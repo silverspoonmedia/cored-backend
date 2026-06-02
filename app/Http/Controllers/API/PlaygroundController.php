@@ -30,7 +30,7 @@ class PlaygroundController extends Controller
         );
     }
 
-    public function show(int $user): JsonResponse
+    public function show(string $user): JsonResponse
     {
         return $this->successResponse(
             $this->userService->get($user),
@@ -45,14 +45,14 @@ class PlaygroundController extends Controller
         return $this->successResponse($record, 'User created successfully.', 201);
     }
 
-    public function update(UpdateUserRequest $request, int $user): JsonResponse
+    public function update(UpdateUserRequest $request, string $user): JsonResponse
     {
         $record = $this->userService->update($user, $request->validated());
 
         return $this->successResponse($record, 'User updated successfully.');
     }
 
-    public function destroy(int $user): JsonResponse
+    public function destroy(string $user): JsonResponse
     {
         $this->userService->delete($user);
 
