@@ -10,6 +10,7 @@
 ## Documentation
 
 - [API routing (global vs versioned)](docs/api-routing.md)
+- [Global reusable repository pattern](docs/crud-architecture.md)
 
 ## About Laravel
 

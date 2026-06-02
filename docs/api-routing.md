@@ -214,3 +214,7 @@ The `ping` endpoints exist only to demonstrate wiring. In a real deployment, glo
 | `GET /api/v1/ping` | Versioned | `Pong V1` |
 
 Both use the shared `App\Traits\ApiResponse` trait for consistent JSON structure.
+
+## Related documentation
+
+- [CRUD Architecture & Repository Pattern](./crud-architecture.md) — layer responsibilities, generic vs dedicated repositories, and the Playground User reference implementation.
