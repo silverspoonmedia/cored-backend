@@ -42,7 +42,7 @@ class PlaygroundController extends Controller
     {
         $record = $this->userService->create($request->validated());
 
-        // return $this->successResponse($record, 'User created successfully.', 201);
+        return $this->successResponse($record, 'User created successfully.', 201);
     }
 
     public function update(UpdateUserRequest $request, int $user): JsonResponse
