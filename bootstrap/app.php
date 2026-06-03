@@ -11,6 +11,7 @@ use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenBlacklistedException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException;
+use Spatie\Permission\Exceptions\UnauthorizedException as PermissionUnauthorizedException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
@@ -98,5 +99,13 @@ return Application::configure(basePath: dirname(__DIR__))
             };
 
             return ApiResponder::error($message, 401);
+        });
+
+        $exceptions->render(function (PermissionUnauthorizedException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return ApiResponder::error('You are not authorized to perform this action.', 403);
         });
     })->create();

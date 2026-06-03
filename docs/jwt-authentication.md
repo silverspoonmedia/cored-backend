@@ -228,6 +228,19 @@ API routes **never redirect** to a web login page. `bootstrap/app.php` overrides
 
 Laravel’s default `{"message":"Unauthenticated."}` response and login redirects are **not** used on `api/*` routes.
 
+### Authorization errors (roles & permissions)
+
+When `role`, `permission`, or `role_or_permission` middleware denies access on `api/*`:
+
+```json
+{
+  "status": "error",
+  "message": "You are not authorized to perform this action."
+}
+```
+
+HTTP status is `403`. Required role or permission names are **not** exposed in the response (`display_permission_in_exception` and `display_role_in_exception` remain `false` in `config/permission.php`).
+
 ---
 
 ## API endpoints
