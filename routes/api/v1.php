@@ -5,6 +5,7 @@ use App\Http\Controllers\API\V1\Auth\AuthController;
 use App\Http\Controllers\API\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\API\V1\Auth\PasswordController;
 use App\Http\Controllers\API\V1\PlaygroundController;
+use App\Http\Controllers\API\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('ping', [PlaygroundController::class, 'ping']);
@@ -33,6 +34,13 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
         ->name('refresh');
 });
 
-Route::middleware(['auth:api', 'permission:users.manage'])
+Route::middleware(['auth:api', 'permission:view user'])
     ->get('admin/ping', [AdminController::class, 'ping'])
     ->name('admin.ping');
+
+Route::middleware('auth:api')->group(function (): void {
+    Route::get('users/assignable-roles', [UserController::class, 'assignableRoles'])
+        ->name('users.assignable-roles');
+
+    Route::apiResource('users', UserController::class);
+});

@@ -103,7 +103,7 @@ app/
     └── CurrentPasswordIncorrectException.php
 
 routes/api/v1.php                        ← all auth routes
-database/seeders/RolePermissionSeeder.php
+database/seeders/RoleSeeder.php
 ```
 
 `UserRepositoryInterface` is bound to `UserRepository` in `App\Providers\AppServiceProvider`.
@@ -161,7 +161,7 @@ JWT_TTL=60
 JWT_REFRESH_TTL=20160
 
 AUTH_GUARD=api
-AUTH_DEFAULT_ROLE=user
+AUTH_DEFAULT_ROLE=User
 AUTH_VERIFICATION_EXPIRE=60
 ```
 
@@ -181,7 +181,7 @@ AUTH_VERIFICATION_EXPIRE=60
     ],
 ],
 
-'default_role' => env('AUTH_DEFAULT_ROLE', 'user'),
+'default_role' => env('AUTH_DEFAULT_ROLE', 'User'),
 
 'verification' => [
     'expire' => (int) env('AUTH_VERIFICATION_EXPIRE', 60),
@@ -195,13 +195,13 @@ AUTH_VERIFICATION_EXPIRE=60
 | `jwt.auth` | JWT Authenticate | *(registered by jwt-auth package)* |
 | `jwt.refresh` | JWT RefreshToken | Token refresh endpoint |
 | `role` | Spatie `RoleMiddleware` | `middleware('role:admin')` |
-| `permission` | Spatie `PermissionMiddleware` | `middleware('permission:users.manage')` |
+| `permission` | Spatie `PermissionMiddleware` | `middleware('permission:view user')` |
 | `role_or_permission` | Spatie `RoleOrPermissionMiddleware` | Either role or permission |
 
 Protected routes use `auth:api` (JWT guard). Example RBAC route:
 
 ```php
-Route::middleware(['auth:api', 'permission:users.manage'])
+Route::middleware(['auth:api', 'permission:view user'])
     ->get('admin/ping', [AdminController::class, 'ping']);
 ```
 
@@ -271,7 +271,7 @@ Base URL prefix: **`/api/v1`**. Route names are prefixed with `api.v1.`.
 
 | Method | URI | Middleware | Description |
 |--------|-----|------------|-------------|
-| `GET` | `/admin/ping` | `auth:api`, `permission:users.manage` | Example admin-only endpoint |
+| `GET` | `/admin/ping` | `auth:api`, `permission:view user` | Example permission-gated endpoint |
 
 List routes:
 
@@ -409,36 +409,39 @@ The reset email includes a link with `token` and `email` query parameters pointi
 
 ## Roles and permissions
 
-Seeded by `RolePermissionSeeder` (`guard_name`: `api`):
+Seeded by `RoleSeeder` (`guard_name`: `api`). Roles use PascalCase names and a numeric **`level`** column for hierarchy (smaller level = higher authority). See [User Management & Hierarchical RBAC](./user-management-hrbac.md) for the full role matrix, user CRUD endpoints, and policy rules.
 
-| Role | Permissions |
-|------|-------------|
-| `user` | `profile.view`, `profile.update` |
-| `admin` | All permissions (`users.view`, `users.manage`, `profile.view`, `profile.update`) |
+| Role | Level | User-management permissions |
+|------|-------|-----------------------------|
+| `Root` | 1 | `view user`, `create user`, `edit user`, `delete user` |
+| `Admin` | 100 | All four |
+| `Moderator` | 200 | `view user`, `create user`, `edit user` |
+| `Management` | 300 | `view user` |
+| `User` | 400 | *(none)* |
 
-On registration, `AuthService` assigns the role from `config('auth.default_role')` (default: `user`).
+On registration, `AuthService` assigns the role from `config('auth.default_role')` (default: `User`).
 
 ### Checking access in routes
 
 ```php
-// Single permission
-Route::middleware(['auth:api', 'permission:users.manage'])->get(...);
+// Single permission (names contain spaces)
+Route::middleware(['auth:api', 'permission:view user'])->get(...);
 
 // Single role
-Route::middleware(['auth:api', 'role:admin'])->get(...);
+Route::middleware(['auth:api', 'role:Admin'])->get(...);
 
 // Role or permission
-Route::middleware(['auth:api', 'role_or_permission:admin|users.manage'])->get(...);
+Route::middleware(['auth:api', 'role_or_permission:Admin|view user'])->get(...);
 ```
 
 ### Checking access in code
 
 ```php
-$user->hasRole('admin');
-$user->can('users.manage');
+$user->hasRole('Admin');
+$user->can('view user');
 ```
 
-The `GET /api/v1/auth/me` response includes `roles` and `permissions` arrays for client-side UI hints; **always enforce authorization on the server** with middleware or policies.
+The `GET /api/v1/auth/me` response includes `roles` and `permissions` arrays for client-side UI hints; **always enforce authorization on the server** with middleware or policies (e.g. `UserPolicy` for `/api/v1/users/*`).
 
 ---
 
@@ -456,7 +459,7 @@ Default seeded admin (from `DatabaseSeeder`):
 
 - Email: `admin@example.com`
 - Password: `password` (factory default)
-- Role: `admin`
+- Role: `Admin`
 
 Ensure `MAIL_*` is configured for verification and reset emails (tests use `MAIL_MAILER=array`).
 
@@ -508,7 +511,7 @@ Run:
 php artisan test --filter=Auth
 ```
 
-Feature tests use `Tests\Concerns\SeedsRolesAndPermissions` to load `RolePermissionSeeder` before auth scenarios.
+Feature tests use `Tests\Concerns\SeedsRolesAndPermissions` to load `RoleSeeder` before auth scenarios.
 
 ---
 
@@ -525,5 +528,6 @@ Feature tests use `Tests\Concerns\SeedsRolesAndPermissions` to load `RolePermiss
 ## Related documentation
 
 - [API Routing](./api-routing.md) — global vs versioned routes; auth belongs on v1+
+- [User Management & Hierarchical RBAC](./user-management-hrbac.md) — hierarchical user CRUD, `UserPolicy`, and `RoleService`
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — layer responsibilities and dedicated repositories
 - [User primary keys (UUID v7)](./user-uuid-v7.md) — user ID type and migrations

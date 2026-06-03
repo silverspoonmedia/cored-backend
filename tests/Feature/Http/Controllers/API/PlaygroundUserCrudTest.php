@@ -118,7 +118,7 @@ class PlaygroundUserCrudTest extends TestCase
                 'message' => 'User deleted successfully.',
             ]);
 
-        $this->assertDatabaseMissing('users', [
+        $this->assertSoftDeleted('users', [
             'id' => $user->id,
         ]);
     }

@@ -83,7 +83,7 @@ class AuthFlowTest extends TestCase
         ])
             ->assertOk()
             ->assertJsonPath('data.email', 'auth@example.com')
-            ->assertJsonPath('data.roles.0', 'user');
+            ->assertJsonPath('data.roles.0', 'User');
 
         $this->postJson('/api/v1/auth/logout', [], [
             'Authorization' => 'Bearer '.$token,
@@ -156,7 +156,7 @@ class AuthFlowTest extends TestCase
     public function test_email_verification_and_resend_flow(): void
     {
         $user = User::factory()->unverified()->create();
-        $user->assignRole('user');
+        $user->assignRole('User');
 
         $verificationUrl = URL::temporarySignedRoute(
             'api.v1.auth.verification.verify',
@@ -194,7 +194,7 @@ class AuthFlowTest extends TestCase
     public function test_admin_route_requires_permission(): void
     {
         $user = User::factory()->create();
-        $user->assignRole('user');
+        $user->assignRole('User');
 
         $token = auth('api')->login($user);
 
@@ -208,7 +208,7 @@ class AuthFlowTest extends TestCase
             ]);
 
         $admin = User::factory()->create();
-        $admin->assignRole('admin');
+        $admin->assignRole('Admin');
 
         $adminToken = auth('api')->login($admin);
 
@@ -227,7 +227,7 @@ class AuthFlowTest extends TestCase
         $user = User::factory()->create([
             'password' => Hash::make('old-password'),
         ]);
-        $user->assignRole('user');
+        $user->assignRole('User');
 
         $token = auth('api')->login($user);
 

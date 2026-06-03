@@ -34,5 +34,6 @@
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="JWT_SECRET" value="testing-jwt-secret-key-with-enough-length"/>
         <env name="AUTH_GUARD" value="api"/>
+        <env name="AUTH_DEFAULT_ROLE" value="User"/>
     </php>
 </phpunit>
