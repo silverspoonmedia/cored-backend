@@ -205,9 +205,28 @@ Route::middleware(['auth:api', 'permission:users.manage'])
     ->get('admin/ping', [AdminController::class, 'ping']);
 ```
 
-### JWT errors on API routes
+### Authentication errors on API routes
 
-`bootstrap/app.php` renders `PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException` subclasses as JSON with HTTP `401` when the path matches `api/*`.
+For paths matching `api/*`, `bootstrap/app.php` normalizes all `401` auth failures to the standard API envelope:
+
+```json
+{
+  "status": "error",
+  "message": "Bearer token is required."
+}
+```
+
+| Situation | HTTP | Message (example) |
+|-----------|------|-------------------|
+| No `Authorization` header on `auth:api` routes | `401` | `Bearer token is required.` |
+| `Authorization` present but token invalid / unparseable | `401` | `Token is invalid.` |
+| JWT middleware: token missing | `401` | `Bearer token is required.` |
+| JWT middleware: user not found for token | `401` | `Token is invalid.` |
+| Expired / blacklisted JWT | `401` | `Token has expired.` / `Token has been revoked.` |
+
+API routes **never redirect** to a web login page. `bootstrap/app.php` overrides Laravel’s default `redirectGuestsTo(route('login'))` because this application has no `login` named route for the web stack.
+
+Laravel’s default `{"message":"Unauthenticated."}` response and login redirects are **not** used on `api/*` routes.
 
 ---
 
@@ -274,7 +293,32 @@ All endpoints use the shared `ApiResponse` trait:
 
 **Validation error** (Form Request): Laravel standard `422` validation JSON.
 
-### Register / login payload
+### Login and remember me
+
+**Request (`POST /api/v1/auth/login`):**
+
+```json
+{
+  "email": "jane@example.com",
+  "password": "password123",
+  "remember_me": true
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `email` | Yes | User email |
+| `password` | Yes | User password |
+| `remember_me` | No | When `true`, issues a longer-lived JWT (see `JWT_REMEMBER_TTL` / `jwt.remember_ttl`) |
+
+This API uses **stateless JWT**, not session cookies. “Remember me” means a **longer access-token TTL** (default: same window as `JWT_REFRESH_TTL`, two weeks), not a Laravel `remember_token` cookie. The JWT includes a persistent `rm` claim so `POST /auth/refresh` keeps the extended lifetime for that session.
+
+| `remember_me` | Token TTL | `data.remember` | `data.expires_in` |
+|---------------|-----------|-----------------|-------------------|
+| `false` / omitted | `JWT_TTL` (default 60 minutes) | `false` | `JWT_TTL * 60` seconds |
+| `true` | `JWT_REMEMBER_TTL` (default 20160 minutes) | `true` | `JWT_REMEMBER_TTL * 60` seconds |
+
+### Register payload
 
 **Request (`POST /api/v1/auth/register`):**
 
@@ -304,12 +348,13 @@ All endpoints use the shared `ApiResponse` trait:
     },
     "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
     "token_type": "bearer",
-    "expires_in": 3600
+    "expires_in": 3600,
+    "remember": false
   }
 }
 ```
 
-`expires_in` is the token TTL in **seconds** (`config('jwt.ttl') * 60`).
+`expires_in` is the token TTL in **seconds**. `remember` reflects whether the client requested a long-lived token.
 
 ### Authenticated requests
 

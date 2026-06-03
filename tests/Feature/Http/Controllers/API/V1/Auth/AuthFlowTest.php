@@ -24,6 +24,42 @@ class AuthFlowTest extends TestCase
         $this->seedRolesAndPermissions();
     }
 
+    public function test_protected_auth_routes_require_bearer_token(): void
+    {
+        $this->getJson('/api/v1/auth/me')
+            ->assertUnauthorized()
+            ->assertJson([
+                'status' => 'error',
+                'message' => 'Bearer token is required.',
+            ]);
+
+        $this->postJson('/api/v1/auth/logout')
+            ->assertUnauthorized()
+            ->assertJson([
+                'status' => 'error',
+                'message' => 'Bearer token is required.',
+            ]);
+    }
+
+    public function test_protected_auth_routes_reject_invalid_bearer_token_without_redirect(): void
+    {
+        $headers = ['Authorization' => 'Bearer invalid-token'];
+
+        $this->get('/api/v1/auth/me', $headers)
+            ->assertUnauthorized()
+            ->assertJson([
+                'status' => 'error',
+                'message' => 'Token is invalid.',
+            ]);
+
+        $this->post('/api/v1/auth/logout', [], $headers)
+            ->assertUnauthorized()
+            ->assertJson([
+                'status' => 'error',
+                'message' => 'Token is invalid.',
+            ]);
+    }
+
     public function test_register_login_me_and_logout_flow(): void
     {
         $register = $this->postJson('/api/v1/auth/register', [
@@ -52,6 +88,25 @@ class AuthFlowTest extends TestCase
         $this->postJson('/api/v1/auth/logout', [], [
             'Authorization' => 'Bearer '.$token,
         ])->assertOk();
+    }
+
+    public function test_login_with_remember_me_returns_extended_expiry(): void
+    {
+        config(['jwt.remember_ttl' => 90]);
+
+        User::factory()->create([
+            'email' => 'remember@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'remember@example.com',
+            'password' => 'password123',
+            'remember_me' => true,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.remember', true)
+            ->assertJsonPath('data.expires_in', 90 * 60);
     }
 
     public function test_login_rejects_invalid_credentials(): void

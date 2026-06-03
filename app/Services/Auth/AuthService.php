@@ -6,10 +6,14 @@ use App\Exceptions\Auth\InvalidCredentialsException;
 use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Support\Auth\UserPresenter;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use PHPOpenSourceSaver\JWTAuth\JWTGuard;
 
 class AuthService
 {
+    private const REMEMBER_CLAIM = 'rm';
+
     public function __construct(
         private readonly UserRepositoryInterface $users,
     ) {}
@@ -33,19 +37,24 @@ class AuthService
     }
 
     /**
-     * @param  array{email: string, password: string}  $credentials
+     * @param  array{email: string, password: string, remember_me?: bool}  $credentials
      * @return array<string, mixed>
      */
     public function login(array $credentials): array
     {
-        if (! $token = Auth::guard('api')->attempt($credentials)) {
-            throw new InvalidCredentialsException;
-        }
+        $remember = (bool) ($credentials['remember_me'] ?? false);
+        $credentials = Arr::only($credentials, ['email', 'password']);
 
-        /** @var User $user */
-        $user = Auth::guard('api')->user();
+        return $this->withTokenLifetime($remember, function (JWTGuard $guard, int $ttlMinutes) use ($credentials, $remember) {
+            if (! $token = $guard->attempt($credentials)) {
+                throw new InvalidCredentialsException;
+            }
 
-        return $this->buildAuthPayload($user, $token);
+            /** @var User $user */
+            $user = $guard->user();
+
+            return $this->buildAuthPayload($user, $token, $ttlMinutes, $remember);
+        });
     }
 
     /**
@@ -53,11 +62,16 @@ class AuthService
      */
     public function refresh(): array
     {
-        /** @var User $user */
-        $user = Auth::guard('api')->user();
-        $token = Auth::guard('api')->refresh();
+        $guard = $this->guard();
+        $remember = (bool) $guard->payload()->get(self::REMEMBER_CLAIM, false);
 
-        return $this->buildAuthPayload($user, $token);
+        return $this->withTokenLifetime($remember, function (JWTGuard $guard, int $ttlMinutes) use ($remember) {
+            /** @var User $user */
+            $user = $guard->user();
+            $token = $guard->refresh();
+
+            return $this->buildAuthPayload($user, $token, $ttlMinutes, $remember);
+        });
     }
 
     public function logout(): void
@@ -77,17 +91,65 @@ class AuthService
     }
 
     /**
+     * @param  callable(JWTGuard, int): array<string, mixed>  $callback
      * @return array<string, mixed>
      */
-    private function buildAuthPayload(User $user, ?string $token = null): array
+    private function withTokenLifetime(bool $remember, callable $callback): array
     {
-        $token ??= Auth::guard('api')->login($user);
+        $guard = $this->guard();
+        $defaultTtl = $this->defaultTtlMinutes();
+        $ttlMinutes = $remember ? $this->rememberTtlMinutes() : $defaultTtl;
+
+        if ($remember) {
+            $guard->claims([self::REMEMBER_CLAIM => true]);
+        }
+
+        $guard->setTTL($ttlMinutes);
+
+        try {
+            return $callback($guard, $ttlMinutes);
+        } finally {
+            $guard->setTTL($defaultTtl);
+        }
+    }
+
+    private function guard(): JWTGuard
+    {
+        /** @var JWTGuard $guard */
+        $guard = Auth::guard('api');
+
+        return $guard;
+    }
+
+    private function defaultTtlMinutes(): int
+    {
+        return (int) config('jwt.ttl', 60);
+    }
+
+    private function rememberTtlMinutes(): int
+    {
+        return (int) config('jwt.remember_ttl', config('jwt.refresh_ttl', 20160));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildAuthPayload(
+        User $user,
+        ?string $token = null,
+        ?int $ttlMinutes = null,
+        bool $remember = false,
+    ): array {
+        $guard = $this->guard();
+        $token ??= $guard->login($user);
+        $ttlMinutes ??= $guard->getTTL() ?? $this->defaultTtlMinutes();
 
         return [
             'user' => UserPresenter::present($user),
             'token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => (int) config('jwt.ttl', 60) * 60,
+            'expires_in' => $ttlMinutes * 60,
+            'remember' => $remember,
         ];
     }
 }

@@ -70,5 +70,26 @@ class AuthServiceTest extends TestCase
 
         $this->assertNotEmpty($payload['token']);
         $this->assertSame('user@example.com', $payload['user']['email']);
+        $this->assertFalse($payload['remember']);
+        $this->assertSame((int) config('jwt.ttl', 60) * 60, $payload['expires_in']);
+    }
+
+    public function test_login_with_remember_me_uses_extended_ttl(): void
+    {
+        config(['jwt.remember_ttl' => 120]);
+
+        User::factory()->create([
+            'email' => 'remember@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $payload = $this->service->login([
+            'email' => 'remember@example.com',
+            'password' => 'password123',
+            'remember_me' => true,
+        ]);
+
+        $this->assertTrue($payload['remember']);
+        $this->assertSame(120 * 60, $payload['expires_in']);
     }
 }

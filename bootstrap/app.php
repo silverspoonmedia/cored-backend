@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\ApiResponder;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,6 +14,7 @@ use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -32,6 +35,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/whatsup',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Laravel defaults to route('login') for guests; this API has no web login route.
+        // Never redirect unauthenticated API clients—return JSON 401 instead.
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('api/*')) {
+                return null;
+            }
+
+            return null;
+        });
+
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
@@ -42,6 +55,32 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            $message = $request->bearerToken()
+                ? 'Token is invalid.'
+                : 'Bearer token is required.';
+
+            return ApiResponder::error($message, 401);
+        });
+
+        $exceptions->render(function (UnauthorizedHttpException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            $message = match ($e->getMessage()) {
+                'Token not provided' => 'Bearer token is required.',
+                'User not found' => 'Token is invalid.',
+                default => $e->getMessage() ?: 'Could not authenticate token.',
+            };
+
+            return ApiResponder::error($message, 401);
+        });
 
         $exceptions->render(function (
             JWTException $e,
@@ -58,9 +97,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 default => 'Could not authenticate token.',
             };
 
-            return response()->json([
-                'status' => 'error',
-                'message' => $message,
-            ], 401);
+            return ApiResponder::error($message, 401);
         });
     })->create();

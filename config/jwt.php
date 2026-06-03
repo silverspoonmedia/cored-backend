@@ -1,5 +1,8 @@
 <?php
 
+use PHPOpenSourceSaver\JWTAuth\Providers\Auth\Illuminate;
+use PHPOpenSourceSaver\JWTAuth\Providers\JWT\Lcobucci;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -93,6 +96,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Remember-me token TTL
+    |--------------------------------------------------------------------------
+    |
+    | When the client sends remember_me=true on login, the issued JWT uses this
+    | TTL (minutes) instead of jwt.ttl. Defaults to jwt.refresh_ttl (2 weeks).
+    |
+    */
+
+    'remember_ttl' => (int) env('JWT_REMEMBER_TTL', env('JWT_REFRESH_TTL', 20160)),
+
+    /*
+    |--------------------------------------------------------------------------
     | Refresh time to live
     |--------------------------------------------------------------------------
     |
@@ -168,8 +183,7 @@ return [
     */
 
     'persistent_claims' => [
-        // 'foo',
-        // 'bar',
+        'rm',
     ],
 
     /*
@@ -294,7 +308,7 @@ return [
         |
         */
 
-        'jwt' => PHPOpenSourceSaver\JWTAuth\Providers\JWT\Lcobucci::class,
+        'jwt' => Lcobucci::class,
 
         /*
         |--------------------------------------------------------------------------
@@ -305,7 +319,7 @@ return [
         |
         */
 
-        'auth' => PHPOpenSourceSaver\JWTAuth\Providers\Auth\Illuminate::class,
+        'auth' => Illuminate::class,
 
         /*
         |--------------------------------------------------------------------------
