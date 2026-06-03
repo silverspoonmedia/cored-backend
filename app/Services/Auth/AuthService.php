@@ -30,7 +30,7 @@ class AuthService
             'password' => $data['password'],
         ]);
 
-        $user->assignRole(config('auth.default_role', 'user'));
+        $user->assignRole(config('auth.default_role', 'User'));
         $user->sendEmailVerificationNotification();
 
         return $this->buildAuthPayload($user);

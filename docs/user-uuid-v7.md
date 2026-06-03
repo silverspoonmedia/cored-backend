@@ -135,6 +135,7 @@ When introducing new tables that belong to a user:
 ## Related documentation
 
 - [JWT Authentication & RBAC](./jwt-authentication.md) — JWT `sub` claim and permission pivot tables use user UUIDs
+- [User Management & Hierarchical RBAC](./user-management-hrbac.md) — user CRUD routes use UUID `{user}` binding
 - [API Routing](./api-routing.md) — versioned API surface
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — layer responsibilities
 

@@ -1,7 +1,10 @@
 <?php
 
+use App\Models\User;
 use App\Support\ApiResponder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,6 +18,8 @@ use Spatie\Permission\Exceptions\UnauthorizedException as PermissionUnauthorized
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -56,6 +61,25 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            $previous = $e->getPrevious();
+
+            if ($previous instanceof ModelNotFoundException) {
+                $message = match ($previous->getModel()) {
+                    User::class => 'User not found.',
+                    default => 'Data not found.',
+                };
+
+                return ApiResponder::error($message, 404);
+            }
+
+            return ApiResponder::error('Resource not found.', 404);
+        });
 
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             if (! $request->is('api/*')) {
@@ -107,5 +131,27 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return ApiResponder::error('You are not authorized to perform this action.', 403);
+        });
+
+        $exceptions->render(function (AuthorizationException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return ApiResponder::error(
+                $e->getMessage() ?: 'You are not authorized to perform this action.',
+                403,
+            );
+        });
+
+        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return ApiResponder::error(
+                $e->getMessage() ?: 'You are not authorized to perform this action.',
+                403,
+            );
         });
     })->create();

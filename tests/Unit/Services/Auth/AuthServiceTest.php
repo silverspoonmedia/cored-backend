@@ -36,7 +36,7 @@ class AuthServiceTest extends TestCase
 
         $this->assertDatabaseHas('users', ['email' => 'jane@example.com']);
         $user = User::query()->where('email', 'jane@example.com')->first();
-        $this->assertTrue($user->hasRole('user'));
+        $this->assertTrue($user->hasRole('User'));
         $this->assertNotEmpty($payload['token']);
         $this->assertSame('jane@example.com', $payload['user']['email']);
     }

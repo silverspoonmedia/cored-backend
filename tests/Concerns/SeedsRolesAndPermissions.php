@@ -2,12 +2,12 @@
 
 namespace Tests\Concerns;
 
-use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\RoleSeeder;
 
 trait SeedsRolesAndPermissions
 {
     protected function seedRolesAndPermissions(): void
     {
-        $this->seed(RolePermissionSeeder::class);
+        $this->seed(RoleSeeder::class);
     }
 }

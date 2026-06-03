@@ -224,4 +224,5 @@ php artisan test --filter=Playground
 
 - [API Routing](./api-routing.md) — global vs versioned routes; product features belong on v1+
 - [JWT Authentication & RBAC](./jwt-authentication.md) — dedicated `UserRepository` and versioned auth endpoints
+- [User Management & Hierarchical RBAC](./user-management-hrbac.md) — production user CRUD on v1 (`UserManagementService`, `UserPolicy`, hierarchy)
 - [User primary keys (UUID v7)](./user-uuid-v7.md) — UUID primary keys for `users` and related tables
