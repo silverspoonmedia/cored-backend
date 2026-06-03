@@ -12,6 +12,7 @@
 - [API routing (global vs versioned)](docs/api-routing.md)
 - [Global reusable repository pattern](docs/crud-architecture.md)
 - [User primary keys (UUID v7)](docs/user-uuid-v7.md)
+- [Laravel Pint (Artisan wrapper)](docs/laravel-pint.md)
 
 ## About Laravel
 
