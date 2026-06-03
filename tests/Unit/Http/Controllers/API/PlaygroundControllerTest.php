@@ -54,7 +54,7 @@ class PlaygroundControllerTest extends TestCase
     public function test_index_returns_all_users(): void
     {
         $user = new User(['name' => 'Alice', 'email' => 'alice@example.com']);
-        $user->id = 1;
+        $user->id = '019e8766-857b-7259-a580-a21e1ddfa27e';
 
         $this->userService
             ->shouldReceive('list')
@@ -68,7 +68,7 @@ class PlaygroundControllerTest extends TestCase
                 'status' => 'success',
                 'message' => 'Users retrieved successfully.',
                 'data' => [
-                    ['id' => 1, 'name' => 'Alice', 'email' => 'alice@example.com'],
+                    ['id' => '019e8766-857b-7259-a580-a21e1ddfa27e', 'name' => 'Alice', 'email' => 'alice@example.com'],
                 ],
             ]);
     }
@@ -76,22 +76,22 @@ class PlaygroundControllerTest extends TestCase
     public function test_show_returns_user(): void
     {
         $user = new User(['name' => 'Alice', 'email' => 'alice@example.com']);
-        $user->id = 1;
+        $user->id = '019e8766-857b-7259-a580-a21e1ddfa27e';
 
         $this->userService
             ->shouldReceive('get')
             ->once()
-            ->with(1)
+            ->with('019e8766-857b-7259-a580-a21e1ddfa27e')
             ->andReturn($user);
 
-        $response = $this->toTestResponse($this->controller->show(1));
+        $response = $this->toTestResponse($this->controller->show('019e8766-857b-7259-a580-a21e1ddfa27e'));
 
         $response->assertStatus(200)
             ->assertJson([
                 'status' => 'success',
                 'message' => 'User retrieved successfully.',
                 'data' => [
-                    'id' => 1,
+                    'id' => '019e8766-857b-7259-a580-a21e1ddfa27e',
                     'name' => 'Alice',
                     'email' => 'alice@example.com',
                 ],
@@ -110,7 +110,7 @@ class PlaygroundControllerTest extends TestCase
             'name' => 'Bob',
             'email' => 'bob@example.com',
         ]);
-        $created->id = 2;
+        $created->id = '019e8766-857b-7259-a580-a21e1ddfa28e';
 
         $request = Mockery::mock(StoreUserRequest::class);
         $request->shouldReceive('validated')->once()->andReturn($payload);
@@ -128,7 +128,7 @@ class PlaygroundControllerTest extends TestCase
                 'status' => 'success',
                 'message' => 'User created successfully.',
                 'data' => [
-                    'id' => 2,
+                    'id' => '019e8766-857b-7259-a580-a21e1ddfa28e',
                     'name' => 'Bob',
                     'email' => 'bob@example.com',
                 ],
@@ -143,7 +143,7 @@ class PlaygroundControllerTest extends TestCase
             'name' => 'Bobby',
             'email' => 'bob@example.com',
         ]);
-        $updated->id = 1;
+        $updated->id = '019e8766-857b-7259-a580-a21e1ddfa27e';
 
         $request = Mockery::mock(UpdateUserRequest::class);
         $request->shouldReceive('validated')->once()->andReturn($payload);
@@ -151,17 +151,17 @@ class PlaygroundControllerTest extends TestCase
         $this->userService
             ->shouldReceive('update')
             ->once()
-            ->with(1, $payload)
+            ->with('019e8766-857b-7259-a580-a21e1ddfa27e', $payload)
             ->andReturn($updated);
 
-        $response = $this->toTestResponse($this->controller->update($request, 1));
+        $response = $this->toTestResponse($this->controller->update($request, '019e8766-857b-7259-a580-a21e1ddfa27e'));
 
         $response->assertStatus(200)
             ->assertJson([
                 'status' => 'success',
                 'message' => 'User updated successfully.',
                 'data' => [
-                    'id' => 1,
+                    'id' => '019e8766-857b-7259-a580-a21e1ddfa27e',
                     'name' => 'Bobby',
                     'email' => 'bob@example.com',
                 ],
@@ -173,9 +173,9 @@ class PlaygroundControllerTest extends TestCase
         $this->userService
             ->shouldReceive('delete')
             ->once()
-            ->with(1);
+            ->with('019e8766-857b-7259-a580-a21e1ddfa27e');
 
-        $response = $this->toTestResponse($this->controller->destroy(1));
+        $response = $this->toTestResponse($this->controller->destroy('019e8766-857b-7259-a580-a21e1ddfa27e'));
 
         $response->assertStatus(200)
             ->assertJson([

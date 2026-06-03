@@ -26,7 +26,7 @@ class UserService
         return $this->repository->all(User::class);
     }
 
-    public function get(int $id): Model
+    public function get(string $id): Model
     {
         return $this->repository->findOrFail(User::class, $id);
     }
@@ -38,22 +38,22 @@ class UserService
     {
         $this->assertEmailDomainAllowed($data['email']);
 
-        return $this->repository->create(User::class, $data);
+        return $this->repository->create(User::class, $this->onlyPersistableAttributes($data));
     }
 
     /**
      * @param  array<string, mixed>  $data
      */
-    public function update(int $id, array $data): Model
+    public function update(string $id, array $data): Model
     {
         if (isset($data['email'])) {
             $this->assertEmailDomainAllowed($data['email']);
         }
 
-        return $this->repository->update(User::class, $id, $data);
+        return $this->repository->update(User::class, $id, $this->onlyPersistableAttributes($data));
     }
 
-    public function delete(int $id): void
+    public function delete(string $id): void
     {
         if ($this->repository->count(User::class) <= 1) {
             throw new CannotDeleteLastRemainingUserException;
@@ -69,5 +69,14 @@ class UserService
         if ($domain !== '' && in_array(ltrim($domain, '@'), self::BLOCKED_EMAIL_DOMAINS, true)) {
             throw new DisposableEmailNotAllowedException;
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function onlyPersistableAttributes(array $data): array
+    {
+        return array_intersect_key($data, array_flip(['name', 'email', 'password']));
     }
 }

@@ -43,7 +43,7 @@ class PlaygroundUserCrudTest extends TestCase
 
     public function test_show_returns_not_found_for_missing_user(): void
     {
-        $response = $this->getJson('/api/playground/users/999');
+        $response = $this->getJson('/api/playground/users/019e8766-857b-7259-a580-a21e1ddfa27e');
 
         $response->assertNotFound();
     }
@@ -54,6 +54,8 @@ class PlaygroundUserCrudTest extends TestCase
             'name' => 'New User',
             'email' => 'new@example.com',
             'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'agreement' => true,
         ]);
 
         $response->assertCreated()
@@ -140,6 +142,8 @@ class PlaygroundUserCrudTest extends TestCase
             'name' => 'Bob',
             'email' => 'bob@mailinator.com',
             'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'agreement' => true,
         ]);
 
         $response->assertStatus(422)
