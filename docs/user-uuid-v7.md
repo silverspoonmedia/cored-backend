@@ -132,6 +132,14 @@ When introducing new tables that belong to a user:
 
 ---
 
+## Related documentation
+
+- [JWT Authentication & RBAC](./jwt-authentication.md) — JWT `sub` claim and permission pivot tables use user UUIDs
+- [API Routing](./api-routing.md) — versioned API surface
+- [CRUD Architecture & Repository Pattern](./crud-architecture.md) — layer responsibilities
+
+---
+
 ## References
 
 - [Laravel Eloquent: UUIDs](https://laravel.com/docs/eloquent#uuid-and-ulid-keys)

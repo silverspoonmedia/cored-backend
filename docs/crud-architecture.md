@@ -217,3 +217,11 @@ php artisan test --filter=Playground
 4. Keep the **controller** thin: validated data in, Service call, response out.
 5. Register routes on the correct API layer (versioned for product features).
 6. Add unit tests for Service and Controller; feature tests for HTTP behavior.
+
+---
+
+## Related documentation
+
+- [API Routing](./api-routing.md) — global vs versioned routes; product features belong on v1+
+- [JWT Authentication & RBAC](./jwt-authentication.md) — dedicated `UserRepository` and versioned auth endpoints
+- [User primary keys (UUID v7)](./user-uuid-v7.md) — UUID primary keys for `users` and related tables
