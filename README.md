@@ -1,64 +1,213 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Monolith
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel 13 API application with **JWT authentication**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks and playground CRUD.
 
-## Documentation
+### Living documentation (required)
 
-- [API routing (global vs versioned)](docs/api-routing.md)
-- [Global reusable repository pattern](docs/crud-architecture.md)
-- [User primary keys (UUID v7)](docs/user-uuid-v7.md)
-- [Laravel Pint (Artisan wrapper)](docs/laravel-pint.md)
+**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, or any behavior described here—do not let code and docs drift apart.
 
-## About Laravel
+**All project documentation must be written in English** (README, `docs/`, and any new guides or sections you add).
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Identifiers (UUID)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+This project does **not** use auto-increment integer primary keys for domain models. **Primary keys and foreign keys are UUID columns** end to end.
 
-## Learning Laravel
+| Rule | Practice |
+|------|----------|
+| Primary key | `$table->uuid('id')->primary()` in migrations |
+| Foreign key | `$table->foreignUuid('…_id')->constrained(…)` (or `uuid` + explicit FK) |
+| Model | `Illuminate\Database\Eloquent\Concerns\HasUuids` — Laravel 13 generates **UUID v7** on create |
+| API / JWT | Route parameters, JSON `id` fields, and JWT `sub` are UUID strings |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+**Already on UUID today**
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Area | Columns |
+|------|---------|
+| `users` | `id` (PK) |
+| `sessions` | `user_id` → `users.id` |
+| Spatie (`roles`, `permissions`, pivots) | `id`, `model_id`, `role_id`, `permission_id` |
+| Models | `User`, `Role`, `Permission` use `HasUuids` |
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+When you add a table that belongs to a user or another UUID-backed model, use `foreignUuid` (not `foreignId`). Do not pass integer IDs in validation or route binding. Full rationale, migration examples, and pitfalls (e.g. do not use DB `gen_random_uuid()` for v7) → **[User primary keys (UUID v7)](docs/user-uuid-v7.md)**.
 
-## Agentic Development
+---
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Requirements
+
+| Tool | Version |
+|------|---------|
+| PHP | ^8.3 (extensions: `mbstring`, `openssl`, `pdo`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`) |
+| Composer | 2.x |
+| Node.js & npm | For Vite frontend assets (optional if you only use the API) |
+| Database | SQLite (default in `.env.example`), or MySQL / PostgreSQL |
+
+On **Laragon** (Windows), enable PHP 8.3+ and create a MySQL database if you do not use SQLite.
+
+---
+
+## Setup from scratch
+
+### 1. Clone and install dependencies
 
 ```bash
-composer require laravel/boost --dev
+git clone <repository-url> monolith
+cd monolith
 
-php artisan boost:install
+composer install
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 2. Environment file
 
-## Contributing
+```bash
+cp .env.example .env   # Windows: copy .env.example .env
+php artisan key:generate
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Copy `.env.example` and adjust at least:
 
-## Code of Conduct
+| Variable | Notes |
+|----------|--------|
+| `APP_URL` | Base URL of the app (e.g. `http://monolith.test` on Laragon) |
+| `DB_*` | Default is SQLite (`DB_CONNECTION=sqlite`). For MySQL, uncomment and set `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`. |
+| `JWT_*` | Set `JWT_SECRET` via step 4 below |
+| `MAIL_*` | Required for email verification and password reset in real use (tests use `array` driver) |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+**SQLite:** ensure the database file exists:
 
-## Security Vulnerabilities
+```bash
+touch database/database.sqlite   # Windows: type nul > database\database.sqlite
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 3. JWT signing secret
+
+Required for this project (not covered by `composer setup`):
+
+```bash
+php artisan jwt:secret
+```
+
+This writes `JWT_SECRET` into `.env`. See [JWT Authentication & RBAC](docs/jwt-authentication.md#configuration).
+
+### 4. Database migrations and seeders
+
+```bash
+php artisan migrate
+php artisan db:seed
+```
+
+`DatabaseSeeder` runs `RoleSeeder` (roles, permissions, hierarchy levels) and creates a default admin user:
+
+| Field | Value |
+|-------|--------|
+| Email | `admin@example.com` |
+| Password | `123456789` |
+| Role | `Admin` |
+
+To reset and reseed during development:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+### 5. Frontend assets (optional)
+
+```bash
+npm install
+npm run build
+```
+
+For local development with hot reload:
+
+```bash
+npm run dev
+```
+
+### 6. Run the application
+
+**API only:**
+
+```bash
+php artisan serve
+```
+
+**Full stack** (HTTP server, queue worker, log tail, Vite):
+
+```bash
+composer run dev
+```
+
+### One-shot setup (Composer script)
+
+`composer.json` defines a `setup` script that installs PHP deps, copies `.env`, generates `APP_KEY`, runs migrations, and builds frontend assets. It does **not** run `jwt:secret` or seeders—run those after `composer run setup`:
+
+```bash
+composer run setup
+php artisan jwt:secret
+php artisan db:seed
+```
+
+---
+
+## Verify the install
+
+| Check | Command / URL |
+|-------|----------------|
+| Versioned ping | `GET /api/v1/ping` |
+| Login | `POST /api/v1/auth/login` with `admin@example.com` / `123456789` |
+| Authenticated profile | `GET /api/v1/auth/me` with `Authorization: Bearer <token>` |
+| Tests | `composer test` or `php artisan test` |
+| Code style | `php artisan pint` — see [Laravel Pint](docs/laravel-pint.md) |
+
+---
+
+## Project documentation
+
+All guides live under [`docs/`](docs/). Read them in this order when onboarding:
+
+### API surface and structure
+
+| Document | Description |
+|----------|-------------|
+| [API routing](docs/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
+| [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, playground example |
+
+### Authentication and authorization
+
+| Document | Description |
+|----------|-------------|
+| [JWT authentication & RBAC](docs/jwt-authentication.md) | JWT guard, register/login/refresh, Spatie roles & permissions, env config, local setup |
+| [User management & H-RBAC](docs/user-management-hrbac.md) | `/api/v1/users` CRUD, role hierarchy (`roles.level`), policies, permissions matrix |
+| [User primary keys (UUID v7)](docs/user-uuid-v7.md) | Why UUID v7 on `users`, migrations, and applying the same pattern to new models |
+
+### Tooling
+
+| Document | Description |
+|----------|-------------|
+| [Laravel Pint (Artisan wrapper)](docs/laravel-pint.md) | `php artisan pint` instead of calling the binary directly |
+
+### Cross-links between docs
+
+- Auth endpoints and middleware → [jwt-authentication.md](docs/jwt-authentication.md)
+- User CRUD and hierarchy rules → [user-management-hrbac.md](docs/user-management-hrbac.md) (builds on JWT doc)
+- Route placement for new features → [api-routing.md](docs/api-routing.md)
+- Simple CRUD scaffolding → [crud-architecture.md](docs/crud-architecture.md)
+- ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
+
+---
+
+## Common Artisan commands
+
+```bash
+php artisan migrate              # Apply migrations
+php artisan db:seed              # Roles, permissions, sample admin
+php artisan jwt:secret           # Generate JWT_SECRET (once per environment)
+php artisan pint                 # Format PHP code
+php artisan test                 # PHPUnit test suite
+```
+
+---
 
 ## License
 
