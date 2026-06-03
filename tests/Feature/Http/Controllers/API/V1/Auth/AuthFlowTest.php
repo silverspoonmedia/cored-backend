@@ -200,7 +200,12 @@ class AuthFlowTest extends TestCase
 
         $this->getJson('/api/v1/admin/ping', [
             'Authorization' => 'Bearer '.$token,
-        ])->assertForbidden();
+        ])
+            ->assertForbidden()
+            ->assertJson([
+                'status' => 'error',
+                'message' => 'You are not authorized to perform this action.',
+            ]);
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
