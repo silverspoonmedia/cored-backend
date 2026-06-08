@@ -219,4 +219,4 @@ Both use the shared `App\Traits\ApiResponse` trait for consistent JSON structure
 
 - [JWT Authentication & RBAC](./jwt-authentication.md) — registration, login, JWT, email verification, password reset, and Spatie permissions on v1
 - [User Management & Hierarchical RBAC](./user-management-hrbac.md) — versioned user CRUD, role levels, policies, and hierarchy rules on v1
-- [CRUD Architecture & Repository Pattern](./crud-architecture.md) — layer responsibilities, generic vs dedicated repositories, and the Playground User reference implementation
+- [CRUD Architecture & Repository Pattern](./crud-architecture.md) — layer responsibilities, generic vs dedicated repositories, `Route::apiResource` for simple CRUD, and the Playground User reference implementation
