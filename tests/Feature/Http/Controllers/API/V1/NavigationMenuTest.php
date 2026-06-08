@@ -179,6 +179,81 @@ class NavigationMenuTest extends TestCase
         $this->assertSoftDeleted('menus', ['id' => $child->id]);
     }
 
+    public function test_admin_can_restore_trashed_subtree(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $header = $this->repo()->createMenu(['name' => 'H', 'type' => 'h'], 'append', null);
+        $parent = $this->repo()->createMenu(['name' => 'P', 'type' => 'p', 'parent_id' => $header->id], 'append', null);
+        $child = $this->repo()->createMenu(['name' => 'C', 'type' => 'c', 'parent_id' => $parent->id], 'append', null);
+        $this->repo()->deleteMenu($header, true);
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/navigation/menus/'.$header->id.'/restore')
+            ->assertOk()
+            ->assertJsonPath('data.id', $header->id);
+
+        $this->assertDatabaseHas('menus', ['id' => $header->id, 'deleted_at' => null]);
+        $this->assertDatabaseHas('menus', ['id' => $parent->id, 'deleted_at' => null]);
+        $this->assertDatabaseHas('menus', ['id' => $child->id, 'deleted_at' => null]);
+    }
+
+    public function test_restore_appends_menu_to_tail_of_group(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $a = $this->makeMenu(['name' => 'A', 'type' => 'p']);
+        $b = $this->makeMenu(['name' => 'B', 'type' => 'p']);
+
+        $this->repo()->deleteMenu($a);
+        $this->assertSame(1, $b->fresh()->order);
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/navigation/menus/'.$a->id.'/restore')
+            ->assertOk();
+
+        $this->assertSame(1, $b->fresh()->order);
+        $this->assertSame(2, $a->fresh()->order);
+    }
+
+    public function test_restore_rejects_when_parent_still_trashed(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $header = $this->repo()->createMenu(['name' => 'H', 'type' => 'h'], 'append', null);
+        $parent = $this->repo()->createMenu(['name' => 'P', 'type' => 'p', 'parent_id' => $header->id], 'append', null);
+        $this->repo()->deleteMenu($header, true);
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/navigation/menus/'.$parent->id.'/restore')
+            ->assertStatus(422)
+            ->assertJsonPath('status', 'error');
+
+        $this->assertSoftDeleted('menus', ['id' => $parent->id]);
+    }
+
+    public function test_trashed_list_returns_soft_deleted_menus(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $menu = $this->makeMenu(['name' => 'Gone', 'type' => 'c']);
+        $this->repo()->deleteMenu($menu);
+
+        $response = $this->actingAsJwt($admin)
+            ->getJson('/api/v1/navigation/menus/trashed')
+            ->assertOk();
+
+        $this->assertTrue(collect($response->json('data'))->pluck('name')->contains('Gone'));
+    }
+
+    public function test_restore_requires_restore_permission(): void
+    {
+        $menu = $this->makeMenu(['name' => 'Gone', 'type' => 'c']);
+        $this->repo()->deleteMenu($menu);
+
+        $this->postJson('/api/v1/navigation/menus/'.$menu->id.'/restore')->assertUnauthorized();
+
+        $this->actingAsJwt($this->userWithRole('User'))
+            ->postJson('/api/v1/navigation/menus/'.$menu->id.'/restore')
+            ->assertForbidden();
+    }
+
     public function test_store_rejects_parent_that_is_soft_deleted(): void
     {
         $admin = $this->userWithRole('Admin');

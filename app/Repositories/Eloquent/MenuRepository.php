@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Eloquent;
 
+use App\Exceptions\Navigation\InvalidMenuParentException;
 use App\Exceptions\Navigation\InvalidMenuPositionException;
 use App\Exceptions\Navigation\MenuHasChildrenException;
 use App\Models\Menu;
@@ -212,6 +213,49 @@ class MenuRepository implements MenuRepositoryInterface
         $this->flushCache();
     }
 
+    public function restoreMenu(Menu $menu): void
+    {
+        DB::transaction(function () use ($menu) {
+            // Restoring under a still-trashed parent would re-orphan the branch
+            // (invisible in the tree because the parent is unreachable).
+            if ($menu->parent_id !== null && ! Menu::query()->whereKey($menu->parent_id)->exists()) {
+                throw new InvalidMenuParentException('Cannot restore: the parent menu is missing or still deleted. Restore the parent first.');
+            }
+
+            $ids = $this->trashedSubtreeIds($menu->id);
+
+            if ($ids === []) {
+                return;
+            }
+
+            // Rows come back with order still NULL, then get appended per group.
+            Menu::withTrashed()->whereIn('id', $ids)->restore();
+
+            $groups = Menu::query()
+                ->whereIn('id', $ids)
+                ->get(['parent_id', 'type'])
+                ->map(fn (Menu $m): array => ['parent_id' => $m->parent_id, 'type' => $m->type])
+                ->unique(fn (array $group): string => ($group['parent_id'] ?? self::ROOT).'|'.$group['type']);
+
+            foreach ($groups as $group) {
+                $this->persistOrderSequence($this->siblingIdsForAppend($group['parent_id'], $group['type']));
+            }
+        });
+
+        $this->flushCache();
+    }
+
+    public function trashedList(?string $loadType): array
+    {
+        $query = Menu::onlyTrashed()->with(['roles', 'includedUsers', 'excludedUsers']);
+
+        if ($loadType !== null && $loadType !== '') {
+            $query->where('type', $loadType);
+        }
+
+        return $query->orderByDesc('deleted_at')->get()->all();
+    }
+
     public function syncRoles(Menu $menu, array $idsOrNames): void
     {
         if ($idsOrNames === []) {
@@ -314,6 +358,58 @@ class MenuRepository implements MenuRepositoryInterface
         }
 
         return $descendants;
+    }
+
+    /**
+     * The menu plus its trashed descendants (depth-first). Empty when the menu
+     * itself is not trashed.
+     *
+     * @return list<string>
+     */
+    private function trashedSubtreeIds(string $menuId): array
+    {
+        if (! Menu::onlyTrashed()->whereKey($menuId)->exists()) {
+            return [];
+        }
+
+        $childrenByParent = [];
+        foreach (Menu::onlyTrashed()->get(['id', 'parent_id']) as $menu) {
+            $childrenByParent[$menu->parent_id][] = $menu->id;
+        }
+
+        $ids = [$menuId];
+        $stack = [$menuId];
+
+        while ($stack !== []) {
+            $current = array_pop($stack);
+            foreach ($childrenByParent[$current] ?? [] as $childId) {
+                $ids[] = $childId;
+                $stack[] = $childId;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Active sibling ids ordered for an append: rows that already hold an order
+     * keep their relative position, freshly-restored rows (order NULL) trail
+     * behind in creation order. Used to re-sequence a group after a restore.
+     *
+     * @return list<string>
+     */
+    private function siblingIdsForAppend(?string $parentId, string $type): array
+    {
+        $siblings = Menu::query()
+            ->byParent($parentId)
+            ->where('type', $type)
+            ->orderBy('created_at')
+            ->get(['id', 'order']);
+
+        $withOrder = $siblings->filter(fn (Menu $m): bool => $m->order !== null)->sortBy('order')->values();
+        $withoutOrder = $siblings->filter(fn (Menu $m): bool => $m->order === null)->values();
+
+        return $withOrder->concat($withoutOrder)->pluck('id')->all();
     }
 
     /**

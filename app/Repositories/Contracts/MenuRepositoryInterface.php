@@ -42,6 +42,20 @@ interface MenuRepositoryInterface
     public function deleteMenu(Menu $menu, bool $cascade = false): void;
 
     /**
+     * Restore a soft-deleted menu together with its trashed subtree, re-appending
+     * each restored row to the tail of its sibling group. Rejected when the
+     * parent is still trashed (would re-orphan the branch).
+     */
+    public function restoreMenu(Menu $menu): void;
+
+    /**
+     * Soft-deleted menus, optionally filtered by type, newest deletion first.
+     *
+     * @return list<Menu>
+     */
+    public function trashedList(?string $loadType): array;
+
+    /**
      * Forget the cached navigation snapshot (e.g. after a role rename).
      */
     public function flushNavigationCache(): void;
