@@ -24,5 +24,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $admin->assignRole('Admin');
+
+        $this->call(MenuSeeder::class);
+        $this->call(MenuRbacSeeder::class);
     }
 }

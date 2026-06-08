@@ -172,6 +172,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 |----------|-------------|
 | [API routing](docs/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
 | [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, playground example |
+| [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
 
 ### Authentication and authorization
 
@@ -193,6 +194,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - User CRUD and hierarchy rules → [user-management-hrbac.md](docs/user-management-hrbac.md) (builds on JWT doc)
 - Route placement for new features → [api-routing.md](docs/api-routing.md)
 - Simple CRUD scaffolding → [crud-architecture.md](docs/crud-architecture.md)
+- Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/navigation-menu.md)
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
 
 ---
