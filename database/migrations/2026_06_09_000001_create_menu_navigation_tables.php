@@ -1,0 +1,74 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * The Spatie roles table name.
+     */
+    private function rolesTable(): string
+    {
+        return config('permission.table_names.roles', 'roles');
+    }
+
+    public function up(): void
+    {
+        Schema::create('menus', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('parent_id')
+                ->nullable()
+                ->constrained('menus')
+                ->cascadeOnDelete();
+            $table->string('name');
+            $table->string('icon')->nullable();
+            $table->string('route')->nullable();
+            // h = header, p = parent, c = child.
+            $table->char('type', 1);
+            // Position within a (parent_id, type) sibling group. Nullable on
+            // purpose: an active row always holds a distinct integer, while
+            // soft-deleted (and transiently reordered) rows are parked at NULL
+            // so they never collide with the unique index below. Multiple NULLs
+            // are allowed by SQL unique semantics on every supported engine.
+            $table->unsignedInteger('order')->nullable();
+            $table->boolean('is_authenticate')->nullable();
+            $table->boolean('is_guest_only')->nullable();
+            $table->softDeletes();
+            $table->timestamps();
+
+            // Enforce the ordering invariant at the database level for active rows.
+            $table->unique(['parent_id', 'type', 'order']);
+        });
+
+        Schema::create('menu_roles', function (Blueprint $table) {
+            $table->foreignUuid('menu_id')->constrained('menus')->cascadeOnDelete();
+            $table->foreignUuid('role_id')->constrained($this->rolesTable())->cascadeOnDelete();
+
+            $table->primary(['menu_id', 'role_id']);
+        });
+
+        Schema::create('menu_user_includes', function (Blueprint $table) {
+            $table->foreignUuid('menu_id')->constrained('menus')->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
+
+            $table->primary(['menu_id', 'user_id']);
+        });
+
+        Schema::create('menu_user_excludes', function (Blueprint $table) {
+            $table->foreignUuid('menu_id')->constrained('menus')->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
+
+            $table->primary(['menu_id', 'user_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('menu_user_excludes');
+        Schema::dropIfExists('menu_user_includes');
+        Schema::dropIfExists('menu_roles');
+        Schema::dropIfExists('menus');
+    }
+};

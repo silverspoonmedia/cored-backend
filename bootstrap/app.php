@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\OptionalJwtAuthenticate;
 use App\Models\User;
 use App\Support\ApiResponder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -55,6 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
+            'jwt.optional' => OptionalJwtAuthenticate::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
