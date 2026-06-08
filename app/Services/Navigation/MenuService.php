@@ -93,6 +93,19 @@ class MenuService
         $this->menus->deleteMenu($menu, $cascade);
     }
 
+    public function restore(Menu $menu): void
+    {
+        $this->menus->restoreMenu($menu);
+    }
+
+    /**
+     * @return list<Menu>
+     */
+    public function trashedList(?string $loadType): array
+    {
+        return $this->menus->trashedList($loadType);
+    }
+
     /**
      * Translate request field names to persisted column names.
      *

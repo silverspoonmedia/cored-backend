@@ -45,6 +45,33 @@ class MenuPresenter
     }
 
     /**
+     * Admin row plus the deletion timestamp, for the trashed listing.
+     *
+     * @return array<string, mixed>
+     */
+    public static function presentTrashedRow(Menu $menu): array
+    {
+        return array_merge(self::presentAdminRow($menu), [
+            'deleted_at' => $menu->deleted_at?->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * @param  iterable<int, Menu>  $menus
+     * @return list<array<string, mixed>>
+     */
+    public static function presentTrashedCollection(iterable $menus): array
+    {
+        $rows = [];
+
+        foreach ($menus as $menu) {
+            $rows[] = self::presentTrashedRow($menu);
+        }
+
+        return $rows;
+    }
+
+    /**
      * Single-record detail (used after create/update/show).
      *
      * @return array<string, mixed>

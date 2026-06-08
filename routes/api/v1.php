@@ -54,6 +54,7 @@ Route::prefix('navigation/menus')->name('navigation.menus.')->group(function ():
         // Read-only management views.
         Route::middleware('permission:view menu')->group(function (): void {
             Route::get('list', [MenuController::class, 'list'])->name('list');
+            Route::get('trashed', [MenuController::class, 'trashed'])->name('trashed');
             Route::get('{menu}', [MenuController::class, 'show'])->whereUuid('menu')->name('show');
         });
 
@@ -63,5 +64,12 @@ Route::prefix('navigation/menus')->name('navigation.menus.')->group(function ():
             Route::match(['put', 'patch'], '{menu}', [MenuController::class, 'update'])->whereUuid('menu')->name('update');
             Route::delete('{menu}', [MenuController::class, 'destroy'])->whereUuid('menu')->name('destroy');
         });
+
+        // Recovery of soft-deleted menus (binds the trashed record).
+        Route::middleware('permission:restore menu')
+            ->post('{menu}/restore', [MenuController::class, 'restore'])
+            ->whereUuid('menu')
+            ->withTrashed()
+            ->name('restore');
     });
 });

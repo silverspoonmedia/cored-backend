@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Repositories\Eloquent;
 
+use App\Exceptions\Navigation\InvalidMenuParentException;
 use App\Exceptions\Navigation\InvalidMenuPositionException;
 use App\Exceptions\Navigation\MenuHasChildrenException;
 use App\Models\Menu;
@@ -213,6 +214,51 @@ class MenuRepositoryTest extends TestCase
         $this->assertSoftDeleted('menus', ['id' => $parent->id]);
         $this->assertSoftDeleted('menus', ['id' => $child->id]);
         $this->assertNotContains('H', $this->treeNames(null));
+    }
+
+    public function test_restore_brings_back_subtree_and_appends_order(): void
+    {
+        $header = $this->makeMenu(['name' => 'H', 'type' => 'h']);
+        $parent = $this->makeMenu(['name' => 'P', 'type' => 'p', 'parent_id' => $header->id]);
+        $child = $this->makeMenu(['name' => 'C', 'type' => 'c', 'parent_id' => $parent->id]);
+        $sibling = $this->makeMenu(['name' => 'H2', 'type' => 'h']);
+
+        $this->repository->deleteMenu($header, true);
+        $this->assertSame(1, $sibling->fresh()->order);
+
+        $this->repository->restoreMenu($header);
+
+        $this->assertNull($header->fresh()->deleted_at);
+        $this->assertNull($parent->fresh()->deleted_at);
+        $this->assertNull($child->fresh()->deleted_at);
+
+        // Restored header re-appended to the tail of the root group, behind H2.
+        $this->assertSame(1, $sibling->fresh()->order);
+        $this->assertSame(2, $header->fresh()->order);
+        $this->assertContains('H', $this->treeNames(null));
+    }
+
+    public function test_restore_rejects_when_parent_is_still_trashed(): void
+    {
+        $header = $this->makeMenu(['name' => 'H', 'type' => 'h']);
+        $parent = $this->makeMenu(['name' => 'P', 'type' => 'p', 'parent_id' => $header->id]);
+        $this->repository->deleteMenu($header, true);
+
+        $this->expectException(InvalidMenuParentException::class);
+
+        $this->repository->restoreMenu($parent);
+    }
+
+    public function test_trashed_list_returns_only_soft_deleted(): void
+    {
+        $kept = $this->makeMenu(['name' => 'Kept', 'type' => 'c']);
+        $gone = $this->makeMenu(['name' => 'Gone', 'type' => 'c']);
+        $this->repository->deleteMenu($gone);
+
+        $names = array_map(fn (Menu $m) => $m->name, $this->repository->trashedList(null));
+
+        $this->assertSame(['Gone'], $names);
+        $this->assertNotNull($kept->fresh());
     }
 
     public function test_navigation_cache_is_busted_when_role_is_renamed(): void

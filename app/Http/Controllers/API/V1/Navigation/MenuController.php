@@ -81,6 +81,32 @@ class MenuController extends Controller
         return $this->successResponse(null, 'Menu deleted successfully.');
     }
 
+    /**
+     * Soft-deleted menus for the recovery screen.
+     */
+    public function trashed(IndexMenuListRequest $request): JsonResponse
+    {
+        $rows = MenuPresenter::presentTrashedCollection(
+            $this->menus->trashedList($request->validated()['load_type'] ?? null),
+        );
+
+        return $this->successResponse($rows, 'Trashed menus retrieved successfully.');
+    }
+
+    /**
+     * Restore a soft-deleted menu and its trashed subtree. `{menu}` is bound
+     * with `withTrashed()` so the trashed record resolves.
+     */
+    public function restore(Menu $menu): JsonResponse
+    {
+        $this->menus->restore($menu);
+
+        return $this->successResponse(
+            MenuPresenter::presentDetail($this->menus->detail($menu->id)),
+            'Menu restored successfully.',
+        );
+    }
+
     private function optionalActor(): ?User
     {
         $user = Auth::guard('api')->user();

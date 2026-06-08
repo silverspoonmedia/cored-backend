@@ -24,6 +24,7 @@ All IDs are **UUID v7** end to end (see [User primary keys (UUID v7)](./user-uui
 | Middleware | `app/Http/Middleware/OptionalJwtAuthenticate.php` (alias `jwt.optional`) | Optional auth for `index` |
 | Exception | `app/Exceptions/Navigation/InvalidMenuPositionException.php` | 422 for bad reordering input |
 | Exception | `app/Exceptions/Navigation/MenuHasChildrenException.php` | 409 when deleting a non-empty branch without `cascade` |
+| Exception | `app/Exceptions/Navigation/InvalidMenuParentException.php` | 422 for invalid parent (cycle / restoring under a trashed parent) |
 | Seeder | `database/seeders/MenuSeeder.php` | Sample header → parent → children |
 
 The repository is bound in `App\Providers\AppServiceProvider`:
@@ -91,8 +92,10 @@ Base prefix `/api/v1`, route name prefix `api.v1.navigation.menus.`.
 | GET | `/api/v1/navigation/menus/{menu}` | `…menus.show` | `auth:api`, `permission:view menu` | Read |
 | PUT/PATCH | `/api/v1/navigation/menus/{menu}` | `…menus.update` | `auth:api`, `permission:manage menu` | Update (and reorder) |
 | DELETE | `/api/v1/navigation/menus/{menu}` | `…menus.destroy` | `auth:api`, `permission:manage menu` | Delete (`?cascade=1` to remove the subtree) |
+| GET | `/api/v1/navigation/menus/trashed` | `…menus.trashed` | `auth:api`, `permission:view menu` | List soft-deleted menus (`?load_type=h\|p\|c`) |
+| POST | `/api/v1/navigation/menus/{menu}/restore` | `…menus.restore` | `auth:api`, `permission:restore menu` | Restore a menu + its trashed subtree |
 
-Authorization is **permission-based** (consistent with the rest of the app), not a hardcoded role list. `RoleSeeder` grants `view menu` to Root/Admin/Moderator/Management and `manage menu` to Root/Admin/Moderator.
+Authorization is **permission-based** (consistent with the rest of the app), not a hardcoded role list. `RoleSeeder` grants `view menu` to Root/Admin/Moderator/Management, and `manage menu` + `restore menu` to Root/Admin/Moderator. The `{menu}` on the restore route is bound with `withTrashed()` so the soft-deleted record resolves.
 
 `{menu}` is constrained with `whereUuid` and resolved by implicit model binding.
 
@@ -126,7 +129,7 @@ Invalid `position`/`reference_id` combinations throw `InvalidMenuPositionExcepti
 
 ## Soft deletes
 
-`Menu` uses `SoftDeletes`. `deleteMenu` nulls the row's `order` (freeing its slot under the unique index), soft-deletes it, then compacts the surviving siblings. Soft-deleted rows are excluded from the navigation tree, the admin list, and all sibling-ordering queries (default scope). There is no restore endpoint yet; a restored row would need a fresh `order` assigned.
+`Menu` uses `SoftDeletes`. `deleteMenu` nulls the row's `order` (freeing its slot under the unique index), soft-deletes it, then compacts the surviving siblings. Soft-deleted rows are excluded from the navigation tree, the admin list, and all sibling-ordering queries (default scope).
 
 **Branch deletes do not orphan children.** A soft delete is an `UPDATE deleted_at`, so the `parent_id` FK `cascadeOnDelete` (which only fires on a real `DELETE`) never runs. Left unchecked, soft-deleting a header/parent would strand its still-active descendants — invisible in the tree/list (their parent is no longer reachable from a root) yet alive in the table. To prevent that, `deleteMenu($menu, $cascade)`:
 
@@ -136,6 +139,16 @@ Invalid `position`/`reference_id` combinations throw `InvalidMenuPositionExcepti
 The HTTP layer exposes this as `DELETE /…/{menu}?cascade=1`. Leaf (`c`) deletes need no flag.
 
 Also note: because the `parent`/`reference_id` `exists` rules exclude trashed rows, you cannot create or move a menu under a soft-deleted parent (which would re-orphan it).
+
+### Restore
+
+`restoreMenu($menu)` is the inverse of a cascade delete and runs in one transaction:
+
+1. **Parent guard.** If the menu has a `parent_id` whose row is not currently active, the restore is rejected (`InvalidMenuParentException`, **422**) — restoring under a still-trashed parent would just re-orphan the branch. Restore the parent first.
+2. **Cascade up the subtree.** The menu **and all of its still-trashed descendants** are restored together (`Menu::onlyTrashed()` is walked depth-first to collect them).
+3. **Re-sequence order.** Restored rows come back with `order = NULL`; each affected `(parent_id, type)` group is then re-sequenced so existing siblings keep their relative order and restored rows are **appended to the tail** (`siblingIdsForAppend`).
+
+Listing is exposed via `GET …/menus/trashed` (`onlyTrashed`, newest deletion first, optional `?load_type`). There is still **no force-delete endpoint**: permanent removal (which would fire the real FK `cascadeOnDelete`) is intentionally left out, so the only API paths are soft-delete and restore.
 
 ## Caching
 
