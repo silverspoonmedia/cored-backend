@@ -21,6 +21,76 @@ The **Playground User CRUD** under `/api/playground/users` is the reference impl
 
 The generic repository must **never** contain business logic or validation—only Eloquent query and persistence operations.
 
+When an entity fits this profile, its HTTP surface should be a **standard REST resource** registered with `Route::apiResource` (see [Routing simple CRUD](#routing-simple-crud) below). Do not hand-roll individual `GET`/`POST`/`PUT`/`DELETE` lines for the same five actions unless the endpoint set is genuinely non-standard.
+
+---
+
+## Routing simple CRUD
+
+Controllers that expose **only** the classic resource actions—`index`, `show`, `store`, `update`, `destroy`—and are backed by simple persistence (often via `EloquentCrudRepository` or a thin dedicated repository) should be wired with **`Route::apiResource`**.
+
+Laravel registers the conventional URI map and route names in one declaration:
+
+| Method | URI (example) | Action | Route name suffix |
+|--------|---------------|--------|-------------------|
+| `GET` | `/resources` | `index` | `.index` |
+| `POST` | `/resources` | `store` | `.store` |
+| `GET` | `/resources/{resource}` | `show` | `.show` |
+| `PUT` / `PATCH` | `/resources/{resource}` | `update` | `.update` |
+| `DELETE` | `/resources/{resource}` | `destroy` | `.destroy` |
+
+`apiResource` also registers `create` and `edit` actions meant for HTML forms. API-only controllers should exclude them:
+
+```php
+Route::apiResource('users', UserController::class)->except(['create', 'edit']);
+```
+
+On versioned routes (`routes/api/v{N}.php`), paths are relative to the version prefix—for example `Route::apiResource('users', …)` under `/api/v1` resolves to `/api/v1/users`, `/api/v1/users/{user}`, and so on.
+
+### Examples in this project
+
+**Playground (global demo)** — `routes/api.php`:
+
+```php
+Route::prefix('playground')->group(function () {
+    Route::apiResource('users', PlaygroundController::class)->except(['create', 'edit']);
+});
+```
+
+**Production user CRUD (v1)** — `routes/api/v1.php`:
+
+```php
+Route::middleware('auth:api')->group(function (): void {
+    Route::apiResource('users', UserController::class);
+});
+```
+
+The controller implements the five resource methods; middleware, policies, and Form Requests handle auth and validation. See [API Routing](./api-routing.md) for where versioned routes live.
+
+### Route model binding and parameters
+
+- Use **implicit route model binding** (`show(User $user)`) when the model is the route key.
+- For UUID primary keys, ensure the model uses `HasUuids` and add `->whereUuid('{param}')` on individual routes when you register them manually; `apiResource` binding works once the model key type is correct.
+- Override the route parameter name when Laravel’s default singularization does not match your binding key:
+
+```php
+Route::apiResource('children', ChildController::class)
+    ->parameters(['children' => 'child']);
+```
+
+### When **not** to use `apiResource`
+
+Use explicit routes (or a mix of `apiResource` plus extra lines) when the controller is **not** a plain five-action CRUD surface:
+
+| Situation | Example in this project |
+|-----------|-------------------------|
+| Extra read endpoints (`list`, `trashed`, search) | [Navigation menus](./navigation-menu.md) — `list`, `trashed`, optional-auth `index` |
+| Non-CRUD actions (`restore`, `publish`, `approve`) | Menus — `POST …/restore` with `withTrashed()` |
+| Different middleware or permissions per verb | Menus — `view menu` for reads, `manage menu` for writes |
+| Public or optional-auth reads alongside protected writes | Menus — `jwt.optional` on tree `index` |
+
+Those cases belong in a dedicated route group with named routes, not a single `apiResource` block. The [Menu system](./navigation-menu.md) is the reference for **rich** domain endpoints; Playground Users and v1 Users are the references for **simple** `apiResource` CRUD.
+
 ---
 
 ## Layer responsibilities
@@ -69,7 +139,13 @@ Model / database
 
 ### Routes
 
-Defined in `routes/api.php`:
+Registered with `Route::apiResource` in `routes/api.php` (see [Routing simple CRUD](#routing-simple-crud)):
+
+```php
+Route::prefix('playground')->group(function () {
+    Route::apiResource('users', PlaygroundController::class)->except(['create', 'edit']);
+});
+```
 
 | Method | URI | Controller action |
 |--------|-----|-------------------|
@@ -215,7 +291,7 @@ php artisan test --filter=Playground
 2. Add a **Service** for business rules; throw `BusinessRuleException` subclasses when rules fail.
 3. Use **`EloquentCrudRepository`** only if access patterns are simple; otherwise add a **dedicated repository**.
 4. Keep the **controller** thin: validated data in, Service call, response out.
-5. Register routes on the correct API layer (versioned for product features).
+5. If the surface is standard five-action CRUD, register it with **`Route::apiResource`** on the correct API layer (versioned for product features); use explicit routes when actions, middleware, or permissions diverge per endpoint.
 6. Add unit tests for Service and Controller; feature tests for HTTP behavior.
 
 ---

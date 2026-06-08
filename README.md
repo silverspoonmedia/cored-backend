@@ -45,6 +45,16 @@ When you add a table that belongs to a user or another UUID-backed model, use `f
 
 On **Laragon** (Windows), enable PHP 8.3+ and create a MySQL database if you do not use SQLite.
 
+### Development OS (Windows)
+
+**Active development targets Windows** (PowerShell / cmd). Shell examples in this repo assume a Windows environment unless noted otherwise.
+
+**AI IDE / agent shells:** when chaining multiple commands in one line, use **`;`** as the separator—not **`&&`**. On Windows, `&&` often fails or behaves differently than on Unix shells, which wastes tokens on retries and error output. Prefer separate commands when clarity matters; when you must chain, use semicolons:
+
+```powershell
+cd monolith; php artisan migrate; php artisan db:seed
+```
+
 ---
 
 ## Setup from scratch
@@ -171,7 +181,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | Document | Description |
 |----------|-------------|
 | [API routing](docs/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
-| [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, playground example |
+| [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
 
 ### Authentication and authorization
@@ -193,7 +203,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - Auth endpoints and middleware → [jwt-authentication.md](docs/jwt-authentication.md)
 - User CRUD and hierarchy rules → [user-management-hrbac.md](docs/user-management-hrbac.md) (builds on JWT doc)
 - Route placement for new features → [api-routing.md](docs/api-routing.md)
-- Simple CRUD scaffolding → [crud-architecture.md](docs/crud-architecture.md)
+- Simple CRUD scaffolding (`Route::apiResource` + repository pattern) → [crud-architecture.md](docs/crud-architecture.md)
 - Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/navigation-menu.md)
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
 
