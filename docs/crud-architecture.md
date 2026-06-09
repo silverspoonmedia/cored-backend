@@ -85,6 +85,7 @@ Use explicit routes (or a mix of `apiResource` plus extra lines) when the contro
 | Situation | Example in this project |
 |-----------|-------------------------|
 | Extra read endpoints (`list`, `trashed`, search) | [Navigation menus](./navigation-menu.md) — `list`, `trashed`, optional-auth `index` |
+| List endpoints with query + DataTables dual mode | [List display modes](./list-display-modes.md) — `display_mode` query param, RBAC `actions` column |
 | Non-CRUD actions (`restore`, `publish`, `approve`) | Menus — `POST …/restore` with `withTrashed()` |
 | Different middleware or permissions per verb | Menus — `view menu` for reads, `manage menu` for writes |
 | Public or optional-auth reads alongside protected writes | Menus — `jwt.optional` on tree `index` |
@@ -230,6 +231,20 @@ Available methods are listed on `EloquentCrudRepositoryInterface` (including pag
 
 Success and error JSON envelopes use the `ApiResponse` trait (`status`, `message`, optional `data`). Uncaught `BusinessRuleException` subclasses render JSON via their `render()` method when the request expects JSON (e.g. `api/*`).
 
+### API Resources (list / show)
+
+**List/index** and **show** responses use Laravel **Eloquent API Resources** (`App\Http\Resources\…`) so field selection and formatting live in one class per shape. Controllers resolve resources to plain arrays before wrapping them in the `ApiResponse` envelope (via `ResolvesResourceArray`); datatable rows use the same resource as query mode.
+
+| Resource | Used for |
+|----------|----------|
+| `UserManagementResource` | v1 user index & show |
+| `PlaygroundUserResource` | Playground user index & show |
+| `MenuListResource` | Menu admin flat list |
+| `MenuTrashedResource` | Trashed menu list |
+| `MenuDetailResource` | Menu show |
+
+Presenters under `App\Support\…` may delegate to resources for write responses (create/update) until those endpoints are migrated. When adding a new list or show endpoint, define a resource first; keep the initial `toArray()` **as-is** with the existing JSON fields, then adjust formatting in the resource only.
+
 **Example success (create):**
 
 ```json
@@ -290,9 +305,10 @@ php artisan test --filter=Playground
 1. Add **Form Request(s)** for store/update (and authorization in `authorize()`).
 2. Add a **Service** for business rules; throw `BusinessRuleException` subclasses when rules fail.
 3. Use **`EloquentCrudRepository`** only if access patterns are simple; otherwise add a **dedicated repository**.
-4. Keep the **controller** thin: validated data in, Service call, response out.
-5. If the surface is standard five-action CRUD, register it with **`Route::apiResource`** on the correct API layer (versioned for product features); use explicit routes when actions, middleware, or permissions diverge per endpoint.
-6. Add unit tests for Service and Controller; feature tests for HTTP behavior.
+4. Add **API Resource(s)** for list/index and show payloads (`App\Http\Resources\…`).
+5. Keep the **controller** thin: validated data in, Service call, resolve resource, response out.
+6. If the surface is standard five-action CRUD, register it with **`Route::apiResource`** on the correct API layer (versioned for product features); use explicit routes when actions, middleware, or permissions diverge per endpoint.
+7. Add unit tests for Service and Controller; feature tests for HTTP behavior.
 
 ---
 

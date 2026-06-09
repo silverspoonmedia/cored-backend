@@ -1,0 +1,59 @@
+<?php
+
+namespace App\Support\DataTable\Resolvers;
+
+use App\Models\User;
+use App\Support\DataTable\ActionButton;
+use App\Support\DataTable\Contracts\RowActionResolverInterface;
+use Illuminate\Support\Facades\Gate;
+
+final class UserRowActionResolver implements RowActionResolverInterface
+{
+    /**
+     * @return list<ActionButton>
+     */
+    public function resolve(mixed $model, ?User $actor = null): array
+    {
+        if (! $model instanceof User || ! $actor instanceof User) {
+            return [];
+        }
+
+        $actions = [];
+
+        if (Gate::forUser($actor)->allows('view', $model)) {
+            $actions[] = new ActionButton(
+                key: 'show',
+                label: 'Detail',
+                method: 'GET',
+                url: route('api.v1.users.show', $model),
+                style: 'info',
+                icon: 'fas fa-eye',
+            );
+        }
+
+        if (Gate::forUser($actor)->allows('update', $model)) {
+            $actions[] = new ActionButton(
+                key: 'edit',
+                label: 'Edit',
+                method: 'PATCH',
+                url: route('api.v1.users.update', $model),
+                style: 'primary',
+                icon: 'fas fa-edit',
+            );
+        }
+
+        if ($actor->id !== $model->id && Gate::forUser($actor)->allows('delete', $model)) {
+            $actions[] = new ActionButton(
+                key: 'delete',
+                label: 'Hapus',
+                method: 'DELETE',
+                url: route('api.v1.users.destroy', $model),
+                style: 'danger',
+                icon: 'fas fa-trash',
+                confirm: 'Yakin ingin menghapus pengguna ini?',
+            );
+        }
+
+        return $actions;
+    }
+}

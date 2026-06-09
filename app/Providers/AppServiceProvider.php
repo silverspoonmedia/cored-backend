@@ -11,6 +11,7 @@ use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Repositories\Eloquent\EloquentCrudRepository;
 use App\Repositories\Eloquent\MenuRepository;
 use App\Repositories\Eloquent\UserRepository;
+use App\Support\DataTable\DataTableResponseFactory;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -24,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(EloquentCrudRepositoryInterface::class, EloquentCrudRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(MenuRepositoryInterface::class, MenuRepository::class);
+        $this->app->singleton(DataTableResponseFactory::class);
     }
 
     /**

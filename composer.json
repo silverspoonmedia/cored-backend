@@ -10,7 +10,9 @@
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
         "php-open-source-saver/jwt-auth": "^2.9",
-        "spatie/laravel-permission": "^8.0"
+        "spatie/laravel-permission": "^8.0",
+        "yajra/laravel-datatables-fractal": "13.*",
+        "yajra/laravel-datatables-oracle": "13.*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

@@ -2,13 +2,21 @@
 
 namespace App\Http\Controllers\API\V1\Navigation;
 
+use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Navigation\IndexMenuListRequest;
 use App\Http\Requests\Navigation\StoreMenuRequest;
 use App\Http\Requests\Navigation\UpdateMenuRequest;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Http\Resources\Navigation\MenuDetailResource;
+use App\Http\Resources\Navigation\MenuListResource;
+use App\Http\Resources\Navigation\MenuTrashedResource;
 use App\Models\Menu;
 use App\Models\User;
 use App\Services\Navigation\MenuService;
+use App\Support\DataTable\DataTableResponseFactory;
+use App\Support\DataTable\Resolvers\MenuRowActionResolver;
+use App\Support\DataTable\Resolvers\MenuTrashedRowActionResolver;
 use App\Support\Navigation\MenuPresenter;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -18,9 +26,14 @@ use Illuminate\Support\Facades\Auth;
 class MenuController extends Controller
 {
     use ApiResponse;
+    use ResolvesResourceArray;
+    use RespondsWithListDisplayMode;
 
     public function __construct(
         private readonly MenuService $menus,
+        private readonly DataTableResponseFactory $dataTables,
+        private readonly MenuRowActionResolver $rowActions,
+        private readonly MenuTrashedRowActionResolver $trashedRowActions,
     ) {}
 
     /**
@@ -38,11 +51,23 @@ class MenuController extends Controller
      */
     public function list(IndexMenuListRequest $request): JsonResponse
     {
-        $rows = MenuPresenter::presentAdminCollection(
-            $this->menus->adminList($request->validated()['load_type'] ?? null),
-        );
+        $loadType = $request->validated()['load_type'] ?? null;
+        $actor = $this->requiredActor();
+        $menus = $this->menus->adminList($loadType);
 
-        return $this->successResponse($rows, 'Menus retrieved successfully.');
+        return $this->respondToListDisplayMode(
+            $request,
+            fn (): JsonResponse => $this->successResponse(
+                $this->resolveResource(MenuListResource::collection($menus)),
+                'Menus retrieved successfully.',
+            ),
+            fn (): JsonResponse => $this->dataTables->respond(
+                $menus,
+                fn (Menu $menu) => $this->resolveResource(new MenuListResource($menu)),
+                $this->rowActions,
+                $actor,
+            ),
+        );
     }
 
     public function store(StoreMenuRequest $request): JsonResponse
@@ -59,7 +84,7 @@ class MenuController extends Controller
     public function show(Menu $menu): JsonResponse
     {
         return $this->successResponse(
-            MenuPresenter::presentDetail($this->menus->detail($menu->id)),
+            $this->resolveResource(new MenuDetailResource($this->menus->detail($menu->id))),
             'Menu retrieved successfully.',
         );
     }
@@ -86,11 +111,23 @@ class MenuController extends Controller
      */
     public function trashed(IndexMenuListRequest $request): JsonResponse
     {
-        $rows = MenuPresenter::presentTrashedCollection(
-            $this->menus->trashedList($request->validated()['load_type'] ?? null),
-        );
+        $loadType = $request->validated()['load_type'] ?? null;
+        $actor = $this->requiredActor();
+        $menus = $this->menus->trashedList($loadType);
 
-        return $this->successResponse($rows, 'Trashed menus retrieved successfully.');
+        return $this->respondToListDisplayMode(
+            $request,
+            fn (): JsonResponse => $this->successResponse(
+                $this->resolveResource(MenuTrashedResource::collection($menus)),
+                'Trashed menus retrieved successfully.',
+            ),
+            fn (): JsonResponse => $this->dataTables->respond(
+                $menus,
+                fn (Menu $menu) => $this->resolveResource(new MenuTrashedResource($menu)),
+                $this->trashedRowActions,
+                $actor,
+            ),
+        );
     }
 
     /**
@@ -112,5 +149,16 @@ class MenuController extends Controller
         $user = Auth::guard('api')->user();
 
         return $user instanceof User ? $user : null;
+    }
+
+    private function requiredActor(): User
+    {
+        $user = Auth::guard('api')->user();
+
+        if (! $user instanceof User) {
+            abort(401);
+        }
+
+        return $user;
     }
 }
