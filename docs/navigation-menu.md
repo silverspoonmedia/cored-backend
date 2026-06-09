@@ -87,12 +87,12 @@ Base prefix `/api/v1`, route name prefix `api.v1.navigation.menus.`.
 | Method | URI | Name | Middleware | Action |
 |--------|-----|------|------------|--------|
 | GET | `/api/v1/navigation/menus` | `…menus.index` | `jwt.optional` | Filtered navigation tree |
-| GET | `/api/v1/navigation/menus/list` | `…menus.list` | `auth:api`, `permission:view menu` | Admin flat list (`?load_type=h\|p\|c`) |
+| GET | `/api/v1/navigation/menus/list` | `…menus.list` | `auth:api`, `permission:view menu` | Admin flat list (`?load_type=h\|p\|c`, optional `?display_mode=datatable`) |
 | POST | `/api/v1/navigation/menus` | `…menus.store` | `auth:api`, `permission:manage menu` | Create |
 | GET | `/api/v1/navigation/menus/{menu}` | `…menus.show` | `auth:api`, `permission:view menu` | Read |
 | PUT/PATCH | `/api/v1/navigation/menus/{menu}` | `…menus.update` | `auth:api`, `permission:manage menu` | Update (and reorder) |
 | DELETE | `/api/v1/navigation/menus/{menu}` | `…menus.destroy` | `auth:api`, `permission:manage menu` | Delete (`?cascade=1` to remove the subtree) |
-| GET | `/api/v1/navigation/menus/trashed` | `…menus.trashed` | `auth:api`, `permission:view menu` | List soft-deleted menus (`?load_type=h\|p\|c`) |
+| GET | `/api/v1/navigation/menus/trashed` | `…menus.trashed` | `auth:api`, `permission:view menu` | List soft-deleted menus (`?load_type=h\|p\|c`, optional `?display_mode=datatable`) |
 | POST | `/api/v1/navigation/menus/{menu}/restore` | `…menus.restore` | `auth:api`, `permission:restore menu` | Restore a menu + its trashed subtree |
 
 Authorization is **permission-based** (consistent with the rest of the app), not a hardcoded role list. `RoleSeeder` grants `view menu` to Root/Admin/Moderator/Management, and `manage menu` + `restore menu` to Root/Admin/Moderator. The `{menu}` on the restore route is bound with `withTrashed()` so the soft-deleted record resolves.
@@ -176,6 +176,7 @@ php artisan migrate:fresh --seed
 ## Related documentation
 
 - [API Routing](./api-routing.md) — versioned route placement
+- [List display modes (query & DataTables)](./list-display-modes.md) — `list` / `trashed` dual-mode responses and RBAC actions
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — when to use a dedicated repository
 - [JWT Authentication & RBAC](./jwt-authentication.md) — guard, roles, middleware
 - [User Management & H-RBAC](./user-management-hrbac.md) — role levels and hierarchy

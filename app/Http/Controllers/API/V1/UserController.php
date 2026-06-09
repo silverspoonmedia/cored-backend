@@ -3,12 +3,18 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Exceptions\User\CannotDeleteSelfException;
+use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\User\IndexUserRequest;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Http\Resources\User\UserManagementResource;
 use App\Models\User;
 use App\Services\Rbac\RoleService;
 use App\Services\User\UserManagementService;
+use App\Support\DataTable\DataTableResponseFactory;
+use App\Support\DataTable\Resolvers\UserRowActionResolver;
 use App\Support\User\UserManagementPresenter;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -17,22 +23,35 @@ use Illuminate\Support\Facades\Auth;
 class UserController extends Controller
 {
     use ApiResponse;
+    use ResolvesResourceArray;
+    use RespondsWithListDisplayMode;
 
     public function __construct(
         private readonly UserManagementService $userManagement,
         private readonly RoleService $roleService,
+        private readonly DataTableResponseFactory $dataTables,
+        private readonly UserRowActionResolver $rowActions,
     ) {}
 
-    public function index(): JsonResponse
+    public function index(IndexUserRequest $request): JsonResponse
     {
         $actor = $this->actor();
         $this->authorize('viewAny', User::class);
 
         $users = $this->userManagement->list($actor);
 
-        return $this->successResponse(
-            UserManagementPresenter::presentCollection($users),
-            'Daftar pengguna berhasil diambil.',
+        return $this->respondToListDisplayMode(
+            $request,
+            fn (): JsonResponse => $this->successResponse(
+                $this->resolveResource(UserManagementResource::collection($users)),
+                'Daftar pengguna berhasil diambil.',
+            ),
+            fn (): JsonResponse => $this->dataTables->respond(
+                $users,
+                fn (User $user) => $this->resolveResource(new UserManagementResource($user)),
+                $this->rowActions,
+                $actor,
+            ),
         );
     }
 
@@ -43,7 +62,7 @@ class UserController extends Controller
         $user->load('roles');
 
         return $this->successResponse(
-            UserManagementPresenter::present($user),
+            $this->resolveResource(new UserManagementResource($user)),
             'Detail pengguna berhasil diambil.',
         );
     }

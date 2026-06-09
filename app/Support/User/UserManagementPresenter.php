@@ -2,6 +2,7 @@
 
 namespace App\Support\User;
 
+use App\Http\Resources\User\UserManagementResource;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -13,18 +14,7 @@ class UserManagementPresenter
      */
     public static function present(User $user): array
     {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'email_verified_at' => $user->email_verified_at?->toIso8601String(),
-            'roles' => $user->roles->map(fn (Role $role) => [
-                'name' => $role->name,
-                'level' => $role->level,
-            ])->values()->all(),
-            'created_at' => $user->created_at?->toIso8601String(),
-            'updated_at' => $user->updated_at?->toIso8601String(),
-        ];
+        return (new UserManagementResource($user))->resolve(request());
     }
 
     /**
@@ -33,13 +23,7 @@ class UserManagementPresenter
      */
     public static function presentCollection(iterable $users): array
     {
-        $presented = [];
-
-        foreach ($users as $user) {
-            $presented[] = self::present($user);
-        }
-
-        return $presented;
+        return UserManagementResource::collection($users)->resolve(request());
     }
 
     /**

@@ -20,23 +20,26 @@ class UserManagementTest extends TestCase
         $this->seedRolesAndPermissions();
     }
 
-    public function test_admin_lists_only_users_below_their_hierarchy(): void
+    public function test_admin_lists_peers_and_lower_but_not_higher_authority(): void
     {
         $admin = $this->userWithRole('Admin');
         $moderator = User::factory()->create(['email' => 'mod@example.com']);
         $moderator->assignRole('Moderator');
         $peerAdmin = User::factory()->create(['email' => 'peer@example.com']);
         $peerAdmin->assignRole('Admin');
+        $root = User::factory()->create(['email' => 'root@example.com']);
+        $root->assignRole('Root');
 
         $response = $this->actingAsJwt($admin)->getJson('/api/v1/users');
 
         $response->assertOk();
         $emails = collect($response->json('data'))->pluck('email');
         $this->assertTrue($emails->contains('mod@example.com'));
-        $this->assertFalse($emails->contains('peer@example.com'));
+        $this->assertTrue($emails->contains('peer@example.com'));
+        $this->assertFalse($emails->contains('root@example.com'));
     }
 
-    public function test_admin_cannot_view_peer_admin_detail(): void
+    public function test_admin_can_view_peer_admin_detail(): void
     {
         $admin = $this->userWithRole('Admin');
         $peer = User::factory()->create();
@@ -44,11 +47,33 @@ class UserManagementTest extends TestCase
 
         $this->actingAsJwt($admin)
             ->getJson('/api/v1/users/'.$peer->id)
+            ->assertOk()
+            ->assertJsonPath('data.id', $peer->id);
+    }
+
+    public function test_admin_cannot_view_higher_authority_detail(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $root = User::factory()->create();
+        $root->assignRole('Root');
+
+        $this->actingAsJwt($admin)
+            ->getJson('/api/v1/users/'.$root->id)
             ->assertForbidden()
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Anda tidak dapat mengakses pengguna dengan level role yang sama atau lebih tinggi dari Anda.',
+                'message' => 'Anda tidak dapat mengakses pengguna dengan level role lebih tinggi dari Anda.',
             ]);
+    }
+
+    public function test_user_can_view_their_own_profile(): void
+    {
+        $user = $this->userWithRole('User');
+
+        $this->actingAsJwt($user)
+            ->getJson('/api/v1/users/'.$user->id)
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id);
     }
 
     public function test_show_returns_not_found_when_user_does_not_exist(): void
@@ -178,14 +203,15 @@ class UserManagementTest extends TestCase
     public function test_actor_with_multiple_roles_uses_lowest_level(): void
     {
         $actor = User::factory()->create();
-        $actor->assignRole(['Admin', 'Moderator']);
+        $actor->assignRole(['Admin', 'Management']);
 
-        $peerAdmin = User::factory()->create(['email' => 'peer2@example.com']);
-        $peerAdmin->assignRole('Admin');
+        $target = User::factory()->create(['email' => 'peer2@example.com']);
+        $target->assignRole('Moderator');
 
         $this->actingAsJwt($actor)
-            ->getJson('/api/v1/users/'.$peerAdmin->id)
-            ->assertForbidden();
+            ->getJson('/api/v1/users/'.$target->id)
+            ->assertOk()
+            ->assertJsonPath('data.id', $target->id);
     }
 
     private function userWithRole(string $roleName): User

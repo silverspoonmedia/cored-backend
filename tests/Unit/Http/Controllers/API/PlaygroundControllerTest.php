@@ -3,10 +3,13 @@
 namespace Tests\Unit\Http\Controllers\API;
 
 use App\Http\Controllers\API\PlaygroundController;
+use App\Http\Requests\Playground\IndexUserRequest;
 use App\Http\Requests\Playground\StoreUserRequest;
 use App\Http\Requests\Playground\UpdateUserRequest;
 use App\Models\User;
 use App\Services\Playground\UserService;
+use App\Support\DataTable\DataTableResponseFactory;
+use App\Support\DataTable\Resolvers\PlaygroundUserRowActionResolver;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Testing\TestResponse;
@@ -18,6 +21,10 @@ class PlaygroundControllerTest extends TestCase
 {
     private UserService&MockInterface $userService;
 
+    private DataTableResponseFactory $dataTables;
+
+    private PlaygroundUserRowActionResolver $rowActions;
+
     private PlaygroundController $controller;
 
     protected function setUp(): void
@@ -25,7 +32,13 @@ class PlaygroundControllerTest extends TestCase
         parent::setUp();
 
         $this->userService = Mockery::mock(UserService::class);
-        $this->controller = new PlaygroundController($this->userService);
+        $this->dataTables = new DataTableResponseFactory;
+        $this->rowActions = new PlaygroundUserRowActionResolver;
+        $this->controller = new PlaygroundController(
+            $this->userService,
+            $this->dataTables,
+            $this->rowActions,
+        );
     }
 
     protected function tearDown(): void
@@ -61,7 +74,10 @@ class PlaygroundControllerTest extends TestCase
             ->once()
             ->andReturn(new Collection([$user]));
 
-        $response = $this->toTestResponse($this->controller->index());
+        $request = Mockery::mock(IndexUserRequest::class);
+        $request->shouldReceive('wantsDatatable')->once()->andReturn(false);
+
+        $response = $this->toTestResponse($this->controller->index($request));
 
         $response->assertStatus(200)
             ->assertJson([

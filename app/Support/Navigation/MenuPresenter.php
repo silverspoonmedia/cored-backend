@@ -2,6 +2,9 @@
 
 namespace App\Support\Navigation;
 
+use App\Http\Resources\Navigation\MenuDetailResource;
+use App\Http\Resources\Navigation\MenuListResource;
+use App\Http\Resources\Navigation\MenuTrashedResource;
 use App\Models\Menu;
 
 class MenuPresenter
@@ -13,20 +16,7 @@ class MenuPresenter
      */
     public static function presentAdminRow(Menu $menu): array
     {
-        return [
-            'id' => $menu->id,
-            'parent_id' => $menu->parent_id,
-            'name' => $menu->name,
-            'icon' => $menu->icon,
-            'route' => $menu->route,
-            'type' => $menu->type,
-            'order' => $menu->order,
-            'is_authenticate' => $menu->is_authenticate,
-            'is_guest_only' => $menu->is_guest_only,
-            'role_ids' => $menu->roles->pluck('id')->values()->all(),
-            'user_include_ids' => $menu->includedUsers->pluck('id')->values()->all(),
-            'user_exclude_ids' => $menu->excludedUsers->pluck('id')->values()->all(),
-        ];
+        return (new MenuListResource($menu))->resolve(request());
     }
 
     /**
@@ -35,13 +25,7 @@ class MenuPresenter
      */
     public static function presentAdminCollection(iterable $menus): array
     {
-        $rows = [];
-
-        foreach ($menus as $menu) {
-            $rows[] = self::presentAdminRow($menu);
-        }
-
-        return $rows;
+        return MenuListResource::collection($menus)->resolve(request());
     }
 
     /**
@@ -51,9 +35,7 @@ class MenuPresenter
      */
     public static function presentTrashedRow(Menu $menu): array
     {
-        return array_merge(self::presentAdminRow($menu), [
-            'deleted_at' => $menu->deleted_at?->toIso8601String(),
-        ]);
+        return (new MenuTrashedResource($menu))->resolve(request());
     }
 
     /**
@@ -62,13 +44,7 @@ class MenuPresenter
      */
     public static function presentTrashedCollection(iterable $menus): array
     {
-        $rows = [];
-
-        foreach ($menus as $menu) {
-            $rows[] = self::presentTrashedRow($menu);
-        }
-
-        return $rows;
+        return MenuTrashedResource::collection($menus)->resolve(request());
     }
 
     /**
@@ -78,9 +54,6 @@ class MenuPresenter
      */
     public static function presentDetail(Menu $menu): array
     {
-        return array_merge(self::presentAdminRow($menu), [
-            'created_at' => $menu->created_at?->toIso8601String(),
-            'updated_at' => $menu->updated_at?->toIso8601String(),
-        ]);
+        return (new MenuDetailResource($menu))->resolve(request());
     }
 }

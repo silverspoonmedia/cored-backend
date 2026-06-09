@@ -59,7 +59,8 @@ class RoleService
     }
 
     /**
-     * Untuk view/index/show: level efektif target (terendah) harus lebih besar dari actor.
+     * Untuk view/index/show: level efektif target (terendah) boleh sama atau lebih besar dari actor.
+     * Peer selevel boleh saling lihat (read-only); hanya target dengan kewenangan lebih tinggi yang ditolak.
      */
     public function canActorViewTarget(User $actor, User $target): bool
     {
@@ -70,7 +71,7 @@ class RoleService
             return false;
         }
 
-        return $targetLevel > $actorLevel;
+        return $targetLevel >= $actorLevel;
     }
 
     /**
