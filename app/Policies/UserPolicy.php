@@ -22,6 +22,10 @@ class UserPolicy
 
     public function view(User $actor, User $target): Response
     {
+        if ($actor->is($target)) {
+            return $this->allow();
+        }
+
         $permission = $this->checkPermission($actor, 'view user');
 
         if ($permission->denied()) {
@@ -90,7 +94,9 @@ class UserPolicy
             return $this->allow();
         }
 
-        return $this->denyHierarchy();
+        return $this->deny(
+            'Anda tidak dapat mengakses pengguna dengan level role lebih tinggi dari Anda.',
+        );
     }
 
     private function checkAllRolesAbove(User $actor, User $target): Response
@@ -99,13 +105,8 @@ class UserPolicy
             return $this->allow();
         }
 
-        return $this->denyHierarchy();
-    }
-
-    private function denyHierarchy(): Response
-    {
         return $this->deny(
-            'Anda tidak dapat mengakses pengguna dengan level role yang sama atau lebih tinggi dari Anda.',
+            'Anda tidak dapat mengubah pengguna dengan level role yang sama atau lebih tinggi dari Anda.',
         );
     }
 }

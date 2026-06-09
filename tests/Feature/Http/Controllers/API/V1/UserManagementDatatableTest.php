@@ -31,15 +31,21 @@ class UserManagementDatatableTest extends TestCase
             ->getJson('/api/v1/users?display_mode=datatable&draw=1&start=0&length=50');
 
         $response->assertOk()
-            ->assertJsonPath('recordsTotal', 1);
+            ->assertJsonPath('recordsTotal', 3);
 
-        $row = collect($response->json('data'))->firstWhere('email', 'mod@example.com');
-        $this->assertNotNull($row);
-        $this->assertContains('show', collect($row['actions'])->pluck('key'));
-        $this->assertContains('edit', collect($row['actions'])->pluck('key'));
-        $this->assertContains('delete', collect($row['actions'])->pluck('key'));
+        $data = collect($response->json('data'));
 
-        $this->assertNull(collect($response->json('data'))->firstWhere('email', 'peer@example.com'));
+        $moderatorRow = $data->firstWhere('email', 'mod@example.com');
+        $this->assertNotNull($moderatorRow);
+        $this->assertSame(['show', 'edit', 'delete'], collect($moderatorRow['actions'])->pluck('key')->all());
+
+        $peerRow = $data->firstWhere('email', 'peer@example.com');
+        $this->assertNotNull($peerRow);
+        $this->assertSame(['show'], collect($peerRow['actions'])->pluck('key')->all());
+
+        $selfRow = $data->firstWhere('email', $admin->email);
+        $this->assertNotNull($selfRow);
+        $this->assertSame(['show'], collect($selfRow['actions'])->pluck('key')->all());
     }
 
     public function test_query_mode_remains_default_envelope(): void

@@ -58,7 +58,7 @@ class UserRepository implements UserRepositoryInterface
                     ->join($rolesTable, "{$rolesTable}.id", '=', "{$pivotTable}.role_id")
                     ->where("{$pivotTable}.model_type", $userModel->getMorphClass())
                     ->groupBy("{$pivotTable}.{$morphKey}")
-                    ->havingRaw('MIN('.$rolesTable.'.level) > ?', [$actorLevel]);
+                    ->havingRaw('MIN('.$rolesTable.'.level) >= ?', [$actorLevel]);
             })
             ->orderBy('name')
             ->get();

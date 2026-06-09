@@ -34,13 +34,35 @@ class UserRowActionResolverTest extends TestCase
         $this->assertSame(['show', 'edit', 'delete'], $keys->values()->all());
     }
 
-    public function test_admin_cannot_delete_self(): void
+    public function test_peer_admin_only_receives_view_action(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $peer = User::factory()->create();
+        $peer->assignRole('Admin');
+
+        $keys = collect($this->resolver->resolve($peer, $admin))->pluck('key');
+
+        $this->assertSame(['show'], $keys->values()->all());
+    }
+
+    public function test_higher_authority_receives_no_actions(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $root = User::factory()->create();
+        $root->assignRole('Root');
+
+        $actions = $this->resolver->resolve($root, $admin);
+
+        $this->assertSame([], $actions);
+    }
+
+    public function test_self_only_receives_view_action(): void
     {
         $admin = $this->userWithRole('Admin');
 
         $keys = collect($this->resolver->resolve($admin, $admin))->pluck('key');
 
-        $this->assertNotContains('delete', $keys);
+        $this->assertSame(['show'], $keys->values()->all());
     }
 
     private function userWithRole(string $role): User
