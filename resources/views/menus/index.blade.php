@@ -29,24 +29,24 @@
                     @forelse ($menus as $menu)
                         <tr>
                             <td>
-                                <span style="padding-left: {{ $menu->type === 'c' ? 32 : ($menu->type === 'p' ? 16 : 0) }}px;">
-                                    @if ($menu->icon)<i class="bi {{ $menu->icon }} me-1"></i>@endif
-                                    {{ $menu->name }}
+                                <span style="padding-left: {{ $menu['type'] === 'c' ? 32 : ($menu['type'] === 'p' ? 16 : 0) }}px;">
+                                    @if ($menu['icon'])<i class="bi {{ $menu['icon'] }} me-1"></i>@endif
+                                    {{ $menu['name'] }}
                                 </span>
                             </td>
-                            <td><code>{{ $menu->type }}</code></td>
-                            <td>{{ $menu->route ?? '—' }}</td>
-                            <td>{{ $menu->order ?? '—' }}</td>
+                            <td><code>{{ $menu['type'] }}</code></td>
+                            <td>{{ $menu['route'] ?? '—' }}</td>
+                            <td>{{ $menu['order'] ?? '—' }}</td>
                             <td>
-                                @if ($menu->is_authenticate)<span class="badge text-bg-info">auth</span>@endif
-                                @if ($menu->is_guest_only)<span class="badge text-bg-secondary">guest</span>@endif
+                                @if ($menu['is_authenticate'])<span class="badge text-bg-info">auth</span>@endif
+                                @if ($menu['is_guest_only'])<span class="badge text-bg-secondary">guest</span>@endif
                             </td>
                             <td class="text-end">
                                 @can('manage menu')
-                                    <a href="{{ route('menus.edit', $menu) }}" class="btn btn-sm btn-info">
+                                    <a href="{{ route('menus.edit', $menu['id']) }}" class="btn btn-sm btn-info">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('menus.destroy', $menu) }}" class="d-inline">
+                                    <form method="POST" action="{{ route('menus.destroy', $menu['id']) }}" class="d-inline">
                                         @csrf
                                         @method('DELETE')
                                         <div class="btn-group">

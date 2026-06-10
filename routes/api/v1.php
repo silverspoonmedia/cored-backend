@@ -1,11 +1,9 @@
 <?php
 
-use App\Http\Controllers\API\V1\AdminController;
 use App\Http\Controllers\API\V1\Auth\AuthController;
 use App\Http\Controllers\API\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\API\V1\Auth\PasswordController;
 use App\Http\Controllers\API\V1\Navigation\MenuController;
-use App\Http\Controllers\API\V1\PlaygroundController;
 use App\Http\Controllers\API\V1\UserController;
 use Illuminate\Support\Facades\Route;
 

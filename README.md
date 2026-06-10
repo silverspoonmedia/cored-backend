@@ -2,7 +2,7 @@
 
 Laravel 13 API application with **JWT authentication**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks and playground CRUD.
 
-It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that **reuses the same Services, Form Requests, Policies, and Spatie permissions as the API** — no duplicated auth or business logic. The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**. See **[Web Frontend (Blade + AdminLTE 4)](docs/web-frontend.md)**.
+It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that is a **pure consumer of the versioned API**: every web controller forwards to `/api/v1/*`, so validation, CRUD, and RBAC run **only once — in the API** (no duplicated business logic). The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**, which the web layer forwards to the API as a Bearer token. See **[Web Frontend (Blade + AdminLTE 4)](docs/web-frontend.md)**.
 
 ### Living documentation (required)
 
@@ -186,7 +186,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example |
 | [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 4 / jQuery 3 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
-| [Web frontend (Blade + AdminLTE 4)](docs/web-frontend.md) | Server-rendered admin UI that reuses the API stack; JWT-in-HttpOnly-cookie auth, reusable Blade components, user & menu management screens |
+| [Web frontend (Blade + AdminLTE 4)](docs/web-frontend.md) | Server-rendered admin UI that **consumes the versioned API** (web = API client); JWT-in-HttpOnly-cookie auth forwarded as Bearer, reusable Blade components, user & menu management screens |
 
 ### Authentication and authorization
 
@@ -211,7 +211,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - Dual-mode list/index (query JSON vs DataTables + RBAC actions) → [list-display-modes.md](docs/list-display-modes.md)
 - Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/navigation-menu.md)
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
-- Blade admin frontend, JWT-cookie auth, reusable components → [web-frontend.md](docs/web-frontend.md)
+- Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi` → [web-frontend.md](docs/web-frontend.md)
 
 ---
 

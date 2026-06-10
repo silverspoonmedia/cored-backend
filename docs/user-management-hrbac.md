@@ -138,6 +138,22 @@ List routes:
 php artisan route:list --path=api/v1/users
 ```
 
+### Blade web UI (API client)
+
+The server-rendered admin does **not** call `UserManagementService` or `UserPolicy` directly. `App\Http\Controllers\Web\UserController` forwards every action to the endpoints above via `App\Support\Api\ApiClient` (JWT from the `auth_token` cookie sent as `Authorization: Bearer`). Validation, H-RBAC filtering, and authorization all run **only** in the API layer documented here.
+
+| Web route | Forwards to |
+|-----------|-------------|
+| `GET /users` | Blade shell only (no API call) |
+| `GET /users/datatable` | `GET /api/v1/users?display_mode=datatable` — proxies the Yajra payload and rewrites allowed action keys to web URLs |
+| `GET /users/create` | `GET /api/v1/users/assignable-roles` |
+| `POST /users` | `POST /api/v1/users` |
+| `GET /users/{user}/edit` | `GET /api/v1/users/{id}` + assignable roles |
+| `PUT /users/{user}` | `PUT /api/v1/users/{id}` |
+| `DELETE /users/{user}` | `DELETE /api/v1/users/{id}` |
+
+Web routes carry **no** `permission:` middleware — a `403` from the API is translated into a flash error by `ConsumesApi`. See [Web frontend](./web-frontend.md) and [List display modes](./list-display-modes.md).
+
 ---
 
 ## Request and response format
@@ -415,6 +431,7 @@ php artisan test --filter=UserManagement
 
 ## Related documentation
 
+- [Web frontend (Blade + AdminLTE 4)](./web-frontend.md) — Blade admin as a pure API client for user management screens
 - [API Routing](./api-routing.md) — versioned routes; user management lives on v1 only
 - [JWT Authentication & RBAC](./jwt-authentication.md) — JWT guard, Spatie setup, registration default role
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — layer responsibilities; user management uses a dedicated repository

@@ -9,7 +9,7 @@
         <div class="col-lg-6">
             <x-card title="Ubah data: {{ $user->name }}">
                 @include('users._form', [
-                    'action' => route('users.update', $user),
+                    'action' => route('users.update', $user->id),
                     'method' => 'PUT',
                     'isEdit' => true,
                     'submitLabel' => 'Perbarui',

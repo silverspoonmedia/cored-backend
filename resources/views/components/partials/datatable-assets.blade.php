@@ -1,0 +1,19 @@
+{{-- jQuery + DataTables (Bootstrap 5). Used by server-side list screens. --}}
+<link
+    rel="stylesheet"
+    href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css"
+    crossorigin="anonymous"
+/>
+<script
+    src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+    crossorigin="anonymous"
+></script>
+<script
+    src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"
+    crossorigin="anonymous"
+></script>
+<script
+    src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"
+    crossorigin="anonymous"
+></script>

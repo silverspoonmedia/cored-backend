@@ -2,14 +2,15 @@
     Shared menu create/edit form.
     Expected variables:
       $action, $method ('POST'|'PUT'), $isEdit (bool), $submitLabel
-      $menu     Menu|null (edit only, with roles/includedUsers/excludedUsers loaded)
-      $allMenus Collection<Menu> (parent / reference candidates)
-      $roles    Collection<Role>
-      $users    Collection<User>
+      $menu     array|null (edit only) — MenuDetailResource payload from the API,
+                including flat role_ids / user_include_ids / user_exclude_ids
+      $allMenus Collection<array> (parent / reference candidates from the API)
+      $roles    Collection<Role>  (reference option-list)
+      $users    Collection<User>  (reference option-list)
 --}}
 @php
     $typeOptions = ['h' => 'Header (h)', 'p' => 'Parent (p)', 'c' => 'Child (c)'];
-    $parentOptions = $allMenus->mapWithKeys(fn ($m) => [$m->id => $m->name.' · '.$m->type]);
+    $parentOptions = $allMenus->mapWithKeys(fn ($m) => [$m['id'] => $m['name'].' · '.$m['type']]);
     $roleOptions = $roles->pluck('name', 'id');
     $userOptions = $users->mapWithKeys(fn ($u) => [$u->id => $u->name.' ('.$u->email.')']);
 
@@ -26,25 +27,25 @@
 
     <div class="row">
         <div class="col-md-6">
-            <x-form.input name="name" label="Nama" :value="$menu->name ?? null" required />
+            <x-form.input name="name" label="Nama" :value="data_get($menu, 'name')" required />
         </div>
         <div class="col-md-6">
-            <x-form.select name="type" label="Tipe" :options="$typeOptions" :selected="$menu->type ?? null"
+            <x-form.select name="type" label="Tipe" :options="$typeOptions" :selected="data_get($menu, 'type')"
                 placeholder="Pilih tipe" required
                 hint="h harus root, p berada di bawah h, c berada di bawah p." />
         </div>
     </div>
 
-    <x-form.select name="parent" label="Induk (parent)" :options="$parentOptions" :selected="$menu->parent_id ?? null"
+    <x-form.select name="parent" label="Induk (parent)" :options="$parentOptions" :selected="data_get($menu, 'parent_id')"
         placeholder="Tidak ada (root)" />
 
     <div class="row">
         <div class="col-md-6">
-            <x-form.input name="route" label="Route" :value="$menu->route ?? null"
+            <x-form.input name="route" label="Route" :value="data_get($menu, 'route')"
                 hint="Nama route Laravel yang terdaftar (mis. dashboard), bukan URL." />
         </div>
         <div class="col-md-6">
-            <x-form.input name="icon" label="Ikon" :value="$menu->icon ?? null"
+            <x-form.input name="icon" label="Ikon" :value="data_get($menu, 'icon')"
                 hint="Kelas ikon lengkap, mis. bi bi-house." />
         </div>
     </div>
@@ -52,26 +53,26 @@
     <div class="row">
         <div class="col-md-6">
             <x-form.checkbox name="authenticate" label="Hanya untuk pengguna terautentikasi"
-                :checked="(bool) ($menu->is_authenticate ?? false)" />
+                :checked="(bool) data_get($menu, 'is_authenticate', false)" />
         </div>
         <div class="col-md-6">
             <x-form.checkbox name="guest_only" label="Hanya untuk tamu (guest)"
-                :checked="(bool) ($menu->is_guest_only ?? false)" />
+                :checked="(bool) data_get($menu, 'is_guest_only', false)" />
         </div>
     </div>
 
     <x-form.multiselect name="roles" label="Role yang boleh melihat" :options="$roleOptions"
-        :selected="$menu?->roles->pluck('id')->all() ?? []"
+        :selected="data_get($menu, 'role_ids', [])"
         hint="Kosongkan agar terlihat oleh semua yang lolos aturan lain. Tidak kompatibel dengan 'guest only'." />
 
     <div class="row">
         <div class="col-md-6">
             <x-form.multiselect name="user_includes" label="Pengguna disertakan (allowlist)" :options="$userOptions"
-                :selected="$menu?->includedUsers->pluck('id')->all() ?? []" />
+                :selected="data_get($menu, 'user_include_ids', [])" />
         </div>
         <div class="col-md-6">
             <x-form.multiselect name="user_excludes" label="Pengguna dikecualikan (blacklist)" :options="$userOptions"
-                :selected="$menu?->excludedUsers->pluck('id')->all() ?? []" />
+                :selected="data_get($menu, 'user_exclude_ids', [])" />
         </div>
     </div>
 

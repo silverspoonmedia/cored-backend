@@ -3,110 +3,129 @@
 namespace App\Http\Controllers\Web\Navigation;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Web\Concerns\HandlesDomainErrors;
-use App\Http\Requests\Navigation\StoreMenuRequest;
-use App\Http\Requests\Navigation\UpdateMenuRequest;
-use App\Models\Menu;
+use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Models\Role;
 use App\Models\User;
-use App\Services\Navigation\MenuService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Web mirror of the API {@see \App\Http\Controllers\API\V1\Navigation\MenuController}.
- * Reuses {@see MenuService} and the same store/update form requests (structural
- * `h \u2192 p \u2192 c` validation, cycle guards, flag-compatibility checks). Permission
- * gating (`view menu`, `manage menu`, `restore menu`) is applied on the routes.
+ * Web navigation-menu management — a pure consumer of the versioned API.
+ *
+ * Every list, mutation and recovery forwards to `/api/v1/navigation/menus`
+ * (see {@see \App\Http\Controllers\API\V1\Navigation\MenuController}); the
+ * structural `h → p → c` validation, cycle guards and RBAC all run there.
  */
 class MenuController extends Controller
 {
-    use HandlesDomainErrors;
+    use ConsumesApi;
 
-    public function __construct(
-        private readonly MenuService $menus,
-    ) {}
-
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
-        return view('menus.index', [
-            'menus' => $this->menus->adminList(null),
-        ]);
+        $response = $this->api()->get('navigation/menus/list');
+
+        if (! $response->successful()) {
+            return redirect()->route('dashboard')->with('error', $this->apiMessage($response));
+        }
+
+        return view('menus.index', ['menus' => $response->json('data', [])]);
     }
 
-    public function create(): View
+    public function trashed(): View|RedirectResponse
     {
-        return view('menus.create', $this->formData());
+        $response = $this->api()->get('navigation/menus/trashed');
+
+        if (! $response->successful()) {
+            return redirect()->route('menus.index')->with('error', $this->apiMessage($response));
+        }
+
+        return view('menus.trashed', ['menus' => $response->json('data', [])]);
     }
 
-    public function store(StoreMenuRequest $request): RedirectResponse
+    public function create(): View|RedirectResponse
     {
-        return $this->handleDomain(function () use ($request): RedirectResponse {
-            $this->menus->create($request->validated());
-
-            return redirect()->route('menus.index')->with('success', 'Menu berhasil dibuat.');
-        });
+        return $this->renderForm('menus.create');
     }
 
-    public function edit(Menu $menu): View
+    public function store(Request $request): RedirectResponse
     {
-        $menu->load(['roles', 'includedUsers', 'excludedUsers']);
+        $response = $this->api()->post('navigation/menus', $request->except(['_token', '_method']));
 
-        return view('menus.edit', array_merge($this->formData($menu), [
-            'menu' => $menu,
-        ]));
+        return $this->redirectFromApi(
+            $response,
+            fn (): RedirectResponse => redirect()->route('menus.index')->with('success', 'Menu berhasil dibuat.'),
+        );
     }
 
-    public function update(UpdateMenuRequest $request, Menu $menu): RedirectResponse
+    public function edit(string $menu): View|RedirectResponse
     {
-        return $this->handleDomain(function () use ($request, $menu): RedirectResponse {
-            $this->menus->update($menu, $request->validated());
+        $response = $this->api()->get("navigation/menus/{$menu}");
 
-            return redirect()->route('menus.index')->with('success', 'Menu berhasil diperbarui.');
-        });
+        if (! $response->successful()) {
+            return redirect()->route('menus.index')->with('error', $this->apiMessage($response));
+        }
+
+        return $this->renderForm('menus.edit', $response->json('data', []));
     }
 
-    public function destroy(Request $request, Menu $menu): RedirectResponse
+    public function update(Request $request, string $menu): RedirectResponse
     {
-        return $this->handleDomain(function () use ($request, $menu): RedirectResponse {
-            $this->menus->delete($menu, $request->boolean('cascade'));
+        $response = $this->api()->put("navigation/menus/{$menu}", $request->except(['_token', '_method']));
 
-            return redirect()->route('menus.index')->with('success', 'Menu berhasil dihapus.');
-        });
+        return $this->redirectFromApi(
+            $response,
+            fn (): RedirectResponse => redirect()->route('menus.index')->with('success', 'Menu berhasil diperbarui.'),
+        );
     }
 
-    public function trashed(): View
+    public function destroy(Request $request, string $menu): RedirectResponse
     {
-        return view('menus.trashed', [
-            'menus' => $this->menus->trashedList(null),
-        ]);
+        $response = $this->api()->delete("navigation/menus/{$menu}", ['cascade' => $request->boolean('cascade')]);
+
+        return $this->redirectFromApi(
+            $response,
+            fn (): RedirectResponse => redirect()->route('menus.index')->with('success', 'Menu berhasil dihapus.'),
+        );
     }
 
-    public function restore(Menu $menu): RedirectResponse
+    public function restore(string $menu): RedirectResponse
     {
-        return $this->handleDomain(function () use ($menu): RedirectResponse {
-            $this->menus->restore($menu);
+        $response = $this->api()->post("navigation/menus/{$menu}/restore");
 
-            return redirect()->route('menus.trashed')->with('success', 'Menu berhasil dipulihkan.');
-        });
+        return $this->redirectFromApi(
+            $response,
+            fn (): RedirectResponse => redirect()->route('menus.trashed')->with('success', 'Menu berhasil dipulihkan.'),
+        );
     }
 
     /**
-     * Shared option lists for the create/edit forms.
+     * Build the create/edit form payload.
      *
-     * @return array<string, mixed>
+     * @param  array<string, mixed>  $menu  Menu detail from the API (empty on create).
      */
-    private function formData(?Menu $current = null): array
+    private function renderForm(string $view, array $menu = []): View|RedirectResponse
     {
-        $parents = collect($this->menus->adminList(null))
-            ->when($current !== null, fn ($menus) => $menus->reject(fn (Menu $m) => $m->id === $current->id))
+        $list = $this->api()->get('navigation/menus/list');
+
+        if (! $list->successful()) {
+            return redirect()->route('menus.index')->with('error', $this->apiMessage($list));
+        }
+
+        $currentId = $menu['id'] ?? null;
+
+        $allMenus = collect($list->json('data', []))
+            ->when($currentId !== null, fn ($items) => $items->reject(fn (array $m): bool => ($m['id'] ?? null) === $currentId))
             ->values();
 
-        return [
-            'allMenus' => $parents,
+        return view($view, [
+            'menu' => $menu !== [] ? $menu : null,
+            'allMenus' => $allMenus,
+            // Reference option-lists for the role/user pickers. The API exposes
+            // no full role/user catalogue endpoint, so these are read directly
+            // (reference data only — no business logic lives here).
             'roles' => Role::query()->orderBy('level')->get(),
             'users' => User::query()->orderBy('name')->get(),
-        ];
+        ]);
     }
 }

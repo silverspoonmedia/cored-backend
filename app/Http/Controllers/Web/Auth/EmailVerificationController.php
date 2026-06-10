@@ -3,33 +3,25 @@
 namespace App\Http\Controllers\Web\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Web\Concerns\HandlesDomainErrors;
-use App\Models\User;
-use App\Services\Auth\EmailVerificationService;
+use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 
 /**
- * Resends the email verification link for the signed-in user. Reuses
- * {@see EmailVerificationService} (throws when already verified).
+ * Resends the email verification link for the signed-in user by forwarding to
+ * `POST /api/v1/auth/email/verification-notification` (the API throws when the
+ * address is already verified).
  */
 class EmailVerificationController extends Controller
 {
-    use HandlesDomainErrors;
-
-    public function __construct(
-        private readonly EmailVerificationService $verification,
-    ) {}
+    use ConsumesApi;
 
     public function resend(): RedirectResponse
     {
-        return $this->handleDomain(function (): RedirectResponse {
-            /** @var User $user */
-            $user = Auth::guard('api')->user();
+        $response = $this->api()->post('auth/email/verification-notification');
 
-            $this->verification->sendNotification($user);
-
-            return back()->with('success', 'Tautan verifikasi telah dikirim ke email Anda.');
-        });
+        return $this->redirectFromApi(
+            $response,
+            fn (): RedirectResponse => back()->with('success', 'Tautan verifikasi telah dikirim ke email Anda.'),
+        );
     }
 }

@@ -99,6 +99,28 @@ Authorization is **permission-based** (consistent with the rest of the app), not
 
 `{menu}` is constrained with `whereUuid` and resolved by implicit model binding.
 
+### Blade web UI (API client)
+
+Menu management screens in the Blade admin (`routes/web.php`) are **pure consumers** of the API above. `App\Http\Controllers\Web\Navigation\MenuController` forwards list/read/mutation calls through `App\Support\Api\ApiClient`; validation, structural rules, and Spatie permission checks all run in `App\Http\Controllers\API\V1\Navigation\MenuController` only.
+
+| Web route | Forwards to |
+|-----------|-------------|
+| `GET /menus` | `GET /api/v1/navigation/menus/list` |
+| `GET /menus/trashed` | `GET /api/v1/navigation/menus/trashed` |
+| `GET /menus/create` | `GET /api/v1/navigation/menus/list` (parent options) + `POST` on submit |
+| `POST /menus` | `POST /api/v1/navigation/menus` |
+| `GET /menus/{menu}/edit` | `GET /api/v1/navigation/menus/{id}` |
+| `PUT /menus/{menu}` | `PUT /api/v1/navigation/menus/{id}` |
+| `DELETE /menus/{menu}` | `DELETE /api/v1/navigation/menus/{id}` (`cascade` query/body forwarded) |
+| `POST /menus/{menu}/restore` | `POST /api/v1/navigation/menus/{id}/restore` |
+
+Views render the **JSON arrays** returned by the API (`$menu['name']`, flat `role_ids` / `user_include_ids` / `user_exclude_ids` on edit). Web routes carry **no** `permission:` middleware — the API returns `403` when the actor lacks access.
+
+**Two deliberate exceptions** (reference reads only; see [Web frontend](./web-frontend.md)):
+
+1. **Sidebar** — `NavigationComposer` still calls `MenuService::navigationTree()` directly (same engine as `GET /api/v1/navigation/menus`, but no self-HTTP round-trip on every page).
+2. **Form role/user pickers** — `roles` and `users` option lists are loaded via Eloquent because no catalogue API endpoint exists yet.
+
 ### Request fields (store/update)
 
 The HTTP contract uses friendlier names than the columns; the **service** maps them:
@@ -115,7 +137,7 @@ The HTTP contract uses friendlier names than the columns; the **service** maps t
 
 On **create**, all three relationship sets are written (omitting a key clears it). On **update**, a relationship is only touched when its key is present, so an empty array explicitly clears assignments while omitting the key leaves them untouched.
 
-**HTML form normalization.** Browsers post unselected `<select>`s as `""`, which would otherwise trip the `exists`/`in` rules. `Store`/`UpdateMenuRequest::prepareForValidation()` coerces an empty `parent` / `reference_id` to `null` and drops an empty `position` before validation, so a deliberately-omitted optional select is treated as absent. JSON API callers are unaffected (they send `null` or omit the key).
+**HTML form normalization.** Browsers post unselected `<select>`s as `""`, which would otherwise trip the `exists`/`in` rules. `Store`/`UpdateMenuRequest::prepareForValidation()` coerces an empty `parent` / `reference_id` to `null` and drops an empty `position` before validation, so a deliberately-omitted optional select is treated as absent. Blade forms post to web routes, which forward the raw body to the API — the API's Form Request runs this normalization before validating. JSON API callers are unaffected (they send `null` or omit the key).
 
 **Atomicity:** `MenuService::create`/`update` wrap the row write *and* all pivot syncs in a single `DB::transaction`, so a failed relationship sync rolls back the menu too — no half-wired records.
 
@@ -177,6 +199,7 @@ php artisan migrate:fresh --seed
 
 ## Related documentation
 
+- [Web frontend (Blade + AdminLTE 4)](./web-frontend.md) — Blade admin as API client for menu screens; sidebar exceptions
 - [API Routing](./api-routing.md) — versioned route placement
 - [List display modes (query & DataTables)](./list-display-modes.md) — `list` / `trashed` dual-mode responses and RBAC actions
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — when to use a dedicated repository

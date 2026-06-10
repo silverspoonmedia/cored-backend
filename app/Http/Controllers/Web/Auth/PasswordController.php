@@ -3,41 +3,32 @@
 namespace App\Http\Controllers\Web\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Web\Concerns\HandlesDomainErrors;
-use App\Http\Requests\Auth\ChangePasswordRequest;
-use App\Models\User;
-use App\Services\Auth\PasswordResetService;
+use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Authenticated self-service password change. Reuses {@see ChangePasswordRequest}
- * and {@see PasswordResetService::changePassword()} (verifies the current
- * password before updating).
+ * Authenticated self-service password change. Forwards to
+ * `PUT /api/v1/auth/password` (the API verifies the current password before
+ * updating); the JWT travels as a Bearer header from the auth cookie.
  */
 class PasswordController extends Controller
 {
-    use HandlesDomainErrors;
-
-    public function __construct(
-        private readonly PasswordResetService $passwords,
-    ) {}
+    use ConsumesApi;
 
     public function edit(): View
     {
         return view('profile.password');
     }
 
-    public function update(ChangePasswordRequest $request): RedirectResponse
+    public function update(Request $request): RedirectResponse
     {
-        return $this->handleDomain(function () use ($request): RedirectResponse {
-            /** @var User $user */
-            $user = Auth::guard('api')->user();
+        $response = $this->api()->put('auth/password', $request->except(['_token', '_method']));
 
-            $this->passwords->changePassword($user->id, $request->validated());
-
-            return back()->with('success', 'Kata sandi berhasil diperbarui.');
-        });
+        return $this->redirectFromApi(
+            $response,
+            fn (): RedirectResponse => back()->with('success', 'Kata sandi berhasil diperbarui.'),
+        );
     }
 }

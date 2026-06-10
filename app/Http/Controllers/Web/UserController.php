@@ -2,118 +2,171 @@
 
 namespace App\Http\Controllers\Web;
 
-use App\Exceptions\User\CannotDeleteSelfException;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Web\Concerns\HandlesDomainErrors;
-use App\Http\Requests\User\StoreUserRequest;
-use App\Http\Requests\User\UpdateUserRequest;
-use App\Models\User;
-use App\Policies\UserPolicy;
-use App\Services\Rbac\RoleService;
-use App\Services\User\UserManagementService;
+use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Web user management. A thin mirror of the API {@see \App\Http\Controllers\API\V1\UserController}:
- * identical authorization ({@see UserPolicy}), the same
- * {@see UserManagementService}/{@see RoleService}, and the same H-RBAC form
- * requests — only the response shape differs (Blade + redirects vs JSON).
+ * Web user management — a pure consumer of the versioned API.
+ *
+ * No validation, CRUD or RBAC lives here: every action forwards to
+ * `/api/v1/users` (see {@see \App\Http\Controllers\API\V1\UserController}) via
+ * {@see ConsumesApi}, and the controller only turns the JSON envelope into a
+ * Blade view or a redirect. Authorization is enforced entirely by the API.
  */
 class UserController extends Controller
 {
-    use HandlesDomainErrors;
-
-    public function __construct(
-        private readonly UserManagementService $userManagement,
-        private readonly RoleService $roleService,
-    ) {}
+    use ConsumesApi;
 
     public function index(): View
     {
-        $actor = $this->actor();
-        $this->authorize('viewAny', User::class);
-
-        $users = $this->userManagement->list($actor)->load('roles');
-
-        return view('users.index', [
-            'users' => $users,
-            'actorId' => $actor->id,
-        ]);
+        return view('users.index');
     }
 
-    public function create(): View
+    /**
+     * Server-side DataTables feed: proxy the API's datatable payload, then map
+     * each row's allowed actions (decided by the API's RBAC) onto web routes the
+     * browser can navigate/submit. On any API failure, render an empty table.
+     */
+    public function datatable(Request $request): JsonResponse
     {
-        $actor = $this->actor();
-        $this->authorize('create', User::class);
+        $response = $this->api()->get('users', array_merge(
+            $request->query(),
+            ['display_mode' => 'datatable'],
+        ));
+
+        if (! $response->successful()) {
+            return response()->json([
+                'draw' => (int) $request->query('draw'),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+            ]);
+        }
+
+        $payload = $response->json();
+        $payload['data'] = array_map(
+            fn (array $row): array => $this->mapRowActions($row),
+            $payload['data'] ?? [],
+        );
+
+        return response()->json($payload);
+    }
+
+    public function create(): View|RedirectResponse
+    {
+        $response = $this->api()->get('users/assignable-roles');
+
+        if (! $response->successful()) {
+            return redirect()->route('users.index')->with('error', $this->apiMessage($response));
+        }
 
         return view('users.create', [
-            'assignableRoles' => $this->roleService->getAssignableRoles($actor),
+            'assignableRoles' => collect($response->json('data', [])),
         ]);
     }
 
-    public function store(StoreUserRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        $actor = $this->actor();
-        $this->authorize('create', User::class);
+        $response = $this->api()->post('users', $this->payload($request));
 
-        return $this->handleDomain(function () use ($actor, $request): RedirectResponse {
-            $this->userManagement->create($actor, $request->validated());
-
-            return redirect()
-                ->route('users.index')
-                ->with('success', 'Pengguna berhasil dibuat.');
-        });
+        return $this->redirectFromApi(
+            $response,
+            fn (): RedirectResponse => redirect()->route('users.index')->with('success', 'Pengguna berhasil dibuat.'),
+        );
     }
 
-    public function edit(User $user): View
+    public function edit(string $user): View|RedirectResponse
     {
-        $actor = $this->actor();
-        $this->authorize('update', $user);
+        $response = $this->api()->get("users/{$user}");
+
+        if (! $response->successful()) {
+            return redirect()->route('users.index')->with('error', $this->apiMessage($response));
+        }
+
+        $roles = $this->api()->get('users/assignable-roles');
+
+        $data = $response->json('data', []);
 
         return view('users.edit', [
-            'user' => $user->load('roles'),
-            'currentRole' => $user->roles->first()?->name,
-            'assignableRoles' => $this->roleService->getAssignableRoles($actor),
+            'user' => (object) $data,
+            'currentRole' => data_get($data, 'roles.0.name'),
+            'assignableRoles' => collect($roles->successful() ? $roles->json('data', []) : []),
         ]);
     }
 
-    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    public function update(Request $request, string $user): RedirectResponse
     {
-        $this->authorize('update', $user);
+        $response = $this->api()->put("users/{$user}", $this->payload($request));
 
-        return $this->handleDomain(function () use ($request, $user): RedirectResponse {
-            $this->userManagement->update($this->actor(), $user->id, $request->validated());
-
-            return redirect()
-                ->route('users.index')
-                ->with('success', 'Pengguna berhasil diperbarui.');
-        });
+        return $this->redirectFromApi(
+            $response,
+            fn (): RedirectResponse => redirect()->route('users.index')->with('success', 'Pengguna berhasil diperbarui.'),
+        );
     }
 
-    public function destroy(User $user): RedirectResponse
+    public function destroy(string $user): RedirectResponse
     {
-        return $this->handleDomain(function () use ($user): RedirectResponse {
-            if ($this->actor()->id === $user->id) {
-                throw new CannotDeleteSelfException;
-            }
+        $response = $this->api()->delete("users/{$user}");
 
-            $this->authorize('delete', $user);
-
-            $this->userManagement->delete($this->actor(), $user->id);
-
-            return redirect()
-                ->route('users.index')
-                ->with('success', 'Pengguna berhasil dihapus.');
-        });
+        return $this->redirectFromApi(
+            $response,
+            fn (): RedirectResponse => redirect()->route('users.index')->with('success', 'Pengguna berhasil dihapus.'),
+        );
     }
 
-    private function actor(): User
+    /**
+     * Form fields to forward to the API (CSRF/method spoofing stripped).
+     *
+     * @return array<string, mixed>
+     */
+    private function payload(Request $request): array
     {
-        /** @var User $user */
-        $user = Auth::guard('api')->user();
+        return $request->except(['_token', '_method']);
+    }
 
-        return $user;
+    /**
+     * Rewrite the API's allowed-action keys onto clickable web routes. The API
+     * decides WHICH actions the actor may take (RBAC); the web layer only maps
+     * those keys to its own edit page / delete form.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function mapRowActions(array $row): array
+    {
+        $allowed = array_column($row['actions'] ?? [], 'key');
+        $id = $row['id'] ?? null;
+        $actions = [];
+
+        if ($id !== null && in_array('edit', $allowed, true)) {
+            $actions[] = [
+                'key' => 'edit',
+                'label' => 'Edit',
+                'method' => 'GET',
+                'url' => route('users.edit', $id),
+                'style' => 'info',
+                'icon' => 'bi bi-pencil',
+            ];
+        }
+
+        if ($id !== null && in_array('delete', $allowed, true)) {
+            $actions[] = [
+                'key' => 'delete',
+                'label' => 'Hapus',
+                'method' => 'DELETE',
+                'url' => route('users.destroy', $id),
+                'style' => 'danger',
+                'icon' => 'bi bi-trash',
+                'confirm' => 'Yakin ingin menghapus pengguna ini?',
+            ];
+        }
+
+        $row['actions'] = $actions;
+
+        return $row;
     }
 }

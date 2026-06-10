@@ -3,37 +3,33 @@
 namespace App\Http\Controllers\Web\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Web\Concerns\HandlesDomainErrors;
-use App\Http\Requests\Auth\ForgotPasswordRequest;
-use App\Http\Requests\Auth\ResetPasswordRequest;
-use App\Services\Auth\PasswordResetService;
+use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
  * Forgot-password (request a reset link) and reset (set a new password) screens.
- * Reuses {@see PasswordResetService} and the same form requests as the API.
+ * Both forward to `/api/v1/auth/*`; the API owns validation and the reset logic.
  */
 class PasswordResetController extends Controller
 {
-    use HandlesDomainErrors;
-
-    public function __construct(
-        private readonly PasswordResetService $passwords,
-    ) {}
+    use ConsumesApi;
 
     public function showLinkRequest(): View
     {
         return view('auth.forgot-password');
     }
 
-    public function sendLink(ForgotPasswordRequest $request): RedirectResponse
+    public function sendLink(Request $request): RedirectResponse
     {
-        $this->passwords->sendResetLink($request->validated()['email']);
+        $response = $this->api()->post('auth/forgot-password', $request->only('email'));
 
-        // Generic message: never reveal whether the email exists.
-        return back()->with('success', 'Jika email terdaftar, kami telah mengirim tautan reset kata sandi.');
+        // Generic message on success: never reveal whether the email exists.
+        return $this->redirectFromApi(
+            $response,
+            fn (): RedirectResponse => back()->with('success', 'Jika email terdaftar, kami telah mengirim tautan reset kata sandi.'),
+        );
     }
 
     public function showReset(Request $request, string $token): View
@@ -44,14 +40,13 @@ class PasswordResetController extends Controller
         ]);
     }
 
-    public function reset(ResetPasswordRequest $request): RedirectResponse
+    public function reset(Request $request): RedirectResponse
     {
-        return $this->handleDomain(function () use ($request): RedirectResponse {
-            $this->passwords->reset($request->validated());
+        $response = $this->api()->post('auth/reset-password', $request->except(['_token']));
 
-            return redirect()
-                ->route('login')
-                ->with('success', 'Kata sandi berhasil diatur ulang. Silakan masuk.');
-        });
+        return $this->redirectFromApi(
+            $response,
+            fn (): RedirectResponse => redirect()->route('login')->with('success', 'Kata sandi berhasil diatur ulang. Silakan masuk.'),
+        );
     }
 }

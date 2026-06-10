@@ -3,40 +3,36 @@
 namespace App\Http\Controllers\Web\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Web\Concerns\HandlesDomainErrors;
+use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Concerns\IssuesAuthCookie;
-use App\Http\Requests\Auth\RegisterRequest;
-use App\Services\Auth\AuthService;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Browser self-registration. Reuses {@see RegisterRequest} and
- * {@see AuthService::register()} (assigns the default role, sends the
- * verification email), then signs the user in via the auth cookie.
+ * Browser self-registration. Forwards to `POST /api/v1/auth/register` (the API
+ * validates, assigns the default role, sends the verification email and issues
+ * a JWT), then signs the user in via the auth cookie.
  */
 class RegisterController extends Controller
 {
-    use HandlesDomainErrors;
+    use ConsumesApi;
     use IssuesAuthCookie;
-
-    public function __construct(
-        private readonly AuthService $authService,
-    ) {}
 
     public function create(): View
     {
         return view('auth.register');
     }
 
-    public function store(RegisterRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        return $this->handleDomain(function () use ($request): RedirectResponse {
-            $payload = $this->authService->register($request->validated());
+        $response = $this->api()->post('auth/register', $request->except(['_token']));
 
+        return $this->redirectFromApi($response, function (Response $r): RedirectResponse {
             session()->flash('success', 'Registrasi berhasil. Kami telah mengirim tautan verifikasi ke email Anda.');
 
-            return $this->redirectAuthenticated($payload);
+            return $this->redirectAuthenticated($r->json('data', []));
         });
     }
 }

@@ -15,6 +15,16 @@ Navigation **tree** `GET /api/v1/navigation/menus` is excluded — it returns a 
 | `GET` | `/api/v1/navigation/menus/list` | Admin flat menu list | Same data + actions |
 | `GET` | `/api/v1/navigation/menus/trashed` | Soft-deleted menus | Same data + actions (+ restore) |
 
+### Web (Blade) datatable routes
+
+The server-rendered admin UI exposes **dedicated web JSON routes** for DataTables AJAX. Each route is a **proxy**: the web controller forwards the DataTables query string to the matching API endpoint (`display_mode=datatable`), re-reads the JWT from the **HttpOnly `auth_token` cookie** as `Authorization: Bearer`, and returns the API's Yajra payload after rewriting per-row `actions` to web route URLs. The web layer holds no list/RBAC logic of its own (see [Web frontend — Server-side DataTables](./web-frontend.md#server-side-datatables-user-list)).
+
+| Method | URI | Route name | Source | Notes |
+|--------|-----|------------|--------|-------|
+| `GET` | `/users/datatable` | `users.datatable` | **proxy of** `GET /api/v1/users?display_mode=datatable` | Forwards DataTables params + Bearer, then maps the API's allowed-action keys onto web routes (`users.edit` GET, `users.destroy` DELETE) with `bi bi-*` icons |
+
+Web datatable routes always respond in Yajra format (the `draw` query parameter is sent automatically by DataTables). The web layer holds **no** datatable logic of its own: it proxies the API's datatable payload and rewrites only the per-row action URLs (the API still decides *which* actions are allowed — RBAC).
+
 ---
 
 ## Selecting a display mode
@@ -123,6 +133,7 @@ Actions are computed **per row** for the authenticated actor:
 | `/api/playground/users` | `PlaygroundUserRowActionResolver` | All actions on every row (demo, no auth) |
 | `/api/v1/navigation/menus/list` | `MenuRowActionResolver` | Spatie permissions: `view menu`, `manage menu` |
 | `/api/v1/navigation/menus/trashed` | `MenuTrashedRowActionResolver` | `view menu`, `restore menu` |
+| `/users/datatable` (web) | *(proxy)* `UserRowActionResolver` via the API | The API resolves RBAC; the web proxy maps allowed keys to web URLs (`users.edit`, `users.destroy`), dropping `show` |
 
 When the actor lacks permission for an action, that button is omitted from the row's `actions` array.
 
@@ -151,9 +162,11 @@ app/
         └── MenuTrashedRowActionResolver.php
 ```
 
+> The web Blade datatable does **not** have its own resolver — `Web\UserController::datatable()` proxies the API's datatable response and rewrites the action URLs to web routes.
+
 List and show payloads are shaped by **Eloquent API Resources** (`JsonResource`). Query mode and datatable rows both resolve the same resource so the JSON contract stays in one place. See [CRUD Architecture — API Resources](./crud-architecture.md#api-resources-list-show).
 
-### Adding datatable mode to a new list endpoint
+### Adding datatable mode to a new list endpoint (API)
 
 1. Add `InteractsWithListDisplayMode` to the list Form Request (merge `listDisplayModeRules()`).
 2. Use `RespondsWithListDisplayMode` in the controller: pass query and datatable closures.
@@ -163,6 +176,18 @@ List and show payloads are shaped by **Eloquent API Resources** (`JsonResource`)
 
 Keep business logic in Services; resolvers only evaluate authorization and build URLs.
 
+### Adding a datatable list screen on the web (Blade)
+
+Follow the users index as the reference (`resources/views/users/index.blade.php`). Steps:
+
+1. Register `GET /{resource}/datatable` on `web.php` (before `{resource}/{id}` routes) under `web.auth` (no `permission:` gate — the API authorizes).
+2. Add a `datatable()` method on the web controller (using `ConsumesApi`) that **proxies** `GET /api/v1/{resource}?display_mode=datatable` — forward `$request->query()` plus `display_mode=datatable`, then `array_map` over `data[]` to rewrite each row's `actions` keys to web route URLs (`bi bi-*` icons). Return an empty payload on API failure.
+3. Change the index view to an empty `<table>` shell; include `<x-partials.datatable-assets />` and `<x-partials.datatable-row-actions />` in `<x-slot:scripts>`.
+4. Initialise DataTables with `serverSide: true`, `ajax` pointing at the web datatable route, and define **column headers via `title`** on each `columns[]` entry (single source of truth — no duplicate `<thead>` markup).
+5. Add a feature test under `tests/Feature/Http/Controllers/Web/` that `Http::fake()`s the API datatable response and asserts the proxy maps the API action keys onto web URLs.
+
+Full web-layer conventions → [Web frontend — Server-side DataTables](./web-frontend.md#server-side-datatables-user-list).
+
 ---
 
 ## Related documentation
@@ -170,3 +195,4 @@ Keep business logic in Services; resolvers only evaluate authorization and build
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — list endpoint layering
 - [User Management & H-RBAC](./user-management-hrbac.md) — user list filtering and policies
 - [Dynamic navigation menu](./navigation-menu.md) — menu list/trashed endpoints
+- [Web frontend (Blade + AdminLTE 4)](./web-frontend.md) — API-client architecture, `ApiClient`/`ConsumesApi`, datatable proxy, shared partials

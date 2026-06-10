@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers\Web\Concerns;
 
-use App\Services\Auth\AuthService;
 use App\Support\Auth\AuthCookie;
 use Illuminate\Http\RedirectResponse;
 
 /**
- * Shared by the login and register web controllers: takes the auth payload
- * produced by {@see AuthService} (the very same payload the
- * API returns) and persists its JWT in the HttpOnly cookie, then redirects.
+ * Shared by the login and register web controllers: takes the `data` payload
+ * returned by `POST /api/v1/auth/{login,register}` and persists its JWT in the
+ * HttpOnly cookie, then redirects.
  */
 trait IssuesAuthCookie
 {

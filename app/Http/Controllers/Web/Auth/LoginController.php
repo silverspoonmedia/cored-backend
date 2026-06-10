@@ -3,45 +3,44 @@
 namespace App\Http\Controllers\Web\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Web\Concerns\HandlesDomainErrors;
+use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Concerns\IssuesAuthCookie;
-use App\Http\Requests\Auth\LoginRequest;
-use App\Services\Auth\AuthService;
 use App\Support\Auth\AuthCookie;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Browser login. Reuses {@see LoginRequest} for validation and
- * {@see AuthService::login()} for the exact same JWT issuance the API performs,
- * then stores the token in the auth cookie.
+ * Browser login. Forwards credentials to `POST /api/v1/auth/login` (the API
+ * validates and issues the JWT), then stores the returned token in the HttpOnly
+ * cookie. No auth logic lives here.
  */
 class LoginController extends Controller
 {
-    use HandlesDomainErrors;
+    use ConsumesApi;
     use IssuesAuthCookie;
-
-    public function __construct(
-        private readonly AuthService $authService,
-    ) {}
 
     public function create(): View
     {
         return view('auth.login');
     }
 
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        return $this->handleDomain(function () use ($request): RedirectResponse {
-            $payload = $this->authService->login($request->validated());
+        $response = $this->api()->post('auth/login', $request->except(['_token']));
 
-            return $this->redirectAuthenticated($payload);
-        });
+        return $this->redirectFromApi(
+            $response,
+            fn (Response $r): RedirectResponse => $this->redirectAuthenticated($r->json('data', [])),
+        );
     }
 
     public function destroy(): RedirectResponse
     {
-        $this->authService->logout();
+        // Best-effort: blacklist the token API-side; the cookie is cleared
+        // regardless so the browser session always ends.
+        $this->api()->post('auth/logout');
 
         return redirect()
             ->route('login')

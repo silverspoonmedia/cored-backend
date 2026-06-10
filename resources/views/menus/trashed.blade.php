@@ -20,14 +20,14 @@
                     @forelse ($menus as $menu)
                         <tr>
                             <td>
-                                @if ($menu->icon)<i class="bi {{ $menu->icon }} me-1"></i>@endif
-                                {{ $menu->name }}
+                                @if ($menu['icon'])<i class="bi {{ $menu['icon'] }} me-1"></i>@endif
+                                {{ $menu['name'] }}
                             </td>
-                            <td><code>{{ $menu->type }}</code></td>
-                            <td>{{ $menu->route ?? '—' }}</td>
+                            <td><code>{{ $menu['type'] }}</code></td>
+                            <td>{{ $menu['route'] ?? '—' }}</td>
                             <td class="text-end">
                                 @can('restore menu')
-                                    <form method="POST" action="{{ route('menus.restore', $menu) }}" class="d-inline"
+                                    <form method="POST" action="{{ route('menus.restore', $menu['id']) }}" class="d-inline"
                                           onsubmit="return confirm('Pulihkan menu ini beserta turunannya yang terhapus?');">
                                         @csrf
                                         <button type="submit" class="btn btn-sm btn-success">

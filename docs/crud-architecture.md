@@ -59,7 +59,7 @@ Route::prefix('playground')->group(function () {
 });
 ```
 
-> Route names are namespaced (`playground.users.*`) so the demo surface does not squat the generic `users.*` names, which the [Blade web frontend](./web-frontend.md) uses for its admin user CRUD.
+> Route names are namespaced (`playground.users.*`) so the demo surface does not squat the generic `users.*` names, which the [Blade web frontend](./web-frontend.md) uses for its admin user CRUD (web controllers forward to `/api/v1/users`, not to Playground).
 
 **Production user CRUD (v1)** — `routes/api/v1.php`:
 
@@ -320,6 +320,7 @@ php artisan test --filter=Playground
 
 ## Related documentation
 
+- [Web frontend (Blade + AdminLTE 4)](./web-frontend.md) — Blade admin consumes v1 API endpoints via `ApiClient`; business logic stays in Services behind the API
 - [API Routing](./api-routing.md) — global vs versioned routes; product features belong on v1+
 - [JWT Authentication & RBAC](./jwt-authentication.md) — dedicated `UserRepository` and versioned auth endpoints
 - [User Management & Hierarchical RBAC](./user-management-hrbac.md) — production user CRUD on v1 (`UserManagementService`, `UserPolicy`, hierarchy)

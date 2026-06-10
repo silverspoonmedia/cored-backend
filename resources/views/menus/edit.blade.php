@@ -5,9 +5,9 @@
         <li class="breadcrumb-item active" aria-current="page">Ubah</li>
     </x-slot:breadcrumb>
 
-    <x-card title="Ubah menu: {{ $menu->name }}">
+    <x-card title="Ubah menu: {{ $menu['name'] }}">
         @include('menus._form', [
-            'action' => route('menus.update', $menu),
+            'action' => route('menus.update', $menu['id']),
             'method' => 'PUT',
             'isEdit' => true,
             'submitLabel' => 'Perbarui',
