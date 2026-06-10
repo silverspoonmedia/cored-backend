@@ -224,7 +224,7 @@ For paths matching `api/*`, `bootstrap/app.php` normalizes all `401` auth failur
 | JWT middleware: user not found for token | `401` | `Token is invalid.` |
 | Expired / blacklisted JWT | `401` | `Token has expired.` / `Token has been revoked.` |
 
-API routes **never redirect** to a web login page. `bootstrap/app.php` overrides Laravel’s default `redirectGuestsTo(route('login'))` because this application has no `login` named route for the web stack.
+API routes **never redirect** to a web login page. `bootstrap/app.php` sets `redirectGuestsTo` to return `null` for `api/*` requests so unauthenticated API clients always receive JSON **401** instead of a redirect. The Blade frontend has its own `login` route and uses the `web.auth` middleware alias to redirect guests there.
 
 Laravel’s default `{"message":"Unauthenticated."}` response and login redirects are **not** used on `api/*` routes.
 
@@ -525,8 +525,17 @@ Feature tests use `Tests\Concerns\SeedsRolesAndPermissions` to load `RoleSeeder`
 
 ---
 
+## Web frontend (Blade)
+
+The Blade admin is a **pure consumer** of the auth endpoints above — it does not call `AuthService` directly. Login, register, logout, password reset/change, and email verification resend all forward to `/api/v1/auth/*` via `App\Support\Api\ApiClient`. The returned JWT is stored in the HttpOnly `auth_token` cookie (`IssuesAuthCookie`); on every subsequent request `AuthenticateWithJwtCookie` binds it to the `api` guard for `web.auth`/`web.guest`, and `ApiClient` re-forwards it as `Authorization: Bearer` to the API.
+
+See [Web frontend (Blade + AdminLTE 4)](./web-frontend.md) for the full flow, `ConsumesApi` error translation, and the `PHP_CLI_SERVER_WORKERS` caveat for self-HTTP calls.
+
+---
+
 ## Related documentation
 
+- [Web frontend (Blade + AdminLTE 4)](./web-frontend.md) — JWT cookie bridge and API-client web controllers
 - [API Routing](./api-routing.md) — global vs versioned routes; auth belongs on v1+
 - [User Management & Hierarchical RBAC](./user-management-hrbac.md) — hierarchical user CRUD, `UserPolicy`, and `RoleService`
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — layer responsibilities and dedicated repositories

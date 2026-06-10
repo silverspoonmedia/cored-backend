@@ -46,7 +46,7 @@ All keys are UUID. Because `users` and `roles` exist before this migration runs,
 | `id` | uuid PK | |
 | `parent_id` | uuid, nullable | self-FK → `menus.id`, `cascadeOnDelete` |
 | `name` | string | |
-| `icon` | string, nullable | |
+| `icon` | string, nullable | a **full** icon class, e.g. `bi bi-people` (the web sidebar renders it verbatim and falls back to `bi bi-circle` when null/empty) |
 | `route` | string, nullable | a **registered Laravel route name**, not a URL |
 | `type` | char(1) | `h` header, `p` parent, `c` child |
 | `order` | unsigned int, **nullable** | sibling order **within a `(parent_id, type)` group**; active rows hold a contiguous `1..N`, soft-deleted/transient rows are parked at `NULL` |
@@ -99,6 +99,28 @@ Authorization is **permission-based** (consistent with the rest of the app), not
 
 `{menu}` is constrained with `whereUuid` and resolved by implicit model binding.
 
+### Blade web UI (API client)
+
+Menu management screens in the Blade admin (`routes/web.php`) are **pure consumers** of the API above. `App\Http\Controllers\Web\Navigation\MenuController` forwards list/read/mutation calls through `App\Support\Api\ApiClient`; validation, structural rules, and Spatie permission checks all run in `App\Http\Controllers\API\V1\Navigation\MenuController` only.
+
+| Web route | Forwards to |
+|-----------|-------------|
+| `GET /menus` | `GET /api/v1/navigation/menus/list` |
+| `GET /menus/trashed` | `GET /api/v1/navigation/menus/trashed` |
+| `GET /menus/create` | `GET /api/v1/navigation/menus/list` (parent options) + `POST` on submit |
+| `POST /menus` | `POST /api/v1/navigation/menus` |
+| `GET /menus/{menu}/edit` | `GET /api/v1/navigation/menus/{id}` |
+| `PUT /menus/{menu}` | `PUT /api/v1/navigation/menus/{id}` |
+| `DELETE /menus/{menu}` | `DELETE /api/v1/navigation/menus/{id}` (`cascade` query/body forwarded) |
+| `POST /menus/{menu}/restore` | `POST /api/v1/navigation/menus/{id}/restore` |
+
+Views render the **JSON arrays** returned by the API (`$menu['name']`, flat `role_ids` / `user_include_ids` / `user_exclude_ids` on edit). Web routes carry **no** `permission:` middleware — the API returns `403` when the actor lacks access.
+
+**Two deliberate exceptions** (reference reads only; see [Web frontend](./web-frontend.md)):
+
+1. **Sidebar** — `NavigationComposer` still calls `MenuService::navigationTree()` directly (same engine as `GET /api/v1/navigation/menus`, but no self-HTTP round-trip on every page).
+2. **Form role/user pickers** — `roles` and `users` option lists are loaded via Eloquent because no catalogue API endpoint exists yet.
+
 ### Request fields (store/update)
 
 The HTTP contract uses friendlier names than the columns; the **service** maps them:
@@ -109,11 +131,13 @@ The HTTP contract uses friendlier names than the columns; the **service** maps t
 | `parent` | `parent_id` | must `exists:menus,id` **excluding soft-deleted**; on update cannot equal the menu itself **or any descendant** |
 | `authenticate` | `is_authenticate` | boolean |
 | `guest_only` | `is_guest_only` | boolean |
-| `position` + `reference_id` | — | `append` (default) or `before`/`after` a sibling in the same `(parent_id, type)` group; `reference_id` must point at a **non-trashed** menu |
+| `position` + `reference_id` | — | **Optional as a pair.** On **create**, omitting both appends to the tail of the sibling group (same as `append`). On **update**, omitting both leaves `order` unchanged. When `position` is `before` or `after`, `reference_id` is required and must point at a **non-trashed** sibling in the same `(parent_id, type)` group |
 | `roles[]` | `menu_roles` | role IDs **or** names (`api` guard) |
 | `user_includes[]` / `user_excludes[]` | pivots | user UUIDs (non-trashed) |
 
 On **create**, all three relationship sets are written (omitting a key clears it). On **update**, a relationship is only touched when its key is present, so an empty array explicitly clears assignments while omitting the key leaves them untouched.
+
+**HTML form normalization.** Browsers post unselected `<select>`s as `""`, which would otherwise trip the `exists`/`in` rules. `Store`/`UpdateMenuRequest::prepareForValidation()` coerces an empty `parent` / `reference_id` to `null` and drops an empty `position` before validation, so a deliberately-omitted optional select is treated as absent. Blade forms post to web routes, which forward the raw body to the API — the API's Form Request runs this normalization before validating. JSON API callers are unaffected (they send `null` or omit the key).
 
 **Atomicity:** `MenuService::create`/`update` wrap the row write *and* all pivot syncs in a single `DB::transaction`, so a failed relationship sync rolls back the menu too — no half-wired records.
 
@@ -162,7 +186,7 @@ The admin list (`adminFlatList`) queries the database directly rather than the s
 
 ## Seeding
 
-- **`MenuSeeder`** (wired into `DatabaseSeeder`) creates a sample tree: `Application` (header) → `Auth` (parent) → `Login` / `Register` (guest-only) / `Profile` (authenticated), using real route names (`api.v1.auth.*`).
+- **`MenuSeeder`** (wired into `DatabaseSeeder`) creates the default **web admin navigation** that the Blade sidebar renders (see [Web frontend](./web-frontend.md)): a `Menu` header → `Dashboard` (all authenticated) + `Manajemen Pengguna` (role-gated), and an `Administrasi` header → `Navigasi Menu` parent → `Daftar Menu` / `Menu Terhapus`. Items use full Bootstrap Icons classes (`bi bi-…`) and **registered web route names** (`dashboard`, `users.index`, `menus.index`, `menus.trashed`). Role-gated items get the roles holding `view user` / `view menu` (Root/Admin/Moderator/Management) attached, since the engine filters by role. **Structure note:** leaf links are `c` (the engine prunes childless `h`/`p`) and a branch (`p`) is never placed as a sibling of leaves (siblings sort `h`→`p`→`c` before `order`, so a branch would float above the leaves) — hence the two-header layout.
 - **`MenuRbacSeeder`** (debugging) populates all three pivots via a `Debug → RBAC Demo` branch: an Admin/Root-restricted item (`menu_roles`), an include-only item (`menu_user_includes`), and an exclude item (`menu_user_excludes`), plus two demo users.
 
 Both are idempotent. A `MenuFactory` (with `header()` / `parentItem()` / `child()` / `authenticated()` / `guestOnly()` states) is available for tests; it defaults `order` to `NULL` so factory-built siblings never trip the unique index.
@@ -175,6 +199,7 @@ php artisan migrate:fresh --seed
 
 ## Related documentation
 
+- [Web frontend (Blade + AdminLTE 4)](./web-frontend.md) — Blade admin as API client for menu screens; sidebar exceptions
 - [API Routing](./api-routing.md) — versioned route placement
 - [List display modes (query & DataTables)](./list-display-modes.md) — `list` / `trashed` dual-mode responses and RBAC actions
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — when to use a dedicated repository

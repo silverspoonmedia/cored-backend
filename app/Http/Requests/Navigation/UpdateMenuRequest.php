@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Navigation;
 
+use App\Http\Requests\Navigation\Concerns\NormalizesMenuPlacementFields;
 use App\Http\Requests\Navigation\Concerns\ValidatesMenuStructure;
 use App\Models\Menu;
 use Closure;
@@ -13,6 +14,7 @@ use Illuminate\Validation\Validator;
 
 class UpdateMenuRequest extends FormRequest
 {
+    use NormalizesMenuPlacementFields;
     use ValidatesMenuStructure;
 
     public function authorize(): bool
@@ -22,9 +24,7 @@ class UpdateMenuRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->input('parent') === '') {
-            $this->merge(['parent' => null]);
-        }
+        $this->normalizePlacementFields();
     }
 
     /**
@@ -43,12 +43,12 @@ class UpdateMenuRequest extends FormRequest
             'parent' => ['sometimes', 'nullable', 'string', Rule::exists('menus', 'id')->whereNull('deleted_at'), Rule::notIn([$menuId])],
             'authenticate' => ['sometimes', 'boolean'],
             'guest_only' => ['sometimes', 'boolean'],
-            'position' => ['sometimes', 'string', Rule::in(['before', 'after'])],
+            'position' => ['nullable', 'string', Rule::in(['before', 'after'])],
             'reference_id' => [
-                'nullable',
+                Rule::excludeIf(fn () => ! in_array($this->input('position'), ['before', 'after'], true)),
+                'required',
                 'string',
                 Rule::exists('menus', 'id')->whereNull('deleted_at'),
-                Rule::requiredIf(fn () => in_array($this->input('position'), ['before', 'after'], true)),
             ],
             'roles' => ['sometimes', 'array'],
             'roles.*' => ['string'],

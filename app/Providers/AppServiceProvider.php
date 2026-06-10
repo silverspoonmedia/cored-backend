@@ -12,7 +12,9 @@ use App\Repositories\Eloquent\EloquentCrudRepository;
 use App\Repositories\Eloquent\MenuRepository;
 use App\Repositories\Eloquent\UserRepository;
 use App\Support\DataTable\DataTableResponseFactory;
+use App\View\Composers\NavigationComposer;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -40,5 +42,8 @@ class AppServiceProvider extends ServiceProvider
         $flushMenuCache = fn () => $this->app->make(MenuRepositoryInterface::class)->flushNavigationCache();
         Role::updated($flushMenuCache);
         Role::deleted($flushMenuCache);
+
+        // The sidebar partial renders the dynamic navigation tree on every page.
+        View::composer('components.partials.sidebar', NavigationComposer::class);
     }
 }

@@ -33,7 +33,7 @@ class MenuRbacSeeder extends Seeder
         $header = Menu::query()->create([
             'parent_id' => null,
             'name' => 'Debug',
-            'icon' => 'bug',
+            'icon' => 'bi bi-bug',
             'route' => null,
             'type' => 'h',
             'order' => 99,
@@ -44,7 +44,7 @@ class MenuRbacSeeder extends Seeder
         $parent = Menu::query()->create([
             'parent_id' => $header->id,
             'name' => 'RBAC Demo',
-            'icon' => 'shield',
+            'icon' => 'bi bi-shield-lock',
             'route' => null,
             'type' => 'p',
             'order' => 1,
@@ -56,7 +56,7 @@ class MenuRbacSeeder extends Seeder
         $adminOnly = Menu::query()->create([
             'parent_id' => $parent->id,
             'name' => 'Admin Only',
-            'icon' => 'crown',
+            'icon' => 'bi bi-person-badge',
             'route' => null,
             'type' => 'c',
             'order' => 1,
@@ -69,7 +69,7 @@ class MenuRbacSeeder extends Seeder
         $includedOnly = Menu::query()->create([
             'parent_id' => $parent->id,
             'name' => 'Included User Only',
-            'icon' => 'user-check',
+            'icon' => 'bi bi-person-check',
             'route' => null,
             'type' => 'c',
             'order' => 2,
@@ -82,7 +82,7 @@ class MenuRbacSeeder extends Seeder
         $hiddenForExcluded = Menu::query()->create([
             'parent_id' => $parent->id,
             'name' => 'Hidden For Excluded User',
-            'icon' => 'user-x',
+            'icon' => 'bi bi-person-x',
             'route' => null,
             'type' => 'c',
             'order' => 3,

@@ -1,0 +1,105 @@
+@props(['bare' => false])
+{{-- Shared scripts: Bootstrap 5 stack, AdminLTE, OverlayScrollbars, color-mode toggle.
+     $bare = true skips the sidebar scrollbar wiring (used by the auth layout). --}}
+<script
+    src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js"
+    integrity="sha256-PWX3kZbY40OTPANHVfHlYREsGG4b/IV5xZLO8ztldLg="
+    crossorigin="anonymous"
+></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+    integrity="sha256-whL0tQWoY1Ku1iskqPFvmZ+CHsvmRWx/PIoEvIeWh4I="
+    crossorigin="anonymous"
+></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js"
+    integrity="sha256-lel57Jim1/CW4I1iEkaHexK/J9h/ZRneeORKiQuNOIg="
+    crossorigin="anonymous"
+></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0/dist/js/adminlte.min.js"
+    integrity="sha256-O93/LKKIU6rm891QQnUnP0JUEVIDUqufmdR/IICsKlQ="
+    crossorigin="anonymous"
+></script>
+
+@if (! $bare)
+    <script>
+        const SELECTOR_SIDEBAR_WRAPPER = '.sidebar-wrapper';
+        const Default = {
+            scrollbarTheme: 'os-theme-light',
+            scrollbarAutoHide: 'leave',
+            scrollbarClickScroll: true,
+        };
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebarWrapper = document.querySelector(SELECTOR_SIDEBAR_WRAPPER);
+            const isMobile = window.innerWidth <= 992;
+            if (sidebarWrapper && OverlayScrollbarsGlobal?.OverlayScrollbars !== undefined && !isMobile) {
+                OverlayScrollbarsGlobal.OverlayScrollbars(sidebarWrapper, {
+                    scrollbars: {
+                        theme: Default.scrollbarTheme,
+                        autoHide: Default.scrollbarAutoHide,
+                        clickScroll: Default.scrollbarClickScroll,
+                    },
+                });
+            }
+        });
+    </script>
+@endif
+
+<script>
+    (() => {
+        'use strict';
+        const STORAGE_KEY = 'lte-theme';
+        const getStoredTheme = () => localStorage.getItem(STORAGE_KEY);
+        const setStoredTheme = (theme) => localStorage.setItem(STORAGE_KEY, theme);
+        const prefersDark = () => globalThis.matchMedia('(prefers-color-scheme: dark)').matches;
+        const getPreferredTheme = () => {
+            const stored = getStoredTheme();
+            if (stored) return stored;
+            return prefersDark() ? 'dark' : 'light';
+        };
+        const setTheme = (theme) => {
+            const resolved = theme === 'auto' ? (prefersDark() ? 'dark' : 'light') : theme;
+            document.documentElement.setAttribute('data-bs-theme', resolved);
+        };
+        setTheme(getPreferredTheme());
+
+        const showActiveTheme = (theme) => {
+            document.querySelectorAll('[data-bs-theme-value]').forEach((el) => {
+                el.classList.remove('active');
+                el.setAttribute('aria-pressed', 'false');
+                const check = el.querySelector('.bi-check-lg');
+                if (check) check.classList.add('d-none');
+            });
+            const active = document.querySelector(`[data-bs-theme-value="${theme}"]`);
+            if (active) {
+                active.classList.add('active');
+                active.setAttribute('aria-pressed', 'true');
+                const check = active.querySelector('.bi-check-lg');
+                if (check) check.classList.remove('d-none');
+            }
+            document.querySelectorAll('[data-lte-theme-icon]').forEach((icon) => {
+                icon.classList.toggle('d-none', icon.dataset.lteThemeIcon !== theme);
+            });
+        };
+
+        globalThis.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            const stored = getStoredTheme();
+            if (!stored || stored === 'auto') setTheme(getPreferredTheme());
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showActiveTheme(getPreferredTheme());
+            document.querySelectorAll('[data-bs-theme-value]').forEach((toggle) => {
+                toggle.addEventListener('click', () => {
+                    const theme = toggle.getAttribute('data-bs-theme-value');
+                    setStoredTheme(theme);
+                    setTheme(theme);
+                    showActiveTheme(theme);
+                });
+            });
+        });
+    })();
+</script>
+
+<x-partials.ajax-form />

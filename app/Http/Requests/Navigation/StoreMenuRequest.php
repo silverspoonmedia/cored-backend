@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Navigation;
 
+use App\Http\Requests\Navigation\Concerns\NormalizesMenuPlacementFields;
 use App\Http\Requests\Navigation\Concerns\ValidatesMenuStructure;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -12,6 +13,7 @@ use Illuminate\Validation\Validator;
 
 class StoreMenuRequest extends FormRequest
 {
+    use NormalizesMenuPlacementFields;
     use ValidatesMenuStructure;
 
     public function authorize(): bool
@@ -21,9 +23,7 @@ class StoreMenuRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->input('parent') === '') {
-            $this->merge(['parent' => null]);
-        }
+        $this->normalizePlacementFields();
     }
 
     /**
@@ -41,10 +41,10 @@ class StoreMenuRequest extends FormRequest
             'guest_only' => ['sometimes', 'boolean'],
             'position' => ['nullable', 'string', Rule::in(['before', 'after', 'append'])],
             'reference_id' => [
-                'nullable',
+                Rule::excludeIf(fn () => ! in_array($this->input('position'), ['before', 'after'], true)),
+                'required',
                 'string',
                 Rule::exists('menus', 'id')->whereNull('deleted_at'),
-                Rule::requiredIf(fn () => in_array($this->input('position'), ['before', 'after'], true)),
             ],
             'roles' => ['sometimes', 'array'],
             'roles.*' => ['string'],

@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Middleware\AuthenticateWithJwtCookie;
+use App\Http\Middleware\EnsureWebAuthenticated;
 use App\Http\Middleware\OptionalJwtAuthenticate;
+use App\Http\Middleware\RedirectIfWebAuthenticated;
 use App\Models\User;
 use App\Support\ApiResponder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -52,11 +55,20 @@ return Application::configure(basePath: dirname(__DIR__))
             return null;
         });
 
+        // The Blade frontend authenticates with the same stateless JWT as the
+        // API, carried in an HttpOnly cookie. Reading it on every web request
+        // lets `permission:`/`role:` middleware and policies work unchanged.
+        $middleware->web(append: [
+            AuthenticateWithJwtCookie::class,
+        ]);
+
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'jwt.optional' => OptionalJwtAuthenticate::class,
+            'web.auth' => EnsureWebAuthenticated::class,
+            'web.guest' => RedirectIfWebAuthenticated::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

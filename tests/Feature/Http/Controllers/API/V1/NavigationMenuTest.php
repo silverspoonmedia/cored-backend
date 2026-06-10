@@ -103,6 +103,41 @@ class NavigationMenuTest extends TestCase
             ->assertJsonValidationErrors(['route']);
     }
 
+    public function test_update_without_placement_keeps_order(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $a = $this->makeMenu(['name' => 'A', 'type' => 'p', 'order' => 1]);
+        $b = $this->makeMenu(['name' => 'B', 'type' => 'p', 'order' => 2]);
+
+        $this->actingAsJwt($admin)
+            ->patchJson('/api/v1/navigation/menus/'.$b->id, [
+                'name' => 'B renamed',
+                'position' => '',
+                'reference_id' => '',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'B renamed')
+            ->assertJsonPath('data.order', 2);
+
+        $this->assertSame(1, $a->fresh()->order);
+    }
+
+    public function test_store_without_placement_appends_to_group(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->makeMenu(['name' => 'Existing', 'type' => 'h', 'order' => 1]);
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => 'New tail',
+                'type' => 'h',
+                'position' => '',
+                'reference_id' => '',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.order', 2);
+    }
+
     public function test_admin_can_update_and_reorder_menu(): void
     {
         $admin = $this->userWithRole('Admin');
