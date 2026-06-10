@@ -46,7 +46,7 @@ All keys are UUID. Because `users` and `roles` exist before this migration runs,
 | `id` | uuid PK | |
 | `parent_id` | uuid, nullable | self-FK → `menus.id`, `cascadeOnDelete` |
 | `name` | string | |
-| `icon` | string, nullable | |
+| `icon` | string, nullable | a **full** icon class, e.g. `bi bi-people` (the web sidebar renders it verbatim and falls back to `bi bi-circle` when null/empty) |
 | `route` | string, nullable | a **registered Laravel route name**, not a URL |
 | `type` | char(1) | `h` header, `p` parent, `c` child |
 | `order` | unsigned int, **nullable** | sibling order **within a `(parent_id, type)` group**; active rows hold a contiguous `1..N`, soft-deleted/transient rows are parked at `NULL` |
@@ -114,6 +114,8 @@ The HTTP contract uses friendlier names than the columns; the **service** maps t
 | `user_includes[]` / `user_excludes[]` | pivots | user UUIDs (non-trashed) |
 
 On **create**, all three relationship sets are written (omitting a key clears it). On **update**, a relationship is only touched when its key is present, so an empty array explicitly clears assignments while omitting the key leaves them untouched.
+
+**HTML form normalization.** Browsers post unselected `<select>`s as `""`, which would otherwise trip the `exists`/`in` rules. `Store`/`UpdateMenuRequest::prepareForValidation()` coerces an empty `parent` / `reference_id` to `null` and drops an empty `position` before validation, so a deliberately-omitted optional select is treated as absent. JSON API callers are unaffected (they send `null` or omit the key).
 
 **Atomicity:** `MenuService::create`/`update` wrap the row write *and* all pivot syncs in a single `DB::transaction`, so a failed relationship sync rolls back the menu too — no half-wired records.
 

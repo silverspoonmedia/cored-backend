@@ -59,6 +59,7 @@ All web routes run through the `web` group (which now includes `AuthenticateWith
 
 | Method | URI | Name | Middleware | Reuses |
 |--------|-----|------|------------|--------|
+| GET | `/` | — | `web` | redirects to `dashboard` if the `api` guard resolves, else `login` |
 | GET | `/login` | `login` | `web.guest` | — |
 | POST | `/login` | `login.store` | `web.guest` | `LoginRequest`, `AuthService::login` |
 | GET/POST | `/register` | `register` / `register.store` | `web.guest` | `RegisterRequest`, `AuthService::register` |
@@ -107,7 +108,7 @@ resources/views/
 - **Create/edit forms** share one `_form.blade.php` partial per resource (DRY), differing only in `action`/`method`/`submitLabel`.
 - The **sidebar is fully data-driven by the [dynamic navigation engine](./navigation-menu.md)** — no hardcoded links. `App\View\Composers\NavigationComposer` calls the *same* `MenuService::navigationTree()` the API's navigation endpoint uses (single source of truth), and `<x-nav.tree>` renders the result recursively (`h` → section label, `p` → collapsible branch, `c` → leaf link). Per-viewer visibility (auth/guest flags, role attachments, user include/exclude) is resolved by the engine, so the Blade has **no `@can` gating** — a node only reaches the view if the viewer may see it. Default items are seeded by `MenuSeeder` (Dashboard, User Management, Menu Navigation) and are editable through the menu management UI.
   - **Caveat — gating is by role, not permission.** The engine filters menu visibility via attached *roles* (`hasAnyRole`), whereas page authorization gates by *permission* (`permission:` middleware). The seeder attaches the roles that currently hold `view user` / `view menu` (Root/Admin/Moderator/Management) so the two line up, but if you later re-grant those permissions to different roles, update the menu's role attachments too — otherwise a sidebar link can show (or hide) out of sync with the route it points at. The route middleware still enforces real authorization regardless, so this is a cosmetic mismatch, never a security hole.
-  - Menu `icon` stores a **full** icon class (e.g. `bi bi-people`); `route` stores a **registered route name** (e.g. `dashboard`), and unregistered names degrade to `#`.
+  - Menu `icon` stores a **full** icon class (e.g. `bi bi-people`); a null/empty icon renders the `bi bi-circle` placeholder. `route` stores a **registered route name** (e.g. `dashboard`), and unregistered names degrade to `#`.
 
 All forms are standard `<form method="POST">` submissions (with `@csrf`, and `@method('PUT'|'DELETE')` where needed) that post to the web controllers above.
 
