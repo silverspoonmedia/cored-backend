@@ -53,9 +53,13 @@ On versioned routes (`routes/api/v{N}.php`), paths are relative to the version p
 
 ```php
 Route::prefix('playground')->group(function () {
-    Route::apiResource('users', PlaygroundController::class)->except(['create', 'edit']);
+    Route::apiResource('users', PlaygroundController::class)
+        ->except(['create', 'edit'])
+        ->names('playground.users');
 });
 ```
+
+> Route names are namespaced (`playground.users.*`) so the demo surface does not squat the generic `users.*` names, which the [Blade web frontend](./web-frontend.md) uses for its admin user CRUD.
 
 **Production user CRUD (v1)** — `routes/api/v1.php`:
 
@@ -144,7 +148,9 @@ Registered with `Route::apiResource` in `routes/api.php` (see [Routing simple CR
 
 ```php
 Route::prefix('playground')->group(function () {
-    Route::apiResource('users', PlaygroundController::class)->except(['create', 'edit']);
+    Route::apiResource('users', PlaygroundController::class)
+        ->except(['create', 'edit'])
+        ->names('playground.users');
 });
 ```
 

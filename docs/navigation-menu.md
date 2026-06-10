@@ -162,7 +162,7 @@ The admin list (`adminFlatList`) queries the database directly rather than the s
 
 ## Seeding
 
-- **`MenuSeeder`** (wired into `DatabaseSeeder`) creates a sample tree: `Application` (header) → `Auth` (parent) → `Login` / `Register` (guest-only) / `Profile` (authenticated), using real route names (`api.v1.auth.*`).
+- **`MenuSeeder`** (wired into `DatabaseSeeder`) creates the default **web admin navigation** that the Blade sidebar renders (see [Web frontend](./web-frontend.md)): a `Menu` header → `Dashboard` (all authenticated) + `Manajemen Pengguna` (role-gated), and an `Administrasi` header → `Navigasi Menu` parent → `Daftar Menu` / `Menu Terhapus`. Items use full Bootstrap Icons classes (`bi bi-…`) and **registered web route names** (`dashboard`, `users.index`, `menus.index`, `menus.trashed`). Role-gated items get the roles holding `view user` / `view menu` (Root/Admin/Moderator/Management) attached, since the engine filters by role. **Structure note:** leaf links are `c` (the engine prunes childless `h`/`p`) and a branch (`p`) is never placed as a sibling of leaves (siblings sort `h`→`p`→`c` before `order`, so a branch would float above the leaves) — hence the two-header layout.
 - **`MenuRbacSeeder`** (debugging) populates all three pivots via a `Debug → RBAC Demo` branch: an Admin/Root-restricted item (`menu_roles`), an include-only item (`menu_user_includes`), and an exclude item (`menu_user_excludes`), plus two demo users.
 
 Both are idempotent. A `MenuFactory` (with `header()` / `parentItem()` / `child()` / `authenticated()` / `guestOnly()` states) is available for tests; it defaults `order` to `NULL` so factory-built siblings never trip the unique index.

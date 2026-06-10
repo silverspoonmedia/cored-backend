@@ -21,8 +21,16 @@ class StoreMenuRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->input('parent') === '') {
-            $this->merge(['parent' => null]);
+        // Empty optional selects (HTML forms post "") must be normalized so the
+        // `in`/`exists` rules don't reject a deliberately-omitted value.
+        foreach (['parent', 'reference_id'] as $field) {
+            if ($this->input($field) === '') {
+                $this->merge([$field => null]);
+            }
+        }
+
+        if ($this->input('position') === '') {
+            $this->request->remove('position');
         }
     }
 
