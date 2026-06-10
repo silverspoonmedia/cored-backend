@@ -23,10 +23,11 @@
                         <span class="badge text-bg-success">Terverifikasi</span>
                     @else
                         <span class="badge text-bg-warning">Belum terverifikasi</span>
-                        <form method="POST" action="{{ route('verification.send') }}" class="d-inline ms-2">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">Kirim ulang verifikasi</button>
-                        </form>
+                        <span class="d-inline-block align-top ms-2">
+                            <x-form.ajax :action="route('verification.send')">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Kirim ulang verifikasi</button>
+                            </x-form.ajax>
+                        </span>
                     @endif
                 </div>
 

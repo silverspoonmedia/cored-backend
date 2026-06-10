@@ -27,13 +27,12 @@
                             <td>{{ $menu['route'] ?? '—' }}</td>
                             <td class="text-end">
                                 @can('restore menu')
-                                    <form method="POST" action="{{ route('menus.restore', $menu['id']) }}" class="d-inline"
+                                    <x-form.ajax :action="route('menus.restore', $menu['id'])" class="d-inline"
                                           onsubmit="return confirm('Pulihkan menu ini beserta turunannya yang terhapus?');">
-                                        @csrf
                                         <button type="submit" class="btn btn-sm btn-success">
                                             <i class="bi bi-arrow-counterclockwise me-1"></i> Pulihkan
                                         </button>
-                                    </form>
+                                    </x-form.ajax>
                                 @endcan
                             </td>
                         </tr>

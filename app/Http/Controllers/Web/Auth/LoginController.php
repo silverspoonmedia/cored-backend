@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Concerns\IssuesAuthCookie;
 use App\Support\Auth\AuthCookie;
 use Illuminate\Http\Client\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -26,25 +27,30 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('auth/login', $request->except(['_token']));
 
-        return $this->redirectFromApi(
+        return $this->respondFromApi(
+            $request,
             $response,
             fn (Response $r): RedirectResponse => $this->redirectAuthenticated($r->json('data', [])),
         );
     }
 
-    public function destroy(): RedirectResponse
+    public function destroy(Request $request): RedirectResponse|JsonResponse
     {
-        // Best-effort: blacklist the token API-side; the cookie is cleared
-        // regardless so the browser session always ends.
         $this->api()->post('auth/logout');
 
-        return redirect()
+        $redirect = redirect()
             ->route('login')
             ->withCookie(AuthCookie::forget())
             ->with('success', 'Anda telah keluar.');
+
+        if ($request->expectsJson()) {
+            return $this->jsonFromRedirect($request, $redirect, 'Anda telah keluar.');
+        }
+
+        return $redirect;
     }
 }

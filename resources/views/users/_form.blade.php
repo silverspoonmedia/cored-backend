@@ -11,12 +11,7 @@
 --}}
 @php($roleOptions = $assignableRoles->pluck('name', 'name'))
 
-<form method="POST" action="{{ $action }}">
-    @csrf
-    @if ($method === 'PUT')
-        @method('PUT')
-    @endif
-
+<x-form.ajax :action="$action" :method="$method">
     <x-form.input name="name" label="Nama" :value="$user->name ?? null" required />
     <x-form.input name="email" type="email" label="Email" :value="$user->email ?? null" required />
 
@@ -46,7 +41,7 @@
     />
 
     <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-primary">{{ $submitLabel }}</button>
+        <x-form.submit :label="$submitLabel" class="btn btn-primary" />
         <a href="{{ route('users.index') }}" class="btn btn-outline-secondary">Batal</a>
     </div>
-</form>
+</x-form.ajax>

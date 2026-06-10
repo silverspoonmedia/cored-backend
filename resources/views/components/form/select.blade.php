@@ -10,7 +10,7 @@
 @php($hasError = $errors->has($name))
 @php($current = old($name, $selected))
 
-<div class="mb-3">
+<div class="mb-3" data-form-field="{{ $name }}">
     @if ($label)
         <label for="{{ $id }}" class="form-label">
             {{ $label }}@if ($attributes->has('required'))<span class="text-danger">*</span>@endif
@@ -30,7 +30,7 @@
         @endforeach
     </select>
 
-    @error($name)<div class="invalid-feedback">{{ $message }}</div>@enderror
+    <x-form.error :name="$name" />
 
     @if ($hint)
         <small class="form-text text-muted">{{ $hint }}</small>

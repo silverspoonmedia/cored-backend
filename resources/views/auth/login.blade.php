@@ -1,7 +1,5 @@
 <x-layouts.auth title="Masuk" heading="Masuk untuk memulai sesi Anda">
-    <form method="POST" action="{{ route('login.store') }}">
-        @csrf
-
+    <x-form.ajax :action="route('login.store')">
         <x-form.input name="email" type="email" placeholder="Email" icon="bi-envelope" required autofocus autocomplete="email" />
         <x-form.input name="password" type="password" placeholder="Kata sandi" icon="bi-lock-fill" required autocomplete="current-password" />
 
@@ -11,11 +9,11 @@
             </div>
             <div class="col-5">
                 <div class="d-grid">
-                    <button type="submit" class="btn btn-primary">Masuk</button>
+                    <x-form.submit label="Masuk" class="btn btn-primary" />
                 </div>
             </div>
         </div>
-    </form>
+    </x-form.ajax>
 
     <p class="mt-3 mb-1">
         <a href="{{ route('password.request') }}">Lupa kata sandi?</a>

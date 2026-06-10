@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -21,14 +22,16 @@ class PasswordResetController extends Controller
         return view('auth.forgot-password');
     }
 
-    public function sendLink(Request $request): RedirectResponse
+    public function sendLink(Request $request): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('auth/forgot-password', $request->only('email'));
 
-        // Generic message on success: never reveal whether the email exists.
-        return $this->redirectFromApi(
+        return $this->respondFromApi(
+            $request,
             $response,
             fn (): RedirectResponse => back()->with('success', 'Jika email terdaftar, kami telah mengirim tautan reset kata sandi.'),
+            'Jika email terdaftar, kami telah mengirim tautan reset kata sandi.',
+            stayOnPageOnSuccess: true,
         );
     }
 
@@ -40,13 +43,15 @@ class PasswordResetController extends Controller
         ]);
     }
 
-    public function reset(Request $request): RedirectResponse
+    public function reset(Request $request): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('auth/reset-password', $request->except(['_token']));
 
-        return $this->redirectFromApi(
+        return $this->respondFromApi(
+            $request,
             $response,
             fn (): RedirectResponse => redirect()->route('login')->with('success', 'Kata sandi berhasil diatur ulang. Silakan masuk.'),
+            'Kata sandi berhasil diatur ulang. Silakan masuk.',
         );
     }
 }

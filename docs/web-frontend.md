@@ -48,7 +48,8 @@ Two small pieces keep every web controller a thin, uniform forwarder:
 | Piece | File | Role |
 |-------|------|------|
 | `ApiClient` | `app/Support/Api/ApiClient.php` | `Http` wrapper: targets `{current host}/api/v1`, sets `Accept: application/json`, and forwards the JWT from the `auth_token` cookie as `Bearer`. Exposes `get/post/put/delete`. |
-| `ConsumesApi` (trait) | `app/Http/Controllers/Web/Concerns/ConsumesApi.php` | `redirectFromApi(response, onSuccess)` maps the JSON envelope back to the browser: **2xx** → success redirect; **422** → `back()->withErrors($json['errors'])` (the API is the validator); **401/419** → back to login; **other** → `back()->with('error', $json['message'])`. |
+| `ConsumesApi` (trait) | `app/Http/Controllers/Web/Concerns/ConsumesApi.php` | `respondFromApi($request, …)` maps the JSON envelope: **2xx** → redirect or inline success; **422** → field errors; **401/419** → login. Pass `stayOnPageOnSuccess: true` when the user should remain on the same screen (edit save, change password, forgot-password link, resend verification). Default `false` for create/delete/login/logout. |
+| AJAX forms | `x-form.ajax`, `x-form.submit`, `x-form.error`, `partials/ajax-form` | All Blade forms submit via `fetch` + `Accept: application/json`; validation errors render inline without reload. |
 | `IssuesAuthCookie` (trait) | `app/Http/Controllers/Web/Concerns/IssuesAuthCookie.php` | Turns the API's auth payload (`data.token` / `expires_in`) into the cookie + redirect (login & register). |
 
 Because validation lives only in the API, web controllers **do not use Form Requests** — they forward the raw input (`$request->except(['_token','_method'])`) and let the API's Form Request validate and return `422`, which `ConsumesApi` translates into the usual `$errors` bag + repopulated `old()` input. There is **no `$this->authorize()` and no `permission:` middleware on web routes**: the API authorizes every forwarded call.

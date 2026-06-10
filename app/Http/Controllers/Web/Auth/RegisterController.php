@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Concerns\IssuesAuthCookie;
 use Illuminate\Http\Client\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -25,14 +26,19 @@ class RegisterController extends Controller
         return view('auth.register');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('auth/register', $request->except(['_token']));
 
-        return $this->redirectFromApi($response, function (Response $r): RedirectResponse {
-            session()->flash('success', 'Registrasi berhasil. Kami telah mengirim tautan verifikasi ke email Anda.');
+        return $this->respondFromApi(
+            $request,
+            $response,
+            function (Response $r): RedirectResponse {
+                session()->flash('success', 'Registrasi berhasil. Kami telah mengirim tautan verifikasi ke email Anda.');
 
-            return $this->redirectAuthenticated($r->json('data', []));
-        });
+                return $this->redirectAuthenticated($r->json('data', []));
+            },
+            'Registrasi berhasil. Kami telah mengirim tautan verifikasi ke email Anda.',
+        );
     }
 }

@@ -21,7 +21,7 @@
             }).join('');
         };
 
-        window.handleDatatableAction = function (action) {
+        window.handleDatatableAction = async function (action) {
             if (action.confirm && !window.confirm(action.confirm)) {
                 return;
             }
@@ -32,27 +32,47 @@
                 return;
             }
 
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = action.url;
-            form.style.display = 'none';
-
-            const appendHidden = function (name, value) {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = name;
-                input.value = value;
-                form.appendChild(input);
-            };
-
-            appendHidden('_token', csrfToken);
+            const formData = new FormData();
+            formData.append('_token', csrfToken);
 
             if (action.method !== 'POST') {
-                appendHidden('_method', action.method);
+                formData.append('_method', action.method);
             }
 
-            document.body.appendChild(form);
-            form.submit();
+            try {
+                const response = await fetch(action.url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    credentials: 'same-origin',
+                });
+
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (parseError) {
+                    data = {};
+                }
+
+                if (response.ok && data.redirect) {
+                    window.location.assign(data.redirect);
+                    return;
+                }
+
+                if (response.ok) {
+                    window.location.reload();
+                    return;
+                }
+
+                window.alert(data.message || 'Permintaan gagal diproses.');
+            } catch (error) {
+                window.alert('Tidak dapat menghubungi server.');
+                console.error('Datatable action failed', error);
+            }
         };
 
         document.addEventListener('click', function (event) {

@@ -69,8 +69,12 @@ class MenuService
                 $menu = $this->menus->updateMenu($menu, $attributes);
             }
 
-            if (isset($data['position'], $data['reference_id'])) {
-                $menu = $this->menus->updateMenuPosition($menu, $data['position'], $data['reference_id']);
+            if ($this->shouldReposition($data)) {
+                $menu = $this->menus->updateMenuPosition(
+                    $menu,
+                    (string) $data['position'],
+                    (string) $data['reference_id'],
+                );
             }
 
             // On update, only touch a relationship when its key was sent.
@@ -145,5 +149,17 @@ class MenuService
         }
 
         return $attributes;
+    }
+
+    /**
+     * Reposition only when the client explicitly sends a before/after pair.
+     * Omitting placement (or sending append on create) leaves order unchanged.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function shouldReposition(array $data): bool
+    {
+        return in_array($data['position'] ?? null, ['before', 'after'], true)
+            && filled($data['reference_id'] ?? null);
     }
 }

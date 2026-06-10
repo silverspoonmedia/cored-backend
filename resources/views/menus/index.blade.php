@@ -46,9 +46,7 @@
                                     <a href="{{ route('menus.edit', $menu['id']) }}" class="btn btn-sm btn-info">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('menus.destroy', $menu['id']) }}" class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
+                                    <x-form.ajax :action="route('menus.destroy', $menu['id'])" method="DELETE" class="d-inline">
                                         <div class="btn-group">
                                             <button type="submit" class="btn btn-sm btn-danger" title="Hapus"
                                                     onclick="return confirm('Hapus menu ini?');">
@@ -60,7 +58,7 @@
                                                 <i class="bi bi-trash3"></i>
                                             </button>
                                         </div>
-                                    </form>
+                                    </x-form.ajax>
                                 @endcan
                             </td>
                         </tr>

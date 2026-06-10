@@ -131,7 +131,7 @@ The HTTP contract uses friendlier names than the columns; the **service** maps t
 | `parent` | `parent_id` | must `exists:menus,id` **excluding soft-deleted**; on update cannot equal the menu itself **or any descendant** |
 | `authenticate` | `is_authenticate` | boolean |
 | `guest_only` | `is_guest_only` | boolean |
-| `position` + `reference_id` | — | `append` (default) or `before`/`after` a sibling in the same `(parent_id, type)` group; `reference_id` must point at a **non-trashed** menu |
+| `position` + `reference_id` | — | **Optional as a pair.** On **create**, omitting both appends to the tail of the sibling group (same as `append`). On **update**, omitting both leaves `order` unchanged. When `position` is `before` or `after`, `reference_id` is required and must point at a **non-trashed** sibling in the same `(parent_id, type)` group |
 | `roles[]` | `menu_roles` | role IDs **or** names (`api` guard) |
 | `user_includes[]` / `user_excludes[]` | pivots | user UUIDs (non-trashed) |
 

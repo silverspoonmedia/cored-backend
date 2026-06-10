@@ -19,12 +19,7 @@
         : ['append' => 'Di akhir grup', 'before' => 'Sebelum referensi', 'after' => 'Sesudah referensi'];
 @endphp
 
-<form method="POST" action="{{ $action }}">
-    @csrf
-    @if ($method === 'PUT')
-        @method('PUT')
-    @endif
-
+<x-form.ajax :action="$action" :method="$method">
     <div class="row">
         <div class="col-md-6">
             <x-form.input name="name" label="Nama" :value="data_get($menu, 'name')" required />
@@ -80,17 +75,18 @@
     <p class="text-muted small mb-2">Penempatan (opsional)</p>
     <div class="row">
         <div class="col-md-6">
-            <x-form.select name="position" label="Posisi" :options="$positionOptions" placeholder="Default (akhir grup)" />
+            <x-form.select name="position" label="Posisi" :options="$positionOptions"
+                :placeholder="$isEdit ? 'Tidak ubah urutan' : 'Default (akhir grup)'" />
         </div>
         <div class="col-md-6">
             <x-form.select name="reference_id" label="Menu referensi" :options="$parentOptions"
                 placeholder="Pilih menu referensi"
-                hint="Wajib jika posisi 'sebelum' atau 'sesudah'." />
+                :hint="$isEdit ? 'Wajib jika posisi diisi. Kosongkan keduanya agar urutan tidak berubah.' : 'Wajib jika posisi \'sebelum\' atau \'sesudah\'.'" />
         </div>
     </div>
 
     <div class="d-flex gap-2 mt-3">
-        <button type="submit" class="btn btn-primary">{{ $submitLabel }}</button>
+        <x-form.submit :label="$submitLabel" class="btn btn-primary" />
         <a href="{{ route('menus.index') }}" class="btn btn-outline-secondary">Batal</a>
     </div>
-</form>
+</x-form.ajax>

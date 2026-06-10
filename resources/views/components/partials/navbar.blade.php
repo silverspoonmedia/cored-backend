@@ -57,12 +57,11 @@
                         <a href="{{ route('profile.password.edit') }}" class="btn btn-outline-secondary btn-sm">
                             <i class="bi bi-key"></i> Kata Sandi
                         </a>
-                        <form method="POST" action="{{ route('logout') }}" class="float-end">
-                            @csrf
+                        <x-form.ajax :action="route('logout')" :show-alert="false" class="float-end">
                             <button type="submit" class="btn btn-outline-danger btn-sm">
                                 <i class="bi bi-box-arrow-right"></i> Keluar
                             </button>
-                        </form>
+                        </x-form.ajax>
                     </li>
                 </ul>
             </li>

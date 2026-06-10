@@ -101,3 +101,5 @@
         });
     })();
 </script>
+
+<x-partials.ajax-form />

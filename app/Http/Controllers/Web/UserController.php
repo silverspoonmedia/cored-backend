@@ -69,13 +69,15 @@ class UserController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('users', $this->payload($request));
 
-        return $this->redirectFromApi(
+        return $this->respondFromApi(
+            $request,
             $response,
             fn (): RedirectResponse => redirect()->route('users.index')->with('success', 'Pengguna berhasil dibuat.'),
+            'Pengguna berhasil dibuat.',
         );
     }
 
@@ -98,23 +100,28 @@ class UserController extends Controller
         ]);
     }
 
-    public function update(Request $request, string $user): RedirectResponse
+    public function update(Request $request, string $user): RedirectResponse|JsonResponse
     {
         $response = $this->api()->put("users/{$user}", $this->payload($request));
 
-        return $this->redirectFromApi(
+        return $this->respondFromApi(
+            $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('users.index')->with('success', 'Pengguna berhasil diperbarui.'),
+            fn (): RedirectResponse => back()->with('success', 'Pengguna berhasil diperbarui.'),
+            'Pengguna berhasil diperbarui.',
+            stayOnPageOnSuccess: true,
         );
     }
 
-    public function destroy(string $user): RedirectResponse
+    public function destroy(Request $request, string $user): RedirectResponse|JsonResponse
     {
         $response = $this->api()->delete("users/{$user}");
 
-        return $this->redirectFromApi(
+        return $this->respondFromApi(
+            $request,
             $response,
             fn (): RedirectResponse => redirect()->route('users.index')->with('success', 'Pengguna berhasil dihapus.'),
+            'Pengguna berhasil dihapus.',
         );
     }
 

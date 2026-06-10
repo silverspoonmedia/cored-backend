@@ -9,7 +9,7 @@
 @php($hasError = $errors->has($name))
 @php($current = (array) old($name, $selected))
 
-<div class="mb-3">
+<div class="mb-3" data-form-field="{{ $name }}">
     @if ($label)
         <label for="{{ $id }}" class="form-label">{{ $label }}</label>
     @endif
@@ -25,7 +25,7 @@
         @endforeach
     </select>
 
-    @error($name)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+    <x-form.error :name="$name" class="d-block" />
 
     @if ($hint)
         <small class="form-text text-muted">{{ $hint }}</small>

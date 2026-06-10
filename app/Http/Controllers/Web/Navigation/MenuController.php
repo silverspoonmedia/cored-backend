@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -48,13 +49,15 @@ class MenuController extends Controller
         return $this->renderForm('menus.create');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('navigation/menus', $request->except(['_token', '_method']));
 
-        return $this->redirectFromApi(
+        return $this->respondFromApi(
+            $request,
             $response,
             fn (): RedirectResponse => redirect()->route('menus.index')->with('success', 'Menu berhasil dibuat.'),
+            'Menu berhasil dibuat.',
         );
     }
 
@@ -69,33 +72,40 @@ class MenuController extends Controller
         return $this->renderForm('menus.edit', $response->json('data', []));
     }
 
-    public function update(Request $request, string $menu): RedirectResponse
+    public function update(Request $request, string $menu): RedirectResponse|JsonResponse
     {
         $response = $this->api()->put("navigation/menus/{$menu}", $request->except(['_token', '_method']));
 
-        return $this->redirectFromApi(
+        return $this->respondFromApi(
+            $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('menus.index')->with('success', 'Menu berhasil diperbarui.'),
+            fn (): RedirectResponse => back()->with('success', 'Menu berhasil diperbarui.'),
+            'Menu berhasil diperbarui.',
+            stayOnPageOnSuccess: true,
         );
     }
 
-    public function destroy(Request $request, string $menu): RedirectResponse
+    public function destroy(Request $request, string $menu): RedirectResponse|JsonResponse
     {
         $response = $this->api()->delete("navigation/menus/{$menu}", ['cascade' => $request->boolean('cascade')]);
 
-        return $this->redirectFromApi(
+        return $this->respondFromApi(
+            $request,
             $response,
             fn (): RedirectResponse => redirect()->route('menus.index')->with('success', 'Menu berhasil dihapus.'),
+            'Menu berhasil dihapus.',
         );
     }
 
-    public function restore(string $menu): RedirectResponse
+    public function restore(Request $request, string $menu): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post("navigation/menus/{$menu}/restore");
 
-        return $this->redirectFromApi(
+        return $this->respondFromApi(
+            $request,
             $response,
             fn (): RedirectResponse => redirect()->route('menus.trashed')->with('success', 'Menu berhasil dipulihkan.'),
+            'Menu berhasil dipulihkan.',
         );
     }
 

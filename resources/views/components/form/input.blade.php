@@ -12,7 +12,7 @@
 @php($canToggle = ($toggleable ?? $type === 'password') && $type === 'password')
 @php($useInputGroup = $icon || $canToggle)
 
-<div class="mb-3">
+<div class="mb-3" data-form-field="{{ $name }}">
     @if ($label)
         <label for="{{ $id }}" class="form-label">
             {{ $label }}@if ($attributes->has('required'))<span class="text-danger">*</span>@endif
@@ -42,7 +42,7 @@
             @if ($icon)
                 <span class="input-group-text"><i class="bi {{ $icon }}"></i></span>
             @endif
-            @error($name)<div class="invalid-feedback">{{ $message }}</div>@enderror
+            <x-form.error :name="$name" />
         </div>
     @else
         <input
@@ -52,7 +52,7 @@
             @if ($type !== 'password') value="{{ old($name, $value) }}" @endif
             {{ $attributes->merge(['class' => 'form-control'.($hasError ? ' is-invalid' : '')]) }}
         />
-        @error($name)<div class="invalid-feedback">{{ $message }}</div>@enderror
+        <x-form.error :name="$name" />
     @endif
 
     @if ($hint)
