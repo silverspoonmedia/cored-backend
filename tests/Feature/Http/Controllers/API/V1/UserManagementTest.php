@@ -62,7 +62,7 @@ class UserManagementTest extends TestCase
             ->assertForbidden()
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Anda tidak dapat mengakses pengguna dengan level role lebih tinggi dari Anda.',
+                'message' => __('api/users.policy.hierarchy_view'),
             ]);
     }
 
@@ -85,7 +85,7 @@ class UserManagementTest extends TestCase
             ->assertNotFound()
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Pengguna tidak ditemukan.',
+                'message' => __('api/users.not_found'),
             ]);
     }
 
@@ -148,7 +148,7 @@ class UserManagementTest extends TestCase
             ->assertStatus(422)
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Anda tidak dapat menghapus akun Anda sendiri.',
+                'message' => __('api/users.cannot_delete_self'),
             ]);
     }
 
@@ -196,7 +196,7 @@ class UserManagementTest extends TestCase
             ->assertForbidden()
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Anda tidak memiliki izin untuk menghapus pengguna.',
+                'message' => __('api/users.policy.delete'),
             ]);
     }
 

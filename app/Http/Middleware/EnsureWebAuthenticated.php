@@ -25,7 +25,7 @@ class EnsureWebAuthenticated
             return redirect()
                 ->route('login')
                 ->withCookie(AuthCookie::forget())
-                ->with('error', 'Silakan masuk untuk melanjutkan.');
+                ->with('error', __('web/session.login_required'));
         }
 
         return $next($request);

@@ -86,7 +86,7 @@ class UserManagementService
     private function assertRoleAssignable(User $actor, string $roleName): void
     {
         if (! $this->roleService->isRoleAssignableBy($actor, $roleName)) {
-            abort(403, 'Role yang dipilih tidak boleh ditetapkan berdasarkan hierarki Anda.');
+            abort(403, __('forms/users.role_not_assignable'));
         }
     }
 }

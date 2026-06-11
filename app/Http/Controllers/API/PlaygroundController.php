@@ -30,7 +30,7 @@ class PlaygroundController extends Controller
 
     public function ping(): JsonResponse
     {
-        return $this->successResponse(null, 'Pong Global', 200);
+        return $this->successResponse(null, __('api/playground.pong_global'), 200);
     }
 
     public function index(IndexUserRequest $request): JsonResponse
@@ -39,7 +39,7 @@ class PlaygroundController extends Controller
             $request,
             fn (): JsonResponse => $this->successResponse(
                 $this->resolveResource(PlaygroundUserResource::collection($this->userService->list())),
-                'Users retrieved successfully.',
+                __('api/playground.users_list'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(
                 $this->userService->list(),
@@ -53,7 +53,7 @@ class PlaygroundController extends Controller
     {
         return $this->successResponse(
             $this->resolveResource(new PlaygroundUserResource($this->userService->get($user))),
-            'User retrieved successfully.',
+            __('api/playground.user_show'),
         );
     }
 
@@ -63,7 +63,7 @@ class PlaygroundController extends Controller
 
         return $this->successResponse(
             $this->resolveResource(new PlaygroundUserResource($record)),
-            'User created successfully.',
+            __('api/playground.user_created'),
             201,
         );
     }
@@ -74,7 +74,7 @@ class PlaygroundController extends Controller
 
         return $this->successResponse(
             $this->resolveResource(new PlaygroundUserResource($record)),
-            'User updated successfully.',
+            __('api/playground.user_updated'),
         );
     }
 
@@ -82,6 +82,6 @@ class PlaygroundController extends Controller
     {
         $this->userService->delete($user);
 
-        return $this->successResponse(null, 'User deleted successfully.');
+        return $this->successResponse(null, __('api/playground.user_deleted'));
     }
 }

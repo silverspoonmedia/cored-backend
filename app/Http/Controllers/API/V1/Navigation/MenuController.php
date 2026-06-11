@@ -43,7 +43,7 @@ class MenuController extends Controller
     {
         $tree = $this->menus->navigationTree($this->optionalActor());
 
-        return $this->successResponse($tree, 'Navigation tree retrieved successfully.');
+        return $this->successResponse($tree, __('api/navigation.tree_success'));
     }
 
     /**
@@ -59,7 +59,7 @@ class MenuController extends Controller
             $request,
             fn (): JsonResponse => $this->successResponse(
                 $this->resolveResource(MenuListResource::collection($menus)),
-                'Menus retrieved successfully.',
+                __('api/navigation.list_success'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(
                 $menus,
@@ -76,7 +76,7 @@ class MenuController extends Controller
 
         return $this->successResponse(
             MenuPresenter::presentDetail($menu),
-            'Menu created successfully.',
+            __('api/navigation.created'),
             201,
         );
     }
@@ -85,7 +85,7 @@ class MenuController extends Controller
     {
         return $this->successResponse(
             $this->resolveResource(new MenuDetailResource($this->menus->detail($menu->id))),
-            'Menu retrieved successfully.',
+            __('api/navigation.show_success'),
         );
     }
 
@@ -95,7 +95,7 @@ class MenuController extends Controller
 
         return $this->successResponse(
             MenuPresenter::presentDetail($updated),
-            'Menu updated successfully.',
+            __('api/navigation.updated'),
         );
     }
 
@@ -103,7 +103,7 @@ class MenuController extends Controller
     {
         $this->menus->delete($menu, $request->boolean('cascade'));
 
-        return $this->successResponse(null, 'Menu deleted successfully.');
+        return $this->successResponse(null, __('api/navigation.deleted'));
     }
 
     /**
@@ -119,7 +119,7 @@ class MenuController extends Controller
             $request,
             fn (): JsonResponse => $this->successResponse(
                 $this->resolveResource(MenuTrashedResource::collection($menus)),
-                'Trashed menus retrieved successfully.',
+                __('api/navigation.trashed_success'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(
                 $menus,
@@ -140,7 +140,7 @@ class MenuController extends Controller
 
         return $this->successResponse(
             MenuPresenter::presentDetail($this->menus->detail($menu->id)),
-            'Menu restored successfully.',
+            __('api/navigation.restored'),
         );
     }
 

@@ -27,7 +27,7 @@ class EmailVerificationService
         $user = $this->users->findByIdOrFail($userId);
 
         if (! hash_equals(sha1($user->getEmailForVerification()), $hash)) {
-            abort(403, 'Invalid verification link.');
+            abort(403, __('api/auth.invalid_verification_link'));
         }
 
         if ($user->hasVerifiedEmail()) {

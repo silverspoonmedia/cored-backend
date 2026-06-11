@@ -37,7 +37,7 @@ class StoreUserRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'role.in' => 'Role yang dipilih tidak boleh ditetapkan berdasarkan hierarki Anda.',
+            'role.in' => __('forms/users.role_not_assignable'),
         ];
     }
 }

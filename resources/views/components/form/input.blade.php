@@ -82,7 +82,7 @@
                 icon.classList.toggle('bi-eye-slash', !isHidden);
             }
 
-            button.setAttribute('aria-label', isHidden ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+            button.setAttribute('aria-label', isHidden ? @json(__('ui.password.hide')) : @json(__('ui.password.show')));
             button.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
         });
     </script>

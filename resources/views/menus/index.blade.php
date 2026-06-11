@@ -1,14 +1,14 @@
-<x-layouts.app title="Navigasi Menu">
+<x-layouts.app :title="__('web/menus.title')">
     <x-slot:breadcrumb>
-        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Menu</li>
+        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('menu.dashboard') }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ __('web/menus.breadcrumb') }}</li>
     </x-slot:breadcrumb>
 
-    <x-card title="Daftar menu">
+    <x-card :title="__('web/menus.list_title')">
         @can('manage menu')
             <x-slot:actions>
                 <a href="{{ route('menus.create') }}" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i> Tambah menu
+                    <i class="bi bi-plus-lg me-1"></i> {{ __('web/menus.add_button') }}
                 </a>
             </x-slot:actions>
         @endcan
@@ -17,12 +17,12 @@
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Nama</th>
-                        <th>Tipe</th>
-                        <th>Route</th>
-                        <th>Urutan</th>
-                        <th>Atribut</th>
-                        <th class="text-end">Aksi</th>
+                        <th>{{ __('web/menus.columns.name') }}</th>
+                        <th>{{ __('web/menus.columns.type') }}</th>
+                        <th>{{ __('web/menus.columns.route') }}</th>
+                        <th>{{ __('web/menus.columns.order') }}</th>
+                        <th>{{ __('web/menus.columns.attributes') }}</th>
+                        <th class="text-end">{{ __('web/menus.columns.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -48,13 +48,13 @@
                                     </a>
                                     <x-form.ajax :action="route('menus.destroy', $menu['id'])" method="DELETE" class="d-inline">
                                         <div class="btn-group">
-                                            <button type="submit" class="btn btn-sm btn-danger" title="Hapus"
-                                                    onclick="return confirm('Hapus menu ini?');">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="{{ __('web/menus.delete_title') }}"
+                                                    onclick="return confirm(@json(__('web/menus.delete')));">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                             <button type="submit" name="cascade" value="1" class="btn btn-sm btn-outline-danger"
-                                                    title="Hapus beserta turunannya"
-                                                    onclick="return confirm('Hapus menu ini beserta SELURUH turunannya?');">
+                                                    title="{{ __('web/menus.delete_cascade_title') }}"
+                                                    onclick="return confirm(@json(__('web/menus.delete_cascade')));">
                                                 <i class="bi bi-trash3"></i>
                                             </button>
                                         </div>
@@ -64,7 +64,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">Belum ada menu.</td>
+                            <td colspan="6" class="text-center text-muted py-4">{{ __('web/menus.empty_list') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

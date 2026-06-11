@@ -21,21 +21,21 @@ class AuthController extends Controller
     {
         $payload = $this->authService->register($request->validated());
 
-        return $this->successResponse($payload, 'Registration successful.', 201);
+        return $this->successResponse($payload, __('api/auth.register_success'), 201);
     }
 
     public function login(LoginRequest $request): JsonResponse
     {
         $payload = $this->authService->login($request->validated());
 
-        return $this->successResponse($payload, 'Login successful.');
+        return $this->successResponse($payload, __('api/auth.login_success'));
     }
 
     public function me(): JsonResponse
     {
         return $this->successResponse(
             $this->authService->me(),
-            'Authenticated user retrieved successfully.',
+            __('api/auth.me_success'),
         );
     }
 
@@ -43,13 +43,13 @@ class AuthController extends Controller
     {
         $payload = $this->authService->refresh();
 
-        return $this->successResponse($payload, 'Token refreshed successfully.');
+        return $this->successResponse($payload, __('api/auth.refresh_success'));
     }
 
     public function logout(): JsonResponse
     {
         $this->authService->logout();
 
-        return $this->successResponse(null, 'Logged out successfully.');
+        return $this->successResponse(null, __('api/auth.logout_success'));
     }
 }

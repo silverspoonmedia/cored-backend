@@ -8,7 +8,7 @@ class InvalidPasswordResetTokenException extends BusinessRuleException
 {
     public function __construct()
     {
-        parent::__construct('This password reset token is invalid or has expired.');
+        parent::__construct(__('api/auth.invalid_reset_token'));
     }
 
     public function statusCode(): int

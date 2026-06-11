@@ -8,7 +8,7 @@ class InvalidCredentialsException extends BusinessRuleException
 {
     public function __construct()
     {
-        parent::__construct('Invalid email or password.');
+        parent::__construct(__('api/auth.invalid_credentials'));
     }
 
     public function statusCode(): int

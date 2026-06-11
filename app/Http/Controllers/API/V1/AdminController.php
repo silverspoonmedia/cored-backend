@@ -12,6 +12,6 @@ class AdminController extends Controller
 
     public function ping(): JsonResponse
     {
-        return $this->successResponse(null, 'Admin access granted.');
+        return $this->successResponse(null, __('api/admin.access_granted'));
     }
 }

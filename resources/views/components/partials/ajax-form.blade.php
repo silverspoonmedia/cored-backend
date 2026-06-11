@@ -3,6 +3,10 @@
         'use strict';
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+        const messages = @json([
+            'requestFailed' => __('ui.ajax.request_failed'),
+            'serverUnreachable' => __('ui.ajax.server_unreachable'),
+        ]);
 
         function findControl(form, field) {
             const wrapper = form.querySelector('[data-form-field="' + CSS.escape(field) + '"]');
@@ -150,9 +154,9 @@
                     return;
                 }
 
-                showFormAlert(form, data.message || 'Permintaan gagal diproses.', 'danger');
+                showFormAlert(form, data.message || messages.requestFailed, 'danger');
             } catch (error) {
-                showFormAlert(form, 'Tidak dapat menghubungi server. Periksa koneksi Anda.', 'danger');
+                showFormAlert(form, messages.serverUnreachable, 'danger');
                 console.error('AJAX form submit failed', error);
             } finally {
                 setSubmitting(form, false);

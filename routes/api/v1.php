@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\V1\AdminController;
 use App\Http\Controllers\API\V1\Auth\AuthController;
 use App\Http\Controllers\API\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\API\V1\Auth\PasswordController;
@@ -37,6 +38,10 @@ Route::middleware('auth:api')->group(function (): void {
 
     Route::apiResource('users', UserController::class);
 });
+
+Route::middleware(['auth:api', 'permission:view user'])
+    ->get('admin/ping', [AdminController::class, 'ping'])
+    ->name('admin.ping');
 
 Route::prefix('navigation/menus')->name('navigation.menus.')->group(function (): void {
     // Public/optional-auth navigation tree: filtered for the current viewer.

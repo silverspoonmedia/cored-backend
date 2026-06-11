@@ -8,7 +8,7 @@ class CannotDeleteLastRemainingUserException extends BusinessRuleException
 {
     public function __construct()
     {
-        parent::__construct('Cannot delete the last remaining user.');
+        parent::__construct(__('api/playground.cannot_delete_last_user'));
     }
 
     public function statusCode(): int

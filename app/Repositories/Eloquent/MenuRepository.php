@@ -9,6 +9,7 @@ use App\Models\Menu;
 use App\Models\Role;
 use App\Models\User;
 use App\Repositories\Contracts\MenuRepositoryInterface;
+use App\Support\Localization\TranslationResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -77,6 +78,7 @@ class MenuRepository implements MenuRepositoryInterface
             $menu = Menu::query()->create([
                 'parent_id' => $parentId,
                 'name' => $data['name'],
+                'description' => $data['description'] ?? null,
                 'icon' => $data['icon'] ?? null,
                 'route' => $data['route'] ?? null,
                 'type' => $type,
@@ -90,14 +92,14 @@ class MenuRepository implements MenuRepositoryInterface
 
             if ($position === 'before' || $position === 'after') {
                 if ($referenceId === null || $referenceId === '') {
-                    throw new InvalidMenuPositionException('reference_id is required for before/after positioning.');
+                    throw new InvalidMenuPositionException(__('api/navigation.position.reference_required'));
                 }
 
                 $this->assertSameGroup($menu, $referenceId, $parentId, $type);
 
                 $refIndex = array_search($referenceId, $ids, true);
                 if ($refIndex === false) {
-                    throw new InvalidMenuPositionException('reference_id is not in the same sibling group.');
+                    throw new InvalidMenuPositionException(__('api/navigation.position.reference_not_in_group'));
                 }
 
                 $offset = $position === 'before' ? $refIndex : $refIndex + 1;
@@ -122,7 +124,7 @@ class MenuRepository implements MenuRepositoryInterface
             $oldParent = $menu->parent_id;
             $oldType = $menu->type;
 
-            foreach (['parent_id', 'name', 'icon', 'route', 'type', 'is_authenticate', 'is_guest_only'] as $key) {
+            foreach (['parent_id', 'name', 'description', 'icon', 'route', 'type', 'is_authenticate', 'is_guest_only'] as $key) {
                 if (array_key_exists($key, $data)) {
                     $menu->{$key} = $data[$key];
                 }
@@ -161,7 +163,7 @@ class MenuRepository implements MenuRepositoryInterface
 
             $refIndex = array_search($referenceId, $ids, true);
             if ($refIndex === false) {
-                throw new InvalidMenuPositionException('reference_id is not in the same sibling group.');
+                throw new InvalidMenuPositionException(__('api/navigation.position.reference_not_in_group'));
             }
 
             if ($position === 'before') {
@@ -169,7 +171,7 @@ class MenuRepository implements MenuRepositoryInterface
             } elseif ($position === 'after') {
                 array_splice($ids, $refIndex + 1, 0, [$menu->id]);
             } else {
-                throw new InvalidMenuPositionException('position must be before or after.');
+                throw new InvalidMenuPositionException(__('api/navigation.position.invalid_position'));
             }
 
             $this->persistOrderSequence($ids);
@@ -219,7 +221,7 @@ class MenuRepository implements MenuRepositoryInterface
             // Restoring under a still-trashed parent would re-orphan the branch
             // (invisible in the tree because the parent is unreachable).
             if ($menu->parent_id !== null && ! Menu::query()->whereKey($menu->parent_id)->exists()) {
-                throw new InvalidMenuParentException('Cannot restore: the parent menu is missing or still deleted. Restore the parent first.');
+                throw new InvalidMenuParentException(__('api/navigation.parent_restore_failed'));
             }
 
             $ids = $this->trashedSubtreeIds($menu->id);
@@ -308,7 +310,8 @@ class MenuRepository implements MenuRepositoryInterface
                 ->map(fn (Menu $menu): array => [
                     'id' => $menu->id,
                     'parent_id' => $menu->parent_id,
-                    'name' => $menu->name,
+                    'name_translations' => $menu->getTranslations('name'),
+                    'description_translations' => $menu->getTranslations('description'),
                     'icon' => $menu->icon,
                     'route' => $menu->route,
                     'type' => $menu->type,
@@ -455,7 +458,8 @@ class MenuRepository implements MenuRepositoryInterface
 
             $out[] = [
                 'id' => $child['id'],
-                'name' => $child['name'],
+                'name' => TranslationResolver::resolve($child['name_translations'] ?? []),
+                'description' => TranslationResolver::resolve($child['description_translations'] ?? []),
                 'icon' => $child['icon'],
                 'route' => $child['route'],
                 'type' => $child['type'],
@@ -618,12 +622,12 @@ class MenuRepository implements MenuRepositoryInterface
     private function assertSameGroup(Menu $menu, string $referenceId, ?string $parentId, string $type): void
     {
         if ($menu->id === $referenceId) {
-            throw new InvalidMenuPositionException('reference_id cannot be the same menu.');
+            throw new InvalidMenuPositionException(__('api/navigation.position.reference_same_menu'));
         }
 
         $ref = Menu::query()->findOrFail($referenceId);
         if ($ref->parent_id !== $parentId || $ref->type !== $type) {
-            throw new InvalidMenuPositionException('reference menu must share parent_id and type with the target group.');
+            throw new InvalidMenuPositionException(__('api/navigation.position.reference_wrong_group'));
         }
     }
 }

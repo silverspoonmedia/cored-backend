@@ -76,8 +76,8 @@ class UserController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('users.index')->with('success', 'Pengguna berhasil dibuat.'),
-            'Pengguna berhasil dibuat.',
+            fn (): RedirectResponse => redirect()->route('users.index')->with('success', __('api/users.created')),
+            __('api/users.created'),
         );
     }
 
@@ -107,8 +107,8 @@ class UserController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => back()->with('success', 'Pengguna berhasil diperbarui.'),
-            'Pengguna berhasil diperbarui.',
+            fn (): RedirectResponse => back()->with('success', __('api/users.updated')),
+            __('api/users.updated'),
             stayOnPageOnSuccess: true,
         );
     }
@@ -120,8 +120,8 @@ class UserController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('users.index')->with('success', 'Pengguna berhasil dihapus.'),
-            'Pengguna berhasil dihapus.',
+            fn (): RedirectResponse => redirect()->route('users.index')->with('success', __('api/users.deleted')),
+            __('api/users.deleted'),
         );
     }
 

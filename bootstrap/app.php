@@ -4,10 +4,12 @@ use App\Http\Middleware\AuthenticateWithJwtCookie;
 use App\Http\Middleware\EnsureWebAuthenticated;
 use App\Http\Middleware\OptionalJwtAuthenticate;
 use App\Http\Middleware\RedirectIfWebAuthenticated;
+use App\Http\Middleware\SetLocale;
 use App\Models\User;
 use App\Support\ApiResponder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -60,6 +62,19 @@ return Application::configure(basePath: dirname(__DIR__))
         // lets `permission:`/`role:` middleware and policies work unchanged.
         $middleware->web(append: [
             AuthenticateWithJwtCookie::class,
+            SetLocale::class,
+        ]);
+
+        $middleware->api(append: [
+            SetLocale::class,
+        ]);
+
+        // Resolve locale after auth middleware so users.locale wins over cookie.
+        $middleware->priority([
+            AuthenticateWithJwtCookie::class,
+            OptionalJwtAuthenticate::class,
+            Authenticate::class,
+            SetLocale::class,
         ]);
 
         $middleware->alias([
@@ -85,14 +100,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
             if ($previous instanceof ModelNotFoundException) {
                 $message = match ($previous->getModel()) {
-                    User::class => 'User not found.',
-                    default => 'Data not found.',
+                    User::class => __('api/users.not_found'),
+                    default => __('api/common.data_not_found'),
                 };
 
                 return ApiResponder::error($message, 404);
             }
 
-            return ApiResponder::error('Resource not found.', 404);
+            return ApiResponder::error(__('api/common.resource_not_found'), 404);
         });
 
         $exceptions->render(function (AuthenticationException $e, Request $request) {
@@ -101,8 +116,8 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             $message = $request->bearerToken()
-                ? 'Token is invalid.'
-                : 'Bearer token is required.';
+                ? __('api/auth.token_invalid')
+                : __('api/auth.bearer_required');
 
             return ApiResponder::error($message, 401);
         });
@@ -113,9 +128,9 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             $message = match ($e->getMessage()) {
-                'Token not provided' => 'Bearer token is required.',
-                'User not found' => 'Token is invalid.',
-                default => $e->getMessage() ?: 'Could not authenticate token.',
+                'Token not provided' => __('api/auth.bearer_required'),
+                'User not found' => __('api/auth.token_invalid'),
+                default => $e->getMessage() ?: __('api/auth.could_not_authenticate'),
             };
 
             return ApiResponder::error($message, 401);
@@ -130,10 +145,10 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             $message = match (true) {
-                $e instanceof TokenExpiredException => 'Token has expired.',
-                $e instanceof TokenInvalidException => 'Token is invalid.',
-                $e instanceof TokenBlacklistedException => 'Token has been revoked.',
-                default => 'Could not authenticate token.',
+                $e instanceof TokenExpiredException => __('api/auth.token_expired'),
+                $e instanceof TokenInvalidException => __('api/auth.token_invalid'),
+                $e instanceof TokenBlacklistedException => __('api/auth.token_revoked'),
+                default => __('api/auth.could_not_authenticate'),
             };
 
             return ApiResponder::error($message, 401);
@@ -144,7 +159,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return ApiResponder::error('You are not authorized to perform this action.', 403);
+            return ApiResponder::error(__('api/common.unauthorized'), 403);
         });
 
         $exceptions->render(function (AuthorizationException $e, Request $request) {
@@ -153,7 +168,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return ApiResponder::error(
-                $e->getMessage() ?: 'You are not authorized to perform this action.',
+                $e->getMessage() ?: __('api/common.unauthorized'),
                 403,
             );
         });
@@ -164,7 +179,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return ApiResponder::error(
-                $e->getMessage() ?: 'You are not authorized to perform this action.',
+                $e->getMessage() ?: __('api/common.unauthorized'),
                 403,
             );
         });

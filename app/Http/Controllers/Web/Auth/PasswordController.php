@@ -30,8 +30,8 @@ class PasswordController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => back()->with('success', 'Kata sandi berhasil diperbarui.'),
-            'Kata sandi berhasil diperbarui.',
+            fn (): RedirectResponse => back()->with('success', __('web/auth.password_updated')),
+            __('web/auth.password_updated'),
             stayOnPageOnSuccess: true,
         );
     }

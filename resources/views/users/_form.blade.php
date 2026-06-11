@@ -12,36 +12,36 @@
 @php($roleOptions = $assignableRoles->pluck('name', 'name'))
 
 <x-form.ajax :action="$action" :method="$method">
-    <x-form.input name="name" label="Nama" :value="$user->name ?? null" required />
-    <x-form.input name="email" type="email" label="Email" :value="$user->email ?? null" required />
+    <x-form.input name="name" :label="__('ui.labels.name')" :value="$user->name ?? null" required />
+    <x-form.input name="email" type="email" :label="__('ui.labels.email')" :value="$user->email ?? null" required />
 
     <x-form.input
         name="password"
         type="password"
-        label="Kata sandi"
+        :label="__('ui.labels.password')"
         :required="! $isEdit"
         autocomplete="new-password"
-        :hint="$isEdit ? 'Kosongkan jika tidak ingin mengubah kata sandi.' : 'Minimal 8 karakter.'"
+        :hint="$isEdit ? __('web/users.form.password_hint_edit') : __('web/users.form.password_hint_create')"
     />
     <x-form.input
         name="password_confirmation"
         type="password"
-        label="Konfirmasi kata sandi"
+        :label="__('web/users.form.password_confirm')"
         :required="! $isEdit"
         autocomplete="new-password"
     />
 
     <x-form.select
         name="role"
-        label="Role"
+        :label="__('ui.labels.role')"
         :options="$roleOptions"
         :selected="$currentRole ?? null"
-        placeholder="Pilih role"
+        :placeholder="__('web/users.form.role_placeholder')"
         required
     />
 
     <div class="d-flex gap-2">
         <x-form.submit :label="$submitLabel" class="btn btn-primary" />
-        <a href="{{ route('users.index') }}" class="btn btn-outline-secondary">Batal</a>
+        <a href="{{ route('users.index') }}" class="btn btn-outline-secondary">{{ __('ui.actions.cancel') }}</a>
     </div>
 </x-form.ajax>

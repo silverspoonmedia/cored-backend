@@ -3,6 +3,10 @@
         'use strict';
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+        const messages = @json([
+            'requestFailed' => __('ui.ajax.request_failed'),
+            'serverUnreachable' => __('ui.ajax.server_unreachable'),
+        ]);
 
         window.renderDatatableActions = function (actions) {
             if (!Array.isArray(actions) || actions.length === 0) {
@@ -68,9 +72,9 @@
                     return;
                 }
 
-                window.alert(data.message || 'Permintaan gagal diproses.');
+                window.alert(data.message || messages.requestFailed);
             } catch (error) {
-                window.alert('Tidak dapat menghubungi server.');
+                window.alert(messages.serverUnreachable);
                 console.error('Datatable action failed', error);
             }
         };

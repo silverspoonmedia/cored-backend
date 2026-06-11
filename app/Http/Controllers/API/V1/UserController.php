@@ -44,7 +44,7 @@ class UserController extends Controller
             $request,
             fn (): JsonResponse => $this->successResponse(
                 $this->resolveResource(UserManagementResource::collection($users)),
-                'Daftar pengguna berhasil diambil.',
+                __('api/users.list_success'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(
                 $users,
@@ -63,7 +63,7 @@ class UserController extends Controller
 
         return $this->successResponse(
             $this->resolveResource(new UserManagementResource($user)),
-            'Detail pengguna berhasil diambil.',
+            __('api/users.show_success'),
         );
     }
 
@@ -76,7 +76,7 @@ class UserController extends Controller
 
         return $this->successResponse(
             UserManagementPresenter::present($user),
-            'Pengguna berhasil dibuat.',
+            __('api/users.created'),
             201,
         );
     }
@@ -89,7 +89,7 @@ class UserController extends Controller
 
         return $this->successResponse(
             UserManagementPresenter::present($updated),
-            'Pengguna berhasil diperbarui.',
+            __('api/users.updated'),
         );
     }
 
@@ -103,7 +103,7 @@ class UserController extends Controller
 
         $this->userManagement->delete($this->actor(), $user->id);
 
-        return $this->successResponse(null, 'Pengguna berhasil dihapus.');
+        return $this->successResponse(null, __('api/users.deleted'));
     }
 
     public function assignableRoles(): JsonResponse
@@ -115,7 +115,7 @@ class UserController extends Controller
 
         return $this->successResponse(
             UserManagementPresenter::presentAssignableRoles($roles),
-            'Daftar role yang dapat ditetapkan berhasil diambil.',
+            __('api/users.assignable_roles_success'),
         );
     }
 

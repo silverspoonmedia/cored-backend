@@ -24,8 +24,8 @@ class EmailVerificationController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => back()->with('success', 'Tautan verifikasi telah dikirim ke email Anda.'),
-            'Tautan verifikasi telah dikirim ke email Anda.',
+            fn (): RedirectResponse => back()->with('success', __('web/auth.verification_resent')),
+            __('web/auth.verification_resent'),
             stayOnPageOnSuccess: true,
         );
     }

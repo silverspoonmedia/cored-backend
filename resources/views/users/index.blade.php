@@ -1,14 +1,14 @@
-<x-layouts.app title="Manajemen Pengguna">
+<x-layouts.app :title="__('web/users.title')">
     <x-slot:breadcrumb>
-        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Pengguna</li>
+        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('menu.dashboard') }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ __('web/users.breadcrumb') }}</li>
     </x-slot:breadcrumb>
 
-    <x-card title="Daftar pengguna">
+    <x-card :title="__('web/users.list_title')">
         @can('create user')
             <x-slot:actions>
                 <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i> Tambah pengguna
+                    <i class="bi bi-plus-lg me-1"></i> {{ __('web/users.add_button') }}
                 </a>
             </x-slot:actions>
         @endcan
@@ -30,15 +30,15 @@
                     ajax: '{{ route('users.datatable') }}',
                     order: [[0, 'asc']],
                     language: {
-                        emptyTable: 'Tidak ada pengguna yang dapat Anda lihat.',
-                        zeroRecords: 'Tidak ada pengguna yang cocok dengan pencarian.',
+                        emptyTable: @json(__('web/users.datatable.empty')),
+                        zeroRecords: @json(__('web/users.datatable.zero_records')),
                     },
                     columns: [
-                        { data: 'name', title: 'Nama' },
-                        { data: 'email', title: 'Email' },
+                        { data: 'name', title: @json(__('web/users.datatable.columns.name')) },
+                        { data: 'email', title: @json(__('web/users.datatable.columns.email')) },
                         {
                             data: 'roles',
-                            title: 'Role',
+                            title: @json(__('web/users.datatable.columns.roles')),
                             orderable: false,
                             render: function (roles) {
                                 if (!Array.isArray(roles) || roles.length === 0) {
@@ -51,24 +51,13 @@
                             },
                         },
                         {
-                            data: 'email_verified_at',
-                            title: 'Status',
-                            render: function (verifiedAt) {
-                                if (verifiedAt) {
-                                    return '<span class="badge text-bg-success">Terverifikasi</span>';
-                                }
-
-                                return '<span class="badge text-bg-warning">Belum</span>';
-                            },
-                        },
-                        {
                             data: 'actions',
-                            title: 'Aksi',
+                            title: @json(__('web/users.datatable.columns.actions')),
                             orderable: false,
                             searchable: false,
                             className: 'text-end',
                             render: function (actions) {
-                                return renderDatatableActions(actions);
+                                return window.renderDatatableActions(actions);
                             },
                         },
                     ],

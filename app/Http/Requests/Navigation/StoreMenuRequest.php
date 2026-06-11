@@ -4,6 +4,7 @@ namespace App\Http\Requests\Navigation;
 
 use App\Http\Requests\Navigation\Concerns\NormalizesMenuPlacementFields;
 use App\Http\Requests\Navigation\Concerns\ValidatesMenuStructure;
+use App\Support\Localization\Concerns\ValidatesTranslatableInput;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -15,6 +16,7 @@ class StoreMenuRequest extends FormRequest
 {
     use NormalizesMenuPlacementFields;
     use ValidatesMenuStructure;
+    use ValidatesTranslatableInput;
 
     public function authorize(): bool
     {
@@ -32,7 +34,8 @@ class StoreMenuRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required'],
+            'description' => ['sometimes'],
             'type' => ['required', 'string', 'size:1', Rule::in(['h', 'p', 'c'])],
             'icon' => ['nullable', 'string', 'max:255'],
             'route' => ['nullable', 'string', 'max:255', $this->namedRouteRule()],
@@ -58,6 +61,15 @@ class StoreMenuRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            $supportedLocales = config('localization.supported_locales', ['en', 'id']);
+
+            $this->validateTranslatableString($validator, 'name', $supportedLocales);
+            $this->validateTranslatableAllLocales($validator, 'name', $supportedLocales);
+
+            if ($this->has('description')) {
+                $this->validateTranslatableString($validator, 'description', $supportedLocales);
+            }
+
             $type = $this->input('type');
 
             if (is_string($type)) {
@@ -84,8 +96,18 @@ class StoreMenuRequest extends FormRequest
             }
 
             if (! is_string($value) || ! Route::has($value)) {
-                $fail('The :attribute must be a registered route name.');
+                $fail(__('api/navigation.invalid_route'));
             }
         };
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => __('validation.required', ['attribute' => 'name']),
+        ];
     }
 }

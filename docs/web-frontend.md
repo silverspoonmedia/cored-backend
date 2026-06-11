@@ -8,7 +8,7 @@ Browser ──► Web controller ──► ApiClient (Http::withToken) ──►
    └──────────────  Blade view / redirect  ◄──── JSON envelope ◄────┘
 ```
 
-> The backend is the single source of truth. See [JWT Authentication & RBAC](./jwt-authentication.md), [User Management & H-RBAC](./user-management-hrbac.md), [Dynamic Navigation Menu](./navigation-menu.md), and [CRUD Architecture](./crud-architecture.md).
+> The backend is the single source of truth. See [JWT Authentication & RBAC](./jwt-authentication.md), [User Management & H-RBAC](./user-management-hrbac.md), [Dynamic Navigation Menu](./navigation-menu.md), [CRUD Architecture](./crud-architecture.md), and [Localization](./localization.md) (all user-facing copy must use `__()` / translatable fields — see the **Task rule** there).
 
 ---
 
@@ -75,6 +75,7 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | GET/POST | `/forgot-password` | `password.request` / `password.email` | `web.guest` | `POST /auth/forgot-password` |
 | GET/POST | `/reset-password/{token}` | `password.reset` / `password.update` | `web.guest` | `POST /auth/reset-password` |
 | POST | `/logout` | `logout` | `web.auth` | `POST /auth/logout` |
+| GET | `/locale/{locale}` | `locale.switch` | `web` | sets locale cookie; persists `users.locale` when JWT-authenticated; redirects back (see [Localization](./localization.md#switching-locale)) |
 | GET | `/dashboard` | `dashboard` | `web.auth` | `GET /auth/me` |
 | GET/PUT | `/profile/password` | `profile.password.edit` / `…update` | `web.auth` | `PUT /auth/password` |
 | POST | `/email/verification-notification` | `verification.send` | `web.auth` | `POST /auth/email/verification-notification` |
@@ -95,7 +96,7 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 
 ## Views and components
 
-Assets are loaded from CDN. Views render the **JSON arrays** returned by the API (e.g. `$profile`, `$menu['name']`), not Eloquent models.
+Assets are loaded from CDN. Views render the **JSON arrays** returned by the API (e.g. `$profile`, `$menu['name']` for display, `$menu['name_translations']` for edit forms), not Eloquent models. Static UI strings use `__('…')` from `lang/{locale}/web/*` and `lang/{locale}/ui.php` — never hardcode copy in Blade.
 
 ```
 resources/views/
@@ -107,7 +108,7 @@ resources/views/
 │   ├── nav/tree.blade.php          ← recursive renderer for the dynamic sidebar tree
 │   ├── alert.blade.php             ← flash + validation feedback
 │   ├── card.blade.php              ← panel wrapper (title + actions slot)
-│   └── form/                       ← input, select, multiselect, checkbox
+│   └── form/                       ← input, select, multiselect, checkbox, translatable-input
 ├── auth/                           ← login, register, forgot-password, reset-password
 ├── profile/password.blade.php
 ├── dashboard.blade.php             ← consumes GET /auth/me payload
@@ -116,7 +117,9 @@ resources/views/
 ```
 
 - **Create/edit forms** share one `_form.blade.php` per resource. Validation errors come from the API's `422` (mapped by `ConsumesApi`), repopulated with `old()`.
-- **Menu placement** (`position` + `reference_id`) is optional on both create and edit. Empty selects mean append on create or unchanged order on edit — see [navigation-menu.md](./navigation-menu.md#request-fields-storeupdate). The edit form placeholder reads *Tidak ubah urutan*.
+- **Menu placement** (`position` + `reference_id`) is optional on both create and edit. Empty selects mean append on create or unchanged order on edit — see [navigation-menu.md](./navigation-menu.md#request-fields-storeupdate).
+- **Menu translatable fields** — `name` and `description` use `<x-form.translatable-input>` (one field per locale). Create/edit posts `name[en]`, `name[id]`, … which the web controller forwards as JSON to the API. Edit forms bind from `name_translations` / `description_translations` on the API detail payload.
+- **Locale switcher** — navbar dropdown links to `GET /locale/{locale}` (`en`, `id`). Flash and AJAX fallback messages come from `lang/{locale}/ui.php` (`ui.ajax.*`).
 - The **sidebar is data-driven by the [dynamic navigation engine](./navigation-menu.md)**. `NavigationComposer` feeds `MenuService::navigationTree()` (see exception #1 above) and `<x-nav.tree>` renders it recursively (`h` → section label, `p` → collapsible branch, `c` → leaf link). Visibility is resolved by the engine, so there is **no `@can` gating** in the tree.
   - **Caveat — sidebar gating is by role, not permission.** The engine filters by attached *roles*; page access is enforced by the *API*. The seeder attaches the roles that hold `view user` / `view menu` so they line up; re-grant the permission to a different role and you must update the menu's role attachments too. Cosmetic only — the API still enforces real authorization.
   - Menu `icon` stores a **full** icon class (e.g. `bi bi-people`); null/empty renders the `bi bi-circle` placeholder. `route` stores a **registered route name**; unregistered names degrade to `#`.
@@ -172,3 +175,4 @@ Visit `/login`, sign in with the seeded admin, and the dashboard / user manageme
 - [Dynamic Navigation Menu](./navigation-menu.md) — menu domain behind the web menu screens
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — layer responsibilities behind the API
 - [API Routing](./api-routing.md) — the versioned API surface the web layer consumes
+- [Localization](./localization.md) — locale resolution, `lang/` layout, Spatie fields, task rule for translations

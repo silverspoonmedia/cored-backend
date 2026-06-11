@@ -8,7 +8,7 @@ class DisposableEmailNotAllowedException extends BusinessRuleException
 {
     public function __construct()
     {
-        parent::__construct('Disposable email domains are not allowed.');
+        parent::__construct(__('api/playground.disposable_email'));
     }
 
     public function statusCode(): int

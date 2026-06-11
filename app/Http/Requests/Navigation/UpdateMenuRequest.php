@@ -5,6 +5,7 @@ namespace App\Http\Requests\Navigation;
 use App\Http\Requests\Navigation\Concerns\NormalizesMenuPlacementFields;
 use App\Http\Requests\Navigation\Concerns\ValidatesMenuStructure;
 use App\Models\Menu;
+use App\Support\Localization\Concerns\ValidatesTranslatableInput;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -16,6 +17,7 @@ class UpdateMenuRequest extends FormRequest
 {
     use NormalizesMenuPlacementFields;
     use ValidatesMenuStructure;
+    use ValidatesTranslatableInput;
 
     public function authorize(): bool
     {
@@ -36,7 +38,8 @@ class UpdateMenuRequest extends FormRequest
         $menuId = $routeMenu instanceof Menu ? $routeMenu->getKey() : (string) $routeMenu;
 
         return [
-            'name' => ['sometimes', 'string', 'max:255'],
+            'name' => ['sometimes'],
+            'description' => ['sometimes'],
             'type' => ['sometimes', 'string', 'size:1', Rule::in(['h', 'p', 'c'])],
             'icon' => ['sometimes', 'nullable', 'string', 'max:255'],
             'route' => ['sometimes', 'nullable', 'string', 'max:255', $this->namedRouteRule()],
@@ -62,6 +65,17 @@ class UpdateMenuRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            $supportedLocales = config('localization.supported_locales', ['en', 'id']);
+
+            if ($this->has('name')) {
+                $this->validateTranslatableString($validator, 'name', $supportedLocales);
+                $this->validateTranslatableAllLocales($validator, 'name', $supportedLocales);
+            }
+
+            if ($this->has('description')) {
+                $this->validateTranslatableString($validator, 'description', $supportedLocales);
+            }
+
             $menu = $this->route('menu');
 
             if (! $menu instanceof Menu) {
@@ -107,7 +121,7 @@ class UpdateMenuRequest extends FormRequest
             }
 
             if (! is_string($value) || ! Route::has($value)) {
-                $fail('The :attribute must be a registered route name.');
+                $fail(__('api/navigation.invalid_route'));
             }
         };
     }

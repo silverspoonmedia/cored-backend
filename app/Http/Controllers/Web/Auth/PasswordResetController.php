@@ -29,8 +29,8 @@ class PasswordResetController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => back()->with('success', 'Jika email terdaftar, kami telah mengirim tautan reset kata sandi.'),
-            'Jika email terdaftar, kami telah mengirim tautan reset kata sandi.',
+            fn (): RedirectResponse => back()->with('success', __('web/auth.forgot_password_success')),
+            __('web/auth.forgot_password_success'),
             stayOnPageOnSuccess: true,
         );
     }
@@ -50,8 +50,8 @@ class PasswordResetController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('login')->with('success', 'Kata sandi berhasil diatur ulang. Silakan masuk.'),
-            'Kata sandi berhasil diatur ulang. Silakan masuk.',
+            fn (): RedirectResponse => redirect()->route('login')->with('success', __('web/auth.reset_password_success')),
+            __('web/auth.reset_password_success'),
         );
     }
 }
