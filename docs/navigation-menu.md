@@ -21,6 +21,7 @@ All IDs are **UUID v7** end to end (see [User primary keys (UUID v7)](./user-uui
 | Presenter | `app/Support/Navigation/MenuPresenter.php` | Admin/detail JSON shape |
 | Controller | `app/Http/Controllers/API/V1/Navigation/MenuController.php` | Thin HTTP layer |
 | Requests | `app/Http/Requests/Navigation/{Store,Update,IndexMenuList}MenuRequest.php` | Input validation |
+| Request concern | `app/Http/Requests/Navigation/Concerns/NormalizesMenuPlacementFields.php` | Coerces/drops empty placement fields before validation (shared by store/update) |
 | Middleware | `app/Http/Middleware/OptionalJwtAuthenticate.php` (alias `jwt.optional`) | Optional auth for `index` |
 | Exception | `app/Exceptions/Navigation/InvalidMenuPositionException.php` | 422 for bad reordering input |
 | Exception | `app/Exceptions/Navigation/MenuHasChildrenException.php` | 409 when deleting a non-empty branch without `cascade` |
@@ -137,7 +138,9 @@ The HTTP contract uses friendlier names than the columns; the **service** maps t
 
 On **create**, all three relationship sets are written (omitting a key clears it). On **update**, a relationship is only touched when its key is present, so an empty array explicitly clears assignments while omitting the key leaves them untouched.
 
-**HTML form normalization.** Browsers post unselected `<select>`s as `""`, which would otherwise trip the `exists`/`in` rules. `Store`/`UpdateMenuRequest::prepareForValidation()` coerces an empty `parent` / `reference_id` to `null` and drops an empty `position` before validation, so a deliberately-omitted optional select is treated as absent. Blade forms post to web routes, which forward the raw body to the API — the API's Form Request runs this normalization before validating. JSON API callers are unaffected (they send `null` or omit the key).
+**HTML form normalization.** Browsers post unselected `<select>`s as `""`, which would otherwise trip the `exists`/`in` rules. `StoreMenuRequest` / `UpdateMenuRequest` call `NormalizesMenuPlacementFields` in `prepareForValidation()`: an empty `parent` becomes `null`; an empty `position` is removed from the request; `reference_id` is removed unless `position` is `before` or `after` (empty `reference_id` is removed too). Validation then uses `Rule::excludeIf` so `reference_id` is only required and `exists`-checked when repositioning. Blade forms post to web routes, which forward the raw body to the API — normalization runs in the API Form Request, not the web controller. JSON API callers can omit the keys or send `null`; behavior is the same.
+
+**Service gate.** `MenuService::update()` calls `updateMenuPosition` only when `shouldReposition()` sees a `before`/`after` `position` plus a non-empty `reference_id`. Omitting the placement pair after normalization is a no-op for `order`. On create, a missing placement pair defaults to `append` in the repository.
 
 **Atomicity:** `MenuService::create`/`update` wrap the row write *and* all pivot syncs in a single `DB::transaction`, so a failed relationship sync rolls back the menu too — no half-wired records.
 
@@ -149,7 +152,7 @@ Invalid `position`/`reference_id` combinations throw `InvalidMenuPositionExcepti
 
 ## Ordering model
 
-`order` is meaningful only within a `(parent_id, type)` sibling group. Insert, move, and delete all run in a `DB::transaction` and call `persistOrderSequence()`, which rewrites the group to a clean `1..N` in **two phases**: first set every affected row's `order` to `NULL`, then assign the final positions. The `NULL` phase is what lets the rewrite coexist with the unique `(parent_id, type, order)` index — a straight in-place rewrite (e.g. `1 → 2` while another row still holds `2`) would violate the constraint mid-statement. Moving a menu to another parent/type compacts the old group and appends to the new one.
+`order` is meaningful only within a `(parent_id, type)` sibling group. Insert, move, and delete all run in a `DB::transaction` and call `persistOrderSequence()`, which rewrites the group to a clean `1..N` in **two phases**: first set every affected row's `order` to `NULL`, then assign the final positions. The `NULL` phase is what lets the rewrite coexist with the unique `(parent_id, type, order)` index — a straight in-place rewrite (e.g. `1 → 2` while another row still holds `2`) would violate the constraint mid-statement. Moving a menu to another parent/type compacts the old group and appends to the new one. A partial update that changes only name/flags/RBAC and omits placement leaves `order` untouched.
 
 ## Soft deletes
 

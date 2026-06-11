@@ -116,6 +116,7 @@ resources/views/
 ```
 
 - **Create/edit forms** share one `_form.blade.php` per resource. Validation errors come from the API's `422` (mapped by `ConsumesApi`), repopulated with `old()`.
+- **Menu placement** (`position` + `reference_id`) is optional on both create and edit. Empty selects mean append on create or unchanged order on edit — see [navigation-menu.md](./navigation-menu.md#request-fields-storeupdate). The edit form placeholder reads *Tidak ubah urutan*.
 - The **sidebar is data-driven by the [dynamic navigation engine](./navigation-menu.md)**. `NavigationComposer` feeds `MenuService::navigationTree()` (see exception #1 above) and `<x-nav.tree>` renders it recursively (`h` → section label, `p` → collapsible branch, `c` → leaf link). Visibility is resolved by the engine, so there is **no `@can` gating** in the tree.
   - **Caveat — sidebar gating is by role, not permission.** The engine filters by attached *roles*; page access is enforced by the *API*. The seeder attaches the roles that hold `view user` / `view menu` so they line up; re-grant the permission to a different role and you must update the menu's role attachments too. Cosmetic only — the API still enforces real authorization.
   - Menu `icon` stores a **full** icon class (e.g. `bi bi-people`); null/empty renders the `bi bi-circle` placeholder. `route` stores a **registered route name**; unregistered names degrade to `#`.
