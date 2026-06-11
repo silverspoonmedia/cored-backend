@@ -78,7 +78,7 @@ All keys are UUID. Because `users` and `roles` exist before this migration runs,
 4. `is_authenticate` ⇒ hidden from guests.
 5. If the node has `api`-guard roles attached, the viewer must hold at least one (`hasAnyRole`). No roles attached ⇒ visible to all who passed the above.
 
-Headers (`h`) and parents (`p`) that end up with no visible children are pruned, so empty branches never reach the client. Siblings are sorted by type rank (`h` → `p` → `c`) then `order`.
+Headers (`h`) and parents (`p`) that end up with no visible children are pruned, so empty branches never reach the client — **except** a **leaf parent**: type `p` with a registered `route` but no children is kept and rendered as a plain link (same sidebar shape as a `c`). A childless `p` without a `route` is still pruned. Siblings are sorted by type rank (`h` → `p` → `c`) then `order`.
 
 **Contradictory flags are rejected at validation time** (they would make a menu visible to nobody): `guest_only + authenticate` (mutually exclusive audiences) and `guest_only + roles` (roles require an authenticated viewer).
 
@@ -215,17 +215,31 @@ Listing is exposed via `GET …/menus/trashed` (`onlyTrashed`, newest deletion f
 
 ## Caching
 
-`navigationTree` reads a **serialization-safe scalar snapshot** (`Cache::rememberForever('menus.navigation.snapshot')`) — plain arrays of every active menu plus its `role_names` / include / exclude user IDs, **not** hydrated Eloquent models (those break a serializing store like the `database` driver). The tree is assembled and filtered from those arrays in memory; per-viewer filtering happens after the read, so the cache is viewer-agnostic.
+The **sidebar** and `GET /api/v1/navigation/menus` both call `MenuRepository::navigationTree()`, which does **not** query `menus` on every request. Instead it reads a **serialization-safe scalar snapshot** from cache:
 
-Any menu mutation (`createMenu`, `updateMenu`, `updateMenuPosition`, `deleteMenu`, and the three `sync*` methods) busts the snapshot. Because the snapshot stores role **names**, renaming or deleting a `Role` would otherwise leave a stale gate — so `AppServiceProvider` flushes the snapshot on `Role::updated` / `Role::deleted` via `flushNavigationCache()`. (User role *assignments* need no bust: visibility is evaluated live per request against the current user.)
+| Item | Detail |
+|------|--------|
+| Key | `menus.navigation.snapshot` |
+| API | `Cache::rememberForever(...)` — built once, then reused until invalidated |
+| Payload | Plain arrays of every **active** (non-trashed) menu plus `role_names` / include / exclude user IDs — **not** hydrated Eloquent models (those break a serializing store like the `database` driver) |
+| Per request | The visible tree is assembled and RBAC-filtered **in memory** from that snapshot; the cache is viewer-agnostic |
 
-The admin list (`adminFlatList`) queries the database directly rather than the snapshot.
+**Invalidation (bust).** Any menu write clears the key (`Cache::forget`). The next `navigationTree()` call **rebuilds** the snapshot from the database inside `rememberForever`'s closure. Writes that bust:
+
+- `createMenu`, `updateMenu`, `updateMenuPosition`, `deleteMenu`, `restoreMenu`
+- `syncRoles`, `syncUserIncludes`, `syncUserExcludes`
+
+Because the snapshot stores role **names**, renaming or deleting a `Role` would otherwise leave a stale gate — so `AppServiceProvider` also flushes on `Role::updated` / `Role::deleted` via `flushNavigationCache()`. (User role *assignments* need no bust: visibility is evaluated live per request against the current user.)
+
+**Not cached:** the admin flat list (`adminFlatList`) and trashed list query the database directly.
+
+**Web caveat.** The Blade sidebar embeds the tree returned on **that page load** (see [Web frontend](./web-frontend.md)). After a menu change, the server cache is fresh on the next request, but an already-open tab still searches the old embedded JSON until the user reloads the page.
 
 ---
 
 ## Seeding
 
-- **`MenuSeeder`** (wired into `DatabaseSeeder`) creates the default **web admin navigation** that the Blade sidebar renders (see [Web frontend](./web-frontend.md)): a `Menu` header → `Dashboard` (all authenticated) + `Manajemen Pengguna` (role-gated), and an `Administrasi` header → `Navigasi Menu` parent → `Daftar Menu` / `Menu Terhapus`. Items use full Bootstrap Icons classes (`bi bi-…`) and **registered web route names** (`dashboard`, `users.index`, `menus.index`, `menus.trashed`). Role-gated items get the roles holding `view user` / `view menu` (Root/Admin/Moderator/Management) attached, since the engine filters by role. **Structure note:** leaf links are `c` (the engine prunes childless `h`/`p`) and a branch (`p`) is never placed as a sibling of leaves (siblings sort `h`→`p`→`c` before `order`, so a branch would float above the leaves) — hence the two-header layout.
+- **`MenuSeeder`** (wired into `DatabaseSeeder`) creates the default **web admin navigation** that the Blade sidebar renders (see [Web frontend](./web-frontend.md)): a `Menu` header → `Dashboard` + `Manajemen Pengguna` as **leaf parents** (`p` with a `route`, no children), and an `Administrasi` header → `Navigasi Menu` branch (`p` with `c` children) → `Daftar Menu` / `Menu Terhapus`. Items use full Bootstrap Icons classes (`bi bi-…`) and **registered web route names** (`dashboard`, `users.index`, `menus.index`, `menus.trashed`). Role-gated items get the roles holding `view user` / `view menu` (Root/Admin/Moderator/Management) attached, since the engine filters by role.
 - **`MenuRbacSeeder`** (debugging) populates all three pivots via a `Debug → RBAC Demo` branch: an Admin/Root-restricted item (`menu_roles`), an include-only item (`menu_user_includes`), and an exclude item (`menu_user_excludes`), plus two demo users.
 
 Both are idempotent. A `MenuFactory` (with `header()` / `parentItem()` / `child()` / `authenticated()` / `guestOnly()` states) is available for tests; it defaults `order` to `NULL` so factory-built siblings never trip the unique index.

@@ -42,10 +42,10 @@ class MenuSeeder extends Seeder
 
         Menu::query()->create([
             'parent_id' => $main->id,
-            'name' => ['en' => 'Dashboard', 'id' => 'Dasbor'],
+            'name' => ['en' => 'Dashboard', 'id' => 'Beranda'],
             'icon' => 'bi bi-speedometer2',
             'route' => 'dashboard',
-            'type' => 'c',
+            'type' => 'p',
             'order' => 1,
             'is_authenticate' => true,
         ]);
@@ -55,7 +55,7 @@ class MenuSeeder extends Seeder
             'name' => ['en' => 'User management', 'id' => 'Manajemen Pengguna'],
             'icon' => 'bi bi-people',
             'route' => 'users.index',
-            'type' => 'c',
+            'type' => 'p',
             'order' => 2,
             'is_authenticate' => true,
         ]);
