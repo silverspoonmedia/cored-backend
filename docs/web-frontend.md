@@ -75,7 +75,7 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | GET/POST | `/forgot-password` | `password.request` / `password.email` | `web.guest` | `POST /auth/forgot-password` |
 | GET/POST | `/reset-password/{token}` | `password.reset` / `password.update` | `web.guest` | `POST /auth/reset-password` |
 | POST | `/logout` | `logout` | `web.auth` | `POST /auth/logout` |
-| GET | `/locale/{locale}` | `locale.switch` | `web` | sets locale cookie, redirects back (see [Localization](./localization.md#switching-locale-guest-or-user-without-db-preference)) |
+| GET | `/locale/{locale}` | `locale.switch` | `web` | sets locale cookie; persists `users.locale` when JWT-authenticated; redirects back (see [Localization](./localization.md#switching-locale)) |
 | GET | `/dashboard` | `dashboard` | `web.auth` | `GET /auth/me` |
 | GET/PUT | `/profile/password` | `profile.password.edit` / `…update` | `web.auth` | `PUT /auth/password` |
 | POST | `/email/verification-notification` | `verification.send` | `web.auth` | `POST /auth/email/verification-notification` |

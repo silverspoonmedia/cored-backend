@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Support\Localization\LocaleCookie;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LocaleController extends Controller
 {
@@ -19,6 +21,27 @@ class LocaleController extends Controller
 
         LocaleCookie::queue($locale);
 
+        $user = Auth::guard('api')->user();
+
+        if ($user instanceof User) {
+            $this->persistLocaleForUser($user, $locale);
+        }
+
         return redirect()->back();
+    }
+
+    private function persistLocaleForUser(User $user, string $locale): void
+    {
+        $column = config('localization.user_column');
+
+        if (! is_string($column) || $column === '') {
+            return;
+        }
+
+        if ($user->{$column} === $locale) {
+            return;
+        }
+
+        $user->update([$column => $locale]);
     }
 }

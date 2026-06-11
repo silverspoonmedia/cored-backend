@@ -42,7 +42,7 @@ Priority:
 
 Supported locales are whitelisted in `config/localization.php` (`supported_locales`).
 
-### Switching locale (guest or user without DB preference)
+### Switching locale
 
 ```
 GET /locale/{locale}
@@ -50,7 +50,12 @@ GET /locale/{locale}
 
 Sets the locale cookie and redirects back. Example: `/locale/id`.
 
-Authenticated users can persist preference by updating `users.locale` (e.g. profile API — add when needed).
+| Caller | Persistence |
+|--------|-------------|
+| Guest | Cookie only (`locale`) |
+| Authenticated user (`api` guard via JWT cookie) | Cookie **and** `users.locale` updated in the same request |
+
+On the next login, `SetLocale` reads `users.locale` first, so the last choice survives across sessions. Guests still rely on the cookie until they sign in.
 
 ---
 
