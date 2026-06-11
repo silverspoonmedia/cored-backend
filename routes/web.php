@@ -50,6 +50,9 @@ Route::middleware('web.auth')->group(function (): void {
 
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Sidebar navigation tree (optional ?q= filter) — proxied to the API.
+    Route::get('navigation/tree', [MenuController::class, 'navigationTree'])->name('navigation.tree');
+
     // Self-service profile.
     Route::get('profile/password', [PasswordController::class, 'edit'])->name('profile.password.edit');
     Route::put('profile/password', [PasswordController::class, 'update'])->name('profile.password.update');

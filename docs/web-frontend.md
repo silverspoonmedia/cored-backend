@@ -84,6 +84,7 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | GET/POST | `/users/create`, `/users` | `users.create` / `users.store` | `web.auth` | `GET /users/assignable-roles`, `POST /users` |
 | GET/PUT | `/users/{user}/edit`, `/users/{user}` | `users.edit` / `users.update` | `web.auth` | `GET /users/{id}`, `PUT /users/{id}` |
 | DELETE | `/users/{user}` | `users.destroy` | `web.auth` | `DELETE /users/{id}` |
+| GET | `/navigation/tree` | `navigation.tree` | `web.auth` | `GET /navigation/menus` (optional `?q=`) |
 | GET | `/menus`, `/menus/trashed` | `menus.index` / `menus.trashed` | `web.auth` | `GET /navigation/menus/{list,trashed}` |
 | GET/POST | `/menus/create`, `/menus` | `menus.create` / `menus.store` | `web.auth` | `GET /navigation/menus/list`, `POST /navigation/menus` |
 | GET/PUT | `/menus/{menu}/edit`, `/menus/{menu}` | `menus.edit` / `menus.update` | `web.auth` | `GET/PUT /navigation/menus/{id}` |
@@ -121,6 +122,7 @@ resources/views/
 - **Menu translatable fields** — `name` and `description` use `<x-form.translatable-input>` (one field per locale). Create/edit posts `name[en]`, `name[id]`, … which the web controller forwards as JSON to the API. Edit forms bind from `name_translations` / `description_translations` on the API detail payload.
 - **Locale switcher** — navbar dropdown links to `GET /locale/{locale}` (`en`, `id`). Flash and AJAX fallback messages come from `lang/{locale}/ui.php` (`ui.ajax.*`).
 - The **sidebar is data-driven by the [dynamic navigation engine](./navigation-menu.md)**. `NavigationComposer` feeds `MenuService::navigationTree()` (see exception #1 above) and `<x-nav.tree>` renders it recursively (`h` → section label, `p` → collapsible branch, `c` → leaf link). Visibility is resolved by the engine, so there is **no `@can` gating** in the tree.
+- **Sidebar live-search** — the search box in `components/partials/sidebar-nav-search.blade.php` filters the embedded tree in-memory on each keystroke (same rules as `NavigationTreeFilter`). Matching leaves keep their ancestor headers/parents visible as markers; non-matching siblings are hidden. `GET /navigation/tree?q=` (web → API proxy) is available for server-filtered JSON.
   - **Caveat — sidebar gating is by role, not permission.** The engine filters by attached *roles*; page access is enforced by the *API*. The seeder attaches the roles that hold `view user` / `view menu` so they line up; re-grant the permission to a different role and you must update the menu's role attachments too. Cosmetic only — the API still enforces real authorization.
   - Menu `icon` stores a **full** icon class (e.g. `bi bi-people`); null/empty renders the `bi bi-circle` placeholder. `route` stores a **registered route name**; unregistered names degrade to `#`.
 

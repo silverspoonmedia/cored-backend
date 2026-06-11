@@ -18,6 +18,8 @@ All IDs are **UUID v7** end to end (see [User primary keys (UUID v7)](./user-uui
 | Contract | `app/Repositories/Contracts/MenuRepositoryInterface.php` | Repository contract |
 | Repository | `app/Repositories/Eloquent/MenuRepository.php` | Tree build, viewer filtering, ordering transactions, pivot sync |
 | Service | `app/Services/Navigation/MenuService.php` | Maps request fields → columns, orchestrates repository |
+| Support | `app/Support/Navigation/NavigationTreeFilter.php` | Optional `?q=` filter on the navigation tree (name, description, route) |
+| Support | `app/Support/Navigation/NavigationRouteMap.php` | Resolves route names to URLs for the sidebar search renderer |
 | Presenter | `app/Support/Navigation/MenuPresenter.php` | Admin/detail JSON shape |
 | Controller | `app/Http/Controllers/API/V1/Navigation/MenuController.php` | Thin HTTP layer |
 | Requests | `app/Http/Requests/Navigation/{Store,Update,IndexMenuList}MenuRequest.php` | Input validation |
@@ -88,7 +90,7 @@ Base prefix `/api/v1`, route name prefix `api.v1.navigation.menus.`.
 
 | Method | URI | Name | Middleware | Action |
 |--------|-----|------|------------|--------|
-| GET | `/api/v1/navigation/menus` | `…menus.index` | `jwt.optional` | Filtered navigation tree |
+| GET | `/api/v1/navigation/menus` | `…menus.index` | `jwt.optional` | Filtered navigation tree; optional `?q=` live-search (keeps ancestor `h`/`p` nodes as markers) |
 | GET | `/api/v1/navigation/menus/list` | `…menus.list` | `auth:api`, `permission:view menu` | Admin flat list (`?load_type=h\|p\|c`, optional `?display_mode=datatable`) |
 | POST | `/api/v1/navigation/menus` | `…menus.store` | `auth:api`, `permission:manage menu` | Create |
 | GET | `/api/v1/navigation/menus/{menu}` | `…menus.show` | `auth:api`, `permission:view menu` | Read |

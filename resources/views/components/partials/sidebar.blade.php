@@ -12,8 +12,17 @@
     </div>
 
     <div class="sidebar-wrapper">
+        <x-partials.sidebar-nav-search :navigation="$navigation ?? []" />
+
         <nav class="mt-2">
-            <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="navigation" aria-label="Main navigation" data-accordion="false">
+            <ul
+                id="sidebar-menu-root"
+                class="nav sidebar-menu flex-column"
+                data-lte-toggle="treeview"
+                role="navigation"
+                aria-label="Main navigation"
+                data-accordion="false"
+            >
                 <x-nav.tree :items="$navigation ?? []" />
             </ul>
         </nav>

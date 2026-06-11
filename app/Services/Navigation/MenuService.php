@@ -5,6 +5,7 @@ namespace App\Services\Navigation;
 use App\Models\Menu;
 use App\Models\User;
 use App\Repositories\Contracts\MenuRepositoryInterface;
+use App\Support\Navigation\NavigationTreeFilter;
 use Illuminate\Support\Facades\DB;
 
 class MenuService
@@ -18,9 +19,15 @@ class MenuService
      *
      * @return list<array<string, mixed>>
      */
-    public function navigationTree(?User $user): array
+    public function navigationTree(?User $user, ?string $search = null): array
     {
-        return $this->menus->navigationTree($user);
+        $tree = $this->menus->navigationTree($user);
+
+        if ($search === null || trim($search) === '') {
+            return $tree;
+        }
+
+        return app(NavigationTreeFilter::class)->filter($tree, $search);
     }
 
     /**
