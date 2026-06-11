@@ -1,19 +1,19 @@
-<x-layouts.app title="Menu Terhapus">
+<x-layouts.app :title="__('web/menus.trashed_title')">
     <x-slot:breadcrumb>
-        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="{{ route('menus.index') }}">Menu</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Terhapus</li>
+        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('menu.dashboard') }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ route('menus.index') }}">{{ __('web/menus.breadcrumb') }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ __('web/menus.trashed_breadcrumb') }}</li>
     </x-slot:breadcrumb>
 
-    <x-card title="Menu yang dihapus">
+    <x-card :title="__('web/menus.trashed_card_title')">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Nama</th>
-                        <th>Tipe</th>
-                        <th>Route</th>
-                        <th class="text-end">Aksi</th>
+                        <th>{{ __('web/menus.columns.name') }}</th>
+                        <th>{{ __('web/menus.columns.type') }}</th>
+                        <th>{{ __('web/menus.columns.route') }}</th>
+                        <th class="text-end">{{ __('web/menus.columns.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -28,9 +28,9 @@
                             <td class="text-end">
                                 @can('restore menu')
                                     <x-form.ajax :action="route('menus.restore', $menu['id'])" class="d-inline"
-                                          onsubmit="return confirm('Pulihkan menu ini beserta turunannya yang terhapus?');">
+                                          onsubmit="return confirm(@json(__('web/menus.restore_confirm')));">
                                         <button type="submit" class="btn btn-sm btn-success">
-                                            <i class="bi bi-arrow-counterclockwise me-1"></i> Pulihkan
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i> {{ __('web/menus.restore') }}
                                         </button>
                                     </x-form.ajax>
                                 @endcan
@@ -38,7 +38,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">Tidak ada menu terhapus.</td>
+                            <td colspan="4" class="text-center text-muted py-4">{{ __('web/menus.empty_trashed') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

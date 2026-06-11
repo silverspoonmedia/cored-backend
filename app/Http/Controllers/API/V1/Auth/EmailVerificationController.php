@@ -24,7 +24,7 @@ class EmailVerificationController extends Controller
 
         return $this->successResponse(
             UserPresenter::present($user),
-            'Email verified successfully.',
+            __('api/auth.email_verified'),
         );
     }
 
@@ -37,7 +37,7 @@ class EmailVerificationController extends Controller
 
         return $this->successResponse(
             null,
-            'Verification link sent.',
+            __('api/auth.verification_sent'),
         );
     }
 }

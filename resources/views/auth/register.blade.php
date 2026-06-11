@@ -1,16 +1,16 @@
-<x-layouts.auth title="Daftar" heading="Daftar akun baru">
+<x-layouts.auth :title="__('web/auth.register_title')" :heading="__('web/auth.register_heading')">
     <x-form.ajax :action="route('register.store')">
-        <x-form.input name="name" placeholder="Nama lengkap" icon="bi-person" required autofocus autocomplete="name" />
-        <x-form.input name="email" type="email" placeholder="Email" icon="bi-envelope" required autocomplete="email" />
-        <x-form.input name="password" type="password" placeholder="Kata sandi" icon="bi-lock-fill" required autocomplete="new-password" />
-        <x-form.input name="password_confirmation" type="password" placeholder="Konfirmasi kata sandi" icon="bi-lock-fill" required autocomplete="new-password" />
+        <x-form.input name="name" :placeholder="__('web/auth.name_placeholder')" icon="bi-person" required autofocus autocomplete="name" />
+        <x-form.input name="email" type="email" :placeholder="__('web/auth.email_placeholder')" icon="bi-envelope" required autocomplete="email" />
+        <x-form.input name="password" type="password" :placeholder="__('web/auth.password_placeholder')" icon="bi-lock-fill" required autocomplete="new-password" />
+        <x-form.input name="password_confirmation" type="password" :placeholder="__('web/auth.password_confirm_placeholder')" icon="bi-lock-fill" required autocomplete="new-password" />
 
         <div class="d-grid">
-            <x-form.submit label="Daftar" class="btn btn-primary" />
+            <x-form.submit :label="__('web/auth.sign_up')" class="btn btn-primary" />
         </div>
     </x-form.ajax>
 
     <p class="mt-3 mb-0">
-        Sudah punya akun? <a href="{{ route('login') }}">Masuk</a>
+        {{ __('web/auth.has_account') }} <a href="{{ route('login') }}">{{ __('web/auth.sign_in') }}</a>
     </p>
 </x-layouts.auth>

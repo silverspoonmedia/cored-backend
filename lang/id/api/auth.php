@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'register_success' => 'Registrasi berhasil.',
+    'login_success' => 'Berhasil masuk.',
+    'me_success' => 'Data pengguna berhasil diambil.',
+    'refresh_success' => 'Token berhasil diperbarui.',
+    'logout_success' => 'Berhasil keluar.',
+    'password_forgot' => 'Jika email terdaftar, kami telah mengirim tautan reset kata sandi.',
+    'password_reset' => 'Kata sandi berhasil diatur ulang.',
+    'password_updated' => 'Kata sandi berhasil diperbarui.',
+    'email_verified' => 'Email berhasil diverifikasi.',
+    'invalid_verification_link' => 'Tautan verifikasi tidak valid.',
+    'verification_sent' => 'Tautan verifikasi telah dikirim.',
+    'invalid_credentials' => 'Email atau kata sandi tidak valid.',
+    'current_password_incorrect' => 'Kata sandi saat ini tidak benar.',
+    'email_already_verified' => 'Alamat email sudah terverifikasi.',
+    'invalid_reset_token' => 'Token reset kata sandi tidak valid atau sudah kedaluwarsa.',
+    'bearer_required' => 'Bearer token diperlukan.',
+    'token_invalid' => 'Token tidak valid.',
+    'token_expired' => 'Token sudah kedaluwarsa.',
+    'token_revoked' => 'Token telah dicabut.',
+    'could_not_authenticate' => 'Tidak dapat mengautentikasi token.',
+    'unauthorized' => 'Anda tidak memiliki izin untuk melakukan tindakan ini.',
+];

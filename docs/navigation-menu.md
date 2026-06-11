@@ -46,7 +46,8 @@ All keys are UUID. Because `users` and `roles` exist before this migration runs,
 |--------|------|-------|
 | `id` | uuid PK | |
 | `parent_id` | uuid, nullable | self-FK → `menus.id`, `cascadeOnDelete` |
-| `name` | string | |
+| `name` | json | Spatie translatable (`en`, `id`, …) — see [Localization](./localization.md) |
+| `description` | json, nullable | Spatie translatable optional helper text |
 | `icon` | string, nullable | a **full** icon class, e.g. `bi bi-people` (the web sidebar renders it verbatim and falls back to `bi bi-circle` when null/empty) |
 | `route` | string, nullable | a **registered Laravel route name**, not a URL |
 | `type` | char(1) | `h` header, `p` parent, `c` child |
@@ -115,7 +116,7 @@ Menu management screens in the Blade admin (`routes/web.php`) are **pure consume
 | `DELETE /menus/{menu}` | `DELETE /api/v1/navigation/menus/{id}` (`cascade` query/body forwarded) |
 | `POST /menus/{menu}/restore` | `POST /api/v1/navigation/menus/{id}/restore` |
 
-Views render the **JSON arrays** returned by the API (`$menu['name']`, flat `role_ids` / `user_include_ids` / `user_exclude_ids` on edit). Web routes carry **no** `permission:` middleware — the API returns `403` when the actor lacks access.
+Views render the **JSON arrays** returned by the API. List screens use the locale-resolved `$menu['name']`; the edit form binds translatable fields from `$menu['name_translations']` and `$menu['description_translations']` (see [Translatable input](#translatable-input-name--description)). Flat `role_ids` / `user_include_ids` / `user_exclude_ids` come from the detail payload. Web routes carry **no** `permission:` middleware — the API returns `403` when the actor lacks access.
 
 **Two deliberate exceptions** (reference reads only; see [Web frontend](./web-frontend.md)):
 
@@ -128,7 +129,7 @@ The HTTP contract uses friendlier names than the columns; the **service** maps t
 
 | Request field | Column | Notes |
 |---------------|--------|-------|
-| `name`, `icon`, `route`, `type` | same | `type ∈ {h,p,c}`; `route` must pass `Route::has()` |
+| `name`, `description`, `icon`, `route`, `type` | same | `name` / `description` are **Spatie translatable** (JSON). See [Translatable input](#translatable-input-name--description) below. `type ∈ {h,p,c}`; `route` must pass `Route::has()` |
 | `parent` | `parent_id` | must `exists:menus,id` **excluding soft-deleted**; on update cannot equal the menu itself **or any descendant** |
 | `authenticate` | `is_authenticate` | boolean |
 | `guest_only` | `is_guest_only` | boolean |
@@ -147,6 +148,39 @@ On **create**, all three relationship sets are written (omitting a key clears it
 **Structural validation (`h → p → c`):** the form requests enforce strict nesting — a header (`h`) must be a root (no parent), a parent (`p`) must sit under a header, and a child (`c`) must sit under a parent. On update this is only checked when `type` or `parent` is actually being changed, so pure renames/reorders of existing data are never rejected. Re-parenting a menu under one of its own descendants is rejected (cycle guard). These are HTTP-layer concerns; the repository and seeders are trusted callers and bypass them.
 
 Invalid `position`/`reference_id` combinations throw `InvalidMenuPositionException`; structural/cycle violations surface as standard `422` validation errors on the `parent`/`type` fields.
+
+### Translatable input (`name` / `description`)
+
+`Menu` uses `spatie/laravel-translatable`. The API accepts **either** shape:
+
+**Shorthand (active locale only)** — sets the translation for the request locale resolved by `SetLocale` (`users.locale` → cookie → `APP_LOCALE`):
+
+```json
+{ "name": "Dashboard", "type": "c" }
+```
+
+**Explicit map (admin / Blade form)** — when `name` is an object, **every** supported locale (`config('localization.supported_locales')`) must be non-empty. The Blade menu form posts `name[en]`, `name[id]`, … which the web controller forwards as JSON to the API unchanged.
+
+```json
+{
+  "name": { "en": "Dashboard", "id": "Dasbor" },
+  "description": { "en": "Overview", "id": "Ringkasan" },
+  "type": "c"
+}
+```
+
+**Responses**
+
+| Field | Meaning |
+|-------|---------|
+| `data.name` | Label for the **viewer's active locale** (navigation + list display) |
+| `data.description` | Same for optional description |
+| `data.name_translations` | Full map for edit forms (`{ "en": "…", "id": "…" }`) |
+| `data.description_translations` | Full map for edit forms |
+
+On **update**, omitting `name` leaves translations untouched. Sending a string updates only the active locale; sending a map replaces/sets each provided locale (Spatie merge semantics).
+
+See also [Localization](./localization.md#database-translations-menu-example).
 
 ---
 

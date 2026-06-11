@@ -16,7 +16,7 @@ use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'email_verified_at'])]
+#[Fillable(['name', 'email', 'locale', 'password', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 {

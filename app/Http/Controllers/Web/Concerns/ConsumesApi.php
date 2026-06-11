@@ -69,7 +69,7 @@ trait ConsumesApi
             $redirect = $onSuccess($response);
             $payload = [
                 'status' => 'success',
-                'message' => $successMessage ?? 'Berhasil disimpan.',
+                'message' => $successMessage ?? __('ui.ajax.saved'),
             ];
 
             if (! $stayOnPageOnSuccess) {
@@ -82,7 +82,7 @@ trait ConsumesApi
         if ($response->status() === 422) {
             return response()->json([
                 'status' => 'error',
-                'message' => $this->apiMessage($response, 'Periksa kembali isian Anda.'),
+                'message' => $this->apiMessage($response, __('ui.ajax.validation_failed')),
                 'errors' => $response->json('errors', []),
             ], 422);
         }
@@ -90,7 +90,7 @@ trait ConsumesApi
         if (in_array($response->status(), [401, 419], true)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Sesi Anda telah berakhir. Silakan masuk kembali.',
+                'message' => __('web/session.expired'),
                 'redirect' => route('login'),
             ], 401);
         }
@@ -126,7 +126,7 @@ trait ConsumesApi
         if (in_array($response->status(), [401, 419], true)) {
             return redirect()
                 ->route('login')
-                ->with('error', 'Sesi Anda telah berakhir. Silakan masuk kembali.');
+                ->with('error', __('web/session.expired'));
         }
 
         return back()
@@ -137,9 +137,10 @@ trait ConsumesApi
     /**
      * The API envelope's `message`, with a safe fallback.
      */
-    protected function apiMessage(Response $response, string $fallback = 'Permintaan gagal diproses.'): string
+    protected function apiMessage(Response $response, ?string $fallback = null): string
     {
         $message = $response->json('message');
+        $fallback ??= __('ui.ajax.request_failed');
 
         return is_string($message) && $message !== '' ? $message : $fallback;
     }

@@ -24,7 +24,7 @@ class MenuRbacSeeder extends Seeder
     public function run(): void
     {
         // Marker: if the debug header already exists, assume the branch is seeded.
-        if (Menu::query()->where('name', 'Debug')->where('type', 'h')->exists()) {
+        if (Menu::query()->where('name->en', 'Debug')->where('type', 'h')->exists()) {
             return;
         }
 
@@ -32,7 +32,7 @@ class MenuRbacSeeder extends Seeder
 
         $header = Menu::query()->create([
             'parent_id' => null,
-            'name' => 'Debug',
+            'name' => ['en' => 'Debug', 'id' => 'Debug'],
             'icon' => 'bi bi-bug',
             'route' => null,
             'type' => 'h',

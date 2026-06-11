@@ -45,10 +45,10 @@ class LoginController extends Controller
         $redirect = redirect()
             ->route('login')
             ->withCookie(AuthCookie::forget())
-            ->with('success', 'Anda telah keluar.');
+            ->with('success', __('web/auth.logout_success'));
 
         if ($request->expectsJson()) {
-            return $this->jsonFromRedirect($request, $redirect, 'Anda telah keluar.');
+            return $this->jsonFromRedirect($request, $redirect, __('web/auth.logout_success'));
         }
 
         return $redirect;

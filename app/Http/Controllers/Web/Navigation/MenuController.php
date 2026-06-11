@@ -56,8 +56,8 @@ class MenuController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('menus.index')->with('success', 'Menu berhasil dibuat.'),
-            'Menu berhasil dibuat.',
+            fn (): RedirectResponse => redirect()->route('menus.index')->with('success', __('api/navigation.created')),
+            __('api/navigation.created'),
         );
     }
 
@@ -79,8 +79,8 @@ class MenuController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => back()->with('success', 'Menu berhasil diperbarui.'),
-            'Menu berhasil diperbarui.',
+            fn (): RedirectResponse => back()->with('success', __('api/navigation.updated')),
+            __('api/navigation.updated'),
             stayOnPageOnSuccess: true,
         );
     }
@@ -92,8 +92,8 @@ class MenuController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('menus.index')->with('success', 'Menu berhasil dihapus.'),
-            'Menu berhasil dihapus.',
+            fn (): RedirectResponse => redirect()->route('menus.index')->with('success', __('api/navigation.deleted')),
+            __('api/navigation.deleted'),
         );
     }
 
@@ -104,8 +104,8 @@ class MenuController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('menus.trashed')->with('success', 'Menu berhasil dipulihkan.'),
-            'Menu berhasil dipulihkan.',
+            fn (): RedirectResponse => redirect()->route('menus.trashed')->with('success', __('api/navigation.restored')),
+            __('api/navigation.restored'),
         );
     }
 

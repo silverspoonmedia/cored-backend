@@ -11,6 +11,6 @@ class PlaygroundController extends Controller
 
     public function ping()
     {
-        return $this->successResponse(null, 'Pong V1', 200);
+        return $this->successResponse(null, __('api/playground.pong_v1'), 200);
     }
 }

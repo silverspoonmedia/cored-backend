@@ -123,9 +123,13 @@ class MenuService
         if ($isCreate) {
             $attributes['name'] = $data['name'];
             $attributes['type'] = $data['type'];
+            $attributes['description'] = $data['description'] ?? null;
         } else {
             if (array_key_exists('name', $data)) {
                 $attributes['name'] = $data['name'];
+            }
+            if (array_key_exists('description', $data)) {
+                $attributes['description'] = $data['description'];
             }
             if (array_key_exists('type', $data)) {
                 $attributes['type'] = $data['type'];

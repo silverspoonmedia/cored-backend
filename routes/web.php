@@ -6,6 +6,7 @@ use App\Http\Controllers\Web\Auth\PasswordController;
 use App\Http\Controllers\Web\Auth\PasswordResetController;
 use App\Http\Controllers\Web\Auth\RegisterController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\LocaleController;
 use App\Http\Controllers\Web\Navigation\MenuController;
 use App\Http\Controllers\Web\UserController;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', fn () => redirect()->route(Auth::guard('api')->check() ? 'dashboard' : 'login'));
+
+Route::get('locale/{locale}', LocaleController::class)->name('locale.switch');
 
 // Guest-only auth screens.
 Route::middleware('web.guest')->group(function (): void {

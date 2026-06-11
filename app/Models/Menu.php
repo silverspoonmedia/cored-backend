@@ -11,17 +11,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Translatable\HasTranslations;
 
 class Menu extends Model
 {
     /** @use HasFactory<MenuFactory> */
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, HasTranslations, HasUuids, SoftDeletes;
+
+    /** @var list<string> */
+    public array $translatable = ['name', 'description'];
 
     protected $table = 'menus';
 
     protected $fillable = [
         'parent_id',
         'name',
+        'description',
         'icon',
         'route',
         'type',

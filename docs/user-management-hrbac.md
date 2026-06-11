@@ -158,7 +158,7 @@ Web routes carry **no** `permission:` middleware — a `403` from the API is tra
 
 ## Request and response format
 
-Responses use the shared `ApiResponse` / `ApiResponder` envelope.
+Responses use the shared `ApiResponse` / `ApiResponder` envelope. User-facing `message` values come from `lang/{locale}/api/users.php` (and related keys) — they are **not** hardcoded in controllers. The JSON examples below illustrate Indonesian (`id`); the active locale may return English instead.
 
 **Success:**
 
@@ -198,6 +198,8 @@ Responses use the shared `ApiResponse` / `ApiResponder` envelope.
 ```
 
 Other Eloquent models on the API receive `Data tidak ditemukan.` instead of Laravel’s default `No query results for model [...]` message.
+
+> **Locale note:** All `message` strings above are resolved via `__('api/users.*')` / `__('api/common.*')` and follow the active request locale (`SetLocale`: `users.locale` → cookie → `APP_LOCALE`). Examples show Indonesian (`id`); with `APP_LOCALE=en` the same keys return English from `lang/en/api/users.php`. See [Localization](./localization.md).
 
 User payloads in management endpoints use `App\Support\User\UserManagementPresenter` (includes `roles` with `name` and `level`).
 

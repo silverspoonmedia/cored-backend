@@ -73,7 +73,7 @@ class UserFormAjaxTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('status', 'success')
-            ->assertJsonPath('message', 'Pengguna berhasil diperbarui.');
+            ->assertJsonPath('message', __('api/users.updated'));
 
         $this->assertArrayNotHasKey('redirect', $response->json());
     }
@@ -101,7 +101,7 @@ class UserFormAjaxTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('status', 'success')
-            ->assertJsonPath('message', 'Pengguna berhasil dibuat.')
+            ->assertJsonPath('message', __('api/users.created'))
             ->assertJsonPath('redirect', route('users.index'));
     }
 

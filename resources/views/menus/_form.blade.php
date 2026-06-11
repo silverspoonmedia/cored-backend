@@ -1,92 +1,112 @@
 {{--
     Shared menu create/edit form.
-    Expected variables:
-      $action, $method ('POST'|'PUT'), $isEdit (bool), $submitLabel
-      $menu     array|null (edit only) — MenuDetailResource payload from the API,
-                including flat role_ids / user_include_ids / user_exclude_ids
-      $allMenus Collection<array> (parent / reference candidates from the API)
-      $roles    Collection<Role>  (reference option-list)
-      $users    Collection<User>  (reference option-list)
 --}}
 @php
-    $typeOptions = ['h' => 'Header (h)', 'p' => 'Parent (p)', 'c' => 'Child (c)'];
+    $typeOptions = [
+        'h' => __('web/menus.form.types.h'),
+        'p' => __('web/menus.form.types.p'),
+        'c' => __('web/menus.form.types.c'),
+    ];
     $parentOptions = $allMenus->mapWithKeys(fn ($m) => [$m['id'] => $m['name'].' · '.$m['type']]);
     $roleOptions = $roles->pluck('name', 'id');
     $userOptions = $users->mapWithKeys(fn ($u) => [$u->id => $u->name.' ('.$u->email.')']);
 
     $positionOptions = $isEdit
-        ? ['before' => 'Sebelum referensi', 'after' => 'Sesudah referensi']
-        : ['append' => 'Di akhir grup', 'before' => 'Sebelum referensi', 'after' => 'Sesudah referensi'];
+        ? [
+            'before' => __('web/menus.form.position.before'),
+            'after' => __('web/menus.form.position.after'),
+        ]
+        : [
+            'append' => __('web/menus.form.position.append'),
+            'before' => __('web/menus.form.position.before'),
+            'after' => __('web/menus.form.position.after'),
+        ];
+
+    $nameTranslations = data_get($menu, 'name_translations', []);
+    $descriptionTranslations = data_get($menu, 'description_translations', []);
 @endphp
 
 <x-form.ajax :action="$action" :method="$method">
     <div class="row">
         <div class="col-md-6">
-            <x-form.input name="name" label="Nama" :value="data_get($menu, 'name')" required />
+            <x-form.translatable-input
+                name="name"
+                :label="__('ui.labels.name')"
+                :translations="$nameTranslations"
+                :hint="__('web/menus.form.name_hint')"
+                required
+            />
         </div>
         <div class="col-md-6">
-            <x-form.select name="type" label="Tipe" :options="$typeOptions" :selected="data_get($menu, 'type')"
-                placeholder="Pilih tipe" required
-                hint="h harus root, p berada di bawah h, c berada di bawah p." />
-        </div>
-    </div>
-
-    <x-form.select name="parent" label="Induk (parent)" :options="$parentOptions" :selected="data_get($menu, 'parent_id')"
-        placeholder="Tidak ada (root)" />
-
-    <div class="row">
-        <div class="col-md-6">
-            <x-form.input name="route" label="Route" :value="data_get($menu, 'route')"
-                hint="Nama route Laravel yang terdaftar (mis. dashboard), bukan URL." />
-        </div>
-        <div class="col-md-6">
-            <x-form.input name="icon" label="Ikon" :value="data_get($menu, 'icon')"
-                hint="Kelas ikon lengkap, mis. bi bi-house." />
+            <x-form.select name="type" :label="__('web/menus.columns.type')" :options="$typeOptions" :selected="data_get($menu, 'type')"
+                :placeholder="__('web/menus.form.type_placeholder')" required
+                :hint="__('web/menus.form.type_hint')" />
         </div>
     </div>
 
+    <x-form.translatable-input
+        name="description"
+        :label="__('web/menus.form.description_label')"
+        :translations="$descriptionTranslations"
+        :hint="__('web/menus.form.description_hint')"
+    />
+
+    <x-form.select name="parent" :label="__('web/menus.form.parent_label')" :options="$parentOptions" :selected="data_get($menu, 'parent_id')"
+        :placeholder="__('web/menus.form.parent_placeholder')" />
+
     <div class="row">
         <div class="col-md-6">
-            <x-form.checkbox name="authenticate" label="Hanya untuk pengguna terautentikasi"
+            <x-form.input name="route" :label="__('web/menus.columns.route')" :value="data_get($menu, 'route')"
+                :hint="__('web/menus.form.route_hint')" />
+        </div>
+        <div class="col-md-6">
+            <x-form.input name="icon" :label="__('web/menus.form.icon_label')" :value="data_get($menu, 'icon')"
+                :hint="__('web/menus.form.icon_hint')" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <x-form.checkbox name="authenticate" :label="__('web/menus.form.authenticate')"
                 :checked="(bool) data_get($menu, 'is_authenticate', false)" />
         </div>
         <div class="col-md-6">
-            <x-form.checkbox name="guest_only" label="Hanya untuk tamu (guest)"
+            <x-form.checkbox name="guest_only" :label="__('web/menus.form.guest_only')"
                 :checked="(bool) data_get($menu, 'is_guest_only', false)" />
         </div>
     </div>
 
-    <x-form.multiselect name="roles" label="Role yang boleh melihat" :options="$roleOptions"
+    <x-form.multiselect name="roles" :label="__('web/menus.form.roles_label')" :options="$roleOptions"
         :selected="data_get($menu, 'role_ids', [])"
-        hint="Kosongkan agar terlihat oleh semua yang lolos aturan lain. Tidak kompatibel dengan 'guest only'." />
+        :hint="__('web/menus.form.roles_hint')" />
 
     <div class="row">
         <div class="col-md-6">
-            <x-form.multiselect name="user_includes" label="Pengguna disertakan (allowlist)" :options="$userOptions"
+            <x-form.multiselect name="user_includes" :label="__('web/menus.form.user_includes')" :options="$userOptions"
                 :selected="data_get($menu, 'user_include_ids', [])" />
         </div>
         <div class="col-md-6">
-            <x-form.multiselect name="user_excludes" label="Pengguna dikecualikan (blacklist)" :options="$userOptions"
+            <x-form.multiselect name="user_excludes" :label="__('web/menus.form.user_excludes')" :options="$userOptions"
                 :selected="data_get($menu, 'user_exclude_ids', [])" />
         </div>
     </div>
 
     <hr />
-    <p class="text-muted small mb-2">Penempatan (opsional)</p>
+    <p class="text-muted small mb-2">{{ __('web/menus.form.placement_heading') }}</p>
     <div class="row">
         <div class="col-md-6">
-            <x-form.select name="position" label="Posisi" :options="$positionOptions"
-                :placeholder="$isEdit ? 'Tidak ubah urutan' : 'Default (akhir grup)'" />
+            <x-form.select name="position" :label="__('web/menus.form.position_label')" :options="$positionOptions"
+                :placeholder="$isEdit ? __('web/menus.form.position_no_change') : __('web/menus.form.position_default')" />
         </div>
         <div class="col-md-6">
-            <x-form.select name="reference_id" label="Menu referensi" :options="$parentOptions"
-                placeholder="Pilih menu referensi"
-                :hint="$isEdit ? 'Wajib jika posisi diisi. Kosongkan keduanya agar urutan tidak berubah.' : 'Wajib jika posisi \'sebelum\' atau \'sesudah\'.'" />
+            <x-form.select name="reference_id" :label="__('web/menus.form.reference_label')" :options="$parentOptions"
+                :placeholder="__('web/menus.form.reference_placeholder')"
+                :hint="$isEdit ? __('web/menus.form.reference_hint_edit') : __('web/menus.form.reference_hint_create')" />
         </div>
     </div>
 
     <div class="d-flex gap-2 mt-3">
         <x-form.submit :label="$submitLabel" class="btn btn-primary" />
-        <a href="{{ route('menus.index') }}" class="btn btn-outline-secondary">Batal</a>
+        <a href="{{ route('menus.index') }}" class="btn btn-outline-secondary">{{ __('ui.actions.cancel') }}</a>
     </div>
 </x-form.ajax>

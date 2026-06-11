@@ -26,7 +26,7 @@ class PasswordController extends Controller
 
         return $this->successResponse(
             null,
-            'If that email address exists in our system, a password reset link has been sent.',
+            __('api/auth.password_forgot'),
         );
     }
 
@@ -34,7 +34,7 @@ class PasswordController extends Controller
     {
         $this->passwordResetService->reset($request->validated());
 
-        return $this->successResponse(null, 'Password has been reset successfully.');
+        return $this->successResponse(null, __('api/auth.password_reset'));
     }
 
     public function update(ChangePasswordRequest $request): JsonResponse
@@ -44,6 +44,6 @@ class PasswordController extends Controller
 
         $this->passwordResetService->changePassword($user->id, $request->validated());
 
-        return $this->successResponse(null, 'Password updated successfully.');
+        return $this->successResponse(null, __('api/auth.password_updated'));
     }
 }

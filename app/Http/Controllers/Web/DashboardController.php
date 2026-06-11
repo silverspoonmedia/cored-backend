@@ -21,7 +21,7 @@ class DashboardController extends Controller
             return redirect()
                 ->route('login')
                 ->withCookie(AuthCookie::forget())
-                ->with('error', 'Sesi Anda telah berakhir. Silakan masuk kembali.');
+                ->with('error', __('web/session.expired'));
         }
 
         return view('dashboard', [

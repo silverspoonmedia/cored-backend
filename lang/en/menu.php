@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * Static menu labels used in Blade layouts (not database-driven navigation).
+ * Database menu names use Spatie translatable on the Menu model.
+ */
+return [
+    'dashboard' => 'Dashboard',
+    'users' => 'User management',
+    'navigation' => 'Navigation',
+    'menus' => 'Menu list',
+    'menus_trashed' => 'Trashed menus',
+    'profile' => 'Profile',
+    'password' => 'Change password',
+];

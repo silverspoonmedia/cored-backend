@@ -8,7 +8,7 @@ class EmailAlreadyVerifiedException extends BusinessRuleException
 {
     public function __construct()
     {
-        parent::__construct('Email address is already verified.');
+        parent::__construct(__('api/auth.email_already_verified'));
     }
 
     public function statusCode(): int

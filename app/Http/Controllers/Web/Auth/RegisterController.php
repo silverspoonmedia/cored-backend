@@ -34,11 +34,11 @@ class RegisterController extends Controller
             $request,
             $response,
             function (Response $r): RedirectResponse {
-                session()->flash('success', 'Registrasi berhasil. Kami telah mengirim tautan verifikasi ke email Anda.');
+                session()->flash('success', __('web/auth.register_success'));
 
                 return $this->redirectAuthenticated($r->json('data', []));
             },
-            'Registrasi berhasil. Kami telah mengirim tautan verifikasi ke email Anda.',
+            __('web/auth.register_success'),
         );
     }
 }

@@ -6,9 +6,11 @@ It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap
 
 ### Living documentation (required)
 
-**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, or any behavior described here—do not let code and docs drift apart.
+**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, localization, or any behavior described here—do not let code and docs drift apart.
 
 **All project documentation must be written in English** (README, `docs/`, and any new guides or sections you add).
+
+**Localization (required on every task that touches copy):** Any change that adds or modifies user-facing text — Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, or database content shown to users — must include translations for **all** supported locales (`en` and `id` today) in the **same task/PR**. Use `__('…')` with application-owned files under `lang/{locale}/` (never hardcode strings), or Spatie translatable fields for database content. See [Localization](docs/localization.md#task-rule-required) for the full checklist and conventions.
 
 ---
 
@@ -196,6 +198,12 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [User management & H-RBAC](docs/user-management-hrbac.md) | `/api/v1/users` CRUD, role hierarchy (`roles.level`), policies, permissions matrix |
 | [User primary keys (UUID v7)](docs/user-uuid-v7.md) | Why UUID v7 on `users`, migrations, and applying the same pattern to new models |
 
+### Localization
+
+| Document | Description |
+|----------|-------------|
+| [Localization (multi-language)](docs/localization.md) | Cookie/user locale resolution, `laravel-lang/common` file packs, Spatie translatable models, `lang/` layout, and validation strategy |
+
 ### Tooling
 
 | Document | Description |
@@ -212,6 +220,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/navigation-menu.md)
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
 - Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi` → [web-frontend.md](docs/web-frontend.md)
+- Multi-language (API, Blade, DB) → [localization.md](docs/localization.md)
 
 ---
 
@@ -221,6 +230,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 php artisan migrate              # Apply migrations
 php artisan db:seed              # Roles, permissions, sample admin
 php artisan jwt:secret           # Generate JWT_SECRET (once per environment)
+php artisan lang:update          # Refresh laravel-lang package files (also runs on composer update)
 php artisan pint                 # Format PHP code
 php artisan test                 # PHPUnit test suite
 ```

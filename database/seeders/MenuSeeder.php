@@ -12,10 +12,7 @@ use Illuminate\Database\Seeder;
  * Seeds the default admin web navigation that the dynamic sidebar renders.
  *
  * Icons are full Bootstrap Icons classes (e.g. "bi bi-people"); `route` holds
- * registered WEB route names. Visibility mirrors the page-level authorization:
- * the engine gates by ROLE, so items behind `view user` / `view menu` get the
- * roles that actually hold those permissions attached (Root/Admin/Moderator/
- * Management). Dashboard stays open to every authenticated viewer.
+ * registered WEB route names. Menu names are stored as Spatie translatable JSON.
  */
 class MenuSeeder extends Seeder
 {
@@ -27,22 +24,15 @@ class MenuSeeder extends Seeder
             return;
         }
 
-        // Roles that may see the management items (those holding view user / view menu).
         $managementRoleIds = Role::query()
             ->where('guard_name', 'api')
             ->whereIn('name', ['Root', 'Admin', 'Moderator', 'Management'])
             ->pluck('id')
             ->all();
 
-        // The engine prunes childless 'h'/'p' nodes and sorts siblings by type
-        // rank (h→p→c) before `order`. So leaf links must be 'c' (never pruned),
-        // and a branch ('p') must not share a parent with leaves or it floats
-        // above them. The clean fit: group leaves under one header, the branch
-        // under its own — each group stays single-type, so `order` alone wins.
-
         $main = Menu::query()->create([
             'parent_id' => null,
-            'name' => 'Menu',
+            'name' => ['en' => 'Menu', 'id' => 'Menu'],
             'icon' => null,
             'route' => null,
             'type' => 'h',
@@ -52,7 +42,7 @@ class MenuSeeder extends Seeder
 
         Menu::query()->create([
             'parent_id' => $main->id,
-            'name' => 'Dashboard',
+            'name' => ['en' => 'Dashboard', 'id' => 'Dasbor'],
             'icon' => 'bi bi-speedometer2',
             'route' => 'dashboard',
             'type' => 'c',
@@ -62,7 +52,7 @@ class MenuSeeder extends Seeder
 
         $usersItem = Menu::query()->create([
             'parent_id' => $main->id,
-            'name' => 'Manajemen Pengguna',
+            'name' => ['en' => 'User management', 'id' => 'Manajemen Pengguna'],
             'icon' => 'bi bi-people',
             'route' => 'users.index',
             'type' => 'c',
@@ -73,7 +63,7 @@ class MenuSeeder extends Seeder
 
         $admin = Menu::query()->create([
             'parent_id' => null,
-            'name' => 'Administrasi',
+            'name' => ['en' => 'Administration', 'id' => 'Administrasi'],
             'icon' => null,
             'route' => null,
             'type' => 'h',
@@ -83,7 +73,7 @@ class MenuSeeder extends Seeder
 
         $menus = Menu::query()->create([
             'parent_id' => $admin->id,
-            'name' => 'Navigasi Menu',
+            'name' => ['en' => 'Navigation menu', 'id' => 'Navigasi Menu'],
             'icon' => 'bi bi-list-nested',
             'route' => null,
             'type' => 'p',
@@ -94,7 +84,7 @@ class MenuSeeder extends Seeder
 
         Menu::query()->create([
             'parent_id' => $menus->id,
-            'name' => 'Daftar Menu',
+            'name' => ['en' => 'Menu list', 'id' => 'Daftar Menu'],
             'icon' => 'bi bi-circle',
             'route' => 'menus.index',
             'type' => 'c',
@@ -104,7 +94,7 @@ class MenuSeeder extends Seeder
 
         Menu::query()->create([
             'parent_id' => $menus->id,
-            'name' => 'Menu Terhapus',
+            'name' => ['en' => 'Trashed menus', 'id' => 'Menu Terhapus'],
             'icon' => 'bi bi-trash',
             'route' => 'menus.trashed',
             'type' => 'c',
@@ -112,7 +102,6 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
 
-        // Events are suppressed in seeders, so bust the navigation snapshot by hand.
         app(MenuRepositoryInterface::class)->flushNavigationCache();
     }
 }

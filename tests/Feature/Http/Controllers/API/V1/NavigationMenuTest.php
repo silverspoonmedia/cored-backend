@@ -78,9 +78,64 @@ class NavigationMenuTest extends TestCase
         $menuId = $response->json('data.id');
         $adminRoleId = Role::query()->where('name', 'Admin')->where('guard_name', 'api')->value('id');
 
-        $this->assertDatabaseHas('menus', ['id' => $menuId, 'name' => 'Reports']);
+        $this->assertDatabaseHas('menus', [
+            'id' => $menuId,
+            'name' => json_encode(['en' => 'Reports'], JSON_UNESCAPED_UNICODE),
+        ]);
         $this->assertDatabaseHas('menu_roles', ['menu_id' => $menuId, 'role_id' => $adminRoleId]);
         $this->assertSame([$adminRoleId], $response->json('data.role_ids'));
+    }
+
+    public function test_admin_can_create_menu_with_translations_map(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        $response = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => ['en' => 'Reports', 'id' => 'Laporan'],
+                'description' => ['en' => 'Reports section', 'id' => 'Bagian laporan'],
+                'type' => 'h',
+                'authenticate' => true,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.name', 'Reports')
+            ->assertJsonPath('data.name_translations.en', 'Reports')
+            ->assertJsonPath('data.name_translations.id', 'Laporan')
+            ->assertJsonPath('data.description_translations.id', 'Bagian laporan');
+
+        $menuId = $response->json('data.id');
+
+        $this->assertDatabaseHas('menus', [
+            'id' => $menuId,
+            'name' => json_encode(['en' => 'Reports', 'id' => 'Laporan'], JSON_UNESCAPED_UNICODE),
+        ]);
+    }
+
+    public function test_navigation_tree_resolves_name_for_request_locale(): void
+    {
+        $this->makeMenu([
+            'name' => ['en' => 'English label', 'id' => 'Label Indonesia'],
+            'type' => 'c',
+        ]);
+
+        app()->setLocale('id');
+
+        $response = $this->getJson('/api/v1/navigation/menus')->assertOk();
+
+        $this->assertTrue(
+            collect($response->json('data'))->pluck('name')->contains('Label Indonesia'),
+        );
+    }
+
+    public function test_store_rejects_incomplete_translation_map(): void
+    {
+        $this->actingAsJwt($this->userWithRole('Admin'))
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => ['en' => 'Only English'],
+                'type' => 'c',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name.id']);
     }
 
     public function test_store_rejects_invalid_type(): void

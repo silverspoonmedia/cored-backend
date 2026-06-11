@@ -68,7 +68,7 @@ class UserPolicy
             return $this->allow();
         }
 
-        return $this->deny('Anda tidak memiliki izin untuk melihat daftar role yang dapat ditetapkan.');
+        return $this->deny(__('api/users.policy.assignable_roles'));
     }
 
     private function checkPermission(User $actor, string $permission): Response
@@ -78,11 +78,11 @@ class UserPolicy
         }
 
         $message = match ($permission) {
-            'view user' => 'Anda tidak memiliki izin untuk melihat pengguna.',
-            'create user' => 'Anda tidak memiliki izin untuk membuat pengguna.',
-            'edit user' => 'Anda tidak memiliki izin untuk mengedit pengguna.',
-            'delete user' => 'Anda tidak memiliki izin untuk menghapus pengguna.',
-            default => 'Anda tidak memiliki izin untuk melakukan tindakan ini.',
+            'view user' => __('api/users.policy.view'),
+            'create user' => __('api/users.policy.create'),
+            'edit user' => __('api/users.policy.edit'),
+            'delete user' => __('api/users.policy.delete'),
+            default => __('api/users.policy.default'),
         };
 
         return $this->deny($message);
@@ -94,9 +94,7 @@ class UserPolicy
             return $this->allow();
         }
 
-        return $this->deny(
-            'Anda tidak dapat mengakses pengguna dengan level role lebih tinggi dari Anda.',
-        );
+        return $this->deny(__('api/users.policy.hierarchy_view'));
     }
 
     private function checkAllRolesAbove(User $actor, User $target): Response
@@ -105,8 +103,6 @@ class UserPolicy
             return $this->allow();
         }
 
-        return $this->deny(
-            'Anda tidak dapat mengubah pengguna dengan level role yang sama atau lebih tinggi dari Anda.',
-        );
+        return $this->deny(__('api/users.policy.hierarchy_modify'));
     }
 }

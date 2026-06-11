@@ -1,0 +1,41 @@
+<?php
+
+return [
+    'actions' => [
+        'save' => 'Save',
+        'cancel' => 'Cancel',
+        'delete' => 'Delete',
+        'edit' => 'Edit',
+        'create' => 'Create',
+        'back' => 'Back',
+        'search' => 'Search',
+        'logout' => 'Log out',
+    ],
+    'labels' => [
+        'email' => 'Email address',
+        'password' => 'Password',
+        'name' => 'Name',
+        'role' => 'Role',
+        'status' => 'Status',
+        'language' => 'Language',
+    ],
+    'status' => [
+        'verified' => 'Verified',
+        'unverified' => 'Not verified',
+        'none' => 'None',
+    ],
+    'ajax' => [
+        'saved' => 'Saved successfully.',
+        'validation_failed' => 'Please check your input.',
+        'request_failed' => 'The request could not be processed.',
+        'server_unreachable' => 'Could not reach the server. Check your connection.',
+    ],
+    'password' => [
+        'show' => 'Show password',
+        'hide' => 'Hide password',
+    ],
+    'breadcrumb' => [
+        'add' => 'Add',
+        'edit' => 'Edit',
+    ],
+];

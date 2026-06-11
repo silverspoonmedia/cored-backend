@@ -8,7 +8,7 @@ class MenuHasChildrenException extends BusinessRuleException
 {
     public function __construct()
     {
-        parent::__construct('This menu has child items. Pass cascade=true to delete it together with its descendants.');
+        parent::__construct(__('api/navigation.has_children'));
     }
 
     public function statusCode(): int

@@ -30,14 +30,14 @@ class AuthFlowTest extends TestCase
             ->assertUnauthorized()
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Bearer token is required.',
+                'message' => __('api/auth.bearer_required'),
             ]);
 
         $this->postJson('/api/v1/auth/logout')
             ->assertUnauthorized()
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Bearer token is required.',
+                'message' => __('api/auth.bearer_required'),
             ]);
     }
 
@@ -49,14 +49,14 @@ class AuthFlowTest extends TestCase
             ->assertUnauthorized()
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Token is invalid.',
+                'message' => __('api/auth.token_invalid'),
             ]);
 
         $this->post('/api/v1/auth/logout', [], $headers)
             ->assertUnauthorized()
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Token is invalid.',
+                'message' => __('api/auth.token_invalid'),
             ]);
     }
 
@@ -123,7 +123,7 @@ class AuthFlowTest extends TestCase
             ->assertUnauthorized()
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Invalid email or password.',
+                'message' => __('api/auth.invalid_credentials'),
             ]);
     }
 
@@ -171,7 +171,7 @@ class AuthFlowTest extends TestCase
             ->assertOk()
             ->assertJson([
                 'status' => 'success',
-                'message' => 'Email verified successfully.',
+                'message' => __('api/auth.email_verified'),
             ]);
 
         $login = $this->postJson('/api/v1/auth/login', [
@@ -187,7 +187,7 @@ class AuthFlowTest extends TestCase
             ->assertStatus(422)
             ->assertJson([
                 'status' => 'error',
-                'message' => 'Email address is already verified.',
+                'message' => __('api/auth.email_already_verified'),
             ]);
     }
 
@@ -204,7 +204,7 @@ class AuthFlowTest extends TestCase
             ->assertForbidden()
             ->assertJson([
                 'status' => 'error',
-                'message' => 'You are not authorized to perform this action.',
+                'message' => __('api/common.unauthorized'),
             ]);
 
         $admin = User::factory()->create();
@@ -218,7 +218,7 @@ class AuthFlowTest extends TestCase
             ->assertOk()
             ->assertJson([
                 'status' => 'success',
-                'message' => 'Admin access granted.',
+                'message' => __('api/admin.access_granted'),
             ]);
     }
 

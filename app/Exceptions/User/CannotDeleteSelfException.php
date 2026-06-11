@@ -8,7 +8,7 @@ class CannotDeleteSelfException extends BusinessRuleException
 {
     public function __construct()
     {
-        parent::__construct('Anda tidak dapat menghapus akun Anda sendiri.');
+        parent::__construct(__('api/users.cannot_delete_self'));
     }
 
     public function statusCode(): int
