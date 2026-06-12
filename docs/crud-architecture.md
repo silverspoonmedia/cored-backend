@@ -276,6 +276,60 @@ Presenters under `App\Support\…` may delegate to resources for write responses
 
 ---
 
+## Master-detail aggregates (transactions, dedicated repository)
+
+When one master row owns many detail rows (an order and its line items), the
+write spans two tables and must be **atomic** — a failed line insert must never
+leave a master without its details (no orphaned data). This is exactly the case
+the generic `EloquentCrudRepository` is **not** for; it gets a **dedicated
+repository** whose writes run inside `DB::transaction()`.
+
+**Reference implementation — Playground Orders** (`/api/playground/orders`):
+
+```
+app/
+├── Models/
+│   ├── Order.php          # order_master — HasMany details, HasUuids, derived totals
+│   └── OrderDetail.php    # order_detail — BelongsTo order, foreignUuid order_master_id
+├── Repositories/
+│   ├── Contracts/OrderRepositoryInterface.php
+│   └── Eloquent/OrderRepository.php        # createWithDetails / updateWithDetails / deleteWithDetails — each in DB::transaction()
+├── Services/Playground/OrderService.php    # business rules + derives subtotal/grand_total from lines
+├── Http/
+│   ├── Requests/Playground/{Store,Update,Index}OrderRequest.php
+│   ├── Resources/Playground/PlaygroundOrder{,Detail}Resource.php
+│   └── Controllers/API/PlaygroundOrderController.php
+├── Exceptions/Playground/
+│   ├── OrderRequiresDetailException.php     (HTTP 422)
+│   └── OrderNotEditableException.php         (HTTP 409 — completed orders are frozen)
+└── Support/DataTable/Resolvers/PlaygroundOrderRowActionResolver.php
+```
+
+| Concern | Where it lives | Why |
+|---------|----------------|-----|
+| **Atomic two-table write** | `OrderRepository` (`DB::transaction`) | Master + details commit or roll back together; a mid-write failure leaves nothing behind |
+| **Totals derived from lines** | `OrderService` | Persisted `subtotal`/`grand_total` always match the items — never trusted from the client |
+| **Business rules** (≥1 line, completed orders immutable) | `OrderService` → `BusinessRuleException` subclasses | Domain state, not HTTP-shape validation |
+| **Input shape** (`details[]` array, per-line fields) | `Store/UpdateOrderRequest` | `details` is `required|array|min:1`; lines validated with `details.*.*` rules |
+| **Update semantics** | `OrderRepository::updateWithDetails` | **ID-preserving sync**: lines sent with an existing `id` are updated in place (UUID kept), lines without an id are inserted, lines absent from the payload are deleted — all inside the transaction |
+| **Schema** | `order_master` / `order_detail` migrations | UUID PKs (`HasUuids`), `foreignUuid('order_master_id')->constrained()->cascadeOnDelete()` |
+| **File attachments** | `OrderService` + `Support\Orders\OrderAttachmentStorage` | Multiple files per order stored on the `s3Custom` disk; `order_master.attachment` JSON holds `{path,name,size,mime}` metadata. Files live **outside** the DB transaction, so the service compensates (deletes uploads) on a failed write and purges dropped/deleted files only after commit — no orphaned objects |
+
+The controller stays thin (validated input → `OrderService` → resource → response)
+exactly like Playground Users; only the **data layer** differs (dedicated repo +
+transaction instead of `EloquentCrudRepository`). The interface is bound in
+`AppServiceProvider`. Web admin screens for this aggregate live in the
+[web frontend](./web-frontend.md) and consume `/api/playground/orders`. Full
+detail (request shapes, attachment reconciliation, transaction-safety ordering)
+→ **[Playground](./playground.md#attachments-multiple-file-upload)**.
+
+> The detail set is synced by **id**, not blindly replaced. Send a line's `id`
+> to update it in place (its UUID survives); omit `id` for a new line; leave a
+> line out to delete it. A line `id` that does not belong to the order is
+> ignored and treated as a new line (no cross-order hijacking).
+
+---
+
 ## Evolving to a dedicated repository
 
 When an entity outgrows generic CRUD:
@@ -297,11 +351,15 @@ Do not extend `EloquentCrudRepository` with business-specific methods—that cou
 | Controller unit | `tests/Unit/Http/Controllers/API/PlaygroundControllerTest.php` | Controller delegates to `UserService`; no repository in controller |
 | Service unit | `tests/Unit/Services/Playground/UserServiceTest.php` | Business rules; repository mocked |
 | Feature | `tests/Feature/Http/Controllers/API/PlaygroundUserCrudTest.php` | Full HTTP stack, validation, persistence |
+| Order service unit | `tests/Unit/Services/Playground/OrderServiceTest.php` | Master-detail rules + total derivation; repository mocked |
+| Order repository feature | `tests/Feature/Repositories/OrderRepositoryTest.php` | Transaction rollback (no orphaned master/details) |
+| Order feature | `tests/Feature/Http/Controllers/API/PlaygroundOrderCrudTest.php` | Full HTTP stack: atomic create, full-line replace, frozen completed orders |
 
 Run:
 
 ```bash
 php artisan test --filter=Playground
+php artisan test --filter="Order"
 ```
 
 ---

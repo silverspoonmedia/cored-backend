@@ -32,7 +32,8 @@ This project does **not** use auto-increment integer primary keys for domain mod
 | `users` | `id` (PK) |
 | `sessions` | `user_id` → `users.id` |
 | Spatie (`roles`, `permissions`, pivots) | `id`, `model_id`, `role_id`, `permission_id` |
-| Models | `User`, `Role`, `Permission` use `HasUuids` |
+| `order_master` / `order_detail` | `id` (PK), `order_detail.order_master_id` (FK) |
+| Models | `User`, `Role`, `Permission`, `Order`, `OrderDetail` use `HasUuids` |
 
 When you add a table that belongs to a user or another UUID-backed model, use `foreignUuid` (not `foreignId`). Do not pass integer IDs in validation or route binding. Full rationale, migration examples, and pitfalls (e.g. do not use DB `gen_random_uuid()` for v7) → **[User primary keys (UUID v7)](docs/user-uuid-v7.md)**.
 
@@ -185,7 +186,8 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | Document | Description |
 |----------|-------------|
 | [API routing](docs/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
-| [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example |
+| [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example, and the master-detail aggregate (Order + OrderDetail) with transactional writes |
+| [Playground (reference surface)](docs/playground.md) | Non-production `/api/playground/*` demos: simple CRUD (Users) and the master-detail aggregate (Orders) with transactional writes, plus their web screens |
 | [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 4 / jQuery 3 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
 | [Activity notifications (per role + per user)](docs/notifications.md) | Generic event-driven notification engine: broadcast to whole roles and/or target specific users, per-user read state, navbar bell |
@@ -217,6 +219,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - User CRUD and hierarchy rules → [user-management-hrbac.md](docs/user-management-hrbac.md) (builds on JWT doc)
 - Route placement for new features → [api-routing.md](docs/api-routing.md)
 - Simple CRUD scaffolding (`Route::apiResource` + repository pattern) → [crud-architecture.md](docs/crud-architecture.md)
+- Non-production reference surface (simple CRUD + master-detail orders) → [playground.md](docs/playground.md)
 - Dual-mode list/index (query JSON vs DataTables + RBAC actions) → [list-display-modes.md](docs/list-display-modes.md)
 - Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/navigation-menu.md)
 - Role-targeted + personal activity notifications (events → roles/users) → [notifications.md](docs/notifications.md)

@@ -50,6 +50,7 @@ return [
             'delete_menu' => 'Delete this menu item?',
             'restore_menu' => 'Restore this menu item and its trashed subtree?',
             'delete_playground_user' => 'Delete this user?',
+            'delete_playground_order' => 'Delete this order and all its line items?',
         ],
     ],
 ];

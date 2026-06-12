@@ -11,6 +11,7 @@ Navigation **tree** `GET /api/v1/navigation/menus` is excluded — it returns a 
 | Method | URI | Query mode (default) | Datatable mode |
 |--------|-----|----------------------|----------------|
 | `GET` | `/api/playground/users` | Playground demo list | Same data + actions |
+| `GET` | `/api/playground/orders` | Playground master-detail list | Same data + actions |
 | `GET` | `/api/v1/users` | User management list (H-RBAC filtered) | Same data + actions |
 | `GET` | `/api/v1/navigation/menus/list` | Admin flat menu list | Same data + actions |
 | `GET` | `/api/v1/navigation/menus/trashed` | Soft-deleted menus | Same data + actions (+ restore) |
@@ -131,6 +132,7 @@ Actions are computed **per row** for the authenticated actor:
 |----------|----------|-------|
 | `/api/v1/users` | `UserRowActionResolver` | Laravel `UserPolicy` + H-RBAC via `RoleService`; no self-delete |
 | `/api/playground/users` | `PlaygroundUserRowActionResolver` | All actions on every row (demo, no auth) |
+| `/api/playground/orders` | `PlaygroundOrderRowActionResolver` | All actions; edit/delete dropped for `completed` orders (frozen) |
 | `/api/v1/navigation/menus/list` | `MenuRowActionResolver` | Spatie permissions: `view menu`, `manage menu` |
 | `/api/v1/navigation/menus/trashed` | `MenuTrashedRowActionResolver` | `view menu`, `restore menu` |
 | `/users/datatable` (web) | *(proxy)* `UserRowActionResolver` via the API | The API resolves RBAC; the web proxy maps allowed keys to web URLs (`users.edit`, `users.destroy`), dropping `show` |
