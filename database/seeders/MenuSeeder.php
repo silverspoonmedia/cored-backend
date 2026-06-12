@@ -32,7 +32,7 @@ class MenuSeeder extends Seeder
 
         $main = Menu::query()->create([
             'parent_id' => null,
-            'name' => ['en' => 'Menu', 'id' => 'Menu'],
+            'name' => ['en' => 'Menu', 'id' => 'Menu', 'ja' => 'メニュー'],
             'icon' => null,
             'route' => null,
             'type' => 'h',
@@ -42,7 +42,7 @@ class MenuSeeder extends Seeder
 
         Menu::query()->create([
             'parent_id' => $main->id,
-            'name' => ['en' => 'Dashboard', 'id' => 'Beranda'],
+            'name' => ['en' => 'Dashboard', 'id' => 'Beranda', 'ja' => 'ダッシュボード'],
             'icon' => 'bi bi-speedometer2',
             'route' => 'dashboard',
             'type' => 'p',
@@ -52,7 +52,7 @@ class MenuSeeder extends Seeder
 
         $usersItem = Menu::query()->create([
             'parent_id' => $main->id,
-            'name' => ['en' => 'User management', 'id' => 'Manajemen Pengguna'],
+            'name' => ['en' => 'User management', 'id' => 'Manajemen Pengguna', 'ja' => 'ユーザー管理'],
             'icon' => 'bi bi-people',
             'route' => 'users.index',
             'type' => 'p',
@@ -65,7 +65,7 @@ class MenuSeeder extends Seeder
         // so no role gating — visible to all signed-in viewers.
         Menu::query()->create([
             'parent_id' => $main->id,
-            'name' => ['en' => 'Notifications', 'id' => 'Notifikasi'],
+            'name' => ['en' => 'Notifications', 'id' => 'Notifikasi', 'ja' => '通知'],
             'icon' => 'bi bi-bell',
             'route' => 'notifications.index',
             'type' => 'p',
@@ -75,7 +75,7 @@ class MenuSeeder extends Seeder
 
         $admin = Menu::query()->create([
             'parent_id' => null,
-            'name' => ['en' => 'Administration', 'id' => 'Administrasi'],
+            'name' => ['en' => 'Administration', 'id' => 'Administrasi', 'ja' => '管理'],
             'icon' => null,
             'route' => null,
             'type' => 'h',
@@ -85,7 +85,7 @@ class MenuSeeder extends Seeder
 
         $menus = Menu::query()->create([
             'parent_id' => $admin->id,
-            'name' => ['en' => 'Navigation menu', 'id' => 'Navigasi Menu'],
+            'name' => ['en' => 'Navigation menu', 'id' => 'Navigasi Menu', 'ja' => 'ナビゲーションメニュー'],
             'icon' => 'bi bi-list-nested',
             'route' => null,
             'type' => 'p',
@@ -96,7 +96,7 @@ class MenuSeeder extends Seeder
 
         Menu::query()->create([
             'parent_id' => $menus->id,
-            'name' => ['en' => 'Menu list', 'id' => 'Daftar Menu'],
+            'name' => ['en' => 'Menu list', 'id' => 'Daftar Menu', 'ja' => 'メニュー一覧'],
             'icon' => 'bi bi-circle',
             'route' => 'menus.index',
             'type' => 'c',
@@ -106,7 +106,7 @@ class MenuSeeder extends Seeder
 
         Menu::query()->create([
             'parent_id' => $menus->id,
-            'name' => ['en' => 'Trashed menus', 'id' => 'Menu Terhapus'],
+            'name' => ['en' => 'Trashed menus', 'id' => 'Menu Terhapus', 'ja' => '削除済みメニュー'],
             'icon' => 'bi bi-trash',
             'route' => 'menus.trashed',
             'type' => 'c',

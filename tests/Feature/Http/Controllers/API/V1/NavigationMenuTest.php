@@ -90,24 +90,31 @@ class NavigationMenuTest extends TestCase
     {
         $admin = $this->userWithRole('Admin');
 
+        // A locale map must cover EVERY supported locale (validateTranslatableAllLocales),
+        // so build the payload from config rather than hardcoding en/id — this keeps
+        // the test correct when locales are added (e.g. ja).
+        $locales = config('localization.supported_locales');
+        $name = collect($locales)->mapWithKeys(fn (string $l): array => [$l => "Reports {$l}"])->all();
+        $description = collect($locales)->mapWithKeys(fn (string $l): array => [$l => "Reports section {$l}"])->all();
+
         $response = $this->actingAsJwt($admin)
             ->postJson('/api/v1/navigation/menus', [
-                'name' => ['en' => 'Reports', 'id' => 'Laporan'],
-                'description' => ['en' => 'Reports section', 'id' => 'Bagian laporan'],
+                'name' => $name,
+                'description' => $description,
                 'type' => 'h',
                 'authenticate' => true,
             ])
             ->assertCreated()
-            ->assertJsonPath('data.name', 'Reports')
-            ->assertJsonPath('data.name_translations.en', 'Reports')
-            ->assertJsonPath('data.name_translations.id', 'Laporan')
-            ->assertJsonPath('data.description_translations.id', 'Bagian laporan');
+            ->assertJsonPath('data.name', 'Reports en')
+            ->assertJsonPath('data.name_translations.en', 'Reports en')
+            ->assertJsonPath('data.name_translations.id', 'Reports id')
+            ->assertJsonPath('data.description_translations.id', 'Reports section id');
 
         $menuId = $response->json('data.id');
 
         $this->assertDatabaseHas('menus', [
             'id' => $menuId,
-            'name' => json_encode(['en' => 'Reports', 'id' => 'Laporan'], JSON_UNESCAPED_UNICODE),
+            'name' => json_encode($name, JSON_UNESCAPED_UNICODE),
         ]);
     }
 

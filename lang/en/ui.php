@@ -16,6 +16,7 @@ return [
         'password' => 'Password',
         'name' => 'Name',
         'role' => 'Role',
+        'permissions' => 'Permissions',
         'status' => 'Status',
         'language' => 'Language',
     ],

@@ -16,6 +16,7 @@ return [
         'password' => 'Kata sandi',
         'name' => 'Nama',
         'role' => 'Role',
+        'permissions' => 'Hak Akses',
         'status' => 'Status',
         'language' => 'Bahasa',
     ],

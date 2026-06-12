@@ -20,7 +20,7 @@ Any change that introduces or modifies **user-facing copy** must include transla
 
 | Touch this | Translate in the same task |
 |------------|----------------------------|
-| Blade / UI label, button, hint, confirm, DataTables / AJAX fallback | `lang/{locale}/ui.php`, `lang/{locale}/web/*`, or `lang/{locale}/menu.php` — **every** entry in `config('localization.supported_locales')` (currently `en` + `id`) |
+| Blade / UI label, button, hint, confirm, DataTables / AJAX fallback | `lang/{locale}/ui.php`, `lang/{locale}/web/*`, or `lang/{locale}/menu.php` — **every** entry in `config('localization.supported_locales')` (currently `en`, `id`, `ja`) |
 | API success/error message, policy deny text, business-rule exception | `lang/{locale}/api/*` (or `forms/*` for reusable validation copy) — all supported locales |
 | Reusable FormRequest validation message | `lang/{locale}/forms/{resource}.php` or `FormRequest::messages()` calling `__()` — all supported locales |
 | Database field shown to end users (titles, labels, body text) | Spatie `HasTranslations` on the model + admin input for **each** locale (see [Blade translatable fields](#blade-translatable-fields-admin-forms)) |
@@ -137,6 +137,8 @@ lang/
       users.php           # application-owned (reusable validation copy)
   id/
     … (mirror structure)
+  ja/
+    … (mirror structure)
 ```
 
 Managed file list is documented in `config/localization.php` → `managed_files`.
@@ -185,6 +187,29 @@ php artisan lang:update
 ```
 
 `composer.json` runs `lang:update` automatically in `post-update-cmd`.
+
+### Adding a new locale (`locale:add`)
+
+Adding a language touches **three** places; missing any one is the usual cause of mixed-language output. The `locale:add` command does all three in one step:
+
+```powershell
+php artisan locale:add fr            # add French, copy fallback files from en
+php artisan locale:add de --from=en  # explicit reference locale
+php artisan locale:add es --skip-package   # config + app files only (no lang:add)
+php artisan locale:add fr --force    # re-copy app-owned files, overwriting
+```
+
+What it does:
+
+| Step | Action |
+|------|--------|
+| 1. laravel-lang managed files | Runs `lang:add <locale>` (validation, auth, JSON pack, …). Skip with `--skip-package`. |
+| 2. `supported_locales` | Appends the locale to `config/localization.php` so `SetLocale` / `LocaleController` accept it. Idempotent. |
+| 3. Application-owned files | Copies every app-owned file (`ui.php`, `menu.php`, `mail.php`, `web/*`, `api/*`, `forms/*`) from `--from` (default `en`) into `lang/{locale}/`, preserving structure. Existing files are kept unless `--force`. |
+
+The copied files hold the reference locale's text as a **fallback**, so [`LocaleParityTest`](#locale-parity-enforced) passes immediately — then you translate them in place. Managed root files (`auth.php`, `validation.php`, …) are never copied; their subdirectory namesakes (`web/auth.php`, `api/auth.php`) **are** treated as application-owned. Command source: `app/Console/Commands/AddLocaleCommand.php`; covered by `tests/Feature/Console/AddLocaleCommandTest.php`.
+
+After adding: translate `lang/{locale}/*` and `lang/{locale}.json`, then run `php artisan test --filter=LocaleParity` and `php artisan config:clear` if config is cached.
 
 ---
 
@@ -346,6 +371,7 @@ See `app/Http/Requests/Navigation/StoreMenuRequest.php`.
 | Recipient-locale email | `app/Models/User.php` (`preferredLocale()`), `app/Notifications/Auth/ResetPasswordNotification.php` |
 | Application-owned mail copy | `lang/{locale}/mail.php` |
 | Locale parity guard (test) | `tests/Unit/Localization/LocaleParityTest.php` |
+| Add-locale command | `app/Console/Commands/AddLocaleCommand.php` (`php artisan locale:add`) |
 | Cookie helper / switch route | `app/Support/Localization/LocaleCookie.php`, `GET /locale/{locale}` → `Web\LocaleController` |
 | Translation resolver (cached nav) | `app/Support/Localization/TranslationResolver.php` |
 | Translatable validation trait | `app/Support/Localization/Concerns/ValidatesTranslatableInput.php` |
