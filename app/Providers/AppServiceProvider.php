@@ -7,9 +7,11 @@ use App\Models\User;
 use App\Policies\UserPolicy;
 use App\Repositories\Contracts\EloquentCrudRepositoryInterface;
 use App\Repositories\Contracts\MenuRepositoryInterface;
+use App\Repositories\Contracts\NotificationRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Repositories\Eloquent\EloquentCrudRepository;
 use App\Repositories\Eloquent\MenuRepository;
+use App\Repositories\Eloquent\NotificationRepository;
 use App\Repositories\Eloquent\UserRepository;
 use App\Support\DataTable\DataTableResponseFactory;
 use App\View\Composers\NavigationComposer;
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(EloquentCrudRepositoryInterface::class, EloquentCrudRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(MenuRepositoryInterface::class, MenuRepository::class);
+        $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
         $this->app->singleton(DataTableResponseFactory::class);
     }
 

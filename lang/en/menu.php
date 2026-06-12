@@ -10,6 +10,7 @@ return [
     'navigation' => 'Navigation',
     'menus' => 'Menu list',
     'menus_trashed' => 'Trashed menus',
+    'notifications' => 'Notifications',
     'profile' => 'Profile',
     'password' => 'Change password',
 ];

@@ -61,6 +61,18 @@ class MenuSeeder extends Seeder
         ]);
         $usersItem->roles()->sync($managementRoleIds);
 
+        // Notifications: every authenticated user may receive personal notifications,
+        // so no role gating — visible to all signed-in viewers.
+        Menu::query()->create([
+            'parent_id' => $main->id,
+            'name' => ['en' => 'Notifications', 'id' => 'Notifikasi'],
+            'icon' => 'bi bi-bell',
+            'route' => 'notifications.index',
+            'type' => 'p',
+            'order' => 3,
+            'is_authenticate' => true,
+        ]);
+
         $admin = Menu::query()->create([
             'parent_id' => null,
             'name' => ['en' => 'Administration', 'id' => 'Administrasi'],

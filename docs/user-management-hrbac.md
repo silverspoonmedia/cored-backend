@@ -93,6 +93,7 @@ Example: Admin (100) may assign Moderator (200), Management (300), or User (400)
 - Actor must have `create user`.
 - The `role` field may only be a role whose `level` is **greater than** the actor’s effective level.
 - Assignable roles for forms are exposed at `GET /api/v1/users/assignable-roles` and validated in `StoreUserRequest` / `UpdateUserRequest`.
+- On success, `UserManagementService::create()` dispatches `ActivityNotificationEvent` (`user_created`), fanning a role-targeted notification out to **Root** + **Admin**. Both the API and the Blade UI funnel through this service, so one dispatch covers every entry point. See [Activity notifications](./notifications.md).
 
 ### Read (index / show)
 
@@ -105,6 +106,7 @@ Example: Admin (100) may assign Moderator (200), Management (300), or User (400)
 - Actor must have `edit user`.
 - Target must pass the **all roles above actor** check.
 - If `role` is sent, it must be assignable per hierarchy (same rules as create).
+- On success, when the actor edits **someone else**, `UserManagementService::update()` dispatches `ActivityNotificationEvent` (`account_updated`) as a **personal** notification to the edited user. Self-edits emit nothing. See [Activity notifications](./notifications.md).
 
 ### Delete
 

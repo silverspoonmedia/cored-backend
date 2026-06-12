@@ -5,6 +5,7 @@ use App\Http\Controllers\API\V1\Auth\AuthController;
 use App\Http\Controllers\API\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\API\V1\Auth\PasswordController;
 use App\Http\Controllers\API\V1\Navigation\MenuController;
+use App\Http\Controllers\API\V1\NotificationController;
 use App\Http\Controllers\API\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +43,20 @@ Route::middleware('auth:api')->group(function (): void {
 Route::middleware(['auth:api', 'permission:view user'])
     ->get('admin/ping', [AdminController::class, 'ping'])
     ->name('admin.ping');
+
+// Role-targeted activity notifications. `view notification` gates the surface;
+// per-row role overlap is enforced by the service/repository.
+Route::middleware(['auth:api', 'permission:view notification'])
+    ->prefix('notifications')
+    ->name('notifications.')
+    ->group(function (): void {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
+        Route::post('read-all', [NotificationController::class, 'markAllAsRead'])->name('read-all');
+        Route::post('{notification}/read', [NotificationController::class, 'markAsRead'])
+            ->whereUuid('notification')
+            ->name('read');
+    });
 
 Route::prefix('navigation/menus')->name('navigation.menus.')->group(function (): void {
     // Public/optional-auth navigation tree: filtered for the current viewer.

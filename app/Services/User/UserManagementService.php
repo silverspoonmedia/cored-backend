@@ -2,7 +2,9 @@
 
 namespace App\Services\User;
 
+use App\Events\ActivityNotificationEvent;
 use App\Models\User;
+use App\Notifications\Activity\NotificationType;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\Rbac\RoleService;
 use Illuminate\Database\Eloquent\Collection;
@@ -51,6 +53,21 @@ class UserManagementService
 
         $user->syncRoles([$roleName]);
 
+        // Fan out a role-targeted notification (Root + Admin by default). Both the
+        // API and the Blade UI funnel user creation through here, so one dispatch
+        // covers every entry point.
+        ActivityNotificationEvent::dispatch(
+            NotificationType::UserCreated,
+            [
+                'name' => $user->name,
+                'email' => $user->email,
+                'actor' => $actor->name,
+                'role' => $roleName,
+            ],
+            actionRoute: 'users.edit',
+            actionParams: ['user' => $user->id],
+        );
+
         return $user->load('roles');
     }
 
@@ -73,6 +90,19 @@ class UserManagementService
 
         if (isset($data['role'])) {
             $user->syncRoles([$data['role']]);
+        }
+
+        // Personal notification: tell the affected user their account changed —
+        // but not when they edited themselves (they already know).
+        if ($actor->id !== $user->id) {
+            ActivityNotificationEvent::dispatch(
+                NotificationType::AccountUpdated,
+                [
+                    'name' => $user->name,
+                    'actor' => $actor->name,
+                ],
+                users: [$user->id],
+            );
         }
 
         return $user->load('roles');
