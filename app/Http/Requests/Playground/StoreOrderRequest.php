@@ -37,6 +37,10 @@ class StoreOrderRequest extends FormRequest
             'details.*.unit_price' => ['required', 'numeric', 'min:0'],
             'details.*.discount' => ['nullable', 'numeric', 'min:0'],
             'details.*.notes' => ['nullable', 'string'],
+
+            // Multiple file upload (stored on the s3Custom disk as JSON metadata).
+            'attachments' => ['nullable', 'array', 'max:10'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx'],
         ];
     }
 }

@@ -27,6 +27,7 @@ class OrderFactory extends Factory
             'customer_name' => fake()->name(),
             'customer_email' => fake()->safeEmail(),
             'customer_phone' => fake()->optional()->phoneNumber(),
+            'attachment' => [],
             'subtotal' => $subtotal,
             'discount' => $discount,
             'tax' => $tax,
@@ -44,5 +45,22 @@ class OrderFactory extends Factory
     public function pending(): static
     {
         return $this->state(fn () => ['status' => 'pending']);
+    }
+
+    /**
+     * Seed the order with attachment metadata rows (no real files on disk).
+     */
+    public function withAttachments(int $count = 2): static
+    {
+        return $this->state(fn () => [
+            'attachment' => collect(range(1, $count))
+                ->map(fn (int $i): array => [
+                    'path' => 'orders/attachments/file-'.$i.'-'.fake()->uuid().'.pdf',
+                    'name' => 'file-'.$i.'.pdf',
+                    'size' => fake()->numberBetween(1000, 500000),
+                    'mime' => 'application/pdf',
+                ])
+                ->all(),
+        ]);
     }
 }

@@ -147,6 +147,61 @@
 
     <x-form.error name="details" />
 
+    <hr>
+
+    <h5 class="mb-3">{{ __('web/orders.form.attachments_section') }}</h5>
+
+    @php($existingAttachments = data_get($order, 'attachment', []))
+    @if (! empty($existingAttachments))
+        {{--
+            Marker so the server can tell "this form manages attachments" apart
+            from a plain API call. Unchecked checkboxes are NOT submitted, so if
+            the user unticks every file `keep_attachments` would be absent and
+            the API would (correctly, for API callers) keep all. This hidden
+            field lets the web controller send an explicit empty keep-list in
+            that case, so unticking all really removes all.
+        --}}
+        <input type="hidden" name="attachments_managed" value="1">
+
+        {{-- Existing files: unchecking removes the file on save (keep_attachments[] carries the kept paths). --}}
+        <div class="mb-3">
+            <label class="form-label">{{ __('web/orders.form.current_attachments') }}</label>
+            <ul class="list-group">
+                @foreach ($existingAttachments as $file)
+                    <li class="list-group-item d-flex align-items-center gap-2">
+                        <div class="form-check flex-grow-1 mb-0">
+                            <input
+                                class="form-check-input"
+                                type="checkbox"
+                                name="keep_attachments[]"
+                                value="{{ data_get($file, 'path') }}"
+                                id="keep-{{ $loop->index }}"
+                                checked
+                            >
+                            <label class="form-check-label" for="keep-{{ $loop->index }}">
+                                @if (data_get($file, 'url'))
+                                    <a href="{{ data_get($file, 'url') }}" target="_blank" rel="noopener">{{ data_get($file, 'name') }}</a>
+                                @else
+                                    {{ data_get($file, 'name') }}
+                                @endif
+                                <small class="text-muted">({{ number_format((int) data_get($file, 'size', 0) / 1024, 1) }} KB)</small>
+                            </label>
+                        </div>
+                        <span class="badge text-bg-light border">{{ __('web/orders.form.keep_hint') }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <div class="mb-3" data-form-field="attachments">
+        <label for="attachments" class="form-label">{{ __('web/orders.form.add_attachments') }}</label>
+        <input type="file" name="attachments[]" id="attachments" class="form-control" multiple>
+        <small class="form-text text-muted">{{ __('web/orders.form.attachments_hint') }}</small>
+        <x-form.error name="attachments" />
+        <x-form.error name="attachments.0" />
+    </div>
+
     <div class="d-flex gap-2 mt-3">
         <x-form.submit :label="$submitLabel" class="btn btn-primary" />
         <a href="{{ route('orders.index') }}" class="btn btn-outline-secondary">{{ __('ui.actions.cancel') }}</a>

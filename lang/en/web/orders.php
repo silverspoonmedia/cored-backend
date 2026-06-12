@@ -47,6 +47,11 @@ return [
         'add_line' => 'Add line',
         'remove_line' => 'Remove',
         'totals_hint' => 'Subtotal and grand total are computed by the server from the line items.',
+        'attachments_section' => 'Attachments',
+        'current_attachments' => 'Current files',
+        'add_attachments' => 'Add files',
+        'attachments_hint' => 'Up to 10 files, 10 MB each (jpg, png, pdf, doc, docx, xls, xlsx).',
+        'keep_hint' => 'Keep',
     ],
     'show' => [
         'customer' => 'Customer',
@@ -64,5 +69,7 @@ return [
         'unit_price' => 'Unit price',
         'line_subtotal' => 'Subtotal',
         'back' => 'Back to list',
+        'attachments' => 'Attachments',
+        'no_attachments' => 'No attachments.',
     ],
 ];

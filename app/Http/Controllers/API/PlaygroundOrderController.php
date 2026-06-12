@@ -63,7 +63,10 @@ class PlaygroundOrderController extends Controller
 
     public function store(StoreOrderRequest $request): JsonResponse
     {
-        $record = $this->orderService->create($request->validated());
+        $record = $this->orderService->create(
+            $request->validated(),
+            $request->file('attachments', []),
+        );
 
         return $this->successResponse(
             $this->resolveResource(new PlaygroundOrderResource($record)),
@@ -74,7 +77,11 @@ class PlaygroundOrderController extends Controller
 
     public function update(UpdateOrderRequest $request, string $order): JsonResponse
     {
-        $record = $this->orderService->update($order, $request->validated());
+        $record = $this->orderService->update(
+            $order,
+            $request->validated(),
+            $request->file('attachments', []),
+        );
 
         return $this->successResponse(
             $this->resolveResource(new PlaygroundOrderResource($record)),

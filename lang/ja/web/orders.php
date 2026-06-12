@@ -47,6 +47,11 @@ return [
         'add_line' => '行を追加',
         'remove_line' => '削除',
         'totals_hint' => '小計と合計金額は明細行からサーバーで計算されます。',
+        'attachments_section' => '添付ファイル',
+        'current_attachments' => '現在のファイル',
+        'add_attachments' => 'ファイルを追加',
+        'attachments_hint' => '最大10件、1件あたり10MB（jpg, png, pdf, doc, docx, xls, xlsx）。',
+        'keep_hint' => '保持',
     ],
     'show' => [
         'customer' => '顧客',
@@ -64,5 +69,7 @@ return [
         'unit_price' => '単価',
         'line_subtotal' => '小計',
         'back' => '一覧に戻る',
+        'attachments' => '添付ファイル',
+        'no_attachments' => '添付ファイルはありません。',
     ],
 ];

@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'customer_name',
     'customer_email',
     'customer_phone',
+    'attachment',
     'subtotal',
     'discount',
     'tax',
@@ -36,11 +37,23 @@ class Order extends Model
     protected $table = 'order_master';
 
     /**
+     * Each attachment is stored as `{path, name, size, mime}`. `attachment`
+     * holds a JSON array so one order can carry multiple files; it defaults to
+     * an empty array so the non-nullable column is always satisfied.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'attachment' => '[]',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
+            'attachment' => 'array',
             'subtotal' => 'decimal:2',
             'discount' => 'decimal:2',
             'tax' => 'decimal:2',

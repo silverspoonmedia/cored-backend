@@ -77,6 +77,29 @@
                     <i class="bi bi-arrow-left me-1"></i>{{ __('web/orders.show.back') }}
                 </a>
             </x-card>
+
+            <x-card :title="__('web/orders.show.attachments')">
+                @php($files = data_get($order, 'attachment', []))
+                @if (empty($files))
+                    <p class="text-muted mb-0">{{ __('web/orders.show.no_attachments') }}</p>
+                @else
+                    <ul class="list-group list-group-flush">
+                        @foreach ($files as $file)
+                            <li class="list-group-item d-flex align-items-center gap-2 px-0">
+                                <i class="bi bi-paperclip"></i>
+                                <span class="flex-grow-1">
+                                    @if (data_get($file, 'url'))
+                                        <a href="{{ data_get($file, 'url') }}" target="_blank" rel="noopener">{{ data_get($file, 'name') }}</a>
+                                    @else
+                                        {{ data_get($file, 'name') }}
+                                    @endif
+                                </span>
+                                <small class="text-muted">{{ number_format((int) data_get($file, 'size', 0) / 1024, 1) }} KB</small>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </x-card>
         </div>
     </div>
 </x-layouts.app>

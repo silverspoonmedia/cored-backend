@@ -47,6 +47,11 @@ return [
         'add_line' => 'Tambah baris',
         'remove_line' => 'Hapus',
         'totals_hint' => 'Subtotal dan total akhir dihitung oleh server dari baris item.',
+        'attachments_section' => 'Lampiran',
+        'current_attachments' => 'Berkas saat ini',
+        'add_attachments' => 'Tambah berkas',
+        'attachments_hint' => 'Maksimal 10 berkas, 10 MB per berkas (jpg, png, pdf, doc, docx, xls, xlsx).',
+        'keep_hint' => 'Simpan',
     ],
     'show' => [
         'customer' => 'Pelanggan',
@@ -64,5 +69,7 @@ return [
         'unit_price' => 'Harga satuan',
         'line_subtotal' => 'Subtotal',
         'back' => 'Kembali ke daftar',
+        'attachments' => 'Lampiran',
+        'no_attachments' => 'Tidak ada lampiran.',
     ],
 ];

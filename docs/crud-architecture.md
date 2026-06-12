@@ -313,12 +313,15 @@ app/
 | **Input shape** (`details[]` array, per-line fields) | `Store/UpdateOrderRequest` | `details` is `required|array|min:1`; lines validated with `details.*.*` rules |
 | **Update semantics** | `OrderRepository::updateWithDetails` | **ID-preserving sync**: lines sent with an existing `id` are updated in place (UUID kept), lines without an id are inserted, lines absent from the payload are deleted — all inside the transaction |
 | **Schema** | `order_master` / `order_detail` migrations | UUID PKs (`HasUuids`), `foreignUuid('order_master_id')->constrained()->cascadeOnDelete()` |
+| **File attachments** | `OrderService` + `Support\Orders\OrderAttachmentStorage` | Multiple files per order stored on the `s3Custom` disk; `order_master.attachment` JSON holds `{path,name,size,mime}` metadata. Files live **outside** the DB transaction, so the service compensates (deletes uploads) on a failed write and purges dropped/deleted files only after commit — no orphaned objects |
 
 The controller stays thin (validated input → `OrderService` → resource → response)
 exactly like Playground Users; only the **data layer** differs (dedicated repo +
 transaction instead of `EloquentCrudRepository`). The interface is bound in
 `AppServiceProvider`. Web admin screens for this aggregate live in the
-[web frontend](./web-frontend.md) and consume `/api/playground/orders`.
+[web frontend](./web-frontend.md) and consume `/api/playground/orders`. Full
+detail (request shapes, attachment reconciliation, transaction-safety ordering)
+→ **[Playground](./playground.md#attachments-multiple-file-upload)**.
 
 > The detail set is synced by **id**, not blindly replaced. Send a line's `id`
 > to update it in place (its UUID survives); omit `id` for a new line; leave a

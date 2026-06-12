@@ -7,6 +7,9 @@ use App\Exceptions\Playground\OrderRequiresDetailException;
 use App\Models\Order;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Services\Playground\OrderService;
+use App\Support\Orders\OrderAttachmentStorage;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Mockery\MockInterface;
 use Tests\TestCase;
@@ -21,8 +24,12 @@ class OrderServiceTest extends TestCase
     {
         parent::setUp();
 
+        // Real storage class against a fake disk — keeps the file I/O honest
+        // while the repository (DB) stays mocked for unit isolation.
+        Storage::fake(OrderAttachmentStorage::DISK);
+
         $this->repository = Mockery::mock(OrderRepositoryInterface::class);
-        $this->service = new OrderService($this->repository);
+        $this->service = new OrderService($this->repository, new OrderAttachmentStorage);
     }
 
     protected function tearDown(): void
@@ -71,6 +78,30 @@ class OrderServiceTest extends TestCase
                 ['product_name' => 'B', 'quantity' => 1, 'unit_price' => 50, 'discount' => 10],
             ],
         ]);
+    }
+
+    public function test_create_deletes_uploaded_files_when_db_write_fails(): void
+    {
+        $file = UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf');
+
+        $this->repository
+            ->shouldReceive('createWithDetails')
+            ->once()
+            ->andThrow(new \RuntimeException('db boom'));
+
+        try {
+            $this->service->create([
+                'customer_name' => 'Jane',
+                'customer_email' => 'jane@example.com',
+                'details' => [['product_name' => 'A', 'quantity' => 1, 'unit_price' => 10]],
+            ], [$file]);
+            $this->fail('Expected the DB failure to propagate.');
+        } catch (\RuntimeException) {
+            // expected
+        }
+
+        // Compensation: the just-uploaded file must not linger on the disk.
+        $this->assertEmpty(Storage::disk(OrderAttachmentStorage::DISK)->allFiles());
     }
 
     public function test_update_rejects_completed_order(): void
