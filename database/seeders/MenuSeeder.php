@@ -73,6 +73,18 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
 
+        // Master-detail playground reference (Order + OrderDetail). No RBAC in the
+        // playground, so it is visible to any authenticated viewer.
+        Menu::query()->create([
+            'parent_id' => $main->id,
+            'name' => ['en' => 'Orders', 'id' => 'Pesanan', 'ja' => '注文'],
+            'icon' => 'bi bi-cart',
+            'route' => 'orders.index',
+            'type' => 'p',
+            'order' => 4,
+            'is_authenticate' => true,
+        ]);
+
         $admin = Menu::query()->create([
             'parent_id' => null,
             'name' => ['en' => 'Administration', 'id' => 'Administrasi', 'ja' => '管理'],

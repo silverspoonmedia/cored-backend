@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\PlaygroundController;
+use App\Http\Controllers\API\PlaygroundOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('ping', [PlaygroundController::class, 'ping']);
@@ -11,4 +12,10 @@ Route::prefix('playground')->group(function () {
     Route::apiResource('users', PlaygroundController::class)
         ->except(['create', 'edit'])
         ->names('playground.users');
+
+    // Master-detail reference CRUD (Order + OrderDetail). Standard five-action
+    // resource; the atomic two-table write lives in OrderService/OrderRepository.
+    Route::apiResource('orders', PlaygroundOrderController::class)
+        ->except(['create', 'edit'])
+        ->names('playground.orders');
 });

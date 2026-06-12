@@ -9,6 +9,7 @@ use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\LocaleController;
 use App\Http\Controllers\Web\Navigation\MenuController;
 use App\Http\Controllers\Web\NotificationController;
+use App\Http\Controllers\Web\OrderController;
 use App\Http\Controllers\Web\UserController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +66,12 @@ Route::middleware('web.auth')->group(function (): void {
     Route::get('users/create', [UserController::class, 'create'])->name('users.create');
     Route::get('users/{user}/edit', [UserController::class, 'edit'])->whereUuid('user')->name('users.edit');
     Route::apiResource('users', UserController::class)->except(['show'])->whereUuid('user');
+
+    // Master-detail orders (playground reference) — forwarded to /api/playground/orders.
+    Route::get('orders/datatable', [OrderController::class, 'datatable'])->name('orders.datatable');
+    Route::get('orders/create', [OrderController::class, 'create'])->name('orders.create');
+    Route::get('orders/{order}/edit', [OrderController::class, 'edit'])->whereUuid('order')->name('orders.edit');
+    Route::apiResource('orders', OrderController::class)->except(['create', 'edit'])->whereUuid('order');
 
     // Navigation menu management — forwarded to /api/v1/navigation/menus.
     Route::get('menus/trashed', [MenuController::class, 'trashed'])->name('menus.trashed');

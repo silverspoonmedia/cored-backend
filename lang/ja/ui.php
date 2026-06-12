@@ -50,6 +50,7 @@ return [
             'delete_menu' => 'このメニュー項目を削除しますか？',
             'restore_menu' => 'このメニュー項目と削除されたサブツリーを復元しますか？',
             'delete_playground_user' => 'このユーザーを削除しますか？',
+            'delete_playground_order' => 'この注文とすべての明細を削除しますか？',
         ],
     ],
 ];

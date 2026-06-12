@@ -214,6 +214,8 @@ GET|HEAD  api/v1/admin/ping  … api.v1.admin.ping › API\V1\AdminController@pi
 
 The global `ping` endpoint exists only to demonstrate wiring and doubles as a liveness probe. Product behavior is implemented solely under versioned routes (`auth/*`, `users/*`, `navigation/menus/*`, `notifications/*`); there is intentionally **no** versioned `ping`.
 
+The playground prefix also hosts reference CRUD surfaces (`playground/users`, `playground/orders`). These are **demonstrations** of the layered architecture — simple CRUD and a master-detail aggregate respectively — not product endpoints. Real order/user features would live under a version prefix. See [CRUD Architecture — master-detail aggregates](./crud-architecture.md#master-detail-aggregates-transactions-dedicated-repository).
+
 | Endpoint | Layer | Response message (example) |
 |----------|-------|----------------------------|
 | `GET /api/ping` | Global | `Pong Global` |

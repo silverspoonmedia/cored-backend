@@ -50,6 +50,7 @@ return [
             'delete_menu' => 'Hapus item menu ini?',
             'restore_menu' => 'Pulihkan item menu ini beserta subtree yang terhapus?',
             'delete_playground_user' => 'Hapus pengguna ini?',
+            'delete_playground_order' => 'Hapus pesanan ini beserta seluruh barisnya?',
         ],
     ],
 ];

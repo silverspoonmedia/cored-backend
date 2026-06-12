@@ -28,6 +28,25 @@ use Illuminate\Support\Facades\Http;
 class ApiClient
 {
     /**
+     * Path prefix every call is mounted under. Defaults to the versioned API
+     * (`api/v1`) — where all production features live. The global playground
+     * surface (`api/playground`) is reachable via {@see self::withPrefix()}.
+     */
+    private string $prefix = 'api/v1';
+
+    /**
+     * Return a clone targeting a different API prefix (e.g. `api/playground`).
+     * Immutable so the shared singleton's default prefix is never mutated.
+     */
+    public function withPrefix(string $prefix): self
+    {
+        $clone = clone $this;
+        $clone->prefix = trim($prefix, '/');
+
+        return $clone;
+    }
+
+    /**
      * @param  array<string, mixed>  $query
      */
     public function get(string $uri, array $query = []): Response
@@ -90,6 +109,6 @@ class ApiClient
         // regardless of how APP_URL is configured behind proxies/vhosts.
         $base = request()?->getSchemeAndHttpHost() ?? rtrim((string) config('app.url'), '/');
 
-        return $base.'/api/v1/'.ltrim($uri, '/');
+        return $base.'/'.$this->prefix.'/'.ltrim($uri, '/');
     }
 }

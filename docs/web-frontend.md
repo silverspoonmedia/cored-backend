@@ -47,7 +47,7 @@ Two small pieces keep every web controller a thin, uniform forwarder:
 
 | Piece | File | Role |
 |-------|------|------|
-| `ApiClient` | `app/Support/Api/ApiClient.php` | `Http` wrapper: targets `{current host}/api/v1`, sets `Accept: application/json`, and forwards the JWT from the `auth_token` cookie as `Bearer`. Exposes `get/post/put/delete`. |
+| `ApiClient` | `app/Support/Api/ApiClient.php` | `Http` wrapper: targets `{current host}/api/v1`, sets `Accept: application/json`, and forwards the JWT from the `auth_token` cookie as `Bearer`. Exposes `get/post/put/delete`. `withPrefix('api/playground')` returns a clone targeting the global playground surface (used by the order master-detail screens). |
 | `ConsumesApi` (trait) | `app/Http/Controllers/Web/Concerns/ConsumesApi.php` | `respondFromApi($request, …)` maps the JSON envelope: **2xx** → redirect or inline success; **422** → field errors; **401/419** → login. Pass `stayOnPageOnSuccess: true` when the user should remain on the same screen (edit save, change password, forgot-password link, resend verification). Default `false` for create/delete/login/logout. |
 | AJAX forms | `x-form.ajax`, `x-form.submit`, `x-form.error`, `partials/ajax-form` | All Blade forms submit via `fetch` + `Accept: application/json`; validation errors render inline without reload. |
 | `IssuesAuthCookie` (trait) | `app/Http/Controllers/Web/Concerns/IssuesAuthCookie.php` | Turns the API's auth payload (`data.token` / `expires_in`) into the cookie + redirect (login & register). |
@@ -84,6 +84,12 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | GET/POST | `/users/create`, `/users` | `users.create` / `users.store` | `web.auth` | `GET /users/assignable-roles`, `POST /users` |
 | GET/PUT | `/users/{user}/edit`, `/users/{user}` | `users.edit` / `users.update` | `web.auth` | `GET /users/{id}`, `PUT /users/{id}` |
 | DELETE | `/users/{user}` | `users.destroy` | `web.auth` | `DELETE /users/{id}` |
+| GET | `/orders` | `orders.index` | `web.auth` | Blade shell for the order DataTable |
+| GET | `/orders/datatable` | `orders.datatable` | `web.auth` | `GET /playground/orders?display_mode=datatable` (proxied) |
+| GET/POST | `/orders/create`, `/orders` | `orders.create` / `orders.store` | `web.auth` | `POST /playground/orders` (master-detail payload) |
+| GET | `/orders/{order}` | `orders.show` | `web.auth` | `GET /playground/orders/{id}` (master + lines) |
+| GET/PUT | `/orders/{order}/edit`, `/orders/{order}` | `orders.edit` / `orders.update` | `web.auth` | `GET`/`PUT /playground/orders/{id}` |
+| DELETE | `/orders/{order}` | `orders.destroy` | `web.auth` | `DELETE /playground/orders/{id}` |
 | GET | `/navigation/tree` | `navigation.tree` | `web.auth` | `GET /navigation/menus` (optional `?q=`) |
 | GET | `/menus`, `/menus/trashed` | `menus.index` / `menus.trashed` | `web.auth` | `GET /navigation/menus/{list,trashed}` |
 | GET/POST | `/menus/create`, `/menus` | `menus.create` / `menus.store` | `web.auth` | `GET /navigation/menus/list`, `POST /navigation/menus` |
@@ -119,6 +125,7 @@ resources/views/
 ├── profile/password.blade.php
 ├── dashboard.blade.php             ← consumes GET /auth/me payload
 ├── users/                          ← index (datatable shell), create, edit, _form (shared)
+├── orders/                         ← master-detail demo: index (datatable), create, edit, show, _form (dynamic line rows)
 ├── menus/                          ← index, trashed, create, edit, _form (shared)
 └── notifications/                  ← index (full list); navbar bell lives in components/partials/navbar
 ```
