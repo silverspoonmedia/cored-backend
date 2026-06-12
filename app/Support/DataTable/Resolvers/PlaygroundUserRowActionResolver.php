@@ -22,7 +22,7 @@ final class PlaygroundUserRowActionResolver implements RowActionResolverInterfac
         return [
             new ActionButton(
                 key: 'show',
-                label: 'View',
+                label: __('ui.datatable.view'),
                 method: 'GET',
                 url: route('playground.users.show', $model),
                 style: 'info',
@@ -30,7 +30,7 @@ final class PlaygroundUserRowActionResolver implements RowActionResolverInterfac
             ),
             new ActionButton(
                 key: 'edit',
-                label: 'Edit',
+                label: __('ui.datatable.edit'),
                 method: 'PATCH',
                 url: route('playground.users.update', $model),
                 style: 'primary',
@@ -38,12 +38,12 @@ final class PlaygroundUserRowActionResolver implements RowActionResolverInterfac
             ),
             new ActionButton(
                 key: 'delete',
-                label: 'Delete',
+                label: __('ui.datatable.delete'),
                 method: 'DELETE',
                 url: route('playground.users.destroy', $model),
                 style: 'danger',
                 icon: 'fas fa-trash',
-                confirm: 'Delete this user?',
+                confirm: __('ui.datatable.confirm.delete_playground_user'),
             ),
         ];
     }

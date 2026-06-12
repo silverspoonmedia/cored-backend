@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\API\V2\PlaygroundController;
-use Illuminate\Support\Facades\Route;
+// use App\Http\Controllers\API\V2\PlaygroundController;
+// use Illuminate\Support\Facades\Route;
 
-Route::get('ping', [PlaygroundController::class, 'ping']);
+// Route::get('ping', [PlaygroundController::class, 'ping']);

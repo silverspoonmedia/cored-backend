@@ -48,14 +48,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Laravel defaults to route('login') for guests; this API has no web login route.
-        // Never redirect unauthenticated API clients—return JSON 401 instead.
-        $middleware->redirectGuestsTo(function (Request $request) {
-            if ($request->is('api/*')) {
-                return null;
-            }
-
-            return null;
-        });
+        // Never redirect unauthenticated API clients—return JSON 401 instead. Web guests
+        // are redirected to login by the `web.auth` middleware, not here.
+        $middleware->redirectGuestsTo(fn (Request $request) => null);
 
         // The Blade frontend authenticates with the same stateless JWT as the
         // API, carried in an HttpOnly cookie. Reading it on every web request

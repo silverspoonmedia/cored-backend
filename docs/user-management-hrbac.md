@@ -42,10 +42,10 @@ Roles are ordered by **`level`**. A **smaller** level number means **higher** au
 Actor with Admin (100) + Moderator (200) → effective level = 100
 ```
 
-**Target visibility (list / show)** — a target is visible only if the target’s **lowest** role level is **greater than** the actor’s effective level:
+**Target visibility (list / show)** — a target is visible if the target’s **lowest** role level is **greater than or equal to** the actor’s effective level. Peers at the same effective level may see each other (read-only); only targets with *higher* authority (a smaller level number) are hidden:
 
 ```
-target_min_level > actor_effective_level
+target_min_level >= actor_effective_level
 ```
 
 **Target modification (update / delete)** — **every** role assigned to the target must satisfy:
@@ -98,8 +98,8 @@ Example: Admin (100) may assign Moderator (200), Management (300), or User (400)
 ### Read (index / show)
 
 - Actor must have `view user`.
-- **Index** returns only users whose minimum role level is above the actor’s effective level (repository query).
-- **Show** returns 403 if the target’s minimum level is not above the actor’s (policy).
+- **Index** returns users whose minimum role level is **at or above** the actor’s effective level (repository query) — peers included, higher authority excluded.
+- **Show** returns 403 if the target’s minimum level is *below* the actor’s effective level (higher authority). Peers and lower-authority targets are viewable. A user can always view their own profile.
 
 ### Update
 
@@ -343,7 +343,7 @@ tests/Feature/Http/Controllers/API/V1/UserManagementTest.php
 | `getRoleLevels(User $user): Collection` | All level values for a user’s roles |
 | `getAssignableRoles(User $actor): Collection` | Roles with `level > actor` effective level |
 | `isRoleAssignableBy(User $actor, string $roleName): bool` | Whether a role name may be assigned |
-| `canActorViewTarget(User $actor, User $target): bool` | List/show hierarchy check |
+| `canActorViewTarget(User $actor, User $target): bool` | List/show hierarchy check (`target_min_level >= actor`) |
 | `allTargetRolesAboveActor(User $actor, User $target): bool` | Update/delete hierarchy check |
 
 ---
@@ -409,7 +409,7 @@ Defined in `config/auth.php` as `default_role`. Must match a role name created b
 
 ## Listing users (repository)
 
-`UserRepository::listVisibleToActorLevel(int $actorLevel)` returns users whose **minimum** assigned role level is greater than `$actorLevel`, using a grouped subquery on `model_has_roles` and `roles`. Users with no roles are excluded.
+`UserRepository::listVisibleToActorLevel(int $actorLevel)` returns users whose **minimum** assigned role level is greater than or equal to `$actorLevel`, using a grouped subquery on `model_has_roles` and `roles`. Users with no roles are excluded.
 
 ---
 

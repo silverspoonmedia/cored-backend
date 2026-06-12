@@ -23,7 +23,7 @@ final class MenuTrashedRowActionResolver implements RowActionResolverInterface
         if ($actor->can('view menu')) {
             $actions[] = new ActionButton(
                 key: 'show',
-                label: 'Detail',
+                label: __('ui.datatable.detail'),
                 method: 'GET',
                 url: route('api.v1.navigation.menus.show', $model),
                 style: 'info',
@@ -34,12 +34,12 @@ final class MenuTrashedRowActionResolver implements RowActionResolverInterface
         if ($actor->can('restore menu')) {
             $actions[] = new ActionButton(
                 key: 'restore',
-                label: 'Restore',
+                label: __('ui.datatable.restore'),
                 method: 'POST',
                 url: route('api.v1.navigation.menus.restore', $model),
                 style: 'success',
                 icon: 'fas fa-undo',
-                confirm: 'Restore this menu item and its trashed subtree?',
+                confirm: __('ui.datatable.confirm.restore_menu'),
             );
         }
 

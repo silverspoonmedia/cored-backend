@@ -356,8 +356,8 @@ This API uses **stateless JWT**, not session cookies. “Remember me” means a 
       "name": "Jane Doe",
       "email": "jane@example.com",
       "email_verified_at": null,
-      "roles": ["user"],
-      "permissions": ["profile.view", "profile.update"]
+      "roles": ["User"],
+      "permissions": ["view notification"]
     },
     "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
     "token_type": "bearer",
@@ -458,7 +458,7 @@ php artisan migrate:fresh --seed
 Default seeded admin (from `DatabaseSeeder`):
 
 - Email: `admin@example.com`
-- Password: `password` (factory default)
+- Password: `123456789`
 - Role: `Admin`
 
 Ensure `MAIL_*` is configured for verification and reset emails (tests use `MAIL_MAILER=array`).

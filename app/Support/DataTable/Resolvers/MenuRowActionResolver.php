@@ -23,7 +23,7 @@ final class MenuRowActionResolver implements RowActionResolverInterface
         if ($actor->can('view menu')) {
             $actions[] = new ActionButton(
                 key: 'show',
-                label: 'Detail',
+                label: __('ui.datatable.detail'),
                 method: 'GET',
                 url: route('api.v1.navigation.menus.show', $model),
                 style: 'info',
@@ -34,7 +34,7 @@ final class MenuRowActionResolver implements RowActionResolverInterface
         if ($actor->can('manage menu')) {
             $actions[] = new ActionButton(
                 key: 'edit',
-                label: 'Edit',
+                label: __('ui.datatable.edit'),
                 method: 'PATCH',
                 url: route('api.v1.navigation.menus.update', $model),
                 style: 'primary',
@@ -43,12 +43,12 @@ final class MenuRowActionResolver implements RowActionResolverInterface
 
             $actions[] = new ActionButton(
                 key: 'delete',
-                label: 'Delete',
+                label: __('ui.datatable.delete'),
                 method: 'DELETE',
                 url: route('api.v1.navigation.menus.destroy', $model),
                 style: 'danger',
                 icon: 'fas fa-trash',
-                confirm: 'Delete this menu item?',
+                confirm: __('ui.datatable.confirm.delete_menu'),
             );
         }
 

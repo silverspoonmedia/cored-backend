@@ -168,7 +168,7 @@ php artisan db:seed
 
 | Check | Command / URL |
 |-------|----------------|
-| Versioned ping | `GET /api/v1/ping` |
+| Health check | `GET /api/ping` (global) or `GET /whatsup` |
 | Login | `POST /api/v1/auth/login` with `admin@example.com` / `123456789` |
 | Authenticated profile | `GET /api/v1/auth/me` with `Authorization: Bearer <token>` |
 | Tests | `composer test` or `php artisan test` |
