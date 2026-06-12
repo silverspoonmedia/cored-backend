@@ -10,6 +10,7 @@ return [
     'navigation' => 'Navigasi',
     'menus' => 'Daftar menu',
     'menus_trashed' => 'Menu terhapus',
+    'notifications' => 'Notifikasi',
     'profile' => 'Profil',
     'password' => 'Ubah kata sandi',
 ];

@@ -90,6 +90,11 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | GET/PUT | `/menus/{menu}/edit`, `/menus/{menu}` | `menus.edit` / `menus.update` | `web.auth` | `GET/PUT /navigation/menus/{id}` |
 | DELETE | `/menus/{menu}` | `menus.destroy` | `web.auth` | `DELETE /navigation/menus/{id}` (`cascade`) |
 | POST | `/menus/{menu}/restore` | `menus.restore` | `web.auth` | `POST /navigation/menus/{id}/restore` |
+| GET | `/notifications` | `notifications.index` | `web.auth` | `GET /notifications?limit=100` |
+| GET | `/notifications/unread-count`, `/notifications/recent` | `notifications.unread-count` / `notifications.recent` | `web.auth` | `GET /notifications/unread-count`, `GET /notifications?limit=10` (bell JSON) |
+| POST | `/notifications/read-all`, `/notifications/{id}/read` | `notifications.read-all` / `notifications.read` | `web.auth` | `POST /notifications/read-all`, `POST /notifications/{id}/read` |
+
+> The navbar bell (`@can('view notification')`) polls the unread count and recent list as JSON; see [Activity notifications](./notifications.md).
 
 > **Route-name note:** the global Playground demo previously registered the generic names `users.*`. To free those for the web admin UI, it is now `Route::apiResource('users', …)->names('playground.users')` (URLs unchanged).
 
@@ -114,7 +119,8 @@ resources/views/
 ├── profile/password.blade.php
 ├── dashboard.blade.php             ← consumes GET /auth/me payload
 ├── users/                          ← index (datatable shell), create, edit, _form (shared)
-└── menus/                          ← index, trashed, create, edit, _form (shared)
+├── menus/                          ← index, trashed, create, edit, _form (shared)
+└── notifications/                  ← index (full list); navbar bell lives in components/partials/navbar
 ```
 
 - **Create/edit forms** share one `_form.blade.php` per resource. Validation errors come from the API's `422` (mapped by `ConsumesApi`), repopulated with `old()`.

@@ -35,6 +35,7 @@ class RoleSeeder extends Seeder
             'view menu',
             'manage menu',
             'restore menu',
+            'view notification',
         ];
 
         foreach ($permissions as $permission) {
@@ -45,8 +46,8 @@ class RoleSeeder extends Seeder
         }
 
         $rolePermissions = [
-            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu'],
-            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu'],
+            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification'],
+            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification'],
             'Moderator' => ['view user', 'create user', 'edit user', 'view menu', 'manage menu', 'restore menu'],
             'Management' => ['view user', 'view menu'],
             'User' => [],

@@ -8,6 +8,7 @@ use App\Http\Controllers\Web\Auth\RegisterController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\LocaleController;
 use App\Http\Controllers\Web\Navigation\MenuController;
+use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\UserController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -60,21 +61,24 @@ Route::middleware('web.auth')->group(function (): void {
         ->name('verification.send');
 
     // User management — forwarded to /api/v1/users (the API authorizes).
-    Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::get('users/datatable', [UserController::class, 'datatable'])->name('users.datatable');
     Route::get('users/create', [UserController::class, 'create'])->name('users.create');
-    Route::post('users', [UserController::class, 'store'])->name('users.store');
     Route::get('users/{user}/edit', [UserController::class, 'edit'])->whereUuid('user')->name('users.edit');
-    Route::put('users/{user}', [UserController::class, 'update'])->whereUuid('user')->name('users.update');
-    Route::delete('users/{user}', [UserController::class, 'destroy'])->whereUuid('user')->name('users.destroy');
+    Route::apiResource('users', UserController::class)->except(['show'])->whereUuid('user');
 
     // Navigation menu management — forwarded to /api/v1/navigation/menus.
-    Route::get('menus', [MenuController::class, 'index'])->name('menus.index');
     Route::get('menus/trashed', [MenuController::class, 'trashed'])->name('menus.trashed');
     Route::get('menus/create', [MenuController::class, 'create'])->name('menus.create');
-    Route::post('menus', [MenuController::class, 'store'])->name('menus.store');
     Route::get('menus/{menu}/edit', [MenuController::class, 'edit'])->whereUuid('menu')->name('menus.edit');
-    Route::put('menus/{menu}', [MenuController::class, 'update'])->whereUuid('menu')->name('menus.update');
-    Route::delete('menus/{menu}', [MenuController::class, 'destroy'])->whereUuid('menu')->name('menus.destroy');
     Route::post('menus/{menu}/restore', [MenuController::class, 'restore'])->whereUuid('menu')->name('menus.restore');
+    Route::apiResource('menus', MenuController::class)->except(['show'])->whereUuid('menu');
+
+    // Activity notifications — forwarded to /api/v1/notifications (the API authorizes).
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::get('notifications/recent', [NotificationController::class, 'recent'])->name('notifications.recent');
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
+        ->whereUuid('notification')
+        ->name('notifications.read');
 });
