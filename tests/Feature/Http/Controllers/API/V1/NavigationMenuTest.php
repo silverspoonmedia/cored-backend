@@ -127,6 +127,38 @@ class NavigationMenuTest extends TestCase
         );
     }
 
+    public function test_navigation_tree_filters_by_query_and_keeps_ancestors(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $header = $this->makeMenu(['name' => 'Admin Section', 'type' => 'h']);
+        $parent = $this->makeMenu(['name' => 'User Management', 'type' => 'p', 'parent_id' => $header->id]);
+        $this->makeMenu(['name' => 'User List', 'type' => 'c', 'parent_id' => $parent->id, 'route' => 'users.index']);
+        $this->makeMenu(['name' => 'Menu Manager', 'type' => 'c', 'parent_id' => $parent->id]);
+
+        $response = $this->actingAsJwt($admin)
+            ->getJson('/api/v1/navigation/menus?q=user%20list')
+            ->assertOk();
+
+        $data = $response->json('data');
+        $this->assertCount(1, $data);
+        $this->assertSame('Admin Section', $data[0]['name']);
+        $this->assertCount(1, $data[0]['children']);
+        $this->assertSame('User Management', $data[0]['children'][0]['name']);
+        $this->assertCount(1, $data[0]['children'][0]['children']);
+        $this->assertSame('User List', $data[0]['children'][0]['children'][0]['name']);
+    }
+
+    public function test_navigation_tree_empty_query_returns_full_tree(): void
+    {
+        $this->makeMenu(['name' => 'Alpha', 'type' => 'c']);
+        $this->makeMenu(['name' => 'Beta', 'type' => 'c']);
+
+        $full = $this->getJson('/api/v1/navigation/menus')->assertOk()->json('data');
+        $filtered = $this->getJson('/api/v1/navigation/menus?q=')->assertOk()->json('data');
+
+        $this->assertCount(count($full), $filtered);
+    }
+
     public function test_store_rejects_incomplete_translation_map(): void
     {
         $this->actingAsJwt($this->userWithRole('Admin'))

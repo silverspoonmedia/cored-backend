@@ -22,6 +22,24 @@ class MenuController extends Controller
 {
     use ConsumesApi;
 
+    /**
+     * Filtered navigation tree for sidebar live-search (proxies the API).
+     */
+    public function navigationTree(Request $request): JsonResponse
+    {
+        $query = $request->string('q')->trim()->toString();
+        $response = $this->api()->get('navigation/menus', $query !== '' ? ['q' => $query] : []);
+
+        if (! $response->successful()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $this->apiMessage($response),
+            ], $response->status() >= 400 ? $response->status() : 400);
+        }
+
+        return response()->json($response->json());
+    }
+
     public function index(): View|RedirectResponse
     {
         $response = $this->api()->get('navigation/menus/list');

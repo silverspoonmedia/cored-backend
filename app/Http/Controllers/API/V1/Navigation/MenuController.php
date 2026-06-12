@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\V1\Navigation;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Navigation\IndexMenuListRequest;
+use App\Http\Requests\Navigation\IndexNavigationMenuRequest;
 use App\Http\Requests\Navigation\StoreMenuRequest;
 use App\Http\Requests\Navigation\UpdateMenuRequest;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
@@ -39,9 +40,12 @@ class MenuController extends Controller
     /**
      * Auth-aware navigation tree for the current request (guest or authenticated).
      */
-    public function index(): JsonResponse
+    public function index(IndexNavigationMenuRequest $request): JsonResponse
     {
-        $tree = $this->menus->navigationTree($this->optionalActor());
+        $tree = $this->menus->navigationTree(
+            $this->optionalActor(),
+            $request->validated()['q'] ?? null,
+        );
 
         return $this->successResponse($tree, __('api/navigation.tree_success'));
     }

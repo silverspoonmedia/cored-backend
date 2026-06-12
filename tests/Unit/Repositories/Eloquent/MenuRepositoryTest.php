@@ -163,6 +163,22 @@ class MenuRepositoryTest extends TestCase
         $this->assertNotContains('Empty Header', $this->treeNames(null));
     }
 
+    public function test_navigation_tree_keeps_leaf_parent_with_route(): void
+    {
+        $header = $this->makeMenu(['name' => 'Main', 'type' => 'h']);
+        $this->makeMenu([
+            'name' => 'Dashboard',
+            'type' => 'p',
+            'parent_id' => $header->id,
+            'route' => 'dashboard',
+        ]);
+
+        $names = $this->treeNames($this->userWithRole('Admin'));
+
+        $this->assertContains('Main', $names);
+        $this->assertContains('Dashboard', $names);
+    }
+
     public function test_navigation_tree_survives_a_serializing_cache_store(): void
     {
         // The default test store is `array` (no serialization). Force a store

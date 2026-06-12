@@ -27,11 +27,18 @@
                 </thead>
                 <tbody>
                     @forelse ($menus as $menu)
+                        @php($hasChildren = ($menu['children_count'] ?? 0) > 0)
                         <tr>
                             <td>
                                 <span style="padding-left: {{ $menu['type'] === 'c' ? 32 : ($menu['type'] === 'p' ? 16 : 0) }}px;">
                                     @if ($menu['icon'])<i class="bi {{ $menu['icon'] }} me-1"></i>@endif
-                                    {{ $menu['name'] }}
+                                    <span @class(['fw-bold' => $hasChildren])>{{ $menu['name'] }}</span>
+                                    @if ($hasChildren)
+                                        <span class="badge text-bg-light border text-muted ms-1 fw-normal"
+                                            title="{{ __('web/menus.has_children_title', ['count' => $menu['children_count']]) }}">
+                                            <i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>{{ $menu['children_count'] }}
+                                        </span>
+                                    @endif
                                 </span>
                             </td>
                             <td><code>{{ $menu['type'] }}</code></td>

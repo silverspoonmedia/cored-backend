@@ -25,6 +25,7 @@ return [
     'empty_trashed' => 'No trashed menus.',
     'trashed_breadcrumb' => 'Trashed',
     'empty_list' => 'No menus yet.',
+    'has_children_title' => 'Has :count child item(s)',
     'trashed_card_title' => 'Deleted menus',
     'new_card_title' => 'New menu details',
     'edit_card_title' => 'Edit menu: :name',

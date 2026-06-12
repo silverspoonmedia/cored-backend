@@ -32,6 +32,7 @@ class MenuListResource extends JsonResource
             'role_ids' => $this->roles->pluck('id')->values()->all(),
             'user_include_ids' => $this->includedUsers->pluck('id')->values()->all(),
             'user_exclude_ids' => $this->excludedUsers->pluck('id')->values()->all(),
+            'children_count' => $this->whenCounted('children'),
         ];
     }
 }

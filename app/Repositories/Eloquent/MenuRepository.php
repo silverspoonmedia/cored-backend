@@ -41,7 +41,9 @@ class MenuRepository implements MenuRepositoryInterface
 
     public function adminFlatList(?string $loadType): array
     {
-        $query = Menu::query()->with(['roles', 'includedUsers', 'excludedUsers']);
+        $query = Menu::query()
+            ->with(['roles', 'includedUsers', 'excludedUsers'])
+            ->withCount('children');
 
         if ($loadType !== null && $loadType !== '') {
             $query->where('type', $loadType);
@@ -451,8 +453,9 @@ class MenuRepository implements MenuRepositoryInterface
 
             $nested = $this->buildVisibleTree($child['id'], $user, $nodes, $childrenByParent);
 
-            // Hide empty headers/parents: a branch with no reachable leaf is noise.
-            if (in_array($child['type'], ['h', 'p'], true) && $nested === []) {
+            // Hide empty headers and non-navigable parents. A `p` with a route but no
+            // children is a leaf parent (e.g. Dashboard under a section header).
+            if ($nested === [] && $this->shouldPruneEmptyBranch($child)) {
                 continue;
             }
 
@@ -469,6 +472,20 @@ class MenuRepository implements MenuRepositoryInterface
         }
 
         return $out;
+    }
+
+    /**
+     * @param  array<string, mixed>  $node
+     */
+    private function shouldPruneEmptyBranch(array $node): bool
+    {
+        $type = $node['type'] ?? 'c';
+
+        if ($type === 'p' && filled($node['route'] ?? null)) {
+            return false;
+        }
+
+        return in_array($type, ['h', 'p'], true);
     }
 
     /**
