@@ -6,6 +6,8 @@ use App\Models\ActivityNotification;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\Activity\NotificationType;
+use App\Services\Notification\NotificationService;
+use App\Services\User\UserManagementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
@@ -44,7 +46,7 @@ class NotificationTest extends TestCase
         $this->assertSame(['Admin', 'Root'], $targetRoles);
     }
 
-    public function test_admin_sees_notification_but_moderator_does_not(): void
+    public function test_moderator_can_access_surface_but_does_not_see_root_admin_broadcast(): void
     {
         $admin = $this->userWithRole('Admin');
         $moderator = $this->userWithRole('Moderator');
@@ -56,10 +58,74 @@ class NotificationTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data');
 
-        // Moderator lacks `view notification`: the surface itself is forbidden.
+        // Moderator now holds `view notification` (per-user notifications can reach
+        // any role), but is not in the Root/Admin broadcast audience → empty list.
         $this->actingAsJwt($moderator)
             ->getJson('/api/v1/notifications')
-            ->assertForbidden();
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_personal_notification_reaches_only_the_targeted_user(): void
+    {
+        $alice = $this->userWithRole('User');
+        $bob = $this->userWithRole('User');
+
+        app(NotificationService::class)->sendToUsers(
+            NotificationType::AccountUpdated,
+            [$alice->id],
+            ['name' => $alice->name, 'actor' => 'Admin User'],
+        );
+
+        $this->actingAsJwt($alice)
+            ->getJson('/api/v1/notifications')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.type', NotificationType::AccountUpdated->value);
+
+        // Bob shares the same role but was not targeted → sees nothing
+        // (per-user is not a role broadcast).
+        $this->actingAsJwt($bob)
+            ->getJson('/api/v1/notifications')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_updating_a_user_sends_a_personal_notification_to_that_user(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $target = $this->userWithRole('Moderator');
+
+        $this->actingAsJwt($admin)
+            ->putJson("/api/v1/users/{$target->id}", ['name' => 'Renamed'])
+            ->assertOk();
+
+        $personal = ActivityNotification::query()
+            ->where('type', NotificationType::AccountUpdated->value)
+            ->firstOrFail();
+        $this->assertTrue($personal->targetUsers->contains('id', $target->id));
+        $this->assertCount(0, $personal->roles);
+
+        // The edited user sees their personal notification.
+        $this->actingAsJwt($target)
+            ->getJson('/api/v1/notifications')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_self_edit_does_not_create_a_personal_notification(): void
+    {
+        // Self-edit can't reach the HTTP endpoint (UserPolicy denies equal-level
+        // updates), so assert the service guard directly: editing yourself emits
+        // no AccountUpdated notification.
+        $admin = $this->userWithRole('Admin');
+
+        app(UserManagementService::class)
+            ->update($admin, $admin->id, ['name' => 'Myself Renamed']);
+
+        $this->assertDatabaseMissing('activity_notifications', [
+            'type' => NotificationType::AccountUpdated->value,
+        ]);
     }
 
     public function test_unread_count_and_mark_as_read(): void
@@ -98,9 +164,9 @@ class NotificationTest extends TestCase
             ->assertJsonPath('data.unread', 0);
     }
 
-    public function test_cannot_mark_notification_out_of_role_scope(): void
+    public function test_cannot_mark_notification_out_of_scope(): void
     {
-        // A notification targeted only at Root.
+        // A broadcast targeted only at Root, with no per-user target.
         $rootOnly = ActivityNotification::factory()->create();
         $rootOnly->roles()->sync(Role::query()->where('name', 'Root')->pluck('id'));
 

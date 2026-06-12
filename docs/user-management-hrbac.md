@@ -106,6 +106,7 @@ Example: Admin (100) may assign Moderator (200), Management (300), or User (400)
 - Actor must have `edit user`.
 - Target must pass the **all roles above actor** check.
 - If `role` is sent, it must be assignable per hierarchy (same rules as create).
+- On success, when the actor edits **someone else**, `UserManagementService::update()` dispatches `ActivityNotificationEvent` (`account_updated`) as a **personal** notification to the edited user. Self-edits emit nothing. See [Activity notifications](./notifications.md).
 
 ### Delete
 

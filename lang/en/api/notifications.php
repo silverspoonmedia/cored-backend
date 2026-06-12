@@ -10,5 +10,6 @@ return [
     // notification `data` payload (:name, :email, :actor, :role, …).
     'types' => [
         'user_created' => 'A new user :name (:email) was added by :actor.',
+        'account_updated' => 'Your account was updated by :actor.',
     ],
 ];

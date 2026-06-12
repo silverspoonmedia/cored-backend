@@ -92,6 +92,19 @@ class UserManagementService
             $user->syncRoles([$data['role']]);
         }
 
+        // Personal notification: tell the affected user their account changed —
+        // but not when they edited themselves (they already know).
+        if ($actor->id !== $user->id) {
+            ActivityNotificationEvent::dispatch(
+                NotificationType::AccountUpdated,
+                [
+                    'name' => $user->name,
+                    'actor' => $actor->name,
+                ],
+                users: [$user->id],
+            );
+        }
+
         return $user->load('roles');
     }
 

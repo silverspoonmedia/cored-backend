@@ -11,8 +11,9 @@ use Illuminate\Support\Collection;
 /**
  * Business layer for activity notifications.
  *
- * Generic by design: `emit()` takes a NotificationType plus context and fans
- * the record out to whole roles. Listeners (or any caller) use it so the rule
+ * Generic by design: `emit()` takes a NotificationType plus an audience —
+ * **roles** (broadcast) and/or **users** (personal) — and persists the record.
+ * `broadcastToRoles()` and `sendToUsers()` are thin, readable wrappers. The rule
  * "who can see this" stays in one place. Reads/visibility delegate to the repo.
  */
 class NotificationService
@@ -22,16 +23,22 @@ class NotificationService
     ) {}
 
     /**
-     * Create a role-targeted notification.
+     * Create a notification targeting roles and/or specific users.
+     *
+     * At least one of `$roles` / `$users` should be non-empty, otherwise the
+     * notification is visible to nobody. When `$roles` is null, the type's
+     * default roles are used; pass `[]` explicitly for a user-only notification.
      *
      * @param  array<string, mixed>  $data  Message replacements + render context.
      * @param  list<string>|null  $roles  Target role names; null = type defaults.
+     * @param  list<string>  $users  Target user ids (personal audience).
      * @param  array<string, mixed>  $actionParams
      */
     public function emit(
         NotificationType $type,
         array $data = [],
         ?array $roles = null,
+        array $users = [],
         ?string $actionRoute = null,
         array $actionParams = [],
     ): ActivityNotification {
@@ -43,7 +50,43 @@ class NotificationService
                 'action_params' => $actionParams === [] ? null : $actionParams,
             ],
             $roles ?? $type->defaultRoles(),
+            $users,
         );
+    }
+
+    /**
+     * Broadcast to whole roles (no per-user targeting). Omitting `$roles` uses
+     * the type defaults.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  list<string>|null  $roles
+     * @param  array<string, mixed>  $actionParams
+     */
+    public function broadcastToRoles(
+        NotificationType $type,
+        array $data = [],
+        ?array $roles = null,
+        ?string $actionRoute = null,
+        array $actionParams = [],
+    ): ActivityNotification {
+        return $this->emit($type, $data, $roles, [], $actionRoute, $actionParams);
+    }
+
+    /**
+     * Send a personal notification to specific users only (no role broadcast).
+     *
+     * @param  list<string>  $users
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $actionParams
+     */
+    public function sendToUsers(
+        NotificationType $type,
+        array $users,
+        array $data = [],
+        ?string $actionRoute = null,
+        array $actionParams = [],
+    ): ActivityNotification {
+        return $this->emit($type, $data, [], $users, $actionRoute, $actionParams);
     }
 
     /**

@@ -30,13 +30,6 @@ class MenuSeeder extends Seeder
             ->pluck('id')
             ->all();
 
-        // Roles that may see notifications (hold `view notification`): Root + Admin.
-        $notificationRoleIds = Role::query()
-            ->where('guard_name', 'api')
-            ->whereIn('name', ['Root', 'Admin'])
-            ->pluck('id')
-            ->all();
-
         $main = Menu::query()->create([
             'parent_id' => null,
             'name' => ['en' => 'Menu', 'id' => 'Menu'],
@@ -68,7 +61,9 @@ class MenuSeeder extends Seeder
         ]);
         $usersItem->roles()->sync($managementRoleIds);
 
-        $notificationsItem = Menu::query()->create([
+        // Notifications: every authenticated user may receive personal notifications,
+        // so no role gating — visible to all signed-in viewers.
+        Menu::query()->create([
             'parent_id' => $main->id,
             'name' => ['en' => 'Notifications', 'id' => 'Notifikasi'],
             'icon' => 'bi bi-bell',
@@ -77,7 +72,6 @@ class MenuSeeder extends Seeder
             'order' => 3,
             'is_authenticate' => true,
         ]);
-        $notificationsItem->roles()->sync($notificationRoleIds);
 
         $admin = Menu::query()->create([
             'parent_id' => null,

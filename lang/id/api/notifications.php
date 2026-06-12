@@ -10,5 +10,6 @@ return [
     // `data` notifikasi (:name, :email, :actor, :role, …).
     'types' => [
         'user_created' => 'Pengguna baru :name (:email) ditambahkan oleh :actor.',
+        'account_updated' => 'Akun Anda diperbarui oleh :actor.',
     ],
 ];

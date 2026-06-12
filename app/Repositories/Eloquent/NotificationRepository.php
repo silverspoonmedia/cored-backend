@@ -6,34 +6,30 @@ use App\Models\ActivityNotification;
 use App\Models\Role;
 use App\Models\User;
 use App\Repositories\Contracts\NotificationRepositoryInterface;
+use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class NotificationRepository implements NotificationRepositoryInterface
 {
-    public function create(array $attributes, array $roleIdsOrNames): ActivityNotification
+    public function create(array $attributes, array $roleIdsOrNames, array $userIds = []): ActivityNotification
     {
-        return DB::transaction(function () use ($attributes, $roleIdsOrNames): ActivityNotification {
+        return DB::transaction(function () use ($attributes, $roleIdsOrNames, $userIds): ActivityNotification {
             $notification = ActivityNotification::query()->create($attributes);
 
             $notification->roles()->sync($this->resolveRoleIds($roleIdsOrNames));
+            $notification->targetUsers()->sync(array_values(array_unique($userIds)));
 
-            return $notification->load('roles');
+            return $notification->load(['roles', 'targetUsers']);
         });
     }
 
     public function listForViewer(User $viewer, int $limit = 50): Collection
     {
-        $roleIds = $this->viewerRoleIds($viewer);
-
-        if ($roleIds === []) {
-            return new Collection;
-        }
-
         return ActivityNotification::query()
-            ->whereHas('roles', fn (Builder $q) => $q->whereIn('roles.id', $roleIds))
-            ->withCount(['readers as is_read' => fn (Builder $q) => $q->where('user_id', $viewer->id)])
+            ->where(fn (Builder $q) => $this->scopeVisibleTo($q, $viewer))
+            ->withCount(['readers as is_read' => fn (BuilderContract $q) => $q->where('user_id', $viewer->id)])
             ->latest('created_at')
             ->limit($limit)
             ->get()
@@ -42,27 +38,18 @@ class NotificationRepository implements NotificationRepositoryInterface
 
     public function unreadCountForViewer(User $viewer): int
     {
-        $roleIds = $this->viewerRoleIds($viewer);
-
-        if ($roleIds === []) {
-            return 0;
-        }
-
         return ActivityNotification::query()
-            ->whereHas('roles', fn (Builder $q) => $q->whereIn('roles.id', $roleIds))
-            ->whereDoesntHave('readers', fn (Builder $q) => $q->where('user_id', $viewer->id))
+            ->where(fn (Builder $q) => $this->scopeVisibleTo($q, $viewer))
+            ->whereDoesntHave('readers', fn (BuilderContract $q) => $q->where('user_id', $viewer->id))
             ->count();
     }
 
     public function isVisibleTo(ActivityNotification $notification, User $viewer): bool
     {
-        $roleIds = $this->viewerRoleIds($viewer);
-
-        if ($roleIds === []) {
-            return false;
-        }
-
-        return $notification->roles()->whereIn('roles.id', $roleIds)->exists();
+        return ActivityNotification::query()
+            ->whereKey($notification->getKey())
+            ->where(fn (Builder $q) => $this->scopeVisibleTo($q, $viewer))
+            ->exists();
     }
 
     public function markAsRead(ActivityNotification $notification, User $viewer): void
@@ -74,15 +61,9 @@ class NotificationRepository implements NotificationRepositoryInterface
 
     public function markAllAsRead(User $viewer): int
     {
-        $roleIds = $this->viewerRoleIds($viewer);
-
-        if ($roleIds === []) {
-            return 0;
-        }
-
         $unread = ActivityNotification::query()
-            ->whereHas('roles', fn (Builder $q) => $q->whereIn('roles.id', $roleIds))
-            ->whereDoesntHave('readers', fn (Builder $q) => $q->where('user_id', $viewer->id))
+            ->where(fn (Builder $q) => $this->scopeVisibleTo($q, $viewer))
+            ->whereDoesntHave('readers', fn (BuilderContract $q) => $q->where('user_id', $viewer->id))
             ->pluck('id');
 
         if ($unread->isEmpty()) {
@@ -102,6 +83,24 @@ class NotificationRepository implements NotificationRepositoryInterface
         );
 
         return $unread->count();
+    }
+
+    /**
+     * Constrain a query to notifications visible to the viewer: the viewer holds
+     * one of the target roles (broadcast) OR is an explicitly targeted user
+     * (personal).
+     */
+    private function scopeVisibleTo(Builder $query, User $viewer): Builder
+    {
+        $roleIds = $this->viewerRoleIds($viewer);
+
+        return $query->where(function (Builder $q) use ($viewer, $roleIds): void {
+            if ($roleIds !== []) {
+                $q->whereHas('roles', fn (BuilderContract $r) => $r->whereIn('roles.id', $roleIds));
+            }
+
+            $q->orWhereHas('targetUsers', fn (BuilderContract $u) => $u->where('users.id', $viewer->id));
+        });
     }
 
     /**

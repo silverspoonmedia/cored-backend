@@ -9,16 +9,19 @@ use Illuminate\Support\Collection;
 interface NotificationRepositoryInterface
 {
     /**
-     * Persist a notification and attach its target roles (by id or name).
+     * Persist a notification and attach its audience: target roles (by id or
+     * name) and/or explicitly targeted users.
      *
      * @param  array<string, mixed>  $attributes
      * @param  list<string>  $roleIdsOrNames
+     * @param  list<string>  $userIds
      */
-    public function create(array $attributes, array $roleIdsOrNames): ActivityNotification;
+    public function create(array $attributes, array $roleIdsOrNames, array $userIds = []): ActivityNotification;
 
     /**
-     * Notifications visible to the viewer (they hold at least one target role),
-     * newest first. Each model carries a `is_read` boolean for the viewer.
+     * Notifications visible to the viewer (they hold at least one target role,
+     * OR are an explicitly targeted user), newest first. Each model carries a
+     * `is_read` boolean for the viewer.
      *
      * @return Collection<int, ActivityNotification>
      */
@@ -30,7 +33,8 @@ interface NotificationRepositoryInterface
     public function unreadCountForViewer(User $viewer): int;
 
     /**
-     * Whether the viewer is allowed to see this notification (role overlap).
+     * Whether the viewer is allowed to see this notification (role overlap OR
+     * direct user target).
      */
     public function isVisibleTo(ActivityNotification $notification, User $viewer): bool;
 

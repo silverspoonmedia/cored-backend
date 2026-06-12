@@ -188,7 +188,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example |
 | [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 4 / jQuery 3 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
-| [Activity notifications (role-targeted)](docs/notifications.md) | Generic event-driven notification engine; one record fanned out to whole roles, per-user read state, navbar bell |
+| [Activity notifications (per role + per user)](docs/notifications.md) | Generic event-driven notification engine: broadcast to whole roles and/or target specific users, per-user read state, navbar bell |
 | [Web frontend (Blade + AdminLTE 4)](docs/web-frontend.md) | Server-rendered admin UI that **consumes the versioned API** (web = API client); JWT-in-HttpOnly-cookie auth forwarded as Bearer, reusable Blade components, user & menu management screens |
 
 ### Authentication and authorization
@@ -219,7 +219,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - Simple CRUD scaffolding (`Route::apiResource` + repository pattern) → [crud-architecture.md](docs/crud-architecture.md)
 - Dual-mode list/index (query JSON vs DataTables + RBAC actions) → [list-display-modes.md](docs/list-display-modes.md)
 - Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/navigation-menu.md)
-- Role-targeted activity notifications (events → roles) → [notifications.md](docs/notifications.md)
+- Role-targeted + personal activity notifications (events → roles/users) → [notifications.md](docs/notifications.md)
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
 - Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi` → [web-frontend.md](docs/web-frontend.md)
 - Multi-language (API, Blade, DB) → [localization.md](docs/localization.md)

@@ -24,6 +24,7 @@ class SendActivityNotification
             $event->type,
             $event->data,
             $event->roles,
+            $event->users,
             $event->actionRoute,
             $event->actionParams,
         );
