@@ -3,6 +3,7 @@
 namespace App\Support\Api;
 
 use App\Support\Auth\AuthCookie;
+use App\Support\Localization\LocaleCookie;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -67,6 +68,18 @@ class ApiClient
         if (is_string($token) && $token !== '') {
             $client = $client->withToken($token);
         }
+
+        // Keep web and API locale in sync. The web SetLocale already resolved
+        // the active locale (db > cookie > Laravel default); forward it as the
+        // locale cookie so the API's own SetLocale lands on the same value.
+        // For authenticated users the API still resolves db first (identical
+        // value); for guests / users without a DB preference this carries the
+        // cookie the API would otherwise never receive on this server-to-server
+        // call.
+        $client = $client->withCookies(
+            [LocaleCookie::name() => app()->getLocale()],
+            request()?->getHost() ?? parse_url((string) config('app.url'), PHP_URL_HOST) ?? 'localhost',
+        );
 
         return $client;
     }
