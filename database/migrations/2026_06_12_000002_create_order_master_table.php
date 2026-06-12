@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('customer_name');
             $table->string('customer_email');
             $table->string('customer_phone')->nullable();
-            $table->json('attachment');
             $table->decimal('subtotal', 15, 2);
             $table->decimal('discount', 15, 2)->default(0);
             $table->decimal('tax', 15, 2)->default(0);

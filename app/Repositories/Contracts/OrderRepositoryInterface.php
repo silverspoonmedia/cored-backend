@@ -23,20 +23,23 @@ interface OrderRepositoryInterface
     public function findOrFail(string $id): Order;
 
     /**
-     * Persist the master plus its detail lines atomically.
+     * Persist the master plus its detail lines and attachment rows atomically.
      *
      * @param  array<string, mixed>  $master
      * @param  list<array<string, mixed>>  $details
+     * @param  list<array<string, mixed>>  $attachments  desired attachment metadata rows ({path,name,size,mime})
      */
-    public function createWithDetails(array $master, array $details): Order;
+    public function createWithDetails(array $master, array $details, array $attachments = []): Order;
 
     /**
-     * Update the master and fully replace its detail lines atomically.
+     * Update the master, fully replace its detail lines, and reconcile its
+     * attachment rows (by `path`) atomically.
      *
      * @param  array<string, mixed>  $master
      * @param  list<array<string, mixed>>  $details
+     * @param  list<array<string, mixed>>  $attachments  desired attachment metadata rows ({path,name,size,mime})
      */
-    public function updateWithDetails(string $id, array $master, array $details): Order;
+    public function updateWithDetails(string $id, array $master, array $details, array $attachments = []): Order;
 
     public function deleteWithDetails(string $id): void;
 

@@ -9,19 +9,22 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * Order master — the aggregate root of the master-detail pair. Owns many
  * {@see OrderDetail} line items. Monetary totals are derived from the lines and
  * persisted by {@see OrderRepository} inside a single
  * DB transaction, so a master never exists without its computed detail rows.
+ *
+ * Attachments are kept in the shared `attachments` table (polymorphic), not a
+ * JSON column, so file metadata is queryable and managed like any other row.
  */
 #[Fillable([
     'order_number',
     'customer_name',
     'customer_email',
     'customer_phone',
-    'attachment',
     'subtotal',
     'discount',
     'tax',
@@ -37,23 +40,11 @@ class Order extends Model
     protected $table = 'order_master';
 
     /**
-     * Each attachment is stored as `{path, name, size, mime}`. `attachment`
-     * holds a JSON array so one order can carry multiple files; it defaults to
-     * an empty array so the non-nullable column is always satisfied.
-     *
-     * @var array<string, mixed>
-     */
-    protected $attributes = [
-        'attachment' => '[]',
-    ];
-
-    /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
-            'attachment' => 'array',
             'subtotal' => 'decimal:2',
             'discount' => 'decimal:2',
             'tax' => 'decimal:2',
@@ -67,5 +58,13 @@ class Order extends Model
     public function details(): HasMany
     {
         return $this->hasMany(OrderDetail::class, 'order_master_id');
+    }
+
+    /**
+     * @return MorphMany<Attachment, $this>
+     */
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 }

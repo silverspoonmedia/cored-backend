@@ -33,7 +33,8 @@ This project does **not** use auto-increment integer primary keys for domain mod
 | `sessions` | `user_id` → `users.id` |
 | Spatie (`roles`, `permissions`, pivots) | `id`, `model_id`, `role_id`, `permission_id` |
 | `order_master` / `order_detail` | `id` (PK), `order_detail.order_master_id` (FK) |
-| Models | `User`, `Role`, `Permission`, `Order`, `OrderDetail` use `HasUuids` |
+| `attachments` | `id` (PK), `attachable_id` (polymorphic FK via `uuidMorphs`), `user_id` (FK → `users`) |
+| Models | `User`, `Role`, `Permission`, `Order`, `OrderDetail`, `Attachment` use `HasUuids` |
 
 When you add a table that belongs to a user or another UUID-backed model, use `foreignUuid` (not `foreignId`). Do not pass integer IDs in validation or route binding. Full rationale, migration examples, and pitfalls (e.g. do not use DB `gen_random_uuid()` for v7) → **[User primary keys (UUID v7)](docs/user-uuid-v7.md)**.
 

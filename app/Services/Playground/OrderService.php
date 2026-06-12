@@ -53,14 +53,13 @@ class OrderService
 
         // Upload files BEFORE the DB write; if the transaction throws, delete
         // the freshly stored objects so a failed order leaves no orphaned files.
-        $stored = $this->attachments->storeMany($files);
+        $stored = $this->stampOwner($this->attachments->storeMany($files));
 
         $master = $this->buildMaster($data, $details);
         $master['order_number'] = $this->generateOrderNumber();
-        $master['attachment'] = $stored;
 
         try {
-            return $this->repository->createWithDetails($master, $details);
+            return $this->repository->createWithDetails($master, $details, $stored);
         } catch (Throwable $e) {
             $this->attachments->deleteMany($stored);
 
@@ -86,14 +85,16 @@ class OrderService
         // Reconcile attachments: keep the ones the caller asked to keep, append
         // the newly uploaded files. Anything dropped is removed AFTER the DB
         // commit so a rollback never loses a file that is still referenced.
-        $existing = $order->attachment ?? [];
+        $existing = $order->attachments
+            ->map(fn ($a): array => $a->only(['user_id', 'disk', 'path', 'name', 'size', 'mime']))
+            ->all();
         [$kept, $removed] = $this->partitionByKeep($existing, $this->resolveKeepPaths($data));
 
-        $stored = $this->attachments->storeMany($files);
-        $master['attachment'] = array_values([...$kept, ...$stored]);
+        $stored = $this->stampOwner($this->attachments->storeMany($files));
+        $desired = array_values([...$kept, ...$stored]);
 
         try {
-            $updated = $this->repository->updateWithDetails($id, $master, $details);
+            $updated = $this->repository->updateWithDetails($id, $master, $details, $desired);
         } catch (Throwable $e) {
             $this->attachments->deleteMany($stored);
 
@@ -111,13 +112,33 @@ class OrderService
         $order = $this->repository->findOrFail($id);
         $this->assertEditable($order);
 
-        $attachments = $order->attachment ?? [];
+        $attachments = $order->attachments
+            ->map(fn ($a): array => $a->only(['path']))
+            ->all();
 
         $this->repository->deleteWithDetails($id);
 
         // DB row gone — drop its files. (Done after commit; a stored file with
         // no DB row is a harmless leak, a missing file with a live row is not.)
         $this->attachments->deleteMany($attachments);
+    }
+
+    /**
+     * Stamp the current user (the uploader/owner) onto freshly stored
+     * attachment metadata rows. Resolves the authenticated id once; null when
+     * unauthenticated (the column is nullable).
+     *
+     * @param  list<array<string, mixed>>  $stored
+     * @return list<array<string, mixed>>
+     */
+    private function stampOwner(array $stored): array
+    {
+        $userId = auth()->id();
+
+        return array_map(
+            fn (array $row): array => $row + ['user_id' => $userId],
+            $stored,
+        );
     }
 
     /**

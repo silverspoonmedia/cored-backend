@@ -65,6 +65,7 @@ class OrderServiceTest extends TestCase
                         && str_starts_with((string) $master['order_number'], 'ORD-');
                 }),
                 Mockery::on(fn (array $details): bool => count($details) === 2 && $details[0]['subtotal'] === 200.0),
+                Mockery::on(fn (array $attachments): bool => $attachments === []),
             )
             ->andReturn(new Order);
 
