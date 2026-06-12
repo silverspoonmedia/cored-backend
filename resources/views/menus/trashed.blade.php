@@ -1,10 +1,4 @@
 <x-layouts.app :title="__('web/menus.trashed_title')">
-    <x-slot:breadcrumb>
-        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('menu.dashboard') }}</a></li>
-        <li class="breadcrumb-item"><a href="{{ route('menus.index') }}">{{ __('web/menus.breadcrumb') }}</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ __('web/menus.trashed_breadcrumb') }}</li>
-    </x-slot:breadcrumb>
-
     <x-card :title="__('web/menus.trashed_card_title')">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">

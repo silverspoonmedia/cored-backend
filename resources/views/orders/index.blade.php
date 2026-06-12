@@ -1,9 +1,4 @@
 <x-layouts.app :title="__('web/orders.title')">
-    <x-slot:breadcrumb>
-        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('menu.dashboard') }}</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ __('web/orders.breadcrumb') }}</li>
-    </x-slot:breadcrumb>
-
     <x-card :title="__('web/orders.list_title')">
         <x-slot:actions>
             <a href="{{ route('orders.create') }}" class="btn btn-primary btn-sm">
