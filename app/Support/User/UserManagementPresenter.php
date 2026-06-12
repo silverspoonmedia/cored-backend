@@ -18,15 +18,6 @@ class UserManagementPresenter
     }
 
     /**
-     * @param  Collection<int, User>|iterable<int, User>  $users
-     * @return list<array<string, mixed>>
-     */
-    public static function presentCollection(iterable $users): array
-    {
-        return UserManagementResource::collection($users)->resolve(request());
-    }
-
-    /**
      * @param  Collection<int, Role>  $roles
      * @return list<array<string, mixed>>
      */

@@ -152,7 +152,7 @@ class UserController extends Controller
         if ($id !== null && in_array('edit', $allowed, true)) {
             $actions[] = [
                 'key' => 'edit',
-                'label' => 'Edit',
+                'label' => __('ui.datatable.edit'),
                 'method' => 'GET',
                 'url' => route('users.edit', $id),
                 'style' => 'info',
@@ -163,12 +163,12 @@ class UserController extends Controller
         if ($id !== null && in_array('delete', $allowed, true)) {
             $actions[] = [
                 'key' => 'delete',
-                'label' => 'Hapus',
+                'label' => __('ui.datatable.delete'),
                 'method' => 'DELETE',
                 'url' => route('users.destroy', $id),
                 'style' => 'danger',
                 'icon' => 'bi bi-trash',
-                'confirm' => 'Yakin ingin menghapus pengguna ini?',
+                'confirm' => __('ui.datatable.confirm.delete_user'),
             ];
         }
 

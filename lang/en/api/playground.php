@@ -2,7 +2,6 @@
 
 return [
     'pong_global' => 'Pong Global',
-    'pong_v1' => 'Pong V1',
     'users_list' => 'Users retrieved successfully.',
     'user_show' => 'User retrieved successfully.',
     'user_created' => 'User created successfully.',

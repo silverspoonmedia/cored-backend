@@ -32,7 +32,7 @@ class MenuRbacSeeder extends Seeder
 
         $header = Menu::query()->create([
             'parent_id' => null,
-            'name' => ['en' => 'Debug', 'id' => 'Debug'],
+            'name' => ['en' => 'Debug', 'id' => 'Debug', 'ja' => 'デバッグ'],
             'icon' => 'bi bi-bug',
             'route' => null,
             'type' => 'h',
@@ -43,7 +43,7 @@ class MenuRbacSeeder extends Seeder
 
         $parent = Menu::query()->create([
             'parent_id' => $header->id,
-            'name' => 'RBAC Demo',
+            'name' => ['en' => 'RBAC Demo', 'id' => 'Demo RBAC', 'ja' => 'RBAC デモ'],
             'icon' => 'bi bi-shield-lock',
             'route' => null,
             'type' => 'p',
@@ -55,7 +55,7 @@ class MenuRbacSeeder extends Seeder
         // menu_roles: visible only to Admin/Root holders.
         $adminOnly = Menu::query()->create([
             'parent_id' => $parent->id,
-            'name' => 'Admin Only',
+            'name' => ['en' => 'Admin Only', 'id' => 'Hanya Admin', 'ja' => '管理者のみ'],
             'icon' => 'bi bi-person-badge',
             'route' => null,
             'type' => 'c',
@@ -68,7 +68,7 @@ class MenuRbacSeeder extends Seeder
         // menu_user_includes: visible only to the explicitly included user.
         $includedOnly = Menu::query()->create([
             'parent_id' => $parent->id,
-            'name' => 'Included User Only',
+            'name' => ['en' => 'Included User Only', 'id' => 'Hanya Pengguna Termasuk', 'ja' => '対象ユーザーのみ'],
             'icon' => 'bi bi-person-check',
             'route' => null,
             'type' => 'c',
@@ -81,7 +81,7 @@ class MenuRbacSeeder extends Seeder
         // menu_user_excludes: hidden from the excluded user, visible to everyone else.
         $hiddenForExcluded = Menu::query()->create([
             'parent_id' => $parent->id,
-            'name' => 'Hidden For Excluded User',
+            'name' => ['en' => 'Hidden For Excluded User', 'id' => 'Tersembunyi Untuk Pengguna Dikecualikan', 'ja' => '除外ユーザーには非表示'],
             'icon' => 'bi bi-person-x',
             'route' => null,
             'type' => 'c',

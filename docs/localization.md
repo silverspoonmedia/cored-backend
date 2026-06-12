@@ -20,13 +20,15 @@ Any change that introduces or modifies **user-facing copy** must include transla
 
 | Touch this | Translate in the same task |
 |------------|----------------------------|
-| Blade / UI label, button, hint, confirm, DataTables / AJAX fallback | `lang/{locale}/ui.php`, `lang/{locale}/web/*`, or `lang/{locale}/menu.php` — **every** entry in `config('localization.supported_locales')` (currently `en` + `id`) |
+| Blade / UI label, button, hint, confirm, DataTables / AJAX fallback | `lang/{locale}/ui.php`, `lang/{locale}/web/*`, or `lang/{locale}/menu.php` — **every** entry in `config('localization.supported_locales')` (currently `en`, `id`, `ja`) |
 | API success/error message, policy deny text, business-rule exception | `lang/{locale}/api/*` (or `forms/*` for reusable validation copy) — all supported locales |
 | Reusable FormRequest validation message | `lang/{locale}/forms/{resource}.php` or `FormRequest::messages()` calling `__()` — all supported locales |
 | Database field shown to end users (titles, labels, body text) | Spatie `HasTranslations` on the model + admin input for **each** locale (see [Blade translatable fields](#blade-translatable-fields-admin-forms)) |
 | Seeder / factory sample content in translatable columns | Locale map in seed data, e.g. `['en' => '…', 'id' => '…']` |
 
-**Out of scope for file-based `lang/` (document separately if you add them):** Laravel Lang managed files (`validation.php`, …), outbound **email** notification bodies (`ResetPasswordNotification`, …), third-party package strings.
+**Out of scope for file-based `lang/` (document separately if you add them):** Laravel Lang managed files (`validation.php`, …), third-party package strings.
+
+Outbound **email notifications are in scope** and follow the recipient's locale — see [Outbound email locale](#outbound-email-locale).
 
 ---
 
@@ -57,6 +59,45 @@ Sets the locale cookie and redirects back. Example: `/locale/id`.
 
 On the next login, `SetLocale` reads `users.locale` first, so the last choice survives across sessions. Guests still rely on the cookie until they sign in.
 
+### Web ↔ API locale sync
+
+The Blade frontend is a pure API consumer: every web controller forwards to `/api/v1/*` over a **real HTTP round-trip** (`ApiClient`). That second request runs its **own** `SetLocale`, so the locale must cross the boundary or the two layers desync (web renders `id`, API replies `en`).
+
+`SetLocale` runs **first on the web request** and resolves the canonical locale (`users.locale` > `locale` cookie > `config('app.locale')`). `ApiClient` then forwards that resolved value to the API as the `locale` cookie (alongside the JWT bearer). Result: both layers always land on the same locale.
+
+| Request | Web resolves (db > cookie > default) | Forwarded to API as `locale` cookie | API resolves |
+|---------|--------------------------------------|--------------------------------------|--------------|
+| Authenticated, `users.locale = id` | `id` (db) | `id` | `id` (db, JWT forwarded — same value) |
+| Authenticated, `locale` null, cookie `id` | `id` (cookie) | `id` | `id` (cookie) |
+| Guest, cookie `id` | `id` (cookie) | `id` | `id` (cookie) |
+
+Without forwarding, the server-to-server API call carries no cookie, so the API collapses to `db > default` and silently drops to `en` whenever the locale comes from the cookie. The DB-first fallback is unchanged on both sides — forwarding only fixes the cookie tier.
+
+> Implemented in `ApiClient::pending()` via `withCookies([LocaleCookie::name() => app()->getLocale()], <host>)`. Covered by `tests/Feature/Support/Api/ApiClientLocaleForwardingTest.php`.
+
+### Outbound email locale
+
+Emails follow the **recipient's** saved locale, not the locale of the request that triggered them. This matters because a forgot-password request is made by a **guest**: the only reliable language signal is the target user's `users.locale`.
+
+`User` implements `Illuminate\Contracts\Translation\HasLocalePreference::preferredLocale()`, returning `users.locale` when it is a supported locale (else `null`, so Laravel uses the app default). The notification queue/mailer wraps rendering in that locale automatically.
+
+| Trigger | Locale used for the email |
+|---------|---------------------------|
+| Forgot password (guest submits target's email) | target user's `users.locale` |
+| Email verification (authenticated) | the user's `users.locale` |
+| No / unsupported `users.locale` | `config('app.locale')` |
+
+All mail copy goes through the translator — never hardcode strings in a notification's `toMail()`:
+
+- Shared password-reset / verify-email lines resolve from the **laravel-lang JSON packs** (`lang/{locale}.json`).
+- Project-specific lines (e.g. the reset API hint) live in the application-owned `lang/{locale}/mail.php`.
+
+`ResetPasswordNotification` overrides only the **action URL** (points at `/api/v1/auth/reset-password`) and adds the API hint; every line is translated. Covered by `tests/Feature/Notifications/ResetPasswordNotificationLocaleTest.php`.
+
+### Locale parity (enforced)
+
+`tests/Unit/Localization/LocaleParityTest.php` fails the build if any **application-owned** lang file or key exists in one supported locale but not another — the silent mixed-language failure mode. It excludes laravel-lang managed files (`config('localization.managed_files')`) and `*.json` packs, which `php artisan lang:update` keeps in sync. Adding a new locale to `supported_locales` makes this test require a full translation set before the suite passes.
+
 ---
 
 ## Folder layout
@@ -74,6 +115,7 @@ lang/
     ui.php                # application-owned — shared UI, AJAX fallbacks
     menu.php              # application-owned — static layout labels
     notifications.php     # application-owned — flash/toast copy
+    mail.php              # application-owned — project-specific email copy (API hints, …)
     web/
       auth.php            # application-owned — auth screens + flash
       session.php         # application-owned
@@ -94,6 +136,8 @@ lang/
     forms/
       users.php           # application-owned (reusable validation copy)
   id/
+    … (mirror structure)
+  ja/
     … (mirror structure)
 ```
 
@@ -143,6 +187,29 @@ php artisan lang:update
 ```
 
 `composer.json` runs `lang:update` automatically in `post-update-cmd`.
+
+### Adding a new locale (`locale:add`)
+
+Adding a language touches **three** places; missing any one is the usual cause of mixed-language output. The `locale:add` command does all three in one step:
+
+```powershell
+php artisan locale:add fr            # add French, copy fallback files from en
+php artisan locale:add de --from=en  # explicit reference locale
+php artisan locale:add es --skip-package   # config + app files only (no lang:add)
+php artisan locale:add fr --force    # re-copy app-owned files, overwriting
+```
+
+What it does:
+
+| Step | Action |
+|------|--------|
+| 1. laravel-lang managed files | Runs `lang:add <locale>` (validation, auth, JSON pack, …). Skip with `--skip-package`. |
+| 2. `supported_locales` | Appends the locale to `config/localization.php` so `SetLocale` / `LocaleController` accept it. Idempotent. |
+| 3. Application-owned files | Copies every app-owned file (`ui.php`, `menu.php`, `mail.php`, `web/*`, `api/*`, `forms/*`) from `--from` (default `en`) into `lang/{locale}/`, preserving structure. Existing files are kept unless `--force`. |
+
+The copied files hold the reference locale's text as a **fallback**, so [`LocaleParityTest`](#locale-parity-enforced) passes immediately — then you translate them in place. Managed root files (`auth.php`, `validation.php`, …) are never copied; their subdirectory namesakes (`web/auth.php`, `api/auth.php`) **are** treated as application-owned. Command source: `app/Console/Commands/AddLocaleCommand.php`; covered by `tests/Feature/Console/AddLocaleCommandTest.php`.
+
+After adding: translate `lang/{locale}/*` and `lang/{locale}.json`, then run `php artisan test --filter=LocaleParity` and `php artisan config:clear` if config is cached.
 
 ---
 
@@ -300,6 +367,11 @@ See `app/Http/Requests/Navigation/StoreMenuRequest.php`.
 | Area | Location |
 |------|----------|
 | Locale middleware | `app/Http/Middleware/SetLocale.php` |
+| Web → API locale forwarding | `app/Support/Api/ApiClient.php` (`pending()` forwards `locale` cookie) |
+| Recipient-locale email | `app/Models/User.php` (`preferredLocale()`), `app/Notifications/Auth/ResetPasswordNotification.php` |
+| Application-owned mail copy | `lang/{locale}/mail.php` |
+| Locale parity guard (test) | `tests/Unit/Localization/LocaleParityTest.php` |
+| Add-locale command | `app/Console/Commands/AddLocaleCommand.php` (`php artisan locale:add`) |
 | Cookie helper / switch route | `app/Support/Localization/LocaleCookie.php`, `GET /locale/{locale}` → `Web\LocaleController` |
 | Translation resolver (cached nav) | `app/Support/Localization/TranslationResolver.php` |
 | Translatable validation trait | `app/Support/Localization/Concerns/ValidatesTranslatableInput.php` |

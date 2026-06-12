@@ -16,6 +16,7 @@ return [
         'password' => 'Kata sandi',
         'name' => 'Nama',
         'role' => 'Role',
+        'permissions' => 'Hak Akses',
         'status' => 'Status',
         'language' => 'Bahasa',
     ],
@@ -37,5 +38,18 @@ return [
     'breadcrumb' => [
         'add' => 'Tambah',
         'edit' => 'Ubah',
+    ],
+    'datatable' => [
+        'detail' => 'Detail',
+        'view' => 'Lihat',
+        'edit' => 'Ubah',
+        'delete' => 'Hapus',
+        'restore' => 'Pulihkan',
+        'confirm' => [
+            'delete_user' => 'Yakin ingin menghapus pengguna ini?',
+            'delete_menu' => 'Hapus item menu ini?',
+            'restore_menu' => 'Pulihkan item menu ini beserta subtree yang terhapus?',
+            'delete_playground_user' => 'Hapus pengguna ini?',
+        ],
     ],
 ];

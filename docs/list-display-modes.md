@@ -53,7 +53,7 @@ Authorization: Bearer <token>
       "id": "019e8766-857b-7259-a580-a21e1ddfa27e",
       "name": "Jane Doe",
       "email": "jane@example.com",
-      "roles": [{ "name": "Moderator", "level": 3 }]
+      "roles": [{ "name": "Moderator", "level": 200 }]
     }
   ]
 }
@@ -76,7 +76,7 @@ Authorization: Bearer <token>
       "id": "019e8766-857b-7259-a580-a21e1ddfa27e",
       "name": "Jane Doe",
       "email": "jane@example.com",
-      "roles": [{ "name": "Moderator", "level": 3 }],
+      "roles": [{ "name": "Moderator", "level": 200 }],
       "actions": [
         {
           "key": "show",
@@ -112,14 +112,14 @@ Each entry in `actions` is a plain object meant to be rendered as a Bootstrap 4 
 | Field | Type | Description |
 |-------|------|-------------|
 | `key` | string | Stable identifier (`show`, `edit`, `delete`, `restore`, …) for JS handlers |
-| `label` | string | Button text |
+| `label` | string | Button text, resolved for the active locale via `__('ui.datatable.*')` |
 | `method` | string | HTTP verb (`GET`, `PATCH`, `DELETE`, `POST`, …) |
 | `url` | string | Fully qualified API URL for the action |
 | `style` | string | Bootstrap 4 variant without `btn-` prefix (`info`, `primary`, `danger`, `success`, …) |
 | `icon` | string? | Optional Font Awesome class(es), e.g. `fas fa-eye` |
-| `confirm` | string? | When set, the client should show a confirmation dialog before sending the request |
+| `confirm` | string? | When set, the client should show a confirmation dialog before sending the request; also localized via `__('ui.datatable.confirm.*')` |
 
-The API returns **metadata only** — no pre-rendered HTML. The client builds buttons and attaches click handlers.
+The API returns **metadata only** — no pre-rendered HTML. The client builds buttons and attaches click handlers. Action `label` and `confirm` text come from `lang/{locale}/ui.php` (`ui.datatable.*`), so they follow the active request locale; the JSON examples above show Indonesian (`id`).
 
 ---
 

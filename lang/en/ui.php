@@ -16,6 +16,7 @@ return [
         'password' => 'Password',
         'name' => 'Name',
         'role' => 'Role',
+        'permissions' => 'Permissions',
         'status' => 'Status',
         'language' => 'Language',
     ],
@@ -37,5 +38,18 @@ return [
     'breadcrumb' => [
         'add' => 'Add',
         'edit' => 'Edit',
+    ],
+    'datatable' => [
+        'detail' => 'Detail',
+        'view' => 'View',
+        'edit' => 'Edit',
+        'delete' => 'Delete',
+        'restore' => 'Restore',
+        'confirm' => [
+            'delete_user' => 'Are you sure you want to delete this user?',
+            'delete_menu' => 'Delete this menu item?',
+            'restore_menu' => 'Restore this menu item and its trashed subtree?',
+            'delete_playground_user' => 'Delete this user?',
+        ],
     ],
 ];

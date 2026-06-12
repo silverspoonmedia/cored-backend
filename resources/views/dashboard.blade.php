@@ -32,7 +32,7 @@
                 </div>
 
                 <div>
-                    <strong>Permission</strong>
+                    <strong>{{ __('ui.labels.permissions') }}:</strong>
                     @forelse ($profile['permissions'] as $permission)
                         <span class="badge text-bg-secondary">{{ $permission }}</span>
                     @empty

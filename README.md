@@ -10,7 +10,7 @@ It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap
 
 **All project documentation must be written in English** (README, `docs/`, and any new guides or sections you add).
 
-**Localization (required on every task that touches copy):** Any change that adds or modifies user-facing text — Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, or database content shown to users — must include translations for **all** supported locales (`en` and `id` today) in the **same task/PR**. Use `__('…')` with application-owned files under `lang/{locale}/` (never hardcode strings), or Spatie translatable fields for database content. See [Localization](docs/localization.md#task-rule-required) for the full checklist and conventions.
+**Localization (required on every task that touches copy):** Any change that adds or modifies user-facing text — Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, or database content shown to users — must include translations for **all** supported locales (`en`, `id`, `ja` today) in the **same task/PR**. Use `__('…')` with application-owned files under `lang/{locale}/` (never hardcode strings), or Spatie translatable fields for database content. See [Localization](docs/localization.md#task-rule-required) for the full checklist and conventions.
 
 ---
 
@@ -168,7 +168,7 @@ php artisan db:seed
 
 | Check | Command / URL |
 |-------|----------------|
-| Versioned ping | `GET /api/v1/ping` |
+| Health check | `GET /api/ping` (global) or `GET /whatsup` |
 | Login | `POST /api/v1/auth/login` with `admin@example.com` / `123456789` |
 | Authenticated profile | `GET /api/v1/auth/me` with `Authorization: Bearer <token>` |
 | Tests | `composer test` or `php artisan test` |
@@ -233,6 +233,7 @@ php artisan migrate              # Apply migrations
 php artisan db:seed              # Roles, permissions, sample admin
 php artisan jwt:secret           # Generate JWT_SECRET (once per environment)
 php artisan lang:update          # Refresh laravel-lang package files (also runs on composer update)
+php artisan locale:add <locale>  # Onboard a new locale (managed files + config + app-owned scaffolding)
 php artisan pint                 # Format PHP code
 php artisan test                 # PHPUnit test suite
 ```

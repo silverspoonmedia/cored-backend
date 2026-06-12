@@ -23,7 +23,7 @@ final class UserRowActionResolver implements RowActionResolverInterface
         if (Gate::forUser($actor)->allows('view', $model)) {
             $actions[] = new ActionButton(
                 key: 'show',
-                label: 'Detail',
+                label: __('ui.datatable.detail'),
                 method: 'GET',
                 url: route('api.v1.users.show', $model),
                 style: 'info',
@@ -34,7 +34,7 @@ final class UserRowActionResolver implements RowActionResolverInterface
         if (Gate::forUser($actor)->allows('update', $model)) {
             $actions[] = new ActionButton(
                 key: 'edit',
-                label: 'Edit',
+                label: __('ui.datatable.edit'),
                 method: 'PATCH',
                 url: route('api.v1.users.update', $model),
                 style: 'primary',
@@ -45,12 +45,12 @@ final class UserRowActionResolver implements RowActionResolverInterface
         if ($actor->id !== $model->id && Gate::forUser($actor)->allows('delete', $model)) {
             $actions[] = new ActionButton(
                 key: 'delete',
-                label: 'Hapus',
+                label: __('ui.datatable.delete'),
                 method: 'DELETE',
                 url: route('api.v1.users.destroy', $model),
                 style: 'danger',
                 icon: 'fas fa-trash',
-                confirm: 'Yakin ingin menghapus pengguna ini?',
+                confirm: __('ui.datatable.confirm.delete_user'),
             );
         }
 

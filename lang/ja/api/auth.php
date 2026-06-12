@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'register_success' => '登録が完了しました。',
+    'login_success' => 'ログインに成功しました。',
+    'me_success' => '認証済みユーザーを取得しました。',
+    'refresh_success' => 'トークンを更新しました。',
+    'logout_success' => 'ログアウトしました。',
+    'password_forgot' => 'そのメールアドレスがシステムに存在する場合、パスワード再設定リンクを送信しました。',
+    'password_reset' => 'パスワードを再設定しました。',
+    'password_updated' => 'パスワードを更新しました。',
+    'email_verified' => 'メールアドレスを確認しました。',
+    'invalid_verification_link' => '確認リンクが無効です。',
+    'verification_sent' => '確認リンクを送信しました。',
+    'invalid_credentials' => 'メールアドレスまたはパスワードが正しくありません。',
+    'current_password_incorrect' => '現在のパスワードが正しくありません。',
+    'email_already_verified' => 'メールアドレスはすでに確認済みです。',
+    'invalid_reset_token' => 'このパスワード再設定トークンは無効か、有効期限が切れています。',
+    'bearer_required' => 'Bearer トークンが必要です。',
+    'token_invalid' => 'トークンが無効です。',
+    'token_expired' => 'トークンの有効期限が切れています。',
+    'token_revoked' => 'トークンは取り消されました。',
+    'could_not_authenticate' => 'トークンを認証できませんでした。',
+    'unauthorized' => 'この操作を行う権限がありません。',
+];

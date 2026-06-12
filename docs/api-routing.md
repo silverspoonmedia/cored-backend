@@ -48,10 +48,14 @@ routes/
 app/Http/Controllers/API/
 ├── PlaygroundController.php       # Global (demo / non-domain utilities only)
 └── V1/
-    └── PlaygroundController.php   # Versioned application controllers
+    ├── Auth/                      # Versioned application controllers
+    ├── Navigation/
+    ├── UserController.php
+    ├── NotificationController.php
+    └── AdminController.php
 ```
 
-Route paths inside version files are **relative** to the version prefix. For example, `Route::get('ping', ...)` in `routes/api/v1.php` resolves to `GET /api/v1/ping`, not `GET /api/v1/v1/ping`.
+Route paths inside version files are **relative** to the version prefix. For example, a hypothetical `Route::get('ping', ...)` in `routes/api/v1.php` would resolve to `GET /api/v1/ping`, not `GET /api/v1/v1/ping`.
 
 ## Registration (`bootstrap/app.php`)
 
@@ -79,7 +83,7 @@ Route paths inside version files are **relative** to the version prefix. For exa
 | `api: routes/api.php` | Loads global routes with Laravel’s default `api` middleware and `/api` prefix. |
 | `middleware('api')` | Applies the same middleware group as global API routes (e.g. rate limiting, bindings). |
 | `prefix('api/v1')` | Mounts all routes in `v1.php` under `/api/v1`. |
-| `name('api.v1.')` | Prefixes route names (e.g. `api.v1.ping`) for `route()` and tests. |
+| `name('api.v1.')` | Prefixes route names (e.g. `api.v1.auth.login`) for `route()` and tests. |
 
 JSON error responses for API requests are enabled when the path matches `api/*`:
 
@@ -111,16 +115,18 @@ Controllers live in `App\Http\Controllers\API\` (no `V{N}` segment). Keep this n
 **File:** `routes/api/v1.php`
 
 ```php
-use App\Http\Controllers\API\V1\PlaygroundController;
+use App\Http\Controllers\API\V1\AdminController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('ping', [PlaygroundController::class, 'ping']);
+Route::middleware(['auth:api', 'permission:view user'])
+    ->get('admin/ping', [AdminController::class, 'ping'])
+    ->name('admin.ping');
 ```
 
-**Example endpoint:** `GET /api/v1/ping`  
-**Example route name:** `api.v1.ping` (via `route('api.v1.ping')`)
+**Example endpoint:** `GET /api/v1/admin/ping`  
+**Example route name:** `api.v1.admin.ping` (via `route('api.v1.admin.ping')`)
 
-This is the **primary API surface** for the application. Implement new endpoints here unless they explicitly meet the global criteria above.
+This is the **primary API surface** for the application. Implement new endpoints here unless they explicitly meet the global criteria above. The real v1 surface includes `auth/*`, `users/*`, `navigation/menus/*`, and `notifications/*` (see the related docs below).
 
 Place controllers under `App\Http\Controllers\API\V1\` (or `V2`, `V3`, etc.). Do not change existing version namespaces when introducing a new version; add a new namespace so older clients keep working.
 
@@ -200,18 +206,18 @@ php artisan route:list --path=api
 Expected output (when v1 and global are active):
 
 ```
-GET|HEAD  api/ping      … API\PlaygroundController@ping
-GET|HEAD  api/v1/ping   … api.v1. › API\V1\PlaygroundController@ping
+GET|HEAD  api/ping           … API\PlaygroundController@ping
+GET|HEAD  api/v1/admin/ping  … api.v1.admin.ping › API\V1\AdminController@ping
 ```
 
 ## Playground examples
 
-The `ping` endpoints exist only to demonstrate wiring. In a real deployment, global `ping` might remain as a health check; product behavior would be implemented solely under versioned routes.
+The global `ping` endpoint exists only to demonstrate wiring and doubles as a liveness probe. Product behavior is implemented solely under versioned routes (`auth/*`, `users/*`, `navigation/menus/*`, `notifications/*`); there is intentionally **no** versioned `ping`.
 
 | Endpoint | Layer | Response message (example) |
 |----------|-------|----------------------------|
 | `GET /api/ping` | Global | `Pong Global` |
-| `GET /api/v1/ping` | Versioned | `Pong V1` |
+| `GET /api/v1/admin/ping` | Versioned (RBAC-gated) | `api/admin.access_granted` |
 
 Both use the shared `App\Traits\ApiResponse` trait for consistent JSON structure.
 

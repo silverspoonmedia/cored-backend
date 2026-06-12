@@ -2,7 +2,6 @@
 
 return [
     'pong_global' => 'Pong Global',
-    'pong_v1' => 'Pong V1',
     'users_list' => 'Daftar pengguna berhasil diambil.',
     'user_show' => 'Detail pengguna berhasil diambil.',
     'user_created' => 'Pengguna berhasil dibuat.',
