@@ -41,7 +41,9 @@ class MenuRepository implements MenuRepositoryInterface
 
     public function adminFlatList(?string $loadType): array
     {
-        $query = Menu::query()->with(['roles', 'includedUsers', 'excludedUsers']);
+        $query = Menu::query()
+            ->with(['roles', 'includedUsers', 'excludedUsers'])
+            ->withCount('children');
 
         if ($loadType !== null && $loadType !== '') {
             $query->where('type', $loadType);

@@ -25,6 +25,7 @@ return [
     'empty_trashed' => 'Tidak ada menu terhapus.',
     'trashed_breadcrumb' => 'Terhapus',
     'empty_list' => 'Belum ada menu.',
+    'has_children_title' => 'Memiliki :count item turunan',
     'trashed_card_title' => 'Menu yang dihapus',
     'new_card_title' => 'Data menu baru',
     'edit_card_title' => 'Ubah menu: :name',
