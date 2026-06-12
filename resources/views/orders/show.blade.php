@@ -1,9 +1,7 @@
 <x-layouts.app :title="__('web/orders.show_title')">
-    <x-slot:breadcrumb>
-        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('menu.dashboard') }}</a></li>
-        <li class="breadcrumb-item"><a href="{{ route('orders.index') }}">{{ __('web/orders.breadcrumb') }}</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ data_get($order, 'order_number') }}</li>
-    </x-slot:breadcrumb>
+    {{-- Dynamic trail segment (order number): feed it to the route-bound trail
+         without a DB lookup, keeping the web layer a pure API consumer. --}}
+    @php(\Diglactic\Breadcrumbs\Breadcrumbs::setCurrentRoute('orders.show', data_get($order, 'order_number')))
 
     @php($statusStyles = ['pending' => 'secondary', 'processing' => 'info', 'completed' => 'success', 'cancelled' => 'danger'])
     @php($status = data_get($order, 'status', 'pending'))

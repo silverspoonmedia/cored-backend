@@ -1,9 +1,4 @@
 <x-layouts.app :title="__('web/profile.password_title')">
-    <x-slot:breadcrumb>
-        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('menu.dashboard') }}</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ __('web/profile.password_title') }}</li>
-    </x-slot:breadcrumb>
-
     <div class="row">
         <div class="col-lg-6">
             <x-card :title="__('web/profile.password_card')">

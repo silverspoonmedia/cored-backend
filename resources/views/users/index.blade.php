@@ -1,9 +1,4 @@
 <x-layouts.app :title="__('web/users.title')">
-    <x-slot:breadcrumb>
-        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('menu.dashboard') }}</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ __('web/users.breadcrumb') }}</li>
-    </x-slot:breadcrumb>
-
     <x-card :title="__('web/users.list_title')">
         @can('create user')
             <x-slot:actions>

@@ -1,8 +1,4 @@
 <x-layouts.app :title="__('web/dashboard.title')">
-    <x-slot:breadcrumb>
-        <li class="breadcrumb-item active" aria-current="page">{{ __('web/dashboard.title') }}</li>
-    </x-slot:breadcrumb>
-
     <div class="row">
         <div class="col-lg-8">
             <x-card :title="__('web/dashboard.welcome', ['name' => $profile['name']])">

@@ -19,11 +19,14 @@
                             <div class="col-sm-6">
                                 <h3 class="mb-0">{{ $title }}</h3>
                             </div>
-                            @isset($breadcrumb)
+                            {{-- Breadcrumb trail is defined once per route in routes/breadcrumbs.php
+                                 and auto-rendered for the current route. Views needing a dynamic
+                                 segment (e.g. orders.show) call Breadcrumbs::setCurrentRoute(...). --}}
+                            @if (Breadcrumbs::exists())
                                 <div class="col-sm-6">
-                                    <ol class="breadcrumb float-sm-end">{{ $breadcrumb }}</ol>
+                                    {{ Breadcrumbs::view('partials.breadcrumbs') }}
                                 </div>
-                            @endisset
+                            @endif
                         </div>
                     </div>
                 </div>

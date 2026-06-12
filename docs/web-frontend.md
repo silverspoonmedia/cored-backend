@@ -116,7 +116,7 @@ resources/views/
 │   ├── layouts/app.blade.php       ← <x-layouts.app>  authenticated shell (navbar + sidebar + footer)
 │   ├── layouts/auth.blade.php      ← <x-layouts.auth> centered login card
 │   ├── partials/                   ← assets-head, assets-scripts, navbar, sidebar, footer,
-│   │                                  datatable-assets, datatable-row-actions
+│   │                                  datatable-assets, datatable-row-actions, breadcrumbs
 │   ├── nav/tree.blade.php          ← recursive renderer for the dynamic sidebar tree
 │   ├── alert.blade.php             ← flash + validation feedback
 │   ├── card.blade.php              ← panel wrapper (title + actions slot)
@@ -141,6 +141,20 @@ resources/views/
   - Menu `icon` stores a **full** icon class (e.g. `bi bi-people`); null/empty renders the `bi bi-circle` placeholder. `route` stores a **registered route name**; unregistered names degrade to `#`.
 
 All forms are standard `<form method="POST">` submissions (`@csrf`, `@method('PUT'|'DELETE')`) posting to the web controllers, which forward to the API.
+
+### Breadcrumbs (`diglactic/laravel-breadcrumbs`)
+
+Breadcrumb trails are **defined once per route name** in `routes/breadcrumbs.php` (loaded automatically by the package), not hardcoded in each view. The authenticated shell (`components/layouts/app.blade.php`) auto-renders the trail for the **current route** via `Breadcrumbs::view('partials.breadcrumbs')` (guarded by `Breadcrumbs::exists()`, so routes without a trail render nothing). `partials/breadcrumbs.blade.php` keeps the original AdminLTE markup (`<ol class="breadcrumb float-sm-end">`).
+
+| Piece | File | Role |
+|-------|------|------|
+| Trail definitions | `routes/breadcrumbs.php` | One `Breadcrumbs::for('<route.name>', …)` per screen; `parent()` chains to the ancestor, `push()` adds the current crumb |
+| Renderer | `resources/views/partials/breadcrumbs.blade.php` | Turns the generated collection into the `float-sm-end` `<ol>` |
+| Auto-render | `resources/views/components/layouts/app.blade.php` | `@if (Breadcrumbs::exists()) {{ Breadcrumbs::view('partials.breadcrumbs') }} @endif` |
+
+- **Localization** — every title goes through `__()` against the **same** lang keys the views already used (`menu.dashboard`, `web/*.breadcrumb`, `ui.breadcrumb.add`/`edit`, `web/menus.trashed_breadcrumb`, `web/profile.password_title`, `web/notifications.breadcrumb`). No new keys, all `en`/`id`/`ja` already covered. Never hardcode crumb copy.
+- **Dynamic segment** — `orders.show` needs the order number (no static label). Its trail takes a parameter; the view feeds it **without a DB lookup** (the web layer is a pure API consumer) via `@php(Breadcrumbs::setCurrentRoute('orders.show', data_get($order, 'order_number')))` before the layout renders.
+- **Adding a screen** — register a new `Breadcrumbs::for('<route.name>', …)` keyed by the route name; the layout picks it up with no view changes. Views no longer pass a `<x-slot:breadcrumb>`.
 
 ### Server-side DataTables (user list)
 
