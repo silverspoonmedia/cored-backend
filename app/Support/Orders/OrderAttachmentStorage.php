@@ -2,6 +2,7 @@
 
 namespace App\Support\Orders;
 
+use App\Models\Attachment;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -9,8 +10,10 @@ use Illuminate\Support\Facades\Storage;
  * Stores and removes order attachment files on the configured disk.
  *
  * Files live on the `s3Custom` disk (see config/filesystems.php); the database
- * only keeps lightweight metadata per file (`path`, `name`, `size`, `mime`).
- * The `path` is the disk-relative key used to build a URL or delete the object.
+ * only keeps lightweight metadata per file (`disk`, `path`, `name`, `size`,
+ * `mime`). The `path` is the disk-relative key used to build a URL or delete the
+ * object; `disk` records where the bytes live. URL resolution (incl. signed-URL
+ * caching) lives on the {@see Attachment} model, not here.
  *
  * This class is pure file I/O — it does not touch the database. OrderService
  * decides WHEN to store/keep/forget files and persists the metadata; keeping
@@ -26,13 +29,14 @@ class OrderAttachmentStorage
     /**
      * Store one uploaded file and return its metadata row.
      *
-     * @return array{path: string, name: string, size: int, mime: string}
+     * @return array{disk: string, path: string, name: string, size: int, mime: string}
      */
     public function store(UploadedFile $file): array
     {
         $path = $file->store(self::DIRECTORY, self::DISK);
 
         return [
+            'disk' => self::DISK,
             'path' => $path,
             'name' => $file->getClientOriginalName(),
             'size' => $file->getSize(),
@@ -44,7 +48,7 @@ class OrderAttachmentStorage
      * Store many uploaded files.
      *
      * @param  iterable<UploadedFile>  $files
-     * @return list<array{path: string, name: string, size: int, mime: string}>
+     * @return list<array{disk: string, path: string, name: string, size: int, mime: string}>
      */
     public function storeMany(iterable $files): array
     {
@@ -78,13 +82,5 @@ class OrderAttachmentStorage
         if ($paths !== []) {
             Storage::disk(self::DISK)->delete($paths);
         }
-    }
-
-    /**
-     * Public URL for a stored attachment path.
-     */
-    public function url(string $path): string
-    {
-        return Storage::disk(self::DISK)->url($path);
     }
 }

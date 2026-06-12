@@ -35,8 +35,17 @@ Both tables follow the project UUID convention (see [UUID v7](./user-uuid-v7.md)
 
 | Table | Key columns |
 |-------|-------------|
-| `order_master` | `id` (uuid PK), `order_number` (unique), `customer_*`, `attachment` (json), `subtotal`, `discount`, `tax`, `grand_total`, `status` (`pending`/`processing`/`completed`/`cancelled`), `notes`, timestamps; index on `status` |
+| `order_master` | `id` (uuid PK), `order_number` (unique), `customer_*`, `subtotal`, `discount`, `tax`, `grand_total`, `status` (`pending`/`processing`/`completed`/`cancelled`), `notes`, timestamps; index on `status` |
 | `order_detail` | `id` (uuid PK), `order_master_id` (`foreignUuid` → `order_master`, `cascadeOnDelete`), `product_name`, `quantity`, `unit_price`, `discount`, `subtotal`, `notes`, timestamps |
+| `attachments` | `id` (uuid PK), `attachable_type` + `attachable_id` (`uuidMorphs`, polymorphic owner), `user_id` (`foreignUuid` → `users`, `nullOnDelete`), `disk`, `path`, `name`, `size`, `mime`, `cached_url` + `cached_url_expires_at` (signed-URL cache, S3 only), timestamps |
+
+> Attachment metadata lives in its own **`attachments`** table (polymorphic via
+> `uuidMorphs`), **not** a JSON column on `order_master`. One shared table can
+> own files for any model, and file metadata is queryable/manageable like any
+> other row. An order owns its files through a `morphMany` relation. Each row
+> records its `disk` and the owning `user_id`. For S3-compatible disks the
+> signed URL is cached on the row (`cached_url` + `cached_url_expires_at`) and
+> regenerated only when it nears expiry — see [Attachments](#attachments-multiple-file-upload).
 
 > The migrations use `uuid` / `foreignUuid` (project rule), not the `ulid` from
 > the original example file. `product_name` is added so each line references a
@@ -49,8 +58,9 @@ Both tables follow the project UUID convention (see [UUID v7](./user-uuid-v7.md)
 ```
 app/
 ├── Models/
-│   ├── Order.php          # HasMany details, HasUuids, decimal + attachment(array) casts, factory
-│   └── OrderDetail.php    # BelongsTo order (order_master_id), HasUuids, factory
+│   ├── Order.php          # HasMany details, MorphMany attachments, HasUuids, decimal casts, factory
+│   ├── OrderDetail.php    # BelongsTo order (order_master_id), HasUuids, factory
+│   └── Attachment.php     # MorphTo attachable + BelongsTo user, HasUuids, factory; disk-aware url() with signed-URL cache
 ├── Repositories/
 │   ├── Contracts/OrderRepositoryInterface.php
 │   └── Eloquent/OrderRepository.php          # all writes wrapped in DB::transaction()
@@ -143,17 +153,35 @@ for a new line; drop a line from the array to delete it:
 
 ### Attachments (multiple file upload)
 
-The `order_master.attachment` column is a JSON array — one order can carry many
-files. The **files** live on the `s3Custom` disk (see `config/filesystems.php`);
-the database stores only lightweight metadata per file: `{path, name, size, mime}`.
+Attachment metadata lives in the shared **`attachments`** table (polymorphic via
+`uuidMorphs`); an order owns many rows through a `morphMany` relation — one order
+can carry many files. The **files** live on the `s3Custom` disk (see
+`config/filesystems.php`); each `attachments` row stores lightweight metadata per
+file: `{disk, path, name, size, mime}`, plus the owning `user_id` and a
+signed-URL cache (`cached_url`, `cached_url_expires_at`).
 
 | Piece | Role |
 |-------|------|
-| `App\Support\Orders\OrderAttachmentStorage` | Pure file I/O: `store`/`storeMany`/`deleteMany`/`url` on the `s3Custom` disk. No DB access. |
-| `OrderService` | Decides when to store/keep/forget files and persists the metadata; compensates a failed DB write by deleting the just-uploaded files |
+| `App\Models\Attachment` | Polymorphic (`attachable`) metadata row; `Order morphMany attachments`, `Attachment belongsTo user`. Owns **disk-aware URL resolution** (see below). The shared table is not order-specific. |
+| `App\Support\Orders\OrderAttachmentStorage` | Pure file I/O: `store`/`storeMany`/`deleteMany` on the `s3Custom` disk; `store` returns the `disk` in each metadata row. No DB access, no URL logic. |
+| `OrderService` | Decides when to store/keep/forget files; stamps the authenticated `user_id` on freshly stored rows; reconciles the desired metadata set (by `path`) and hands it to the repository, which writes the rows inside the master-detail transaction. Compensates a failed DB write by deleting the just-uploaded files |
+| `OrderRepository` | Persists/reconciles `attachments` rows **inside** the same `DB::transaction()` as the master + details (sync by `path`: drop removed, insert new, keep surviving UUIDs) |
 | `StoreOrderRequest` | `attachments` (`nullable|array|max:10`), `attachments.*` (`file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx`) |
 | `UpdateOrderRequest` | Same `attachments` rules **plus** `keep_attachments` (array of disk paths to retain) and `attachments_managed` (boolean marker — see reconciliation below) |
-| `PlaygroundOrderResource` | Emits each file as `{path, name, size, mime, url}` (the `url` is resolved from the disk) |
+| `PlaygroundOrderResource` | Emits each file as `{path, name, size, mime, url}` (from the `attachments` relation; the `url` comes from `Attachment::url()`) |
+
+**URL resolution (disk-aware + signed-URL cache)** — `Attachment::url()` returns
+the right URL for the file's `disk`:
+
+| Disk kind | Behaviour |
+|-----------|-----------|
+| Public / local (`providesTemporaryUrls() === false`) | plain, non-expiring `Storage::url()`; nothing cached |
+| S3-compatible (`providesTemporaryUrls() === true`) | a **signed** (temporary) URL is minted, cached on the row (`cached_url` + `cached_url_expires_at`, TTL `60` min), and reused on subsequent calls until it is within `5` min of expiring — then a fresh one is minted and re-cached |
+
+> Signing is expensive and the signed URL itself expires, so caching it avoids
+> re-minting on every read while the refresh threshold guarantees a caller never
+> gets an about-to-die URL. The cache write is best-effort: the URL is always
+> returned even if the row cannot be saved.
 
 **Upload (store/update)** — send `multipart/form-data` with `attachments[]` file
 parts alongside the JSON-ish fields:
@@ -190,16 +218,18 @@ of existing files to retain. The new set is `kept ∪ newly uploaded`:
 
 #### Transaction safety (no orphaned files)
 
-Files are stored on a disk, which is **not** part of the DB transaction. The
-service orders the work so neither side leaks:
+Files are stored on a disk, which is **not** part of the DB transaction (the
+`attachments` rows are). The service orders the work so neither side leaks:
 
-- **Create / update:** upload files → run the DB transaction → **on DB failure,
+- **Create / update:** upload files → run the DB transaction (writes the
+  master, details **and** `attachments` rows together) → **on DB failure,
   delete the just-uploaded files** (compensating action) and rethrow. A dropped
   file (update) is deleted **only after** the DB commit succeeds, so a rollback
   never loses a file that is still referenced.
-- **Delete:** remove the DB row first, then delete its files. A stored file with
-  no DB row is a harmless leak; a missing file with a live row is data loss — so
-  the DB is the source of truth and files are purged last.
+- **Delete:** remove the DB rows first (master + details + attachments in one
+  transaction), then delete its files. A stored file with no DB row is a
+  harmless leak; a missing file with a live row is data loss — so the DB is the
+  source of truth and files are purged last.
 
 > The web layer forwards uploads as multipart too: `ApiClient::postMultipart()` /
 > `putMultipart()` attach the files and flatten nested fields (e.g.
@@ -276,6 +306,7 @@ per the [Localization task rule](./localization.md#task-rule-required):
 | `tests/Feature/Http/Controllers/API/PlaygroundOrderCrudTest.php` | Order full HTTP stack: atomic create, ID-preserving update, frozen completed orders, datatable mode |
 | `tests/Feature/Http/Controllers/API/PlaygroundOrderAttachmentTest.php` | Multi-file upload, type validation, keep/drop reconciliation (incl. `attachments_managed` marker), delete purges files (disk faked) |
 | `tests/Feature/Http/Controllers/Web/OrderAttachmentWebTest.php` | Web layer forwards uploads + attachment fields as multipart to the playground API |
+| `tests/Feature/Models/AttachmentTest.php` | Disk-aware `Attachment::url()`: plain URL for public disks; signed-URL mint + cache, fresh-cache reuse, near-expiry refresh for S3; owning-user relation |
 
 ```bash
 php artisan test --filter=Playground

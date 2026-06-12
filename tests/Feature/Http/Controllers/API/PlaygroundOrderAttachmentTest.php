@@ -190,11 +190,10 @@ class PlaygroundOrderAttachmentTest extends TestCase
 
     public function test_destroy_removes_attachment_files(): void
     {
-        $order = Order::factory()->pending()->create([
-            'attachment' => [
-                ['path' => 'orders/attachments/x.pdf', 'name' => 'x.pdf', 'size' => 10, 'mime' => 'application/pdf'],
-            ],
-        ]);
+        $order = Order::factory()->pending()->create();
+        $order->attachments()->create(
+            ['disk' => OrderAttachmentStorage::DISK, 'path' => 'orders/attachments/x.pdf', 'name' => 'x.pdf', 'size' => 10, 'mime' => 'application/pdf'],
+        );
         OrderDetail::factory()->create(['order_master_id' => $order->id]);
 
         $disk = Storage::disk(OrderAttachmentStorage::DISK);
@@ -204,5 +203,6 @@ class PlaygroundOrderAttachmentTest extends TestCase
 
         $disk->assertMissing('orders/attachments/x.pdf');
         $this->assertDatabaseCount('order_master', 0);
+        $this->assertDatabaseCount('attachments', 0);
     }
 }

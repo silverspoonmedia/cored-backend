@@ -22,6 +22,7 @@ class OrderRepository implements OrderRepositoryInterface
     public function all(): Collection
     {
         return Order::query()
+            ->with('attachments')
             ->withCount('details')
             ->latest()
             ->get();
@@ -30,24 +31,28 @@ class OrderRepository implements OrderRepositoryInterface
     public function findOrFail(string $id): Order
     {
         return Order::query()
-            ->with('details')
+            ->with('details', 'attachments')
             ->findOrFail($id);
     }
 
-    public function createWithDetails(array $master, array $details): Order
+    public function createWithDetails(array $master, array $details, array $attachments = []): Order
     {
-        return DB::transaction(function () use ($master, $details): Order {
+        return DB::transaction(function () use ($master, $details, $attachments): Order {
             $order = Order::query()->create($master);
 
             $order->details()->createMany($details);
 
-            return $order->load('details');
+            if ($attachments !== []) {
+                $order->attachments()->createMany($attachments);
+            }
+
+            return $order->load('details', 'attachments');
         });
     }
 
-    public function updateWithDetails(string $id, array $master, array $details): Order
+    public function updateWithDetails(string $id, array $master, array $details, array $attachments = []): Order
     {
-        return DB::transaction(function () use ($id, $master, $details): Order {
+        return DB::transaction(function () use ($id, $master, $details, $attachments): Order {
             $order = Order::query()->findOrFail($id);
 
             $order->update($master);
@@ -78,8 +83,39 @@ class OrderRepository implements OrderRepositoryInterface
 
             $order->details()->whereKeyNot($keptIds)->delete();
 
-            return $order->load('details');
+            $this->syncAttachments($order, $attachments);
+
+            return $order->load('details', 'attachments');
         });
+    }
+
+    /**
+     * Reconcile the order's attachment rows against the desired set by `path`
+     * (the stable disk key). Rows whose path is no longer desired are deleted,
+     * brand-new paths are inserted, and surviving rows are left untouched so
+     * their UUIDs persist. File I/O (the actual upload/delete) is owned by
+     * OrderService; here we only mirror the metadata inside the transaction.
+     *
+     * @param  list<array<string, mixed>>  $desired
+     */
+    private function syncAttachments(Order $order, array $desired): void
+    {
+        $desiredPaths = array_column($desired, 'path');
+
+        // Drop rows the caller no longer wants.
+        $order->attachments()->whereNotIn('path', $desiredPaths)->delete();
+
+        // Insert rows for paths that are not persisted yet.
+        $existingPaths = $order->attachments()->pluck('path')->all();
+
+        $new = array_values(array_filter(
+            $desired,
+            fn (array $row): bool => ! in_array($row['path'], $existingPaths, true),
+        ));
+
+        if ($new !== []) {
+            $order->attachments()->createMany($new);
+        }
     }
 
     public function deleteWithDetails(string $id): void
@@ -88,8 +124,9 @@ class OrderRepository implements OrderRepositoryInterface
             $order = Order::query()->findOrFail($id);
 
             // Explicit child delete keeps the intent clear and stays correct
-            // even if the FK cascade is ever relaxed; both rows go in one tx.
+            // even if the FK cascade is ever relaxed; all rows go in one tx.
             $order->details()->delete();
+            $order->attachments()->delete();
             $order->delete();
         });
     }

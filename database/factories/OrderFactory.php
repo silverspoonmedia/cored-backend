@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Order;
+use App\Support\Orders\OrderAttachmentStorage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -27,7 +28,6 @@ class OrderFactory extends Factory
             'customer_name' => fake()->name(),
             'customer_email' => fake()->safeEmail(),
             'customer_phone' => fake()->optional()->phoneNumber(),
-            'attachment' => [],
             'subtotal' => $subtotal,
             'discount' => $discount,
             'tax' => $tax,
@@ -48,19 +48,22 @@ class OrderFactory extends Factory
     }
 
     /**
-     * Seed the order with attachment metadata rows (no real files on disk).
+     * Seed the order with related attachment rows (no real files on disk).
      */
     public function withAttachments(int $count = 2): static
     {
-        return $this->state(fn () => [
-            'attachment' => collect(range(1, $count))
-                ->map(fn (int $i): array => [
-                    'path' => 'orders/attachments/file-'.$i.'-'.fake()->uuid().'.pdf',
-                    'name' => 'file-'.$i.'.pdf',
-                    'size' => fake()->numberBetween(1000, 500000),
-                    'mime' => 'application/pdf',
-                ])
-                ->all(),
-        ]);
+        return $this->afterCreating(function (Order $order) use ($count): void {
+            $order->attachments()->createMany(
+                collect(range(1, $count))
+                    ->map(fn (int $i): array => [
+                        'disk' => OrderAttachmentStorage::DISK,
+                        'path' => 'orders/attachments/file-'.$i.'-'.fake()->uuid().'.pdf',
+                        'name' => 'file-'.$i.'.pdf',
+                        'size' => fake()->numberBetween(1000, 500000),
+                        'mime' => 'application/pdf',
+                    ])
+                    ->all(),
+            );
+        });
     }
 }
