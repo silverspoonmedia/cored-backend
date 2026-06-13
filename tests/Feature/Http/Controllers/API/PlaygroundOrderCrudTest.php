@@ -205,6 +205,46 @@ class PlaygroundOrderCrudTest extends TestCase
         $this->assertDatabaseCount('order_master', 1);
     }
 
+    public function test_bulk_destroy_removes_many_orders_atomically(): void
+    {
+        $a = Order::factory()->pending()->create();
+        $b = Order::factory()->pending()->create();
+        OrderDetail::factory()->count(2)->create(['order_master_id' => $a->id]);
+        OrderDetail::factory()->create(['order_master_id' => $b->id]);
+
+        $this->deleteJson('/api/playground/orders/bulk', ['ids' => [$a->id, $b->id]])
+            ->assertOk()
+            ->assertJson(['status' => 'success'])
+            ->assertJsonPath('data.deleted', 2);
+
+        $this->assertDatabaseCount('order_master', 0);
+        $this->assertDatabaseCount('order_detail', 0);
+    }
+
+    public function test_bulk_destroy_aborts_whole_batch_when_one_order_is_completed(): void
+    {
+        $open = Order::factory()->pending()->create();
+        $frozen = Order::factory()->completed()->create();
+
+        $this->deleteJson('/api/playground/orders/bulk', ['ids' => [$open->id, $frozen->id]])
+            ->assertStatus(409)
+            ->assertJson(['status' => 'error']);
+
+        // Nothing was deleted: the completed order freezes the entire batch.
+        $this->assertDatabaseCount('order_master', 2);
+    }
+
+    public function test_bulk_destroy_validates_the_id_set(): void
+    {
+        $this->deleteJson('/api/playground/orders/bulk', ['ids' => []])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['ids']);
+
+        $this->deleteJson('/api/playground/orders/bulk', ['ids' => [fake()->uuid()]])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['ids.0']);
+    }
+
     public function test_index_datatable_mode_returns_actions(): void
     {
         Order::factory()->pending()->create();

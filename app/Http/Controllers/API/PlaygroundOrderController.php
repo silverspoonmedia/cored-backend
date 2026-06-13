@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Playground\BulkDestroyOrderRequest;
 use App\Http\Requests\Playground\IndexOrderRequest;
 use App\Http\Requests\Playground\StoreOrderRequest;
 use App\Http\Requests\Playground\UpdateOrderRequest;
@@ -94,5 +95,22 @@ class PlaygroundOrderController extends Controller
         $this->orderService->delete($order);
 
         return $this->successResponse(null, __('api/playground-orders.deleted'));
+    }
+
+    /**
+     * Mass-delete: remove every order in the `ids` set in one atomic batch.
+     * The service freezes the whole batch if any order is completed, mirroring
+     * the single-row delete rule.
+     */
+    public function bulkDestroy(BulkDestroyOrderRequest $request): JsonResponse
+    {
+        $ids = $request->validated('ids');
+
+        $this->orderService->deleteMany($ids);
+
+        return $this->successResponse(
+            ['deleted' => count($ids)],
+            __('api/playground-orders.bulk_deleted', ['count' => count($ids)]),
+        );
     }
 }

@@ -5,6 +5,7 @@ namespace App\Repositories\Eloquent;
 use App\Models\Order;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -33,6 +34,21 @@ class OrderRepository implements OrderRepositoryInterface
         return Order::query()
             ->with('details', 'attachments')
             ->findOrFail($id);
+    }
+
+    public function findManyOrFail(array $ids): Collection
+    {
+        $ids = array_values(array_unique($ids));
+
+        $orders = Order::query()
+            ->with('details', 'attachments')
+            ->findMany($ids);
+
+        if ($orders->count() !== count($ids)) {
+            throw (new ModelNotFoundException)->setModel(Order::class, $ids);
+        }
+
+        return $orders;
     }
 
     public function createWithDetails(array $master, array $details, array $attachments = []): Order
@@ -128,6 +144,25 @@ class OrderRepository implements OrderRepositoryInterface
             $order->details()->delete();
             $order->attachments()->delete();
             $order->delete();
+        });
+    }
+
+    public function deleteManyWithDetails(array $ids): void
+    {
+        if ($ids === []) {
+            return;
+        }
+
+        DB::transaction(function () use ($ids): void {
+            $orders = Order::query()->with('details', 'attachments')->findMany($ids);
+
+            // Explicit child delete keeps the intent clear and stays correct
+            // even if the FK cascade is ever relaxed; every row goes in one tx.
+            foreach ($orders as $order) {
+                $order->details()->delete();
+                $order->attachments()->delete();
+                $order->delete();
+            }
         });
     }
 

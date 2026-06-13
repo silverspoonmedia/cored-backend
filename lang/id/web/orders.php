@@ -11,6 +11,12 @@ return [
     'new_card_title' => 'Pesanan baru',
     'edit_card_title' => 'Ubah pesanan: :number',
     'update_submit' => 'Perbarui',
+    'bulk' => [
+        'delete_button' => 'Hapus terpilih',
+        'select_all' => 'Pilih semua',
+        'confirm' => 'Hapus :count pesanan terpilih beserta seluruh barisnya?',
+        'none_selected' => 'Pilih minimal satu pesanan terlebih dahulu.',
+    ],
     'datatable' => [
         'empty' => 'Belum ada pesanan.',
         'zero_records' => 'Tidak ada pesanan yang cocok dengan pencarian Anda.',

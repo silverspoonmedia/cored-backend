@@ -11,6 +11,12 @@ return [
     'new_card_title' => 'New order',
     'edit_card_title' => 'Edit order: :number',
     'update_submit' => 'Update',
+    'bulk' => [
+        'delete_button' => 'Delete selected',
+        'select_all' => 'Select all',
+        'confirm' => 'Delete the :count selected order(s) and all their line items?',
+        'none_selected' => 'Select at least one order first.',
+    ],
     'datatable' => [
         'empty' => 'No orders yet.',
         'zero_records' => 'No orders match your search.',
