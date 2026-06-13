@@ -142,6 +142,26 @@ class OrderController extends Controller
     }
 
     /**
+     * Mass-delete: forward the selected ids to the API's bulk endpoint. The API
+     * runs the atomic batch delete + frozen-order rule; the web layer only
+     * relays the id set and translates the JSON envelope (AJAX, no reload).
+     */
+    public function bulkDestroy(Request $request): RedirectResponse|JsonResponse
+    {
+        $response = $this->api()->delete('orders/bulk', [
+            'ids' => array_values((array) $request->input('ids', [])),
+        ]);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('orders.index')->with('success', $this->apiMessage($response)),
+            $this->apiMessage($response),
+            stayOnPageOnSuccess: true,
+        );
+    }
+
+    /**
      * Non-file form fields to forward to the API (CSRF/method spoofing and the
      * uploaded files stripped — files are attached separately as multipart).
      * The `details`, `keep_attachments` and `attachments_managed` fields ride

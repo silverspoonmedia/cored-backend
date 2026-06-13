@@ -124,6 +124,40 @@ class OrderService
     }
 
     /**
+     * Mass-delete orders by id. Either every order is removed or none is: the
+     * frozen-order rule is enforced up front (one completed order in the set
+     * aborts the whole batch), then the masters + details + attachment rows are
+     * dropped in a single transaction, and only afterwards are the files purged.
+     *
+     * @param  list<string>  $ids
+     */
+    public function deleteMany(array $ids): void
+    {
+        $ids = array_values(array_unique($ids));
+
+        if ($ids === []) {
+            return;
+        }
+
+        $orders = $this->repository->findManyOrFail($ids);
+
+        foreach ($orders as $order) {
+            $this->assertEditable($order);
+        }
+
+        $attachments = $orders
+            ->flatMap(fn (Order $order) => $order->attachments)
+            ->map(fn ($a): array => $a->only(['path']))
+            ->all();
+
+        $this->repository->deleteManyWithDetails($ids);
+
+        // DB rows gone — drop their files after commit, same ordering as the
+        // single-row delete (a stored file with no row is a harmless leak).
+        $this->attachments->deleteMany($attachments);
+    }
+
+    /**
      * Stamp the current user (the uploader/owner) onto freshly stored
      * attachment metadata rows. Resolves the authenticated id once; null when
      * unauthenticated (the column is nullable).

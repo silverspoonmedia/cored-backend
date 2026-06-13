@@ -90,6 +90,7 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | GET | `/orders/{order}` | `orders.show` | `web.auth` | `GET /playground/orders/{id}` (master + lines) |
 | GET/PUT | `/orders/{order}/edit`, `/orders/{order}` | `orders.edit` / `orders.update` | `web.auth` | `GET`/`PUT /playground/orders/{id}` |
 | DELETE | `/orders/{order}` | `orders.destroy` | `web.auth` | `DELETE /playground/orders/{id}` |
+| DELETE | `/orders/bulk` | `orders.bulk-destroy` | `web.auth` | `DELETE /playground/orders/bulk` (mass-delete; `ids[]` in body) |
 | GET | `/navigation/tree` | `navigation.tree` | `web.auth` | `GET /navigation/menus` (optional `?q=`) |
 | GET | `/menus`, `/menus/trashed` | `menus.index` / `menus.trashed` | `web.auth` | `GET /navigation/menus/{list,trashed}` |
 | GET/POST | `/menus/create`, `/menus` | `menus.create` / `menus.store` | `web.auth` | `GET /navigation/menus/list`, `POST /navigation/menus` |

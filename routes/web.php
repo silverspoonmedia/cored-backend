@@ -71,6 +71,9 @@ Route::middleware('web.auth')->group(function (): void {
     Route::get('orders/datatable', [OrderController::class, 'datatable'])->name('orders.datatable');
     Route::get('orders/create', [OrderController::class, 'create'])->name('orders.create');
     Route::get('orders/{order}/edit', [OrderController::class, 'edit'])->whereUuid('order')->name('orders.edit');
+    // Mass-delete (literal `bulk` segment declared before the resource so it is
+    // not captured by the `{order}` wildcard). Selected ids ride in the body.
+    Route::delete('orders/bulk', [OrderController::class, 'bulkDestroy'])->name('orders.bulk-destroy');
     Route::apiResource('orders', OrderController::class)->except(['create', 'edit'])->whereUuid('order');
 
     // Navigation menu management — forwarded to /api/v1/navigation/menus.

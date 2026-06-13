@@ -11,6 +11,12 @@ return [
     'new_card_title' => '新規注文',
     'edit_card_title' => '注文を編集: :number',
     'update_submit' => '更新',
+    'bulk' => [
+        'delete_button' => '選択を削除',
+        'select_all' => 'すべて選択',
+        'confirm' => '選択した :count 件の注文とすべての明細を削除しますか？',
+        'none_selected' => '少なくとも1件の注文を選択してください。',
+    ],
     'datatable' => [
         'empty' => '注文はまだありません。',
         'zero_records' => '検索条件に一致する注文がありません。',

@@ -89,8 +89,32 @@ depends only on the repository contract.
 | `GET` | `/api/playground/orders/{order}` | show master + lines | `playground.orders.show` |
 | `PUT`/`PATCH` | `/api/playground/orders/{order}` | update (full line replace) | `playground.orders.update` |
 | `DELETE` | `/api/playground/orders/{order}` | delete master + lines | `playground.orders.destroy` |
+| `DELETE` | `/api/playground/orders/bulk` | **mass-delete** the `ids[]` set | `playground.orders.bulk-destroy` |
 
-Registered with `Route::apiResource(...)->except(['create','edit'])->names('playground.orders')`.
+Registered with `Route::apiResource(...)->except(['create','edit'])->names('playground.orders')`,
+plus an explicit `DELETE orders/bulk` line **declared before** the resource so
+the literal `bulk` segment is not captured by the `{order}` wildcard.
+
+### Mass-delete (bulk)
+
+`DELETE /api/playground/orders/bulk` removes many orders in one atomic batch.
+The id set rides in the request body:
+
+```json
+{ "ids": ["019e…", "019f…"] }
+```
+
+- `BulkDestroyOrderRequest` validates the shape only: `ids` is
+  `required|array|min:1`; each entry is `uuid|distinct|exists:order_master,id`.
+- `OrderService::deleteMany()` enforces the **same frozen-order rule** as the
+  single delete: if **any** order in the set is `completed` it throws
+  `OrderNotEditableException` (409) and **nothing** is deleted (all-or-nothing).
+- `OrderRepository::deleteManyWithDetails()` drops every master + its details +
+  attachment rows inside **one** `DB::transaction()`; files are purged only
+  after the commit (same ordering as the single-row delete — a stored file with
+  no DB row is a harmless leak, the reverse is data loss).
+- Success returns `{ data: { deleted: <count> } }` with the
+  `api/playground-orders.bulk_deleted` message.
 
 ### Request shape (store/update)
 
@@ -251,6 +275,7 @@ shared client there with `ApiClient::withPrefix('api/playground')`.
 | GET | `/orders/{order}` | `orders.show` | `GET /playground/orders/{id}` |
 | GET/PUT | `/orders/{order}/edit`, `/orders/{order}` | `orders.edit` / `orders.update` | `GET`/`PUT /playground/orders/{id}` |
 | DELETE | `/orders/{order}` | `orders.destroy` | `DELETE /playground/orders/{id}` |
+| DELETE | `/orders/bulk` | `orders.bulk-destroy` | `DELETE /playground/orders/bulk` (proxied; `ids[]` in body) |
 
 - `resources/views/orders/_form.blade.php` renders **dynamic detail rows**
   (add/remove line item) with a monotonic row index so removing then adding
@@ -262,7 +287,12 @@ shared client there with `ApiClient::withPrefix('api/playground')`.
   [reconciliation](#attachments-multiple-file-upload)).
 - `index.blade.php` is a server-side DataTable; the `status` column renders a
   colored badge, `grand_total` is locale-formatted, and completed orders drop
-  their edit/delete buttons (`PlaygroundOrderRowActionResolver`).
+  their edit/delete buttons (`PlaygroundOrderRowActionResolver`). The first
+  column is a **select checkbox** (header "select all" toggles the current
+  page); completed rows are not selectable (frozen). A **"Delete selected"**
+  toolbar button appears once ≥1 row is checked and posts the chosen `ids[]` to
+  `orders.bulk-destroy` (AJAX); the selected set survives paging/search in JS,
+  and the table reloads in place on success.
 - `show.blade.php` renders the master summary, the read-only line table, and a
   download list of attachments (each links to its disk `url`).
 - A sidebar entry (`orders.index`) is seeded by `MenuSeeder`.
@@ -303,9 +333,10 @@ per the [Localization task rule](./localization.md#task-rule-required):
 | `tests/Feature/Http/Controllers/API/PlaygroundUserDatatableTest.php` | User dual-mode list |
 | `tests/Unit/Services/Playground/OrderServiceTest.php` | Order rules + total derivation; **upload-rollback compensation** (repository mocked, disk faked) |
 | `tests/Feature/Repositories/OrderRepositoryTest.php` | **Transaction rollback** — no orphaned master/details on a failed line insert; ID-preserving line sync |
-| `tests/Feature/Http/Controllers/API/PlaygroundOrderCrudTest.php` | Order full HTTP stack: atomic create, ID-preserving update, frozen completed orders, datatable mode |
+| `tests/Feature/Http/Controllers/API/PlaygroundOrderCrudTest.php` | Order full HTTP stack: atomic create, ID-preserving update, frozen completed orders, **atomic mass-delete (frozen-order batch abort, id-set validation)**, datatable mode |
 | `tests/Feature/Http/Controllers/API/PlaygroundOrderAttachmentTest.php` | Multi-file upload, type validation, keep/drop reconciliation (incl. `attachments_managed` marker), delete purges files (disk faked) |
 | `tests/Feature/Http/Controllers/Web/OrderAttachmentWebTest.php` | Web layer forwards uploads + attachment fields as multipart to the playground API |
+| `tests/Feature/Http/Controllers/Web/OrderBulkDeleteWebTest.php` | Web layer forwards the selected `ids[]` to the API bulk endpoint and relays its envelope |
 | `tests/Feature/Models/AttachmentTest.php` | Disk-aware `Attachment::url()`: plain URL for public disks; signed-URL mint + cache, fresh-cache reuse, near-expiry refresh for S3; owning-user relation |
 
 ```bash

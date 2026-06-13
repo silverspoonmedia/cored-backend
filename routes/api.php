@@ -13,6 +13,11 @@ Route::prefix('playground')->group(function () {
         ->except(['create', 'edit'])
         ->names('playground.users');
 
+    // Mass-delete (declared before the resource so the literal segment is not
+    // captured by the `{order}` wildcard). Ids ride in the request body.
+    Route::delete('orders/bulk', [PlaygroundOrderController::class, 'bulkDestroy'])
+        ->name('playground.orders.bulk-destroy');
+
     // Master-detail reference CRUD (Order + OrderDetail). Standard five-action
     // resource; the atomic two-table write lives in OrderService/OrderRepository.
     Route::apiResource('orders', PlaygroundOrderController::class)
