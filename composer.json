@@ -8,7 +8,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/silverspoonmedia/pdf-merger.git"
+            "url": "https://github.com/silverspoonmedia/pdf-tools.git"
         }
     ],
     "require": {
@@ -19,9 +19,10 @@
         "laravel/tinker": "^3.0",
         "league/flysystem-aws-s3-v3": "3.*",
         "php-open-source-saver/jwt-auth": "^2.9",
+        "silverspoonmedia/pdf-tools": "dev-main",
+        "spatie/laravel-pdf": "^2.12",
         "spatie/laravel-permission": "^8.0",
         "spatie/laravel-translatable": "^6.14",
-        "silverspoonmedia/pdf-tools": "dev-main",
         "yajra/laravel-datatables-fractal": "13.*",
         "yajra/laravel-datatables-oracle": "13.*"
     },
