@@ -5,6 +5,12 @@
     "description": "The skeleton application for the Laravel framework.",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/silverspoonmedia/pdf-tools.git"
+        }
+    ],
     "require": {
         "php": "^8.3",
         "diglactic/laravel-breadcrumbs": "^10.1",
@@ -13,6 +19,8 @@
         "laravel/tinker": "^3.0",
         "league/flysystem-aws-s3-v3": "3.*",
         "php-open-source-saver/jwt-auth": "^2.9",
+        "silverspoonmedia/pdf-tools": "dev-main",
+        "spatie/laravel-pdf": "^2.12",
         "spatie/laravel-permission": "^8.0",
         "spatie/laravel-translatable": "^6.14",
         "yajra/laravel-datatables-fractal": "13.*",
