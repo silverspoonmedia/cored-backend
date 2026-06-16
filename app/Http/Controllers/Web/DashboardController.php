@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Web;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Support\Auth\AuthCookie;
 use Illuminate\Http\RedirectResponse;
@@ -24,7 +23,7 @@ class DashboardController extends Controller
                 ->with('error', __('web/session.expired'));
         }
 
-        return view('dashboard', [
+        return $this->webView('dashboard', [
             'profile' => $response->json('data', []),
         ]);
     }

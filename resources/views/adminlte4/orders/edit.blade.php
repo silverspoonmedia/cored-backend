@@ -1,0 +1,10 @@
+<x-adminlte4::layouts.app :title="__('web/orders.edit_title')">
+    <x-adminlte4::card :title="__('web/orders.edit_card_title', ['number' => data_get($order, 'order_number')])">
+        @include('orders._form', [
+            'action' => route('orders.update', data_get($order, 'id')),
+            'method' => 'PUT',
+            'order' => $order,
+            'submitLabel' => __('web/orders.update_submit'),
+        ])
+    </x-adminlte4::card>
+</x-adminlte4::layouts.app>

@@ -16,7 +16,9 @@ use App\Repositories\Eloquent\NotificationRepository;
 use App\Repositories\Eloquent\OrderRepository;
 use App\Repositories\Eloquent\UserRepository;
 use App\Support\DataTable\DataTableResponseFactory;
+use App\Support\Web\WebLayout;
 use App\View\Composers\NavigationComposer;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -49,7 +51,9 @@ class AppServiceProvider extends ServiceProvider
         Role::updated($flushMenuCache);
         Role::deleted($flushMenuCache);
 
+        Blade::anonymousComponentPath(WebLayout::componentsPath(), WebLayout::name());
+
         // The sidebar partial renders the dynamic navigation tree on every page.
-        View::composer('components.partials.sidebar', NavigationComposer::class);
+        View::composer(WebLayout::sidebarComposerView(), NavigationComposer::class);
     }
 }

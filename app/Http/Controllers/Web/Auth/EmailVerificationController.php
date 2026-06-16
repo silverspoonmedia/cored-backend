@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Web\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

@@ -180,11 +180,11 @@ Keep business logic in Services; resolvers only evaluate authorization and build
 
 ### Adding a datatable list screen on the web (Blade)
 
-Follow the users index as the reference (`resources/views/users/index.blade.php`). Steps:
+Follow the users index as the reference (`resources/views/adminlte4/users/index.blade.php`). Steps:
 
 1. Register `GET /{resource}/datatable` on `web.php` (before `{resource}/{id}` routes) under `web.auth` (no `permission:` gate — the API authorizes).
 2. Add a `datatable()` method on the web controller (using `ConsumesApi`) that **proxies** `GET /api/v1/{resource}?display_mode=datatable` — forward `$request->query()` plus `display_mode=datatable`, then `array_map` over `data[]` to rewrite each row's `actions` keys to web route URLs (`bi bi-*` icons). Return an empty payload on API failure.
-3. Change the index view to an empty `<table>` shell; include `<x-partials.datatable-assets />` and `<x-partials.datatable-row-actions />` in `<x-slot:scripts>`.
+3. Change the index view to an empty `<table>` shell; include `<x-adminlte4::partials.datatable-assets />` and `<x-adminlte4::partials.datatable-row-actions />` in `<x-slot:scripts>`.
 4. Initialise DataTables with `serverSide: true`, `ajax` pointing at the web datatable route, and define **column headers via `title`** on each `columns[]` entry (single source of truth — no duplicate `<thead>` markup).
 5. Add a feature test under `tests/Feature/Http/Controllers/Web/` that `Http::fake()`s the API datatable response and asserts the proxy maps the API action keys onto web URLs.
 

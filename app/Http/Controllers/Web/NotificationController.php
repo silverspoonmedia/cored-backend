@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Web;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +32,7 @@ class NotificationController extends Controller
             return redirect()->route('dashboard')->with('error', $this->apiMessage($response));
         }
 
-        return view('notifications.index', [
+        return $this->webView('notifications.index', [
             'notifications' => $this->withWebUrls($response->json('data', [])),
         ]);
     }

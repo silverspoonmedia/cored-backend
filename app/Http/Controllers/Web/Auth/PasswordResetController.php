@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Web\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +19,7 @@ class PasswordResetController extends Controller
 
     public function showLinkRequest(): View
     {
-        return view('auth.forgot-password');
+        return $this->webView('auth.forgot-password');
     }
 
     public function sendLink(Request $request): RedirectResponse|JsonResponse
@@ -37,7 +37,7 @@ class PasswordResetController extends Controller
 
     public function showReset(Request $request, string $token): View
     {
-        return view('auth.reset-password', [
+        return $this->webView('auth.reset-password', [
             'token' => $token,
             'email' => (string) $request->query('email', ''),
         ]);

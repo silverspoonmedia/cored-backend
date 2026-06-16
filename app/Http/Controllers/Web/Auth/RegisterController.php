@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Web\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Concerns\IssuesAuthCookie;
+use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,7 +23,7 @@ class RegisterController extends Controller
 
     public function create(): View
     {
-        return view('auth.register');
+        return $this->webView('auth.register');
     }
 
     public function store(Request $request): RedirectResponse|JsonResponse

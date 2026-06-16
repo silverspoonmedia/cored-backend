@@ -277,7 +277,7 @@ shared client there with `ApiClient::withPrefix('api/playground')`.
 | DELETE | `/orders/{order}` | `orders.destroy` | `DELETE /playground/orders/{id}` |
 | DELETE | `/orders/bulk` | `orders.bulk-destroy` | `DELETE /playground/orders/bulk` (proxied; `ids[]` in body) |
 
-- `resources/views/orders/_form.blade.php` renders **dynamic detail rows**
+- `resources/views/adminlte4/orders/_form.blade.php` renders **dynamic detail rows**
   (add/remove line item) with a monotonic row index so removing then adding
   never collides on a `details[i][...]` field name. It always keeps ≥1 row. It
   also has a multi-file `attachments[]` input and, on edit, a checkbox list of

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Web\Navigation;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use App\Http\Controllers\Web\Controller;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -48,7 +48,7 @@ class MenuController extends Controller
             return redirect()->route('dashboard')->with('error', $this->apiMessage($response));
         }
 
-        return view('menus.index', ['menus' => $response->json('data', [])]);
+        return $this->webView('menus.index', ['menus' => $response->json('data', [])]);
     }
 
     public function trashed(): View|RedirectResponse
@@ -59,7 +59,7 @@ class MenuController extends Controller
             return redirect()->route('menus.index')->with('error', $this->apiMessage($response));
         }
 
-        return view('menus.trashed', ['menus' => $response->json('data', [])]);
+        return $this->webView('menus.trashed', ['menus' => $response->json('data', [])]);
     }
 
     public function create(): View|RedirectResponse
@@ -146,7 +146,7 @@ class MenuController extends Controller
             ->when($currentId !== null, fn ($items) => $items->reject(fn (array $m): bool => ($m['id'] ?? null) === $currentId))
             ->values();
 
-        return view($view, [
+        return $this->webView($view, [
             'menu' => $menu !== [] ? $menu : null,
             'allMenus' => $allMenus,
             // Reference option-lists for the role/user pickers. The API exposes
