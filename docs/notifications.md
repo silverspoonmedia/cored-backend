@@ -215,11 +215,11 @@ holds visibility logic.
 The web layer resolves each notification's `action_route` + `action_params` into
 a clickable URL (`Route::has()` guard; unregistered routes degrade to `null`).
 
-- **Navbar bell** — `resources/views/components/partials/navbar.blade.php`,
+- **Navbar bell** — `resources/views/adminlte4/components/partials/navbar.blade.php`,
   shown `@can('view notification')` (every role). Polls the unread count every
   60s, loads recent items on dropdown open, marks an item read on click. Built
   on AdminLTE's native `navbar-badge` + `dropdown-header`/`dropdown-footer`.
-- **Index page** — `resources/views/notifications/index.blade.php`, with a
+- **Index page** — `resources/views/adminlte4/notifications/index.blade.php`, with a
   "mark all as read" action.
 
 Sidebar entry: `MenuSeeder` adds a `Notifications` (`bi bi-bell`,

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Web;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,7 +22,7 @@ class UserController extends Controller
 
     public function index(): View
     {
-        return view('users.index');
+        return $this->webView('users.index');
     }
 
     /**
@@ -64,7 +63,7 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', $this->apiMessage($response));
         }
 
-        return view('users.create', [
+        return $this->webView('users.create', [
             'assignableRoles' => collect($response->json('data', [])),
         ]);
     }
@@ -93,7 +92,7 @@ class UserController extends Controller
 
         $data = $response->json('data', []);
 
-        return view('users.edit', [
+        return $this->webView('users.edit', [
             'user' => (object) $data,
             'currentRole' => data_get($data, 'roles.0.name'),
             'assignableRoles' => collect($roles->successful() ? $roles->json('data', []) : []),

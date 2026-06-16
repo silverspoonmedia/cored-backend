@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\API\PlaygroundOrderController;
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Support\Api\ApiClient;
 use Illuminate\Http\JsonResponse;
@@ -34,7 +33,7 @@ class OrderController extends Controller
 
     public function index(): View
     {
-        return view('orders.index');
+        return $this->webView('orders.index');
     }
 
     /**
@@ -68,7 +67,7 @@ class OrderController extends Controller
 
     public function create(): View
     {
-        return view('orders.create');
+        return $this->webView('orders.create');
     }
 
     public function store(Request $request): RedirectResponse|JsonResponse
@@ -95,7 +94,7 @@ class OrderController extends Controller
             return redirect()->route('orders.index')->with('error', $this->apiMessage($response));
         }
 
-        return view('orders.show', [
+        return $this->webView('orders.show', [
             'order' => $response->json('data', []),
         ]);
     }
@@ -108,7 +107,7 @@ class OrderController extends Controller
             return redirect()->route('orders.index')->with('error', $this->apiMessage($response));
         }
 
-        return view('orders.edit', [
+        return $this->webView('orders.edit', [
             'order' => $response->json('data', []),
         ]);
     }

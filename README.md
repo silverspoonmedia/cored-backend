@@ -18,7 +18,7 @@ It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap
 |-------|----------------|
 | **API** | Versioned routes (`/api/v1/*`), controllers, form requests, policies, repositories, and API responses |
 | **Web** | Web controllers that consume the API (`ConsumesApi` / `ApiClient`), routes in `routes/web.php`, and request forwarding |
-| **Blade views** | Screens, forms, list tables, partials, and reusable components under `resources/views/` |
+| **Blade views** | Screens, forms, list tables, partials, and reusable components under `resources/views/{layout}/` (default layout: `adminlte4` via `WEB_LAYOUT` / `config/web.php`; see [web-frontend.md](docs/web-frontend.md#layout-namespace-and-configwebphp)) |
 | **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (`en`, `id`, `ja`) |
 | **Other (as applicable)** | Migrations, seeders, models, events/listeners, notifications, navigation menu entries, tests, and the relevant `docs/` guides |
 

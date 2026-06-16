@@ -291,9 +291,9 @@ The navigation tree cache stores translation **maps** (`name_translations`) and 
 
 ### Blade translatable fields (admin forms)
 
-Admin screens that edit Spatie-backed columns use `<x-form.translatable-input>` (`resources/views/components/form/translatable-input.blade.php`). It renders one text field per supported locale (`name[en]`, `name[id]`, …). On **edit**, values come from `name_translations` / `description_translations` in the API payload — not from the resolved `name` string alone.
+Admin screens that edit Spatie-backed columns use `<x-adminlte4::form.translatable-input>` (`resources/views/adminlte4/components/form/translatable-input.blade.php`). It renders one text field per supported locale (`name[en]`, `name[id]`, …). On **edit**, values come from `name_translations` / `description_translations` in the API payload — not from the resolved `name` string alone.
 
-The menu form (`resources/views/menus/_form.blade.php`) is the reference implementation. The web controller forwards the nested array to the API unchanged (`ConsumesApi` + `ApiClient` as JSON).
+The menu form (`resources/views/adminlte4/menus/_form.blade.php`) is the reference implementation. The web controller forwards the nested array to the API unchanged (`ConsumesApi` + `ApiClient` as JSON).
 
 When the client sends `name` as an object, `ValidatesTranslatableInput::validateTranslatableAllLocales()` requires a non-empty value for **every** supported locale (`name.en`, `name.id`, …). A plain string still sets only the active request locale (API shorthand).
 
@@ -379,7 +379,7 @@ See `app/Http/Requests/Navigation/StoreMenuRequest.php`.
 | Menu model | `app/Models/Menu.php` (`HasTranslations`) |
 | API resources | `app/Http/Resources/Navigation/MenuListResource.php` |
 | Navigation cache (locale maps) | `app/Repositories/Eloquent/MenuRepository.php` (`name_translations` in snapshot) |
-| Blade translatable control | `resources/views/components/form/translatable-input.blade.php` |
+| Blade translatable control | `resources/views/adminlte4/components/form/translatable-input.blade.php` |
 | Post-update lang sync | `composer.json` → `post-update-cmd` runs `php artisan lang:update` |
 
 ---

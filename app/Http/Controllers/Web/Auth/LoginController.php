@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Web\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Concerns\IssuesAuthCookie;
+use App\Http\Controllers\Web\Controller;
 use App\Support\Auth\AuthCookie;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +24,7 @@ class LoginController extends Controller
 
     public function create(): View
     {
-        return view('auth.login');
+        return $this->webView('auth.login');
     }
 
     public function store(Request $request): RedirectResponse|JsonResponse

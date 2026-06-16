@@ -9,7 +9,7 @@ use Diglactic\Breadcrumbs\Generator as Trail;
 |--------------------------------------------------------------------------
 | Single source of truth for every authenticated web screen's breadcrumb.
 | Trails are keyed by ROUTE NAME, so the layout can auto-render the trail for
-| the current route (see resources/views/components/layouts/app.blade.php).
+| the current route (see resources/views/adminlte4/components/layouts/app.blade.php).
 |
 | All titles go through __() against the same lang keys the views already use
 | (lang/{en,id,ja}/menu.php, ui.php, web/*.php) — no hardcoded copy, so every
