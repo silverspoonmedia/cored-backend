@@ -2,13 +2,16 @@
 
 namespace Tests\Feature\Http\Controllers\API\V1;
 
+use App\Events\UserActivityNotificationReceived;
 use App\Models\ActivityNotification;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\Activity\NotificationType;
 use App\Services\Notification\NotificationService;
 use App\Services\User\UserManagementService;
+use Illuminate\Broadcasting\BroadcastManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
@@ -177,6 +180,44 @@ class NotificationTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_emit_broadcasts_realtime_ping_in_production_when_pusher_is_configured(): void
+    {
+        Event::fake([UserActivityNotificationReceived::class]);
+
+        $this->configurePusherBroadcasting();
+        $this->app->detectEnvironment(fn () => 'production');
+
+        $alice = $this->userWithRole('User');
+
+        app(NotificationService::class)->sendToUsers(
+            NotificationType::AccountUpdated,
+            [$alice->id],
+            ['name' => $alice->name, 'actor' => 'Admin User'],
+        );
+
+        Event::assertDispatched(UserActivityNotificationReceived::class, function (UserActivityNotificationReceived $event) use ($alice): bool {
+            return $event->userId === $alice->id;
+        });
+    }
+
+    public function test_emit_does_not_broadcast_in_local_environment(): void
+    {
+        Event::fake([UserActivityNotificationReceived::class]);
+
+        $this->configurePusherBroadcasting();
+        $this->app->detectEnvironment(fn () => 'local');
+
+        $alice = $this->userWithRole('User');
+
+        app(NotificationService::class)->sendToUsers(
+            NotificationType::AccountUpdated,
+            [$alice->id],
+            ['name' => $alice->name, 'actor' => 'Admin User'],
+        );
+
+        Event::assertNotDispatched(UserActivityNotificationReceived::class);
+    }
+
     private function emitUserCreated(): ActivityNotification
     {
         $notification = ActivityNotification::factory()->create();
@@ -200,5 +241,21 @@ class NotificationTest extends TestCase
         $token = auth('api')->login($user);
 
         return $this->withHeader('Authorization', 'Bearer '.$token);
+    }
+
+    private function configurePusherBroadcasting(): void
+    {
+        config([
+            'broadcasting.default' => 'pusher',
+            'broadcasting.connections.pusher' => [
+                'driver' => 'pusher',
+                'key' => 'key',
+                'secret' => 'secret',
+                'app_id' => 'app',
+                'options' => [],
+            ],
+        ]);
+
+        $this->app->forgetInstance(BroadcastManager::class);
     }
 }

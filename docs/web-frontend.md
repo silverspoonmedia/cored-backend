@@ -101,7 +101,8 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | GET | `/notifications/unread-count`, `/notifications/recent` | `notifications.unread-count` / `notifications.recent` | `web.auth` | `GET /notifications/unread-count`, `GET /notifications?limit=10` (bell JSON) |
 | POST | `/notifications/read-all`, `/notifications/{id}/read` | `notifications.read-all` / `notifications.read` | `web.auth` | `POST /notifications/read-all`, `POST /notifications/{id}/read` |
 
-> The navbar bell (`@can('view notification')`) polls the unread count and recent list as JSON; see [Activity notifications](./notifications.md).
+> The navbar bell (`@can('view notification')`) polls or receives realtime pushes
+> via Laravel Echo (Vite bundle); see [Activity notifications](./notifications.md#realtime-vs-polling).
 
 > **Route-name note:** the global Playground demo previously registered the generic names `users.*`. To free those for the web admin UI, it is now `Route::apiResource('users', …)->names('playground.users')` (URLs unchanged).
 
@@ -109,7 +110,10 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 
 ## Views and components
 
-Assets are loaded from CDN. Views render the **JSON arrays** returned by the API (e.g. `$profile`, `$menu['name']` for display, `$menu['name_translations']` for edit forms), not Eloquent models. Static UI strings use `__('…')` from `lang/{locale}/web/*` and `lang/{locale}/ui.php` — never hardcode copy in Blade.
+Assets are loaded from CDN for AdminLTE/Bootstrap. **Notification bell** scripts
+are bundled with Vite (`resources/js/notifications/bell.js`, `@vite` in the navbar).
+Run `npm run build` before deploying (or `npm run dev` alongside `php artisan serve`).
+Views render the **JSON arrays** returned by the API (e.g. `$profile`, `$menu['name']` for display, `$menu['name_translations']` for edit forms), not Eloquent models. Static UI strings use `__('…')` from `lang/{locale}/web/*` and `lang/{locale}/ui.php` — never hardcode copy in Blade.
 
 ### Layout namespace and `config/web.php`
 

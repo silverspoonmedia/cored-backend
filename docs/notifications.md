@@ -42,7 +42,9 @@ of fanning out a copy per recipient:
 | Model | `app/Models/ActivityNotification.php` | `HasUuids`, `roles()` + `targetUsers()` + `readers()` |
 | Type catalogue | `app/Notifications/Activity/NotificationType.php` | Enum: message key, icon, default broadcast roles per action |
 | Event | `app/Events/ActivityNotificationEvent.php` | Generic "raise a notification" signal any feature dispatches |
+| Broadcast ping | `app/Events/UserActivityNotificationReceived.php` | Private-channel websocket ping when realtime delivery is enabled |
 | Listener | `app/Listeners/SendActivityNotification.php` | Persists + fans out (auto-discovered) |
+| Broadcast gate | `app/Support/Broadcasting/BroadcastConnection.php` | Production + valid Pusher config → realtime; otherwise polling |
 | Contract | `app/Repositories/Contracts/NotificationRepositoryInterface.php` | Repository contract |
 | Repository | `app/Repositories/Eloquent/NotificationRepository.php` | Role/user visibility, unread count, read state |
 | Service | `app/Services/Notification/NotificationService.php` | `emit()` / `broadcastToRoles()` / `sendToUsers()` + viewer reads |
@@ -216,11 +218,63 @@ The web layer resolves each notification's `action_route` + `action_params` into
 a clickable URL (`Route::has()` guard; unregistered routes degrade to `null`).
 
 - **Navbar bell** — `resources/views/adminlte4/components/partials/navbar.blade.php`,
-  shown `@can('view notification')` (every role). Polls the unread count every
-  60s, loads recent items on dropdown open, marks an item read on click. Built
-  on AdminLTE's native `navbar-badge` + `dropdown-header`/`dropdown-footer`.
+  shown `@can('view notification')` (every role). Delivery mode is chosen at
+  runtime (see [Realtime vs polling](#realtime-vs-polling) below). Loads recent
+  items on dropdown open, marks an item read on click. Built on AdminLTE's native
+  `navbar-badge` + `dropdown-header`/`dropdown-footer`.
 - **Index page** — `resources/views/adminlte4/notifications/index.blade.php`, with a
   "mark all as read" action.
+
+### Realtime vs polling
+
+The bell supports two delivery modes. `App\Support\Broadcasting\BroadcastConnection`
+picks between them — no separate env flag beyond `APP_ENV` and the broadcast
+placeholders in `.env.example`.
+
+| Mode | When | Client behaviour |
+|------|------|------------------|
+| **Polling** | `APP_ENV=local`, **or** the default broadcast connection is missing / invalid (`BROADCAST_CONNECTION` unset, `null`, `log`, or Pusher credentials empty) | Fetches unread count on load and every 60s; recent list on dropdown open |
+| **Realtime** | `APP_ENV=production` **and** Pusher (or Socket-compatible) credentials are present | Subscribes via Laravel Echo + Pusher to private channel `App.Models.User.{id}`; on `activity-notification.received` refetches badge (and recent list when the dropdown is open) |
+
+**Why HTTP refetch on realtime pings?** Message copy is locale-aware and resolved
+server-side (`NotificationResource`). The websocket event is intentionally empty —
+it only signals "something changed" so each viewer refetches through the existing
+web → API routes.
+
+**Production setup** — set in `.env`:
+
+| Variable | Notes |
+|----------|--------|
+| `APP_ENV` | `production` |
+| `BROADCAST_CONNECTION` | `pusher` (default in `.env.example`) |
+| `PUSHER_APP_ID`, `PUSHER_APP_KEY`, `PUSHER_APP_SECRET` | From Pusher or a compatible host (e.g. Soketi) |
+| `PUSHER_APP_CLUSTER` | Pusher cluster (ignored when `PUSHER_HOST` points at self-hosted) |
+| `PUSHER_HOST` | Optional; set for Socket-compatible self-hosted websocket |
+| `PUSHER_PORT` / `PUSHER_SCHEME` | Usually `443` / `https` (or your host's port/scheme) |
+| `VITE_PUSHER_*` | Mirrored for the Vite bundle (`resources/js/notifications/echo.js` reads `import.meta.env.VITE_PUSHER_*`; server-injected config may override host/port at runtime) |
+
+**Frontend assets** — the bell ships as a Vite entry (`resources/js/notifications/bell.js`),
+loaded via `@vite` in the navbar when the viewer holds `view notification`. Run
+`npm install` and `npm run build` (or `composer run dev` / `npm run dev` for HMR).
+Echo and Pusher are npm dependencies, not CDN scripts.
+
+Channel authorization uses `POST /broadcasting/auth` on the **web** stack (JWT
+cookie → `api` guard). `routes/channels.php` authorizes
+`App.Models.User.{id}` when the authenticated user's id matches.
+
+**Multiple browser tabs** — each tab opens its own websocket. Background tabs are
+often throttled by the browser and may miss a push. The Vite bell bundle handles
+this in two ways:
+
+1. **BroadcastChannel** — when one tab receives `activity-notification.received`,
+   it notifies sibling tabs for the same user so they refetch the badge without
+   a full page reload.
+2. **Page visibility** — when a tab becomes visible again, it refetches the badge
+   (and reconnects Pusher if the socket dropped while idle).
+
+When a notification is persisted, `NotificationService::emit()` fans out
+`UserActivityNotificationReceived` to every recipient user id (role holders +
+explicit targets) **only** in realtime mode.
 
 Sidebar entry: `MenuSeeder` adds a `Notifications` (`bi bi-bell`,
 `notifications.index`) item visible to **all authenticated** users (no role gate,
@@ -249,11 +303,16 @@ type message must be added to **both** `en` and `id` in the same change.
 fan-out on user creation, role-scoped visibility (Admin sees / Moderator with the
 permission still sees nothing outside its broadcast), personal notifications
 reaching only the targeted user, the `account_updated` personal trigger on update
-(skipped on self-edit), unread count + mark-as-read, mark-all, and out-of-scope
-403.
+(skipped on self-edit), unread count + mark-as-read, mark-all, out-of-scope
+403, and realtime websocket fan-out when `APP_ENV=production` with valid Pusher
+config (polling-only in `local`).
+
+`tests/Unit/Support/Broadcasting/BroadcastConnectionTest.php` covers the
+production + credential gate for realtime delivery.
 
 ```bash
 php artisan test --filter=NotificationTest
+php artisan test --filter=BroadcastConnectionTest
 ```
 
 ---

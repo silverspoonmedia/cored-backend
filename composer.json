@@ -19,6 +19,7 @@
         "laravel/tinker": "^3.0",
         "league/flysystem-aws-s3-v3": "3.*",
         "php-open-source-saver/jwt-auth": "^2.9",
+        "pusher/pusher-php-server": "^7.2",
         "silverspoonmedia/pdf-tools": "dev-main",
         "spatie/laravel-pdf": "^2.12",
         "spatie/laravel-permission": "^8.0",

@@ -1,6 +1,6 @@
 <x-adminlte4::layouts.app :title="__('web/menus.edit_title')">
     <x-adminlte4::card :title="__('web/menus.edit_card_title', ['name' => $menu['name']])">
-        @include('menus._form', [
+        @include(config('web.layout').'.menus._form', [
             'action' => route('menus.update', $menu['id']),
             'method' => 'PUT',
             'isEdit' => true,

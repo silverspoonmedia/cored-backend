@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Events;
+
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+/**
+ * Lightweight ping on a user's private channel when a new activity notification
+ * is visible to them. The bell refetches unread count / recent items over HTTP
+ * so message copy stays locale-aware.
+ */
+class UserActivityNotificationReceived implements ShouldBroadcastNow
+{
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
+
+    public function __construct(
+        public readonly string $userId,
+    ) {}
+
+    /**
+     * @return array<int, PrivateChannel>
+     */
+    public function broadcastOn(): array
+    {
+        return [
+            new PrivateChannel('App.Models.User.'.$this->userId),
+        ];
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'activity-notification.received';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function broadcastWith(): array
+    {
+        return [];
+    }
+}

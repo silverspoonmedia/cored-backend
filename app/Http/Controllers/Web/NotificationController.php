@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use App\Support\Broadcasting\BroadcastConnection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,8 @@ use Illuminate\View\View;
  * No business logic lives here: every action forwards to
  * `/api/v1/notifications` (see {@see \App\Http\Controllers\API\V1\NotificationController})
  * via {@see ConsumesApi}. Role-based visibility and read state are owned by the
- * API. The navbar bell polls {@see unreadCount()} / {@see recent()} for JSON.
+ * API. The navbar bell uses polling or realtime websocket delivery depending on
+ * {@see BroadcastConnection}; see docs/notifications.md.
  */
 class NotificationController extends Controller
 {

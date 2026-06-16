@@ -101,6 +101,7 @@ Copy `.env.example` and adjust at least:
 | `DB_*` | Default is SQLite (`DB_CONNECTION=sqlite`). For MySQL, uncomment and set `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`. |
 | `JWT_*` | Set `JWT_SECRET` via step 4 below |
 | `MAIL_*` | Required for email verification and password reset in real use (tests use `array` driver) |
+| `BROADCAST_CONNECTION` / `PUSHER_*` | Optional locally (bell uses polling). In production, set Pusher or Socket-compatible credentials for realtime notifications — see [Activity notifications](docs/notifications.md#realtime-vs-polling) |
 
 **SQLite:** ensure the database file exists:
 
