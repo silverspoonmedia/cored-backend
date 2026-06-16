@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Repositories\Contracts\MenuRepositoryInterface;
 use App\Support\Localization\TranslationResolver;
+use App\Support\Navigation\MenuLayout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -32,14 +33,14 @@ class MenuRepository implements MenuRepositoryInterface
      */
     private const ROOT = '__root__';
 
-    public function navigationTree(?User $user): array
+    public function navigationTree(?User $user, string $layout): array
     {
         $nodes = $this->navigationSnapshot();
 
-        return $this->buildVisibleTree(null, $user, $nodes, $this->indexChildren($nodes));
+        return $this->buildVisibleTree(null, $user, $nodes, $this->indexChildren($nodes), $layout);
     }
 
-    public function adminFlatList(?string $loadType): array
+    public function adminFlatList(?string $loadType, ?string $layout = null): array
     {
         $query = Menu::query()
             ->with(['roles', 'includedUsers', 'excludedUsers'])
@@ -49,10 +50,23 @@ class MenuRepository implements MenuRepositoryInterface
             $query->where('type', $loadType);
         }
 
+        if ($layout !== null && $layout !== '') {
+            $query->where('layout', $layout);
+        }
+
         $menus = $query->get()->keyBy('id');
 
         $roots = $menus->whereNull('parent_id')
-            ->sort(fn (Menu $a, Menu $b) => $this->compareModels($a, $b))
+            ->sort(function (Menu $a, Menu $b) use ($layout): int {
+                if ($layout === null || $layout === '') {
+                    $byLayout = $a->layout <=> $b->layout;
+                    if ($byLayout !== 0) {
+                        return $byLayout;
+                    }
+                }
+
+                return $this->compareModels($a, $b);
+            })
             ->values();
 
         $flat = [];
@@ -75,10 +89,12 @@ class MenuRepository implements MenuRepositoryInterface
         $menu = DB::transaction(function () use ($data, $position, $referenceId) {
             $parentId = $data['parent_id'] ?? null;
             $type = $data['type'];
+            $layout = $data['layout'] ?? MenuLayout::default();
 
             // Insert parked at NULL order; the rebalance below assigns its slot.
             $menu = Menu::query()->create([
                 'parent_id' => $parentId,
+                'layout' => $layout,
                 'name' => $data['name'],
                 'description' => $data['description'] ?? null,
                 'icon' => $data['icon'] ?? null,
@@ -89,7 +105,7 @@ class MenuRepository implements MenuRepositoryInterface
                 'is_guest_only' => $data['is_guest_only'] ?? null,
             ]);
 
-            $ids = $this->orderedSiblingIds($parentId, $type);
+            $ids = $this->orderedSiblingIds($parentId, $type, $layout);
             $ids = array_values(array_filter($ids, fn (string $id) => $id !== $menu->id));
 
             if ($position === 'before' || $position === 'after') {
@@ -97,7 +113,7 @@ class MenuRepository implements MenuRepositoryInterface
                     throw new InvalidMenuPositionException(__('api/navigation.position.reference_required'));
                 }
 
-                $this->assertSameGroup($menu, $referenceId, $parentId, $type);
+                $this->assertSameGroup($menu, $referenceId, $parentId, $type, $layout);
 
                 $refIndex = array_search($referenceId, $ids, true);
                 if ($refIndex === false) {
@@ -136,10 +152,10 @@ class MenuRepository implements MenuRepositoryInterface
 
             // Moving across groups: compact the old group, append to the new one.
             if ($menu->parent_id !== $oldParent || $menu->type !== $oldType) {
-                $this->removeFromSiblingOrder($oldParent, $oldType, $menu->id);
+                $this->removeFromSiblingOrder($oldParent, $oldType, $menu->layout, $menu->id);
 
                 $ids = array_values(array_filter(
-                    $this->orderedSiblingIds($menu->parent_id, $menu->type),
+                    $this->orderedSiblingIds($menu->parent_id, $menu->type, $menu->layout),
                     fn (string $id) => $id !== $menu->id,
                 ));
                 $ids[] = $menu->id;
@@ -158,9 +174,9 @@ class MenuRepository implements MenuRepositoryInterface
     public function updateMenuPosition(Menu $menu, string $position, string $referenceId): Menu
     {
         $menu = DB::transaction(function () use ($menu, $position, $referenceId) {
-            $this->assertSameGroup($menu, $referenceId, $menu->parent_id, $menu->type);
+            $this->assertSameGroup($menu, $referenceId, $menu->parent_id, $menu->type, $menu->layout);
 
-            $ids = $this->orderedSiblingIds($menu->parent_id, $menu->type);
+            $ids = $this->orderedSiblingIds($menu->parent_id, $menu->type, $menu->layout);
             $ids = array_values(array_filter($ids, fn (string $id) => $id !== $menu->id));
 
             $refIndex = array_search($referenceId, $ids, true);
@@ -199,6 +215,7 @@ class MenuRepository implements MenuRepositoryInterface
 
             $parentId = $menu->parent_id;
             $type = $menu->type;
+            $layout = $menu->layout;
 
             if ($descendantIds !== []) {
                 // Park orders at NULL (free the unique slots) then soft-delete.
@@ -211,7 +228,7 @@ class MenuRepository implements MenuRepositoryInterface
             $menu->forceFill(['order' => null])->save();
             $menu->delete();
 
-            $this->persistOrderSequence($this->orderedSiblingIds($parentId, $type));
+            $this->persistOrderSequence($this->orderedSiblingIds($parentId, $type, $layout));
         });
 
         $this->flushCache();
@@ -237,24 +254,28 @@ class MenuRepository implements MenuRepositoryInterface
 
             $groups = Menu::query()
                 ->whereIn('id', $ids)
-                ->get(['parent_id', 'type'])
-                ->map(fn (Menu $m): array => ['parent_id' => $m->parent_id, 'type' => $m->type])
-                ->unique(fn (array $group): string => ($group['parent_id'] ?? self::ROOT).'|'.$group['type']);
+                ->get(['parent_id', 'type', 'layout'])
+                ->map(fn (Menu $m): array => ['parent_id' => $m->parent_id, 'type' => $m->type, 'layout' => $m->layout])
+                ->unique(fn (array $group): string => ($group['parent_id'] ?? self::ROOT).'|'.$group['type'].'|'.$group['layout']);
 
             foreach ($groups as $group) {
-                $this->persistOrderSequence($this->siblingIdsForAppend($group['parent_id'], $group['type']));
+                $this->persistOrderSequence($this->siblingIdsForAppend($group['parent_id'], $group['type'], $group['layout']));
             }
         });
 
         $this->flushCache();
     }
 
-    public function trashedList(?string $loadType): array
+    public function trashedList(?string $loadType, ?string $layout = null): array
     {
         $query = Menu::onlyTrashed()->with(['roles', 'includedUsers', 'excludedUsers']);
 
         if ($loadType !== null && $loadType !== '') {
             $query->where('type', $loadType);
+        }
+
+        if ($layout !== null && $layout !== '') {
+            $query->where('layout', $layout);
         }
 
         return $query->orderByDesc('deleted_at')->get()->all();
@@ -312,6 +333,7 @@ class MenuRepository implements MenuRepositoryInterface
                 ->map(fn (Menu $menu): array => [
                     'id' => $menu->id,
                     'parent_id' => $menu->parent_id,
+                    'layout' => $menu->layout,
                     'name_translations' => $menu->getTranslations('name'),
                     'description_translations' => $menu->getTranslations('description'),
                     'icon' => $menu->icon,
@@ -403,10 +425,11 @@ class MenuRepository implements MenuRepositoryInterface
      *
      * @return list<string>
      */
-    private function siblingIdsForAppend(?string $parentId, string $type): array
+    private function siblingIdsForAppend(?string $parentId, string $type, string $layout): array
     {
         $siblings = Menu::query()
             ->byParent($parentId)
+            ->byLayout($layout)
             ->where('type', $type)
             ->orderBy('created_at')
             ->get(['id', 'order']);
@@ -438,11 +461,14 @@ class MenuRepository implements MenuRepositoryInterface
      * @param  array<string, list<string>>  $childrenByParent
      * @return list<array<string, mixed>>
      */
-    private function buildVisibleTree(?string $parentId, ?User $user, array $nodes, array $childrenByParent): array
+    private function buildVisibleTree(?string $parentId, ?User $user, array $nodes, array $childrenByParent, string $layout): array
     {
         $childIds = $childrenByParent[$parentId ?? self::ROOT] ?? [];
 
-        $children = array_map(fn (string $id) => $nodes[$id], $childIds);
+        $children = array_values(array_filter(
+            array_map(fn (string $id) => $nodes[$id], $childIds),
+            fn (array $node): bool => ($node['layout'] ?? MenuLayout::default()) === $layout,
+        ));
         usort($children, fn (array $a, array $b) => $this->compareNodes($a, $b));
 
         $out = [];
@@ -451,7 +477,7 @@ class MenuRepository implements MenuRepositoryInterface
                 continue;
             }
 
-            $nested = $this->buildVisibleTree($child['id'], $user, $nodes, $childrenByParent);
+            $nested = $this->buildVisibleTree($child['id'], $user, $nodes, $childrenByParent, $layout);
 
             // Hide empty headers and non-navigable parents. A `p` with a route but no
             // children is a leaf parent (e.g. Dashboard under a section header).
@@ -591,10 +617,11 @@ class MenuRepository implements MenuRepositoryInterface
     /**
      * @return list<string>
      */
-    private function orderedSiblingIds(?string $parentId, string $type): array
+    private function orderedSiblingIds(?string $parentId, string $type, string $layout): array
     {
         return Menu::query()
             ->byParent($parentId)
+            ->byLayout($layout)
             ->where('type', $type)
             ->orderBy('order')
             ->pluck('id')
@@ -626,24 +653,24 @@ class MenuRepository implements MenuRepositoryInterface
         }
     }
 
-    private function removeFromSiblingOrder(?string $parentId, string $type, string $menuId): void
+    private function removeFromSiblingOrder(?string $parentId, string $type, string $layout, string $menuId): void
     {
         $ids = array_values(array_filter(
-            $this->orderedSiblingIds($parentId, $type),
+            $this->orderedSiblingIds($parentId, $type, $layout),
             fn (string $id) => $id !== $menuId,
         ));
 
         $this->persistOrderSequence($ids);
     }
 
-    private function assertSameGroup(Menu $menu, string $referenceId, ?string $parentId, string $type): void
+    private function assertSameGroup(Menu $menu, string $referenceId, ?string $parentId, string $type, string $layout): void
     {
         if ($menu->id === $referenceId) {
             throw new InvalidMenuPositionException(__('api/navigation.position.reference_same_menu'));
         }
 
         $ref = Menu::query()->findOrFail($referenceId);
-        if ($ref->parent_id !== $parentId || $ref->type !== $type) {
+        if ($ref->parent_id !== $parentId || $ref->type !== $type || $ref->layout !== $layout) {
             throw new InvalidMenuPositionException(__('api/navigation.position.reference_wrong_group'));
         }
     }

@@ -2,11 +2,27 @@
     <x-adminlte4::card :title="__('web/menus.list_title')">
         @can('manage menu')
             <x-slot:actions>
-                <a href="{{ route('menus.create') }}" class="btn btn-primary btn-sm">
+                <a href="{{ route('menus.trashed', ['layout' => $selectedLayout]) }}" class="btn btn-outline-secondary btn-sm me-1">
+                    <i class="bi bi-trash me-1"></i> {{ __('web/menus.trashed_breadcrumb') }}
+                </a>
+                <a href="{{ route('menus.create', ['layout' => $selectedLayout]) }}" class="btn btn-primary btn-sm">
                     <i class="bi bi-plus-lg me-1"></i> {{ __('web/menus.add_button') }}
                 </a>
             </x-slot:actions>
         @endcan
+
+        <form method="GET" action="{{ route('menus.index') }}" class="row g-2 align-items-end mb-3">
+            <div class="col-sm-4 col-md-3">
+                <x-adminlte4::form.select
+                    name="layout"
+                    :label="__('web/menus.filter.layout_label')"
+                    :options="$layoutOptions"
+                    :selected="$selectedLayout"
+                    :hint="__('web/menus.filter.layout_hint')"
+                    onchange="this.form.submit()"
+                />
+            </div>
+        </form>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -48,7 +64,11 @@
                                     <a href="{{ route('menus.edit', $menu['id']) }}" class="btn btn-sm btn-info">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <x-adminlte4::form.ajax :action="route('menus.destroy', $menu['id'])" method="DELETE" class="d-inline">
+                                    <x-adminlte4::form.ajax
+                                        :action="route('menus.destroy', ['menu' => $menu['id'], 'layout' => $selectedLayout])"
+                                        method="DELETE"
+                                        class="d-inline"
+                                    >
                                         <div class="btn-group">
                                             <button type="submit" class="btn btn-sm btn-danger" title="{{ __('web/menus.delete_title') }}"
                                                     onclick="return confirm(@json(__('web/menus.delete')));">
@@ -66,7 +86,9 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">{{ __('web/menus.empty_list') }}</td>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                {{ __('web/menus.empty_list_layout', ['layout' => $layoutOptions[$selectedLayout] ?? $selectedLayout]) }}
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -19,6 +19,7 @@ class MenuFactory extends Factory
     {
         return [
             'parent_id' => null,
+            'layout' => 'sidebar',
             'name' => fake()->unique()->words(2, true),
             'icon' => null,
             'route' => null,

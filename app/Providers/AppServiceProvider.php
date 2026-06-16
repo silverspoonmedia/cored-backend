@@ -53,7 +53,13 @@ class AppServiceProvider extends ServiceProvider
 
         Blade::anonymousComponentPath(WebLayout::componentsPath(), WebLayout::name());
 
-        // The sidebar partial renders the dynamic navigation tree on every page.
-        View::composer(WebLayout::sidebarComposerView(), NavigationComposer::class);
+        // The sidebar and navbar partials render layout-scoped navigation trees.
+        $navigation = NavigationComposer::class;
+        View::composer(WebLayout::sidebarComposerView(), function (\Illuminate\View\View $view) use ($navigation): void {
+            app($navigation)->composeSidebar($view);
+        });
+        View::composer(WebLayout::navbarComposerView(), function (\Illuminate\View\View $view) use ($navigation): void {
+            app($navigation)->composeNavbar($view);
+        });
     }
 }

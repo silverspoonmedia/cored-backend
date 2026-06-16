@@ -6,6 +6,7 @@ use App\Http\Requests\Navigation\Concerns\NormalizesMenuPlacementFields;
 use App\Http\Requests\Navigation\Concerns\ValidatesMenuStructure;
 use App\Support\Localization\Concerns\ValidatesTranslatableInput;
 use Closure;
+use App\Support\Navigation\MenuLayout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,10 @@ class StoreMenuRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->normalizePlacementFields();
+
+        if (! $this->has('layout')) {
+            $this->merge(['layout' => MenuLayout::default()]);
+        }
     }
 
     /**
@@ -37,6 +42,7 @@ class StoreMenuRequest extends FormRequest
             'name' => ['required'],
             'description' => ['sometimes'],
             'type' => ['required', 'string', 'size:1', Rule::in(['h', 'p', 'c'])],
+            'layout' => ['required', 'string', Rule::in(MenuLayout::all())],
             'icon' => ['nullable', 'string', 'max:255'],
             'route' => ['nullable', 'string', 'max:255', $this->namedRouteRule()],
             'parent' => ['nullable', 'string', Rule::exists('menus', 'id')->whereNull('deleted_at')],
@@ -74,6 +80,11 @@ class StoreMenuRequest extends FormRequest
 
             if (is_string($type)) {
                 $this->assertMenuStructure($validator, $type, $this->input('parent'));
+                $this->assertParentLayoutMatches(
+                    $validator,
+                    (string) $this->input('layout', MenuLayout::default()),
+                    $this->input('parent'),
+                );
             }
 
             $this->assertFlagsCompatible(

@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Navigation;
 
+use App\Support\Navigation\MenuLayout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class IndexNavigationMenuRequest extends FormRequest
 {
@@ -19,6 +21,7 @@ class IndexNavigationMenuRequest extends FormRequest
     {
         return [
             'q' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'layout' => ['sometimes', 'string', Rule::in(MenuLayout::all())],
         ];
     }
 
@@ -26,6 +29,10 @@ class IndexNavigationMenuRequest extends FormRequest
     {
         if ($this->input('q') === '') {
             $this->merge(['q' => null]);
+        }
+
+        if (! $this->has('layout')) {
+            $this->merge(['layout' => MenuLayout::default()]);
         }
     }
 }

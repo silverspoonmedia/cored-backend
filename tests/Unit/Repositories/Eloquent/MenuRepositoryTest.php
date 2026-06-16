@@ -368,7 +368,7 @@ class MenuRepositoryTest extends TestCase
                 $walk($node['children']);
             }
         };
-        $walk($this->repository->navigationTree($user));
+        $walk($this->repository->navigationTree($user, 'sidebar'));
 
         return $names;
     }

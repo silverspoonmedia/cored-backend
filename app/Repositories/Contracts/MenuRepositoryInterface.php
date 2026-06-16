@@ -12,14 +12,14 @@ interface MenuRepositoryInterface
      *
      * @return list<array<string, mixed>>
      */
-    public function navigationTree(?User $user): array;
+    public function navigationTree(?User $user, string $layout): array;
 
     /**
      * Hierarchically sorted flat list for admin/management screens.
      *
      * @return list<Menu>
      */
-    public function adminFlatList(?string $loadType): array;
+    public function adminFlatList(?string $loadType, ?string $layout = null): array;
 
     public function read(string $id): Menu;
 
@@ -53,7 +53,7 @@ interface MenuRepositoryInterface
      *
      * @return list<Menu>
      */
-    public function trashedList(?string $loadType): array;
+    public function trashedList(?string $loadType, ?string $layout = null): array;
 
     /**
      * Forget the cached navigation snapshot (e.g. after a role rename).

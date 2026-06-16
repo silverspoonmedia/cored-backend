@@ -18,6 +18,7 @@ use App\Services\Navigation\MenuService;
 use App\Support\DataTable\DataTableResponseFactory;
 use App\Support\DataTable\Resolvers\MenuRowActionResolver;
 use App\Support\DataTable\Resolvers\MenuTrashedRowActionResolver;
+use App\Support\Navigation\MenuLayout;
 use App\Support\Navigation\MenuPresenter;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -42,9 +43,12 @@ class MenuController extends Controller
      */
     public function index(IndexNavigationMenuRequest $request): JsonResponse
     {
+        $validated = $request->validated();
+
         $tree = $this->menus->navigationTree(
             $this->optionalActor(),
-            $request->validated()['q'] ?? null,
+            $validated['q'] ?? null,
+            $validated['layout'] ?? MenuLayout::default(),
         );
 
         return $this->successResponse($tree, __('api/navigation.tree_success'));
@@ -55,9 +59,11 @@ class MenuController extends Controller
      */
     public function list(IndexMenuListRequest $request): JsonResponse
     {
-        $loadType = $request->validated()['load_type'] ?? null;
+        $validated = $request->validated();
+        $loadType = $validated['load_type'] ?? null;
+        $layout = $validated['layout'] ?? MenuLayout::default();
         $actor = $this->requiredActor();
-        $menus = $this->menus->adminList($loadType);
+        $menus = $this->menus->adminList($loadType, $layout);
 
         return $this->respondToListDisplayMode(
             $request,
@@ -115,9 +121,11 @@ class MenuController extends Controller
      */
     public function trashed(IndexMenuListRequest $request): JsonResponse
     {
-        $loadType = $request->validated()['load_type'] ?? null;
+        $validated = $request->validated();
+        $loadType = $validated['load_type'] ?? null;
+        $layout = $validated['layout'] ?? MenuLayout::default();
         $actor = $this->requiredActor();
-        $menus = $this->menus->trashedList($loadType);
+        $menus = $this->menus->trashedList($loadType, $layout);
 
         return $this->respondToListDisplayMode(
             $request,

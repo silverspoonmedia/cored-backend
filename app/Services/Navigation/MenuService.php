@@ -5,6 +5,7 @@ namespace App\Services\Navigation;
 use App\Models\Menu;
 use App\Models\User;
 use App\Repositories\Contracts\MenuRepositoryInterface;
+use App\Support\Navigation\MenuLayout;
 use App\Support\Navigation\NavigationTreeFilter;
 use Illuminate\Support\Facades\DB;
 
@@ -19,9 +20,9 @@ class MenuService
      *
      * @return list<array<string, mixed>>
      */
-    public function navigationTree(?User $user, ?string $search = null): array
+    public function navigationTree(?User $user, ?string $search = null, ?string $layout = null): array
     {
-        $tree = $this->menus->navigationTree($user);
+        $tree = $this->menus->navigationTree($user, $layout ?? MenuLayout::default());
 
         if ($search === null || trim($search) === '') {
             return $tree;
@@ -33,9 +34,9 @@ class MenuService
     /**
      * @return list<Menu>
      */
-    public function adminList(?string $loadType): array
+    public function adminList(?string $loadType, ?string $layout = null): array
     {
-        return $this->menus->adminFlatList($loadType);
+        return $this->menus->adminFlatList($loadType, $layout);
     }
 
     public function detail(string $id): Menu
@@ -112,9 +113,9 @@ class MenuService
     /**
      * @return list<Menu>
      */
-    public function trashedList(?string $loadType): array
+    public function trashedList(?string $loadType, ?string $layout = null): array
     {
-        return $this->menus->trashedList($loadType);
+        return $this->menus->trashedList($loadType, $layout);
     }
 
     /**
@@ -130,6 +131,7 @@ class MenuService
         if ($isCreate) {
             $attributes['name'] = $data['name'];
             $attributes['type'] = $data['type'];
+            $attributes['layout'] = $data['layout'] ?? MenuLayout::default();
             $attributes['description'] = $data['description'] ?? null;
         } else {
             if (array_key_exists('name', $data)) {
