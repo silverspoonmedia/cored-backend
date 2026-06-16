@@ -45,13 +45,18 @@ of fanning out a copy per recipient:
 | Broadcast ping | `app/Events/UserActivityNotificationReceived.php` | Private-channel websocket ping when realtime delivery is enabled |
 | Listener | `app/Listeners/SendActivityNotification.php` | Persists + fans out (auto-discovered) |
 | Broadcast gate | `app/Support/Broadcasting/BroadcastConnection.php` | Production + valid Pusher config → realtime; otherwise polling |
+| Broadcast config | `config/broadcasting.php` | Pusher / Reverb connection definitions (`BROADCAST_CONNECTION`, `PUSHER_*`) |
+| Channel auth | `routes/channels.php` | Private channel `App.Models.User.{id}` (UUID string match) |
+| View composer | `app/View/Composers/NotificationBellComposer.php` | Injects `$notificationBellConfig` for the navbar bell (bound to the hashed navbar view — see below) |
 | Contract | `app/Repositories/Contracts/NotificationRepositoryInterface.php` | Repository contract |
-| Repository | `app/Repositories/Eloquent/NotificationRepository.php` | Role/user visibility, unread count, read state |
+| Repository | `app/Repositories/Eloquent/NotificationRepository.php` | Role/user visibility, unread count, read state, `recipientUserIds()` |
 | Service | `app/Services/Notification/NotificationService.php` | `emit()` / `broadcastToRoles()` / `sendToUsers()` + viewer reads |
 | Resource | `app/Http/Resources/Notification/NotificationResource.php` | JSON shape (localized `message`, `icon`, `is_read`) |
 | Request | `app/Http/Requests/Notification/IndexNotificationRequest.php` | `limit` validation |
 | API controller | `app/Http/Controllers/API/V1/NotificationController.php` | Thin HTTP layer |
 | Web controller | `app/Http/Controllers/Web/NotificationController.php` | Pure API consumer (bell + page) |
+| Vite — bell | `resources/js/notifications/bell.js` | Badge/list UI, polling interval, Echo subscription, multi-tab sync |
+| Vite — echo | `resources/js/notifications/echo.js` | Laravel Echo + Pusher factory (`VITE_PUSHER_*` + server overrides) |
 
 The repository is bound in `App\Providers\AppServiceProvider`:
 
@@ -61,6 +66,33 @@ $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository:
 
 The listener is **auto-discovered** (Laravel scans `app/Listeners`); do **not**
 also register it with `Event::listen` or it fires twice.
+
+`bootstrap/app.php` registers `routes/channels.php` via `withRouting(…, channels: …)`.
+Channel authorization is exposed at `POST /broadcasting/auth` on the web stack.
+
+---
+
+## Realtime delivery flow (production)
+
+When `BroadcastConnection::usesRealtimeNotifications()` is true, a persisted
+notification also fans out a lightweight websocket ping:
+
+```
+CRUD / service
+    └── ActivityNotificationEvent
+            └── SendActivityNotification listener
+                    └── NotificationService::emit()
+                            ├── NotificationRepository::create()   (DB + pivots)
+                            └── foreach recipientUserIds()
+                                    └── event(UserActivityNotificationReceived)
+                                            └── ShouldBroadcastNow
+                                                    └── private App.Models.User.{id}
+                                                            └── activity-notification.received
+```
+
+The browser bell (`bell.js`) listens on that private channel, then **refetches**
+`GET /notifications/unread-count` (and recent items when the dropdown is open)
+so localized copy still comes from `NotificationResource` over HTTP.
 
 ---
 
@@ -192,7 +224,7 @@ Because **both** the API and the Blade UI funnel user create/update through
 1. Add a case to `NotificationType` with its `icon()` and `defaultRoles()`
    (return `[]` for personal-only types).
 2. Add the message template under `types.{value}` in
-   `lang/en/api/notifications.php` **and** `lang/id/api/notifications.php`.
+   `lang/{locale}/api/notifications.php` for every supported locale (`en`, `id`, `ja`).
 3. Dispatch `ActivityNotificationEvent` (or call the service) with the right
    `roles` / `users` audience.
 
@@ -219,11 +251,19 @@ a clickable URL (`Route::has()` guard; unregistered routes degrade to `null`).
 
 - **Navbar bell** — `resources/views/adminlte4/components/partials/navbar.blade.php`,
   shown `@can('view notification')` (every role). Delivery mode is chosen at
-  runtime (see [Realtime vs polling](#realtime-vs-polling) below). Loads recent
-  items on dropdown open, marks an item read on click. Built on AdminLTE's native
-  `navbar-badge` + `dropdown-header`/`dropdown-footer`.
+  runtime (see [Realtime vs polling](#realtime-vs-polling) below). Config is
+  injected by `NotificationBellComposer` as JSON on `#notification-bell`
+  (`data-notification-config`); the Vite entry `resources/js/notifications/bell.js`
+  is loaded with `@vite`. Loads recent items on dropdown open, marks an item read
+  on click. Built on AdminLTE's native `navbar-badge` + `dropdown-header`/`dropdown-footer`.
 - **Index page** — `resources/views/adminlte4/notifications/index.blade.php`, with a
   "mark all as read" action.
+
+`NotificationBellComposer` is registered on the **hashed** navbar view name from
+`WebLayout::navbarComposerView()` (same target as `NavigationComposer`). Anonymous
+components (`<x-adminlte4::partials.navbar>`) do **not** use the readable
+`adminlte4::…` view name — bind composers to the hashed name or chain them in
+`AppServiceProvider` alongside `NavigationComposer`.
 
 ### Realtime vs polling
 
@@ -234,7 +274,15 @@ placeholders in `.env.example`.
 | Mode | When | Client behaviour |
 |------|------|------------------|
 | **Polling** | `APP_ENV=local`, **or** the default broadcast connection is missing / invalid (`BROADCAST_CONNECTION` unset, `null`, `log`, or Pusher credentials empty) | Fetches unread count on load and every 60s; recent list on dropdown open |
-| **Realtime** | `APP_ENV=production` **and** Pusher (or Socket-compatible) credentials are present | Subscribes via Laravel Echo + Pusher to private channel `App.Models.User.{id}`; on `activity-notification.received` refetches badge (and recent list when the dropdown is open) |
+| **Realtime** | `APP_ENV=production` **and** Pusher (or Socket-compatible) credentials are present | Subscribes via Laravel Echo + Pusher to private channel `App.Models.User.{id}`; on `activity-notification.received` refetches badge (and recent list when the dropdown is open). Multiple tabs stay in sync without a full page reload (see below). |
+
+**Local vs production behaviour**
+
+| Environment | Typical `APP_ENV` | Pusher credentials | Bell behaviour |
+|-------------|-------------------|--------------------|----------------|
+| Developer machine | `local` | empty or filled | **Polling** — unread count on load + every 60s |
+| Production | `production` | filled | **Realtime** — websocket push + HTTP refetch |
+| Misconfigured production | `production` | empty / invalid | **Polling** fallback — bell still works |
 
 **Why HTTP refetch on realtime pings?** Message copy is locale-aware and resolved
 server-side (`NotificationResource`). The websocket event is intentionally empty —
@@ -255,22 +303,37 @@ web → API routes.
 
 **Frontend assets** — the bell ships as a Vite entry (`resources/js/notifications/bell.js`),
 loaded via `@vite` in the navbar when the viewer holds `view notification`. Run
-`npm install` and `npm run build` (or `composer run dev` / `npm run dev` for HMR).
-Echo and Pusher are npm dependencies, not CDN scripts.
+`npm install` and `npm run build` before deploying (or `composer run dev` /
+`npm run dev` for HMR). Echo and Pusher are **npm** dependencies (`laravel-echo`,
+`pusher-js`), not CDN scripts.
+
+| File | Role |
+|------|------|
+| `resources/js/notifications/bell.js` | Entry: reads `data-notification-config`, polling vs realtime, dropdown UX |
+| `resources/js/notifications/echo.js` | Builds Echo client; reads `import.meta.env.VITE_PUSHER_*` |
+| `vite.config.js` | Declares `bell.js` (and `app.js`) as Vite inputs |
+| `package.json` | `laravel-echo`, `pusher-js` dependencies |
 
 Channel authorization uses `POST /broadcasting/auth` on the **web** stack (JWT
 cookie → `api` guard). `routes/channels.php` authorizes
-`App.Models.User.{id}` when the authenticated user's id matches.
+`App.Models.User.{id}` when the authenticated user's id matches (UUID string
+comparison — not integer).
 
 **Multiple browser tabs** — each tab opens its own websocket. Background tabs are
-often throttled by the browser and may miss a push. The Vite bell bundle handles
-this in two ways:
+often throttled by the browser and may miss a push. The Vite bell bundle keeps
+every open tab consistent **without a manual page refresh**:
 
-1. **BroadcastChannel** — when one tab receives `activity-notification.received`,
-   it notifies sibling tabs for the same user so they refetch the badge without
-   a full page reload.
-2. **Page visibility** — when a tab becomes visible again, it refetches the badge
-   (and reconnects Pusher if the socket dropped while idle).
+1. **BroadcastChannel** (`activity-notifications.{userId}`) — when one tab receives
+   `activity-notification.received`, it posts a ping to sibling tabs for the same
+   user; those tabs refetch the badge immediately.
+2. **Page visibility / window focus** — when a tab becomes visible again, it
+   refetches the badge (and recent list if the dropdown is open) and reconnects
+   Pusher when the socket dropped while idle.
+
+**Manual test (realtime)** — open two tabs as the same user (e.g. dashboard idle
+in tab A, CRUD that emits a notification in tab B). Tab B should update instantly;
+tab A should update without reload via BroadcastChannel (or on focus if the
+browser suspended the background tab entirely).
 
 When a notification is persisted, `NotificationService::emit()` fans out
 `UserActivityNotificationReceived` to every recipient user id (role holders +
@@ -293,7 +356,8 @@ User-facing copy lives in application-owned files (all locales):
 | `lang/{locale}/menu.php` | `notifications` static label |
 
 Per the [Localization task rule](./localization.md#task-rule-required), every new
-type message must be added to **both** `en` and `id` in the same change.
+type message must be added to **all** supported locales (`en`, `id`, `ja`) in the
+same change.
 
 ---
 
