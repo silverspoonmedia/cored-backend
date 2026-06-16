@@ -1,8 +1,7 @@
 {{--
     Admin sidebar — fully data-driven by the dynamic navigation engine.
-    $navigation is the per-viewer filtered tree shared by NavigationComposer
-    (MenuService::navigationTree). No hardcoded items, no @can gating: the
-    engine already resolved exactly what this signed-in user may see.
+    $navigation is the sidebar-layout tree from NavigationComposer
+    (MenuService::navigationTree, layout=sidebar). No hardcoded items.
 --}}
 <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
     <div class="sidebar-brand">

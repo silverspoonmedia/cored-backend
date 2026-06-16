@@ -48,6 +48,7 @@ All keys are UUID. Because `users` and `roles` exist before this migration runs,
 |--------|------|-------|
 | `id` | uuid PK | |
 | `parent_id` | uuid, nullable | self-FK → `menus.id`, `cascadeOnDelete` |
+| `layout` | string(32) | **layout identifier** — which shell region owns this menu tree (`sidebar`, `navbar`, …). Sibling ordering and parent/child links are scoped to `(layout, parent_id, type)`. See [Menu layouts](#menu-layouts). |
 | `name` | json | Spatie translatable (`en`, `id`, …) — see [Localization](./localization.md) |
 | `description` | json, nullable | Spatie translatable optional helper text |
 | `icon` | string, nullable | a **full** icon class, e.g. `bi bi-people` (the web sidebar renders it verbatim and falls back to `bi bi-circle` when null/empty) |
@@ -59,7 +60,27 @@ All keys are UUID. Because `users` and `roles` exist before this migration runs,
 | `deleted_at` | timestamp, nullable | soft delete |
 | `created_at` / `updated_at` | timestamps | |
 
-**Unique index** on `(parent_id, type, order)` enforces the ordering invariant at the database level. `order` is **nullable on purpose**: SQL treats multiple `NULL`s as distinct, so soft-deleted rows (and rows mid-reorder) parked at `NULL` never collide with active siblings. This is why reordering runs in two phases (see [Ordering model](#ordering-model)) and why a soft delete first nulls the row's `order` to free its slot.
+**Unique index** on `(layout, parent_id, type, order)` enforces the ordering invariant at the database level per layout. `order` is **nullable on purpose**: SQL treats multiple `NULL`s as distinct, so soft-deleted rows (and rows mid-reorder) parked at `NULL` never collide with active siblings. This is why reordering runs in two phases (see [Ordering model](#ordering-model)) and why a soft delete first nulls the row's `order` to free its slot.
+
+### Menu layouts
+
+Each menu row carries a **`layout`** key that groups it into an independent navigation tree. The same RBAC / visibility engine runs for every layout; only the **scope** changes:
+
+| Layout key | Rendered in | Composer variable |
+|------------|-------------|-------------------|
+| `sidebar` (default) | `resources/views/{layout}/components/partials/sidebar.blade.php` via `<x-adminlte4::nav.tree>` | `$navigation` |
+| `navbar` | `resources/views/{layout}/components/partials/navbar.blade.php` via `<x-adminlte4::nav.bar-tree>` | `$navbarNavigation` |
+
+Known keys live in `config/navigation.php` (`navigation.layouts`). Add a key there when introducing a new shell region, then register a view composer in `AppServiceProvider` that calls `MenuService::navigationTree(..., layout: 'your-key')`.
+
+Rules:
+
+- **Parent and child must share the same `layout`.** Validation rejects cross-layout parenting.
+- **Ordering** is contiguous within `(layout, parent_id, type)` — sidebar order `1` and navbar order `1` do not conflict.
+- **Layout is fixed after create** (admin form shows it read-only on edit). Create a new menu to target another region.
+- **Cache snapshot** stores every active menu regardless of layout; per-request tree assembly filters by the requested layout before RBAC pruning.
+
+The public navigation endpoint accepts `?layout=sidebar|navbar` (defaults to `sidebar`). The Blade sidebar and navbar partials call the service directly with their respective layout keys (no self-HTTP round-trip).
 
 ### Pivots
 
@@ -90,13 +111,13 @@ Base prefix `/api/v1`, route name prefix `api.v1.navigation.menus.`.
 
 | Method | URI | Name | Middleware | Action |
 |--------|-----|------|------------|--------|
-| GET | `/api/v1/navigation/menus` | `…menus.index` | `jwt.optional` | Filtered navigation tree; optional `?q=` live-search (keeps ancestor `h`/`p` nodes as markers) |
-| GET | `/api/v1/navigation/menus/list` | `…menus.list` | `auth:api`, `permission:view menu` | Admin flat list (`?load_type=h\|p\|c`, optional `?display_mode=datatable`) |
+| GET | `/api/v1/navigation/menus` | `…menus.index` | `jwt.optional` | Filtered navigation tree for one layout (`?layout=sidebar\|navbar`, default `sidebar`); optional `?q=` live-search (keeps ancestor `h`/`p` nodes as markers) |
+| GET | `/api/v1/navigation/menus/list` | `…menus.list` | `auth:api`, `permission:view menu` | Admin flat list (`?layout=sidebar\|navbar`, default `sidebar`; optional `?load_type=h\|p\|c`, `?display_mode=datatable`) |
 | POST | `/api/v1/navigation/menus` | `…menus.store` | `auth:api`, `permission:manage menu` | Create |
 | GET | `/api/v1/navigation/menus/{menu}` | `…menus.show` | `auth:api`, `permission:view menu` | Read |
 | PUT/PATCH | `/api/v1/navigation/menus/{menu}` | `…menus.update` | `auth:api`, `permission:manage menu` | Update (and reorder) |
 | DELETE | `/api/v1/navigation/menus/{menu}` | `…menus.destroy` | `auth:api`, `permission:manage menu` | Delete (`?cascade=1` to remove the subtree) |
-| GET | `/api/v1/navigation/menus/trashed` | `…menus.trashed` | `auth:api`, `permission:view menu` | List soft-deleted menus (`?load_type=h\|p\|c`, optional `?display_mode=datatable`) |
+| GET | `/api/v1/navigation/menus/trashed` | `…menus.trashed` | `auth:api`, `permission:view menu` | List soft-deleted menus (`?layout=sidebar\|navbar`, default `sidebar`; optional `?load_type`, `?display_mode=datatable`). Each row includes `ancestor_chain` / `ancestor_path` (root → parent labels, including trashed ancestors) |
 | POST | `/api/v1/navigation/menus/{menu}/restore` | `…menus.restore` | `auth:api`, `permission:restore menu` | Restore a menu + its trashed subtree |
 
 Authorization is **permission-based** (consistent with the rest of the app), not a hardcoded role list. `RoleSeeder` grants `view menu` to Root/Admin/Moderator/Management, and `manage menu` + `restore menu` to Root/Admin/Moderator. The `{menu}` on the restore route is bound with `withTrashed()` so the soft-deleted record resolves.
@@ -122,7 +143,7 @@ Views render the **JSON arrays** returned by the API. List screens use the local
 
 **Two deliberate exceptions** (reference reads only; see [Web frontend](./web-frontend.md)):
 
-1. **Sidebar** — `NavigationComposer` still calls `MenuService::navigationTree()` directly (same engine as `GET /api/v1/navigation/menus`, but no self-HTTP round-trip on every page).
+1. **Sidebar and navbar** — `NavigationComposer` calls `MenuService::navigationTree(..., layout: …)` directly (same engine as `GET /api/v1/navigation/menus`, but no self-HTTP round-trip on every page). Sidebar uses `layout=sidebar`; navbar uses `layout=navbar`.
 2. **Form role/user pickers** — `roles` and `users` option lists are loaded via Eloquent because no catalogue API endpoint exists yet.
 
 ### Request fields (store/update)
@@ -131,6 +152,7 @@ The HTTP contract uses friendlier names than the columns; the **service** maps t
 
 | Request field | Column | Notes |
 |---------------|--------|-------|
+| `layout` | `layout` | required on create (`sidebar` / `navbar` today); immutable on update; parent options in the admin form are filtered to the same layout |
 | `name`, `description`, `icon`, `route`, `type` | same | `name` / `description` are **Spatie translatable** (JSON). See [Translatable input](#translatable-input-name--description) below. `type ∈ {h,p,c}`; `route` must pass `Route::has()` |
 | `parent` | `parent_id` | must `exists:menus,id` **excluding soft-deleted**; on update cannot equal the menu itself **or any descendant** |
 | `authenticate` | `is_authenticate` | boolean |
@@ -188,7 +210,7 @@ See also [Localization](./localization.md#database-translations-menu-example).
 
 ## Ordering model
 
-`order` is meaningful only within a `(parent_id, type)` sibling group. Insert, move, and delete all run in a `DB::transaction` and call `persistOrderSequence()`, which rewrites the group to a clean `1..N` in **two phases**: first set every affected row's `order` to `NULL`, then assign the final positions. The `NULL` phase is what lets the rewrite coexist with the unique `(parent_id, type, order)` index — a straight in-place rewrite (e.g. `1 → 2` while another row still holds `2`) would violate the constraint mid-statement. Moving a menu to another parent/type compacts the old group and appends to the new one. A partial update that changes only name/flags/RBAC and omits placement leaves `order` untouched.
+`order` is meaningful only within a `(layout, parent_id, type)` sibling group. Insert, move, and delete all run in a `DB::transaction` and call `persistOrderSequence()`, which rewrites the group to a clean `1..N` in **two phases**: first set every affected row's `order` to `NULL`, then assign the final positions. The `NULL` phase is what lets the rewrite coexist with the unique `(layout, parent_id, type, order)` index — a straight in-place rewrite (e.g. `1 → 2` while another row still holds `2`) would violate the constraint mid-statement. Moving a menu to another parent/type compacts the old group and appends to the new one. A partial update that changes only name/flags/RBAC and omits placement leaves `order` untouched.
 
 ## Soft deletes
 
@@ -239,7 +261,7 @@ Because the snapshot stores role **names**, renaming or deleting a `Role` would 
 
 ## Seeding
 
-- **`MenuSeeder`** (wired into `DatabaseSeeder`) creates the default **web admin navigation** that the Blade sidebar renders (see [Web frontend](./web-frontend.md)): a `Menu` header → `Dashboard` + `Manajemen Pengguna` as **leaf parents** (`p` with a `route`, no children), and an `Administrasi` header → `Navigasi Menu` branch (`p` with `c` children) → `Daftar Menu` / `Menu Terhapus`. Items use full Bootstrap Icons classes (`bi bi-…`) and **registered web route names** (`dashboard`, `users.index`, `menus.index`, `menus.trashed`). Role-gated items get the roles holding `view user` / `view menu` (Root/Admin/Moderator/Management) attached, since the engine filters by role.
+- **`MenuSeeder`** (wired into `DatabaseSeeder`) creates the default **web admin navigation**: **sidebar** items (Dashboard, users, notifications, orders, menu admin) and a **navbar** Home shortcut to `dashboard`. Icons use full Bootstrap Icons classes (`bi bi-…`) and **registered web route names**. Role-gated items get the roles holding `view user` / `view menu` attached.
 - **`MenuRbacSeeder`** (debugging) populates all three pivots via a `Debug → RBAC Demo` branch: an Admin/Root-restricted item (`menu_roles`), an include-only item (`menu_user_includes`), and an exclude item (`menu_user_excludes`), plus two demo users.
 
 Both are idempotent. A `MenuFactory` (with `header()` / `parentItem()` / `child()` / `authenticated()` / `guestOnly()` states) is available for tests; it defaults `order` to `NULL` so factory-built siblings never trip the unique index.

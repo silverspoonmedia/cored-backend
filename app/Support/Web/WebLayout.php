@@ -37,6 +37,11 @@ class WebLayout
         return hash('xxh128', self::name()).'::partials.sidebar';
     }
 
+    public static function navbarComposerView(): string
+    {
+        return hash('xxh128', self::name()).'::partials.navbar';
+    }
+
     /**
      * Breadcrumb renderer view passed to Breadcrumbs::view().
      */

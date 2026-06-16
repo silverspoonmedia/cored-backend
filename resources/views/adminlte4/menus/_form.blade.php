@@ -2,6 +2,8 @@
     Shared menu create/edit form.
 --}}
 @php
+    use App\Support\Navigation\MenuLayout;
+
     $typeOptions = [
         'h' => __('web/menus.form.types.h'),
         'p' => __('web/menus.form.types.p'),
@@ -24,6 +26,10 @@
 
     $nameTranslations = data_get($menu, 'name_translations', []);
     $descriptionTranslations = data_get($menu, 'description_translations', []);
+    $selectedLayout = data_get($menu, 'layout', MenuLayout::default());
+    $layoutOptions = collect(MenuLayout::all())->mapWithKeys(
+        fn (string $layout) => [$layout => __('web/menus.form.layouts.'.$layout)],
+    );
 @endphp
 
 <x-adminlte4::form.ajax :action="$action" :method="$method">
@@ -43,6 +49,14 @@
                 :hint="__('web/menus.form.type_hint')" />
         </div>
     </div>
+
+    @if ($isEdit)
+        <x-adminlte4::form.input name="layout" :label="__('web/menus.columns.layout')" :value="$selectedLayout" readonly
+            :hint="__('web/menus.form.layout_readonly_hint')" />
+    @else
+        <x-adminlte4::form.select name="layout" :label="__('web/menus.columns.layout')" :options="$layoutOptions" :selected="$selectedLayout"
+            required :hint="__('web/menus.form.layout_hint')" />
+    @endif
 
     <x-adminlte4::form.translatable-input
         name="description"
@@ -107,6 +121,6 @@
 
     <div class="d-flex gap-2 mt-3">
         <x-adminlte4::form.submit :label="$submitLabel" class="btn btn-primary" />
-        <a href="{{ route('menus.index') }}" class="btn btn-outline-secondary">{{ __('ui.actions.cancel') }}</a>
+        <a href="{{ route('menus.index', ['layout' => $listLayout ?? data_get($menu, 'layout', MenuLayout::default())]) }}" class="btn btn-outline-secondary">{{ __('ui.actions.cancel') }}</a>
     </div>
 </x-adminlte4::form.ajax>

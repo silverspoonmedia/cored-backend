@@ -4,22 +4,35 @@ namespace App\View\Composers;
 
 use App\Models\User;
 use App\Services\Navigation\MenuService;
+use App\Support\Navigation\MenuLayout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 /**
- * Feeds the per-viewer navigation tree to the sidebar. Reuses the exact same
- * MenuService the API's navigation endpoint uses, so the web sidebar and the
- * API tree can never drift — single source of truth, fully RBAC-filtered.
+ * Feeds per-layout navigation trees to the sidebar and navbar partials. Reuses
+ * the same MenuService the API uses, scoped by layout identifier.
  */
 class NavigationComposer
 {
     public function __construct(private readonly MenuService $menus) {}
 
-    public function compose(View $view): void
+    public function composeSidebar(View $view): void
+    {
+        $view->with('navigation', $this->tree(MenuLayout::SIDEBAR));
+    }
+
+    public function composeNavbar(View $view): void
+    {
+        $view->with('navbarNavigation', $this->tree(MenuLayout::NAVBAR));
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function tree(string $layout): array
     {
         $user = Auth::guard('api')->user();
 
-        $view->with('navigation', $this->menus->navigationTree($user instanceof User ? $user : null));
+        return $this->menus->navigationTree($user instanceof User ? $user : null, layout: $layout);
     }
 }

@@ -58,7 +58,7 @@ Because validation lives only in the API, web controllers **do not use Form Requ
 
 These are pure reference reads, not business logic, and there is no suitable API endpoint, so they are read directly. Flagged here for honesty:
 
-1. **Sidebar navigation** (`App\View\Composers\NavigationComposer`) calls `MenuService::navigationTree()` directly. It runs on **every** page render; routing it through a self-HTTP call would add a round-trip per page for zero logic gain. It is the same engine the API's navigation endpoint uses.
+1. **Sidebar and navbar navigation** (`App\View\Composers\NavigationComposer`) calls `MenuService::navigationTree(..., layout: …)` directly — `sidebar` for the sidebar partial, `navbar` for the top bar. It runs on **every** page render; routing it through a self-HTTP call would add a round-trip per page for zero logic gain. Same engine as `GET /api/v1/navigation/menus?layout=…`.
 2. **Menu form option-lists** (`roles`, `users` pickers in `Web\Navigation\MenuController::renderForm`) are read via Eloquent because the API exposes no "list all roles / all users" endpoint. If full purity is required, add those endpoints and switch the form to consume them.
 
 ---
@@ -118,15 +118,15 @@ The active layout is **`config('web.layout')`** (env `WEB_LAYOUT`, default `admi
 | Piece | File | Role |
 |-------|------|------|
 | Config | `config/web.php` | `layout` key — switch layouts without touching controllers |
-| Resolver | `App\Support\Web\WebLayout` | `view()`, `componentsPath()`, `breadcrumbsView()`, `sidebarComposerView()` |
+| Resolver | `App\Support\Web\WebLayout` | `view()`, `componentsPath()`, `breadcrumbsView()`, `sidebarComposerView()`, `navbarComposerView()` |
 | Controllers | `App\Http\Controllers\Web\Controller` + `RendersWebViews` | `$this->webView('dashboard')` → `view('{layout}.dashboard')` |
-| Bootstrap | `AppServiceProvider` | Registers `Blade::anonymousComponentPath(WebLayout::…)` and `NavigationComposer` on the layout sidebar |
+| Bootstrap | `AppServiceProvider` | Registers `Blade::anonymousComponentPath(WebLayout::…)` and `NavigationComposer` on the layout sidebar **and** navbar |
 
 **AdminLTE 4** is the shipped layout today (`resources/views/adminlte4/`). Blade templates inside that tree still reference `<x-adminlte4::layouts.app>`, `<x-adminlte4::form.input>`, etc. — component tags are layout-specific by design.
 
 When you add a second layout, create `resources/views/<layout>/` with its own components, set `WEB_LAYOUT=<layout>` (or override per environment), and keep using `$this->webView('…')` in controllers. The API layer stays unchanged.
 
-`NavigationComposer` is bound to the active layout's sidebar via `View::composer(WebLayout::sidebarComposerView(), …)` in `AppServiceProvider`. That resolves the **hashed** anonymous-component view namespace Laravel registers for `Blade::anonymousComponentPath()` (not the readable `<x-{layout}::…>` prefix). Breadcrumb markup uses `WebLayout::breadcrumbsView()`.
+`NavigationComposer` is bound to the active layout's sidebar and navbar via `View::composer(WebLayout::sidebarComposerView(), …)` and `View::composer(WebLayout::navbarComposerView(), …)` in `AppServiceProvider`. That resolves the **hashed** anonymous-component view namespace Laravel registers for `Blade::anonymousComponentPath()` (not the readable `<x-{layout}::…>` prefix). Breadcrumb markup uses `WebLayout::breadcrumbsView()`.
 
 ```
 resources/views/adminlte4/
@@ -136,6 +136,7 @@ resources/views/adminlte4/
 │   ├── partials/                   ← assets-head, assets-scripts, navbar, sidebar, footer,
 │   │                                  datatable-assets, datatable-row-actions
 │   ├── nav/tree.blade.php          ← recursive renderer for the dynamic sidebar tree
+│   ├── nav/bar-tree.blade.php      ← horizontal renderer for the dynamic navbar tree
 │   ├── alert.blade.php             ← flash + validation feedback
 │   ├── card.blade.php              ← panel wrapper (title + actions slot)
 │   └── form/                       ← input, select, multiselect, checkbox, translatable-input
@@ -154,7 +155,7 @@ resources/views/adminlte4/
 - **Menu placement** (`position` + `reference_id`) is optional on both create and edit. Empty selects mean append on create or unchanged order on edit — see [navigation-menu.md](./navigation-menu.md#request-fields-storeupdate).
 - **Menu translatable fields** — `name` and `description` use `<x-adminlte4::form.translatable-input>` (one field per locale). Create/edit posts `name[en]`, `name[id]`, … which the web controller forwards as JSON to the API. Edit forms bind from `name_translations` / `description_translations` on the API detail payload.
 - **Locale switcher** — navbar dropdown links to `GET /locale/{locale}` (`en`, `id`). Flash and AJAX fallback messages come from `lang/{locale}/ui.php` (`ui.ajax.*`).
-- The **sidebar is data-driven by the [dynamic navigation engine](./navigation-menu.md)**. `NavigationComposer` feeds `MenuService::navigationTree()` (see exception #1 above) and `<x-adminlte4::nav.tree>` renders it recursively (`h` → section label, `p` → collapsible branch, `c` → leaf link). Visibility is resolved by the engine, so there is **no `@can` gating** in the tree.
+- The **sidebar and navbar are data-driven** by the [dynamic navigation engine](./navigation-menu.md), scoped per `layout` key (`sidebar` / `navbar`). `NavigationComposer` feeds `MenuService::navigationTree()` (see exception #1 above). Sidebar uses `<x-adminlte4::nav.tree>`; navbar uses `<x-adminlte4::nav.bar-tree>`. Visibility is resolved by the engine — **no `@can` gating** in the tree renderers.
 - **Navigation cache** — the tree comes from a server-side snapshot (`menus.navigation.snapshot`); see [Caching](./navigation-menu.md#caching). Any menu create/update/delete/restore or pivot sync **busts** the cache; the **next** `navigationTree()` call rebuilds it from the DB. The sidebar on an already-loaded page still holds the previous tree in HTML/embedded JSON until a full page reload.
 - **Sidebar live-search** — the search box in `adminlte4/components/partials/sidebar-nav-search.blade.php` filters that **page-load** tree in-memory on each keystroke (same rules as `NavigationTreeFilter`). Matching leaves keep their ancestor headers/parents visible as markers; non-matching siblings are hidden. `GET /navigation/tree?q=` (web → API proxy) returns a freshly cached tree from the server if you need a live JSON refetch.
   - **Caveat — sidebar gating is by role, not permission.** The engine filters by attached *roles*; page access is enforced by the *API*. The seeder attaches the roles that hold `view user` / `view menu` so they line up; re-grant the permission to a different role and you must update the menu's role attachments too. Cosmetic only — the API still enforces real authorization.
@@ -191,7 +192,7 @@ Action buttons stay web-side because the browser submits a normal CSRF `<form>` 
 | `app/Http/Controllers/Web/UserController.php` | `datatable()` proxies the API and maps actions; `index()` renders the shell |
 | `resources/views/adminlte4/users/index.blade.php` | Empty `<table>` + DataTables init pointing at `users.datatable` |
 | `resources/views/adminlte4/components/partials/datatable-row-actions.blade.php` | `renderDatatableActions()` + CSRF form submit for non-GET actions |
-| `tests/Feature/Http/Controllers/Web/SidebarNavigationWebTest.php` | Asserts `NavigationComposer` binds to the hashed sidebar view and seeded menu items render in the HTML shell |
+| `tests/Feature/Http/Controllers/Web/SidebarNavigationWebTest.php` | Asserts `NavigationComposer` binds to the hashed sidebar/navbar views and seeded layout menus render in the HTML shell |
 | `tests/Feature/Http/Controllers/Web/UserDatatableTest.php` | `Http::fake()` → asserts the proxy maps API keys to web URLs |
 
 ---

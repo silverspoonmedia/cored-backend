@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Menu;
 use App\Models\Role;
 use App\Repositories\Contracts\MenuRepositoryInterface;
+use App\Support\Navigation\MenuLayout;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -32,6 +33,7 @@ class MenuSeeder extends Seeder
 
         $main = Menu::query()->create([
             'parent_id' => null,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Menu', 'id' => 'Menu', 'ja' => 'メニュー'],
             'icon' => null,
             'route' => null,
@@ -42,6 +44,7 @@ class MenuSeeder extends Seeder
 
         Menu::query()->create([
             'parent_id' => $main->id,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Dashboard', 'id' => 'Beranda', 'ja' => 'ダッシュボード'],
             'icon' => 'bi bi-speedometer2',
             'route' => 'dashboard',
@@ -52,6 +55,7 @@ class MenuSeeder extends Seeder
 
         $usersItem = Menu::query()->create([
             'parent_id' => $main->id,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'User management', 'id' => 'Manajemen Pengguna', 'ja' => 'ユーザー管理'],
             'icon' => 'bi bi-people',
             'route' => 'users.index',
@@ -65,6 +69,7 @@ class MenuSeeder extends Seeder
         // so no role gating — visible to all signed-in viewers.
         Menu::query()->create([
             'parent_id' => $main->id,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Notifications', 'id' => 'Notifikasi', 'ja' => '通知'],
             'icon' => 'bi bi-bell',
             'route' => 'notifications.index',
@@ -77,6 +82,7 @@ class MenuSeeder extends Seeder
         // playground, so it is visible to any authenticated viewer.
         Menu::query()->create([
             'parent_id' => $main->id,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Orders', 'id' => 'Pesanan', 'ja' => '注文'],
             'icon' => 'bi bi-cart',
             'route' => 'orders.index',
@@ -87,6 +93,7 @@ class MenuSeeder extends Seeder
 
         $admin = Menu::query()->create([
             'parent_id' => null,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Administration', 'id' => 'Administrasi', 'ja' => '管理'],
             'icon' => null,
             'route' => null,
@@ -97,6 +104,7 @@ class MenuSeeder extends Seeder
 
         $menus = Menu::query()->create([
             'parent_id' => $admin->id,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Navigation menu', 'id' => 'Navigasi Menu', 'ja' => 'ナビゲーションメニュー'],
             'icon' => 'bi bi-list-nested',
             'route' => null,
@@ -108,6 +116,7 @@ class MenuSeeder extends Seeder
 
         Menu::query()->create([
             'parent_id' => $menus->id,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Menu list', 'id' => 'Daftar Menu', 'ja' => 'メニュー一覧'],
             'icon' => 'bi bi-circle',
             'route' => 'menus.index',
@@ -118,11 +127,24 @@ class MenuSeeder extends Seeder
 
         Menu::query()->create([
             'parent_id' => $menus->id,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Trashed menus', 'id' => 'Menu Terhapus', 'ja' => '削除済みメニュー'],
             'icon' => 'bi bi-trash',
             'route' => 'menus.trashed',
             'type' => 'c',
             'order' => 2,
+            'is_authenticate' => true,
+        ]);
+
+        // Top navbar shortcuts (layout=navbar). Headers flatten in the bar renderer.
+        Menu::query()->create([
+            'parent_id' => null,
+            'layout' => MenuLayout::NAVBAR,
+            'name' => ['en' => 'Home', 'id' => 'Beranda', 'ja' => 'ホーム'],
+            'icon' => 'bi bi-house',
+            'route' => 'dashboard',
+            'type' => 'p',
+            'order' => 1,
             'is_authenticate' => true,
         ]);
 

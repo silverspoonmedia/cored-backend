@@ -19,6 +19,7 @@ class MenuListResource extends JsonResource
         return [
             'id' => $this->id,
             'parent_id' => $this->parent_id,
+            'layout' => $this->layout,
             'name' => $this->name,
             'description' => $this->description,
             'name_translations' => $this->getTranslations('name'),

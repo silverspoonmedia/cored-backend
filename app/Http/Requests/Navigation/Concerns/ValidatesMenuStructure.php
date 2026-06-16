@@ -47,6 +47,19 @@ trait ValidatesMenuStructure
         }
     }
 
+    protected function assertParentLayoutMatches(Validator $validator, string $layout, ?string $parentId): void
+    {
+        if ($parentId === null) {
+            return;
+        }
+
+        $parentLayout = Menu::query()->whereKey($parentId)->value('layout');
+
+        if ($parentLayout !== null && $parentLayout !== $layout) {
+            $validator->errors()->add('parent', 'The parent menu must belong to the same layout as this menu.');
+        }
+    }
+
     /**
      * Reject visibility-flag combinations that would make a menu visible to no
      * one: guest-only + authenticate (mutually exclusive audiences), and

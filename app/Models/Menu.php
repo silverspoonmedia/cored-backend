@@ -25,6 +25,7 @@ class Menu extends Model
 
     protected $fillable = [
         'parent_id',
+        'layout',
         'name',
         'description',
         'icon',
@@ -97,6 +98,11 @@ class Menu extends Model
     public function scopeByType(Builder $query, string $type): Builder
     {
         return $query->where('type', $type);
+    }
+
+    public function scopeByLayout(Builder $query, string $layout): Builder
+    {
+        return $query->where('layout', $layout);
     }
 
     /**

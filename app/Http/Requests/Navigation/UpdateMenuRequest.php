@@ -102,6 +102,7 @@ class UpdateMenuRequest extends FormRequest
 
             if ($changingParent) {
                 $this->assertParentIsNotDescendant($validator, $menu->getKey(), $parentId);
+                $this->assertParentLayoutMatches($validator, $menu->layout, $parentId);
             }
 
             if (is_string($type)) {

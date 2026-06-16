@@ -7,9 +7,7 @@
                     <i class="bi bi-list"></i>
                 </a>
             </li>
-            <li class="nav-item d-none d-md-block">
-                <a href="{{ route('dashboard') }}" class="nav-link">{{ __('web/navbar.home') }}</a>
-            </li>
+            <x-adminlte4::nav.bar-tree :items="$navbarNavigation ?? []" />
         </ul>
 
         <ul class="navbar-nav ms-auto">

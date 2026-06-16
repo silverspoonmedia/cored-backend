@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Menu;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\Navigation\MenuLayout;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -32,6 +33,7 @@ class MenuRbacSeeder extends Seeder
 
         $header = Menu::query()->create([
             'parent_id' => null,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Debug', 'id' => 'Debug', 'ja' => 'デバッグ'],
             'icon' => 'bi bi-bug',
             'route' => null,
@@ -43,6 +45,7 @@ class MenuRbacSeeder extends Seeder
 
         $parent = Menu::query()->create([
             'parent_id' => $header->id,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'RBAC Demo', 'id' => 'Demo RBAC', 'ja' => 'RBAC デモ'],
             'icon' => 'bi bi-shield-lock',
             'route' => null,
@@ -55,6 +58,7 @@ class MenuRbacSeeder extends Seeder
         // menu_roles: visible only to Admin/Root holders.
         $adminOnly = Menu::query()->create([
             'parent_id' => $parent->id,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Admin Only', 'id' => 'Hanya Admin', 'ja' => '管理者のみ'],
             'icon' => 'bi bi-person-badge',
             'route' => null,
@@ -68,6 +72,7 @@ class MenuRbacSeeder extends Seeder
         // menu_user_includes: visible only to the explicitly included user.
         $includedOnly = Menu::query()->create([
             'parent_id' => $parent->id,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Included User Only', 'id' => 'Hanya Pengguna Termasuk', 'ja' => '対象ユーザーのみ'],
             'icon' => 'bi bi-person-check',
             'route' => null,
@@ -81,6 +86,7 @@ class MenuRbacSeeder extends Seeder
         // menu_user_excludes: hidden from the excluded user, visible to everyone else.
         $hiddenForExcluded = Menu::query()->create([
             'parent_id' => $parent->id,
+            'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'Hidden For Excluded User', 'id' => 'Tersembunyi Untuk Pengguna Dikecualikan', 'ja' => '除外ユーザーには非表示'],
             'icon' => 'bi bi-person-x',
             'route' => null,

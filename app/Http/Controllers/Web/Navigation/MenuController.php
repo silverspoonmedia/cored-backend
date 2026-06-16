@@ -6,6 +6,7 @@ use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\Navigation\MenuLayout;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,7 +29,12 @@ class MenuController extends Controller
     public function navigationTree(Request $request): JsonResponse
     {
         $query = $request->string('q')->trim()->toString();
-        $response = $this->api()->get('navigation/menus', $query !== '' ? ['q' => $query] : []);
+        $layout = $request->string('layout')->trim()->toString();
+        $params = array_filter([
+            'q' => $query !== '' ? $query : null,
+            'layout' => $layout !== '' ? $layout : null,
+        ]);
+        $response = $this->api()->get('navigation/menus', $params);
 
         if (! $response->successful()) {
             return response()->json([
@@ -40,31 +46,45 @@ class MenuController extends Controller
         return response()->json($response->json());
     }
 
-    public function index(): View|RedirectResponse
+    public function index(Request $request): View|RedirectResponse
     {
-        $response = $this->api()->get('navigation/menus/list');
+        $layout = $this->resolveLayout($request->query('layout'));
+
+        $response = $this->api()->get('navigation/menus/list', ['layout' => $layout]);
 
         if (! $response->successful()) {
             return redirect()->route('dashboard')->with('error', $this->apiMessage($response));
         }
 
-        return $this->webView('menus.index', ['menus' => $response->json('data', [])]);
+        return $this->webView('menus.index', [
+            'menus' => $response->json('data', []),
+            'selectedLayout' => $layout,
+            'layoutOptions' => $this->layoutOptions(),
+        ]);
     }
 
-    public function trashed(): View|RedirectResponse
+    public function trashed(Request $request): View|RedirectResponse
     {
-        $response = $this->api()->get('navigation/menus/trashed');
+        $layout = $this->resolveLayout($request->query('layout'));
+
+        $response = $this->api()->get('navigation/menus/trashed', ['layout' => $layout]);
 
         if (! $response->successful()) {
-            return redirect()->route('menus.index')->with('error', $this->apiMessage($response));
+            return redirect()->route('menus.index', ['layout' => $layout])->with('error', $this->apiMessage($response));
         }
 
-        return $this->webView('menus.trashed', ['menus' => $response->json('data', [])]);
+        return $this->webView('menus.trashed', [
+            'menus' => $response->json('data', []),
+            'selectedLayout' => $layout,
+            'layoutOptions' => $this->layoutOptions(),
+        ]);
     }
 
-    public function create(): View|RedirectResponse
+    public function create(Request $request): View|RedirectResponse
     {
-        return $this->renderForm('menus.create');
+        return $this->renderForm('menus.create', [
+            'layout' => $this->resolveLayout($request->query('layout')),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse|JsonResponse
@@ -74,7 +94,9 @@ class MenuController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('menus.index')->with('success', __('api/navigation.created')),
+            fn (): RedirectResponse => redirect()->route('menus.index', [
+                'layout' => $this->resolveLayout($request->input('layout')),
+            ])->with('success', __('api/navigation.created')),
             __('api/navigation.created'),
         );
     }
@@ -110,7 +132,9 @@ class MenuController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('menus.index')->with('success', __('api/navigation.deleted')),
+            fn (): RedirectResponse => redirect()->route('menus.index', [
+                'layout' => $this->resolveLayout($request->query('layout', $request->input('layout'))),
+            ])->with('success', __('api/navigation.deleted')),
             __('api/navigation.deleted'),
         );
     }
@@ -122,7 +146,9 @@ class MenuController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('menus.trashed')->with('success', __('api/navigation.restored')),
+            fn (): RedirectResponse => redirect()->route('menus.trashed', [
+                'layout' => $this->resolveLayout($request->query('layout', $request->input('layout'))),
+            ])->with('success', __('api/navigation.restored')),
             __('api/navigation.restored'),
         );
     }
@@ -134,10 +160,11 @@ class MenuController extends Controller
      */
     private function renderForm(string $view, array $menu = []): View|RedirectResponse
     {
-        $list = $this->api()->get('navigation/menus/list');
+        $layout = $menu['layout'] ?? MenuLayout::default();
+        $list = $this->api()->get('navigation/menus/list', ['layout' => $layout]);
 
         if (! $list->successful()) {
-            return redirect()->route('menus.index')->with('error', $this->apiMessage($list));
+            return redirect()->route('menus.index', ['layout' => $layout])->with('error', $this->apiMessage($list));
         }
 
         $currentId = $menu['id'] ?? null;
@@ -149,11 +176,28 @@ class MenuController extends Controller
         return $this->webView($view, [
             'menu' => $menu !== [] ? $menu : null,
             'allMenus' => $allMenus,
-            // Reference option-lists for the role/user pickers. The API exposes
-            // no full role/user catalogue endpoint, so these are read directly
-            // (reference data only — no business logic lives here).
+            'listLayout' => $layout,
             'roles' => Role::query()->orderBy('level')->get(),
             'users' => User::query()->orderBy('name')->get(),
         ]);
+    }
+
+    private function resolveLayout(?string $layout): string
+    {
+        if ($layout !== null && MenuLayout::isValid($layout)) {
+            return $layout;
+        }
+
+        return MenuLayout::default();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function layoutOptions(): array
+    {
+        return collect(MenuLayout::all())
+            ->mapWithKeys(fn (string $layout): array => [$layout => __('web/menus.form.layouts.'.$layout)])
+            ->all();
     }
 }
