@@ -45,6 +45,72 @@ function relativeTime(iso) {
     return `${Math.round(hours / 24)}d`;
 }
 
+/**
+ * Pending table reloads (tableId set). Used when reload event arrives before
+ * DataTable initialization completes (e.g., during navigation).
+ */
+const pendingReloads = new Set();
+
+/**
+ * Reload a DataTable if it exists on the current page. If the table doesn't
+ * exist yet, queue it for retry (handles timing issues during navigation).
+ */
+function reloadDataTable(tableId) {
+    if (!tableId) {
+        return;
+    }
+
+    // Immediate reload if table exists
+    if (typeof window.dataTables === 'object' && window.dataTables[tableId]) {
+        const table = window.dataTables[tableId];
+
+        if (table && typeof table.ajax === 'object' && typeof table.ajax.reload === 'function') {
+            table.ajax.reload(null, false); // false = stay on current page
+            pendingReloads.delete(tableId); // Clear if it was pending
+            return;
+        }
+    }
+
+    // Table doesn't exist yet — queue for retry
+    pendingReloads.add(tableId);
+    retryPendingReloads();
+}
+
+/**
+ * Retry pending table reloads with exponential backoff (max 3 attempts over 2s).
+ * Handles case where reload event arrives during page navigation.
+ */
+let retryAttempt = 0;
+function retryPendingReloads() {
+    if (pendingReloads.size === 0 || retryAttempt >= 3) {
+        retryAttempt = 0;
+        return;
+    }
+
+    const delay = [500, 1000, 2000][retryAttempt];
+    retryAttempt++;
+
+    setTimeout(() => {
+        for (const tableId of pendingReloads) {
+            if (typeof window.dataTables === 'object' && window.dataTables[tableId]) {
+                const table = window.dataTables[tableId];
+
+                if (table && typeof table.ajax === 'object' && typeof table.ajax.reload === 'function') {
+                    table.ajax.reload(null, false);
+                    pendingReloads.delete(tableId);
+                }
+            }
+        }
+
+        // Retry remaining pending reloads
+        if (pendingReloads.size > 0) {
+            retryPendingReloads();
+        } else {
+            retryAttempt = 0;
+        }
+    }, delay);
+}
+
 function initNotificationBell(config) {
     const bell = document.getElementById('notification-bell');
 
@@ -162,15 +228,20 @@ function initNotificationBell(config) {
         return toggle?.getAttribute('aria-expanded') === 'true';
     }
 
-    function onRealtimePing(fromTabSync = false) {
+    function onRealtimePing(eventData = null, fromTabSync = false) {
         refreshBadge();
 
         if (isDropdownOpen()) {
             refreshList();
         }
 
-        if (!fromTabSync) {
-            tabSync?.postMessage({ type: 'ping', at: Date.now() });
+        // Reload DataTable if notification has a tableId
+        if (eventData?.table_id) {
+            reloadDataTable(eventData.table_id);
+        }
+
+        if (!fromTabSync && eventData) {
+            tabSync?.postMessage({ type: 'ping', at: Date.now(), eventData });
         }
     }
 
@@ -182,7 +253,7 @@ function initNotificationBell(config) {
             tabSync = new BroadcastChannel(`activity-notifications.${userId}`);
             tabSync.addEventListener('message', (event) => {
                 if (event.data?.type === 'ping') {
-                    onRealtimePing(true);
+                    onRealtimePing(event.data.eventData || null, true);
                 }
             });
         } catch {
@@ -236,7 +307,7 @@ function initNotificationBell(config) {
 
             echoInstance
                 .private(`App.Models.User.${userId}`)
-                .listen('.activity-notification.received', () => onRealtimePing(false));
+                .listen('.activity-notification.received', (e) => onRealtimePing(e, false));
 
             refreshBadge();
         } catch {

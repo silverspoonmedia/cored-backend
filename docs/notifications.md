@@ -345,29 +345,95 @@ since any user can receive a personal notification).
 
 ---
 
-## Deferred: DataTable live reload (not shipped)
+## DataTable live reload (shipped)
 
-**Status: attempted, not shipped.** The navbar bell (realtime + multi-tab sync) is
-**in production**. Automatically reloading server-side DataTables (e.g. `#users-table`
-on the users index when `user_created` fires) was **removed** after repeated
-attempts could not reliably refresh **background / unfocused** tabs across browsers.
+**Status: in production.** List screens with DataTables (e.g. `#users-table`) now
+**automatically reload** when relevant notifications fire (e.g. `user_created`),
+using a **hybrid approach** that handles both cross-tab updates (websocket) and
+active-tab updates (flash session).
 
-| What worked | What did not ship |
-|-------------|-------------------|
-| Bell badge + dropdown via Echo, HTTP refetch, `BroadcastChannel`, visibility/focus | Cross-tab `DataTable.ajax.reload()` staying in sync without focusing the list tab |
+| Component | Implementation |
+|-----------|----------------|
+| Type → table mapping | `NotificationType::tableId()` returns DataTable ID (e.g. `user_created` → `users-table`) |
+| Websocket payload | `UserActivityNotificationReceived::broadcastWith()` includes `type` + `table_id` |
+| DataTable exposure | Init scripts store API reference on `window.dataTables[tableId]` |
+| Cross-tab reload | `bell.js` receives websocket → calls `table.ajax.reload()` → `BroadcastChannel` syncs sibling tabs |
+| Active-tab reload | Controller sets flash session → Blade detects flag → retries until DataTable ready |
+| Background tab retry | `bell.js` retry queue (exponential backoff) + visibility/focus handlers |
 
-**Why it failed (summary):** list reload depends on jQuery DataTables AJAX in each
-tab's page context. Background tabs are throttled; wiring from the Vite bell bundle
-to page-scoped DataTable APIs proved brittle (detection, timing, cross-tab delivery).
+### How it works (hybrid architecture)
 
-**Future implementation notes** (when revisiting):
+**Scenario A: Cross-tab update (Tab A idle, Tab B creates user)**
 
-1. Map `NotificationType` → list screen / `<table id="…">` (e.g. `user_created` → `users-table`).
-2. Reload from **the same script that inits the DataTable** (hold an API reference on `window`), not only from the navbar Vite bundle.
-3. Consider `localStorage` + `storage` event or `BroadcastChannel` for sibling tabs; expect **focus/visibility retry** for background tabs.
-4. Optionally include `type` / `tableId` in `UserActivityNotificationReceived::broadcastWith()` once the client contract is stable.
+1. Tab B submits create form → redirect starts
+2. `NotificationService` broadcasts `UserActivityNotificationReceived` with `{ type, table_id }`
+3. Tab A (idle) receives websocket via `bell.js` → calls `reloadDataTable('users-table')`
+4. Tab A's DataTable reloads instantly via `table.ajax.reload()`
+5. `BroadcastChannel` propagates to other sibling tabs
 
-Until then, users refresh list screens manually (navigation, F5, or reopen the index).
+**Scenario B: Active-tab update (Tab B creates user, then views list)**
+
+1. Tab B submits create form
+2. Controller redirects with `->with('datatable_reload', 'users-table')`
+3. Index page loads, DataTable initializes
+4. Blade detects flash session → triggers retry loop
+5. Retry loop waits for DataTable to be ready (up to 10 attempts × 200ms)
+6. Once ready, calls `table.ajax.reload(null, false)`
+
+**Why hybrid?** Websocket events during navigation have unpredictable timing (may arrive
+before DataTable initializes). Flash-based reload for the active tab is reliable because
+it waits for the table to be ready. Cross-tab updates use websocket because those tabs
+are already loaded and stable.
+
+### Adding a new table reload
+
+When adding a notification type that should trigger a list reload:
+
+1. **Backend**: Add the type to `NotificationType` with a `tableId()` method:
+   ```php
+   case OrderCreated = 'order_created';
+   
+   public function tableId(): ?string
+   {
+       return match ($this) {
+           self::UserCreated => 'users-table',
+           self::OrderCreated => 'orders-table',
+           self::AccountUpdated => null, // personal notification, no table
+       };
+   }
+   ```
+
+2. **Controller**: Add flash flag on redirect after create/delete:
+   ```php
+   return redirect()->route('orders.index')
+       ->with('success', __('api/orders.created'))
+       ->with('datatable_reload', 'orders-table');
+   ```
+
+3. **Blade index view**: Expose DataTable API + handle flash reload:
+   ```javascript
+   const table = $('#orders-table').DataTable({ /* config */ });
+   window.dataTables = window.dataTables || {};
+   window.dataTables['orders-table'] = table;
+   
+   @if(session('datatable_reload') === 'orders-table')
+       (function waitAndReload(attempt = 0) {
+           if (attempt > 10) return;
+           const tbl = window.dataTables?.['orders-table'];
+           if (tbl?.ajax?.reload) {
+               tbl.ajax.reload(null, false);
+           } else {
+               setTimeout(() => waitAndReload(attempt + 1), 200);
+           }
+       })();
+   @endif
+   ```
+
+4. No changes to `bell.js`, notification engine, or event broadcasting required.
+
+**Example**: `resources/views/adminlte4/users/index.blade.php` + `UserController::store()`
+implement both mechanisms; when a user is created, the active tab reloads via flash, and
+all other open user-list tabs reload via websocket + BroadcastChannel.
 
 ---
 

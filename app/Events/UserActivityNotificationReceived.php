@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Notifications\Activity\NotificationType;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -11,7 +12,8 @@ use Illuminate\Queue\SerializesModels;
 /**
  * Lightweight ping on a user's private channel when a new activity notification
  * is visible to them. The bell refetches unread count / recent items over HTTP
- * so message copy stays locale-aware.
+ * so message copy stays locale-aware. Also broadcasts type + tableId for
+ * DataTable live reload.
  */
 class UserActivityNotificationReceived implements ShouldBroadcastNow
 {
@@ -21,6 +23,7 @@ class UserActivityNotificationReceived implements ShouldBroadcastNow
 
     public function __construct(
         public readonly string $userId,
+        public readonly NotificationType $type,
     ) {}
 
     /**
@@ -43,6 +46,9 @@ class UserActivityNotificationReceived implements ShouldBroadcastNow
      */
     public function broadcastWith(): array
     {
-        return [];
+        return [
+            'type' => $this->type->value,
+            'table_id' => $this->type->tableId(),
+        ];
     }
 }

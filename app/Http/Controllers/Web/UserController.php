@@ -75,7 +75,9 @@ class UserController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('users.index')->with('success', __('api/users.created')),
+            fn (): RedirectResponse => redirect()->route('users.index')
+                ->with('success', __('api/users.created'))
+                ->with('datatable_reload', 'users-table'),
             __('api/users.created'),
         );
     }
@@ -119,7 +121,9 @@ class UserController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (): RedirectResponse => redirect()->route('users.index')->with('success', __('api/users.deleted')),
+            fn (): RedirectResponse => redirect()->route('users.index')
+                ->with('success', __('api/users.deleted'))
+                ->with('datatable_reload', 'users-table'),
             __('api/users.deleted'),
         );
     }

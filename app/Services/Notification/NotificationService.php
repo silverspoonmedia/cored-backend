@@ -132,8 +132,10 @@ class NotificationService
             return;
         }
 
+        $type = NotificationType::from($notification->type);
+
         foreach ($this->notifications->recipientUserIds($notification) as $userId) {
-            event(new UserActivityNotificationReceived($userId));
+            event(new UserActivityNotificationReceived($userId, $type));
         }
     }
 }

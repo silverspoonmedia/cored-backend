@@ -19,7 +19,7 @@
 
         <script>
             $(function () {
-                $('#users-table').DataTable({
+                const table = $('#users-table').DataTable({
                     processing: true,
                     serverSide: true,
                     ajax: '{{ route('users.datatable') }}',
@@ -57,6 +57,24 @@
                         },
                     ],
                 });
+
+                // Expose DataTable API for live reload via notifications
+                window.dataTables = window.dataTables || {};
+                window.dataTables['users-table'] = table;
+
+                // Reload if we just created/deleted a user (flash from controller)
+                @if(session('datatable_reload') === 'users-table')
+                    (function waitAndReload(attempt = 0) {
+                        if (attempt > 10) return;
+                        
+                        const tbl = window.dataTables?.['users-table'];
+                        if (tbl?.ajax?.reload) {
+                            tbl.ajax.reload(null, false);
+                        } else {
+                            setTimeout(() => waitAndReload(attempt + 1), 200);
+                        }
+                    })();
+                @endif
             });
         </script>
     </x-slot:scripts>
