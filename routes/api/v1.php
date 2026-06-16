@@ -10,10 +10,18 @@ use App\Http\Controllers\API\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->name('auth.')->group(function (): void {
-    Route::post('register', [AuthController::class, 'register'])->name('register');
-    Route::post('login', [AuthController::class, 'login'])->name('login');
-    Route::post('forgot-password', [PasswordController::class, 'forgot'])->name('password.forgot');
-    Route::post('reset-password', [PasswordController::class, 'reset'])->name('password.reset');
+    Route::post('register', [AuthController::class, 'register'])
+        ->middleware('throttle:5,1')
+        ->name('register');
+    Route::post('login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('login');
+    Route::post('forgot-password', [PasswordController::class, 'forgot'])
+        ->middleware('throttle:3,1')
+        ->name('password.forgot');
+    Route::post('reset-password', [PasswordController::class, 'reset'])
+        ->middleware('throttle:3,1')
+        ->name('password.reset');
 
     Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
         ->middleware(['signed', 'throttle:6,1'])

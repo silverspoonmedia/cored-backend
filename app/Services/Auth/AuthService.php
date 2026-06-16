@@ -2,6 +2,9 @@
 
 namespace App\Services\Auth;
 
+use App\Events\Auth\LoginFailed;
+use App\Events\Auth\LoginSuccessful;
+use App\Events\Auth\UserLoggedOut;
 use App\Exceptions\Auth\InvalidCredentialsException;
 use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
@@ -45,16 +48,32 @@ class AuthService
         $remember = (bool) ($credentials['remember_me'] ?? false);
         $credentials = Arr::only($credentials, ['email', 'password']);
 
-        return $this->withTokenLifetime($remember, function (JWTGuard $guard, int $ttlMinutes) use ($credentials, $remember) {
-            if (! $token = $guard->attempt($credentials)) {
-                throw new InvalidCredentialsException;
-            }
+        try {
+            return $this->withTokenLifetime($remember, function (JWTGuard $guard, int $ttlMinutes) use ($credentials, $remember) {
+                if (! $token = $guard->attempt($credentials)) {
+                    throw new InvalidCredentialsException;
+                }
 
-            /** @var User $user */
-            $user = $guard->user();
+                /** @var User $user */
+                $user = $guard->user();
 
-            return $this->buildAuthPayload($user, $token, $ttlMinutes, $remember);
-        });
+                LoginSuccessful::dispatch(
+                    $user,
+                    request()->ip() ?? 'unknown',
+                    request()->userAgent()
+                );
+
+                return $this->buildAuthPayload($user, $token, $ttlMinutes, $remember);
+            });
+        } catch (InvalidCredentialsException $e) {
+            LoginFailed::dispatch(
+                $credentials['email'] ?? 'unknown',
+                request()->ip() ?? 'unknown',
+                request()->userAgent()
+            );
+
+            throw $e;
+        }
     }
 
     /**
@@ -76,7 +95,17 @@ class AuthService
 
     public function logout(): void
     {
+        /** @var User|null $user */
+        $user = Auth::guard('api')->user();
+
         Auth::guard('api')->logout();
+
+        if ($user) {
+            UserLoggedOut::dispatch(
+                $user,
+                request()->ip() ?? 'unknown'
+            );
+        }
     }
 
     /**

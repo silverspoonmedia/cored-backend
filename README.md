@@ -197,6 +197,23 @@ php artisan db:seed
 
 ---
 
+## Security
+
+**Security Audit Report:** See [`SECURITY_AUDIT.md`](SECURITY_AUDIT.md) for the comprehensive OWASP Top 10:2025 security audit (20 findings, all critical and high priority vulnerabilities patched).
+
+**Last Audit:** 2026-06-16 (Audit #1 - 19/20 findings resolved)
+
+**Security Audit Procedure:** See [`docs/security-audit-procedure.md`](docs/security-audit-procedure.md) for repeatable audit methodology. Run security audits quarterly, before major deployments, or after significant feature changes.
+
+**Production Security Checklist:**
+- Set `APP_ENV=production` and `APP_DEBUG=false`
+- Set `SESSION_SECURE_COOKIE=true` (enforce HTTPS-only cookies)
+- Set `SESSION_ENCRYPT=true` (encrypt session data)
+- Verify `JWT_SECRET` is generated and strong
+- Playground routes are automatically disabled in production
+
+---
+
 ## Project documentation
 
 All guides live under [`docs/`](docs/). Read them in this order when onboarding:
