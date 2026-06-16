@@ -18,6 +18,7 @@ use App\Repositories\Eloquent\UserRepository;
 use App\Support\DataTable\DataTableResponseFactory;
 use App\Support\Web\WebLayout;
 use App\View\Composers\NavigationComposer;
+use App\View\Composers\NotificationBellComposer;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
@@ -60,6 +61,7 @@ class AppServiceProvider extends ServiceProvider
         });
         View::composer(WebLayout::navbarComposerView(), function (\Illuminate\View\View $view) use ($navigation): void {
             app($navigation)->composeNavbar($view);
+            app(NotificationBellComposer::class)->compose($view);
         });
     }
 }

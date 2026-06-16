@@ -1,6 +1,6 @@
 <x-adminlte4::layouts.app :title="__('web/menus.create_title')">
     <x-adminlte4::card :title="__('web/menus.new_card_title')">
-        @include('menus._form', [
+        @include(config('web.layout').'.menus._form', [
             'action' => route('menus.store'),
             'method' => 'POST',
             'isEdit' => false,

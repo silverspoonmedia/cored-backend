@@ -101,7 +101,10 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | GET | `/notifications/unread-count`, `/notifications/recent` | `notifications.unread-count` / `notifications.recent` | `web.auth` | `GET /notifications/unread-count`, `GET /notifications?limit=10` (bell JSON) |
 | POST | `/notifications/read-all`, `/notifications/{id}/read` | `notifications.read-all` / `notifications.read` | `web.auth` | `POST /notifications/read-all`, `POST /notifications/{id}/read` |
 
-> The navbar bell (`@can('view notification')`) polls the unread count and recent list as JSON; see [Activity notifications](./notifications.md).
+> The navbar bell (`@can('view notification')`) uses **polling** in `local` (or when
+> Pusher is misconfigured) and **realtime websocket** in `production` with valid
+> credentials — Vite + Laravel Echo. Multiple tabs sync without reload. See
+> [Activity notifications](./notifications.md#realtime-vs-polling).
 
 > **Route-name note:** the global Playground demo previously registered the generic names `users.*`. To free those for the web admin UI, it is now `Route::apiResource('users', …)->names('playground.users')` (URLs unchanged).
 
@@ -109,7 +112,23 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 
 ## Views and components
 
-Assets are loaded from CDN. Views render the **JSON arrays** returned by the API (e.g. `$profile`, `$menu['name']` for display, `$menu['name_translations']` for edit forms), not Eloquent models. Static UI strings use `__('…')` from `lang/{locale}/web/*` and `lang/{locale}/ui.php` — never hardcode copy in Blade.
+**Assets:** AdminLTE 4, Bootstrap 5, and Bootstrap Icons load from CDN
+(`adminlte4/components/partials/assets-head.blade.php` and `assets-scripts.blade.php`).
+
+**Vite** bundles the notification bell only:
+
+| Vite input | Loaded from | npm packages |
+|------------|-------------|--------------|
+| `resources/js/notifications/bell.js` | `@vite` in `partials/navbar.blade.php` (`@can('view notification')`) | `laravel-echo`, `pusher-js` |
+| `resources/js/app.js` | Default entry (Tailwind / future shared JS) | — |
+
+Run `npm install` and `npm run build` before deploy (or `composer run dev` for
+serve + queue + Vite HMR). Bell config (routes, labels, realtime flag, viewer id,
+broadcast auth endpoint) is built server-side by `NotificationBellComposer` and
+passed as `data-notification-config` on `#notification-bell`. Public Pusher fields
+also come from `VITE_PUSHER_*` in `.env` — see [notifications.md](./notifications.md#realtime-vs-polling).
+
+Views render the **JSON arrays** returned by the API (e.g. `$profile`, `$menu['name']` for display, `$menu['name_translations']` for edit forms), not Eloquent models. Static UI strings use `__('…')` from `lang/{locale}/web/*` and `lang/{locale}/ui.php` — never hardcode copy in Blade.
 
 ### Layout namespace and `config/web.php`
 
@@ -120,13 +139,18 @@ The active layout is **`config('web.layout')`** (env `WEB_LAYOUT`, default `admi
 | Config | `config/web.php` | `layout` key — switch layouts without touching controllers |
 | Resolver | `App\Support\Web\WebLayout` | `view()`, `componentsPath()`, `breadcrumbsView()`, `sidebarComposerView()`, `navbarComposerView()` |
 | Controllers | `App\Http\Controllers\Web\Controller` + `RendersWebViews` | `$this->webView('dashboard')` → `view('{layout}.dashboard')` |
-| Bootstrap | `AppServiceProvider` | Registers `Blade::anonymousComponentPath(WebLayout::…)` and `NavigationComposer` on the layout sidebar **and** navbar |
+| Bootstrap | `AppServiceProvider` | Registers `Blade::anonymousComponentPath(WebLayout::…)`; `NavigationComposer` + `NotificationBellComposer` on the hashed navbar view; `NavigationComposer` on the hashed sidebar view |
 
 **AdminLTE 4** is the shipped layout today (`resources/views/adminlte4/`). Blade templates inside that tree still reference `<x-adminlte4::layouts.app>`, `<x-adminlte4::form.input>`, etc. — component tags are layout-specific by design.
 
 When you add a second layout, create `resources/views/<layout>/` with its own components, set `WEB_LAYOUT=<layout>` (or override per environment), and keep using `$this->webView('…')` in controllers. The API layer stays unchanged.
 
-`NavigationComposer` is bound to the active layout's sidebar and navbar via `View::composer(WebLayout::sidebarComposerView(), …)` and `View::composer(WebLayout::navbarComposerView(), …)` in `AppServiceProvider`. That resolves the **hashed** anonymous-component view namespace Laravel registers for `Blade::anonymousComponentPath()` (not the readable `<x-{layout}::…>` prefix). Breadcrumb markup uses `WebLayout::breadcrumbsView()`.
+`NavigationComposer` and `NotificationBellComposer` are bound to the active layout's
+sidebar and navbar via `View::composer(WebLayout::sidebarComposerView(), …)` and
+`View::composer(WebLayout::navbarComposerView(), …)` in `AppServiceProvider`. That
+resolves the **hashed** anonymous-component view namespace Laravel registers for
+`Blade::anonymousComponentPath()` (not the readable `<x-{layout}::…>` prefix).
+Breadcrumb markup uses `WebLayout::breadcrumbsView()`.
 
 ```
 resources/views/adminlte4/
@@ -151,10 +175,17 @@ resources/views/adminlte4/
 └── notifications/                  ← index (full list); navbar bell lives in components/partials/navbar
 ```
 
-- **Create/edit forms** share one `_form.blade.php` per resource. Validation errors come from the API's `422` (mapped by `ConsumesApi`), repopulated with `old()`.
+- **Create/edit forms** share one `_form.blade.php` per resource. Include them with the
+  layout prefix — `@include(config('web.layout').'.users._form', …)` — not a bare
+  `users._form` path (views live under `resources/views/{layout}/`, e.g.
+  `adminlte4/users/_form.blade.php`). Validation errors come from the API's `422`
+  (mapped by `ConsumesApi`), repopulated with `old()`.
 - **Menu placement** (`position` + `reference_id`) is optional on both create and edit. Empty selects mean append on create or unchanged order on edit — see [navigation-menu.md](./navigation-menu.md#request-fields-storeupdate).
 - **Menu translatable fields** — `name` and `description` use `<x-adminlte4::form.translatable-input>` (one field per locale). Create/edit posts `name[en]`, `name[id]`, … which the web controller forwards as JSON to the API. Edit forms bind from `name_translations` / `description_translations` on the API detail payload.
-- **Locale switcher** — navbar dropdown links to `GET /locale/{locale}` (`en`, `id`). Flash and AJAX fallback messages come from `lang/{locale}/ui.php` (`ui.ajax.*`).
+- **Locale switcher** — navbar dropdown links to `GET /locale/{locale}` (`en`, `id`, `ja`). Flash and AJAX fallback messages come from `lang/{locale}/ui.php` (`ui.ajax.*`).
+- **Notification bell** — `NotificationBellComposer` feeds the navbar partial;
+  realtime vs polling is decided by `BroadcastConnection` (`APP_ENV` + `PUSHER_*`).
+  Full behaviour, env table, and multi-tab sync → [notifications.md](./notifications.md).
 - The **sidebar and navbar are data-driven** by the [dynamic navigation engine](./navigation-menu.md), scoped per `layout` key (`sidebar` / `navbar`). `NavigationComposer` feeds `MenuService::navigationTree()` (see exception #1 above). Sidebar uses `<x-adminlte4::nav.tree>`; navbar uses `<x-adminlte4::nav.bar-tree>`. Visibility is resolved by the engine — **no `@can` gating** in the tree renderers.
 - **Navigation cache** — the tree comes from a server-side snapshot (`menus.navigation.snapshot`); see [Caching](./navigation-menu.md#caching). Any menu create/update/delete/restore or pivot sync **busts** the cache; the **next** `navigationTree()` call rebuilds it from the DB. The sidebar on an already-loaded page still holds the previous tree in HTML/embedded JSON until a full page reload.
 - **Sidebar live-search** — the search box in `adminlte4/components/partials/sidebar-nav-search.blade.php` filters that **page-load** tree in-memory on each keystroke (same rules as `NavigationTreeFilter`). Matching leaves keep their ancestor headers/parents visible as markers; non-matching siblings are hidden. `GET /navigation/tree?q=` (web → API proxy) returns a freshly cached tree from the server if you need a live JSON refetch.
@@ -226,5 +257,6 @@ Visit `/login`, sign in with the seeded admin, and the dashboard / user manageme
 - [User Management & H-RBAC](./user-management-hrbac.md) — policies/hierarchy enforced by the API the web calls
 - [Dynamic Navigation Menu](./navigation-menu.md) — menu domain behind the web menu screens
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — layer responsibilities behind the API
+- [Activity notifications](./notifications.md) — bell delivery (polling / realtime), Vite + Echo, broadcasting
 - [API Routing](./api-routing.md) — the versioned API surface the web layer consumes
 - [Localization](./localization.md) — locale resolution, `lang/` layout, Spatie fields, task rule for translations

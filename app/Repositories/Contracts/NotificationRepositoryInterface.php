@@ -48,4 +48,12 @@ interface NotificationRepositoryInterface
      * of notifications newly marked.
      */
     public function markAllAsRead(User $viewer): int;
+
+    /**
+     * User ids that should receive a realtime ping for this notification
+     * (role holders plus explicit targets).
+     *
+     * @return list<string>
+     */
+    public function recipientUserIds(ActivityNotification $notification): array;
 }

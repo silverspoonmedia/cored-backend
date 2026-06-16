@@ -19,7 +19,7 @@
 
         <script>
             $(function () {
-                $('#users-table').DataTable({
+                const table = $('#users-table').DataTable({
                     processing: true,
                     serverSide: true,
                     ajax: '{{ route('users.datatable') }}',
@@ -57,6 +57,10 @@
                         },
                     ],
                 });
+
+                // Expose DataTable API for live reload via notifications
+                window.dataTables = window.dataTables || {};
+                window.dataTables['users-table'] = table;
             });
         </script>
     </x-slot:scripts>

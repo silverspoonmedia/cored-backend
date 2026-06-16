@@ -2,10 +2,12 @@
 
 namespace App\Services\Notification;
 
+use App\Events\UserActivityNotificationReceived;
 use App\Models\ActivityNotification;
 use App\Models\User;
 use App\Notifications\Activity\NotificationType;
 use App\Repositories\Contracts\NotificationRepositoryInterface;
+use App\Support\Broadcasting\BroadcastConnection;
 use Illuminate\Support\Collection;
 
 /**
@@ -42,7 +44,7 @@ class NotificationService
         ?string $actionRoute = null,
         array $actionParams = [],
     ): ActivityNotification {
-        return $this->notifications->create(
+        $notification = $this->notifications->create(
             [
                 'type' => $type->value,
                 'data' => $data,
@@ -52,6 +54,10 @@ class NotificationService
             $roles ?? $type->defaultRoles(),
             $users,
         );
+
+        $this->pushRealtimeToRecipients($notification);
+
+        return $notification;
     }
 
     /**
@@ -115,5 +121,21 @@ class NotificationService
     public function markAllAsRead(User $viewer): int
     {
         return $this->notifications->markAllAsRead($viewer);
+    }
+
+    /**
+     * Fan out a websocket ping to every user who can see the notification.
+     */
+    private function pushRealtimeToRecipients(ActivityNotification $notification): void
+    {
+        if (! BroadcastConnection::usesRealtimeNotifications()) {
+            return;
+        }
+
+        $type = NotificationType::from($notification->type);
+
+        foreach ($this->notifications->recipientUserIds($notification) as $userId) {
+            event(new UserActivityNotificationReceived($userId, $type));
+        }
     }
 }

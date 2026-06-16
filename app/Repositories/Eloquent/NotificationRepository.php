@@ -59,6 +59,24 @@ class NotificationRepository implements NotificationRepositoryInterface
         ]);
     }
 
+    public function recipientUserIds(ActivityNotification $notification): array
+    {
+        $notification->loadMissing(['roles', 'targetUsers']);
+
+        $roleIds = $notification->roles->pluck('id')->all();
+
+        $roleUserIds = $roleIds === []
+            ? []
+            : User::query()
+                ->whereHas('roles', fn (BuilderContract $q) => $q->whereIn('roles.id', $roleIds))
+                ->pluck('id')
+                ->all();
+
+        $directUserIds = $notification->targetUsers->pluck('id')->all();
+
+        return array_values(array_unique([...$roleUserIds, ...$directUserIds]));
+    }
+
     public function markAllAsRead(User $viewer): int
     {
         $unread = ActivityNotification::query()

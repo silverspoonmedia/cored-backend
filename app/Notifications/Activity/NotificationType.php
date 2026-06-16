@@ -53,4 +53,16 @@ enum NotificationType: string
     {
         return "api/notifications.types.{$this->value}";
     }
+
+    /**
+     * DataTable ID that should reload when this notification fires. Null for
+     * types that don't correspond to a list screen (e.g. personal updates).
+     */
+    public function tableId(): ?string
+    {
+        return match ($this) {
+            self::UserCreated => 'users-table',
+            self::AccountUpdated => null,
+        };
+    }
 }

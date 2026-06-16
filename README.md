@@ -101,6 +101,7 @@ Copy `.env.example` and adjust at least:
 | `DB_*` | Default is SQLite (`DB_CONNECTION=sqlite`). For MySQL, uncomment and set `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`. |
 | `JWT_*` | Set `JWT_SECRET` via step 4 below |
 | `MAIL_*` | Required for email verification and password reset in real use (tests use `array` driver) |
+| `BROADCAST_CONNECTION` / `PUSHER_*` | Optional locally (bell uses polling). In production, set Pusher or Socket-compatible credentials for realtime notifications — see [Activity notifications](docs/notifications.md#realtime-vs-polling) |
 
 **SQLite:** ensure the database file exists:
 
@@ -139,12 +140,16 @@ To reset and reseed during development:
 php artisan migrate:fresh --seed
 ```
 
-### 5. Frontend assets (optional)
+### 5. Frontend assets
+
+Required for the **notification bell** (Vite bundle with Laravel Echo + Pusher). AdminLTE/Bootstrap still load from CDN; only the bell uses Vite.
 
 ```bash
 npm install
 npm run build
 ```
+
+`package.json` includes `laravel-echo` and `pusher-js` as runtime dependencies. Vite entries are declared in `vite.config.js` (`resources/js/app.js`, `resources/js/notifications/bell.js`).
 
 For local development with hot reload:
 
@@ -186,6 +191,8 @@ php artisan db:seed
 | Login | `POST /api/v1/auth/login` with `admin@example.com` / `123456789` |
 | Authenticated profile | `GET /api/v1/auth/me` with `Authorization: Bearer <token>` |
 | Tests | `composer test` or `php artisan test` |
+| Notification bell (local) | Sign in, open dashboard — badge polls every 60s (`APP_ENV=local` or missing Pusher credentials) |
+| Notification bell (realtime) | Set `APP_ENV=production` + `PUSHER_*`, run `npm run build`, trigger a notification (e.g. create user) — badge updates without reload; see [notifications.md](docs/notifications.md#realtime-vs-polling) |
 | Code style | `php artisan pint` — see [Laravel Pint](docs/laravel-pint.md) |
 
 ---
@@ -203,7 +210,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [Playground (reference surface)](docs/playground.md) | Non-production `/api/playground/*` demos: simple CRUD (Users) and the master-detail aggregate (Orders) with transactional writes, plus their web screens |
 | [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 4 / jQuery 3 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
-| [Activity notifications (per role + per user)](docs/notifications.md) | Generic event-driven notification engine: broadcast to whole roles and/or target specific users, per-user read state, navbar bell |
+| [Activity notifications (per role + per user)](docs/notifications.md) | Generic event-driven notification engine: broadcast to whole roles and/or target specific users, per-user read state, navbar bell with **polling (local)** or **realtime websocket (production + Pusher)** via Vite + Laravel Echo |
 | [Web frontend (Blade + AdminLTE 4)](docs/web-frontend.md) | Server-rendered admin UI that **consumes the versioned API** (web = API client); JWT-in-HttpOnly-cookie auth forwarded as Bearer, reusable Blade components, user & menu management screens |
 
 ### Authentication and authorization
