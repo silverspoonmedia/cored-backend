@@ -77,6 +77,19 @@ function reloadDataTable(tableId) {
 }
 
 /**
+ * Check for flash session flag (set by controller on redirect) and trigger
+ * reload once DataTable is ready. Centralized handling for active-tab reloads.
+ */
+function handleFlashReload() {
+    const meta = document.querySelector('meta[name="datatable-reload"]');
+    const tableId = meta?.getAttribute('content');
+    
+    if (tableId) {
+        reloadDataTable(tableId);
+    }
+}
+
+/**
  * Retry pending table reloads with exponential backoff (max 3 attempts over 2s).
  * Handles case where reload event arrives during page navigation.
  */
@@ -349,3 +362,6 @@ if (bellRoot?.dataset.notificationConfig) {
         // Misconfigured JSON — bell stays inert.
     }
 }
+
+// Handle flash-based DataTable reload (active tab after create/delete redirect)
+handleFlashReload();

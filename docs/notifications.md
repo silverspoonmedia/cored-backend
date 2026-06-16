@@ -389,7 +389,7 @@ are already loaded and stable.
 
 When adding a notification type that should trigger a list reload:
 
-1. **Backend**: Add the type to `NotificationType` with a `tableId()` method:
+1. **Backend - NotificationType**: Add the type with `tableId()` method:
    ```php
    case OrderCreated = 'order_created';
    
@@ -398,42 +398,32 @@ When adding a notification type that should trigger a list reload:
        return match ($this) {
            self::UserCreated => 'users-table',
            self::OrderCreated => 'orders-table',
-           self::AccountUpdated => null, // personal notification, no table
+           self::AccountUpdated => null, // personal, no table
        };
    }
    ```
 
-2. **Controller**: Add flash flag on redirect after create/delete:
+2. **Backend - Controller**: Add flash flag on redirect after create/delete:
    ```php
    return redirect()->route('orders.index')
        ->with('success', __('api/orders.created'))
        ->with('datatable_reload', 'orders-table');
    ```
 
-3. **Blade index view**: Expose DataTable API + handle flash reload:
+3. **Frontend - Blade index view**: Expose DataTable API (3 lines only):
    ```javascript
    const table = $('#orders-table').DataTable({ /* config */ });
    window.dataTables = window.dataTables || {};
    window.dataTables['orders-table'] = table;
-   
-   @if(session('datatable_reload') === 'orders-table')
-       (function waitAndReload(attempt = 0) {
-           if (attempt > 10) return;
-           const tbl = window.dataTables?.['orders-table'];
-           if (tbl?.ajax?.reload) {
-               tbl.ajax.reload(null, false);
-           } else {
-               setTimeout(() => waitAndReload(attempt + 1), 200);
-           }
-       })();
-   @endif
    ```
 
-4. No changes to `bell.js`, notification engine, or event broadcasting required.
+**That's it.** No per-page retry logic needed. Flash reload is handled centrally
+in `bell.js` (reads meta tag from layout, triggers retry until table ready).
+Cross-tab reload via websocket is also centralized in `bell.js`.
 
-**Example**: `resources/views/adminlte4/users/index.blade.php` + `UserController::store()`
-implement both mechanisms; when a user is created, the active tab reloads via flash, and
-all other open user-list tabs reload via websocket + BroadcastChannel.
+**DRY principle:** Each DataTable page only needs 3 lines. All reload intelligence
+(flash detection, websocket handling, retry logic, cross-tab sync) lives in one
+place: `bell.js` + `assets-head.blade.php` meta tag.
 
 ---
 

@@ -5,6 +5,9 @@
 <meta name="color-scheme" content="light dark" />
 <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+@if(session('datatable_reload'))
+<meta name="datatable-reload" content="{{ session('datatable_reload') }}" />
+@endif
 
 <link
     rel="stylesheet"
