@@ -12,6 +12,18 @@ It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap
 
 **Localization (required on every task that touches copy):** Any change that adds or modifies user-facing text — Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, or database content shown to users — must include translations for **all** supported locales (`en`, `id`, `ja` today) in the **same task/PR**. Use `__('…')` with application-owned files under `lang/{locale}/` (never hardcode strings), or Spatie translatable fields for database content. See [Localization](docs/localization.md#task-rule-required) for the full checklist and conventions.
 
+**Full-stack implementation (required on every task):** Every feature or change must be implemented end to end across **all relevant layers** in the **same task/PR** — do **not** ship work that only touches a single layer. At minimum, a typical task should cover:
+
+| Layer | What to touch |
+|-------|----------------|
+| **API** | Versioned routes (`/api/v1/*`), controllers, form requests, policies, repositories, and API responses |
+| **Web** | Web controllers that consume the API (`ConsumesApi` / `ApiClient`), routes in `routes/web.php`, and request forwarding |
+| **Blade views** | Screens, forms, list tables, partials, and reusable components under `resources/views/` |
+| **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (`en`, `id`, `ja`) |
+| **Other (as applicable)** | Migrations, seeders, models, events/listeners, notifications, navigation menu entries, tests, and the relevant `docs/` guides |
+
+A task that adds an API endpoint without the matching web route, Blade screen, and translations is **incomplete**. Likewise, a Blade-only or API-only change without its counterpart layers is not acceptable. See [Web frontend](docs/web-frontend.md), [CRUD architecture](docs/crud-architecture.md), and [Localization](docs/localization.md) for layer-specific conventions.
+
 ---
 
 ## Identifiers (UUID)
