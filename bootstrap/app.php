@@ -4,6 +4,7 @@ use App\Http\Middleware\AuthenticateWithJwtCookie;
 use App\Http\Middleware\EnsureWebAuthenticated;
 use App\Http\Middleware\OptionalJwtAuthenticate;
 use App\Http\Middleware\RedirectIfWebAuthenticated;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Models\User;
 use App\Support\ApiResponder;
@@ -59,6 +60,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             AuthenticateWithJwtCookie::class,
             SetLocale::class,
+            SecurityHeaders::class,
         ]);
 
         $middleware->api(append: [
