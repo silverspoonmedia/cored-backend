@@ -26,6 +26,9 @@ The server-rendered admin UI exposes **dedicated web JSON routes** for DataTable
 
 Web datatable routes always respond in Yajra format (the `draw` query parameter is sent automatically by DataTables). The web layer holds **no** datatable logic of its own: it proxies the API's datatable payload and rewrites only the per-row action URLs (the API still decides *which* actions are allowed — RBAC).
 
+> **Deferred:** realtime DataTable reload on notification ping is **not** implemented.
+> See [Activity notifications — Deferred: DataTable live reload](./notifications.md#deferred-datatable-live-reload-not-shipped).
+
 ---
 
 ## Selecting a display mode

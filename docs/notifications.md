@@ -345,6 +345,32 @@ since any user can receive a personal notification).
 
 ---
 
+## Deferred: DataTable live reload (not shipped)
+
+**Status: attempted, not shipped.** The navbar bell (realtime + multi-tab sync) is
+**in production**. Automatically reloading server-side DataTables (e.g. `#users-table`
+on the users index when `user_created` fires) was **removed** after repeated
+attempts could not reliably refresh **background / unfocused** tabs across browsers.
+
+| What worked | What did not ship |
+|-------------|-------------------|
+| Bell badge + dropdown via Echo, HTTP refetch, `BroadcastChannel`, visibility/focus | Cross-tab `DataTable.ajax.reload()` staying in sync without focusing the list tab |
+
+**Why it failed (summary):** list reload depends on jQuery DataTables AJAX in each
+tab's page context. Background tabs are throttled; wiring from the Vite bell bundle
+to page-scoped DataTable APIs proved brittle (detection, timing, cross-tab delivery).
+
+**Future implementation notes** (when revisiting):
+
+1. Map `NotificationType` → list screen / `<table id="…">` (e.g. `user_created` → `users-table`).
+2. Reload from **the same script that inits the DataTable** (hold an API reference on `window`), not only from the navbar Vite bundle.
+3. Consider `localStorage` + `storage` event or `BroadcastChannel` for sibling tabs; expect **focus/visibility retry** for background tabs.
+4. Optionally include `type` / `tableId` in `UserActivityNotificationReceived::broadcastWith()` once the client contract is stable.
+
+Until then, users refresh list screens manually (navigation, F5, or reopen the index).
+
+---
+
 ## Localization
 
 User-facing copy lives in application-owned files (all locales):
