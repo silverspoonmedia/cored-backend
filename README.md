@@ -73,6 +73,8 @@ On **Laragon** (Windows), enable PHP 8.3+ and create a MySQL database if you do 
 cd monolith; php artisan migrate; php artisan db:seed
 ```
 
+**AI Agent token optimization:** Some AI models implement strict prompt caching and may repeatedly mention token optimization or usage statistics in their responses. If your AI agent exhibits this behavior (e.g., frequently commenting on token consumption, suggesting cache optimization strategies unprompted, or adding token-related warnings to routine operations), instruct it to omit unnecessary optimization commentary unless token usage is directly relevant to the current task. The agent should focus on delivering requested functionality without meta-commentary about the interaction itself—nagging about tokens wastes more tokens than it saves.
+
 ---
 
 ## Setup from scratch
