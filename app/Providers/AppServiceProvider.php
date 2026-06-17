@@ -5,11 +5,13 @@ namespace App\Providers;
 use App\Models\Role;
 use App\Models\User;
 use App\Policies\UserPolicy;
+use App\Repositories\Contracts\ApprovalRepositoryInterface;
 use App\Repositories\Contracts\EloquentCrudRepositoryInterface;
 use App\Repositories\Contracts\MenuRepositoryInterface;
 use App\Repositories\Contracts\NotificationRepositoryInterface;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
+use App\Repositories\Eloquent\ApprovalRepository;
 use App\Repositories\Eloquent\EloquentCrudRepository;
 use App\Repositories\Eloquent\MenuRepository;
 use App\Repositories\Eloquent\NotificationRepository;
@@ -36,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MenuRepositoryInterface::class, MenuRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
         $this->app->bind(OrderRepositoryInterface::class, OrderRepository::class);
+        $this->app->bind(ApprovalRepositoryInterface::class, ApprovalRepository::class);
         $this->app->singleton(DataTableResponseFactory::class);
     }
 

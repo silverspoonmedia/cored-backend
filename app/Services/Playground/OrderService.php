@@ -31,6 +31,7 @@ class OrderService
     public function __construct(
         private readonly OrderRepositoryInterface $repository,
         private readonly OrderAttachmentStorage $attachments,
+        private readonly \App\Services\ApprovalService $approvalService,
     ) {}
 
     public function list(): Collection
@@ -59,7 +60,20 @@ class OrderService
         $master['order_number'] = $this->generateOrderNumber();
 
         try {
-            return $this->repository->createWithDetails($master, $details, $stored);
+            $order = $this->repository->createWithDetails($master, $details, $stored);
+            
+            // Initiate approval process
+            try {
+                $this->approvalService->initiate($order, 'ORDER');
+            } catch (\Exception $e) {
+                // Log approval initiation failure but don't block order creation
+                \Log::warning('Failed to initiate approval for order', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            
+            return $order;
         } catch (Throwable $e) {
             $this->attachments->deleteMany($stored);
 

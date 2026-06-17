@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\Auth\PasswordController;
 use App\Http\Controllers\Web\Auth\PasswordResetController;
 use App\Http\Controllers\Web\Auth\RegisterController;
+use App\Http\Controllers\Web\ApprovalController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\LocaleController;
 use App\Http\Controllers\Web\Navigation\MenuController;
@@ -51,6 +52,12 @@ Route::middleware('web.auth')->group(function (): void {
     Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
 
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Approval management — forwarded to /api/v1/approvals (the API authorizes).
+    Route::get('approvals/my-pending', [ApprovalController::class, 'myPending'])->name('approvals.my-pending');
+    Route::get('approvals/instances/{instance}', [ApprovalController::class, 'show'])->whereUuid('instance')->name('approvals.show');
+    Route::post('approvals/slots/{slot}/approve', [ApprovalController::class, 'approve'])->whereUuid('slot')->name('approvals.approve');
+    Route::post('approvals/slots/{slot}/reject', [ApprovalController::class, 'reject'])->whereUuid('slot')->name('approvals.reject');
 
     // Sidebar navigation tree (optional ?q= filter) — proxied to the API.
     Route::get('navigation/tree', [MenuController::class, 'navigationTree'])->name('navigation.tree');

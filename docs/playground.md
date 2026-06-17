@@ -10,6 +10,39 @@ versioned `/api/v1/*`). Real product features must **not** be built here; the
 playground is a reference you copy *from*, not a place product logic lands. See
 [API Routing](./api-routing.md) for the global vs versioned split.
 
+## Environment requirement (local/development only)
+
+**Playground routes are disabled when `APP_ENV=production`.** The guard in `routes/api.php` wraps all playground routes in `if (! app()->environment('production'))` to prevent accidental exposure in production environments.
+
+**Why disabled in production:**
+- Playground routes have **no authentication or authorization** (intentional for quick testing)
+- Exposing unauthenticated CRUD endpoints in production is a critical security risk
+- See `SECURITY_AUDIT.md` FINDING-001 for details
+
+**To use playground routes:**
+
+Set `APP_ENV=local` or `APP_ENV=development` in your `.env` file, then clear config cache:
+
+```bash
+# .env
+APP_ENV=local
+
+# Clear config cache
+php artisan config:clear
+```
+
+Verify playground routes are active:
+
+```bash
+php artisan route:list --path=api/playground
+```
+
+You should see routes for `/api/playground/users` and `/api/playground/orders`.
+
+**Web frontend impact:** The Blade admin screens at `/orders/*` consume the playground orders API. If playground routes are disabled (production environment), these web routes will fail because the backend API endpoints they forward to do not exist.
+
+---
+
 | Surface | Demonstrates |
 |---------|--------------|
 | **Playground Users** (`/api/playground/users`) | Simple five-action CRUD on the **shared** `EloquentCrudRepository`, business rules in a Service, dual-mode list (query + DataTables) |
