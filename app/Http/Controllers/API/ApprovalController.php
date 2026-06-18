@@ -27,6 +27,7 @@ class ApprovalController extends Controller
             'data' => $approvals->map(function ($slot) {
                 return [
                     'id' => $slot->id,
+                    'instance_id' => $slot->instanceStep->instance_id,
                     'document_type' => $slot->instanceStep->instance->document_type,
                     'document_id' => $slot->instanceStep->instance->document_id,
                     'step_name' => $slot->instanceStep->step_name,

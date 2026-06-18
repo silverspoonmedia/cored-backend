@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\ApprovalCompleted;
 use App\Models\ApprovalInstance;
 use App\Models\ApprovalInstanceStepApprover;
 use App\Models\ApprovalLog;
@@ -196,6 +197,10 @@ class ApprovalService
             // Handle reject action
             if ($workflowStep->reject_action === 'STOP') {
                 $this->repository->updateInstanceStatus($step->instance_id, 'REJECTED');
+                
+                // Dispatch event for rejected approval
+                $instance = ApprovalInstance::find($step->instance_id);
+                ApprovalCompleted::dispatch($instance);
             }
         });
     }
@@ -262,6 +267,14 @@ class ApprovalService
         if (! $nextStep) {
             // No more steps - instance complete
             $this->repository->updateInstanceStatus($instance->id, 'APPROVED');
+            
+            // Dispatch event for approved completion
+            \Log::info('🎉 DISPATCHING ApprovalCompleted event', [
+                'instance_id' => $instance->id,
+                'document_type' => $instance->document_type,
+                'document_id' => $instance->document_id,
+            ]);
+            ApprovalCompleted::dispatch($instance->fresh());
             return;
         }
 

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Support\Web\ConsumesApi;
+use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -17,7 +17,7 @@ class ApprovalController extends Controller
     public function myPending(Request $request): View
     {
         try {
-            $response = $this->apiClient()->get('/api/v1/approvals/my-pending');
+            $response = $this->api()->get('approvals/my-pending');
 
             return view('adminlte4.approvals.my-pending', [
                 'approvals' => $response['data'] ?? [],
@@ -36,7 +36,7 @@ class ApprovalController extends Controller
     public function show(Request $request, string $instanceId): View
     {
         try {
-            $response = $this->apiClient()->get("/api/v1/approvals/instances/{$instanceId}");
+            $response = $this->api()->get("approvals/instances/{$instanceId}");
 
             return view('adminlte4.approvals.show', [
                 'instance' => $response['data'] ?? null,
@@ -52,7 +52,7 @@ class ApprovalController extends Controller
     public function approve(Request $request, string $slotId)
     {
         try {
-            $this->apiClient()->post("/api/v1/approvals/slots/{$slotId}/approve", [
+            $this->api()->post("approvals/slots/{$slotId}/approve", [
                 'notes' => $request->input('notes'),
             ]);
 
@@ -72,7 +72,7 @@ class ApprovalController extends Controller
         ]);
 
         try {
-            $this->apiClient()->post("/api/v1/approvals/slots/{$slotId}/reject", [
+            $this->api()->post("approvals/slots/{$slotId}/reject", [
                 'notes' => $request->input('notes'),
             ]);
 
