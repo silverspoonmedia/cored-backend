@@ -137,4 +137,15 @@ return [
         'expire' => (int) env('AUTH_VERIFICATION_EXPIRE', 60),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Two-Factor Authentication
+    |--------------------------------------------------------------------------
+    */
+
+    'two_factor' => [
+        'window' => (int) env('TWO_FACTOR_WINDOW', 1),
+        'issuer' => env('TWO_FACTOR_ISSUER', env('APP_NAME', 'Monolith')),
+    ],
+
 ];

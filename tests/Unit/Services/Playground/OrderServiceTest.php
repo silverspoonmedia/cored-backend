@@ -6,6 +6,7 @@ use App\Exceptions\Playground\OrderNotEditableException;
 use App\Exceptions\Playground\OrderRequiresDetailException;
 use App\Models\Order;
 use App\Repositories\Contracts\OrderRepositoryInterface;
+use App\Services\ApprovalService;
 use App\Services\Playground\OrderService;
 use App\Support\Orders\OrderAttachmentStorage;
 use Illuminate\Http\UploadedFile;
@@ -29,7 +30,9 @@ class OrderServiceTest extends TestCase
         Storage::fake(OrderAttachmentStorage::DISK);
 
         $this->repository = Mockery::mock(OrderRepositoryInterface::class);
-        $this->service = new OrderService($this->repository, new OrderAttachmentStorage);
+        $approvalService = Mockery::mock(ApprovalService::class);
+        $approvalService->shouldReceive('initiate')->byDefault();
+        $this->service = new OrderService($this->repository, new OrderAttachmentStorage, $approvalService);
     }
 
     protected function tearDown(): void

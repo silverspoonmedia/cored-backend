@@ -27,6 +27,18 @@
                     @endif
                 </div>
 
+                <div class="mb-3">
+                    <strong>{{ __('menu.two_factor') }}:</strong>
+                    @if (!empty($profile['two_factor_enabled']))
+                        <span class="badge text-bg-success">{{ __('web/auth.two_factor_enabled_short') }}</span>
+                    @else
+                        <span class="badge text-bg-warning">{{ __('web/auth.two_factor_disabled_short') }}</span>
+                        <a href="{{ route('profile.two-factor.edit') }}" class="btn btn-sm btn-outline-primary ms-2">
+                            {{ __('web/auth.two_factor_setup_button') }}
+                        </a>
+                    @endif
+                </div>
+
                 <div>
                     <strong>{{ __('ui.labels.permissions') }}:</strong>
                     @forelse ($profile['permissions'] as $permission)
@@ -53,6 +65,9 @@
                     @endcan
                     <a href="{{ route('profile.password.edit') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-key me-1"></i> {{ __('menu.password') }}
+                    </a>
+                    <a href="{{ route('profile.two-factor.edit') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-shield-lock me-1"></i> {{ __('menu.two_factor') }}
                     </a>
                 </div>
             </x-adminlte4::card>

@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\ApprovalWorkflow;
 use App\Models\Menu;
 use App\Models\User;
+use Database\Seeders\MenuSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
@@ -15,13 +17,14 @@ class ApprovalWorkflowAdminTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RoleSeeder::class);
+        $this->seed(RoleSeeder::class);
 
         $this->admin = User::factory()->create(['email' => 'workflow-admin@example.test']);
         $this->admin->assignRole('Admin');
@@ -139,7 +142,7 @@ class ApprovalWorkflowAdminTest extends TestCase
 
     public function test_admin_menu_seeder_creates_approval_matrix_entry(): void
     {
-        $this->seed(\Database\Seeders\MenuSeeder::class);
+        $this->seed(MenuSeeder::class);
 
         $this->assertDatabaseHas('menus', [
             'route' => 'admin.approval-workflows.index',

@@ -9,8 +9,8 @@ class ConditionEvaluator
     /**
      * Evaluate a condition against a document model.
      *
-     * @param array|null $condition JSON condition: {"field": "total", "op": ">=", "value": 10000}
-     * @param Model $document The document to evaluate against
+     * @param  array|null  $condition  JSON condition: {"field": "total", "op": ">=", "value": 10000}
+     * @param  Model  $document  The document to evaluate against
      * @return bool True if condition passes or is null (always active)
      */
     public function evaluate(?array $condition, Model $document): bool

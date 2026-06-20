@@ -13,8 +13,8 @@ return new class extends Migration
             $table->foreignUuid('instance_id')->constrained('approval_instances')->cascadeOnDelete();
             $table->foreignUuid('instance_step_id')->nullable()->constrained('approval_instance_steps')->cascadeOnDelete();
             $table->enum('action', [
-                'SUBMITTED', 'APPROVED', 'REJECTED', 'DELEGATED', 
-                'CANCELLED', 'PERMANENT_TRANSFER', 'REASSIGNED', 'ESCALATED'
+                'SUBMITTED', 'APPROVED', 'REJECTED', 'DELEGATED',
+                'CANCELLED', 'PERMANENT_TRANSFER', 'REASSIGNED', 'ESCALATED',
             ]);
             $table->foreignUuid('actor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignUuid('target_user_id')->nullable()->constrained('users')->nullOnDelete();

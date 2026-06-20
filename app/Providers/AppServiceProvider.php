@@ -2,12 +2,12 @@
 
 namespace App\Providers;
 
-use App\Models\Role;
-use App\Models\User;
-use App\Policies\UserPolicy;
 use App\Events\ApprovalCompleted;
 use App\Listeners\SendApprovalCompletedNotification;
 use App\Listeners\UpdateDocumentStatus;
+use App\Models\Role;
+use App\Models\User;
+use App\Policies\UserPolicy;
 use App\Repositories\Contracts\ApprovalRepositoryInterface;
 use App\Repositories\Contracts\EloquentCrudRepositoryInterface;
 use App\Repositories\Contracts\MenuRepositoryInterface;

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers\Web;
 
 use App\Models\User;
+use App\Repositories\Contracts\MenuRepositoryInterface;
 use App\Support\Auth\AuthCookie;
 use App\Support\Web\WebLayout;
 use Database\Seeders\MenuSeeder;
@@ -27,7 +28,7 @@ class SidebarNavigationWebTest extends TestCase
         $this->seedRolesAndPermissions();
         $this->seed(MenuSeeder::class);
 
-        app(\App\Repositories\Contracts\MenuRepositoryInterface::class)->flushNavigationCache();
+        app(MenuRepositoryInterface::class)->flushNavigationCache();
     }
 
     public function test_sidebar_composer_view_is_registered_for_active_layout(): void

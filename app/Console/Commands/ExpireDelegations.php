@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 class ExpireDelegations extends Command
 {
     protected $signature = 'approval:expire-delegations';
+
     protected $description = 'Deactivate expired delegations';
 
     public function handle(): int

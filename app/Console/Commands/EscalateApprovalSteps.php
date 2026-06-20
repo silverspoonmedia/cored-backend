@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\ApprovalInstanceStep;
+use App\Models\ApprovalLog;
 use App\Models\User;
 use App\Notifications\Approval\ApprovalEscalationNotification;
 use Illuminate\Console\Command;
@@ -10,6 +11,7 @@ use Illuminate\Console\Command;
 class EscalateApprovalSteps extends Command
 {
     protected $signature = 'approval:escalate';
+
     protected $description = 'Escalate overdue approval steps to the escalation role';
 
     public function handle(): int
@@ -26,6 +28,7 @@ class EscalateApprovalSteps extends Command
             ->get()
             ->filter(function ($step) use ($now) {
                 $days = $step->workflowStep->escalate_after_days;
+
                 return $step->activated_at->diffInDays($now) >= $days;
             });
 
@@ -48,7 +51,7 @@ class EscalateApprovalSteps extends Command
 
             $step->update(['escalated_at' => now()]);
 
-            \App\Models\ApprovalLog::create([
+            ApprovalLog::create([
                 'instance_id' => $step->instance_id,
                 'instance_step_id' => $step->id,
                 'action' => 'ESCALATED',

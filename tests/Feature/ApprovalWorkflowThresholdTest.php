@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\ApprovalService;
+use Database\Seeders\ApprovalWorkflowSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -14,30 +16,34 @@ class ApprovalWorkflowThresholdTest extends TestCase
     use RefreshDatabase;
 
     protected ApprovalService $approvalService;
+
     protected User $submitter;
+
     protected User $manager;
+
     protected User $moderator;
+
     protected User $admin;
 
     protected function setUp(): void
     {
         parent::setUp();
         Notification::fake();
-        
-        $this->seed(\Database\Seeders\RoleSeeder::class);
-        $this->seed(\Database\Seeders\ApprovalWorkflowSeeder::class);
+
+        $this->seed(RoleSeeder::class);
+        $this->seed(ApprovalWorkflowSeeder::class);
         $this->approvalService = app(ApprovalService::class);
 
         // Create users
         $this->submitter = User::factory()->create();
         $this->submitter->assignRole('User');
-        
+
         $this->manager = User::factory()->create(['email' => 'manager@test.com']);
         $this->manager->assignRole('Management');
-        
+
         $this->moderator = User::factory()->create(['email' => 'moderator@test.com']);
         $this->moderator->assignRole('Moderator');
-        
+
         $this->admin = User::factory()->create(['email' => 'admin@test.com']);
         $this->admin->assignRole('Admin');
     }
@@ -51,7 +57,7 @@ class ApprovalWorkflowThresholdTest extends TestCase
     {
         // Create order with grand_total = 5000 (< 10000)
         $order = $this->createOrder(5000.00);
-        
+
         $this->actingAs($this->submitter, 'api');
         $instance = $this->approvalService->initiate($order, 'ORDER');
 
@@ -85,17 +91,17 @@ class ApprovalWorkflowThresholdTest extends TestCase
 
         // Assert Step 4 now IN_PROGRESS
         $this->assertEquals('IN_PROGRESS', $step4->status);
-        
+
         // Assert only 1 WAITING approval for admin
         $waitingForAdmin = $instance->steps()
             ->where('status', 'IN_PROGRESS')
             ->with('approvers')
             ->get()
-            ->flatMap(fn($s) => $s->approvers->where('status', 'WAITING'))
-            ->filter(fn($a) => $a->assigned_user_id === $this->admin->id);
-        
-        $this->assertEquals(1, $waitingForAdmin->count(), 
-            'Should have exactly 1 WAITING approval for admin, found: ' . $waitingForAdmin->count());
+            ->flatMap(fn ($s) => $s->approvers->where('status', 'WAITING'))
+            ->filter(fn ($a) => $a->assigned_user_id === $this->admin->id);
+
+        $this->assertEquals(1, $waitingForAdmin->count(),
+            'Should have exactly 1 WAITING approval for admin, found: '.$waitingForAdmin->count());
     }
 
     /**
@@ -107,7 +113,7 @@ class ApprovalWorkflowThresholdTest extends TestCase
     {
         // Create order with grand_total = 10000 (>= 10000 condition met)
         $order = $this->createOrder(10000.00);
-        
+
         $this->actingAs($this->submitter, 'api');
         $instance = $this->approvalService->initiate($order, 'ORDER');
 
@@ -138,7 +144,7 @@ class ApprovalWorkflowThresholdTest extends TestCase
     {
         // Create order with grand_total = 25000 (>= 10000 but < 50000)
         $order = $this->createOrder(25000.00);
-        
+
         $this->actingAs($this->submitter, 'api');
         $instance = $this->approvalService->initiate($order, 'ORDER');
 
@@ -162,7 +168,7 @@ class ApprovalWorkflowThresholdTest extends TestCase
     {
         // Create order with grand_total = 50000 (>= 50000 condition met)
         $order = $this->createOrder(50000.00);
-        
+
         $this->actingAs($this->submitter, 'api');
         $instance = $this->approvalService->initiate($order, 'ORDER');
 
@@ -179,10 +185,10 @@ class ApprovalWorkflowThresholdTest extends TestCase
 
         // Assert Step 2 has approvers
         $this->assertEquals(1, $step2->approvers->count());
-        
+
         // Assert Step 3 has approvers
         $this->assertEquals(1, $step3->approvers->count());
-        
+
         // Assert Step 4 has approvers
         $this->assertEquals(1, $step4->approvers->count());
     }
@@ -195,13 +201,13 @@ class ApprovalWorkflowThresholdTest extends TestCase
     {
         // Create order with grand_total = 100000 (> 50000)
         $order = $this->createOrder(100000.00);
-        
+
         $this->actingAs($this->submitter, 'api');
         $instance = $this->approvalService->initiate($order, 'ORDER');
 
         // Assert NO steps are SKIPPED
         foreach ($instance->steps as $step) {
-            $this->assertNotEquals('SKIPPED', $step->status, 
+            $this->assertNotEquals('SKIPPED', $step->status,
                 "Step {$step->step_order} should not be SKIPPED for order amount 100000");
         }
 
@@ -218,7 +224,7 @@ class ApprovalWorkflowThresholdTest extends TestCase
     public function test_full_flow_small_order_no_duplicate_approvals(): void
     {
         $order = $this->createOrder(5000.00);
-        
+
         $this->actingAs($this->submitter, 'api');
         $instance = $this->approvalService->initiate($order, 'ORDER');
 
@@ -233,10 +239,10 @@ class ApprovalWorkflowThresholdTest extends TestCase
             ->where('status', 'IN_PROGRESS')
             ->with('approvers')
             ->get()
-            ->flatMap(fn($s) => $s->approvers->where('status', 'WAITING'));
-        
-        $this->assertEquals(1, $waiting->count(), 
-            'After manager approval, should have exactly 1 WAITING approval, found: ' . $waiting->count());
+            ->flatMap(fn ($s) => $s->approvers->where('status', 'WAITING'));
+
+        $this->assertEquals(1, $waiting->count(),
+            'After manager approval, should have exactly 1 WAITING approval, found: '.$waiting->count());
 
         // Step 4: Admin approves
         $this->actingAs($this->admin, 'api');
@@ -249,10 +255,10 @@ class ApprovalWorkflowThresholdTest extends TestCase
             ->whereIn('status', ['IN_PROGRESS', 'WAITING'])
             ->with('approvers')
             ->get()
-            ->flatMap(fn($s) => $s->approvers->where('status', 'WAITING'));
-        
-        $this->assertEquals(0, $waitingAfterComplete->count(), 
-            'After completing all approvals, should have 0 WAITING approvals, found: ' . $waitingAfterComplete->count());
+            ->flatMap(fn ($s) => $s->approvers->where('status', 'WAITING'));
+
+        $this->assertEquals(0, $waitingAfterComplete->count(),
+            'After completing all approvals, should have 0 WAITING approvals, found: '.$waitingAfterComplete->count());
 
         // Verify order status updated
         $order->refresh();
@@ -262,7 +268,7 @@ class ApprovalWorkflowThresholdTest extends TestCase
     private function createOrder(float $grandTotal): Order
     {
         return Order::create([
-            'order_number' => 'TEST-' . uniqid(),
+            'order_number' => 'TEST-'.uniqid(),
             'customer_name' => 'Test Customer',
             'customer_email' => 'test@example.com',
             'subtotal' => $grandTotal,

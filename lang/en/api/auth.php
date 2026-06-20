@@ -22,4 +22,10 @@ return [
     'token_revoked' => 'Token has been revoked.',
     'could_not_authenticate' => 'Could not authenticate token.',
     'unauthorized' => 'You are not authorized to perform this action.',
+    'two_factor_setup_started' => 'Two-factor authentication setup started.',
+    'two_factor_enabled' => 'Two-factor authentication enabled.',
+    'two_factor_disabled' => 'Two-factor authentication disabled.',
+    'two_factor_already_enabled' => 'Two-factor authentication is already enabled.',
+    'two_factor_not_enabled' => 'Two-factor authentication is not enabled.',
+    'invalid_two_factor_code' => 'The two-factor authentication code is invalid.',
 ];

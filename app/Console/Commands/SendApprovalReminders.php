@@ -3,12 +3,13 @@
 namespace App\Console\Commands;
 
 use App\Models\ApprovalInstanceStep;
-use App\Models\ApprovalInstanceStepApprover;
+use App\Notifications\Approval\ApprovalReminderNotification;
 use Illuminate\Console\Command;
 
 class SendApprovalReminders extends Command
 {
     protected $signature = 'approval:send-reminders';
+
     protected $description = 'Send SLA overdue reminders to approvers';
 
     public function handle(): int
@@ -28,7 +29,7 @@ class SendApprovalReminders extends Command
 
                 if ($slot->assignedUser) {
                     $slot->assignedUser->notify(
-                        new \App\Notifications\Approval\ApprovalReminderNotification($slot)
+                        new ApprovalReminderNotification($slot)
                     );
                 }
             }

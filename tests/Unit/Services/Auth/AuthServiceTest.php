@@ -6,6 +6,7 @@ use App\Exceptions\Auth\InvalidCredentialsException;
 use App\Models\User;
 use App\Repositories\Eloquent\UserRepository;
 use App\Services\Auth\AuthService;
+use App\Services\Auth\TwoFactorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -23,7 +24,7 @@ class AuthServiceTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->service = new AuthService(new UserRepository);
+        $this->service = new AuthService(new UserRepository, new TwoFactorService);
     }
 
     public function test_register_persists_user_assigns_role_and_returns_token(): void

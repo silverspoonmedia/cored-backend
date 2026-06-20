@@ -1,6 +1,6 @@
 # Monolith
 
-Laravel 13 API application with **JWT authentication**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks and playground CRUD.
+Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks and playground CRUD.
 
 It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that is a **pure consumer of the versioned API**: every web controller forwards to `/api/v1/*`, so validation, CRUD, and RBAC run **only once — in the API** (no duplicated business logic). The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**, which the web layer forwards to the API as a Bearer token. See **[Web Frontend (Blade + AdminLTE 4)](docs/web-frontend.md)**.
 
@@ -135,6 +135,8 @@ php artisan db:seed
 | Email | `admin@example.com` |
 | Password | `123456789` |
 | Role | `Admin` |
+
+**Two-factor authentication (2FA):** Users can enable TOTP-based 2FA from their profile. Once enabled, login returns a `two_factor_token` (not a JWT); the client must call `POST /api/v1/auth/two-factor/login` with the token and a valid TOTP code to obtain the real JWT. See [JWT Authentication & RBAC](docs/jwt-authentication.md#two-factor-authentication-2fa) for full API and web flow.
 
 To reset and reseed during development:
 

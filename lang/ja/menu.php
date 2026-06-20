@@ -13,4 +13,5 @@ return [
     'notifications' => '通知',
     'profile' => 'プロフィール',
     'password' => 'パスワード変更',
+    'two_factor' => '二要素認証',
 ];

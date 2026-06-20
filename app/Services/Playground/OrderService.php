@@ -6,6 +6,7 @@ use App\Exceptions\Playground\OrderNotEditableException;
 use App\Exceptions\Playground\OrderRequiresDetailException;
 use App\Models\Order;
 use App\Repositories\Contracts\OrderRepositoryInterface;
+use App\Services\ApprovalService;
 use App\Support\Orders\OrderAttachmentStorage;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -31,7 +32,7 @@ class OrderService
     public function __construct(
         private readonly OrderRepositoryInterface $repository,
         private readonly OrderAttachmentStorage $attachments,
-        private readonly \App\Services\ApprovalService $approvalService,
+        private readonly ApprovalService $approvalService,
     ) {}
 
     public function list(): Collection
@@ -61,7 +62,7 @@ class OrderService
 
         try {
             $order = $this->repository->createWithDetails($master, $details, $stored);
-            
+
             // Initiate approval process
             try {
                 $this->approvalService->initiate($order, 'ORDER');
@@ -72,7 +73,7 @@ class OrderService
                     'error' => $e->getMessage(),
                 ]);
             }
-            
+
             return $order;
         } catch (Throwable $e) {
             $this->attachments->deleteMany($stored);

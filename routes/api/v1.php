@@ -4,6 +4,7 @@ use App\Http\Controllers\API\V1\AdminController;
 use App\Http\Controllers\API\V1\Auth\AuthController;
 use App\Http\Controllers\API\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\API\V1\Auth\PasswordController;
+use App\Http\Controllers\API\V1\Auth\TwoFactorController;
 use App\Http\Controllers\API\V1\Navigation\MenuController;
 use App\Http\Controllers\API\V1\NotificationController;
 use App\Http\Controllers\API\V1\UserController;
@@ -16,6 +17,9 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
     Route::post('login', [AuthController::class, 'login'])
         ->middleware('throttle:5,1')
         ->name('login');
+    Route::post('two-factor/login', [TwoFactorController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('two-factor.login');
     Route::post('forgot-password', [PasswordController::class, 'forgot'])
         ->middleware('throttle:3,1')
         ->name('password.forgot');
@@ -34,6 +38,15 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
             ->middleware('throttle:6,1')
             ->name('verification.send');
         Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+        Route::post('two-factor/setup', [TwoFactorController::class, 'startSetup'])
+            ->middleware('throttle:3,1')
+            ->name('two-factor.setup');
+        Route::post('two-factor/confirm', [TwoFactorController::class, 'confirmSetup'])
+            ->middleware('throttle:3,1')
+            ->name('two-factor.confirm');
+        Route::post('two-factor/disable', [TwoFactorController::class, 'disable'])
+            ->middleware('throttle:3,1')
+            ->name('two-factor.disable');
     });
 
     Route::post('refresh', [AuthController::class, 'refresh'])
