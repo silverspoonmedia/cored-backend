@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use Illuminate\Http\Client\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -30,23 +32,17 @@ class ApprovalWorkflowAdminController extends Controller
         return view('adminlte4.admin.approval-workflows.create');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->post('admin/approval-workflows', $request->validate([
-            'document_type' => 'required|string|max:50',
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'version' => 'nullable|integer|min:1',
-            'is_active' => 'nullable|boolean',
-        ]));
+        $response = $this->api()->post('admin/approval-workflows', $request->all());
 
-        if (! $response->successful()) {
-            return back()->withInput()->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()
-            ->route('admin.approval-workflows.show', $response->json('data.id'))
-            ->with('success', $this->apiMessage($response, __('approval.workflow_created')));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (Response $r): RedirectResponse => redirect()
+                ->route('admin.approval-workflows.show', $r->json('data.id'))
+                ->with('success', $this->apiMessage($r, __('approval.workflow_created'))),
+        );
     }
 
     public function show(string $workflow): View|RedirectResponse
@@ -76,111 +72,89 @@ class ApprovalWorkflowAdminController extends Controller
         ]);
     }
 
-    public function update(Request $request, string $workflow): RedirectResponse
+    public function update(Request $request, string $workflow): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->put("admin/approval-workflows/{$workflow}", [
-            ...$request->validate([
-                'document_type' => 'required|string|max:50',
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string',
-                'version' => 'required|integer|min:1',
-            ]),
-            'is_active' => $request->boolean('is_active'),
-        ]);
+        $response = $this->api()->put("admin/approval-workflows/{$workflow}", $request->all());
 
-        if (! $response->successful()) {
-            return back()->withInput()->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()
-            ->route('admin.approval-workflows.show', $workflow)
-            ->with('success', $this->apiMessage($response, __('approval.workflow_updated')));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()
+                ->route('admin.approval-workflows.show', $workflow)
+                ->with('success', $this->apiMessage($response, __('approval.workflow_updated'))),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function activate(string $workflow): RedirectResponse
+    public function activate(Request $request, string $workflow): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post("admin/approval-workflows/{$workflow}/activate");
 
-        if (! $response->successful()) {
-            return back()->with('error', $this->apiMessage($response));
-        }
-
-        return back()->with('success', $this->apiMessage($response, __('approval.workflow_activated')));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => back()->with('success', $this->apiMessage($response, __('approval.workflow_activated'))),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function deactivate(string $workflow): RedirectResponse
+    public function deactivate(Request $request, string $workflow): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post("admin/approval-workflows/{$workflow}/deactivate");
 
-        if (! $response->successful()) {
-            return back()->with('error', $this->apiMessage($response));
-        }
-
-        return back()->with('success', $this->apiMessage($response, __('approval.workflow_deactivated')));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => back()->with('success', $this->apiMessage($response, __('approval.workflow_deactivated'))),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function storeStep(Request $request, string $workflow): RedirectResponse
+    public function storeStep(Request $request, string $workflow): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->post("admin/approval-workflows/{$workflow}/steps", [
-            ...$request->validate([
-                'step_order' => 'required|integer|min:1',
-                'step_name' => 'required|string|max:255',
-                'condition_field' => 'nullable|string|max:255',
-                'condition_op' => 'nullable|string|in:=,!=,>,>=,<,<=',
-                'condition_value' => 'nullable|string|max:255',
-                'parallel_mode' => 'required|in:UNANIMOUS,ANY_REJECT,MAJORITY_VOTE',
-                'reject_action' => 'required|in:STOP,BACK_TO_STEP',
-                'reject_target_step_order' => 'nullable|integer|min:1',
-                'reject_set_doc_status' => 'nullable|string|max:100',
-                'approve_set_doc_status' => 'nullable|string|max:100',
-                'reminder_after_days' => 'required|integer|min:0',
-                'escalate_after_days' => 'nullable|integer|min:0',
-                'escalate_to_role' => 'nullable|string|max:255',
-            ]),
-            'reject_reset_downstream' => $request->boolean('reject_reset_downstream', true),
-            'allow_reassignment' => $request->boolean('allow_reassignment'),
-        ]);
+        $response = $this->api()->post("admin/approval-workflows/{$workflow}/steps", $request->all());
 
-        if (! $response->successful()) {
-            return back()->withInput()->with('error', $this->apiMessage($response));
-        }
-
-        return back()->with('success', $this->apiMessage($response, __('approval.workflow_step_created')));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => back()->with('success', $this->apiMessage($response, __('approval.workflow_step_created'))),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function destroyStep(string $workflow, string $step): RedirectResponse
+    public function destroyStep(Request $request, string $workflow, string $step): RedirectResponse|JsonResponse
     {
         $response = $this->api()->delete("admin/approval-workflows/{$workflow}/steps/{$step}");
 
-        if (! $response->successful()) {
-            return back()->with('error', $this->apiMessage($response));
-        }
-
-        return back()->with('success', $this->apiMessage($response, __('approval.workflow_step_deleted')));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => back()->with('success', $this->apiMessage($response, __('approval.workflow_step_deleted'))),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function storeApprover(Request $request, string $workflow, string $step): RedirectResponse
+    public function storeApprover(Request $request, string $workflow, string $step): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->post("admin/approval-workflows/{$workflow}/steps/{$step}/approvers", $request->validate([
-            'required_role' => 'required|string',
-            'slot_label' => 'required|string|max:255',
-        ]));
+        $response = $this->api()->post("admin/approval-workflows/{$workflow}/steps/{$step}/approvers", $request->all());
 
-        if (! $response->successful()) {
-            return back()->withInput()->with('error', $this->apiMessage($response));
-        }
-
-        return back()->with('success', $this->apiMessage($response, __('approval.workflow_approver_created')));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => back()->with('success', $this->apiMessage($response, __('approval.workflow_approver_created'))),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function destroyApprover(string $workflow, string $step, string $approver): RedirectResponse
+    public function destroyApprover(Request $request, string $workflow, string $step, string $approver): RedirectResponse|JsonResponse
     {
         $response = $this->api()->delete("admin/approval-workflows/{$workflow}/steps/{$step}/approvers/{$approver}");
 
-        if (! $response->successful()) {
-            return back()->with('error', $this->apiMessage($response));
-        }
-
-        return back()->with('success', $this->apiMessage($response, __('approval.workflow_approver_deleted')));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => back()->with('success', $this->apiMessage($response, __('approval.workflow_approver_deleted'))),
+            stayOnPageOnSuccess: true,
+        );
     }
 }

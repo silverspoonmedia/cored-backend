@@ -49,7 +49,7 @@ Two small pieces keep every web controller a thin, uniform forwarder:
 |-------|------|------|
 | `ApiClient` | `app/Support/Api/ApiClient.php` | `Http` wrapper: targets `{current host}/api/v1`, sets `Accept: application/json`, and forwards the JWT from the `auth_token` cookie as `Bearer`. Exposes `get/post/put/delete` plus `postMultipart`/`putMultipart` for file uploads (flattens nested fields and attaches `attachments[]`; `putMultipart` uses `_method=PUT` spoofing). `withPrefix('api/playground')` returns a clone targeting the global playground surface (used by the order master-detail screens). |
 | `ConsumesApi` (trait) | `app/Http/Controllers/Web/Concerns/ConsumesApi.php` | `respondFromApi($request, …)` maps the JSON envelope: **2xx** → redirect or inline success; **422** → field errors; **401/419** → login. Pass `stayOnPageOnSuccess: true` when the user should remain on the same screen (edit save, change password, forgot-password link, resend verification). Default `false` for create/delete/login/logout. |
-| AJAX forms | `x-adminlte4::form.ajax`, `x-adminlte4::form.submit`, `x-adminlte4::form.error`, `adminlte4/components/partials/ajax-form` | All Blade forms submit via `fetch` + `Accept: application/json`; validation errors render inline without reload. |
+| AJAX forms | `x-adminlte4::form.ajax`, `x-adminlte4::form.submit`, `x-adminlte4::form.error`, `adminlte4/components/partials/ajax-form` | **All** Blade forms use AJAX (`form.ajax`). Submits via `fetch` + `Accept: application/json`; inline validation errors, no full-page reload on 422. Controllers must use `respondFromApi()` to return `JsonResponse` for AJAX, falling back to `RedirectResponse` for non-JSON requests. |
 | `IssuesAuthCookie` (trait) | `app/Http/Controllers/Web/Concerns/IssuesAuthCookie.php` | Turns the API's auth payload (`data.token` / `expires_in`) into the cookie + redirect (login & register). |
 
 Because validation lives only in the API, web controllers **do not use Form Requests** — they forward the raw input (`$request->except(['_token','_method'])`) and let the API's Form Request validate and return `422`, which `ConsumesApi` translates into the usual `$errors` bag + repopulated `old()` input. There is **no `$this->authorize()` and no `permission:` middleware on web routes**: the API authorizes every forwarded call.
@@ -79,7 +79,7 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | GET | `/locale/{locale}` | `locale.switch` | `web` | sets locale cookie; persists `users.locale` when JWT-authenticated; redirects back (see [Localization](./localization.md#switching-locale)) |
 | GET | `/dashboard` | `dashboard` | `web.auth` | `GET /auth/me` |
 | GET/PUT | `/profile/password` | `profile.password.edit` / `…update` | `web.auth` | `PUT /auth/password` |
-| GET/POST | `/profile/two-factor`, `/profile/two-factor/{setup,confirm,disable}` | `profile.two-factor.*` | `web.auth` | `GET /auth/me`, `POST /auth/two-factor/{setup,confirm,disable}` |
+| GET/POST | `/profile/two-factor`<br>`/profile/two-factor/setup`<br>`/profile/two-factor/confirm`<br>`/profile/two-factor/disable` | `profile.two-factor.{edit,setup,confirm,disable}` | `web.auth` | `GET /auth/me`, `POST /auth/two-factor/{setup,confirm,disable}` |
 | POST | `/email/verification-notification` | `verification.send` | `web.auth` | `POST /auth/email/verification-notification` |
 | GET | `/users` | `users.index` | `web.auth` | Blade shell for the user DataTable |
 | GET | `/users/datatable` | `users.datatable` | `web.auth` | `GET /users?display_mode=datatable` (proxied) |
@@ -167,7 +167,7 @@ resources/views/adminlte4/
 │   ├── nav/bar-tree.blade.php      ← horizontal renderer for the dynamic navbar tree
 │   ├── alert.blade.php             ← flash + validation feedback
 │   ├── card.blade.php              ← panel wrapper (title + actions slot)
-│   └── form/                       ← input, select, multiselect, checkbox, translatable-input
+│   └── form/                       ← input, select, multiselect, checkbox, translatable-input, ajax, submit, error
 ├── partials/
 │   └── breadcrumbs.blade.php       ← AdminLTE breadcrumb `<ol>` renderer
 ├── auth/                           ← login, register, forgot-password, reset-password
@@ -196,7 +196,7 @@ resources/views/adminlte4/
   - **Caveat — sidebar gating is by role, not permission.** The engine filters by attached *roles*; page access is enforced by the *API*. The seeder attaches the roles that hold `view user` / `view menu` so they line up; re-grant the permission to a different role and you must update the menu's role attachments too. Cosmetic only — the API still enforces real authorization.
   - Menu `icon` stores a **full** icon class (e.g. `bi bi-people`); null/empty renders the `bi bi-circle` placeholder. `route` stores a **registered route name**; unregistered names degrade to `#`.
 
-All forms are standard `<form method="POST">` submissions (`@csrf`, `@method('PUT'|'DELETE')`) posting to the web controllers, which forward to the API.
+All forms use `<x-adminlte4::form.ajax>` (AJAX submissions with inline errors, `@csrf`, optional `@method`). They post to the web controllers, which forward to the API. Controllers must return mixed `RedirectResponse|JsonResponse` via `ConsumesApi::respondFromApi()`.
 
 ### Breadcrumbs (`diglactic/laravel-breadcrumbs`)
 

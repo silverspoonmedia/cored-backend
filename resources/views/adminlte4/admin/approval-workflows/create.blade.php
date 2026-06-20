@@ -1,7 +1,6 @@
 <x-adminlte4::layouts.app :title="__('approval.workflow_create')">
     <x-adminlte4::card :title="__('approval.workflow_create')">
-        <form method="POST" action="{{ route('admin.approval-workflows.store') }}">
-            @csrf
+        <x-adminlte4::form.ajax :action="route('admin.approval-workflows.store')">
             <div class="mb-3">
                 <label class="form-label">{{ __('approval.document_type') }}</label>
                 <input type="text" name="document_type" class="form-control" value="{{ old('document_type', 'ORDER') }}" required>
@@ -24,6 +23,6 @@
 
             <button class="btn btn-primary">{{ __('approval.save') }}</button>
             <a href="{{ route('admin.approval-workflows.index') }}" class="btn btn-secondary">{{ __('approval.cancel') }}</a>
-        </form>
+        </x-adminlte4::form.ajax>
     </x-adminlte4::card>
 </x-adminlte4::layouts.app>

@@ -99,8 +99,7 @@
 
     <div class="modal fade" id="rejectModal" tabindex="-1">
         <div class="modal-dialog">
-            <form id="rejectForm" method="POST">
-                @csrf
+            <x-adminlte4::form.ajax :action="''" id="rejectForm">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">{{ __('approval.reject_confirmation') }}</h5>
@@ -117,14 +116,13 @@
                         <button type="submit" class="btn btn-danger">{{ __('approval.confirm_reject') }}</button>
                     </div>
                 </div>
-            </form>
+            </x-adminlte4::form.ajax>
         </div>
     </div>
 
     <div class="modal fade" id="reassignModal" tabindex="-1">
         <div class="modal-dialog">
-            <form id="reassignForm" method="POST">
-                @csrf
+            <x-adminlte4::form.ajax :action="''" id="reassignForm">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">{{ __('approval.reassign_confirmation') }}</h5>
@@ -145,7 +143,7 @@
                         <button type="submit" class="btn btn-warning">{{ __('approval.confirm_reassign') }}</button>
                     </div>
                 </div>
-            </form>
+            </x-adminlte4::form.ajax>
         </div>
     </div>
 
