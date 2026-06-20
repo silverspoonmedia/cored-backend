@@ -18,8 +18,6 @@ use PHPOpenSourceSaver\JWTAuth\JWTGuard;
 
 class AuthService
 {
-    private const REMEMBER_CLAIM = 'rm';
-
     private const TWO_FACTOR_CACHE_PREFIX = '2fa_token:';
 
     private const TWO_FACTOR_CACHE_TTL = 300;
@@ -57,7 +55,11 @@ class AuthService
         $credentials = Arr::only($credentials, ['email', 'password']);
 
         try {
-            return $this->withTokenLifetime($remember, function (JWTGuard $guard, int $ttlMinutes) use ($credentials, $remember) {
+            return $this->withTokenLifetime($remember, function (int $ttlMinutes) use ($credentials, $remember) {
+                Auth::forgetGuards();
+                $guard = $this->guard();
+                $guard->setTTL($ttlMinutes);
+
                 if (! $token = $guard->attempt($credentials)) {
                     throw new InvalidCredentialsException;
                 }
@@ -96,14 +98,17 @@ class AuthService
     public function refresh(): array
     {
         $guard = $this->guard();
-        $remember = (bool) $guard->payload()->get(self::REMEMBER_CLAIM, false);
 
-        return $this->withTokenLifetime($remember, function (JWTGuard $guard, int $ttlMinutes) use ($remember) {
+        return $this->withTokenLifetime(false, function (int $ttlMinutes) use ($guard) {
+            Auth::forgetGuards();
+            $guard = $this->guard();
+            $guard->setTTL($ttlMinutes);
+
             /** @var User $user */
             $user = $guard->user();
             $token = $guard->refresh();
 
-            return $this->buildAuthPayload($user, $token, $ttlMinutes, $remember);
+            return $this->buildAuthPayload($user, $token, $ttlMinutes, false);
         });
     }
 
@@ -130,7 +135,11 @@ class AuthService
             request()->userAgent()
         );
 
-        return $this->withTokenLifetime((bool) $challenge['remember'], function (JWTGuard $guard, int $ttlMinutes) use ($user, $challenge) {
+        return $this->withTokenLifetime((bool) $challenge['remember'], function (int $ttlMinutes) use ($user, $challenge) {
+            Auth::forgetGuards();
+            $guard = $this->guard();
+            $guard->setTTL($ttlMinutes);
+
             $token = $guard->login($user);
 
             return $this->buildAuthPayload($user, $token, $ttlMinutes, (bool) $challenge['remember']);
@@ -164,25 +173,21 @@ class AuthService
     }
 
     /**
-     * @param  callable(JWTGuard, int): array<string, mixed>  $callback
+     * @param  callable(int): array<string, mixed>  $callback
      * @return array<string, mixed>
      */
     private function withTokenLifetime(bool $remember, callable $callback): array
     {
-        $guard = $this->guard();
         $defaultTtl = $this->defaultTtlMinutes();
         $ttlMinutes = $remember ? $this->rememberTtlMinutes() : $defaultTtl;
 
-        if ($remember) {
-            $guard->claims([self::REMEMBER_CLAIM => true]);
-        }
-
-        $guard->setTTL($ttlMinutes);
-
         try {
-            return $callback($guard, $ttlMinutes);
+            return $callback($ttlMinutes);
         } finally {
-            $guard->setTTL($defaultTtl);
+            Auth::forgetGuards();
+            app()->forgetInstance('tymon.jwt');
+            app()->forgetInstance('tymon.jwt.provider.jwt');
+            app()->forgetInstance('tymon.jwt.manager');
         }
     }
 
@@ -243,9 +248,25 @@ class AuthService
         ?int $ttlMinutes = null,
         bool $remember = false,
     ): array {
-        $guard = $this->guard();
-        $token ??= $guard->login($user);
-        $ttlMinutes ??= $guard->getTTL() ?? $this->defaultTtlMinutes();
+        if ($token === null) {
+            return $this->withTokenLifetime($remember, function (int $ttl) use ($user, $ttlMinutes, $remember) {
+                Auth::forgetGuards();
+                $guard = $this->guard();
+                $guard->setTTL($ttlMinutes ?? $ttl);
+                $token = $guard->login($user);
+                $actualTtl = $ttlMinutes ?? $guard->getTTL() ?? $this->defaultTtlMinutes();
+
+                return [
+                    'user' => UserPresenter::present($user),
+                    'token' => $token,
+                    'token_type' => 'bearer',
+                    'expires_in' => $actualTtl * 60,
+                    'remember' => $remember,
+                ];
+            });
+        }
+
+        $ttlMinutes ??= $this->defaultTtlMinutes();
 
         return [
             'user' => UserPresenter::present($user),

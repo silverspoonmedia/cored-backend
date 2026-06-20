@@ -12,6 +12,8 @@ It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap
 
 **Localization (required on every task that touches copy):** Any change that adds or modifies user-facing text — Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, or database content shown to users — must include translations for **all** supported locales (`en`, `id`, `ja` today) in the **same task/PR**. Use `__('…')` with application-owned files under `lang/{locale}/` (never hardcode strings), or Spatie translatable fields for database content. See [Localization](docs/localization.md#task-rule-required) for the full checklist and conventions.
 
+**Octane / Swoole readiness (required on every task):** All new code must follow the mandatory patterns in [Octane / Swoole Readiness](docs/octane-readiness.md) to survive long-lived worker processes. Never store request/user state on static properties or singletons. Never mutate facade/guard state without cleanup. Never call `env()` outside config files. Never use `config()->set()` at runtime. This project is not yet running Octane, but every line of code must be written as if it will tomorrow.
+
 **Full-stack implementation (required on every task):** Every feature or change must be implemented end to end across **all relevant layers** in the **same task/PR** — do **not** ship work that only touches a single layer. At minimum, a typical task should cover:
 
 | Layer | What to touch |
@@ -255,6 +257,12 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 |----------|-------------|
 | [Laravel Pint (Artisan wrapper)](docs/laravel-pint.md) | `php artisan pint` instead of calling the binary directly |
 
+### Performance and deployment
+
+| Document | Description |
+|----------|-------------|
+| [Octane / Swoole Readiness](docs/octane-readiness.md) | Rules and patterns for long-lived worker safety (mandatory before deploying Octane + Swoole) |
+
 ### Cross-links between docs
 
 - Auth endpoints and middleware → [jwt-authentication.md](docs/jwt-authentication.md)
@@ -268,6 +276,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
 - Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi` → [web-frontend.md](docs/web-frontend.md)
 - Multi-language (API, Blade, DB) → [localization.md](docs/localization.md)
+- Long-lived worker safety for future Octane + Swoole deployment → [octane-readiness.md](docs/octane-readiness.md)
 
 ---
 
