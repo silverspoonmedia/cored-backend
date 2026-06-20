@@ -35,15 +35,13 @@
                     <a href="{{ route('admin.approval-workflows.edit', $workflowData['id']) }}" class="btn btn-sm btn-primary">{{ __('approval.edit') }}</a>
 
                     @if($workflowData['is_active'] ?? false)
-                        <form method="POST" action="{{ route('admin.approval-workflows.deactivate', $workflowData['id']) }}" style="display:inline">
-                            @csrf
+                        <x-adminlte4::form.ajax :action="route('admin.approval-workflows.deactivate', $workflowData['id'])" style="display:inline">
                             <button class="btn btn-sm btn-warning">{{ __('approval.deactivate') }}</button>
-                        </form>
+                        </x-adminlte4::form.ajax>
                     @else
-                        <form method="POST" action="{{ route('admin.approval-workflows.activate', $workflowData['id']) }}" style="display:inline">
-                            @csrf
+                        <x-adminlte4::form.ajax :action="route('admin.approval-workflows.activate', $workflowData['id'])" style="display:inline">
                             <button class="btn btn-sm btn-success">{{ __('approval.activate') }}</button>
-                        </form>
+                        </x-adminlte4::form.ajax>
                     @endif
 
                     <a href="{{ route('admin.approval-workflows.index') }}" class="btn btn-sm btn-secondary">{{ __('approval.back') }}</a>
@@ -74,11 +72,9 @@
                                 <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addApproverModal" data-step-id="{{ $step['id'] }}" data-step-name="{{ $step['step_name'] }}">
                                     {{ __('approval.add_approver') }}
                                 </button>
-                                <form method="POST" action="{{ route('admin.approval-workflows.steps.destroy', [$workflowData['id'], $step['id']]) }}" style="display:inline" onsubmit="return confirm('{{ __('approval.confirm_delete') }}')">
-                                    @csrf
-                                    @method('DELETE')
+                                <x-adminlte4::form.ajax :action="route('admin.approval-workflows.steps.destroy', [$workflowData['id'], $step['id']])" method="DELETE" style="display:inline" onsubmit="return confirm('{{ __('approval.confirm_delete') }}')">
                                     <button class="btn btn-sm btn-outline-danger">{{ __('approval.delete') }}</button>
-                                </form>
+                                </x-adminlte4::form.ajax>
                             </div>
                         </div>
                         <div class="card-body">
@@ -135,11 +131,9 @@
                                                 <td>{{ $approver['slot_label'] }}</td>
                                                 <td><code>{{ $approver['required_role'] }}</code></td>
                                                 <td>
-                                                    <form method="POST" action="{{ route('admin.approval-workflows.steps.approvers.destroy', [$workflowData['id'], $step['id'], $approver['id']]) }}" style="display:inline">
-                                                        @csrf
-                                                        @method('DELETE')
+                                                    <x-adminlte4::form.ajax :action="route('admin.approval-workflows.steps.approvers.destroy', [$workflowData['id'], $step['id'], $approver['id']])" method="DELETE" style="display:inline">
                                                         <button class="btn btn-sm btn-outline-danger">{{ __('approval.delete') }}</button>
-                                                    </form>
+                                                    </x-adminlte4::form.ajax>
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -155,8 +149,7 @@
 
     <div class="modal fade" id="addStepModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
-            <form method="POST" action="{{ route('admin.approval-workflows.steps.store', $workflowData['id']) }}">
-                @csrf
+            <x-adminlte4::form.ajax :action="route('admin.approval-workflows.steps.store', $workflowData['id'])">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">{{ __('approval.workflow_step_create') }}</h5>
@@ -264,14 +257,13 @@
                         <button type="submit" class="btn btn-primary">{{ __('approval.save') }}</button>
                     </div>
                 </div>
-            </form>
+            </x-adminlte4::form.ajax>
         </div>
     </div>
 
     <div class="modal fade" id="addApproverModal" tabindex="-1">
         <div class="modal-dialog">
-            <form id="addApproverForm" method="POST">
-                @csrf
+            <x-adminlte4::form.ajax :action="''" id="addApproverForm">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">{{ __('approval.add_approver') }}</h5>
@@ -296,7 +288,7 @@
                         <button type="submit" class="btn btn-primary">{{ __('approval.save') }}</button>
                     </div>
                 </div>
-            </form>
+            </x-adminlte4::form.ajax>
         </div>
     </div>
 

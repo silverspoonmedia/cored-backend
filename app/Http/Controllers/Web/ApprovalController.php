@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -16,18 +18,11 @@ class ApprovalController extends Controller
      */
     public function myPending(Request $request): View
     {
-        try {
-            $response = $this->api()->get('approvals/my-pending');
+        $response = $this->api()->get('approvals/my-pending');
 
-            return view('adminlte4.approvals.my-pending', [
-                'approvals' => $response['data'] ?? [],
-            ]);
-        } catch (\Exception $e) {
-            return view('adminlte4.approvals.my-pending', [
-                'approvals' => [],
-                'error' => $e->getMessage(),
-            ]);
-        }
+        return view('adminlte4.approvals.my-pending', [
+            'approvals' => $response->json('data', []),
+        ]);
     }
 
     /**
@@ -35,97 +30,79 @@ class ApprovalController extends Controller
      */
     public function show(Request $request, string $instanceId): View
     {
-        try {
-            $response = $this->api()->get("approvals/instances/{$instanceId}");
+        $response = $this->api()->get("approvals/instances/{$instanceId}");
 
-            return view('adminlte4.approvals.show', [
-                'instance' => $response['data'] ?? null,
-            ]);
-        } catch (\Exception $e) {
-            return back()->with('error', __('approval.instance_not_found'));
-        }
+        return view('adminlte4.approvals.show', [
+            'instance' => $response->json('data'),
+        ]);
     }
 
     /**
-     * Approve a slot.
+     * Approve a slot (called from dynamic JS form on show page).
      */
-    public function approve(Request $request, string $slotId)
+    public function approve(Request $request, string $slotId): RedirectResponse
     {
-        try {
-            $this->api()->post("approvals/slots/{$slotId}/approve", [
-                'notes' => $request->input('notes'),
-            ]);
+        $response = $this->api()->post("approvals/slots/{$slotId}/approve", [
+            'notes' => $request->input('notes'),
+        ]);
 
-            return back()->with('success', __('approval.approved_successfully'));
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+        if (! $response->successful()) {
+            return back()->with('error', $this->apiMessage($response));
         }
+
+        return back()->with('success', $this->apiMessage($response, __('approval.approved_successfully')));
     }
 
     /**
-     * Reject a slot.
+     * Reject a slot (modal form — JSON-capable).
      */
-    public function reject(Request $request, string $slotId)
+    public function reject(Request $request, string $slotId): RedirectResponse|JsonResponse
     {
-        $request->validate([
-            'notes' => 'required|string|max:1000',
+        $response = $this->api()->post("approvals/slots/{$slotId}/reject", [
+            'notes' => $request->input('notes'),
         ]);
 
-        try {
-            $this->api()->post("approvals/slots/{$slotId}/reject", [
-                'notes' => $request->input('notes'),
-            ]);
-
-            return back()->with('success', __('approval.rejected_successfully'));
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
-        }
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => back()->with('success', $this->apiMessage($response, __('approval.rejected_successfully'))),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function reassign(Request $request, string $slotId)
+    /**
+     * Reassign a slot (modal form — JSON-capable).
+     */
+    public function reassign(Request $request, string $slotId): RedirectResponse|JsonResponse
     {
-        $request->validate([
-            'user_id' => 'required|uuid',
-            'reason' => 'required|string|max:1000',
+        $response = $this->api()->post("approvals/slots/{$slotId}/reassign", [
+            'user_id' => $request->input('user_id'),
+            'reason' => $request->input('reason'),
         ]);
 
-        try {
-            $this->api()->post("approvals/slots/{$slotId}/reassign", [
-                'user_id' => $request->input('user_id'),
-                'reason' => $request->input('reason'),
-            ]);
-
-            return back()->with('success', __('approval.reassigned_successfully'));
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
-        }
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => back()->with('success', $this->apiMessage($response, __('approval.reassigned_successfully'))),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function batchApprove(Request $request)
+    /**
+     * Batch approve (form on my-pending page — JSON-capable).
+     */
+    public function batchApprove(Request $request): RedirectResponse|JsonResponse
     {
-        $request->validate([
-            'slot_ids' => 'required|array',
-            'notes' => 'nullable|string|max:1000',
+        $response = $this->api()->post('approvals/slots/batch-approve', [
+            'slot_ids' => $request->input('slot_ids', []),
+            'notes' => $request->input('notes'),
         ]);
 
-        try {
-            $response = $this->api()->post('approvals/slots/batch-approve', [
-                'slot_ids' => $request->input('slot_ids'),
-                'notes' => $request->input('notes'),
-            ]);
-
-            $data = $response['data'];
-
-            if ($data['failed'] > 0) {
-                return back()->with('warning', __('approval.batch_partial', [
-                    'success' => $data['success'],
-                    'failed' => $data['failed'],
-                ]));
-            }
-
-            return back()->with('success', __('approval.batch_approved', ['count' => $data['success']]));
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
-        }
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => back()->with('success', $this->apiMessage($response, __('approval.batch_approved'))),
+            stayOnPageOnSuccess: true,
+        );
     }
 }

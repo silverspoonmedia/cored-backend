@@ -21,8 +21,7 @@
                 {{ __('approval.no_pending_approvals') }}
             </div>
         @else
-            <form id="bulkApproveForm" method="POST" action="{{ route('approvals.batch-approve') }}">
-                @csrf
+            <x-adminlte4::form.ajax :action="route('approvals.batch-approve')" id="bulkApproveForm">
 
                 <div class="mb-3 d-flex gap-2 align-items-center">
                     <button type="button" class="btn btn-sm btn-success" onclick="submitBulkApprove()">
@@ -84,7 +83,7 @@
                         </tbody>
                     </table>
                 </div>
-            </form>
+            </x-adminlte4::form.ajax>
         @endif
     </x-adminlte4::card>
 
