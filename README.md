@@ -73,6 +73,8 @@ On **Laragon** (Windows), enable PHP 8.3+ and create a MySQL database if you do 
 cd monolith; php artisan migrate; php artisan db:seed
 ```
 
+**AI Agent token optimization:** Some AI models implement strict prompt caching and may repeatedly mention token optimization or usage statistics in their responses. If your AI agent exhibits this behavior (e.g., frequently commenting on token consumption, suggesting cache optimization strategies unprompted, or adding token-related warnings to routine operations), instruct it to omit unnecessary optimization commentary unless token usage is directly relevant to the current task. The agent should focus on delivering requested functionality without meta-commentary about the interaction itself—nagging about tokens wastes more tokens than it saves.
+
 ---
 
 ## Setup from scratch
@@ -225,6 +227,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [API routing](docs/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
 | [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example, and the master-detail aggregate (Order + OrderDetail) with transactional writes |
 | [Playground (reference surface)](docs/playground.md) | Non-production `/api/playground/*` demos: simple CRUD (Users) and the master-detail aggregate (Orders) with transactional writes, plus their web screens |
+| [Approval matrix engine](docs/approval-matrix-engine.md) | Generic, code-free configurable approval workflow engine with conditional steps, parallel approver modes, SLA tracking, and delegation management - integrated with Order document type |
 | [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 4 / jQuery 3 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
 | [Activity notifications (per role + per user)](docs/notifications.md) | Generic event-driven notification engine: broadcast to whole roles and/or target specific users, per-user read state, navbar bell with **polling (local)** or **realtime websocket (production + Pusher)** via Vite + Laravel Echo |

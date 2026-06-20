@@ -5,11 +5,16 @@ namespace App\Providers;
 use App\Models\Role;
 use App\Models\User;
 use App\Policies\UserPolicy;
+use App\Events\ApprovalCompleted;
+use App\Listeners\SendApprovalCompletedNotification;
+use App\Listeners\UpdateDocumentStatus;
+use App\Repositories\Contracts\ApprovalRepositoryInterface;
 use App\Repositories\Contracts\EloquentCrudRepositoryInterface;
 use App\Repositories\Contracts\MenuRepositoryInterface;
 use App\Repositories\Contracts\NotificationRepositoryInterface;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
+use App\Repositories\Eloquent\ApprovalRepository;
 use App\Repositories\Eloquent\EloquentCrudRepository;
 use App\Repositories\Eloquent\MenuRepository;
 use App\Repositories\Eloquent\NotificationRepository;
@@ -20,6 +25,7 @@ use App\Support\Web\WebLayout;
 use App\View\Composers\NavigationComposer;
 use App\View\Composers\NotificationBellComposer;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -36,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MenuRepositoryInterface::class, MenuRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
         $this->app->bind(OrderRepositoryInterface::class, OrderRepository::class);
+        $this->app->bind(ApprovalRepositoryInterface::class, ApprovalRepository::class);
         $this->app->singleton(DataTableResponseFactory::class);
     }
 
@@ -45,6 +52,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(User::class, UserPolicy::class);
+
+        // Register event listeners
+        Event::listen(ApprovalCompleted::class, UpdateDocumentStatus::class);
+        Event::listen(ApprovalCompleted::class, SendApprovalCompletedNotification::class);
 
         // The navigation snapshot caches role names. Renaming or deleting a role
         // would otherwise leave the cached gate referencing a stale name.
