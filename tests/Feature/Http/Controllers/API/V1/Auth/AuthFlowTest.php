@@ -4,6 +4,7 @@ namespace Tests\Feature\Http\Controllers\API\V1\Auth;
 
 use App\Models\User;
 use App\Notifications\Auth\ResetPasswordNotification;
+use App\Services\Auth\TwoFactorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -242,5 +243,92 @@ class AuthFlowTest extends TestCase
         $user->refresh();
 
         $this->assertTrue(Hash::check('new-password-123', $user->password));
+    }
+
+    public function test_authenticated_user_can_enable_and_disable_two_factor_authentication(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('User');
+        $token = auth('api')->login($user);
+
+        $setup = $this->postJson('/api/v1/auth/two-factor/setup', [], [
+            'Authorization' => 'Bearer '.$token,
+        ])->assertOk()
+            ->assertJsonStructure(['data' => ['secret', 'qr_code_url', 'qr_code_svg']]);
+
+        $secret = $setup->json('data.secret');
+        $code = app('pragmarx.google2fa')->getCurrentOtp($secret);
+
+        $this->postJson('/api/v1/auth/two-factor/confirm', ['code' => $code], [
+            'Authorization' => 'Bearer '.$token,
+        ])->assertOk()
+            ->assertJsonPath('message', __('api/auth.two_factor_enabled'));
+
+        $user->refresh();
+        $this->assertNotNull($user->two_factor_confirmed_at);
+
+        $code = app('pragmarx.google2fa')->getCurrentOtp($secret);
+
+        $this->postJson('/api/v1/auth/two-factor/disable', ['code' => $code], [
+            'Authorization' => 'Bearer '.$token,
+        ])->assertOk()
+            ->assertJsonPath('message', __('api/auth.two_factor_disabled'));
+
+        $user->refresh();
+        $this->assertNull($user->two_factor_secret);
+    }
+
+    public function test_login_requires_second_factor_when_two_factor_is_enabled(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'two-factor@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $user->assignRole('User');
+
+        $service = new TwoFactorService;
+        $setup = $service->startSetup($user);
+        $code = app('pragmarx.google2fa')->getCurrentOtp($setup['secret']);
+        $service->confirmSetup($user, $code);
+
+        $challenge = $this->postJson('/api/v1/auth/login', [
+            'email' => 'two-factor@example.com',
+            'password' => 'password123',
+        ])->assertOk()
+            ->assertJsonPath('data.two_factor_required', true)
+            ->assertJsonMissingPath('data.token');
+
+        $loginCode = app('pragmarx.google2fa')->getCurrentOtp($setup['secret']);
+
+        $this->postJson('/api/v1/auth/two-factor/login', [
+            'two_factor_token' => $challenge->json('data.two_factor_token'),
+            'code' => $loginCode,
+        ])->assertOk()
+            ->assertJsonStructure(['data' => ['token', 'token_type', 'expires_in']]);
+    }
+
+    public function test_two_factor_login_rejects_invalid_code(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'bad-two-factor@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $user->assignRole('User');
+
+        $service = new TwoFactorService;
+        $setup = $service->startSetup($user);
+        $code = app('pragmarx.google2fa')->getCurrentOtp($setup['secret']);
+        $service->confirmSetup($user, $code);
+
+        $challenge = $this->postJson('/api/v1/auth/login', [
+            'email' => 'bad-two-factor@example.com',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->postJson('/api/v1/auth/two-factor/login', [
+            'two_factor_token' => $challenge->json('data.two_factor_token'),
+            'code' => '000000',
+        ])->assertUnauthorized()
+            ->assertJsonPath('message', __('api/auth.invalid_two_factor_code'));
     }
 }

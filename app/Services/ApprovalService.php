@@ -8,6 +8,7 @@ use App\Models\ApprovalInstance;
 use App\Models\ApprovalInstanceStep;
 use App\Models\ApprovalInstanceStepApprover;
 use App\Models\ApprovalLog;
+use App\Models\Order;
 use App\Models\User;
 use App\Notifications\Approval\ApprovalRequestNotification;
 use App\Repositories\Contracts\ApprovalRepositoryInterface;
@@ -199,11 +200,13 @@ class ApprovalService
 
             if ($finalStatus === 'APPROVED') {
                 $this->activateNextStep($step->instance->fresh());
+
                 return;
             }
 
             if ($workflowStep->reject_action === 'BACK_TO_STEP') {
                 $this->handleBackToStep($step);
+
                 return;
             }
 
@@ -227,10 +230,10 @@ class ApprovalService
             ->where('valid_until', '>=', now())
             ->where(function ($q) use ($slot) {
                 $q->where('scope', 'ALL')
-                  ->orWhere(fn ($q2) => $q2->where('scope', 'DOCUMENT_TYPE')
-                                          ->where('document_type', $slot->instanceStep->instance->document_type))
-                  ->orWhere(fn ($q3) => $q3->where('scope', 'INSTANCE')
-                                          ->where('instance_id', $slot->instanceStep->instance_id));
+                    ->orWhere(fn ($q2) => $q2->where('scope', 'DOCUMENT_TYPE')
+                        ->where('document_type', $slot->instanceStep->instance->document_type))
+                    ->orWhere(fn ($q3) => $q3->where('scope', 'INSTANCE')
+                        ->where('instance_id', $slot->instanceStep->instance_id));
             })
             ->exists();
     }
@@ -296,7 +299,7 @@ class ApprovalService
 
         $document = null;
         if ($instance->document_type === 'ORDER') {
-            $document = \App\Models\Order::find($instance->document_id);
+            $document = Order::find($instance->document_id);
         }
 
         if ($targetOrder === null) {
@@ -307,6 +310,7 @@ class ApprovalService
             }
 
             ApprovalCompleted::dispatch($instance->fresh());
+
             return;
         }
 
@@ -380,8 +384,9 @@ class ApprovalService
         if (! $nextStep) {
             // No more steps - instance complete
             $this->repository->updateInstanceStatus($instance->id, 'APPROVED');
-            
+
             ApprovalCompleted::dispatch($instance->fresh());
+
             return;
         }
 

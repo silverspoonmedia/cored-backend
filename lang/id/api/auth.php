@@ -22,4 +22,10 @@ return [
     'token_revoked' => 'Token telah dicabut.',
     'could_not_authenticate' => 'Tidak dapat mengautentikasi token.',
     'unauthorized' => 'Anda tidak memiliki izin untuk melakukan tindakan ini.',
+    'two_factor_setup_started' => 'Pengaturan autentikasi dua faktor dimulai.',
+    'two_factor_enabled' => 'Autentikasi dua faktor diaktifkan.',
+    'two_factor_disabled' => 'Autentikasi dua faktor dinonaktifkan.',
+    'two_factor_already_enabled' => 'Autentikasi dua faktor sudah diaktifkan.',
+    'two_factor_not_enabled' => 'Autentikasi dua faktor belum diaktifkan.',
+    'invalid_two_factor_code' => 'Kode autentikasi dua faktor tidak valid.',
 ];

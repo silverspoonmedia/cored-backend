@@ -75,9 +75,11 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | GET/POST | `/forgot-password` | `password.request` / `password.email` | `web.guest` | `POST /auth/forgot-password` |
 | GET/POST | `/reset-password/{token}` | `password.reset` / `password.update` | `web.guest` | `POST /auth/reset-password` |
 | POST | `/logout` | `logout` | `web.auth` | `POST /auth/logout` |
+| GET/POST | `/two-factor-challenge` | `two-factor.challenge` / `…store` | `web.guest` | `POST /auth/two-factor/login` |
 | GET | `/locale/{locale}` | `locale.switch` | `web` | sets locale cookie; persists `users.locale` when JWT-authenticated; redirects back (see [Localization](./localization.md#switching-locale)) |
 | GET | `/dashboard` | `dashboard` | `web.auth` | `GET /auth/me` |
 | GET/PUT | `/profile/password` | `profile.password.edit` / `…update` | `web.auth` | `PUT /auth/password` |
+| GET/POST | `/profile/two-factor`, `/profile/two-factor/{setup,confirm,disable}` | `profile.two-factor.*` | `web.auth` | `GET /auth/me`, `POST /auth/two-factor/{setup,confirm,disable}` |
 | POST | `/email/verification-notification` | `verification.send` | `web.auth` | `POST /auth/email/verification-notification` |
 | GET | `/users` | `users.index` | `web.auth` | Blade shell for the user DataTable |
 | GET | `/users/datatable` | `users.datatable` | `web.auth` | `GET /users?display_mode=datatable` (proxied) |
@@ -129,6 +131,8 @@ passed as `data-notification-config` on `#notification-bell`. Public Pusher fiel
 also come from `VITE_PUSHER_*` in `.env` — see [notifications.md](./notifications.md#realtime-vs-polling).
 
 Views render the **JSON arrays** returned by the API (e.g. `$profile`, `$menu['name']` for display, `$menu['name_translations']` for edit forms), not Eloquent models. Static UI strings use `__('…')` from `lang/{locale}/web/*` and `lang/{locale}/ui.php` — never hardcode copy in Blade.
+
+The 2FA management screen is reachable from the dashboard quick access and the user dropdown (`menu.two_factor`). Setup shows the base64 SVG QR image returned by the API, with the `otpauth://` setup URL and manual secret as fallbacks; login challenges redirect guests to `/two-factor-challenge` before any JWT cookie is issued.
 
 ### Layout namespace and `config/web.php`
 

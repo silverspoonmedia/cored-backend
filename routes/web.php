@@ -1,12 +1,14 @@
 <?php
 
+use App\Http\Controllers\Web\ApprovalController;
+use App\Http\Controllers\Web\ApprovalWorkflowAdminController;
 use App\Http\Controllers\Web\Auth\EmailVerificationController;
 use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\Auth\PasswordController;
 use App\Http\Controllers\Web\Auth\PasswordResetController;
+use App\Http\Controllers\Web\Auth\ProfileTwoFactorController;
 use App\Http\Controllers\Web\Auth\RegisterController;
-use App\Http\Controllers\Web\ApprovalController;
-use App\Http\Controllers\Web\ApprovalWorkflowAdminController;
+use App\Http\Controllers\Web\Auth\TwoFactorController as TwoFactorWebController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\LocaleController;
 use App\Http\Controllers\Web\Navigation\MenuController;
@@ -37,6 +39,12 @@ Route::get('locale/{locale}', LocaleController::class)->name('locale.switch');
 Route::middleware('web.guest')->group(function (): void {
     Route::get('login', [LoginController::class, 'create'])->name('login');
     Route::post('login', [LoginController::class, 'store'])->name('login.store');
+    
+    Route::get('two-factor-challenge', [TwoFactorWebController::class, 'create'])->name('two-factor.challenge');
+    Route::post('two-factor-challenge', [TwoFactorWebController::class, 'store'])->name('two-factor.challenge.store');
+
+    Route::get('register', [RegisterController::class, 'create'])->name('register');
+    Route::post('register', [RegisterController::class, 'store'])->name('register.store');
 
     Route::get('register', [RegisterController::class, 'create'])->name('register');
     Route::post('register', [RegisterController::class, 'store'])->name('register.store');
@@ -84,6 +92,10 @@ Route::middleware('web.auth')->group(function (): void {
     // Self-service profile.
     Route::get('profile/password', [PasswordController::class, 'edit'])->name('profile.password.edit');
     Route::put('profile/password', [PasswordController::class, 'update'])->name('profile.password.update');
+    Route::get('profile/two-factor', [ProfileTwoFactorController::class, 'edit'])->name('profile.two-factor.edit');
+    Route::post('profile/two-factor/setup', [ProfileTwoFactorController::class, 'setup'])->name('profile.two-factor.setup');
+    Route::post('profile/two-factor/confirm', [ProfileTwoFactorController::class, 'confirm'])->name('profile.two-factor.confirm');
+    Route::post('profile/two-factor/disable', [ProfileTwoFactorController::class, 'disable'])->name('profile.two-factor.disable');
     Route::post('email/verification-notification', [EmailVerificationController::class, 'resend'])
         ->name('verification.send');
 

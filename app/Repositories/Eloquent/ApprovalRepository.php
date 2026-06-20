@@ -155,7 +155,7 @@ class ApprovalRepository implements ApprovalRepositoryInterface
     public function activateStep(string $stepId): void
     {
         $step = ApprovalInstanceStep::find($stepId);
-        
+
         $step->update([
             'status' => 'IN_PROGRESS',
             'activated_at' => now(),

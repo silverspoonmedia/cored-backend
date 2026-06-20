@@ -6,6 +6,7 @@ use App\Models\ApprovalWorkflow;
 use App\Models\ApprovalWorkflowStep;
 use App\Models\ApprovalWorkflowStepApprover;
 use App\Models\User;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,13 +17,13 @@ class ApprovalWorkflowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(\Database\Seeders\RoleSeeder::class);
+        $this->seed(RoleSeeder::class);
     }
 
     public function test_can_create_approval_workflow(): void
     {
         $user = User::factory()->create();
-        
+
         $workflow = ApprovalWorkflow::create([
             'document_type' => 'ORDER',
             'name' => 'Test Workflow',
@@ -127,7 +128,7 @@ class ApprovalWorkflowTest extends TestCase
         ]);
 
         $steps = $workflow->steps()->orderBy('step_order')->get();
-        
+
         $this->assertEquals('First Step', $steps[0]->step_name);
         $this->assertEquals('Second Step', $steps[1]->step_name);
         $this->assertEquals('Third Step', $steps[2]->step_name);

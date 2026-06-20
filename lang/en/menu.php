@@ -13,4 +13,5 @@ return [
     'notifications' => 'Notifications',
     'profile' => 'Profile',
     'password' => 'Change password',
+    'two_factor' => 'Two-factor authentication',
 ];

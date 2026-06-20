@@ -34,10 +34,11 @@ class UpdateDocumentStatus
         $order = Order::find($instance->document_id);
 
         if (! $order) {
-            Log::warning("Order not found for approval instance", [
+            Log::warning('Order not found for approval instance', [
                 'instance_id' => $instance->id,
                 'order_id' => $instance->document_id,
             ]);
+
             return;
         }
 
@@ -50,7 +51,7 @@ class UpdateDocumentStatus
         if ($newStatus && $order->status !== $newStatus) {
             $order->update(['status' => $newStatus]);
 
-            Log::info("Order status updated from approval", [
+            Log::info('Order status updated from approval', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
                 'old_status' => $order->status,

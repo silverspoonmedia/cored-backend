@@ -101,10 +101,17 @@
                             <small>{{ $user?->email }}</small>
                         </p>
                     </li>
+                    <li class="px-3 py-2">
+                        <div class="d-grid gap-2">
+                            <a href="{{ route('profile.password.edit') }}" class="btn btn-outline-secondary btn-sm text-start">
+                                <i class="bi bi-key me-1"></i> {{ __('menu.password') }}
+                            </a>
+                            <a href="{{ route('profile.two-factor.edit') }}" class="btn btn-outline-secondary btn-sm text-start">
+                                <i class="bi bi-shield-lock me-1"></i> {{ __('menu.two_factor') }}
+                            </a>
+                        </div>
+                    </li>
                     <li class="user-footer">
-                        <a href="{{ route('profile.password.edit') }}" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-key"></i> {{ __('menu.password') }}
-                        </a>
                         <x-adminlte4::form.ajax :action="route('logout')" :show-alert="false" class="float-end">
                             <button type="submit" class="btn btn-outline-danger btn-sm">
                                 <i class="bi bi-box-arrow-right"></i> {{ __('ui.actions.logout') }}

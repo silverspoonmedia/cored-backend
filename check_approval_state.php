@@ -1,12 +1,18 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+use App\Models\ApprovalInstance;
+use App\Models\ApprovalInstanceStepApprover;
+use App\Models\ApprovalWorkflow;
+use App\Models\Order;
+use App\Models\User;
 
-$app = require_once __DIR__ . '/bootstrap/app.php';
+require __DIR__.'/vendor/autoload.php';
+
+$app = require_once __DIR__.'/bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
 echo "=== 1. CEK WORKFLOW ===\n";
-$workflow = \App\Models\ApprovalWorkflow::where('document_type', 'ORDER')->where('is_active', true)->first();
+$workflow = ApprovalWorkflow::where('document_type', 'ORDER')->where('is_active', true)->first();
 if ($workflow) {
     echo "✓ Workflow ID: {$workflow->id}\n";
     echo "  Name: {$workflow->name}\n";
@@ -16,24 +22,24 @@ if ($workflow) {
 }
 
 echo "\n=== 2. CEK USER MANAGER ===\n";
-$manager = \App\Models\User::where('email', 'manager@example.com')->first();
+$manager = User::where('email', 'manager@example.com')->first();
 if ($manager) {
     echo "✓ User ID: {$manager->id}\n";
     echo "  Name: {$manager->name}\n";
-    echo "  Roles: " . $manager->getRoleNames()->implode(', ') . "\n";
+    echo '  Roles: '.$manager->getRoleNames()->implode(', ')."\n";
 } else {
     echo "✗ PROBLEM: User manager@example.com not found\n";
 }
 
 echo "\n=== 3. CEK ORDERS ===\n";
-$orders = \App\Models\Order::latest()->take(5)->get();
-echo "Total orders: " . \App\Models\Order::count() . "\n";
+$orders = Order::latest()->take(5)->get();
+echo 'Total orders: '.Order::count()."\n";
 foreach ($orders as $order) {
     echo "  Order #{$order->order_number} - Total: {$order->grand_total} - Status: {$order->status}\n";
 }
 
 echo "\n=== 4. CEK APPROVAL INSTANCES ===\n";
-$instances = \App\Models\ApprovalInstance::with('steps.approvers')->get();
+$instances = ApprovalInstance::with('steps.approvers')->get();
 echo "Total approval instances: {$instances->count()}\n";
 foreach ($instances as $inst) {
     echo "  Instance {$inst->id} - {$inst->document_type} - Status: {$inst->status}\n";
@@ -47,9 +53,11 @@ foreach ($instances as $inst) {
 
 echo "\n=== 5. CEK PENDING FOR MANAGER ===\n";
 if ($manager) {
-    $pending = \App\Models\ApprovalInstanceStepApprover::where('assigned_user_id', $manager->id)
+    $pending = ApprovalInstanceStepApprover::where('assigned_user_id', $manager->id)
         ->where('status', 'WAITING')
-        ->whereHas('instanceStep', function($q) { $q->where('status', 'IN_PROGRESS'); })
+        ->whereHas('instanceStep', function ($q) {
+            $q->where('status', 'IN_PROGRESS');
+        })
         ->get();
     echo "Pending approvals for manager: {$pending->count()}\n";
     foreach ($pending as $p) {

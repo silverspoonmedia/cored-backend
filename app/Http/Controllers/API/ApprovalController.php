@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\ApprovalInstance;
 use App\Models\ApprovalInstanceStepApprover;
+use App\Models\User;
 use App\Repositories\Contracts\ApprovalRepositoryInterface;
 use App\Services\ApprovalService;
 use Illuminate\Http\JsonResponse;
@@ -47,7 +49,7 @@ class ApprovalController extends Controller
      */
     public function show(Request $request, string $instanceId): JsonResponse
     {
-        $instance = \App\Models\ApprovalInstance::with([
+        $instance = ApprovalInstance::with([
             'workflow',
             'steps.approvers.assignedUser',
             'steps.workflowStep',
@@ -82,7 +84,7 @@ class ApprovalController extends Controller
                         'completed_at' => $step->completed_at,
                         'allow_reassignment' => $step->workflowStep->allow_reassignment,
                         'approvers' => $step->approvers->map(function ($approver) use ($step) {
-                            $reassignmentCandidates = \App\Models\User::role($approver->required_role)
+                            $reassignmentCandidates = User::role($approver->required_role)
                                 ->where('users.id', '!=', $approver->assigned_user_id)
                                 ->get(['id', 'name'])
                                 ->map(fn ($user) => [
@@ -181,7 +183,7 @@ class ApprovalController extends Controller
         ]);
 
         $slot = ApprovalInstanceStepApprover::findOrFail($slotId);
-        $newApprover = \App\Models\User::findOrFail($request->string('user_id')->toString());
+        $newApprover = User::findOrFail($request->string('user_id')->toString());
 
         try {
             $updatedSlot = $this->approvalService->reassign($slot, $newApprover, $request->string('reason')->toString());

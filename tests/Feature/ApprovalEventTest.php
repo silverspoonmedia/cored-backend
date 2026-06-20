@@ -3,11 +3,11 @@
 namespace Tests\Feature;
 
 use App\Events\ApprovalCompleted;
-use App\Listeners\UpdateDocumentStatus;
 use App\Models\ApprovalInstance;
 use App\Models\ApprovalWorkflow;
 use App\Models\Order;
 use App\Models\User;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -20,8 +20,8 @@ class ApprovalEventTest extends TestCase
     {
         Notification::fake();
         // Setup
-        $this->seed(\Database\Seeders\RoleSeeder::class);
-        
+        $this->seed(RoleSeeder::class);
+
         // Create a user
         $user = User::factory()->create();
         $user->assignRole('Admin');
@@ -71,8 +71,8 @@ class ApprovalEventTest extends TestCase
     {
         Notification::fake();
         // Setup
-        $this->seed(\Database\Seeders\RoleSeeder::class);
-        
+        $this->seed(RoleSeeder::class);
+
         // Create a user
         $user = User::factory()->create();
         $user->assignRole('Admin');

@@ -16,6 +16,7 @@ class UserPresenter
             'name' => $user->name,
             'email' => $user->email,
             'email_verified_at' => $user->email_verified_at?->toIso8601String(),
+            'two_factor_enabled' => filled($user->two_factor_secret) && $user->two_factor_confirmed_at !== null,
             'roles' => $user->getRoleNames()->values()->all(),
             'permissions' => $user->getAllPermissions()->pluck('name')->values()->all(),
         ];

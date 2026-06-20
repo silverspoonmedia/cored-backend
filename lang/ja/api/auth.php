@@ -22,4 +22,10 @@ return [
     'token_revoked' => 'トークンは取り消されました。',
     'could_not_authenticate' => 'トークンを認証できませんでした。',
     'unauthorized' => 'この操作を行う権限がありません。',
+    'two_factor_setup_started' => '二要素認証の設定を開始しました。',
+    'two_factor_enabled' => '二要素認証を有効にしました。',
+    'two_factor_disabled' => '二要素認証を無効にしました。',
+    'two_factor_already_enabled' => '二要素認証はすでに有効です。',
+    'two_factor_not_enabled' => '二要素認証は有効ではありません。',
+    'invalid_two_factor_code' => '二要素認証コードが無効です。',
 ];

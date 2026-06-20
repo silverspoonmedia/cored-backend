@@ -34,8 +34,26 @@ class LoginController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn (Response $r): RedirectResponse => $this->redirectAuthenticated($r->json('data', [])),
+            fn (Response $r): RedirectResponse => $this->redirectAfterLogin($request, $r->json('data', [])),
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    protected function redirectAfterLogin(Request $request, array $payload): RedirectResponse
+    {
+        if (! empty($payload['two_factor_required'])) {
+            $request->session()->put('two_factor_token', $payload['two_factor_token']);
+
+            if ($request->expectsJson()) {
+                return redirect()->route('two-factor.challenge');
+            }
+
+            return redirect()->route('two-factor.challenge');
+        }
+
+        return $this->redirectAuthenticated($payload);
     }
 
     public function destroy(Request $request): RedirectResponse|JsonResponse

@@ -1,6 +1,6 @@
 # JWT Authentication & RBAC
 
-This document describes the API authentication stack: **JWT-based auth** (`php-open-source-saver/jwt-auth`), **role and permission management** (`spatie/laravel-permission`), and how they are wired into the versioned API under `/api/v1`.
+This document describes the API authentication stack: **JWT-based auth** (`php-open-source-saver/jwt-auth`), **TOTP two-factor authentication** (`pragmarx/google2fa-laravel`), **role and permission management** (`spatie/laravel-permission`), and how they are wired into the versioned API under `/api/v1`.
 
 Authentication is **not** exposed on global routes (`/api/*`). All auth endpoints live in `routes/api/v1.php`. See [API Routing](./api-routing.md).
 
@@ -28,6 +28,7 @@ These packages are already required in `composer.json`—do not reinstall them:
 | Package | Purpose |
 |---------|---------|
 | `php-open-source-saver/jwt-auth` | Issue, validate, refresh, and blacklist JWTs |
+| `pragmarx/google2fa-laravel` | Generate TOTP secrets and verify authenticator app codes |
 | `spatie/laravel-permission` | Roles, permissions, and route middleware |
 
 Published config files:
@@ -252,7 +253,8 @@ Base URL prefix: **`/api/v1`**. Route names are prefixed with `api.v1.`.
 | Method | URI | Route name | Description |
 |--------|-----|------------|-------------|
 | `POST` | `/auth/register` | `api.v1.auth.register` | Create account, assign default role, send verification email, return JWT |
-| `POST` | `/auth/login` | `api.v1.auth.login` | Authenticate and return JWT |
+| `POST` | `/auth/login` | `api.v1.auth.login` | Authenticate and return JWT, or return a 2FA challenge when enabled |
+| `POST` | `/auth/two-factor/login` | `api.v1.auth.two-factor.login` | Exchange `two_factor_token` + TOTP code for a JWT |
 | `POST` | `/auth/forgot-password` | `api.v1.auth.password.forgot` | Queue password reset email |
 | `POST` | `/auth/reset-password` | `api.v1.auth.password.reset` | Reset password with token + email |
 | `GET` | `/auth/email/verify/{id}/{hash}` | `api.v1.auth.verification.verify` | Verify email (signed URL, throttled) |
@@ -266,6 +268,9 @@ Base URL prefix: **`/api/v1`**. Route names are prefixed with `api.v1.`.
 | `GET` | `/auth/me` | `api.v1.auth.me` | Current user with roles and permissions |
 | `PUT` | `/auth/password` | `api.v1.auth.password.update` | Change password (requires current password) |
 | `POST` | `/auth/email/verification-notification` | `api.v1.auth.verification.send` | Resend verification email (throttled) |
+| `POST` | `/auth/two-factor/setup` | `api.v1.auth.two-factor.setup` | Generate encrypted secret + QR URL |
+| `POST` | `/auth/two-factor/confirm` | `api.v1.auth.two-factor.confirm` | Verify setup code and activate 2FA |
+| `POST` | `/auth/two-factor/disable` | `api.v1.auth.two-factor.disable` | Verify TOTP and remove 2FA |
 
 ### RBAC example
 
@@ -330,6 +335,26 @@ This API uses **stateless JWT**, not session cookies. “Remember me” means a 
 |---------------|-----------|-----------------|-------------------|
 | `false` / omitted | `JWT_TTL` (default 60 minutes) | `false` | `JWT_TTL * 60` seconds |
 | `true` | `JWT_REMEMBER_TTL` (default 20160 minutes) | `true` | `JWT_REMEMBER_TTL * 60` seconds |
+
+### Two-factor authentication (2FA)
+
+2FA uses TOTP via `pragmarx/google2fa-laravel`. The user secret is stored encrypted in `users.two_factor_secret`; 2FA is considered active only when `users.two_factor_confirmed_at` is set.
+
+**Setup flow (authenticated):**
+
+1. `POST /api/v1/auth/two-factor/setup` generates a secret, stores it encrypted, and returns `secret`, `qr_code_url` (`otpauth://...`), and `qr_code_svg` (`data:image/svg+xml;base64,...`).
+2. The client shows the QR image first and keeps the manual secret / setup URL as fallback.
+3. `POST /api/v1/auth/two-factor/confirm` with `{ "code": "123456" }` verifies the current TOTP and sets `two_factor_confirmed_at`.
+4. `POST /api/v1/auth/two-factor/disable` with a valid TOTP code clears the encrypted secret and confirmation timestamp.
+
+**Login flow when 2FA is enabled:**
+
+1. `POST /api/v1/auth/login` validates email/password but does **not** return a JWT.
+2. The response contains `data.two_factor_required = true` and a short-lived `data.two_factor_token` (5 minutes).
+3. The client calls `POST /api/v1/auth/two-factor/login` with `{ "two_factor_token": "...", "code": "123456" }`.
+4. Only this second step returns the real JWT auth payload.
+
+Why this works: password check proves factor 1; TOTP proves possession of the authenticator secret. The first step cannot return a JWT, or 2FA becomes decorative clown makeup.
 
 ### Register payload
 
@@ -472,7 +497,8 @@ Ensure `MAIL_*` is configured for verification and reset emails (tests use `MAIL
 | Method | Description |
 |--------|-------------|
 | `register(array $data)` | Create user, assign default role, send verification email, return auth payload |
-| `login(array $credentials)` | Attempt JWT login; throws `InvalidCredentialsException` on failure |
+| `login(array $credentials)` | Attempt password login; returns JWT or a short-lived 2FA challenge when enabled; throws `InvalidCredentialsException` on failure |
+| `loginWithTwoFactorToken(string $token, string $code)` | Verify the 2FA challenge and issue the real JWT |
 | `refresh()` | Refresh token for current user |
 | `logout()` | Blacklist current token |
 | `me()` | Return `UserPresenter` array for authenticated user |
@@ -499,7 +525,8 @@ Ensure `MAIL_*` is configured for verification and reset emails (tests use `MAIL
 | Test | Location | Focus |
 |------|----------|--------|
 | Repository | `tests/Unit/Repositories/Eloquent/UserRepositoryTest.php` | UUID create/find, email verification |
-| Auth service | `tests/Unit/Services/Auth/AuthServiceTest.php` | Register, login, credentials |
+| Auth service | `tests/Unit/Services/Auth/AuthServiceTest.php` | Register, login, credentials, 2FA challenge handoff |
+| 2FA service | `tests/Unit/Services/Auth/TwoFactorServiceTest.php` | Secret generation/encryption, confirmation, disable, TOTP validation |
 | Password service | `tests/Unit/Services/Auth/PasswordResetServiceTest.php` | Reset and change password |
 | Email service | `tests/Unit/Services/Auth/EmailVerificationServiceTest.php` | Verify and resend rules |
 | Auth controller | `tests/Unit/Http/Controllers/API/V1/Auth/AuthControllerTest.php` | Controller delegation |

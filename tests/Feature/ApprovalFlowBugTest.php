@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\ApprovalInstance;
-use App\Models\ApprovalWorkflow;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\ApprovalService;
+use Database\Seeders\ApprovalWorkflowSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -21,9 +21,9 @@ class ApprovalFlowBugTest extends TestCase
     {
         parent::setUp();
         Notification::fake();
-        
-        $this->seed(\Database\Seeders\RoleSeeder::class);
-        $this->seed(\Database\Seeders\ApprovalWorkflowSeeder::class);
+
+        $this->seed(RoleSeeder::class);
+        $this->seed(ApprovalWorkflowSeeder::class);
         $this->approvalService = app(ApprovalService::class);
     }
 
@@ -32,13 +32,13 @@ class ApprovalFlowBugTest extends TestCase
         // Create users
         $submitter = User::factory()->create();
         $submitter->assignRole('User');
-        
+
         $manager = User::factory()->create(['email' => 'manager@test.com']);
         $manager->assignRole('Management');
-        
+
         $moderator = User::factory()->create(['email' => 'moderator@test.com']);
         $moderator->assignRole('Moderator');
-        
+
         $admin = User::factory()->create(['email' => 'admin@test.com']);
         $admin->assignRole('Admin');
 
@@ -72,7 +72,7 @@ class ApprovalFlowBugTest extends TestCase
         // Step 4 should be WAITING
         $step4 = $instance->steps->where('step_order', 4)->first();
         $this->assertEquals('WAITING', $step4->status);
-        
+
         // Manager approves Step 1
         $this->actingAs($manager, 'api');
         $managerSlot = $step1->approvers->first();
@@ -80,30 +80,30 @@ class ApprovalFlowBugTest extends TestCase
 
         // Refresh instance
         $instance = $instance->fresh();
-        
+
         // Check: Only 1 pending approval should exist for admin (Step 4 Final)
         $pendingForAdmin = $instance->steps()
             ->where('status', 'IN_PROGRESS')
             ->with('approvers')
             ->get()
-            ->flatMap(fn($step) => $step->approvers->where('status', 'WAITING'))
-            ->filter(fn($approver) => $approver->assigned_user_id === $admin->id);
-        
+            ->flatMap(fn ($step) => $step->approvers->where('status', 'WAITING'))
+            ->filter(fn ($approver) => $approver->assigned_user_id === $admin->id);
+
         $this->assertEquals(
-            1, 
-            $pendingForAdmin->count(), 
-            'Admin should have EXACTLY 1 pending approval (Step 4 Final), but found: ' . $pendingForAdmin->count()
+            1,
+            $pendingForAdmin->count(),
+            'Admin should have EXACTLY 1 pending approval (Step 4 Final), but found: '.$pendingForAdmin->count()
         );
 
         // Verify Step 4 is now IN_PROGRESS
         $step4 = $step4->fresh();
         $this->assertEquals('IN_PROGRESS', $step4->status);
-        
+
         // Verify Step 4 has exactly 1 approver
         $this->assertEquals(
             1,
             $step4->approvers->count(),
-            'Step 4 should have exactly 1 approver, but found: ' . $step4->approvers->count()
+            'Step 4 should have exactly 1 approver, but found: '.$step4->approvers->count()
         );
     }
 }

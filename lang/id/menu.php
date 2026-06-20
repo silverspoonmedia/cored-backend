@@ -13,4 +13,5 @@ return [
     'notifications' => 'Notifikasi',
     'profile' => 'Profil',
     'password' => 'Ubah kata sandi',
+    'two_factor' => 'Autentikasi dua faktor',
 ];
