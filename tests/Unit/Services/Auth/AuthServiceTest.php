@@ -93,4 +93,32 @@ class AuthServiceTest extends TestCase
         $this->assertTrue($payload['remember']);
         $this->assertSame(120 * 60, $payload['expires_in']);
     }
+
+    public function test_remember_claim_does_not_leak_across_requests(): void
+    {
+        config(['jwt.ttl' => 60, 'jwt.remember_ttl' => 120]);
+
+        User::factory()->create([
+            'email' => 'leak-test@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $rememberPayload = $this->service->login([
+            'email' => 'leak-test@example.com',
+            'password' => 'password123',
+            'remember_me' => true,
+        ]);
+
+        $this->assertTrue($rememberPayload['remember']);
+        $this->assertSame(120 * 60, $rememberPayload['expires_in']);
+
+        $normalPayload = $this->service->login([
+            'email' => 'leak-test@example.com',
+            'password' => 'password123',
+            'remember_me' => false,
+        ]);
+
+        $this->assertFalse($normalPayload['remember']);
+        $this->assertSame(60 * 60, $normalPayload['expires_in']);
+    }
 }

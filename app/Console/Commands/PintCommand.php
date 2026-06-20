@@ -41,7 +41,7 @@ class PintCommand extends Command
      */
     protected function pintArguments(): array
     {
-        $argv = $_SERVER['argv'] ?? [];
+        $argv = request()->server('argv', []);
 
         $index = array_search('pint', $argv, true);
 

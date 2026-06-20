@@ -329,7 +329,7 @@ All endpoints use the shared `ApiResponse` trait:
 | `password` | Yes | User password |
 | `remember_me` | No | When `true`, issues a longer-lived JWT (see `JWT_REMEMBER_TTL` / `jwt.remember_ttl`) |
 
-This API uses **stateless JWT**, not session cookies. “Remember me” means a **longer access-token TTL** (default: same window as `JWT_REFRESH_TTL`, two weeks), not a Laravel `remember_token` cookie. The JWT includes a persistent `rm` claim so `POST /auth/refresh` keeps the extended lifetime for that session.
+This API uses **stateless JWT**, not session cookies. "Remember me" means a **longer access-token TTL** (default: same window as `JWT_REFRESH_TTL`, two weeks), not a Laravel `remember_token` cookie. The response `data.remember` field and `data.expires_in` indicate the chosen TTL.
 
 | `remember_me` | Token TTL | `data.remember` | `data.expires_in` |
 |---------------|-----------|-----------------|-------------------|
