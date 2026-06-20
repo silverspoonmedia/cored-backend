@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Policies\UserPolicy;
 use App\Events\ApprovalCompleted;
+use App\Listeners\SendApprovalCompletedNotification;
 use App\Listeners\UpdateDocumentStatus;
 use App\Repositories\Contracts\ApprovalRepositoryInterface;
 use App\Repositories\Contracts\EloquentCrudRepositoryInterface;
@@ -54,6 +55,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Register event listeners
         Event::listen(ApprovalCompleted::class, UpdateDocumentStatus::class);
+        Event::listen(ApprovalCompleted::class, SendApprovalCompletedNotification::class);
 
         // The navigation snapshot caches role names. Renaming or deleting a role
         // would otherwise leave the cached gate referencing a stale name.

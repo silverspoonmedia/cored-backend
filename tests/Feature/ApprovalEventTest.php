@@ -9,7 +9,7 @@ use App\Models\ApprovalWorkflow;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class ApprovalEventTest extends TestCase
@@ -18,6 +18,7 @@ class ApprovalEventTest extends TestCase
 
     public function test_approval_completed_event_updates_order_status_to_approved(): void
     {
+        Notification::fake();
         // Setup
         $this->seed(\Database\Seeders\RoleSeeder::class);
         
@@ -68,6 +69,7 @@ class ApprovalEventTest extends TestCase
 
     public function test_approval_completed_event_updates_order_status_to_rejected(): void
     {
+        Notification::fake();
         // Setup
         $this->seed(\Database\Seeders\RoleSeeder::class);
         

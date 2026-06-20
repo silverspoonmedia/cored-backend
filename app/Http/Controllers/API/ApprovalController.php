@@ -80,7 +80,16 @@ class ApprovalController extends Controller
                         'status' => $step->status,
                         'activated_at' => $step->activated_at,
                         'completed_at' => $step->completed_at,
-                        'approvers' => $step->approvers->map(function ($approver) {
+                        'allow_reassignment' => $step->workflowStep->allow_reassignment,
+                        'approvers' => $step->approvers->map(function ($approver) use ($step) {
+                            $reassignmentCandidates = \App\Models\User::role($approver->required_role)
+                                ->where('users.id', '!=', $approver->assigned_user_id)
+                                ->get(['id', 'name'])
+                                ->map(fn ($user) => [
+                                    'id' => $user->id,
+                                    'name' => $user->name,
+                                ]);
+
                             return [
                                 'id' => $approver->id,
                                 'slot_label' => $approver->slot_label,
@@ -93,6 +102,8 @@ class ApprovalController extends Controller
                                     'id' => $approver->actor->id,
                                     'name' => $approver->actor->name,
                                 ] : null,
+                                'allow_reassignment' => $step->workflowStep->allow_reassignment,
+                                'reassignment_candidates' => $reassignmentCandidates,
                                 'acted_at' => $approver->acted_at,
                                 'notes' => $approver->notes,
                             ];
@@ -160,5 +171,72 @@ class ApprovalController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    public function reassign(Request $request, string $slotId): JsonResponse
+    {
+        $request->validate([
+            'user_id' => 'required|uuid|exists:users,id',
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $slot = ApprovalInstanceStepApprover::findOrFail($slotId);
+        $newApprover = \App\Models\User::findOrFail($request->string('user_id')->toString());
+
+        try {
+            $updatedSlot = $this->approvalService->reassign($slot, $newApprover, $request->string('reason')->toString());
+
+            return response()->json([
+                'message' => __('approval.reassigned_successfully'),
+                'data' => [
+                    'id' => $updatedSlot->id,
+                    'assigned_to' => [
+                        'id' => $updatedSlot->assignedUser?->id,
+                        'name' => $updatedSlot->assignedUser?->name,
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function batchApprove(Request $request): JsonResponse
+    {
+        $request->validate([
+            'slot_ids' => 'required|array|min:1',
+            'slot_ids.*' => 'uuid|exists:approval_instance_step_approvers,id',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $slotIds = $request->input('slot_ids');
+        $results = [];
+        $successCount = 0;
+
+        foreach ($slotIds as $slotId) {
+            $slot = ApprovalInstanceStepApprover::find($slotId);
+
+            try {
+                $this->approvalService->approve($slot, $request->input('notes'));
+                $results[] = ['id' => $slotId, 'status' => 'APPROVED'];
+                $successCount++;
+            } catch (\Exception $e) {
+                $results[] = ['id' => $slotId, 'status' => 'FAILED', 'error' => $e->getMessage()];
+            }
+        }
+
+        $message = __('approval.batch_approved', ['count' => $successCount]);
+
+        return response()->json([
+            'message' => $message,
+            'data' => [
+                'total' => count($slotIds),
+                'success' => $successCount,
+                'failed' => count($slotIds) - $successCount,
+                'results' => $results,
+            ],
+        ]);
     }
 }

@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Services\ApprovalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class ApprovalFlowBugTest extends TestCase
@@ -19,6 +20,7 @@ class ApprovalFlowBugTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Notification::fake();
         
         $this->seed(\Database\Seeders\RoleSeeder::class);
         $this->seed(\Database\Seeders\ApprovalWorkflowSeeder::class);

@@ -81,4 +81,51 @@ class ApprovalController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
+
+    public function reassign(Request $request, string $slotId)
+    {
+        $request->validate([
+            'user_id' => 'required|uuid',
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        try {
+            $this->api()->post("approvals/slots/{$slotId}/reassign", [
+                'user_id' => $request->input('user_id'),
+                'reason' => $request->input('reason'),
+            ]);
+
+            return back()->with('success', __('approval.reassigned_successfully'));
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function batchApprove(Request $request)
+    {
+        $request->validate([
+            'slot_ids' => 'required|array',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $response = $this->api()->post('approvals/slots/batch-approve', [
+                'slot_ids' => $request->input('slot_ids'),
+                'notes' => $request->input('notes'),
+            ]);
+
+            $data = $response['data'];
+
+            if ($data['failed'] > 0) {
+                return back()->with('warning', __('approval.batch_partial', [
+                    'success' => $data['success'],
+                    'failed' => $data['failed'],
+                ]));
+            }
+
+            return back()->with('success', __('approval.batch_approved', ['count' => $data['success']]));
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
 }

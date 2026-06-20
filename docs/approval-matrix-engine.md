@@ -1419,28 +1419,82 @@ The implemented system supports:
 ✅ **API Endpoints** - RESTful JSON API for approve/reject actions  
 ✅ **Multi-Language** - Full translation support (EN, ID, JA)
 
-### Not Yet Implemented
+## Implementation Status Update (2026-06-18)
 
-⏳ **Delegation UI** - Tables exist, business logic ready, but no UI screens  
-⏳ **Reassignment** - Field exists but no UI implementation  
-⏳ **Scheduler Jobs** - SLA reminder/escalation jobs defined but not scheduled  
-⏳ **Permanent Transfer** - User deactivation with approval transfer (logic documented but not coded)  
-⏳ **Bulk Approval** - Approve multiple slots at once (not implemented)  
-⏳ **Notification Integration** - Events fired but listeners not created  
+### Completed after the initial implementation
+
+The outstanding production blockers from the first pass have been reduced. The following items are now implemented and covered by tests:
+
+✅ **BACK_TO_STEP rejection handling** - Rejections can return an approval instance to a configured target step. The target step is reactivated, approver slots are reset to `WAITING`, and approved downstream steps between the target and rejecting step are reset when `reject_reset_downstream` is enabled.  
+✅ **Delegation authorization** - `ApprovalService::canActOnSlot()` now allows a delegate to act when an active `approval_delegations` record matches `ALL`, `DOCUMENT_TYPE`, or `INSTANCE` scope.  
+✅ **Approval notifications** - Created approval request, reminder, escalation, and completion notification classes under `app/Notifications/Approval/`. New approval step activation notifies assigned approvers. Completed approval instances notify the submitter.  
+✅ **Scheduled approval commands** - Laravel 13 scheduling is registered in `routes/console.php`, not `app/Console/Kernel.php`. Commands now exist for reminders, escalation checks, and delegation expiry:
+- `approval:send-reminders`
+- `approval:escalate`
+- `approval:expire-delegations`
+
+✅ **Navigation entry** - `MenuSeeder` now seeds a `My Approvals` sidebar item pointing to `approvals.my-pending`.  
+✅ **Repository contract alignment** - `ApprovalRepositoryInterface` now declares the methods used by `ApprovalService`, instead of being a fake contract with half the API missing.  
+✅ **Localization** - New notification text is translated in `lang/en/approval.php`, `lang/id/approval.php`, and `lang/ja/approval.php`.  
+✅ **Approval regression tests** - `tests/Feature/ApprovalAdvancedFlowTest.php` covers request notifications, BACK_TO_STEP reset behavior, delegation-based approval, reminder command behavior, and reassignment validation.
+✅ **Reassignment** - Waiting approval slots can be reassigned by the currently assigned approver when the workflow step has `allow_reassignment = true`. The new approver must have the same required role. Reassignment updates the assigned user, stores reassignment metadata on the slot, writes an immutable `REASSIGNED` audit log, and notifies the new approver.
+✅ **Bulk Approval** - API endpoint `POST /api/v1/approvals/slots/batch-approve` accepts an array of slot UUIDs and optional notes. Each slot is processed individually using the existing `approve()` logic; results include per-slot status and aggregate counts. The "My Pending" UI provides bulk selection and a bulk approve action with optional notes.
+✅ **Workflow Admin UI** - Admin/Root users can manage approval workflow templates from `admin/approval-workflows`: create/edit workflow headers, activate/deactivate workflows, add/delete steps, and add/delete role-based approver slots. The UI uses web controllers that consume the versioned API; both web routes and API controller authorization are restricted to `Root` and `Admin`.
+✅ **Approval Matrix menu entry** - `MenuSeeder` now seeds an `Approval Matrix` sidebar item pointing to `admin.approval-workflows.index`, role-gated to `Root` and `Admin` only.
+✅ **Menu cache flush command** - `php artisan menu:flush-cache` clears the cached navigation snapshot used by the dynamic sidebar.
+✅ **Workflow admin tests** - `tests/Feature/ApprovalWorkflowAdminTest.php` covers workflow creation, step/approver setup, activation/deactivation, non-admin denial, Root/Admin menu seeding, web route role middleware, and menu cache flushing.
+
+**Test result:** `php artisan test --filter=Approval` passes: 29 tests, 107 assertions.
+
+### Current Capabilities
+
+The implemented system supports:
+
+✅ **Conditional Steps** - Steps activate based on document properties (e.g., `grand_total >= 10000`)  
+✅ **Parallel Approver Modes** - UNANIMOUS, ANY_REJECT, MAJORITY_VOTE  
+✅ **SLA Tracking** - Target dates calculated and reminder/escalation commands scheduled  
+✅ **Audit Trail** - Every action logged immutably in `approval_logs`  
+✅ **Workflow Versioning** - In-flight approvals immune to template changes  
+✅ **Role-Based Assignment** - Uses existing Spatie roles (Management, Moderator, Admin)  
+✅ **Delegation Authorization** - Active delegations can approve through `ALL`, `DOCUMENT_TYPE`, or `INSTANCE` scope  
+✅ **Reassignment** - Eligible waiting slots can be reassigned to another user with the same required role when enabled on the workflow step  
+✅ **Rejection Handling** - STOP or BACK_TO_STEP with downstream reset  
+✅ **Bulk Approval** - Batch approve multiple slots from "My Pending" with per-slot results  
+✅ **Notifications** - Request, reminder, escalation, and completion notifications exist  
+✅ **Scheduled Commands** - Reminder, escalation, and delegation expiry commands are registered in `routes/console.php`  
+✅ **Web UI** - Pending approvals list + detailed approval timeline view  
+✅ **Navigation** - `My Approvals` sidebar entry is seeded  
+✅ **API Endpoints** - RESTful JSON API for approve/reject actions  
+✅ **Workflow Admin UI** - Admin screens to manage workflow templates (steps, approvers, activation)  
+✅ **Admin Navigation** - `Approval Matrix` sidebar entry for Root/Admin roles  
+✅ **Menu Cache Flush Command** - `php artisan menu:flush-cache` clears stale navigation snapshots during debugging  
+✅ **Multi-Language** - Full translation support (EN, ID, JA)
+
+### Still Not Implemented
+
+⏳ **Delegation UI** - Tables and authorization logic exist, but no IT admin screens for creating/revoking delegations.  
+⏳ **Permanent Transfer** - User deactivation with approval transfer remains documented but not coded.  
+⏳ **Dashboards/KPI Reports** - Approval metrics, SLA breach dashboards, and KPI reports are not implemented.
 
 ### Next Steps for Production
 
-1. **Add to navigation menu** - Create menu entry for "My Approvals" in sidebar
-2. **Enable scheduler jobs** - Activate daily reminder/escalation cron jobs
-3. **Connect notifications** - Create event listeners to send email/push notifications
-4. **Add delegation UI** - Screens for IT role to manage delegations
-5. **Implement reassignment** - Allow approvers to reassign slots
-6. **Add workflow admin UI** - Screens for BOD to create/edit workflows
-7. **Performance optimization** - Add caching for workflow lookups
-8. **Add dashboards** - Approval metrics, SLA tracking, KPI reports
+1. **Add delegation management UI** - IT-only screens/API for create, revoke, and inspect delegations.
+2. **Implement permanent transfer** - Wire pending approval transfer into user deactivation flow.
+3. **Add dashboards** - Approval metrics, SLA tracking, and KPI reporting.
+4. **Performance optimization** - Cache active workflow lookups and invalidate on workflow changes.
 
-### Files Created Summary
+### Files Created/Updated Summary
 
-**Total: 38 files** (5 migrations, 9 models, 2 services, 2 repositories, 2 controllers, 2 views, 3 translations, 1 seeder, 1 test, 11 supporting files)
+Additional files added in the 2026-06-18 completion pass:
 
-The approval matrix engine is **production-ready** for the Order document type. Additional document types (PR, PO, BOQ_REVISION, etc.) can be added by creating new workflow templates via seeder or admin UI.
+- `app/Console/Commands/SendApprovalReminders.php`
+- `app/Console/Commands/EscalateApprovalSteps.php`
+- `app/Console/Commands/ExpireDelegations.php`
+- `app/Notifications/Approval/ApprovalRequestNotification.php`
+- `app/Notifications/Approval/ApprovalReminderNotification.php`
+- `app/Notifications/Approval/ApprovalEscalationNotification.php`
+- `app/Notifications/Approval/ApprovalCompletedNotification.php`
+- `app/Listeners/SendApprovalCompletedNotification.php`
+- `tests/Feature/ApprovalAdvancedFlowTest.php`
+
+The approval matrix engine is now substantially more production-ready for the Order document type. The remaining work is mostly administrative UI and operational reporting, not core approval state-machine behavior.

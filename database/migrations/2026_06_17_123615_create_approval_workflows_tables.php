@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreignUuid('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
-            $table->unique(['document_type', 'is_active'], 'idx_active_workflow_per_type');
+            $table->index(['document_type', 'is_active'], 'idx_workflow_document_active');
             $table->index('is_active');
         });
 

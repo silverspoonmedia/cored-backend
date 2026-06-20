@@ -177,4 +177,18 @@ class ApprovalRepository implements ApprovalRepositoryInterface
             ->where('status', 'WAITING')
             ->update(['status' => 'CANCELLED']);
     }
+
+    public function reassignSlot(
+        string $slotId,
+        string $newUserId,
+        string $actorId,
+        string $reason
+    ): void {
+        ApprovalInstanceStepApprover::where('id', $slotId)->update([
+            'assigned_user_id' => $newUserId,
+            'reassigned_to' => $newUserId,
+            'actor_id' => $actorId,
+            'reassignment_reason' => $reason,
+        ]);
+    }
 }

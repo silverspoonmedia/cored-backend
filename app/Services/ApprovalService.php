@@ -3,10 +3,13 @@
 namespace App\Services;
 
 use App\Events\ApprovalCompleted;
+use App\Models\ApprovalDelegation;
 use App\Models\ApprovalInstance;
+use App\Models\ApprovalInstanceStep;
 use App\Models\ApprovalInstanceStepApprover;
 use App\Models\ApprovalLog;
 use App\Models\User;
+use App\Notifications\Approval\ApprovalRequestNotification;
 use App\Repositories\Contracts\ApprovalRepositoryInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -113,6 +116,10 @@ class ApprovalService
                 );
             }
 
+            if ($slot->status !== 'WAITING') {
+                throw new \Exception(__('approval.slot_not_waiting'));
+            }
+
             // Update slot
             $this->repository->updateSlotStatus(
                 $slot->id,
@@ -182,42 +189,50 @@ class ApprovalService
             $step = $slot->instanceStep->fresh();
             $workflowStep = $step->workflowStep;
 
-            // Check parallel mode - might not be final rejection
-            if ($workflowStep->parallel_mode === 'MAJORITY_VOTE') {
-                $stepComplete = $this->evaluateStepCompletion($step);
-                if (! $stepComplete) {
-                    return; // Not enough votes yet
-                }
+            if (! $this->evaluateStepCompletion($step)) {
+                return;
             }
 
-            // Step is rejected
-            $this->repository->updateStepStatus($step->id, 'REJECTED');
+            $finalStatus = $this->resolveStepFinalStatus($step);
+            $this->repository->updateStepStatus($step->id, $finalStatus);
             $this->repository->cancelRemainingSlots($step->id);
 
-            // Handle reject action
-            if ($workflowStep->reject_action === 'STOP') {
-                $this->repository->updateInstanceStatus($step->instance_id, 'REJECTED');
-                
-                // Dispatch event for rejected approval
-                $instance = ApprovalInstance::find($step->instance_id);
-                ApprovalCompleted::dispatch($instance);
+            if ($finalStatus === 'APPROVED') {
+                $this->activateNextStep($step->instance->fresh());
+                return;
             }
+
+            if ($workflowStep->reject_action === 'BACK_TO_STEP') {
+                $this->handleBackToStep($step);
+                return;
+            }
+
+            $this->repository->updateInstanceStatus($step->instance_id, 'REJECTED');
+            ApprovalCompleted::dispatch(ApprovalInstance::find($step->instance_id));
         });
     }
 
     /**
-     * Check if user can act on a slot.
+     * Check if user can act on a slot (direct role or active delegation).
      */
     protected function canActOnSlot(User $user, ApprovalInstanceStepApprover $slot): bool
     {
-        // Direct role match
         if ($user->hasRole($slot->required_role)) {
             return true;
         }
 
-        // TODO: Check active delegation
-
-        return false;
+        return ApprovalDelegation::where('delegate_id', $user->id)
+            ->where('is_active', true)
+            ->where('valid_from', '<=', now())
+            ->where('valid_until', '>=', now())
+            ->where(function ($q) use ($slot) {
+                $q->where('scope', 'ALL')
+                  ->orWhere(fn ($q2) => $q2->where('scope', 'DOCUMENT_TYPE')
+                                          ->where('document_type', $slot->instanceStep->instance->document_type))
+                  ->orWhere(fn ($q3) => $q3->where('scope', 'INSTANCE')
+                                          ->where('instance_id', $slot->instanceStep->instance_id));
+            })
+            ->exists();
     }
 
     /**
@@ -252,6 +267,104 @@ class ApprovalService
     }
 
     /**
+     * Determine whether a completed step is APPROVED or REJECTED.
+     */
+    protected function resolveStepFinalStatus(ApprovalInstanceStep $step): string
+    {
+        $workflowStep = $step->workflowStep;
+        $approvedCount = $step->approvers()->where('status', 'APPROVED')->count();
+        $rejectedCount = $step->approvers()->where('status', 'REJECTED')->count();
+
+        if (in_array($workflowStep->parallel_mode, ['UNANIMOUS', 'ANY_REJECT'], true)) {
+            return $rejectedCount > 0 ? 'REJECTED' : 'APPROVED';
+        }
+
+        $total = $step->approvers()->count();
+        $threshold = floor($total / 2) + 1;
+
+        return $approvedCount >= $threshold ? 'APPROVED' : 'REJECTED';
+    }
+
+    /**
+     * Reset target step (and downstream if configured) after a BACK_TO_STEP rejection.
+     */
+    protected function handleBackToStep(ApprovalInstanceStep $rejectedStep): void
+    {
+        $instance = $rejectedStep->instance;
+        $workflowStep = $rejectedStep->workflowStep;
+        $targetOrder = $workflowStep->reject_target_step_order;
+
+        $document = null;
+        if ($instance->document_type === 'ORDER') {
+            $document = \App\Models\Order::find($instance->document_id);
+        }
+
+        if ($targetOrder === null) {
+            $this->repository->updateInstanceStatus($instance->id, 'REJECTED');
+
+            if ($document && $workflowStep->reject_set_doc_status) {
+                $document->update(['status' => $workflowStep->reject_set_doc_status]);
+            }
+
+            ApprovalCompleted::dispatch($instance->fresh());
+            return;
+        }
+
+        $targetStep = $instance->steps()->where('step_order', $targetOrder)->firstOrFail();
+
+        $targetStep->approvers()->update([
+            'status' => 'WAITING',
+            'actor_id' => null,
+            'acted_at' => null,
+            'notes' => null,
+        ]);
+
+        $targetStep->update([
+            'status' => 'IN_PROGRESS',
+            'activated_at' => now(),
+            'completed_at' => null,
+        ]);
+
+        if ($workflowStep->reject_reset_downstream !== false) {
+            $instance->steps()
+                ->where('step_order', '>', $targetOrder)
+                ->where('step_order', '<', $rejectedStep->step_order)
+                ->where('status', 'APPROVED')
+                ->each(function (ApprovalInstanceStep $step) {
+                    $step->approvers()->update([
+                        'status' => 'WAITING',
+                        'actor_id' => null,
+                        'acted_at' => null,
+                        'notes' => null,
+                    ]);
+
+                    $step->update([
+                        'status' => 'WAITING',
+                        'activated_at' => null,
+                        'completed_at' => null,
+                    ]);
+                });
+        }
+
+        ApprovalLog::create([
+            'instance_id' => $instance->id,
+            'instance_step_id' => $targetStep->id,
+            'action' => 'REJECTED',
+            'actor_id' => auth()->id(),
+            'notes' => "Returned to step {$targetOrder} from step {$rejectedStep->step_order}",
+            'metadata' => [
+                'from_step' => $rejectedStep->step_order,
+                'to_step' => $targetOrder,
+                'reset_downstream' => $workflowStep->reject_reset_downstream !== false,
+            ],
+        ]);
+
+        if ($document && $workflowStep->reject_set_doc_status) {
+            $document->update(['status' => $workflowStep->reject_set_doc_status]);
+        }
+    }
+
+    /**
      * Activate next waiting step or complete instance.
      */
     protected function activateNextStep(ApprovalInstance $instance): void
@@ -268,17 +381,84 @@ class ApprovalService
             // No more steps - instance complete
             $this->repository->updateInstanceStatus($instance->id, 'APPROVED');
             
-            // Dispatch event for approved completion
-            \Log::info('🎉 DISPATCHING ApprovalCompleted event', [
-                'instance_id' => $instance->id,
-                'document_type' => $instance->document_type,
-                'document_id' => $instance->document_id,
-            ]);
             ApprovalCompleted::dispatch($instance->fresh());
             return;
         }
 
-        // Activate next step
         $this->repository->activateStep($nextStep->id);
+
+        foreach ($nextStep->fresh('approvers.assignedUser')->approvers as $approver) {
+            if ($approver->assignedUser) {
+                $approver->assignedUser->notify(new ApprovalRequestNotification($approver));
+            }
+        }
+    }
+
+    public function reassign(ApprovalInstanceStepApprover $slot, User $newApprover, string $reason): ApprovalInstanceStepApprover
+    {
+        return DB::transaction(function () use ($slot, $newApprover, $reason) {
+            $actor = auth()->user();
+            $slot = $slot->fresh(['instanceStep.workflowStep', 'assignedUser']);
+            $step = $slot->instanceStep;
+            $workflowStep = $step->workflowStep;
+
+            if ($step->status !== 'IN_PROGRESS') {
+                throw new \Exception(__('approval.reassignment_step_not_active'));
+            }
+
+            if ($slot->status !== 'WAITING') {
+                throw new \Exception(__('approval.reassignment_slot_not_waiting'));
+            }
+
+            if ($workflowStep->allow_reassignment !== true) {
+                throw new \Exception(__('approval.reassignment_not_allowed'));
+            }
+
+            if (! $actor || $slot->assigned_user_id !== $actor->id) {
+                throw new \Exception(__('approval.reassignment_only_assignee'));
+            }
+
+            if (! $newApprover->hasRole($slot->required_role)) {
+                throw new \Exception(__('approval.reassignment_same_role_required', [
+                    'role' => $slot->required_role,
+                ]));
+            }
+
+            if ($newApprover->id === $slot->assigned_user_id) {
+                throw new \Exception(__('approval.reassignment_same_user'));
+            }
+
+            $oldUserId = $slot->assigned_user_id;
+
+            $this->repository->reassignSlot(
+                $slot->id,
+                $newApprover->id,
+                $actor->id,
+                $reason
+            );
+
+            ApprovalLog::create([
+                'instance_id' => $step->instance_id,
+                'instance_step_id' => $step->id,
+                'action' => 'REASSIGNED',
+                'actor_id' => $actor->id,
+                'target_user_id' => $newApprover->id,
+                'notes' => $reason,
+                'metadata' => [
+                    'slot_id' => $slot->id,
+                    'from_user_id' => $oldUserId,
+                    'to_user_id' => $newApprover->id,
+                    'required_role' => $slot->required_role,
+                ],
+            ]);
+
+            $updatedSlot = $slot->fresh(['assignedUser']);
+
+            if ($updatedSlot->assignedUser) {
+                $updatedSlot->assignedUser->notify(new ApprovalRequestNotification($updatedSlot));
+            }
+
+            return $updatedSlot;
+        });
     }
 }

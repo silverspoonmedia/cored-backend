@@ -10,7 +10,6 @@
     @if(!$instance)
         <div class="alert alert-danger">{{ __('approval.instance_not_found') }}</div>
     @else
-        <!-- Instance Info -->
         <x-adminlte4::card :title="__('approval.approval_details')">
             <x-slot name="tools">
                 <span class="badge badge-{{ $instance['status'] === 'PENDING' ? 'warning' : ($instance['status'] === 'APPROVED' ? 'success' : 'danger') }}">
@@ -38,7 +37,6 @@
             </dl>
         </x-adminlte4::card>
 
-        <!-- Steps -->
         <x-adminlte4::card :title="__('approval.approval_steps')">
             @foreach($instance['steps'] as $step)
                 <div class="card mb-3 {{ $step['status'] === 'IN_PROGRESS' ? 'border-primary' : '' }}">
@@ -74,14 +72,19 @@
                                         <td>{{ $approver['notes'] ?? '-' }}</td>
                                         <td>
                                             @if($approver['status'] === 'WAITING' && $approver['assigned_to'] && $approver['assigned_to']['id'] === auth()->id())
-                                                <button type="button" class="btn btn-sm btn-success" 
-                                                        onclick="approveSlot('{{ $approver['id'] }}')">
+                                                <button type="button" class="btn btn-sm btn-success" onclick="approveSlot('{{ $approver['id'] }}')">
                                                     {{ __('approval.approve') }}
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-danger" 
-                                                        onclick="rejectSlot('{{ $approver['id'] }}')">
+                                                <button type="button" class="btn btn-sm btn-danger" onclick="rejectSlot('{{ $approver['id'] }}')">
                                                     {{ __('approval.reject') }}
                                                 </button>
+                                                @if($approver['allow_reassignment'] && count($approver['reassignment_candidates']) > 0)
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-warning"
+                                                            onclick='reassignSlot(@json($approver["id"]), @json($approver["reassignment_candidates"]))'>
+                                                        {{ __('approval.reassign') }}
+                                                    </button>
+                                                @endif
                                             @endif
                                         </td>
                                     </tr>
@@ -94,7 +97,6 @@
         </x-adminlte4::card>
     @endif
 
-    <!-- Approve/Reject Modals -->
     <div class="modal fade" id="rejectModal" tabindex="-1">
         <div class="modal-dialog">
             <form id="rejectForm" method="POST">
@@ -119,46 +121,68 @@
         </div>
     </div>
 
+    <div class="modal fade" id="reassignModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form id="reassignForm" method="POST">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ __('approval.reassign_confirmation') }}</h5>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>{{ __('approval.reassign_select_user') }} *</label>
+                            <select id="reassignUserId" name="user_id" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>{{ __('approval.reassign_reason') }} *</label>
+                            <textarea name="reason" class="form-control" rows="4" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('approval.cancel') }}</button>
+                        <button type="submit" class="btn btn-warning">{{ __('approval.confirm_reassign') }}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
     function approveSlot(slotId) {
-        console.log('approveSlot called with:', slotId);
-        if (confirm('{{ __('approval.confirm_approve') }}')) {
-            console.log('User confirmed approve');
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/approvals/slots/${slotId}/approve`;
-            
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = '_token';
-            csrfInput.value = '{{ csrf_token() }}';
-            form.appendChild(csrfInput);
-            
-            document.body.appendChild(form);
-            console.log('Form created, about to submit:', form.action);
-            form.submit();
+        if (!confirm('{{ __('approval.confirm_approve') }}')) {
+            return;
         }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/approvals/slots/${slotId}/approve`;
+        form.innerHTML = `@csrf`;
+        document.body.appendChild(form);
+        form.submit();
     }
 
     function rejectSlot(slotId) {
-        console.log('rejectSlot called with:', slotId);
         const form = document.getElementById('rejectForm');
         form.action = `/approvals/slots/${slotId}/reject`;
-        console.log('Opening modal, form action:', form.action);
-        if (typeof $ !== 'undefined') {
-            $('#rejectModal').modal('show');
-        } else {
-            // Fallback if jQuery not loaded
-            document.getElementById('rejectModal').classList.add('show');
-            document.getElementById('rejectModal').style.display = 'block';
-        }
+        $('#rejectModal').modal('show');
     }
 
-    // Debug: Check if buttons exist
-    console.log('Approval script loaded');
-    const approveButtons = document.querySelectorAll('button[onclick^="approveSlot"]');
-    const rejectButtons = document.querySelectorAll('button[onclick^="rejectSlot"]');
-    console.log('Approve buttons found:', approveButtons.length);
-    console.log('Reject buttons found:', rejectButtons.length);
+    function reassignSlot(slotId, candidates) {
+        const form = document.getElementById('reassignForm');
+        const select = document.getElementById('reassignUserId');
+        form.action = `/approvals/slots/${slotId}/reassign`;
+        select.innerHTML = '<option value="">--</option>';
+
+        candidates.forEach(function (candidate) {
+            const option = document.createElement('option');
+            option.value = candidate.id;
+            option.textContent = candidate.name;
+            select.appendChild(option);
+        });
+
+        $('#reassignModal').modal('show');
+    }
     </script>
 </x-adminlte4::layouts.app>

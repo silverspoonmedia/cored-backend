@@ -78,6 +78,17 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
 
+        Menu::query()->create([
+            'parent_id' => $main->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'My Approvals', 'id' => 'Approval Saya', 'ja' => '自分の承認'],
+            'icon' => 'bi bi-check2-square',
+            'route' => 'approvals.my-pending',
+            'type' => 'p',
+            'order' => 4,
+            'is_authenticate' => true,
+        ]);
+
         // Master-detail playground reference (Order + OrderDetail). No RBAC in the
         // playground, so it is visible to any authenticated viewer.
         Menu::query()->create([
@@ -87,7 +98,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-cart',
             'route' => 'orders.index',
             'type' => 'p',
-            'order' => 4,
+            'order' => 5,
             'is_authenticate' => true,
         ]);
 
@@ -102,6 +113,24 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
 
+        $adminRoleIds = Role::query()
+            ->where('guard_name', 'api')
+            ->whereIn('name', ['Root', 'Admin'])
+            ->pluck('id')
+            ->all();
+
+        $workflowsItem = Menu::query()->create([
+            'parent_id' => $admin->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Approval Matrix', 'id' => 'Matriks Approval', 'ja' => '承認マトリックス'],
+            'icon' => 'bi bi-diagram-3',
+            'route' => 'admin.approval-workflows.index',
+            'type' => 'p',
+            'order' => 1,
+            'is_authenticate' => true,
+        ]);
+        $workflowsItem->roles()->sync($adminRoleIds);
+
         $menus = Menu::query()->create([
             'parent_id' => $admin->id,
             'layout' => MenuLayout::SIDEBAR,
@@ -109,7 +138,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-list-nested',
             'route' => null,
             'type' => 'p',
-            'order' => 1,
+            'order' => 2,
             'is_authenticate' => true,
         ]);
         $menus->roles()->sync($managementRoleIds);
