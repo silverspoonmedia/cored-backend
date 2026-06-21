@@ -235,6 +235,8 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 4 / jQuery 3 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
 | [Activity notifications (per role + per user)](docs/notifications.md) | Generic event-driven notification engine: broadcast to whole roles and/or target specific users, per-user read state, navbar bell with **polling (local)** or **realtime websocket (production + Pusher)** via Vite + Laravel Echo |
+| [Activity log (audit trail)](docs/activity-log.md) | Spatie laravel-activitylog v5: immutable mutation audit (`activity_log`), automatic model logging, role-assignment events, API viewer + Blade screens |
+| [Authentication activity assessment](docs/auth-activity-assessment.md) | Auth event coverage matrix: login/logout/2FA/password → activity log vs file log, gaps and security notes |
 | [Web frontend (Blade + AdminLTE 4)](docs/web-frontend.md) | Server-rendered admin UI that **consumes the versioned API** (web = API client); JWT-in-HttpOnly-cookie auth forwarded as Bearer, reusable Blade components, user & menu management screens |
 
 ### Authentication and authorization
@@ -273,6 +275,8 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - Dual-mode list/index (query JSON vs DataTables + RBAC actions) → [list-display-modes.md](docs/list-display-modes.md)
 - Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/navigation-menu.md)
 - Role-targeted + personal activity notifications (events → roles/users) → [notifications.md](docs/notifications.md)
+- Immutable mutation audit trail (Spatie activitylog) → [activity-log.md](docs/activity-log.md)
+- Auth sessions and password events in activity log → [auth-activity-assessment.md](docs/auth-activity-assessment.md)
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
 - Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi` → [web-frontend.md](docs/web-frontend.md)
 - Multi-language (API, Blade, DB) → [localization.md](docs/localization.md)

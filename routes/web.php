@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Web\ActivityLogController;
 use App\Http\Controllers\Web\ApprovalController;
 use App\Http\Controllers\Web\ApprovalWorkflowAdminController;
 use App\Http\Controllers\Web\Auth\EmailVerificationController;
@@ -39,7 +40,7 @@ Route::get('locale/{locale}', LocaleController::class)->name('locale.switch');
 Route::middleware('web.guest')->group(function (): void {
     Route::get('login', [LoginController::class, 'create'])->name('login');
     Route::post('login', [LoginController::class, 'store'])->name('login.store');
-    
+
     Route::get('two-factor-challenge', [TwoFactorWebController::class, 'create'])->name('two-factor.challenge');
     Route::post('two-factor-challenge', [TwoFactorWebController::class, 'store'])->name('two-factor.challenge.store');
 
@@ -120,6 +121,12 @@ Route::middleware('web.auth')->group(function (): void {
     Route::get('menus/{menu}/edit', [MenuController::class, 'edit'])->whereUuid('menu')->name('menus.edit');
     Route::post('menus/{menu}/restore', [MenuController::class, 'restore'])->whereUuid('menu')->name('menus.restore');
     Route::apiResource('menus', MenuController::class)->except(['show'])->whereUuid('menu');
+
+    // Activity audit log — forwarded to /api/v1/activity-logs (the API authorizes).
+    Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+    Route::get('activity-logs/{activity}', [ActivityLogController::class, 'show'])
+        ->whereNumber('activity')
+        ->name('activity-logs.show');
 
     // Activity notifications — forwarded to /api/v1/notifications (the API authorizes).
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\V1\ActivityLogController;
 use App\Http\Controllers\API\V1\AdminController;
 use App\Http\Controllers\API\V1\Auth\AuthController;
 use App\Http\Controllers\API\V1\Auth\EmailVerificationController;
@@ -78,6 +79,22 @@ Route::middleware(['auth:api', 'permission:view notification'])
             ->whereUuid('notification')
             ->name('read');
     });
+
+// Immutable audit trail (Spatie activitylog). Distinct from activity notifications.
+Route::middleware(['auth:api', 'permission:view activity log'])
+    ->prefix('activity-logs')
+    ->name('activity-logs.')
+    ->group(function (): void {
+        Route::get('/', [ActivityLogController::class, 'index'])->name('index');
+        Route::get('{activity}', [ActivityLogController::class, 'show'])
+            ->whereNumber('activity')
+            ->name('show');
+    });
+
+Route::middleware(['auth:api', 'permission:view activity log'])
+    ->get('users/{user}/activity-logs', [ActivityLogController::class, 'forUser'])
+    ->whereUuid('user')
+    ->name('users.activity-logs');
 
 Route::prefix('navigation/menus')->name('navigation.menus.')->group(function (): void {
     // Public/optional-auth navigation tree: filtered for the current viewer.

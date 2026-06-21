@@ -53,6 +53,14 @@ class UserManagementService
 
         $user->syncRoles([$roleName]);
 
+        activity()
+            ->useLog('user')
+            ->causedBy($actor)
+            ->performedOn($user)
+            ->event('role_assigned')
+            ->withProperties(['role' => $roleName])
+            ->log('role_assigned');
+
         // Fan out a role-targeted notification (Root + Admin by default). Both the
         // API and the Blade UI funnel user creation through here, so one dispatch
         // covers every entry point.
@@ -89,7 +97,21 @@ class UserManagementService
         $user = $this->users->update($id, $attributes);
 
         if (isset($data['role'])) {
+            $previousRole = $user->roles->first()?->name;
             $user->syncRoles([$data['role']]);
+
+            if ($previousRole !== $data['role']) {
+                activity()
+                    ->useLog('user')
+                    ->causedBy($actor)
+                    ->performedOn($user)
+                    ->event('role_assigned')
+                    ->withProperties([
+                        'previous_role' => $previousRole,
+                        'role' => $data['role'],
+                    ])
+                    ->log('role_assigned');
+            }
         }
 
         // Personal notification: tell the affected user their account changed —

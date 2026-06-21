@@ -4,11 +4,21 @@ namespace App\Listeners\Auth;
 
 use App\Events\Auth\LoginFailed;
 use App\Events\Auth\LoginSuccessful;
+use App\Events\Auth\PasswordChanged;
+use App\Events\Auth\TwoFactorChallengeIssued;
+use App\Events\Auth\TwoFactorDisabled;
+use App\Events\Auth\TwoFactorEnabled;
+use App\Events\Auth\TwoFactorLoginFailed;
 use App\Events\Auth\UserLoggedOut;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
-class LogAuthenticationEvents implements ShouldQueue
+/**
+ * Writes auth domain events to Laravel's file log.
+ *
+ * Synchronous for the same reason as {@see RecordAuthenticationActivity}:
+ * audit visibility must not depend on a queue worker in local/dev.
+ */
+class LogAuthenticationEvents
 {
     public function handleLoginSuccessful(LoginSuccessful $event): void
     {
@@ -38,6 +48,57 @@ class LogAuthenticationEvents implements ShouldQueue
         ]);
     }
 
+    public function handleTwoFactorChallengeIssued(TwoFactorChallengeIssued $event): void
+    {
+        Log::info('Two-factor challenge issued', [
+            'user_id' => $event->user->id,
+            'email' => $event->user->email,
+            'ip_address' => $event->ipAddress,
+            'user_agent' => $event->userAgent,
+        ]);
+    }
+
+    public function handleTwoFactorLoginFailed(TwoFactorLoginFailed $event): void
+    {
+        Log::warning('Two-factor login failed', [
+            'user_id' => $event->user?->id,
+            'email' => $event->user?->email,
+            'reason' => $event->reason,
+            'ip_address' => $event->ipAddress,
+            'user_agent' => $event->userAgent,
+        ]);
+    }
+
+    public function handlePasswordChanged(PasswordChanged $event): void
+    {
+        Log::info('User password changed', [
+            'user_id' => $event->user->id,
+            'email' => $event->user->email,
+            'method' => $event->method,
+            'ip_address' => $event->ipAddress,
+        ]);
+    }
+
+    public function handleTwoFactorEnabled(TwoFactorEnabled $event): void
+    {
+        Log::info('Two-factor authentication enabled', [
+            'user_id' => $event->user->id,
+            'email' => $event->user->email,
+            'ip_address' => $event->ipAddress,
+            'user_agent' => $event->userAgent,
+        ]);
+    }
+
+    public function handleTwoFactorDisabled(TwoFactorDisabled $event): void
+    {
+        Log::info('Two-factor authentication disabled', [
+            'user_id' => $event->user->id,
+            'email' => $event->user->email,
+            'ip_address' => $event->ipAddress,
+            'user_agent' => $event->userAgent,
+        ]);
+    }
+
     /**
      * Register event listener subscriptions.
      *
@@ -49,6 +110,11 @@ class LogAuthenticationEvents implements ShouldQueue
             LoginSuccessful::class => 'handleLoginSuccessful',
             LoginFailed::class => 'handleLoginFailed',
             UserLoggedOut::class => 'handleUserLoggedOut',
+            TwoFactorChallengeIssued::class => 'handleTwoFactorChallengeIssued',
+            TwoFactorLoginFailed::class => 'handleTwoFactorLoginFailed',
+            PasswordChanged::class => 'handlePasswordChanged',
+            TwoFactorEnabled::class => 'handleTwoFactorEnabled',
+            TwoFactorDisabled::class => 'handleTwoFactorDisabled',
         ];
     }
 }

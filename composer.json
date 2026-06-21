@@ -23,6 +23,7 @@
         "pragmarx/google2fa-laravel": "^3.0",
         "pusher/pusher-php-server": "^7.2",
         "silverspoonmedia/pdf-tools": "dev-main",
+        "spatie/laravel-activitylog": "^5.0",
         "spatie/laravel-pdf": "^2.12",
         "spatie/laravel-permission": "^8.0",
         "spatie/laravel-translatable": "^6.14",

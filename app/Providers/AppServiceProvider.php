@@ -8,12 +8,14 @@ use App\Listeners\UpdateDocumentStatus;
 use App\Models\Role;
 use App\Models\User;
 use App\Policies\UserPolicy;
+use App\Repositories\Contracts\ActivityLogRepositoryInterface;
 use App\Repositories\Contracts\ApprovalRepositoryInterface;
 use App\Repositories\Contracts\EloquentCrudRepositoryInterface;
 use App\Repositories\Contracts\MenuRepositoryInterface;
 use App\Repositories\Contracts\NotificationRepositoryInterface;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
+use App\Repositories\Eloquent\ActivityLogRepository;
 use App\Repositories\Eloquent\ApprovalRepository;
 use App\Repositories\Eloquent\EloquentCrudRepository;
 use App\Repositories\Eloquent\MenuRepository;
@@ -41,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(MenuRepositoryInterface::class, MenuRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
+        $this->app->bind(ActivityLogRepositoryInterface::class, ActivityLogRepository::class);
         $this->app->bind(OrderRepositoryInterface::class, OrderRepository::class);
         $this->app->bind(ApprovalRepositoryInterface::class, ApprovalRepository::class);
         $this->app->singleton(DataTableResponseFactory::class);
@@ -56,6 +59,10 @@ class AppServiceProvider extends ServiceProvider
         // Register event listeners
         Event::listen(ApprovalCompleted::class, UpdateDocumentStatus::class);
         Event::listen(ApprovalCompleted::class, SendApprovalCompletedNotification::class);
+
+        // Auth subscribers (LogAuthenticationEvents, RecordAuthenticationActivity) use
+        // subscribe() and are auto-discovered — do not Event::subscribe() them here
+        // or every auth activity row is written twice.
 
         // The navigation snapshot caches role names. Renaming or deleting a role
         // would otherwise leave the cached gate referencing a stale name.

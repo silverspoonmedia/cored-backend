@@ -64,6 +64,8 @@ User model / database
 
 Auth-specific failures use `App\Exceptions\Auth\*` classes extending `BusinessRuleException`, which render JSON for `api/*` requests.
 
+**Audit trail:** Login, logout, 2FA, and password changes are recorded in Spatie activitylog (`log_name: auth`) and in Laravel's file log via event listeners. See [Authentication activity assessment](./auth-activity-assessment.md) and [Activity log](./activity-log.md).
+
 ### Directory layout
 
 ```
