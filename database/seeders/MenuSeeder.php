@@ -131,6 +131,18 @@ class MenuSeeder extends Seeder
         ]);
         $workflowsItem->roles()->sync($adminRoleIds);
 
+        $activityLogItem = Menu::query()->create([
+            'parent_id' => $admin->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Activity log', 'id' => 'Log Aktivitas', 'ja' => 'アクティビティログ'],
+            'icon' => 'bi bi-journal-text',
+            'route' => 'activity-logs.index',
+            'type' => 'p',
+            'order' => 2,
+            'is_authenticate' => true,
+        ]);
+        $activityLogItem->roles()->sync($adminRoleIds);
+
         $menus = Menu::query()->create([
             'parent_id' => $admin->id,
             'layout' => MenuLayout::SIDEBAR,
@@ -138,7 +150,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-list-nested',
             'route' => null,
             'type' => 'p',
-            'order' => 2,
+            'order' => 3,
             'is_authenticate' => true,
         ]);
         $menus->roles()->sync($managementRoleIds);

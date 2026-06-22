@@ -15,5 +15,7 @@ class LoginSuccessful
         public User $user,
         public string $ipAddress,
         public ?string $userAgent = null,
+        /** @var 'password'|'two_factor' */
+        public string $loginMethod = 'password',
     ) {}
 }

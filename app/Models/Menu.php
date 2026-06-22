@@ -11,12 +11,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Translatable\HasTranslations;
 
 class Menu extends Model
 {
     /** @use HasFactory<MenuFactory> */
-    use HasFactory, HasTranslations, HasUuids, SoftDeletes;
+    use HasFactory, HasTranslations, HasUuids, LogsActivity, SoftDeletes;
 
     /** @var list<string> */
     public array $translatable = ['name', 'description'];
@@ -121,5 +123,25 @@ class Menu extends Model
             'order' => $this->order,
             'children' => [],
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'parent_id',
+                'layout',
+                'name',
+                'description',
+                'icon',
+                'route',
+                'type',
+                'order',
+                'is_authenticate',
+                'is_guest_only',
+            ])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('menu');
     }
 }

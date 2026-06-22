@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * Order master — the aggregate root of the master-detail pair. Owns many
@@ -35,7 +37,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, LogsActivity;
 
     protected $table = 'order_master';
 
@@ -66,5 +68,14 @@ class Order extends Model
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('order');
     }
 }

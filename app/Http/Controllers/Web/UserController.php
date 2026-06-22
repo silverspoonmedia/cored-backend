@@ -91,6 +91,7 @@ class UserController extends Controller
         }
 
         $roles = $this->api()->get('users/assignable-roles');
+        $activityLogs = $this->api()->get("users/{$user}/activity-logs", ['limit' => 10]);
 
         $data = $response->json('data', []);
 
@@ -98,6 +99,7 @@ class UserController extends Controller
             'user' => (object) $data,
             'currentRole' => data_get($data, 'roles.0.name'),
             'assignableRoles' => collect($roles->successful() ? $roles->json('data', []) : []),
+            'activityLogs' => $activityLogs->successful() ? $activityLogs->json('data', []) : [],
         ]);
     }
 

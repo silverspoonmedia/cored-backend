@@ -4,6 +4,8 @@ namespace App\Services\Auth;
 
 use App\Events\Auth\LoginFailed;
 use App\Events\Auth\LoginSuccessful;
+use App\Events\Auth\TwoFactorChallengeIssued;
+use App\Events\Auth\TwoFactorLoginFailed;
 use App\Events\Auth\UserLoggedOut;
 use App\Exceptions\Auth\InvalidCredentialsException;
 use App\Exceptions\Auth\InvalidTwoFactorCodeException;
@@ -70,6 +72,12 @@ class AuthService
                 if ($this->twoFactor->enabled($user)) {
                     $guard->setToken($token)->invalidate();
 
+                    TwoFactorChallengeIssued::dispatch(
+                        $user,
+                        request()->ip() ?? 'unknown',
+                        request()->userAgent(),
+                    );
+
                     return $this->buildTwoFactorChallengePayload($user, $remember);
                 }
 
@@ -120,19 +128,33 @@ class AuthService
         $challenge = Cache::pull($this->twoFactorCacheKey($twoFactorToken));
 
         if (! is_array($challenge) || ! isset($challenge['user_id'], $challenge['remember'])) {
+            TwoFactorLoginFailed::dispatch(
+                request()->ip() ?? 'unknown',
+                'invalid_token',
+                request()->userAgent(),
+            );
+
             throw new InvalidTwoFactorCodeException;
         }
 
         $user = User::query()->find((string) $challenge['user_id']);
 
         if (! $user || ! $this->twoFactor->verifyLogin($user, $code)) {
+            TwoFactorLoginFailed::dispatch(
+                request()->ip() ?? 'unknown',
+                'invalid_code',
+                request()->userAgent(),
+                $user,
+            );
+
             throw new InvalidTwoFactorCodeException;
         }
 
         LoginSuccessful::dispatch(
             $user,
             request()->ip() ?? 'unknown',
-            request()->userAgent()
+            request()->userAgent(),
+            'two_factor',
         );
 
         return $this->withTokenLifetime((bool) $challenge['remember'], function (int $ttlMinutes) use ($user, $challenge) {

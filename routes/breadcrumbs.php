@@ -81,6 +81,17 @@ Breadcrumbs::for('menus.trashed', function (Trail $trail): void {
     $trail->push(__('web/menus.trashed_breadcrumb'));
 });
 
+// Activity audit log.
+Breadcrumbs::for('activity-logs.index', function (Trail $trail): void {
+    $trail->parent('dashboard');
+    $trail->push(__('web/activity-log.breadcrumb'));
+});
+
+Breadcrumbs::for('activity-logs.show', function (Trail $trail): void {
+    $trail->parent('activity-logs.index');
+    $trail->push(__('web/activity-log.show_breadcrumb'));
+});
+
 // Notifications.
 Breadcrumbs::for('notifications.index', function (Trail $trail): void {
     $trail->parent('dashboard');

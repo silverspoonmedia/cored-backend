@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Events\Auth\PasswordChanged;
 use App\Exceptions\Auth\CurrentPasswordIncorrectException;
 use App\Exceptions\Auth\InvalidPasswordResetTokenException;
 use App\Repositories\Contracts\UserRepositoryInterface;
@@ -40,6 +41,12 @@ class PasswordResetService
                 ]);
 
                 event(new PasswordReset($user));
+
+                PasswordChanged::dispatch(
+                    $user,
+                    request()->ip() ?? 'unknown',
+                    'reset',
+                );
             },
         );
 
@@ -62,5 +69,11 @@ class PasswordResetService
         $this->users->update($userId, [
             'password' => $data['password'],
         ]);
+
+        PasswordChanged::dispatch(
+            $user->fresh() ?? $user,
+            request()->ip() ?? 'unknown',
+            'change',
+        );
     }
 }

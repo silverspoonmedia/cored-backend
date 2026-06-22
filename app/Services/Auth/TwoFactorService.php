@@ -2,6 +2,8 @@
 
 namespace App\Services\Auth;
 
+use App\Events\Auth\TwoFactorDisabled;
+use App\Events\Auth\TwoFactorEnabled;
 use App\Exceptions\Auth\InvalidTwoFactorCodeException;
 use App\Exceptions\Auth\TwoFactorAlreadyEnabledException;
 use App\Exceptions\Auth\TwoFactorNotEnabledException;
@@ -48,6 +50,12 @@ class TwoFactorService
             'two_factor_confirmed_at' => now(),
         ])->save();
 
+        TwoFactorEnabled::dispatch(
+            $user,
+            request()->ip() ?? 'unknown',
+            request()->userAgent(),
+        );
+
         return ['confirmed_at' => $user->two_factor_confirmed_at->toIso8601String()];
     }
 
@@ -67,6 +75,12 @@ class TwoFactorService
             'two_factor_secret' => null,
             'two_factor_confirmed_at' => null,
         ])->save();
+
+        TwoFactorDisabled::dispatch(
+            $user,
+            request()->ip() ?? 'unknown',
+            request()->userAgent(),
+        );
     }
 
     public function verifyLogin(User $user, string $code): bool

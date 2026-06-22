@@ -10,5 +10,8 @@
                 ])
             </x-adminlte4::card>
         </div>
+        <div class="col-lg-6">
+            @include(config('web.layout').'.users._activity_history', ['activityLogs' => $activityLogs ?? []])
+        </div>
     </div>
 </x-adminlte4::layouts.app>
