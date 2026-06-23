@@ -234,7 +234,8 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [Approval matrix engine](docs/approval-matrix-engine.md) | Generic, code-free configurable approval workflow engine with conditional steps, parallel approver modes, SLA tracking, and delegation management - integrated with Order document type |
 | [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 4 / jQuery 3 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
-| [Activity notifications (per role + per user)](docs/notifications.md) | Generic event-driven notification engine: broadcast to whole roles and/or target specific users, per-user read state, navbar bell with **polling (local)** or **realtime websocket (production + Pusher)** via Vite + Laravel Echo |
+| [Activity notifications (per role + per user)](docs/notifications.md) | Generic event-driven notification engine: per-type audiences in **DB via seeder** (hybrid with code catalogue), per-user read state, navbar bell with polling or realtime websocket |
+| [Activity notifications — implementation guide](docs/notifications-implementation-guide.md) | **AI-agent playbook:** step-by-step checklists to add types, wire dispatch, change audience, translations, tests, and DataTable reload (hybrid enum + dynamic audience) |
 | [Activity log (audit trail)](docs/activity-log.md) | Spatie laravel-activitylog v5: immutable mutation audit (`activity_log`), automatic model logging, role-assignment events, API viewer + Blade screens |
 | [Authentication activity assessment](docs/auth-activity-assessment.md) | Auth event coverage matrix: login/logout/2FA/password → activity log vs file log, gaps and security notes |
 | [Web frontend (Blade + AdminLTE 4)](docs/web-frontend.md) | Server-rendered admin UI that **consumes the versioned API** (web = API client); JWT-in-HttpOnly-cookie auth forwarded as Bearer, reusable Blade components, user & menu management screens |
@@ -275,6 +276,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - Dual-mode list/index (query JSON vs DataTables + RBAC actions) → [list-display-modes.md](docs/list-display-modes.md)
 - Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/navigation-menu.md)
 - Role-targeted + personal activity notifications (events → roles/users) → [notifications.md](docs/notifications.md)
+- Adding or changing a notification type (agent checklist) → [notifications-implementation-guide.md](docs/notifications-implementation-guide.md)
 - Immutable mutation audit trail (Spatie activitylog) → [activity-log.md](docs/activity-log.md)
 - Auth sessions and password events in activity log → [auth-activity-assessment.md](docs/auth-activity-assessment.md)
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)

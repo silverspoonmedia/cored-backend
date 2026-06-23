@@ -1,5 +1,7 @@
 # Activity Notifications (per role + per user)
 
+> **Implementing or changing a notification?** Use the step-by-step playbook: [Activity Notifications — Implementation Guide](./notifications-implementation-guide.md) (for AI agents and developers). This document covers architecture and runtime behaviour.
+
 A generic activity-notification engine with **two targeting modes**:
 
 - **Per role (broadcast)** — linked to whole roles; any current or future holder
@@ -39,8 +41,10 @@ of fanning out a copy per recipient:
 | Layer | File | Responsibility |
 |-------|------|----------------|
 | Migration | `database/migrations/2026_06_12_000001_create_activity_notifications_tables.php` | `activity_notifications` + `_roles` + `_users` + `_reads` |
+| Migration | `database/migrations/2026_06_22_000001_create_notification_type_settings_tables.php` | `notification_type_settings` + role/user pivots (dynamic audience config) |
 | Model | `app/Models/ActivityNotification.php` | `HasUuids`, `roles()` + `targetUsers()` + `readers()` |
-| Type catalogue | `app/Notifications/Activity/NotificationType.php` | Enum: message key, icon, default broadcast roles per action |
+| Model | `app/Models/NotificationTypeSetting.php` | Per-type audience config (`roles`, `targetUsers`, `notify_subject_user`) |
+| Type catalogue | `app/Notifications/Activity/NotificationType.php` | Enum: message key, icon, DataTable mapping; enum `defaultRoles()` is a **fallback only** |
 | Event | `app/Events/ActivityNotificationEvent.php` | Generic "raise a notification" signal any feature dispatches |
 | Broadcast ping | `app/Events/UserActivityNotificationReceived.php` | Private-channel websocket ping when realtime delivery is enabled |
 | Listener | `app/Listeners/SendActivityNotification.php` | Persists + fans out (auto-discovered) |
@@ -51,10 +55,13 @@ of fanning out a copy per recipient:
 | Contract | `app/Repositories/Contracts/NotificationRepositoryInterface.php` | Repository contract |
 | Repository | `app/Repositories/Eloquent/NotificationRepository.php` | Role/user visibility, unread count, read state, `recipientUserIds()` |
 | Service | `app/Services/Notification/NotificationService.php` | `emit()` / `broadcastToRoles()` / `sendToUsers()` + viewer reads |
+| Contract | `app/Repositories/Contracts/NotificationTypeSettingRepositoryInterface.php` | Settings snapshot + `resolveAudience()` |
+| Repository | `app/Repositories/Eloquent/NotificationTypeSettingRepository.php` | Cached settings, pivot sync, audience resolution |
+| Seeder | `database/seeders/NotificationTypeSettingSeeder.php` | Default audiences (replaces former hardcoded enum defaults) |
 | Resource | `app/Http/Resources/Notification/NotificationResource.php` | JSON shape (localized `message`, `icon`, `is_read`) |
 | Request | `app/Http/Requests/Notification/IndexNotificationRequest.php` | `limit` validation |
-| API controller | `app/Http/Controllers/API/V1/NotificationController.php` | Thin HTTP layer |
-| Web controller | `app/Http/Controllers/Web/NotificationController.php` | Pure API consumer (bell + page) |
+| API controller | `app/Http/Controllers/API/V1/NotificationController.php` | Thin HTTP layer (viewer reads) |
+| Web controller | `app/Http/Controllers/Web/NotificationController.php` | Pure API consumer (bell + inbox page) |
 | Vite — bell | `resources/js/notifications/bell.js` | Badge/list UI, polling interval, Echo subscription, multi-tab sync |
 | Vite — echo | `resources/js/notifications/echo.js` | Laravel Echo + Pusher factory (`VITE_PUSHER_*` + server overrides) |
 
@@ -62,6 +69,7 @@ The repository is bound in `App\Providers\AppServiceProvider`:
 
 ```php
 $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
+$this->app->bind(NotificationTypeSettingRepositoryInterface::class, NotificationTypeSettingRepository::class);
 ```
 
 The listener is **auto-discovered** (Laravel scans `app/Listeners`); do **not**
@@ -117,6 +125,37 @@ is constrained in one migration.
 - `activity_notification_roles` — (`notification_id`, `role_id`), composite PK, both FKs cascade. **Broadcast** audience.
 - `activity_notification_users` — (`notification_id`, `user_id`), composite PK, both FKs cascade. **Personal** audience.
 - `activity_notification_reads` — (`notification_id`, `user_id`, `read_at`), composite PK, both FKs cascade. A present row = the user has read it.
+
+### Type settings (dynamic audience)
+
+Per-type **who receives** a notification when it is emitted is stored in the database
+and maintained via **`NotificationTypeSettingSeeder`** (or a one-off migration), not
+hardcoded in dispatch code. There is **no admin UI** for audience configuration —
+types and triggers stay in code; audience defaults are changed in a PR like any
+other config. See [Implementation Guide — Workflow B](./notifications-implementation-guide.md#workflow-b-change-audience-seeder--pr).
+
+#### `notification_type_settings`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | |
+| `type` | string, unique | `NotificationType` value (e.g. `user_created`) |
+| `notify_subject_user` | bool | When `true`, adds `data.subject_user_id` to the personal audience |
+| `created_at` / `updated_at` | timestamps | |
+
+#### Settings pivots
+
+- `notification_type_setting_roles` — (`setting_id`, `role_id`), composite PK. **Broadcast** roles for this type.
+- `notification_type_setting_users` — (`setting_id`, `user_id`), composite PK. **Additional** personal targets always notified for this type.
+
+`NotificationTypeSettingRepository::resolveAudience()` merges, in order:
+
+1. Explicit `$roles` / `$users` passed by the emitter (override; rare).
+2. Roles / users from the cached settings row.
+3. When `notify_subject_user` is `true`, `data['subject_user_id']` (contextual personal target).
+4. If no settings row exists yet, `NotificationType::defaultRoles()` as a fallback.
+
+`NotificationTypeSettingSeeder` runs after `RoleSeeder` and seeds defaults equivalent to the former hardcoded values (`user_created` → Root + Admin; `account_updated` → `notify_subject_user = true`).
 
 ---
 
@@ -177,14 +216,14 @@ type's translation key (`api/notifications.types.{type}`).
 ## Emitting a notification (generic engine)
 
 Any feature raises a notification by dispatching the event — it never touches
-storage or visibility directly. Choose the audience with `roles` (broadcast)
-and/or `users` (personal):
+storage directly. **Audience targeting** (roles + users) is resolved from
+`notification_type_settings` unless the emitter passes an explicit override.
 
 ```php
 use App\Events\ActivityNotificationEvent;
 use App\Notifications\Activity\NotificationType;
 
-// Broadcast to roles (null roles = the type's defaultRoles()):
+// Audience comes from DB settings for user_created (broadcast roles):
 ActivityNotificationEvent::dispatch(
     NotificationType::UserCreated,
     ['name' => $user->name, 'email' => $user->email, 'actor' => $actor->name],
@@ -192,12 +231,14 @@ ActivityNotificationEvent::dispatch(
     actionParams: ['user' => $user->id],
 );
 
-// Personal — to specific users only:
+// Audience comes from settings (notify_subject_user + optional extra users/roles):
 ActivityNotificationEvent::dispatch(
     NotificationType::AccountUpdated,
-    ['name' => $user->name, 'actor' => $actor->name],
-    roles: [],            // no broadcast
-    users: [$user->id],   // personal audience
+    [
+        'name' => $user->name,
+        'actor' => $actor->name,
+        'subject_user_id' => $user->id,
+    ],
 );
 ```
 
@@ -205,30 +246,31 @@ Or call `NotificationService` directly when not dispatching an event:
 
 | Method | Audience |
 |--------|----------|
-| `emit($type, $data, $roles, $users, …)` | Full control (roles and/or users) |
-| `broadcastToRoles($type, $data, $roles, …)` | Roles only (defaults when `$roles` null) |
-| `sendToUsers($type, $users, $data, …)` | Specific users only |
+| `emit($type, $data, $roles, $users, …)` | Full control; `null` `$roles` → DB settings |
+| `broadcastToRoles($type, $data, $roles, …)` | Roles only (`null` → DB settings) |
+| `sendToUsers($type, $users, $data, …)` | Passes explicit users; still merges DB settings |
 
 ### Reference wiring
 
-| Trigger | Type | Audience | Where |
-|---------|------|----------|-------|
-| User created | `user_created` | **Broadcast** → Root + Admin | `UserManagementService::create()` |
-| User account updated (by someone else) | `account_updated` | **Personal** → the edited user | `UserManagementService::update()` (skipped on self-edit) |
+| Trigger | Type | Audience (default settings) | Where |
+|---------|------|-------------------------------|-------|
+| User created | `user_created` | **Broadcast** → Root + Admin (configurable) | `UserManagementService::create()` |
+| User account updated (by someone else) | `account_updated` | **Personal** → subject user via `notify_subject_user` | `UserManagementService::update()` (skipped on self-edit) |
 
 Because **both** the API and the Blade UI funnel user create/update through
 `UserManagementService`, a single dispatch covers every entry point.
 
 ### Adding a new notification type
 
-1. Add a case to `NotificationType` with its `icon()` and `defaultRoles()`
-   (return `[]` for personal-only types).
+See **[Implementation Guide — Workflow A](./notifications-implementation-guide.md#workflow-a-add-a-new-notification-type)** for the full checklist, templates, and test requirements. Summary:
+
+1. Add a case to `NotificationType` with its `icon()` and `tableId()` as needed.
 2. Add the message template under `types.{value}` in
    `lang/{locale}/api/notifications.php` for every supported locale (`en`, `id`, `ja`).
-3. Dispatch `ActivityNotificationEvent` (or call the service) with the right
-   `roles` / `users` audience.
+3. Add a row in `NotificationTypeSettingSeeder` with the default audience.
+4. Dispatch `ActivityNotificationEvent` from wherever the action happens.
 
-No engine, controller, or migration change is required.
+No activity-notification engine or migration change is required beyond seeding the new type's settings row.
 
 ---
 
@@ -434,7 +476,7 @@ User-facing copy lives in application-owned files (all locales):
 | File | Use |
 |------|-----|
 | `lang/{locale}/api/notifications.php` | API messages + per-type `types.*` templates |
-| `lang/{locale}/web/notifications.php` | Bell + page labels |
+| `lang/{locale}/web/notifications.php` | Bell + inbox page labels |
 | `lang/{locale}/menu.php` | `notifications` static label |
 
 Per the [Localization task rule](./localization.md#task-rule-required), every new
@@ -453,11 +495,15 @@ reaching only the targeted user, the `account_updated` personal trigger on updat
 403, and realtime websocket fan-out when `APP_ENV=production` with valid Pusher
 config (polling-only in `local`).
 
+`tests/Unit/Repositories/Eloquent/NotificationTypeSettingRepositoryTest.php`
+covers `resolveAudience()` merging roles, static users, subject user, and overrides.
+
 `tests/Unit/Support/Broadcasting/BroadcastConnectionTest.php` covers the
 production + credential gate for realtime delivery.
 
 ```bash
 php artisan test --filter=NotificationTest
+php artisan test --filter=NotificationTypeSettingRepositoryTest
 php artisan test --filter=BroadcastConnectionTest
 ```
 
@@ -465,6 +511,7 @@ php artisan test --filter=BroadcastConnectionTest
 
 ## Related documentation
 
+- [Activity Notifications — Implementation Guide](./notifications-implementation-guide.md) — step-by-step tasks for new types, audience changes, dispatch, tests
 - [User Management & H-RBAC](./user-management-hrbac.md) — the create/update flows that emit notifications
 - [API Routing](./api-routing.md) — versioned route placement
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — dedicated repository rationale

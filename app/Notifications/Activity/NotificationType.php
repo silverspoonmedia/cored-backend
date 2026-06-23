@@ -6,9 +6,10 @@ namespace App\Notifications\Activity;
  * Catalogue of activity-notification types.
  *
  * Each type maps to a localized message (lang/{locale}/api/notifications.php
- * under `types.{type}`), a Bootstrap icon, and the default target roles for the
- * **broadcast** audience. Per-user (personal) notifications pass an explicit
- * user list instead and usually have empty `defaultRoles()`.
+ * under `types.{type}`), a Bootstrap icon, and optional enum fallbacks when no
+ * database setting exists. **Audience targeting** (roles + users) is stored in
+ * `notification_type_settings` and managed via the admin UI — see
+ * docs/notifications.md.
  *
  * Adding a new action = add a case here + a lang entry + fire
  * ActivityNotificationEvent from wherever the action happens. No engine change.
@@ -33,8 +34,7 @@ enum NotificationType: string
     }
 
     /**
-     * Default target roles (names) for the broadcast audience when an emitter
-     * does not override them. Personal-only types return an empty list.
+     * Fallback target roles when no database setting exists (e.g. before seeding).
      *
      * @return list<string>
      */

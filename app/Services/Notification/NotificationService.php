@@ -7,6 +7,7 @@ use App\Models\ActivityNotification;
 use App\Models\User;
 use App\Notifications\Activity\NotificationType;
 use App\Repositories\Contracts\NotificationRepositoryInterface;
+use App\Repositories\Contracts\NotificationTypeSettingRepositoryInterface;
 use App\Support\Broadcasting\BroadcastConnection;
 use Illuminate\Support\Collection;
 
@@ -22,6 +23,7 @@ class NotificationService
 {
     public function __construct(
         private readonly NotificationRepositoryInterface $notifications,
+        private readonly NotificationTypeSettingRepositoryInterface $typeSettings,
     ) {}
 
     /**
@@ -44,6 +46,8 @@ class NotificationService
         ?string $actionRoute = null,
         array $actionParams = [],
     ): ActivityNotification {
+        $audience = $this->typeSettings->resolveAudience($type, $data, $roles, $users);
+
         $notification = $this->notifications->create(
             [
                 'type' => $type->value,
@@ -51,8 +55,8 @@ class NotificationService
                 'action_route' => $actionRoute,
                 'action_params' => $actionParams === [] ? null : $actionParams,
             ],
-            $roles ?? $type->defaultRoles(),
-            $users,
+            $audience['roles'],
+            $audience['users'],
         );
 
         $this->pushRealtimeToRecipients($notification);
