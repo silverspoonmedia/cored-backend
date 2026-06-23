@@ -115,15 +115,16 @@ class UserManagementService
         }
 
         // Personal notification: tell the affected user their account changed —
-        // but not when they edited themselves (they already know).
+        // but not when they edited themselves (they already know). Audience is
+        // resolved from notification type settings (notify_subject_user).
         if ($actor->id !== $user->id) {
             ActivityNotificationEvent::dispatch(
                 NotificationType::AccountUpdated,
                 [
                     'name' => $user->name,
                     'actor' => $actor->name,
+                    'subject_user_id' => $user->id,
                 ],
-                users: [$user->id],
             );
         }
 
