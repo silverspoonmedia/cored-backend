@@ -22,7 +22,12 @@
                 const table = $('#users-table').DataTable({
                     processing: true,
                     serverSide: true,
-                    ajax: '{{ route('users.datatable') }}',
+                    ajax: {
+                        url: '{{ route('users.datatable') }}',
+                        error: function (xhr) {
+                            window.MonolithApi.datatableAjaxError(xhr);
+                        },
+                    },
                     order: [[0, 'asc']],
                     language: {
                         emptyTable: @json(__('web/users.datatable.empty')),

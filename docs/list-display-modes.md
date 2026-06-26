@@ -186,8 +186,8 @@ Keep business logic in Services; resolvers only evaluate authorization and build
 Follow the users index as the reference (`resources/views/adminlte4/users/index.blade.php`). Steps:
 
 1. Register `GET /{resource}/datatable` on `web.php` (before `{resource}/{id}` routes) under `web.auth` (no `permission:` gate — the API authorizes).
-2. Add a `datatable()` method on the web controller (using `ConsumesApi`) that **proxies** `GET /api/v1/{resource}?display_mode=datatable` — forward `$request->query()` plus `display_mode=datatable`, then `array_map` over `data[]` to rewrite each row's `actions` keys to web route URLs (`bi bi-*` icons). Return an empty payload on API failure.
-3. Change the index view to an empty `<table>` shell; include `<x-adminlte4::partials.datatable-assets />` and `<x-adminlte4::partials.datatable-row-actions />` in `<x-slot:scripts>`.
+2. Add a `datatable()` method on the web controller (using `ConsumesApi`) that **proxies** `GET /api/v1/{resource}?display_mode=datatable` — forward `$request->query()` plus `display_mode=datatable`, then `array_map` over `data[]` to rewrite each row's `actions` keys to web route URLs (`bi bi-*` icons). On API failure, return a DataTables payload with an `error` key (see [Web frontend — AJAX error handling](./web-frontend.md#ajax-error-handling-contract)).
+3. Change the index view to an empty `<table>` shell; include `<x-adminlte4::partials.datatable-assets />` and `<x-adminlte4::partials.datatable-row-actions />` in `<x-slot:scripts>`. Wire DataTables `ajax.error` to `MonolithApi.datatableAjaxError()` (see [Web frontend — AJAX error handling](./web-frontend.md#ajax-error-handling-contract)).
 4. Initialise DataTables with `serverSide: true`, `ajax` pointing at the web datatable route, and define **column headers via `title`** on each `columns[]` entry (single source of truth — no duplicate `<thead>` markup).
 5. Add a feature test under `tests/Feature/Http/Controllers/Web/` that `Http::fake()`s the API datatable response and asserts the proxy maps the API action keys onto web URLs.
 
@@ -200,4 +200,4 @@ Full web-layer conventions → [Web frontend — Server-side DataTables](./web-f
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — list endpoint layering
 - [User Management & H-RBAC](./user-management-hrbac.md) — user list filtering and policies
 - [Dynamic navigation menu](./navigation-menu.md) — menu list/trashed endpoints
-- [Web frontend (Blade + AdminLTE 4)](./web-frontend.md) — API-client architecture, `ApiClient`/`ConsumesApi`, datatable proxy, shared partials
+- [Web frontend (Blade + AdminLTE 4)](./web-frontend.md) — API-client architecture, `ApiClient`/`ConsumesApi`/`MonolithApi`, datatable proxy, [AJAX error handling](./web-frontend.md#ajax-error-handling-contract)

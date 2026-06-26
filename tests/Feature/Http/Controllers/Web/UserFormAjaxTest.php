@@ -105,6 +105,83 @@ class UserFormAjaxTest extends TestCase
             ->assertJsonPath('redirect', route('users.index'));
     }
 
+    public function test_store_returns_session_flash_on_auth_expired(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        Http::fake([
+            '*/api/v1/users' => Http::response([
+                'status' => 'error',
+                'message' => __('api/auth.token_expired'),
+            ], 401),
+        ]);
+
+        $response = $this->actingWithJwtCookie($admin)
+            ->postJson('/users', [
+                'name' => 'Baru',
+                'email' => 'baru@example.com',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'role' => 'User',
+            ]);
+
+        $response->assertUnauthorized()
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', __('web/session.expired'))
+            ->assertJsonPath('redirect', route('login'));
+
+        $response->assertSessionHas('error', __('web/session.expired'));
+    }
+
+    public function test_store_returns_error_message_on_forbidden(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        Http::fake([
+            '*/api/v1/users' => Http::response([
+                'status' => 'error',
+                'message' => __('api/common.unauthorized'),
+            ], 403),
+        ]);
+
+        $response = $this->actingWithJwtCookie($admin)
+            ->postJson('/users', [
+                'name' => 'Baru',
+                'email' => 'baru@example.com',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'role' => 'User',
+            ]);
+
+        $response->assertForbidden()
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', __('api/common.unauthorized'));
+    }
+
+    public function test_store_returns_error_message_on_server_error(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        Http::fake([
+            '*/api/v1/users' => Http::response([
+                'message' => 'Upstream failure',
+            ], 500),
+        ]);
+
+        $response = $this->actingWithJwtCookie($admin)
+            ->postJson('/users', [
+                'name' => 'Baru',
+                'email' => 'baru@example.com',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'role' => 'User',
+            ]);
+
+        $response->assertStatus(500)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message', 'Upstream failure');
+    }
+
     private function actingWithJwtCookie(User $user): static
     {
         $token = auth('api')->login($user);

@@ -3,10 +3,6 @@
         'use strict';
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-        const messages = @json([
-            'requestFailed' => __('ui.ajax.request_failed'),
-            'serverUnreachable' => __('ui.ajax.server_unreachable'),
-        ]);
 
         function findControl(form, field) {
             const wrapper = form.querySelector('[data-form-field="' + CSS.escape(field) + '"]');
@@ -47,23 +43,12 @@
             }
         }
 
-        function showFormAlert(form, message, type) {
-            const alert = form.querySelector('[data-form-alert]');
-            if (!alert) {
-                return;
-            }
-
-            alert.className = 'alert alert-' + type + ' mb-3';
-            alert.textContent = message;
-            alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
         function applyFieldErrors(form, errors) {
             let firstInvalid = null;
 
             Object.keys(errors).forEach(function (field) {
-                const messages = errors[field];
-                const message = Array.isArray(messages) ? messages[0] : messages;
+                const fieldMessages = errors[field];
+                const message = Array.isArray(fieldMessages) ? fieldMessages[0] : fieldMessages;
                 const wrapper = form.querySelector('[data-form-field="' + CSS.escape(field) + '"]');
                 const control = findControl(form, field);
                 const errorNode = findErrorNode(form, field);
@@ -118,6 +103,7 @@
             setSubmitting(form, true);
 
             const formData = new FormData(form);
+            const alertEl = form.querySelector('[data-form-alert]');
 
             try {
                 const response = await fetch(form.action, {
@@ -138,36 +124,13 @@
                     data = {};
                 }
 
-                if (response.ok) {
-                    if (data.message) {
-                        showFormAlert(form, data.message, 'success');
-                    }
-
-                    if (data.redirect) {
-                        window.location.assign(data.redirect);
-                        return;
-                    }
-
-                    return;
-                }
-
-                if (response.status === 422 && data.errors) {
-                    applyFieldErrors(form, data.errors);
-                    if (data.message) {
-                        showFormAlert(form, data.message, 'danger');
-                    }
-                    document.dispatchEvent(new CustomEvent('ajax-form:invalid'));
-                    return;
-                }
-
-                if (data.redirect) {
-                    window.location.assign(data.redirect);
-                    return;
-                }
-
-                showFormAlert(form, data.message || messages.requestFailed, 'danger');
+                window.MonolithApi.handleResponse(response, data, {
+                    alertEl: alertEl,
+                    form: form,
+                    applyFieldErrors: applyFieldErrors,
+                });
             } catch (error) {
-                showFormAlert(form, messages.serverUnreachable, 'danger');
+                window.MonolithApi.handleNetworkError(alertEl);
                 console.error('AJAX form submit failed', error);
             } finally {
                 setSubmitting(form, false);

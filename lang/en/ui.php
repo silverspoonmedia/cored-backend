@@ -30,6 +30,7 @@ return [
         'validation_failed' => 'Please check your input.',
         'request_failed' => 'The request could not be processed.',
         'server_unreachable' => 'Could not reach the server. Check your connection.',
+        'datatable_load_failed' => 'Could not load the table data. Please try again.',
     ],
     'password' => [
         'show' => 'Show password',

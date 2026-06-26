@@ -53,7 +53,8 @@ class OrderController extends Controller
                 'recordsTotal' => 0,
                 'recordsFiltered' => 0,
                 'data' => [],
-            ]);
+                'error' => $this->apiMessage($response),
+            ], $response->status() >= 400 ? $response->status() : 400);
         }
 
         $payload = $response->json();

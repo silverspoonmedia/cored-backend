@@ -44,8 +44,6 @@
                     csrf: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
                     confirm: @json(__('web/orders.bulk.confirm')),
                     none: @json(__('web/orders.bulk.none_selected')),
-                    failed: @json(__('ui.ajax.request_failed')),
-                    unreachable: @json(__('ui.ajax.server_unreachable')),
                 };
 
                 // Selected ids survive paging/search (server-side mode only ever
@@ -84,7 +82,12 @@
                 const dt = $table.DataTable({
                     processing: true,
                     serverSide: true,
-                    ajax: '{{ route('orders.datatable') }}',
+                    ajax: {
+                        url: '{{ route('orders.datatable') }}',
+                        error: function (xhr) {
+                            window.MonolithApi.datatableAjaxError(xhr);
+                        },
+                    },
                     order: [[1, 'asc']],
                     language: {
                         emptyTable: @json(__('web/orders.datatable.empty')),
@@ -204,16 +207,15 @@
                             data = {};
                         }
 
-                        if (response.ok) {
-                            selected.clear();
-                            refreshToolbar();
-                            dt.ajax.reload(null, false);
-                            return;
-                        }
-
-                        window.alert(data.message || bulk.failed);
+                        window.MonolithApi.handleResponse(response, data, {
+                            onSuccess: function () {
+                                selected.clear();
+                                refreshToolbar();
+                                dt.ajax.reload(null, false);
+                            },
+                        });
                     } catch (error) {
-                        window.alert(bulk.unreachable);
+                        window.MonolithApi.handleNetworkError(null);
                         console.error('Bulk delete failed', error);
                     }
                 });
