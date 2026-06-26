@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Http\Requests\Auth\Concerns\ValidatesHcaptcha;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ForgotPasswordRequest extends FormRequest
 {
+    use ValidatesHcaptcha;
+
     public function authorize(): bool
     {
         return true;
@@ -16,8 +19,8 @@ class ForgotPasswordRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        return array_merge([
             'email' => ['required', 'string', 'email'],
-        ];
+        ], $this->hcaptchaRules());
     }
 }

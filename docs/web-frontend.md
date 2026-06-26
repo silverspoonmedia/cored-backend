@@ -32,12 +32,42 @@ Every later web request ──► AuthenticateWithJwtCookie ──► binds the 
 |-------|------|------|
 | Cookie factory | `app/Support/Auth/AuthCookie.php` | Builds/forgets the HttpOnly `auth_token` cookie (lifetime mirrors the token's `expires_in`) |
 | Guard bridge | `app/Http/Middleware/AuthenticateWithJwtCookie.php` | Appended to the `web` group; reads the cookie and resolves the `api` guard so `web.auth`/`web.guest` know who is logged in. Never rejects — a bad/expired token = guest |
-| Auth gate | `app/Http/Middleware/EnsureWebAuthenticated.php` (alias `web.auth`) | Redirects guests to `login` (stores intended URL) |
+| Auth gate | `app/Http/Middleware/EnsureWebAuthenticated.php` (alias `web.auth`) | Redirects guests to `login`; stores the intended URL via `App\Support\Web\IntendedUrl` |
+| Intended URL rules | `app/Support/Web/IntendedUrl.php`, `config/web.php` → `intended_url_exclude_routes` | Controls which guest requests may write `url.intended`, and sanitizes it on login |
 | Guest gate | `app/Http/Middleware/RedirectIfWebAuthenticated.php` (alias `web.guest`) | Bounces authenticated users away from login/register/reset |
 
-**Login/register** forward credentials to `POST /api/v1/auth/{login,register}` and persist the returned `data.token` in the cookie (`IssuesAuthCookie`). **Logout** calls `POST /api/v1/auth/logout` (the API blacklists the JWT) and forgets the cookie regardless of the API result.
+**Login/register** forward credentials to `POST /api/v1/auth/{login,register}` and persist the returned `data.token` in the cookie (`IssuesAuthCookie`). **Logout** calls `POST /api/v1/auth/logout` (the API blacklists the JWT), forgets the cookie regardless of the API result, and clears any stored intended URL.
+
+When `HCAPTCHA_ENABLED=true`, login, register, forgot-password, and two-factor challenge forms render the hCaptcha widget. The web layer forwards `h-captcha-response` to the API; validation runs only on the API Form Requests. See [JWT Authentication — hCaptcha](./jwt-authentication.md#hcaptcha-defense-in-depth).
+
+### hCaptcha on auth forms
+
+| Piece | File | Role |
+|-------|------|------|
+| Widget | `adminlte4/components/form/hcaptcha.blade.php` | Full-width bordered widget; loads `api.js` once (`@once`); JS scales the iframe to the container width; uses `<x-adminlte4::form.error>` for `h-captcha-response` |
+| Auth submit block | `adminlte4/components/form/auth-submit.blade.php` | `<x-adminlte4::form.hcaptcha />` + `d-grid` submit — used on register, forgot-password, and two-factor challenge |
+| Login layout | `adminlte4/auth/login.blade.php` | Renders `<x-adminlte4::form.hcaptcha />` above the remember-me / submit row (layout differs from other auth screens) |
+| Web forwarding | `PasswordResetController::sendLink()`, `TwoFactorController::store()` | Must include `h-captcha-response` in the API payload (login/register already forward all fields except `_token`) |
+| AJAX hook | `adminlte4/components/partials/ajax-form.blade.php` | On `422`, dispatches `ajax-form:invalid`; non-input fields use `data-field-invalid-class` on `[data-form-field]` for error styling |
+
+The hCaptcha script listens for `ajax-form:invalid`, calls `hcaptcha.reset()`, and refits widgets — tokens are single-use and would otherwise block resubmission after a validation error.
 
 The server keeps **no session-based identity**; the session is used only for CSRF, flash messages, and the "intended URL". Identity is always the stateless JWT, owned by the API.
+
+### Intended URL after login
+
+When a guest opens a protected page, `EnsureWebAuthenticated` stores the originally requested URL in session (`url.intended`) so login can send them back. **Not every unauthenticated hit writes this key** — otherwise background requests would overwrite the user's real destination:
+
+| Request type | Stored as intended? |
+|--------------|---------------------|
+| Full-page `GET` navigation (e.g. `/users`, `/orders/{id}`) | Yes — **first write wins** for the current auth challenge |
+| AJAX / JSON / `X-Requested-With: XMLHttpRequest` | No |
+| Non-`GET` requests | No |
+| Excluded route names (see `config/web.php` → `intended_url_exclude_routes`) | No — includes notification bell JSON (`notifications.unread-count`, `notifications.recent`), DataTable feeds (`users.datatable`, `orders.datatable`), and `navigation.tree` |
+
+**Why this matters:** the navbar notification bell polls `/notifications/unread-count` on every authenticated page (and on tab focus). When the JWT expires, those background polls still hit `web.auth` routes. Before this filtering existed, the last poll could overwrite `url.intended` with a notification URL, so post-login redirects sometimes landed on `/notifications` or raw JSON endpoints instead of the page the user originally opened.
+
+On successful login (and 2FA completion), `IssuesAuthCookie` resolves the stored URL through `IntendedUrl::resolve()` — invalid or excluded paths fall back to `dashboard`. Logout clears `url.intended` so a stale value cannot survive into the next sign-in.
 
 ---
 
@@ -49,7 +79,7 @@ Two small pieces keep every web controller a thin, uniform forwarder:
 |-------|------|------|
 | `ApiClient` | `app/Support/Api/ApiClient.php` | `Http` wrapper: targets `{current host}/api/v1`, sets `Accept: application/json`, and forwards the JWT from the `auth_token` cookie as `Bearer`. Exposes `get/post/put/delete` plus `postMultipart`/`putMultipart` for file uploads (flattens nested fields and attaches `attachments[]`; `putMultipart` uses `_method=PUT` spoofing). `withPrefix('api/playground')` returns a clone targeting the global playground surface (used by the order master-detail screens). |
 | `ConsumesApi` (trait) | `app/Http/Controllers/Web/Concerns/ConsumesApi.php` | `respondFromApi($request, …)` maps the JSON envelope: **2xx** → redirect or inline success; **422** → field errors; **401/419** → login. Pass `stayOnPageOnSuccess: true` when the user should remain on the same screen (edit save, change password, forgot-password link, resend verification). Default `false` for create/delete/login/logout. |
-| AJAX forms | `x-adminlte4::form.ajax`, `x-adminlte4::form.submit`, `x-adminlte4::form.error`, `adminlte4/components/partials/ajax-form` | **All** Blade forms use AJAX (`form.ajax`). Submits via `fetch` + `Accept: application/json`; inline validation errors, no full-page reload on 422. Controllers must use `respondFromApi()` to return `JsonResponse` for AJAX, falling back to `RedirectResponse` for non-JSON requests. |
+| AJAX forms | `x-adminlte4::form.ajax`, `x-adminlte4::form.submit`, `x-adminlte4::form.error`, `adminlte4/components/partials/ajax-form` | **All** Blade forms use AJAX (`form.ajax`). Submits via `fetch` + `Accept: application/json`; inline validation errors, no full-page reload on 422. On `422`, dispatches `document` event `ajax-form:invalid` (e.g. hCaptcha reset). Non-input fields mark errors via `data-field-invalid-class` on `[data-form-field]`. Controllers must use `respondFromApi()` to return `JsonResponse` for AJAX, falling back to `RedirectResponse` for non-JSON requests. |
 | `IssuesAuthCookie` (trait) | `app/Http/Controllers/Web/Concerns/IssuesAuthCookie.php` | Turns the API's auth payload (`data.token` / `expires_in`) into the cookie + redirect (login & register). |
 
 Because validation lives only in the API, web controllers **do not use Form Requests** — they forward the raw input (`$request->except(['_token','_method'])`) and let the API's Form Request validate and return `422`, which `ConsumesApi` translates into the usual `$errors` bag + repopulated `old()` input. There is **no `$this->authorize()` and no `permission:` middleware on web routes**: the API authorizes every forwarded call.
@@ -169,10 +199,10 @@ resources/views/adminlte4/
 │   ├── nav/bar-tree.blade.php      ← horizontal renderer for the dynamic navbar tree
 │   ├── alert.blade.php             ← flash + validation feedback
 │   ├── card.blade.php              ← panel wrapper (title + actions slot)
-│   └── form/                       ← input, select, multiselect, checkbox, translatable-input, ajax, submit, error
+│   └── form/                       ← input, select, multiselect, checkbox, translatable-input, ajax, submit, error, hcaptcha, auth-submit
 ├── partials/
 │   └── breadcrumbs.blade.php       ← AdminLTE breadcrumb `<ol>` renderer
-├── auth/                           ← login, register, forgot-password, reset-password
+├── auth/                           ← login, register, forgot-password, reset-password, two-factor-challenge
 ├── profile/password.blade.php
 ├── dashboard.blade.php             ← consumes GET /auth/me payload
 ├── users/                          ← index (datatable shell), create, edit, _form (shared)

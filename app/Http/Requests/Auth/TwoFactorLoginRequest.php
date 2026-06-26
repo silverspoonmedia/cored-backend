@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Http\Requests\Auth\Concerns\ValidatesHcaptcha;
 use Illuminate\Foundation\Http\FormRequest;
 
 class TwoFactorLoginRequest extends FormRequest
 {
+    use ValidatesHcaptcha;
+
     public function authorize(): bool
     {
         return true;
@@ -16,9 +19,9 @@ class TwoFactorLoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        return array_merge([
             'two_factor_token' => ['required', 'string'],
             'code' => ['required', 'string', 'digits:6'],
-        ];
+        ], $this->hcaptchaRules());
     }
 }

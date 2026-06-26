@@ -23,6 +23,10 @@
 
         function clearFormFeedback(form) {
             form.querySelectorAll('[data-form-field]').forEach(function (wrapper) {
+                if (wrapper.dataset.fieldInvalidClass) {
+                    wrapper.classList.remove(wrapper.dataset.fieldInvalidClass);
+                }
+
                 wrapper.querySelectorAll('.form-control, .form-select').forEach(function (control) {
                     control.classList.remove('is-invalid');
                 });
@@ -60,6 +64,7 @@
             Object.keys(errors).forEach(function (field) {
                 const messages = errors[field];
                 const message = Array.isArray(messages) ? messages[0] : messages;
+                const wrapper = form.querySelector('[data-form-field="' + CSS.escape(field) + '"]');
                 const control = findControl(form, field);
                 const errorNode = findErrorNode(form, field);
 
@@ -67,6 +72,11 @@
                     control.classList.add('is-invalid');
                     if (!firstInvalid) {
                         firstInvalid = control;
+                    }
+                } else if (wrapper?.dataset.fieldInvalidClass) {
+                    wrapper.classList.add(wrapper.dataset.fieldInvalidClass);
+                    if (!firstInvalid) {
+                        firstInvalid = wrapper;
                     }
                 }
 
@@ -146,6 +156,7 @@
                     if (data.message) {
                         showFormAlert(form, data.message, 'danger');
                     }
+                    document.dispatchEvent(new CustomEvent('ajax-form:invalid'));
                     return;
                 }
 

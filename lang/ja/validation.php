@@ -156,6 +156,7 @@ return [
     'uppercase' => ':attributeは、大文字で入力してください。',
     'url' => ':attributeは、有効なURL形式で指定してください。',
     'uuid' => ':attributeは、有効なUUIDである必要があります。',
+    'hcaptcha' => 'キャプチャの認証に失敗しました。もう一度お試しください。',
     'attributes' => [
         'address' => '住所',
         'affiliate_url' => 'アフィリエイトURL',
@@ -200,6 +201,7 @@ return [
         'gender' => '性別',
         'grand_prize' => '大賞',
         'group' => 'グループ',
+        'h-captcha-response' => 'キャプチャ',
         'hour' => '時',
         'image' => '画像',
         'image_desktop' => 'デスクトップ画像',

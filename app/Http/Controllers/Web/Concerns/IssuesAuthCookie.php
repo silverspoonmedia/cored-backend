@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Web\Concerns;
 
 use App\Support\Auth\AuthCookie;
+use App\Support\Web\IntendedUrl;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 /**
  * Shared by the login and register web controllers: takes the `data` payload
@@ -15,12 +17,13 @@ trait IssuesAuthCookie
     /**
      * @param  array{token: string, expires_in: int}  $payload
      */
-    protected function redirectAuthenticated(array $payload, string $route = 'dashboard'): RedirectResponse
+    protected function redirectAuthenticated(array $payload, string $route = 'dashboard', ?Request $request = null): RedirectResponse
     {
+        $request ??= request();
         $cookie = AuthCookie::make($payload['token'], (int) $payload['expires_in']);
 
         return redirect()
-            ->intended(route($route))
+            ->to(IntendedUrl::resolve($request, route($route)))
             ->withCookie($cookie);
     }
 }

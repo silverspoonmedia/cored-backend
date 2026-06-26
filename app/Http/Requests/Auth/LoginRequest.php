@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Http\Requests\Auth\Concerns\ValidatesHcaptcha;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LoginRequest extends FormRequest
 {
+    use ValidatesHcaptcha;
+
     public function authorize(): bool
     {
         return true;
@@ -16,10 +19,10 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        return array_merge([
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
             'remember_me' => ['sometimes', 'boolean'],
-        ];
+        ], $this->hcaptchaRules());
     }
 }

@@ -30,6 +30,7 @@ class TwoFactorController extends Controller
         $response = $this->api()->post('auth/two-factor/login', [
             'two_factor_token' => $request->session()->get('two_factor_token'),
             'code' => $request->input('code'),
+            'h-captcha-response' => $request->input('h-captcha-response'),
         ]);
 
         return $this->respondFromApi(
