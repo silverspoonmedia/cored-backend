@@ -98,6 +98,24 @@
                 return;
             }
 
+            const hcaptchaWidget = form.querySelector('[data-hcaptcha-widget]');
+            const captchaToken = form.querySelector('[name="h-captcha-response"]')?.value ?? '';
+
+            if (hcaptchaWidget && !captchaToken && window.MonolithHcaptcha?.execute) {
+                event.preventDefault();
+
+                setSubmitting(form, true);
+
+                try {
+                    await window.MonolithHcaptcha.execute(form);
+                    form.requestSubmit();
+                } catch (error) {
+                    setSubmitting(form, false);
+                }
+
+                return;
+            }
+
             event.preventDefault();
             clearFormFeedback(form);
             setSubmitting(form, true);

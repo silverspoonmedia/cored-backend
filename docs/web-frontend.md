@@ -38,19 +38,21 @@ Every later web request ──► AuthenticateWithJwtCookie ──► binds the 
 
 **Login/register** forward credentials to `POST /api/v1/auth/{login,register}` and persist the returned `data.token` in the cookie (`IssuesAuthCookie`). **Logout** calls `POST /api/v1/auth/logout` (the API blacklists the JWT), forgets the cookie regardless of the API result, and clears any stored intended URL.
 
-When `HCAPTCHA_ENABLED=true`, login, register, forgot-password, and two-factor challenge forms render the hCaptcha widget. The web layer forwards `h-captcha-response` to the API; validation runs only on the API Form Requests. See [JWT Authentication — hCaptcha](./jwt-authentication.md#hcaptcha-defense-in-depth).
+When `HCAPTCHA_ENABLED=true`, login, register, forgot-password, and two-factor challenge forms use **invisible hCaptcha** (challenge on submit, not a visible widget). The web layer forwards `h-captcha-response` to the API; validation runs only on the API Form Requests. See [JWT Authentication — hCaptcha](./jwt-authentication.md#hcaptcha-defense-in-depth).
 
 ### hCaptcha on auth forms
 
 | Piece | File | Role |
 |-------|------|------|
-| Widget | `adminlte4/components/form/hcaptcha.blade.php` | Full-width bordered widget; loads `api.js` once (`@once`); JS scales the iframe to the container width; uses `<x-adminlte4::form.error>` for `h-captcha-response` |
+| Invisible widget | `adminlte4/components/form/hcaptcha.blade.php` | Renders a hidden widget (`size: invisible`, explicit `render=explicit`); exposes `window.MonolithHcaptcha` (`execute`, `resetForm`, `resetAll`); loads `api.js` once (`@once`); uses `<x-adminlte4::form.error>` for `h-captcha-response` |
 | Auth submit block | `adminlte4/components/form/auth-submit.blade.php` | `<x-adminlte4::form.hcaptcha />` + `d-grid` submit — used on register, forgot-password, and two-factor challenge |
 | Login layout | `adminlte4/auth/login.blade.php` | Renders `<x-adminlte4::form.hcaptcha />` above the remember-me / submit row (layout differs from other auth screens) |
 | Web forwarding | `PasswordResetController::sendLink()`, `TwoFactorController::store()` | Must include `h-captcha-response` in the API payload (login/register already forward all fields except `_token`) |
-| AJAX hook | `adminlte4/components/partials/ajax-form.blade.php` | On `422`, dispatches `ajax-form:invalid`; non-input fields use `data-field-invalid-class` on `[data-form-field]` for error styling |
+| AJAX submit gate | `adminlte4/components/partials/ajax-form.blade.php` | On submit, if the form has `[data-hcaptcha-widget]` and no token yet, calls `MonolithHcaptcha.execute(form)` then `requestSubmit()`; on `422`, dispatches `ajax-form:invalid`; non-input fields use `data-field-invalid-class` on `[data-form-field]` for error styling |
 
-The hCaptcha script listens for `ajax-form:invalid`, calls `hcaptcha.reset()`, and refits widgets — tokens are single-use and would otherwise block resubmission after a validation error.
+**Submit flow:** click submit → `hcaptcha.execute()` (silent pass or challenge modal) → AJAX POST with `h-captcha-response` → API response. No checkbox is shown upfront.
+
+The hCaptcha script listens for `ajax-form:invalid` and calls `MonolithHcaptcha.resetAll()` — tokens are single-use and would otherwise block resubmission after a validation error.
 
 The server keeps **no session-based identity**; the session is used only for CSRF, flash messages, and the "intended URL". Identity is always the stateless JWT, owned by the API.
 
