@@ -877,7 +877,7 @@ Manual verification only:
 
 **Medium Term:**
 9. Setup Dependabot/Renovate untuk automated dependency updates
-10. ~~Implement CAPTCHA untuk auth endpoints (defense-in-depth)~~ **DONE** — manual hCaptcha (`config/hcaptcha.php`, `HcaptchaVerifier`, auth Form Requests, Blade widget); set `HCAPTCHA_ENABLED=true` in production
+10. ~~Implement CAPTCHA untuk auth endpoints (defense-in-depth)~~ **DONE** — manual hCaptcha (`config/hcaptcha.php`, `HcaptchaVerifier`, `ValidatesHcaptcha` trait, Blade `form.hcaptcha` / `form.auth-submit`); set `HCAPTCHA_ENABLED=true` in production — see `docs/jwt-authentication.md#hcaptcha-defense-in-depth`
 11. Review file upload handling di attachments
 12. Setup external logging/monitoring (Sentry, CloudWatch, dll)
 

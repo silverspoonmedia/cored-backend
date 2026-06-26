@@ -108,7 +108,7 @@ Copy `.env.example` and adjust at least:
 | `BROADCAST_CONNECTION` / `PUSHER_*` | Optional locally (bell uses polling). For realtime, set `APP_NOTIFICATION_TYPE=realtime` plus Pusher or Socket-compatible credentials — see [Activity notifications](docs/notifications.md#realtime-vs-polling) |
 | `APP_NOTIFICATION_TYPE` | `polling` (default) or `realtime` — controls navbar bell delivery mode |
 | `APP_NOTIFICATION_POLLING_INTERVAL` | Polling badge refresh interval in seconds (default `60`; only used in polling mode) |
-| `HCAPTCHA_*` | Optional locally (`HCAPTCHA_ENABLED=false`). In production, set `HCAPTCHA_ENABLED=true` plus `HCAPTCHA_SECRET` and `HCAPTCHA_SITEKEY` from the [hCaptcha dashboard](https://dashboard.hcaptcha.com/) — see [JWT Authentication](docs/jwt-authentication.md#hcaptcha-defense-in-depth) |
+| `HCAPTCHA_*` | Optional locally (`HCAPTCHA_ENABLED=false`). In production, set `HCAPTCHA_ENABLED=true` plus `HCAPTCHA_SECRET` and `HCAPTCHA_SITEKEY` from the [hCaptcha dashboard](https://dashboard.hcaptcha.com/) — API: [JWT Authentication](docs/jwt-authentication.md#hcaptcha-defense-in-depth); Blade UI: [Web frontend](docs/web-frontend.md#hcaptcha-on-auth-forms) |
 
 **SQLite:** ensure the database file exists:
 
@@ -287,6 +287,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - Auth sessions and password events in activity log → [auth-activity-assessment.md](docs/auth-activity-assessment.md)
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
 - Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi` → [web-frontend.md](docs/web-frontend.md)
+- hCaptcha on public auth (API validation + Blade widget) → [jwt-authentication.md](docs/jwt-authentication.md#hcaptcha-defense-in-depth), [web-frontend.md](docs/web-frontend.md#hcaptcha-on-auth-forms)
 - Multi-language (API, Blade, DB) → [localization.md](docs/localization.md)
 - Long-lived worker safety for future Octane + Swoole deployment → [octane-readiness.md](docs/octane-readiness.md)
 

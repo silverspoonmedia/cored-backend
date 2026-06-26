@@ -78,11 +78,15 @@ app/
 │   │   │   └── PasswordController.php
 │   │   └── AdminController.php          ← RBAC example (permission middleware)
 │   └── Requests/Auth/
+│       ├── Concerns/ValidatesHcaptcha.php
 │       ├── RegisterRequest.php
 │       ├── LoginRequest.php
 │       ├── ForgotPasswordRequest.php
+│       ├── TwoFactorLoginRequest.php
 │       ├── ResetPasswordRequest.php
 │       └── ChangePasswordRequest.php
+├── Rules/
+│   └── Hcaptcha.php                     ← siteverify validation rule
 ├── Services/Auth/
 │   ├── AuthService.php
 │   ├── PasswordResetService.php
@@ -99,6 +103,8 @@ app/
 │   └── ResetPasswordNotification.php
 ├── Support/Auth/
 │   └── UserPresenter.php                ← consistent user JSON shape
+├── Support/Security/
+│   └── HcaptchaVerifier.php             ← POST to api.hcaptcha.com/siteverify
 └── Exceptions/Auth/
     ├── InvalidCredentialsException.php
     ├── InvalidPasswordResetTokenException.php
@@ -198,9 +204,9 @@ Config file: `config/hcaptcha.php`.
 
 Validation is enforced in API Form Requests via the `ValidatesHcaptcha` trait (`app/Http/Requests/Auth/Concerns/ValidatesHcaptcha.php`). Direct API clients (mobile apps, scripts) must include `h-captcha-response` in the JSON body — the web layer only forwards the field; it does not validate.
 
-**Web UI:** auth Blade forms include `<x-adminlte4::form.hcaptcha />` when enabled. AJAX forms call `hcaptcha.reset()` after a `422` so tokens are not single-use stuck.
+**Web UI:** see [Web frontend — hCaptcha](./web-frontend.md#hcaptcha-on-auth-forms). Summary: `<x-adminlte4::form.hcaptcha />` (widget + scaling + assets) and `<x-adminlte4::form.auth-submit />` (captcha + submit grid) on auth screens; `PasswordResetController` and `TwoFactorController` forward `h-captcha-response` to the API. On `422`, `ajax-form` dispatches `ajax-form:invalid`; the hCaptcha script resets and refits the widget.
 
-Tests: `php artisan test --filter=Hcaptcha`.
+**Tests:** `php artisan test --filter=Hcaptcha` (`HcaptchaVerifierTest`, `HcaptchaTest`, `HcaptchaConfigTest`, `HcaptchaAuthTest`).
 
 ### Auth guard (`config/auth.php`)
 
@@ -344,6 +350,8 @@ All endpoints use the shared `ApiResponse` trait:
 ```
 
 **Validation error** (Form Request): Laravel standard `422` validation JSON.
+
+When `HCAPTCHA_ENABLED=true`, public auth requests (`login`, `register`, `forgot-password`, `two-factor/login`) must also include `h-captcha-response` (string from the client widget or hCaptcha SDK). See [hCaptcha (defense-in-depth)](#hcaptcha-defense-in-depth).
 
 ### Login and remember me
 
