@@ -6,6 +6,7 @@ use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Concerns\IssuesAuthCookie;
 use App\Http\Controllers\Web\Controller;
 use App\Support\Auth\AuthCookie;
+use App\Support\Web\IntendedUrl;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -53,12 +54,14 @@ class LoginController extends Controller
             return redirect()->route('two-factor.challenge');
         }
 
-        return $this->redirectAuthenticated($payload);
+        return $this->redirectAuthenticated($payload, 'dashboard', $request);
     }
 
     public function destroy(Request $request): RedirectResponse|JsonResponse
     {
         $this->api()->post('auth/logout');
+
+        IntendedUrl::forget($request);
 
         $redirect = redirect()
             ->route('login')

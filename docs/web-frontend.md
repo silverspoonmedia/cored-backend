@@ -32,12 +32,28 @@ Every later web request ──► AuthenticateWithJwtCookie ──► binds the 
 |-------|------|------|
 | Cookie factory | `app/Support/Auth/AuthCookie.php` | Builds/forgets the HttpOnly `auth_token` cookie (lifetime mirrors the token's `expires_in`) |
 | Guard bridge | `app/Http/Middleware/AuthenticateWithJwtCookie.php` | Appended to the `web` group; reads the cookie and resolves the `api` guard so `web.auth`/`web.guest` know who is logged in. Never rejects — a bad/expired token = guest |
-| Auth gate | `app/Http/Middleware/EnsureWebAuthenticated.php` (alias `web.auth`) | Redirects guests to `login` (stores intended URL) |
+| Auth gate | `app/Http/Middleware/EnsureWebAuthenticated.php` (alias `web.auth`) | Redirects guests to `login`; stores the intended URL via `App\Support\Web\IntendedUrl` |
+| Intended URL rules | `app/Support/Web/IntendedUrl.php`, `config/web.php` → `intended_url_exclude_routes` | Controls which guest requests may write `url.intended`, and sanitizes it on login |
 | Guest gate | `app/Http/Middleware/RedirectIfWebAuthenticated.php` (alias `web.guest`) | Bounces authenticated users away from login/register/reset |
 
-**Login/register** forward credentials to `POST /api/v1/auth/{login,register}` and persist the returned `data.token` in the cookie (`IssuesAuthCookie`). **Logout** calls `POST /api/v1/auth/logout` (the API blacklists the JWT) and forgets the cookie regardless of the API result.
+**Login/register** forward credentials to `POST /api/v1/auth/{login,register}` and persist the returned `data.token` in the cookie (`IssuesAuthCookie`). **Logout** calls `POST /api/v1/auth/logout` (the API blacklists the JWT), forgets the cookie regardless of the API result, and clears any stored intended URL.
 
 The server keeps **no session-based identity**; the session is used only for CSRF, flash messages, and the "intended URL". Identity is always the stateless JWT, owned by the API.
+
+### Intended URL after login
+
+When a guest opens a protected page, `EnsureWebAuthenticated` stores the originally requested URL in session (`url.intended`) so login can send them back. **Not every unauthenticated hit writes this key** — otherwise background requests would overwrite the user's real destination:
+
+| Request type | Stored as intended? |
+|--------------|---------------------|
+| Full-page `GET` navigation (e.g. `/users`, `/orders/{id}`) | Yes — **first write wins** for the current auth challenge |
+| AJAX / JSON / `X-Requested-With: XMLHttpRequest` | No |
+| Non-`GET` requests | No |
+| Excluded route names (see `config/web.php` → `intended_url_exclude_routes`) | No — includes notification bell JSON (`notifications.unread-count`, `notifications.recent`), DataTable feeds (`users.datatable`, `orders.datatable`), and `navigation.tree` |
+
+**Why this matters:** the navbar notification bell polls `/notifications/unread-count` on every authenticated page (and on tab focus). When the JWT expires, those background polls still hit `web.auth` routes. Before this filtering existed, the last poll could overwrite `url.intended` with a notification URL, so post-login redirects sometimes landed on `/notifications` or raw JSON endpoints instead of the page the user originally opened.
+
+On successful login (and 2FA completion), `IssuesAuthCookie` resolves the stored URL through `IntendedUrl::resolve()` — invalid or excluded paths fall back to `dashboard`. Logout clears `url.intended` so a stale value cannot survive into the next sign-in.
 
 ---
 

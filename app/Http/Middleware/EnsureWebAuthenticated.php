@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\Auth\AuthCookie;
+use App\Support\Web\IntendedUrl;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,7 @@ class EnsureWebAuthenticated
     public function handle(Request $request, Closure $next): Response
     {
         if (! Auth::guard('api')->check()) {
-            $request->session()->put('url.intended', $request->fullUrl());
+            IntendedUrl::storeIfApplicable($request);
 
             // Drop any stale cookie so the browser stops replaying a dead token.
             return redirect()
