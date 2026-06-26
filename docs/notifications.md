@@ -1,6 +1,8 @@
 # Activity Notifications (per role + per user)
 
 > **Implementing or changing a notification?** Use the step-by-step playbook: [Activity Notifications — Implementation Guide](./notifications-implementation-guide.md) (for AI agents and developers). This document covers architecture and runtime behaviour.
+>
+> **Changing audience or targeting mode?** See [Role vs user notification handling](./notifications-role-vs-user.md) for broadcast (per role) vs personal (per user) lifecycle, decision matrix, and pitfalls.
 
 A generic activity-notification engine with **two targeting modes**:
 
@@ -252,6 +254,8 @@ Or call `NotificationService` directly when not dispatching an event:
 | `sendToUsers($type, $users, $data, …)` | Passes explicit users; still merges DB settings |
 
 ### Reference wiring
+
+Full per-role matrix, message templates, deep links, and scenarios → [Shipped notification catalogue](./notifications-role-vs-user.md#shipped-notification-catalogue).
 
 | Trigger | Type | Audience (default settings) | Where |
 |---------|------|-------------------------------|-------|
@@ -517,6 +521,7 @@ php artisan test --filter=NotificationsConfigTest
 
 ## Related documentation
 
+- [Role vs user notification handling](./notifications-role-vs-user.md) — reference for broadcast (per role) vs personal (per user) targeting, lifecycle, and flow-change decisions
 - [Activity Notifications — Implementation Guide](./notifications-implementation-guide.md) — step-by-step tasks for new types, audience changes, dispatch, tests
 - [User Management & H-RBAC](./user-management-hrbac.md) — the create/update flows that emit notifications
 - [API Routing](./api-routing.md) — versioned route placement
