@@ -135,7 +135,7 @@ function initNotificationBell(config) {
     const list = bell.querySelector('[data-notification-list]');
     const header = bell.querySelector('[data-notification-header]');
     const headerDefault = header ? header.textContent : '';
-    const { urls, labels, realtime, userId, broadcast } = config;
+    const { urls, labels, realtime, pollingIntervalSeconds = 60, userId, broadcast } = config;
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
     function setBadge(count) {
@@ -302,8 +302,10 @@ function initNotificationBell(config) {
     let echoInstance = null;
 
     function startPolling() {
+        const intervalMs = Math.max(1000, Number(pollingIntervalSeconds) * 1000 || 60_000);
+
         refreshBadge();
-        setInterval(refreshBadge, 60_000);
+        setInterval(refreshBadge, intervalMs);
     }
 
     function startRealtime() {

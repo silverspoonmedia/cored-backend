@@ -180,12 +180,12 @@ class NotificationTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_emit_broadcasts_realtime_ping_in_production_when_pusher_is_configured(): void
+    public function test_emit_broadcasts_realtime_ping_when_delivery_is_realtime_and_pusher_is_configured(): void
     {
         Event::fake([UserActivityNotificationReceived::class]);
 
         $this->configurePusherBroadcasting();
-        $this->app->detectEnvironment(fn () => 'production');
+        config(['notifications.delivery' => 'realtime']);
 
         $alice = $this->userWithRole('User');
 
@@ -200,12 +200,12 @@ class NotificationTest extends TestCase
         });
     }
 
-    public function test_emit_does_not_broadcast_in_local_environment(): void
+    public function test_emit_does_not_broadcast_when_delivery_is_polling(): void
     {
         Event::fake([UserActivityNotificationReceived::class]);
 
         $this->configurePusherBroadcasting();
-        $this->app->detectEnvironment(fn () => 'local');
+        config(['notifications.delivery' => 'polling']);
 
         $alice = $this->userWithRole('User');
 

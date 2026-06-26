@@ -34,9 +34,10 @@ class BroadcastConnectionTest extends TestCase
         $this->assertTrue(BroadcastConnection::isConfigured());
     }
 
-    public function test_realtime_requires_production_and_valid_broadcast_config(): void
+    public function test_realtime_requires_notification_type_and_valid_broadcast_config(): void
     {
         config([
+            'notifications.delivery' => 'polling',
             'broadcasting.default' => 'pusher',
             'broadcasting.connections.pusher' => [
                 'driver' => 'pusher',
@@ -47,10 +48,9 @@ class BroadcastConnectionTest extends TestCase
             ],
         ]);
 
-        $this->app->detectEnvironment(fn () => 'local');
         $this->assertFalse(BroadcastConnection::usesRealtimeNotifications());
 
-        $this->app->detectEnvironment(fn () => 'production');
+        config(['notifications.delivery' => 'realtime']);
         $this->assertTrue(BroadcastConnection::usesRealtimeNotifications());
 
         config(['broadcasting.connections.pusher.key' => '']);
@@ -59,14 +59,15 @@ class BroadcastConnectionTest extends TestCase
 
     public function test_client_config_is_null_outside_realtime_mode(): void
     {
-        $this->app->detectEnvironment(fn () => 'local');
+        config(['notifications.delivery' => 'polling']);
 
         $this->assertNull(BroadcastConnection::clientConfig());
     }
 
-    public function test_client_config_exposes_public_pusher_fields_in_production(): void
+    public function test_client_config_exposes_public_pusher_fields_in_realtime_mode(): void
     {
         config([
+            'notifications.delivery' => 'realtime',
             'broadcasting.default' => 'pusher',
             'broadcasting.connections.pusher' => [
                 'driver' => 'pusher',
@@ -81,8 +82,6 @@ class BroadcastConnectionTest extends TestCase
                 ],
             ],
         ]);
-
-        $this->app->detectEnvironment(fn () => 'production');
 
         $this->assertSame([
             'key' => 'public-key',

@@ -105,7 +105,9 @@ Copy `.env.example` and adjust at least:
 | `DB_*` | Default is SQLite (`DB_CONNECTION=sqlite`). For MySQL, uncomment and set `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`. |
 | `JWT_*` | Set `JWT_SECRET` via step 4 below |
 | `MAIL_*` | Required for email verification and password reset in real use (tests use `array` driver) |
-| `BROADCAST_CONNECTION` / `PUSHER_*` | Optional locally (bell uses polling). In production, set Pusher or Socket-compatible credentials for realtime notifications — see [Activity notifications](docs/notifications.md#realtime-vs-polling) |
+| `BROADCAST_CONNECTION` / `PUSHER_*` | Optional locally (bell uses polling). For realtime, set `APP_NOTIFICATION_TYPE=realtime` plus Pusher or Socket-compatible credentials — see [Activity notifications](docs/notifications.md#realtime-vs-polling) |
+| `APP_NOTIFICATION_TYPE` | `polling` (default) or `realtime` — controls navbar bell delivery mode |
+| `APP_NOTIFICATION_POLLING_INTERVAL` | Polling badge refresh interval in seconds (default `60`; only used in polling mode) |
 
 **SQLite:** ensure the database file exists:
 
@@ -197,8 +199,8 @@ php artisan db:seed
 | Login | `POST /api/v1/auth/login` with `admin@example.com` / `123456789` |
 | Authenticated profile | `GET /api/v1/auth/me` with `Authorization: Bearer <token>` |
 | Tests | `composer test` or `php artisan test` |
-| Notification bell (local) | Sign in, open dashboard — badge polls every 60s (`APP_ENV=local` or missing Pusher credentials) |
-| Notification bell (realtime) | Set `APP_ENV=production` + `PUSHER_*`, run `npm run build`, trigger a notification (e.g. create user) — badge updates without reload; see [notifications.md](docs/notifications.md#realtime-vs-polling) |
+| Notification bell (polling) | Sign in, open dashboard — badge polls on load and every `APP_NOTIFICATION_POLLING_INTERVAL` s (default 60; `APP_NOTIFICATION_TYPE=polling` or missing Pusher credentials) |
+| Notification bell (realtime) | Set `APP_NOTIFICATION_TYPE=realtime` + `PUSHER_*`, run `npm run build`, trigger a notification (e.g. create user) — badge updates without reload; see [notifications.md](docs/notifications.md#realtime-vs-polling) |
 | Code style | `php artisan pint` — see [Laravel Pint](docs/laravel-pint.md) |
 
 ---
