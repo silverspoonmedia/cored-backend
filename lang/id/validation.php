@@ -156,6 +156,7 @@ return [
     'uppercase' => ':Attribute harus berupa huruf kapital.',
     'url' => 'Format :attribute tidak valid.',
     'uuid' => ':Attribute harus merupakan UUID yang valid.',
+    'hcaptcha' => 'Verifikasi captcha gagal. Silakan coba lagi.',
     'attributes' => [
         'address' => 'alamat',
         'affiliate_url' => 'URL afiliasi',
@@ -200,6 +201,7 @@ return [
         'gender' => 'jenis kelamin',
         'grand_prize' => 'hadiah utama',
         'group' => 'kelompok',
+        'h-captcha-response' => 'captcha',
         'hour' => 'jam',
         'image' => 'gambar',
         'image_desktop' => 'gambar desktop',

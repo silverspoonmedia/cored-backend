@@ -166,9 +166,41 @@ JWT_REFRESH_TTL=20160
 AUTH_GUARD=api
 AUTH_DEFAULT_ROLE=User
 AUTH_VERIFICATION_EXPIRE=60
+
+# hCaptcha (defense-in-depth on public auth endpoints; disabled by default for local dev)
+HCAPTCHA_ENABLED=false
+HCAPTCHA_SECRET=
+HCAPTCHA_SITEKEY=
 ```
 
-`phpunit.xml` sets `JWT_SECRET` and `AUTH_GUARD=api` for tests.
+`phpunit.xml` sets `JWT_SECRET`, `AUTH_GUARD=api`, and `HCAPTCHA_ENABLED=false` for tests.
+
+### hCaptcha (defense-in-depth)
+
+When `HCAPTCHA_ENABLED=true`, public auth endpoints require a valid `h-captcha-response` token (verified server-side against `https://api.hcaptcha.com/siteverify`). No Composer package is used — verification lives in `App\Support\Security\HcaptchaVerifier` and `App\Rules\Hcaptcha`.
+
+| Variable | Purpose |
+|----------|---------|
+| `HCAPTCHA_ENABLED` | `true` in production; `false` locally so devs are not solving puzzles on every login |
+| `HCAPTCHA_SECRET` | Server secret from the [hCaptcha dashboard](https://dashboard.hcaptcha.com/) |
+| `HCAPTCHA_SITEKEY` | Public site key (rendered in Blade when enabled) |
+
+Config file: `config/hcaptcha.php`.
+
+**Protected endpoints** (when enabled):
+
+| Method | URI |
+|--------|-----|
+| `POST` | `/auth/login` |
+| `POST` | `/auth/register` |
+| `POST` | `/auth/forgot-password` |
+| `POST` | `/auth/two-factor/login` |
+
+Validation is enforced in API Form Requests via the `ValidatesHcaptcha` trait (`app/Http/Requests/Auth/Concerns/ValidatesHcaptcha.php`). Direct API clients (mobile apps, scripts) must include `h-captcha-response` in the JSON body — the web layer only forwards the field; it does not validate.
+
+**Web UI:** auth Blade forms include `<x-adminlte4::form.hcaptcha />` when enabled. AJAX forms call `hcaptcha.reset()` after a `422` so tokens are not single-use stuck.
+
+Tests: `php artisan test --filter=Hcaptcha`.
 
 ### Auth guard (`config/auth.php`)
 

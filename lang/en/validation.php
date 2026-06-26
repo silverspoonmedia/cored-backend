@@ -156,6 +156,7 @@ return [
     'uppercase' => 'The :attribute field must be uppercase.',
     'url' => 'The :attribute field must be a valid URL.',
     'uuid' => 'The :attribute field must be a valid UUID.',
+    'hcaptcha' => 'The captcha verification failed. Please try again.',
     'attributes' => [
         'address' => 'address',
         'affiliate_url' => 'affiliate URL',
@@ -200,6 +201,7 @@ return [
         'gender' => 'gender',
         'grand_prize' => 'grand prize',
         'group' => 'group',
+        'h-captcha-response' => 'captcha',
         'hour' => 'hour',
         'image' => 'image',
         'image_desktop' => 'desktop image',

@@ -5,9 +5,7 @@
         <x-adminlte4::form.input name="password" type="password" :placeholder="__('web/auth.password_placeholder')" icon="bi-lock-fill" required autocomplete="new-password" />
         <x-adminlte4::form.input name="password_confirmation" type="password" :placeholder="__('web/auth.password_confirm_placeholder')" icon="bi-lock-fill" required autocomplete="new-password" />
 
-        <div class="d-grid">
-            <x-adminlte4::form.submit :label="__('web/auth.sign_up')" class="btn btn-primary" />
-        </div>
+        <x-adminlte4::form.auth-submit :label="__('web/auth.sign_up')" class="btn btn-primary" />
     </x-adminlte4::form.ajax>
 
     <p class="mt-3 mb-0">

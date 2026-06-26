@@ -108,6 +108,7 @@ Copy `.env.example` and adjust at least:
 | `BROADCAST_CONNECTION` / `PUSHER_*` | Optional locally (bell uses polling). For realtime, set `APP_NOTIFICATION_TYPE=realtime` plus Pusher or Socket-compatible credentials — see [Activity notifications](docs/notifications.md#realtime-vs-polling) |
 | `APP_NOTIFICATION_TYPE` | `polling` (default) or `realtime` — controls navbar bell delivery mode |
 | `APP_NOTIFICATION_POLLING_INTERVAL` | Polling badge refresh interval in seconds (default `60`; only used in polling mode) |
+| `HCAPTCHA_*` | Optional locally (`HCAPTCHA_ENABLED=false`). In production, set `HCAPTCHA_ENABLED=true` plus `HCAPTCHA_SECRET` and `HCAPTCHA_SITEKEY` from the [hCaptcha dashboard](https://dashboard.hcaptcha.com/) — see [JWT Authentication](docs/jwt-authentication.md#hcaptcha-defense-in-depth) |
 
 **SQLite:** ensure the database file exists:
 
@@ -218,6 +219,7 @@ php artisan db:seed
 - Set `SESSION_SECURE_COOKIE=true` (enforce HTTPS-only cookies)
 - Set `SESSION_ENCRYPT=true` (encrypt session data)
 - Verify `JWT_SECRET` is generated and strong
+- Set `HCAPTCHA_ENABLED=true` with valid `HCAPTCHA_SECRET` and `HCAPTCHA_SITEKEY` (defense-in-depth on public auth endpoints)
 - Playground routes are automatically disabled in production
 
 ---

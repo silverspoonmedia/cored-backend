@@ -246,7 +246,7 @@ done
 Tidak ada test automated - manual verification only.
 
 **Catatan Residual Risk:**
-Rate limiting hanya efektif jika attacker tidak menggunakan distributed IP. Pertimbangkan tambahan CAPTCHA untuk production.
+Rate limiting hanya efektif jika attacker tidak menggunakan distributed IP. **Mitigasi tambahan:** hCaptcha pada endpoint auth publik (`POST /api/v1/auth/login`, `register`, `forgot-password`, `two-factor/login`) — aktif saat `HCAPTCHA_ENABLED=true`. Lihat `config/hcaptcha.php`, `App\Support\Security\HcaptchaVerifier`, dan `docs/jwt-authentication.md#hcaptcha-defense-in-depth`.
 
 ---
 
@@ -877,7 +877,7 @@ Manual verification only:
 
 **Medium Term:**
 9. Setup Dependabot/Renovate untuk automated dependency updates
-10. Implement CAPTCHA untuk auth endpoints (defense-in-depth)
+10. ~~Implement CAPTCHA untuk auth endpoints (defense-in-depth)~~ **DONE** — manual hCaptcha (`config/hcaptcha.php`, `HcaptchaVerifier`, auth Form Requests, Blade widget); set `HCAPTCHA_ENABLED=true` in production
 11. Review file upload handling di attachments
 12. Setup external logging/monitoring (Sentry, CloudWatch, dll)
 

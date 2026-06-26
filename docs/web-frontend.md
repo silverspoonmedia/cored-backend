@@ -38,6 +38,8 @@ Every later web request ──► AuthenticateWithJwtCookie ──► binds the 
 
 **Login/register** forward credentials to `POST /api/v1/auth/{login,register}` and persist the returned `data.token` in the cookie (`IssuesAuthCookie`). **Logout** calls `POST /api/v1/auth/logout` (the API blacklists the JWT), forgets the cookie regardless of the API result, and clears any stored intended URL.
 
+When `HCAPTCHA_ENABLED=true`, login, register, forgot-password, and two-factor challenge forms render the hCaptcha widget (`<x-adminlte4::form.hcaptcha />`). The web layer forwards `h-captcha-response` to the API; validation runs only on the API Form Requests. See [JWT Authentication — hCaptcha](./jwt-authentication.md#hcaptcha-defense-in-depth).
+
 The server keeps **no session-based identity**; the session is used only for CSRF, flash messages, and the "intended URL". Identity is always the stateless JWT, owned by the API.
 
 ### Intended URL after login

@@ -24,7 +24,7 @@ class PasswordResetController extends Controller
 
     public function sendLink(Request $request): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->post('auth/forgot-password', $request->only('email'));
+        $response = $this->api()->post('auth/forgot-password', $request->only(['email', 'h-captcha-response']));
 
         return $this->respondFromApi(
             $request,
