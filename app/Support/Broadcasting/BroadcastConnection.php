@@ -5,9 +5,9 @@ namespace App\Support\Broadcasting;
 /**
  * Decides whether the web notification bell uses WebSocket push or HTTP polling.
  *
- * Realtime delivery requires production AND a usable broadcast driver (Pusher /
- * Socket-compatible). Local development and misconfigured production always
- * fall back to polling so the bell keeps working without a websocket server.
+ * Realtime delivery requires APP_NOTIFICATION_TYPE=realtime AND a usable broadcast
+ * driver (Pusher / Socket-compatible). Polling mode and misconfigured realtime always
+ * fall back to HTTP polling so the bell keeps working without a websocket server.
  */
 class BroadcastConnection
 {
@@ -41,7 +41,7 @@ class BroadcastConnection
      */
     public static function usesRealtimeNotifications(): bool
     {
-        return app()->environment('production') && self::isConfigured();
+        return config('notifications.delivery') === 'realtime' && self::isConfigured();
     }
 
     /**

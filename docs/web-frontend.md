@@ -103,9 +103,11 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | GET | `/notifications/unread-count`, `/notifications/recent` | `notifications.unread-count` / `notifications.recent` | `web.auth` | `GET /notifications/unread-count`, `GET /notifications?limit=10` (bell JSON) |
 | POST | `/notifications/read-all`, `/notifications/{id}/read` | `notifications.read-all` / `notifications.read` | `web.auth` | `POST /notifications/read-all`, `POST /notifications/{id}/read` |
 
-> The navbar bell (`@can('view notification')`) uses **polling** in `local` (or when
-> Pusher is misconfigured) and **realtime websocket** in `production` with valid
-> credentials — Vite + Laravel Echo. Multiple tabs sync without reload. See
+> The navbar bell (`@can('view notification')`) uses **polling** when
+> `APP_NOTIFICATION_TYPE=polling` (or when Pusher is misconfigured) and **realtime websocket**
+> when `APP_NOTIFICATION_TYPE=realtime` with valid credentials — Vite + Laravel Echo.
+> Multiple tabs sync without reload. `APP_NOTIFICATION_POLLING_INTERVAL` (default 60 seconds)
+> controls how often the badge refetches in polling mode. See
 > [Activity notifications](./notifications.md#realtime-vs-polling).
 
 > **Route-name note:** the global Playground demo previously registered the generic names `users.*`. To free those for the web admin UI, it is now `Route::apiResource('users', …)->names('playground.users')` (URLs unchanged).
@@ -188,7 +190,8 @@ resources/views/adminlte4/
 - **Menu translatable fields** — `name` and `description` use `<x-adminlte4::form.translatable-input>` (one field per locale). Create/edit posts `name[en]`, `name[id]`, … which the web controller forwards as JSON to the API. Edit forms bind from `name_translations` / `description_translations` on the API detail payload.
 - **Locale switcher** — navbar dropdown links to `GET /locale/{locale}` (`en`, `id`, `ja`). Flash and AJAX fallback messages come from `lang/{locale}/ui.php` (`ui.ajax.*`).
 - **Notification bell** — `NotificationBellComposer` feeds the navbar partial;
-  realtime vs polling is decided by `BroadcastConnection` (`APP_ENV` + `PUSHER_*`).
+  realtime vs polling is decided by `BroadcastConnection` (`APP_NOTIFICATION_TYPE` + `PUSHER_*`);
+  polling interval comes from `APP_NOTIFICATION_POLLING_INTERVAL` (injected as `pollingIntervalSeconds`).
   Full behaviour, env table, and multi-tab sync → [notifications.md](./notifications.md).
 - The **sidebar and navbar are data-driven** by the [dynamic navigation engine](./navigation-menu.md), scoped per `layout` key (`sidebar` / `navbar`). `NavigationComposer` feeds `MenuService::navigationTree()` (see exception #1 above). Sidebar uses `<x-adminlte4::nav.tree>`; navbar uses `<x-adminlte4::nav.bar-tree>`. Visibility is resolved by the engine — **no `@can` gating** in the tree renderers.
 - **Navigation cache** — the tree comes from a server-side snapshot (`menus.navigation.snapshot`); see [Caching](./navigation-menu.md#caching). Any menu create/update/delete/restore or pivot sync **busts** the cache; the **next** `navigationTree()` call rebuilds it from the DB. The sidebar on an already-loaded page still holds the previous tree in HTML/embedded JSON until a full page reload.

@@ -48,8 +48,9 @@ of fanning out a copy per recipient:
 | Event | `app/Events/ActivityNotificationEvent.php` | Generic "raise a notification" signal any feature dispatches |
 | Broadcast ping | `app/Events/UserActivityNotificationReceived.php` | Private-channel websocket ping when realtime delivery is enabled |
 | Listener | `app/Listeners/SendActivityNotification.php` | Persists + fans out (auto-discovered) |
-| Broadcast gate | `app/Support/Broadcasting/BroadcastConnection.php` | Production + valid Pusher config → realtime; otherwise polling |
+| Broadcast gate | `app/Support/Broadcasting/BroadcastConnection.php` | `APP_NOTIFICATION_TYPE=realtime` + valid Pusher config → realtime; otherwise polling |
 | Broadcast config | `config/broadcasting.php` | Pusher / Reverb connection definitions (`BROADCAST_CONNECTION`, `PUSHER_*`) |
+| Delivery config | `config/notifications.php` | Maps `APP_NOTIFICATION_TYPE` (`polling` \| `realtime`, default `polling`) and `APP_NOTIFICATION_POLLING_INTERVAL` (seconds, default `60`) |
 | Channel auth | `routes/channels.php` | Private channel `App.Models.User.{id}` (UUID string match) |
 | View composer | `app/View/Composers/NotificationBellComposer.php` | Injects `$notificationBellConfig` for the navbar bell (bound to the hashed navbar view — see below) |
 | Contract | `app/Repositories/Contracts/NotificationRepositoryInterface.php` | Repository contract |
@@ -310,32 +311,33 @@ components (`<x-adminlte4::partials.navbar>`) do **not** use the readable
 ### Realtime vs polling
 
 The bell supports two delivery modes. `App\Support\Broadcasting\BroadcastConnection`
-picks between them — no separate env flag beyond `APP_ENV` and the broadcast
-placeholders in `.env.example`.
+picks between them based on `APP_NOTIFICATION_TYPE` (via `config/notifications.php`)
+and whether the broadcast connection has valid credentials.
 
 | Mode | When | Client behaviour |
 |------|------|------------------|
-| **Polling** | `APP_ENV=local`, **or** the default broadcast connection is missing / invalid (`BROADCAST_CONNECTION` unset, `null`, `log`, or Pusher credentials empty) | Fetches unread count on load and every 60s; recent list on dropdown open |
-| **Realtime** | `APP_ENV=production` **and** Pusher (or Socket-compatible) credentials are present | Subscribes via Laravel Echo + Pusher to private channel `App.Models.User.{id}`; on `activity-notification.received` refetches badge (and recent list when the dropdown is open). Multiple tabs stay in sync without a full page reload (see below). |
+| **Polling** | `APP_NOTIFICATION_TYPE=polling` (default), **or** `realtime` with missing / invalid broadcast config (`BROADCAST_CONNECTION` unset, `null`, `log`, or Pusher credentials empty) | Fetches unread count on load and every `APP_NOTIFICATION_POLLING_INTERVAL` seconds (default 60); recent list on dropdown open |
+| **Realtime** | `APP_NOTIFICATION_TYPE=realtime` **and** Pusher (or Socket-compatible) credentials are present | Subscribes via Laravel Echo + Pusher to private channel `App.Models.User.{id}`; on `activity-notification.received` refetches badge (and recent list when the dropdown is open). Multiple tabs stay in sync without a full page reload (see below). |
 
-**Local vs production behaviour**
+**Typical configurations**
 
-| Environment | Typical `APP_ENV` | Pusher credentials | Bell behaviour |
-|-------------|-------------------|--------------------|----------------|
-| Developer machine | `local` | empty or filled | **Polling** — unread count on load + every 60s |
-| Production | `production` | filled | **Realtime** — websocket push + HTTP refetch |
-| Misconfigured production | `production` | empty / invalid | **Polling** fallback — bell still works |
+| `APP_NOTIFICATION_TYPE` | Pusher credentials | Bell behaviour |
+|-------------------------|--------------------|----------------|
+| `polling` (default) | any | **Polling** — unread count on load + every `APP_NOTIFICATION_POLLING_INTERVAL` s (default 60) |
+| `realtime` | filled | **Realtime** — websocket push + HTTP refetch |
+| `realtime` | empty / invalid | **Polling** fallback — bell still works |
 
 **Why HTTP refetch on realtime pings?** Message copy is locale-aware and resolved
 server-side (`NotificationResource`). The websocket event is intentionally empty —
 it only signals "something changed" so each viewer refetches through the existing
 web → API routes.
 
-**Production setup** — set in `.env`:
+**Realtime setup** — set in `.env`:
 
 | Variable | Notes |
 |----------|--------|
-| `APP_ENV` | `production` |
+| `APP_NOTIFICATION_TYPE` | `realtime` (default is `polling`) |
+| `APP_NOTIFICATION_POLLING_INTERVAL` | Badge poll interval in seconds when in polling mode (default `60`, minimum `1`) |
 | `BROADCAST_CONNECTION` | `pusher` (default in `.env.example`) |
 | `PUSHER_APP_ID`, `PUSHER_APP_KEY`, `PUSHER_APP_SECRET` | From Pusher or a compatible host (e.g. Soketi) |
 | `PUSHER_APP_CLUSTER` | Pusher cluster (ignored when `PUSHER_HOST` points at self-hosted) |
@@ -351,7 +353,7 @@ loaded via `@vite` in the navbar when the viewer holds `view notification`. Run
 
 | File | Role |
 |------|------|
-| `resources/js/notifications/bell.js` | Entry: reads `data-notification-config`, polling vs realtime, dropdown UX |
+| `resources/js/notifications/bell.js` | Entry: reads `data-notification-config` (`pollingIntervalSeconds`, realtime flag), dropdown UX |
 | `resources/js/notifications/echo.js` | Builds Echo client; reads `import.meta.env.VITE_PUSHER_*` |
 | `vite.config.js` | Declares `bell.js` (and `app.js`) as Vite inputs |
 | `package.json` | `laravel-echo`, `pusher-js` dependencies |
@@ -492,19 +494,23 @@ fan-out on user creation, role-scoped visibility (Admin sees / Moderator with th
 permission still sees nothing outside its broadcast), personal notifications
 reaching only the targeted user, the `account_updated` personal trigger on update
 (skipped on self-edit), unread count + mark-as-read, mark-all, out-of-scope
-403, and realtime websocket fan-out when `APP_ENV=production` with valid Pusher
-config (polling-only in `local`).
+403, and realtime websocket fan-out when `APP_NOTIFICATION_TYPE=realtime` with valid Pusher
+config (polling-only when delivery is `polling`).
 
 `tests/Unit/Repositories/Eloquent/NotificationTypeSettingRepositoryTest.php`
 covers `resolveAudience()` merging roles, static users, subject user, and overrides.
 
 `tests/Unit/Support/Broadcasting/BroadcastConnectionTest.php` covers the
-production + credential gate for realtime delivery.
+notification-type + credential gate for realtime delivery.
+
+`tests/Unit/Config/NotificationsConfigTest.php` covers the default and override for
+`APP_NOTIFICATION_POLLING_INTERVAL`.
 
 ```bash
 php artisan test --filter=NotificationTest
 php artisan test --filter=NotificationTypeSettingRepositoryTest
 php artisan test --filter=BroadcastConnectionTest
+php artisan test --filter=NotificationsConfigTest
 ```
 
 ---

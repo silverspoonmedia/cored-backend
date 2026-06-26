@@ -34,6 +34,7 @@ class NotificationBellComposer
                     'header' => __('web/notifications.header_count'),
                 ],
                 'realtime' => $realtime,
+                'pollingIntervalSeconds' => max(1, (int) config('notifications.polling_interval')),
                 'userId' => $userId,
                 'broadcast' => $broadcast,
             ];
