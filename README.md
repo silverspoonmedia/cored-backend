@@ -243,7 +243,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [Activity notifications — implementation guide](docs/notifications-implementation-guide.md) | **AI-agent playbook:** step-by-step checklists to add types, wire dispatch, change audience, translations, tests, and DataTable reload (hybrid enum + dynamic audience) |
 | [Activity log (audit trail)](docs/activity-log.md) | Spatie laravel-activitylog v5: immutable mutation audit (`activity_log`), automatic model logging, role-assignment events, API viewer + Blade screens |
 | [Authentication activity assessment](docs/auth-activity-assessment.md) | Auth event coverage matrix: login/logout/2FA/password → activity log vs file log, gaps and security notes |
-| [Web frontend (Blade + AdminLTE 4)](docs/web-frontend.md) | Server-rendered admin UI that **consumes the versioned API** (web = API client); JWT-in-HttpOnly-cookie auth forwarded as Bearer, reusable Blade components, user & menu management screens |
+| [Web frontend (Blade + AdminLTE 4)](docs/web-frontend.md) | Server-rendered admin UI that **consumes the versioned API** (web = API client); JWT-in-HttpOnly-cookie auth forwarded as Bearer, reusable Blade components, `MonolithApi` AJAX error handling, user & menu management screens |
 
 ### Authentication and authorization
 
@@ -286,7 +286,8 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - Immutable mutation audit trail (Spatie activitylog) → [activity-log.md](docs/activity-log.md)
 - Auth sessions and password events in activity log → [auth-activity-assessment.md](docs/auth-activity-assessment.md)
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
-- Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi` → [web-frontend.md](docs/web-frontend.md)
+- Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi`/`MonolithApi` → [web-frontend.md](docs/web-frontend.md)
+- AJAX / DataTable error UX (auth expired, CSRF, proxy failures) → [web-frontend.md — AJAX error handling](docs/web-frontend.md#ajax-error-handling-contract)
 - hCaptcha on public auth (API validation + Blade widget) → [jwt-authentication.md](docs/jwt-authentication.md#hcaptcha-defense-in-depth), [web-frontend.md](docs/web-frontend.md#hcaptcha-on-auth-forms)
 - Multi-language (API, Blade, DB) → [localization.md](docs/localization.md)
 - Long-lived worker safety for future Octane + Swoole deployment → [octane-readiness.md](docs/octane-readiness.md)

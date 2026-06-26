@@ -30,6 +30,7 @@ return [
         'validation_failed' => '入力内容を確認してください。',
         'request_failed' => 'リクエストを処理できませんでした。',
         'server_unreachable' => 'サーバーに接続できませんでした。接続を確認してください。',
+        'datatable_load_failed' => 'テーブルデータを読み込めませんでした。もう一度お試しください。',
     ],
     'password' => [
         'show' => 'パスワードを表示',

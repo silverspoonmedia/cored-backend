@@ -88,9 +88,12 @@ trait ConsumesApi
         }
 
         if (in_array($response->status(), [401, 419], true)) {
+            $message = __('web/session.expired');
+            $request->session()->flash('error', $message);
+
             return response()->json([
                 'status' => 'error',
-                'message' => __('web/session.expired'),
+                'message' => $message,
                 'redirect' => route('login'),
             ], 401);
         }

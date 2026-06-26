@@ -83,6 +83,26 @@ class UserDatatableTest extends TestCase
             ->assertRedirect(route('login'));
     }
 
+    public function test_datatable_returns_error_on_api_failure(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        Http::fake([
+            '*/api/v1/users*' => Http::response([
+                'status' => 'error',
+                'message' => 'Upstream failure',
+            ], 500),
+        ]);
+
+        $response = $this->actingWithJwtCookie($admin)
+            ->getJson('/users/datatable?draw=1&start=0&length=50');
+
+        $response->assertStatus(500)
+            ->assertJsonPath('error', 'Upstream failure')
+            ->assertJsonPath('recordsTotal', 0)
+            ->assertJsonPath('data', []);
+    }
+
     private function actingWithJwtCookie(User $user): static
     {
         $token = auth('api')->login($user);

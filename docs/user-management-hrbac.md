@@ -154,7 +154,7 @@ The server-rendered admin does **not** call `UserManagementService` or `UserPoli
 | `PUT /users/{user}` | `PUT /api/v1/users/{id}` |
 | `DELETE /users/{user}` | `DELETE /api/v1/users/{id}` |
 
-Web routes carry **no** `permission:` middleware — a `403` from the API is translated into a flash error by `ConsumesApi`. See [Web frontend](./web-frontend.md) and [List display modes](./list-display-modes.md).
+Web routes carry **no** `permission:` middleware — a `403` from the API is translated by `ConsumesApi` into an inline AJAX error (`{ status: error, message }`) or a full-page `back()` flash, depending on the request. See [Web frontend — AJAX error handling](./web-frontend.md#ajax-error-handling-contract) and [List display modes](./list-display-modes.md).
 
 ---
 

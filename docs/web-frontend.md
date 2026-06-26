@@ -73,16 +73,56 @@ On successful login (and 2FA completion), `IssuesAuthCookie` resolves the stored
 
 ## The API client: how the web layer talks to the backend
 
-Two small pieces keep every web controller a thin, uniform forwarder:
+These pieces keep every web controller a thin, uniform forwarder:
 
 | Piece | File | Role |
 |-------|------|------|
 | `ApiClient` | `app/Support/Api/ApiClient.php` | `Http` wrapper: targets `{current host}/api/v1`, sets `Accept: application/json`, and forwards the JWT from the `auth_token` cookie as `Bearer`. Exposes `get/post/put/delete` plus `postMultipart`/`putMultipart` for file uploads (flattens nested fields and attaches `attachments[]`; `putMultipart` uses `_method=PUT` spoofing). `withPrefix('api/playground')` returns a clone targeting the global playground surface (used by the order master-detail screens). |
-| `ConsumesApi` (trait) | `app/Http/Controllers/Web/Concerns/ConsumesApi.php` | `respondFromApi($request, …)` maps the JSON envelope: **2xx** → redirect or inline success; **422** → field errors; **401/419** → login. Pass `stayOnPageOnSuccess: true` when the user should remain on the same screen (edit save, change password, forgot-password link, resend verification). Default `false` for create/delete/login/logout. |
+| `ConsumesApi` (trait) | `app/Http/Controllers/Web/Concerns/ConsumesApi.php` | `respondFromApi($request, …)` maps the JSON envelope for AJAX and full-page flows — see [AJAX error handling](#ajax-error-handling-contract) below. Pass `stayOnPageOnSuccess: true` when the user should remain on the same screen (edit save, change password, forgot-password link, resend verification). Default `false` for create/delete/login/logout. |
+| `MonolithApi` (client) | `adminlte4/components/partials/api-response-handler` | Shared `window.MonolithApi.handleResponse()` for all `fetch` call sites (AJAX forms, DataTable row actions, bulk delete). Loaded globally from `assets-scripts.blade.php`. |
 | AJAX forms | `x-adminlte4::form.ajax`, `x-adminlte4::form.submit`, `x-adminlte4::form.error`, `adminlte4/components/partials/ajax-form` | **All** Blade forms use AJAX (`form.ajax`). Submits via `fetch` + `Accept: application/json`; inline validation errors, no full-page reload on 422. On `422`, dispatches `document` event `ajax-form:invalid` (e.g. hCaptcha reset). Non-input fields mark errors via `data-field-invalid-class` on `[data-form-field]`. Controllers must use `respondFromApi()` to return `JsonResponse` for AJAX, falling back to `RedirectResponse` for non-JSON requests. |
 | `IssuesAuthCookie` (trait) | `app/Http/Controllers/Web/Concerns/IssuesAuthCookie.php` | Turns the API's auth payload (`data.token` / `expires_in`) into the cookie + redirect (login & register). |
 
 Because validation lives only in the API, web controllers **do not use Form Requests** — they forward the raw input (`$request->except(['_token','_method'])`) and let the API's Form Request validate and return `422`, which `ConsumesApi` translates into the usual `$errors` bag + repopulated `old()` input. There is **no `$this->authorize()` and no `permission:` middleware on web routes**: the API authorizes every forwarded call.
+
+### AJAX error handling contract
+
+Silent failures on form submit and DataTable actions are handled in two layers — server envelope + shared client handler.
+
+**Server (`ConsumesApi` + `bootstrap/app.php`)**
+
+| HTTP status | Source | AJAX JSON envelope | Session flash |
+|-------------|--------|-------------------|---------------|
+| **2xx** | API success | `{ status: success, message?, redirect? }` | via redirect closure |
+| **422** | API validation | `{ status: error, message, errors }` | — |
+| **401 / 419** | API auth expired | `{ status: error, message, redirect: login }` | `session('error')` = `web/session.expired` **before** JSON is returned (login page shows the alert after client redirect) |
+| **403 / 5xx** | API RBAC / server | `{ status: error, message }` | — |
+| **419** | Laravel CSRF (`TokenMismatchException` → `HttpException`) on web routes | `{ status: error, message, reload: true }` | `session('error')` = `web/session.csrf_expired` |
+
+CSRF handling is registered in `bootstrap/app.php` for web routes only (the API is Bearer-only and has no CSRF middleware). Laravel converts `TokenMismatchException` to `HttpException(419)` before custom renderers run, so the handler matches `HttpException` with status 419 and a `TokenMismatchException` previous.
+
+**DataTable proxy failure** — `UserController::datatable()` and `OrderController::datatable()` return a DataTables payload with an `error` key (localized via `apiMessage()`) and the upstream HTTP status instead of a silent empty table.
+
+**Client (`window.MonolithApi`)**
+
+Loaded from `adminlte4/components/partials/api-response-handler.blade.php` (before `ajax-form` in `assets-scripts.blade.php`). All `fetch` call sites delegate to `MonolithApi.handleResponse()`:
+
+| Condition | UX |
+|-----------|-----|
+| **422** + `errors` | Inline field errors + danger `[data-form-alert]`; dispatches `ajax-form:invalid` |
+| **422** without `errors` | Danger alert with `message` |
+| **419** + `reload` | Danger alert → page reload after 2 s (fresh CSRF meta) |
+| **401** + `redirect` | Danger alert (if `[data-form-alert]` exists) → `location.assign`; login flash already set server-side |
+| **Other 4xx/5xx** | Danger alert or `window.alert` when no alert target |
+| **Network error** | `ui.ajax.server_unreachable` |
+
+DataTable list feeds wire `ajax.error` to `MonolithApi.datatableAjaxError()` so transport failures and proxy `error` payloads surface as `window.alert()` instead of looking like an empty table.
+
+Copy lives in `lang/{locale}/ui.php` (`ui.ajax.request_failed`, `ui.ajax.server_unreachable`, `ui.ajax.datatable_load_failed`, …) and `lang/{locale}/web/session.php` (`expired`, `csrf_expired`, `login_required`).
+
+**Tests** — `tests/Feature/Http/Controllers/Web/UserFormAjaxTest.php` (422 / 401 session flash / 403 / 500), `WebCsrfErrorTest.php` (CSRF 419 renderer), `UserDatatableTest.php` (proxy `error` key on API failure).
+
+**Out of scope today:** the navbar notification bell still fails silently on auth/API errors (background polling/realtime); only form submits and DataTable actions are covered above.
 
 ### Two deliberate exceptions (reads with no business logic)
 
@@ -148,6 +188,7 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 
 **Assets:** AdminLTE 4, Bootstrap 5, and Bootstrap Icons load from CDN
 (`adminlte4/components/partials/assets-head.blade.php` and `assets-scripts.blade.php`).
+`assets-scripts.blade.php` loads shared client glue in order: `api-response-handler` (`window.MonolithApi`) → `ajax-form` (global submit listener). Page-level scripts (e.g. DataTables) load afterward and may call `MonolithApi` helpers.
 
 **Vite** bundles the notification bell only:
 
@@ -193,8 +234,8 @@ resources/views/adminlte4/
 ├── components/
 │   ├── layouts/app.blade.php       ← <x-adminlte4::layouts.app>  authenticated shell (navbar + sidebar + footer)
 │   ├── layouts/auth.blade.php      ← <x-adminlte4::layouts.auth> centered login card
-│   ├── partials/                   ← assets-head, assets-scripts, navbar, sidebar, footer,
-│   │                                  datatable-assets, datatable-row-actions
+│   ├── partials/                   ← assets-head, assets-scripts, api-response-handler, ajax-form,
+│   │                                  navbar, sidebar, footer, datatable-assets, datatable-row-actions
 │   ├── nav/tree.blade.php          ← recursive renderer for the dynamic sidebar tree
 │   ├── nav/bar-tree.blade.php      ← horizontal renderer for the dynamic navbar tree
 │   ├── alert.blade.php             ← flash + validation feedback
@@ -251,7 +292,7 @@ The user list uses **Yajra DataTables** server-side. The web layer does **not** 
 
 - The **API decides which actions** the actor may take (RBAC) and returns them as `actions[].key` (`show`/`edit`/`delete`).
 - The web layer **maps those keys** to clickable web routes (`users.edit` GET, `users.destroy` DELETE form) with `bi bi-*` icons, dropping `show` (there is no web detail page).
-- On any API failure the proxy returns an **empty** DataTables payload.
+- On any API failure the proxy returns a DataTables payload with `error` (localized message) and the upstream HTTP status — the browser shows an alert via `MonolithApi.datatableAjaxError()` instead of an empty table. The same pattern applies to `Web\OrderController::datatable()` and orders bulk delete (`orders/index.blade.php` uses `MonolithApi.handleResponse()`).
 
 Action buttons stay web-side because the browser submits a normal CSRF `<form>` (with `_method`) to a **web** route — the API (Bearer-only, no CSRF) is never hit directly from the browser.
 
@@ -259,9 +300,11 @@ Action buttons stay web-side because the browser submits a normal CSRF `<form>` 
 |------|------|
 | `app/Http/Controllers/Web/UserController.php` | `datatable()` proxies the API and maps actions; `index()` renders the shell |
 | `resources/views/adminlte4/users/index.blade.php` | Empty `<table>` + DataTables init pointing at `users.datatable` |
-| `resources/views/adminlte4/components/partials/datatable-row-actions.blade.php` | `renderDatatableActions()` + CSRF form submit for non-GET actions |
+| `resources/views/adminlte4/components/partials/datatable-row-actions.blade.php` | `renderDatatableActions()` + `MonolithApi.handleResponse()` for non-GET actions |
 | `tests/Feature/Http/Controllers/Web/SidebarNavigationWebTest.php` | Asserts `NavigationComposer` binds to the hashed sidebar/navbar views and seeded layout menus render in the HTML shell |
-| `tests/Feature/Http/Controllers/Web/UserDatatableTest.php` | `Http::fake()` → asserts the proxy maps API keys to web URLs |
+| `tests/Feature/Http/Controllers/Web/UserDatatableTest.php` | `Http::fake()` → asserts the proxy maps API keys to web URLs and returns an `error` key on API failure |
+| `tests/Feature/Http/Controllers/Web/UserFormAjaxTest.php` | AJAX mutation envelope: 422 field errors, 401 session flash + redirect, 403/500 error messages |
+| `tests/Feature/Http/Controllers/Web/WebCsrfErrorTest.php` | CSRF `TokenMismatchException` → JSON 419 envelope + session flash |
 
 ---
 
@@ -294,6 +337,7 @@ Visit `/login`, sign in with the seeded admin, and the dashboard / user manageme
 - [User Management & H-RBAC](./user-management-hrbac.md) — policies/hierarchy enforced by the API the web calls
 - [Dynamic Navigation Menu](./navigation-menu.md) — menu domain behind the web menu screens
 - [CRUD Architecture & Repository Pattern](./crud-architecture.md) — layer responsibilities behind the API
+- [List display modes (query & DataTables)](./list-display-modes.md) — datatable proxy checklist and `error` field on API failure
 - [Activity notifications](./notifications.md) — bell delivery (polling / realtime), Vite + Echo, broadcasting
 - [API Routing](./api-routing.md) — the versioned API surface the web layer consumes
 - [Localization](./localization.md) — locale resolution, `lang/` layout, Spatie fields, task rule for translations

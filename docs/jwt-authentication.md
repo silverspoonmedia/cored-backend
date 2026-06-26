@@ -598,7 +598,7 @@ Feature tests use `Tests\Concerns\SeedsRolesAndPermissions` to load `RoleSeeder`
 
 The Blade admin is a **pure consumer** of the auth endpoints above — it does not call `AuthService` directly. Login, register, logout, password reset/change, and email verification resend all forward to `/api/v1/auth/*` via `App\Support\Api\ApiClient`. The returned JWT is stored in the HttpOnly `auth_token` cookie (`IssuesAuthCookie`); on every subsequent request `AuthenticateWithJwtCookie` binds it to the `api` guard for `web.auth`/`web.guest`, and `ApiClient` re-forwards it as `Authorization: Bearer` to the API.
 
-See [Web frontend (Blade + AdminLTE 4)](./web-frontend.md) for the full flow, `ConsumesApi` error translation, and the `PHP_CLI_SERVER_WORKERS` caveat for self-HTTP calls.
+See [Web frontend (Blade + AdminLTE 4)](./web-frontend.md) for the full flow, `ConsumesApi` / `MonolithApi` error translation ([AJAX error handling](./web-frontend.md#ajax-error-handling-contract)), and the `PHP_CLI_SERVER_WORKERS` caveat for self-HTTP calls.
 
 ---
 

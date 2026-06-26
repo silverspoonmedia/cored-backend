@@ -30,6 +30,7 @@ return [
         'validation_failed' => 'Periksa kembali isian Anda.',
         'request_failed' => 'Permintaan gagal diproses.',
         'server_unreachable' => 'Tidak dapat menghubungi server. Periksa koneksi Anda.',
+        'datatable_load_failed' => 'Tidak dapat memuat data tabel. Silakan coba lagi.',
     ],
     'password' => [
         'show' => 'Tampilkan kata sandi',

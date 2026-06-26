@@ -102,4 +102,5 @@
     })();
 </script>
 
+<x-adminlte4::partials.api-response-handler />
 <x-adminlte4::partials.ajax-form />

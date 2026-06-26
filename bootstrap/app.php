@@ -16,6 +16,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\Route;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenBlacklistedException;
@@ -26,6 +27,7 @@ use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
@@ -180,5 +182,30 @@ return Application::configure(basePath: dirname(__DIR__))
                 $e->getMessage() ?: __('api/common.unauthorized'),
                 403,
             );
+        });
+
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if ($request->is('api/*') || $e->getStatusCode() !== 419) {
+                return null;
+            }
+
+            if (! $e->getPrevious() instanceof TokenMismatchException) {
+                return null;
+            }
+
+            $message = __('web/session.csrf_expired');
+            $request->session()->flash('error', $message);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $message,
+                    'reload' => true,
+                ], 419);
+            }
+
+            return back()
+                ->withInput()
+                ->with('error', $message);
         });
     })->create();

@@ -3,10 +3,6 @@
         'use strict';
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-        const messages = @json([
-            'requestFailed' => __('ui.ajax.request_failed'),
-            'serverUnreachable' => __('ui.ajax.server_unreachable'),
-        ]);
 
         window.renderDatatableActions = function (actions) {
             if (!Array.isArray(actions) || actions.length === 0) {
@@ -62,19 +58,13 @@
                     data = {};
                 }
 
-                if (response.ok && data.redirect) {
-                    window.location.assign(data.redirect);
-                    return;
-                }
-
-                if (response.ok) {
-                    window.location.reload();
-                    return;
-                }
-
-                window.alert(data.message || messages.requestFailed);
+                window.MonolithApi.handleResponse(response, data, {
+                    onSuccess: function () {
+                        window.location.reload();
+                    },
+                });
             } catch (error) {
-                window.alert(messages.serverUnreachable);
+                window.MonolithApi.handleNetworkError(null);
                 console.error('Datatable action failed', error);
             }
         };
