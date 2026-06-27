@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('disk');
             $table->string('path');
-            $table->string('s3_upload_id')->nullable();
+            $table->text('s3_upload_id')->nullable();
             $table->string('strategy'); // single | multipart
             $table->string('original_name');
             $table->string('mime');

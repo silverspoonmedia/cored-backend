@@ -15,6 +15,7 @@ return [
     'invalid_size' => 'Ukuran file harus lebih dari nol.',
     'file_too_large' => 'File melebihi ukuran maksimum yang diizinkan.',
     'invalid_type' => 'Jenis file tidak diizinkan.',
+    'invalid_name' => 'Nama berkas wajib diisi.',
     'multipart_only' => 'Tindakan ini hanya tersedia untuk unggah multipart.',
     'invalid_part_number' => 'Nomor bagian di luar rentang.',
     'incomplete_parts' => 'Belum semua bagian unggah diterima.',

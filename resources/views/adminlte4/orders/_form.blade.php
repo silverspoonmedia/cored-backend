@@ -208,8 +208,11 @@
         data-abort-url="{{ route('orders.attachments.uploads.destroy', ['upload' => '__UPLOAD__']) }}"
         data-sign-parts-url="{{ route('orders.attachments.uploads.sign-parts', ['upload' => '__UPLOAD__']) }}"
         data-max-files="{{ (int) config('attachments.max_files_per_order') }}"
+        data-max-concurrent="{{ (int) config('attachments.max_concurrent_uploads') }}"
         data-messages="{{ json_encode([
             'uploading' => __('web/orders.form.upload_uploading'),
+            'pending' => __('web/orders.form.upload_pending'),
+            'waiting' => __('web/orders.form.upload_waiting'),
             'done' => __('web/orders.form.upload_done'),
             'uploadFailed' => __('web/orders.form.upload_failed'),
             'tooManyFiles' => __('web/orders.form.upload_too_many'),
@@ -223,13 +226,21 @@
             class="form-control"
             data-direct-upload-input
             multiple
-            accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
         >
         <small class="form-text text-muted">{{ __('web/orders.form.attachments_hint', [
             'count' => (int) config('attachments.max_files_per_order'),
             'size' => $attachmentMaxSizeLabel ?? '5 GB',
         ]) }}</small>
+        <small class="form-text text-muted d-block">{{ __('web/orders.form.upload_concurrency_hint', [
+            'count' => (int) config('attachments.max_concurrent_uploads'),
+        ]) }}</small>
         <div class="mt-2" data-direct-upload-queue></div>
+        <button
+            type="button"
+            class="btn btn-outline-primary btn-sm mt-2"
+            data-direct-upload-start
+            disabled
+        >{{ __('web/orders.form.upload_start') }}</button>
         <div class="mt-2" data-direct-upload-staged></div>
         <x-adminlte4::form.error name="staged_attachments" />
         <x-adminlte4::form.error name="staged_attachments.0" />

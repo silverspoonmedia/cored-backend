@@ -297,29 +297,8 @@ class DirectAttachmentUploadService
             throw new AttachmentUploadException(__('api/playground-attachment-uploads.file_too_large'));
         }
 
-        $extension = strtolower((string) pathinfo($name, PATHINFO_EXTENSION));
-
-        if ($extension === '' || ! in_array($extension, config('attachments.allowed_mimes', []), true)) {
-            throw new AttachmentUploadException(__('api/playground-attachment-uploads.invalid_type'));
-        }
-
-        if ($mime === '' || $mime === 'application/octet-stream') {
-            return;
-        }
-
-        $allowedMimePrefixes = ['image/', 'application/pdf', 'application/msword', 'application/vnd.'];
-
-        $allowed = false;
-
-        foreach ($allowedMimePrefixes as $prefix) {
-            if (str_starts_with($mime, $prefix)) {
-                $allowed = true;
-                break;
-            }
-        }
-
-        if (! $allowed) {
-            throw new AttachmentUploadException(__('api/playground-attachment-uploads.invalid_type'));
+        if (trim($name) === '') {
+            throw new AttachmentUploadException(__('api/playground-attachment-uploads.invalid_name'));
         }
     }
 

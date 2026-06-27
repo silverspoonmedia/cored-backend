@@ -248,7 +248,20 @@ create/update. Instead:
 | Piece | Role |
 |-------|------|
 | `App\Models\Attachment` | Polymorphic metadata row; owns disk-aware **download** URL resolution (`Attachment::url()`). |
-| `App\Models\AttachmentUpload` | Server-side upload session (`pending` → `completed` / `aborted`); tracks multipart parts for resume. |
+| `App\Models\AttachmentUpload` | Server-side upload session (`pending` → `completed` / `aborted`); tracks multipart parts for resume. Stored in **`attachment_uploads`** — file bytes are **not** in the database. |
+
+**`attachment_uploads` session table** (upload orchestration only):
+
+| Column | Role |
+|--------|------|
+| `id` | Client-facing upload UUID (`staged_attachments[]` references this) |
+| `path` | Pre-issued object key on the storage disk |
+| `s3_upload_id` | S3/R2 multipart `UploadId` for files ≥ `multipart_threshold_bytes`; `null` for single-PUT uploads. Stored as **`text`** (not `varchar`) because provider IDs can exceed 255 characters — this is an opaque handle, not file content |
+| `parts` | JSON array of uploaded part numbers + ETags (resume / complete) |
+| `size`, `mime`, `original_name` | Declared file metadata from the client at init time |
+
+| Piece | Role |
+|-------|------|
 | `DirectAttachmentUploadService` | Presign + S3 multipart orchestration (`initiate`, `status`, `signParts`, `complete`, `abort`, `resolveStaged`). |
 | `OrderAttachmentStorage` | `pathExists` + `deleteMany` (compensation / purge); no server-side `store()`. |
 | `OrderService` | Resolves `staged_attachments` into metadata; reconciles `keep_attachments` on update; compensates on DB failure. |
@@ -266,6 +279,7 @@ create/update. Instead:
 | `multipart_threshold_bytes` | 8 MiB | Files below this get a single presigned PUT |
 | `max_file_size_bytes` | 5 GiB | POC ceiling per file |
 | `max_files_per_order` | 10 | Matches staged attachment count limit |
+| `max_concurrent_uploads` | 2 | Max simultaneous browser uploads (`ATTACHMENT_UPLOAD_MAX_CONCURRENT`) |
 | `presign_ttl_minutes` | 15 | Presigned URL lifetime |
 | `session_ttl_hours` | 24 | Pending session / resume window |
 
@@ -332,6 +346,15 @@ The web Blade form uses `resources/js/orders/direct-upload.js` (Vite) to run the
 upload flow against proxied web routes (`/orders/attachments/uploads/*`), then
 submits `staged_attachments[]` hidden fields with the order JSON payload.
 
+**Direct-upload UX:** picking files adds rows in a **Pending** state without
+starting storage I/O. The user clicks **Start upload** to begin; the widget
+schedules work through `resources/js/orders/upload-queue.js` (`runWithConcurrency`)
+with a ceiling of `max_concurrent_uploads` (default 2). Extra files show
+**Waiting…** until a slot frees; each file keeps its own progress bar while
+**Uploading…**. Pending rows can be removed before start (no S3 session yet).
+Form submit is blocked only while a batch is running or any file is actively
+uploading — unstaged pending files do not block save.
+
 ### Web (Blade) screens
 
 The admin UI consumes the playground API exactly like the rest of the
@@ -357,8 +380,9 @@ shared client there with `ApiClient::withPrefix('api/playground')`.
   (add/remove line item) with a monotonic row index so removing then adding
   never collides on a `details[i][...]` field name. It always keeps ≥1 row. On
   edit it shows a checkbox list of current files (`keep_attachments[]`) plus the
-  **direct-upload widget** (`direct-upload.js`): files upload to storage in
-  chunks before save; completed sessions populate `staged_attachments[]` hidden
+  **direct-upload widget** (`direct-upload.js` + `upload-queue.js`): user picks
+  files (pending queue), clicks **Start upload**, then files upload to storage in
+  chunks with at-most-`max_concurrent_uploads` parallelism before save; completed sessions populate `staged_attachments[]` hidden
   inputs. A hidden `attachments_managed=1` marker ensures unticking every
   keep-box drops all existing files (see
   [reconciliation](#attachments-direct-s3-upload)).
@@ -418,6 +442,7 @@ per the [Localization task rule](./localization.md#task-rule-required):
 | `tests/Unit/Support/Orders/DirectAttachmentUploadServiceTest.php` | Upload strategy selection + `resolveStaged` rules |
 | `tests/Feature/Http/Controllers/Web/OrderAttachmentWebTest.php` | Web layer forwards JSON order mutations + upload init proxy |
 | `tests/Feature/Http/Controllers/Web/OrderBulkDeleteWebTest.php` | Web layer forwards the selected `ids[]` to the API bulk endpoint and relays its envelope |
+| `tests/Unit/Models/AttachmentUploadTest.php` | Multipart `s3_upload_id` longer than 255 chars persists (`text` column) |
 | `tests/Feature/Models/AttachmentTest.php` | Disk-aware `Attachment::url()`: plain URL for public disks; signed-URL mint + cache, fresh-cache reuse, near-expiry refresh for S3; owning-user relation |
 
 ```bash

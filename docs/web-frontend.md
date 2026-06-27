@@ -198,15 +198,22 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 (`adminlte4/components/partials/assets-head.blade.php` and `assets-scripts.blade.php`).
 `assets-scripts.blade.php` loads shared client glue in order: `api-response-handler` (`window.MonolithApi`) → `ajax-form` (global submit listener). Page-level scripts (e.g. DataTables) load afterward and may call `MonolithApi` helpers.
 
-**Vite** bundles the notification bell only:
+**Vite** bundles the notification bell and order direct-upload widget:
 
 | Vite input | Loaded from | npm packages |
 |------------|-------------|--------------|
 | `resources/js/notifications/bell.js` | `@vite` in `partials/navbar.blade.php` (`@can('view notification')`) | `laravel-echo`, `pusher-js` |
+| `resources/js/orders/direct-upload.js` | `@vite` in `orders/_form.blade.php` | — (`upload-queue.js` helper) |
 | `resources/js/app.js` | Default entry (Tailwind / future shared JS) | — |
 
+Order attachment concurrency is configured via `ATTACHMENT_UPLOAD_MAX_CONCURRENT`
+(see `config/attachments.php` → `max_concurrent_uploads`; exposed to the widget
+as `data-max-concurrent` on `[data-direct-upload]`). The form shows a **Start
+upload** button; files are not sent to storage until the user clicks it.
+
 Run `npm install` and `npm run build` before deploy (or `composer run dev` for
-serve + queue + Vite HMR). Bell config (routes, labels, realtime flag, viewer id,
+serve + queue + Vite HMR). JS unit tests: `npm run test:js` (Vitest;
+`resources/js/orders/upload-queue.test.js`). Bell config (routes, labels, realtime flag, viewer id,
 broadcast auth endpoint) is built server-side by `NotificationBellComposer` and
 passed as `data-notification-config` on `#notification-bell`. Public Pusher fields
 also come from `VITE_PUSHER_*` in `.env` — see [notifications.md](./notifications.md#realtime-vs-polling).

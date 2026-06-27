@@ -24,6 +24,21 @@ class DirectAttachmentUploadServiceTest extends TestCase
         $this->service = new FakeDirectAttachmentUploadService(new OrderAttachmentStorage);
     }
 
+    public function test_initiate_accepts_any_extension_and_mime(): void
+    {
+        $result = $this->service->initiate('clip.mp4', 'video/mp4', 1024);
+
+        $this->assertSame('clip.mp4', $result['upload']->original_name);
+        $this->assertSame('video/mp4', $result['upload']->mime);
+    }
+
+    public function test_initiate_rejects_empty_file_name(): void
+    {
+        $this->expectException(AttachmentUploadException::class);
+
+        $this->service->initiate('   ', 'application/octet-stream', 1024);
+    }
+
     public function test_initiate_uses_single_strategy_for_small_files(): void
     {
         config(['attachments.multipart_threshold_bytes' => 8192]);

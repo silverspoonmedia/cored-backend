@@ -15,6 +15,7 @@ return [
     'invalid_size' => 'ファイルサイズは 0 より大きい必要があります。',
     'file_too_large' => 'ファイルが許可された最大サイズを超えています。',
     'invalid_type' => 'このファイル形式は許可されていません。',
+    'invalid_name' => 'ファイル名は必須です。',
     'multipart_only' => 'この操作はマルチパートアップロードでのみ利用できます。',
     'invalid_part_number' => 'パート番号が範囲外です。',
     'incomplete_parts' => 'すべてのアップロードパートが受信されていません。',

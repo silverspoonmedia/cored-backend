@@ -43,10 +43,26 @@ class PlaygroundAttachmentUploadTest extends TestCase
         ]);
     }
 
-    public function test_init_rejects_disallowed_file_type(): void
+    public function test_init_accepts_any_file_extension(): void
     {
         $response = $this->postJson('/api/playground/attachments/uploads', [
-            'name' => 'malware.exe',
+            'name' => 'setup.exe',
+            'mime' => 'application/octet-stream',
+            'size' => 100,
+        ]);
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('attachment_uploads', [
+            'original_name' => 'setup.exe',
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_init_rejects_empty_file_name(): void
+    {
+        $response = $this->postJson('/api/playground/attachments/uploads', [
+            'name' => '   ',
             'mime' => 'application/octet-stream',
             'size' => 100,
         ]);

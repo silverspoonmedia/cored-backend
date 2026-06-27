@@ -15,6 +15,7 @@ return [
     'invalid_size' => 'File size must be greater than zero.',
     'file_too_large' => 'File exceeds the maximum allowed size.',
     'invalid_type' => 'File type is not allowed.',
+    'invalid_name' => 'File name is required.',
     'multipart_only' => 'This action is only available for multipart uploads.',
     'invalid_part_number' => 'Part number is out of range.',
     'incomplete_parts' => 'Not all upload parts have been received.',

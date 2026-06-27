@@ -51,6 +51,19 @@ class PlaygroundOrderAttachmentTest extends TestCase
         return $service->complete($init['upload']->id)['upload']->id;
     }
 
+    public function test_store_persists_staged_upload_with_any_extension(): void
+    {
+        $uploadId = $this->stageUpload('bundle.zip', 2048);
+
+        $response = $this->postJson('/api/playground/orders', $this->basePayload([
+            'staged_attachments' => [$uploadId],
+        ]));
+
+        $response->assertCreated()
+            ->assertJsonCount(1, 'data.attachment')
+            ->assertJsonPath('data.attachment.0.name', 'bundle.zip');
+    }
+
     public function test_store_persists_staged_attachment_metadata(): void
     {
         $first = $this->stageUpload('invoice.pdf');

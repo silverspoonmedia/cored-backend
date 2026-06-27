@@ -40,9 +40,7 @@ return [
 
     'max_files_per_order' => (int) env('ATTACHMENT_UPLOAD_MAX_FILES_PER_ORDER', 10),
 
-    'allowed_mimes' => [
-        'jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx',
-    ],
+    'max_concurrent_uploads' => (int) env('ATTACHMENT_UPLOAD_MAX_CONCURRENT', 2),
 
     'presign_ttl_minutes' => (int) env('ATTACHMENT_UPLOAD_PRESIGN_TTL', 15),
 
