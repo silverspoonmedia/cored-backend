@@ -137,7 +137,9 @@ These are pure reference reads, not business logic, and there is no suitable API
 
 ## Routes (`routes/web.php`)
 
-All web routes run through the `web` group (which includes `AuthenticateWithJwtCookie`). They carry **no `permission:` gate** — the API authorizes each forwarded call; web middleware is transport-only.
+All web routes run through the `web` group (which includes `AuthenticateWithJwtCookie`). They carry **no `permission:` gate** on most routes — the API authorizes each forwarded call; web middleware is transport-only.
+
+**Exception:** approval workflow admin screens (`/admin/approval-workflows/*`) also apply `role:Root|Admin` before forwarding to the API. This is a transport-layer gate for admin-only setup UI; the API still enforces authorization on every forwarded call.
 
 | Method | URI | Name | Middleware | Forwards to (API) |
 |--------|-----|------|------------|-------------------|

@@ -26,8 +26,10 @@ use Illuminate\Support\Facades\Route;
 | The Blade frontend is a pure CONSUMER of the versioned API: every controller
 | forwards to `/api/v1/*` (see App\Support\Api\ApiClient) and only renders the
 | JSON it gets back. Business logic — validation, CRUD, RBAC — lives solely in
-| the API, so these routes carry NO `permission:` gate: the API authorizes each
-| forwarded call. Web middleware here is transport-only: `web.guest`/`web.auth`
+| the API, so these routes carry NO `permission:` gate on most paths: the API
+| authorizes each forwarded call. Exception: `role:Root|Admin` on
+| `admin/approval-workflows/*` (transport-layer gate before API forwarding).
+| Web middleware here is transport-only: `web.guest`/`web.auth`
 | (who is logged in, where to redirect) and the JWT-cookie bridge that lets the
 | browser carry the same stateless token the API issues.
 */
@@ -43,9 +45,6 @@ Route::middleware('web.guest')->group(function (): void {
 
     Route::get('two-factor-challenge', [TwoFactorWebController::class, 'create'])->name('two-factor.challenge');
     Route::post('two-factor-challenge', [TwoFactorWebController::class, 'store'])->name('two-factor.challenge.store');
-
-    Route::get('register', [RegisterController::class, 'create'])->name('register');
-    Route::post('register', [RegisterController::class, 'store'])->name('register.store');
 
     Route::get('register', [RegisterController::class, 'create'])->name('register');
     Route::post('register', [RegisterController::class, 'store'])->name('register.store');

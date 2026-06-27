@@ -34,7 +34,7 @@ Route::middleware('auth:api')->prefix('v1/admin/approval-workflows')->group(func
 
 // Playground routes: demo CRUD surface for testing. Disabled in production for
 // security (no authentication/authorization). See SECURITY_AUDIT.md FINDING-001.
-// if (! app()->environment('production')) {
+if (! app()->environment('production')) {
 Route::prefix('playground')->group(function () {
     // Namespaced route names (`playground.users.*`) so the demo surface does not
     // squat the generic `users.*` names used by the web admin UI.
@@ -53,4 +53,4 @@ Route::prefix('playground')->group(function () {
         ->except(['create', 'edit'])
         ->names('playground.orders');
 });
-// }
+}

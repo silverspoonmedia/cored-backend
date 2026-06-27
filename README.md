@@ -1,6 +1,6 @@
 # Monolith
 
-Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks and playground CRUD.
+Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, a **configurable approval matrix engine**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks and playground CRUD.
 
 It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that is a **pure consumer of the versioned API**: every web controller forwards to `/api/v1/*`, so validation, CRUD, and RBAC run **only once — in the API** (no duplicated business logic). The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**, which the web layer forwards to the API as a Bearer token. See **[Web Frontend (Blade + AdminLTE 4)](docs/web-frontend.md)**.
 
@@ -133,13 +133,14 @@ php artisan migrate
 php artisan db:seed
 ```
 
-`DatabaseSeeder` runs `RoleSeeder` (roles, permissions, hierarchy levels) and creates a default admin user:
+`DatabaseSeeder` runs `RoleSeeder` (roles, permissions, hierarchy levels), `NotificationTypeSettingSeeder`, sample users, navigation menus, and an approval workflow demo:
 
-| Field | Value |
-|-------|--------|
-| Email | `admin@example.com` |
-| Password | `123456789` |
-| Role | `Admin` |
+| Email | Password | Role | Purpose |
+|-------|----------|------|---------|
+| `admin@example.com` | `123456789` | Admin | Default sign-in; executive/final approval steps |
+| `manager@example.com` | `123456789` | Management | Manager review step |
+| `finance@example.com` | `123456789` | Moderator | Finance approval step |
+| `user@example.com` | `123456789` | User | Regular user; order submission demo |
 
 **Two-factor authentication (2FA):** Users can enable TOTP-based 2FA from their profile. Once enabled, login returns a `two_factor_token` (not a JWT); the client must call `POST /api/v1/auth/two-factor/login` with the token and a valid TOTP code to obtain the real JWT. See [JWT Authentication & RBAC](docs/jwt-authentication.md#two-factor-authentication-2fa) for full API and web flow.
 
@@ -236,7 +237,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example, and the master-detail aggregate (Order + OrderDetail) with transactional writes |
 | [Playground (reference surface)](docs/playground.md) | Non-production `/api/playground/*` demos: simple CRUD (Users) and the master-detail aggregate (Orders) with transactional writes, plus their web screens |
 | [Approval matrix engine](docs/approval-matrix-engine.md) | Generic, code-free configurable approval workflow engine with conditional steps, parallel approver modes, SLA tracking, and delegation management - integrated with Order document type |
-| [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 4 / jQuery 3 |
+| [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 5 / jQuery 3.7 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
 | [Activity notifications (per role + per user)](docs/notifications.md) | Generic event-driven notification engine: per-type audiences in **DB via seeder** (hybrid with code catalogue), per-user read state, navbar bell with polling or realtime websocket |
 | [Activity notifications — role vs user handling](docs/notifications-role-vs-user.md) | Reference for broadcast (per role) vs personal (per user) targeting, lifecycle, pitfalls, and flow-change decisions |

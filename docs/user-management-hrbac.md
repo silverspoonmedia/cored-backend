@@ -162,7 +162,11 @@ Web routes carry **no** `permission:` middleware — a `403` from the API is tra
 
 Responses use the shared `ApiResponse` / `ApiResponder` envelope. User-facing `message` values come from `lang/{locale}/api/users.php` (and related keys) — they are **not** hardcoded in controllers. The JSON examples below illustrate Indonesian (`id`); the active locale may return English instead.
 
-**Success:**
+**Success** (`id` locale example — with `APP_LOCALE=en`, see English column):
+
+| Key | English (`en`) | Indonesian (`id`) |
+|-----|----------------|-------------------|
+| List retrieved | User list retrieved successfully. | Daftar pengguna berhasil diambil. |
 
 ```json
 {
@@ -174,6 +178,10 @@ Responses use the shared `ApiResponse` / `ApiResponder` envelope. User-facing `m
 
 **Policy / authorization denial (403):**
 
+| English (`en`) | Indonesian (`id`) |
+|----------------|-------------------|
+| You cannot access users at the same or higher role level than yours. | Anda tidak dapat mengakses pengguna dengan level role yang sama atau lebih tinggi dari Anda. |
+
 ```json
 {
   "status": "error",
@@ -182,6 +190,10 @@ Responses use the shared `ApiResponse` / `ApiResponder` envelope. User-facing `m
 ```
 
 **Self-delete (422):**
+
+| English (`en`) | Indonesian (`id`) |
+|----------------|-------------------|
+| You cannot delete your own account. | Anda tidak dapat menghapus akun Anda sendiri. |
 
 ```json
 {
@@ -192,6 +204,10 @@ Responses use the shared `ApiResponse` / `ApiResponder` envelope. User-facing `m
 
 **Resource not found (404)** — route model binding or repository `findOrFail` on `api/*`:
 
+| English (`en`) | Indonesian (`id`) |
+|----------------|-------------------|
+| User not found. | Pengguna tidak ditemukan. |
+
 ```json
 {
   "status": "error",
@@ -199,9 +215,9 @@ Responses use the shared `ApiResponse` / `ApiResponder` envelope. User-facing `m
 }
 ```
 
-Other Eloquent models on the API receive `Data tidak ditemukan.` instead of Laravel’s default `No query results for model [...]` message.
+Other Eloquent models on the API receive the localized `api/common.data_not_found` string (e.g. `Data not found.` in `en`, `Data tidak ditemukan.` in `id`) instead of Laravel’s default `No query results for model [...]` message.
 
-> **Locale note:** All `message` strings above are resolved via `__('api/users.*')` / `__('api/common.*')` and follow the active request locale (`SetLocale`: `users.locale` → cookie → `APP_LOCALE`). Examples show Indonesian (`id`); with `APP_LOCALE=en` the same keys return English from `lang/en/api/users.php`. See [Localization](./localization.md).
+> **Locale note:** All `message` strings are resolved via `__('api/users.*')` / `__('api/common.*')` and follow the active request locale (`SetLocale`: `users.locale` → cookie → `APP_LOCALE`). See [Localization](./localization.md).
 
 User payloads in management endpoints use `App\Support\User\UserManagementPresenter` (includes `roles` with `name` and `level`).
 
@@ -361,7 +377,7 @@ tests/Feature/Http/Controllers/API/V1/UserManagementTest.php
 | `delete` | `delete user` | `allTargetRolesAboveActor` |
 | `assignableRoles` | `create user` **or** `edit user` | — |
 
-Denied responses use **Indonesian** messages. For `api/*` routes, `bootstrap/app.php` renders `AuthorizationException` and `AccessDeniedHttpException` through `ApiResponder` so clients always receive the standard JSON envelope.
+Denied responses use localized messages from `lang/{locale}/api/users.php`. For `api/*` routes, `bootstrap/app.php` renders `AuthorizationException` and `AccessDeniedHttpException` through `ApiResponder` so clients always receive the standard JSON envelope.
 
 ---
 

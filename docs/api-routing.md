@@ -46,7 +46,10 @@ routes/
     └── v2.php           # Optional next version (enable in bootstrap)
 
 app/Http/Controllers/API/
-├── PlaygroundController.php       # Global (demo / non-domain utilities only)
+├── PlaygroundController.php       # Global ping + playground users demo
+├── PlaygroundOrderController.php  # Global playground orders demo
+├── ApprovalController.php         # Authenticated approval actions (v1-prefixed in routes/api.php)
+├── ApprovalWorkflowAdminController.php
 └── V1/
     ├── Auth/                      # Versioned application controllers
     ├── Navigation/
@@ -95,16 +98,34 @@ $exceptions->shouldRenderJsonWhen(
 
 ## Global routes
 
-**File:** `routes/api.php`
+**File:** [routes/api.php](routes/api.php)
+
+What is registered here today:
+
+| Prefix / path | When active | Auth | Purpose |
+|---------------|-------------|------|---------|
+| `GET /api/ping` | Always | None | Liveness probe (`Pong Global`) |
+| `/api/playground/*` | Non-production only (`APP_ENV` ≠ `production`) | None | Reference CRUD demos — see [Playground](./playground.md) |
+| `/api/v1/approvals/*` | Always | `auth:api` | Approval inbox and slot actions |
+| `/api/v1/admin/approval-workflows/*` | Always | `auth:api` | Approval workflow setup (API enforces Root/Admin) |
+
+Minimal excerpt:
 
 ```php
 use App\Http\Controllers\API\PlaygroundController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('ping', [PlaygroundController::class, 'ping']);
+
+// Approval routes use a v1/ prefix but live in this global file for historical wiring.
+Route::middleware('auth:api')->prefix('v1/approvals')->group(function () { /* … */ });
+
+if (! app()->environment('production')) {
+    Route::prefix('playground')->group(function () { /* … */ });
+}
 ```
 
-**Example endpoint:** `GET /api/ping`
+**Why approval routes sit in `routes/api.php`:** they were added alongside playground wiring and use a `v1/` URL prefix without living in `routes/api/v1.php`. New versioned features should still go in `routes/api/v{N}.php` unless there is a strong reason to extend this file.
 
 Global routes are **not** the default place to add new API features. Before adding a route here, confirm the endpoint is truly version-agnostic and safe. If it implements or orchestrates business logic, it belongs under a versioned route file instead.
 
@@ -126,7 +147,9 @@ Route::middleware(['auth:api', 'permission:view user'])
 **Example endpoint:** `GET /api/v1/admin/ping`  
 **Example route name:** `api.v1.admin.ping` (via `route('api.v1.admin.ping')`)
 
-This is the **primary API surface** for the application. Implement new endpoints here unless they explicitly meet the global criteria above. The real v1 surface includes `auth/*`, `users/*`, `navigation/menus/*`, and `notifications/*` (see the related docs below).
+This is the **primary API surface** for the application. Implement new endpoints here unless they explicitly meet the global criteria above. The real v1 surface includes `auth/*`, `users/*`, `navigation/menus/*`, `notifications/*`, and `activity-logs/*` (see the related docs below).
+
+Approval endpoints (`/api/v1/approvals/*`, `/api/v1/admin/approval-workflows/*`) are registered from [routes/api.php](routes/api.php) with a `v1/` prefix — see [Approval matrix engine](./approval-matrix-engine.md).
 
 Place controllers under `App\Http\Controllers\API\V1\` (or `V2`, `V3`, etc.). Do not change existing version namespaces when introducing a new version; add a new namespace so older clients keep working.
 
@@ -203,12 +226,17 @@ List registered API routes:
 php artisan route:list --path=api
 ```
 
-Expected output (when v1 and global are active):
+Expected output (when v1 and global are active, non-production):
 
 ```
-GET|HEAD  api/ping           … API\PlaygroundController@ping
-GET|HEAD  api/v1/admin/ping  … api.v1.admin.ping › API\V1\AdminController@ping
+GET|HEAD  api/ping                              … API\PlaygroundController@ping
+GET|HEAD  api/playground/users                  … playground.users.index
+GET|HEAD  api/v1/approvals/my-pending           … API\ApprovalController@myPending
+GET|HEAD  api/v1/admin/approval-workflows       … API\ApprovalWorkflowAdminController@index
+GET|HEAD  api/v1/admin/ping                     … api.v1.admin.ping › API\V1\AdminController@ping
 ```
+
+In production, playground routes are absent; `api/ping` and versioned routes remain.
 
 ## Playground examples
 

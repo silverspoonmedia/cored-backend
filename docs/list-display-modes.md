@@ -1,6 +1,6 @@
 # List display modes (query & DataTables)
 
-Every **tabular list/index** endpoint in this application supports two response shapes: the existing **query** JSON envelope and a **DataTables** payload powered by [Yajra Laravel DataTables](https://github.com/yajra/laravel-datatables). Datatable rows include an **`actions`** array: RBAC-filtered button metadata for Bootstrap 4 / jQuery 3 frontends.
+Every **tabular list/index** endpoint in this application supports two response shapes: the existing **query** JSON envelope and a **DataTables** payload powered by [Yajra Laravel DataTables](https://github.com/yajra/laravel-datatables). Datatable rows include an **`actions`** array: RBAC-filtered button metadata for Bootstrap 5 / jQuery 3.7 frontends.
 
 Navigation **tree** `GET /api/v1/navigation/menus` is excluded — it returns a hierarchical tree, not a flat table.
 
@@ -111,7 +111,7 @@ Standard DataTables request parameters (`draw`, `start`, `length`, `search`, `or
 
 ## Action button contract (frontend)
 
-Each entry in `actions` is a plain object meant to be rendered as a Bootstrap 4 button (`btn btn-{style}`) and wired with jQuery 3:
+Each entry in `actions` is a plain object meant to be rendered as a Bootstrap 5 button (`btn btn-{style}`) and wired with jQuery 3.7:
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -119,7 +119,7 @@ Each entry in `actions` is a plain object meant to be rendered as a Bootstrap 4 
 | `label` | string | Button text, resolved for the active locale via `__('ui.datatable.*')` |
 | `method` | string | HTTP verb (`GET`, `PATCH`, `DELETE`, `POST`, …) |
 | `url` | string | Fully qualified API URL for the action |
-| `style` | string | Bootstrap 4 variant without `btn-` prefix (`info`, `primary`, `danger`, `success`, …) |
+| `style` | string | Bootstrap 5 variant without `btn-` prefix (`info`, `primary`, `danger`, `success`, …) |
 | `icon` | string? | Optional Font Awesome class(es), e.g. `fas fa-eye` |
 | `confirm` | string? | When set, the client should show a confirmation dialog before sending the request; also localized via `__('ui.datatable.confirm.*')` |
 

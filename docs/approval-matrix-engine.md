@@ -1028,31 +1028,23 @@ interface ApprovalRepository
 }
 ```
 
-### 2. API Versioning
+### 2. API routing
 
-Place all approval endpoints under `/api/v1/approvals`:
+Approval endpoints live under `/api/v1/approvals/*` and `/api/v1/admin/approval-workflows/*`. They are registered in [`routes/api.php`](routes/api.php) with a `v1/` URL prefix (not in `routes/api/v1.php`). See [API routing — Global routes](./api-routing.md#global-routes).
 
 ```php
-// routes/api_v1.php
-Route::middleware('auth:api')->prefix('approvals')->group(function () {
-    Route::post('/', [ApprovalController::class, 'initiate']);
-    Route::post('/{slot}/approve', [ApprovalController::class, 'approve']);
-    Route::post('/{slot}/reject', [ApprovalController::class, 'reject']);
-    Route::post('/{slot}/reassign', [ApprovalController::class, 'reassign']);
-    Route::get('/my-pending', [ApprovalController::class, 'myPending']);
-    Route::get('/instances/{instance}', [ApprovalController::class, 'show']);
+// routes/api.php (actual wiring)
+Route::middleware('auth:api')->prefix('v1/approvals')->group(function () {
+    Route::get('my-pending', [ApprovalController::class, 'myPending']);
+    Route::get('instances/{instance}', [ApprovalController::class, 'show']);
+    Route::post('slots/{slot}/approve', [ApprovalController::class, 'approve']);
+    Route::post('slots/{slot}/reject', [ApprovalController::class, 'reject']);
+    Route::post('slots/{slot}/reassign', [ApprovalController::class, 'reassign']);
+    Route::post('slots/batch-approve', [ApprovalController::class, 'batchApprove']);
 });
 
-// Admin/workflow management
-Route::middleware(['auth:api', 'role:Admin|IT'])->prefix('approval-workflows')->group(function () {
-    Route::apiResource('workflows', ApprovalWorkflowController::class);
-    Route::apiResource('workflows.steps', ApprovalWorkflowStepController::class);
-});
-
-// Delegation management (IT only)
-Route::middleware(['auth:api', 'role:IT'])->prefix('approval-delegations')->group(function () {
-    Route::apiResource('delegations', ApprovalDelegationController::class);
-    Route::post('/{delegation}/revoke', [ApprovalDelegationController::class, 'revoke']);
+Route::middleware('auth:api')->prefix('v1/admin/approval-workflows')->group(function () {
+    // workflow CRUD, steps, approvers — Root/Admin enforced in controllers
 });
 ```
 
