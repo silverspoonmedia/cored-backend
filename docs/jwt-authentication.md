@@ -204,9 +204,9 @@ Config file: `config/hcaptcha.php`.
 
 Validation is enforced in API Form Requests via the `ValidatesHcaptcha` trait (`app/Http/Requests/Auth/Concerns/ValidatesHcaptcha.php`). Direct API clients (mobile apps, scripts) must include `h-captcha-response` in the JSON body — the web layer only forwards the field; it does not validate.
 
-**Web UI:** see [Web frontend — hCaptcha](./web-frontend.md#hcaptcha-on-auth-forms). Summary: `<x-adminlte4::form.hcaptcha />` (widget + scaling + assets) and `<x-adminlte4::form.auth-submit />` (captcha + submit grid) on auth screens; `PasswordResetController` and `TwoFactorController` forward `h-captcha-response` to the API. On `422`, `ajax-form` dispatches `ajax-form:invalid`; the hCaptcha script resets and refits the widget.
+**Web UI:** see [Web frontend — hCaptcha](./web-frontend.md#hcaptcha-on-auth-forms). Summary: `<x-adminlte4::form.hcaptcha />` (invisible widget + `MonolithHcaptcha` API) and `<x-adminlte4::form.auth-submit />` (captcha + submit grid) on auth screens; `ajax-form` calls `MonolithHcaptcha.execute()` on submit before the fetch. `PasswordResetController` and `TwoFactorController` forward `h-captcha-response` to the API. On `422`, `ajax-form` dispatches `ajax-form:invalid`; the hCaptcha script resets all widgets.
 
-**Tests:** `php artisan test --filter=Hcaptcha` (`HcaptchaVerifierTest`, `HcaptchaTest`, `HcaptchaConfigTest`, `HcaptchaAuthTest`).
+**Tests:** `php artisan test --filter=Hcaptcha` (`HcaptchaVerifierTest`, `HcaptchaTest`, `HcaptchaConfigTest`, `HcaptchaAuthTest`, `HcaptchaInvisibleAuthFormsTest`).
 
 ### Auth guard (`config/auth.php`)
 

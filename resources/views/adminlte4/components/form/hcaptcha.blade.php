@@ -1,146 +1,141 @@
 @if (config('hcaptcha.enabled') && config('hcaptcha.sitekey'))
     <div
-        class="hcaptcha-field mb-3{{ $errors->has('h-captcha-response') ? ' hcaptcha-field--invalid' : '' }}"
+        class="hcaptcha-field{{ $errors->has('h-captcha-response') ? ' hcaptcha-field--invalid mb-3' : '' }}"
         data-form-field="h-captcha-response"
         data-field-invalid-class="hcaptcha-field--invalid"
     >
-        <div class="hcaptcha-field__widget" data-hcaptcha-fit>
-            <div
-                class="h-captcha"
-                data-sitekey="{{ config('hcaptcha.sitekey') }}"
-                data-size="normal"
-            ></div>
-        </div>
+        <div
+            class="visually-hidden"
+            data-hcaptcha-widget
+            data-sitekey="{{ config('hcaptcha.sitekey') }}"
+        ></div>
         <x-adminlte4::form.error
             name="h-captcha-response"
-            class="d-block text-center hcaptcha-field__error"
+            class="d-block text-center hcaptcha-field__error mb-3"
         />
     </div>
 
     @once
-        <script src="https://js.hcaptcha.com/1/api.js?onload=onHcaptchaApiLoad" async defer></script>
+        <script src="https://js.hcaptcha.com/1/api.js?onload=onHcaptchaApiLoad&amp;render=explicit" async defer></script>
         <style>
-            .hcaptcha-field__widget {
-                width: 100%;
-                overflow: hidden;
-                border: 1px solid var(--bs-border-color);
-                border-radius: var(--bs-border-radius, 0.375rem);
-                background-color: var(--bs-body-bg);
-                box-sizing: border-box;
-            }
-
-            .hcaptcha-field__widget .h-captcha {
-                display: block;
-                margin: 0;
-                line-height: 0;
-                transform-origin: top left;
-                will-change: transform;
-            }
-
             .hcaptcha-field__error:empty {
                 display: none !important;
             }
 
-            .hcaptcha-field .hcaptcha-field__error {
+            .hcaptcha-field--invalid .hcaptcha-field__error:not(:empty) {
                 margin-top: 0.375rem;
-            }
-
-            .hcaptcha-field--invalid .hcaptcha-field__widget {
-                border-color: var(--bs-form-invalid-border-color, #dc3545);
-                box-shadow: 0 0 0 0.25rem rgba(var(--bs-danger-rgb), 0.25);
             }
         </style>
         <script>
             (function () {
                 'use strict';
 
-                let resizeTimer = null;
+                const widgets = new WeakMap();
+                const pending = new WeakMap();
 
-                function fitHcaptchaField(container) {
-                    const captcha = container.querySelector('.h-captcha');
-                    const iframe = captcha?.querySelector('iframe');
-
-                    if (!captcha || !iframe) {
-                        return false;
-                    }
-
-                    captcha.style.transform = '';
-                    captcha.style.width = '';
-                    captcha.style.height = '';
-                    container.style.height = '';
-
-                    const naturalWidth = iframe.offsetWidth;
-                    const naturalHeight = iframe.offsetHeight;
-
-                    if (naturalWidth <= 0 || naturalHeight <= 0) {
-                        return false;
-                    }
-
-                    const targetWidth = container.clientWidth;
-                    const scale = targetWidth / naturalWidth;
-
-                    captcha.style.width = naturalWidth + 'px';
-                    captcha.style.height = naturalHeight + 'px';
-                    captcha.style.transform = 'scale(' + scale + ')';
-                    container.style.height = Math.ceil(naturalHeight * scale) + 'px';
-
-                    return true;
+                function findForm(container) {
+                    return container.closest('[data-ajax-form]');
                 }
 
-                function fitAllHcaptchaFields() {
-                    let fitted = true;
-
-                    document.querySelectorAll('[data-hcaptcha-fit]').forEach(function (container) {
-                        if (!fitHcaptchaField(container)) {
-                            fitted = false;
-                        }
-                    });
-
-                    return fitted;
+                function findTokenInput(form) {
+                    return form?.querySelector('[name="h-captcha-response"]') ?? null;
                 }
 
-                function scheduleHcaptchaFit(retries) {
-                    if (fitAllHcaptchaFields() || retries <= 0) {
-                        return;
-                    }
-
-                    window.setTimeout(function () {
-                        scheduleHcaptchaFit(retries - 1);
-                    }, 100);
-                }
-
-                function resetHcaptchaWidgets() {
+                function renderWidgets() {
                     if (typeof window.hcaptcha === 'undefined') {
                         return;
                     }
 
-                    window.hcaptcha.reset();
+                    document.querySelectorAll('[data-hcaptcha-widget]').forEach(function (container) {
+                        if (container.dataset.hcaptchaRendered === '1') {
+                            return;
+                        }
 
-                    if (typeof window.fitAllHcaptchaFields === 'function') {
-                        window.setTimeout(window.fitAllHcaptchaFields, 150);
+                        const form = findForm(container);
+                        const widgetId = window.hcaptcha.render(container, {
+                            sitekey: container.dataset.sitekey,
+                            size: 'invisible',
+                            callback: function () {
+                                const formRef = findForm(container);
+                                const pendingExec = formRef ? pending.get(formRef) : null;
+
+                                if (pendingExec) {
+                                    pendingExec.resolve();
+                                    pending.delete(formRef);
+                                }
+                            },
+                            'error-callback': function () {
+                                const formRef = findForm(container);
+                                const pendingExec = formRef ? pending.get(formRef) : null;
+
+                                if (pendingExec) {
+                                    pendingExec.reject(new Error('hCaptcha challenge failed'));
+                                    pending.delete(formRef);
+                                }
+                            },
+                        });
+
+                        container.dataset.hcaptchaRendered = '1';
+
+                        if (form) {
+                            widgets.set(form, widgetId);
+                        }
+                    });
+                }
+
+                function resetForm(form) {
+                    const widgetId = widgets.get(form);
+
+                    if (widgetId !== undefined && typeof window.hcaptcha !== 'undefined') {
+                        window.hcaptcha.reset(widgetId);
+                    }
+
+                    const tokenInput = findTokenInput(form);
+
+                    if (tokenInput) {
+                        tokenInput.value = '';
                     }
                 }
 
-                window.fitAllHcaptchaFields = fitAllHcaptchaFields;
+                window.MonolithHcaptcha = {
+                    execute: function (form) {
+                        return new Promise(function (resolve, reject) {
+                            const widgetId = widgets.get(form);
+                            const tokenInput = findTokenInput(form);
 
-                window.onHcaptchaApiLoad = function () {
-                    scheduleHcaptchaFit(40);
+                            if (tokenInput?.value) {
+                                resolve(tokenInput.value);
+
+                                return;
+                            }
+
+                            if (widgetId === undefined || typeof window.hcaptcha === 'undefined') {
+                                reject(new Error('hCaptcha not ready'));
+
+                                return;
+                            }
+
+                            pending.set(form, { resolve: resolve, reject: reject });
+                            window.hcaptcha.execute(widgetId);
+                        });
+                    },
+                    resetForm: resetForm,
+                    resetAll: function () {
+                        document.querySelectorAll('[data-ajax-form]').forEach(function (form) {
+                            if (form.querySelector('[data-hcaptcha-widget]')) {
+                                resetForm(form);
+                            }
+                        });
+                    },
                 };
 
-                document.addEventListener('ajax-form:invalid', resetHcaptchaWidgets);
+                window.onHcaptchaApiLoad = function () {
+                    renderWidgets();
+                };
 
-                window.addEventListener('resize', function () {
-                    window.clearTimeout(resizeTimer);
-                    resizeTimer = window.setTimeout(fitAllHcaptchaFields, 150);
+                document.addEventListener('ajax-form:invalid', function () {
+                    window.MonolithHcaptcha.resetAll();
                 });
-
-                if (document.readyState === 'complete') {
-                    scheduleHcaptchaFit(40);
-                } else {
-                    window.addEventListener('load', function () {
-                        scheduleHcaptchaFit(40);
-                    });
-                }
             })();
         </script>
     @endonce

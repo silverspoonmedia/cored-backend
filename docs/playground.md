@@ -14,6 +14,8 @@ playground is a reference you copy *from*, not a place product logic lands. See
 
 **Playground routes are disabled when `APP_ENV=production`.** The guard in `routes/api.php` wraps all playground routes in `if (! app()->environment('production'))` to prevent accidental exposure in production environments.
 
+**Global ping is always available:** `GET /api/ping` is registered outside the playground group and remains a liveness probe in every environment.
+
 **Why disabled in production:**
 - Playground routes have **no authentication or authorization** (intentional for quick testing)
 - Exposing unauthenticated CRUD endpoints in production is a critical security risk

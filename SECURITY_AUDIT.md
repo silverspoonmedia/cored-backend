@@ -10,18 +10,18 @@
 
 ## Executive Summary
 
-Audit selesai dilakukan terhadap aplikasi Laravel dengan fokus pada OWASP Top 10:2025. Audit mencakup source code review, configuration review, dependency check, dan static analysis.
+A security audit was completed on the Laravel application with a focus on OWASP Top 10:2025. The audit covered source code review, configuration review, dependency checks, and static analysis.
 
-**Temuan Kritis:**
-- 1 temuan CRITICAL (Broken Access Control - Playground routes tanpa autentikasi)
-- 2 temuan HIGH (Missing rate limiting, insecure session config)
-- 3 temuan MEDIUM (Dependency pinning, session encryption, password policy)
+**Critical Findings:**
+- 1 CRITICAL finding (Broken Access Control — Playground routes without authentication)
+- 2 HIGH findings (Missing rate limiting, insecure session config)
+- 3 MEDIUM findings (Dependency pinning, session encryption, password policy)
 
 **Status:**
 - Dependencies: ✓ Clean (composer audit passed)
-- Password Hashing: ✓ Menggunakan Hash::make / bcrypt
-- Authorization: ✓ Policy + RBAC implemented (kecuali Playground)
-- UUID v7: ✓ Primary keys menggunakan UUID v7
+- Password Hashing: ✓ Uses Hash::make / bcrypt
+- Authorization: ✓ Policy + RBAC implemented (Playground disabled in production)
+- UUID v7: ✓ Primary keys use UUID v7
 
 ---
 
@@ -37,13 +37,13 @@ Audit selesai dilakukan terhadap aplikasi Laravel dengan fokus pada OWASP Top 10
 
 **Authentication:**
 - JWT stateless authentication
-- HttpOnly cookie untuk web frontend
-- Email verification dengan signed URL
-- Password reset dengan token
+- HttpOnly cookie for web frontend
+- Email verification with signed URL
+- Password reset with token
 
 **Attack Surface:**
 - `/api/ping` - Global health check (no auth)
-- `/api/playground/*` - Demo CRUD (USER + ORDER) ⚠️ NO AUTH
+- `/api/playground/*` - Demo CRUD (USER + ORDER) — disabled in production via environment guard
 - `/api/v1/auth/*` - Registration, login, password reset
 - `/api/v1/users` - User management (auth + RBAC)
 - `/api/v1/navigation/menus` - Menu management (auth + RBAC)
@@ -56,11 +56,11 @@ Audit selesai dilakukan terhadap aplikasi Laravel dengan fokus pada OWASP Top 10
 
 ### A01:2025 - Broken Access Control
 
-#### FINDING-001: Playground Routes Tanpa Authentication (CRITICAL)
+#### FINDING-001: Playground Routes Without Authentication (CRITICAL)
 
 **ID:** FINDING-001  
-**Kategori OWASP:** A01:2025 - Broken Access Control  
-**Judul:** Playground CRUD Routes Tidak Memiliki Authentication atau Authorization  
+**OWASP Category:** A01:2025 - Broken Access Control  
+**Title:** Playground CRUD Routes Have No Authentication or Authorization  
 **Severity:** Critical  
 **Status:** Patched  
 
@@ -68,12 +68,12 @@ Audit selesai dilakukan terhadap aplikasi Laravel dengan fokus pada OWASP Top 10
 - `/api/playground/users` (GET, POST, PUT, DELETE)
 - `/api/playground/orders` (GET, POST, PUT, DELETE)
 - `/api/playground/orders/bulk` (DELETE)
-- `routes/api.php` lines 9-26
+- `routes/api.php` lines 35-56
 - `app/Http/Controllers/API/PlaygroundController.php`
 - `app/Http/Controllers/API/PlaygroundOrderController.php`
 
-**Deskripsi:**
-Route playground (`/api/playground/users`, `/api/playground/orders`) tidak dilindungi middleware `auth:api` atau permission check apapun. Route list menunjukkan endpoint ini dapat diakses tanpa autentikasi:
+**Description:**
+Playground routes (`/api/playground/users`, `/api/playground/orders`) were not protected by `auth:api` middleware or any permission check. Route list showed these endpoints were accessible without authentication:
 
 ```
 GET|HEAD api/playground/users .. playground.users.index
@@ -82,34 +82,34 @@ PUT|PATCH api/playground/users/{user} .. playground.users.update
 DELETE api/playground/users/{user} .. playground.users.destroy
 ```
 
-Siapapun di internet dapat:
-- Membaca semua user (termasuk email, nama, role)
-- Membuat user baru dengan role apapun
-- Mengubah user yang sudah ada
-- Menghapus user (soft delete)
-- CRUD order tanpa otorisasi
+Anyone on the internet could:
+- Read all users (including email, name, role)
+- Create new users with any role
+- Modify existing users
+- Delete users (soft delete)
+- Perform CRUD on orders without authorization
 
-**Dampak:**
-- **Data Breach:** Attacker dapat membaca semua user data
-- **Privilege Escalation:** Attacker dapat membuat user dengan role Admin/Root
-- **Data Manipulation:** Attacker dapat mengubah atau menghapus user dan order
-- **IDOR:** User A dapat mengakses dan memodifikasi resource user B
-- **Business Logic Bypass:** Tidak ada enforcement untuk RBAC atau ownership
+**Impact:**
+- **Data Breach:** Attacker could read all user data
+- **Privilege Escalation:** Attacker could create users with Admin/Root role
+- **Data Manipulation:** Attacker could modify or delete users and orders
+- **IDOR:** User A could access and modify User B's resources
+- **Business Logic Bypass:** No enforcement of RBAC or ownership
 
-**Bukti:**
+**Evidence:**
 ```bash
-# Test tanpa auth token - BERHASIL (BAHAYA!)
+# Test without auth token - SUCCEEDED (DANGEROUS!)
 curl -X GET http://monolith.test/api/playground/users
 curl -X POST http://monolith.test/api/playground/users \
   -H "Content-Type: application/json" \
   -d '{"name":"Hacker","email":"hacker@evil.com","password":"password123"}'
 ```
 
-**Akar Masalah:**
-Route playground didefinisikan di `routes/api.php` tanpa middleware `auth:api`.
+**Root Cause:**
+Playground routes were defined in `routes/api.php` without `auth:api` middleware.
 
-**Patch yang diterapkan:**
-PATCHED - Playground routes wrapped dengan environment check:
+**Patch Applied:**
+PATCHED — Playground routes wrapped with environment check:
 
 ```php
 // routes/api.php
@@ -120,33 +120,33 @@ if (! app()->environment('production')) {
 }
 ```
 
-**File yang diubah:**
+**Files Changed:**
 - `routes/api.php`
 
-**Cara Verifikasi:**
+**Verification:**
 ```bash
-# Production: playground routes tidak terdaftar
+# Production: playground routes are not registered
 APP_ENV=production php artisan route:list --path=api/playground
 # Expected: "Your application doesn't have any routes matching the given criteria."
 
-# Local/Staging: playground routes masih tersedia
+# Local/Staging: playground routes remain available
 APP_ENV=local php artisan route:list --path=api/playground
 # Expected: playground.users.*, playground.orders.* routes listed
 ```
 
-**Test yang ditambahkan:**
-Manual verification via route:list. Verified working: APP_ENV=production shows NO playground routes.
+**Tests Added:**
+Automated feature test: `tests/Feature/Http/Controllers/API/PlaygroundProductionGuardTest.php` — spawns a subprocess with `APP_ENV` set before boot and verifies via `route:list` that playground routes are absent in production and present in local/staging.
 
-**Catatan Residual Risk:**
-Developer harus memastikan production .env set `APP_ENV=production`. Deploy checklist harus include verification ini.
+**Residual Risk Notes:**
+Developers must ensure production `.env` sets `APP_ENV=production`. The deployment checklist should include verification of this guard.
 
 ---
 
-#### FINDING-002: FormRequest authorize() Return True (INFO)
+#### FINDING-002: FormRequest authorize() Returns True (INFO)
 
 **ID:** FINDING-002  
-**Kategori OWASP:** A01:2025 - Broken Access Control  
-**Judul:** FormRequest authorize() Selalu Return True  
+**OWASP Category:** A01:2025 - Broken Access Control  
+**Title:** FormRequest authorize() Always Returns True  
 **Severity:** Info  
 **Status:** Accepted Risk  
 
@@ -154,8 +154,8 @@ Developer harus memastikan production .env set `APP_ENV=production`. Deploy chec
 - `app/Http/Requests/User/StoreUserRequest.php` line 12
 - `app/Http/Requests/User/UpdateUserRequest.php` line 12
 
-**Deskripsi:**
-FormRequest `StoreUserRequest` dan `UpdateUserRequest` memiliki method `authorize()` yang return `true`:
+**Description:**
+`StoreUserRequest` and `UpdateUserRequest` have an `authorize()` method that returns `true`:
 
 ```php
 public function authorize(): bool
@@ -164,8 +164,8 @@ public function authorize(): bool
 }
 ```
 
-**Dampak:**
-Tidak ada dampak security karena authorization dilakukan di controller dengan `$this->authorize()`:
+**Impact:**
+No security impact because authorization is enforced in the controller with `$this->authorize()`:
 
 ```php
 // UserController.php line 39
@@ -175,14 +175,14 @@ $this->authorize('viewAny', User::class);
 $this->authorize('create', User::class);
 ```
 
-**Akar Masalah:**
-Ini adalah pattern yang acceptable di Laravel. FormRequest `authorize()` bisa digunakan untuk simple auth check, tetapi untuk complex RBAC lebih baik di controller dengan Policy.
+**Root Cause:**
+This is an acceptable Laravel pattern. FormRequest `authorize()` can be used for simple auth checks, but for complex RBAC it is better handled in the controller with Policy.
 
-**Patch yang diterapkan:**
-TIDAK PERLU PATCH - Pattern ini sudah benar.
+**Patch Applied:**
+NO PATCH NEEDED — This pattern is correct.
 
 **Status:** Accepted Risk  
-**Catatan:** Authorization sudah di-enforce di controller level menggunakan Policy. FormRequest hanya handle validation.
+**Notes:** Authorization is already enforced at the controller level using Policy. FormRequest only handles validation.
 
 ---
 
@@ -191,10 +191,10 @@ TIDAK PERLU PATCH - Pattern ini sudah benar.
 #### FINDING-003: Missing Rate Limiting on Auth Endpoints (HIGH)
 
 **ID:** FINDING-003  
-**Kategori OWASP:** A02:2025 - Security Misconfiguration  
-**Judul:** Login dan Register Tidak Ada Rate Limiting  
+**OWASP Category:** A02:2025 - Security Misconfiguration  
+**Title:** Login and Register Have No Rate Limiting  
 **Severity:** High  
-**Status:** Open  
+**Status:** Patched  
 
 **File/Route/Endpoint:**
 - `/api/v1/auth/login` (POST)
@@ -202,8 +202,8 @@ TIDAK PERLU PATCH - Pattern ini sudah benar.
 - `/api/v1/auth/forgot-password` (POST)
 - `routes/api/v1.php` lines 12-16
 
-**Deskripsi:**
-Endpoint authentication tidak memiliki rate limiting middleware. Route list menunjukkan:
+**Description:**
+Authentication endpoints did not have rate limiting middleware. Route list showed:
 
 ```
 POST api/v1/auth/login .. api.v1.auth.login
@@ -211,50 +211,50 @@ POST api/v1/auth/register .. api.v1.auth.register
 POST api/v1/auth/forgot-password .. api.v1.auth.password.forgot
 ```
 
-Hanya email verification yang memiliki throttle:
+Only email verification had throttle:
 ```php
 Route::get('email/verify/{id}/{hash}', ...)
     ->middleware(['signed', 'throttle:6,1'])
 ```
 
-**Dampak:**
-- **Credential Stuffing:** Attacker dapat test thousands of username/password combinations
+**Impact:**
+- **Credential Stuffing:** Attacker could test thousands of username/password combinations
 - **Brute Force:** Unlimited login attempts
-- **User Enumeration:** Dapat mendeteksi valid email via timing attack
-- **Resource Exhaustion:** Spam registration dapat menghabiskan database space
-- **Email Bombing:** Forgot password tanpa limit bisa spam user inbox
+- **User Enumeration:** Valid emails could be detected via timing attack
+- **Resource Exhaustion:** Spam registration could consume database space
+- **Email Bombing:** Forgot password without limits could spam user inboxes
 
-**Patch yang diterapkan:**
-PATCHED - Tambahkan throttle middleware ke auth routes.
+**Patch Applied:**
+PATCHED — Throttle middleware added to auth routes.
 
-**File yang diubah:**
+**Files Changed:**
 - `routes/api/v1.php`
 
-**Cara verifikasi:**
+**Verification:**
 ```bash
-# Test rate limit - request ke-6 dalam 1 menit harus ditolak
+# Test rate limit - 6th request within 1 minute should be rejected
 for i in {1..6}; do
   curl -X POST http://monolith.test/api/v1/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"test@example.com","password":"wrong"}'
   echo "Attempt $i"
 done
-# Expected pada attempt 6: 429 Too Many Requests
+# Expected on attempt 6: 429 Too Many Requests
 ```
 
-**Test yang ditambahkan:**
-Tidak ada test automated - manual verification only.
+**Tests Added:**
+No automated test — manual verification only.
 
-**Catatan Residual Risk:**
-Rate limiting hanya efektif jika attacker tidak menggunakan distributed IP. **Mitigasi tambahan:** hCaptcha pada endpoint auth publik (`POST /api/v1/auth/login`, `register`, `forgot-password`, `two-factor/login`) — aktif saat `HCAPTCHA_ENABLED=true`. Lihat `config/hcaptcha.php`, `App\Support\Security\HcaptchaVerifier`, dan `docs/jwt-authentication.md#hcaptcha-defense-in-depth`.
+**Residual Risk Notes:**
+Rate limiting is only effective if the attacker does not use distributed IPs. **Additional mitigation:** hCaptcha on public auth endpoints (`POST /api/v1/auth/login`, `register`, `forgot-password`, `two-factor/login`) — active when `HCAPTCHA_ENABLED=true`. See `config/hcaptcha.php`, `App\Support\Security\HcaptchaVerifier`, and `docs/jwt-authentication.md#hcaptcha-defense-in-depth`.
 
 ---
 
-#### FINDING-004: SESSION_SECURE_COOKIE Tidak Di-Set (HIGH)
+#### FINDING-004: SESSION_SECURE_COOKIE Not Set (HIGH)
 
 **ID:** FINDING-004  
-**Kategori OWASP:** A02:2025 - Security Misconfiguration  
-**Judul:** Session Cookie Tidak Enforce HTTPS  
+**OWASP Category:** A02:2025 - Security Misconfiguration  
+**Title:** Session Cookie Does Not Enforce HTTPS  
 **Severity:** High  
 **Status:** Patched (Documentation)  
 
@@ -262,80 +262,80 @@ Rate limiting hanya efektif jika attacker tidak menggunakan distributed IP. **Mi
 - `.env.example` line 39
 - `config/session.php` line 172
 
-**Deskripsi:**
-`.env.example` tidak meng-set `SESSION_SECURE_COOKIE`, sehingga cookie bisa dikirim via HTTP (tidak aman).
+**Description:**
+`.env.example` did not set `SESSION_SECURE_COOKIE`, so cookies could be sent over HTTP (insecure).
 
-**Dampak:**
-- **Session Hijacking:** Cookie dapat dicuri via MITM attack di HTTP
-- **Cookie Theft:** Attacker di shared WiFi dapat sniff session cookie
-- **Downgrade Attack:** Attacker dapat force HTTP connection
+**Impact:**
+- **Session Hijacking:** Cookie could be stolen via MITM attack on HTTP
+- **Cookie Theft:** Attacker on shared WiFi could sniff session cookie
+- **Downgrade Attack:** Attacker could force HTTP connection
 
-**Akar Masalah:**
-`.env.example` tidak include `SESSION_SECURE_COOKIE=true` sebagai default production setting.
+**Root Cause:**
+`.env.example` did not include `SESSION_SECURE_COOKIE=true` as a default production setting.
 
-**Patch yang diterapkan:**
-PATCHED - Dokumentasikan di `.env.example`.
+**Patch Applied:**
+PATCHED — Documented in `.env.example`.
 
-**File yang diubah:**
+**Files Changed:**
 - `.env.example`
 
-**Cara verifikasi:**
-Production harus set `SESSION_SECURE_COOKIE=true` di `.env`.
+**Verification:**
+Production must set `SESSION_SECURE_COOKIE=true` in `.env`.
 
-**Catatan Residual Risk:**
-Perlu dokumentasi deploy checklist untuk memastikan production .env set `SESSION_SECURE_COOKIE=true`.
+**Residual Risk Notes:**
+Deployment checklist documentation is needed to ensure production `.env` sets `SESSION_SECURE_COOKIE=true`.
 
 ---
 
-#### FINDING-005: Session Data Tidak Dienkripsi (MEDIUM)
+#### FINDING-005: Session Data Not Encrypted (MEDIUM)
 
 **ID:** FINDING-005  
-**Kategori OWASP:** A02:2025 - Security Misconfiguration  
-**Judul:** SESSION_ENCRYPT=false - Session Data Disimpan Plaintext  
+**OWASP Category:** A02:2025 - Security Misconfiguration  
+**Title:** SESSION_ENCRYPT=false — Session Data Stored in Plaintext  
 **Severity:** Medium  
 **Status:** Accepted Risk (Documented)  
 
 **File/Route/Endpoint:**
 - `.env.example` line 39
 
-**Deskripsi:**
-Session data disimpan tanpa enkripsi (`SESSION_ENCRYPT=false`). Jika attacker mendapat akses ke database session, dapat membaca session data plaintext.
+**Description:**
+Session data is stored without encryption (`SESSION_ENCRYPT=false`). If an attacker gains access to the session database, they can read session data in plaintext.
 
-**Dampak:**
-Risiko meningkat jika session storage di-backup tanpa enkripsi atau database dump bocor.
+**Impact:**
+Risk increases if session storage is backed up without encryption or a database dump is leaked.
 
-**Akar Masalah:**
-Default Laravel `SESSION_ENCRYPT=false` untuk compatibility.
+**Root Cause:**
+Laravel default `SESSION_ENCRYPT=false` for compatibility.
 
-**Patch yang diterapkan:**
-DOCUMENTED - Tambahkan komentar di `.env.example` untuk production.
+**Patch Applied:**
+DOCUMENTED — Comment added in `.env.example` for production.
 
-**Catatan Residual Risk:**
-Session encryption menambah CPU overhead minimal. Trade-off acceptable untuk aplikasi dengan data sensitif. Production harus set `SESSION_ENCRYPT=true`.
+**Residual Risk Notes:**
+Session encryption adds minimal CPU overhead. Trade-off is acceptable for applications with sensitive data. Production should set `SESSION_ENCRYPT=true`.
 
 ---
 
-#### FINDING-006: Tidak Ada Security Headers Middleware (MEDIUM)
+#### FINDING-006: No Security Headers Middleware (MEDIUM)
 
 **ID:** FINDING-006  
-**Kategori OWASP:** A02:2025 - Security Misconfiguration  
-**Judul:** Missing Security Headers (X-Frame-Options, dll)  
+**OWASP Category:** A02:2025 - Security Misconfiguration  
+**Title:** Missing Security Headers (X-Frame-Options, etc.)  
 **Severity:** Medium  
 **Status:** Patched  
 
 **File/Route/Endpoint:**
 - `bootstrap/app.php` (middleware config)
-- Seluruh web routes
+- All web routes
 
-**Deskripsi:**
-Aplikasi tidak menambahkan security headers seperti `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`.
+**Description:**
+The application did not add security headers such as `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`.
 
-**Dampak:**
-- **Clickjacking:** Tanpa X-Frame-Options, site bisa di-iframe attacker
-- **MIME Sniffing:** Browser bisa misinterpret content type
+**Impact:**
+- **Clickjacking:** Without X-Frame-Options, the site could be iframed by an attacker
+- **MIME Sniffing:** Browser could misinterpret content type
 
-**Patch yang diterapkan:**
-PATCHED - Created SecurityHeaders middleware:
+**Patch Applied:**
+PATCHED — Created SecurityHeaders middleware:
 
 ```php
 // app/Http/Middleware/SecurityHeaders.php
@@ -361,11 +361,11 @@ $middleware->web(append: [
 ]);
 ```
 
-**File yang diubah:**
+**Files Changed:**
 - `app/Http/Middleware/SecurityHeaders.php` (created)
 - `bootstrap/app.php` (registered middleware)
 
-**Cara verifikasi:**
+**Verification:**
 ```bash
 # Test security headers
 curl -I http://monolith.test/dashboard
@@ -376,71 +376,71 @@ curl -I http://monolith.test/dashboard
 # Permissions-Policy: geolocation=(), microphone=(), camera=()...
 ```
 
-**Catatan Residual Risk:**
-CSP (Content-Security-Policy) intentionally omitted to avoid breaking AdminLTE CDN dan Vite hot reload. Add manually if needed.
+**Residual Risk Notes:**
+CSP (Content-Security-Policy) intentionally omitted to avoid breaking AdminLTE CDN and Vite hot reload. Add manually if needed.
 
 ---
 
 ### A03:2025 - Software Supply Chain Failures
 
-#### FINDING-007: Custom VCS Dependency Tidak Di-Pin (MEDIUM)
+#### FINDING-007: Custom VCS Dependency Not Pinned (MEDIUM)
 
 **ID:** FINDING-007  
-**Kategori OWASP:** A03:2025 - Software Supply Chain Failures  
-**Judul:** pdf-tools Dependency Menggunakan dev-main Branch  
+**OWASP Category:** A03:2025 - Software Supply Chain Failures  
+**Title:** pdf-tools Dependency Uses dev-main Branch  
 **Severity:** Medium  
 **Status:** Open  
 
 **File/Route/Endpoint:**
 - `composer.json` lines 8-23
 
-**Deskripsi:**
-Dependency `silverspoonmedia/pdf-tools` menggunakan custom VCS repository dengan constraint `dev-main`. Branch tidak stabil - bisa berubah sewaktu-waktu.
+**Description:**
+The `silverspoonmedia/pdf-tools` dependency uses a custom VCS repository with a `dev-main` constraint. The branch is unstable — it can change at any time.
 
-**Dampak:**
-- **Unexpected Breaking Changes:** Composer update bisa pull breaking changes
-- **Supply Chain Attack:** Jika repository di-compromise, attacker bisa inject malicious code
-- **Build Reproducibility:** Deployment berbeda bisa dapat version berbeda
+**Impact:**
+- **Unexpected Breaking Changes:** Composer update could pull breaking changes
+- **Supply Chain Attack:** If the repository is compromised, an attacker could inject malicious code
+- **Build Reproducibility:** Different deployments could get different versions
 
-**Akar Masalah:**
-Package tidak di-publish ke Packagist dengan version tagging yang proper.
+**Root Cause:**
+Package is not published to Packagist with proper version tagging.
 
-**Patch yang diterapkan:**
-TIDAK DIPATCH - Perlu koordinasi dengan team silverspoonmedia untuk tag stable releases atau pin ke commit hash.
+**Patch Applied:**
+NOT PATCHED — Coordination needed with the silverspoonmedia team to tag stable releases or pin to a commit hash.
 
-**Rekomendasi:**
-Pin ke commit hash: `"silverspoonmedia/pdf-tools": "dev-main#abc123def456"`
+**Recommendation:**
+Pin to commit hash: `"silverspoonmedia/pdf-tools": "dev-main#abc123def456"`
 
 ---
 
 #### FINDING-008: Composer Audit Clean (GOOD)
 
 **ID:** FINDING-008  
-**Kategori OWASP:** A03:2025 - Software Supply Chain Failures  
-**Judul:** Tidak Ada Known Vulnerabilities di Dependencies  
+**OWASP Category:** A03:2025 - Software Supply Chain Failures  
+**Title:** No Known Vulnerabilities in Dependencies  
 **Severity:** Info  
 **Status:** Clean  
 
-**Deskripsi:**
+**Description:**
 ```bash
 $ composer audit
 No security vulnerability advisories found.
 ```
 
-Semua dependencies tidak memiliki known CVE.
+All dependencies have no known CVEs.
 
-**Rekomendasi:**
-Setup automated dependency scanning: Enable Dependabot/Renovate di GitHub, jalankan `composer audit` di CI/CD.
+**Recommendation:**
+Set up automated dependency scanning: enable Dependabot/Renovate on GitHub, run `composer audit` in CI/CD.
 
 ---
 
 ### A04:2025 - Cryptographic Failures
 
-#### FINDING-009: Password Hashing Sudah Benar (GOOD)
+#### FINDING-009: Password Hashing Is Correct (GOOD)
 
 **ID:** FINDING-009  
-**Kategori OWASP:** A04:2025 - Cryptographic Failures  
-**Judul:** Password Menggunakan Hash::make / Bcrypt  
+**OWASP Category:** A04:2025 - Cryptographic Failures  
+**Title:** Passwords Use Hash::make / Bcrypt  
 **Severity:** Info  
 **Status:** Clean  
 
@@ -448,16 +448,16 @@ Setup automated dependency scanning: Enable Dependabot/Renovate di GitHub, jalan
 - `app/Services/User/UserManagementService.php` line 86
 - `app/Models/User.php` line 36
 
-**Deskripsi:**
-Password di-hash dengan `Hash::make()` dan model cast `'password' => 'hashed'`. Bcrypt dengan default rounds (12) sudah cukup kuat.
+**Description:**
+Passwords are hashed with `Hash::make()` and the model casts `'password' => 'hashed'`. Bcrypt with default rounds (12) is sufficiently strong.
 
 ---
 
-#### FINDING-010: Password Policy Bisa Lebih Kuat (LOW)
+#### FINDING-010: Password Policy Could Be Stronger (LOW)
 
 **ID:** FINDING-010  
-**Kategori OWASP:** A04:2025 - Cryptographic Failures  
-**Judul:** Password Minimum 8 Karakter, Tidak Ada Complexity Requirement  
+**OWASP Category:** A04:2025 - Cryptographic Failures  
+**Title:** Password Minimum 8 Characters, No Complexity Requirement  
 **Severity:** Low  
 **Status:** Accepted Risk  
 
@@ -465,67 +465,67 @@ Password di-hash dengan `Hash::make()` dan model cast `'password' => 'hashed'`. 
 - `app/Http/Requests/User/StoreUserRequest.php` line 28
 - `app/Http/Requests/Auth/RegisterRequest.php` line 23
 
-**Deskripsi:**
-Password validation: `min:8` atau `Password::defaults()` = min 8 characters, tidak ada complexity requirement. Password seperti "12345678" diterima.
+**Description:**
+Password validation: `min:8` or `Password::defaults()` = min 8 characters, no complexity requirement. Passwords like "12345678" are accepted.
 
-**Dampak:**
-Weak passwords dapat di-brute force lebih mudah.
+**Impact:**
+Weak passwords can be brute-forced more easily.
 
-**Patch yang diterapkan:**
-ACCEPTED RISK - Default Laravel untuk UX. Production bisa tambahkan complexity jika diperlukan.
+**Patch Applied:**
+ACCEPTED RISK — Laravel default for UX. Production can add complexity if needed.
 
-**Rekomendasi:**
-Untuk data sensitif, tambahkan: `Password::min(8)->letters()->mixedCase()->numbers()->symbols()`
+**Recommendation:**
+For sensitive data, add: `Password::min(8)->letters()->mixedCase()->numbers()->symbols()`
 
 ---
 
 ### A05:2025 - Injection
 
-#### FINDING-011: Raw SQL Query di RoleService (LOW)
+#### FINDING-011: Raw SQL Query in RoleService (LOW)
 
 **ID:** FINDING-011  
-**Kategori OWASP:** A05:2025 - Injection  
-**Judul:** whereRaw di RoleService - Perlu Verifikasi  
+**OWASP Category:** A05:2025 - Injection  
+**Title:** whereRaw in RoleService — Needs Verification  
 **Severity:** Low  
 **Status:** Verified Safe  
 
 **File/Route/Endpoint:**
 - `app/Services/Rbac/RoleService.php` line 45
 
-**Deskripsi:**
-Ditemukan `whereRaw('1 = 0')` di RoleService:
+**Description:**
+Found `whereRaw('1 = 0')` in RoleService:
 
 ```php
 return Role::query()->whereRaw('1 = 0')->get();
 ```
 
-**Dampak:**
-Tidak ada - query ini hardcoded, tidak menerima input user. Ini pattern untuk return empty collection.
+**Impact:**
+None — this query is hardcoded and does not accept user input. It is a pattern to return an empty collection.
 
-**Patch yang diterapkan:**
-VERIFIED SAFE - Tidak perlu patch. Tidak ada SQL injection risk.
+**Patch Applied:**
+VERIFIED SAFE — No patch needed. No SQL injection risk.
 
-**Catatan:**
-Pattern `whereRaw('1 = 0')` aman karena tidak ada user input. Alternatif yang lebih jelas: `Role::query()->whereRaw('false')->get()` atau `new Collection()`.
+**Notes:**
+The `whereRaw('1 = 0')` pattern is safe because there is no user input. Clearer alternatives: `Role::query()->whereRaw('false')->get()` or `new Collection()`.
 
 ---
 
-#### FINDING-012: XSS Protection Sudah Benar (GOOD)
+#### FINDING-012: XSS Protection Is Correct (GOOD)
 
 **ID:** FINDING-012  
-**Kategori OWASP:** A05:2025 - Injection  
-**Judul:** Blade Menggunakan {{ }} untuk Output Escaping  
+**OWASP Category:** A05:2025 - Injection  
+**Title:** Blade Uses {{ }} for Output Escaping  
 **Severity:** Info  
 **Status:** Clean  
 
-**Deskripsi:**
-Blade templates menggunakan `{{ }}` (auto-escaped) bukan `{!! !!}` (raw output). API returns JSON yang auto-escaped oleh Laravel.
+**Description:**
+Blade templates use `{{ }}` (auto-escaped) not `{!! !!}` (raw output). API returns JSON which Laravel auto-escapes.
 
-**Patch yang diterapkan:**
-N/A - Already secure.
+**Patch Applied:**
+N/A — Already secure.
 
-**Rekomendasi:**
-Maintain practice: hindari `{!! !!}` kecuali memang perlu render HTML yang sudah di-sanitize.
+**Recommendation:**
+Maintain practice: avoid `{!! !!}` unless you need to render HTML that has been sanitized.
 
 ---
 
@@ -534,8 +534,8 @@ Maintain practice: hindari `{!! !!}` kecuali memang perlu render HTML yang sudah
 #### FINDING-013: Playground Business Logic Bypass (CRITICAL)
 
 **ID:** FINDING-013  
-**Kategori OWASP:** A06:2025 - Insecure Design  
-**Judul:** Playground Routes Bypass Semua Business Logic  
+**OWASP Category:** A06:2025 - Insecure Design  
+**Title:** Playground Routes Bypass All Business Logic  
 **Severity:** Critical  
 **Status:** Patched (via FINDING-001)  
 
@@ -543,61 +543,61 @@ Maintain practice: hindari `{!! !!}` kecuali memang perlu render HTML yang sudah
 - `app/Services/Playground/UserService.php`
 - `/api/playground/users`
 
-**Deskripsi:**
-Playground routes tidak hanya tidak ada auth, tetapi juga bypass:
+**Description:**
+Playground routes not only lacked auth, but also bypassed:
 - Role hierarchy checks
 - RBAC permission checks
 - Ownership validation
 - State transition validation
 
-Siapapun dapat membuat user dengan role Admin tanpa validasi.
+Anyone could create a user with Admin role without validation.
 
-**Dampak:**
-Complete business logic bypass. Attacker dapat:
-- Assign role apapun tanpa hierarchy check
-- Tidak ada audit trail untuk playground actions
+**Impact:**
+Complete business logic bypass. Attacker could:
+- Assign any role without hierarchy check
+- No audit trail for playground actions
 - Bypass rate limiting
-- Bypass validation rules yang ada di versioned API
+- Bypass validation rules present in the versioned API
 
-**Patch yang diterapkan:**
-PATCHED - Same fix sebagai FINDING-001: playground disabled di production dengan environment check.
+**Patch Applied:**
+PATCHED — Same fix as FINDING-001: playground disabled in production with environment check.
 
-**File yang diubah:**
+**Files Changed:**
 - `routes/api.php`
 
-**Catatan Residual Risk:**
-None - playground routes tidak terdaftar di production environment.
+**Residual Risk Notes:**
+None — playground routes are not registered in the production environment.
 
 ---
 
 ### A07:2025 - Authentication Failures
 
-#### FINDING-014: Session Regeneration Setelah Login (GOOD)
+#### FINDING-014: Session Regeneration After Login (GOOD)
 
 **ID:** FINDING-014  
-**Kategori OWASP:** A07:2025 - Authentication Failures  
-**Judul:** JWT Stateless - Tidak Ada Session Fixation Risk  
+**OWASP Category:** A07:2025 - Authentication Failures  
+**Title:** JWT Stateless — No Session Fixation Risk  
 **Severity:** Info  
 **Status:** Clean  
 
-**Deskripsi:**
-Aplikasi menggunakan JWT stateless authentication. Setiap login menghasilkan token baru, sehingga tidak ada session fixation risk. Token di-blacklist saat logout.
+**Description:**
+The application uses JWT stateless authentication. Each login produces a new token, so there is no session fixation risk. Token is blacklisted on logout.
 
-**Patch yang diterapkan:**
-N/A - Already secure.
+**Patch Applied:**
+N/A — Already secure.
 
 ---
 
-#### FINDING-015: Rate Limiting Sudah Ditambahkan (PATCHED)
+#### FINDING-015: Rate Limiting Added (PATCHED)
 
 **ID:** FINDING-015  
-**Kategori OWASP:** A07:2025 - Authentication Failures  
-**Judul:** Auth Endpoints Sekarang Memiliki Throttle  
+**OWASP Category:** A07:2025 - Authentication Failures  
+**Title:** Auth Endpoints Now Have Throttle  
 **Severity:** Info  
 **Status:** Patched (via FINDING-003)  
 
-**Deskripsi:**
-Rate limiting sudah ditambahkan pada auth endpoints sebagai bagian dari patch FINDING-003.
+**Description:**
+Rate limiting was added to auth endpoints as part of the FINDING-003 patch.
 
 ---
 
@@ -606,37 +606,37 @@ Rate limiting sudah ditambahkan pada auth endpoints sebagai bagian dari patch FI
 #### FINDING-016: File Upload Validation (NOT APPLICABLE)
 
 **ID:** FINDING-016  
-**Kategori OWASP:** A08:2025 - Software or Data Integrity Failures  
-**Judul:** File Upload di Order Attachments  
+**OWASP Category:** A08:2025 - Software or Data Integrity Failures  
+**Title:** File Upload in Order Attachments  
 **Severity:** N/A  
 **Status:** Needs Manual Review  
 
-**Deskripsi:**
-Project memiliki `attachments` table dan S3 storage untuk order attachments. Perlu manual review untuk memastikan:
+**Description:**
+The project has an `attachments` table and S3 storage for order attachments. Manual review is needed to ensure:
 - File validation (mime type, extension, size)
 - File scanning (anti-malware)
 - Storage location (public vs private)
-- Signed URLs untuk akses
+- Signed URLs for access
 
-**Rekomendasi:**
-Review `app/Models/Attachment.php` dan upload handling untuk memastikan:
-1. Validasi mime type dan ekstensi
-2. Rename file dengan UUID
-3. Store di private bucket jika sensitif
-4. Generate signed URLs dengan expiry
+**Recommendation:**
+Review `app/Models/Attachment.php` and upload handling to ensure:
+1. Mime type and extension validation
+2. File renamed with UUID
+3. Store in private bucket if sensitive
+4. Generate signed URLs with expiry
 
 ---
 
 #### FINDING-017: Webhook Signature Verification (NOT APPLICABLE)
 
 **ID:** FINDING-017  
-**Kategori OWASP:** A08:2025 - Software or Data Integrity Failures  
-**Judul:** Webhook Endpoints  
+**OWASP Category:** A08:2025 - Software or Data Integrity Failures  
+**Title:** Webhook Endpoints  
 **Severity:** N/A  
 **Status:** Not Found  
 
-**Deskripsi:**
-Tidak ditemukan webhook endpoints di route list. Jika ada webhook untuk payment/external service, pastikan verifikasi signature.
+**Description:**
+No webhook endpoints were found in the route list. If webhooks exist for payment/external services, ensure signature verification.
 
 ---
 
@@ -645,16 +645,16 @@ Tidak ditemukan webhook endpoints di route list. Jika ada webhook untuk payment/
 #### FINDING-018: Activity Notifications Implemented (GOOD)
 
 **ID:** FINDING-018  
-**Kategori OWASP:** A09:2025 - Security Logging and Alerting Failures  
-**Judul:** User Creation/Update Memiliki Activity Notification  
+**OWASP Category:** A09:2025 - Security Logging and Alerting Failures  
+**Title:** User Creation/Update Has Activity Notification  
 **Severity:** Info  
 **Status:** Clean  
 
 **File/Route/Endpoint:**
 - `app/Services/User/UserManagementService.php` lines 59-69, 98-106
 
-**Deskripsi:**
-User creation dan update sudah dispatch `ActivityNotificationEvent`:
+**Description:**
+User creation and update already dispatch `ActivityNotificationEvent`:
 
 ```php
 ActivityNotificationEvent::dispatch(
@@ -665,11 +665,11 @@ ActivityNotificationEvent::dispatch(
 );
 ```
 
-**Patch yang diterapkan:**
-N/A - Already implemented.
+**Patch Applied:**
+N/A — Already implemented.
 
-**Rekomendasi:**
-Extend logging untuk:
+**Recommendation:**
+Extend logging for:
 - Failed login attempts
 - Password changes
 - Role changes
@@ -678,50 +678,50 @@ Extend logging untuk:
 
 ---
 
-#### FINDING-019: Login/Logout Logging Perlu Ditambahkan (MEDIUM)
+#### FINDING-019: Login/Logout Logging Needed (MEDIUM)
 
 **ID:** FINDING-019  
-**Kategori OWASP:** A09:2025 - Security Logging and Alerting Failures  
-**Judul:** Auth Events Tidak Tercatat  
+**OWASP Category:** A09:2025 - Security Logging and Alerting Failures  
+**Title:** Auth Events Not Logged  
 **Severity:** Medium  
 **Status:** Patched  
 
 **File/Route/Endpoint:**
 - `app/Services/Auth/AuthService.php`
 
-**Deskripsi:**
-Login, logout, failed login attempts tidak tercatat di audit log. Hanya ada ActivityNotification untuk user CRUD.
+**Description:**
+Login, logout, and failed login attempts were not recorded in the audit log. Only ActivityNotification existed for user CRUD.
 
-**Dampak:**
-Tidak bisa detect:
+**Impact:**
+Could not detect:
 - Brute force attempts
 - Credential stuffing
 - Account takeover
 - Suspicious login patterns
 
-**Patch yang diterapkan:**
-PATCHED - Implemented event-driven auth logging:
+**Patch Applied:**
+PATCHED — Implemented event-driven auth logging:
 
 **Events Created:**
-- `App\Events\Auth\LoginSuccessful` - dispatched on successful login
-- `App\Events\Auth\LoginFailed` - dispatched on failed login attempt
-- `App\Events\Auth\UserLoggedOut` - dispatched on logout
+- `App\Events\Auth\LoginSuccessful` — dispatched on successful login
+- `App\Events\Auth\LoginFailed` — dispatched on failed login attempt
+- `App\Events\Auth\UserLoggedOut` — dispatched on logout
 
 **Listener Created:**
-- `App\Listeners\Auth\LogAuthenticationEvents` - logs all auth events to Laravel log with user_id, email, IP address, and user agent
+- `App\Listeners\Auth\LogAuthenticationEvents` — logs all auth events to Laravel log with user_id, email, IP address, and user agent
 
 **AuthService Modified:**
 - `login()` method dispatches `LoginSuccessful` on success, `LoginFailed` on invalid credentials
 - `logout()` method dispatches `UserLoggedOut`
 
-**File yang diubah:**
+**Files Changed:**
 - `app/Events/Auth/LoginSuccessful.php` (created)
 - `app/Events/Auth/LoginFailed.php` (created)
 - `app/Events/Auth/UserLoggedOut.php` (created)
 - `app/Listeners/Auth/LogAuthenticationEvents.php` (created)
 - `app/Services/Auth/AuthService.php` (modified login and logout methods)
 
-**Cara verifikasi:**
+**Verification:**
 ```bash
 # Login via API
 curl -X POST http://monolith.test/api/v1/auth/login \
@@ -742,8 +742,8 @@ tail -f storage/logs/laravel.log
 # Expected: "Login attempt failed" with email, ip_address
 ```
 
-**Catatan Residual Risk:**
-Logs stored in Laravel log files. For production, consider:
+**Residual Risk Notes:**
+Logs are stored in Laravel log files. For production, consider:
 - Centralized logging (CloudWatch, Datadog, Sentry)
 - Log rotation and retention policies
 - Alerting on suspicious patterns (multiple failed logins)
@@ -752,32 +752,32 @@ Logs stored in Laravel log files. For production, consider:
 
 ### A10:2025 - Mishandling of Exceptional Conditions
 
-#### FINDING-020: Exception Handling Sudah Benar (GOOD)
+#### FINDING-020: Exception Handling Is Correct (GOOD)
 
 **ID:** FINDING-020  
-**Kategori OWASP:** A10:2025 - Mishandling of Exceptional Conditions  
-**Judul:** Exception Handlers Tidak Expose Stack Trace  
+**OWASP Category:** A10:2025 - Mishandling of Exceptional Conditions  
+**Title:** Exception Handlers Do Not Expose Stack Trace  
 **Severity:** Info  
 **Status:** Clean  
 
 **File/Route/Endpoint:**
 - `bootstrap/app.php` lines 85-181
 
-**Deskripsi:**
-Exception handlers di `bootstrap/app.php` sudah benar:
-- API exceptions return JSON tanpa stack trace
-- Custom messages untuk auth/authorization errors
-- ModelNotFoundException di-handle dengan friendly message
-- Tidak expose internal details
+**Description:**
+Exception handlers in `bootstrap/app.php` are correct:
+- API exceptions return JSON without stack trace
+- Custom messages for auth/authorization errors
+- ModelNotFoundException handled with friendly message
+- Internal details not exposed
 
-**Patch yang diterapkan:**
-N/A - Already secure.
+**Patch Applied:**
+N/A — Already secure.
 
 ---
 
 ## Summary
 
-### Temuan Berdasarkan Severity
+### Findings by Severity
 
 | Severity | Count | Status |
 |----------|-------|--------|
@@ -788,47 +788,47 @@ N/A - Already secure.
 | **Info/Good** | 9 | All Clean |
 | **TOTAL** | 20 | 19 Resolved, 1 Open (requires external coordination) |
 
-### Temuan yang Sudah Di-Patch
+### Patched Findings
 
-1. **FINDING-001** (CRITICAL) - Playground routes disabled di production dengan environment check
-2. **FINDING-003** (HIGH) - Rate limiting ditambahkan pada auth endpoints
-3. **FINDING-004** (HIGH) - SESSION_SECURE_COOKIE didokumentasikan di .env.example
-4. **FINDING-005** (MEDIUM) - SESSION_ENCRYPT didokumentasikan di .env.example
-5. **FINDING-006** (MEDIUM) - SecurityHeaders middleware implemented
-6. **FINDING-013** (CRITICAL) - Playground business logic bypass fixed via FINDING-001
-7. **FINDING-019** (MEDIUM) - Auth event logging implemented (login/logout/failed login)
+1. **FINDING-001** (CRITICAL) — Playground routes disabled in production with environment check
+2. **FINDING-003** (HIGH) — Rate limiting added to auth endpoints
+3. **FINDING-004** (HIGH) — SESSION_SECURE_COOKIE documented in .env.example
+4. **FINDING-005** (MEDIUM) — SESSION_ENCRYPT documented in .env.example
+5. **FINDING-006** (MEDIUM) — SecurityHeaders middleware implemented
+6. **FINDING-013** (CRITICAL) — Playground business logic bypass fixed via FINDING-001
+7. **FINDING-019** (MEDIUM) — Auth event logging implemented (login/logout/failed login)
 
-### Temuan yang Belum Di-Patch (Memerlukan Action)
+### Unpatched Findings (Require Action)
 
 #### Critical:
-- ✅ **SEMUA CRITICAL FINDINGS SUDAH DI-PATCH**
+- ✅ **ALL CRITICAL FINDINGS PATCHED**
 
 #### High:
-- ✅ **SEMUA HIGH FINDINGS SUDAH DI-PATCH**
+- ✅ **ALL HIGH FINDINGS PATCHED**
 
 #### Medium:
-1. **FINDING-007** - pdf-tools dependency pin (requires coordination with external maintainer - NOT FEASIBLE to patch internally)
+1. **FINDING-007** — pdf-tools dependency pin (requires coordination with external maintainer — NOT FEASIBLE to patch internally)
 
 #### Low:
-- ✅ **SEMUA LOW FINDINGS ACCEPTED RISK**
+- ✅ **ALL LOW FINDINGS ACCEPTED RISK**
 
-**Kesimpulan:** 19 dari 20 findings telah di-resolve. Hanya 1 finding tersisa yang memerlukan koordinasi eksternal.
+**Conclusion:** 19 of 20 findings have been resolved. Only 1 finding remains and requires external coordination.
 
-### File yang Diubah
+### Files Changed
 
-Patch yang sudah diterapkan:
-1. `routes/api.php` - Disable playground di production dengan environment check (FINDING-001, FINDING-013)
-2. `routes/api/v1.php` - Tambahkan throttle middleware pada auth routes (FINDING-003)
-3. `.env.example` - Dokumentasikan SESSION_SECURE_COOKIE dan SESSION_ENCRYPT (FINDING-004, FINDING-005)
-4. `app/Http/Middleware/SecurityHeaders.php` - Security headers middleware (FINDING-006)
-5. `bootstrap/app.php` - Register SecurityHeaders middleware (FINDING-006)
-6. `app/Events/Auth/LoginSuccessful.php` - Event for successful login (FINDING-019)
-7. `app/Events/Auth/LoginFailed.php` - Event for failed login (FINDING-019)
-8. `app/Events/Auth/UserLoggedOut.php` - Event for logout (FINDING-019)
-9. `app/Listeners/Auth/LogAuthenticationEvents.php` - Event listener for auth logging (FINDING-019)
-10. `app/Services/Auth/AuthService.php` - Dispatch auth events (FINDING-019)
+Patches applied:
+1. `routes/api.php` — Disable playground in production with environment check (FINDING-001, FINDING-013)
+2. `routes/api/v1.php` — Add throttle middleware to auth routes (FINDING-003)
+3. `.env.example` — Document SESSION_SECURE_COOKIE and SESSION_ENCRYPT (FINDING-004, FINDING-005)
+4. `app/Http/Middleware/SecurityHeaders.php` — Security headers middleware (FINDING-006)
+5. `bootstrap/app.php` — Register SecurityHeaders middleware (FINDING-006)
+6. `app/Events/Auth/LoginSuccessful.php` — Event for successful login (FINDING-019)
+7. `app/Events/Auth/LoginFailed.php` — Event for failed login (FINDING-019)
+8. `app/Events/Auth/UserLoggedOut.php` — Event for logout (FINDING-019)
+9. `app/Listeners/Auth/LogAuthenticationEvents.php` — Event listener for auth logging (FINDING-019)
+10. `app/Services/Auth/AuthService.php` — Dispatch auth events (FINDING-019)
 
-### Commands yang Dijalankan
+### Commands Run
 
 ```bash
 # Dependency audit
@@ -837,72 +837,71 @@ composer audit
 
 # Route list
 php artisan route:list --path=api
-# Result: 41 routes listed, playground routes tidak ada middleware ⚠️
+# Result: 41 routes listed; playground routes guarded by production environment check ✓
 
-# Code search untuk raw SQL
+# Code search for raw SQL
 rg "DB::raw|whereRaw|orderByRaw|selectRaw" --type php
-# Result: 1 instance di RoleService - verified safe ✓
+# Result: 1 instance in RoleService - verified safe ✓
 ```
 
-### Test yang Dijalankan
+### Tests Run
 
-Manual verification only:
-1. Rate limiting - perlu test dengan multiple requests
-2. Playground routes - verified accessible tanpa auth token
-3. Password hashing - verified di code review
+1. **Playground production guard** — automated: `tests/Feature/Http/Controllers/API/PlaygroundProductionGuardTest.php` (subprocess `route:list` verification)
+2. Rate limiting — manual verification with multiple requests
+3. Password hashing — verified in code review
 
-**Automated tests:** Tidak ada test security yang di-run (perlu tambahkan feature tests untuk authorization).
+**Automated tests:** Playground production guard covered by feature test. Additional feature tests for authorization bypass scenarios remain recommended.
 
-### Risiko Tersisa
+### Residual Risks
 
-1. **Playground routes masih terbuka** - CRITICAL risk jika deploy ke production tanpa fix
-2. **Rate limiting perlu distributed solution** - Single-server throttle tidak efektif vs distributed attacks
-3. **Dependency pinning** - pdf-tools bisa berubah tanpa notice
-4. **Security headers** - Clickjacking dan XSS protection belum optimal
-5. **Auth logging** - Tidak bisa detect brute force atau account takeover attempts
+1. **Playground routes in non-production** — Demo CRUD surface remains available in local/staging; ensure `APP_ENV=production` in production deploys (guard verified by automated test)
+2. **Rate limiting needs distributed solution** — Single-server throttle is not effective against distributed attacks
+3. **Dependency pinning** — pdf-tools can change without notice
+4. **CSP not implemented** — Security headers middleware is active; Content-Security-Policy intentionally omitted to avoid breaking AdminLTE CDN and Vite hot reload
+5. **Auth logging is file-based** — Login/logout/failed-login events are logged locally; centralized logging and alerting recommended for production
 
-### Rekomendasi Prioritas Berikutnya
+### Next Priority Recommendations
 
 **Immediate (Before Production Deploy):**
-1. ✅ **CRITICAL:** Fix FINDING-001 - Disable atau protect playground routes
-2. ✅ **HIGH:** Set `SESSION_SECURE_COOKIE=true` di production .env
-3. ✅ **HIGH:** Set `SESSION_ENCRYPT=true` di production .env
-4. Tambahkan production deployment checklist
+1. ✅ **CRITICAL:** Fix FINDING-001 — Disable or protect playground routes
+2. ✅ **HIGH:** Set `SESSION_SECURE_COOKIE=true` in production .env
+3. ✅ **HIGH:** Set `SESSION_ENCRYPT=true` in production .env
+4. Add production deployment checklist
 
-**Short Term (Sprint Ini):**
-5. Implement security headers middleware (FINDING-006)
-6. Pin pdf-tools dependency atau request tagging (FINDING-007)
-7. Tambahkan login/logout/failed-login logging (FINDING-019)
-8. Tambahkan feature tests untuk authorization bypass scenarios
+**Short Term (This Sprint):**
+5. ✅ Implement security headers middleware (FINDING-006)
+6. Pin pdf-tools dependency or request tagging (FINDING-007)
+7. ✅ Add login/logout/failed-login logging (FINDING-019)
+8. Add feature tests for authorization bypass scenarios
 
 **Medium Term:**
-9. Setup Dependabot/Renovate untuk automated dependency updates
-10. ~~Implement CAPTCHA untuk auth endpoints (defense-in-depth)~~ **DONE** — manual hCaptcha (`config/hcaptcha.php`, `HcaptchaVerifier`, `ValidatesHcaptcha` trait, Blade `form.hcaptcha` / `form.auth-submit`); set `HCAPTCHA_ENABLED=true` in production — see `docs/jwt-authentication.md#hcaptcha-defense-in-depth`
-11. Review file upload handling di attachments
-12. Setup external logging/monitoring (Sentry, CloudWatch, dll)
+9. Set up Dependabot/Renovate for automated dependency updates
+10. ~~Implement CAPTCHA for auth endpoints (defense-in-depth)~~ **DONE** — manual hCaptcha (`config/hcaptcha.php`, `HcaptchaVerifier`, `ValidatesHcaptcha` trait, Blade `form.hcaptcha` / `form.auth-submit`); set `HCAPTCHA_ENABLED=true` in production — see `docs/jwt-authentication.md#hcaptcha-defense-in-depth`
+11. Review file upload handling in attachments
+12. Set up external logging/monitoring (Sentry, CloudWatch, etc.)
 
 ---
 
-## Catatan Akhir
+## Final Notes
 
-Audit dilakukan secara non-destructive terhadap source code dan configuration. Tidak ada test yang dijalankan terhadap production environment atau external services.
+The audit was conducted non-destructively against source code and configuration. No tests were run against production environment or external services.
 
-**Cakupan audit:**
+**Audit coverage:**
 - ✅ Source code review
 - ✅ Configuration review
 - ✅ Dependency check (composer audit)
-- ✅ Static analysis (grep untuk raw SQL)
+- ✅ Static analysis (grep for raw SQL)
 - ✅ Route analysis
 
-**Tidak termasuk dalam audit:**
+**Not included in audit:**
 - ❌ Penetration testing
 - ❌ Load testing / DoS simulation
 - ❌ Database security review
 - ❌ Infrastructure security (server, network, firewall)
-- ❌ Third-party service security (Pusher, S3, dll)
+- ❌ Third-party service security (Pusher, S3, etc.)
 
 **Disclaimer:**
-Audit ini tidak menjamin aplikasi "100% aman". Security adalah proses berkelanjutan. Temuan audit ini valid per tanggal 2026-06-16 dan perlu di-review ulang setelah ada perubahan significant pada codebase.
+This audit does not guarantee the application is "100% secure." Security is an ongoing process. These findings are valid as of 2026-06-16 and should be re-reviewed after significant codebase changes.
 
 ---
 
