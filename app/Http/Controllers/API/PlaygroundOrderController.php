@@ -66,7 +66,7 @@ class PlaygroundOrderController extends Controller
     {
         $record = $this->orderService->create(
             $request->validated(),
-            $request->file('attachments', []),
+            $request->validated('staged_attachments', []),
         );
 
         return $this->successResponse(
@@ -81,7 +81,7 @@ class PlaygroundOrderController extends Controller
         $record = $this->orderService->update(
             $order,
             $request->validated(),
-            $request->file('attachments', []),
+            $request->validated('staged_attachments', []),
         );
 
         return $this->successResponse(

@@ -79,7 +79,7 @@ These pieces keep every web controller a thin, uniform forwarder:
 
 | Piece | File | Role |
 |-------|------|------|
-| `ApiClient` | `app/Support/Api/ApiClient.php` | `Http` wrapper: targets `{current host}/api/v1`, sets `Accept: application/json`, and forwards the JWT from the `auth_token` cookie as `Bearer`. Exposes `get/post/put/delete` plus `postMultipart`/`putMultipart` for file uploads (flattens nested fields and attaches `attachments[]`; `putMultipart` uses `_method=PUT` spoofing). `withPrefix('api/playground')` returns a clone targeting the global playground surface (used by the order master-detail screens). |
+| `ApiClient` | `app/Support/Api/ApiClient.php` | `Http` wrapper: targets `{current host}/api/v1`, sets `Accept: application/json`, and forwards the JWT from the `auth_token` cookie as `Bearer`. Exposes `get/post/put/delete` plus `postMultipart`/`putMultipart` (legacy helpers — order attachments no longer use them). `withPrefix('api/playground')` returns a clone targeting the global playground surface (orders + direct-upload orchestration). |
 | `ConsumesApi` (trait) | `app/Http/Controllers/Web/Concerns/ConsumesApi.php` | `respondFromApi($request, …)` maps the JSON envelope for AJAX and full-page flows — see [AJAX error handling](#ajax-error-handling-contract) below. Pass `stayOnPageOnSuccess: true` when the user should remain on the same screen (edit save, change password, forgot-password link, resend verification). Default `false` for create/delete/login/logout. |
 | `MonolithApi` (client) | `adminlte4/components/partials/api-response-handler` | Shared `window.MonolithApi.handleResponse()` for all `fetch` call sites (AJAX forms, DataTable row actions, bulk delete). Loaded globally from `assets-scripts.blade.php`. |
 | AJAX forms | `x-adminlte4::form.ajax`, `x-adminlte4::form.submit`, `x-adminlte4::form.error`, `adminlte4/components/partials/ajax-form` | **All** Blade forms use AJAX (`form.ajax`). Submits via `fetch` + `Accept: application/json`; inline validation errors, no full-page reload on 422. On `422`, dispatches `document` event `ajax-form:invalid` (e.g. hCaptcha reset). Non-input fields mark errors via `data-field-invalid-class` on `[data-form-field]`. Controllers must use `respondFromApi()` to return `JsonResponse` for AJAX, falling back to `RedirectResponse` for non-JSON requests. |
@@ -162,7 +162,11 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | DELETE | `/users/{user}` | `users.destroy` | `web.auth` | `DELETE /users/{id}` |
 | GET | `/orders` | `orders.index` | `web.auth` | Blade shell for the order DataTable |
 | GET | `/orders/datatable` | `orders.datatable` | `web.auth` | `GET /playground/orders?display_mode=datatable` (proxied) |
-| GET/POST | `/orders/create`, `/orders` | `orders.create` / `orders.store` | `web.auth` | `POST /playground/orders` (master-detail payload) |
+| GET/POST | `/orders/create`, `/orders` | `orders.create` / `orders.store` | `web.auth` | `POST /playground/orders` (JSON; `staged_attachments[]`) |
+| POST | `/orders/attachments/uploads` | `orders.attachments.uploads.store` | `web.auth` | `POST /playground/attachments/uploads` |
+| GET | `/orders/attachments/uploads/{upload}` | `orders.attachments.uploads.show` | `web.auth` | `GET /playground/attachments/uploads/{id}` |
+| POST | `/orders/attachments/uploads/{upload}/complete` | `orders.attachments.uploads.complete` | `web.auth` | `POST /playground/attachments/uploads/{id}/complete` |
+| DELETE | `/orders/attachments/uploads/{upload}` | `orders.attachments.uploads.destroy` | `web.auth` | `DELETE /playground/attachments/uploads/{id}` |
 | GET | `/orders/{order}` | `orders.show` | `web.auth` | `GET /playground/orders/{id}` (master + lines) |
 | GET/PUT | `/orders/{order}/edit`, `/orders/{order}` | `orders.edit` / `orders.update` | `web.auth` | `GET`/`PUT /playground/orders/{id}` |
 | DELETE | `/orders/{order}` | `orders.destroy` | `web.auth` | `DELETE /playground/orders/{id}` |
@@ -194,18 +198,47 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 (`adminlte4/components/partials/assets-head.blade.php` and `assets-scripts.blade.php`).
 `assets-scripts.blade.php` loads shared client glue in order: `api-response-handler` (`window.MonolithApi`) → `ajax-form` (global submit listener). Page-level scripts (e.g. DataTables) load afterward and may call `MonolithApi` helpers.
 
-**Vite** bundles the notification bell only:
+**Vite** bundles the notification bell and order direct-upload widget:
 
 | Vite input | Loaded from | npm packages |
 |------------|-------------|--------------|
 | `resources/js/notifications/bell.js` | `@vite` in `partials/navbar.blade.php` (`@can('view notification')`) | `laravel-echo`, `pusher-js` |
+| `resources/js/orders/direct-upload.js` | `@vite` in `orders/_form.blade.php` | — (`upload-queue.js` helper) |
 | `resources/js/app.js` | Default entry (Tailwind / future shared JS) | — |
 
+Order attachment concurrency is configured via `ATTACHMENT_UPLOAD_MAX_CONCURRENT`
+(see `config/attachments.php` → `max_concurrent_uploads`; exposed to the widget
+as `data-max-concurrent` on `[data-direct-upload]`). The form shows a **Start
+upload** button; files are not sent to storage until the user clicks it.
+
 Run `npm install` and `npm run build` before deploy (or `composer run dev` for
-serve + queue + Vite HMR). Bell config (routes, labels, realtime flag, viewer id,
+serve + queue + Vite HMR). JS unit tests: `npm run test:js` (Vitest;
+`resources/js/orders/upload-queue.test.js`). Bell config (routes, labels, realtime flag, viewer id,
 broadcast auth endpoint) is built server-side by `NotificationBellComposer` and
 passed as `data-notification-config` on `#notification-bell`. Public Pusher fields
 also come from `VITE_PUSHER_*` in `.env` — see [notifications.md](./notifications.md#realtime-vs-polling).
+
+### Order direct-upload widget
+
+Order create/edit (`orders/_form.blade.php`) includes a **browser-direct**
+attachment widget for the playground master-detail demo. It is the only
+page-level Vite entry besides the notification bell.
+
+| Piece | Location | Role |
+|-------|----------|------|
+| Blade mount | `[data-direct-upload]` in `orders/_form.blade.php` | Routes, limits, i18n messages (`data-messages`), `data-max-concurrent` |
+| Upload UI | `resources/js/orders/direct-upload.js` | Pending queue, Start button, per-file progress, staged hidden inputs |
+| Scheduler | `resources/js/orders/upload-queue.js` | `runWithConcurrency()` — caps parallel storage PUTs |
+| Config | `config/attachments.php` → `max_concurrent_uploads` | Env `ATTACHMENT_UPLOAD_MAX_CONCURRENT` (default 2) |
+| i18n | `lang/{locale}/web/orders.php` → `form.upload_*` | Pending / Waiting / Start upload / concurrency hint |
+
+**Operator tuning:** raise `ATTACHMENT_UPLOAD_MAX_CONCURRENT` in `.env` on fast
+links; lower it on slow or metered connections. No code deploy required — Blade
+reads `config()` at render time (Octane-safe).
+
+Full upload API, reconciliation, and transaction-safety detail →
+[playground.md — attachments](./playground.md#attachments-direct-s3-upload) and
+[playground.md — web upload widget](./playground.md#web-upload-widget-manual-queue).
 
 Views render the **JSON arrays** returned by the API (e.g. `$profile`, `$menu['name']` for display, `$menu['name_translations']` for edit forms), not Eloquent models. Static UI strings use `__('…')` from `lang/{locale}/web/*` and `lang/{locale}/ui.php` — never hardcode copy in Blade.
 
@@ -251,7 +284,7 @@ resources/views/adminlte4/
 ├── profile/password.blade.php
 ├── dashboard.blade.php             ← consumes GET /auth/me payload
 ├── users/                          ← index (datatable shell), create, edit, _form (shared)
-├── orders/                         ← master-detail demo: index (datatable), create, edit, show, _form (dynamic line rows)
+├── orders/                         ← master-detail demo: index (datatable), create, edit, show, _form (dynamic line rows + direct-upload widget)
 ├── menus/                          ← index, trashed, create, edit, _form (shared)
 └── notifications/                  ← index (full list); navbar bell lives in components/partials/navbar
 ```

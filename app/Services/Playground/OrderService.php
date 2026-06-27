@@ -7,31 +7,25 @@ use App\Exceptions\Playground\OrderRequiresDetailException;
 use App\Models\Order;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Services\ApprovalService;
+use App\Support\Orders\DirectAttachmentUploadService;
 use App\Support\Orders\OrderAttachmentStorage;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Throwable;
 
 /**
  * Business logic for the Order master-detail aggregate.
  *
- * The service owns the rules ("an order needs ≥1 line", "a completed order is
- * frozen") and derives the master totals from the detail lines so the persisted
- * money always matches the items. It delegates the atomic two-table write to
- * OrderRepository, which runs it inside a single DB transaction. HTTP-shape
- * validation stays in the Form Requests; raw queries stay in the repository.
- *
- * Attachments live on a file disk, NOT in the DB transaction. The service
- * stores files first, then persists their metadata; if the DB write fails it
- * compensates by deleting the just-uploaded files so no orphaned objects leak.
- * On a successful update it removes the files the caller dropped.
+ * Attachments are staged on object storage via browser-direct uploads before
+ * create/update. The service resolves completed upload sessions into metadata
+ * rows and compensates by deleting freshly staged objects if the DB write fails.
  */
 class OrderService
 {
     public function __construct(
         private readonly OrderRepositoryInterface $repository,
         private readonly OrderAttachmentStorage $attachments,
+        private readonly DirectAttachmentUploadService $directUploads,
         private readonly ApprovalService $approvalService,
     ) {}
 
@@ -47,15 +41,12 @@ class OrderService
 
     /**
      * @param  array<string, mixed>  $data
-     * @param  list<UploadedFile>  $files
+     * @param  list<string>  $stagedUploadIds
      */
-    public function create(array $data, array $files = []): Order
+    public function create(array $data, array $stagedUploadIds = []): Order
     {
         $details = $this->buildDetailLines($data['details'] ?? []);
-
-        // Upload files BEFORE the DB write; if the transaction throws, delete
-        // the freshly stored objects so a failed order leaves no orphaned files.
-        $stored = $this->stampOwner($this->attachments->storeMany($files));
+        $stored = $this->stampOwner($this->directUploads->resolveStaged($stagedUploadIds));
 
         $master = $this->buildMaster($data, $details);
         $master['order_number'] = $this->generateOrderNumber();
@@ -63,11 +54,9 @@ class OrderService
         try {
             $order = $this->repository->createWithDetails($master, $details, $stored);
 
-            // Initiate approval process
             try {
                 $this->approvalService->initiate($order, 'ORDER');
             } catch (\Exception $e) {
-                // Log approval initiation failure but don't block order creation
                 \Log::warning('Failed to initiate approval for order', [
                     'order_id' => $order->id,
                     'error' => $e->getMessage(),
@@ -84,9 +73,9 @@ class OrderService
 
     /**
      * @param  array<string, mixed>  $data
-     * @param  list<UploadedFile>  $files
+     * @param  list<string>  $stagedUploadIds
      */
-    public function update(string $id, array $data, array $files = []): Order
+    public function update(string $id, array $data, array $stagedUploadIds = []): Order
     {
         $order = $this->repository->findOrFail($id);
         $this->assertEditable($order);
@@ -94,18 +83,14 @@ class OrderService
         $details = $this->buildDetailLines($data['details'] ?? []);
         $master = $this->buildMaster($data, $details);
 
-        // order_number is immutable after creation.
         unset($master['order_number']);
 
-        // Reconcile attachments: keep the ones the caller asked to keep, append
-        // the newly uploaded files. Anything dropped is removed AFTER the DB
-        // commit so a rollback never loses a file that is still referenced.
         $existing = $order->attachments
             ->map(fn ($a): array => $a->only(['user_id', 'disk', 'path', 'name', 'size', 'mime']))
             ->all();
         [$kept, $removed] = $this->partitionByKeep($existing, $this->resolveKeepPaths($data));
 
-        $stored = $this->stampOwner($this->attachments->storeMany($files));
+        $stored = $this->stampOwner($this->directUploads->resolveStaged($stagedUploadIds));
         $desired = array_values([...$kept, ...$stored]);
 
         try {
@@ -116,7 +101,6 @@ class OrderService
             throw $e;
         }
 
-        // Committed — now it is safe to purge the files the caller dropped.
         $this->attachments->deleteMany($removed);
 
         return $updated;
@@ -128,22 +112,15 @@ class OrderService
         $this->assertEditable($order);
 
         $attachments = $order->attachments
-            ->map(fn ($a): array => $a->only(['path']))
+            ->map(fn ($a): array => $a->only(['disk', 'path']))
             ->all();
 
         $this->repository->deleteWithDetails($id);
 
-        // DB row gone — drop its files. (Done after commit; a stored file with
-        // no DB row is a harmless leak, a missing file with a live row is not.)
         $this->attachments->deleteMany($attachments);
     }
 
     /**
-     * Mass-delete orders by id. Either every order is removed or none is: the
-     * frozen-order rule is enforced up front (one completed order in the set
-     * aborts the whole batch), then the masters + details + attachment rows are
-     * dropped in a single transaction, and only afterwards are the files purged.
-     *
      * @param  list<string>  $ids
      */
     public function deleteMany(array $ids): void
@@ -162,21 +139,15 @@ class OrderService
 
         $attachments = $orders
             ->flatMap(fn (Order $order) => $order->attachments)
-            ->map(fn ($a): array => $a->only(['path']))
+            ->map(fn ($a): array => $a->only(['disk', 'path']))
             ->all();
 
         $this->repository->deleteManyWithDetails($ids);
 
-        // DB rows gone — drop their files after commit, same ordering as the
-        // single-row delete (a stored file with no row is a harmless leak).
         $this->attachments->deleteMany($attachments);
     }
 
     /**
-     * Stamp the current user (the uploader/owner) onto freshly stored
-     * attachment metadata rows. Resolves the authenticated id once; null when
-     * unauthenticated (the column is nullable).
-     *
      * @param  list<array<string, mixed>>  $stored
      * @return list<array<string, mixed>>
      */
@@ -185,20 +156,14 @@ class OrderService
         $userId = auth()->id();
 
         return array_map(
-            fn (array $row): array => $row + ['user_id' => $userId],
+            fn (array $row): array => $row + ['user_id' => $userId ?? $row['user_id'] ?? null],
             $stored,
         );
     }
 
     /**
-     * Resolve the keep-list from request data, reconciling the multipart edge
-     * case: an empty `keep_attachments` array cannot be encoded over
-     * multipart/form-data (zero fields = absent key). Clients that own the
-     * attachment set send `attachments_managed=1`; when that marker is truthy
-     * and no keep-list arrived, "absent" means **keep none**, not keep all.
-     *
      * @param  array<string, mixed>  $data
-     * @return list<string>|null null = keep all; [] = drop all; list = keep those
+     * @return list<string>|null
      */
     private function resolveKeepPaths(array $data): ?array
     {
@@ -214,10 +179,6 @@ class OrderService
     }
 
     /**
-     * Split existing attachments into [kept, removed] using the caller's
-     * keep-list (array of paths). A null keep-list means "keep all" (e.g. a
-     * metadata-only edit that does not touch files); an empty array drops all.
-     *
      * @param  list<array<string, mixed>>  $existing
      * @param  list<string>|null  $keepPaths
      * @return array{0: list<array<string, mixed>>, 1: list<array<string, mixed>>}
@@ -243,9 +204,6 @@ class OrderService
     }
 
     /**
-     * Normalise + compute each line's subtotal. Rejects an empty line set: an
-     * order with no items is meaningless and would strand an empty master.
-     *
      * @param  array<int, array<string, mixed>>  $rawDetails
      * @return list<array<string, mixed>>
      */
@@ -273,9 +231,6 @@ class OrderService
                 'notes' => $detail['notes'] ?? null,
             ];
 
-            // Carry an existing line id through so the repository can update it
-            // in place (ID-preserving sync) instead of recreating the row. New
-            // lines simply omit the id and get a fresh UUID on insert.
             if (! empty($detail['id'])) {
                 $line['id'] = $detail['id'];
             }
@@ -287,8 +242,6 @@ class OrderService
     }
 
     /**
-     * Derive master totals from the lines so persisted money matches the items.
-     *
      * @param  array<string, mixed>  $data
      * @param  list<array<string, mixed>>  $details
      * @return array<string, mixed>

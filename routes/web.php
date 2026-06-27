@@ -14,6 +14,7 @@ use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\LocaleController;
 use App\Http\Controllers\Web\Navigation\MenuController;
 use App\Http\Controllers\Web\NotificationController;
+use App\Http\Controllers\Web\OrderAttachmentUploadController;
 use App\Http\Controllers\Web\OrderController;
 use App\Http\Controllers\Web\UserController;
 use Illuminate\Support\Facades\Auth;
@@ -109,6 +110,13 @@ Route::middleware('web.auth')->group(function (): void {
     Route::get('orders/datatable', [OrderController::class, 'datatable'])->name('orders.datatable');
     Route::get('orders/create', [OrderController::class, 'create'])->name('orders.create');
     Route::get('orders/{order}/edit', [OrderController::class, 'edit'])->whereUuid('order')->name('orders.edit');
+    Route::prefix('orders/attachments/uploads')->name('orders.attachments.uploads.')->group(function () {
+        Route::post('/', [OrderAttachmentUploadController::class, 'store'])->name('store');
+        Route::get('{upload}', [OrderAttachmentUploadController::class, 'show'])->name('show')->whereUuid('upload');
+        Route::post('{upload}/parts', [OrderAttachmentUploadController::class, 'signParts'])->name('sign-parts')->whereUuid('upload');
+        Route::post('{upload}/complete', [OrderAttachmentUploadController::class, 'complete'])->name('complete')->whereUuid('upload');
+        Route::delete('{upload}', [OrderAttachmentUploadController::class, 'destroy'])->name('destroy')->whereUuid('upload');
+    });
     // Mass-delete (literal `bulk` segment declared before the resource so it is
     // not captured by the `{order}` wildcard). Selected ids ride in the body.
     Route::delete('orders/bulk', [OrderController::class, 'bulkDestroy'])->name('orders.bulk-destroy');

@@ -313,7 +313,7 @@ app/
 | **Input shape** (`details[]` array, per-line fields) | `Store/UpdateOrderRequest` | `details` is `required|array|min:1`; lines validated with `details.*.*` rules |
 | **Update semantics** | `OrderRepository::updateWithDetails` | **ID-preserving sync**: lines sent with an existing `id` are updated in place (UUID kept), lines without an id are inserted, lines absent from the payload are deleted — all inside the transaction |
 | **Schema** | `order_master` / `order_detail` migrations | UUID PKs (`HasUuids`), `foreignUuid('order_master_id')->constrained()->cascadeOnDelete()` |
-| **File attachments** | `OrderService` + `Support\Orders\OrderAttachmentStorage` + `Attachment` model | Multiple files per order stored on the `s3Custom` disk; metadata lives in the shared polymorphic **`attachments`** table (`{disk,path,name,size,mime}` + `attachable` + owning `user_id`), reconciled by `OrderRepository` **inside** the master-detail transaction. `Attachment::url()` is disk-aware: public disks return a plain URL, S3 disks return a **signed URL cached on the row** (`cached_url`/`cached_url_expires_at`, refreshed near expiry). Files live **outside** the DB transaction, so the service compensates (deletes uploads) on a failed write and purges dropped/deleted files only after commit — no orphaned objects |
+| **File attachments** | `OrderService` + `DirectAttachmentUploadService` + `OrderAttachmentStorage` + `Attachment` / `AttachmentUpload` models | Browser-direct uploads to `s3Custom` via presigned URLs (chunked multipart for large files). The web widget uses a **manual Start upload** queue with `max_concurrent_uploads` (env `ATTACHMENT_UPLOAD_MAX_CONCURRENT`) so the browser never saturates bandwidth with parallel PUTs. Completed upload sessions are referenced as `staged_attachments[]` on order create/update; metadata lives in the polymorphic **`attachments`** table and is reconciled inside the master-detail transaction. `Attachment::url()` serves cached signed GET URLs on S3 disks. Objects live outside the DB transaction — the service compensates on failed writes and purges dropped files only after commit |
 
 The controller stays thin (validated input → `OrderService` → resource → response)
 exactly like Playground Users; only the **data layer** differs (dedicated repo +
@@ -321,7 +321,7 @@ transaction instead of `EloquentCrudRepository`). The interface is bound in
 `AppServiceProvider`. Web admin screens for this aggregate live in the
 [web frontend](./web-frontend.md) and consume `/api/playground/orders`. Full
 detail (request shapes, attachment reconciliation, transaction-safety ordering)
-→ **[Playground](./playground.md#attachments-multiple-file-upload)**.
+→ **[Playground](./playground.md#attachments-direct-s3-upload)**.
 
 > The detail set is synced by **id**, not blindly replaced. Send a line's `id`
 > to update it in place (its UUID survives); omit `id` for a new line; leave a

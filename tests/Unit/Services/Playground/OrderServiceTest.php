@@ -4,19 +4,24 @@ namespace Tests\Unit\Services\Playground;
 
 use App\Exceptions\Playground\OrderNotEditableException;
 use App\Exceptions\Playground\OrderRequiresDetailException;
+use App\Models\AttachmentUpload;
 use App\Models\Order;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Services\ApprovalService;
 use App\Services\Playground\OrderService;
+use App\Support\Orders\DirectAttachmentUploadService;
 use App\Support\Orders\OrderAttachmentStorage;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Mockery\MockInterface;
+use Tests\Fakes\FakeDirectAttachmentUploadService;
 use Tests\TestCase;
 
 class OrderServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private OrderRepositoryInterface&MockInterface $repository;
 
     private OrderService $service;
@@ -25,14 +30,21 @@ class OrderServiceTest extends TestCase
     {
         parent::setUp();
 
-        // Real storage class against a fake disk — keeps the file I/O honest
-        // while the repository (DB) stays mocked for unit isolation.
         Storage::fake(OrderAttachmentStorage::DISK);
+        $this->app->instance(
+            DirectAttachmentUploadService::class,
+            new FakeDirectAttachmentUploadService(new OrderAttachmentStorage),
+        );
 
         $this->repository = Mockery::mock(OrderRepositoryInterface::class);
         $approvalService = Mockery::mock(ApprovalService::class);
         $approvalService->shouldReceive('initiate')->byDefault();
-        $this->service = new OrderService($this->repository, new OrderAttachmentStorage, $approvalService);
+        $this->service = new OrderService(
+            $this->repository,
+            new OrderAttachmentStorage,
+            app(DirectAttachmentUploadService::class),
+            $approvalService,
+        );
     }
 
     protected function tearDown(): void
@@ -62,7 +74,6 @@ class OrderServiceTest extends TestCase
             ->once()
             ->with(
                 Mockery::on(function (array $master): bool {
-                    // subtotal = (2*100-0)+(1*50-10)=240, grand = 240-20+5=225
                     return $master['subtotal'] === 240.0
                         && $master['grand_total'] === 225.0
                         && str_starts_with((string) $master['order_number'], 'ORD-');
@@ -84,9 +95,10 @@ class OrderServiceTest extends TestCase
         ]);
     }
 
-    public function test_create_deletes_uploaded_files_when_db_write_fails(): void
+    public function test_create_deletes_staged_files_when_db_write_fails(): void
     {
-        $file = UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf');
+        $upload = AttachmentUpload::factory()->completed()->create();
+        Storage::disk($upload->disk)->put($upload->path, 'payload');
 
         $this->repository
             ->shouldReceive('createWithDetails')
@@ -98,14 +110,12 @@ class OrderServiceTest extends TestCase
                 'customer_name' => 'Jane',
                 'customer_email' => 'jane@example.com',
                 'details' => [['product_name' => 'A', 'quantity' => 1, 'unit_price' => 10]],
-            ], [$file]);
+            ], [$upload->id]);
             $this->fail('Expected the DB failure to propagate.');
         } catch (\RuntimeException) {
-            // expected
         }
 
-        // Compensation: the just-uploaded file must not linger on the disk.
-        $this->assertEmpty(Storage::disk(OrderAttachmentStorage::DISK)->allFiles());
+        Storage::disk($upload->disk)->assertMissing($upload->path);
     }
 
     public function test_update_rejects_completed_order(): void

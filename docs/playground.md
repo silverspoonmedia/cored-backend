@@ -100,11 +100,16 @@ app/
 │   ├── Contracts/OrderRepositoryInterface.php
 │   └── Eloquent/OrderRepository.php          # all writes wrapped in DB::transaction()
 ├── Services/Playground/OrderService.php      # business rules + totals + attachment reconciliation
-├── Support/Orders/OrderAttachmentStorage.php # file I/O on the s3Custom disk (store/delete/url)
+├── Support/Orders/
+│   ├── DirectAttachmentUploadService.php   # presigned direct-to-S3 upload orchestration
+│   └── OrderAttachmentStorage.php          # object existence checks + deleteMany on s3Custom
+├── Models/AttachmentUpload.php             # pending/completed browser-direct upload sessions
 ├── Http/
 │   ├── Requests/Playground/{Store,Update,Index}OrderRequest.php
+│   ├── Requests/Playground/{Init,Complete,Sign}AttachmentUploadRequest.php
 │   ├── Resources/Playground/PlaygroundOrder{,Detail}Resource.php
-│   └── Controllers/API/PlaygroundOrderController.php
+│   ├── Controllers/API/PlaygroundOrderController.php
+│   └── Controllers/API/PlaygroundAttachmentUploadController.php
 ├── Exceptions/Playground/
 │   ├── OrderRequiresDetailException.php       # HTTP 422 — ≥1 line required
 │   └── OrderNotEditableException.php           # HTTP 409 — completed orders are frozen
@@ -125,6 +130,11 @@ depends only on the repository contract.
 | `PUT`/`PATCH` | `/api/playground/orders/{order}` | update (full line replace) | `playground.orders.update` |
 | `DELETE` | `/api/playground/orders/{order}` | delete master + lines | `playground.orders.destroy` |
 | `DELETE` | `/api/playground/orders/bulk` | **mass-delete** the `ids[]` set | `playground.orders.bulk-destroy` |
+| `POST` | `/api/playground/attachments/uploads` | init direct upload session | `playground.attachments.uploads.store` |
+| `GET` | `/api/playground/attachments/uploads/{upload}` | upload status / resume | `playground.attachments.uploads.show` |
+| `POST` | `/api/playground/attachments/uploads/{upload}/parts` | presign part numbers | `playground.attachments.uploads.sign-parts` |
+| `POST` | `/api/playground/attachments/uploads/{upload}/complete` | finalize upload | `playground.attachments.uploads.complete` |
+| `DELETE` | `/api/playground/attachments/uploads/{upload}` | abort pending upload | `playground.attachments.uploads.destroy` |
 
 Registered with `Route::apiResource(...)->except(['create','edit'])->names('playground.orders')`,
 plus an explicit `DELETE orders/bulk` line **declared before** the resource so
@@ -191,8 +201,10 @@ for a new line; drop a line from the array to delete it:
 - `order_number` is generated on create (`ORD-YYYYMMDD-XXXXXX`) and **immutable** afterward.
 - On **update**, send each existing line's `id` to keep it (and its UUID); omit
   `id` for new lines. See [Update semantics](#rules-and-responsibilities) below.
-- Files are uploaded as `attachments[]` over `multipart/form-data`; existing
-  files are retained via `keep_attachments[]`. See [Attachments](#attachments-multiple-file-upload) below.
+- Files are attached via **completed** direct-upload session ids in
+  `staged_attachments[]` (JSON). Upload bytes go browser → S3-compatible storage
+  through presigned URLs first; see
+  [Attachments (direct S3 upload)](#attachments-direct-s3-upload) below.
 
 ### Rules and responsibilities
 
@@ -210,90 +222,161 @@ for a new line; drop a line from the array to delete it:
 > line — survive the edit. This is an ID-preserving **sync**, not a delete-all +
 > recreate (which would silently re-issue every line id on each save).
 
-### Attachments (multiple file upload)
+### Attachments (direct S3 upload)
 
 Attachment metadata lives in the shared **`attachments`** table (polymorphic via
-`uuidMorphs`); an order owns many rows through a `morphMany` relation — one order
-can carry many files. The **files** live on the `s3Custom` disk (see
-`config/filesystems.php`); each `attachments` row stores lightweight metadata per
-file: `{disk, path, name, size, mime}`, plus the owning `user_id` and a
-signed-URL cache (`cached_url`, `cached_url_expires_at`).
+`uuidMorphs`); an order owns many rows through a `morphMany` relation. The
+**files** live on the `s3Custom` disk (see `config/filesystems.php` and
+`config/attachments.php`). Each `attachments` row stores `{disk, path, name, size,
+mime}`, plus the owning `user_id` and a signed-URL cache (`cached_url`,
+`cached_url_expires_at`).
+
+**Ingress is browser-direct.** The application never receives file bytes on
+create/update. Instead:
+
+1. The client calls the upload API to **init** a session and receives presigned
+   URLs (single `PutObject` for small files, S3 **multipart** + per-part URLs for
+   larger files).
+2. The browser uploads chunks **straight to object storage** (no app-server
+   bandwidth).
+3. The client calls **complete**; the server finalizes multipart uploads (or
+   verifies the object exists) and marks the `attachment_uploads` row `completed`.
+4. Order **store/update** sends `staged_attachments: ["<upload-uuid>", …]`; the
+   service resolves those sessions into metadata rows inside the master-detail
+   transaction.
 
 | Piece | Role |
 |-------|------|
-| `App\Models\Attachment` | Polymorphic (`attachable`) metadata row; `Order morphMany attachments`, `Attachment belongsTo user`. Owns **disk-aware URL resolution** (see below). The shared table is not order-specific. |
-| `App\Support\Orders\OrderAttachmentStorage` | Pure file I/O: `store`/`storeMany`/`deleteMany` on the `s3Custom` disk; `store` returns the `disk` in each metadata row. No DB access, no URL logic. |
-| `OrderService` | Decides when to store/keep/forget files; stamps the authenticated `user_id` on freshly stored rows; reconciles the desired metadata set (by `path`) and hands it to the repository, which writes the rows inside the master-detail transaction. Compensates a failed DB write by deleting the just-uploaded files |
-| `OrderRepository` | Persists/reconciles `attachments` rows **inside** the same `DB::transaction()` as the master + details (sync by `path`: drop removed, insert new, keep surviving UUIDs) |
-| `StoreOrderRequest` | `attachments` (`nullable|array|max:10`), `attachments.*` (`file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx`) |
-| `UpdateOrderRequest` | Same `attachments` rules **plus** `keep_attachments` (array of disk paths to retain) and `attachments_managed` (boolean marker — see reconciliation below) |
-| `PlaygroundOrderResource` | Emits each file as `{path, name, size, mime, url}` (from the `attachments` relation; the `url` comes from `Attachment::url()`) |
+| `App\Models\Attachment` | Polymorphic metadata row; owns disk-aware **download** URL resolution (`Attachment::url()`). |
+| `App\Models\AttachmentUpload` | Server-side upload session (`pending` → `completed` / `aborted`); tracks multipart parts for resume. Stored in **`attachment_uploads`** — file bytes are **not** in the database. |
 
-**URL resolution (disk-aware + signed-URL cache)** — `Attachment::url()` returns
-the right URL for the file's `disk`:
+**`attachment_uploads` session table** (upload orchestration only):
 
-| Disk kind | Behaviour |
-|-----------|-----------|
-| Public / local (`providesTemporaryUrls() === false`) | plain, non-expiring `Storage::url()`; nothing cached |
-| S3-compatible (`providesTemporaryUrls() === true`) | a **signed** (temporary) URL is minted, cached on the row (`cached_url` + `cached_url_expires_at`, TTL `60` min), and reused on subsequent calls until it is within `5` min of expiring — then a fresh one is minted and re-cached |
+| Column | Role |
+|--------|------|
+| `id` | Client-facing upload UUID (`staged_attachments[]` references this) |
+| `path` | Pre-issued object key on the storage disk |
+| `s3_upload_id` | S3/R2 multipart `UploadId` for files ≥ `multipart_threshold_bytes`; `null` for single-PUT uploads. Stored as **`text`** (not `varchar`) because provider IDs can exceed 255 characters — this is an opaque handle, not file content |
+| `parts` | JSON array of uploaded part numbers + ETags (resume / complete) |
+| `size`, `mime`, `original_name` | Declared file metadata from the client at init time |
 
-> Signing is expensive and the signed URL itself expires, so caching it avoids
-> re-minting on every read while the refresh threshold guarantees a caller never
-> gets an about-to-die URL. The cache write is best-effort: the URL is always
-> returned even if the row cannot be saved.
+| Piece | Role |
+|-------|------|
+| `DirectAttachmentUploadService` | Presign + S3 multipart orchestration (`initiate`, `status`, `signParts`, `complete`, `abort`, `resolveStaged`). |
+| `OrderAttachmentStorage` | `pathExists` + `deleteMany` (compensation / purge); no server-side `store()`. |
+| `OrderService` | Resolves `staged_attachments` into metadata; reconciles `keep_attachments` on update; compensates on DB failure. |
+| `OrderRepository` | Persists `attachments` rows inside the master-detail `DB::transaction()`. |
+| `StoreOrderRequest` / `UpdateOrderRequest` | `staged_attachments` (`nullable|array|max:N`), each id must reference a **completed** upload (`CompletedAttachmentUpload` rule). |
+| `PlaygroundAttachmentUploadController` | Upload orchestration endpoints under `/api/playground/attachments/uploads`. |
+| `PlaygroundOrderResource` | Emits `{path, name, size, mime, url}` per attachment. |
 
-**Upload (store/update)** — send `multipart/form-data` with `attachments[]` file
-parts alongside the JSON-ish fields:
+**Configuration** (`config/attachments.php`, overridable via `.env`):
+
+| Key | Default | Notes |
+|-----|---------|-------|
+| `disk` | `s3Custom` | Target filesystem disk |
+| `chunk_size_bytes` | 8 MiB | Multipart part size (S3 min 5 MiB except last part) |
+| `multipart_threshold_bytes` | 8 MiB | Files below this get a single presigned PUT |
+| `max_file_size_bytes` | 5 GiB | POC ceiling per file |
+| `max_files_per_order` | 10 | Matches staged attachment count limit |
+| `max_concurrent_uploads` | 2 | Max simultaneous browser uploads (`ATTACHMENT_UPLOAD_MAX_CONCURRENT`) |
+| `presign_ttl_minutes` | 15 | Presigned URL lifetime |
+| `session_ttl_hours` | 24 | Pending session / resume window |
+
+**Bucket CORS (operator prerequisite):** configure the S3-compatible bucket to
+allow browser `PUT` from your app origin and **expose the `ETag` response
+header** (required for multipart completion). This cannot be automated from the
+Laravel app.
+
+**Upload API flow**
 
 ```
-POST /api/playground/orders        (multipart/form-data)
-  customer_name = Jane Doe
-  customer_email = jane@example.com
-  details[0][product_name] = Widget
-  details[0][quantity] = 1
-  details[0][unit_price] = 100
-  attachments[] = <file: invoice.pdf>
-  attachments[] = <file: photo.png>
+POST /api/playground/attachments/uploads
+  { "name": "invoice.pdf", "mime": "application/pdf", "size": 10485760 }
+→ { upload_id, strategy, chunk_size, part_count, parts: [{ part_number, url, headers }] }
+
+PUT <presigned-url>   (browser → storage, per part)
+
+POST /api/playground/attachments/uploads/{upload_id}/complete
+  { "parts": [{ "part_number": 1, "etag": "…" }, …] }   // multipart only
+→ { metadata: { disk, path, name, size, mime } }
+
+GET /api/playground/attachments/uploads/{upload_id}   // resume: recorded_parts + fresh part URLs
+DELETE /api/playground/attachments/uploads/{upload_id}   // abort
 ```
 
-**Reconciliation on update** — `keep_attachments[]` carries the disk **paths**
-of existing files to retain. The new set is `kept ∪ newly uploaded`:
+**Order attach (store/update)** — JSON body (no file bytes):
+
+```json
+{
+  "customer_name": "Jane Doe",
+  "customer_email": "jane@example.com",
+  "details": [{ "product_name": "Widget", "quantity": 1, "unit_price": 100 }],
+  "staged_attachments": ["019f…upload-uuid"]
+}
+```
+
+**Reconciliation on update** — `keep_attachments[]` carries disk **paths** of
+existing files to retain. The new set is `kept ∪ staged_attachments`:
 
 | `keep_attachments` | `attachments_managed` | Behavior |
 |--------------------|-----------------------|----------|
 | *omitted* | *omitted / falsy* | keep **all** current files (metadata-only edit) |
-| `[]` (empty array, JSON only) | — | drop **all** current files |
-| *omitted* | `1` (truthy) | drop **all** current files (multipart-safe "drop all") |
-| `["orders/attachments/a.pdf", …]` | — | keep only the listed paths; the rest are deleted from disk |
+| `[]` | — | drop **all** current files |
+| *omitted* | `true` | drop **all** current files (form marker when every checkbox is unticked) |
+| `["orders/attachments/…/a.pdf", …]` | — | keep only listed paths; rest deleted from disk |
 
-> **Why `attachments_managed`?** An empty `keep_attachments` array encodes fine
-> in JSON, but **not** over `multipart/form-data` — an empty array produces zero
-> form fields, so the key arrives *absent*, which otherwise means "keep all".
-> The Blade form (multipart) therefore sends a scalar `attachments_managed=1`
-> marker; when it is truthy and no keep-list arrived, the service treats it as
-> "keep none". An explicit `keep_attachments` always wins over the marker. This
-> is resolved in `OrderService::resolveKeepPaths()`, so both JSON API callers
-> and the multipart web form get correct semantics.
+**URL resolution (download)** — `Attachment::url()` returns a plain URL for
+public disks or a cached **signed GET URL** for S3-compatible disks (TTL 60 min,
+refresh threshold 5 min). See the table in the previous revision of this doc;
+behavior is unchanged.
 
 #### Transaction safety (no orphaned files)
 
-Files are stored on a disk, which is **not** part of the DB transaction (the
-`attachments` rows are). The service orders the work so neither side leaks:
+Objects are written on object storage **before** the order transaction. The
+service orders work so neither side leaks:
 
-- **Create / update:** upload files → run the DB transaction (writes the
-  master, details **and** `attachments` rows together) → **on DB failure,
-  delete the just-uploaded files** (compensating action) and rethrow. A dropped
-  file (update) is deleted **only after** the DB commit succeeds, so a rollback
-  never loses a file that is still referenced.
-- **Delete:** remove the DB rows first (master + details + attachments in one
-  transaction), then delete its files. A stored file with no DB row is a
-  harmless leak; a missing file with a live row is data loss — so the DB is the
-  source of truth and files are purged last.
+- **Create / update:** resolve completed staged uploads → DB transaction (master
+  + details + `attachments` rows) → **on DB failure, delete the just-staged
+  objects** (compensation). Dropped files (update) are deleted **only after**
+  commit.
+- **Delete:** remove DB rows first, then delete files from disk.
 
-> The web layer forwards uploads as multipart too: `ApiClient::postMultipart()` /
-> `putMultipart()` attach the files and flatten nested fields (e.g.
-> `details[0][product_name]`) into multipart-safe keys. `putMultipart` uses
-> `_method=PUT` spoofing because PHP does not parse multipart bodies on real PUT.
+#### Web upload widget (manual queue)
+
+The Blade form (`resources/views/adminlte4/orders/_form.blade.php`) mounts
+`[data-direct-upload]` and loads `resources/js/orders/direct-upload.js` via Vite.
+Upload orchestration still goes through proxied web routes
+(`/orders/attachments/uploads/*` → playground API); completed sessions populate
+`staged_attachments[]` hidden inputs submitted with the order JSON payload.
+
+**Why manual start:** file selection no longer triggers immediate storage I/O.
+The user reviews the queue, then clicks **Start upload**. This avoids surprise
+bandwidth use and gives a clear checkpoint before presigned URLs are minted.
+
+**Concurrency cap:** `max_concurrent_uploads` in `config/attachments.php`
+(env `ATTACHMENT_UPLOAD_MAX_CONCURRENT`, default **2**) limits how many files
+upload to object storage at once. The Blade template exposes this as
+`data-max-concurrent` on `[data-direct-upload]`; a translated hint under the
+file input explains the limit.
+
+| Client state | When | Storage I/O |
+|--------------|------|-------------|
+| **Pending** | File picked, batch not started | None — row can be removed (×) |
+| **Waiting…** | Batch started, all concurrency slots busy | None yet |
+| **Uploading…** | Worker slot acquired | Init → PUT part(s) → complete |
+| **Ready** | `complete` succeeded | Staged hidden input added |
+| **Upload failed** | Any step threw | Row marked error; not staged |
+
+Scheduler: `resources/js/orders/upload-queue.js` exports `runWithConcurrency()`.
+`direct-upload.js` passes each queued item to the existing per-file upload worker.
+Unit tests: `npm run test:js` (`resources/js/orders/upload-queue.test.js`).
+
+**Form submit guard:** blocked while a batch is draining or any file is actively
+**Uploading…**. Unstarted **Pending** files are *not* staged and do *not* block
+save (same as never having picked them).
+
+See also [web frontend — order direct-upload widget](./web-frontend.md#order-direct-upload-widget).
 
 ### Web (Blade) screens
 
@@ -306,7 +389,11 @@ shared client there with `ApiClient::withPrefix('api/playground')`.
 |--------|-----|------|-------------|
 | GET | `/orders` | `orders.index` | Blade DataTable shell |
 | GET | `/orders/datatable` | `orders.datatable` | `GET /playground/orders?display_mode=datatable` (proxied) |
-| GET/POST | `/orders/create`, `/orders` | `orders.create` / `orders.store` | `POST /playground/orders` |
+| GET/POST | `/orders/create`, `/orders` | `orders.create` / `orders.store` | `POST /playground/orders` (JSON + `staged_attachments`) |
+| POST | `/orders/attachments/uploads` | `orders.attachments.uploads.store` | `POST /playground/attachments/uploads` |
+| GET | `/orders/attachments/uploads/{upload}` | `orders.attachments.uploads.show` | `GET /playground/attachments/uploads/{id}` |
+| POST | `/orders/attachments/uploads/{upload}/complete` | `orders.attachments.uploads.complete` | `POST /playground/attachments/uploads/{id}/complete` |
+| DELETE | `/orders/attachments/uploads/{upload}` | `orders.attachments.uploads.destroy` | `DELETE /playground/attachments/uploads/{id}` |
 | GET | `/orders/{order}` | `orders.show` | `GET /playground/orders/{id}` |
 | GET/PUT | `/orders/{order}/edit`, `/orders/{order}` | `orders.edit` / `orders.update` | `GET`/`PUT /playground/orders/{id}` |
 | DELETE | `/orders/{order}` | `orders.destroy` | `DELETE /playground/orders/{id}` |
@@ -314,12 +401,14 @@ shared client there with `ApiClient::withPrefix('api/playground')`.
 
 - `resources/views/adminlte4/orders/_form.blade.php` renders **dynamic detail rows**
   (add/remove line item) with a monotonic row index so removing then adding
-  never collides on a `details[i][...]` field name. It always keeps ≥1 row. It
-  also has a multi-file `attachments[]` input and, on edit, a checkbox list of
-  current files (`keep_attachments[]`) — unticking one removes it on save. The
-  form also carries a hidden `attachments_managed=1` so unticking **every** box
-  drops all files (an empty keep-list cannot survive multipart — see
-  [reconciliation](#attachments-multiple-file-upload)).
+  never collides on a `details[i][...]` field name. It always keeps ≥1 row. On
+  edit it shows a checkbox list of current files (`keep_attachments[]`) plus the
+  **direct-upload widget** (`direct-upload.js` + `upload-queue.js`): user picks
+  files (pending queue), clicks **Start upload**, then files upload to storage in
+  chunks with at-most-`max_concurrent_uploads` parallelism before save; completed sessions populate `staged_attachments[]` hidden
+  inputs. A hidden `attachments_managed=1` marker ensures unticking every
+  keep-box drops all existing files (see
+  [reconciliation](#attachments-direct-s3-upload)).
 - `index.blade.php` is a server-side DataTable; the `status` column renders a
   colored badge, `grand_total` is locale-formatted, and completed orders drop
   their edit/delete buttons (`PlaygroundOrderRowActionResolver`). The first
@@ -331,9 +420,10 @@ shared client there with `ApiClient::withPrefix('api/playground')`.
 - `show.blade.php` renders the master summary, the read-only line table, and a
   download list of attachments (each links to its disk `url`).
 - A sidebar entry (`orders.index`) is seeded by `MenuSeeder`.
-- File uploads are forwarded as multipart by the web layer
-  (`ApiClient::postMultipart`/`putMultipart`); the standard AJAX form already
-  submits via `FormData`, so the file inputs ride along automatically.
+- Order mutations forward **JSON only** (`ApiClient::post` / `put`); file bytes
+  never pass through the web layer. Direct uploads use
+  `Web\OrderAttachmentUploadController` as a thin proxy to the playground upload
+  API.
 
 ### DataTables
 
@@ -353,7 +443,8 @@ per the [Localization task rule](./localization.md#task-rule-required):
 |------|----------|
 | `lang/{locale}/api/playground.php` | Playground **Users** API messages |
 | `lang/{locale}/api/playground-orders.php` | Playground **Orders** API messages + business-rule errors |
-| `lang/{locale}/web/orders.php` | Order web screens (titles, datatable columns, form + attachment labels, statuses) |
+| `lang/{locale}/api/playground-attachment-uploads.php` | Direct-upload API messages + validation errors |
+| `lang/{locale}/web/orders.php` | Order web screens (titles, datatable columns, form + direct-upload labels, statuses) |
 | `lang/{locale}/ui.php` | Shared datatable action labels + `confirm.delete_playground_order` |
 
 ---
@@ -369,14 +460,19 @@ per the [Localization task rule](./localization.md#task-rule-required):
 | `tests/Unit/Services/Playground/OrderServiceTest.php` | Order rules + total derivation; **upload-rollback compensation** (repository mocked, disk faked) |
 | `tests/Feature/Repositories/OrderRepositoryTest.php` | **Transaction rollback** — no orphaned master/details on a failed line insert; ID-preserving line sync |
 | `tests/Feature/Http/Controllers/API/PlaygroundOrderCrudTest.php` | Order full HTTP stack: atomic create, ID-preserving update, frozen completed orders, **atomic mass-delete (frozen-order batch abort, id-set validation)**, datatable mode |
-| `tests/Feature/Http/Controllers/API/PlaygroundOrderAttachmentTest.php` | Multi-file upload, type validation, keep/drop reconciliation (incl. `attachments_managed` marker), delete purges files (disk faked) |
-| `tests/Feature/Http/Controllers/Web/OrderAttachmentWebTest.php` | Web layer forwards uploads + attachment fields as multipart to the playground API |
+| `tests/Feature/Http/Controllers/API/PlaygroundOrderAttachmentTest.php` | Staged direct uploads, keep/drop reconciliation, delete purges files (disk faked) |
+| `tests/Feature/Http/Controllers/API/PlaygroundAttachmentUploadTest.php` | Upload init/complete/status/abort API lifecycle (fake S3 service) |
+| `tests/Unit/Support/Orders/DirectAttachmentUploadServiceTest.php` | Upload strategy selection + `resolveStaged` rules |
+| `tests/Feature/Http/Controllers/Web/OrderAttachmentWebTest.php` | Web layer forwards JSON order mutations + upload init proxy |
 | `tests/Feature/Http/Controllers/Web/OrderBulkDeleteWebTest.php` | Web layer forwards the selected `ids[]` to the API bulk endpoint and relays its envelope |
+| `tests/Unit/Models/AttachmentUploadTest.php` | Multipart `s3_upload_id` longer than 255 chars persists (`text` column) |
 | `tests/Feature/Models/AttachmentTest.php` | Disk-aware `Attachment::url()`: plain URL for public disks; signed-URL mint + cache, fresh-cache reuse, near-expiry refresh for S3; owning-user relation |
+| `resources/js/orders/upload-queue.test.js` | Browser upload queue scheduler (`runWithConcurrency`): empty list, concurrency ceiling, completion, error propagation |
 
 ```bash
 php artisan test --filter=Playground
 php artisan test --filter=Order
+npm run test:js    # Vitest — upload-queue scheduler
 ```
 
 ---

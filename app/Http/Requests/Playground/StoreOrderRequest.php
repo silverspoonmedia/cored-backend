@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Playground;
 
+use App\Rules\CompletedAttachmentUpload;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,6 +23,8 @@ class StoreOrderRequest extends FormRequest
      */
     public function rules(): array
     {
+        $maxFiles = (int) config('attachments.max_files_per_order');
+
         return [
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['required', 'email', 'max:255'],
@@ -38,9 +41,8 @@ class StoreOrderRequest extends FormRequest
             'details.*.discount' => ['nullable', 'numeric', 'min:0'],
             'details.*.notes' => ['nullable', 'string'],
 
-            // Multiple file upload (stored on the s3Custom disk as JSON metadata).
-            'attachments' => ['nullable', 'array', 'max:10'],
-            'attachments.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx'],
+            'staged_attachments' => ['nullable', 'array', 'max:'.$maxFiles],
+            'staged_attachments.*' => ['required', 'uuid', new CompletedAttachmentUpload],
         ];
     }
 }

@@ -4,16 +4,11 @@ namespace Tests\Feature\Http\Controllers\Web;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
- * The web order controller is a pure forwarder to /api/playground/orders. RBAC,
- * validation, totals and the master-detail + attachment writes are covered by
- * the API's own tests; here we fake the API and assert only the proxy behaviour
- * that lives in the web layer — chiefly that uploads are forwarded as multipart
- * and the attachment fields ride along untouched.
+ * Web order + upload controllers forward JSON to the playground API.
  */
 class OrderAttachmentWebTest extends TestCase
 {
@@ -29,10 +24,15 @@ class OrderAttachmentWebTest extends TestCase
                 'message' => 'ok',
                 'data' => ['id' => 'x'],
             ], 200),
+            '*/api/playground/attachments/uploads*' => Http::response([
+                'status' => 'success',
+                'message' => 'ok',
+                'data' => ['upload_id' => 'upload-1'],
+            ], 201),
         ]);
     }
 
-    public function test_update_forwards_attachment_fields_as_multipart(): void
+    public function test_update_forwards_staged_attachments_as_json(): void
     {
         $admin = $this->actingWithApiGuard(User::factory()->create());
 
@@ -40,27 +40,22 @@ class OrderAttachmentWebTest extends TestCase
             'customer_name' => 'Jane',
             'customer_email' => 'jane@example.com',
             'details' => [['product_name' => 'A', 'quantity' => 1, 'unit_price' => 10]],
-            // The form sends this marker so the API can treat an absent
-            // keep-list as "keep none" (an empty array cannot be encoded over
-            // multipart). The web layer just forwards it verbatim.
             'attachments_managed' => '1',
+            'staged_attachments' => [fake()->uuid()],
         ]);
 
         Http::assertSent(function ($request) {
-            $body = collect($request->data());
-            $field = fn (string $name) => $body->first(fn ($p) => ($p['name'] ?? null) === $name);
-
-            $contentType = implode(';', $request->headers()['Content-Type'] ?? []);
+            $headers = $request->headers();
+            $body = $request->data();
 
             return str_contains($request->url(), '/api/playground/orders')
-                && str_contains($contentType, 'multipart/form-data')
-                // method spoofing + the marker survive the multipart channel.
-                && ($field('_method')['contents'] ?? null) === 'PUT'
-                && ($field('attachments_managed')['contents'] ?? null) === '1';
+                && in_array('application/json', $headers['Content-Type'] ?? [], true)
+                && ($body['attachments_managed'] ?? null) === '1'
+                && is_array($body['staged_attachments'] ?? null);
         });
     }
 
-    public function test_store_forwards_uploaded_files_as_multipart(): void
+    public function test_store_forwards_json_without_multipart(): void
     {
         $admin = $this->actingWithApiGuard(User::factory()->create());
 
@@ -68,25 +63,34 @@ class OrderAttachmentWebTest extends TestCase
             'customer_name' => 'Jane',
             'customer_email' => 'jane@example.com',
             'details' => [['product_name' => 'A', 'quantity' => 1, 'unit_price' => 10]],
-            'attachments' => [UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')],
+            'staged_attachments' => [fake()->uuid()],
         ]);
 
         Http::assertSent(function ($request) {
-            $contentType = implode(';', $request->headers()['Content-Type'] ?? []);
-            $names = collect($request->data())->pluck('name');
+            $headers = $request->headers();
 
             return str_contains($request->url(), '/api/playground/orders')
-                && str_contains($contentType, 'multipart/form-data')
-                && $names->contains('attachments[]');
+                && in_array('application/json', $headers['Content-Type'] ?? [], true)
+                && is_array($request->data()['staged_attachments'] ?? null);
         });
+    }
+
+    public function test_upload_init_proxies_to_playground_api(): void
+    {
+        $admin = $this->actingWithApiGuard(User::factory()->create());
+
+        $admin->postJson('/orders/attachments/uploads', [
+            'name' => 'invoice.pdf',
+            'mime' => 'application/pdf',
+            'size' => 1024,
+        ])->assertCreated();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/api/playground/attachments/uploads')
+            && $request->method() === 'POST');
     }
 
     private function actingWithApiGuard(User $user): static
     {
-        // The encrypted-cookie roundtrip is not reproduced by the test harness's
-        // raw withCookie(), so authenticate the `api` guard directly — that is
-        // what AuthenticateWithJwtCookie resolves to in a real request, and what
-        // web.auth checks. Cookie→Bearer forwarding is exercised in the browser.
         return $this->actingAs($user, 'api');
     }
 }
