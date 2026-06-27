@@ -51,6 +51,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/whatsup',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Cloudflare Tunnel (and other local reverse proxies) forward X-Forwarded-*
+        // headers so route()/redirect() use the public host, not the Laragon vhost.
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         // Laravel defaults to route('login') for guests; this API has no web login route.
         // Never redirect unauthenticated API clients—return JSON 401 instead. Web guests
         // are redirected to login by the `web.auth` middleware, not here.
