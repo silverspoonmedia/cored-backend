@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Playground;
 
+use App\Rules\CompletedAttachmentUpload;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,6 +22,8 @@ class UpdateOrderRequest extends FormRequest
      */
     public function rules(): array
     {
+        $maxFiles = (int) config('attachments.max_files_per_order');
+
         return [
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['required', 'email', 'max:255'],
@@ -38,21 +41,12 @@ class UpdateOrderRequest extends FormRequest
             'details.*.discount' => ['nullable', 'numeric', 'min:0'],
             'details.*.notes' => ['nullable', 'string'],
 
-            // Newly uploaded files (appended to whatever is kept below).
-            'attachments' => ['nullable', 'array', 'max:10'],
-            'attachments.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx'],
+            'staged_attachments' => ['nullable', 'array', 'max:'.$maxFiles],
+            'staged_attachments.*' => ['required', 'uuid', new CompletedAttachmentUpload],
 
-            // Disk paths of existing attachments to keep. Omit the key entirely
-            // to keep all current files (metadata-only edit); send an empty
-            // array to drop them all.
             'keep_attachments' => ['sometimes', 'nullable', 'array'],
             'keep_attachments.*' => ['string'],
 
-            // Marker for clients that manage the attachment set over multipart
-            // (where an empty `keep_attachments` array cannot be encoded). When
-            // truthy and `keep_attachments` is absent, the service treats it as
-            // "keep none" instead of "keep all". A plain scalar, so it survives
-            // multipart/form-data. See OrderService::update().
             'attachments_managed' => ['sometimes', 'boolean'],
         ];
     }

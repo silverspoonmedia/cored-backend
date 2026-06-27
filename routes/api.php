@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\ApprovalController;
 use App\Http\Controllers\API\ApprovalWorkflowAdminController;
+use App\Http\Controllers\API\PlaygroundAttachmentUploadController;
 use App\Http\Controllers\API\PlaygroundController;
 use App\Http\Controllers\API\PlaygroundOrderController;
 use Illuminate\Support\Facades\Route;
@@ -35,22 +36,30 @@ Route::middleware('auth:api')->prefix('v1/admin/approval-workflows')->group(func
 // Playground routes: demo CRUD surface for testing. Disabled in production for
 // security (no authentication/authorization). See SECURITY_AUDIT.md FINDING-001.
 if (! app()->environment('production')) {
-Route::prefix('playground')->group(function () {
-    // Namespaced route names (`playground.users.*`) so the demo surface does not
-    // squat the generic `users.*` names used by the web admin UI.
-    Route::apiResource('users', PlaygroundController::class)
-        ->except(['create', 'edit'])
-        ->names('playground.users');
+    Route::prefix('playground')->group(function () {
+        // Namespaced route names (`playground.users.*`) so the demo surface does not
+        // squat the generic `users.*` names used by the web admin UI.
+        Route::apiResource('users', PlaygroundController::class)
+            ->except(['create', 'edit'])
+            ->names('playground.users');
 
-    // Mass-delete (declared before the resource so the literal segment is not
-    // captured by the `{order}` wildcard). Ids ride in the request body.
-    Route::delete('orders/bulk', [PlaygroundOrderController::class, 'bulkDestroy'])
-        ->name('playground.orders.bulk-destroy');
+        // Mass-delete (declared before the resource so the literal segment is not
+        // captured by the `{order}` wildcard). Ids ride in the request body.
+        Route::delete('orders/bulk', [PlaygroundOrderController::class, 'bulkDestroy'])
+            ->name('playground.orders.bulk-destroy');
 
-    // Master-detail reference CRUD (Order + OrderDetail). Standard five-action
-    // resource; the atomic two-table write lives in OrderService/OrderRepository.
-    Route::apiResource('orders', PlaygroundOrderController::class)
-        ->except(['create', 'edit'])
-        ->names('playground.orders');
-});
+        Route::prefix('attachments/uploads')->name('playground.attachments.uploads.')->group(function () {
+            Route::post('/', [PlaygroundAttachmentUploadController::class, 'store'])->name('store');
+            Route::get('{upload}', [PlaygroundAttachmentUploadController::class, 'show'])->name('show')->whereUuid('upload');
+            Route::post('{upload}/parts', [PlaygroundAttachmentUploadController::class, 'signParts'])->name('sign-parts')->whereUuid('upload');
+            Route::post('{upload}/complete', [PlaygroundAttachmentUploadController::class, 'complete'])->name('complete')->whereUuid('upload');
+            Route::delete('{upload}', [PlaygroundAttachmentUploadController::class, 'destroy'])->name('destroy')->whereUuid('upload');
+        });
+
+        // Master-detail reference CRUD (Order + OrderDetail). Standard five-action
+        // resource; the atomic two-table write lives in OrderService/OrderRepository.
+        Route::apiResource('orders', PlaygroundOrderController::class)
+            ->except(['create', 'edit'])
+            ->names('playground.orders');
+    });
 }

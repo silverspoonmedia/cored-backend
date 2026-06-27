@@ -13,6 +13,10 @@
 @php($order = $order ?? [])
 @php($details = old('details', data_get($order, 'details', [[]])))
 @php($statuses = ['pending', 'processing', 'completed', 'cancelled'])
+@php($maxBytes = (int) config('attachments.max_file_size_bytes'))
+@php($attachmentMaxSizeLabel = $maxBytes >= 1073741824
+    ? round($maxBytes / 1073741824, 1).' GB'
+    : round($maxBytes / 1048576, 0).' MB')
 
 <x-adminlte4::form.ajax :action="$action" :method="$method">
     <h5 class="mb-3">{{ __('web/orders.form.customer_section') }}</h5>
@@ -194,12 +198,41 @@
         </div>
     @endif
 
-    <div class="mb-3" data-form-field="attachments">
-        <label for="attachments" class="form-label">{{ __('web/orders.form.add_attachments') }}</label>
-        <input type="file" name="attachments[]" id="attachments" class="form-control" multiple>
-        <small class="form-text text-muted">{{ __('web/orders.form.attachments_hint') }}</small>
-        <x-adminlte4::form.error name="attachments" />
-        <x-adminlte4::form.error name="attachments.0" />
+    <div
+        class="mb-3"
+        data-form-field="staged_attachments"
+        data-direct-upload
+        data-init-url="{{ route('orders.attachments.uploads.store') }}"
+        data-status-url="{{ route('orders.attachments.uploads.show', ['upload' => '__UPLOAD__']) }}"
+        data-complete-url="{{ route('orders.attachments.uploads.complete', ['upload' => '__UPLOAD__']) }}"
+        data-abort-url="{{ route('orders.attachments.uploads.destroy', ['upload' => '__UPLOAD__']) }}"
+        data-sign-parts-url="{{ route('orders.attachments.uploads.sign-parts', ['upload' => '__UPLOAD__']) }}"
+        data-max-files="{{ (int) config('attachments.max_files_per_order') }}"
+        data-messages="{{ json_encode([
+            'uploading' => __('web/orders.form.upload_uploading'),
+            'done' => __('web/orders.form.upload_done'),
+            'uploadFailed' => __('web/orders.form.upload_failed'),
+            'tooManyFiles' => __('web/orders.form.upload_too_many'),
+            'waitForUploads' => __('web/orders.form.upload_wait'),
+            'remove' => __('web/orders.form.upload_remove'),
+        ]) }}"
+    >
+        <label class="form-label">{{ __('web/orders.form.add_attachments') }}</label>
+        <input
+            type="file"
+            class="form-control"
+            data-direct-upload-input
+            multiple
+            accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+        >
+        <small class="form-text text-muted">{{ __('web/orders.form.attachments_hint', [
+            'count' => (int) config('attachments.max_files_per_order'),
+            'size' => $attachmentMaxSizeLabel ?? '5 GB',
+        ]) }}</small>
+        <div class="mt-2" data-direct-upload-queue></div>
+        <div class="mt-2" data-direct-upload-staged></div>
+        <x-adminlte4::form.error name="staged_attachments" />
+        <x-adminlte4::form.error name="staged_attachments.0" />
     </div>
 
     <div class="d-flex gap-2 mt-3">
@@ -253,3 +286,5 @@
         }
     })();
 </script>
+
+@vite('resources/js/orders/direct-upload.js')

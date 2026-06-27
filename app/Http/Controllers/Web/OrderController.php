@@ -73,11 +73,7 @@ class OrderController extends Controller
 
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->postMultipart(
-            'orders',
-            $this->payload($request),
-            $request->file('attachments', []),
-        );
+        $response = $this->api()->post('orders', $this->payload($request));
 
         return $this->respondFromApi(
             $request,
@@ -115,11 +111,7 @@ class OrderController extends Controller
 
     public function update(Request $request, string $order): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->putMultipart(
-            "orders/{$order}",
-            $this->payload($request),
-            $request->file('attachments', []),
-        );
+        $response = $this->api()->put("orders/{$order}", $this->payload($request));
 
         return $this->respondFromApi(
             $request,
@@ -162,18 +154,15 @@ class OrderController extends Controller
     }
 
     /**
-     * Non-file form fields to forward to the API (CSRF/method spoofing and the
-     * uploaded files stripped — files are attached separately as multipart).
-     * The `details`, `keep_attachments` and `attachments_managed` fields ride
-     * along as-is; the API resolves the keep/drop semantics (an empty keep-list
-     * cannot survive multipart, so the form sends `attachments_managed=1` and
-     * the API treats an absent keep-list as "keep none").
+     * Non-file form fields to forward to the API as JSON. The `details`,
+     * `keep_attachments`, `staged_attachments`, and `attachments_managed` fields
+     * ride along as-is; the API resolves attachment semantics.
      *
      * @return array<string, mixed>
      */
     private function payload(Request $request): array
     {
-        return $request->except(['_token', '_method', 'attachments']);
+        return $request->except(['_token', '_method']);
     }
 
     /**

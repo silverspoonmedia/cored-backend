@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/notifications/bell.js',
+                'resources/js/orders/direct-upload.js',
             ],
             refresh: true,
             fonts: [

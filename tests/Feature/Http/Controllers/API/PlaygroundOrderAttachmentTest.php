@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Http\Controllers\API;
 
+use App\Models\AttachmentUpload;
 use App\Models\Order;
 use App\Models\OrderDetail;
+use App\Support\Orders\DirectAttachmentUploadService;
 use App\Support\Orders\OrderAttachmentStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Fakes\FakeDirectAttachmentUploadService;
 use Tests\TestCase;
 
 class PlaygroundOrderAttachmentTest extends TestCase
@@ -19,6 +21,10 @@ class PlaygroundOrderAttachmentTest extends TestCase
         parent::setUp();
 
         Storage::fake(OrderAttachmentStorage::DISK);
+        $this->app->instance(
+            DirectAttachmentUploadService::class,
+            new FakeDirectAttachmentUploadService(new OrderAttachmentStorage),
+        );
     }
 
     /**
@@ -37,13 +43,21 @@ class PlaygroundOrderAttachmentTest extends TestCase
         ], $overrides);
     }
 
-    public function test_store_uploads_files_and_persists_metadata(): void
+    private function stageUpload(string $name = 'invoice.pdf', int $size = 1024): string
     {
+        $service = app(DirectAttachmentUploadService::class);
+        $init = $service->initiate($name, 'application/pdf', $size);
+
+        return $service->complete($init['upload']->id)['upload']->id;
+    }
+
+    public function test_store_persists_staged_attachment_metadata(): void
+    {
+        $first = $this->stageUpload('invoice.pdf');
+        $second = $this->stageUpload('photo.png', 2048);
+
         $response = $this->postJson('/api/playground/orders', $this->basePayload([
-            'attachments' => [
-                UploadedFile::fake()->create('invoice.pdf', 120, 'application/pdf'),
-                UploadedFile::fake()->image('photo.png'),
-            ],
+            'staged_attachments' => [$first, $second],
         ]));
 
         $response->assertCreated()
@@ -51,35 +65,37 @@ class PlaygroundOrderAttachmentTest extends TestCase
             ->assertJsonPath('data.attachment.0.name', 'invoice.pdf');
 
         $disk = Storage::disk(OrderAttachmentStorage::DISK);
-        $this->assertCount(2, $disk->allFiles());
-
-        // Each stored path actually exists on the disk + carries a url.
         $paths = collect($response->json('data.attachment'))->pluck('path');
+
         foreach ($paths as $path) {
             $disk->assertExists($path);
         }
+
         $this->assertNotNull($response->json('data.attachment.0.url'));
     }
 
-    public function test_store_rejects_disallowed_file_type(): void
+    public function test_store_rejects_incomplete_staged_upload(): void
     {
+        $pending = AttachmentUpload::factory()->create([
+            'status' => AttachmentUpload::STATUS_PENDING,
+        ]);
+
         $response = $this->postJson('/api/playground/orders', $this->basePayload([
-            'attachments' => [UploadedFile::fake()->create('malware.exe', 10, 'application/octet-stream')],
+            'staged_attachments' => [$pending->id],
         ]));
 
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['attachments.0']);
-
-        $this->assertEmpty(Storage::disk(OrderAttachmentStorage::DISK)->allFiles());
+            ->assertJsonValidationErrors(['staged_attachments.0']);
     }
 
     public function test_update_keeps_selected_files_and_removes_the_rest(): void
     {
+        $keepId = $this->stageUpload('keep.pdf');
+        $dropId = $this->stageUpload('drop.pdf');
+        $newId = $this->stageUpload('new.pdf');
+
         $created = $this->postJson('/api/playground/orders', $this->basePayload([
-            'attachments' => [
-                UploadedFile::fake()->create('keep.pdf', 50, 'application/pdf'),
-                UploadedFile::fake()->create('drop.pdf', 50, 'application/pdf'),
-            ],
+            'staged_attachments' => [$keepId, $dropId],
         ]))->json('data');
 
         $keepPath = collect($created['attachment'])->firstWhere('name', 'keep.pdf')['path'];
@@ -91,13 +107,12 @@ class PlaygroundOrderAttachmentTest extends TestCase
 
         $response = $this->putJson('/api/playground/orders/'.$created['id'], $this->basePayload([
             'keep_attachments' => [$keepPath],
-            'attachments' => [UploadedFile::fake()->create('new.pdf', 50, 'application/pdf')],
+            'staged_attachments' => [$newId],
         ]));
 
         $response->assertOk()
             ->assertJsonCount(2, 'data.attachment');
 
-        // Kept + newly uploaded survive; the dropped file is deleted from disk.
         $disk->assertExists($keepPath);
         $disk->assertMissing($dropPath);
 
@@ -109,11 +124,12 @@ class PlaygroundOrderAttachmentTest extends TestCase
 
     public function test_update_without_keep_list_preserves_existing_files(): void
     {
+        $uploadId = $this->stageUpload('keep.pdf');
+
         $created = $this->postJson('/api/playground/orders', $this->basePayload([
-            'attachments' => [UploadedFile::fake()->create('keep.pdf', 50, 'application/pdf')],
+            'staged_attachments' => [$uploadId],
         ]))->json('data');
 
-        // No `keep_attachments` key, no new files → metadata-only edit keeps all.
         $response = $this->putJson('/api/playground/orders/'.$created['id'], $this->basePayload([
             'customer_name' => 'Renamed',
         ]));
@@ -128,8 +144,10 @@ class PlaygroundOrderAttachmentTest extends TestCase
 
     public function test_update_dropping_all_files_with_empty_keep_list(): void
     {
+        $uploadId = $this->stageUpload('gone.pdf');
+
         $created = $this->postJson('/api/playground/orders', $this->basePayload([
-            'attachments' => [UploadedFile::fake()->create('gone.pdf', 50, 'application/pdf')],
+            'staged_attachments' => [$uploadId],
         ]))->json('data');
         $path = $created['attachment'][0]['path'];
 
@@ -145,16 +163,15 @@ class PlaygroundOrderAttachmentTest extends TestCase
 
     public function test_update_dropping_all_files_via_managed_marker(): void
     {
-        // Multipart cannot encode an empty `keep_attachments` array, so clients
-        // signal "I manage attachments" with attachments_managed=1; an absent
-        // keep-list then means "keep none", not "keep all".
+        $uploadId = $this->stageUpload('gone.pdf');
+
         $created = $this->postJson('/api/playground/orders', $this->basePayload([
-            'attachments' => [UploadedFile::fake()->create('gone.pdf', 50, 'application/pdf')],
+            'staged_attachments' => [$uploadId],
         ]))->json('data');
         $path = $created['attachment'][0]['path'];
 
         $response = $this->putJson('/api/playground/orders/'.$created['id'], $this->basePayload([
-            'attachments_managed' => '1',
+            'attachments_managed' => true,
         ]));
 
         $response->assertOk()
@@ -165,19 +182,18 @@ class PlaygroundOrderAttachmentTest extends TestCase
 
     public function test_update_managed_marker_keeps_listed_files(): void
     {
+        $keepId = $this->stageUpload('keep.pdf');
+        $dropId = $this->stageUpload('drop.pdf');
+
         $created = $this->postJson('/api/playground/orders', $this->basePayload([
-            'attachments' => [
-                UploadedFile::fake()->create('keep.pdf', 50, 'application/pdf'),
-                UploadedFile::fake()->create('drop.pdf', 50, 'application/pdf'),
-            ],
+            'staged_attachments' => [$keepId, $dropId],
         ]))->json('data');
 
         $keepPath = collect($created['attachment'])->firstWhere('name', 'keep.pdf')['path'];
         $dropPath = collect($created['attachment'])->firstWhere('name', 'drop.pdf')['path'];
 
-        // Marker present AND a keep-list present: the explicit list wins.
         $response = $this->putJson('/api/playground/orders/'.$created['id'], $this->basePayload([
-            'attachments_managed' => '1',
+            'attachments_managed' => true,
             'keep_attachments' => [$keepPath],
         ]));
 

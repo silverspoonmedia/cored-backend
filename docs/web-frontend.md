@@ -79,7 +79,7 @@ These pieces keep every web controller a thin, uniform forwarder:
 
 | Piece | File | Role |
 |-------|------|------|
-| `ApiClient` | `app/Support/Api/ApiClient.php` | `Http` wrapper: targets `{current host}/api/v1`, sets `Accept: application/json`, and forwards the JWT from the `auth_token` cookie as `Bearer`. Exposes `get/post/put/delete` plus `postMultipart`/`putMultipart` for file uploads (flattens nested fields and attaches `attachments[]`; `putMultipart` uses `_method=PUT` spoofing). `withPrefix('api/playground')` returns a clone targeting the global playground surface (used by the order master-detail screens). |
+| `ApiClient` | `app/Support/Api/ApiClient.php` | `Http` wrapper: targets `{current host}/api/v1`, sets `Accept: application/json`, and forwards the JWT from the `auth_token` cookie as `Bearer`. Exposes `get/post/put/delete` plus `postMultipart`/`putMultipart` (legacy helpers — order attachments no longer use them). `withPrefix('api/playground')` returns a clone targeting the global playground surface (orders + direct-upload orchestration). |
 | `ConsumesApi` (trait) | `app/Http/Controllers/Web/Concerns/ConsumesApi.php` | `respondFromApi($request, …)` maps the JSON envelope for AJAX and full-page flows — see [AJAX error handling](#ajax-error-handling-contract) below. Pass `stayOnPageOnSuccess: true` when the user should remain on the same screen (edit save, change password, forgot-password link, resend verification). Default `false` for create/delete/login/logout. |
 | `MonolithApi` (client) | `adminlte4/components/partials/api-response-handler` | Shared `window.MonolithApi.handleResponse()` for all `fetch` call sites (AJAX forms, DataTable row actions, bulk delete). Loaded globally from `assets-scripts.blade.php`. |
 | AJAX forms | `x-adminlte4::form.ajax`, `x-adminlte4::form.submit`, `x-adminlte4::form.error`, `adminlte4/components/partials/ajax-form` | **All** Blade forms use AJAX (`form.ajax`). Submits via `fetch` + `Accept: application/json`; inline validation errors, no full-page reload on 422. On `422`, dispatches `document` event `ajax-form:invalid` (e.g. hCaptcha reset). Non-input fields mark errors via `data-field-invalid-class` on `[data-form-field]`. Controllers must use `respondFromApi()` to return `JsonResponse` for AJAX, falling back to `RedirectResponse` for non-JSON requests. |
@@ -162,7 +162,11 @@ All web routes run through the `web` group (which includes `AuthenticateWithJwtC
 | DELETE | `/users/{user}` | `users.destroy` | `web.auth` | `DELETE /users/{id}` |
 | GET | `/orders` | `orders.index` | `web.auth` | Blade shell for the order DataTable |
 | GET | `/orders/datatable` | `orders.datatable` | `web.auth` | `GET /playground/orders?display_mode=datatable` (proxied) |
-| GET/POST | `/orders/create`, `/orders` | `orders.create` / `orders.store` | `web.auth` | `POST /playground/orders` (master-detail payload) |
+| GET/POST | `/orders/create`, `/orders` | `orders.create` / `orders.store` | `web.auth` | `POST /playground/orders` (JSON; `staged_attachments[]`) |
+| POST | `/orders/attachments/uploads` | `orders.attachments.uploads.store` | `web.auth` | `POST /playground/attachments/uploads` |
+| GET | `/orders/attachments/uploads/{upload}` | `orders.attachments.uploads.show` | `web.auth` | `GET /playground/attachments/uploads/{id}` |
+| POST | `/orders/attachments/uploads/{upload}/complete` | `orders.attachments.uploads.complete` | `web.auth` | `POST /playground/attachments/uploads/{id}/complete` |
+| DELETE | `/orders/attachments/uploads/{upload}` | `orders.attachments.uploads.destroy` | `web.auth` | `DELETE /playground/attachments/uploads/{id}` |
 | GET | `/orders/{order}` | `orders.show` | `web.auth` | `GET /playground/orders/{id}` (master + lines) |
 | GET/PUT | `/orders/{order}/edit`, `/orders/{order}` | `orders.edit` / `orders.update` | `web.auth` | `GET`/`PUT /playground/orders/{id}` |
 | DELETE | `/orders/{order}` | `orders.destroy` | `web.auth` | `DELETE /playground/orders/{id}` |
