@@ -342,18 +342,41 @@ service orders work so neither side leaks:
   commit.
 - **Delete:** remove DB rows first, then delete files from disk.
 
-The web Blade form uses `resources/js/orders/direct-upload.js` (Vite) to run the
-upload flow against proxied web routes (`/orders/attachments/uploads/*`), then
-submits `staged_attachments[]` hidden fields with the order JSON payload.
+#### Web upload widget (manual queue)
 
-**Direct-upload UX:** picking files adds rows in a **Pending** state without
-starting storage I/O. The user clicks **Start upload** to begin; the widget
-schedules work through `resources/js/orders/upload-queue.js` (`runWithConcurrency`)
-with a ceiling of `max_concurrent_uploads` (default 2). Extra files show
-**Waiting…** until a slot frees; each file keeps its own progress bar while
-**Uploading…**. Pending rows can be removed before start (no S3 session yet).
-Form submit is blocked only while a batch is running or any file is actively
-uploading — unstaged pending files do not block save.
+The Blade form (`resources/views/adminlte4/orders/_form.blade.php`) mounts
+`[data-direct-upload]` and loads `resources/js/orders/direct-upload.js` via Vite.
+Upload orchestration still goes through proxied web routes
+(`/orders/attachments/uploads/*` → playground API); completed sessions populate
+`staged_attachments[]` hidden inputs submitted with the order JSON payload.
+
+**Why manual start:** file selection no longer triggers immediate storage I/O.
+The user reviews the queue, then clicks **Start upload**. This avoids surprise
+bandwidth use and gives a clear checkpoint before presigned URLs are minted.
+
+**Concurrency cap:** `max_concurrent_uploads` in `config/attachments.php`
+(env `ATTACHMENT_UPLOAD_MAX_CONCURRENT`, default **2**) limits how many files
+upload to object storage at once. The Blade template exposes this as
+`data-max-concurrent` on `[data-direct-upload]`; a translated hint under the
+file input explains the limit.
+
+| Client state | When | Storage I/O |
+|--------------|------|-------------|
+| **Pending** | File picked, batch not started | None — row can be removed (×) |
+| **Waiting…** | Batch started, all concurrency slots busy | None yet |
+| **Uploading…** | Worker slot acquired | Init → PUT part(s) → complete |
+| **Ready** | `complete` succeeded | Staged hidden input added |
+| **Upload failed** | Any step threw | Row marked error; not staged |
+
+Scheduler: `resources/js/orders/upload-queue.js` exports `runWithConcurrency()`.
+`direct-upload.js` passes each queued item to the existing per-file upload worker.
+Unit tests: `npm run test:js` (`resources/js/orders/upload-queue.test.js`).
+
+**Form submit guard:** blocked while a batch is draining or any file is actively
+**Uploading…**. Unstarted **Pending** files are *not* staged and do *not* block
+save (same as never having picked them).
+
+See also [web frontend — order direct-upload widget](./web-frontend.md#order-direct-upload-widget).
 
 ### Web (Blade) screens
 
@@ -444,10 +467,12 @@ per the [Localization task rule](./localization.md#task-rule-required):
 | `tests/Feature/Http/Controllers/Web/OrderBulkDeleteWebTest.php` | Web layer forwards the selected `ids[]` to the API bulk endpoint and relays its envelope |
 | `tests/Unit/Models/AttachmentUploadTest.php` | Multipart `s3_upload_id` longer than 255 chars persists (`text` column) |
 | `tests/Feature/Models/AttachmentTest.php` | Disk-aware `Attachment::url()`: plain URL for public disks; signed-URL mint + cache, fresh-cache reuse, near-expiry refresh for S3; owning-user relation |
+| `resources/js/orders/upload-queue.test.js` | Browser upload queue scheduler (`runWithConcurrency`): empty list, concurrency ceiling, completion, error propagation |
 
 ```bash
 php artisan test --filter=Playground
 php artisan test --filter=Order
+npm run test:js    # Vitest — upload-queue scheduler
 ```
 
 ---

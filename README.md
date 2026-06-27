@@ -235,7 +235,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 |----------|-------------|
 | [API routing](docs/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
 | [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example, and the master-detail aggregate (Order + OrderDetail) with transactional writes |
-| [Playground (reference surface)](docs/playground.md) | Non-production `/api/playground/*` demos: simple CRUD (Users), master-detail Orders with **browser-direct chunked S3 uploads**, and transactional writes |
+| [Playground (reference surface)](docs/playground.md) | Non-production `/api/playground/*` demos: simple CRUD (Users), master-detail Orders with **browser-direct chunked S3 uploads** (manual Start queue + configurable concurrency), and transactional writes |
 | [Approval matrix engine](docs/approval-matrix-engine.md) | Generic, code-free configurable approval workflow engine with conditional steps, parallel approver modes, SLA tracking, and delegation management - integrated with Order document type |
 | [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 5 / jQuery 3.7 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
@@ -244,7 +244,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [Activity notifications — implementation guide](docs/notifications-implementation-guide.md) | **AI-agent playbook:** step-by-step checklists to add types, wire dispatch, change audience, translations, tests, and DataTable reload (hybrid enum + dynamic audience) |
 | [Activity log (audit trail)](docs/activity-log.md) | Spatie laravel-activitylog v5: immutable mutation audit (`activity_log`), automatic model logging, role-assignment events, API viewer + Blade screens |
 | [Authentication activity assessment](docs/auth-activity-assessment.md) | Auth event coverage matrix: login/logout/2FA/password → activity log vs file log, gaps and security notes |
-| [Web frontend (Blade + AdminLTE 4)](docs/web-frontend.md) | Server-rendered admin UI that **consumes the versioned API** (web = API client); JWT-in-HttpOnly-cookie auth forwarded as Bearer, reusable Blade components, `MonolithApi` AJAX error handling, user & menu management screens |
+| [Web frontend (Blade + AdminLTE 4)](docs/web-frontend.md) | Server-rendered admin UI that **consumes the versioned API** (web = API client); JWT-in-HttpOnly-cookie auth forwarded as Bearer, reusable Blade components, `MonolithApi` AJAX error handling, order direct-upload widget, user & menu management screens |
 
 ### Authentication and authorization
 
@@ -288,6 +288,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - Auth sessions and password events in activity log → [auth-activity-assessment.md](docs/auth-activity-assessment.md)
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
 - Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi`/`MonolithApi` → [web-frontend.md](docs/web-frontend.md)
+- Order attachment direct-upload widget (manual queue, concurrency env) → [web-frontend.md — order direct-upload](docs/web-frontend.md#order-direct-upload-widget), [playground.md — web upload widget](docs/playground.md#web-upload-widget-manual-queue)
 - AJAX / DataTable error UX (auth expired, CSRF, proxy failures) → [web-frontend.md — AJAX error handling](docs/web-frontend.md#ajax-error-handling-contract)
 - hCaptcha on public auth (API validation + Blade widget) → [jwt-authentication.md](docs/jwt-authentication.md#hcaptcha-defense-in-depth), [web-frontend.md](docs/web-frontend.md#hcaptcha-on-auth-forms)
 - Multi-language (API, Blade, DB) → [localization.md](docs/localization.md)
@@ -305,6 +306,8 @@ php artisan lang:update          # Refresh laravel-lang package files (also runs
 php artisan locale:add <locale>  # Onboard a new locale (managed files + config + app-owned scaffolding)
 php artisan pint                 # Format PHP code
 php artisan test                 # PHPUnit test suite
+npm run test:js                  # Vitest — JS unit tests (upload-queue scheduler)
+npm run build                    # Vite production bundle (direct-upload.js, bell.js, app.css)
 ```
 
 ---

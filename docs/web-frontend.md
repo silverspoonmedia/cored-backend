@@ -218,6 +218,28 @@ broadcast auth endpoint) is built server-side by `NotificationBellComposer` and
 passed as `data-notification-config` on `#notification-bell`. Public Pusher fields
 also come from `VITE_PUSHER_*` in `.env` — see [notifications.md](./notifications.md#realtime-vs-polling).
 
+### Order direct-upload widget
+
+Order create/edit (`orders/_form.blade.php`) includes a **browser-direct**
+attachment widget for the playground master-detail demo. It is the only
+page-level Vite entry besides the notification bell.
+
+| Piece | Location | Role |
+|-------|----------|------|
+| Blade mount | `[data-direct-upload]` in `orders/_form.blade.php` | Routes, limits, i18n messages (`data-messages`), `data-max-concurrent` |
+| Upload UI | `resources/js/orders/direct-upload.js` | Pending queue, Start button, per-file progress, staged hidden inputs |
+| Scheduler | `resources/js/orders/upload-queue.js` | `runWithConcurrency()` — caps parallel storage PUTs |
+| Config | `config/attachments.php` → `max_concurrent_uploads` | Env `ATTACHMENT_UPLOAD_MAX_CONCURRENT` (default 2) |
+| i18n | `lang/{locale}/web/orders.php` → `form.upload_*` | Pending / Waiting / Start upload / concurrency hint |
+
+**Operator tuning:** raise `ATTACHMENT_UPLOAD_MAX_CONCURRENT` in `.env` on fast
+links; lower it on slow or metered connections. No code deploy required — Blade
+reads `config()` at render time (Octane-safe).
+
+Full upload API, reconciliation, and transaction-safety detail →
+[playground.md — attachments](./playground.md#attachments-direct-s3-upload) and
+[playground.md — web upload widget](./playground.md#web-upload-widget-manual-queue).
+
 Views render the **JSON arrays** returned by the API (e.g. `$profile`, `$menu['name']` for display, `$menu['name_translations']` for edit forms), not Eloquent models. Static UI strings use `__('…')` from `lang/{locale}/web/*` and `lang/{locale}/ui.php` — never hardcode copy in Blade.
 
 The 2FA management screen is reachable from the dashboard quick access and the user dropdown (`menu.two_factor`). Setup shows the base64 SVG QR image returned by the API, with the `otpauth://` setup URL and manual secret as fallbacks; login challenges redirect guests to `/two-factor-challenge` before any JWT cookie is issued.
@@ -262,7 +284,7 @@ resources/views/adminlte4/
 ├── profile/password.blade.php
 ├── dashboard.blade.php             ← consumes GET /auth/me payload
 ├── users/                          ← index (datatable shell), create, edit, _form (shared)
-├── orders/                         ← master-detail demo: index (datatable), create, edit, show, _form (dynamic line rows)
+├── orders/                         ← master-detail demo: index (datatable), create, edit, show, _form (dynamic line rows + direct-upload widget)
 ├── menus/                          ← index, trashed, create, edit, _form (shared)
 └── notifications/                  ← index (full list); navbar bell lives in components/partials/navbar
 ```
