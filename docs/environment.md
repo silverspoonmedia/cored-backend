@@ -208,8 +208,21 @@ Production platforms (Laravel Forge, Vapor, Kubernetes, CI/CD) can inject env va
 - `SESSION_SECURE_COOKIE=true` and `SESSION_ENCRYPT=true`
 - `JWT_SECRET` generated (`env:install` does this on first run)
 - `HCAPTCHA_ENABLED=true` with valid keys
+- `GATEWAY_ENFORCE=true` with a strong `GATEWAY_SECRET` shared with [monolith-gateway](../../monolith-gateway) (API must not be reachable without the gateway)
 - Verify playground is off: `APP_ENV=production php artisan route:list --path=api/playground` (no routes)
 - See also [README Security checklist](../README.md#security)
+
+## Public gateway perimeter
+
+When the versioned API is exposed only through **monolith-gateway**, enable perimeter checks on Monolith:
+
+| Variable | Purpose |
+|----------|---------|
+| `GATEWAY_ENFORCE` | `true` in staging/production — reject API calls without a valid gateway secret or allowlisted IP |
+| `GATEWAY_SECRET` | Shared secret; must match `MONOLITH_GATEWAY_SECRET` on the gateway |
+| `GATEWAY_ALLOWED_IPS` | Optional comma-separated IPs (e.g. gateway server) that may call the API without the header |
+
+Local development keeps `GATEWAY_ENFORCE=false` so Blade and PHPUnit work without the gateway.
 
 ## Keeping templates in sync
 
