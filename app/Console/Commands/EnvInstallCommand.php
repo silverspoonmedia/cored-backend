@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Support\EnvironmentKeyWriter;
 use Illuminate\Console\Command;
-use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Console\Attribute\AsCommand;
 
@@ -29,6 +29,12 @@ class EnvInstallCommand extends Command
         {--force : Overwrite an existing .env file}';
 
     protected $description = 'Create .env from a profile template (local, staging, or production) and generate secrets';
+
+    public function __construct(
+        private readonly EnvironmentKeyWriter $keyWriter,
+    ) {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -58,7 +64,12 @@ class EnvInstallCommand extends Command
         File::copy($templatePath, $envPath);
         $this->info('Copied '.self::PROFILES[$profile].' → .env');
 
-        $this->generateAppKey($envPath);
+        try {
+            $this->keyWriter->writeAppKey($envPath);
+            $this->info('Generated APP_KEY.');
+        } catch (\RuntimeException $exception) {
+            $this->warn($exception->getMessage());
+        }
 
         if ($this->jwtSecretIsEmpty($envPath)) {
             $this->callSilent('jwt:secret', ['--force' => true]);
@@ -73,28 +84,6 @@ class EnvInstallCommand extends Command
         $this->line('  • See docs/environment.md for the full checklist.');
 
         return self::SUCCESS;
-    }
-
-    private function generateAppKey(string $envPath): void
-    {
-        $key = 'base64:'.base64_encode(Encrypter::generateKey(config('app.cipher')));
-
-        $contents = File::get($envPath);
-        $updated = preg_replace(
-            '/^APP_KEY=.*$/m',
-            'APP_KEY="'.$key.'"',
-            $contents,
-            count: $count,
-        );
-
-        if ($count === 0) {
-            $this->warn('APP_KEY line not found in .env — run php artisan key:generate manually.');
-
-            return;
-        }
-
-        File::put($envPath, $updated);
-        $this->info('Generated APP_KEY.');
     }
 
     private function jwtSecretIsEmpty(string $envPath): bool

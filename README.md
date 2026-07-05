@@ -285,6 +285,8 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 
 ```bash
 php artisan env:install local    # Scaffold .env from local profile (see docs/environment.md)
+php artisan key:generate         # Generate APP_KEY when empty
+php artisan key:generate --force # Rotate APP_KEY; retired key moves to APP_PREVIOUS_KEYS
 php artisan migrate              # Apply migrations
 php artisan db:seed              # Roles, permissions, sample admin
 php artisan jwt:secret           # Generate JWT_SECRET (once per environment)

@@ -40,6 +40,7 @@ class EnvInstallCommandTest extends TestCase
         $this->assertStringContainsString('APP_ENV="local"', $env);
         $this->assertStringContainsString('APP_DEBUG=true', $env);
         $this->assertMatchesRegularExpression('/^APP_KEY="base64:.+"/m', $env);
+        $this->assertStringContainsString('APP_PREVIOUS_KEYS=""', $env);
         $this->assertMatchesRegularExpression('/^JWT_SECRET=.+$/m', $env);
         $this->assertDoesNotMatchRegularExpression('/^JWT_SECRET=""$/m', $env);
     }
