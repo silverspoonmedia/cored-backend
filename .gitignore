@@ -2,6 +2,7 @@
 .DS_Store
 .env
 .env.backup
+.env.profile
 .env.local
 .env.staging
 .env.production

@@ -9,10 +9,11 @@ Laravel loads **one** `.env` file at boot. It does not merge `.env.local` + `.en
 ```
 Committed (in git)                    Gitignored (per machine)
 ─────────────────────                 ──────────────────────────
-.env.example          master catalog  .env
-.env.local.example    local template
-.env.staging.example  staging template
-.env.production.example production template
+.env.example          master catalog  .env              (active — Laravel reads this)
+.env.local.example    local template  .env.profile      (active profile name)
+.env.staging.example  staging         .env.local        (saved local snapshot)
+.env.production.example production    .env.staging      (saved staging snapshot)
+                                      .env.production   (saved production snapshot)
 ```
 
 | File | Purpose |
@@ -21,7 +22,9 @@ Committed (in git)                    Gitignored (per machine)
 | `.env.local.example` | Local development defaults (debug on, polling notifications, `MAIL_MAILER=log`, database cache/queue). |
 | `.env.staging.example` | Pre-production mirror: production-like security, playground **still enabled** (`APP_ENV !== production`). |
 | `.env.production.example` | Hardened production defaults; playground routes disabled. |
-| `.env` | Active secrets on your machine or server. Never commit. |
+| `.env` | **Active** environment file Laravel loads at runtime. Never commit. |
+| `.env.profile` | One-line marker (`local`, `staging`, or `production`) for the active profile. Never commit. |
+| `.env.local` / `.env.staging` / `.env.production` | **Saved snapshots** per profile on your machine. Never commit. |
 
 ## Quick start (local)
 
@@ -30,7 +33,7 @@ composer install
 php artisan env:install local
 ```
 
-This copies `.env.local.example` → `.env`, generates `APP_KEY`, and generates `JWT_SECRET` when empty.
+This copies `.env.local.example` → `.env`, seeds `.env.local`, sets `.env.profile`, and generates `APP_KEY` and `JWT_SECRET` when empty.
 
 Overwrite an existing `.env`:
 
@@ -104,6 +107,56 @@ Show a key without writing:
 ```bash
 php artisan key:generate --show
 ```
+
+## Switching profiles (local dev)
+
+Laravel only reads `.env` — it does not know about "local" vs "staging". Monolith keeps **separate saved snapshots** so you can switch without losing per-profile values.
+
+| Command | Purpose |
+|---------|---------|
+| `php artisan env:install {profile}` | **Fresh** setup from `.env.{profile}.example` — resets that profile's snapshot |
+| `php artisan env:switch {profile}` | **Switch** active `.env` — saves current profile, loads target snapshot |
+| `php artisan env:switch` | Show active profile |
+| `php artisan env:switch --list` | Table of profiles with snapshot status |
+
+### Typical workflow
+
+```bash
+# First-time setup
+php artisan env:install local
+# Edit .env — set DB_*, APP_URL, secrets, etc.
+
+# Switch to staging (first visit bootstraps from .env.staging.example)
+php artisan env:switch staging
+# Edit .env for staging-specific values
+
+# Switch back — local values restored from .env.local
+php artisan env:switch local
+
+# After switching
+php artisan config:clear
+```
+
+### What happens on switch
+
+1. Current `.env` is saved to `.env.{current}` (profile from `.env.profile`, or inferred from `APP_ENV`)
+2. If `.env.{target}` does not exist yet, it is bootstrapped from `.env.{target}.example` (secrets generated)
+3. `.env.{target}` is copied to `.env`
+4. `.env.profile` is updated
+
+Switching to the **same** profile is a no-op (no data loss).
+
+**Reset a profile** from template (destructive for that snapshot):
+
+```bash
+php artisan env:install staging --force
+```
+
+### Migration from `.env`-only setups
+
+If you already have a `.env` but no snapshots, the first `env:switch` infers the current profile from `APP_ENV` and saves it before activating the target.
+
+`env:switch` is intended for **local development**. Production servers typically keep a single `.env` (or platform-injected env vars).
 
 ## Staging and production
 

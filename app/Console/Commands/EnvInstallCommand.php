@@ -2,28 +2,22 @@
 
 namespace App\Console\Commands;
 
-use App\Support\EnvironmentKeyWriter;
+use App\Support\EnvironmentProfileManager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use InvalidArgumentException;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 /**
  * Scaffold `.env` from a committed profile template (local, staging, production).
  *
  * Laravel loads a single `.env` at boot — this command copies the right
- * `.env.{profile}.example` into `.env`, then generates APP_KEY and JWT_SECRET
- * when they are empty. See docs/environment.md.
+ * `.env.{profile}.example` into `.env`, seeds a profile snapshot, and
+ * generates secrets when they are empty. See docs/environment.md.
  */
 #[AsCommand(name: 'env:install')]
 class EnvInstallCommand extends Command
 {
-    /** @var array<string, string> */
-    private const PROFILES = [
-        'local' => '.env.local.example',
-        'staging' => '.env.staging.example',
-        'production' => '.env.production.example',
-    ];
-
     protected $signature = 'env:install
         {profile : Profile to install: local, staging, or production}
         {--force : Overwrite an existing .env file}';
@@ -31,7 +25,7 @@ class EnvInstallCommand extends Command
     protected $description = 'Create .env from a profile template (local, staging, or production) and generate secrets';
 
     public function __construct(
-        private readonly EnvironmentKeyWriter $keyWriter,
+        private readonly EnvironmentProfileManager $profiles,
     ) {
         parent::__construct();
     }
@@ -40,41 +34,35 @@ class EnvInstallCommand extends Command
     {
         $profile = strtolower(trim((string) $this->argument('profile')));
 
-        if (! array_key_exists($profile, self::PROFILES)) {
-            $this->error("Invalid profile [{$profile}]. Choose: ".implode(', ', array_keys(self::PROFILES)).'.');
+        if (! $this->profiles->isValidProfile($profile)) {
+            $this->error('Invalid profile ['.$profile.']. Choose: '.implode(', ', $this->profiles->profiles()).'.');
 
             return self::FAILURE;
         }
 
-        $templatePath = base_path(self::PROFILES[$profile]);
-        $envPath = base_path('.env');
-
-        if (! File::exists($templatePath)) {
-            $this->error('Profile template not found: '.self::PROFILES[$profile]);
+        if (! File::exists($this->profiles->templatePath($profile))) {
+            $this->error('Profile template not found: .env.'.$profile.'.example');
 
             return self::FAILURE;
         }
 
-        if (File::exists($envPath) && ! $this->option('force')) {
+        if (File::exists($this->profiles->envPath()) && ! $this->option('force')) {
             $this->error('.env already exists. Use --force to overwrite.');
 
             return self::FAILURE;
         }
 
-        File::copy($templatePath, $envPath);
-        $this->info('Copied '.self::PROFILES[$profile].' → .env');
-
         try {
-            $this->keyWriter->writeAppKey($envPath);
-            $this->info('Generated APP_KEY.');
-        } catch (\RuntimeException $exception) {
-            $this->warn($exception->getMessage());
+            $this->profiles->installFromTemplate($profile);
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
         }
 
-        if ($this->jwtSecretIsEmpty($envPath)) {
-            $this->callSilent('jwt:secret', ['--force' => true]);
-            $this->info('Generated JWT_SECRET.');
-        }
+        $this->info('Copied .env.'.$profile.'.example → .env');
+        $this->info('Seeded snapshot → .env.'.$profile);
+        $this->info('Active profile → '.$profile);
 
         $this->newLine();
         $this->line('Next steps:');
@@ -84,18 +72,5 @@ class EnvInstallCommand extends Command
         $this->line('  • See docs/environment.md for the full checklist.');
 
         return self::SUCCESS;
-    }
-
-    private function jwtSecretIsEmpty(string $envPath): bool
-    {
-        $contents = File::get($envPath);
-
-        if (! preg_match('/^JWT_SECRET=(.*)$/m', $contents, $matches)) {
-            return true;
-        }
-
-        $value = trim($matches[1], " \t\n\r\0\x0B\"'");
-
-        return $value === '';
     }
 }

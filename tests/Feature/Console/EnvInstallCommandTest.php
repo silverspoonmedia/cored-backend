@@ -11,18 +11,43 @@ use Tests\TestCase;
  */
 class EnvInstallCommandTest extends TestCase
 {
-    private ?string $envBackup = null;
+    /** @var array<string, string|null> */
+    private array $backups = [];
 
-    private bool $hadEnv = false;
+    /** @var array<int, string> */
+    private const MANAGED_FILES = [
+        '.env',
+        '.env.profile',
+        '.env.local',
+        '.env.staging',
+        '.env.production',
+    ];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        foreach (self::MANAGED_FILES as $file) {
+            $path = base_path($file);
+            $this->backups[$file] = File::exists($path) ? File::get($path) : null;
+            if (File::exists($path)) {
+                File::delete($path);
+            }
+        }
+    }
 
     protected function tearDown(): void
     {
-        $envPath = base_path('.env');
+        foreach (self::MANAGED_FILES as $file) {
+            $path = base_path($file);
 
-        if ($this->hadEnv && $this->envBackup !== null) {
-            File::put($envPath, $this->envBackup);
-        } elseif (File::exists($envPath)) {
-            File::delete($envPath);
+            if (File::exists($path)) {
+                File::delete($path);
+            }
+
+            if ($this->backups[$file] !== null) {
+                File::put($path, $this->backups[$file]);
+            }
         }
 
         parent::tearDown();
@@ -30,8 +55,6 @@ class EnvInstallCommandTest extends TestCase
 
     public function test_it_installs_local_profile_and_generates_secrets(): void
     {
-        $this->prepareEnvFile();
-
         $this->artisan('env:install', ['profile' => 'local'])
             ->assertSuccessful();
 
@@ -43,11 +66,12 @@ class EnvInstallCommandTest extends TestCase
         $this->assertStringContainsString('APP_PREVIOUS_KEYS=""', $env);
         $this->assertMatchesRegularExpression('/^JWT_SECRET=.+$/m', $env);
         $this->assertDoesNotMatchRegularExpression('/^JWT_SECRET=""$/m', $env);
+        $this->assertFileExists(base_path('.env.local'));
+        $this->assertSame('local', trim(File::get(base_path('.env.profile'))));
     }
 
     public function test_it_refuses_to_overwrite_existing_env_without_force(): void
     {
-        $this->prepareEnvFile();
         File::put(base_path('.env'), "APP_NAME=\"Existing\"\n");
 
         $this->artisan('env:install', ['profile' => 'local'])
@@ -58,7 +82,6 @@ class EnvInstallCommandTest extends TestCase
 
     public function test_it_overwrites_existing_env_with_force(): void
     {
-        $this->prepareEnvFile();
         File::put(base_path('.env'), "APP_NAME=\"Existing\"\n");
 
         $this->artisan('env:install', [
@@ -69,24 +92,12 @@ class EnvInstallCommandTest extends TestCase
         $env = File::get(base_path('.env'));
         $this->assertStringContainsString('APP_ENV="staging"', $env);
         $this->assertStringNotContainsString('APP_NAME="Existing"', $env);
+        $this->assertSame('staging', trim(File::get(base_path('.env.profile'))));
     }
 
     public function test_it_rejects_an_invalid_profile(): void
     {
-        $this->prepareEnvFile();
-
         $this->artisan('env:install', ['profile' => 'qa'])
             ->assertFailed();
-    }
-
-    private function prepareEnvFile(): void
-    {
-        $envPath = base_path('.env');
-        $this->hadEnv = File::exists($envPath);
-
-        if ($this->hadEnv) {
-            $this->envBackup = File::get($envPath);
-            File::delete($envPath);
-        }
     }
 }

@@ -254,7 +254,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 
 | Document | Description |
 |----------|-------------|
-| [Environment configuration](docs/environment.md) | Profile templates (local/staging/production), `env:install`, and production checklist |
+| [Environment configuration](docs/environment.md) | Profile templates, `env:install`, `env:switch`, and production checklist |
 | [Octane / Swoole Readiness](docs/octane-readiness.md) | Rules and patterns for long-lived worker safety (mandatory before deploying Octane + Swoole) |
 
 ### Cross-links between docs
@@ -285,6 +285,8 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 
 ```bash
 php artisan env:install local    # Scaffold .env from local profile (see docs/environment.md)
+php artisan env:switch staging   # Swap active .env; keep per-profile snapshots
+php artisan env:switch           # Show active profile
 php artisan key:generate         # Generate APP_KEY when empty
 php artisan key:generate --force # Rotate APP_KEY; retired key moves to APP_PREVIOUS_KEYS
 php artisan migrate              # Apply migrations
