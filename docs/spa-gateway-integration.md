@@ -64,7 +64,7 @@ The Vue SPA mirrors the Blade admin surface at `resources/views/adminlte4/*`. Ro
 
 | Area | Blade | SPA | Status |
 |------|-------|-----|--------|
-| Auth (login/register/2FA/reset) | yes | yes | Parity |
+| Auth (login/register/2FA/reset) | yes | yes | Parity — AdminLTE-matched card; inline locale switcher in card header |
 | Dashboard + quick links | `@can` | `hasPermission` + route guards | Parity |
 | Users CRUD + activity history | yes | yes | Parity |
 | Orders (playground) show/bulk/form | yes | yes | Parity |
@@ -91,6 +91,21 @@ VITE_PUSHER_SCHEME=http
 Vite dev/preview proxies `/broadcasting` to the gateway, which forwards to Monolith `/broadcasting/auth` with the `auth_token` cookie.
 
 If websocket auth fails, the bell falls back to HTTP polling (`VITE_NOTIFICATION_POLLING_INTERVAL`, default 60s) — same behaviour as Blade.
+
+## SPA frontend implementation
+
+Recent UX work (skeleton loading, responsive shell, auth layout parity) lives entirely in **monolith-frontend**. No gateway or Monolith API changes were required.
+
+| Guide (monolith-frontend) | Topic |
+|---------------------------|-------|
+| `docs/audit-summary.md` | What changed in each of the three projects |
+| `docs/architecture.md` | Stack, axios cookie auth, Vite proxy, folder layout |
+| `docs/async-fetch-ux.md` | `useAsyncData`, `AppFetchState`, skeleton/error components |
+| `docs/responsive-ui.md` | `useBreakpoint`, mobile layouts, DataTables Responsive |
+| `docs/auth-layout.md` | AdminLTE auth card, locale switcher, mobile spacing |
+| `docs/testing.md` | Vitest vs Playwright, 49 unit tests |
+
+Path on disk: `monolith-frontend/docs/` (separate project directory from Monolith and Gateway).
 
 ## Production
 
