@@ -96,7 +96,9 @@ composer install
 php artisan env:install local
 ```
 
-This copies `.env.local.example` → `.env` and generates `APP_KEY` and `JWT_SECRET`. See [Environment configuration](docs/environment.md) for staging/production profiles.
+This copies `.env.local.example` → `.env`, seeds a matching snapshot (`.env.local`), sets `.env.profile`, and generates `APP_KEY` and `JWT_SECRET` when empty. See [Environment configuration](docs/environment.md) for staging/production profiles.
+
+To swap between saved profiles later without losing values, use `php artisan env:switch {profile}` — see [Switching profiles](docs/environment.md#switching-profiles-local-dev).
 
 Adjust at least:
 

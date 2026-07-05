@@ -53,11 +53,15 @@ class EnvInstallCommand extends Command
         }
 
         try {
-            $this->profiles->installFromTemplate($profile);
+            $warnings = $this->profiles->installFromTemplate($profile);
         } catch (InvalidArgumentException $exception) {
             $this->error($exception->getMessage());
 
             return self::FAILURE;
+        }
+
+        foreach ($warnings as $warning) {
+            $this->warn($warning);
         }
 
         $this->info('Copied .env.'.$profile.'.example → .env');

@@ -127,7 +127,10 @@ class EnvironmentProfileManager
         $this->saveSnapshot($profile);
     }
 
-    public function installFromTemplate(string $profile): void
+    /**
+     * @return array<int, string> Non-fatal warnings (e.g. APP_KEY generation failed).
+     */
+    public function installFromTemplate(string $profile): array
     {
         $this->assertValidProfile($profile);
 
@@ -138,9 +141,11 @@ class EnvironmentProfileManager
         }
 
         File::copy($templatePath, $this->envPath());
-        $this->generateSecrets($this->envPath());
+        $warnings = $this->generateSecrets($this->envPath());
         $this->saveSnapshot($profile);
         $this->setActiveProfile($profile);
+
+        return $warnings;
     }
 
     public function activateProfile(string $profile): EnvironmentSwitchResult
@@ -218,12 +223,17 @@ class EnvironmentProfileManager
         return $this->isValidProfile($appEnv) ? $appEnv : null;
     }
 
-    private function generateSecrets(string $envPath): void
+    /**
+     * @return array<int, string>
+     */
+    private function generateSecrets(string $envPath): array
     {
+        $warnings = [];
+
         try {
             $this->keyWriter->writeAppKey($envPath);
-        } catch (RuntimeException) {
-            // Caller may surface warnings; install/switch can continue.
+        } catch (RuntimeException $exception) {
+            $warnings[] = 'Could not generate APP_KEY: '.$exception->getMessage();
         }
 
         if ($this->jwtSecretIsEmpty($envPath)) {
@@ -233,6 +243,8 @@ class EnvironmentProfileManager
                 $this->writeJwtSecret($envPath);
             }
         }
+
+        return $warnings;
     }
 
     private function jwtSecretIsEmpty(string $envPath): bool
@@ -252,9 +264,9 @@ class EnvironmentProfileManager
         $contents = File::get($envPath);
 
         if (preg_match('/^JWT_SECRET=.*$/m', $contents)) {
-            $updated = preg_replace('/^JWT_SECRET=.*$/m', 'JWT_SECRET='.$secret, $contents);
+            $updated = preg_replace('/^JWT_SECRET=.*$/m', 'JWT_SECRET="'.$secret.'"', $contents);
         } else {
-            $updated = rtrim($contents).PHP_EOL.'JWT_SECRET='.$secret.PHP_EOL;
+            $updated = rtrim($contents).PHP_EOL.'JWT_SECRET="'.$secret.'"'.PHP_EOL;
         }
 
         File::put($envPath, $updated);
