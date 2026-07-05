@@ -58,6 +58,40 @@ If the Vue app shows a SQL error during login, read the stack trace:
 
 Do not confuse gateway `database/database.sqlite` with Monolith's MySQL database `monolith`.
 
+## SPA vs Blade parity
+
+The Vue SPA mirrors the Blade admin surface at `resources/views/adminlte4/*`. Route names align with [`monolith-gateway/config/vue-routes.php`](../../monolith-gateway/config/vue-routes.php).
+
+| Area | Blade | SPA | Status |
+|------|-------|-----|--------|
+| Auth (login/register/2FA/reset) | yes | yes | Parity |
+| Dashboard + quick links | `@can` | `hasPermission` + route guards | Parity |
+| Users CRUD + activity history | yes | yes | Parity |
+| Orders (playground) show/bulk/form | yes | yes | Parity |
+| Menus CRUD + trashed restore | yes | yes | Parity |
+| Activity logs index/show | yes | yes | Parity |
+| Notifications index + bell | polling/Echo | polling + Echo (`VITE_BROADCAST_ENABLED`) | Parity |
+| Approvals batch/reject/reassign | yes | yes | Parity |
+| Approval workflow admin | yes | yes | Parity |
+| AdminLTE shell (theme, breadcrumbs, sidebar search) | yes | yes | Parity |
+| Locale persist (`users.locale`) | `GET /locale/{locale}` | `POST /api/v1/auth/locale` | Parity |
+
+### Realtime notifications (SPA)
+
+When Monolith has `APP_NOTIFICATION_TYPE=realtime` and a configured `BROADCAST_CONNECTION` (Reverb/Pusher), set on the frontend build:
+
+```env
+VITE_BROADCAST_ENABLED=true
+VITE_PUSHER_APP_KEY=...
+VITE_PUSHER_HOST=127.0.0.1
+VITE_PUSHER_PORT=6001
+VITE_PUSHER_SCHEME=http
+```
+
+Vite dev/preview proxies `/broadcasting` to the gateway, which forwards to Monolith `/broadcasting/auth` with the `auth_token` cookie.
+
+If websocket auth fails, the bell falls back to HTTP polling (`VITE_NOTIFICATION_POLLING_INTERVAL`, default 60s) — same behaviour as Blade.
+
 ## Production
 
 - `GATEWAY_ENFORCE=true` on Monolith
