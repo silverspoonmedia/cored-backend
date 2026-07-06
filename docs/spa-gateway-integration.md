@@ -107,6 +107,21 @@ Recent UX work (skeleton loading, responsive shell, auth layout parity) lives en
 
 Path on disk: `monolith-frontend/docs/` (separate project directory from Monolith and Gateway).
 
+## Gateway implementation
+
+Gateway-specific internals are documented in **monolith-gateway** `docs/`:
+
+| Guide | Topic |
+|-------|-------|
+| `docs/architecture.md` | Routes, proxy flow, file map |
+| `docs/auth-cookie.md` | `auth_token` HttpOnly cookie, token stripping |
+| `docs/monolith-client.md` | Upstream HTTP, headers, multipart |
+| `docs/vue-route-transforms.md` | `vue-routes.php`, navigation/DataTable/notification URL rewriting |
+| `docs/configuration.md` | Env vars, CORS, stateless Laragon rules |
+| `docs/testing.md` | PHPUnit |
+
+SPA UX work does not require gateway code changes unless new screens need route mappings in `config/vue-routes.php`.
+
 ## Production
 
 - `GATEWAY_ENFORCE=true` on Monolith
