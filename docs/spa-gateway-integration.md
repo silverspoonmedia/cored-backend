@@ -1,5 +1,7 @@
 # Three-project integration (Monolith + Gateway + Vue)
 
+**AI agents:** read the canonical [AI Agent Guide](ai-agent-guide.md) before implementing cross-project changes.
+
 End-to-end public stack:
 
 | Project | Role | URL (Laragon local) |
@@ -117,10 +119,23 @@ Gateway-specific internals are documented in **monolith-gateway** `docs/`:
 | `docs/auth-cookie.md` | `auth_token` HttpOnly cookie, token stripping |
 | `docs/monolith-client.md` | Upstream HTTP, headers, multipart |
 | `docs/vue-route-transforms.md` | `vue-routes.php`, navigation/DataTable/notification URL rewriting |
+| `docs/aggregate-endpoints.md` | BFF bootstrap + form aggregate endpoints |
 | `docs/configuration.md` | Env vars, CORS, stateless Laragon rules |
 | `docs/testing.md` | PHPUnit |
 
-SPA UX work does not require gateway code changes unless new screens need route mappings in `config/vue-routes.php`.
+SPA UX work may require gateway aggregate endpoints or new route mappings in `config/vue-routes.php` when screens fan out to many Monolith resources on load.
+
+### API aggregation (latency)
+
+The SPA is on Cloudflare POPs; the gateway is in Singapore. To avoid multiple cross-region round trips per page load, the gateway exposes:
+
+| Endpoint | Replaces (browser calls) |
+|----------|--------------------------|
+| `GET /api/v1/bootstrap` | `auth/me` + 2× `navigation/menus` + `notifications/unread-count` |
+| `GET /api/v1/users/{id}/edit-context` | `assignable-roles` + `users/{id}` + `users/{id}/activity-logs` |
+| `GET /api/v1/navigation/menus/form-options` | `menus/{id}` + `menus/list` + `users` (menu form) |
+
+Monolith API is unchanged. See gateway `docs/aggregate-endpoints.md`.
 
 ## Production
 

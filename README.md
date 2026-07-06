@@ -8,7 +8,7 @@ A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the 
 
 ### Living documentation (required)
 
-**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, localization, or any behavior described here—do not let code and docs drift apart.
+**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **AI agents:** read [AI Agent Guide](docs/ai-agent-guide.md) and root [AGENTS.md](AGENTS.md) before cross-project work. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, localization, or any behavior described here—do not let code and docs drift apart.
 
 **All project documentation must be written in English** (README, `docs/`, and any new guides or sections you add).
 
