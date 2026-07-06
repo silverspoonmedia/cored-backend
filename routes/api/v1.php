@@ -4,6 +4,7 @@ use App\Http\Controllers\API\V1\ActivityLogController;
 use App\Http\Controllers\API\V1\AdminController;
 use App\Http\Controllers\API\V1\Auth\AuthController;
 use App\Http\Controllers\API\V1\Auth\EmailVerificationController;
+use App\Http\Controllers\API\V1\Auth\LocaleController;
 use App\Http\Controllers\API\V1\Auth\PasswordController;
 use App\Http\Controllers\API\V1\Auth\TwoFactorController;
 use App\Http\Controllers\API\V1\Navigation\MenuController;
@@ -35,6 +36,7 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
     Route::middleware('auth:api')->group(function (): void {
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('me', [AuthController::class, 'me'])->name('me');
+        Route::post('locale', [LocaleController::class, 'update'])->name('locale');
         Route::post('email/verification-notification', [EmailVerificationController::class, 'send'])
             ->middleware('throttle:6,1')
             ->name('verification.send');

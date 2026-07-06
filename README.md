@@ -4,9 +4,11 @@ Laravel 13 API application with **JWT authentication**, **TOTP two-factor authen
 
 It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that is a **pure consumer of the versioned API**: every web controller forwards to `/api/v1/*`, so validation, CRUD, and RBAC run **only once — in the API** (no duplicated business logic). The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**, which the web layer forwards to the API as a Bearer token. See **[Web Frontend (Blade + AdminLTE 4)](docs/web-frontend.md)**.
 
+A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the Blade UI via the public **monolith-gateway** BFF. Gateway proxies `/api/*` to this application, sets HttpOnly cookies for the SPA, and enforces `GATEWAY_SECRET` when `GATEWAY_ENFORCE=true`. See [Three-project integration (Monolith + Gateway + Vue)](docs/spa-gateway-integration.md) and [Environment configuration — Public gateway perimeter](docs/environment.md#public-gateway-perimeter). SPA guides: `monolith-frontend/docs/`. Gateway internals: `monolith-gateway/docs/`.
+
 ### Living documentation (required)
 
-**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, localization, or any behavior described here—do not let code and docs drift apart.
+**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **AI agents:** read [AI Agent Guide](docs/ai-agent-guide.md) and root [AGENTS.md](AGENTS.md) before cross-project work. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, localization, or any behavior described here—do not let code and docs drift apart.
 
 **All project documentation must be written in English** (README, `docs/`, and any new guides or sections you add).
 
@@ -258,6 +260,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 |----------|-------------|
 | [Environment configuration](docs/environment.md) | Profile templates, `env:install`, `env:switch`, and production checklist |
 | [Octane / Swoole Readiness](docs/octane-readiness.md) | Rules and patterns for long-lived worker safety (mandatory before deploying Octane + Swoole) |
+| [Three-project integration (Monolith + Gateway + Vue)](docs/spa-gateway-integration.md) | Local Laragon wiring, gateway cookie auth, SPA vs Blade parity, production checklist; gateway internals in `monolith-gateway/docs/` |
 
 ### Cross-links between docs
 
