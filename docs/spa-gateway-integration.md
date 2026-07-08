@@ -34,6 +34,38 @@ npm run preview:local
 
 Sign in with seeded credentials (`admin@example.com` / `123456789`). The gateway sets `auth_token`; the SPA never reads the JWT.
 
+### Local dev ports and CORS
+
+| Mode | SPA URL | `FRONTEND_URL` on gateway | Why |
+|------|---------|---------------------------|-----|
+| `npm run dev` | `http://localhost:5173` | `http://localhost:8788` (default in gateway `.env.example`) | Vite proxies `/api` and `/broadcasting` to `monolith-gateway.test` — browser sees same-origin `:5173`, so CORS is not involved |
+| `npm run preview:local` | `http://localhost:8788` | `http://localhost:8788` | Vite preview with same proxy; matches `FRONTEND_URL` for cross-origin tests |
+
+`vite.config.ts` sets `cookieDomainRewrite: 'localhost'` on the proxy so HttpOnly cookies set by the gateway are accepted on the dev origin.
+
+Do **not** set `VITE_API_BASE_URL` to the gateway URL while developing on `:5173` unless you also add `http://localhost:5173` to gateway CORS — the default setup avoids that by proxying.
+
+## Two API client paths
+
+| Client | Browser → | Monolith path | Auth |
+|--------|-----------|---------------|------|
+| **Vue SPA** | Cloudflare Pages → **Gateway** `/api/*` | Gateway forwards to `MONOLITH_BASE_URL/api/v1/*` (or `/api/playground/*`) | HttpOnly `auth_token` cookie on gateway; gateway sends `Authorization: Bearer` upstream |
+| **Blade admin** | Monolith web → **same-host** `/api/v1/*` | `ApiClient` (`app/Support/Api/ApiClient.php`) | JWT from `auth_token` cookie + `X-Gateway-Secret` when `GATEWAY_SECRET` is set |
+
+`GATEWAY_ENFORCE=false` locally allows Blade and PHPUnit to call Monolith API without going through the gateway vhost. In production, `GATEWAY_ENFORCE=true` blocks direct public access to Monolith; the SPA still uses Gateway exclusively.
+
+## Playground API (`/api/playground/*`)
+
+Monolith playground routes live on the **global** prefix `/api/playground/*` (not `/api/v1/*`). They are **disabled when `APP_ENV=production`** — see [playground.md](./playground.md).
+
+Gateway exposes a transparent catch-all:
+
+```
+ANY /api/playground/{path}  →  Monolith /api/playground/{path}
+```
+
+The Vue SPA orders screens call `/api/playground/orders` (and attachment uploads under `/api/playground/attachments/uploads`). In production, if playground is off on Monolith, those SPA screens will fail — playground is a **non-production demo surface**.
+
 ## Verify connectivity
 
 ```powershell
@@ -76,23 +108,52 @@ The Vue SPA mirrors the Blade admin surface at `resources/views/adminlte4/*`. Ro
 | Approvals batch/reject/reassign | yes | yes | Parity |
 | Approval workflow admin | yes | yes | Parity |
 | AdminLTE shell (theme, breadcrumbs, sidebar search) | yes | yes | Parity |
-| Locale persist (`users.locale`) | `GET /locale/{locale}` | `POST /api/v1/auth/locale` | Parity |
+| Locale persist (`users.locale`) | `GET /locale/{locale}` | `POST /api/v1/auth/locale` + guest `locale` cookie in JS | Parity — see [Locale (SPA)](#locale-spa) below |
 
 ### Realtime notifications (SPA)
 
-When Monolith has `APP_NOTIFICATION_TYPE=realtime` and a configured `BROADCAST_CONNECTION` (Reverb/Pusher), set on the frontend build:
+When Monolith has `APP_NOTIFICATION_TYPE=realtime` and a configured `BROADCAST_CONNECTION` (Reverb/Pusher), set on the **frontend build** env (Cloudflare Pages or `monolith-frontend/.env`):
 
 ```env
 VITE_BROADCAST_ENABLED=true
 VITE_PUSHER_APP_KEY=...
+VITE_PUSHER_APP_CLUSTER=mt1
 VITE_PUSHER_HOST=127.0.0.1
 VITE_PUSHER_PORT=6001
 VITE_PUSHER_SCHEME=http
 ```
 
+| Traffic | Path |
+|---------|------|
+| Websocket connection | **Direct** to `VITE_PUSHER_HOST`:`VITE_PUSHER_PORT` (not through Gateway) |
+| Channel auth | `POST /broadcasting/auth` — Vite dev/preview proxies to gateway → Monolith |
+
 Vite dev/preview proxies `/broadcasting` to the gateway, which forwards to Monolith `/broadcasting/auth` with the `auth_token` cookie.
 
 If websocket auth fails, the bell falls back to HTTP polling (`VITE_NOTIFICATION_POLLING_INTERVAL`, default 60s) — same behaviour as Blade.
+
+### Locale (SPA)
+
+Blade uses `GET /locale/{locale}` (cookie + optional `users.locale` update). The SPA uses a different surface:
+
+1. **Guest:** `localeStore` sets `document.cookie = locale=…` and `localStorage.locale`.
+2. **Authenticated:** `POST /api/v1/auth/locale` persists `users.locale` on Monolith.
+3. **Every API call:** Axios sends `Accept-Language` from `localStorage` (informational); Monolith `SetLocale` resolves **`users.locale` → `locale` cookie → `config('app.locale')`** — it does **not** use `Accept-Language` alone.
+
+Gateway `MonolithClient` forwards the incoming `locale` cookie (and `Accept-Language`) upstream so SPA and Monolith stay aligned.
+
+Full Blade/API rules: [localization.md](./localization.md). SPA store details: `monolith-frontend/docs/stores-and-realtime.md`.
+
+### hCaptcha (SPA auth forms)
+
+When Monolith has `HCAPTCHA_ENABLED=true`, the SPA build must set matching frontend vars or login/register will fail server-side validation:
+
+```env
+VITE_HCAPTCHA_ENABLED=true
+VITE_HCAPTCHA_SITEKEY=...
+```
+
+Monolith `HCAPTCHA_SECRET` stays on the server only. See [jwt-authentication.md](./jwt-authentication.md).
 
 ## SPA frontend implementation
 
@@ -132,14 +193,28 @@ The SPA is on Cloudflare POPs; the gateway is in Singapore. To avoid multiple cr
 | Endpoint | Replaces (browser calls) |
 |----------|--------------------------|
 | `GET /api/v1/bootstrap` | `auth/me` + 2× `navigation/menus` + `notifications/unread-count` |
-| `GET /api/v1/users/{id}/edit-context` | `assignable-roles` + `users/{id}` + `users/{id}/activity-logs` |
-| `GET /api/v1/navigation/menus/form-options` | `menus/{id}` + `menus/list` + `users` (menu form) |
+| `GET /api/v1/users/{id}/edit-context` | `users/assignable-roles` + `users/{id}` + `users/{id}/activity-logs` |
+| `GET /api/v1/navigation/menus/form-options` | `navigation/menus/{id}` + `navigation/menus/list` + `users` (menu form) |
 
 Monolith API is unchanged. See gateway `docs/aggregate-endpoints.md`.
+
+### Programmatic API access only
+
+Gateway rejects **direct browser `GET` navigation** to `/api/*` (address bar, new tab) while allowing SPA programmatic fetch and all `POST`/`PUT`/`DELETE` mutations. `OPTIONS` preflight is always allowed. The Frontend sends `X-Requested-With: XMLHttpRequest` via Axios.
+
+**Toggle:** `GATEWAY_ENFORCE_PROGRAMMATIC_API` on the gateway (default `true`). Aggregate `GET` endpoints (`bootstrap`, `edit-context`, `form-options`) are subject to the same middleware.
+
+Details: gateway [programmatic-api-access.md](../../monolith-gateway/docs/programmatic-api-access.md).
+
+### Static Frontend / Gateway-first
+
+The Vue SPA deploys as **static `dist/` on Cloudflare Pages** — no Pages Functions or Workers for API/BFF logic. Any capability that might otherwise be added at the edge must be assessed for **Gateway implementation first**; Frontend edge compute requires explicit approval after discussion. See Frontend [static-only-policy.md](../../monolith-frontend/docs/static-only-policy.md) and canonical [ai-agent-guide.md](./ai-agent-guide.md).
 
 ## Production
 
 - `GATEWAY_ENFORCE=true` on Monolith
 - Shared strong `GATEWAY_SECRET` / `MONOLITH_GATEWAY_SECRET`
 - `AUTH_COOKIE_SECURE=true` and `AUTH_COOKIE_SAME_SITE=none` on gateway
-- `FRONTEND_URL` and `VITE_API_BASE_URL` must match deployed public origins (HTTPS)
+- `FRONTEND_URL` = deployed SPA public HTTPS origin (Cloudflare Pages)
+- `VITE_API_BASE_URL` = deployed gateway public HTTPS origin (VPS) — **different** from `FRONTEND_URL`
+- `GATEWAY_ENFORCE_PROGRAMMATIC_API=true` on gateway (default; leave enabled in production)
