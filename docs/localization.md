@@ -75,6 +75,21 @@ Without forwarding, the server-to-server API call carries no cookie, so the API 
 
 > Implemented in `ApiClient::pending()` via `withCookies([LocaleCookie::name() => app()->getLocale()], <host>)`. Covered by `tests/Feature/Support/Api/ApiClientLocaleForwardingTest.php`.
 
+### Vue SPA locale
+
+The Vue SPA does **not** use `GET /locale/{locale}`. Locale switching is client-driven:
+
+| Step | Behaviour |
+|------|-----------|
+| Guest | `localeStore` writes `localStorage.locale` and `document.cookie = locale=…` |
+| Authenticated | `POST /api/v1/auth/locale` updates `users.locale` on Monolith |
+| API requests | Axios sends `Accept-Language` from `localStorage`; Gateway forwards `locale` cookie upstream |
+| Monolith resolution | `SetLocale`: `users.locale` (JWT) → `locale` cookie → `config('app.locale')` — **`Accept-Language` alone is not used** |
+
+Changing locale remounts the router (`routerKey` in `App.vue`) and refreshes navigation when authenticated.
+
+Three-project wiring: [spa-gateway-integration.md](./spa-gateway-integration.md) → Locale (SPA). Frontend store details: `monolith-frontend/docs/stores-and-realtime.md`.
+
 ### Outbound email locale
 
 Emails follow the **recipient's** saved locale, not the locale of the request that triggered them. This matters because a forgot-password request is made by a **guest**: the only reliable language signal is the target user's `users.locale`.

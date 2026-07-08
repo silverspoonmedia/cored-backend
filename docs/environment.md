@@ -209,6 +209,7 @@ Production platforms (Laravel Forge, Vapor, Kubernetes, CI/CD) can inject env va
 - `JWT_SECRET` generated (`env:install` does this on first run)
 - `HCAPTCHA_ENABLED=true` with valid keys
 - `GATEWAY_ENFORCE=true` with a strong `GATEWAY_SECRET` shared with [monolith-gateway](../../monolith-gateway) (API must not be reachable without the gateway)
+- On gateway: `GATEWAY_ENFORCE_PROGRAMMATIC_API=true` (default)
 - Verify playground is off: `APP_ENV=production php artisan route:list --path=api/playground` (no routes)
 - See also [README Security checklist](../README.md#security)
 
@@ -223,6 +224,12 @@ When the versioned API is exposed only through **monolith-gateway**, enable peri
 | `GATEWAY_ALLOWED_IPS` | Optional comma-separated IPs (e.g. gateway server) that may call the API without the header |
 
 Local development keeps `GATEWAY_ENFORCE=false` so Blade and PHPUnit work without the gateway.
+
+**Gateway-only (not Monolith):** programmatic API access is controlled on the gateway by `GATEWAY_ENFORCE_PROGRAMMATIC_API` (default `true`). See [monolith-gateway/docs/programmatic-api-access.md](../../monolith-gateway/docs/programmatic-api-access.md).
+
+### Frontend build variables (`VITE_*`)
+
+`VITE_*` keys in Monolith `.env.local.example` are **documentation placeholders** for the separate **monolith-frontend** build. They are not read by Monolith PHP at runtime. Set them in `monolith-frontend/.env` or Cloudflare Pages build env. See [spa-gateway-integration.md](./spa-gateway-integration.md).
 
 ## Keeping templates in sync
 
@@ -239,6 +246,7 @@ PHPUnit sets `APP_ENV=testing` and overrides drivers in `phpunit.xml`. No `.env.
 ## Related docs
 
 - [JWT authentication](jwt-authentication.md#configuration)
+- [SPA + Gateway integration](spa-gateway-integration.md) — three-project wiring, locale (SPA), realtime, playground
 - [Activity notifications (polling vs realtime)](notifications.md#realtime-vs-polling)
 - [Playground (non-production only)](playground.md)
 - [Octane readiness (Redis for cache/queue)](octane-readiness.md)

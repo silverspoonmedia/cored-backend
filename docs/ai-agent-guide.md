@@ -50,8 +50,11 @@ Project Monolith Gateway is a **Laravel 13** stateless BFF between Monolith and 
 - It is the **only public HTTP API surface** clients should call in production.
 - It proxies to private Monolith (`MONOLITH_BASE_URL`), manages HttpOnly JWT cookies for the SPA, applies CORS, and rewrites selected JSON for Vue router paths.
 - It must remain **stateless**: do not configure `DB_*` on the gateway (see [configuration.md](../../monolith-gateway/docs/configuration.md)).
+- It is the **default home** for server-side concerns that might otherwise tempt Cloudflare Pages Functions or Workers on the Frontend (API proxying, aggregation, cookies, CORS, middleware, response transforms). See [static-only-policy.md](../../monolith-frontend/docs/static-only-policy.md).
 
-**Aggregate endpoint assessment (required):** Before shipping UI flows that issue multiple API calls on load (shell bootstrap, form screens, dashboards), **assess whether Gateway should expose a combined endpoint** that fan-outs to Monolith in parallel via `MonolithClient::pool()`. Cross-region latency (browser → Gateway in Singapore) is paid per round trip; aggregation reduces browser RTTs without changing Monolith.
+- Cross-region latency (browser → Gateway) is paid per round trip; aggregation reduces browser RTTs without changing Monolith. Gateway VPS region (e.g. Singapore) is a **deployment convention**, not enforced in code.
+
+**Aggregate endpoint assessment (required):** Before shipping UI flows that issue multiple API calls on load (shell bootstrap, form screens, dashboards), **assess whether Gateway should expose a combined endpoint** that fan-outs to Monolith in parallel via `MonolithClient::pool()`.
 
 | Existing aggregate examples | Purpose |
 |----------------------------|---------|
@@ -62,6 +65,8 @@ Project Monolith Gateway is a **Laravel 13** stateless BFF between Monolith and 
 Pattern and contracts: [aggregate-endpoints.md](../../monolith-gateway/docs/aggregate-endpoints.md).
 
 Individual proxied Monolith routes remain available for mutations, polling, and DataTables.
+
+**Programmatic API access only:** `GET /api/*` must not be browsable in the browser address bar. Gateway middleware rejects `GET` with `Sec-Fetch-Dest: document` / `iframe` or without `X-Requested-With: XMLHttpRequest`. `POST`/`PUT`/`PATCH`/`DELETE` and `OPTIONS` are exempt. Frontend Axios sends the header on all requests. See [programmatic-api-access.md](../../monolith-gateway/docs/programmatic-api-access.md).
 
 ### 3. Project Monolith Frontend is a static API consumer
 
@@ -74,6 +79,26 @@ Project Monolith Frontend is a **Vue 3** SPA that consumes Gateway only. It is h
 
 The Frontend is a thin client: Pinia stores, Axios (`src/api/client.ts`), and views — no duplicated business logic from Laravel.
 
+#### Gateway-first assessment (required)
+
+Before adding **Cloudflare Pages Functions, Workers, or any server-side logic** to the Frontend, assess whether **Gateway** can implement the need instead.
+
+```mermaid
+flowchart TD
+    Need["New capability needed"]
+    Need --> Q{"Can Gateway implement it?"}
+    Q -->|Yes| GW["Implement on Gateway only"]
+    Q -->|No| Discuss["Discuss before Frontend Functions"]
+    GW --> Static["Frontend stays static dist/"]
+```
+
+| Outcome | Action |
+|---------|--------|
+| Gateway can satisfy the need | Implement **only** on Gateway |
+| Gateway cannot | **Stop and discuss** — do not add Frontend Functions without explicit approval |
+
+Full policy and examples: [static-only-policy.md](../../monolith-frontend/docs/static-only-policy.md).
+
 ### 4. Cross-project consistency
 
 Because all three projects share one workspace, treat them as one system:
@@ -83,8 +108,9 @@ Because all three projects share one workspace, treat them as one system:
 | Monolith API route or response shape | Gateway proxy/transforms, Frontend `src/api/*`, [spa-gateway-integration.md](./spa-gateway-integration.md) |
 | Gateway aggregate or Vue transform | Frontend stores/views, [aggregate-endpoints.md](../../monolith-gateway/docs/aggregate-endpoints.md), PHPUnit tests |
 | Frontend screen with multiple parallel fetches | Gateway aggregation assessment **first** |
+| Need that might require Frontend Functions/Workers | Gateway-first assessment **first** — see [static-only-policy.md](../../monolith-frontend/docs/static-only-policy.md) |
 | New Laravel route name in menus or DataTable actions | [monolith-gateway/config/vue-routes.php](../../monolith-gateway/config/vue-routes.php) |
-| User-facing copy | Monolith `lang/{locale}/`, Frontend `src/i18n/` (`en`, `id`, `ja`) |
+| User-facing copy | Monolith `lang/{locale}/` + [localization.md](./localization.md) (SPA locale chain), Frontend `src/i18n/` (`en`, `id`, `ja`) |
 
 Do not leave documentation behind: update relevant `docs/` and `README.md` files in the same task as code changes (see Monolith README living-documentation policy).
 
@@ -129,6 +155,7 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 |----------|-------|
 | [README.md](../../monolith-gateway/README.md) | Overview and setup |
 | [docs/architecture.md](../../monolith-gateway/docs/architecture.md) | Routes, file map, middleware |
+| [docs/programmatic-api-access.md](../../monolith-gateway/docs/programmatic-api-access.md) | Block direct browser API navigation |
 | [docs/aggregate-endpoints.md](../../monolith-gateway/docs/aggregate-endpoints.md) | BFF multi-fetch endpoints |
 | [docs/auth-cookie.md](../../monolith-gateway/docs/auth-cookie.md) | `auth_token` HttpOnly cookie |
 | [docs/monolith-client.md](../../monolith-gateway/docs/monolith-client.md) | Upstream HTTP, `pool()` |
@@ -141,7 +168,13 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 | Document | Topic |
 |----------|-------|
 | [README.md](../../monolith-frontend/README.md) | Setup, deploy, env vars |
-| [docs/architecture.md](../../monolith-frontend/docs/architecture.md) | Stack, auth, bootstrap shell |
+| [docs/static-only-policy.md](../../monolith-frontend/docs/static-only-policy.md) | Static-only Cloudflare Pages; Gateway-first rule |
+| [docs/architecture.md](../../monolith-frontend/docs/architecture.md) | Stack, auth, bootstrap shell, Vite/wrangler |
+| [docs/api-surface.md](../../monolith-frontend/docs/api-surface.md) | All `src/api/*` endpoints |
+| [docs/router-and-guards.md](../../monolith-frontend/docs/router-and-guards.md) | Routes, permissions, guards |
+| [docs/stores-and-realtime.md](../../monolith-frontend/docs/stores-and-realtime.md) | Pinia stores, Echo, locale |
+| [docs/datatable-actions.md](../../monolith-frontend/docs/datatable-actions.md) | DataTable server actions |
+| [docs/playground-orders.md](../../monolith-frontend/docs/playground-orders.md) | Playground orders + uploads |
 | [docs/async-fetch-ux.md](../../monolith-frontend/docs/async-fetch-ux.md) | Loading and error UX |
 | [docs/auth-layout.md](../../monolith-frontend/docs/auth-layout.md) | Guest auth screens |
 | [docs/responsive-ui.md](../../monolith-frontend/docs/responsive-ui.md) | Mobile layouts |
@@ -154,9 +187,10 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 1. **Identify** which project(s) are affected.
 2. **Read** the relevant docs from the index above (start with Monolith for API/domain changes).
 3. **Assess aggregation** if the Frontend would issue multiple parallel API calls on load — prefer Gateway fan-out over extra Monolith endpoints.
-4. **Implement** with minimal scope; match existing naming, patterns, and folder layout in each repo.
-5. **Test** in every touched project (`php artisan test`, `npm run test:unit -- --run`, `npm run build` as applicable).
-6. **Update documentation** in the same task so code and docs do not drift.
+4. **Assess Gateway first** before any Frontend edge/server feature (Functions, Workers, API proxying) — see [static-only-policy.md](../../monolith-frontend/docs/static-only-policy.md).
+5. **Implement** with minimal scope; match existing naming, patterns, and folder layout in each repo.
+6. **Test** in every touched project (`php artisan test`, `npm run test:unit -- --run`, `npm run build` as applicable).
+7. **Update documentation** in the same task so code and docs do not drift.
 
 ---
 
@@ -164,6 +198,6 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 
 - Rework Monolith architecture without strong justification — it is production-stable source of truth.
 - Put business logic or a database on Gateway.
-- Add Cloudflare Workers/Functions to Frontend for API proxying.
+- Add Cloudflare Workers/Functions to Frontend for API proxying or BFF logic without Gateway-first assessment and explicit approval.
 - Ship Frontend multi-fetch screens without considering Gateway aggregation.
 - Change API contracts in Gateway or Frontend without verifying Monolith behavior and updating integration docs.
