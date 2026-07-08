@@ -194,7 +194,8 @@ The SPA is on Cloudflare POPs; the gateway is in Singapore. To avoid multiple cr
 |----------|--------------------------|
 | `GET /api/v1/bootstrap` | `auth/me` + 2× `navigation/menus` + `notifications/unread-count` |
 | `GET /api/v1/users/{id}/edit-context` | `users/assignable-roles` + `users/{id}` + `users/{id}/activity-logs` |
-| `GET /api/v1/navigation/menus/form-options` | `navigation/menus/{id}` + `navigation/menus/list` + `users` (menu form) |
+| `GET /api/v1/navigation/menus/form-options` | `navigation/menus/{id}` only (edit); create returns `{}` |
+| `GET /api/v1/lookups/{users,menus,roles}` | Paginated Select2 options (proxied; see [form-selects.md](./form-selects.md)) |
 
 Monolith API is unchanged. See gateway `docs/aggregate-endpoints.md`.
 

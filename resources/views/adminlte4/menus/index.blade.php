@@ -19,7 +19,7 @@
                     :options="$layoutOptions"
                     :selected="$selectedLayout"
                     :hint="__('web/menus.filter.layout_hint')"
-                    onchange="this.form.submit()"
+                    :autosubmit="true"
                 />
             </div>
         </form>
@@ -95,4 +95,8 @@
             </table>
         </div>
     </x-adminlte4::card>
+
+    <x-slot:scripts>
+        <x-adminlte4::partials.select2-scripts />
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

@@ -60,7 +60,8 @@ Project Monolith Gateway is a **Laravel 13** stateless BFF between Monolith and 
 |----------------------------|---------|
 | `GET /api/v1/bootstrap` | Shell: user + navigation trees + notification unread count |
 | `GET /api/v1/users/{user}/edit-context` | User edit form data |
-| `GET /api/v1/navigation/menus/form-options` | Menu create/edit form data |
+| `GET /api/v1/navigation/menus/form-options` | Menu create/edit form data (edit: menu record only) |
+| `GET /api/v1/lookups/*` | Paginated form select options — [form-selects.md](./form-selects.md) |
 
 Pattern and contracts: [aggregate-endpoints.md](../../monolith-gateway/docs/aggregate-endpoints.md).
 
@@ -144,6 +145,7 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 | [docs/crud-architecture.md](./crud-architecture.md) | Repository pattern, API resources |
 | [docs/environment.md](./environment.md) | `GATEWAY_ENFORCE`, secrets, env vars |
 | [docs/user-management-hrbac.md](./user-management-hrbac.md) | Users and role hierarchy |
+| [docs/form-selects.md](./form-selects.md) | Select2 + lookup endpoints |
 | [docs/navigation-menu.md](./navigation-menu.md) | Menu tree API |
 | [docs/notifications.md](./notifications.md) | Notifications and broadcasting |
 | [docs/approval-matrix-engine.md](./approval-matrix-engine.md) | Approval workflows |
@@ -170,6 +172,7 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 | [README.md](../../monolith-frontend/README.md) | Setup, deploy, env vars |
 | [docs/static-only-policy.md](../../monolith-frontend/docs/static-only-policy.md) | Static-only Cloudflare Pages; Gateway-first rule |
 | [docs/architecture.md](../../monolith-frontend/docs/architecture.md) | Stack, auth, bootstrap shell, Vite/wrangler |
+| [docs/form-selects.md](../../monolith-frontend/docs/form-selects.md) | Select2 fields + lookup client |
 | [docs/api-surface.md](../../monolith-frontend/docs/api-surface.md) | All `src/api/*` endpoints |
 | [docs/router-and-guards.md](../../monolith-frontend/docs/router-and-guards.md) | Routes, permissions, guards |
 | [docs/stores-and-realtime.md](../../monolith-frontend/docs/stores-and-realtime.md) | Pinia stores, Echo, locale |

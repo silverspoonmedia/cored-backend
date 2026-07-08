@@ -7,4 +7,8 @@
             'submitLabel' => __('web/users.update_submit'),
         ])
     </x-adminlte4::card>
+
+    <x-slot:scripts>
+        <x-adminlte4::partials.select2-scripts />
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

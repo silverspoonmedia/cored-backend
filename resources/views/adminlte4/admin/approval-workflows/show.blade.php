@@ -170,7 +170,7 @@
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">{{ __('approval.parallel_mode') }}</label>
-                                <select name="parallel_mode" class="form-select" required>
+                                <select name="parallel_mode" class="form-select" data-monolith-select2="1" required>
                                     @foreach($meta['parallel_modes'] ?? ['UNANIMOUS', 'ANY_REJECT', 'MAJORITY_VOTE'] as $mode)
                                         <option value="{{ $mode }}" {{ old('parallel_mode') === $mode ? 'selected' : '' }}>{{ $mode }}</option>
                                     @endforeach
@@ -178,7 +178,7 @@
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">{{ __('approval.reject_action') }}</label>
-                                <select name="reject_action" class="form-select" id="rejectActionSelect" required>
+                                <select name="reject_action" class="form-select" id="rejectActionSelect" data-monolith-select2="1" required>
                                     @foreach($meta['reject_actions'] ?? ['STOP', 'BACK_TO_STEP'] as $action)
                                         <option value="{{ $action }}" {{ old('reject_action') === $action ? 'selected' : '' }}>{{ $action }}</option>
                                     @endforeach
@@ -199,7 +199,7 @@
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">{{ __('approval.condition_op') }}</label>
-                                <select name="condition_op" class="form-select">
+                                <select name="condition_op" class="form-select" data-monolith-select2="1">
                                     <option value=">=" {{ old('condition_op') === '>=' ? 'selected' : '' }}>&gt;=</option>
                                     <option value=">" {{ old('condition_op') === '>' ? 'selected' : '' }}>&gt;</option>
                                     <option value="<=" {{ old('condition_op') === '<=' ? 'selected' : '' }}>&lt;=</option>
@@ -227,7 +227,7 @@
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">{{ __('approval.escalate_to_role') }}</label>
-                                <select name="escalate_to_role" class="form-select">
+                                <select name="escalate_to_role" class="form-select" data-monolith-select2="1">
                                     <option value="">--</option>
                                     @foreach($meta['roles'] ?? [] as $role)
                                         <option value="{{ $role }}" {{ old('escalate_to_role') === $role ? 'selected' : '' }}>{{ $role }}</option>
@@ -272,7 +272,7 @@
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label">{{ __('approval.required_role') }}</label>
-                            <select name="required_role" class="form-select" required>
+                            <select name="required_role" class="form-select" data-monolith-select2="1" required>
                                 @foreach($meta['roles'] ?? [] as $role)
                                     <option value="{{ $role }}">{{ $role }}</option>
                                 @endforeach
@@ -292,26 +292,30 @@
         </div>
     </div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const rejectActionSelect = document.getElementById('rejectActionSelect');
-        const rejectTargetGroup = document.getElementById('rejectTargetStepGroup');
+    <x-slot:scripts>
+        <x-adminlte4::partials.select2-scripts />
 
-        if (rejectActionSelect && rejectTargetGroup) {
-            rejectActionSelect.addEventListener('change', function () {
-                rejectTargetGroup.style.display = this.value === 'BACK_TO_STEP' ? 'block' : 'none';
-            });
-        }
+        <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rejectActionSelect = document.getElementById('rejectActionSelect');
+            const rejectTargetGroup = document.getElementById('rejectTargetStepGroup');
 
-        const addApproverModal = document.getElementById('addApproverModal');
-        if (addApproverModal) {
-            addApproverModal.addEventListener('show.bs.modal', function (event) {
-                const button = event.relatedTarget;
-                const stepId = button.dataset.stepId;
-                const form = document.getElementById('addApproverForm');
-                form.action = `/admin/approval-workflows/{{ $workflowData['id'] }}/steps/${stepId}/approvers`;
-            });
-        }
-    });
-    </script>
+            if (rejectActionSelect && rejectTargetGroup) {
+                rejectActionSelect.addEventListener('change', function () {
+                    rejectTargetGroup.style.display = this.value === 'BACK_TO_STEP' ? 'block' : 'none';
+                });
+            }
+
+            const addApproverModal = document.getElementById('addApproverModal');
+            if (addApproverModal) {
+                addApproverModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const stepId = button.dataset.stepId;
+                    const form = document.getElementById('addApproverForm');
+                    form.action = `/admin/approval-workflows/{{ $workflowData['id'] }}/steps/${stepId}/approvers`;
+                });
+            }
+        });
+        </script>
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

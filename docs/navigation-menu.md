@@ -141,6 +141,8 @@ Menu management screens in the Blade admin (`routes/web.php`) are **pure consume
 
 Views render the **JSON arrays** returned by the API. List screens use the locale-resolved `$menu['name']`; the edit form binds translatable fields from `$menu['name_translations']` and `$menu['description_translations']` (see [Translatable input](#translatable-input-name--description)). Flat `role_ids` / `user_include_ids` / `user_exclude_ids` come from the detail payload. Web routes carry **no** `permission:` middleware — the API returns `403` when the actor lacks access.
 
+**Form select options** (parent, users, roles) load via paginated `GET /api/v1/lookups/*` (Blade: `GET /lookups/*` proxies). The admin form no longer bulk-loads all users or menus on page render. See [form-selects.md](./form-selects.md).
+
 **Two deliberate exceptions** (reference reads only; see [Web frontend](./web-frontend.md)):
 
 1. **Sidebar and navbar** — `NavigationComposer` calls `MenuService::navigationTree(..., layout: …)` directly (same engine as `GET /api/v1/navigation/menus`, but no self-HTTP round-trip on every page). Sidebar uses `layout=sidebar`; navbar uses `layout=navbar`.

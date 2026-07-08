@@ -147,7 +147,7 @@ Route::middleware(['auth:api', 'permission:view user'])
 **Example endpoint:** `GET /api/v1/admin/ping`  
 **Example route name:** `api.v1.admin.ping` (via `route('api.v1.admin.ping')`)
 
-This is the **primary API surface** for the application. Implement new endpoints here unless they explicitly meet the global criteria above. The real v1 surface includes `auth/*`, `users/*`, `navigation/menus/*`, `notifications/*`, and `activity-logs/*` (see the related docs below).
+This is the **primary API surface** for the application. Implement new endpoints here unless they explicitly meet the global criteria above. The real v1 surface includes `auth/*`, `users/*`, `navigation/menus/*`, `lookups/*`, `notifications/*`, and `activity-logs/*` (see the related docs below).
 
 Approval endpoints (`/api/v1/approvals/*`, `/api/v1/admin/approval-workflows/*`) are registered from [routes/api.php](routes/api.php) with a `v1/` prefix — see [Approval matrix engine](./approval-matrix-engine.md).
 

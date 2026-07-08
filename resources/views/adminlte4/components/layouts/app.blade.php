@@ -44,5 +44,6 @@
 
         <x-adminlte4::partials.assets-scripts />
         {{ $scripts ?? '' }}
+        @stack('scripts')
     </body>
 </html>

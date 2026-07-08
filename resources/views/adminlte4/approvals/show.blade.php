@@ -131,7 +131,7 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>{{ __('approval.reassign_select_user') }} *</label>
-                            <select id="reassignUserId" name="user_id" class="form-control" required></select>
+                            <select id="reassignUserId" name="user_id" class="form-select" data-monolith-select2="1" data-placeholder="--" required></select>
                         </div>
                         <div class="form-group">
                             <label>{{ __('approval.reassign_reason') }} *</label>
@@ -147,40 +147,48 @@
         </div>
     </div>
 
-    <script>
-    function approveSlot(slotId) {
-        if (!confirm('{{ __('approval.confirm_approve') }}')) {
-            return;
+    <x-slot:scripts>
+        <x-adminlte4::partials.select2-scripts />
+
+        <script>
+        function approveSlot(slotId) {
+            if (!confirm('{{ __('approval.confirm_approve') }}')) {
+                return;
+            }
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/approvals/slots/${slotId}/approve`;
+            form.innerHTML = `@csrf`;
+            document.body.appendChild(form);
+            form.submit();
         }
 
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/approvals/slots/${slotId}/approve`;
-        form.innerHTML = `@csrf`;
-        document.body.appendChild(form);
-        form.submit();
-    }
+        function rejectSlot(slotId) {
+            const form = document.getElementById('rejectForm');
+            form.action = `/approvals/slots/${slotId}/reject`;
+            $('#rejectModal').modal('show');
+        }
 
-    function rejectSlot(slotId) {
-        const form = document.getElementById('rejectForm');
-        form.action = `/approvals/slots/${slotId}/reject`;
-        $('#rejectModal').modal('show');
-    }
+        function reassignSlot(slotId, candidates) {
+            const form = document.getElementById('reassignForm');
+            const select = document.getElementById('reassignUserId');
+            form.action = `/approvals/slots/${slotId}/reassign`;
+            select.innerHTML = '<option value="">--</option>';
 
-    function reassignSlot(slotId, candidates) {
-        const form = document.getElementById('reassignForm');
-        const select = document.getElementById('reassignUserId');
-        form.action = `/approvals/slots/${slotId}/reassign`;
-        select.innerHTML = '<option value="">--</option>';
+            candidates.forEach(function (candidate) {
+                const option = document.createElement('option');
+                option.value = candidate.id;
+                option.textContent = candidate.name;
+                select.appendChild(option);
+            });
 
-        candidates.forEach(function (candidate) {
-            const option = document.createElement('option');
-            option.value = candidate.id;
-            option.textContent = candidate.name;
-            select.appendChild(option);
-        });
+            if (window.MonolithSelect2) {
+                window.MonolithSelect2.initElement(select);
+            }
 
-        $('#reassignModal').modal('show');
-    }
-    </script>
+            $('#reassignModal').modal('show');
+        }
+        </script>
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

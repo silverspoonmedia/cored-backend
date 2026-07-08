@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Web\Navigation;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
 use App\Models\Role;
-use App\Models\User;
 use App\Support\Navigation\MenuLayout;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -161,25 +160,64 @@ class MenuController extends Controller
     private function renderForm(string $view, array $menu = []): View|RedirectResponse
     {
         $layout = $menu['layout'] ?? MenuLayout::default();
-        $list = $this->api()->get('navigation/menus/list', ['layout' => $layout]);
-
-        if (! $list->successful()) {
-            return redirect()->route('menus.index', ['layout' => $layout])->with('error', $this->apiMessage($list));
-        }
-
-        $currentId = $menu['id'] ?? null;
-
-        $allMenus = collect($list->json('data', []))
-            ->when($currentId !== null, fn ($items) => $items->reject(fn (array $m): bool => ($m['id'] ?? null) === $currentId))
-            ->values();
 
         return $this->webView($view, [
             'menu' => $menu !== [] ? $menu : null,
-            'allMenus' => $allMenus,
             'listLayout' => $layout,
             'roles' => Role::query()->orderBy('level')->get(),
-            'users' => User::query()->orderBy('name')->get(),
+            'hydratedLookups' => $this->hydratedLookups($menu, $layout),
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $menu
+     * @return array{menus: array<string, string>, users: array<string, string>, roles: array<string, string>}
+     */
+    private function hydratedLookups(array $menu, string $layout): array
+    {
+        if (! isset($menu['id'])) {
+            return ['menus' => [], 'users' => [], 'roles' => []];
+        }
+
+        $menuIds = array_values(array_filter([(string) ($menu['parent_id'] ?? '')]));
+        $userIds = array_values(array_unique(array_merge(
+            $menu['user_include_ids'] ?? [],
+            $menu['user_exclude_ids'] ?? [],
+        )));
+        $roleIds = $menu['role_ids'] ?? [];
+
+        return [
+            'menus' => $this->lookupOptions('lookups/menus', [
+                'ids' => $menuIds,
+                'layout' => $layout,
+                'exclude' => $menu['id'] ?? null,
+            ]),
+            'users' => $this->lookupOptions('lookups/users', ['ids' => $userIds]),
+            'roles' => $this->lookupOptions('lookups/roles', ['ids' => $roleIds]),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, string>
+     */
+    private function lookupOptions(string $uri, array $query): array
+    {
+        $ids = $query['ids'] ?? [];
+
+        if (! is_array($ids) || $ids === []) {
+            return [];
+        }
+
+        $response = $this->api()->get($uri, $query);
+
+        if (! $response->successful()) {
+            return [];
+        }
+
+        return collect($response->json('data.results', []))
+            ->mapWithKeys(fn (array $row): array => [(string) $row['id'] => (string) $row['text']])
+            ->all();
     }
 
     private function resolveLayout(?string $layout): string

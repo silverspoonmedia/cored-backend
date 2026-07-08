@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/notifications/bell.js',
                 'resources/js/orders/direct-upload.js',
+                'resources/js/select2-init.js',
             ],
             refresh: true,
             fonts: [
