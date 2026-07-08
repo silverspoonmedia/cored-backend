@@ -76,6 +76,7 @@
                     }
 
                     query.append('page', String(requestData.page || 1));
+                    // Intentionally fixed at 10 — parity with SPA LOOKUP_PER_PAGE and config/lookup.php default.
                     query.append('per_page', '10');
 
                     fetch(`${ajaxUrl}?${query.toString()}`, {

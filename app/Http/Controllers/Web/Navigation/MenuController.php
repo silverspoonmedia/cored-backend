@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Web\Navigation;
 
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
-use App\Models\Role;
 use App\Support\Navigation\MenuLayout;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -164,7 +163,6 @@ class MenuController extends Controller
         return $this->webView($view, [
             'menu' => $menu !== [] ? $menu : null,
             'listLayout' => $layout,
-            'roles' => Role::query()->orderBy('level')->get(),
             'hydratedLookups' => $this->hydratedLookups($menu, $layout),
         ]);
     }

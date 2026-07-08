@@ -9,7 +9,6 @@
         'p' => __('web/menus.form.types.p'),
         'c' => __('web/menus.form.types.c'),
     ];
-    $roleOptions = $roles->pluck('name', 'id');
     $hydratedMenus = $hydratedLookups['menus'] ?? [];
     $hydratedUsers = $hydratedLookups['users'] ?? [];
     $hydratedRoles = $hydratedLookups['roles'] ?? [];

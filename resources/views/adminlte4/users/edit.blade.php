@@ -14,8 +14,4 @@
             @include(config('web.layout').'.users._activity_history', ['activityLogs' => $activityLogs ?? []])
         </div>
     </div>
-
-    <x-slot:scripts>
-        <x-adminlte4::partials.select2-scripts />
-    </x-slot:scripts>
 </x-adminlte4::layouts.app>
