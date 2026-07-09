@@ -30,7 +30,7 @@ All IDs are **UUID v7** end to end (see [User primary keys (UUID v7)](./user-uui
 | Exception | `app/Domain/Navigation/Exceptions/InvalidMenuParentException.php` | 422 for invalid parent (cycle / restoring under a trashed parent) |
 | Seeder | `database/seeders/MenuSeeder.php` | Sample header → parent → children |
 
-The repository is bound in `App\Providers\AppServiceProvider`:
+The repository is bound in `App\Providers\Domain\NavigationServiceProvider`:
 
 ```php
 $this->app->bind(MenuRepositoryInterface::class, MenuRepository::class);
@@ -71,7 +71,7 @@ Each menu row carries a **`layout`** key that groups it into an independent navi
 | `sidebar` (default) | `resources/views/{layout}/components/partials/sidebar.blade.php` via `<x-adminlte4::nav.tree>` | `$navigation` |
 | `navbar` | `resources/views/{layout}/components/partials/navbar.blade.php` via `<x-adminlte4::nav.bar-tree>` | `$navbarNavigation` |
 
-Known keys live in `config/navigation.php` (`navigation.layouts`). Add a key there when introducing a new shell region, then register a view composer in `AppServiceProvider` that calls `MenuService::navigationTree(..., layout: 'your-key')`.
+Known keys live in `config/navigation.php` (`navigation.layouts`). Add a key there when introducing a new shell region, then register a view composer in `App\Providers\Domain\NavigationServiceProvider` that calls `MenuService::navigationTree(..., layout: 'your-key')`.
 
 Rules:
 
@@ -253,7 +253,7 @@ The **sidebar** and `GET /api/v1/navigation/menus` both call `MenuRepository::na
 - `createMenu`, `updateMenu`, `updateMenuPosition`, `deleteMenu`, `restoreMenu`
 - `syncRoles`, `syncUserIncludes`, `syncUserExcludes`
 
-Because the snapshot stores role **names**, renaming or deleting a `Role` would otherwise leave a stale gate — so `AppServiceProvider` also flushes on `Role::updated` / `Role::deleted` via `flushNavigationCache()`. (User role *assignments* need no bust: visibility is evaluated live per request against the current user.)
+Because the snapshot stores role **names**, renaming or deleting a `Role` would otherwise leave a stale gate — so `App\Providers\Domain\NavigationServiceProvider` also flushes on `Role::updated` / `Role::deleted` via `flushNavigationCache()`. (User role *assignments* need no bust: visibility is evaluated live per request against the current user.)
 
 **Not cached:** the admin flat list (`adminFlatList`) and trashed list query the database directly.
 

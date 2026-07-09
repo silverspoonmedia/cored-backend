@@ -1313,7 +1313,7 @@ The approval matrix engine has been **fully implemented** in the Laravel 13 mono
 - `app/Domain/Approval/Repositories/Eloquent/ApprovalRepository.php` - Eloquent implementation
 
 **Service provider binding:**
-- Added to `AppServiceProvider::register()` - `ApprovalRepositoryInterface` → `ApprovalRepository`
+- Added to `App\Providers\Domain\ApprovalServiceProvider::register()` - `ApprovalRepositoryInterface` → `ApprovalRepository`
 
 **Status:** All services functional. Dependency injection configured. Business logic follows repository pattern.
 

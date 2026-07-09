@@ -62,7 +62,7 @@ UserRepository            ← Eloquent queries for User only
 User model / database
 ```
 
-Auth-specific failures use `App\Exceptions\Auth\*` classes extending `BusinessRuleException`, which render JSON for `api/*` requests.
+Auth-specific failures use `App\Domain\Identity\Exceptions\Auth\*` classes extending `App\Exceptions\BusinessRuleException`, which render JSON for `api/*` requests.
 
 **Audit trail:** Login, logout, 2FA, and password changes are recorded in Spatie activitylog (`log_name: auth`) and in Laravel's file log via event listeners. See [Authentication activity assessment](./auth-activity-assessment.md) and [Activity log](./activity-log.md).
 
@@ -93,6 +93,7 @@ app/Domain/Identity/
 │   ├── User.php                         ← JWTSubject, MustVerifyEmail, HasRoles
 │   ├── Role.php                         ← HasUuids
 │   └── Permission.php                   ← HasUuids
+├── Exceptions/Auth/*.php                ← InvalidCredentialsException, InvalidTwoFactorCodeException, …
 └── Notifications/Auth/
     ├── VerifyEmailNotification.php
     └── ResetPasswordNotification.php
@@ -100,7 +101,6 @@ app/Domain/Identity/
 app/Rules/Hcaptcha.php
 app/Support/Auth/UserPresenter.php
 app/Support/Security/HcaptchaVerifier.php
-app/Exceptions/Auth/*.php
 
 routes/api/v1/identity.php               ← all auth routes
 database/seeders/RoleSeeder.php
@@ -108,7 +108,7 @@ database/seeders/RoleSeeder.php
 
 See [Domain modules](./domain-modules.md) for the full internal monorepo layout.
 
-`UserRepositoryInterface` is bound to `UserRepository` in `App\Providers\AppServiceProvider`.
+`UserRepositoryInterface` is bound to `UserRepository` in `App\Providers\Domain\IdentityServiceProvider`.
 
 ---
 

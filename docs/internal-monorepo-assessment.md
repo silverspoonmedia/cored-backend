@@ -93,12 +93,13 @@ Breaking changes should use a new API version (`routes/api/v2.php`) rather than 
 | 0 — Assessment | Done | This document |
 | 1 — Logical `app/Domain/*` | Done | Six domains migrated; tests under `tests/Domain/*` |
 | 2 — Route normalization | Done | `routes/api/v1/*.php`, `routes/api/playground.php`; approvals on v1 router file |
-| 3 — ServiceProvider split | Not started | Optional; bindings remain in `AppServiceProvider` |
+| 3 — ServiceProvider split | Done | `app/Providers/Domain/{Identity,Navigation,Notification,ActivityLog,Playground,Approval}ServiceProvider.php`; `AppServiceProvider` kept as kernel-only provider |
 | 4 — Composer packages | **Deferred** | See triggers below |
 
 ### Bootstrap registrations added
 
 - `bootstrap/app.php` — `withEvents(discover:)` for domain listeners; `withCommands()` for Approval + Navigation artisan commands.
+- `bootstrap/providers.php` — registers `AppServiceProvider` (kernel) plus the six per-domain providers under `app/Providers/Domain/`.
 
 ### PHPUnit
 
@@ -156,6 +157,8 @@ Post-cleanup verification: `.\scripts\remove-empty-dirs.ps1 -WhatIf` reports **n
 
 Cleanup script: [`scripts/remove-empty-dirs.ps1`](../scripts/remove-empty-dirs.ps1) (bottom-up delete, file-count guard).
 
+**Follow-up (same day):** the Phase 3 provider split and stray-test relocation (see [internal-monorepo-porting.md](./internal-monorepo-porting.md#remaining-follow-ups-optional)) left 14 more empty shells (`app/Exceptions/Auth`, `tests/Unit/Services/Auth`, `tests/Feature/Auth`, `tests/Feature/Views`, and nested `Http/Controllers/API/*` leaves under `tests/Feature` and `tests/Unit`). Removed the same way; `composer test` → **386 passed** after cleanup.
+
 **Out of scope:** `storage/framework/cache/data/*` (Laravel runtime cache, not porting debris).
 
 ### Kernel paths retained (outside `Domain/`)
@@ -169,12 +172,15 @@ Cleanup script: [`scripts/remove-empty-dirs.ps1`](../scripts/remove-empty-dirs.p
 | `app/Exceptions/` | `BusinessRuleException` + `Auth/*` (candidate move to Identity later) |
 | `app/Http/Requests/Concerns/`, `app/Http/Resources/Concerns/` | Shared request/resource traits |
 | `app/Console/Commands/` | Env/locale/key artisan commands |
-| `app/Providers/AppServiceProvider.php` | DI bindings |
+| `app/Providers/AppServiceProvider.php` | Kernel-only DI bindings (`EloquentCrudRepositoryInterface`, `DataTableResponseFactory`) + Blade component path |
+| `app/Providers/Domain/*ServiceProvider.php` | Per-domain bindings, policies, event listeners, view composers |
 
 ### Future cleanup (not empty folders)
 
-- `tests/Unit/Services/Auth/` — 3 active tests still on old path (imports already use `App\Domain\Identity\Services\*`); relocate to `tests/Domain/Identity/Unit/Services/Auth/` when convenient.
-- Duplicate or overlapping tests under `tests/Feature/` vs `tests/Domain/` — file-level audit, separate task.
+Closed 2026-07-09:
+
+- ~~`tests/Unit/Services/Auth/`~~ — relocated to `tests/Domain/Identity/Unit/Services/Auth/`, plus 10 more stray Identity/Navigation/Playground test files found and relocated during the audit.
+- ~~Duplicate or overlapping tests under `tests/Feature/` vs `tests/Domain/`~~ — audited; no duplicate test classes found, only misplaced ones (now relocated). `tests/Feature/` and `tests/Unit/` retain only kernel/cross-cutting tests (console, middleware, CSRF handling, `Hcaptcha` rule/verifier, locale parity).
 
 ---
 

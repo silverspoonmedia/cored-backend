@@ -4,9 +4,9 @@ namespace App\Domain\Identity\Services\Auth;
 
 use App\Domain\Identity\Events\TwoFactorDisabled;
 use App\Domain\Identity\Events\TwoFactorEnabled;
-use App\Exceptions\Auth\InvalidTwoFactorCodeException;
-use App\Exceptions\Auth\TwoFactorAlreadyEnabledException;
-use App\Exceptions\Auth\TwoFactorNotEnabledException;
+use App\Domain\Identity\Exceptions\Auth\InvalidTwoFactorCodeException;
+use App\Domain\Identity\Exceptions\Auth\TwoFactorAlreadyEnabledException;
+use App\Domain\Identity\Exceptions\Auth\TwoFactorNotEnabledException;
 use App\Domain\Identity\Models\User;
 use Illuminate\Support\Facades\Crypt;
 

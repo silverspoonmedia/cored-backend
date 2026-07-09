@@ -30,8 +30,8 @@ Gateway and Frontend **only change** when HTTP URLs or JSON response shapes chan
 | 0 — Assessment & baseline | Done | [internal-monorepo-assessment.md](./internal-monorepo-assessment.md), baseline test counts |
 | 1 — Logical domain folders | Done | Six domains under `app/Domain/*` |
 | 2 — Route normalization | Done | `routes/api/v1/*.php`, `routes/web/*.php`, approvals on v1 |
-| Post-migration cleanup | Done | 78 empty directories removed via `scripts/remove-empty-dirs.ps1` |
-| 3 — Per-domain ServiceProviders | **Not started** | Bindings still in `AppServiceProvider` |
+| Post-migration cleanup | Done | 78 empty directories removed via `scripts/remove-empty-dirs.ps1`; 14 more removed after the housekeeping pass below |
+| 3 — Per-domain ServiceProviders | Done | `app/Providers/Domain/{Identity,Navigation,Notification,ActivityLog,Playground,Approval}ServiceProvider.php`; `AppServiceProvider` now kernel-only |
 | 4 — Composer packages | **Deferred** | See assessment doc for triggers |
 
 ---
@@ -61,7 +61,7 @@ For each domain, in one PR:
 2. **Update namespaces** to `App\Domain\{Domain}\…`.
 3. **Update imports** across the codebase (routes, config, factories, seeders, other domains).
 4. **Move tests** to `tests/Domain/{Domain}/Feature|Unit/…`.
-5. **Register bindings** in `AppServiceProvider` (repository interfaces → Eloquent implementations).
+5. **Register bindings** in the domain's ServiceProvider under `app/Providers/Domain/{Domain}ServiceProvider.php` (repository interfaces → Eloquent implementations), and add it to `bootstrap/providers.php`.
 6. **Discover listeners/commands** in `bootstrap/app.php` if the domain has them.
 7. Run `composer dump-autoload`.
 8. **Do not change** public route URLs or JSON response shapes.
@@ -82,6 +82,7 @@ For each domain, in one PR:
 | `App\Http\Controllers\API\PlaygroundController` | `App\Domain\Playground\Http\Controllers\API\PlaygroundController` |
 | `App\Http\Controllers\Web\UserController` | `App\Domain\Identity\Http\Controllers\Web\UserController` |
 | `App\View\Composers\NavigationComposer` | `App\Domain\Navigation\View\Composers\NavigationComposer` |
+| `App\Exceptions\Auth\InvalidCredentialsException` | `App\Domain\Identity\Exceptions\Auth\InvalidCredentialsException` |
 
 **Kernel (unchanged):**
 
@@ -92,10 +93,12 @@ For each domain, in one PR:
 | `App\Http\Middleware\*` | Shared middleware |
 | `App\Support\*` | ApiClient, DataTable, Auth cookie, Web helpers |
 | `App\Repositories\Eloquent\EloquentCrudRepository` | Generic CRUD base |
-| `App\Exceptions\BusinessRuleException` + `Auth/*` | Shared exceptions (candidate move to Identity later) |
+| `App\Exceptions\BusinessRuleException` | Shared base exception (domain-specific subclasses, e.g. `App\Domain\Identity\Exceptions\Auth\*`, live under their domain) |
 | `App\Http\Requests\Concerns\InteractsWithListDisplayMode` | Shared request trait |
 | `App\Http\Resources\Concerns\ResolvesResourceArray` | Shared resource trait |
 | `App\Console\Commands/*` | Env/locale/key artisan commands |
+| `App\Providers\AppServiceProvider` | Kernel bindings only (`EloquentCrudRepositoryInterface`, `DataTableResponseFactory`, Blade component path) |
+| `App\Providers\Domain\*ServiceProvider` | Per-domain bindings, policies, event listeners, view composers (registered in `bootstrap/providers.php`) |
 
 Domain controllers **extend** kernel base classes and **import** kernel concerns — they do not duplicate them.
 
@@ -161,7 +164,7 @@ routes/web/notification.php
 |-------|------|
 | `Domain` | `tests/Domain/` (primary — mirrors domains) |
 | `Feature` | `tests/Feature/` (kernel, console, middleware, integration leftovers) |
-| `Unit` | `tests/Unit/` (kernel helpers; `tests/Unit/Services/Auth/` still on old path) |
+| `Unit` | `tests/Unit/` (kernel helpers only — `App\Rules\Hcaptcha`, `HcaptchaVerifier`, config, localization parity, support classes) |
 
 Example: `tests/Domain/Playground/Feature/Http/Controllers/API/PlaygroundUserCrudTest.php`.
 
@@ -205,6 +208,8 @@ composer test
 | `Menu` factory after move | `newFactory()` pointing to `Database\Factories\MenuFactory` |
 | Empty directory shells after move | `.\scripts\remove-empty-dirs.ps1` |
 | Stray empty dirs at repo root (`Http/`, `Models/`, …) | Migration script run in wrong cwd — removed by cleanup script |
+| Moving a domain provider's `boot()` cross-domain dependency (e.g. Navigation's cache flush needs `Role`) | Fine to depend on another domain's model/event in `boot()` — Laravel calls every provider's `register()` before any `boot()`, so bindings from other providers are already available |
+| Two providers composing the same hashed view (`WebLayout::navbarComposerView()`) | Register **separate** `View::composer()` calls per provider (Navigation, Notification) — Laravel runs all composers bound to a view, no need to chain them in one callback |
 
 ---
 
@@ -221,11 +226,9 @@ composer test
 
 ## Remaining follow-ups (optional)
 
-1. **Phase 3** — Split `AppServiceProvider` into per-domain providers under `app/Providers/Domain/`.
-2. **Relocate** `tests/Unit/Services/Auth/*` → `tests/Domain/Identity/Unit/Services/Auth/`.
-3. **Move** `app/Exceptions/Auth/*` → `app/Domain/Identity/Exceptions/`.
-4. **Audit** overlapping tests in `tests/Feature/` vs `tests/Domain/`.
-5. **Phase 4** — Composer packages only if assessment triggers are met.
+All items below were closed in the 2026-07-09 housekeeping pass (Phase 3 split, exception relocation, and stray test relocation — 386 tests still pass, same count as before).
+
+1. **Phase 4** — Composer packages only if assessment triggers are met (see [internal-monorepo-assessment.md](./internal-monorepo-assessment.md#phase-4-composer-packages-deferred)).
 
 ---
 
@@ -233,6 +236,7 @@ composer test
 
 ```powershell
 cd c:\laragon\www\monolith
+composer dump-autoload                           # required after moving/renaming classes
 composer test                                    # expect 386 passed
 .\scripts\remove-empty-dirs.ps1 -WhatIf          # expect: no empty dirs in scope
 .\scripts\test-workspace.ps1                     # Monolith + Gateway + Frontend

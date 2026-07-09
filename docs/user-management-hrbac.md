@@ -339,7 +339,7 @@ routes/api/v1/identity.php
 tests/Domain/Identity/Feature/Http/Controllers/API/V1/UserManagementTest.php
 ```
 
-`UserPolicy` is registered in `App\Providers\AppServiceProvider` via `Gate::policy(User::class, UserPolicy::class)`.
+`UserPolicy` is registered in `App\Providers\Domain\IdentityServiceProvider` via `Gate::policy(User::class, UserPolicy::class)`.
 
 ---
 

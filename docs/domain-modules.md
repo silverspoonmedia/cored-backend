@@ -21,7 +21,15 @@ app/
 ├── Http/Requests/Concerns/
 ├── Http/Resources/Concerns/
 ├── Console/Commands/   # Env/locale/key artisan (Kernel)
-└── Providers/AppServiceProvider.php
+└── Providers/
+    ├── AppServiceProvider.php          # Kernel-only bindings (Kernel)
+    └── Domain/
+        ├── IdentityServiceProvider.php
+        ├── NavigationServiceProvider.php
+        ├── NotificationServiceProvider.php
+        ├── ActivityLogServiceProvider.php
+        ├── PlaygroundServiceProvider.php
+        └── ApprovalServiceProvider.php
 ```
 
 Each domain typically contains:
@@ -89,7 +97,7 @@ Shared infrastructure stays in `App\Support\*`, `App\Http\Middleware\*`, and `Ap
 1. Create `app/Domain/{Name}/` with controllers, services, repositories, models.
 2. Add `routes/api/v1/{name}.php` and `require` it from `routes/api/v1.php`.
 3. Add `routes/web/{name}.php` (and guest routes if needed) and `require` from `routes/web.php`.
-4. Register repository bindings in `AppServiceProvider` (or a dedicated domain service provider later).
+4. Create `app/Providers/Domain/{Name}ServiceProvider.php` and register repository bindings, policies, event listeners, and view composers there; register the provider in `bootstrap/providers.php`. Keep `AppServiceProvider` for kernel-only bindings (`EloquentCrudRepositoryInterface`, `DataTableResponseFactory`, Blade component path).
 5. Add tests under `tests/Domain/{Name}/`.
 6. If the domain exposes new **public URLs** or JSON shapes, update Gateway/Frontend in the same task.
 7. Update this doc and [internal-monorepo-assessment.md](./internal-monorepo-assessment.md).

@@ -2,7 +2,7 @@
 
 namespace Tests\Domain\Identity\Unit\Services\Auth;
 
-use App\Exceptions\Auth\EmailAlreadyVerifiedException;
+use App\Domain\Identity\Exceptions\Auth\EmailAlreadyVerifiedException;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Repositories\Eloquent\UserRepository;
 use App\Domain\Identity\Services\Auth\EmailVerificationService;

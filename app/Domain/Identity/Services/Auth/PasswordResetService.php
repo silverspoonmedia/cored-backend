@@ -3,8 +3,8 @@
 namespace App\Domain\Identity\Services\Auth;
 
 use App\Domain\Identity\Events\PasswordChanged;
-use App\Exceptions\Auth\CurrentPasswordIncorrectException;
-use App\Exceptions\Auth\InvalidPasswordResetTokenException;
+use App\Domain\Identity\Exceptions\Auth\CurrentPasswordIncorrectException;
+use App\Domain\Identity\Exceptions\Auth\InvalidPasswordResetTokenException;
 use App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Hash;

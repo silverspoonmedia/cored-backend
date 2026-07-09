@@ -2,7 +2,7 @@
 
 namespace App\Domain\Identity\Services\Auth;
 
-use App\Exceptions\Auth\EmailAlreadyVerifiedException;
+use App\Domain\Identity\Exceptions\Auth\EmailAlreadyVerifiedException;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Auth\Events\Verified;

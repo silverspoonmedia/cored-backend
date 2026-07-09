@@ -117,7 +117,7 @@ app/
 ```
 
 `OrderRepositoryInterface` is bound to `OrderRepository` in
-`AppServiceProvider`. The controller depends only on `OrderService`; the service
+`App\Providers\Domain\PlaygroundServiceProvider`. The controller depends only on `OrderService`; the service
 depends only on the repository contract.
 
 ### Endpoints

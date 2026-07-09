@@ -254,7 +254,9 @@ The active layout is **`config('web.layout')`** (env `WEB_LAYOUT`, default `admi
 | Config | `config/web.php` | `layout` key — switch layouts without touching controllers |
 | Resolver | `App\Support\Web\WebLayout` | `view()`, `componentsPath()`, `breadcrumbsView()`, `sidebarComposerView()`, `navbarComposerView()` |
 | Controllers | `App\Http\Controllers\Web\Controller` + `RendersWebViews` | `$this->webView('dashboard')` → `view('{layout}.dashboard')` |
-| Bootstrap | `AppServiceProvider` | Registers `Blade::anonymousComponentPath(WebLayout::…)`; `NavigationComposer` + `NotificationBellComposer` on the hashed navbar view; `NavigationComposer` on the hashed sidebar view |
+| Bootstrap | `AppServiceProvider` | Registers `Blade::anonymousComponentPath(WebLayout::…)` (kernel-only) |
+| Bootstrap | `Providers\Domain\NavigationServiceProvider` | `NavigationComposer` on the hashed sidebar view; `NavigationComposer` on the hashed navbar view |
+| Bootstrap | `Providers\Domain\NotificationServiceProvider` | `NotificationBellComposer` on the hashed navbar view |
 
 **AdminLTE 4** is the shipped layout today (`resources/views/adminlte4/`). Blade templates inside that tree still reference `<x-adminlte4::layouts.app>`, `<x-adminlte4::form.input>`, etc. — component tags are layout-specific by design.
 
@@ -262,9 +264,11 @@ When you add a second layout, create `resources/views/<layout>/` with its own co
 
 `NavigationComposer` and `NotificationBellComposer` are bound to the active layout's
 sidebar and navbar via `View::composer(WebLayout::sidebarComposerView(), …)` and
-`View::composer(WebLayout::navbarComposerView(), …)` in `AppServiceProvider`. That
+`View::composer(WebLayout::navbarComposerView(), …)` in `App\Providers\Domain\NavigationServiceProvider`
+and `App\Providers\Domain\NotificationServiceProvider` respectively. That
 resolves the **hashed** anonymous-component view namespace Laravel registers for
-`Blade::anonymousComponentPath()` (not the readable `<x-{layout}::…>` prefix).
+`Blade::anonymousComponentPath()` (not the readable `<x-{layout}::…>` prefix),
+which is still registered in the kernel `AppServiceProvider`.
 Breadcrumb markup uses `WebLayout::breadcrumbsView()`.
 
 ```

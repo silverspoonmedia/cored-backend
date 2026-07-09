@@ -68,7 +68,7 @@ of fanning out a copy per recipient:
 | Vite — bell | `resources/js/notifications/bell.js` | Badge/list UI, polling interval, Echo subscription, multi-tab sync |
 | Vite — echo | `resources/js/notifications/echo.js` | Laravel Echo + Pusher factory (`VITE_PUSHER_*` + server overrides) |
 
-The repository is bound in `App\Providers\AppServiceProvider`:
+The repository is bound in `App\Providers\Domain\NotificationServiceProvider`:
 
 ```php
 $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
@@ -309,8 +309,10 @@ a clickable URL (`Route::has()` guard; unregistered routes degrade to `null`).
 `NotificationBellComposer` is registered on the **hashed** navbar view name from
 `WebLayout::navbarComposerView()` (same target as `NavigationComposer`). Anonymous
 components (`<x-adminlte4::partials.navbar>`) do **not** use the readable
-`adminlte4::…` view name — bind composers to the hashed name or chain them in
-`AppServiceProvider` alongside `NavigationComposer`.
+`adminlte4::…` view name — bind composers to the hashed name. `App\Providers\Domain\NotificationServiceProvider`
+registers its own `View::composer()` call on that view, separate from
+`App\Providers\Domain\NavigationServiceProvider`'s — Laravel runs every composer
+bound to a view, so they do not need to be chained in one callback.
 
 ### Realtime vs polling
 

@@ -184,7 +184,7 @@ app/
 
 ### Binding
 
-`EloquentCrudRepositoryInterface` is bound to `EloquentCrudRepository` in `App\Providers\AppServiceProvider`. `UserService` receives the interface via constructor injection; the controller receives `UserService` only.
+`EloquentCrudRepositoryInterface` is bound to `EloquentCrudRepository` in `App\Providers\AppServiceProvider` — this is a kernel-shared repository, so the binding stays in the kernel provider rather than a domain provider. `UserService` receives the interface via constructor injection; the controller receives `UserService` only.
 
 ### Controller (thin)
 
@@ -314,7 +314,7 @@ app/Domain/Playground/
 The controller stays thin (validated input → `OrderService` → resource → response)
 exactly like Playground Users; only the **data layer** differs (dedicated repo +
 transaction instead of `EloquentCrudRepository`). The interface is bound in
-`AppServiceProvider`. Web admin screens for this aggregate live in the
+`App\Providers\Domain\PlaygroundServiceProvider`. Web admin screens for this aggregate live in the
 [web frontend](./web-frontend.md) and consume `/api/playground/orders`. Full
 detail (request shapes, attachment reconciliation, transaction-safety ordering)
 → **[Playground](./playground.md#attachments-direct-s3-upload)**.
@@ -332,7 +332,7 @@ When an entity outgrows generic CRUD:
 
 1. Define an interface, e.g. `App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface`, with methods that match domain language (`findByEmail`, `paginateActive`, …).
 2. Implement it in `App\Domain\Identity\Repositories\Eloquent\UserRepository` (or another persistence backend).
-3. Bind the interface in `AppServiceProvider`.
+3. Bind the interface in the relevant domain ServiceProvider under `app/Providers/Domain/` (or `AppServiceProvider` for kernel-shared repositories like `EloquentCrudRepositoryInterface`).
 4. Inject the dedicated interface into `UserService` instead of `EloquentCrudRepositoryInterface`.
 5. Keep **business logic in the Service**; keep the new repository limited to data access.
 
