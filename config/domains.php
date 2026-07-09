@@ -3,8 +3,13 @@
 /**
  * Domain module registry (logical monorepo under app/Domain/*).
  *
- * core => true  — boilerplate; domain:remove refuses (Identity + platform modules).
- * core => false — removable (Playground demo + anything created via domain:make).
+ * core => true  — platform boilerplate (Identity, Navigation, …). Informational
+ *                 for docs/list; domain:remove uses a hardcoded PLATFORM_CORE
+ *                 list in DomainManager — flipping this flag cannot unlock remove.
+ *
+ * locked => true  — product domain; domain:remove refuses until you manually
+ *                   set locked => false in this file (no artisan unlock command).
+ * locked => false — removable (Playground demo, or domain:make --removable).
  *
  * Provider classes still register in bootstrap/providers.php; Artisan domain:*
  * commands keep this file and providers/routes in sync.
@@ -15,5 +20,5 @@ return [
     'Notification' => ['core' => true],
     'ActivityLog' => ['core' => true],
     'Approval' => ['core' => true],
-    'Playground' => ['core' => false],
+    'Playground' => ['core' => false, 'locked' => true],
 ];

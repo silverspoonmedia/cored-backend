@@ -143,7 +143,7 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 | [docs/spa-gateway-integration.md](./spa-gateway-integration.md) | Three-project wiring and production |
 | [docs/localization.md](./localization.md) | `en` / `id` / `ja` task rules |
 | [docs/crud-architecture.md](./crud-architecture.md) | Repository pattern, API resources |
-| [docs/domain-modules.md](./domain-modules.md) | Internal `app/Domain/*` layout, core vs removable, `domain:list\|make\|remove` |
+| [docs/domain-modules.md](./domain-modules.md) | Internal `app/Domain/*` layout, core/locked/removable, `domain:list\|make\|remove` |
 | [docs/internal-monorepo-assessment.md](./internal-monorepo-assessment.md) | Monorepo scope, Gateway/Frontend contract |
 | [docs/internal-monorepo-porting.md](./internal-monorepo-porting.md) | Porting implementation reference (migration order, scripts, gotchas) |
 | [docs/environment.md](./environment.md) | `GATEWAY_ENFORCE`, secrets, env vars |

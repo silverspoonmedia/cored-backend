@@ -223,7 +223,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 
 | Document | Description |
 |----------|-------------|
-| [Domain modules](docs/domain-modules.md) | Core vs removable domains, `domain:list\|make\|remove`, layout |
+| [Domain modules](docs/domain-modules.md) | Core/locked/removable domains, `domain:list\|make\|remove`, layout |
 | [Internal monorepo assessment](docs/internal-monorepo-assessment.md) | Why logical monorepo, domain map, phases, Gateway/Frontend contract |
 | [Internal monorepo porting](docs/internal-monorepo-porting.md) | Implementation reference: migration order, scripts, gotchas, verification |
 | [API routing](docs/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |

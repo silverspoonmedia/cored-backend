@@ -12,9 +12,26 @@ use RuntimeException;
  *
  * Keeps config/domains.php, bootstrap/providers.php, and route loaders in sync.
  * Does not touch migrations (DB history stays intact on remove).
+ *
+ * Platform core is hardcoded — flipping core in config cannot unlock remove.
+ * Product domains use locked => true|false; unlock only by editing config by hand.
  */
 class DomainManager
 {
+    /**
+     * Boilerplate domains that domain:remove always refuses.
+     * Config cannot override this list.
+     *
+     * @var list<string>
+     */
+    public const PLATFORM_CORE = [
+        'Identity',
+        'Navigation',
+        'Notification',
+        'ActivityLog',
+        'Approval',
+    ];
+
     /** @var list<string> */
     private const RESERVED = [
         'Kernel',
@@ -71,8 +88,23 @@ class DomainManager
         return array_key_exists($name, $this->all());
     }
 
+    /**
+     * Hardcoded platform core — config cannot override.
+     */
+    public function isPlatformCore(string $name): bool
+    {
+        return in_array($this->normalizeName($name), self::PLATFORM_CORE, true);
+    }
+
+    /**
+     * Config `core` flag (informational for list/docs). Prefer isPlatformCore() for remove guards.
+     */
     public function isCore(string $name): bool
     {
+        if ($this->isPlatformCore($name)) {
+            return true;
+        }
+
         $name = $this->normalizeName($name);
         $all = $this->all();
 
@@ -83,17 +115,52 @@ class DomainManager
         return (bool) ($all[$name]['core'] ?? false);
     }
 
+    /**
+     * Product lock from config. Platform core is always treated as locked for display/guards.
+     */
+    public function isLocked(string $name): bool
+    {
+        if ($this->isPlatformCore($name)) {
+            return true;
+        }
+
+        $name = $this->normalizeName($name);
+        $all = $this->all();
+
+        if (! array_key_exists($name, $all)) {
+            return false;
+        }
+
+        return (bool) ($all[$name]['locked'] ?? false);
+    }
+
+    /**
+     * Kind label for domain:list — core | locked | removable.
+     */
+    public function kind(string $name): string
+    {
+        if ($this->isPlatformCore($name)) {
+            return 'core';
+        }
+
+        if ($this->isLocked($name)) {
+            return 'locked';
+        }
+
+        return 'removable';
+    }
+
     public function directoryExists(string $name): bool
     {
         return File::isDirectory($this->domainPath($name));
     }
 
     /**
-     * @return array<string, array{core: bool}>
+     * @return array<string, array{core: bool, locked: bool}>
      */
     public function all(): array
     {
-        /** @var array<string, array{core?: bool}> $raw */
+        /** @var array<string, array{core?: bool, locked?: bool}> $raw */
         $raw = (array) config('domains', []);
         $out = [];
 
@@ -101,7 +168,12 @@ class DomainManager
             if (! is_string($name) || $name === '') {
                 continue;
             }
-            $out[$name] = ['core' => (bool) ($meta['core'] ?? false)];
+
+            $platform = in_array($name, self::PLATFORM_CORE, true);
+            $out[$name] = [
+                'core' => $platform || (bool) ($meta['core'] ?? false),
+                'locked' => $platform || (bool) ($meta['locked'] ?? false),
+            ];
         }
 
         return $out;
@@ -143,12 +215,16 @@ class DomainManager
         return base_path('tests/Domain/'.$this->normalizeName($name));
     }
 
-    public function scaffold(string $name): void
+    public function scaffold(string $name, bool $locked = true): void
     {
         $name = $this->normalizeName($name);
 
         if ($this->isReserved($name)) {
             throw new InvalidArgumentException("[{$name}] is reserved for the application kernel.");
+        }
+
+        if ($this->isPlatformCore($name)) {
+            throw new InvalidArgumentException("[{$name}] is platform core and cannot be scaffolded again.");
         }
 
         if ($this->isRegistered($name) || $this->directoryExists($name)) {
@@ -173,7 +249,7 @@ class DomainManager
         File::ensureDirectoryExists($testsFeature);
         File::put($testsFeature.'/.gitkeep', '');
 
-        $this->registerInConfig($name, core: false);
+        $this->registerInConfig($name, core: false, locked: $locked);
         $this->registerProvider($name);
         $this->registerApiV1Require($name);
         $this->registerWebRequire($name);
@@ -192,9 +268,15 @@ class DomainManager
             );
         }
 
-        if ($this->isCore($name)) {
+        if ($this->isPlatformCore($name)) {
             throw new InvalidArgumentException(
-                "Domain [{$name}] is core boilerplate and cannot be removed. Only Playground and domains created via domain:make are removable."
+                "Domain [{$name}] is platform core and cannot be removed. Config cannot override this."
+            );
+        }
+
+        if ($this->isLocked($name)) {
+            throw new InvalidArgumentException(
+                "Domain [{$name}] is locked. Set 'locked' => false in config/domains.php manually, then re-run domain:remove."
             );
         }
 
@@ -235,7 +317,7 @@ class DomainManager
         return $warnings;
     }
 
-    public function registerInConfig(string $name, bool $core = false): void
+    public function registerInConfig(string $name, bool $core = false, bool $locked = true): void
     {
         $name = $this->normalizeName($name);
         $path = config_path('domains.php');
@@ -246,7 +328,8 @@ class DomainManager
         }
 
         $coreLiteral = $core ? 'true' : 'false';
-        $entry = "    '{$name}' => ['core' => {$coreLiteral}],\n];";
+        $lockedLiteral = $locked ? 'true' : 'false';
+        $entry = "    '{$name}' => ['core' => {$coreLiteral}, 'locked' => {$lockedLiteral}],\n];";
 
         $updated = preg_replace('/\];\s*$/', $entry, $contents, 1);
         if ($updated === null || $updated === $contents) {
@@ -254,7 +337,7 @@ class DomainManager
         }
 
         File::put($path, $updated);
-        config(["domains.{$name}" => ['core' => $core]]);
+        config(["domains.{$name}" => ['core' => $core, 'locked' => $locked]]);
     }
 
     public function unregisterFromConfig(string $name): void

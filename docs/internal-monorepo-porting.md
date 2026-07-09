@@ -214,7 +214,7 @@ One-shot porting scripts (`migrate-domain-*`, `fix-domain-*`, `scripts/domains/*
 ## Remaining follow-ups
 
 1. **Phase 4** — Composer packages only if assessment triggers are met (see [internal-monorepo-assessment.md](./internal-monorepo-assessment.md#phase-4-composer-packages-deferred)).
-2. **Day-2 QOL (done 2026-07-10)** — `config/domains.php` core flags; `domain:list|make|remove`; porting scripts removed. See [domain-modules.md](./domain-modules.md).
+2. **Day-2 QOL (done 2026-07-10)** — `config/domains.php`; `domain:list|make|remove`; porting scripts removed. Lock safety (2026-07-10): hardcoded `PLATFORM_CORE`, product `locked` flag (manual unlock only). See [domain-modules.md](./domain-modules.md).
 
 ---
 
@@ -224,7 +224,7 @@ One-shot porting scripts (`migrate-domain-*`, `fix-domain-*`, `scripts/domains/*
 cd c:\laragon\www\monolith
 composer dump-autoload                           # required after moving/renaming classes
 composer test                                    # expect 392+ passed (includes DomainCommandsTest)
-php artisan domain:list                          # core vs removable registry
+php artisan domain:list                          # core / locked / removable registry
 .\scripts\remove-empty-dirs.ps1 -WhatIf          # expect: no empty dirs in scope
 .\scripts\test-workspace.ps1                     # Monolith + Gateway + Frontend
 php artisan route:list --path=api/v1/approvals   # confirm approval routes

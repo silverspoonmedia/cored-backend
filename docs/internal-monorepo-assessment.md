@@ -43,7 +43,7 @@ The real complexity drivers are **full-stack parity** (API + Web + Blade + 3 loc
 | **Playground** | removable | `App\Domain\Playground` | `Order`, `OrderDetail`, `Attachment`, `AttachmentUpload` | `/api/playground/*` (non-prod) |
 | **Kernel** (shared) | core | `App\Support`, `App\Http\Middleware`, … | — | — |
 
-Core vs removable is enforced by [`config/domains.php`](../config/domains.php) and `php artisan domain:remove` (refuses core). Day-2 tooling: [domain-modules.md](./domain-modules.md).
+Platform core is hardcoded in `DomainManager::PLATFORM_CORE` (config cannot unlock remove). Product domains from `domain:make` default to `locked => true`; unlock by editing [`config/domains.php`](../config/domains.php) only. Day-2 tooling: [domain-modules.md](./domain-modules.md).
 
 ---
 
@@ -132,6 +132,12 @@ Recorded **2026-07-09** on Windows / Laragon.
 | Command | Result |
 |---------|--------|
 | `composer test` | **392 passed** (6 new `DomainCommandsTest` cases; porting scripts removed) |
+
+### Domain lock safety (2026-07-10)
+
+| Command | Result |
+|---------|--------|
+| `composer test` | **395 passed** (locked default, manual unlock, platform core hardcode) |
 
 Run all three suites from Monolith:
 

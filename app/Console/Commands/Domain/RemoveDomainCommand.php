@@ -11,11 +11,11 @@ class RemoveDomainCommand extends Command
 {
     /** @var string */
     protected $signature = 'domain:remove
-        {name : Domain name to remove (must be non-core)}
+        {name : Domain name to remove (must be unlocked and non-core)}
         {--force : Skip confirmation prompt}';
 
     /** @var string */
-    protected $description = 'Remove a non-core domain module (refuses core boilerplate)';
+    protected $description = 'Remove an unlocked non-core domain module (refuses platform core and locked domains)';
 
     public function handle(DomainManager $domains): int
     {
@@ -27,9 +27,17 @@ class RemoveDomainCommand extends Command
             return self::FAILURE;
         }
 
-        if ($domains->isCore($name)) {
+        if ($domains->isPlatformCore($name)) {
             $this->error(
-                "Domain [{$name}] is core boilerplate and cannot be removed. Only Playground and domains created via domain:make are removable."
+                "Domain [{$name}] is platform core and cannot be removed. Config cannot override this."
+            );
+
+            return self::FAILURE;
+        }
+
+        if ($domains->isLocked($name)) {
+            $this->error(
+                "Domain [{$name}] is locked. Set 'locked' => false in config/domains.php manually, then re-run domain:remove."
             );
 
             return self::FAILURE;

@@ -2,11 +2,12 @@
 
 namespace Tests\Feature\Console;
 
+use App\Support\Domain\DomainManager;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * Covers domain:list / domain:make / domain:remove.
+ * Covers domain:list / domain:make / domain:remove including lock + platform core.
  *
  * Uses throwaway domain ZzDemo and restores registry/route/provider files in
  * tearDown so the real boilerplate is never left mutated.
@@ -70,47 +71,87 @@ class DomainCommandsTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_domain_list_shows_core_and_removable_flags(): void
+    public function test_domain_list_shows_core_locked_and_removable_kinds(): void
     {
+        $domains = app(DomainManager::class);
+
+        $this->assertSame('core', $domains->kind('Identity'));
+        $this->assertSame('removable', $domains->kind('Playground'));
+
         $this->artisan('domain:list')
             ->assertSuccessful()
             ->expectsOutputToContain('Identity')
-            ->expectsOutputToContain('core')
             ->expectsOutputToContain('Playground')
-            ->expectsOutputToContain('removable');
+            ->expectsOutputToContain('platform (never removable)');
     }
 
-    public function test_domain_make_scaffolds_and_registers_a_removable_domain(): void
+    public function test_domain_make_defaults_to_locked(): void
     {
-        $this->artisan('domain:make', ['name' => self::TEST_DOMAIN])
-            ->assertSuccessful();
-
-        $this->assertDirectoryExists(app_path('Domain/'.self::TEST_DOMAIN));
-        $this->assertFileExists(app_path('Providers/Domain/'.self::TEST_DOMAIN.'ServiceProvider.php'));
-        $this->assertFileExists(base_path('routes/api/v1/zz-demo.php'));
-        $this->assertFileExists(base_path('routes/web/zz-demo.php'));
-        $this->assertDirectoryExists(base_path('tests/Domain/'.self::TEST_DOMAIN.'/Feature'));
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--no-interaction' => true,
+        ])->assertSuccessful();
 
         $config = File::get($this->domainsConfigPath);
-        $this->assertStringContainsString("'".self::TEST_DOMAIN."' => ['core' => false]", $config);
+        $this->assertStringContainsString(
+            "'".self::TEST_DOMAIN."' => ['core' => false, 'locked' => true]",
+            $config
+        );
 
-        $providers = File::get($this->providersPath);
-        $this->assertStringContainsString(self::TEST_DOMAIN.'ServiceProvider::class', $providers);
-        $this->assertStringContainsString('use App\\Providers\\Domain\\'.self::TEST_DOMAIN.'ServiceProvider;', $providers);
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_DOMAIN,
+            '--force' => true,
+        ])->assertFailed();
 
-        $this->assertStringContainsString("require __DIR__.'/v1/zz-demo.php';", File::get($this->apiV1Path));
-        $this->assertStringContainsString("require __DIR__.'/web/zz-demo.php';", File::get($this->webPath));
+        $this->assertDirectoryExists(app_path('Domain/'.self::TEST_DOMAIN));
     }
 
-    public function test_domain_make_rejects_existing_and_reserved_names(): void
+    public function test_domain_make_locked_flag_refuses_remove_until_config_unlock(): void
     {
-        $this->artisan('domain:make', ['name' => 'Identity'])->assertFailed();
-        $this->artisan('domain:make', ['name' => 'Kernel'])->assertFailed();
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--locked' => true,
+        ])->assertSuccessful();
+
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_DOMAIN,
+            '--force' => true,
+        ])->assertFailed();
+
+        $this->assertDirectoryExists(app_path('Domain/'.self::TEST_DOMAIN));
+
+        // Manual unlock — the only supported unlock path.
+        $contents = File::get($this->domainsConfigPath);
+        $contents = str_replace(
+            "'".self::TEST_DOMAIN."' => ['core' => false, 'locked' => true]",
+            "'".self::TEST_DOMAIN."' => ['core' => false, 'locked' => false]",
+            $contents
+        );
+        File::put($this->domainsConfigPath, $contents);
+        config([
+            'domains.'.self::TEST_DOMAIN => ['core' => false, 'locked' => false],
+        ]);
+
+        $this->artisan('domain:remove', [
+            'name' => self::TEST_DOMAIN,
+            '--force' => true,
+        ])->assertSuccessful();
+
+        $this->assertDirectoryDoesNotExist(app_path('Domain/'.self::TEST_DOMAIN));
     }
 
-    public function test_domain_remove_cleans_up_a_made_domain(): void
+    public function test_domain_make_removable_can_be_removed(): void
     {
-        $this->artisan('domain:make', ['name' => self::TEST_DOMAIN])->assertSuccessful();
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--removable' => true,
+        ])->assertSuccessful();
+
+        $config = File::get($this->domainsConfigPath);
+        $this->assertStringContainsString(
+            "'".self::TEST_DOMAIN."' => ['core' => false, 'locked' => false]",
+            $config
+        );
 
         $this->artisan('domain:remove', [
             'name' => self::TEST_DOMAIN,
@@ -129,9 +170,65 @@ class DomainCommandsTest extends TestCase
         $this->assertStringNotContainsString('zz-demo.php', File::get($this->webPath));
     }
 
-    public function test_domain_remove_refuses_core_domains(): void
+    public function test_domain_make_scaffolds_files_and_registrations(): void
     {
-        foreach (['Identity', 'Navigation', 'Notification', 'ActivityLog', 'Approval'] as $core) {
+        $this->artisan('domain:make', [
+            'name' => self::TEST_DOMAIN,
+            '--removable' => true,
+        ])->assertSuccessful();
+
+        $this->assertDirectoryExists(app_path('Domain/'.self::TEST_DOMAIN));
+        $this->assertFileExists(app_path('Providers/Domain/'.self::TEST_DOMAIN.'ServiceProvider.php'));
+        $this->assertFileExists(base_path('routes/api/v1/zz-demo.php'));
+        $this->assertFileExists(base_path('routes/web/zz-demo.php'));
+        $this->assertDirectoryExists(base_path('tests/Domain/'.self::TEST_DOMAIN.'/Feature'));
+
+        $providers = File::get($this->providersPath);
+        $this->assertStringContainsString(self::TEST_DOMAIN.'ServiceProvider::class', $providers);
+        $this->assertStringContainsString('use App\\Providers\\Domain\\'.self::TEST_DOMAIN.'ServiceProvider;', $providers);
+
+        $this->assertStringContainsString("require __DIR__.'/v1/zz-demo.php';", File::get($this->apiV1Path));
+        $this->assertStringContainsString("require __DIR__.'/web/zz-demo.php';", File::get($this->webPath));
+    }
+
+    public function test_domain_make_rejects_existing_and_reserved_names(): void
+    {
+        $this->artisan('domain:make', [
+            'name' => 'Identity',
+            '--no-interaction' => true,
+        ])->assertFailed();
+
+        $this->artisan('domain:make', [
+            'name' => 'Kernel',
+            '--no-interaction' => true,
+        ])->assertFailed();
+    }
+
+    public function test_domain_remove_refuses_platform_core_even_if_config_flipped(): void
+    {
+        // Prove config cannot unlock platform core.
+        $contents = File::get($this->domainsConfigPath);
+        $contents = str_replace(
+            "'Identity' => ['core' => true]",
+            "'Identity' => ['core' => false, 'locked' => false]",
+            $contents
+        );
+        File::put($this->domainsConfigPath, $contents);
+        config(['domains.Identity' => ['core' => false, 'locked' => false]]);
+
+        $this->assertTrue(app(DomainManager::class)->isPlatformCore('Identity'));
+
+        $this->artisan('domain:remove', [
+            'name' => 'Identity',
+            '--force' => true,
+        ])->assertFailed();
+
+        $this->assertDirectoryExists(app_path('Domain/Identity'));
+    }
+
+    public function test_domain_remove_refuses_all_platform_core_domains(): void
+    {
+        foreach (DomainManager::PLATFORM_CORE as $core) {
             $this->artisan('domain:remove', [
                 'name' => $core,
                 '--force' => true,
