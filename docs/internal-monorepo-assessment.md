@@ -33,15 +33,17 @@ The real complexity drivers are **full-stack parity** (API + Web + Blade + 3 loc
 
 ## Domain map
 
-| Domain | Namespace root | Primary models | Public API prefix |
-|--------|----------------|----------------|-------------------|
-| **Identity** | `App\Domain\Identity` | `User`, `Role`, `Permission` | `/api/v1/auth/*`, `/api/v1/users`, `/api/v1/lookups/*` |
-| **Navigation** | `App\Domain\Navigation` | `Menu` | `/api/v1/navigation/menus/*` |
-| **Notification** | `App\Domain\Notification` | `ActivityNotification`, `NotificationTypeSetting` | `/api/v1/notifications/*` |
-| **ActivityLog** | `App\Domain\ActivityLog` | (Spatie `activity_log`) | `/api/v1/activity-logs/*` |
-| **Playground** | `App\Domain\Playground` | `Order`, `OrderDetail`, `Attachment`, `AttachmentUpload` | `/api/playground/*` (non-prod) |
-| **Approval** | `App\Domain\Approval` | 8 approval_* models | `/api/v1/approvals/*`, `/api/v1/admin/approval-workflows/*` |
-| **Kernel** (shared) | `App\Support`, `App\Http\Middleware`, … | — | — |
+| Domain | Kind | Namespace root | Primary models | Public API prefix |
+|--------|------|----------------|----------------|-------------------|
+| **Identity** | core | `App\Domain\Identity` | `User`, `Role`, `Permission` | `/api/v1/auth/*`, `/api/v1/users`, `/api/v1/lookups/*` |
+| **Navigation** | core | `App\Domain\Navigation` | `Menu` | `/api/v1/navigation/menus/*` |
+| **Notification** | core | `App\Domain\Notification` | `ActivityNotification`, `NotificationTypeSetting` | `/api/v1/notifications/*` |
+| **ActivityLog** | core | `App\Domain\ActivityLog` | (Spatie `activity_log`) | `/api/v1/activity-logs/*` |
+| **Approval** | core | `App\Domain\Approval` | 8 approval_* models | `/api/v1/approvals/*`, `/api/v1/admin/approval-workflows/*` |
+| **Playground** | removable | `App\Domain\Playground` | `Order`, `OrderDetail`, `Attachment`, `AttachmentUpload` | `/api/playground/*` (non-prod) |
+| **Kernel** (shared) | core | `App\Support`, `App\Http\Middleware`, … | — | — |
+
+Core vs removable is enforced by [`config/domains.php`](../config/domains.php) and `php artisan domain:remove` (refuses core). Day-2 tooling: [domain-modules.md](./domain-modules.md).
 
 ---
 
@@ -124,6 +126,12 @@ Recorded **2026-07-09** on Windows / Laragon.
 | Command | Result |
 |---------|--------|
 | `composer test` | **386 passed**, 0 failed (locale parity fixed; domain migration complete) |
+
+### Domain management QOL (2026-07-10)
+
+| Command | Result |
+|---------|--------|
+| `composer test` | **392 passed** (6 new `DomainCommandsTest` cases; porting scripts removed) |
 
 Run all three suites from Monolith:
 

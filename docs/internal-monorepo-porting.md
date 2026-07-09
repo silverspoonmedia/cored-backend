@@ -49,7 +49,7 @@ Migrate **one domain per PR**, least coupled first:
 | 5 | **Identity** | Hub — `User`, `Role`, `Permission`; all domains depend on it |
 | 6 | **Approval** | Cross-cutting, attaches to `document_type` |
 
-Navigation was migrated **manually** (pilot). Other domains used JSON configs under `scripts/domains/`.
+Navigation was migrated **manually** (pilot). Other domains used JSON configs under `scripts/domains/` (those configs and migrate/fix scripts were **deleted** after the port completed — use `domain:*` for day-2 work).
 
 ---
 
@@ -172,27 +172,14 @@ Example: `tests/Domain/Playground/Feature/Http/Controllers/API/PlaygroundUserCru
 
 ## Scripts inventory
 
+One-shot porting scripts (`migrate-domain-*`, `fix-domain-*`, `scripts/domains/*.json`) were **deleted** after phases 0–3 completed. Do not reintroduce them for day-2 work.
+
 | Script | Purpose |
 |--------|---------|
-| [`scripts/migrate-domain-structure.php`](../scripts/migrate-domain-structure.php) | Move files from JSON config |
-| [`scripts/migrate-domain.ps1`](../scripts/migrate-domain.ps1) | Orchestrate bulk namespace replace |
-| [`scripts/domains/*.json`](../scripts/domains/) | Per-domain move rules (`identity`, `approval`, `activity-log`, `notification`, `playground` — no `navigation.json`) |
-| [`scripts/fix-domain-namespaces.php`](../scripts/fix-domain-namespaces.php) | Fix `namespace` lines from PSR-4 paths |
-| [`scripts/fix-domain-controller-imports.php`](../scripts/fix-domain-controller-imports.php) | Add base `Controller` / Web concern imports |
-| [`scripts/fix-domain-model-factories.php`](../scripts/fix-domain-model-factories.php) | Add `newFactory()` for moved models |
-| [`scripts/remove-empty-dirs.ps1`](../scripts/remove-empty-dirs.ps1) | Remove empty porting debris directories |
+| [`scripts/remove-empty-dirs.ps1`](../scripts/remove-empty-dirs.ps1) | Optional empty-dir cleanup (`-WhatIf`) |
 | [`scripts/test-workspace.ps1`](../scripts/test-workspace.ps1) | Run Monolith + Gateway + Frontend tests |
 
-Typical scripted flow (after Navigation pilot):
-
-```powershell
-php scripts/migrate-domain-structure.php scripts/domains/identity.json
-php scripts/fix-domain-namespaces.php
-php scripts/fix-domain-controller-imports.php
-php scripts/fix-domain-model-factories.php
-composer dump-autoload
-composer test
-```
+**Day-2 domain management** (add/remove modules): see [domain-modules.md](./domain-modules.md) — `php artisan domain:list|make|remove`.
 
 ---
 
@@ -224,11 +211,10 @@ composer test
 
 ---
 
-## Remaining follow-ups (optional)
-
-All items below were closed in the 2026-07-09 housekeeping pass (Phase 3 split, exception relocation, and stray test relocation — 386 tests still pass, same count as before).
+## Remaining follow-ups
 
 1. **Phase 4** — Composer packages only if assessment triggers are met (see [internal-monorepo-assessment.md](./internal-monorepo-assessment.md#phase-4-composer-packages-deferred)).
+2. **Day-2 QOL (done 2026-07-10)** — `config/domains.php` core flags; `domain:list|make|remove`; porting scripts removed. See [domain-modules.md](./domain-modules.md).
 
 ---
 
@@ -237,7 +223,8 @@ All items below were closed in the 2026-07-09 housekeeping pass (Phase 3 split, 
 ```powershell
 cd c:\laragon\www\monolith
 composer dump-autoload                           # required after moving/renaming classes
-composer test                                    # expect 386 passed
+composer test                                    # expect 392+ passed (includes DomainCommandsTest)
+php artisan domain:list                          # core vs removable registry
 .\scripts\remove-empty-dirs.ps1 -WhatIf          # expect: no empty dirs in scope
 .\scripts\test-workspace.ps1                     # Monolith + Gateway + Frontend
 php artisan route:list --path=api/v1/approvals   # confirm approval routes

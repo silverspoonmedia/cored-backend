@@ -2,25 +2,51 @@
 
 Project Monolith uses a **logical monorepo** layout: domain code lives under `app/Domain/{Domain}/` inside a single Laravel application and git repository. Gateway and Frontend remain **separate repositories**; they only depend on Monolith **HTTP API contracts**, not PHP namespaces.
 
+## Core vs removable
+
+| Kind | Domains | `domain:remove` |
+|------|---------|-----------------|
+| **Core** (boilerplate) | Identity, Navigation, Notification, ActivityLog, Approval + Kernel (`App\Support`, middleware, base controllers) | **Refused** — removing them is suicide |
+| **Removable** | Playground + any domain created via `domain:make` | Allowed |
+
+Registry: [`config/domains.php`](../config/domains.php) (`core => true|false`).
+
+## Day-2 commands
+
+```powershell
+php artisan domain:list
+php artisan domain:make Billing
+php artisan domain:remove Billing --force
+php artisan domain:remove Playground --force   # demo only; migrations kept
+```
+
+| Command | What it does |
+|---------|----------------|
+| `domain:list` | Name, core/removable, whether `app/Domain/{Name}` exists |
+| `domain:make {Name}` | Scaffold folders, empty ServiceProvider, API/Web route stubs, test dir; register in config + `bootstrap/providers.php` + route loaders (`core => false`) |
+| `domain:remove {Name}` | Delete domain PHP/routes/tests/provider; unregister. **Refuses core.** Does **not** delete migrations; warns about factories/seeders/menus |
+
+Implementation: [`app/Support/Domain/DomainManager.php`](../app/Support/Domain/DomainManager.php), commands under [`app/Console/Commands/Domain/`](../app/Console/Commands/Domain/).
+
 ## Directory layout
 
 ```
 app/
 ├── Domain/
-│   ├── Identity/       # Auth, User, RBAC, lookups, admin ping
-│   ├── Navigation/     # Menu tree and management
-│   ├── Notification/   # Activity notifications (bell)
-│   ├── ActivityLog/    # Spatie audit trail
-│   ├── Playground/     # Demo users, orders, attachments
-│   └── Approval/       # Approval matrix engine
+│   ├── Identity/       # Auth, User, RBAC, lookups, admin ping (core)
+│   ├── Navigation/     # Menu tree and management (core)
+│   ├── Notification/   # Activity notifications (bell) (core)
+│   ├── ActivityLog/    # Spatie audit trail (core)
+│   ├── Playground/     # Demo users, orders, attachments (removable)
+│   └── Approval/       # Approval matrix engine (core)
 ├── Http/Middleware/    # Shared HTTP middleware (Kernel)
 ├── Repositories/Eloquent/EloquentCrudRepository.php
-├── Support/            # Api, DataTable, Web, Auth helpers (Kernel)
-├── Exceptions/         # BusinessRuleException + Auth/* (Kernel; move to Identity later)
+├── Support/            # Api, DataTable, Web, Auth, Domain helpers (Kernel)
+├── Exceptions/         # BusinessRuleException (Kernel)
 ├── Http/Controllers/   # Base Controller + Web concerns only (Kernel)
 ├── Http/Requests/Concerns/
 ├── Http/Resources/Concerns/
-├── Console/Commands/   # Env/locale/key artisan (Kernel)
+├── Console/Commands/   # Env/locale/key + Domain/* artisan (Kernel)
 └── Providers/
     ├── AppServiceProvider.php          # Kernel-only bindings (Kernel)
     └── Domain/
@@ -88,39 +114,36 @@ Shared infrastructure stays in `App\Support\*`, `App\Http\Middleware\*`, and `Ap
 
 ## Cross-domain dependencies
 
-- **Identity** (`User`, `Role`, `Permission`) is the shared kernel — other domains import `App\Domain\Identity\Models\*` for relationships.
+- **Identity** (`User`, `Role`, `Permission`) is the shared hub — other domains import `App\Domain\Identity\Models\*` for relationships.
 - **Approval** is cross-cutting (attaches to `document_type` such as orders).
 - Do not import domain services across boundaries unless the dependency is explicit and documented.
 
 ## Adding a new domain
 
-1. Create `app/Domain/{Name}/` with controllers, services, repositories, models.
-2. Add `routes/api/v1/{name}.php` and `require` it from `routes/api/v1.php`.
-3. Add `routes/web/{name}.php` (and guest routes if needed) and `require` from `routes/web.php`.
-4. Create `app/Providers/Domain/{Name}ServiceProvider.php` and register repository bindings, policies, event listeners, and view composers there; register the provider in `bootstrap/providers.php`. Keep `AppServiceProvider` for kernel-only bindings (`EloquentCrudRepositoryInterface`, `DataTableResponseFactory`, Blade component path).
+Prefer the Artisan flow:
+
+1. `php artisan domain:make {Name}`
+2. Implement controllers, services, repositories, models under `app/Domain/{Name}/`.
+3. Fill in `routes/api/v1/{slug}.php` and `routes/web/{slug}.php`.
+4. Bind repositories / policies in the generated `*ServiceProvider` (already registered).
 5. Add tests under `tests/Domain/{Name}/`.
 6. If the domain exposes new **public URLs** or JSON shapes, update Gateway/Frontend in the same task.
-7. Update this doc and [internal-monorepo-assessment.md](./internal-monorepo-assessment.md).
+7. Update this doc and [internal-monorepo-assessment.md](./internal-monorepo-assessment.md) if the domain map changes.
 
-## Migration tooling
-
-Domain moves are scripted for repeatability:
+## Ongoing scripts
 
 | Script | Purpose |
 |--------|---------|
-| [`scripts/migrate-domain-structure.php`](../scripts/migrate-domain-structure.php) | Move files + namespace replacements from JSON config |
-| [`scripts/migrate-domain.ps1`](../scripts/migrate-domain.ps1) | Orchestrate bulk namespace replace after file moves |
-| [`scripts/domains/*.json`](../scripts/domains/) | Per-domain move/replace definitions (Navigation migrated manually — no JSON) |
-| [`scripts/fix-domain-namespaces.php`](../scripts/fix-domain-namespaces.php) | Fix `namespace` lines from PSR-4 paths |
-| [`scripts/fix-domain-controller-imports.php`](../scripts/fix-domain-controller-imports.php) | Add base `Controller` imports |
-| [`scripts/fix-domain-model-factories.php`](../scripts/fix-domain-model-factories.php) | Add `newFactory()` for moved models |
-| [`scripts/remove-empty-dirs.ps1`](../scripts/remove-empty-dirs.ps1) | Remove empty porting debris directories |
 | [`scripts/test-workspace.ps1`](../scripts/test-workspace.ps1) | Run Monolith + Gateway + Frontend tests |
+| [`scripts/remove-empty-dirs.ps1`](../scripts/remove-empty-dirs.ps1) | Optional cleanup of empty directories (`-WhatIf`) |
+
+One-shot porting scripts (`migrate-domain-*`, `fix-domain-*`, `scripts/domains/*.json`) were **removed** after the logical monorepo migration completed.
 
 ## What we deliberately did not do
 
 - No Composer path packages (`packages/*`) — deferred until codebase or team size justifies the overhead.
 - No `nwidart/laravel-modules`.
 - No merge of Gateway or Frontend into this git repository.
+- No dynamic provider auto-discovery — `bootstrap/providers.php` stays explicit; `domain:*` edits it.
 
 See [internal-monorepo-assessment.md](./internal-monorepo-assessment.md) for rationale and phase-4 triggers.
