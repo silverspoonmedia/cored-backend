@@ -25,13 +25,13 @@ Searchable **Select2** fields with the **Bootstrap 5** theme replace native `<se
 - `ids[]` without `q`: hydrate labels for edit forms (no pagination).
 - Empty `q`: first page only (10 items by default via `config/lookup.php`) — never dumps the full table.
 
-Implementation: `App\Services\Lookup\LookupService`, `App\Http\Controllers\API\V1\LookupController`.
+Implementation: `App\Domain\Identity\Services\Lookup\LookupService`, `App\Domain\Identity\Http\Controllers\API\V1\LookupController`.
 
 ## Blade
 
 - Components: `resources/views/adminlte4/components/form/select.blade.php`, `multiselect.blade.php` — props `ajaxUrl`, `ajaxParams`, `select2`, `autosubmit`.
 - Assets: `components/partials/select2-assets.blade.php`, `select2-scripts.blade.php`, `resources/js/select2-init.js` (Vite).
-- Web proxies (session auth): `GET /lookups/{users,menus,roles}` → `App\Http\Controllers\Web\LookupController`.
+- Web proxies (session auth): `GET /lookups/{users,menus,roles}` → `App\Domain\Identity\Http\Controllers\Web\LookupController`.
 - AJAX transport uses a per-element generation counter; stale responses are ignored.
 - Blade client sends `per_page=10` explicitly in `select2-init.js` (parity with SPA `LOOKUP_PER_PAGE` and `config/lookup.php` default).
 - Form components (`select`, `multiselect`) `@push` `select2-scripts` via `@once` — pages that only use those components do **not** need a separate `<x-adminlte4::partials.select2-scripts />` slot. Keep the slot on pages with raw `data-monolith-select2="1"` markup (e.g. approval modals).
@@ -46,7 +46,7 @@ Gateway aggregate `GET /api/v1/navigation/menus/form-options` returns **menu rec
 
 ## Tests
 
-- `tests/Feature/Http/Controllers/API/V1/LookupTest.php`
+- `tests/Domain/Identity/Feature/Http/Controllers/API/V1/LookupTest.php`
 - `tests/Feature/Http/Controllers/Web/Select2ScriptsTest.php`
 
 ## Troubleshooting

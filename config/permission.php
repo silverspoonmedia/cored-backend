@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Permission;
-use App\Models\Role;
+use App\Domain\Identity\Models\Permission;
+use App\Domain\Identity\Models\Role;
 use Spatie\Permission\DefaultTeamResolver;
 
 return [

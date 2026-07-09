@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Support\DataTable;
 
-use App\Models\User;
+use App\Domain\Identity\Models\User;
 use App\Support\DataTable\Resolvers\UserRowActionResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;

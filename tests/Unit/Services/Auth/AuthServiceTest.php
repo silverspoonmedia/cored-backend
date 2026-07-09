@@ -3,10 +3,10 @@
 namespace Tests\Unit\Services\Auth;
 
 use App\Exceptions\Auth\InvalidCredentialsException;
-use App\Models\User;
-use App\Repositories\Eloquent\UserRepository;
-use App\Services\Auth\AuthService;
-use App\Services\Auth\TwoFactorService;
+use App\Domain\Identity\Models\User;
+use App\Domain\Identity\Repositories\Eloquent\UserRepository;
+use App\Domain\Identity\Services\Auth\AuthService;
+use App\Domain\Identity\Services\Auth\TwoFactorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\Concerns\SeedsRolesAndPermissions;

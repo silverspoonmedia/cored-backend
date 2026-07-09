@@ -2,7 +2,7 @@
 
 namespace App\Support\DataTable\Contracts;
 
-use App\Models\User;
+use App\Domain\Identity\Models\User;
 use App\Support\DataTable\ActionButton;
 
 interface RowActionResolverInterface

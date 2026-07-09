@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Order;
-use App\Support\Orders\OrderAttachmentStorage;
+use App\Domain\Playground\Models\Order;
+use App\Domain\Playground\Support\Orders\OrderAttachmentStorage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

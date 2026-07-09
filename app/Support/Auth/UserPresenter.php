@@ -2,7 +2,7 @@
 
 namespace App\Support\Auth;
 
-use App\Models\User;
+use App\Domain\Identity\Models\User;
 
 class UserPresenter
 {

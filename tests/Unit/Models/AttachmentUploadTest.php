@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Models;
 
-use App\Models\AttachmentUpload;
+use App\Domain\Playground\Models\AttachmentUpload;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

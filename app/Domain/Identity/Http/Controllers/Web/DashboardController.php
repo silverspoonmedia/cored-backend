@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Domain\Identity\Http\Controllers\Web;
+
+use App\Http\Controllers\Web\Controller;
+
+use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use App\Support\Auth\AuthCookie;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+
+class DashboardController extends Controller
+{
+    use ConsumesApi;
+
+    public function index(): View|RedirectResponse
+    {
+        // The identity payload comes from the API at GET /api/v1/auth/me.
+        $response = $this->api()->get('auth/me');
+
+        if (! $response->successful()) {
+            return redirect()
+                ->route('login')
+                ->withCookie(AuthCookie::forget())
+                ->with('error', __('web/session.expired'));
+        }
+
+        return $this->webView('dashboard', [
+            'profile' => $response->json('data', []),
+        ]);
+    }
+}

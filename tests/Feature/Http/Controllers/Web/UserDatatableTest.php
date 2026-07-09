@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers\Web;
 
-use App\Models\User;
+use App\Domain\Identity\Models\User;
 use App\Support\Auth\AuthCookie;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;

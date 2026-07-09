@@ -2,14 +2,14 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Events\Auth\LoginFailed;
-use App\Events\Auth\LoginSuccessful;
-use App\Events\Auth\PasswordChanged;
-use App\Events\Auth\TwoFactorChallengeIssued;
-use App\Events\Auth\TwoFactorDisabled;
-use App\Events\Auth\TwoFactorEnabled;
-use App\Events\Auth\TwoFactorLoginFailed;
-use App\Events\Auth\UserLoggedOut;
+use App\Domain\Identity\Events\LoginFailed;
+use App\Domain\Identity\Events\LoginSuccessful;
+use App\Domain\Identity\Events\PasswordChanged;
+use App\Domain\Identity\Events\TwoFactorChallengeIssued;
+use App\Domain\Identity\Events\TwoFactorDisabled;
+use App\Domain\Identity\Events\TwoFactorEnabled;
+use App\Domain\Identity\Events\TwoFactorLoginFailed;
+use App\Domain\Identity\Events\UserLoggedOut;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;

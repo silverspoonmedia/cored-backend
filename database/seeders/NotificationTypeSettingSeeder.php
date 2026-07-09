@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\NotificationTypeSetting;
-use App\Models\Role;
-use App\Notifications\Activity\NotificationType;
-use App\Repositories\Contracts\NotificationTypeSettingRepositoryInterface;
+use App\Domain\Notification\Models\NotificationTypeSetting;
+use App\Domain\Identity\Models\Role;
+use App\Domain\Notification\Notifications\NotificationType;
+use App\Domain\Notification\Repositories\Contracts\NotificationTypeSettingRepositoryInterface;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 

@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\ApprovalInstance;
-use App\Models\Order;
-use App\Models\User;
+use App\Domain\Approval\Models\ApprovalInstance;
+use App\Domain\Playground\Models\Order;
+use App\Domain\Identity\Models\User;
 
 require __DIR__.'/vendor/autoload.php';
 

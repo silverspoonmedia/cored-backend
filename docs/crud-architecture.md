@@ -2,7 +2,7 @@
 
 This document describes how simple API CRUD is structured in this application: layer responsibilities, request flow, and when to use the shared `EloquentCrudRepository` versus a dedicated repository.
 
-The **Playground User CRUD** under `/api/playground/users` is the reference implementation. It is intentionally placed on the global API surface for demonstration only. Production domain features should live on versioned routes (`/api/v1/*`). See [API Routing](./api-routing.md).
+The **Playground User CRUD** under `/api/playground/users` is the reference implementation (`App\Domain\Playground\Services\UserService`, `App\Domain\Playground\Http\Controllers\API\PlaygroundController`). It is intentionally placed on the global API surface for demonstration only. Production domain features should live on versioned routes (`/api/v1/*`). See [API Routing](./api-routing.md) and [Domain modules](./domain-modules.md).
 
 ---
 
@@ -49,7 +49,7 @@ On versioned routes (`routes/api/v{N}.php`), paths are relative to the version p
 
 ### Examples in this project
 
-**Playground (global demo)** — `routes/api.php`:
+**Playground (global demo)** — [`routes/api/playground.php`](routes/api/playground.php) (required from `routes/api.php`):
 
 ```php
 Route::prefix('playground')->group(function () {
@@ -61,7 +61,7 @@ Route::prefix('playground')->group(function () {
 
 > Route names are namespaced (`playground.users.*`) so the demo surface does not squat the generic `users.*` names, which the [Blade web frontend](./web-frontend.md) uses for its admin user CRUD (web controllers forward to `/api/v1/users`, not to Playground).
 
-**Production user CRUD (v1)** — `routes/api/v1.php`:
+**Production user CRUD (v1)** — [`routes/api/v1/identity.php`](routes/api/v1/identity.php):
 
 ```php
 Route::middleware('auth:api')->group(function (): void {
@@ -144,7 +144,7 @@ Model / database
 
 ### Routes
 
-Registered with `Route::apiResource` in `routes/api.php` (see [Routing simple CRUD](#routing-simple-crud)):
+Registered with `Route::apiResource` in [`routes/api/playground.php`](routes/api/playground.php) (see [Routing simple CRUD](#routing-simple-crud)):
 
 ```php
 Route::prefix('playground')->group(function () {
@@ -166,26 +166,20 @@ Route::prefix('playground')->group(function () {
 
 ```
 app/
-├── Http/
-│   ├── Controllers/API/
-│   │   └── PlaygroundController.php
-│   └── Requests/Playground/
-│       ├── StoreUserRequest.php
-│       └── UpdateUserRequest.php
-├── Services/Playground/
-│   └── UserService.php
-├── Repositories/
-│   ├── Contracts/
-│   │   └── EloquentCrudRepositoryInterface.php
-│   └── Eloquent/
-│       └── EloquentCrudRepository.php
-├── Exceptions/
-│   ├── BusinessRuleException.php
-│   └── Playground/
+├── Domain/Playground/
+│   ├── Http/
+│   │   ├── Controllers/API/PlaygroundController.php
+│   │   ├── Requests/{Store,Update}UserRequest.php
+│   │   └── Resources/PlaygroundUserResource.php
+│   ├── Services/UserService.php
+│   └── Exceptions/
 │       ├── CannotDeleteLastRemainingUserException.php   (HTTP 409)
 │       └── DisposableEmailNotAllowedException.php       (HTTP 422)
-└── Models/
-    └── User.php
+├── Domain/Identity/Models/User.php                      # playground users use Identity User model
+├── Repositories/
+│   ├── Contracts/EloquentCrudRepositoryInterface.php
+│   └── Eloquent/EloquentCrudRepository.php
+└── Exceptions/BusinessRuleException.php
 ```
 
 ### Binding
@@ -239,15 +233,15 @@ Success and error JSON envelopes use the `ApiResponse` trait (`status`, `message
 
 ### API Resources (list / show)
 
-**List/index** and **show** responses use Laravel **Eloquent API Resources** (`App\Http\Resources\…`) so field selection and formatting live in one class per shape. Controllers resolve resources to plain arrays before wrapping them in the `ApiResponse` envelope (via `ResolvesResourceArray`); datatable rows use the same resource as query mode.
+**List/index** and **show** responses use Laravel **Eloquent API Resources** (`App\Domain\{Domain}\Http\Resources\…`) so field selection and formatting live in one class per shape. Controllers resolve resources to plain arrays before wrapping them in the `ApiResponse` envelope (via kernel `ResolvesResourceArray`); datatable rows use the same resource as query mode.
 
 | Resource | Used for |
 |----------|----------|
-| `UserManagementResource` | v1 user index & show |
-| `PlaygroundUserResource` | Playground user index & show |
-| `MenuListResource` | Menu admin flat list |
-| `MenuTrashedResource` | Trashed menu list |
-| `MenuDetailResource` | Menu show |
+| `App\Domain\Identity\Http\Resources\UserManagementResource` | v1 user index & show |
+| `App\Domain\Playground\Http\Resources\PlaygroundUserResource` | Playground user index & show |
+| `App\Domain\Navigation\Http\Resources\MenuListResource` | Menu admin flat list |
+| `App\Domain\Navigation\Http\Resources\MenuTrashedResource` | Trashed menu list |
+| `App\Domain\Navigation\Http\Resources\MenuDetailResource` | Menu show |
 
 Presenters under `App\Support\…` may delegate to resources for write responses (create/update) until those endpoints are migrated. When adding a new list or show endpoint, define a resource first; keep the initial `toArray()` **as-is** with the existing JSON fields, then adjust formatting in the resource only.
 
@@ -287,22 +281,24 @@ repository** whose writes run inside `DB::transaction()`.
 **Reference implementation — Playground Orders** (`/api/playground/orders`):
 
 ```
-app/
+app/Domain/Playground/
 ├── Models/
-│   ├── Order.php          # order_master — HasMany details, HasUuids, derived totals
-│   └── OrderDetail.php    # order_detail — BelongsTo order, foreignUuid order_master_id
+│   ├── Order.php              # order_master — HasMany details, HasUuids, derived totals
+│   └── OrderDetail.php        # order_detail — BelongsTo order, foreignUuid order_master_id
 ├── Repositories/
 │   ├── Contracts/OrderRepositoryInterface.php
 │   └── Eloquent/OrderRepository.php        # createWithDetails / updateWithDetails / deleteWithDetails — each in DB::transaction()
-├── Services/Playground/OrderService.php    # business rules + derives subtotal/grand_total from lines
+├── Services/OrderService.php               # business rules + derives subtotal/grand_total from lines
 ├── Http/
-│   ├── Requests/Playground/{Store,Update,Index}OrderRequest.php
-│   ├── Resources/Playground/PlaygroundOrder{,Detail}Resource.php
+│   ├── Requests/{Store,Update,Index}OrderRequest.php
+│   ├── Resources/PlaygroundOrder{,Detail}Resource.php
 │   └── Controllers/API/PlaygroundOrderController.php
-├── Exceptions/Playground/
+├── Exceptions/
 │   ├── OrderRequiresDetailException.php     (HTTP 422)
 │   └── OrderNotEditableException.php         (HTTP 409 — completed orders are frozen)
-└── Support/DataTable/Resolvers/PlaygroundOrderRowActionResolver.php
+└── Support/
+    ├── DataTable/PlaygroundOrderRowActionResolver.php
+    └── Orders/DirectAttachmentUploadService.php
 ```
 
 | Concern | Where it lives | Why |
@@ -334,8 +330,8 @@ detail (request shapes, attachment reconciliation, transaction-safety ordering)
 
 When an entity outgrows generic CRUD:
 
-1. Define an interface, e.g. `App\Repositories\Contracts\UserRepositoryInterface`, with methods that match domain language (`findByEmail`, `paginateActive`, …).
-2. Implement it in `App\Repositories\Eloquent\UserRepository` (or another persistence backend).
+1. Define an interface, e.g. `App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface`, with methods that match domain language (`findByEmail`, `paginateActive`, …).
+2. Implement it in `App\Domain\Identity\Repositories\Eloquent\UserRepository` (or another persistence backend).
 3. Bind the interface in `AppServiceProvider`.
 4. Inject the dedicated interface into `UserService` instead of `EloquentCrudRepositoryInterface`.
 5. Keep **business logic in the Service**; keep the new repository limited to data access.
@@ -348,12 +344,12 @@ Do not extend `EloquentCrudRepository` with business-specific methods—that cou
 
 | Test | Location | Focus |
 |------|----------|--------|
-| Controller unit | `tests/Unit/Http/Controllers/API/PlaygroundControllerTest.php` | Controller delegates to `UserService`; no repository in controller |
-| Service unit | `tests/Unit/Services/Playground/UserServiceTest.php` | Business rules; repository mocked |
-| Feature | `tests/Feature/Http/Controllers/API/PlaygroundUserCrudTest.php` | Full HTTP stack, validation, persistence |
-| Order service unit | `tests/Unit/Services/Playground/OrderServiceTest.php` | Master-detail rules + total derivation; repository mocked |
-| Order repository feature | `tests/Feature/Repositories/OrderRepositoryTest.php` | Transaction rollback (no orphaned master/details) |
-| Order feature | `tests/Feature/Http/Controllers/API/PlaygroundOrderCrudTest.php` | Full HTTP stack: atomic create, full-line replace, frozen completed orders |
+| Controller unit | `tests/Domain/Playground/Unit/Http/Controllers/API/PlaygroundControllerTest.php` | Controller delegates to `UserService`; no repository in controller |
+| Service unit | `tests/Domain/Playground/Unit/Services/UserServiceTest.php` | Business rules; repository mocked |
+| Feature | `tests/Domain/Playground/Feature/Http/Controllers/API/PlaygroundUserCrudTest.php` | Full HTTP stack, validation, persistence |
+| Order service unit | `tests/Domain/Playground/Unit/Services/OrderServiceTest.php` | Master-detail rules + total derivation; repository mocked |
+| Order repository feature | `tests/Domain/Playground/Feature/Repositories/OrderRepositoryTest.php` | Transaction rollback (no orphaned master/details) |
+| Order feature | `tests/Domain/Playground/Feature/Http/Controllers/API/PlaygroundOrderCrudTest.php` | Full HTTP stack: atomic create, full-line replace, frozen completed orders |
 
 Run:
 
@@ -369,7 +365,7 @@ php artisan test --filter="Order"
 1. Add **Form Request(s)** for store/update (and authorization in `authorize()`).
 2. Add a **Service** for business rules; throw `BusinessRuleException` subclasses when rules fail.
 3. Use **`EloquentCrudRepository`** only if access patterns are simple; otherwise add a **dedicated repository**.
-4. Add **API Resource(s)** for list/index and show payloads (`App\Http\Resources\…`).
+4. Add **API Resource(s)** for list/index and show payloads (`App\Domain\{Domain}\Http\Resources\…`).
 5. Keep the **controller** thin: validated data in, Service call, resolve resource, response out.
 6. If the surface is standard five-action CRUD, register it with **`Route::apiResource`** on the correct API layer (versioned for product features); use explicit routes when actions, middleware, or permissions diverge per endpoint.
 7. Add unit tests for Service and Controller; feature tests for HTTP behavior.

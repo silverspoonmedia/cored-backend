@@ -44,27 +44,27 @@ of fanning out a copy per recipient:
 |-------|------|----------------|
 | Migration | `database/migrations/2026_06_12_000001_create_activity_notifications_tables.php` | `activity_notifications` + `_roles` + `_users` + `_reads` |
 | Migration | `database/migrations/2026_06_22_000001_create_notification_type_settings_tables.php` | `notification_type_settings` + role/user pivots (dynamic audience config) |
-| Model | `app/Models/ActivityNotification.php` | `HasUuids`, `roles()` + `targetUsers()` + `readers()` |
-| Model | `app/Models/NotificationTypeSetting.php` | Per-type audience config (`roles`, `targetUsers`, `notify_subject_user`) |
-| Type catalogue | `app/Notifications/Activity/NotificationType.php` | Enum: message key, icon, DataTable mapping; enum `defaultRoles()` is a **fallback only** |
-| Event | `app/Events/ActivityNotificationEvent.php` | Generic "raise a notification" signal any feature dispatches |
-| Broadcast ping | `app/Events/UserActivityNotificationReceived.php` | Private-channel websocket ping when realtime delivery is enabled |
-| Listener | `app/Listeners/SendActivityNotification.php` | Persists + fans out (auto-discovered) |
+| Model | `app/Domain/Notification/Models/ActivityNotification.php` | `HasUuids`, `roles()` + `targetUsers()` + `readers()` |
+| Model | `app/Domain/Notification/Models/NotificationTypeSetting.php` | Per-type audience config (`roles`, `targetUsers`, `notify_subject_user`) |
+| Type catalogue | `app/Domain/Notification/Notifications/Activity/NotificationType.php` | Enum: message key, icon, DataTable mapping; enum `defaultRoles()` is a **fallback only** |
+| Event | `app/Domain/Notification/Events/ActivityNotificationEvent.php` | Generic "raise a notification" signal any feature dispatches |
+| Broadcast ping | `app/Domain/Notification/Events/UserActivityNotificationReceived.php` | Private-channel websocket ping when realtime delivery is enabled |
+| Listener | `app/Domain/Notification/Listeners/SendActivityNotification.php` | Persists + fans out (auto-discovered via `bootstrap/app.php`) |
 | Broadcast gate | `app/Support/Broadcasting/BroadcastConnection.php` | `APP_NOTIFICATION_TYPE=realtime` + valid Pusher config → realtime; otherwise polling |
 | Broadcast config | `config/broadcasting.php` | Pusher / Reverb connection definitions (`BROADCAST_CONNECTION`, `PUSHER_*`) |
 | Delivery config | `config/notifications.php` | Maps `APP_NOTIFICATION_TYPE` (`polling` \| `realtime`, default `polling`) and `APP_NOTIFICATION_POLLING_INTERVAL` (seconds, default `60`) |
 | Channel auth | `routes/channels.php` | Private channel `App.Models.User.{id}` (UUID string match) |
-| View composer | `app/View/Composers/NotificationBellComposer.php` | Injects `$notificationBellConfig` for the navbar bell (bound to the hashed navbar view — see below) |
-| Contract | `app/Repositories/Contracts/NotificationRepositoryInterface.php` | Repository contract |
-| Repository | `app/Repositories/Eloquent/NotificationRepository.php` | Role/user visibility, unread count, read state, `recipientUserIds()` |
-| Service | `app/Services/Notification/NotificationService.php` | `emit()` / `broadcastToRoles()` / `sendToUsers()` + viewer reads |
-| Contract | `app/Repositories/Contracts/NotificationTypeSettingRepositoryInterface.php` | Settings snapshot + `resolveAudience()` |
-| Repository | `app/Repositories/Eloquent/NotificationTypeSettingRepository.php` | Cached settings, pivot sync, audience resolution |
+| View composer | `app/Domain/Notification/View/Composers/NotificationBellComposer.php` | Injects `$notificationBellConfig` for the navbar bell (bound to the hashed navbar view — see below) |
+| Contract | `app/Domain/Notification/Repositories/Contracts/NotificationRepositoryInterface.php` | Repository contract |
+| Repository | `app/Domain/Notification/Repositories/Eloquent/NotificationRepository.php` | Role/user visibility, unread count, read state, `recipientUserIds()` |
+| Service | `app/Domain/Notification/Services/NotificationService.php` | `emit()` / `broadcastToRoles()` / `sendToUsers()` + viewer reads |
+| Contract | `app/Domain/Notification/Repositories/Contracts/NotificationTypeSettingRepositoryInterface.php` | Settings snapshot + `resolveAudience()` |
+| Repository | `app/Domain/Notification/Repositories/Eloquent/NotificationTypeSettingRepository.php` | Cached settings, pivot sync, audience resolution |
 | Seeder | `database/seeders/NotificationTypeSettingSeeder.php` | Default audiences (replaces former hardcoded enum defaults) |
-| Resource | `app/Http/Resources/Notification/NotificationResource.php` | JSON shape (localized `message`, `icon`, `is_read`) |
-| Request | `app/Http/Requests/Notification/IndexNotificationRequest.php` | `limit` validation |
-| API controller | `app/Http/Controllers/API/V1/NotificationController.php` | Thin HTTP layer (viewer reads) |
-| Web controller | `app/Http/Controllers/Web/NotificationController.php` | Pure API consumer (bell + inbox page) |
+| Resource | `app/Domain/Notification/Http/Resources/NotificationResource.php` | JSON shape (localized `message`, `icon`, `is_read`) |
+| Request | `app/Domain/Notification/Http/Requests/IndexNotificationRequest.php` | `limit` validation |
+| API controller | `app/Domain/Notification/Http/Controllers/API/V1/NotificationController.php` | Thin HTTP layer (viewer reads) |
+| Web controller | `app/Domain/Notification/Http/Controllers/Web/NotificationController.php` | Pure API consumer (bell + inbox page) |
 | Vite — bell | `resources/js/notifications/bell.js` | Badge/list UI, polling interval, Echo subscription, multi-tab sync |
 | Vite — echo | `resources/js/notifications/echo.js` | Laravel Echo + Pusher factory (`VITE_PUSHER_*` + server overrides) |
 
@@ -75,7 +75,7 @@ $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository:
 $this->app->bind(NotificationTypeSettingRepositoryInterface::class, NotificationTypeSettingRepository::class);
 ```
 
-The listener is **auto-discovered** (Laravel scans `app/Listeners`); do **not**
+The listener is **auto-discovered** via `bootstrap/app.php` `withEvents(discover:)`; do **not**
 also register it with `Event::listen` or it fires twice.
 
 `bootstrap/app.php` registers `routes/channels.php` via `withRouting(…, channels: …)`.
@@ -282,7 +282,7 @@ No activity-notification engine or migration change is required beyond seeding t
 ## Web frontend (API client)
 
 The Blade admin is a **pure consumer** (see [Web frontend](./web-frontend.md)).
-`App\Http\Controllers\Web\NotificationController` forwards to the API and never
+`App\Domain\Notification\Http\Controllers\Web\NotificationController` forwards to the API and never
 holds visibility logic.
 
 | Web route | Forwards to |
@@ -493,7 +493,7 @@ same change.
 
 ## Tests
 
-`tests/Feature/Http/Controllers/API/V1/NotificationTest.php` covers: broadcast
+`tests/Domain/Notification/Feature/Http/Controllers/API/V1/NotificationTest.php` covers: broadcast
 fan-out on user creation, role-scoped visibility (Admin sees / Moderator with the
 permission still sees nothing outside its broadcast), personal notifications
 reaching only the targeted user, the `account_updated` personal trigger on update

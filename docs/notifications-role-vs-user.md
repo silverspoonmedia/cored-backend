@@ -34,7 +34,7 @@ flowchart TD
     CheckUser -->|no| Hidden
 ```
 
-Implementation: `NotificationRepository::scopeVisibleTo()` in [`app/Repositories/Eloquent/NotificationRepository.php`](../app/Repositories/Eloquent/NotificationRepository.php).
+Implementation: `NotificationRepository::scopeVisibleTo()` in [`NotificationRepository.php`](../app/Domain/Notification/Repositories/Eloquent/NotificationRepository.php).
 
 ---
 
@@ -86,7 +86,7 @@ Current defaults:
 
 ## Shipped notification catalogue
 
-Live inventory of **activity notification types** shipped in this codebase today. Both types are emitted only from [`UserManagementService`](../app/Services/User/UserManagementService.php) (API and Blade share that path).
+Live inventory of **activity notification types** shipped in this codebase today. Both types are emitted only from [`UserManagementService`](../app/Domain/Identity/Services/User/UserManagementService.php) (API and Blade share that path).
 
 **Maintenance rule:** update this section in the **same PR** when you add a `NotificationType` case, a `NotificationTypeSettingSeeder` row, or a new `ActivityNotificationEvent::dispatch` call site.
 
@@ -122,7 +122,7 @@ flowchart LR
 | **Default audience** | Root + Admin | Subject user (`notify_subject_user`) |
 | **Trigger** | User created via `UserManagementService::create()` | User updated via `UserManagementService::update()` when `actor.id !== user.id` |
 | **Skip conditions** | — | Self-edit; no notification on user delete |
-| **Emitter** | [`UserManagementService::create()`](../app/Services/User/UserManagementService.php) | [`UserManagementService::update()`](../app/Services/User/UserManagementService.php) |
+| **Emitter** | [`UserManagementService::create()`](../app/Domain/Identity/Services/User/UserManagementService.php) | [`UserManagementService::update()`](../app/Domain/Identity/Services/User/UserManagementService.php) |
 | **Message key** | `api/notifications.types.user_created` | `api/notifications.types.account_updated` |
 | **EN message template** | `A new user :name (:email) was added by :actor.` | `Your account was updated by :actor.` |
 | **Other locales** | `lang/id/api/notifications.php`, `lang/ja/api/notifications.php` | same files |
@@ -204,7 +204,7 @@ sequenceDiagram
 
 ### 1. Emit (who becomes the audience)
 
-Entry point: [`ActivityNotificationEvent`](../app/Events/ActivityNotificationEvent.php) → [`SendActivityNotification`](../app/Listeners/SendActivityNotification.php) → [`NotificationService::emit()`](../app/Services/Notification/NotificationService.php).
+Entry point: [`ActivityNotificationEvent`](../app/Domain/Notification/Events/ActivityNotificationEvent.php) → [`SendActivityNotification`](../app/Domain/Notification/Listeners/SendActivityNotification.php) → [`NotificationService::emit()`](../app/Domain/Notification/Services/NotificationService.php).
 
 **Audience resolution** (`NotificationTypeSettingRepository::resolveAudience()`) — merge order:
 
@@ -270,7 +270,7 @@ Websocket delivery is **always per user**, never per role. Channel: private `App
 **What a role "handles":**
 
 - A role is an **audience label**, not an actor and not a recipient record.
-- The [`Role`](../app/Models/Role.php) model has **no inverse notification relations**.
+- The [`Role`](../app/Domain/Identity/Models/Role.php) model has **no inverse notification relations**.
 - Visibility = **dynamic role overlap** — query compares viewer roles to notification pivots.
 
 **Design strengths:**
@@ -285,7 +285,7 @@ Websocket delivery is **always per user**, never per role. Channel: private `App
 - No per-role read state — each user reads independently.
 - Websocket fan-out snapshots users at emit, not dynamic membership.
 
-**Real example** — [`UserManagementService::create()`](../app/Services/User/UserManagementService.php):
+**Real example** — [`UserManagementService::create()`](../app/Domain/Identity/Services/User/UserManagementService.php):
 
 ```php
 ActivityNotificationEvent::dispatch(
@@ -297,7 +297,7 @@ ActivityNotificationEvent::dispatch(
 );
 ```
 
-**Tests that lock behaviour:** `test_moderator_can_access_surface_but_does_not_see_root_admin_broadcast` in [`NotificationTest.php`](../tests/Feature/Http/Controllers/API/V1/NotificationTest.php).
+**Tests that lock behaviour:** `test_moderator_can_access_surface_but_does_not_see_root_admin_broadcast` in [`NotificationTest.php`](../tests/Domain/Notification/Feature/Http/Controllers/API/V1/NotificationTest.php).
 
 ---
 
@@ -320,7 +320,7 @@ ActivityNotificationEvent::dispatch(
 - Must pass `subject_user_id` in data when using `notify_subject_user`.
 - Self-actions are usually skipped in the emitter (not in the engine).
 
-**Real example** — [`UserManagementService::update()`](../app/Services/User/UserManagementService.php):
+**Real example** — [`UserManagementService::update()`](../app/Domain/Identity/Services/User/UserManagementService.php):
 
 ```php
 if ($actor->id !== $user->id) {
@@ -420,14 +420,14 @@ There are **no per-user preferences** (mute, subscribe per type). Filtering is a
 
 | Concern | File |
 |---------|------|
-| Visibility query | [`NotificationRepository.php`](../app/Repositories/Eloquent/NotificationRepository.php) |
-| Emit + realtime fan-out | [`NotificationService.php`](../app/Services/Notification/NotificationService.php) |
-| Audience defaults | [`NotificationTypeSettingRepository.php`](../app/Repositories/Eloquent/NotificationTypeSettingRepository.php) |
+| Visibility query | [`NotificationRepository.php`](../app/Domain/Notification/Repositories/Eloquent/NotificationRepository.php) |
+| Emit + realtime fan-out | [`NotificationService.php`](../app/Domain/Notification/Services/NotificationService.php) |
+| Audience defaults | [`NotificationTypeSettingRepository.php`](../app/Domain/Notification/Repositories/Eloquent/NotificationTypeSettingRepository.php) |
 | Seeded audiences | [`NotificationTypeSettingSeeder.php`](../database/seeders/NotificationTypeSettingSeeder.php) |
 | Type catalogue + fallback | [`NotificationType.php`](../app/Notifications/Activity/NotificationType.php) |
-| Model + pivot relations | [`ActivityNotification.php`](../app/Models/ActivityNotification.php) |
-| Dispatch examples | [`UserManagementService.php`](../app/Services/User/UserManagementService.php) |
-| Behavioural tests | [`NotificationTest.php`](../tests/Feature/Http/Controllers/API/V1/NotificationTest.php) |
+| Model + pivot relations | [`ActivityNotification.php`](../app/Domain/Notification/Models/ActivityNotification.php) |
+| Dispatch examples | [`UserManagementService.php`](../app/Domain/Identity/Services/User/UserManagementService.php) |
+| Behavioural tests | [`NotificationTest.php`](../tests/Domain/Notification/Feature/Http/Controllers/API/V1/NotificationTest.php) |
 | Agent checklist | [`notifications-implementation-guide.md`](./notifications-implementation-guide.md) |
 
 ---

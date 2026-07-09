@@ -14,20 +14,20 @@ All IDs are **UUID v7** end to end (see [User primary keys (UUID v7)](./user-uui
 | Layer | File | Responsibility |
 |-------|------|----------------|
 | Migration | `database/migrations/2026_06_09_000001_create_menu_navigation_tables.php` | `menus` tree + `menu_roles`, `menu_user_includes`, `menu_user_excludes` pivots |
-| Model | `app/Models/Menu.php` | `HasUuids`, relations, scopes, `toNavigationArray()` |
-| Contract | `app/Repositories/Contracts/MenuRepositoryInterface.php` | Repository contract |
-| Repository | `app/Repositories/Eloquent/MenuRepository.php` | Tree build, viewer filtering, ordering transactions, pivot sync |
-| Service | `app/Services/Navigation/MenuService.php` | Maps request fields → columns, orchestrates repository |
-| Support | `app/Support/Navigation/NavigationTreeFilter.php` | Optional `?q=` filter on the navigation tree (name, description, route) |
-| Support | `app/Support/Navigation/NavigationRouteMap.php` | Resolves route names to URLs for the sidebar search renderer |
-| Presenter | `app/Support/Navigation/MenuPresenter.php` | Admin/detail JSON shape |
-| Controller | `app/Http/Controllers/API/V1/Navigation/MenuController.php` | Thin HTTP layer |
-| Requests | `app/Http/Requests/Navigation/{Store,Update,IndexMenuList}MenuRequest.php` | Input validation |
-| Request concern | `app/Http/Requests/Navigation/Concerns/NormalizesMenuPlacementFields.php` | Coerces/drops empty placement fields before validation (shared by store/update) |
+| Model | `app/Domain/Navigation/Models/Menu.php` | `HasUuids`, relations, scopes, `toNavigationArray()` |
+| Contract | `app/Domain/Navigation/Repositories/Contracts/MenuRepositoryInterface.php` | Repository contract |
+| Repository | `app/Domain/Navigation/Repositories/Eloquent/MenuRepository.php` | Tree build, viewer filtering, ordering transactions, pivot sync |
+| Service | `app/Domain/Navigation/Services/MenuService.php` | Maps request fields → columns, orchestrates repository |
+| Support | `app/Domain/Navigation/Support/NavigationTreeFilter.php` | Optional `?q=` filter on the navigation tree (name, description, route) |
+| Support | `app/Domain/Navigation/Support/NavigationRouteMap.php` | Resolves route names to URLs for the sidebar search renderer |
+| Presenter | `app/Domain/Navigation/Support/MenuPresenter.php` | Admin/detail JSON shape |
+| Controller | `app/Domain/Navigation/Http/Controllers/API/V1/MenuController.php` | Thin HTTP layer |
+| Requests | `app/Domain/Navigation/Http/Requests/{Store,Update,IndexMenuList}MenuRequest.php` | Input validation |
+| Request concern | `app/Domain/Navigation/Http/Requests/Concerns/NormalizesMenuPlacementFields.php` | Coerces/drops empty placement fields before validation (shared by store/update) |
 | Middleware | `app/Http/Middleware/OptionalJwtAuthenticate.php` (alias `jwt.optional`) | Optional auth for `index` |
-| Exception | `app/Exceptions/Navigation/InvalidMenuPositionException.php` | 422 for bad reordering input |
-| Exception | `app/Exceptions/Navigation/MenuHasChildrenException.php` | 409 when deleting a non-empty branch without `cascade` |
-| Exception | `app/Exceptions/Navigation/InvalidMenuParentException.php` | 422 for invalid parent (cycle / restoring under a trashed parent) |
+| Exception | `app/Domain/Navigation/Exceptions/InvalidMenuPositionException.php` | 422 for bad reordering input |
+| Exception | `app/Domain/Navigation/Exceptions/MenuHasChildrenException.php` | 409 when deleting a non-empty branch without `cascade` |
+| Exception | `app/Domain/Navigation/Exceptions/InvalidMenuParentException.php` | 422 for invalid parent (cycle / restoring under a trashed parent) |
 | Seeder | `database/seeders/MenuSeeder.php` | Sample header → parent → children |
 
 The repository is bound in `App\Providers\AppServiceProvider`:
@@ -126,7 +126,7 @@ Authorization is **permission-based** (consistent with the rest of the app), not
 
 ### Blade web UI (API client)
 
-Menu management screens in the Blade admin (`routes/web.php`) are **pure consumers** of the API above. `App\Http\Controllers\Web\Navigation\MenuController` forwards list/read/mutation calls through `App\Support\Api\ApiClient`; validation, structural rules, and Spatie permission checks all run in `App\Http\Controllers\API\V1\Navigation\MenuController` only.
+Menu management screens in the Blade admin (`routes/web/navigation.php`, loaded from `routes/web.php`) are **pure consumers** of the API above. `App\Domain\Navigation\Http\Controllers\Web\MenuController` forwards list/read/mutation calls through `App\Support\Api\ApiClient`; validation, structural rules, and Spatie permission checks all run in `App\Domain\Navigation\Http\Controllers\API\V1\MenuController` only.
 
 | Web route | Forwards to |
 |-----------|-------------|

@@ -1,0 +1,27 @@
+{
+  "replacements": {
+    "App\\Support\\ActivityLog\\": "App\\Domain\\ActivityLog\\Support\\",
+    "App\\Http\\Requests\\ActivityLog\\": "App\\Domain\\ActivityLog\\Http\\Requests\\",
+    "App\\Http\\Resources\\ActivityLog\\": "App\\Domain\\ActivityLog\\Http\\Resources\\",
+    "App\\Services\\ActivityLog\\": "App\\Domain\\ActivityLog\\Services\\",
+    "App\\Repositories\\Contracts\\ActivityLogRepositoryInterface": "App\\Domain\\ActivityLog\\Repositories\\Contracts\\ActivityLogRepositoryInterface",
+    "App\\Repositories\\Eloquent\\ActivityLogRepository": "App\\Domain\\ActivityLog\\Repositories\\Eloquent\\ActivityLogRepository",
+    "App\\Http\\Controllers\\Web\\ActivityLogController": "App\\Domain\\ActivityLog\\Http\\Controllers\\Web\\ActivityLogController",
+    "App\\Http\\Controllers\\API\\V1\\ActivityLogController": "App\\Domain\\ActivityLog\\Http\\Controllers\\API\\V1\\ActivityLogController"
+  },
+  "moves": [
+    { "from": "app/Http/Controllers/API/V1/ActivityLogController.php", "to": "app/Domain/ActivityLog/Http/Controllers/API/V1/ActivityLogController.php" },
+    { "from": "app/Http/Controllers/Web/ActivityLogController.php", "to": "app/Domain/ActivityLog/Http/Controllers/Web/ActivityLogController.php" },
+    { "from": "app/Services/ActivityLog/ActivityLogService.php", "to": "app/Domain/ActivityLog/Services/ActivityLogService.php" },
+    { "from": "app/Repositories/Eloquent/ActivityLogRepository.php", "to": "app/Domain/ActivityLog/Repositories/Eloquent/ActivityLogRepository.php" },
+    { "from": "app/Repositories/Contracts/ActivityLogRepositoryInterface.php", "to": "app/Domain/ActivityLog/Repositories/Contracts/ActivityLogRepositoryInterface.php" },
+    { "from": "app/Http/Resources/ActivityLog/ActivityLogResource.php", "to": "app/Domain/ActivityLog/Http/Resources/ActivityLogResource.php" },
+    { "from": "app/Http/Requests/ActivityLog/IndexActivityLogRequest.php", "to": "app/Domain/ActivityLog/Http/Requests/IndexActivityLogRequest.php" },
+    { "from": "app/Support/ActivityLog/AuthActivityRecorder.php", "to": "app/Domain/ActivityLog/Support/AuthActivityRecorder.php" },
+    { "from": "app/Support/ActivityLog/SubjectTypeResolver.php", "to": "app/Domain/ActivityLog/Support/SubjectTypeResolver.php" }
+  ],
+  "test_moves": [
+    { "from": "tests/Feature/Http/Controllers/API/V1/ActivityLogTest.php", "to": "tests/Domain/ActivityLog/Feature/Http/Controllers/API/V1/ActivityLogTest.php" },
+    { "from": "tests/Feature/Http/Controllers/API/V1/ActivityLogAuthTest.php", "to": "tests/Domain/ActivityLog/Feature/Http/Controllers/API/V1/ActivityLogAuthTest.php" }
+  ]
+}

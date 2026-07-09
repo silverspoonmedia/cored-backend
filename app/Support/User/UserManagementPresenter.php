@@ -2,9 +2,9 @@
 
 namespace App\Support\User;
 
-use App\Http\Resources\User\UserManagementResource;
-use App\Models\Role;
-use App\Models\User;
+use App\Domain\Identity\Http\Resources\UserManagementResource;
+use App\Domain\Identity\Models\Role;
+use App\Domain\Identity\Models\User;
 use Illuminate\Support\Collection;
 
 class UserManagementPresenter

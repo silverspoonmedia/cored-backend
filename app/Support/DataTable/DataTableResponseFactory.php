@@ -2,7 +2,7 @@
 
 namespace App\Support\DataTable;
 
-use App\Models\User;
+use App\Domain\Identity\Models\User;
 use App\Support\DataTable\Contracts\RowActionResolverInterface;
 use Illuminate\Http\JsonResponse;
 use Yajra\DataTables\Facades\DataTables;

@@ -132,7 +132,7 @@ All routes below use `middleware('auth:api')`. Send `Authorization: Bearer {toke
 | `DELETE` | `/users/{user}` | `api.v1.users.destroy` | Self-delete check, then `delete` |
 | `GET` | `/users/assignable-roles` | `api.v1.users.assignable-roles` | `assignableRoles` |
 
-`{user}` is a UUID (route model binding on `App\Models\User`).
+`{user}` is a UUID (route model binding on `App\Domain\Identity\Models\User`).
 
 List routes:
 
@@ -142,7 +142,7 @@ php artisan route:list --path=api/v1/users
 
 ### Blade web UI (API client)
 
-The server-rendered admin does **not** call `UserManagementService` or `UserPolicy` directly. `App\Http\Controllers\Web\UserController` forwards every action to the endpoints above via `App\Support\Api\ApiClient` (JWT from the `auth_token` cookie sent as `Authorization: Bearer`). Validation, H-RBAC filtering, and authorization all run **only** in the API layer documented here.
+The server-rendered admin does **not** call `UserManagementService` or `UserPolicy` directly. `App\Domain\Identity\Http\Controllers\Web\UserController` forwards every action to the endpoints above via `App\Support\Api\ApiClient` (JWT from the `auth_token` cookie sent as `Authorization: Bearer`). Validation, H-RBAC filtering, and authorization all run **only** in the API layer documented here.
 
 | Web route | Forwards to |
 |-----------|-------------|
@@ -309,30 +309,24 @@ User model / roles (Spatie) / database
 ### Directory layout
 
 ```
-app/
+app/Domain/Identity/
 ├── Http/
-│   ├── Controllers/API/V1/
-│   │   └── UserController.php
-│   └── Requests/User/
-│       ├── StoreUserRequest.php
-│       └── UpdateUserRequest.php
-├── Policies/
-│   └── UserPolicy.php
+│   ├── Controllers/API/V1/UserController.php
+│   ├── Controllers/Web/UserController.php
+│   └── Requests/User/{Store,Update,Index}UserRequest.php
+├── Policies/UserPolicy.php
 ├── Services/
-│   ├── Rbac/
-│   │   └── RoleService.php
-│   └── User/
-│       └── UserManagementService.php
+│   ├── Rbac/RoleService.php
+│   └── User/UserManagementService.php
 ├── Repositories/
 │   ├── Contracts/UserRepositoryInterface.php
 │   └── Eloquent/UserRepository.php
-├── Support/User/
-│   └── UserManagementPresenter.php
-├── Exceptions/User/
-│   └── CannotDeleteSelfException.php
-└── Models/
-    ├── User.php          ← HasRoles, SoftDeletes, HasUuids
-    └── Role.php          ← HasUuids, fillable: level
+├── Models/
+│   ├── User.php          ← HasRoles, SoftDeletes, HasUuids
+│   └── Role.php          ← HasUuids, fillable: level
+└── Exceptions/CannotDeleteSelfException.php
+
+app/Support/User/UserManagementPresenter.php
 
 database/
 ├── migrations/
@@ -341,8 +335,8 @@ database/
 └── seeders/
     └── RoleSeeder.php
 
-routes/api/v1.php
-tests/Feature/Http/Controllers/API/V1/UserManagementTest.php
+routes/api/v1/identity.php
+tests/Domain/Identity/Feature/Http/Controllers/API/V1/UserManagementTest.php
 ```
 
 `UserPolicy` is registered in `App\Providers\AppServiceProvider` via `Gate::policy(User::class, UserPolicy::class)`.
@@ -351,7 +345,7 @@ tests/Feature/Http/Controllers/API/V1/UserManagementTest.php
 
 ## RoleService
 
-`App\Services\Rbac\RoleService` centralizes hierarchy math:
+`App\Domain\Identity\Services\Rbac\RoleService` centralizes hierarchy math:
 
 | Method | Purpose |
 |--------|---------|
@@ -388,7 +382,7 @@ Denied responses use localized messages from `lang/{locale}/api/users.php`. For 
 Added by migration `2026_06_03_000001_add_level_to_roles_table.php`:
 
 - Column: `level` — `unsignedInteger`, **unique**, nullable in migration (seeded values are always set)
-- Model: `App\Models\Role` includes `level` in `$fillable` and casts it to `integer`
+- Model: `App\Domain\Identity\Models\Role` includes `level` in `$fillable` and casts it to `integer`
 
 ### Soft deletes on `users`
 
@@ -439,7 +433,7 @@ Defined in `config/auth.php` as `default_role`. Must match a role name created b
 
 ## Tests
 
-Feature tests: `tests/Feature/Http/Controllers/API/V1/UserManagementTest.php`
+Feature tests: `tests/Domain/Identity/Feature/Http/Controllers/API/V1/UserManagementTest.php`
 
 Covers hierarchy filtering, create/update role validation, permission denials, soft delete, assignable roles, multi-role actors, and self-delete (422).
 

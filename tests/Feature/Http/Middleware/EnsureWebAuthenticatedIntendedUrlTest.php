@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Http\Middleware;
 
-use App\Models\User;
+use App\Domain\Identity\Models\User;
 use App\Support\Auth\AuthCookie;
 use App\Support\Web\IntendedUrl;
 use Illuminate\Foundation\Testing\RefreshDatabase;

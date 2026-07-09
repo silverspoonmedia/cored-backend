@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Routing;
 
-use App\Models\User;
+use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;

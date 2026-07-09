@@ -91,9 +91,9 @@ All routes require `auth:api` and `permission:view activity log` (Root + Admin b
 | `GET` | `/activity-logs/{activity}` | `api.v1.activity-logs.show` | Single entry (`{activity}` is numeric Spatie id) |
 | `GET` | `/users/{user}/activity-logs` | `api.v1.users.activity-logs` | Timeline for one user (includes soft-deleted subjects) |
 
-Controllers: `App\Http\Controllers\API\V1\ActivityLogController`  
-Service: `App\Services\ActivityLog\ActivityLogService`  
-Repository: `App\Repositories\Eloquent\ActivityLogRepository`
+Controllers: `App\Domain\ActivityLog\Http\Controllers\API\V1\ActivityLogController`  
+Service: `App\Domain\ActivityLog\Services\ActivityLogService`  
+Repository: `App\Domain\ActivityLog\Repositories\Eloquent\ActivityLogRepository`
 
 Response shape: `ActivityLogResource` — `id`, `log_name`, `event`, localized `event_label`, `subject_label`, `causer`, `attribute_changes`, `properties`, `created_at`.
 

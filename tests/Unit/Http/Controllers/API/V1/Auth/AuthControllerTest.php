@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\Http\Controllers\API\V1\Auth;
 
-use App\Http\Controllers\API\V1\Auth\AuthController;
-use App\Http\Requests\Auth\LoginRequest;
-use App\Http\Requests\Auth\RegisterRequest;
-use App\Services\Auth\AuthService;
+use App\Domain\Identity\Http\Controllers\API\V1\Auth\AuthController;
+use App\Domain\Identity\Http\Requests\Auth\LoginRequest;
+use App\Domain\Identity\Http\Requests\Auth\RegisterRequest;
+use App\Domain\Identity\Services\Auth\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Testing\TestResponse;
 use Mockery;

@@ -131,14 +131,14 @@ Copy lives in `lang/{locale}/ui.php` (`ui.ajax.request_failed`, `ui.ajax.server_
 
 These are pure reference reads, not business logic, and there is no suitable API endpoint, so they are read directly. Flagged here for honesty:
 
-1. **Sidebar and navbar navigation** (`App\View\Composers\NavigationComposer`) calls `MenuService::navigationTree(..., layout: …)` directly — `sidebar` for the sidebar partial, `navbar` for the top bar. It runs on **every** page render; routing it through a self-HTTP call would add a round-trip per page for zero logic gain. Same engine as `GET /api/v1/navigation/menus?layout=…`.
-2. **Menu form option-lists** (`roles`, `users` pickers in `Web\Navigation\MenuController::renderForm`) are read via Eloquent because the API exposes no "list all roles / all users" endpoint. If full purity is required, add those endpoints and switch the form to consume them.
+1. **Sidebar and navbar navigation** (`App\Domain\Navigation\View\Composers\NavigationComposer`) calls `MenuService::navigationTree(..., layout: …)` directly — `sidebar` for the sidebar partial, `navbar` for the top bar. It runs on **every** page render; routing it through a self-HTTP call would add a round-trip per page for zero logic gain. Same engine as `GET /api/v1/navigation/menus?layout=…`.
+2. **Menu form option-lists** (`roles`, `users` pickers in `App\Domain\Navigation\Http\Controllers\Web\MenuController::renderForm`) are read via Eloquent because the API exposes no "list all roles / all users" endpoint. If full purity is required, add those endpoints and switch the form to consume them.
 
 ---
 
-## Routes (`routes/web.php`)
+## Routes (`routes/web.php` + `routes/web/*.php`)
 
-All web routes run through the `web` group (which includes `AuthenticateWithJwtCookie`). They carry **no `permission:` gate** on most routes — the API authorizes each forwarded call; web middleware is transport-only.
+Domain route files are loaded from [`routes/web.php`](../routes/web.php) inside `web.guest` and `web.auth` middleware groups. See [Domain modules](./domain-modules.md).
 
 **Exception:** approval workflow admin screens (`/admin/approval-workflows/*`) also apply `role:Root|Admin` before forwarding to the API. This is a transport-layer gate for admin-only setup UI; the API still enforces authorization on every forwarded call.
 
@@ -326,21 +326,21 @@ Breadcrumb trails are **defined once per route name** in `routes/breadcrumbs.php
 
 ### Server-side DataTables (user list)
 
-The user list uses **Yajra DataTables** server-side. The web layer does **not** build the payload — `Web\UserController::datatable()` **proxies** `GET /api/v1/users?display_mode=datatable` (forwarding the DataTables query params + Bearer), then rewrites each row's allowed actions onto web routes:
+The user list uses **Yajra DataTables** server-side. The web layer does **not** build the payload — `App\Domain\Identity\Http\Controllers\Web\UserController::datatable()` **proxies** `GET /api/v1/users?display_mode=datatable` (forwarding the DataTables query params + Bearer), then rewrites each row's allowed actions onto web routes:
 
 - The **API decides which actions** the actor may take (RBAC) and returns them as `actions[].key` (`show`/`edit`/`delete`).
 - The web layer **maps those keys** to clickable web routes (`users.edit` GET, `users.destroy` DELETE form) with `bi bi-*` icons, dropping `show` (there is no web detail page).
-- On any API failure the proxy returns a DataTables payload with `error` (localized message) and the upstream HTTP status — the browser shows an alert via `MonolithApi.datatableAjaxError()` instead of an empty table. The same pattern applies to `Web\OrderController::datatable()` and orders bulk delete (`orders/index.blade.php` uses `MonolithApi.handleResponse()`).
+- On any API failure the proxy returns a DataTables payload with `error` (localized message) and the upstream HTTP status — the browser shows an alert via `MonolithApi.datatableAjaxError()` instead of an empty table. The same pattern applies to `App\Domain\Playground\Http\Controllers\Web\OrderController::datatable()` and orders bulk delete (`orders/index.blade.php` uses `MonolithApi.handleResponse()`).
 
 Action buttons stay web-side because the browser submits a normal CSRF `<form>` (with `_method`) to a **web** route — the API (Bearer-only, no CSRF) is never hit directly from the browser.
 
 | File | Role |
 |------|------|
-| `app/Http/Controllers/Web/UserController.php` | `datatable()` proxies the API and maps actions; `index()` renders the shell |
+| `app/Domain/Identity/Http/Controllers/Web/UserController.php` | `datatable()` proxies the API and maps actions; `index()` renders the shell |
 | `resources/views/adminlte4/users/index.blade.php` | Empty `<table>` + DataTables init pointing at `users.datatable` |
 | `resources/views/adminlte4/components/partials/datatable-row-actions.blade.php` | `renderDatatableActions()` + `MonolithApi.handleResponse()` for non-GET actions |
-| `tests/Feature/Http/Controllers/Web/SidebarNavigationWebTest.php` | Asserts `NavigationComposer` binds to the hashed sidebar/navbar views and seeded layout menus render in the HTML shell |
-| `tests/Feature/Http/Controllers/Web/UserDatatableTest.php` | `Http::fake()` → asserts the proxy maps API keys to web URLs and returns an `error` key on API failure |
+| `tests/Domain/Navigation/Feature/Http/Controllers/Web/SidebarNavigationWebTest.php` | Asserts `NavigationComposer` binds to the hashed sidebar/navbar views and seeded layout menus render in the HTML shell |
+| `tests/Domain/Identity/Feature/Http/Controllers/Web/UserDatatableTest.php` | `Http::fake()` → asserts the proxy maps API keys to web URLs and returns an `error` key on API failure |
 | `tests/Feature/Http/Controllers/Web/UserFormAjaxTest.php` | AJAX mutation envelope: 422 field errors, 401 session flash + redirect, 403/500 error messages |
 | `tests/Feature/Http/Controllers/Web/WebCsrfErrorTest.php` | CSRF `TokenMismatchException` → JSON 419 envelope + session flash |
 

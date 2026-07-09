@@ -2,8 +2,8 @@
 
 namespace Tests\Fakes;
 
-use App\Models\AttachmentUpload;
-use App\Support\Orders\DirectAttachmentUploadService;
+use App\Domain\Playground\Models\AttachmentUpload;
+use App\Domain\Playground\Support\Orders\DirectAttachmentUploadService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;

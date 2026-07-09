@@ -4,9 +4,9 @@ namespace Tests\Unit\Services\Auth;
 
 use App\Exceptions\Auth\CurrentPasswordIncorrectException;
 use App\Exceptions\Auth\InvalidPasswordResetTokenException;
-use App\Models\User;
-use App\Repositories\Eloquent\UserRepository;
-use App\Services\Auth\PasswordResetService;
+use App\Domain\Identity\Models\User;
+use App\Domain\Identity\Repositories\Eloquent\UserRepository;
+use App\Domain\Identity\Services\Auth\PasswordResetService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;

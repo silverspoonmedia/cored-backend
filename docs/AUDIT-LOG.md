@@ -13,6 +13,7 @@ Verification of README and `docs/` against the codebase. **Code is the source of
 | `README.md` | Missing approval engine; incomplete seeder table | Updated intro + 4-user seeder table |
 | `docs/user-management-hrbac.md` | Indonesian-only error examples | Added en/id comparison tables |
 | `docs/approval-matrix-engine.md` | Wrong route file (`routes/api_v1.php`) | Aligned with `routes/api.php` |
+| `docs/approval-matrix-engine.md` (2026-07-09) | Approvals documented in `routes/api.php` | **Updated** — approvals now in `routes/api/v1/approval.php` per domain route split |
 | `routes/web.php` | Duplicate register routes | Removed duplicate |
 | Other `docs/*` | Spot-checked jwt, notifications, auth-activity, localization, uuid, octane, pint | **Verified accurate** — no changes |
 

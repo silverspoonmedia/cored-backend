@@ -6,6 +6,8 @@ It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap
 
 A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the Blade UI via the public **monolith-gateway** BFF. Gateway proxies `/api/*` to this application, sets HttpOnly cookies for the SPA, and enforces `GATEWAY_SECRET` when `GATEWAY_ENFORCE=true`. See [Three-project integration (Monolith + Gateway + Vue)](docs/spa-gateway-integration.md) and [Environment configuration — Public gateway perimeter](docs/environment.md#public-gateway-perimeter). SPA guides: `monolith-frontend/docs/`. Gateway internals: `monolith-gateway/docs/`.
 
+**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,Playground,Approval}/` (logical monorepo inside this repository). See [Domain modules](docs/domain-modules.md), [Internal monorepo assessment](docs/internal-monorepo-assessment.md), and [Internal monorepo porting](docs/internal-monorepo-porting.md). Gateway and Frontend stay separate repos and only change when HTTP API contracts change.
+
 ### Living documentation (required)
 
 **This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **AI agents:** read [AI Agent Guide](docs/ai-agent-guide.md) and root [AGENTS.md](AGENTS.md) before cross-project work. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, localization, or any behavior described here—do not let code and docs drift apart.
@@ -21,7 +23,7 @@ A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the 
 | Layer | What to touch |
 |-------|----------------|
 | **API** | Versioned routes (`/api/v1/*`), controllers, form requests, policies, repositories, and API responses |
-| **Web** | Web controllers that consume the API (`ConsumesApi` / `ApiClient`), routes in `routes/web.php`, and request forwarding |
+| **Web** | Web controllers that consume the API (`ConsumesApi` / `ApiClient`), routes in `routes/web.php` and `routes/web/*.php`, and request forwarding |
 | **Blade views** | Screens, forms, list tables, partials, and reusable components under `resources/views/{layout}/` (default layout: `adminlte4` via `WEB_LAYOUT` / `config/web.php`; see [web-frontend.md](docs/web-frontend.md#layout-namespace-and-configwebphp)) |
 | **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (`en`, `id`, `ja`) |
 | **Other (as applicable)** | Migrations, seeders, models, events/listeners, notifications, navigation menu entries, tests, and the relevant `docs/` guides |
@@ -50,7 +52,7 @@ This project does **not** use auto-increment integer primary keys for domain mod
 | Spatie (`roles`, `permissions`, pivots) | `id`, `model_id`, `role_id`, `permission_id` |
 | `order_master` / `order_detail` | `id` (PK), `order_detail.order_master_id` (FK) |
 | `attachments` | `id` (PK), `attachable_id` (polymorphic FK via `uuidMorphs`), `user_id` (FK → `users`) |
-| Models | `User`, `Role`, `Permission`, `Order`, `OrderDetail`, `Attachment` use `HasUuids` |
+| Models | `App\Domain\Identity\Models\{User,Role,Permission}`, `App\Domain\Playground\Models\{Order,OrderDetail,Attachment}` use `HasUuids` |
 
 When you add a table that belongs to a user or another UUID-backed model, use `foreignUuid` (not `foreignId`). Do not pass integer IDs in validation or route binding. Full rationale, migration examples, and pitfalls (e.g. do not use DB `gen_random_uuid()` for v7) → **[User primary keys (UUID v7)](docs/user-uuid-v7.md)**.
 
@@ -221,6 +223,9 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 
 | Document | Description |
 |----------|-------------|
+| [Domain modules](docs/domain-modules.md) | Internal `app/Domain/*` layout, routes, namespace conventions |
+| [Internal monorepo assessment](docs/internal-monorepo-assessment.md) | Why logical monorepo, domain map, phases, Gateway/Frontend contract |
+| [Internal monorepo porting](docs/internal-monorepo-porting.md) | Implementation reference: migration order, scripts, gotchas, verification |
 | [API routing](docs/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
 | [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example, and the master-detail aggregate (Order + OrderDetail) with transactional writes |
 | [Playground (reference surface)](docs/playground.md) | Non-production `/api/playground/*` demos: simple CRUD (Users), master-detail Orders with **browser-direct chunked S3 uploads** (manual Start queue + configurable concurrency), and transactional writes |
