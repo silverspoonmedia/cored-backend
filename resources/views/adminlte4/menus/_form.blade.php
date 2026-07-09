@@ -9,9 +9,19 @@
         'p' => __('web/menus.form.types.p'),
         'c' => __('web/menus.form.types.c'),
     ];
-    $parentOptions = $allMenus->mapWithKeys(fn ($m) => [$m['id'] => $m['name'].' · '.$m['type']]);
-    $roleOptions = $roles->pluck('name', 'id');
-    $userOptions = $users->mapWithKeys(fn ($u) => [$u->id => $u->name.' ('.$u->email.')']);
+    $hydratedMenus = $hydratedLookups['menus'] ?? [];
+    $hydratedUsers = $hydratedLookups['users'] ?? [];
+    $hydratedRoles = $hydratedLookups['roles'] ?? [];
+
+    $parentOptions = $hydratedMenus;
+    $userIncludeOptions = collect($hydratedUsers)->only(data_get($menu, 'user_include_ids', []))->all();
+    $userExcludeOptions = collect($hydratedUsers)->only(data_get($menu, 'user_exclude_ids', []))->all();
+    $roleSelectedOptions = collect($hydratedRoles)->only(data_get($menu, 'role_ids', []))->all();
+
+    $menuAjaxParams = [
+        'layout' => data_get($menu, 'layout', $listLayout ?? MenuLayout::default()),
+        'exclude' => data_get($menu, 'id'),
+    ];
 
     $positionOptions = $isEdit
         ? [
@@ -66,7 +76,9 @@
     />
 
     <x-adminlte4::form.select name="parent" :label="__('web/menus.form.parent_label')" :options="$parentOptions" :selected="data_get($menu, 'parent_id')"
-        :placeholder="__('web/menus.form.parent_placeholder')" />
+        :placeholder="__('web/menus.form.parent_placeholder')"
+        :ajax-url="route('lookups.menus')"
+        :ajax-params="$menuAjaxParams" />
 
     <div class="row">
         <div class="col-md-6">
@@ -90,18 +102,21 @@
         </div>
     </div>
 
-    <x-adminlte4::form.multiselect name="roles" :label="__('web/menus.form.roles_label')" :options="$roleOptions"
+    <x-adminlte4::form.multiselect name="roles" :label="__('web/menus.form.roles_label')" :options="$roleSelectedOptions"
         :selected="data_get($menu, 'role_ids', [])"
-        :hint="__('web/menus.form.roles_hint')" />
+        :hint="__('web/menus.form.roles_hint')"
+        :ajax-url="route('lookups.roles')" />
 
     <div class="row">
         <div class="col-md-6">
-            <x-adminlte4::form.multiselect name="user_includes" :label="__('web/menus.form.user_includes')" :options="$userOptions"
-                :selected="data_get($menu, 'user_include_ids', [])" />
+            <x-adminlte4::form.multiselect name="user_includes" :label="__('web/menus.form.user_includes')" :options="$userIncludeOptions"
+                :selected="data_get($menu, 'user_include_ids', [])"
+                :ajax-url="route('lookups.users')" />
         </div>
         <div class="col-md-6">
-            <x-adminlte4::form.multiselect name="user_excludes" :label="__('web/menus.form.user_excludes')" :options="$userOptions"
-                :selected="data_get($menu, 'user_exclude_ids', [])" />
+            <x-adminlte4::form.multiselect name="user_excludes" :label="__('web/menus.form.user_excludes')" :options="$userExcludeOptions"
+                :selected="data_get($menu, 'user_exclude_ids', [])"
+                :ajax-url="route('lookups.users')" />
         </div>
     </div>
 
@@ -113,9 +128,11 @@
                 :placeholder="$isEdit ? __('web/menus.form.position_no_change') : __('web/menus.form.position_default')" />
         </div>
         <div class="col-md-6">
-            <x-adminlte4::form.select name="reference_id" :label="__('web/menus.form.reference_label')" :options="$parentOptions"
+            <x-adminlte4::form.select name="reference_id" :label="__('web/menus.form.reference_label')" :options="[]"
                 :placeholder="__('web/menus.form.reference_placeholder')"
-                :hint="$isEdit ? __('web/menus.form.reference_hint_edit') : __('web/menus.form.reference_hint_create')" />
+                :hint="$isEdit ? __('web/menus.form.reference_hint_edit') : __('web/menus.form.reference_hint_create')"
+                :ajax-url="route('lookups.menus')"
+                :ajax-params="$menuAjaxParams" />
         </div>
     </div>
 

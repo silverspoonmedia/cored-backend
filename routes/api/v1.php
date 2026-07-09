@@ -7,6 +7,7 @@ use App\Http\Controllers\API\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\API\V1\Auth\LocaleController;
 use App\Http\Controllers\API\V1\Auth\PasswordController;
 use App\Http\Controllers\API\V1\Auth\TwoFactorController;
+use App\Http\Controllers\API\V1\LookupController;
 use App\Http\Controllers\API\V1\Navigation\MenuController;
 use App\Http\Controllers\API\V1\NotificationController;
 use App\Http\Controllers\API\V1\UserController;
@@ -62,6 +63,12 @@ Route::middleware('auth:api')->group(function (): void {
         ->name('users.assignable-roles');
 
     Route::apiResource('users', UserController::class);
+
+    Route::prefix('lookups')->name('lookups.')->group(function (): void {
+        Route::get('users', [LookupController::class, 'users'])->name('users');
+        Route::get('menus', [LookupController::class, 'menus'])->name('menus');
+        Route::get('roles', [LookupController::class, 'roles'])->name('roles');
+    });
 });
 
 Route::middleware(['auth:api', 'permission:view user'])

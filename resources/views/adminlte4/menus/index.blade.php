@@ -19,7 +19,7 @@
                     :options="$layoutOptions"
                     :selected="$selectedLayout"
                     :hint="__('web/menus.filter.layout_hint')"
-                    onchange="this.form.submit()"
+                    :autosubmit="true"
                 />
             </div>
         </form>

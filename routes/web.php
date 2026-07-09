@@ -12,6 +12,7 @@ use App\Http\Controllers\Web\Auth\RegisterController;
 use App\Http\Controllers\Web\Auth\TwoFactorController as TwoFactorWebController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\LocaleController;
+use App\Http\Controllers\Web\LookupController;
 use App\Http\Controllers\Web\Navigation\MenuController;
 use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\OrderAttachmentUploadController;
@@ -99,6 +100,13 @@ Route::middleware('web.auth')->group(function (): void {
     Route::post('profile/two-factor/disable', [ProfileTwoFactorController::class, 'disable'])->name('profile.two-factor.disable');
     Route::post('email/verification-notification', [EmailVerificationController::class, 'resend'])
         ->name('verification.send');
+
+    // Lookup feeds for Select2 AJAX fields.
+    Route::prefix('lookups')->name('lookups.')->group(function (): void {
+        Route::get('users', [LookupController::class, 'users'])->name('users');
+        Route::get('menus', [LookupController::class, 'menus'])->name('menus');
+        Route::get('roles', [LookupController::class, 'roles'])->name('roles');
+    });
 
     // User management — forwarded to /api/v1/users (the API authorizes).
     Route::get('users/datatable', [UserController::class, 'datatable'])->name('users.datatable');
