@@ -24,7 +24,7 @@ flowchart LR
 |---------|------|-------|------|
 | **Project Monolith** | `c:\laragon\www\monolith` | Laravel 13 | **Source of truth** — domain logic, database, JWT/RBAC, `/api/v1/*` |
 | **Project Monolith Gateway** | `c:\laragon\www\monolith-gateway` | Laravel 13 | **API connector / BFF** — public proxy, cookies, CORS, Vue transforms, aggregate endpoints |
-| **Project Monolith Frontend** | `c:\Users\Administrator\Documents\npm\monolith-frontend` | Vue 3 + Vite | **API consumer** — static build deployed on Cloudflare Pages |
+| **Project Monolith Frontend** | `c:\laragon\www\monolith-frontend` | Vue 3 + Vite | **API consumer** — static build deployed on Cloudflare Pages |
 
 These three projects are usually opened together in one workspace. A change in one project often must be reflected in the others **in the same task**.
 

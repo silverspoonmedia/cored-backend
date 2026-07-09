@@ -28,4 +28,4 @@ Read it before cross-project features, API changes, or anything that touches Gat
 | Project | Path |
 |---------|------|
 | Monolith Gateway | `c:\laragon\www\monolith-gateway` — [AGENTS.md](c:\laragon\www\monolith-gateway\AGENTS.md) |
-| Monolith Frontend | `c:\Users\Administrator\Documents\npm\monolith-frontend` — [AGENTS.md](c:\Users\Administrator\Documents\npm\monolith-frontend\AGENTS.md) |
+| Monolith Frontend | `c:\laragon\www\monolith-frontend` — [AGENTS.md](c:\laragon\www\monolith-frontend\AGENTS.md) |

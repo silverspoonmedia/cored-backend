@@ -4,7 +4,7 @@
 $ErrorActionPreference = 'Stop'
 $monolithRoot = Split-Path $PSScriptRoot -Parent
 $gatewayRoot = Join-Path (Split-Path $monolithRoot -Parent) 'monolith-gateway'
-$frontendRoot = 'C:\Users\Administrator\Documents\npm\monolith-frontend'
+$frontendRoot = Join-Path (Split-Path $monolithRoot -Parent) 'monolith-frontend'
 
 $results = @()
 
