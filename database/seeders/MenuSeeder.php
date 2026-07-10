@@ -143,6 +143,60 @@ class MenuSeeder extends Seeder
         ]);
         $activityLogItem->roles()->sync($adminRoleIds);
 
+        $paymentViewerRoleIds = Role::query()
+            ->where('guard_name', 'api')
+            ->whereIn('name', ['Root', 'Admin', 'Moderator', 'Management'])
+            ->pluck('id')
+            ->all();
+
+        $payments = Menu::query()->create([
+            'parent_id' => $admin->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Payments', 'id' => 'Pembayaran', 'ja' => '決済'],
+            'icon' => 'bi bi-credit-card',
+            'route' => null,
+            'type' => 'p',
+            'order' => 3,
+            'is_authenticate' => true,
+        ]);
+        $payments->roles()->sync($paymentViewerRoleIds);
+
+        $paymentGatewaysItem = Menu::query()->create([
+            'parent_id' => $payments->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Payment gateways', 'id' => 'Payment gateway', 'ja' => '決済ゲートウェイ'],
+            'icon' => 'bi bi-circle',
+            'route' => 'payment-gateways.index',
+            'type' => 'c',
+            'order' => 1,
+            'is_authenticate' => true,
+        ]);
+        $paymentGatewaysItem->roles()->sync($paymentViewerRoleIds);
+
+        $invoicesItem = Menu::query()->create([
+            'parent_id' => $payments->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Invoices', 'id' => 'Invoice', 'ja' => '請求書'],
+            'icon' => 'bi bi-circle',
+            'route' => 'invoices.index',
+            'type' => 'c',
+            'order' => 2,
+            'is_authenticate' => true,
+        ]);
+        $invoicesItem->roles()->sync($paymentViewerRoleIds);
+
+        $subscriptionsItem = Menu::query()->create([
+            'parent_id' => $payments->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Subscriptions', 'id' => 'Langganan', 'ja' => 'サブスクリプション'],
+            'icon' => 'bi bi-circle',
+            'route' => 'subscriptions.index',
+            'type' => 'c',
+            'order' => 3,
+            'is_authenticate' => true,
+        ]);
+        $subscriptionsItem->roles()->sync($paymentViewerRoleIds);
+
         $menus = Menu::query()->create([
             'parent_id' => $admin->id,
             'layout' => MenuLayout::SIDEBAR,
@@ -150,7 +204,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-list-nested',
             'route' => null,
             'type' => 'p',
-            'order' => 3,
+            'order' => 4,
             'is_authenticate' => true,
         ]);
         $menus->roles()->sync($managementRoleIds);

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Playground\Http\Resources;
 
+use App\Domain\PaymentGateway\Http\Resources\InvoiceResource;
 use App\Domain\Playground\Models\Attachment;
 use App\Domain\Playground\Models\Order;
 use Illuminate\Http\Request;
@@ -51,6 +52,7 @@ class PlaygroundOrderResource extends JsonResource
             'details' => PlaygroundOrderDetailResource::collection(
                 $this->whenLoaded('details'),
             ),
+            'invoice' => $this->whenLoaded('invoice', fn () => new InvoiceResource($this->invoice)),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

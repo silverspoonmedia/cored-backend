@@ -144,6 +144,7 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 | [docs/localization.md](./localization.md) | `en` / `id` / `ja` task rules |
 | [docs/crud-architecture.md](./crud-architecture.md) | Repository pattern, API resources |
 | [docs/domain-modules.md](./domain-modules.md) | Internal `app/Domain/*` layout, core/locked/removable, `domain:list\|make\|remove` |
+| [docs/payment-gateways.md](./payment-gateways.md) | Midtrans/iPaymu, invoices, subscriptions, webhooks |
 | [docs/internal-monorepo-assessment.md](./internal-monorepo-assessment.md) | Monorepo scope, Gateway/Frontend contract |
 | [docs/internal-monorepo-porting.md](./internal-monorepo-porting.md) | Porting implementation reference (migration order, scripts, gotchas) |
 | [docs/environment.md](./environment.md) | `GATEWAY_ENFORCE`, secrets, env vars |
@@ -181,6 +182,7 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 | [docs/stores-and-realtime.md](../../monolith-frontend/docs/stores-and-realtime.md) | Pinia stores, Echo, locale |
 | [docs/datatable-actions.md](../../monolith-frontend/docs/datatable-actions.md) | DataTable server actions |
 | [docs/playground-orders.md](../../monolith-frontend/docs/playground-orders.md) | Playground orders + uploads |
+| [docs/payment-gateways.md](../../monolith-frontend/docs/payment-gateways.md) | Payment admin, checkout, Snap.js |
 | [docs/async-fetch-ux.md](../../monolith-frontend/docs/async-fetch-ux.md) | Loading and error UX |
 | [docs/auth-layout.md](../../monolith-frontend/docs/auth-layout.md) | Guest auth screens |
 | [docs/responsive-ui.md](../../monolith-frontend/docs/responsive-ui.md) | Mobile layouts |

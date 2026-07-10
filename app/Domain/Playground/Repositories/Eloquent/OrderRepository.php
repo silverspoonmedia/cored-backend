@@ -32,7 +32,7 @@ class OrderRepository implements OrderRepositoryInterface
     public function findOrFail(string $id): Order
     {
         return Order::query()
-            ->with('details', 'attachments')
+            ->with('details', 'attachments', 'invoice.paymentGateway')
             ->findOrFail($id);
     }
 

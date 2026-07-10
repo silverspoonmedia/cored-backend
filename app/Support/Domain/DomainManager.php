@@ -30,6 +30,7 @@ class DomainManager
         'Notification',
         'ActivityLog',
         'Approval',
+        'PaymentGateway',
     ];
 
     /** @var list<string> */

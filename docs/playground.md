@@ -266,7 +266,7 @@ create/update. Instead:
 | `OrderAttachmentStorage` | `pathExists` + `deleteMany` (compensation / purge); no server-side `store()`. |
 | `OrderService` | Resolves `staged_attachments` into metadata; reconciles `keep_attachments` on update; compensates on DB failure. |
 | `OrderRepository` | Persists `attachments` rows inside the master-detail `DB::transaction()`. |
-| `StoreOrderRequest` / `UpdateOrderRequest` | `staged_attachments` (`nullable|array|max:N`), each id must reference a **completed** upload (`CompletedAttachmentUpload` rule). |
+| `StoreOrderRequest` / `UpdateOrderRequest` | `StoreOrderRequest` requires `payment_gateway_id` (active gateway UUID); creates a pending invoice on order create. `staged_attachments` (`nullable|array|max:N`), each id must reference a **completed** upload (`CompletedAttachmentUpload` rule). |
 | `PlaygroundAttachmentUploadController` | Upload orchestration endpoints under `/api/playground/attachments/uploads`. |
 | `PlaygroundOrderResource` | Emits `{path, name, size, mime, url}` per attachment. |
 
@@ -389,7 +389,7 @@ shared client there with `ApiClient::withPrefix('api/playground')`.
 |--------|-----|------|-------------|
 | GET | `/orders` | `orders.index` | Blade DataTable shell |
 | GET | `/orders/datatable` | `orders.datatable` | `GET /playground/orders?display_mode=datatable` (proxied) |
-| GET/POST | `/orders/create`, `/orders` | `orders.create` / `orders.store` | `POST /playground/orders` (JSON + `staged_attachments`) |
+| GET/POST | `/orders/create`, `/orders` | `orders.create` / `orders.store` | `POST /playground/orders` (JSON + required `payment_gateway_id` + `staged_attachments`) |
 | POST | `/orders/attachments/uploads` | `orders.attachments.uploads.store` | `POST /playground/attachments/uploads` |
 | GET | `/orders/attachments/uploads/{upload}` | `orders.attachments.uploads.show` | `GET /playground/attachments/uploads/{id}` |
 | POST | `/orders/attachments/uploads/{upload}/complete` | `orders.attachments.uploads.complete` | `POST /playground/attachments/uploads/{id}/complete` |

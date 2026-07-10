@@ -70,7 +70,9 @@ class OrderController extends Controller
 
     public function create(): View
     {
-        return $this->webView('orders.create');
+        return $this->webView('orders.create', [
+            'paymentGateways' => $this->activePaymentGateways(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse|JsonResponse
@@ -108,6 +110,7 @@ class OrderController extends Controller
 
         return $this->webView('orders.edit', [
             'order' => $response->json('data', []),
+            'paymentGateways' => $this->activePaymentGateways(),
         ]);
     }
 
@@ -216,5 +219,24 @@ class OrderController extends Controller
         $row['actions'] = $actions;
 
         return $row;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function activePaymentGateways(): array
+    {
+        $response = app(ApiClient::class)->get('payment-gateways');
+
+        if (! $response->successful()) {
+            return [];
+        }
+
+        $gateways = $response->json('data', []);
+
+        return array_values(array_filter(
+            is_array($gateways) ? $gateways : [],
+            fn (mixed $gateway): bool => is_array($gateway) && ($gateway['is_active'] ?? false) === true,
+        ));
     }
 }

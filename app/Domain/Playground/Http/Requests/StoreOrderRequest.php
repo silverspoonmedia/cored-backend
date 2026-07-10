@@ -33,6 +33,11 @@ class StoreOrderRequest extends FormRequest
             'tax' => ['nullable', 'numeric', 'min:0'],
             'status' => ['nullable', Rule::in(['pending', 'processing', 'completed', 'cancelled'])],
             'notes' => ['nullable', 'string'],
+            'payment_gateway_id' => [
+                'required',
+                'uuid',
+                Rule::exists('payment_gateways', 'id')->where('is_active', true),
+            ],
 
             'details' => ['required', 'array', 'min:1'],
             'details.*.product_name' => ['required', 'string', 'max:255'],

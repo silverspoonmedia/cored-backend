@@ -4,6 +4,7 @@
             'action' => route('orders.store'),
             'method' => 'POST',
             'order' => null,
+            'paymentGateways' => $paymentGateways ?? [],
             'submitLabel' => __('ui.actions.save'),
         ])
     </x-adminlte4::card>

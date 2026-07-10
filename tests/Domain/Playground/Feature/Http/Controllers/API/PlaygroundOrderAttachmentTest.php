@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Playground\Feature\Http\Controllers\API;
 
+use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\Playground\Models\AttachmentUpload;
 use App\Domain\Playground\Models\Order;
 use App\Domain\Playground\Models\OrderDetail;
@@ -16,6 +17,8 @@ class PlaygroundOrderAttachmentTest extends TestCase
 {
     use RefreshDatabase;
 
+    private string $paymentGatewayId;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +28,13 @@ class PlaygroundOrderAttachmentTest extends TestCase
             DirectAttachmentUploadService::class,
             new FakeDirectAttachmentUploadService(new OrderAttachmentStorage),
         );
+
+        $this->paymentGatewayId = PaymentGateway::query()->create([
+            'name' => 'midtrans',
+            'display_name' => 'Midtrans',
+            'is_active' => true,
+            'priority' => 10,
+        ])->id;
     }
 
     /**
@@ -37,6 +47,7 @@ class PlaygroundOrderAttachmentTest extends TestCase
             'customer_email' => 'jane@example.com',
             'discount' => 0,
             'tax' => 0,
+            'payment_gateway_id' => $this->paymentGatewayId,
             'details' => [
                 ['product_name' => 'Widget', 'quantity' => 1, 'unit_price' => 100, 'discount' => 0],
             ],

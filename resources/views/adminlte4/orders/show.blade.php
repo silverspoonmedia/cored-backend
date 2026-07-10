@@ -44,6 +44,39 @@
                     @endif
                 </dl>
             </x-adminlte4::card>
+
+            @if (data_get($order, 'invoice'))
+                <x-adminlte4::card :title="__('web/orders.show.invoice')">
+                    @php($invoice = data_get($order, 'invoice'))
+                    <dl class="row mb-0">
+                        <dt class="col-5">{{ __('web/orders.show.invoice_number') }}</dt>
+                        <dd class="col-7">
+                            <a href="{{ route('invoices.show', data_get($invoice, 'id')) }}">
+                                {{ data_get($invoice, 'invoice_number') }}
+                            </a>
+                        </dd>
+
+                        <dt class="col-5">{{ __('web/orders.show.invoice_status') }}</dt>
+                        <dd class="col-7">
+                            <span class="badge text-bg-secondary">
+                                {{ data_get($invoice, 'status') }}
+                            </span>
+                        </dd>
+
+                        @if (data_get($invoice, 'payment_gateway.display_name') || data_get($invoice, 'payment_gateway.name'))
+                            <dt class="col-5">{{ __('web/orders.show.payment_gateway') }}</dt>
+                            <dd class="col-7">
+                                {{ data_get($invoice, 'payment_gateway.display_name', data_get($invoice, 'payment_gateway.name')) }}
+                            </dd>
+                        @endif
+                    </dl>
+                </x-adminlte4::card>
+
+                <x-adminlte4::payments.checkout-panel
+                    :invoice="data_get($order, 'invoice')"
+                    :order-id="data_get($order, 'id')"
+                />
+            @endif
         </div>
 
         <div class="col-lg-7">
