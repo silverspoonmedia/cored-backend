@@ -2,7 +2,7 @@
 
 This document describes the API authentication stack: **JWT-based auth** (`php-open-source-saver/jwt-auth`), **TOTP two-factor authentication** (`pragmarx/google2fa-laravel`), **role and permission management** (`spatie/laravel-permission`), and how they are wired into the versioned API under `/api/v1`.
 
-Authentication is **not** exposed on global routes (`/api/*`). All auth endpoints live in `routes/api/v1.php`. See [API Routing](./api-routing.md).
+Authentication is **not** exposed on global routes (`/api/*`). All auth endpoints live in `routes/api/v1/identity.php` (loaded from `routes/api/v1.php`). See [API Routing](./api-routing.md).
 
 ---
 
@@ -35,7 +35,7 @@ Published config files:
 
 - `config/jwt.php`
 - `config/auth.php` (includes `api` guard and auth-related env keys)
-- `config/permission.php` (uses `App\Models\Role` and `App\Models\Permission`)
+- `config/permission.php` (uses `App\Domain\Identity\Models\Role` and `App\Domain\Identity\Models\Permission`)
 
 ---
 
@@ -62,14 +62,14 @@ UserRepository            ← Eloquent queries for User only
 User model / database
 ```
 
-Auth-specific failures use `App\Exceptions\Auth\*` classes extending `BusinessRuleException`, which render JSON for `api/*` requests.
+Auth-specific failures use `App\Domain\Identity\Exceptions\Auth\*` classes extending `App\Exceptions\BusinessRuleException`, which render JSON for `api/*` requests.
 
 **Audit trail:** Login, logout, 2FA, and password changes are recorded in Spatie activitylog (`log_name: auth`) and in Laravel's file log via event listeners. See [Authentication activity assessment](./auth-activity-assessment.md) and [Activity log](./activity-log.md).
 
 ### Directory layout
 
 ```
-app/
+app/Domain/Identity/
 ├── Http/
 │   ├── Controllers/API/V1/
 │   │   ├── Auth/
@@ -81,12 +81,7 @@ app/
 │       ├── Concerns/ValidatesHcaptcha.php
 │       ├── RegisterRequest.php
 │       ├── LoginRequest.php
-│       ├── ForgotPasswordRequest.php
-│       ├── TwoFactorLoginRequest.php
-│       ├── ResetPasswordRequest.php
-│       └── ChangePasswordRequest.php
-├── Rules/
-│   └── Hcaptcha.php                     ← siteverify validation rule
+│       └── …
 ├── Services/Auth/
 │   ├── AuthService.php
 │   ├── PasswordResetService.php
@@ -98,30 +93,28 @@ app/
 │   ├── User.php                         ← JWTSubject, MustVerifyEmail, HasRoles
 │   ├── Role.php                         ← HasUuids
 │   └── Permission.php                   ← HasUuids
-├── Notifications/Auth/
-│   ├── VerifyEmailNotification.php
-│   └── ResetPasswordNotification.php
-├── Support/Auth/
-│   └── UserPresenter.php                ← consistent user JSON shape
-├── Support/Security/
-│   └── HcaptchaVerifier.php             ← POST to api.hcaptcha.com/siteverify
-└── Exceptions/Auth/
-    ├── InvalidCredentialsException.php
-    ├── InvalidPasswordResetTokenException.php
-    ├── EmailAlreadyVerifiedException.php
-    └── CurrentPasswordIncorrectException.php
+├── Exceptions/Auth/*.php                ← InvalidCredentialsException, InvalidTwoFactorCodeException, …
+└── Notifications/Auth/
+    ├── VerifyEmailNotification.php
+    └── ResetPasswordNotification.php
 
-routes/api/v1.php                        ← all auth routes
+app/Rules/Hcaptcha.php
+app/Support/Auth/UserPresenter.php
+app/Support/Security/HcaptchaVerifier.php
+
+routes/api/v1/identity.php               ← all auth routes
 database/seeders/RoleSeeder.php
 ```
 
-`UserRepositoryInterface` is bound to `UserRepository` in `App\Providers\AppServiceProvider`.
+See [Domain modules](./domain-modules.md) for the full internal monorepo layout.
+
+`UserRepositoryInterface` is bound to `UserRepository` in `App\Providers\Domain\IdentityServiceProvider`.
 
 ---
 
 ## User model
 
-`App\Models\User` implements:
+`App\Domain\Identity\Models\User` implements:
 
 | Contract / trait | Role |
 |------------------|------|
@@ -152,7 +145,7 @@ See [User primary keys (UUID v7)](./user-uuid-v7.md) for schema and ID conventio
 | `model_has_roles.model_id` | `uuid` (references `users.id`) |
 | `model_has_permissions.model_id` | `uuid` |
 
-Role and permission IDs use custom models (`App\Models\Role`, `App\Models\Permission`) with `HasUuids`. The permission tables migration uses UUID columns throughout.
+Role and permission IDs use custom models (`App\Domain\Identity\Models\Role`, `App\Domain\Identity\Models\Permission`) with `HasUuids`. The permission tables migration uses UUID columns throughout.
 
 JWT `sub` and route parameters (e.g. `{id}` on email verification) are UUID strings.
 
@@ -202,7 +195,7 @@ Config file: `config/hcaptcha.php`.
 | `POST` | `/auth/forgot-password` |
 | `POST` | `/auth/two-factor/login` |
 
-Validation is enforced in API Form Requests via the `ValidatesHcaptcha` trait (`app/Http/Requests/Auth/Concerns/ValidatesHcaptcha.php`). Direct API clients (mobile apps, scripts) must include `h-captcha-response` in the JSON body — the web layer only forwards the field; it does not validate.
+Validation is enforced in API Form Requests via the `ValidatesHcaptcha` trait (`app/Domain/Identity/Http/Requests/Auth/Concerns/ValidatesHcaptcha.php`). Direct API clients (mobile apps, scripts) must include `h-captcha-response` in the JSON body — the web layer only forwards the field; it does not validate.
 
 **Web UI:** see [Web frontend — hCaptcha](./web-frontend.md#hcaptcha-on-auth-forms). Summary: `<x-adminlte4::form.hcaptcha />` (invisible widget + `MonolithHcaptcha` API) and `<x-adminlte4::form.auth-submit />` (captcha + submit grid) on auth screens; `ajax-form` calls `MonolithHcaptcha.execute()` on submit before the fetch. `PasswordResetController` and `TwoFactorController` forward `h-captcha-response` to the API. On `422`, `ajax-form` dispatches `ajax-form:invalid`; the hCaptcha script resets all widgets.
 
@@ -572,7 +565,7 @@ Ensure `MAIL_*` is configured for verification and reset emails (tests use `MAIL
 | Password service | `tests/Unit/Services/Auth/PasswordResetServiceTest.php` | Reset and change password |
 | Email service | `tests/Unit/Services/Auth/EmailVerificationServiceTest.php` | Verify and resend rules |
 | Auth controller | `tests/Unit/Http/Controllers/API/V1/Auth/AuthControllerTest.php` | Controller delegation |
-| HTTP flows | `tests/Feature/Http/Controllers/API/V1/Auth/AuthFlowTest.php` | End-to-end auth, RBAC, password, email |
+| HTTP flows | `tests/Domain/Identity/Feature/Http/Controllers/API/V1/Auth/AuthFlowTest.php` | End-to-end auth, RBAC, password, email |
 
 Run:
 
@@ -586,8 +579,8 @@ Feature tests use `Tests\Concerns\SeedsRolesAndPermissions` to load `RoleSeeder`
 
 ## Adding new protected endpoints
 
-1. Add the route under `routes/api/v1.php` (not `routes/api.php`).
-2. Place the controller in `App\Http\Controllers\API\V1\`.
+1. Add the route under `routes/api/v1/{domain}.php` (not `routes/api.php`).
+2. Place the controller in `App\Domain\{Domain}\Http\Controllers\API\V1\`.
 3. Wrap with `middleware('auth:api')` and, if needed, `permission:` or `role:` middleware.
 4. Use a **dedicated repository** if persistence is more than simple user lookups; do not put business logic in `EloquentCrudRepository`.
 5. Add Form Requests, Service methods, and unit/feature tests following [CRUD Architecture](./crud-architecture.md).

@@ -49,7 +49,7 @@ php artisan pint --dirty
 php artisan pint --test --bail
 
 # Target a specific path
-php artisan pint app/Models/User.php
+php artisan pint app/Domain/Identity/Models/User.php
 
 # Parallel execution (experimental)
 php artisan pint --parallel --max-processes=4

@@ -10,6 +10,21 @@ End-to-end public stack:
 | **monolith-gateway** | Public BFF, JWT cookie, CORS | `http://monolith-gateway.test` |
 | **monolith-frontend** | Vue SPA | `http://localhost:5173` (`npm run dev`) or `http://localhost:8788` (`npm run preview:local`) |
 
+## Monolith internal layout vs Gateway/Frontend repos
+
+Monolith PHP code is organized as a **logical monorepo** under `app/Domain/*` (see [domain-modules.md](./domain-modules.md)). **Gateway and Frontend remain separate git repositories** — they do not import Monolith PHP classes.
+
+| Change type | Gateway | Frontend |
+|-------------|---------|----------|
+| Namespace / folder moves only | No change | No change |
+| Same public URL, route file split | No change | No change |
+| API URL or JSON response change | Update proxy/routes | Update `src/api/*` |
+| New menu/DataTable route names | `config/vue-routes.php` | `src/router/index.ts` |
+
+Full adaptation matrix: [internal-monorepo-assessment.md](./internal-monorepo-assessment.md#adaptation-contract-gateway--frontend).
+
+Cross-project test script (from Monolith root): `.\scripts\test-workspace.ps1`
+
 ## Local wiring (Laragon)
 
 1. **Monolith** — `GATEWAY_ENFORCE=false` locally; `GATEWAY_SECRET=local-gateway-secret`.
@@ -166,7 +181,7 @@ Recent UX work (skeleton loading, responsive shell, auth layout parity) lives en
 | `docs/async-fetch-ux.md` | `useAsyncData`, `AppFetchState`, skeleton/error components |
 | `docs/responsive-ui.md` | `useBreakpoint`, mobile layouts, DataTables Responsive |
 | `docs/auth-layout.md` | AdminLTE auth card, locale switcher, mobile spacing |
-| `docs/testing.md` | Vitest vs Playwright, 49 unit tests |
+| `docs/testing.md` | Vitest vs Playwright, 84 unit tests |
 
 Path on disk: `monolith-frontend/docs/` (separate project directory from Monolith and Gateway).
 

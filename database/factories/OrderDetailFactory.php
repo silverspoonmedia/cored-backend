@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Order;
-use App\Models\OrderDetail;
+use App\Domain\Playground\Models\Order;
+use App\Domain\Playground\Models\OrderDetail;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

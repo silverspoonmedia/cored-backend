@@ -23,7 +23,7 @@ Typical examples: health/liveness checks, readiness probes, static capability di
 
 ### What belongs in versioned routes
 
-**Everything else**—authentication, users, orders, payments, CRUD, workflows, integrations, and any logic that touches domain rules or persisted data. New features and changes always go through `routes/api/v{N}.php` and `App\Http\Controllers\API\V{N}\`.
+**Everything else**—authentication, users, orders, payments, CRUD, workflows, integrations, and any logic that touches domain rules or persisted data. New features and changes always go through `routes/api/v{N}/*.php` (domain route files loaded from `routes/api/v{N}.php`) and `App\Domain\{Domain}\Http\Controllers\…`.
 
 When behavior changes incompatibly, add a new version (`v2`, `v3`, …) rather than altering an existing version’s contract.
 
@@ -31,8 +31,8 @@ When behavior changes incompatibly, add a new version (`v2`, `v3`, …) rather t
 
 | Layer | Route file | Controller namespace | URL prefix | Route name prefix |
 |-------|------------|----------------------|------------|-------------------|
-| Global | `routes/api.php` | `App\Http\Controllers\API` | `/api` | *(none)* |
-| Versioned | `routes/api/v{N}.php` | `App\Http\Controllers\API\V{N}` | `/api/v{N}` | `api.v{N}.` |
+| Global | `routes/api.php` + `routes/api/playground.php` | `App\Domain\Playground\Http\Controllers\API` (playground only) | `/api` | *(none)* |
+| Versioned | `routes/api/v{N}.php` + `routes/api/v{N}/*.php` | `App\Domain\{Domain}\Http\Controllers\API\V{N}` (or `API\` for domain-specific globals) | `/api/v{N}` | `api.v{N}.` |
 
 Laravel registers the global file through the default `api` routing option in `bootstrap/app.php`. Each API version is registered separately in the `then` callback with its own prefix, middleware stack, and route name prefix.
 
@@ -40,25 +40,29 @@ Laravel registers the global file through the default `api` routing option in `b
 
 ```
 routes/
-├── api.php              # Global only — keep minimal
-└── api/
-    ├── v1.php           # Primary application API (v1)
-    └── v2.php           # Optional next version (enable in bootstrap)
+├── api.php                    # Global ping + requires playground
+├── web.php                    # Blade loader (guest + auth groups)
+├── api/
+│   ├── playground.php         # Non-production playground CRUD
+│   └── v1.php                 # Loader for domain route files
+│       ├── identity.php
+│       ├── navigation.php
+│       ├── notification.php
+│       ├── activity-log.php
+│       └── approval.php
+└── web/
+    ├── identity-guest.php
+    ├── identity.php
+    ├── navigation.php
+    ├── notification.php
+    ├── activity-log.php
+    ├── approval.php
+    └── playground.php
 
-app/Http/Controllers/API/
-├── PlaygroundController.php       # Global ping + playground users demo
-├── PlaygroundOrderController.php  # Global playground orders demo
-├── ApprovalController.php         # Authenticated approval actions (v1-prefixed in routes/api.php)
-├── ApprovalWorkflowAdminController.php
-└── V1/
-    ├── Auth/                      # Versioned application controllers
-    ├── Navigation/
-    ├── UserController.php
-    ├── NotificationController.php
-    └── AdminController.php
+app/Domain/{Domain}/Http/Controllers/…   # Primary controller location (see domain-modules.md)
 ```
 
-Route paths inside version files are **relative** to the version prefix. For example, a hypothetical `Route::get('ping', ...)` in `routes/api/v1.php` would resolve to `GET /api/v1/ping`, not `GET /api/v1/v1/ping`.
+Route paths inside version files are **relative** to the version prefix. For example, `Route::get('approvals/my-pending', …)` in `routes/api/v1/approval.php` resolves to `GET /api/v1/approvals/my-pending`.
 
 ## Registration (`bootstrap/app.php`)
 
@@ -105,53 +109,24 @@ What is registered here today:
 | Prefix / path | When active | Auth | Purpose |
 |---------------|-------------|------|---------|
 | `GET /api/ping` | Always | None | Liveness probe (`Pong Global`) |
-| `/api/playground/*` | Non-production only (`APP_ENV` ≠ `production`) | None | Reference CRUD demos — see [Playground](./playground.md) |
-| `/api/v1/approvals/*` | Always | `auth:api` | Approval inbox and slot actions |
-| `/api/v1/admin/approval-workflows/*` | Always | `auth:api` | Approval workflow setup (API enforces Root/Admin) |
+| `/api/playground/*` | Non-production only | None | Reference CRUD demos — see [Playground](./playground.md) |
 
 Minimal excerpt:
 
 ```php
-use App\Http\Controllers\API\PlaygroundController;
-use Illuminate\Support\Facades\Route;
-
 Route::get('ping', [PlaygroundController::class, 'ping']);
-
-// Approval routes use a v1/ prefix but live in this global file for historical wiring.
-Route::middleware('auth:api')->prefix('v1/approvals')->group(function () { /* … */ });
-
-if (! app()->environment('production')) {
-    Route::prefix('playground')->group(function () { /* … */ });
-}
+require __DIR__.'/api/playground.php';
 ```
 
-**Why approval routes sit in `routes/api.php`:** they were added alongside playground wiring and use a `v1/` URL prefix without living in `routes/api/v1.php`. New versioned features should still go in `routes/api/v{N}.php` unless there is a strong reason to extend this file.
-
-Global routes are **not** the default place to add new API features. Before adding a route here, confirm the endpoint is truly version-agnostic and safe. If it implements or orchestrates business logic, it belongs under a versioned route file instead.
-
-Controllers live in `App\Http\Controllers\API\` (no `V{N}` segment). Keep this namespace small; most controllers should live under `API\V1\`, `API\V2\`, etc.
+Approval and all other versioned product endpoints live under `routes/api/v1/*.php` (loaded from `routes/api/v1.php`). Public URLs are unchanged (`/api/v1/approvals/*`, etc.).
 
 ## Versioned routes
 
-**File:** `routes/api/v1.php`
+**File:** `routes/api/v1.php` (requires domain files under `routes/api/v1/`)
 
-```php
-use App\Http\Controllers\API\V1\AdminController;
-use Illuminate\Support\Facades\Route;
+This is the **primary API surface** for the application. Implement new endpoints in the appropriate `routes/api/v1/{domain}.php` file unless they explicitly meet the global criteria above. The v1 surface includes `auth/*`, `users/*`, `navigation/menus/*`, `lookups/*`, `notifications/*`, `activity-logs/*`, and `approvals/*` (see the related docs below).
 
-Route::middleware(['auth:api', 'permission:view user'])
-    ->get('admin/ping', [AdminController::class, 'ping'])
-    ->name('admin.ping');
-```
-
-**Example endpoint:** `GET /api/v1/admin/ping`  
-**Example route name:** `api.v1.admin.ping` (via `route('api.v1.admin.ping')`)
-
-This is the **primary API surface** for the application. Implement new endpoints here unless they explicitly meet the global criteria above. The real v1 surface includes `auth/*`, `users/*`, `navigation/menus/*`, `lookups/*`, `notifications/*`, and `activity-logs/*` (see the related docs below).
-
-Approval endpoints (`/api/v1/approvals/*`, `/api/v1/admin/approval-workflows/*`) are registered from [routes/api.php](routes/api.php) with a `v1/` prefix — see [Approval matrix engine](./approval-matrix-engine.md).
-
-Place controllers under `App\Http\Controllers\API\V1\` (or `V2`, `V3`, etc.). Do not change existing version namespaces when introducing a new version; add a new namespace so older clients keep working.
+Controllers live under `App\Domain\{Domain}\Http\Controllers\…` — see [Domain modules](./domain-modules.md).
 
 ## Adding a new API version
 
@@ -161,15 +136,26 @@ Example: enabling **v2**.
 
 ### 1. Create the route file
 
-`routes/api/v2.php`:
+`routes/api/v2.php` (loader — mirror v1 pattern):
 
 ```php
 <?php
 
-use App\Http\Controllers\API\V2\PlaygroundController;
+require __DIR__.'/v2/identity.php';
+// require other domain files as v2 surfaces are added
+```
+
+`routes/api/v2/identity.php` (example):
+
+```php
+<?php
+
+use App\Domain\Identity\Http\Controllers\API\V2\AdminController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('ping', [PlaygroundController::class, 'ping']);
+Route::middleware(['auth:api', 'permission:view user'])
+    ->get('admin/ping', [AdminController::class, 'ping'])
+    ->name('admin.ping');
 ```
 
 ### 2. Register the route group
@@ -185,37 +171,16 @@ Route::middleware('api')
 
 ### 3. Add versioned controllers
 
-`app/Http/Controllers/API/V2/PlaygroundController.php`:
-
-```php
-<?php
-
-namespace App\Http\Controllers\API\V2;
-
-use App\Http\Controllers\Controller;
-use App\Traits\ApiResponse;
-
-class PlaygroundController extends Controller
-{
-    use ApiResponse;
-
-    public function ping()
-    {
-        return $this->successResponse(null, 'Pong V2', 200);
-    }
-}
-```
-
-Repeat the same three steps for `v3`, `v4`, and so on.
+Place controllers under `app/Domain/{Domain}/Http/Controllers/API/V2/` (extend kernel `App\Http\Controllers\Controller`). See [Domain modules](./domain-modules.md) and [Internal monorepo porting](./internal-monorepo-porting.md).
 
 ## Conventions
 
-1. **Global is minimal** — Resist growing `routes/api.php`. Most PRs should only touch `routes/api/v{N}.php`.
-2. **Business logic is versioned** — Domain controllers, services, and HTTP resources belong under `API\V{N}\`, not `API\`.
+1. **Global is minimal** — Resist growing `routes/api.php`. Most PRs should only touch `routes/api/v{N}/*.php`.
+2. **Business logic is versioned** — Domain controllers, services, and HTTP resources belong under `App\Domain\{Domain}\…`, not legacy `App\Http\Controllers\API\*`.
 3. **No duplication across layers** — Do not expose the same resource on `/api/...` and `/api/v1/...`.
-4. **One route file per version** — Keep `routes/api/v1.php`, `v2.php`, etc. separate; avoid mixing versions in one file.
-5. **Mirror controller namespaces** — `API\V1\*` for v1, `API\V2\*` for v2.
-6. **Breaking changes require a new version** — Add `V{N}` and a new route file; do not break existing version contracts in place.
+4. **One loader per version** — Keep `routes/api/v1.php` as a loader; add domain files under `routes/api/v1/`.
+5. **Mirror domain layout** — `App\Domain\Identity\Http\Controllers\API\V1\*` for v1 identity endpoints, etc.
+6. **Breaking changes require a new version** — Add `V{N}` and a new route file tree; do not break existing version contracts in place.
 7. **Route names** — Use the `api.v{N}.` prefix so named routes stay unique across versions.
 
 ## Verifying routes
@@ -229,11 +194,11 @@ php artisan route:list --path=api
 Expected output (when v1 and global are active, non-production):
 
 ```
-GET|HEAD  api/ping                              … API\PlaygroundController@ping
+GET|HEAD  api/ping                              … Domain\Playground\…\PlaygroundController@ping
 GET|HEAD  api/playground/users                  … playground.users.index
-GET|HEAD  api/v1/approvals/my-pending           … API\ApprovalController@myPending
-GET|HEAD  api/v1/admin/approval-workflows       … API\ApprovalWorkflowAdminController@index
-GET|HEAD  api/v1/admin/ping                     … api.v1.admin.ping › API\V1\AdminController@ping
+GET|HEAD  api/v1/approvals/my-pending           … Domain\Approval\…\ApprovalController@myPending
+GET|HEAD  api/v1/admin/approval-workflows       … Domain\Approval\…\ApprovalWorkflowAdminController@index
+GET|HEAD  api/v1/admin/ping                     … api.v1.admin.ping › Domain\Identity\…\AdminController@ping
 ```
 
 In production, playground routes are absent; `api/ping` and versioned routes remain.
@@ -249,7 +214,7 @@ The playground prefix also hosts reference CRUD surfaces (`playground/users`, `p
 | `GET /api/ping` | Global | `Pong Global` |
 | `GET /api/v1/admin/ping` | Versioned (RBAC-gated) | `api/admin.access_granted` |
 
-Both use the shared `App\Traits\ApiResponse` trait for consistent JSON structure.
+Both use the shared `App\Support\ApiResponder` (or domain controller response helpers) for consistent JSON structure.
 
 ## Related documentation
 

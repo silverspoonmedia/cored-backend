@@ -2,7 +2,7 @@
     Shared menu create/edit form.
 --}}
 @php
-    use App\Support\Navigation\MenuLayout;
+    use App\Domain\Navigation\Support\MenuLayout;
 
     $typeOptions = [
         'h' => __('web/menus.form.types.h'),

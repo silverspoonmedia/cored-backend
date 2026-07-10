@@ -24,7 +24,7 @@ flowchart LR
 |---------|------|-------|------|
 | **Project Monolith** | `c:\laragon\www\monolith` | Laravel 13 | **Source of truth** — domain logic, database, JWT/RBAC, `/api/v1/*` |
 | **Project Monolith Gateway** | `c:\laragon\www\monolith-gateway` | Laravel 13 | **API connector / BFF** — public proxy, cookies, CORS, Vue transforms, aggregate endpoints |
-| **Project Monolith Frontend** | `c:\Users\Administrator\Documents\npm\monolith-frontend` | Vue 3 + Vite | **API consumer** — static build deployed on Cloudflare Pages |
+| **Project Monolith Frontend** | `c:\laragon\www\monolith-frontend` | Vue 3 + Vite | **API consumer** — static build deployed on Cloudflare Pages |
 
 These three projects are usually opened together in one workspace. A change in one project often must be reflected in the others **in the same task**.
 
@@ -143,6 +143,9 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 | [docs/spa-gateway-integration.md](./spa-gateway-integration.md) | Three-project wiring and production |
 | [docs/localization.md](./localization.md) | `en` / `id` / `ja` task rules |
 | [docs/crud-architecture.md](./crud-architecture.md) | Repository pattern, API resources |
+| [docs/domain-modules.md](./domain-modules.md) | Internal `app/Domain/*` layout, core/locked/removable, `domain:list\|make\|remove` |
+| [docs/internal-monorepo-assessment.md](./internal-monorepo-assessment.md) | Monorepo scope, Gateway/Frontend contract |
+| [docs/internal-monorepo-porting.md](./internal-monorepo-porting.md) | Porting implementation reference (migration order, scripts, gotchas) |
 | [docs/environment.md](./environment.md) | `GATEWAY_ENFORCE`, secrets, env vars |
 | [docs/user-management-hrbac.md](./user-management-hrbac.md) | Users and role hierarchy |
 | [docs/form-selects.md](./form-selects.md) | Select2 + lookup endpoints |

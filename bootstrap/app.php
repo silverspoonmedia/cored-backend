@@ -7,7 +7,7 @@ use App\Http\Middleware\OptionalJwtAuthenticate;
 use App\Http\Middleware\RedirectIfWebAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
-use App\Models\User;
+use App\Domain\Identity\Models\User;
 use App\Support\ApiResponder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -33,6 +33,15 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
+    ->withEvents(discover: [
+        __DIR__.'/../app/Domain/Identity/Listeners',
+        __DIR__.'/../app/Domain/Notification/Listeners',
+        __DIR__.'/../app/Domain/Approval/Listeners',
+    ])
+    ->withCommands([
+        __DIR__.'/../app/Domain/Approval/Console/Commands',
+        __DIR__.'/../app/Domain/Navigation/Console/Commands',
+    ])
     ->withRouting(
         api: __DIR__.'/../routes/api.php',
         then: function (): void {

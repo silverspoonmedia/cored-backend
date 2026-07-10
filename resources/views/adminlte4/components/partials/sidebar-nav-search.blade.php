@@ -5,7 +5,7 @@
 --}}
 @php
     $navTree = $navigation ?? [];
-    $navRouteMap = \App\Support\Navigation\NavigationRouteMap::fromTree($navTree);
+    $navRouteMap = \App\Domain\Navigation\Support\NavigationRouteMap::fromTree($navTree);
     $activeRoute = request()->route()?->getName();
 @endphp
 

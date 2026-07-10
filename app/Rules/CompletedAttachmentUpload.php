@@ -2,7 +2,7 @@
 
 namespace App\Rules;
 
-use App\Models\AttachmentUpload;
+use App\Domain\Playground\Models\AttachmentUpload;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 

@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\ApprovalWorkflow;
-use App\Models\ApprovalWorkflowStep;
-use App\Models\ApprovalWorkflowStepApprover;
-use App\Models\User;
+use App\Domain\Approval\Models\ApprovalWorkflow;
+use App\Domain\Approval\Models\ApprovalWorkflowStep;
+use App\Domain\Approval\Models\ApprovalWorkflowStepApprover;
+use App\Domain\Identity\Models\User;
 use Illuminate\Database\Seeder;
 
 class ApprovalWorkflowSeeder extends Seeder

@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\ApprovalInstance;
+use App\Domain\Approval\Models\ApprovalInstance;
 
 require __DIR__.'/vendor/autoload.php';
 

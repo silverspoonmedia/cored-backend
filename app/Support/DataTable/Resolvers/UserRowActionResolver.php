@@ -2,7 +2,7 @@
 
 namespace App\Support\DataTable\Resolvers;
 
-use App\Models\User;
+use App\Domain\Identity\Models\User;
 use App\Support\DataTable\ActionButton;
 use App\Support\DataTable\Contracts\RowActionResolverInterface;
 use Illuminate\Support\Facades\Gate;

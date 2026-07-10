@@ -11,7 +11,7 @@ This document explains what was changed, why UUID v7 was chosen, and how to appl
 | Location | Change |
 |----------|--------|
 | `database/migrations/0001_01_01_000000_create_users_table.php` | `users.id` is `uuid` primary key; `sessions.user_id` is `foreignUuid` |
-| `app/Models/User.php` | `HasUuids` trait generates UUID v7 on create |
+| `app/Domain/Identity/Models/User.php` | `HasUuids` trait generates UUID v7 on create |
 
 ---
 
@@ -49,7 +49,7 @@ Foreign keys and indexes on `user_id` must use a UUID column type whenever they 
 
 ## Model configuration
 
-`App\Models\User` uses the framework trait:
+`App\Domain\Identity\Models\User` uses the framework trait:
 
 ```php
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -85,7 +85,7 @@ That drops all tables and re-runs migrations. **All data is lost**—use only wh
 To confirm UUID generation after migrating:
 
 ```bash
-php artisan tinker --execute="echo App\Models\User::factory()->create()->id;"
+php artisan tinker --execute="echo App\Domain\Identity\Models\User::factory()->create()->id;"
 ```
 
 ---

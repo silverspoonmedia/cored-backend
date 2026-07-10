@@ -518,7 +518,7 @@ All approvers whose slots were reset receive notification:
 ### Document Submission
 
 ```php
-// App\Services\DocumentService
+// App\Domain\Identity\Services\DocumentService
 public function submit(Model $document): void
 {
     DB::transaction(function () use ($document) {
@@ -532,7 +532,7 @@ public function submit(Model $document): void
 ### Approval Initiation
 
 ```php
-// App\Services\ApprovalService
+// App\Domain\Approval\Services\ApprovalService
 public function initiate(Model $document): ApprovalInstance
 {
     $workflow = ApprovalWorkflow::where('document_type', $document->getDocumentType())
@@ -1030,11 +1030,11 @@ interface ApprovalRepository
 
 ### 2. API routing
 
-Approval endpoints live under `/api/v1/approvals/*` and `/api/v1/admin/approval-workflows/*`. They are registered in [`routes/api.php`](routes/api.php) with a `v1/` URL prefix (not in `routes/api/v1.php`). See [API routing — Global routes](./api-routing.md#global-routes).
+Approval endpoints live under `/api/v1/approvals/*` and `/api/v1/admin/approval-workflows/*`. They are registered in [`routes/api/v1/approval.php`](routes/api/v1/approval.php) (loaded from `routes/api/v1.php`). See [API routing](./api-routing.md).
 
 ```php
-// routes/api.php (actual wiring)
-Route::middleware('auth:api')->prefix('v1/approvals')->group(function () {
+// routes/api/v1/approval.php (actual wiring)
+Route::middleware('auth:api')->prefix('approvals')->group(function () {
     Route::get('my-pending', [ApprovalController::class, 'myPending']);
     Route::get('instances/{instance}', [ApprovalController::class, 'show']);
     Route::post('slots/{slot}/approve', [ApprovalController::class, 'approve']);
@@ -1043,7 +1043,7 @@ Route::middleware('auth:api')->prefix('v1/approvals')->group(function () {
     Route::post('slots/batch-approve', [ApprovalController::class, 'batchApprove']);
 });
 
-Route::middleware('auth:api')->prefix('v1/admin/approval-workflows')->group(function () {
+Route::middleware('auth:api')->prefix('admin/approval-workflows')->group(function () {
     // workflow CRUD, steps, approvers — Root/Admin enforced in controllers
 });
 ```
@@ -1109,7 +1109,7 @@ return [
 Create Blade screens that **consume the versioned API** (see `docs/web-frontend.md`):
 
 ```php
-// app/Http/Controllers/Web/ApprovalController.php
+// app/Domain/Approval/Http/Controllers/Web/ApprovalController.php
 class ApprovalController extends Controller
 {
     use ConsumesApi;
@@ -1305,24 +1305,24 @@ The approval matrix engine has been **fully implemented** in the Laravel 13 mono
 #### Service Layer
 
 **Created services:**
-- `app/Services/ConditionEvaluator.php` - Evaluates JSON conditions against document models
-- `app/Services/ApprovalService.php` - Core business logic (initiate, approve, reject)
+- `app/Domain/Approval/Services/ConditionEvaluator.php` - Evaluates JSON conditions against document models
+- `app/Domain/Approval/Services/ApprovalService.php` - Core business logic (initiate, approve, reject)
 
 **Created repositories:**
-- `app/Repositories/Contracts/ApprovalRepositoryInterface.php` - Repository contract
-- `app/Repositories/Eloquent/ApprovalRepository.php` - Eloquent implementation
+- `app/Domain/Approval/Repositories/Contracts/ApprovalRepositoryInterface.php` - Repository contract
+- `app/Domain/Approval/Repositories/Eloquent/ApprovalRepository.php` - Eloquent implementation
 
 **Service provider binding:**
-- Added to `AppServiceProvider::register()` - `ApprovalRepositoryInterface` → `ApprovalRepository`
+- Added to `App\Providers\Domain\ApprovalServiceProvider::register()` - `ApprovalRepositoryInterface` → `ApprovalRepository`
 
 **Status:** All services functional. Dependency injection configured. Business logic follows repository pattern.
 
 #### API Layer
 
 **Created controller:**
-- `app/Http/Controllers/API/ApprovalController.php` - JSON API endpoints
+- `app/Domain/Approval/Http/Controllers/API/ApprovalController.php` - JSON API endpoints
 
-**API routes (`routes/api.php`):**
+**API routes (`routes/api/v1/approval.php`):**
 ```
 GET  /api/v1/approvals/my-pending        - List user's pending approvals
 GET  /api/v1/approvals/instances/{id}    - Show approval instance details
@@ -1335,9 +1335,9 @@ POST /api/v1/approvals/slots/{id}/reject  - Reject a slot (notes required)
 #### Web Layer (Blade + AdminLTE 4)
 
 **Created controller:**
-- `app/Http/Controllers/Web/ApprovalController.php` - Web UI that consumes API (follows `ConsumesApi` pattern)
+- `app/Domain/Approval/Http/Controllers/Web/ApprovalController.php` - Web UI that consumes API (follows `ConsumesApi` pattern)
 
-**Web routes (`routes/web.php`):**
+**Web routes (`routes/web/approval.php`, loaded from `routes/web.php`):**
 ```
 GET  /approvals/my-pending                    - Pending approvals list
 GET  /approvals/instances/{id}                - Approval details
@@ -1376,7 +1376,7 @@ POST /approvals/slots/{id}/reject             - Reject action
 #### Integration
 
 **Integrated with Order document type:**
-- Modified `app/Services/Playground/OrderService.php`
+- Modified `app/Domain/Playground/Services/OrderService.php`
 - Injected `ApprovalService` into constructor
 - Added approval initiation call in `create()` method
 - Approval auto-initiated after order creation
@@ -1386,7 +1386,7 @@ POST /approvals/slots/{id}/reject             - Reject action
 #### Testing
 
 **Created unit tests:**
-- `tests/Unit/ApprovalWorkflowTest.php` - 5 tests covering workflow creation, relationships, step ordering, conditional logic
+- `tests/Domain/Approval/Unit/ApprovalWorkflowTest.php` - 5 tests covering workflow creation, relationships, step ordering, conditional logic
 
 **Test results:** ✅ All 5 tests passing (5 tests, 11 assertions, 0 failures)
 
@@ -1428,13 +1428,13 @@ The outstanding production blockers from the first pass have been reduced. The f
 ✅ **Navigation entry** - `MenuSeeder` now seeds a `My Approvals` sidebar item pointing to `approvals.my-pending`.  
 ✅ **Repository contract alignment** - `ApprovalRepositoryInterface` now declares the methods used by `ApprovalService`, instead of being a fake contract with half the API missing.  
 ✅ **Localization** - New notification text is translated in `lang/en/approval.php`, `lang/id/approval.php`, and `lang/ja/approval.php`.  
-✅ **Approval regression tests** - `tests/Feature/ApprovalAdvancedFlowTest.php` covers request notifications, BACK_TO_STEP reset behavior, delegation-based approval, reminder command behavior, and reassignment validation.
+✅ **Approval regression tests** - `tests/Domain/Approval/Feature/ApprovalAdvancedFlowTest.php` covers request notifications, BACK_TO_STEP reset behavior, delegation-based approval, reminder command behavior, and reassignment validation.
 ✅ **Reassignment** - Waiting approval slots can be reassigned by the currently assigned approver when the workflow step has `allow_reassignment = true`. The new approver must have the same required role. Reassignment updates the assigned user, stores reassignment metadata on the slot, writes an immutable `REASSIGNED` audit log, and notifies the new approver.
 ✅ **Bulk Approval** - API endpoint `POST /api/v1/approvals/slots/batch-approve` accepts an array of slot UUIDs and optional notes. Each slot is processed individually using the existing `approve()` logic; results include per-slot status and aggregate counts. The "My Pending" UI provides bulk selection and a bulk approve action with optional notes.
 ✅ **Workflow Admin UI** - Admin/Root users can manage approval workflow templates from `admin/approval-workflows`: create/edit workflow headers, activate/deactivate workflows, add/delete steps, and add/delete role-based approver slots. The UI uses web controllers that consume the versioned API; both web routes and API controller authorization are restricted to `Root` and `Admin`.
 ✅ **Approval Matrix menu entry** - `MenuSeeder` now seeds an `Approval Matrix` sidebar item pointing to `admin.approval-workflows.index`, role-gated to `Root` and `Admin` only.
 ✅ **Menu cache flush command** - `php artisan menu:flush-cache` clears the cached navigation snapshot used by the dynamic sidebar.
-✅ **Workflow admin tests** - `tests/Feature/ApprovalWorkflowAdminTest.php` covers workflow creation, step/approver setup, activation/deactivation, non-admin denial, Root/Admin menu seeding, web route role middleware, and menu cache flushing.
+✅ **Workflow admin tests** - `tests/Domain/Approval/Feature/ApprovalWorkflowAdminTest.php` covers workflow creation, step/approver setup, activation/deactivation, non-admin denial, Root/Admin menu seeding, web route role middleware, and menu cache flushing.
 
 **Test result:** `php artisan test --filter=Approval` passes: 29 tests, 107 assertions.
 
@@ -1487,6 +1487,6 @@ Additional files added in the 2026-06-18 completion pass:
 - `app/Notifications/Approval/ApprovalEscalationNotification.php`
 - `app/Notifications/Approval/ApprovalCompletedNotification.php`
 - `app/Listeners/SendApprovalCompletedNotification.php`
-- `tests/Feature/ApprovalAdvancedFlowTest.php`
+- `tests/Domain/Approval/Feature/ApprovalAdvancedFlowTest.php`
 
 The approval matrix engine is now substantially more production-ready for the Order document type. The remaining work is mostly administrative UI and operational reporting, not core approval state-machine behavior.

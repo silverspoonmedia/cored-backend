@@ -12,7 +12,7 @@ playground is a reference you copy *from*, not a place product logic lands. See
 
 ## Environment requirement (local/development only)
 
-**Playground routes are disabled when `APP_ENV=production`.** The guard in `routes/api.php` wraps all playground routes in `if (! app()->environment('production'))` to prevent accidental exposure in production environments.
+**Playground routes are disabled when `APP_ENV=production`.** The guard in `routes/api/playground.php` wraps all playground routes in `if (! app()->environment('production'))` to prevent accidental exposure in production environments.
 
 **Global ping is always available:** `GET /api/ping` is registered outside the playground group and remains a liveness probe in every environment.
 
@@ -113,11 +113,11 @@ app/
 ├── Exceptions/Playground/
 │   ├── OrderRequiresDetailException.php       # HTTP 422 — ≥1 line required
 │   └── OrderNotEditableException.php           # HTTP 409 — completed orders are frozen
-└── Support/DataTable/Resolvers/PlaygroundOrderRowActionResolver.php
+└── Support/DataTable/PlaygroundOrderRowActionResolver.php
 ```
 
 `OrderRepositoryInterface` is bound to `OrderRepository` in
-`AppServiceProvider`. The controller depends only on `OrderService`; the service
+`App\Providers\Domain\PlaygroundServiceProvider`. The controller depends only on `OrderService`; the service
 depends only on the repository contract.
 
 ### Endpoints
@@ -247,8 +247,8 @@ create/update. Instead:
 
 | Piece | Role |
 |-------|------|
-| `App\Models\Attachment` | Polymorphic metadata row; owns disk-aware **download** URL resolution (`Attachment::url()`). |
-| `App\Models\AttachmentUpload` | Server-side upload session (`pending` → `completed` / `aborted`); tracks multipart parts for resume. Stored in **`attachment_uploads`** — file bytes are **not** in the database. |
+| `App\Domain\Playground\Models\Attachment` | Polymorphic metadata row; owns disk-aware **download** URL resolution (`Attachment::url()`). |
+| `App\Domain\Playground\Models\AttachmentUpload` | Server-side upload session (`pending` → `completed` / `aborted`); tracks multipart parts for resume. Stored in **`attachment_uploads`** — file bytes are **not** in the database. |
 
 **`attachment_uploads` session table** (upload orchestration only):
 
@@ -455,13 +455,13 @@ per the [Localization task rule](./localization.md#task-rule-required):
 |------|-------|
 | `tests/Unit/Services/Playground/UserServiceTest.php` | User business rules (repository mocked) |
 | `tests/Unit/Http/Controllers/API/PlaygroundControllerTest.php` | User controller delegates to service |
-| `tests/Feature/Http/Controllers/API/PlaygroundUserCrudTest.php` | User full HTTP stack |
-| `tests/Feature/Http/Controllers/API/PlaygroundUserDatatableTest.php` | User dual-mode list |
+| `tests/Domain/Playground/Feature/Http/Controllers/API/PlaygroundUserCrudTest.php` | User full HTTP stack |
+| `tests/Domain/Playground/Feature/Http/Controllers/API/PlaygroundUserDatatableTest.php` | User dual-mode list |
 | `tests/Unit/Services/Playground/OrderServiceTest.php` | Order rules + total derivation; **upload-rollback compensation** (repository mocked, disk faked) |
 | `tests/Feature/Repositories/OrderRepositoryTest.php` | **Transaction rollback** — no orphaned master/details on a failed line insert; ID-preserving line sync |
-| `tests/Feature/Http/Controllers/API/PlaygroundOrderCrudTest.php` | Order full HTTP stack: atomic create, ID-preserving update, frozen completed orders, **atomic mass-delete (frozen-order batch abort, id-set validation)**, datatable mode |
-| `tests/Feature/Http/Controllers/API/PlaygroundOrderAttachmentTest.php` | Staged direct uploads, keep/drop reconciliation, delete purges files (disk faked) |
-| `tests/Feature/Http/Controllers/API/PlaygroundAttachmentUploadTest.php` | Upload init/complete/status/abort API lifecycle (fake S3 service) |
+| `tests/Domain/Playground/Feature/Http/Controllers/API/PlaygroundOrderCrudTest.php` | Order full HTTP stack: atomic create, ID-preserving update, frozen completed orders, **atomic mass-delete (frozen-order batch abort, id-set validation)**, datatable mode |
+| `tests/Domain/Playground/Feature/Http/Controllers/API/PlaygroundOrderAttachmentTest.php` | Staged direct uploads, keep/drop reconciliation, delete purges files (disk faked) |
+| `tests/Domain/Playground/Feature/Http/Controllers/API/PlaygroundAttachmentUploadTest.php` | Upload init/complete/status/abort API lifecycle (fake S3 service) |
 | `tests/Unit/Support/Orders/DirectAttachmentUploadServiceTest.php` | Upload strategy selection + `resolveStaged` rules |
 | `tests/Feature/Http/Controllers/Web/OrderAttachmentWebTest.php` | Web layer forwards JSON order mutations + upload init proxy |
 | `tests/Feature/Http/Controllers/Web/OrderBulkDeleteWebTest.php` | Web layer forwards the selected `ids[]` to the API bulk endpoint and relays its envelope |

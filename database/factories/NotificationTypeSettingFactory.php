@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\NotificationTypeSetting;
-use App\Notifications\Activity\NotificationType;
+use App\Domain\Notification\Models\NotificationTypeSetting;
+use App\Domain\Notification\Notifications\NotificationType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

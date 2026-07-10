@@ -353,7 +353,7 @@ return $this->successResponse($data, __('api/navigation.created'), 201);
 
 ### FormRequest (translatable + custom route message)
 
-See `app/Http/Requests/Navigation/StoreMenuRequest.php`.
+See `app/Domain/Navigation/Http/Requests/StoreMenuRequest.php`.
 
 ---
 
@@ -383,7 +383,7 @@ See `app/Http/Requests/Navigation/StoreMenuRequest.php`.
 |------|----------|
 | Locale middleware | `app/Http/Middleware/SetLocale.php` |
 | Web → API locale forwarding | `app/Support/Api/ApiClient.php` (`pending()` forwards `locale` cookie) |
-| Recipient-locale email | `app/Models/User.php` (`preferredLocale()`), `app/Notifications/Auth/ResetPasswordNotification.php` |
+| Recipient-locale email | `app/Domain/Identity/Models/User.php` (`preferredLocale()`), `app/Domain/Identity/Notifications/Auth/ResetPasswordNotification.php` |
 | Application-owned mail copy | `lang/{locale}/mail.php` |
 | Locale parity guard (test) | `tests/Unit/Localization/LocaleParityTest.php` |
 | Add-locale command | `app/Console/Commands/AddLocaleCommand.php` (`php artisan locale:add`) |
@@ -391,9 +391,9 @@ See `app/Http/Requests/Navigation/StoreMenuRequest.php`.
 | Translation resolver (cached nav) | `app/Support/Localization/TranslationResolver.php` |
 | Translatable validation trait | `app/Support/Localization/Concerns/ValidatesTranslatableInput.php` |
 | Menu JSON columns | `database/migrations/2026_06_11_000002_make_menus_translatable.php` |
-| Menu model | `app/Models/Menu.php` (`HasTranslations`) |
-| API resources | `app/Http/Resources/Navigation/MenuListResource.php` |
-| Navigation cache (locale maps) | `app/Repositories/Eloquent/MenuRepository.php` (`name_translations` in snapshot) |
+| Menu model | `app/Domain/Navigation/Models/Menu.php` (`HasTranslations`) |
+| API resources | `app/Domain/Navigation/Http/Resources/MenuListResource.php` |
+| Navigation cache (locale maps) | `app/Domain/Navigation/Repositories/Eloquent/MenuRepository.php` (`name_translations` in snapshot) |
 | Blade translatable control | `resources/views/adminlte4/components/form/translatable-input.blade.php` |
 | Post-update lang sync | `composer.json` → `post-update-cmd` runs `php artisan lang:update` |
 
