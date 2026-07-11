@@ -1,7 +1,8 @@
 /**
- * Hosted checkout for pending invoices (channel direct + Midtrans Snap + iPaymu redirect).
+ * Channel checkout for pending invoices (QRIS / VA / e-wallet).
  */
 import { copyToClipboard, resolveQrImageSrc } from './instructionMedia.js';
+
 export function initPaymentCheckout(root) {
     if (!root || root.dataset.paymentCheckoutBound === '1') {
         return;
@@ -16,120 +17,117 @@ export function initPaymentCheckout(root) {
     if (checkoutMode === 'channel') {
         initChannelCheckout(root, csrfToken, messages);
     }
-
-    initSnapCheckout(root, csrfToken, messages);
-}
-
-function initSnapCheckout(root, csrfToken, messages) {
-    const snapTokenUrl = root.dataset.snapTokenUrl;
-    const returnUrl = root.dataset.returnUrl || '';
-    const cancelUrl = root.dataset.cancelUrl || '';
-    const payButton = root.querySelector('[data-payment-checkout-pay]');
-
-    payButton?.addEventListener('click', async function () {
-        if (!snapTokenUrl || payButton.disabled) {
-            return;
-        }
-
-        payButton.disabled = true;
-        const originalLabel = payButton.textContent;
-        payButton.textContent = messages.loading ?? 'Opening payment…';
-
-        try {
-            const body = {};
-
-            if (returnUrl) {
-                body.return_url = returnUrl;
-            }
-
-            if (cancelUrl) {
-                body.cancel_url = cancelUrl;
-            }
-
-            const response = await fetch(snapTokenUrl, {
-                method: 'POST',
-                headers: buildHeaders(csrfToken),
-                credentials: 'same-origin',
-                body: JSON.stringify(body),
-            });
-
-            const payload = await response.json();
-
-            if (!response.ok || payload.status !== 'success') {
-                throw new Error(payload.message || messages.failed || 'Checkout failed.');
-            }
-
-            const data = payload.data ?? {};
-            const provider = payload.provider ?? '';
-
-            if (provider === 'ipaymu' && data.redirect_url) {
-                window.location.assign(String(data.redirect_url));
-                return;
-            }
-
-            if (data.snap_token && data.client_key) {
-                await loadMidtransSnap(String(data.client_key));
-                window.snap?.pay(String(data.snap_token), {
-                    onSuccess: () => window.location.reload(),
-                    onPending: () => window.location.reload(),
-                    onError: () => {
-                        window.alert(messages.failed ?? 'Checkout failed.');
-                    },
-                    onClose: () => {
-                        window.location.reload();
-                    },
-                });
-                return;
-            }
-
-            if (data.redirect_url) {
-                window.location.assign(String(data.redirect_url));
-                return;
-            }
-
-            throw new Error('missing checkout payload');
-        } catch (error) {
-            const message = error instanceof Error ? error.message : (messages.failed ?? 'Checkout failed.');
-            window.alert(message);
-        } finally {
-            payButton.disabled = false;
-            payButton.textContent = originalLabel;
-        }
-    });
 }
 
 function initChannelCheckout(root, csrfToken, messages) {
     const channelCheckoutUrl = root.dataset.channelCheckoutUrl;
     const syncStatusUrl = root.dataset.syncStatusUrl;
     const channels = JSON.parse(root.dataset.channels || '[]');
+    const initialCheckout = parseInitialCheckout(root.dataset.initialCheckout);
     const picker = root.querySelector('[data-payment-channel-picker]');
+    const changeChannelButton = root.querySelector('[data-payment-change-channel]');
+    const channelLabel = root.querySelector('[data-payment-channel-label]');
     const checkoutButton = root.querySelector('[data-payment-channel-checkout]');
     const syncButton = root.querySelector('[data-payment-sync-status]');
     const instructionsEl = root.querySelector('[data-payment-instructions]');
 
-    let selectedChannel = channels[0]?.code ?? '';
-    let pollTimer = null;
+    let selectedChannel = initialCheckout?.channel_code ?? channels[0]?.code ?? '';
+    let pickerCollapsed = false;
+    let hasActiveInstructions = false;
 
-    function setSelected(code) {
+    function stopPolling() {
+        if (window.__paymentCheckoutPollTimer) {
+            clearInterval(window.__paymentCheckoutPollTimer);
+            window.__paymentCheckoutPollTimer = null;
+        }
+
+        syncButton?.classList.add('d-none');
+    }
+
+    function clearInstructions() {
+        hasActiveInstructions = false;
+
+        if (instructionsEl) {
+            instructionsEl.innerHTML = '';
+            instructionsEl.classList.add('d-none');
+        }
+
+        checkoutButton?.classList.remove('d-none');
+    }
+
+    function showInstructions(data) {
+        renderInstructions(instructionsEl, data, messages);
+        instructionsEl?.classList.remove('d-none');
+        syncButton?.classList.remove('d-none');
+        checkoutButton?.classList.add('d-none');
+        hasActiveInstructions = true;
+        collapsePicker();
+        startPolling(syncStatusUrl, csrfToken, messages);
+    }
+
+    function setSelected(code, { collapse = false } = {}) {
+        if (code !== selectedChannel) {
+            stopPolling();
+            clearInstructions();
+        }
+
         selectedChannel = code;
         picker?.querySelectorAll('[data-payment-channel-option]').forEach((button) => {
-            const isActive = button.getAttribute('data-payment-channel-option') === code;
-            button.classList.toggle('btn-primary', isActive);
-            button.classList.toggle('btn-outline-primary', !isActive);
+            button.classList.toggle('is-selected', button.getAttribute('data-payment-channel-option') === code);
         });
+
         if (checkoutButton) {
             checkoutButton.disabled = selectedChannel === '';
         }
+
+        if (collapse) {
+            collapsePicker();
+        }
+    }
+
+    function collapsePicker() {
+        if (!picker || pickerCollapsed) {
+            return;
+        }
+
+        pickerCollapsed = true;
+        picker.classList.add('is-collapsed');
+        changeChannelButton?.classList.remove('d-none');
+        channelLabel?.classList.add('d-none');
+    }
+
+    function expandPicker() {
+        if (!picker) {
+            return;
+        }
+
+        pickerCollapsed = false;
+        picker.classList.remove('is-collapsed');
+        changeChannelButton?.classList.add('d-none');
+        channelLabel?.classList.remove('d-none');
     }
 
     if (selectedChannel !== '') {
         setSelected(selectedChannel);
     }
 
+    if (initialCheckout?.instructions) {
+        showInstructions(initialCheckout);
+    }
+
     picker?.querySelectorAll('[data-payment-channel-option]').forEach((button) => {
         button.addEventListener('click', () => {
-            setSelected(button.getAttribute('data-payment-channel-option') ?? '');
+            setSelected(button.getAttribute('data-payment-channel-option') ?? '', { collapse: true });
         });
+    });
+
+    changeChannelButton?.addEventListener('click', () => {
+        expandPicker();
+
+        if (hasActiveInstructions) {
+            stopPolling();
+            clearInstructions();
+        }
     });
 
     checkoutButton?.addEventListener('click', async () => {
@@ -152,17 +150,10 @@ function initChannelCheckout(root, csrfToken, messages) {
             const payload = await response.json();
 
             if (!response.ok || payload.status !== 'success') {
-                if (payload.data?.snap_fallback_available) {
-                    revealSnapFallback(root, messages);
-                }
-
                 throw new Error(payload.message || messages.channelFailed || 'Channel checkout failed.');
             }
 
-            renderInstructions(instructionsEl, payload.data ?? {}, messages);
-            instructionsEl?.classList.remove('d-none');
-            syncButton?.classList.remove('d-none');
-            startPolling(syncStatusUrl, csrfToken, messages);
+            showInstructions(payload.data ?? {});
         } catch (error) {
             const message = error instanceof Error ? error.message : (messages.channelFailed ?? 'Channel checkout failed.');
             window.alert(message);
@@ -177,19 +168,17 @@ function initChannelCheckout(root, csrfToken, messages) {
     });
 }
 
-function revealSnapFallback(root, messages) {
-    const snapSection = root.querySelector('[data-payment-snap-fallback]');
-
-    if (!snapSection) {
-        return;
+function parseInitialCheckout(raw) {
+    if (!raw || raw === 'null') {
+        return null;
     }
 
-    snapSection.classList.remove('d-none');
+    try {
+        const parsed = JSON.parse(raw);
 
-    const hint = snapSection.querySelector('.text-muted');
-
-    if (hint && messages.channelFailed) {
-        hint.textContent = messages.channelFailed;
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch {
+        return null;
     }
 }
 
@@ -228,6 +217,7 @@ function renderInstructions(container, data, messages) {
         `;
     }
 
+    container.classList.add('pc-checkout-instructions');
     container.innerHTML = `
         <h6 class="mb-3">${escapeHtml(messages.instructionsTitle ?? 'Payment instructions')}</h6>
         ${expiresAt}
@@ -321,23 +311,6 @@ function escapeHtml(value) {
         .replaceAll('"', '&quot;');
 }
 
-function loadMidtransSnap(clientKey) {
-    if (window.snap) {
-        return Promise.resolve();
-    }
-
-    const isProduction = !clientKey.startsWith('SB-');
-
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = isProduction
-            ? 'https://app.midtrans.com/snap/snap.js'
-            : 'https://app.sandbox.midtrans.com/snap/snap.js';
-        script.setAttribute('data-client-key', clientKey);
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('snap script failed'));
-        document.body.appendChild(script);
-    });
-}
-
-document.querySelectorAll('[data-payment-checkout]').forEach(initPaymentCheckout);
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-payment-checkout]').forEach(initPaymentCheckout);
+});

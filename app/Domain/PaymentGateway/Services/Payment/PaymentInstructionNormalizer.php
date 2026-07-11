@@ -106,7 +106,12 @@ class PaymentInstructionNormalizer
             PaymentChannelKind::Va => [
                 'type' => 'va',
                 'bank_name' => (string) (data_get($data, 'Channel') ?? data_get($data, 'PaymentChannel') ?? ''),
-                'va_number' => (string) (data_get($data, 'PaymentNo') ?? data_get($data, 'Va') ?? ''),
+                'va_number' => (string) (
+                    data_get($data, 'PaymentNo')
+                    ?? data_get($data, 'Va')
+                    ?? data_get($data, 'PaymentCode')
+                    ?? ''
+                ),
                 'payment_name' => (string) (data_get($data, 'PaymentName') ?? ''),
             ],
             PaymentChannelKind::Ewallet => [

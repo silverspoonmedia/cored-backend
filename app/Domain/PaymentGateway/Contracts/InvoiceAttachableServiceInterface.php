@@ -7,7 +7,7 @@ use App\Domain\Playground\Models\Order;
 
 interface InvoiceAttachableServiceInterface
 {
-    public function createPendingInvoiceForOrder(Order $order, string $paymentGatewayId): Invoice;
+    public function createPendingInvoiceForOrder(Order $order, ?string $paymentGatewayId): Invoice;
 
     public function syncOrderInvoiceAmountIfPending(Order $order): void;
 

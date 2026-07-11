@@ -53,6 +53,11 @@ return [
         'open_api_signature_invalid' => 'Invalid or unverifiable X-SIGNATURE for Open API notification.',
     ],
 
+    'checkout' => [
+        'active_session_pending' => 'The previous payment session is still pending at the provider. Wait for it to expire or complete before switching channels.',
+        'gateway_provider_mismatch' => 'Invoice payment gateway does not match the requested checkout provider.',
+    ],
+
     'channels' => [
         'list' => 'Payment channels retrieved successfully.',
         'show' => 'Payment channel retrieved successfully.',

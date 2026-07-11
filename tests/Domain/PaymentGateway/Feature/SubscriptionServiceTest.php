@@ -60,14 +60,18 @@ class SubscriptionServiceTest extends TestCase
         $this->assertSame($subscription->amount, $subscription->invoice->subtotal);
     }
 
-    public function test_create_without_payment_gateway_skips_invoice(): void
+    public function test_create_without_payment_gateway_creates_pending_invoice(): void
     {
         $subscription = $this->service->create($this->subscriptionAttributes());
 
         $subscription->load('invoice');
 
-        $this->assertNull($subscription->invoice);
-        $this->assertDatabaseCount('invoices', 0);
+        $this->assertNotNull($subscription->invoice);
+        $this->assertSame('pending', $subscription->invoice->status);
+        $this->assertSame('subscription', $subscription->invoice->invoiceable_type);
+        $this->assertSame($subscription->id, $subscription->invoice->invoiceable_id);
+        $this->assertNull($subscription->invoice->payment_gateway_id);
+        $this->assertSame($subscription->amount, $subscription->invoice->subtotal);
     }
 
     public function test_delete_removes_pending_invoice(): void

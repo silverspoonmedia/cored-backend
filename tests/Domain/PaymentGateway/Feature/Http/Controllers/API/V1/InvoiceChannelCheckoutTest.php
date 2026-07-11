@@ -35,6 +35,42 @@ class InvoiceChannelCheckoutTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_channel_checkout_assigns_gateway_when_invoice_has_none(): void
+    {
+        $invoice = $this->createPayableInvoice(null);
+        $admin = $this->userWithRole('Admin');
+
+        $this->mock(IpaymuPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn([
+                    'ok' => true,
+                    'data' => [
+                        'Status' => 200,
+                        'Data' => [
+                            'TransactionId' => 12345,
+                            'QrString' => 'qris-string',
+                        ],
+                    ],
+                    'message_key' => 'api/payments.ipaymu.charge_created',
+                    'http' => 201,
+                ]);
+        });
+
+        $this->partialMock(MidtransPaymentService::class);
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'qris'])
+            ->assertCreated()
+            ->assertJsonPath('data.gateway', 'ipaymu');
+
+        $invoice->refresh();
+        $this->assertSame(
+            PaymentGateway::query()->where('name', 'ipaymu')->value('id'),
+            $invoice->payment_gateway_id,
+        );
+    }
+
     public function test_channel_checkout_routes_qris_to_ipaymu_and_returns_instructions(): void
     {
         $invoice = $this->createPayableInvoice('midtrans');

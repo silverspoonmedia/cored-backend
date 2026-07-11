@@ -2,6 +2,7 @@
 
 namespace App\Domain\PaymentGateway\Http\Controllers\Web;
 
+use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutGatewayResolver;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Concerns\ResolvesPaymentCheckoutContext;
 use App\Http\Controllers\Web\Controller;
@@ -19,6 +20,10 @@ class PaymentCheckoutController extends Controller
     use ConsumesApi;
     use ResolvesPaymentCheckoutContext;
 
+    public function __construct(
+        private InvoiceCheckoutGatewayResolver $gatewayResolver,
+    ) {}
+
     public function createSnapToken(Request $request, string $invoice): JsonResponse
     {
         $invoiceData = $this->fetchInvoiceData($invoice);
@@ -27,7 +32,7 @@ class PaymentCheckoutController extends Controller
             return $invoiceData;
         }
 
-        $provider = (string) data_get($invoiceData, 'payment_gateway.name');
+        $provider = $this->gatewayResolver->resolveProviderNameForInvoice($invoiceData);
 
         if (! in_array($provider, ['midtrans', 'ipaymu'], true)) {
             return response()->json([
@@ -104,7 +109,7 @@ class PaymentCheckoutController extends Controller
             return $invoiceData;
         }
 
-        $provider = (string) data_get($invoiceData, 'payment_gateway.name');
+        $provider = $this->gatewayResolver->resolveProviderNameForInvoice($invoiceData);
 
         if (! in_array($provider, ['midtrans', 'ipaymu'], true)) {
             return response()->json([

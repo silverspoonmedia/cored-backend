@@ -35,9 +35,11 @@ class SubscriptionService
     {
         $subscription = $this->subscriptions->create($data);
 
-        if (isset($data['payment_gateway_id'])) {
-            $this->createPendingInvoice($subscription, (string) $data['payment_gateway_id']);
-        }
+        $paymentGatewayId = isset($data['payment_gateway_id']) && $data['payment_gateway_id'] !== ''
+            ? (string) $data['payment_gateway_id']
+            : null;
+
+        $this->createPendingInvoice($subscription, $paymentGatewayId);
 
         return $subscription->fresh(['invoice']);
     }
@@ -62,7 +64,7 @@ class SubscriptionService
         $this->subscriptions->delete($id);
     }
 
-    protected function createPendingInvoice(Subscription $subscription, string $paymentGatewayId): Invoice
+    protected function createPendingInvoice(Subscription $subscription, ?string $paymentGatewayId): Invoice
     {
         $invoice = Invoice::query()->create([
             'invoiceable_id' => $subscription->id,

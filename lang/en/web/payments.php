@@ -16,11 +16,32 @@ return [
         ],
     ],
 
+    'show' => [
+        'payment_not_started' => 'Payment method not chosen yet',
+        'payment_pending' => 'Awaiting payment',
+        'status' => [
+            'paid' => 'Paid',
+            'expired' => 'Expired',
+            'cancelled' => 'Cancelled',
+            'failed' => 'Failed',
+        ],
+        'payment_steps' => [
+            'aria' => 'Payment steps',
+            'choose_channel' => 'Choose method',
+            'choose_channel_hint' => 'Pick QRIS, bank transfer, or e-wallet.',
+            'pay' => 'Pay',
+            'pay_hint' => 'Complete payment using the instructions shown.',
+            'confirm' => 'Confirmation',
+            'confirm_hint' => 'Status updates after the provider confirms payment.',
+        ],
+    ],
+
     'invoices' => [
         'title' => 'Invoices',
         'list_title' => 'Invoice list',
         'show_title' => 'Invoice detail',
         'show_card_title' => 'Invoice :number',
+        'view_order' => 'View order',
         'back_to_list' => 'Back to invoices',
         'datatable' => [
             'empty' => 'No invoices found.',
@@ -119,7 +140,9 @@ return [
         'channel_ready' => 'Complete payment using the instructions below.',
         'channel_failed' => 'Could not start channel checkout',
         'confirm_paid' => 'I have paid',
-        'snap_fallback_hint' => 'No direct payment channels are available. Use hosted checkout instead.',
+        'change_channel' => 'Change payment channel',
+        'no_channels' => 'No payment methods are available for this invoice.',
+        'permission_required' => 'You do not have permission to start a payment. Ask an administrator for the “initiate payment” permission.',
         'synced' => 'Payment status synced.',
         'sync_pending' => 'Payment is still pending.',
         'sync_failed' => 'Could not sync payment status.',
@@ -145,6 +168,50 @@ return [
         'updated' => 'Payment channel updated.',
         'route_updated' => 'Payment channel route updated.',
         'routes_title' => 'Gateway routes',
+        'routes_lead' => 'Lower priority number is tried first during checkout. If a route fails, the next active route is used.',
+        'empty' => 'No payment channels configured. Run PaymentChannelSeeder after PaymentGatewaySeeder.',
+        'no_routes' => 'No gateway routes are bound to this channel.',
+        'no_results' => 'No channels match your search.',
+        'search_label' => 'Search channels',
+        'search_placeholder' => 'Search by name, code, or kind…',
+        'inactive_channel' => 'Hidden from checkout',
+        'primary_route' => 'Tried first',
+        'priority_hint' => 'Lower number = higher priority',
+        'visible_count' => '{0} No channels|{1} :count channel visible|[2,*] :count channels visible',
+        'route_count' => '{0} No routes|{1} :count route|[2,*] :count routes',
+        'status' => [
+            'active' => 'Active',
+            'inactive' => 'Inactive',
+        ],
+        'kinds' => [
+            'qris' => 'QRIS',
+            'va' => 'Virtual account',
+            'ewallet' => 'E-wallet',
+        ],
+        'intro' => [
+            'title' => 'How channel checkout routing works',
+            'lead' => 'Customers pick a logical channel (QRIS, bank VA, e-wallet). Monolith then tries your configured gateway routes in priority order until payment instructions are created.',
+            'steps' => [
+                [
+                    'title' => 'Enable the channel',
+                    'body' => 'Inactive channels are hidden from checkout. Routes can stay configured while the channel is off.',
+                ],
+                [
+                    'title' => 'Order gateway routes',
+                    'body' => 'Each route binds the channel to Midtrans or iPaymu. Priority 10 runs before 20.',
+                ],
+                [
+                    'title' => 'Fallback at checkout',
+                    'body' => 'If every route fails, checkout offers hosted Snap or iPaymu redirect.',
+                ],
+            ],
+        ],
+        'stats' => [
+            'channels_active' => 'Active channels',
+            'routes_active' => 'Active routes',
+            'checkout_hint' => 'Checkout behaviour',
+            'checkout_body' => 'Only active channels with at least one viable route appear to payers.',
+        ],
         'columns' => [
             'code' => 'Code',
             'display_name' => 'Display name',

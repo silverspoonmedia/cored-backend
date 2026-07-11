@@ -68,13 +68,13 @@ Set `MIDTRANS_NOTIFY_URL` / `IPAYMU_NOTIFY_URL` in Monolith `.env` to the **Gate
 
 ### Playground orders
 
-Order create **does not** require `payment_gateway_id`. Monolith assigns the default active gateway (lowest `payment_gateways.priority`) to the pending invoice via `PaymentGateway::defaultForInvoice()` + `InvoiceAttachableService`. The PSP used at checkout is chosen by **payment channel route priority**, not the order form.
+Order create **does not** require `payment_gateway_id`. Monolith creates a pending invoice with **`payment_gateway_id` null** — no PSP is chosen until channel checkout succeeds or the user starts hosted Snap/redirect fallback (`PaymentGateway::defaultForInvoice()` is applied at Snap time only).
 
 Order show API eager-loads `invoice.paymentGateway`.
 
 **Paying an order:** Vue `PaymentCheckoutPanel` loads Gateway `GET /api/v1/payments/checkout-context` (order/subscription + channels). When `checkout_mode` is `channel`, the user picks a logical channel (QRIS, VA, e-wallet) and Monolith returns normalized payment instructions via `POST /api/v1/invoices/{id}/channel-checkout`. When no channels are available at load time, the panel falls back to hosted Snap (Midtrans) or redirect (iPaymu). When channel checkout fails on **all** configured routes, the API returns `422` with `data.snap_fallback_available: true` and the UI offers hosted checkout.
 
-**Blade admin** (`orders.show`, `invoices.show`) uses the same channel-first flow via [`checkout-panel.blade.php`](../resources/views/adminlte4/components/payments/checkout-panel.blade.php) + [`checkout.js`](../resources/js/payments/checkout.js). Web proxies:
+**Blade admin** (`orders.show`, `invoices.show`) uses a payment-first layout: status hero, 3-step hint, channel checkout panel with kind icons, and a financial sidebar. Same channel-first flow via [`checkout-panel.blade.php`](../resources/views/adminlte4/components/payments/checkout-panel.blade.php) + [`checkout.js`](../resources/js/payments/checkout.js). Styles: [`order-invoice-show.css`](../resources/css/payments/order-invoice-show.css). Web proxies:
 
 | Web route | API |
 |-----------|-----|
@@ -146,6 +146,38 @@ Rules:
 - **Strict policy:** when an external sync is attempted and the PSP API fails (timeout, 5xx, misconfiguration), initiation returns **503** — no fallback to internal-only checks.
 - iPaymu **does not overwrite** `external_transaction_id` on a second redirect/charge when one is already stored.
 - Cron reconcile commands (`payments:midtrans-reconcile-pending`, `payments:reconcile-withdrawable-funds`) remain **backup** paths; they do not replace the pre-payment guard.
+
+### Checkout session lifecycle
+
+An invoice is considered to have an **active checkout session** when any of these are set:
+
+- `external_transaction_id`
+- `payment_channel_code`
+- non-empty `gateway_response_payload` (Snap token or redirect response stored locally)
+
+[`InvoiceActiveCheckoutCancellationService`](../app/Domain/PaymentGateway/Services/Payment/InvoiceActiveCheckoutCancellationService.php) abandons that session before:
+
+- **Channel checkout** (`prepareForChannelCheckout` / `abandonActiveCheckout`)
+- **Hosted Snap/redirect** (`createSnapToken` on Midtrans and iPaymu)
+- **Order edit** when `grand_total` changes on a pending invoice that still has a session (`OrderService::update`)
+
+Abandon behaviour:
+
+| Gateway | Cancel API | On abandon |
+|---------|------------|------------|
+| **Midtrans** | `cancelTransaction(invoice_number)` when external id **or** Snap payload exists | Best-effort cancel, then clear checkout fields (`external_transaction_id`, `payment_channel_code`, gateway payloads, `payment_gateway_id`) |
+| **iPaymu** | No reliable cancel API | Sync via guard; if PSP still reports **pending** → **422** `active_session_pending` (user must wait for PSP expiry) |
+
+**Known limitations (documented, not fixed in this pass):**
+
+- **iPaymu pending session** — cannot be cancelled via API; channel switch or order amount change may return 422 until the PSP session expires.
+- **Concurrent browser tabs** — row lock is per request; two tabs can race before abandon completes.
+- **Webhook during channel switch** — sync may mark paid while UI still shows old instructions; polling/reload mitigates partially.
+- **Midtrans cancel failure** — abandon still clears local fields; an orphan transaction may remain at the PSP until reconcile/expire.
+- **Pre-migration invoices** may still have a default gateway row; new orders use `payment_gateway_id` null until checkout.
+- **Subscription API** still accepts optional `payment_gateway_id` on create (Vue UI no longer sends it).
+
+**Order edit:** amount sync runs after abandon. If only non-monetary fields change (e.g. notes), checkout is **not** cancelled.
 
 ---
 

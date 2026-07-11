@@ -188,7 +188,7 @@ class InvoicePaymentInitiationGuardTest extends TestCase
 
         $guard = $this->partialGuard();
         $guard->shouldReceive('fetchMidtransTransactionStatus')
-            ->twice()
+            ->once()
             ->andReturn((object) [
                 'transaction_status' => 'settlement',
                 'gross_amount' => '100000.00',

@@ -66,6 +66,26 @@ class PaymentInstructionNormalizerTest extends TestCase
         $this->assertSame('bni', $result['instructions']['bank_name']);
     }
 
+    public function test_normalizes_ipaymu_va_payment_code_response(): void
+    {
+        $channel = PaymentChannel::query()->where('code', 'va_bca')->firstOrFail();
+        $gateway = PaymentGateway::query()->where('name', 'ipaymu')->firstOrFail();
+        $invoice = $this->createPayableInvoice('ipaymu');
+
+        $result = $this->normalizer->normalize($channel, $gateway, $invoice, [
+            'Status' => 200,
+            'Data' => [
+                'PaymentCode' => '3811800034254667',
+                'PaymentChannel' => 'BCA',
+                'PaymentName' => 'Hallo Bali',
+            ],
+        ]);
+
+        $this->assertSame('va', $result['instructions']['type']);
+        $this->assertSame('3811800034254667', $result['instructions']['va_number']);
+        $this->assertSame('BCA', $result['instructions']['bank_name']);
+    }
+
     public function test_normalizes_ipaymu_ewallet_response(): void
     {
         $channel = PaymentChannel::query()->where('code', 'gopay')->firstOrFail();

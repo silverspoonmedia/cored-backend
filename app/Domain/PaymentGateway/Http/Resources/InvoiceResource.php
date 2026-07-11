@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Http\Resources;
 
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutInstructionResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -40,6 +41,7 @@ class InvoiceResource extends JsonResource
             'disbursed_at' => $this->disbursed_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
+            'checkout_session' => app(InvoiceCheckoutInstructionResolver::class)->resolve($this->resource),
         ];
     }
 }

@@ -8,7 +8,7 @@ use App\Domain\Playground\Models\Order;
 
 class InvoiceAttachableService implements InvoiceAttachableServiceInterface
 {
-    public function createPendingInvoiceForOrder(Order $order, string $paymentGatewayId): Invoice
+    public function createPendingInvoiceForOrder(Order $order, ?string $paymentGatewayId): Invoice
     {
         return Invoice::query()->create([
             'invoiceable_id' => $order->id,

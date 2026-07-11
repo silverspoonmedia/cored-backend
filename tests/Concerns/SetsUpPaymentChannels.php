@@ -36,14 +36,18 @@ trait SetsUpPaymentChannels
     /**
      * @param  array<string, mixed>  $overrides
      */
-    protected function createPayableInvoice(string $gatewayName = 'midtrans', array $overrides = []): Invoice
+    protected function createPayableInvoice(?string $gatewayName = 'midtrans', array $overrides = []): Invoice
     {
-        $gateway = PaymentGateway::query()->where('name', $gatewayName)->firstOrFail();
+        $gatewayId = null;
+
+        if ($gatewayName !== null) {
+            $gatewayId = PaymentGateway::query()->where('name', $gatewayName)->value('id');
+        }
 
         return Invoice::query()->create(array_merge([
             'invoiceable_id' => (string) Str::uuid(),
             'invoiceable_type' => 'order',
-            'payment_gateway_id' => $gateway->id,
+            'payment_gateway_id' => $gatewayId,
             'invoice_number' => Invoice::generateInvoiceNumber(),
             'payment_method' => 'pending',
             'payment_channel_code' => null,

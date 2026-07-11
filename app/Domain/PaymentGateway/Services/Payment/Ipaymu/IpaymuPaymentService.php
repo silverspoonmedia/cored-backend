@@ -6,6 +6,8 @@ use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\Playground\Models\Order;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceActiveCheckoutCancellationService;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutGatewayResolver;
 use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
 use iPaymu\iPaymu;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +18,8 @@ class IpaymuPaymentService
         private InvoiceRepositoryInterface $invoices,
         private IpaymuInvoiceSynchronizer $synchronizer,
         private InvoicePaymentInitiationGuard $initiationGuard,
+        private InvoiceCheckoutGatewayResolver $gatewayResolver,
+        private InvoiceActiveCheckoutCancellationService $checkoutCancellation,
     ) {}
 
     /**
@@ -24,7 +28,16 @@ class IpaymuPaymentService
      */
     public function createSnapToken(array $input): array
     {
-        $guardResult = $this->initiationGuard->ensurePayableForIpaymu($input['invoice_id'], rejectActiveCheckout: true);
+        $invoiceModel = $this->invoices->findOrFail($input['invoice_id']);
+        $this->checkoutCancellation->abandonActiveCheckout($invoiceModel);
+
+        $invoice = $this->gatewayResolver->assignGatewayIfMissing(
+            $invoiceModel->refresh(),
+            'ipaymu',
+            $input['payment_gateway_id'] ?? null,
+        );
+
+        $guardResult = $this->initiationGuard->ensurePayableForProvider($invoice->id, 'ipaymu', rejectActiveCheckout: true);
         if (is_array($guardResult)) {
             return $guardResult;
         }
@@ -109,7 +122,7 @@ class IpaymuPaymentService
      */
     public function charge(array $input): array
     {
-        $guardResult = $this->initiationGuard->ensurePayableForIpaymu($input['invoice_id'], rejectActiveCheckout: true);
+        $guardResult = $this->initiationGuard->ensurePayableForProvider($input['invoice_id'], 'ipaymu', rejectActiveCheckout: true);
         if (is_array($guardResult)) {
             return $guardResult;
         }

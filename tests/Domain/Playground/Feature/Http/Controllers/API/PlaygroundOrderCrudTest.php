@@ -94,7 +94,7 @@ class PlaygroundOrderCrudTest extends TestCase
         $this->assertDatabaseCount('order_master', 0);
     }
 
-    public function test_store_assigns_default_payment_gateway_without_input(): void
+    public function test_store_creates_invoice_without_payment_gateway(): void
     {
         $payload = $this->validPayload();
         unset($payload['payment_gateway_id']);
@@ -107,7 +107,7 @@ class PlaygroundOrderCrudTest extends TestCase
         $this->assertDatabaseHas('invoices', [
             'invoiceable_id' => $orderId,
             'invoiceable_type' => 'order',
-            'payment_gateway_id' => $this->paymentGatewayId,
+            'payment_gateway_id' => null,
         ]);
     }
 

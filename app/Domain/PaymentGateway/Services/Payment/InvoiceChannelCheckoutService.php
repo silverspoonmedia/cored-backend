@@ -5,6 +5,7 @@ namespace App\Domain\PaymentGateway\Services\Payment;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
+use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransChargeParameterBuilder;
@@ -20,6 +21,7 @@ class InvoiceChannelCheckoutService
         private IpaymuPaymentService $ipaymuPayments,
         private MidtransChargeParameterBuilder $midtransChargeBuilder,
         private PaymentInstructionNormalizer $instructionNormalizer,
+        private InvoiceActiveCheckoutCancellationService $checkoutCancellation,
     ) {}
 
     /**
@@ -28,8 +30,12 @@ class InvoiceChannelCheckoutService
      */
     public function checkout(Invoice $invoice, array $input): array
     {
+        $channelCode = $input['channel_code'];
+
+        $this->checkoutCancellation->prepareForChannelCheckout($invoice);
+
         $channel = PaymentChannel::query()
-            ->where('code', $input['channel_code'])
+            ->where('code', $channelCode)
             ->where('is_active', true)
             ->first();
 
@@ -67,6 +73,8 @@ class InvoiceChannelCheckoutService
 
                 continue;
             }
+
+            $this->assignGatewayForRoute($invoice, $gateway);
 
             $chargeResult = match ($gateway->name) {
                 'midtrans' => $this->chargeMidtrans($invoice, $route),
@@ -111,15 +119,27 @@ class InvoiceChannelCheckoutService
         ];
     }
 
-    private function persistSuccessfulCheckout(Invoice $invoice, $gateway, PaymentChannel $channel): void
+    private function assignGatewayForRoute(Invoice $invoice, PaymentGateway $gateway): void
+    {
+        DB::transaction(function () use ($invoice, $gateway): void {
+            $locked = $this->invoices->findOrFailByIdForUpdate($invoice->id);
+
+            if (! in_array($locked->status, ['pending', 'challenge'], true)) {
+                abort(422, __('api/payments.channels.checkout_failed'));
+            }
+
+            $locked->payment_gateway_id = $gateway->id;
+            $this->invoices->save($locked);
+        });
+
+        $invoice->refresh();
+    }
+
+    private function persistSuccessfulCheckout(Invoice $invoice, PaymentGateway $gateway, PaymentChannel $channel): void
     {
         DB::transaction(function () use ($invoice, $gateway, $channel): void {
             $locked = $this->invoices->findOrFailByIdForUpdate($invoice->id);
-
-            if ($this->canReassignGateway($locked) && $locked->payment_gateway_id !== $gateway->id) {
-                $locked->payment_gateway_id = $gateway->id;
-            }
-
+            $locked->payment_gateway_id = $gateway->id;
             $locked->payment_channel_code = $channel->code;
             $this->invoices->save($locked);
         });
@@ -167,12 +187,5 @@ class InvoiceChannelCheckoutService
         }
 
         return ['ok' => true, 'data' => $result['data']];
-    }
-
-    private function canReassignGateway(Invoice $invoice): bool
-    {
-        $tid = $invoice->external_transaction_id;
-
-        return $tid === null || $tid === '';
     }
 }

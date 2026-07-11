@@ -4,6 +4,8 @@ namespace App\Domain\PaymentGateway\Services\Payment\Midtrans;
 
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceActiveCheckoutCancellationService;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutGatewayResolver;
 use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
 use Midtrans\CoreApi;
 use Midtrans\Snap;
@@ -16,6 +18,8 @@ class MidtransPaymentService
         private MidtransInvoiceSynchronizer $synchronizer,
         private MidtransSnapParameterBuilder $snapParameterBuilder,
         private InvoicePaymentInitiationGuard $initiationGuard,
+        private InvoiceCheckoutGatewayResolver $gatewayResolver,
+        private InvoiceActiveCheckoutCancellationService $checkoutCancellation,
     ) {}
 
     /**
@@ -24,7 +28,16 @@ class MidtransPaymentService
      */
     public function createSnapToken(array $input): array
     {
-        $guardResult = $this->initiationGuard->ensurePayableForMidtrans($input['invoice_id']);
+        $invoiceModel = $this->invoices->findOrFail($input['invoice_id']);
+        $this->checkoutCancellation->abandonActiveCheckout($invoiceModel);
+
+        $invoice = $this->gatewayResolver->assignGatewayIfMissing(
+            $invoiceModel->refresh(),
+            'midtrans',
+            $input['payment_gateway_id'] ?? null,
+        );
+
+        $guardResult = $this->initiationGuard->ensurePayableForProvider($invoice->id, 'midtrans', rejectActiveCheckout: true);
         if (is_array($guardResult)) {
             return $guardResult;
         }
@@ -88,7 +101,7 @@ class MidtransPaymentService
      */
     public function charge(array $input): array
     {
-        $guardResult = $this->initiationGuard->ensurePayableForMidtrans($input['invoice_id']);
+        $guardResult = $this->initiationGuard->ensurePayableForProvider($input['invoice_id'], 'midtrans');
         if (is_array($guardResult)) {
             return $guardResult;
         }

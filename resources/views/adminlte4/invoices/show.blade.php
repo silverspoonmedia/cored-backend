@@ -1,47 +1,108 @@
 <x-adminlte4::layouts.app :title="__('web/payments.invoices.show_title')">
-    <x-adminlte4::card :title="__('web/payments.invoices.show_card_title', ['number' => $invoice['invoice_number'] ?? $invoice['id'] ?? ''])">
-        <dl class="row mb-0">
-            <dt class="col-sm-3">{{ __('web/payments.invoices.fields.invoice_number') }}</dt>
-            <dd class="col-sm-9">{{ $invoice['invoice_number'] ?? '—' }}</dd>
+    @php
+        $invoiceStatus = (string) ($invoice['status'] ?? '');
+        $hasChannel = (bool) data_get($invoice, 'payment_channel_code');
+        $hasGateway = (bool) data_get($invoice, 'payment_gateway.id');
+        $hasCheckoutSession = $hasChannel
+            || (bool) data_get($invoice, 'external_transaction_id')
+            || ! empty(data_get($invoice, 'gateway_response_payload'));
+        $orderId = ($invoice['invoiceable_type'] ?? '') === 'order' ? ($invoice['invoiceable_id'] ?? null) : null;
 
-            <dt class="col-sm-3">{{ __('web/payments.invoices.fields.status') }}</dt>
-            <dd class="col-sm-9"><span class="badge text-bg-light border">{{ $invoice['status'] ?? '—' }}</span></dd>
+        if ($invoiceStatus === 'paid') {
+            $paymentUi = ['label' => __('web/payments.show.status.paid'), 'variant' => 'success', 'step' => 3];
+        } elseif (in_array($invoiceStatus, ['expired', 'cancelled', 'failed'], true)) {
+            $paymentUi = ['label' => __('web/payments.show.status.'.$invoiceStatus), 'variant' => 'danger', 'step' => 1];
+        } elseif (in_array($invoiceStatus, ['pending', 'challenge'], true)) {
+            $paymentUi = $hasCheckoutSession
+                ? ['label' => __('web/payments.show.payment_pending'), 'variant' => 'warning', 'step' => 2]
+                : ['label' => __('web/payments.show.payment_not_started'), 'variant' => 'secondary', 'step' => 1];
+        } else {
+            $paymentUi = ['label' => $invoiceStatus ?: '—', 'variant' => 'secondary', 'step' => 1];
+        }
 
-            <dt class="col-sm-3">{{ __('web/payments.invoices.fields.gateway') }}</dt>
-            <dd class="col-sm-9">{{ data_get($invoice, 'payment_gateway.display_name', data_get($invoice, 'payment_gateway.name', '—')) }}</dd>
+        $heroBadges = [
+            ['label' => $paymentUi['label'], 'variant' => $paymentUi['variant']],
+        ];
 
-            <dt class="col-sm-3">{{ __('web/payments.invoices.fields.payment_method') }}</dt>
-            <dd class="col-sm-9">{{ $invoice['payment_method'] ?? '—' }}</dd>
+        if ($hasGateway) {
+            $heroBadges[] = [
+                'label' => data_get($invoice, 'payment_gateway.display_name', data_get($invoice, 'payment_gateway.name')),
+                'variant' => 'secondary',
+            ];
+        }
 
-            <dt class="col-sm-3">{{ __('web/payments.invoices.fields.subtotal') }}</dt>
-            <dd class="col-sm-9">{{ ($invoice['currency'] ?? '') }} {{ $invoice['subtotal'] ?? '—' }}</dd>
+        if ($hasChannel) {
+            $heroBadges[] = ['label' => data_get($invoice, 'payment_channel_code'), 'variant' => 'warning'];
+        }
+    @endphp
 
-            <dt class="col-sm-3">{{ __('web/payments.invoices.fields.fee') }}</dt>
-            <dd class="col-sm-9">{{ ($invoice['currency'] ?? '') }} {{ $invoice['payment_channel_fee'] ?? '—' }}</dd>
+    @vite('resources/css/payments/order-invoice-show.css')
 
-            <dt class="col-sm-3">{{ __('web/payments.invoices.fields.total') }}</dt>
-            <dd class="col-sm-9">{{ ($invoice['currency'] ?? '') }} {{ $invoice['customer_gross_total'] ?? '—' }}</dd>
+    <x-adminlte4::payments.payment-status-hero
+        :eyebrow="__('web/payments.invoices.title')"
+        :title="$invoice['invoice_number'] ?? $invoice['id'] ?? '—'"
+        :amount="$invoice['customer_gross_total'] ?? null"
+        :currency="$invoice['currency'] ?? 'IDR'"
+        :badges="$heroBadges"
+    />
 
-            <dt class="col-sm-3">{{ __('web/payments.invoices.fields.paid_at') }}</dt>
-            <dd class="col-sm-9">{{ $invoice['paid_at'] ?? '—' }}</dd>
+    <div class="row g-3 mb-3">
+        <div class="col-lg-8">
+            <x-adminlte4::payments.payment-steps :current-step="$paymentUi['step']" />
 
-            <dt class="col-sm-3">{{ __('web/payments.invoices.fields.expired_at') }}</dt>
-            <dd class="col-sm-9">{{ $invoice['expired_at'] ?? '—' }}</dd>
+            <x-adminlte4::payments.checkout-panel
+                :invoice="$invoice"
+                :payment-channels="$paymentChannels ?? []"
+                :checkout-mode="$checkoutMode ?? 'snap_fallback'"
+                hub-mode
+            />
+        </div>
 
-            <dt class="col-sm-3">{{ __('web/payments.invoices.fields.created_at') }}</dt>
-            <dd class="col-sm-9">{{ $invoice['created_at'] ?? '—' }}</dd>
-        </dl>
+        <div class="col-lg-4">
+            <div class="ois-sidebar-card">
+                <div class="ois-sidebar-card__title">{{ __('web/payments.invoices.fields.total') }}</div>
+                <dl class="row mb-0 small">
+                    <dt class="col-5">{{ __('web/payments.invoices.fields.subtotal') }}</dt>
+                    <dd class="col-7">{{ ($invoice['currency'] ?? '') }} {{ $invoice['subtotal'] ?? '—' }}</dd>
+                    <dt class="col-5">{{ __('web/payments.invoices.fields.fee') }}</dt>
+                    <dd class="col-7">{{ ($invoice['currency'] ?? '') }} {{ $invoice['payment_channel_fee'] ?? '—' }}</dd>
+                    <dt class="col-5 fw-bold">{{ __('web/payments.invoices.fields.total') }}</dt>
+                    <dd class="col-7 fw-bold">{{ ($invoice['currency'] ?? '') }} {{ $invoice['customer_gross_total'] ?? '—' }}</dd>
+                </dl>
+            </div>
 
-        <x-slot:actions>
+            <div class="ois-sidebar-card">
+                <div class="ois-sidebar-card__title">{{ __('web/payments.invoices.fields.status') }}</div>
+                <dl class="row mb-0 small">
+                    <dt class="col-5">{{ __('web/payments.invoices.fields.payment_method') }}</dt>
+                    <dd class="col-7">
+                        @if ($hasCheckoutSession || $invoiceStatus === 'paid')
+                            {{ $hasChannel ? data_get($invoice, 'payment_channel_code') : ($invoice['payment_method'] ?? '—') }}
+                        @else
+                            {{ __('web/payments.show.payment_not_started') }}
+                        @endif
+                    </dd>
+                    <dt class="col-5">{{ __('web/payments.invoices.fields.paid_at') }}</dt>
+                    <dd class="col-7">{{ $invoice['paid_at'] ?? '—' }}</dd>
+                    <dt class="col-5">{{ __('web/payments.invoices.fields.expired_at') }}</dt>
+                    <dd class="col-7">{{ $invoice['expired_at'] ?? '—' }}</dd>
+                    <dt class="col-5">{{ __('web/payments.invoices.fields.created_at') }}</dt>
+                    <dd class="col-7">{{ $invoice['created_at'] ?? '—' }}</dd>
+                </dl>
+            </div>
+
+            @if ($orderId)
+                <div class="ois-sidebar-card">
+                    <div class="ois-sidebar-card__title">{{ __('web/payments.invoices.show.view_order') }}</div>
+                    <a href="{{ route('orders.show', $orderId) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>{{ __('web/payments.invoices.show.view_order') }}
+                    </a>
+                </div>
+            @endif
+
             <a href="{{ route('invoices.index') }}" class="btn btn-outline-secondary btn-sm">
                 {{ __('web/payments.invoices.back_to_list') }}
             </a>
-        </x-slot:actions>
-    </x-adminlte4::card>
-
-    <x-adminlte4::payments.checkout-panel
-        :invoice="$invoice"
-        :payment-channels="$paymentChannels ?? []"
-        :checkout-mode="$checkoutMode ?? 'snap_fallback'"
-    />
+        </div>
+    </div>
 </x-adminlte4::layouts.app>

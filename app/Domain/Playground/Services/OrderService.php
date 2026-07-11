@@ -3,7 +3,7 @@
 namespace App\Domain\Playground\Services;
 
 use App\Domain\PaymentGateway\Contracts\InvoiceAttachableServiceInterface;
-use App\Domain\PaymentGateway\Models\PaymentGateway as PaymentGatewayModel;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceActiveCheckoutCancellationService;
 use App\Domain\Playground\Exceptions\OrderNotEditableException;
 use App\Domain\Playground\Exceptions\OrderRequiresDetailException;
 use App\Domain\Playground\Models\Order;
@@ -30,6 +30,7 @@ class OrderService
         private readonly DirectAttachmentUploadService $directUploads,
         private readonly ApprovalService $approvalService,
         private readonly InvoiceAttachableServiceInterface $invoiceAttachable,
+        private readonly InvoiceActiveCheckoutCancellationService $checkoutCancellation,
     ) {}
 
     public function list(): Collection
@@ -57,12 +58,7 @@ class OrderService
         try {
             $order = $this->repository->createWithDetails($master, $details, $stored);
 
-            $paymentGatewayId = isset($data['payment_gateway_id']) && $data['payment_gateway_id'] !== ''
-                ? (string) $data['payment_gateway_id']
-                : PaymentGatewayModel::defaultForInvoice()->id;
-
-            $this->assertActivePaymentGateway($paymentGatewayId);
-            $this->invoiceAttachable->createPendingInvoiceForOrder($order, $paymentGatewayId);
+            $this->invoiceAttachable->createPendingInvoiceForOrder($order, null);
 
             try {
                 $this->approvalService->initiate($order, 'ORDER');
@@ -94,6 +90,16 @@ class OrderService
         $master = $this->buildMaster($data, $details);
 
         unset($master['order_number']);
+
+        $invoice = $order->invoice;
+        $shouldAbandonCheckout = $invoice !== null
+            && $invoice->status === 'pending'
+            && $this->checkoutCancellation->hasCheckoutSession($invoice)
+            && (float) $invoice->customer_gross_total !== (float) $master['grand_total'];
+
+        if ($shouldAbandonCheckout) {
+            $this->checkoutCancellation->abandonActiveCheckout($invoice);
+        }
 
         $existing = $order->attachments
             ->map(fn ($a): array => $a->only(['user_id', 'disk', 'path', 'name', 'size', 'mime']))
@@ -290,14 +296,5 @@ class OrderService
     private function generateOrderNumber(): string
     {
         return 'ORD-'.now()->format('Ymd').'-'.strtoupper(Str::random(6));
-    }
-
-    private function assertActivePaymentGateway(string $paymentGatewayId): void
-    {
-        $gateway = PaymentGatewayModel::query()->find($paymentGatewayId);
-
-        if ($gateway === null || ! $gateway->is_active) {
-            throw new \InvalidArgumentException(__('api/payments.gateways.inactive'));
-        }
     }
 }

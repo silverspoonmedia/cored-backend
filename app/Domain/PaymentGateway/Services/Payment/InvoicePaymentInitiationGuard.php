@@ -30,25 +30,7 @@ class InvoicePaymentInitiationGuard
      */
     public function ensurePayableForMidtrans(string $invoiceId): Invoice|array
     {
-        $transactionResult = DB::transaction(function () use ($invoiceId): Invoice|array {
-            $invoice = $this->invoices->findOrFailByIdForUpdate($invoiceId);
-            $this->assertMidtransInvoice($invoice);
-
-            $syncError = $this->syncMidtransFromGateway($invoice);
-            if ($syncError !== null) {
-                return $syncError;
-            }
-
-            return $invoice->refresh();
-        });
-
-        if (is_array($transactionResult)) {
-            return $transactionResult;
-        }
-
-        $this->assertInvoicePayable($transactionResult, 'midtrans');
-
-        return $transactionResult;
+        return $this->ensurePayableForProvider($invoiceId, 'midtrans');
     }
 
     /**
@@ -56,19 +38,53 @@ class InvoicePaymentInitiationGuard
      */
     public function ensurePayableForIpaymu(string $invoiceId, bool $rejectActiveCheckout = false): Invoice|array
     {
+        return $this->ensurePayableForProvider($invoiceId, 'ipaymu', $rejectActiveCheckout);
+    }
+
+    /**
+     * @return Invoice|array{ok: false, message: string, http: int}
+     */
+    public function ensurePayableForProvider(
+        string $invoiceId,
+        string $providerName,
+        bool $rejectActiveCheckout = false,
+    ): Invoice|array {
         $activeCheckoutPending = false;
 
-        $transactionResult = DB::transaction(function () use ($invoiceId, $rejectActiveCheckout, &$activeCheckoutPending): Invoice|array {
+        $transactionResult = DB::transaction(function () use ($invoiceId, $providerName, $rejectActiveCheckout, &$activeCheckoutPending): Invoice|array {
             $invoice = $this->invoices->findOrFailByIdForUpdate($invoiceId);
-            $this->assertIpaymuInvoice($invoice);
+            $this->assertInvoicePayable($invoice, $providerName);
 
-            if ($this->hasExternalTransactionId($invoice)) {
-                $result = $this->syncIpaymuFromGateway($invoice, $rejectActiveCheckout, $activeCheckoutPending);
-                if (is_array($result)) {
-                    return $result;
+            $invoice->loadMissing('paymentGateway');
+
+            if ($providerName === 'midtrans') {
+                if ($invoice->paymentGateway !== null && $invoice->paymentGateway->name !== 'midtrans') {
+                    abort(422, __('api/payments.midtrans.invoice_not_midtrans'));
                 }
 
-                return $result->refresh();
+                $syncError = $this->syncMidtransFromGateway($invoice);
+                if (is_array($syncError)) {
+                    return $syncError;
+                }
+
+                return $invoice->refresh();
+            }
+
+            if ($providerName === 'ipaymu') {
+                if ($invoice->paymentGateway !== null && $invoice->paymentGateway->name !== 'ipaymu') {
+                    abort(422, __('api/payments.ipaymu.invoice_not_ipaymu'));
+                }
+
+                if ($this->hasExternalTransactionId($invoice)) {
+                    $result = $this->syncIpaymuFromGateway($invoice, $rejectActiveCheckout, $activeCheckoutPending);
+                    if (is_array($result)) {
+                        return $result;
+                    }
+
+                    return $result->refresh();
+                }
+
+                return $invoice;
             }
 
             return $invoice;
@@ -82,7 +98,7 @@ class InvoicePaymentInitiationGuard
             abort(422, __('api/payments.ipaymu.active_payment_exists'));
         }
 
-        $this->assertInvoicePayable($transactionResult, 'ipaymu');
+        $this->assertInvoicePayable($transactionResult, $providerName);
 
         return $transactionResult;
     }
@@ -202,24 +218,6 @@ class InvoicePaymentInitiationGuard
         $tid = $invoice->external_transaction_id;
 
         return $tid !== null && $tid !== '';
-    }
-
-    private function assertMidtransInvoice(Invoice $invoice): void
-    {
-        $invoice->loadMissing('paymentGateway');
-
-        if ($invoice->paymentGateway === null || $invoice->paymentGateway->name !== 'midtrans') {
-            abort(422, __('api/payments.midtrans.invoice_not_midtrans'));
-        }
-    }
-
-    private function assertIpaymuInvoice(Invoice $invoice): void
-    {
-        $invoice->loadMissing('paymentGateway');
-
-        if ($invoice->paymentGateway === null || $invoice->paymentGateway->name !== 'ipaymu') {
-            abort(422, __('api/payments.ipaymu.invoice_not_ipaymu'));
-        }
     }
 
     private function assertInvoicePayable(Invoice $invoice, string $gateway): void
