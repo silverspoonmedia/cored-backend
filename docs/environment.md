@@ -250,6 +250,8 @@ PHPUnit sets `APP_ENV=testing` and overrides drivers in `phpunit.xml`. No `.env.
 | `tests/TestCase.php` `config([...])` | Overrides cached `bootstrap/cache/config.php` gateway values so PHPUnit env vars are not ignored when config is cached locally. |
 | CSRF bypass in `tests/TestCase.php` | `withoutMiddleware(PreventRequestForgery::class)` (Laravel 13) so authenticated web proxy tests exercise API forwarding, not session token plumbing. [`WebCsrfErrorTest`](../tests/Feature/Http/Controllers/Web/WebCsrfErrorTest.php) still covers the **419** JSON envelope when CSRF fails. |
 
+**Payment channel checkout:** `PAYMENT_PREFER_CHANNEL_CHECKOUT` (default `true`) is read from [`config/payment.php`](../config/payment.php). Channel registry rows come from `PaymentChannelSeeder` (run with `DatabaseSeeder` or after `PaymentGatewaySeeder`).
+
 ## Related docs
 
 - [JWT authentication](jwt-authentication.md#configuration)

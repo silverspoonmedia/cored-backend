@@ -94,17 +94,21 @@ class PlaygroundOrderCrudTest extends TestCase
         $this->assertDatabaseCount('order_master', 0);
     }
 
-    public function test_store_requires_payment_gateway_id(): void
+    public function test_store_assigns_default_payment_gateway_without_input(): void
     {
         $payload = $this->validPayload();
         unset($payload['payment_gateway_id']);
 
         $response = $this->postJson('/api/playground/orders', $payload);
 
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['payment_gateway_id']);
+        $response->assertCreated();
 
-        $this->assertDatabaseCount('order_master', 0);
+        $orderId = $response->json('data.id');
+        $this->assertDatabaseHas('invoices', [
+            'invoiceable_id' => $orderId,
+            'invoiceable_type' => 'order',
+            'payment_gateway_id' => $this->paymentGatewayId,
+        ]);
     }
 
     public function test_store_validates_detail_line_fields(): void

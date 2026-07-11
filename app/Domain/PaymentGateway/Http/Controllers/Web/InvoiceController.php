@@ -4,6 +4,7 @@ namespace App\Domain\PaymentGateway\Http\Controllers\Web;
 
 use App\Domain\PaymentGateway\Http\Controllers\API\V1\InvoiceController as ApiInvoiceController;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use App\Http\Controllers\Web\Concerns\ResolvesPaymentCheckoutContext;
 use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +20,7 @@ use Illuminate\View\View;
 class InvoiceController extends Controller
 {
     use ConsumesApi;
+    use ResolvesPaymentCheckoutContext;
 
     public function index(): View
     {
@@ -59,9 +61,9 @@ class InvoiceController extends Controller
             return redirect()->route('invoices.index')->with('error', $this->apiMessage($response));
         }
 
-        return $this->webView('invoices.show', [
+        return $this->webView('invoices.show', array_merge([
             'invoice' => $response->json('data', []),
-        ]);
+        ], $this->paymentCheckoutContext()));
     }
 
     /**

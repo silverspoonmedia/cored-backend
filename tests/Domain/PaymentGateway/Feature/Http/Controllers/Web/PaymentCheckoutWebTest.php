@@ -114,4 +114,112 @@ class PaymentCheckoutWebTest extends TestCase
             ->assertJsonPath('status', 'error');
     }
 
+    public function test_channel_checkout_proxies_to_api(): void
+    {
+        $invoiceId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/invoices/{$invoiceId}/channel-checkout" => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'channel_code' => 'qris',
+                    'instructions' => ['type' => 'qris', 'qr_string' => 'abc'],
+                ],
+            ], 201),
+        ]);
+
+        $admin = $this->actingWithJwtCookie(User::factory()->create());
+
+        $admin->postJson("/invoices/{$invoiceId}/checkout/channel", ['channel_code' => 'qris'])
+            ->assertCreated()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.instructions.qr_string', 'abc');
+
+        Http::assertSent(function ($request) use ($invoiceId) {
+            return str_contains($request->url(), "/api/v1/invoices/{$invoiceId}/channel-checkout")
+                && ($request->data()['channel_code'] ?? null) === 'qris';
+        });
+    }
+
+    public function test_order_show_prefetches_payment_channels_from_versioned_api(): void
+    {
+        $orderId = fake()->uuid();
+        $invoiceId = fake()->uuid();
+
+        Http::fake([
+            "*/api/playground/orders/{$orderId}" => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => $orderId,
+                    'order_number' => 'ORD-001',
+                    'status' => 'pending',
+                    'invoice' => [
+                        'id' => $invoiceId,
+                        'status' => 'pending',
+                        'currency' => 'IDR',
+                        'customer_gross_total' => 100000,
+                        'payment_gateway' => ['name' => 'midtrans', 'display_name' => 'Midtrans'],
+                    ],
+                ],
+            ], 200),
+            '*/api/v1/payment-channels' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    [
+                        'code' => 'qris',
+                        'display_name' => 'QRIS',
+                        'category' => 'qris',
+                        'is_active' => true,
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $admin = $this->actingWithJwtCookie(User::factory()->create());
+
+        $admin->get("/orders/{$orderId}")
+            ->assertOk()
+            ->assertViewHas('checkoutMode', 'channel')
+            ->assertViewHas('paymentChannels', fn (array $channels): bool => ($channels[0]['code'] ?? null) === 'qris');
+
+        Http::assertSent(function ($request): bool {
+            return str_contains($request->url(), '/api/v1/payment-channels');
+        });
+
+        Http::assertNotSent(function ($request): bool {
+            return str_contains($request->url(), '/api/playground/payment-channels');
+        });
+    }
+
+    public function test_sync_status_proxies_to_matching_provider_api(): void
+    {
+        $invoiceId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/invoices/{$invoiceId}" => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => $invoiceId,
+                    'payment_gateway' => ['name' => 'ipaymu'],
+                ],
+            ], 200),
+            "*/api/v1/payments/providers/ipaymu/invoices/{$invoiceId}/sync-status" => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'invoice' => ['id' => $invoiceId, 'status' => 'pending'],
+                ],
+            ], 200),
+        ]);
+
+        $admin = $this->actingWithJwtCookie(User::factory()->create());
+
+        $admin->postJson("/invoices/{$invoiceId}/checkout/sync-status")
+            ->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        Http::assertSent(function ($request) use ($invoiceId) {
+            return str_contains($request->url(), "/api/v1/payments/providers/ipaymu/invoices/{$invoiceId}/sync-status");
+        });
+    }
+
 }

@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'checkout' => [
+        'prefer_channel_checkout' => filter_var(env('PAYMENT_PREFER_CHANNEL_CHECKOUT', true), FILTER_VALIDATE_BOOLEAN),
+    ],
+
     'gateways' => [
         'midtrans' => [
             'server_key' => env('MIDTRANS_SERVER_KEY'),

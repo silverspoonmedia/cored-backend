@@ -42,4 +42,19 @@ class PaymentGateway extends Model
     {
         return $this->hasMany(Invoice::class);
     }
+
+    public static function defaultForInvoice(): self
+    {
+        $gateway = static::query()
+            ->where('is_active', true)
+            ->orderBy('priority')
+            ->orderBy('display_name')
+            ->first();
+
+        if ($gateway === null) {
+            throw new \RuntimeException(__('api/payments.gateways.none_active'));
+        }
+
+        return $gateway;
+    }
 }

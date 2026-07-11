@@ -75,6 +75,8 @@
                 <x-adminlte4::payments.checkout-panel
                     :invoice="data_get($order, 'invoice')"
                     :order-id="data_get($order, 'id')"
+                    :payment-channels="$paymentChannels ?? []"
+                    :checkout-mode="$checkoutMode ?? 'snap_fallback'"
                 />
             @endif
         </div>

@@ -57,8 +57,12 @@ class OrderService
         try {
             $order = $this->repository->createWithDetails($master, $details, $stored);
 
-            $this->assertActivePaymentGateway((string) $data['payment_gateway_id']);
-            $this->invoiceAttachable->createPendingInvoiceForOrder($order, (string) $data['payment_gateway_id']);
+            $paymentGatewayId = isset($data['payment_gateway_id']) && $data['payment_gateway_id'] !== ''
+                ? (string) $data['payment_gateway_id']
+                : PaymentGatewayModel::defaultForInvoice()->id;
+
+            $this->assertActivePaymentGateway($paymentGatewayId);
+            $this->invoiceAttachable->createPendingInvoiceForOrder($order, $paymentGatewayId);
 
             try {
                 $this->approvalService->initiate($order, 'ORDER');

@@ -12,6 +12,7 @@ return [
         'updated' => 'Payment gateway updated successfully.',
         'deleted' => 'Payment gateway deleted successfully.',
         'inactive' => 'The selected payment gateway is not active.',
+        'none_active' => 'No active payment gateway is configured.',
     ],
 
     'invoices' => [
@@ -50,6 +51,18 @@ return [
         'webhook_subscription_ack' => 'Subscription notification acknowledged.',
         'open_api_public_key_missing' => 'Midtrans Open API public key is not configured.',
         'open_api_signature_invalid' => 'Invalid or unverifiable X-SIGNATURE for Open API notification.',
+    ],
+
+    'channels' => [
+        'list' => 'Payment channels retrieved successfully.',
+        'show' => 'Payment channel retrieved successfully.',
+        'updated' => 'Payment channel updated successfully.',
+        'checkout_created' => 'Payment instructions created.',
+        'checkout_failed' => 'All payment routes for this channel failed.',
+        'route_updated' => 'Payment channel route updated.',
+        'not_found' => 'Payment channel not found.',
+        'not_available' => 'The selected payment channel is not available.',
+        'unsupported_gateway' => 'No supported payment gateway is configured for this channel.',
     ],
 
     'ipaymu' => [

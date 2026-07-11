@@ -6,6 +6,7 @@ use App\Http\Controllers\Web\Controller;
 
 use App\Domain\Playground\Http\Controllers\API\PlaygroundOrderController;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use App\Http\Controllers\Web\Concerns\ResolvesPaymentCheckoutContext;
 use App\Support\Api\ApiClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +24,7 @@ use Illuminate\View\View;
 class OrderController extends Controller
 {
     use ConsumesApi;
+    use ResolvesPaymentCheckoutContext;
 
     /**
      * Playground orders live on the global API surface, not `/api/v1`, so point
@@ -70,9 +72,7 @@ class OrderController extends Controller
 
     public function create(): View
     {
-        return $this->webView('orders.create', [
-            'paymentGateways' => $this->activePaymentGateways(),
-        ]);
+        return $this->webView('orders.create');
     }
 
     public function store(Request $request): RedirectResponse|JsonResponse
@@ -95,9 +95,9 @@ class OrderController extends Controller
             return redirect()->route('orders.index')->with('error', $this->apiMessage($response));
         }
 
-        return $this->webView('orders.show', [
+        return $this->webView('orders.show', array_merge([
             'order' => $response->json('data', []),
-        ]);
+        ], $this->paymentCheckoutContext()));
     }
 
     public function edit(string $order): View|RedirectResponse
@@ -110,7 +110,6 @@ class OrderController extends Controller
 
         return $this->webView('orders.edit', [
             'order' => $response->json('data', []),
-            'paymentGateways' => $this->activePaymentGateways(),
         ]);
     }
 
@@ -219,24 +218,5 @@ class OrderController extends Controller
         $row['actions'] = $actions;
 
         return $row;
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function activePaymentGateways(): array
-    {
-        $response = app(ApiClient::class)->get('payment-gateways');
-
-        if (! $response->successful()) {
-            return [];
-        }
-
-        $gateways = $response->json('data', []);
-
-        return array_values(array_filter(
-            is_array($gateways) ? $gateways : [],
-            fn (mixed $gateway): bool => is_array($gateway) && ($gateway['is_active'] ?? false) === true,
-        ));
     }
 }

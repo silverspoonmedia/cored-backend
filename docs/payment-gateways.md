@@ -19,10 +19,13 @@ Core domain **`PaymentGateway`** (`App\Domain\PaymentGateway\`) — ported from 
 
 ```
 app/Domain/PaymentGateway/
-├── Models/              PaymentGateway, Invoice, Subscription
-├── Enums/               DisbursementStatus, SubscriptionStatus, BillingCycle
+├── Models/              PaymentGateway, Invoice, Subscription, PaymentChannel
+├── Enums/               DisbursementStatus, SubscriptionStatus, BillingCycle, PaymentChannelKind
 ├── Services/
 │   ├── Payment/InvoicePaymentInitiationGuard.php  # lock + PSP sync before snap/charge
+│   ├── Payment/InvoiceChannelCheckoutService.php  # channel direct checkout orchestrator
+│   ├── Payment/PaymentChannelResolver.php         # route logical channel → gateway
+│   ├── Payment/PaymentInstructionNormalizer.php   # PSP JSON → UI instructions DTO
 │   ├── Payment/Midtrans/   # vertical slice (Snap, Core API, webhooks)
 │   ├── Payment/Ipaymu/   # vertical slice (redirect, direct, webhooks)
 │   └── Billing/            # funds ledger + disbursement state machine
@@ -43,6 +46,9 @@ Loaded from [`routes/api/v1/payment-gateway.php`](../routes/api/v1/payment-gatew
 |------|--------|------|
 | Gateway registry | `GET/POST/PUT/DELETE /api/v1/payment-gateways` | `auth:api` + permissions |
 | Invoices | `GET /api/v1/invoices`, `GET /api/v1/invoices/{id}` | `view invoice` |
+| Channel checkout | `POST /api/v1/invoices/{id}/channel-checkout` | `initiate payment` |
+| Payment channels | `GET /api/v1/payment-channels`, `GET/PUT /api/v1/payment-channels/{code}` | `view invoice` / `manage payment gateway` (PUT) |
+| Payment channel routes | `PUT /api/v1/payment-channel-routes/{id}` | `manage payment gateway` |
 | Subscriptions | `GET/POST/PUT/DELETE /api/v1/subscriptions` | `view/manage subscription` |
 | Midtrans | `/api/v1/payments/providers/midtrans/*` | JWT except `webhook` |
 | iPaymu | `/api/v1/payments/providers/ipaymu/*` | JWT except `webhook` |
@@ -62,9 +68,68 @@ Set `MIDTRANS_NOTIFY_URL` / `IPAYMU_NOTIFY_URL` in Monolith `.env` to the **Gate
 
 ### Playground orders
 
-Required `payment_gateway_id` on order create (must reference an **active** gateway) creates a pending invoice atomically via `InvoiceAttachableService`. Order show API eager-loads `invoice.paymentGateway`.
+Order create **does not** require `payment_gateway_id`. Monolith assigns the default active gateway (lowest `payment_gateways.priority`) to the pending invoice via `PaymentGateway::defaultForInvoice()` + `InvoiceAttachableService`. The PSP used at checkout is chosen by **payment channel route priority**, not the order form.
 
-**Paying an order:** Blade order/invoice show pages render a checkout panel that proxies to `POST /invoices/{id}/checkout/snap-token` → provider `snap/token` (Midtrans Snap or iPaymu redirect). Vue order/invoice show uses `PaymentCheckoutPanel` + Gateway `GET /api/v1/payments/checkout-context` (orders/subscriptions) or inline invoice data.
+Order show API eager-loads `invoice.paymentGateway`.
+
+**Paying an order:** Vue `PaymentCheckoutPanel` loads Gateway `GET /api/v1/payments/checkout-context` (order/subscription + channels). When `checkout_mode` is `channel`, the user picks a logical channel (QRIS, VA, e-wallet) and Monolith returns normalized payment instructions via `POST /api/v1/invoices/{id}/channel-checkout`. When no channels are available at load time, the panel falls back to hosted Snap (Midtrans) or redirect (iPaymu). When channel checkout fails on **all** configured routes, the API returns `422` with `data.snap_fallback_available: true` and the UI offers hosted checkout.
+
+**Blade admin** (`orders.show`, `invoices.show`) uses the same channel-first flow via [`checkout-panel.blade.php`](../resources/views/adminlte4/components/payments/checkout-panel.blade.php) + [`checkout.js`](../resources/js/payments/checkout.js). Web proxies:
+
+| Web route | API |
+|-----------|-----|
+| `POST /invoices/{id}/checkout/channel` | `POST /api/v1/invoices/{id}/channel-checkout` |
+| `POST /invoices/{id}/checkout/sync-status` | Provider `sync-status` |
+| `POST /invoices/{id}/checkout/snap-token` | Snap/redirect fallback |
+
+### Payment channel direct checkout
+
+Logical channels are stored in **`payment_channels`** with per-gateway routes in **`payment_channel_routes`**. Seeded by [`PaymentChannelSeeder`](../database/seeders/PaymentChannelSeeder.php) after [`PaymentGatewaySeeder`](../database/seeders/PaymentGatewaySeeder.php).
+
+| Channel code | Kind | Default routing (priority) |
+|--------------|------|----------------------------|
+| `qris` | qris | iPaymu `qris` → Midtrans Core API `qris` |
+| `va_bca`, `va_bni`, `va_mandiri` | va | Midtrans `bank_transfer` → iPaymu `va` |
+| `gopay`, `shopeepay`, `ovo` | ewallet | Midtrans `gopay` / `shopeepay` / `ovo` → iPaymu `qris` sub-channel |
+
+Enable/disable per channel: `PUT /api/v1/payment-channels/{code}` with `{ "is_active": false }` (`manage payment gateway`). Admin list (including disabled channels and nested routes): `GET /api/v1/payment-channels?scope=admin`. Checkout list omits inactive channels from default `GET /api/v1/payment-channels`.
+
+**Per-route admin** (toggle / priority on seeded bindings only — no route CRUD):
+
+```
+PUT /api/v1/payment-channel-routes/{route_id}
+{ "is_active": false }
+{ "priority": 10 }
+```
+
+Blade `/payment-channels` and Vue `/payment-channels` show nested route rows. Web proxy: `PUT /payment-channel-routes/{id}`.
+
+**Charge-time routing:** [`InvoiceChannelCheckoutService`](../app/Domain/PaymentGateway/Services/Payment/InvoiceChannelCheckoutService.php) iterates `PaymentChannelResolver::listViableRoutes()` in priority order until a PSP charge succeeds. Gateway reassignment on the invoice happens **after** a successful charge, only when `external_transaction_id` is still null.
+
+**Snap escape hatch:** when every route fails (or none are viable), channel-checkout error payload includes:
+
+```json
+{ "status": "error", "message": "...", "data": { "snap_fallback_available": true, "failed_routes": 2 } }
+```
+
+**Channel checkout request:**
+
+```json
+POST /api/v1/invoices/{id}/channel-checkout
+{ "channel_code": "qris", "buyer": { "name": "...", "email": "...", "phone": "..." } }
+```
+
+`buyer` is optional when the invoice morph provides customer fields (order/subscription).
+
+**Normalized response (`instructions` by kind):**
+
+| `instructions.type` | Fields |
+|-----------------------|--------|
+| `qris` | `qr_string`, `qr_url` (URLs or `data:image/png;base64,...` from iPaymu `QrImage`) |
+| `va` | `bank_name`, `va_number`, `payment_name` |
+| `ewallet` | `deeplink_url`, `qr_url`, `qr_string` |
+
+Provider-specific charge APIs (`POST .../transactions/charge`) remain available for programmatic use. Channel checkout uses [`InvoiceChannelCheckoutService`](../app/Domain/PaymentGateway/Services/Payment/InvoiceChannelCheckoutService.php) + [`InvoicePaymentInitiationGuard`](../app/Domain/PaymentGateway/Services/Payment/InvoicePaymentInitiationGuard.php) (same pre-payment sync rules as snap/charge).
 
 ### Pre-payment external verification
 
@@ -90,10 +155,10 @@ Rules:
 |---------|----------|
 | Credentials | `.env` → [`config/payment.php`](../config/payment.php) |
 | Registry rows | `payment_gateways` table — [`PaymentGatewaySeeder`](../database/seeders/PaymentGatewaySeeder.php) |
-| Sidebar navigation | [`MenuSeeder`](../database/seeders/MenuSeeder.php) — **Administration → Payments** (`payment-gateways.index`, `invoices.index`, `subscriptions.index`); gated to Root/Admin/Moderator/Management |
+| Sidebar navigation | [`MenuSeeder`](../database/seeders/MenuSeeder.php) — **Administration → Payments** (`payment-channels.index`, `payment-gateways.index`, `invoices.index`, `subscriptions.index`); gated to Root/Admin/Moderator/Management |
 | Runtime config | `$gateway->gatewayConfig()` |
 
-**Env vars:** `MIDTRANS_SERVER_KEY`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_IS_PRODUCTION`, optional `MIDTRANS_NOTIFY_URL` (paste into Midtrans Dashboard), `IPAYMU_VA_KEY`, `IPAYMU_API_KEY`, `IPAYMU_IS_PRODUCTION`, optional `IPAYMU_NOTIFY_URL` (sent as `unotify` per checkout).
+**Env vars:** `MIDTRANS_SERVER_KEY`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_IS_PRODUCTION`, optional `MIDTRANS_NOTIFY_URL` (paste into Midtrans Dashboard), `IPAYMU_VA_KEY`, `IPAYMU_API_KEY`, `IPAYMU_IS_PRODUCTION`, optional `IPAYMU_NOTIFY_URL` (sent as `unotify` per checkout). `PAYMENT_PREFER_CHANNEL_CHECKOUT` in [environment.md](./environment.md) is reserved for future use; checkout mode is derived from available channels at load time.
 
 Run `php artisan payments:webhook-urls` to print resolved webhook URLs from env or route defaults.
 
@@ -157,8 +222,8 @@ Seeded in [`RoleSeeder`](../database/seeders/RoleSeeder.php):
 | Layer | Role |
 |-------|------|
 | **Monolith** | Source of truth — all payment rules, persistence, webhooks |
-| **Gateway** | Proxy + `GET /api/v1/payments/checkout-context` aggregate |
-| **Frontend** | Admin screens, subscription CRUD, checkout panel on orders |
+| **Gateway** | Proxy + `GET /api/v1/payments/checkout-context` aggregate (channels + `checkout_mode`) |
+| **Frontend** | Channel picker, payment instructions panel, Snap/redirect fallback |
 
 See [spa-gateway-integration.md](./spa-gateway-integration.md).
 
@@ -171,4 +236,4 @@ php artisan test --filter=PaymentGateway
 php artisan test --testsuite=Domain
 ```
 
-Signature verifiers, disbursement state machine, subscription invoice lifecycle, Midtrans webhook routing, **invoice payment initiation guard** (pre-checkout PSP sync).
+Signature verifiers, disbursement state machine, subscription invoice lifecycle, Midtrans webhook routing, **invoice payment initiation guard** (pre-checkout PSP sync), **payment channel resolver / channel checkout**.

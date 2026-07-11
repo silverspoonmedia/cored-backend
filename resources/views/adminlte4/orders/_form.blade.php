@@ -12,7 +12,6 @@
 --}}
 @php($order = $order ?? [])
 @php($details = old('details', data_get($order, 'details', [[]])))
-@php($paymentGateways = $paymentGateways ?? [])
 @php($isCreate = empty(data_get($order, 'id')))
 @php($statuses = ['pending', 'processing', 'completed', 'cancelled'])
 @php($maxBytes = (int) config('attachments.max_file_size_bytes'))
@@ -60,28 +59,6 @@
             />
         </div>
     </div>
-
-    @if ($isCreate)
-        <div class="row">
-            <div class="col-md-6">
-                @if (empty($paymentGateways))
-                    <div class="alert alert-warning mb-0">
-                        {{ __('web/orders.form.no_active_payment_gateway') }}
-                    </div>
-                @else
-                    <x-adminlte4::form.select
-                        name="payment_gateway_id"
-                        :label="__('web/orders.form.payment_gateway')"
-                        :options="collect($paymentGateways)->mapWithKeys(fn ($gateway) => [
-                            data_get($gateway, 'id') => data_get($gateway, 'display_name', data_get($gateway, 'name')),
-                        ])"
-                        :selected="old('payment_gateway_id')"
-                        required
-                    />
-                @endif
-            </div>
-        </div>
-    @endif
 
     <div class="row">
         <div class="col-md-6">

@@ -27,6 +27,16 @@ return [
         'deleted' => 'サブスクリプションを削除しました。',
     ],
 
+    'channels' => [
+        'list' => '決済チャネルを取得しました。',
+        'show' => '決済チャネルを取得しました。',
+        'updated' => '決済チャネルを更新しました。',
+        'checkout_created' => '支払い手順を作成しました。',
+        'not_found' => '決済チャネルが見つかりません。',
+        'not_available' => '選択した決済チャネルは利用できません。',
+        'unsupported_gateway' => 'このチャネル用の決済ゲートウェイが設定されていません。',
+    ],
+
     'midtrans' => [
         'snap_created' => 'Snapトランザクションを作成しました。',
         'charge_created' => 'Core APIチャージを作成しました。',

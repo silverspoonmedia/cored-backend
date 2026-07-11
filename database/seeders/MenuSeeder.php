@@ -161,6 +161,18 @@ class MenuSeeder extends Seeder
         ]);
         $payments->roles()->sync($paymentViewerRoleIds);
 
+        $paymentChannelsItem = Menu::query()->create([
+            'parent_id' => $payments->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Payment channels', 'id' => 'Channel pembayaran', 'ja' => '決済チャネル'],
+            'icon' => 'bi bi-circle',
+            'route' => 'payment-channels.index',
+            'type' => 'c',
+            'order' => 1,
+            'is_authenticate' => true,
+        ]);
+        $paymentChannelsItem->roles()->sync($paymentViewerRoleIds);
+
         $paymentGatewaysItem = Menu::query()->create([
             'parent_id' => $payments->id,
             'layout' => MenuLayout::SIDEBAR,
@@ -168,7 +180,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-circle',
             'route' => 'payment-gateways.index',
             'type' => 'c',
-            'order' => 1,
+            'order' => 2,
             'is_authenticate' => true,
         ]);
         $paymentGatewaysItem->roles()->sync($paymentViewerRoleIds);
@@ -180,7 +192,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-circle',
             'route' => 'invoices.index',
             'type' => 'c',
-            'order' => 2,
+            'order' => 3,
             'is_authenticate' => true,
         ]);
         $invoicesItem->roles()->sync($paymentViewerRoleIds);
@@ -192,7 +204,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-circle',
             'route' => 'subscriptions.index',
             'type' => 'c',
-            'order' => 3,
+            'order' => 4,
             'is_authenticate' => true,
         ]);
         $subscriptionsItem->roles()->sync($paymentViewerRoleIds);

@@ -39,5 +39,9 @@
         </x-slot:actions>
     </x-adminlte4::card>
 
-    <x-adminlte4::payments.checkout-panel :invoice="$invoice" />
+    <x-adminlte4::payments.checkout-panel
+        :invoice="$invoice"
+        :payment-channels="$paymentChannels ?? []"
+        :checkout-mode="$checkoutMode ?? 'snap_fallback'"
+    />
 </x-adminlte4::layouts.app>

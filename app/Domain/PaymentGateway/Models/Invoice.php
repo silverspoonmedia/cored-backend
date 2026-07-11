@@ -35,6 +35,7 @@ class Invoice extends Model
         'invoice_number',
         'external_transaction_id',
         'payment_method',
+        'payment_channel_code',
         'subtotal',
         'payment_channel_fee',
         'customer_gross_total',

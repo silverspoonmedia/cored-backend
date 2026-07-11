@@ -1,0 +1,182 @@
+<?php
+
+namespace Tests\Domain\PaymentGateway\Feature\Http\Controllers\API\V1;
+
+use App\Domain\Identity\Models\User;
+use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Models\PaymentChannel;
+use App\Domain\PaymentGateway\Models\PaymentGateway;
+use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
+use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransPaymentService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
+use Tests\Concerns\SeedsRolesAndPermissions;
+use Tests\Concerns\SetsUpPaymentChannels;
+use Tests\TestCase;
+
+class InvoiceChannelCheckoutTest extends TestCase
+{
+    use RefreshDatabase;
+    use SeedsRolesAndPermissions;
+    use SetsUpPaymentChannels;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seedRolesAndPermissions();
+        $this->seedPaymentGatewaysAndChannels();
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+
+        parent::tearDown();
+    }
+
+    public function test_channel_checkout_routes_qris_to_ipaymu_and_returns_instructions(): void
+    {
+        $invoice = $this->createPayableInvoice('midtrans');
+        $admin = $this->userWithRole('Admin');
+
+        $this->mock(IpaymuPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn([
+                    'ok' => true,
+                    'data' => [
+                        'Status' => 200,
+                        'Data' => [
+                            'TransactionId' => 12345,
+                            'QrString' => 'qris-string',
+                            'QrImage' => 'https://example.test/qr.png',
+                        ],
+                    ],
+                    'message_key' => 'api/payments.ipaymu.charge_created',
+                    'http' => 201,
+                ]);
+        });
+
+        $this->partialMock(MidtransPaymentService::class);
+
+        $response = $this->actingAsJwt($admin)->postJson(
+            '/api/v1/invoices/'.$invoice->id.'/channel-checkout',
+            ['channel_code' => 'qris'],
+        );
+
+        $response->assertCreated()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.channel_code', 'qris')
+            ->assertJsonPath('data.gateway', 'ipaymu')
+            ->assertJsonPath('data.instructions.qr_string', 'qris-string');
+
+        $invoice->refresh();
+        $this->assertSame('qris', $invoice->payment_channel_code);
+        $this->assertSame(
+            PaymentGateway::query()->where('name', 'ipaymu')->value('id'),
+            $invoice->payment_gateway_id,
+        );
+    }
+
+    public function test_channel_checkout_fails_over_to_second_gateway_route(): void
+    {
+        $invoice = $this->createPayableInvoice('midtrans');
+        $admin = $this->userWithRole('Admin');
+
+        $this->mock(IpaymuPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn([
+                    'ok' => false,
+                    'message' => 'iPaymu down',
+                    'http' => 502,
+                ]);
+        });
+
+        $this->mock(MidtransPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn([
+                    'ok' => true,
+                    'data' => [
+                        'qr_string' => 'midtrans-qris',
+                        'actions' => [
+                            ['name' => 'generate-qr-code', 'url' => 'https://example.test/qr.png'],
+                        ],
+                    ],
+                    'message_key' => 'api/payments.midtrans.charge_created',
+                    'http' => 201,
+                ]);
+        });
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'qris'])
+            ->assertCreated()
+            ->assertJsonPath('data.gateway', 'midtrans')
+            ->assertJsonPath('data.instructions.qr_string', 'midtrans-qris');
+    }
+
+    public function test_channel_checkout_returns_snap_fallback_when_all_routes_fail(): void
+    {
+        $invoice = $this->createPayableInvoice('midtrans');
+        $admin = $this->userWithRole('Admin');
+
+        $this->mock(IpaymuPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn(['ok' => false, 'message' => 'iPaymu down', 'http' => 502]);
+        });
+
+        $this->mock(MidtransPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn(['ok' => false, 'message' => 'Midtrans down', 'http' => 502]);
+        });
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'qris'])
+            ->assertUnprocessable()
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('data.snap_fallback_available', true)
+            ->assertJsonPath('data.failed_routes', 2);
+    }
+
+    public function test_channel_checkout_rejects_inactive_channel(): void
+    {
+        PaymentChannel::query()->where('code', 'qris')->update(['is_active' => false]);
+
+        $invoice = $this->createPayableInvoice();
+        $admin = $this->userWithRole('Admin');
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'qris'])
+            ->assertUnprocessable()
+            ->assertJsonPath('status', 'error');
+    }
+
+    public function test_channel_checkout_requires_initiate_payment_permission(): void
+    {
+        $invoice = $this->createPayableInvoice();
+        $user = $this->userWithRole('Management');
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'qris'])
+            ->assertForbidden();
+    }
+
+    private function userWithRole(string $role): User
+    {
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        return $user;
+    }
+
+    private function actingAsJwt(User $user): static
+    {
+        $token = auth('api')->login($user);
+
+        return $this->withHeader('Authorization', 'Bearer '.$token);
+    }
+}

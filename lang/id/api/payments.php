@@ -27,6 +27,16 @@ return [
         'deleted' => 'Langganan berhasil dihapus.',
     ],
 
+    'channels' => [
+        'list' => 'Channel pembayaran berhasil diambil.',
+        'show' => 'Channel pembayaran berhasil diambil.',
+        'updated' => 'Channel pembayaran berhasil diperbarui.',
+        'checkout_created' => 'Instruksi pembayaran dibuat.',
+        'not_found' => 'Channel pembayaran tidak ditemukan.',
+        'not_available' => 'Channel pembayaran yang dipilih tidak tersedia.',
+        'unsupported_gateway' => 'Tidak ada payment gateway yang dikonfigurasi untuk channel ini.',
+    ],
+
     'midtrans' => [
         'snap_created' => 'Transaksi Snap dibuat.',
         'charge_created' => 'Charge Core API dibuat.',

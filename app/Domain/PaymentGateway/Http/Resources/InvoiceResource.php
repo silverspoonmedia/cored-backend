@@ -27,6 +27,7 @@ class InvoiceResource extends JsonResource
             'invoice_number' => $this->invoice_number,
             'external_transaction_id' => $this->external_transaction_id,
             'payment_method' => $this->payment_method,
+            'payment_channel_code' => $this->payment_channel_code,
             'subtotal' => $this->subtotal,
             'payment_channel_fee' => $this->payment_channel_fee,
             'customer_gross_total' => $this->customer_gross_total,
