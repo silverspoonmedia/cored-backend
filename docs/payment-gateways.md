@@ -22,6 +22,7 @@ app/Domain/PaymentGateway/
 ├── Models/              PaymentGateway, Invoice, Subscription
 ├── Enums/               DisbursementStatus, SubscriptionStatus, BillingCycle
 ├── Services/
+│   ├── Payment/InvoicePaymentInitiationGuard.php  # lock + PSP sync before snap/charge
 │   ├── Payment/Midtrans/   # vertical slice (Snap, Core API, webhooks)
 │   ├── Payment/Ipaymu/   # vertical slice (redirect, direct, webhooks)
 │   └── Billing/            # funds ledger + disbursement state machine
@@ -64,6 +65,22 @@ Set `MIDTRANS_NOTIFY_URL` / `IPAYMU_NOTIFY_URL` in Monolith `.env` to the **Gate
 Required `payment_gateway_id` on order create (must reference an **active** gateway) creates a pending invoice atomically via `InvoiceAttachableService`. Order show API eager-loads `invoice.paymentGateway`.
 
 **Paying an order:** Blade order/invoice show pages render a checkout panel that proxies to `POST /invoices/{id}/checkout/snap-token` → provider `snap/token` (Midtrans Snap or iPaymu redirect). Vue order/invoice show uses `PaymentCheckoutPanel` + Gateway `GET /api/v1/payments/checkout-context` (orders/subscriptions) or inline invoice data.
+
+### Pre-payment external verification
+
+Before `createSnapToken` or `charge`, [`InvoicePaymentInitiationGuard`](../app/Domain/PaymentGateway/Services/Payment/InvoicePaymentInitiationGuard.php) runs inside a **row lock** (`lockForUpdate`) and polls the PSP so local `invoices.status` cannot drift behind a successful payment when webhooks are delayed or missing.
+
+| Gateway | External check | Behaviour |
+|---------|----------------|-----------|
+| **Midtrans** | `Transaction::status(invoice_number)` on every initiation | Sync via `MidtransInvoiceSynchronizer`; **404 / transaction not found** → proceed (no PSP payment yet); any other API error → **503** (`external_sync_failed`) and checkout is blocked |
+| **iPaymu** | `checkTransaction(external_transaction_id)` when the invoice already has an external id | First checkout (no external id) uses internal status only; if PSP reports **pending** while local is still payable → **422** (`active_payment_exists`); successful PSP status syncs to local before the payable check |
+
+Rules:
+
+- Sync updates are **committed** before the payable assertion, so discovering `paid` at the PSP persists even when a new checkout is rejected (`invoice_not_payable`).
+- **Strict policy:** when an external sync is attempted and the PSP API fails (timeout, 5xx, misconfiguration), initiation returns **503** — no fallback to internal-only checks.
+- iPaymu **does not overwrite** `external_transaction_id` on a second redirect/charge when one is already stored.
+- Cron reconcile commands (`payments:midtrans-reconcile-pending`, `payments:reconcile-withdrawable-funds`) remain **backup** paths; they do not replace the pre-payment guard.
 
 ---
 
@@ -154,4 +171,4 @@ php artisan test --filter=PaymentGateway
 php artisan test --testsuite=Domain
 ```
 
-Signature verifiers, disbursement state machine, subscription invoice lifecycle, Midtrans webhook routing.
+Signature verifiers, disbursement state machine, subscription invoice lifecycle, Midtrans webhook routing, **invoice payment initiation guard** (pre-checkout PSP sync).

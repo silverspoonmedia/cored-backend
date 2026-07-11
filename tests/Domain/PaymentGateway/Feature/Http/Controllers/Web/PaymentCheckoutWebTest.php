@@ -5,10 +5,12 @@ namespace Tests\Domain\PaymentGateway\Feature\Http\Controllers\Web;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\InteractsWithWebAuth;
 use Tests\TestCase;
 
 class PaymentCheckoutWebTest extends TestCase
 {
+    use InteractsWithWebAuth;
     use RefreshDatabase;
 
     public function test_snap_token_proxies_to_matching_provider_api(): void
@@ -34,7 +36,7 @@ class PaymentCheckoutWebTest extends TestCase
             ], 201),
         ]);
 
-        $admin = $this->actingWithApiGuard(User::factory()->create());
+        $admin = $this->actingWithJwtCookie(User::factory()->create());
 
         $response = $admin->postJson("/invoices/{$invoiceId}/checkout/snap-token");
 
@@ -72,7 +74,7 @@ class PaymentCheckoutWebTest extends TestCase
             ], 201),
         ]);
 
-        $admin = $this->actingWithApiGuard(User::factory()->create());
+        $admin = $this->actingWithJwtCookie(User::factory()->create());
 
         $admin->postJson("/invoices/{$invoiceId}/checkout/snap-token", [
             'return_url' => $returnUrl,
@@ -105,15 +107,11 @@ class PaymentCheckoutWebTest extends TestCase
             ], 200),
         ]);
 
-        $admin = $this->actingWithApiGuard(User::factory()->create());
+        $admin = $this->actingWithJwtCookie(User::factory()->create());
 
         $admin->postJson("/invoices/{$invoiceId}/checkout/snap-token")
             ->assertUnprocessable()
             ->assertJsonPath('status', 'error');
     }
 
-    private function actingWithApiGuard(User $user): static
-    {
-        return $this->actingAs($user, 'api');
-    }
 }

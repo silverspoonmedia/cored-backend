@@ -40,5 +40,7 @@
         <env name="AUTH_GUARD" value="api"/>
         <env name="AUTH_DEFAULT_ROLE" value="User"/>
         <env name="HCAPTCHA_ENABLED" value="false"/>
+        <env name="GATEWAY_ENFORCE" value="false"/>
+        <env name="GATEWAY_SECRET" value="testing-gateway-secret"/>
     </php>
 </phpunit>

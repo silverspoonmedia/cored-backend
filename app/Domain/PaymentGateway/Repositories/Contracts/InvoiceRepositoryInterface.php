@@ -9,6 +9,11 @@ interface InvoiceRepositoryInterface
 {
     public function findOrFailById(string $id): Invoice;
 
+    /**
+     * Load invoice with a row lock for payment initiation (must run inside a DB transaction).
+     */
+    public function findOrFailByIdForUpdate(string $id): Invoice;
+
     public function findByInvoiceNumberForGateway(string $invoiceNumber, string $gatewayName): ?Invoice;
 
     public function findByExternalTransactionIdForGateway(string $externalTransactionId, string $gatewayName): ?Invoice;

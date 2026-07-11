@@ -39,10 +39,22 @@ class PlaygroundProductionGuardTest extends TestCase
 
     private function artisanRouteList(string $environment, string $path): string
     {
+        $env = $this->subprocessEnvironment($environment);
+
+        // Cached bootstrap/cache/config.php bakes app.env; clear so subprocess APP_ENV wins.
+        if ($environment === 'production') {
+            $clear = new Process([PHP_BINARY, 'artisan', 'config:clear'], base_path(), $env);
+            $clear->run();
+            $this->assertTrue(
+                $clear->isSuccessful(),
+                'artisan config:clear failed: '.$clear->getErrorOutput(),
+            );
+        }
+
         $process = new Process(
             [PHP_BINARY, 'artisan', 'route:list', '--path='.$path],
             base_path(),
-            $this->subprocessEnvironment($environment),
+            $env,
         );
 
         $process->run();

@@ -15,6 +15,11 @@ class InvoiceRepository implements InvoiceRepositoryInterface
         return Invoice::query()->findOrFail($id);
     }
 
+    public function findOrFailByIdForUpdate(string $id): Invoice
+    {
+        return Invoice::query()->lockForUpdate()->findOrFail($id);
+    }
+
     public function findByInvoiceNumberForGateway(string $invoiceNumber, string $gatewayName): ?Invoice
     {
         return Invoice::query()

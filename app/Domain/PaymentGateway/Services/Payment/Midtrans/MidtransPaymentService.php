@@ -4,6 +4,7 @@ namespace App\Domain\PaymentGateway\Services\Payment\Midtrans;
 
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
+use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
 use Midtrans\CoreApi;
 use Midtrans\Snap;
 use Midtrans\Transaction;
@@ -13,7 +14,8 @@ class MidtransPaymentService
     public function __construct(
         private InvoiceRepositoryInterface $invoices,
         private MidtransInvoiceSynchronizer $synchronizer,
-        private MidtransSnapParameterBuilder $snapParameterBuilder
+        private MidtransSnapParameterBuilder $snapParameterBuilder,
+        private InvoicePaymentInitiationGuard $initiationGuard,
     ) {}
 
     /**
@@ -22,10 +24,11 @@ class MidtransPaymentService
      */
     public function createSnapToken(array $input): array
     {
-        $invoice = $this->invoices->findOrFailById($input['invoice_id']);
-
-        $this->assertMidtransInvoice($invoice);
-        $this->assertInvoicePayable($invoice);
+        $guardResult = $this->initiationGuard->ensurePayableForMidtrans($input['invoice_id']);
+        if (is_array($guardResult)) {
+            return $guardResult;
+        }
+        $invoice = $guardResult;
 
         $gateway = MidtransSdk::resolveGateway();
         MidtransSdk::configure($gateway);
@@ -85,10 +88,11 @@ class MidtransPaymentService
      */
     public function charge(array $input): array
     {
-        $invoice = $this->invoices->findOrFailById($input['invoice_id']);
-
-        $this->assertMidtransInvoice($invoice);
-        $this->assertInvoicePayable($invoice);
+        $guardResult = $this->initiationGuard->ensurePayableForMidtrans($input['invoice_id']);
+        if (is_array($guardResult)) {
+            return $guardResult;
+        }
+        $invoice = $guardResult;
 
         $gateway = MidtransSdk::resolveGateway();
         MidtransSdk::configure($gateway);

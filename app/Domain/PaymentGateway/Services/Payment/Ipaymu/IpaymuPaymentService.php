@@ -6,6 +6,7 @@ use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\Playground\Models\Order;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
+use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
 use iPaymu\iPaymu;
 use Illuminate\Support\Facades\Route;
 
@@ -13,7 +14,8 @@ class IpaymuPaymentService
 {
     public function __construct(
         private InvoiceRepositoryInterface $invoices,
-        private IpaymuInvoiceSynchronizer $synchronizer
+        private IpaymuInvoiceSynchronizer $synchronizer,
+        private InvoicePaymentInitiationGuard $initiationGuard,
     ) {}
 
     /**
@@ -22,10 +24,11 @@ class IpaymuPaymentService
      */
     public function createSnapToken(array $input): array
     {
-        $invoice = $this->invoices->findOrFailById($input['invoice_id']);
-
-        $this->assertIpaymuInvoice($invoice);
-        $this->assertInvoicePayable($invoice);
+        $guardResult = $this->initiationGuard->ensurePayableForIpaymu($input['invoice_id'], rejectActiveCheckout: true);
+        if (is_array($guardResult)) {
+            return $guardResult;
+        }
+        $invoice = $guardResult;
 
         $gateway = IpaymuSdk::resolveGateway();
 
@@ -68,7 +71,7 @@ class IpaymuPaymentService
 
         if (isset($response['Status']) && (int) $response['Status'] === 200) {
             $tid = data_get($response, 'Data.TransactionId');
-            if (is_numeric($tid)) {
+            if (is_numeric($tid) && ! $this->hasExternalTransactionId($invoice)) {
                 $invoice->external_transaction_id = (string) $tid;
             }
         }
@@ -106,10 +109,11 @@ class IpaymuPaymentService
      */
     public function charge(array $input): array
     {
-        $invoice = $this->invoices->findOrFailById($input['invoice_id']);
-
-        $this->assertIpaymuInvoice($invoice);
-        $this->assertInvoicePayable($invoice);
+        $guardResult = $this->initiationGuard->ensurePayableForIpaymu($input['invoice_id'], rejectActiveCheckout: true);
+        if (is_array($guardResult)) {
+            return $guardResult;
+        }
+        $invoice = $guardResult;
 
         $gateway = IpaymuSdk::resolveGateway();
 
@@ -153,7 +157,7 @@ class IpaymuPaymentService
 
         if (isset($response['Status']) && (int) $response['Status'] === 200) {
             $tid = data_get($response, 'Data.TransactionId');
-            if (is_numeric($tid)) {
+            if (is_numeric($tid) && ! $this->hasExternalTransactionId($invoice)) {
                 $invoice->external_transaction_id = (string) $tid;
             }
         }
@@ -340,6 +344,13 @@ class IpaymuPaymentService
         if ($invoice->status !== 'pending' && $invoice->status !== 'challenge') {
             abort(422, __('api/payments.ipaymu.invoice_not_payable'));
         }
+    }
+
+    private function hasExternalTransactionId(Invoice $invoice): bool
+    {
+        $tid = $invoice->external_transaction_id;
+
+        return $tid !== null && $tid !== '';
     }
 
     public static function defaultReturnUrl(): string

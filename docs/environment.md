@@ -243,6 +243,13 @@ When you add or remove an environment variable:
 
 PHPUnit sets `APP_ENV=testing` and overrides drivers in `phpunit.xml`. No `.env.testing.example` is needed.
 
+| Override | Purpose |
+|----------|---------|
+| `GATEWAY_ENFORCE=false` | Tests must not inherit `GATEWAY_ENFORCE=true` from a developer `.env`; otherwise every `/api/v1/*` request returns **403** before controllers run. Production perimeter is covered separately in `EnsureGatewayRequestTest`. |
+| `GATEWAY_SECRET=testing-gateway-secret` | Stable secret for middleware tests that temporarily enable enforcement via `config([...])`. |
+| `tests/TestCase.php` `config([...])` | Overrides cached `bootstrap/cache/config.php` gateway values so PHPUnit env vars are not ignored when config is cached locally. |
+| CSRF bypass in `tests/TestCase.php` | `withoutMiddleware(PreventRequestForgery::class)` (Laravel 13) so authenticated web proxy tests exercise API forwarding, not session token plumbing. [`WebCsrfErrorTest`](../tests/Feature/Http/Controllers/Web/WebCsrfErrorTest.php) still covers the **419** JSON envelope when CSRF fails. |
+
 ## Related docs
 
 - [JWT authentication](jwt-authentication.md#configuration)
