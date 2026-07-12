@@ -34,14 +34,14 @@ No API change. UX-only alignment with existing Vue route names:
 
 ## Gateway actions
 
-- [ ] None required (Frontend-only UX).
+- [x] None required (Frontend-only UX).
 
 ## Frontend actions
 
-- [ ] Add trail builders in `src/router/breadcrumbs.ts` for all payment/billing route names listed above (follow pattern: dashboard → section index → detail/edit).
-- [ ] Reuse existing i18n keys where possible (`payments.channels.title`, `payments.gateways.title`, `payments.invoices.*`, `payments.subscriptions.*`, `payments.ipaymuReturn.title`) — add keys only if missing in `en`, `id`, `ja`.
+- [x] Add trail builders in `src/router/breadcrumbs.ts` for all payment/billing route names listed above (follow pattern: dashboard → section index → detail/edit).
+- [x] Reuse existing i18n keys where possible (`payments.channels.title`, `payments.gateways.title`, `payments.invoices.*`, `payments.subscriptions.*`, `payments.ipaymuReturn.title`) — add keys only if missing in `en`, `id`, `ja`.
 - [ ] Verify `AppLayout` breadcrumb bar on each payment screen shows correct hierarchy.
-- [ ] Optional: add Vitest for `resolveBreadcrumbs()` on `invoices.show` and `subscriptions.edit`.
+- [x] Optional: add Vitest for `resolveBreadcrumbs()` on `invoices.show` and `subscriptions.edit`.
 
 ## Breaking change?
 
@@ -67,5 +67,5 @@ No API change. UX-only alignment with existing Vue route names:
 
 | Field | Value |
 |-------|-------|
-| Status | `pending` |
-| Synced | — |
+| Status | `done` |
+| Synced | 2026-07-12 |

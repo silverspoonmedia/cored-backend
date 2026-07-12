@@ -35,13 +35,15 @@ Some `pending/` files come from a **cross-repo desync audit** rather than a sing
 
 Both types use the same [TEMPLATE.md](./TEMPLATE.md) and are implemented in a **`downstream sync session`**. Audit entries describe drift against current Monolith behavior (no Monolith code change required to create the entry).
 
-**Current audit backlog (2026-07-12):**
+**Audit backlog (2026-07-12) — completed in downstream sync session:**
 
 | File | Priority | Topic |
 |------|----------|-------|
-| [pending/2026-07-12-invoice-checkout-spa-parity.md](./pending/2026-07-12-invoice-checkout-spa-parity.md) | **P1** | Invoice page channel checkout / `checkout_session` parity |
-| [pending/2026-07-12-spa-route-mapping-drift.md](./pending/2026-07-12-spa-route-mapping-drift.md) | **P2** | `routeMap.ts` + iPaymu `vue-routes.php` mapping |
-| [pending/2026-07-12-frontend-breadcrumbs-payment.md](./pending/2026-07-12-frontend-breadcrumbs-payment.md) | **P3** | Payment/billing breadcrumb trails |
+| [done/2026-07-12-invoice-checkout-spa-parity.md](./done/2026-07-12-invoice-checkout-spa-parity.md) | **P1** | Invoice page channel checkout / `checkout_session` parity |
+| [done/2026-07-12-spa-route-mapping-drift.md](./done/2026-07-12-spa-route-mapping-drift.md) | **P2** | `routeMap.ts` + iPaymu `vue-routes.php` mapping |
+| [done/2026-07-12-frontend-breadcrumbs-payment.md](./done/2026-07-12-frontend-breadcrumbs-payment.md) | **P3** | Payment/billing breadcrumb trails |
+
+No open audit backlog entries remain in `pending/`.
 
 ---
 

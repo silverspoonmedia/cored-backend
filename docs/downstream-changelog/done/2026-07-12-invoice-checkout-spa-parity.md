@@ -52,19 +52,19 @@ Monolith Blade invoice show combines `GET /api/v1/invoices/{id}` (including `che
 
 ## Gateway actions
 
-- [ ] **Optional (optimization):** Extend `PaymentCheckoutContextController` + `PaymentCheckoutContextAggregator` to accept `invoice_id` and return `{ invoice, payment_gateways, payment_channels, checkout_mode }` (invoice already includes `checkout_session` from Monolith).
-- [ ] If aggregate added: document in `monolith-gateway/docs/aggregate-endpoints.md` and add PHPUnit feature test.
-- [ ] If Frontend-only fix chosen: no Gateway code change required (catch-all already proxies invoice + payment-channels).
+- [ ] **Optional (optimization):** Extend `PaymentCheckoutContextController` + `PaymentCheckoutContextAggregator` to accept `invoice_id` and return `{ invoice, payment_gateways, payment_channels, checkout_mode }` (invoice already includes `checkout_session` from Monolith). *Deferred — Frontend-only fix chosen for POC.*
+- [ ] If aggregate added: document in `monolith-gateway/docs/aggregate-endpoints.md` and add PHPUnit feature test. *Deferred.*
+- [x] If Frontend-only fix chosen: no Gateway code change required (catch-all already proxies invoice + payment-channels).
 
 ## Frontend actions
 
-- [ ] In `PaymentCheckoutPanel.vue`: when `invoice` prop is set (invoice-only mode), still initialize checkout context — fetch `GET /api/v1/payment-channels` and derive `checkout_mode` (mirror `ResolvesPaymentCheckoutContext`).
-- [ ] Hydrate `channelInstructions` from `invoice.checkout_session` on mount (map shape to `ChannelCheckoutResult` / `PaymentInstructionsPanel` props).
-- [ ] Start `sync-status` polling when active channel instructions are shown (mirror `checkout.js` `startPolling`).
-- [ ] After `channelCheckout` success on invoice page: refetch invoice (`@paid` / parent `execute`) and re-hydrate session.
-- [ ] Update `InvoiceShowView` if needed to pass `invoice-id` or trigger panel reload after payment.
-- [ ] Add unit tests for checkout_session hydration logic (mock invoice with non-null `checkout_session`).
-- [ ] If Gateway adds `invoice_id` aggregate: switch invoice-only mode to `fetchCheckoutContext` variant.
+- [x] In `PaymentCheckoutPanel.vue`: when `invoice` prop is set (invoice-only mode), still initialize checkout context — fetch `GET /api/v1/payment-channels` and derive `checkout_mode` (mirror `ResolvesPaymentCheckoutContext`).
+- [x] Hydrate `channelInstructions` from `invoice.checkout_session` on mount (map shape to `ChannelCheckoutResult` / `PaymentInstructionsPanel` props).
+- [x] Start `sync-status` polling when active channel instructions are shown (mirror `checkout.js` `startPolling`).
+- [x] After `channelCheckout` success on invoice page: refetch invoice (`@paid` / parent `execute`) and re-hydrate session.
+- [x] Update `InvoiceShowView` if needed to pass `invoice-id` or trigger panel reload after payment.
+- [x] Add unit tests for checkout_session hydration logic (mock invoice with non-null `checkout_session`).
+- [ ] If Gateway adds `invoice_id` aggregate: switch invoice-only mode to `fetchCheckoutContext` variant. *Deferred.*
 
 ## Breaking change?
 
@@ -92,5 +92,5 @@ Monolith Blade invoice show combines `GET /api/v1/invoices/{id}` (including `che
 
 | Field | Value |
 |-------|-------|
-| Status | `pending` |
-| Synced | — |
+| Status | `done` |
+| Synced | 2026-07-12 |

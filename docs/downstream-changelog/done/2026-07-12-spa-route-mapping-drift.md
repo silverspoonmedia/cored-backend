@@ -48,15 +48,15 @@ No Monolith API URL or JSON shape change. This entry is about **route-name → S
 
 ## Gateway actions
 
-- [ ] Add `payments.ipaymu.return` and `payments.ipaymu.cancel` to `config/vue-routes.php` `paths` (and optional aliases `payment.ipaymu.return` / `payment.ipaymu.cancel` if Monolith emits the singular form).
+- [x] Add `payments.ipaymu.return` and `payments.ipaymu.cancel` to `config/vue-routes.php` `paths` (and optional aliases `payment.ipaymu.return` / `payment.ipaymu.cancel` if Monolith emits the singular form).
 - [ ] Verify `NotificationUrlTransformer` resolves iPaymu links after mapping (manual: seed or mock notification with `action_route`).
-- [ ] Confirm existing payment/subscription entries in `vue-routes.php` stay aligned with `monolith-frontend/src/router/index.ts`.
-- [ ] **Hygiene:** Fix or remove `tests/Feature/ExampleTest.php` (`GET /` expects 200 but Gateway has no `/` route) — blocks full workspace test script.
+- [x] Confirm existing payment/subscription entries in `vue-routes.php` stay aligned with `monolith-frontend/src/router/index.ts`.
+- [x] **Hygiene:** Fix or remove `tests/Feature/ExampleTest.php` (`GET /` expects 200 but Gateway has no `/` route) — blocks full workspace test script.
 
 ## Frontend actions
 
-- [ ] Add the ten payment/subscription route names to `src/router/routeMap.ts` (mirror `vue-routes.php` paths; use `:param` syntax consistent with existing entries).
-- [ ] Optionally align Vue router `name` with Gateway mapping if aliases are added for `payment.ipaymu.*`.
+- [x] Add the ten payment/subscription route names to `src/router/routeMap.ts` (mirror `vue-routes.php` paths; use `:param` syntax consistent with existing entries).
+- [x] Optionally align Vue router `name` with Gateway mapping if aliases are added for `payment.ipaymu.*`.
 - [ ] Smoke-test `resolveMenuPath()` for payment menu items when `path` is null and only `route` is set (locale refresh path).
 
 ## Breaking change?
@@ -84,5 +84,5 @@ No Monolith API URL or JSON shape change. This entry is about **route-name → S
 
 | Field | Value |
 |-------|-------|
-| Status | `pending` |
-| Synced | — |
+| Status | `done` |
+| Synced | 2026-07-12 |
