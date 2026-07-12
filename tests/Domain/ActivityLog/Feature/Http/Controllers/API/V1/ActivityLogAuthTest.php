@@ -3,8 +3,8 @@
 namespace Tests\Domain\ActivityLog\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Identity\Services\Auth\TwoFactorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use PragmaRX\Google2FA\Google2FA;
 use Spatie\Activitylog\Models\Activity;
@@ -110,15 +110,17 @@ class ActivityLogAuthTest extends TestCase
     public function test_two_factor_flow_writes_challenge_and_login_activity(): void
     {
         $google2fa = new Google2FA;
-        $secret = $google2fa->generateSecretKey();
 
         $user = User::factory()->create([
             'email' => '2fa-user@example.com',
             'password' => Hash::make('password123'),
-            'two_factor_secret' => Crypt::encryptString($secret),
-            'two_factor_confirmed_at' => now(),
         ]);
         $user->assignRole('User');
+
+        $twoFactor = app(TwoFactorService::class);
+        $setup = $twoFactor->startSetup($user);
+        $secret = $setup['secret'];
+        $twoFactor->confirmSetup($user, $google2fa->getCurrentOtp($secret));
 
         $challenge = $this->postJson('/api/v1/auth/login', [
             'email' => '2fa-user@example.com',

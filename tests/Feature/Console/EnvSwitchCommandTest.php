@@ -63,10 +63,12 @@ class EnvSwitchCommandTest extends TestCase
             'DB_DATABASE="monolith_local"',
         ]));
         File::put(base_path('.env.profile'), "local\n");
+        File::put(base_path('bootstrap/cache/config.php'), '<?php return [];');
 
         $this->artisan('env:switch', ['profile' => 'staging'])
             ->assertSuccessful();
 
+        $this->assertFileDoesNotExist(base_path('bootstrap/cache/config.php'));
         $this->assertStringContainsString('APP_ENV="staging"', File::get(base_path('.env')));
         $this->assertStringContainsString('monolith_local', File::get(base_path('.env.local')));
 

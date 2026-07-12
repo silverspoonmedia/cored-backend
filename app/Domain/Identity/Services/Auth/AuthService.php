@@ -12,6 +12,7 @@ use App\Domain\Identity\Exceptions\Auth\InvalidTwoFactorCodeException;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface;
 use App\Support\Auth\UserPresenter;
+use App\Support\Encryption\Cache\SensitiveCacheValue;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -27,6 +28,7 @@ class AuthService
     public function __construct(
         private readonly UserRepositoryInterface $users,
         private readonly TwoFactorService $twoFactor,
+        private readonly SensitiveCacheValue $sensitiveCache,
     ) {}
 
     /**
@@ -125,7 +127,11 @@ class AuthService
      */
     public function loginWithTwoFactorToken(string $twoFactorToken, string $code): array
     {
-        $challenge = Cache::pull($this->twoFactorCacheKey($twoFactorToken));
+        $cacheKey = $this->twoFactorCacheKey($twoFactorToken);
+        $stored = Cache::pull($cacheKey);
+        $challenge = is_string($stored)
+            ? $this->sensitiveCache->unwrap($cacheKey, $stored)
+            : $stored;
 
         if (! is_array($challenge) || ! isset($challenge['user_id'], $challenge['remember'])) {
             TwoFactorLoginFailed::dispatch(
@@ -241,9 +247,11 @@ class AuthService
     {
         $twoFactorToken = (string) Str::uuid();
 
+        $cacheKey = $this->twoFactorCacheKey($twoFactorToken);
+
         Cache::put(
-            $this->twoFactorCacheKey($twoFactorToken),
-            ['user_id' => $user->id, 'remember' => $remember],
+            $cacheKey,
+            $this->sensitiveCache->wrap($cacheKey, ['user_id' => $user->id, 'remember' => $remember]),
             self::TWO_FACTOR_CACHE_TTL,
         );
 

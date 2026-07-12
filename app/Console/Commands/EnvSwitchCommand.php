@@ -65,7 +65,10 @@ class EnvSwitchCommand extends Command
 
         $this->info("Activated {$profile} → .env");
         $this->newLine();
-        $this->line('Run: php artisan config:clear');
+
+        $this->callSilent('config:clear');
+        $this->line('Configuration cache cleared.');
+        $this->line('Run: php artisan config:rebuild (when you need cached config)');
 
         return self::SUCCESS;
     }

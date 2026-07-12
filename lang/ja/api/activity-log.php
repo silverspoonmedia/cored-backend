@@ -18,5 +18,6 @@ return [
         'password_changed' => 'パスワード変更',
         'two_factor_enabled' => '二要素認証を有効化',
         'two_factor_disabled' => '二要素認証を無効化',
+        'field_decrypted' => '機密フィールドを復号',
     ],
 ];

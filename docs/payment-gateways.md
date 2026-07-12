@@ -236,6 +236,8 @@ Abandon behaviour:
 
 **Env vars:** `MIDTRANS_SERVER_KEY`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_IS_PRODUCTION`, optional `MIDTRANS_NOTIFY_URL` (paste into Midtrans Dashboard), `IPAYMU_VA_KEY`, `IPAYMU_API_KEY`, `IPAYMU_IS_PRODUCTION`, optional `IPAYMU_NOTIFY_URL` (sent as `unotify` per checkout). `PAYMENT_PREFER_CHANNEL_CHECKOUT` in [environment.md](./environment.md) is reserved for future use; checkout mode is derived from available channels at load time.
 
+Credentials are resolved through `config('payment.gateways.*')`. If `bootstrap/cache/config.php` is stale, gateways appear unconfigured even when `.env` has keys. Run `php artisan config:rebuild` after editing payment env vars — see [environment.md — Config caching](environment.md#config-caching).
+
 Run `php artisan payments:webhook-urls` to print resolved webhook URLs from env or route defaults.
 
 ### iPaymu return / cancel URLs (browser redirect)

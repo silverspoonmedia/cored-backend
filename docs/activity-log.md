@@ -79,6 +79,18 @@ Login, logout, 2FA, and password changes do **not** mutate tracked `User` column
 
 Listeners: `RecordAuthenticationActivity` (activity log) and `LogAuthenticationEvents` (Laravel file log). They are **auto-discovered** from `subscribe()` — never register them again with `Event::subscribe()` in a service provider or every auth row is duplicated. Filter the viewer with `?log_name=auth`.
 
+### Cryptographic decrypt accountability (`log_name: crypto`)
+
+Envelope decryption is recorded via `CryptoActivityRecorder` — called **only** from `EnvelopeEncryptionService::decrypt()` (the sole decrypt choke point). Never log plaintext, ciphertext, DEKs, or wrapped keys.
+
+| Event | Activity `event` | Trigger |
+|-------|------------------|---------|
+| Field decrypted | `field_decrypted` | First successful decrypt of an envelope (cache miss path still logs once per request lifecycle via the service) |
+
+Properties (safe metadata only): `resource_type`, `resource_id`, `field`, `purpose`, `kms_key_id`, `ip_address`.
+
+Filter the viewer with `?log_name=crypto`. See [Envelope encryption](./envelope-encryption.md) for P0 columns and cache semantics.
+
 ---
 
 ## API surface (`/api/v1`)
@@ -156,5 +168,6 @@ Default retention: **365 days** (`config/activitylog.php`).
 - [CRUD architecture](./crud-architecture.md) — where mutations flow (Service → Repository → Model)
 - [User management & H-RBAC](./user-management-hrbac.md) — user CRUD + role assignment
 - [Authentication activity assessment](./auth-activity-assessment.md) — auth event coverage and activity log mapping
+- [Envelope encryption](./envelope-encryption.md) — decrypt audit (`log_name: crypto`)
 - [Activity notifications](./notifications.md) — in-app bell (separate system)
 - [User primary keys (UUID v7)](./user-uuid-v7.md) — UUID morph FK rules

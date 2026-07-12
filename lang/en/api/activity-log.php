@@ -18,5 +18,6 @@ return [
         'password_changed' => 'Password changed',
         'two_factor_enabled' => 'Two-factor authentication enabled',
         'two_factor_disabled' => 'Two-factor authentication disabled',
+        'field_decrypted' => 'Sensitive field decrypted',
     ],
 ];

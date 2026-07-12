@@ -4,6 +4,7 @@ namespace App\Domain\PaymentGateway\Models;
 
 use App\Domain\PaymentGateway\Enums\DisbursementStatus;
 use App\Domain\Playground\Models\Order;
+use App\Support\Encryption\Casts\EnvelopeEncryptedArray;
 // Internal
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -59,8 +60,8 @@ class Invoice extends Model
             'subtotal' => 'decimal:2',
             'payment_channel_fee' => 'decimal:2',
             'customer_gross_total' => 'decimal:2',
-            'gateway_request_payload' => 'array',
-            'gateway_response_payload' => 'array',
+            'gateway_request_payload' => EnvelopeEncryptedArray::class.':invoices,gateway_request_payload,payment',
+            'gateway_response_payload' => EnvelopeEncryptedArray::class.':invoices,gateway_response_payload,payment',
             'paid_at' => 'datetime',
             'expired_at' => 'datetime',
             'withdrawable_at' => 'datetime',

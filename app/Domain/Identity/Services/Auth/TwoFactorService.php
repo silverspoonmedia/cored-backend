@@ -8,7 +8,6 @@ use App\Domain\Identity\Exceptions\Auth\InvalidTwoFactorCodeException;
 use App\Domain\Identity\Exceptions\Auth\TwoFactorAlreadyEnabledException;
 use App\Domain\Identity\Exceptions\Auth\TwoFactorNotEnabledException;
 use App\Domain\Identity\Models\User;
-use Illuminate\Support\Facades\Crypt;
 
 class TwoFactorService
 {
@@ -24,7 +23,7 @@ class TwoFactorService
         $secret = $this->google2fa()->generateSecretKey();
 
         $user->forceFill([
-            'two_factor_secret' => Crypt::encryptString($secret),
+            'two_factor_secret' => $secret,
             'two_factor_confirmed_at' => null,
         ])->save();
 
@@ -94,7 +93,7 @@ class TwoFactorService
 
     public function enabled(User $user): bool
     {
-        return filled($user->two_factor_secret) && $user->two_factor_confirmed_at !== null;
+        return $user->hasTwoFactorSecret() && $user->two_factor_confirmed_at !== null;
     }
 
     private function verifyCode(string $secret, string $code): bool
@@ -104,11 +103,7 @@ class TwoFactorService
 
     private function secret(User $user): ?string
     {
-        if (! filled($user->two_factor_secret)) {
-            return null;
-        }
-
-        return Crypt::decryptString($user->two_factor_secret);
+        return filled($user->two_factor_secret) ? $user->two_factor_secret : null;
     }
 
     /**

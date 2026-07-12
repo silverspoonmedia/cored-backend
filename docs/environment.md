@@ -50,6 +50,8 @@ Then set at least:
 | `MAIL_*` | Optional locally (`MAIL_MAILER=log` writes to log) |
 | `PUSHER_*` / `APP_NOTIFICATION_TYPE` | Optional locally (bell uses polling by default) |
 | `HCAPTCHA_*` | Disabled locally (`HCAPTCHA_ENABLED=false`) |
+| `OCI_*` | OCI API config + KMS crypto endpoint — see [oci-kms.md](./oci-kms.md) |
+| `ENCRYPTION_*` | Envelope encryption cache, blind index, session encryption — see [envelope-encryption.md](./envelope-encryption.md) |
 
 ```bash
 php artisan migrate
@@ -133,8 +135,8 @@ php artisan env:switch staging
 # Switch back — local values restored from .env.local
 php artisan env:switch local
 
-# After switching
-php artisan config:clear
+# env:switch clears bootstrap/cache/config.php automatically.
+# Run config:rebuild when you need cached config (see below).
 ```
 
 ### What happens on switch
@@ -143,6 +145,7 @@ php artisan config:clear
 2. If `.env.{target}` does not exist yet, it is bootstrapped from `.env.{target}.example` (secrets generated)
 3. `.env.{target}` is copied to `.env`
 4. `.env.profile` is updated
+5. **`bootstrap/cache/config.php` is removed** so Laravel reads the new `.env` on the next request
 
 Switching to the **same** profile is a no-op (no data loss).
 
@@ -157,6 +160,16 @@ php artisan env:install staging --force
 If you already have a `.env` but no snapshots, the first `env:switch` infers the current profile from `APP_ENV` and saves it before activating the target.
 
 `env:switch` is intended for **local development**. Production servers typically keep a single `.env` (or platform-injected env vars).
+
+### `.env.local` name collision (Laravel vs `env:switch`)
+
+Monolith snapshots use `.env.local`, `.env.staging`, and `.env.production`. Stock Laravel also switches to `.env.{APP_ENV}` when `APP_ENV` is already present in the process (Apache `SetEnv`, second bootstrap in the same PHP worker, etc.).
+
+That caused a silent bug: Laragon could load the **snapshot** `.env.local` (empty `IPAYMU_*`, placeholder OCI) instead of the active `.env` you edit — webhooks via tunnel sometimes worked while local sync-status / callback simulation failed.
+
+Monolith registers [`LoadMonolithEnvironmentVariables`](../app/Bootstrap/LoadMonolithEnvironmentVariables.php) so bootstrap **always reads `.env`**, except when you pass an explicit `php artisan --env=staging` flag. Profile snapshots are applied only through `env:switch` (copy snapshot → `.env`).
+
+**Always edit the active `.env`.** Snapshots update when you `env:switch` away (current `.env` is saved to `.env.{profile}` first).
 
 ## Staging and production
 
@@ -178,14 +191,49 @@ Fill in real values for:
 After deploy:
 
 ```bash
-php artisan config:cache
+php artisan config:rebuild
 php artisan route:cache
 php artisan view:cache
 php artisan migrate --force
 npm run build
+php artisan oci:kms-verify
 ```
 
 Production platforms (Laravel Forge, Vapor, Kubernetes, CI/CD) can inject env vars instead of a `.env` file. The variable names stay the same.
+
+## Config caching
+
+Laravel can bake all `config/*.php` values into `bootstrap/cache/config.php`. When that file exists, **`.env` is not read for configuration`** — only the cache file matters.
+
+| Symptom | Typical cause |
+|---------|----------------|
+| Payment gateway says API key not configured | Stale cache baked before `IPAYMU_*` / `MIDTRANS_*` were set |
+| OCI KMS `Could not resolve host: xxxxxxxx-crypto...` | Stale cache still holds template placeholder hostnames |
+| Editing `.env` has no effect | `config:cache` active — run `config:clear` or `config:rebuild` |
+
+This is **not** a conflict between payment and OCI code paths. Both use `env()` only in config files and `config()` at runtime. The fix is to rebuild cache from a complete `.env`.
+
+**`.env.local` trap:** Laravel stock behavior can load `.env.{APP_ENV}` when `APP_ENV` is preset — colliding with Monolith `env:switch` snapshots. See [Switching profiles — `.env.local` name collision](#envlocal-name-collision-laravel-vs-envswitch) above. `config:rebuild` and the overridden `config:cache` always bake from `.env` via [`FreshConfigurationLoader`](../app/Support/Config/FreshConfigurationLoader.php).
+
+### Commands
+
+| Command | When to use |
+|---------|-------------|
+| `php artisan config:clear` | Local dev — always read live `.env` |
+| `php artisan config:verify-secrets` | Check required secrets (use `--fresh` to validate `.env` before caching) |
+| `php artisan config:rebuild` | **Preferred** — clear → verify `.env` → cache → verify baked file |
+
+Workflow after any `.env` change when you need cached config:
+
+```bash
+# Edit .env (payment keys, OCI_KMS_*, ENCRYPTION_*, etc.)
+php artisan config:rebuild
+php artisan oci:kms-verify
+```
+
+Local development can stay on `config:clear` only. Staging/production should use `config:rebuild` after deploy or secret rotation.
+
+**Never** run `php artisan config:cache` manually without verifying secrets first — use `config:rebuild` instead.
 
 ## Profile differences
 
@@ -209,6 +257,8 @@ Production platforms (Laravel Forge, Vapor, Kubernetes, CI/CD) can inject env va
 - `JWT_SECRET` generated (`env:install` does this on first run)
 - `HCAPTCHA_ENABLED=true` with valid keys
 - `GATEWAY_ENFORCE=true` with a strong `GATEWAY_SECRET` shared with [monolith-gateway](../../monolith-gateway) (API must not be reachable without the gateway)
+- `php artisan config:rebuild` after setting production secrets (payment + OCI + encryption pepper)
+- `php artisan oci:kms-verify` passes
 - On gateway: `GATEWAY_ENFORCE_PROGRAMMATIC_API=true` (default)
 - Verify playground is off: `APP_ENV=production php artisan route:list --path=api/playground` (no routes)
 - See also [README Security checklist](../README.md#security)
@@ -261,6 +311,8 @@ PHPUnit sets `APP_ENV=testing` and overrides drivers in `phpunit.xml`. No `.env.
 ## Related docs
 
 - [JWT authentication](jwt-authentication.md#configuration)
+- [OCI KMS connectivity](oci-kms.md) — `OCI_*` env vars, `oci:kms-verify`, IAM troubleshooting
+- [Envelope encryption](envelope-encryption.md) — P0 columns, DEK cache, blind index, `encryption:migrate-p0`
 - [Database safety](database-safety.md) — test isolation, `ALLOW_DESTRUCTIVE_DB`, recovery
 - [SPA + Gateway integration](spa-gateway-integration.md) — three-project wiring, locale (SPA), realtime, playground
 - [Activity notifications (polling vs realtime)](notifications.md#realtime-vs-polling)

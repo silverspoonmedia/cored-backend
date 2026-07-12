@@ -2,14 +2,15 @@
 
 namespace Tests\Domain\Playground\Unit\Services;
 
+use App\Domain\Approval\Services\ApprovalService;
 use App\Domain\PaymentGateway\Contracts\InvoiceAttachableServiceInterface;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceActiveCheckoutCancellationService;
 use App\Domain\Playground\Exceptions\OrderNotEditableException;
 use App\Domain\Playground\Exceptions\OrderRequiresDetailException;
 use App\Domain\Playground\Models\AttachmentUpload;
 use App\Domain\Playground\Models\Order;
 use App\Domain\Playground\Repositories\Contracts\OrderRepositoryInterface;
-use App\Domain\Approval\Services\ApprovalService;
 use App\Domain\Playground\Services\OrderService;
 use App\Domain\Playground\Support\Orders\DirectAttachmentUploadService;
 use App\Domain\Playground\Support\Orders\OrderAttachmentStorage;
@@ -54,12 +55,15 @@ class OrderServiceTest extends TestCase
         $invoiceAttachable->shouldReceive('createPendingInvoiceForOrder')->byDefault();
         $invoiceAttachable->shouldReceive('syncOrderInvoiceAmountIfPending')->byDefault();
         $invoiceAttachable->shouldReceive('deletePendingInvoiceForOrder')->byDefault();
+        $checkoutCancellation = Mockery::mock(InvoiceActiveCheckoutCancellationService::class);
+        $checkoutCancellation->shouldReceive('cancelActiveCheckoutForOrder')->byDefault();
         $this->service = new OrderService(
             $this->repository,
             new OrderAttachmentStorage,
             app(DirectAttachmentUploadService::class),
             $approvalService,
             $invoiceAttachable,
+            $checkoutCancellation,
         );
     }
 
