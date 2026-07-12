@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Console\ConsoleSafetyServiceProvider;
 use App\Repositories\Contracts\EloquentCrudRepositoryInterface;
 use App\Repositories\Eloquent\EloquentCrudRepository;
 use App\Support\DataTable\DataTableResponseFactory;
@@ -26,5 +27,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Blade::anonymousComponentPath(WebLayout::componentsPath(), WebLayout::name());
+
+        $safety = new ConsoleSafetyServiceProvider;
+
+        $safety->registerDestructiveDatabaseGuard();
+        $safety->registerTestCommandConfigClear();
     }
 }

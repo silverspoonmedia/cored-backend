@@ -354,8 +354,8 @@ Do not extend `EloquentCrudRepository` with business-specific methods—that cou
 Run:
 
 ```bash
-php artisan test --filter=Playground
-php artisan test --filter="Order"
+composer test -- --filter=Playground
+composer test -- --filter="Order"
 ```
 
 ---

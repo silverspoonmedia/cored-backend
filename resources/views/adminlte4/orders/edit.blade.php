@@ -4,6 +4,7 @@
             'action' => route('orders.update', data_get($order, 'id')),
             'method' => 'PUT',
             'order' => $order,
+            'paymentGateways' => $paymentGateways ?? [],
             'submitLabel' => __('web/orders.update_submit'),
         ])
     </x-adminlte4::card>

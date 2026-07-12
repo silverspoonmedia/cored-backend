@@ -78,10 +78,8 @@ class NavigationMenuTest extends TestCase
         $menuId = $response->json('data.id');
         $adminRoleId = Role::query()->where('name', 'Admin')->where('guard_name', 'api')->value('id');
 
-        $this->assertDatabaseHas('menus', [
-            'id' => $menuId,
-            'name' => json_encode(['en' => 'Reports'], JSON_UNESCAPED_UNICODE),
-        ]);
+        $menu = Menu::query()->findOrFail($menuId);
+        $this->assertSame(['en' => 'Reports'], $menu->getTranslations('name'));
         $this->assertDatabaseHas('menu_roles', ['menu_id' => $menuId, 'role_id' => $adminRoleId]);
         $this->assertSame([$adminRoleId], $response->json('data.role_ids'));
     }
@@ -112,10 +110,8 @@ class NavigationMenuTest extends TestCase
 
         $menuId = $response->json('data.id');
 
-        $this->assertDatabaseHas('menus', [
-            'id' => $menuId,
-            'name' => json_encode($name, JSON_UNESCAPED_UNICODE),
-        ]);
+        $menu = Menu::query()->findOrFail($menuId);
+        $this->assertSame($name, $menu->getTranslations('name'));
     }
 
     public function test_navigation_tree_resolves_name_for_request_locale(): void

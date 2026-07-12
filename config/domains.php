@@ -20,5 +20,6 @@ return [
     'Notification' => ['core' => true],
     'ActivityLog' => ['core' => true],
     'Approval' => ['core' => true],
+    'PaymentGateway' => ['core' => true],
     'Playground' => ['core' => false, 'locked' => true],
 ];

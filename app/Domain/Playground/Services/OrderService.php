@@ -2,6 +2,8 @@
 
 namespace App\Domain\Playground\Services;
 
+use App\Domain\PaymentGateway\Contracts\InvoiceAttachableServiceInterface;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceActiveCheckoutCancellationService;
 use App\Domain\Playground\Exceptions\OrderNotEditableException;
 use App\Domain\Playground\Exceptions\OrderRequiresDetailException;
 use App\Domain\Playground\Models\Order;
@@ -27,6 +29,8 @@ class OrderService
         private readonly OrderAttachmentStorage $attachments,
         private readonly DirectAttachmentUploadService $directUploads,
         private readonly ApprovalService $approvalService,
+        private readonly InvoiceAttachableServiceInterface $invoiceAttachable,
+        private readonly InvoiceActiveCheckoutCancellationService $checkoutCancellation,
     ) {}
 
     public function list(): Collection
@@ -53,6 +57,8 @@ class OrderService
 
         try {
             $order = $this->repository->createWithDetails($master, $details, $stored);
+
+            $this->invoiceAttachable->createPendingInvoiceForOrder($order, null);
 
             try {
                 $this->approvalService->initiate($order, 'ORDER');
@@ -85,6 +91,16 @@ class OrderService
 
         unset($master['order_number']);
 
+        $invoice = $order->invoice;
+        $shouldAbandonCheckout = $invoice !== null
+            && $invoice->status === 'pending'
+            && $this->checkoutCancellation->hasCheckoutSession($invoice)
+            && (float) $invoice->customer_gross_total !== (float) $master['grand_total'];
+
+        if ($shouldAbandonCheckout) {
+            $this->checkoutCancellation->abandonActiveCheckout($invoice);
+        }
+
         $existing = $order->attachments
             ->map(fn ($a): array => $a->only(['user_id', 'disk', 'path', 'name', 'size', 'mime']))
             ->all();
@@ -101,6 +117,8 @@ class OrderService
             throw $e;
         }
 
+        $this->invoiceAttachable->syncOrderInvoiceAmountIfPending($updated);
+
         $this->attachments->deleteMany($removed);
 
         return $updated;
@@ -114,6 +132,8 @@ class OrderService
         $attachments = $order->attachments
             ->map(fn ($a): array => $a->only(['disk', 'path']))
             ->all();
+
+        $this->invoiceAttachable->deletePendingInvoiceForOrder($order);
 
         $this->repository->deleteWithDetails($id);
 

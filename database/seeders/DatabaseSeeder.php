@@ -53,5 +53,7 @@ class DatabaseSeeder extends Seeder
         $this->call(MenuSeeder::class);
         $this->call(MenuRbacSeeder::class);
         $this->call(ApprovalWorkflowSeeder::class);
+        $this->call(PaymentGatewaySeeder::class);
+        $this->call(PaymentChannelSeeder::class);
     }
 }

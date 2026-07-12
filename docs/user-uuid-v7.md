@@ -77,10 +77,11 @@ Example ID shape: `019e8766-857b-7259-a580-a21e1ddfa27e` (version digit `7` in t
 If the database was created **before** this change, existing `users.id` columns are still `bigint`. Altering the column in place on a populated table is a separate migration task; for local/dev databases it is usually simpler to reset:
 
 ```bash
-php artisan migrate:fresh
+# Requires ALLOW_DESTRUCTIVE_DB=true in .env — see docs/database-safety.md
+php artisan migrate:fresh --seed
 ```
 
-That drops all tables and re-runs migrations. **All data is lost**—use only when that is acceptable.
+That drops all tables and re-runs migrations. **All data is lost**—use only when that is acceptable. Run `php artisan db:seed` afterward if you need default users.
 
 To confirm UUID generation after migrating:
 

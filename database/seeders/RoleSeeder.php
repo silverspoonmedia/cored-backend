@@ -37,6 +37,12 @@ class RoleSeeder extends Seeder
             'restore menu',
             'view notification',
             'view activity log',
+            'view payment gateway',
+            'manage payment gateway',
+            'view invoice',
+            'initiate payment',
+            'view subscription',
+            'manage subscription',
         ];
 
         foreach ($permissions as $permission) {
@@ -47,10 +53,10 @@ class RoleSeeder extends Seeder
         }
 
         $rolePermissions = [
-            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log'],
-            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log'],
-            'Moderator' => ['view user', 'create user', 'edit user', 'view menu', 'manage menu', 'restore menu', 'view notification'],
-            'Management' => ['view user', 'view menu', 'view notification'],
+            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription'],
+            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription'],
+            'Moderator' => ['view user', 'create user', 'edit user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription'],
+            'Management' => ['view user', 'view menu', 'view notification', 'view payment gateway', 'view invoice', 'view subscription'],
             'User' => ['view notification'],
         ];
 

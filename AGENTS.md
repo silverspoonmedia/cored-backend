@@ -10,6 +10,8 @@
 
 Read it before cross-project features, API changes, or anything that touches Gateway or Frontend.
 
+**Database safety:** Never run `migrate:fresh`, `migrate:refresh`, or `db:wipe` on non-sqlite without `ALLOW_DESTRUCTIVE_DB=true`. Prefer `composer test` in Monolith (`composer test -- --filter=…` for filtered runs). See [docs/database-safety.md](docs/database-safety.md).
+
 ## Start here (this project)
 
 | Document | Topic |
@@ -20,6 +22,8 @@ Read it before cross-project features, API changes, or anything that touches Gat
 | [docs/spa-gateway-integration.md](docs/spa-gateway-integration.md) | Monolith + Gateway + Vue wiring |
 | [docs/crud-architecture.md](docs/crud-architecture.md) | CRUD and repositories |
 | [docs/domain-modules.md](docs/domain-modules.md) | Domain modules: core/locked/removable, `domain:list\|make\|remove` |
+| [docs/payment-gateways.md](docs/payment-gateways.md) | Midtrans/iPaymu, invoices, subscriptions, webhooks |
+| [docs/database-safety.md](docs/database-safety.md) | Prevent dev DB wipe; test vs MySQL; recovery |
 | [docs/internal-monorepo-assessment.md](docs/internal-monorepo-assessment.md) | Monorepo assessment and phase-4 deferral |
 | [docs/internal-monorepo-porting.md](docs/internal-monorepo-porting.md) | Porting implementation reference for session handoff |
 

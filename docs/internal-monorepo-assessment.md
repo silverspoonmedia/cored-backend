@@ -40,6 +40,7 @@ The real complexity drivers are **full-stack parity** (API + Web + Blade + 3 loc
 | **Notification** | core | `App\Domain\Notification` | `ActivityNotification`, `NotificationTypeSetting` | `/api/v1/notifications/*` |
 | **ActivityLog** | core | `App\Domain\ActivityLog` | (Spatie `activity_log`) | `/api/v1/activity-logs/*` |
 | **Approval** | core | `App\Domain\Approval` | 8 approval_* models | `/api/v1/approvals/*`, `/api/v1/admin/approval-workflows/*` |
+| **PaymentGateway** | core | `App\Domain\PaymentGateway` | `PaymentGateway`, `Invoice`, `Subscription` | `/api/v1/payment-gateways/*`, `/api/v1/invoices/*`, `/api/v1/subscriptions/*`, `/api/v1/payments/providers/*` |
 | **Playground** | removable | `App\Domain\Playground` | `Order`, `OrderDetail`, `Attachment`, `AttachmentUpload` | `/api/playground/*` (non-prod) |
 | **Kernel** (shared) | core | `App\Support`, `App\Http\Middleware`, … | — | — |
 
@@ -112,6 +113,8 @@ Breaking changes should use a new API version (`routes/api/v2.php`) rather than 
 ## Test baseline and post-migration results
 
 Recorded **2026-07-09** on Windows / Laragon.
+
+> **Note:** Test counts below are **historical snapshots** from the migration period. For the current baseline, run `composer test` in Monolith and update this table only when deliberately refreshing the assessment.
 
 ### Pre-migration baseline
 

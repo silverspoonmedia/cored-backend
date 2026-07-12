@@ -6,7 +6,7 @@ Project Monolith uses a **logical monorepo** layout: domain code lives under `ap
 
 | Kind | Domains | `domain:remove` |
 |------|---------|-----------------|
-| **Core** (platform) | Identity, Navigation, Notification, ActivityLog, Approval + Kernel | **Always refused** — hardcoded in `DomainManager::PLATFORM_CORE`; flipping `core` in config does nothing |
+| **Core** (platform) | Identity, Navigation, Notification, ActivityLog, Approval, PaymentGateway + Kernel | **Always refused** — hardcoded in `DomainManager::PLATFORM_CORE`; flipping `core` in config does nothing |
 | **Locked** (product) | Default for `domain:make` | Refused until you **manually** set `'locked' => false` in [`config/domains.php`](../config/domains.php) |
 | **Removable** | Playground, or `domain:make --removable` | Allowed (confirm / `--force`) |
 
@@ -44,7 +44,8 @@ app/
 │   ├── Navigation/     # Menu tree and management (core)
 │   ├── Notification/   # Activity notifications (bell) (core)
 │   ├── ActivityLog/    # Spatie audit trail (core)
-│   ├── Playground/     # Demo users, orders, attachments (removable)
+│   ├── Playground/     # Demo users, orders, attachments (locked)
+│   ├── PaymentGateway/ # Midtrans, iPaymu, invoices, subscriptions (core)
 │   └── Approval/       # Approval matrix engine (core)
 ├── Http/Middleware/    # Shared HTTP middleware (Kernel)
 ├── Repositories/Eloquent/EloquentCrudRepository.php
@@ -92,6 +93,7 @@ Versioned API routes are split per domain under `routes/api/v1/` and loaded from
 | `routes/api/v1/notification.php` | Notifications |
 | `routes/api/v1/activity-log.php` | Activity logs |
 | `routes/api/v1/approval.php` | Approvals + workflow admin |
+| `routes/api/v1/payment-gateway.php` | Payment gateways, invoices, subscriptions, Midtrans/iPaymu providers |
 
 Global `/api` routes: `routes/api.php` (ping) and `routes/api/playground.php` (non-production playground).
 

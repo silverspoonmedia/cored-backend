@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -76,6 +77,14 @@ class Order extends Model
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    /**
+     * @return MorphOne<\App\Domain\PaymentGateway\Models\Invoice, $this>
+     */
+    public function invoice(): MorphOne
+    {
+        return $this->morphOne(\App\Domain\PaymentGateway\Models\Invoice::class, 'invoiceable');
     }
 
     public function getActivitylogOptions(): LogOptions

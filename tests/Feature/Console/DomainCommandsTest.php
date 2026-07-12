@@ -76,11 +76,13 @@ class DomainCommandsTest extends TestCase
         $domains = app(DomainManager::class);
 
         $this->assertSame('core', $domains->kind('Identity'));
-        $this->assertSame('removable', $domains->kind('Playground'));
+        $this->assertSame('core', $domains->kind('PaymentGateway'));
+        $this->assertSame('locked', $domains->kind('Playground'));
 
         $this->artisan('domain:list')
             ->assertSuccessful()
             ->expectsOutputToContain('Identity')
+            ->expectsOutputToContain('PaymentGateway')
             ->expectsOutputToContain('Playground')
             ->expectsOutputToContain('platform (never removable)');
     }

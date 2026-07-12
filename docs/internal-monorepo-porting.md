@@ -223,7 +223,7 @@ One-shot porting scripts (`migrate-domain-*`, `fix-domain-*`, `scripts/domains/*
 ```powershell
 cd c:\laragon\www\monolith
 composer dump-autoload                           # required after moving/renaming classes
-composer test                                    # expect 392+ passed (includes DomainCommandsTest)
+composer test                                    # run for current pass count (historical snapshots: 392–395+ in 2026-07-10 assessment)
 php artisan domain:list                          # core / locked / removable registry
 .\scripts\remove-empty-dirs.ps1 -WhatIf          # expect: no empty dirs in scope
 .\scripts\test-workspace.ps1                     # Monolith + Gateway + Frontend

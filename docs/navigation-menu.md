@@ -269,6 +269,7 @@ Because the snapshot stores role **names**, renaming or deleting a `Role` would 
 Both are idempotent. A `MenuFactory` (with `header()` / `parentItem()` / `child()` / `authenticated()` / `guestOnly()` states) is available for tests; it defaults `order` to `NULL` so factory-built siblings never trip the unique index.
 
 ```bash
+# Requires ALLOW_DESTRUCTIVE_DB=true in .env — see docs/database-safety.md
 php artisan migrate:fresh --seed
 ```
 

@@ -195,7 +195,7 @@ $this->assertSame(['Admin', 'Root'], $notification->roles->pluck('name')->sort()
 Run:
 
 ```bash
-php artisan test --filter=Notification
+composer test -- --filter=Notification
 ```
 
 ---
@@ -206,7 +206,7 @@ Use when only **who receives** an existing type should change.
 
 1. Edit `database/seeders/NotificationTypeSettingSeeder.php` — adjust `roles()->sync(...)`, `targetUsers`, or `notify_subject_user`.
 2. For **already-deployed** databases, add a one-off migration or data patch that updates `notification_type_setting_roles` / `_users` (re-running the full seeder is not always safe on production).
-3. Run tests: `php artisan test --filter=Notification`.
+3. Run tests: `composer test -- --filter=Notification`.
 
 There is **no** admin UI or API for runtime audience edits.
 
@@ -321,7 +321,7 @@ Follow the implementation guide task router and complete the matching workflow e
 - enum + translations (en, id, ja) + seeder + service dispatch + tests
 - Do NOT add admin UI or API for notification types or audience
 - Audience should use notification_type_settings (not hardcoded roles in dispatch)
-- Run php artisan test --filter=Notification before finishing
+- Run composer test -- --filter=Notification before finishing
 - Update the catalogue table in notifications-implementation-guide.md if adding a new type
 ```
 

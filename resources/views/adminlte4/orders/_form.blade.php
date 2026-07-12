@@ -12,6 +12,7 @@
 --}}
 @php($order = $order ?? [])
 @php($details = old('details', data_get($order, 'details', [[]])))
+@php($isCreate = empty(data_get($order, 'id')))
 @php($statuses = ['pending', 'processing', 'completed', 'cancelled'])
 @php($maxBytes = (int) config('attachments.max_file_size_bytes'))
 @php($attachmentMaxSizeLabel = $maxBytes >= 1073741824

@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Playground\Feature\Http\Controllers\API;
 
+use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\Playground\Support\Orders\DirectAttachmentUploadService;
 use App\Domain\Playground\Support\Orders\OrderAttachmentStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,6 +17,8 @@ class PlaygroundOrderUnrestrictedAttachmentTest extends TestCase
 {
     use RefreshDatabase;
 
+    private string $paymentGatewayId;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +28,13 @@ class PlaygroundOrderUnrestrictedAttachmentTest extends TestCase
             DirectAttachmentUploadService::class,
             new FakeDirectAttachmentUploadService(new OrderAttachmentStorage),
         );
+
+        $this->paymentGatewayId = PaymentGateway::query()->create([
+            'name' => 'midtrans',
+            'display_name' => 'Midtrans',
+            'is_active' => true,
+            'priority' => 10,
+        ])->id;
     }
 
     public function test_store_accepts_staged_executable_attachment(): void
@@ -39,6 +49,7 @@ class PlaygroundOrderUnrestrictedAttachmentTest extends TestCase
             'customer_email' => 'jane@example.com',
             'discount' => 0,
             'tax' => 0,
+            'payment_gateway_id' => $this->paymentGatewayId,
             'details' => [
                 ['product_name' => 'Widget', 'quantity' => 1, 'unit_price' => 100, 'discount' => 0],
             ],
@@ -58,6 +69,7 @@ class PlaygroundOrderUnrestrictedAttachmentTest extends TestCase
             'customer_email' => 'jane@example.com',
             'discount' => 0,
             'tax' => 0,
+            'payment_gateway_id' => $this->paymentGatewayId,
             'details' => [
                 ['product_name' => 'Widget', 'quantity' => 1, 'unit_price' => 100, 'discount' => 0],
             ],
@@ -72,6 +84,7 @@ class PlaygroundOrderUnrestrictedAttachmentTest extends TestCase
             'customer_email' => 'jane@example.com',
             'discount' => 0,
             'tax' => 0,
+            'payment_gateway_id' => $this->paymentGatewayId,
             'details' => [
                 ['product_name' => 'Widget', 'quantity' => 1, 'unit_price' => 100, 'discount' => 0],
             ],

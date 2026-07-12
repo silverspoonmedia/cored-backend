@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Playground\Feature\Http\Controllers\API;
 
+use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\Playground\Models\Order;
 use App\Domain\Playground\Models\OrderDetail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -10,6 +11,20 @@ use Tests\TestCase;
 class PlaygroundOrderCrudTest extends TestCase
 {
     use RefreshDatabase;
+
+    private string $paymentGatewayId;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->paymentGatewayId = PaymentGateway::query()->create([
+            'name' => 'midtrans',
+            'display_name' => 'Midtrans',
+            'is_active' => true,
+            'priority' => 10,
+        ])->id;
+    }
 
     /**
      * @return array<string, mixed>
@@ -23,6 +38,7 @@ class PlaygroundOrderCrudTest extends TestCase
             'discount' => 10,
             'tax' => 5,
             'status' => 'pending',
+            'payment_gateway_id' => $this->paymentGatewayId,
             'details' => [
                 ['product_name' => 'Widget', 'quantity' => 2, 'unit_price' => 100, 'discount' => 0],
                 ['product_name' => 'Gadget', 'quantity' => 1, 'unit_price' => 50, 'discount' => 5],
@@ -76,6 +92,23 @@ class PlaygroundOrderCrudTest extends TestCase
             ->assertJsonValidationErrors(['details']);
 
         $this->assertDatabaseCount('order_master', 0);
+    }
+
+    public function test_store_creates_invoice_without_payment_gateway(): void
+    {
+        $payload = $this->validPayload();
+        unset($payload['payment_gateway_id']);
+
+        $response = $this->postJson('/api/playground/orders', $payload);
+
+        $response->assertCreated();
+
+        $orderId = $response->json('data.id');
+        $this->assertDatabaseHas('invoices', [
+            'invoiceable_id' => $orderId,
+            'invoiceable_type' => 'order',
+            'payment_gateway_id' => null,
+        ]);
     }
 
     public function test_store_validates_detail_line_fields(): void

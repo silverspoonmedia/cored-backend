@@ -6,6 +6,7 @@ use App\Providers\Domain\ApprovalServiceProvider;
 use App\Providers\Domain\IdentityServiceProvider;
 use App\Providers\Domain\NavigationServiceProvider;
 use App\Providers\Domain\NotificationServiceProvider;
+use App\Providers\Domain\PaymentGatewayServiceProvider;
 use App\Providers\Domain\PlaygroundServiceProvider;
 
 return [
@@ -16,4 +17,5 @@ return [
     ActivityLogServiceProvider::class,
     PlaygroundServiceProvider::class,
     ApprovalServiceProvider::class,
+    PaymentGatewayServiceProvider::class,
 ];

@@ -8,9 +8,13 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                'resources/css/payments/channels-admin.css',
+                'resources/css/payments/order-invoice-show.css',
                 'resources/js/app.js',
                 'resources/js/notifications/bell.js',
                 'resources/js/orders/direct-upload.js',
+                'resources/js/payments/checkout.js',
+                'resources/js/payments/channels-admin.js',
                 'resources/js/select2-init.js',
             ],
             refresh: true,

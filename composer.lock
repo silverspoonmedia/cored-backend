@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b8152c2a774e05cec1e477ed5a25f5a0",
+    "content-hash": "dee1850d53565c5e0e0e6a629ad11d7e",
     "packages": [
         {
             "name": "archtechx/enums",
@@ -2056,6 +2056,58 @@
                 }
             ],
             "time": "2026-05-23T22:00:21+00:00"
+        },
+        {
+            "name": "ipaymu/ipaymu-php-api",
+            "version": "v3.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ipaymu/ipaymu-php-api.git",
+                "reference": "d020ee9d83fccfdcdd29e950ff1b7662a743a82e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ipaymu/ipaymu-php-api/zipball/d020ee9d83fccfdcdd29e950ff1b7662a743a82e",
+                "reference": "d020ee9d83fccfdcdd29e950ff1b7662a743a82e",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "fzaninotto/faker": "^1.9@dev",
+                "mockery/mockery": "^1.2.3",
+                "phpunit/phpunit": "5.7.*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "iPaymu\\": "iPaymu/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0"
+            ],
+            "authors": [
+                {
+                    "name": "iPaymu X Dev Fintech",
+                    "email": "support@ipaymu.com"
+                }
+            ],
+            "description": "iPaymu PHP API Package Library",
+            "homepage": "https://github.com/ipaymu/ipaymu-php-api",
+            "keywords": [
+                "indonesia",
+                "ipaymu",
+                "payment gateway"
+            ],
+            "support": {
+                "issues": "https://github.com/ipaymu/ipaymu-php-api/issues",
+                "source": "https://github.com/ipaymu/ipaymu-php-api/tree/v3.0.2"
+            },
+            "time": "2021-11-27T17:29:36+00:00"
         },
         {
             "name": "laravel-lang/actions",
@@ -4588,6 +4640,67 @@
                 }
             ],
             "time": "2026-03-08T20:05:35+00:00"
+        },
+        {
+            "name": "midtrans/midtrans-php",
+            "version": "2.6.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Midtrans/midtrans-php.git",
+                "reference": "8ed7fc58ff1ababe675da17acf8233f4028eb3be"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Midtrans/midtrans-php/zipball/8ed7fc58ff1ababe675da17acf8233f4028eb3be",
+                "reference": "8ed7fc58ff1ababe675da17acf8233f4028eb3be",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-json": "*",
+                "ext-openssl": "*",
+                "php": ">=5.4"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "5.7.*",
+                "psy/psysh": "0.4.*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "SnapBi\\": "SnapBi/",
+                    "Midtrans\\": "Midtrans/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andri Setiawan",
+                    "email": "andri.setiawan@veritrans.co.id"
+                },
+                {
+                    "name": "Alvin Litani",
+                    "email": "alvin.litani@veritrans.co.id"
+                },
+                {
+                    "name": "Ismail Faruqi",
+                    "email": "ismail.faruqi@veritrans.co.id"
+                },
+                {
+                    "name": "Muhammad Fauzi Masykur",
+                    "email": "muhammad.masykur@gojek.com"
+                }
+            ],
+            "description": "PHP Wrapper for Midtrans Payment API.",
+            "homepage": "https://midtrans.com",
+            "support": {
+                "issues": "https://github.com/Midtrans/midtrans-php/issues",
+                "source": "https://github.com/Midtrans/midtrans-php/tree/v2.6.2"
+            },
+            "time": "2025-03-18T06:30:17+00:00"
         },
         {
             "name": "monolog/monolog",

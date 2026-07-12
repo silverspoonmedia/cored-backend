@@ -2,6 +2,8 @@
 
 namespace Tests\Domain\Playground\Unit\Services;
 
+use App\Domain\PaymentGateway\Contracts\InvoiceAttachableServiceInterface;
+use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\Playground\Exceptions\OrderNotEditableException;
 use App\Domain\Playground\Exceptions\OrderRequiresDetailException;
 use App\Domain\Playground\Models\AttachmentUpload;
@@ -26,6 +28,8 @@ class OrderServiceTest extends TestCase
 
     private OrderService $service;
 
+    private string $paymentGatewayId;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,14 +40,26 @@ class OrderServiceTest extends TestCase
             new FakeDirectAttachmentUploadService(new OrderAttachmentStorage),
         );
 
+        $this->paymentGatewayId = PaymentGateway::query()->create([
+            'name' => 'midtrans',
+            'display_name' => 'Midtrans',
+            'is_active' => true,
+            'priority' => 10,
+        ])->id;
+
         $this->repository = Mockery::mock(OrderRepositoryInterface::class);
         $approvalService = Mockery::mock(ApprovalService::class);
         $approvalService->shouldReceive('initiate')->byDefault();
+        $invoiceAttachable = Mockery::mock(InvoiceAttachableServiceInterface::class);
+        $invoiceAttachable->shouldReceive('createPendingInvoiceForOrder')->byDefault();
+        $invoiceAttachable->shouldReceive('syncOrderInvoiceAmountIfPending')->byDefault();
+        $invoiceAttachable->shouldReceive('deletePendingInvoiceForOrder')->byDefault();
         $this->service = new OrderService(
             $this->repository,
             new OrderAttachmentStorage,
             app(DirectAttachmentUploadService::class),
             $approvalService,
+            $invoiceAttachable,
         );
     }
 
@@ -63,6 +79,7 @@ class OrderServiceTest extends TestCase
         $this->service->create([
             'customer_name' => 'Jane',
             'customer_email' => 'jane@example.com',
+            'payment_gateway_id' => $this->paymentGatewayId,
             'details' => [],
         ]);
     }
@@ -86,6 +103,7 @@ class OrderServiceTest extends TestCase
         $this->service->create([
             'customer_name' => 'Jane',
             'customer_email' => 'jane@example.com',
+            'payment_gateway_id' => $this->paymentGatewayId,
             'discount' => 20,
             'tax' => 5,
             'details' => [
@@ -109,6 +127,7 @@ class OrderServiceTest extends TestCase
             $this->service->create([
                 'customer_name' => 'Jane',
                 'customer_email' => 'jane@example.com',
+                'payment_gateway_id' => $this->paymentGatewayId,
                 'details' => [['product_name' => 'A', 'quantity' => 1, 'unit_price' => 10]],
             ], [$upload->id]);
             $this->fail('Expected the DB failure to propagate.');

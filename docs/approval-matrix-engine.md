@@ -1436,7 +1436,7 @@ The outstanding production blockers from the first pass have been reduced. The f
 ✅ **Menu cache flush command** - `php artisan menu:flush-cache` clears the cached navigation snapshot used by the dynamic sidebar.
 ✅ **Workflow admin tests** - `tests/Domain/Approval/Feature/ApprovalWorkflowAdminTest.php` covers workflow creation, step/approver setup, activation/deactivation, non-admin denial, Root/Admin menu seeding, web route role middleware, and menu cache flushing.
 
-**Test result:** `php artisan test --filter=Approval` passes: 29 tests, 107 assertions.
+**Test result:** `composer test -- --filter=Approval` passes: 29 tests, 107 assertions.
 
 ### Current Capabilities
 
