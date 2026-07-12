@@ -48,9 +48,18 @@ class EnvelopeEncrypted implements CastsAttributes
         }
 
         $context = $this->context($model, $key);
+        $plaintext = (string) $value;
+
+        $existingRaw = $attributes[$key] ?? $model->getRawOriginal($key) ?? null;
+
+        if (is_string($existingRaw) && $existingRaw !== ''
+            && $this->encryption()->storedEnvelopeMatchesPlaintext($existingRaw, $context, $plaintext)) {
+            return $existingRaw;
+        }
+
         $this->encryption()->decryptedValueCacheForget($context);
 
-        return $this->encryption()->encrypt((string) $value, $context);
+        return $this->encryption()->encrypt($plaintext, $context);
     }
 
     private function context(Model $model, string $key): DecryptionContext

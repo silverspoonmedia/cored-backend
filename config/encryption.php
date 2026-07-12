@@ -16,18 +16,44 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Decrypted value cache (POC — mirrors dynamic menu cache semantics)
+    | Decrypted value cache (invalidate-on-change + safety cap)
     |--------------------------------------------------------------------------
     |
-    | TTL in seconds for caching plaintext after a successful KMS unwrap + AES
-    | decrypt. When CACHE_STORE=redis in staging/production, entries move to
-    | Redis automatically with the same key prefix and TTL.
+    | Plaintext is cached after the first successful KMS unwrap + AES decrypt
+    | per decryption context and ciphertext fingerprint. Entries are flushed on
+    | encrypt() / cast set() when the value changes. decrypted_cache_max_ttl is
+    | a safety cap (seconds); 0 = no cap (forever until forget).
+    |
+    | ENCRYPTION_DECRYPTED_CACHE_TTL is a deprecated alias read when MAX_TTL is
+    | unset (one-release backward compatibility).
     |
     */
 
-    'decrypted_cache_ttl' => (int) env('ENCRYPTION_DECRYPTED_CACHE_TTL', 900),
+    'decrypted_cache_max_ttl' => (int) env(
+        'ENCRYPTION_DECRYPTED_CACHE_MAX_TTL',
+        env('ENCRYPTION_DECRYPTED_CACHE_TTL', 86400),
+    ),
+
+    /** @deprecated Use decrypted_cache_max_ttl; kept for config consumers */
+    'decrypted_cache_ttl' => (int) env(
+        'ENCRYPTION_DECRYPTED_CACHE_MAX_TTL',
+        env('ENCRYPTION_DECRYPTED_CACHE_TTL', 86400),
+    ),
 
     'decrypted_cache_prefix' => 'encryption.decrypted',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Decrypt audit frequency
+    |--------------------------------------------------------------------------
+    |
+    | cache_miss — log only the first decrypt per context + ciphertext fingerprint
+    | until cache invalidation (default, fewer rows).
+    | always — log every decrypt; includes cache_hit in activity properties.
+    |
+    */
+
+    'audit_decrypts' => env('ENCRYPTION_AUDIT_DECRYPTS', 'cache_miss'),
 
     /*
     |--------------------------------------------------------------------------
@@ -39,9 +65,27 @@ return [
     |
     */
 
-    'encrypt_sessions' => (bool) env('ENCRYPTION_SESSION_ENABLED', true),
+    'encrypt_sessions' => (bool) env('ENCRYPTION_SESSION_ENABLED', false),
 
     'blind_index_pepper' => env('ENCRYPTION_BLIND_INDEX_PEPPER', ''),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Decrypt audit exclusions (safety net)
+    |--------------------------------------------------------------------------
+    |
+    | Sessions use Laravel SESSION_ENCRYPT (APP_KEY), not envelope KMS. If the
+    | legacy encrypted_database handler is re-enabled, skip crypto activity rows.
+    |
+    */
+
+    'audit_excluded_resource_types' => [
+        'sessions',
+    ],
+
+    'audit_excluded_purposes' => [
+        'session_read',
+    ],
 
     /*
     |--------------------------------------------------------------------------

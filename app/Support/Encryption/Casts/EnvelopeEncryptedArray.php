@@ -68,9 +68,16 @@ class EnvelopeEncryptedArray implements CastsAttributes
         }
 
         $context = $this->context($model, $key);
-        $this->encryption()->decryptedValueCacheForget($context);
-
         $json = json_encode($value, JSON_THROW_ON_ERROR);
+
+        $existingRaw = $attributes[$key] ?? $model->getRawOriginal($key) ?? null;
+
+        if (is_string($existingRaw) && $existingRaw !== ''
+            && $this->encryption()->storedEnvelopeMatchesPlaintext($existingRaw, $context, $json)) {
+            return $existingRaw;
+        }
+
+        $this->encryption()->decryptedValueCacheForget($context);
 
         return $this->encryption()->encrypt($json, $context);
     }

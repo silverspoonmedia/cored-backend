@@ -2,9 +2,10 @@
 
 namespace App\Domain\ActivityLog\Http\Resources;
 
+use App\Domain\ActivityLog\Support\CryptoActivityPropertyPresenter;
+use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Models\Menu;
 use App\Domain\Playground\Models\Order;
-use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -31,9 +32,23 @@ class ActivityLogResource extends JsonResource
             'subject_label' => $this->resolveSubjectLabel(),
             'causer' => $this->resolveCauser(),
             'attribute_changes' => $this->attribute_changes?->toArray() ?? [],
-            'properties' => $this->properties?->toArray() ?? [],
+            'properties' => $this->resolveProperties(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolveProperties(): array
+    {
+        $properties = $this->properties?->toArray() ?? [];
+
+        if ($this->log_name === 'crypto') {
+            return CryptoActivityPropertyPresenter::forApi($properties);
+        }
+
+        return $properties;
     }
 
     private function resolveEventLabel(): string

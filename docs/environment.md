@@ -51,7 +51,7 @@ Then set at least:
 | `PUSHER_*` / `APP_NOTIFICATION_TYPE` | Optional locally (bell uses polling by default) |
 | `HCAPTCHA_*` | Disabled locally (`HCAPTCHA_ENABLED=false`) |
 | `OCI_*` | OCI API config + KMS crypto endpoint — see [oci-kms.md](./oci-kms.md) |
-| `ENCRYPTION_*` | Envelope encryption cache, blind index, session encryption — see [envelope-encryption.md](./envelope-encryption.md) |
+| `ENCRYPTION_*` | Envelope encryption — see [envelope-encryption.md](./envelope-encryption.md). Key vars: `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` (default `86400`), `ENCRYPTION_AUDIT_DECRYPTS`, `ENCRYPTION_BLIND_INDEX_PEPPER`, `ENCRYPTION_SESSION_ENABLED` |
 
 ```bash
 php artisan migrate
@@ -244,6 +244,8 @@ Local development can stay on `config:clear` only. Staging/production should use
 | `LOG_LEVEL` | `debug` | `info` | `warning` |
 | `SESSION_SECURE_COOKIE` | `false` | `true` | `true` |
 | `SESSION_ENCRYPT` | `false` | `true` | `true` |
+| `ENCRYPTION_SESSION_ENABLED` | `false` | `false` | `false` |
+| `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` | `86400` | `86400` | `86400` |
 | `HCAPTCHA_ENABLED` | `false` | `true` | `true` |
 | `MAIL_MAILER` | `log` | `smtp` | `smtp` |
 | `CACHE_STORE` / `QUEUE_CONNECTION` | `database` | `redis` | `redis` |
@@ -254,6 +256,7 @@ Local development can stay on `config:clear` only. Staging/production should use
 
 - `APP_ENV=production` and `APP_DEBUG=false`
 - `SESSION_SECURE_COOKIE=true` and `SESSION_ENCRYPT=true`
+- `ENCRYPTION_SESSION_ENABLED=false` (sessions use Tier 1 APP_KEY encryption, not OCI envelope)
 - `JWT_SECRET` generated (`env:install` does this on first run)
 - `HCAPTCHA_ENABLED=true` with valid keys
 - `GATEWAY_ENFORCE=true` with a strong `GATEWAY_SECRET` shared with [monolith-gateway](../../monolith-gateway) (API must not be reachable without the gateway)
@@ -313,6 +316,7 @@ PHPUnit sets `APP_ENV=testing` and overrides drivers in `phpunit.xml`. No `.env.
 - [JWT authentication](jwt-authentication.md#configuration)
 - [OCI KMS connectivity](oci-kms.md) — `OCI_*` env vars, `oci:kms-verify`, IAM troubleshooting
 - [Envelope encryption](envelope-encryption.md) — P0 columns, DEK cache, blind index, `encryption:migrate-p0`
+- [Crypto activity assessment](crypto-activity-assessment.md) — decrypt audit trail, `kms_key_id` masking, production checklist
 - [Database safety](database-safety.md) — test isolation, `ALLOW_DESTRUCTIVE_DB`, recovery
 - [SPA + Gateway integration](spa-gateway-integration.md) — three-project wiring, locale (SPA), realtime, playground
 - [Activity notifications (polling vs realtime)](notifications.md#realtime-vs-polling)

@@ -32,7 +32,6 @@ class EncryptionMigrateP0Command extends Command
             'attachments.cached_url' => $this->migrateAttachments(),
             'invoices.gateway_request_payload' => $this->migrateInvoiceColumn('gateway_request_payload'),
             'invoices.gateway_response_payload' => $this->migrateInvoiceColumn('gateway_response_payload'),
-            'sessions.payload' => $this->migrateSessions(),
             'cache.value' => $this->migrateSensitiveCacheRows(),
         ];
 
@@ -122,35 +121,6 @@ class EncryptionMigrateP0Command extends Command
                     $migrated++;
                 }
             });
-
-        return $migrated;
-    }
-
-    private function migrateSessions(): int
-    {
-        if (! DB::getSchemaBuilder()->hasTable('sessions')) {
-            return 0;
-        }
-
-        $migrated = 0;
-        $rows = DB::table('sessions')->where('payload', '!=', '')->orderBy('id')->lazyById();
-
-        foreach ($rows as $row) {
-            $payload = (string) $row->payload;
-
-            if ($payload === '' || EncryptedEnvelope::isEnvelopeJson($payload)) {
-                continue;
-            }
-
-            DB::table('sessions')->where('id', $row->id)->update([
-                'payload' => $this->encryption->encrypt(
-                    $payload,
-                    new DecryptionContext('sessions', (string) $row->id, 'payload', 'migration'),
-                ),
-            ]);
-
-            $migrated++;
-        }
 
         return $migrated;
     }

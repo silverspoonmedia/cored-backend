@@ -85,11 +85,22 @@ Envelope decryption is recorded via `CryptoActivityRecorder` — called **only**
 
 | Event | Activity `event` | Trigger |
 |-------|------------------|---------|
-| Field decrypted | `field_decrypted` | First successful decrypt of an envelope (cache miss path still logs once per request lifecycle via the service) |
+| Field decrypted | `field_decrypted` | Successful decrypt when audit rules apply (see below) |
 
-Properties (safe metadata only): `resource_type`, `resource_id`, `field`, `purpose`, `kms_key_id`, `ip_address`.
+Properties (safe metadata only): `resource_type`, `resource_id`, `field`, `purpose`, `kms_key_id`, `ip_address`, `cache_hit`, `envelope_version`, `legacy_ciphertext`.
 
-Filter the viewer with `?log_name=crypto`. See [Envelope encryption](./envelope-encryption.md) for P0 columns and cache semantics.
+**Audit frequency** (`ENCRYPTION_AUDIT_DECRYPTS`):
+
+| Mode | Behavior |
+|------|----------|
+| `cache_miss` (default) | Log the first decrypt per context within the decrypt-cache TTL only. |
+| `always` | Log every decrypt; `cache_hit: true` when served from decrypt cache. |
+
+**API masking:** `ActivityLogResource` masks `kms_key_id` OCIDs in JSON responses. Database rows keep the full OCID for forensics.
+
+**Not audited:** Session reads (`sessions` / `session_read`) — sessions use Laravel `SESSION_ENCRYPT`, not envelope KMS.
+
+Filter the viewer with `?log_name=crypto`. See [Envelope encryption](./envelope-encryption.md) and [Crypto activity assessment](./crypto-activity-assessment.md).
 
 ---
 

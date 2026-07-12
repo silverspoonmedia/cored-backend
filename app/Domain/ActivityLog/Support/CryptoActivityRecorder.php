@@ -13,15 +13,41 @@ use Illuminate\Support\Facades\Auth;
  */
 class CryptoActivityRecorder
 {
-    /**
-     * @param  array<string, mixed>  $extraProperties
-     */
+    /** @var array<int, string> */
+    private const ALLOWED_PROPERTY_KEYS = [
+        'resource_type',
+        'resource_id',
+        'field',
+        'purpose',
+        'kms_key_id',
+        'ip_address',
+        'cache_hit',
+        'envelope_version',
+        'legacy_ciphertext',
+    ];
+
+    /** @var array<int, string> */
+    private const FORBIDDEN_PROPERTY_KEYS = [
+        'plaintext',
+        'ciphertext',
+        'dek',
+        'dek_ciphertext',
+        'wrapped_dek',
+        'iv',
+        'tag',
+        'secret',
+        'token',
+    ];
+
     public function recordFieldDecrypted(
         string $resourceType,
         ?string $resourceId,
         string $field,
         ?string $purpose = null,
         ?string $kmsKeyId = null,
+        ?bool $cacheHit = null,
+        ?int $envelopeVersion = null,
+        ?bool $legacyCiphertext = null,
         array $extraProperties = [],
     ): void {
         $properties = array_merge([
@@ -31,7 +57,15 @@ class CryptoActivityRecorder
             'purpose' => $purpose,
             'kms_key_id' => $kmsKeyId,
             'ip_address' => request()->ip(),
-        ], $extraProperties);
+            'cache_hit' => $cacheHit,
+            'envelope_version' => $envelopeVersion,
+            'legacy_ciphertext' => $legacyCiphertext,
+        ], $this->filterExtraProperties($extraProperties));
+
+        $properties = array_filter(
+            $properties,
+            fn (mixed $value): bool => $value !== null,
+        );
 
         $logger = activity()
             ->useLog('crypto')
@@ -45,5 +79,30 @@ class CryptoActivityRecorder
         }
 
         $logger->log('field_decrypted');
+    }
+
+    /**
+     * @param  array<string, mixed>  $extraProperties
+     * @return array<string, mixed>
+     */
+    private function filterExtraProperties(array $extraProperties): array
+    {
+        $filtered = [];
+
+        foreach ($extraProperties as $key => $value) {
+            $key = (string) $key;
+
+            if (in_array($key, self::FORBIDDEN_PROPERTY_KEYS, true)) {
+                continue;
+            }
+
+            if (! in_array($key, self::ALLOWED_PROPERTY_KEYS, true)) {
+                continue;
+            }
+
+            $filtered[$key] = $value;
+        }
+
+        return $filtered;
     }
 }

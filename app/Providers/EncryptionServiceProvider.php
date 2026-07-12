@@ -36,7 +36,7 @@ class EncryptionServiceProvider extends ServiceProvider
         $this->app->booting(function (): void {
             if (
                 config('session.driver') === 'database'
-                && (bool) config('encryption.encrypt_sessions', true)
+                && (bool) config('encryption.encrypt_sessions', false)
             ) {
                 config(['session.driver' => 'encrypted_database']);
             }

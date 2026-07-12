@@ -20,7 +20,7 @@ class EnvelopeEncryptionService
     public function encrypt(string $plaintext, ?DecryptionContext $context = null): string
     {
         if ($context !== null) {
-            $this->decryptedValueCache->forget($context->cacheKey());
+            $this->decryptedValueCache->forgetByContext($context->cacheKey());
         }
 
         $dekResult = $this->kmsClient->generateDek();
@@ -59,19 +59,31 @@ class EnvelopeEncryptionService
 
     public function decrypt(string $storedValue, DecryptionContext $context): string
     {
-        return $this->decryptedValueCache->remember($context->cacheKey(), function () use ($storedValue, $context): string {
-            $plaintext = $this->decryptWithoutCache($storedValue);
+        $contextKey = $context->cacheKey();
+        $cacheHit = $this->decryptedValueCache->has($contextKey, $storedValue);
+
+        $plaintext = $this->decryptedValueCache->remember(
+            $contextKey,
+            $storedValue,
+            fn (): string => $this->decryptWithoutCache($storedValue),
+        );
+
+        if ($this->shouldAuditDecrypt($cacheHit, $context)) {
+            $metadata = $this->resolveAuditMetadata($storedValue);
 
             $this->cryptoActivityRecorder->recordFieldDecrypted(
                 resourceType: $context->resourceType,
                 resourceId: $context->resourceId,
                 field: $context->field,
                 purpose: $context->purpose,
-                kmsKeyId: $this->resolveKmsKeyId($storedValue),
+                kmsKeyId: $metadata['kms_key_id'],
+                cacheHit: $cacheHit,
+                envelopeVersion: $metadata['envelope_version'],
+                legacyCiphertext: $metadata['legacy_ciphertext'],
             );
+        }
 
-            return $plaintext;
-        });
+        return $plaintext;
     }
 
     public function decryptWithoutCache(string $storedValue): string
@@ -96,7 +108,19 @@ class EnvelopeEncryptionService
 
     public function decryptedValueCacheForget(DecryptionContext $context): void
     {
-        $this->decryptedValueCache->forget($context->cacheKey());
+        $this->decryptedValueCache->forgetByContext($context->cacheKey());
+    }
+
+    public function storedEnvelopeMatchesPlaintext(
+        string $storedValue,
+        DecryptionContext $context,
+        string $plaintext,
+    ): bool {
+        if (! EncryptedEnvelope::isEnvelopeJson($storedValue)) {
+            return false;
+        }
+
+        return hash_equals($plaintext, $this->decrypt($storedValue, $context));
     }
 
     private function decryptEnvelope(string $storedValue): string
@@ -142,12 +166,47 @@ class EnvelopeEncryptionService
         }
     }
 
-    private function resolveKmsKeyId(string $storedValue): ?string
+    private function shouldAuditDecrypt(bool $cacheHit, DecryptionContext $context): bool
     {
-        if (! EncryptedEnvelope::isEnvelopeJson($storedValue)) {
-            return null;
+        if ($this->isAuditExcluded($context)) {
+            return false;
         }
 
-        return EncryptedEnvelope::fromJson($storedValue)->kmsKeyId;
+        if (config('encryption.audit_decrypts') === 'always') {
+            return true;
+        }
+
+        return ! $cacheHit;
+    }
+
+    private function isAuditExcluded(DecryptionContext $context): bool
+    {
+        $excludedTypes = (array) config('encryption.audit_excluded_resource_types', []);
+        $excludedPurposes = (array) config('encryption.audit_excluded_purposes', []);
+
+        return in_array($context->resourceType, $excludedTypes, true)
+            || ($context->purpose !== null && in_array($context->purpose, $excludedPurposes, true));
+    }
+
+    /**
+     * @return array{kms_key_id: ?string, envelope_version: ?int, legacy_ciphertext: bool}
+     */
+    private function resolveAuditMetadata(string $storedValue): array
+    {
+        if (! EncryptedEnvelope::isEnvelopeJson($storedValue)) {
+            return [
+                'kms_key_id' => null,
+                'envelope_version' => null,
+                'legacy_ciphertext' => true,
+            ];
+        }
+
+        $envelope = EncryptedEnvelope::fromJson($storedValue);
+
+        return [
+            'kms_key_id' => $envelope->kmsKeyId,
+            'envelope_version' => $envelope->version,
+            'legacy_ciphertext' => false,
+        ];
     }
 }
