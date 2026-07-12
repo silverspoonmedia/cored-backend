@@ -22,6 +22,27 @@ Use the [adaptation contract](../internal-monorepo-assessment.md#adaptation-cont
 
 If unsure, write an entry. A false positive costs less than a missed downstream contract change.
 
+### Audit backlog entries
+
+Some `pending/` files come from a **cross-repo desync audit** rather than a single Monolith task. They are marked with:
+
+> **Origin:** cross-repo desync audit (YYYY-MM-DD). Not triggered by a single Monolith PR — backlog discovered retroactively.
+
+| Origin | When to create |
+|--------|----------------|
+| **Daily Monolith task** | Adaptation contract triggers during implementation |
+| **Audit backlog** | Explicit audit session compares Monolith vs Gateway vs Frontend and records gaps |
+
+Both types use the same [TEMPLATE.md](./TEMPLATE.md) and are implemented in a **`downstream sync session`**. Audit entries describe drift against current Monolith behavior (no Monolith code change required to create the entry).
+
+**Current audit backlog (2026-07-12):**
+
+| File | Priority | Topic |
+|------|----------|-------|
+| [pending/2026-07-12-invoice-checkout-spa-parity.md](./pending/2026-07-12-invoice-checkout-spa-parity.md) | **P1** | Invoice page channel checkout / `checkout_session` parity |
+| [pending/2026-07-12-spa-route-mapping-drift.md](./pending/2026-07-12-spa-route-mapping-drift.md) | **P2** | `routeMap.ts` + iPaymu `vue-routes.php` mapping |
+| [pending/2026-07-12-frontend-breadcrumbs-payment.md](./pending/2026-07-12-frontend-breadcrumbs-payment.md) | **P3** | Payment/billing breadcrumb trails |
+
 ---
 
 ## Directory layout
