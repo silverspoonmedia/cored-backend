@@ -6,7 +6,7 @@ It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap
 
 A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the Blade UI via the public **monolith-gateway** BFF. Gateway proxies `/api/*` to this application, sets HttpOnly cookies for the SPA, and enforces `GATEWAY_SECRET` when `GATEWAY_ENFORCE=true`. See [Three-project integration (Monolith + Gateway + Vue)](docs/spa-gateway-integration.md) and [Environment configuration — Public gateway perimeter](docs/environment.md#public-gateway-perimeter). SPA guides: `monolith-frontend/docs/`. Gateway internals: `monolith-gateway/docs/`.
 
-**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,Playground,Approval}/` (logical monorepo inside this repository). See [Domain modules](docs/domain-modules.md), [Internal monorepo assessment](docs/internal-monorepo-assessment.md), and [Internal monorepo porting](docs/internal-monorepo-porting.md). Gateway and Frontend stay separate repos and only change when HTTP API contracts change.
+**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,Playground,Approval,PaymentGateway}/` (logical monorepo inside this repository). See [Domain modules](docs/domain-modules.md), [Internal monorepo assessment](docs/internal-monorepo-assessment.md), and [Internal monorepo porting](docs/internal-monorepo-porting.md). Gateway and Frontend stay separate repos and only change when HTTP API contracts change.
 
 ### Living documentation (required)
 
@@ -138,8 +138,11 @@ php artisan db:seed
 To reset and reseed during development:
 
 ```bash
+# Requires ALLOW_DESTRUCTIVE_DB=true in .env — see docs/database-safety.md
 php artisan migrate:fresh --seed
 ```
+
+**Database safety:** Tests use SQLite; dev uses MySQL. Prefer `composer test` (runs `config:clear` first). Bare `php artisan test` is guarded on current code — see [docs/database-safety.md](docs/database-safety.md).
 
 ### 4. Frontend assets
 
@@ -150,7 +153,7 @@ npm install
 npm run build
 ```
 
-`package.json` includes `laravel-echo` and `pusher-js` as runtime dependencies. Vite entries are declared in `vite.config.js` (`resources/js/app.js`, `resources/js/notifications/bell.js`).
+`package.json` includes `laravel-echo` and `pusher-js` as runtime dependencies. Vite entries are declared in `vite.config.js` (`resources/js/app.js`, `resources/js/notifications/bell.js`, `resources/js/payments/checkout.js`, `resources/js/payments/channels-admin.js`, `resources/css/payments/order-invoice-show.css`, and others).
 
 For local development with hot reload:
 
@@ -190,7 +193,7 @@ php artisan db:seed
 | Health check | `GET /api/ping` (global) or `GET /whatsup` |
 | Login | `POST /api/v1/auth/login` with `admin@example.com` / `123456789` |
 | Authenticated profile | `GET /api/v1/auth/me` with `Authorization: Bearer <token>` |
-| Tests | `composer test` or `php artisan test` |
+| Tests | `composer test` (preferred; clears config cache first) |
 | Notification bell (polling) | Sign in, open dashboard — badge polls on load and every `APP_NOTIFICATION_POLLING_INTERVAL` s (default 60; `APP_NOTIFICATION_TYPE=polling` or missing Pusher credentials) |
 | Notification bell (realtime) | Set `APP_NOTIFICATION_TYPE=realtime` + `PUSHER_*`, run `npm run build`, trigger a notification (e.g. create user) — badge updates without reload; see [notifications.md](docs/notifications.md#realtime-vs-polling) |
 | Code style | `php artisan pint` — see [Laravel Pint](docs/laravel-pint.md) |
@@ -229,6 +232,8 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [API routing](docs/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
 | [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example, and the master-detail aggregate (Order + OrderDetail) with transactional writes |
 | [Playground (reference surface)](docs/playground.md) | Non-production `/api/playground/*` demos: simple CRUD (Users), master-detail Orders with **browser-direct chunked S3 uploads** (manual Start queue + configurable concurrency), and transactional writes |
+| [Payment gateways](docs/payment-gateways.md) | Midtrans/iPaymu, invoices, channel checkout, subscriptions, webhooks |
+| [Database safety](docs/database-safety.md) | Prevent dev DB wipe; test vs MySQL; `composer test`; recovery |
 | [Approval matrix engine](docs/approval-matrix-engine.md) | Generic, code-free configurable approval workflow engine with conditional steps, parallel approver modes, SLA tracking, and delegation management - integrated with Order document type |
 | [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 5 / jQuery 3.7 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
@@ -287,6 +292,8 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - AJAX / DataTable error UX (auth expired, CSRF, proxy failures) → [web-frontend.md — AJAX error handling](docs/web-frontend.md#ajax-error-handling-contract)
 - hCaptcha on public auth (API validation + Blade widget) → [jwt-authentication.md](docs/jwt-authentication.md#hcaptcha-defense-in-depth), [web-frontend.md](docs/web-frontend.md#hcaptcha-on-auth-forms)
 - Multi-language (API, Blade, DB) → [localization.md](docs/localization.md)
+- Payments, channel checkout, invoices → [payment-gateways.md](docs/payment-gateways.md)
+- Database safety (tests vs MySQL, `ALLOW_DESTRUCTIVE_DB`) → [database-safety.md](docs/database-safety.md)
 - Long-lived worker safety for future Octane + Swoole deployment → [octane-readiness.md](docs/octane-readiness.md)
 
 ---
@@ -305,7 +312,7 @@ php artisan jwt:secret           # Generate JWT_SECRET (once per environment)
 php artisan lang:update          # Refresh laravel-lang package files (also runs on composer update)
 php artisan locale:add <locale>  # Onboard a new locale (managed files + config + app-owned scaffolding)
 php artisan pint                 # Format PHP code
-php artisan test                 # PHPUnit test suite
+composer test                    # PHPUnit (clears config cache first)
 npm run test:js                  # Vitest — JS unit tests (upload-queue scheduler)
 npm run build                    # Vite production bundle (direct-upload.js, bell.js, app.css)
 ```

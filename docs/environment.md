@@ -249,12 +249,19 @@ PHPUnit sets `APP_ENV=testing` and overrides drivers in `phpunit.xml`. No `.env.
 | `GATEWAY_SECRET=testing-gateway-secret` | Stable secret for middleware tests that temporarily enable enforcement via `config([...])`. |
 | `tests/TestCase.php` `config([...])` | Overrides cached `bootstrap/cache/config.php` gateway values so PHPUnit env vars are not ignored when config is cached locally. |
 | CSRF bypass in `tests/TestCase.php` | `withoutMiddleware(PreventRequestForgery::class)` (Laravel 13) so authenticated web proxy tests exercise API forwarding, not session token plumbing. [`WebCsrfErrorTest`](../tests/Feature/Http/Controllers/Web/WebCsrfErrorTest.php) still covers the **419** JSON envelope when CSRF fails. |
+| `tests/bootstrap.php` + sqlite guard | Deletes `bootstrap/cache/config.php` and forces SQLite before PHPUnit; [`TestCase`](../tests/TestCase.php) fails if `database.default !== sqlite`. See [database-safety.md](./database-safety.md). |
+| `ALLOW_DESTRUCTIVE_DB` | When `false` (default), blocks `migrate:fresh` / `db:wipe` on non-sqlite drivers. Set `true` only for intentional schema resets. |
 
-**Payment channel checkout:** `PAYMENT_PREFER_CHANNEL_CHECKOUT` (default `true`) is read from [`config/payment.php`](../config/payment.php). Channel registry rows come from `PaymentChannelSeeder` (run with `DatabaseSeeder` or after `PaymentGatewaySeeder`).
+**Running tests:** Prefer `composer test` (runs `config:clear` first). Filtered runs: `composer test -- --filter=YourTest`.
+
+**Payment channel checkout:** `PAYMENT_PREFER_CHANNEL_CHECKOUT` is defined in [`config/payment.php`](../config/payment.php) but **not read at runtime** today. `checkout_mode` (`channel` vs `snap_fallback`) is derived from whether `GET /api/v1/payment-channels` returns any active channels. Channel registry rows come from `PaymentChannelSeeder` (run with `DatabaseSeeder` or after `PaymentGatewaySeeder`). See [payment-gateways.md](./payment-gateways.md).
+
+**Local dev note:** Running `php artisan config:cache` then tests without guards historically wiped the MySQL dev database via `RefreshDatabase`. Current defense layers mitigate this — see [database-safety.md](./database-safety.md).
 
 ## Related docs
 
 - [JWT authentication](jwt-authentication.md#configuration)
+- [Database safety](database-safety.md) — test isolation, `ALLOW_DESTRUCTIVE_DB`, recovery
 - [SPA + Gateway integration](spa-gateway-integration.md) — three-project wiring, locale (SPA), realtime, playground
 - [Activity notifications (polling vs realtime)](notifications.md#realtime-vs-polling)
 - [Playground (non-production only)](playground.md)

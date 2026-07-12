@@ -1,5 +1,6 @@
 @props([
     'currentStep' => 1,
+    'completed' => false,
 ])
 
 @php
@@ -24,7 +25,7 @@
         @php
             $stateClass = $number < $currentStep
                 ? 'is-done'
-                : ($number === $currentStep ? 'is-active' : '');
+                : ($number === $currentStep ? ($completed ? 'is-done' : 'is-active') : '');
         @endphp
         <div class="ois-step {{ $stateClass }}">
             <span class="ois-step__num">{{ $number }}</span>

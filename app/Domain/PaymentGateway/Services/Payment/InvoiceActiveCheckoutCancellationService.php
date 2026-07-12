@@ -11,7 +11,6 @@ class InvoiceActiveCheckoutCancellationService
 {
     public function __construct(
         private InvoiceRepositoryInterface $invoices,
-        private InvoicePaymentInitiationGuard $initiationGuard,
     ) {}
 
     public function prepareForChannelCheckout(Invoice $invoice): void
@@ -55,23 +54,11 @@ class InvoiceActiveCheckoutCancellationService
 
         if ($gatewayName === 'midtrans') {
             if ($this->hasExternalTransactionId($invoice) || $this->hasGatewayResponsePayload($invoice)) {
-                app(MidtransPaymentService::class)->cancelTransaction($invoice->invoice_number);
-                $this->initiationGuard->ensurePayableForProvider($invoice->id, 'midtrans');
-                $invoice->refresh();
-            }
-        }
-
-        if ($gatewayName === 'ipaymu' && $this->hasExternalTransactionId($invoice)) {
-            $guardResult = $this->initiationGuard->ensurePayableForProvider($invoice->id, 'ipaymu');
-
-            if (is_array($guardResult)) {
-                abort($guardResult['http'], $guardResult['message']);
-            }
-
-            $invoice = $guardResult->refresh();
-
-            if ($this->hasExternalTransactionId($invoice) && in_array($invoice->status, ['pending', 'challenge'], true)) {
-                abort(422, __('api/payments.checkout.active_session_pending'));
+                try {
+                    app(MidtransPaymentService::class)->cancelTransaction($invoice->invoice_number);
+                } catch (\Throwable) {
+                    // Best-effort cancel; local session is cleared below regardless.
+                }
             }
         }
 

@@ -17,5 +17,13 @@ abstract class TestCase extends BaseTestCase
         ]);
 
         $this->withoutMiddleware(PreventRequestForgery::class);
+
+        if (config('database.default') !== 'sqlite') {
+            $this->fail(
+                'Tests must use the sqlite connection (see phpunit.xml). '
+                .'Run `composer test` or `php artisan config:clear` before `php artisan test` '
+                .'so cached MySQL config does not target the dev database.'
+            );
+        }
     }
 }

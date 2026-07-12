@@ -438,7 +438,7 @@ Feature tests: `tests/Domain/Identity/Feature/Http/Controllers/API/V1/UserManage
 Covers hierarchy filtering, create/update role validation, permission denials, soft delete, assignable roles, multi-role actors, and self-delete (422).
 
 ```bash
-php artisan test --filter=UserManagement
+composer test -- --filter=UserManagement
 ```
 
 ---

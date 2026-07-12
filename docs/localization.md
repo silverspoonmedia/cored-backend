@@ -224,7 +224,7 @@ What it does:
 
 The copied files hold the reference locale's text as a **fallback**, so [`LocaleParityTest`](#locale-parity-enforced) passes immediately — then you translate them in place. Managed root files (`auth.php`, `validation.php`, …) are never copied; their subdirectory namesakes (`web/auth.php`, `api/auth.php`) **are** treated as application-owned. Command source: `app/Console/Commands/AddLocaleCommand.php`; covered by `tests/Feature/Console/AddLocaleCommandTest.php`.
 
-After adding: translate `lang/{locale}/*` and `lang/{locale}.json`, then run `php artisan test --filter=LocaleParity` and `php artisan config:clear` if config is cached.
+After adding: translate `lang/{locale}/*` and `lang/{locale}.json`, then run `composer test -- --filter=LocaleParity` and `php artisan config:clear` if config is cached.
 
 ---
 

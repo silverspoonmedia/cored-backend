@@ -114,6 +114,8 @@ Breaking changes should use a new API version (`routes/api/v2.php`) rather than 
 
 Recorded **2026-07-09** on Windows / Laragon.
 
+> **Note:** Test counts below are **historical snapshots** from the migration period. For the current baseline, run `composer test` in Monolith and update this table only when deliberately refreshing the assessment.
+
 ### Pre-migration baseline
 
 | Project | Command | Result |

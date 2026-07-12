@@ -51,7 +51,10 @@
     <div class="row g-3 mb-3">
         <div class="col-lg-8">
             @if ($invoice)
-                <x-adminlte4::payments.payment-steps :current-step="$paymentUi['step']" />
+                <x-adminlte4::payments.payment-steps
+                    :current-step="$paymentUi['step']"
+                    :completed="$invoiceStatus === 'paid'"
+                />
 
                 <x-adminlte4::payments.checkout-panel
                     :invoice="$invoice"

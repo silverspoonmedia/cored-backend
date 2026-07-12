@@ -470,8 +470,8 @@ per the [Localization task rule](./localization.md#task-rule-required):
 | `resources/js/orders/upload-queue.test.js` | Browser upload queue scheduler (`runWithConcurrency`): empty list, concurrency ceiling, completion, error propagation |
 
 ```bash
-php artisan test --filter=Playground
-php artisan test --filter=Order
+composer test -- --filter=Playground
+composer test -- --filter=Order
 npm run test:js    # Vitest — upload-queue scheduler
 ```
 

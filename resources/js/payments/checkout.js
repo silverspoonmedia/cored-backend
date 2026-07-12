@@ -153,7 +153,7 @@ function initChannelCheckout(root, csrfToken, messages) {
                 throw new Error(payload.message || messages.channelFailed || 'Channel checkout failed.');
             }
 
-            showInstructions(payload.data ?? {});
+            window.location.reload();
         } catch (error) {
             const message = error instanceof Error ? error.message : (messages.channelFailed ?? 'Channel checkout failed.');
             window.alert(message);

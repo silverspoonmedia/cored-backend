@@ -22,10 +22,12 @@ app/Domain/PaymentGateway/
 ├── Models/              PaymentGateway, Invoice, Subscription, PaymentChannel
 ├── Enums/               DisbursementStatus, SubscriptionStatus, BillingCycle, PaymentChannelKind
 ├── Services/
-│   ├── Payment/InvoicePaymentInitiationGuard.php  # lock + PSP sync before snap/charge
-│   ├── Payment/InvoiceChannelCheckoutService.php  # channel direct checkout orchestrator
-│   ├── Payment/PaymentChannelResolver.php         # route logical channel → gateway
-│   ├── Payment/PaymentInstructionNormalizer.php   # PSP JSON → UI instructions DTO
+│   ├── Payment/InvoicePaymentInitiationGuard.php       # lock + PSP sync before snap/charge
+│   ├── Payment/InvoiceChannelCheckoutService.php       # channel direct checkout orchestrator
+│   ├── Payment/InvoiceActiveCheckoutCancellationService.php  # abandon session before switch/snap/edit
+│   ├── Payment/InvoiceCheckoutInstructionResolver.php  # rehydrate instructions from persisted session
+│   ├── Payment/PaymentChannelResolver.php              # route logical channel → gateway
+│   ├── Payment/PaymentInstructionNormalizer.php        # PSP JSON → UI instructions DTO
 │   ├── Payment/Midtrans/   # vertical slice (Snap, Core API, webhooks)
 │   ├── Payment/Ipaymu/   # vertical slice (redirect, direct, webhooks)
 │   └── Billing/            # funds ledger + disbursement state machine
@@ -72,15 +74,26 @@ Order create **does not** require `payment_gateway_id`. Monolith creates a pendi
 
 Order show API eager-loads `invoice.paymentGateway`.
 
-**Paying an order:** Vue `PaymentCheckoutPanel` loads Gateway `GET /api/v1/payments/checkout-context` (order/subscription + channels). When `checkout_mode` is `channel`, the user picks a logical channel (QRIS, VA, e-wallet) and Monolith returns normalized payment instructions via `POST /api/v1/invoices/{id}/channel-checkout`. When no channels are available at load time, the panel falls back to hosted Snap (Midtrans) or redirect (iPaymu). When channel checkout fails on **all** configured routes, the API returns `422` with `data.snap_fallback_available: true` and the UI offers hosted checkout.
+**Paying an order — Vue SPA (via Gateway):** `PaymentCheckoutPanel` loads `GET /api/v1/payments/checkout-context` (order/subscription + channels). When `checkout_mode` is `channel`, the user picks a logical channel (QRIS, VA, e-wallet) and Monolith returns normalized payment instructions via `POST /api/v1/invoices/{id}/channel-checkout`. When no channels are available at load time, the panel falls back to hosted Snap (Midtrans) or redirect (iPaymu). When channel checkout fails on **all** configured routes, the API returns `422` with `data.snap_fallback_available: true` and the UI offers hosted checkout.
 
-**Blade admin** (`orders.show`, `invoices.show`) uses a payment-first layout: status hero, 3-step hint, channel checkout panel with kind icons, and a financial sidebar. Same channel-first flow via [`checkout-panel.blade.php`](../resources/views/adminlte4/components/payments/checkout-panel.blade.php) + [`checkout.js`](../resources/js/payments/checkout.js). Styles: [`order-invoice-show.css`](../resources/css/payments/order-invoice-show.css). Web proxies:
+**Paying an order — Blade admin** (`orders.show`, `invoices.show`) uses a payment-first layout: [`payment-status-hero.blade.php`](../resources/views/adminlte4/components/payments/payment-status-hero.blade.php), [`payment-steps.blade.php`](../resources/views/adminlte4/components/payments/payment-steps.blade.php), channel checkout panel, and a financial sidebar. Channel checkout only — **no hosted Snap/redirect buttons in Blade** when channels are empty.
+
+| Surface | `checkout_mode=channel` | `checkout_mode=snap_fallback` |
+|---------|-------------------------|-------------------------------|
+| **Vue** (Gateway aggregate) | Channel picker + instructions | Snap (Midtrans) / redirect (iPaymu) |
+| **Blade** | Channel picker + instructions + polling | Message only (`no_channels`) — no Snap UI |
+
+Blade components: shell [`checkout-panel.blade.php`](../resources/views/adminlte4/components/payments/checkout-panel.blade.php) (card + `@vite(checkout.js)`), body [`checkout-panel-body.blade.php`](../resources/views/adminlte4/components/payments/checkout-panel-body.blade.php) (markup + data attributes). Optional `hubMode` prop hides duplicate invoice summary / gateway line on order and invoice show pages.
+
+Assets: [`checkout.js`](../resources/js/payments/checkout.js), [`instructionMedia.js`](../resources/js/payments/instructionMedia.js) (QR image resolution, clipboard copy; external QR API fallback when only `qr_string` is present), [`order-invoice-show.css`](../resources/css/payments/order-invoice-show.css).
+
+Web proxies (Blade uses channel + sync-status; snap-token exists for programmatic/Vue use, not Blade UI today):
 
 | Web route | API |
 |-----------|-----|
 | `POST /invoices/{id}/checkout/channel` | `POST /api/v1/invoices/{id}/channel-checkout` |
 | `POST /invoices/{id}/checkout/sync-status` | Provider `sync-status` |
-| `POST /invoices/{id}/checkout/snap-token` | Snap/redirect fallback |
+| `POST /invoices/{id}/checkout/snap-token` | Snap/redirect fallback (Vue / API clients) |
 
 ### Payment channel direct checkout
 
@@ -121,13 +134,43 @@ POST /api/v1/invoices/{id}/channel-checkout
 
 `buyer` is optional when the invoice morph provides customer fields (order/subscription).
 
-**Normalized response (`instructions` by kind):**
+**Normalized channel-checkout response** (same shape as `checkout_session` on `GET /api/v1/invoices/{id}`):
+
+| Top-level field | Description |
+|-----------------|-------------|
+| `channel_code` | Logical channel code (e.g. `qris`, `va_bca`) |
+| `kind` | `qris`, `va`, or `ewallet` |
+| `gateway` | Gateway name (`midtrans`, `ipaymu`) |
+| `invoice_id` | Invoice UUID |
+| `amount`, `currency` | Payable amount |
+| `expires_at` | Optional PSP expiry |
+| `external_transaction_id` | PSP transaction id when assigned |
+| `instructions` | Kind-specific object (see below) |
+
+**`instructions` by kind:**
 
 | `instructions.type` | Fields |
 |-----------------------|--------|
 | `qris` | `qr_string`, `qr_url` (URLs or `data:image/png;base64,...` from iPaymu `QrImage`) |
-| `va` | `bank_name`, `va_number`, `payment_name` |
+| `va` | `bank_name`, `va_number`; `payment_name` on **iPaymu** only (Midtrans VA omits it) |
 | `ewallet` | `deeplink_url`, `qr_url`, `qr_string` |
+
+**iPaymu VA field mapping** ([`PaymentInstructionNormalizer`](../app/Domain/PaymentGateway/Services/Payment/PaymentInstructionNormalizer.php)): `va_number` is resolved from `PaymentNo` → `Va` → `PaymentCode` in the PSP payload.
+
+### Checkout session hydration
+
+[`InvoiceResource`](../app/Domain/PaymentGateway/Http/Resources/InvoiceResource.php) includes `checkout_session` on every invoice API response — the same normalized DTO as channel-checkout `data`, or `null` when no resumable session exists.
+
+[`InvoiceCheckoutInstructionResolver`](../app/Domain/PaymentGateway/Services/Payment/InvoiceCheckoutInstructionResolver.php) rebuilds instructions from `payment_channel_code` + `gateway_response_payload` when:
+
+- Invoice status is `pending` or `challenge`
+- Channel is still active and gateway is set
+- `gateway_request_payload.mode` is **not** `redirect` (hosted redirect sessions are not rehydrated as channel instructions)
+- Normalized instructions are renderable (non-empty VA/QR/deeplink)
+
+**Blade resume flow:** [`checkout-panel.blade.php`](../resources/views/adminlte4/components/payments/checkout-panel.blade.php) passes `data-initial-checkout` from `checkout_session`; [`checkout.js`](../resources/js/payments/checkout.js) renders instructions on load. After a successful channel POST, the page performs a **full reload** (not inline render from the POST response). While instructions are visible, the script polls `sync-status` about every 15 seconds until paid or failed.
+
+**Vue SPA:** may read `checkout_session` from `GET /api/v1/invoices/{id}` or from channel-checkout responses; Gateway `checkout-context` aggregate does **not** include `checkout_session` — fetch the invoice separately when resuming.
 
 Provider-specific charge APIs (`POST .../transactions/charge`) remain available for programmatic use. Channel checkout uses [`InvoiceChannelCheckoutService`](../app/Domain/PaymentGateway/Services/Payment/InvoiceChannelCheckoutService.php) + [`InvoicePaymentInitiationGuard`](../app/Domain/PaymentGateway/Services/Payment/InvoicePaymentInitiationGuard.php) (same pre-payment sync rules as snap/charge).
 
@@ -166,16 +209,17 @@ Abandon behaviour:
 | Gateway | Cancel API | On abandon |
 |---------|------------|------------|
 | **Midtrans** | `cancelTransaction(invoice_number)` when external id **or** Snap payload exists | Best-effort cancel, then clear checkout fields (`external_transaction_id`, `payment_channel_code`, gateway payloads, `payment_gateway_id`) |
-| **iPaymu** | No reliable cancel API | Sync via guard; if PSP still reports **pending** → **422** `active_session_pending` (user must wait for PSP expiry) |
+| **iPaymu** | No reliable cancel API | **Local fields cleared only** — no PSP sync or `active_session_pending` check during abandon |
 
-**Known limitations (documented, not fixed in this pass):**
+**Known limitations:**
 
-- **iPaymu pending session** — cannot be cancelled via API; channel switch or order amount change may return 422 until the PSP session expires.
+- **iPaymu pending at PSP** — abandon clears local session fields so channel switch can proceed; an orphan pending transaction may still exist at iPaymu until expiry/reconcile. Pre-checkout guard may still return **422** `active_payment_exists` when initiating a **new** checkout while PSP reports pending **before** abandon runs.
 - **Concurrent browser tabs** — row lock is per request; two tabs can race before abandon completes.
 - **Webhook during channel switch** — sync may mark paid while UI still shows old instructions; polling/reload mitigates partially.
 - **Midtrans cancel failure** — abandon still clears local fields; an orphan transaction may remain at the PSP until reconcile/expire.
 - **Pre-migration invoices** may still have a default gateway row; new orders use `payment_gateway_id` null until checkout.
 - **Subscription API** still accepts optional `payment_gateway_id` on create (Vue UI no longer sends it).
+- **Blade** does not handle `snap_fallback_available` on channel-checkout 422 — Vue `PaymentCheckoutPanel` does.
 
 **Order edit:** amount sync runs after abandon. If only non-monetary fields change (e.g. notes), checkout is **not** cancelled.
 
@@ -253,9 +297,9 @@ Seeded in [`RoleSeeder`](../database/seeders/RoleSeeder.php):
 
 | Layer | Role |
 |-------|------|
-| **Monolith** | Source of truth — all payment rules, persistence, webhooks |
-| **Gateway** | Proxy + `GET /api/v1/payments/checkout-context` aggregate (channels + `checkout_mode`) |
-| **Frontend** | Channel picker, payment instructions panel, Snap/redirect fallback |
+| **Monolith** | Source of truth — all payment rules, persistence, webhooks, `checkout_session` on invoices |
+| **Gateway** | Proxy + `GET /api/v1/payments/checkout-context` aggregate (channels + `checkout_mode`; no `checkout_session`) |
+| **Frontend** | Channel picker, payment instructions panel, **Snap/redirect fallback** (Vue only) |
 
 See [spa-gateway-integration.md](./spa-gateway-integration.md).
 
@@ -263,9 +307,23 @@ See [spa-gateway-integration.md](./spa-gateway-integration.md).
 
 ## Tests
 
+Prefer `composer test` in Monolith (clears config cache first). See [database-safety.md](./database-safety.md).
+
 ```powershell
-php artisan test --filter=PaymentGateway
-php artisan test --testsuite=Domain
+composer test -- --filter=InvoiceActiveCheckout
+composer test -- --filter=InvoiceCheckoutInstructionResolver
+composer test -- --filter=PaymentInstructionNormalizer
+composer test -- --filter=PaymentCheckoutWeb
+composer test -- --filter=InvoiceChannelCheckout
+composer test -- --testsuite=Domain
 ```
 
-Signature verifiers, disbursement state machine, subscription invoice lifecycle, Midtrans webhook routing, **invoice payment initiation guard** (pre-checkout PSP sync), **payment channel resolver / channel checkout**.
+| Test class | Covers |
+|------------|--------|
+| `InvoiceActiveCheckoutTest` | Abandon session, channel switch after prior iPaymu VA session |
+| `InvoiceCheckoutInstructionResolverTest` | Session hydration from persisted payload |
+| `PaymentInstructionNormalizerTest` | Normalization incl. iPaymu `PaymentCode` VA mapping |
+| `PaymentCheckoutWebTest` | Web proxies, channel prefetch from versioned API |
+| `InvoiceChannelCheckoutTest` | Channel checkout, `snap_fallback_available` on route failure |
+
+Also: signature verifiers, disbursement state machine, subscription invoice lifecycle, Midtrans webhook routing, **invoice payment initiation guard** (pre-checkout PSP sync), **payment channel resolver**.

@@ -158,6 +158,57 @@ class InvoiceActiveCheckoutTest extends TestCase
         $this->assertSame(500.0, (float) $invoice->customer_gross_total);
     }
 
+    public function test_channel_checkout_switches_ipaymu_va_channel_after_prior_session(): void
+    {
+        $invoice = $this->createPayableInvoice('ipaymu', [
+            'payment_channel_code' => 'va_bni',
+            'external_transaction_id' => '217546',
+            'gateway_request_payload' => ['mode' => 'direct'],
+            'gateway_response_payload' => [
+                'Status' => 200,
+                'Data' => [
+                    'PaymentCode' => '8808123456',
+                    'PaymentChannel' => 'BNI',
+                ],
+            ],
+        ]);
+        $admin = $this->userWithRole('Admin');
+
+        $this->mock(IpaymuPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn([
+                    'ok' => true,
+                    'data' => [
+                        'Status' => 200,
+                        'Data' => [
+                            'TransactionId' => 217547,
+                            'PaymentCode' => '3811800034254667',
+                            'PaymentChannel' => 'MANDIRI',
+                            'PaymentName' => 'Hallo Bali',
+                        ],
+                    ],
+                    'message_key' => 'api/payments.ipaymu.charge_created',
+                    'http' => 201,
+                ]);
+        });
+
+        $this->mock(MidtransPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn(['ok' => false, 'message' => 'Midtrans down', 'http' => 502]);
+        });
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'va_mandiri'])
+            ->assertCreated()
+            ->assertJsonPath('data.channel_code', 'va_mandiri')
+            ->assertJsonPath('data.instructions.va_number', '3811800034254667');
+
+        $invoice->refresh();
+        $this->assertSame('va_mandiri', $invoice->payment_channel_code);
+    }
+
     private function userWithRole(string $role): User
     {
         $user = User::factory()->create();

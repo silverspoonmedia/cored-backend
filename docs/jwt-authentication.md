@@ -199,7 +199,7 @@ Validation is enforced in API Form Requests via the `ValidatesHcaptcha` trait (`
 
 **Web UI:** see [Web frontend — hCaptcha](./web-frontend.md#hcaptcha-on-auth-forms). Summary: `<x-adminlte4::form.hcaptcha />` (invisible widget + `MonolithHcaptcha` API) and `<x-adminlte4::form.auth-submit />` (captcha + submit grid) on auth screens; `ajax-form` calls `MonolithHcaptcha.execute()` on submit before the fetch. `PasswordResetController` and `TwoFactorController` forward `h-captcha-response` to the API. On `422`, `ajax-form` dispatches `ajax-form:invalid`; the hCaptcha script resets all widgets.
 
-**Tests:** `php artisan test --filter=Hcaptcha` (`HcaptchaVerifierTest`, `HcaptchaTest`, `HcaptchaConfigTest`, `HcaptchaAuthTest`, `HcaptchaInvisibleAuthFormsTest`).
+**Tests:** `composer test -- --filter=Hcaptcha` (`HcaptchaVerifierTest`, `HcaptchaTest`, `HcaptchaConfigTest`, `HcaptchaAuthTest`, `HcaptchaInvisibleAuthFormsTest`). See [database-safety.md](./database-safety.md).
 
 ### Auth guard (`config/auth.php`)
 
@@ -512,6 +512,7 @@ The `GET /api/v1/auth/me` response includes `roles` and `permissions` arrays for
 php artisan jwt:secret
 
 # Migrate and seed roles + sample admin
+# Requires ALLOW_DESTRUCTIVE_DB=true in .env — see docs/database-safety.md
 php artisan migrate:fresh --seed
 ```
 
@@ -570,7 +571,7 @@ Ensure `MAIL_*` is configured for verification and reset emails (tests use `MAIL
 Run:
 
 ```bash
-php artisan test --filter=Auth
+composer test -- --filter=Auth
 ```
 
 Feature tests use `Tests\Concerns\SeedsRolesAndPermissions` to load `RoleSeeder` before auth scenarios.

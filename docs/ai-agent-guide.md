@@ -145,6 +145,7 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 | [docs/crud-architecture.md](./crud-architecture.md) | Repository pattern, API resources |
 | [docs/domain-modules.md](./domain-modules.md) | Internal `app/Domain/*` layout, core/locked/removable, `domain:list\|make\|remove` |
 | [docs/payment-gateways.md](./payment-gateways.md) | Midtrans/iPaymu, invoices, subscriptions, webhooks |
+| [docs/database-safety.md](./database-safety.md) | Dev DB wipe prevention, test vs MySQL, recovery |
 | [docs/internal-monorepo-assessment.md](./internal-monorepo-assessment.md) | Monorepo scope, Gateway/Frontend contract |
 | [docs/internal-monorepo-porting.md](./internal-monorepo-porting.md) | Porting implementation reference (migration order, scripts, gotchas) |
 | [docs/environment.md](./environment.md) | `GATEWAY_ENFORCE`, secrets, env vars |
@@ -197,7 +198,7 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 3. **Assess aggregation** if the Frontend would issue multiple parallel API calls on load — prefer Gateway fan-out over extra Monolith endpoints.
 4. **Assess Gateway first** before any Frontend edge/server feature (Functions, Workers, API proxying) — see [static-only-policy.md](../../monolith-frontend/docs/static-only-policy.md).
 5. **Implement** with minimal scope; match existing naming, patterns, and folder layout in each repo.
-6. **Test** in every touched project (`php artisan test`, `npm run test:unit -- --run`, `npm run build` as applicable).
+6. **Test** in every touched project (`composer test` in Monolith — preferred; see [database-safety.md](database-safety.md). Gateway: `php artisan test`. Frontend: `npm run test:unit -- --run`, `npm run build` as applicable).
 7. **Update documentation** in the same task so code and docs do not drift.
 
 ---
@@ -209,3 +210,5 @@ Use these links to preserve context. Read Monolith docs for domain/API rules bef
 - Add Cloudflare Workers/Functions to Frontend for API proxying or BFF logic without Gateway-first assessment and explicit approval.
 - Ship Frontend multi-fetch screens without considering Gateway aggregation.
 - Change API contracts in Gateway or Frontend without verifying Monolith behavior and updating integration docs.
+- Run `migrate:fresh`, `migrate:refresh`, or `db:wipe` on Monolith non-sqlite without `ALLOW_DESTRUCTIVE_DB=true` (see [database-safety.md](database-safety.md)).
+- Assume Blade admin has hosted Snap/redirect checkout — **Vue only**; Blade is channel-only (see [payment-gateways.md](payment-gateways.md)).

@@ -513,10 +513,10 @@ notification-type + credential gate for realtime delivery.
 `APP_NOTIFICATION_POLLING_INTERVAL`.
 
 ```bash
-php artisan test --filter=NotificationTest
-php artisan test --filter=NotificationTypeSettingRepositoryTest
-php artisan test --filter=BroadcastConnectionTest
-php artisan test --filter=NotificationsConfigTest
+composer test -- --filter=NotificationTest
+composer test -- --filter=NotificationTypeSettingRepositoryTest
+composer test -- --filter=BroadcastConnectionTest
+composer test -- --filter=NotificationsConfigTest
 ```
 
 ---
