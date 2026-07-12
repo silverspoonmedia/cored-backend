@@ -6,6 +6,7 @@ use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
+use App\Support\Encryption\DecryptSourceContext;
 use App\Domain\Playground\Models\Order;
 use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\RedirectResponse;
@@ -59,7 +60,9 @@ class IpaymuReturnController extends Controller
             return;
         }
 
-        $this->payments->syncInvoiceStatus($invoice);
+        DecryptSourceContext::run('payment.ipaymu.return_url', function () use ($invoice): void {
+            $this->payments->syncInvoiceStatus($invoice);
+        });
     }
 
     private function resolveInvoice(Request $request): ?Invoice

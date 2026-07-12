@@ -12,6 +12,7 @@ return [
         'updated' => 'Payment gateway berhasil diperbarui.',
         'deleted' => 'Payment gateway berhasil dihapus.',
         'inactive' => 'Payment gateway yang dipilih tidak aktif.',
+        'none_active' => 'Tidak ada payment gateway aktif yang dikonfigurasi.',
     ],
 
     'invoices' => [
@@ -27,11 +28,18 @@ return [
         'deleted' => 'Langganan berhasil dihapus.',
     ],
 
+    'checkout' => [
+        'active_session_pending' => 'Sesi pembayaran sebelumnya masih tertunda di penyedia. Tunggu hingga kedaluwarsa atau selesai sebelum mengganti channel.',
+        'gateway_provider_mismatch' => 'Payment gateway invoice tidak cocok dengan penyedia checkout yang diminta.',
+    ],
+
     'channels' => [
         'list' => 'Channel pembayaran berhasil diambil.',
         'show' => 'Channel pembayaran berhasil diambil.',
         'updated' => 'Channel pembayaran berhasil diperbarui.',
         'checkout_created' => 'Instruksi pembayaran dibuat.',
+        'checkout_failed' => 'Semua rute pembayaran untuk channel ini gagal.',
+        'route_updated' => 'Rute channel pembayaran diperbarui.',
         'not_found' => 'Channel pembayaran tidak ditemukan.',
         'not_available' => 'Channel pembayaran yang dipilih tidak tersedia.',
         'unsupported_gateway' => 'Tidak ada payment gateway yang dikonfigurasi untuk channel ini.',

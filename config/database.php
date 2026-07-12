@@ -181,4 +181,16 @@ return [
 
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Destructive database commands
+    |--------------------------------------------------------------------------
+    |
+    | When false, migrate:fresh, migrate:refresh, and db:wipe are blocked on
+    | non-sqlite drivers. Set ALLOW_DESTRUCTIVE_DB=true for intentional resets.
+    |
+    */
+
+    'allow_destructive_db' => filter_var(env('ALLOW_DESTRUCTIVE_DB', false), FILTER_VALIDATE_BOOL),
+
 ];

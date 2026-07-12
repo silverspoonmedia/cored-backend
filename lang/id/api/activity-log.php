@@ -18,5 +18,6 @@ return [
         'password_changed' => 'Kata sandi diubah',
         'two_factor_enabled' => 'Autentikasi two-factor diaktifkan',
         'two_factor_disabled' => 'Autentikasi two-factor dinonaktifkan',
+        'field_decrypted' => 'Kolom sensitif didekripsi',
     ],
 ];

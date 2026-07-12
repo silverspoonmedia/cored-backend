@@ -3,10 +3,9 @@
 namespace App\Domain\Playground\Models;
 
 use App\Domain\Identity\Models\User;
-
-use Database\Factories\AttachmentFactory;
-
 use App\Domain\Playground\Support\Orders\OrderAttachmentStorage;
+use App\Support\Encryption\Casts\EnvelopeEncrypted;
+use Database\Factories\AttachmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -48,9 +47,6 @@ class Attachment extends Model
     /** @use HasFactory<AttachmentFactory> */
     use HasFactory, HasUuids;
 
-    /**
-     * @return AttachmentFactory
-     */
     protected static function newFactory(): AttachmentFactory
     {
         return AttachmentFactory::new();
@@ -74,6 +70,7 @@ class Attachment extends Model
     {
         return [
             'size' => 'integer',
+            'cached_url' => EnvelopeEncrypted::class.':attachments,cached_url,signed_url',
             'cached_url_expires_at' => 'datetime',
         ];
     }

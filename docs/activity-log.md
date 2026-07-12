@@ -79,6 +79,29 @@ Login, logout, 2FA, and password changes do **not** mutate tracked `User` column
 
 Listeners: `RecordAuthenticationActivity` (activity log) and `LogAuthenticationEvents` (Laravel file log). They are **auto-discovered** from `subscribe()` — never register them again with `Event::subscribe()` in a service provider or every auth row is duplicated. Filter the viewer with `?log_name=auth`.
 
+### Cryptographic decrypt accountability (`log_name: crypto`)
+
+Envelope decryption is recorded via `CryptoActivityRecorder` — called **only** from `EnvelopeEncryptionService::decrypt()` (the sole decrypt choke point). Never log plaintext, ciphertext, DEKs, or wrapped keys.
+
+| Event | Activity `event` | Trigger |
+|-------|------------------|---------|
+| Field decrypted | `field_decrypted` | Successful decrypt when audit rules apply (see below) |
+
+Properties (safe metadata only): `resource_type`, `resource_id`, `field`, `purpose`, `kms_key_id`, `ip_address`, `cache_hit`, `envelope_version`, `legacy_ciphertext`.
+
+**Audit frequency** (`ENCRYPTION_AUDIT_DECRYPTS`):
+
+| Mode | Behavior |
+|------|----------|
+| `cache_miss` (default) | Log the first decrypt per context within the decrypt-cache TTL only. |
+| `always` | Log every decrypt; `cache_hit: true` when served from decrypt cache. |
+
+**API masking:** `ActivityLogResource` masks `kms_key_id` OCIDs in JSON responses. Database rows keep the full OCID for forensics.
+
+**Not audited:** Session reads (`sessions` / `session_read`) — sessions use Laravel `SESSION_ENCRYPT`, not envelope KMS.
+
+Filter the viewer with `?log_name=crypto`. See [Envelope encryption](./envelope-encryption.md) and [Crypto activity assessment](./crypto-activity-assessment.md).
+
 ---
 
 ## API surface (`/api/v1`)
@@ -156,5 +179,6 @@ Default retention: **365 days** (`config/activitylog.php`).
 - [CRUD architecture](./crud-architecture.md) — where mutations flow (Service → Repository → Model)
 - [User management & H-RBAC](./user-management-hrbac.md) — user CRUD + role assignment
 - [Authentication activity assessment](./auth-activity-assessment.md) — auth event coverage and activity log mapping
+- [Envelope encryption](./envelope-encryption.md) — decrypt audit (`log_name: crypto`)
 - [Activity notifications](./notifications.md) — in-app bell (separate system)
 - [User primary keys (UUID v7)](./user-uuid-v7.md) — UUID morph FK rules

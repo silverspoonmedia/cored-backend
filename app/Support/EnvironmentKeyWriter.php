@@ -126,4 +126,42 @@ class EnvironmentKeyWriter
 
         return trim($matches[1], " \t\n\r\0\x0B\"'");
     }
+
+    public function writeValueIfEmpty(string $envPath, string $name, string $value): bool
+    {
+        if ($this->readEnvValue($envPath, $name) !== '') {
+            return false;
+        }
+
+        $formattedValue = '"'.$this->escapeQuotedValue($value).'"';
+        $contents = File::get($envPath);
+
+        if (preg_match('/^'.preg_quote($name, '/').'=.*$/m', $contents)) {
+            $updated = preg_replace(
+                '/^'.preg_quote($name, '/').'=.*$/m',
+                $name.'='.$formattedValue,
+                $contents,
+            );
+        } else {
+            $updated = rtrim($contents).PHP_EOL.$name.'='.$formattedValue.PHP_EOL;
+        }
+
+        File::put($envPath, $updated);
+
+        return true;
+    }
+
+    public function writeBlindIndexPepperIfEmpty(string $envPath): bool
+    {
+        return $this->writeValueIfEmpty(
+            $envPath,
+            'ENCRYPTION_BLIND_INDEX_PEPPER',
+            bin2hex(random_bytes(32)),
+        );
+    }
+
+    private function escapeQuotedValue(string $value): string
+    {
+        return str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
+    }
 }

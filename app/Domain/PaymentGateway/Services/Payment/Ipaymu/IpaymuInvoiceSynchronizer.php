@@ -12,6 +12,7 @@ use App\Domain\Playground\Models\Order;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\Billing\InvoiceFundsLedgerService;
 // Internal
+use App\Support\Encryption\DecryptSourceContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use iPaymu\iPaymu;
@@ -49,6 +50,18 @@ class IpaymuInvoiceSynchronizer
      * @param  array<string, mixed>  $checkResponse  Full JSON-decoded API response (Status, Data, Message).
      */
     public function sync(Invoice $invoice, array $checkResponse): Invoice
+    {
+        return DecryptSourceContext::run(
+            'payment.ipaymu.invoice_sync',
+            fn (): Invoice => $this->syncWithinContext($invoice, $checkResponse),
+            ['invoice_id' => $invoice->id],
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $checkResponse  Full JSON-decoded API response (Status, Data, Message).
+     */
+    private function syncWithinContext(Invoice $invoice, array $checkResponse): Invoice
     {
         $data = $checkResponse['Data'] ?? null;
 

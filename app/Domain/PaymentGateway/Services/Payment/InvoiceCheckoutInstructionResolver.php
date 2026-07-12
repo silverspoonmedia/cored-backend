@@ -4,6 +4,7 @@ namespace App\Domain\PaymentGateway\Services\Payment;
 
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
+use App\Support\Encryption\DecryptSourceContext;
 
 class InvoiceCheckoutInstructionResolver
 {
@@ -17,6 +18,18 @@ class InvoiceCheckoutInstructionResolver
      * @return array<string, mixed>|null Same shape as channel-checkout POST `data`
      */
     public function resolve(?Invoice $invoice): ?array
+    {
+        return DecryptSourceContext::run(
+            'invoice.checkout_session_resolve',
+            fn (): ?array => $this->resolveWithinContext($invoice),
+            ['invoice_id' => $invoice?->id],
+        );
+    }
+
+    /**
+     * @return array<string, mixed>|null Same shape as channel-checkout POST `data`
+     */
+    private function resolveWithinContext(?Invoice $invoice): ?array
     {
         if ($invoice === null) {
             return null;

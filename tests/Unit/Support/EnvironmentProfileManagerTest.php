@@ -76,6 +76,10 @@ class EnvironmentProfileManagerTest extends TestCase
         $this->assertStringContainsString('APP_ENV="local"', $snapshot);
         $this->assertMatchesRegularExpression('/^APP_KEY="base64:.+"$/m', $snapshot);
         $this->assertMatchesRegularExpression('/^JWT_SECRET=.+$/m', $snapshot);
+        $this->assertMatchesRegularExpression(
+            '/^ENCRYPTION_BLIND_INDEX_PEPPER="[a-f0-9]{64}"$/m',
+            $snapshot,
+        );
     }
 
     public function test_activate_profile_switches_without_losing_saved_values(): void
@@ -111,5 +115,26 @@ class EnvironmentProfileManagerTest extends TestCase
         $result = $this->manager->activateProfile('local');
 
         $this->assertTrue($result->skipped);
+    }
+
+    public function test_activate_profile_fills_empty_blind_index_pepper_in_existing_snapshot(): void
+    {
+        File::put($this->manager->profilePath('local'), implode("\n", [
+            'APP_ENV="local"',
+            'APP_KEY="base64:'.base64_encode(random_bytes(32)).'"',
+            'APP_PREVIOUS_KEYS=""',
+            'JWT_SECRET="existing-jwt-secret"',
+            'ENCRYPTION_BLIND_INDEX_PEPPER=""',
+        ]));
+        File::put($this->manager->markerPath(), "staging\n");
+        File::put($this->manager->envPath(), "APP_ENV=\"staging\"\n");
+
+        $this->manager->activateProfile('local');
+
+        $snapshot = File::get($this->manager->profilePath('local'));
+        $this->assertMatchesRegularExpression(
+            '/^ENCRYPTION_BLIND_INDEX_PEPPER="[a-f0-9]{64}"$/m',
+            $snapshot,
+        );
     }
 }

@@ -7,8 +7,8 @@ use App\Domain\Identity\Exceptions\Auth\TwoFactorAlreadyEnabledException;
 use App\Domain\Identity\Exceptions\Auth\TwoFactorNotEnabledException;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\Auth\TwoFactorService;
+use App\Support\Encryption\EncryptedEnvelope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Crypt;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
@@ -35,19 +35,19 @@ class TwoFactorServiceTest extends TestCase
 
         $user->refresh();
 
-        $this->assertNotEmpty($user->two_factor_secret);
+        $this->assertTrue(EncryptedEnvelope::isEnvelopeJson((string) $user->getRawOriginal('two_factor_secret')));
         $this->assertTrue(str_starts_with($payload['qr_code_url'], 'otpauth://totp/'));
         $this->assertTrue(str_starts_with($payload['qr_code_svg'], 'data:image/svg+xml;base64,'));
-        $this->assertSame(Crypt::decryptString($user->two_factor_secret), $payload['secret']);
+        $this->assertSame($payload['secret'], $user->two_factor_secret);
         $this->assertNull($user->two_factor_confirmed_at);
     }
 
     public function test_start_setup_throws_when_already_enabled(): void
     {
-        $user = User::factory()->create([
-            'two_factor_secret' => Crypt::encryptString('ABC123'),
-            'two_factor_confirmed_at' => now(),
-        ]);
+        $user = User::factory()->create();
+        $setup = $this->service->startSetup($user);
+        $code = app('pragmarx.google2fa')->getCurrentOtp($setup['secret']);
+        $this->service->confirmSetup($user, $code);
 
         $this->expectException(TwoFactorAlreadyEnabledException::class);
 
@@ -92,7 +92,7 @@ class TwoFactorServiceTest extends TestCase
 
         $user->refresh();
 
-        $this->assertNull($user->two_factor_secret);
+        $this->assertFalse($user->hasTwoFactorSecret());
         $this->assertNull($user->two_factor_confirmed_at);
         $this->assertFalse($this->service->enabled($user));
     }
@@ -130,10 +130,8 @@ class TwoFactorServiceTest extends TestCase
 
     public function test_enabled_returns_false_when_not_confirmed(): void
     {
-        $user = User::factory()->create([
-            'two_factor_secret' => Crypt::encryptString('ABC123'),
-            'two_factor_confirmed_at' => null,
-        ]);
+        $user = User::factory()->create();
+        $this->service->startSetup($user);
 
         $this->assertFalse($this->service->enabled($user));
     }

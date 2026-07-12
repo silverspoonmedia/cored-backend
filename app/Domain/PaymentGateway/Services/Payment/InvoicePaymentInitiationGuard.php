@@ -8,6 +8,7 @@ use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuInvoiceSynchronizer;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuSdk;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransInvoiceSynchronizer;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransSdk;
+use App\Support\Encryption\DecryptSourceContext;
 use Illuminate\Support\Facades\DB;
 use Midtrans\Transaction;
 
@@ -45,6 +46,21 @@ class InvoicePaymentInitiationGuard
      * @return Invoice|array{ok: false, message: string, http: int}
      */
     public function ensurePayableForProvider(
+        string $invoiceId,
+        string $providerName,
+        bool $rejectActiveCheckout = false,
+    ): Invoice|array {
+        return DecryptSourceContext::run(
+            'payment.initiation_guard',
+            fn (): Invoice|array => $this->ensurePayableForProviderWithinContext($invoiceId, $providerName, $rejectActiveCheckout),
+            ['provider' => $providerName, 'invoice_id' => $invoiceId],
+        );
+    }
+
+    /**
+     * @return Invoice|array{ok: false, message: string, http: int}
+     */
+    private function ensurePayableForProviderWithinContext(
         string $invoiceId,
         string $providerName,
         bool $rejectActiveCheckout = false,

@@ -82,4 +82,30 @@ class EnvironmentKeyWriterTest extends TestCase
         $this->assertSame($oldKey, $previousKeys[0]);
         $this->assertNotSame($oldKey, $this->writer->readAppKey($this->tempPath));
     }
+
+    public function test_it_writes_blind_index_pepper_when_empty(): void
+    {
+        File::put($this->tempPath, 'ENCRYPTION_BLIND_INDEX_PEPPER=""');
+
+        $written = $this->writer->writeBlindIndexPepperIfEmpty($this->tempPath);
+
+        $this->assertTrue($written);
+        $this->assertMatchesRegularExpression(
+            '/^ENCRYPTION_BLIND_INDEX_PEPPER="[a-f0-9]{64}"$/m',
+            File::get($this->tempPath),
+        );
+    }
+
+    public function test_it_skips_blind_index_pepper_when_already_set(): void
+    {
+        File::put($this->tempPath, 'ENCRYPTION_BLIND_INDEX_PEPPER="existing-pepper"');
+
+        $written = $this->writer->writeBlindIndexPepperIfEmpty($this->tempPath);
+
+        $this->assertFalse($written);
+        $this->assertStringContainsString(
+            'ENCRYPTION_BLIND_INDEX_PEPPER="existing-pepper"',
+            File::get($this->tempPath),
+        );
+    }
 }

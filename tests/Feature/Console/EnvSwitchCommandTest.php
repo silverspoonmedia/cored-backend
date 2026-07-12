@@ -63,10 +63,12 @@ class EnvSwitchCommandTest extends TestCase
             'DB_DATABASE="monolith_local"',
         ]));
         File::put(base_path('.env.profile'), "local\n");
+        File::put(base_path('bootstrap/cache/config.php'), '<?php return [];');
 
         $this->artisan('env:switch', ['profile' => 'staging'])
             ->assertSuccessful();
 
+        $this->assertFileDoesNotExist(base_path('bootstrap/cache/config.php'));
         $this->assertStringContainsString('APP_ENV="staging"', File::get(base_path('.env')));
         $this->assertStringContainsString('monolith_local', File::get(base_path('.env.local')));
 
@@ -99,6 +101,10 @@ class EnvSwitchCommandTest extends TestCase
 
         $this->assertFileExists(base_path('.env.staging'));
         $this->assertStringContainsString('APP_ENV="staging"', File::get(base_path('.env')));
+        $this->assertMatchesRegularExpression(
+            '/^ENCRYPTION_BLIND_INDEX_PEPPER="[a-f0-9]{64}"$/m',
+            File::get(base_path('.env')),
+        );
     }
 
     public function test_it_shows_current_profile_when_called_without_argument(): void

@@ -46,7 +46,7 @@ class DestructiveDatabaseCommandGuard
 
     public function destructiveOperationsAllowed(): bool
     {
-        return filter_var(env('ALLOW_DESTRUCTIVE_DB', false), FILTER_VALIDATE_BOOL);
+        return (bool) config('database.allow_destructive_db', false);
     }
 
     private function blockedMessage(string $commandName): string

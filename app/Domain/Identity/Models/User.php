@@ -4,6 +4,7 @@ namespace App\Domain\Identity\Models;
 
 use App\Domain\Identity\Notifications\ResetPasswordNotification;
 use App\Domain\Identity\Notifications\VerifyEmailNotification;
+use App\Support\Encryption\Casts\EnvelopeEncrypted;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Translation\HasLocalePreference;
@@ -26,9 +27,6 @@ class User extends Authenticatable implements HasLocalePreference, JWTSubject, M
     /** @use HasFactory<UserFactory> */
     use HasActivity, HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
 
-    /**
-     * @return UserFactory
-     */
     protected static function newFactory(): UserFactory
     {
         return UserFactory::new();
@@ -45,6 +43,7 @@ class User extends Authenticatable implements HasLocalePreference, JWTSubject, M
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'two_factor_secret' => EnvelopeEncrypted::class.':users,two_factor_secret,two_factor',
         ];
     }
 
@@ -91,6 +90,11 @@ class User extends Authenticatable implements HasLocalePreference, JWTSubject, M
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));
+    }
+
+    public function hasTwoFactorSecret(): bool
+    {
+        return filled($this->getRawOriginal('two_factor_secret'));
     }
 
     public function getActivitylogOptions(): LogOptions

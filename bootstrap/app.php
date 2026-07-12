@@ -32,13 +32,14 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withEvents(discover: [
         __DIR__.'/../app/Domain/Identity/Listeners',
         __DIR__.'/../app/Domain/Notification/Listeners',
         __DIR__.'/../app/Domain/Approval/Listeners',
     ])
     ->withCommands([
+        __DIR__.'/../app/Console/Commands',
         __DIR__.'/../app/Domain/Approval/Console/Commands',
         __DIR__.'/../app/Domain/Navigation/Console/Commands',
         __DIR__.'/../app/Domain/PaymentGateway/Console/Commands',
@@ -234,3 +235,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->with('error', $message);
         });
     })->create();
+
+$app->singleton(\Illuminate\Contracts\Http\Kernel::class, \App\Http\Kernel::class);
+$app->singleton(\Illuminate\Contracts\Console\Kernel::class, \App\Console\Kernel::class);
+
+return $app;

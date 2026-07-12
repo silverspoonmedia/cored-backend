@@ -8,9 +8,11 @@ use App\Providers\Domain\NavigationServiceProvider;
 use App\Providers\Domain\NotificationServiceProvider;
 use App\Providers\Domain\PaymentGatewayServiceProvider;
 use App\Providers\Domain\PlaygroundServiceProvider;
+use App\Providers\EncryptionServiceProvider;
 
 return [
     AppServiceProvider::class,
+    EncryptionServiceProvider::class,
     IdentityServiceProvider::class,
     NavigationServiceProvider::class,
     NotificationServiceProvider::class,
