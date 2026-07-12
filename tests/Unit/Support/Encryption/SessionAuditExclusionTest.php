@@ -6,6 +6,7 @@ use App\Domain\ActivityLog\Support\CryptoActivityRecorder;
 use App\Support\Encryption\DecryptedValueCache;
 use App\Support\Encryption\DecryptionContext;
 use App\Support\Encryption\EnvelopeEncryptionService;
+use App\Support\Encryption\InvoicePayloadDecryptLogger;
 use App\Support\Oci\Kms\LocalKmsDekClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Activitylog\Models\Activity;
@@ -21,6 +22,7 @@ class SessionAuditExclusionTest extends TestCase
             new LocalKmsDekClient,
             new DecryptedValueCache,
             new CryptoActivityRecorder,
+            new InvoicePayloadDecryptLogger,
         );
 
         $context = new DecryptionContext('sessions', 'sess-1', 'payload', 'session_read');

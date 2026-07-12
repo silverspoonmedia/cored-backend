@@ -30,9 +30,9 @@ class EncryptionFlushDecryptedCacheCommand extends Command
             return self::SUCCESS;
         }
 
-        $this->decryptedValueCache->flushAll();
-        $this->warn('Full decrypted-cache flush is store-dependent. For Redis, prefer key scanning in production ops.');
+        $this->error('Bulk decrypted-cache flush is not implemented. Provide a context key suffix.');
+        $this->line('Example: php artisan encryption:flush-decrypted-cache invoices.gateway_response_payload.{uuid}');
 
-        return self::SUCCESS;
+        return self::FAILURE;
     }
 }

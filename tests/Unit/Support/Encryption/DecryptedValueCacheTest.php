@@ -6,6 +6,7 @@ use App\Domain\ActivityLog\Support\CryptoActivityRecorder;
 use App\Support\Encryption\DecryptedValueCache;
 use App\Support\Encryption\DecryptionContext;
 use App\Support\Encryption\EnvelopeEncryptionService;
+use App\Support\Encryption\InvoicePayloadDecryptLogger;
 use App\Support\Oci\Kms\LocalKmsDekClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -25,6 +26,7 @@ class DecryptedValueCacheTest extends TestCase
             new LocalKmsDekClient,
             new DecryptedValueCache,
             new CryptoActivityRecorder,
+            new InvoicePayloadDecryptLogger,
         );
 
         $context = new DecryptionContext('users', 'user-1', 'two_factor_secret', 'test');
@@ -47,6 +49,7 @@ class DecryptedValueCacheTest extends TestCase
             new LocalKmsDekClient,
             new DecryptedValueCache,
             new CryptoActivityRecorder,
+            new InvoicePayloadDecryptLogger,
         );
 
         $context = new DecryptionContext('users', 'user-2', 'two_factor_secret', 'test');
@@ -89,6 +92,7 @@ class DecryptedValueCacheTest extends TestCase
             new LocalKmsDekClient,
             new DecryptedValueCache,
             new CryptoActivityRecorder,
+            new InvoicePayloadDecryptLogger,
         );
 
         $context = new DecryptionContext('users', 'user-3', 'two_factor_secret', 'test');

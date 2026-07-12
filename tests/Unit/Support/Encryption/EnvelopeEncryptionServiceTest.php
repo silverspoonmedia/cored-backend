@@ -7,6 +7,7 @@ use App\Support\Encryption\DecryptedValueCache;
 use App\Support\Encryption\DecryptionContext;
 use App\Support\Encryption\EncryptedEnvelope;
 use App\Support\Encryption\EnvelopeEncryptionService;
+use App\Support\Encryption\InvoicePayloadDecryptLogger;
 use App\Support\Oci\Kms\Contracts\KmsDekClientInterface;
 use App\Support\Oci\Kms\LocalKmsDekClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,6 +30,7 @@ class EnvelopeEncryptionServiceTest extends TestCase
             new LocalKmsDekClient,
             new DecryptedValueCache,
             new CryptoActivityRecorder,
+            new InvoicePayloadDecryptLogger,
         );
     }
 

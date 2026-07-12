@@ -4,6 +4,7 @@ namespace App\Domain\PaymentGateway\Services\Payment\Ipaymu;
 
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Support\ApiResponder;
+use App\Support\Encryption\DecryptSourceContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -23,7 +24,14 @@ class IpaymuPaymentWebhookService
 
         $raw = $request->getContent();
 
-        if (! is_string($raw) || $raw === '') {
+        return DecryptSourceContext::run('payment.ipaymu.webhook', function () use ($request, $raw): JsonResponse {
+            return $this->handleWebhookPayload($request, $raw);
+        });
+    }
+
+    private function handleWebhookPayload(Request $request, string $raw): JsonResponse
+    {
+        if ($raw === '') {
             return ApiResponder::error(__('api/payments.ipaymu.webhook_invalid_json'), 400);
         }
 

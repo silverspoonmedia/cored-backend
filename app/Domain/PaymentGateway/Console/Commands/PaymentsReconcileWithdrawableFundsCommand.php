@@ -6,6 +6,7 @@ use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransInvoiceSynchronizer;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransSdk;
+use App\Support\Encryption\DecryptSourceContext;
 use Illuminate\Console\Command;
 use Midtrans\Transaction;
 
@@ -46,38 +47,40 @@ class PaymentsReconcileWithdrawableFundsCommand extends Command
         $ok = 0;
         $fail = 0;
 
-        foreach ($rows as $invoice) {
-            $gatewayName = $invoice->paymentGateway?->name;
+        DecryptSourceContext::run('cron.reconcile_withdrawable_funds', function () use ($rows, $midtransSynchronizer, $ipaymuPayments, &$ok, &$fail): void {
+            foreach ($rows as $invoice) {
+                $gatewayName = $invoice->paymentGateway?->name;
 
-            try {
-                if ($gatewayName === 'midtrans') {
-                    $status = Transaction::status($invoice->invoice_number);
-                    $midtransSynchronizer->sync($invoice, $status);
-                    $ok++;
-
-                    continue;
-                }
-
-                if ($gatewayName === 'ipaymu') {
-                    $result = $ipaymuPayments->syncInvoiceStatus($invoice);
-                    if (! $result['ok']) {
-                        $fail++;
-                        $this->warn($invoice->invoice_number.': '.$result['message']);
+                try {
+                    if ($gatewayName === 'midtrans') {
+                        $status = Transaction::status($invoice->invoice_number);
+                        $midtransSynchronizer->sync($invoice, $status);
+                        $ok++;
 
                         continue;
                     }
-                    $ok++;
 
-                    continue;
+                    if ($gatewayName === 'ipaymu') {
+                        $result = $ipaymuPayments->syncInvoiceStatus($invoice);
+                        if (! $result['ok']) {
+                            $fail++;
+                            $this->warn($invoice->invoice_number.': '.$result['message']);
+
+                            continue;
+                        }
+                        $ok++;
+
+                        continue;
+                    }
+
+                    $this->warn($invoice->invoice_number.': unsupported gateway '.$gatewayName);
+                    $fail++;
+                } catch (\Throwable $e) {
+                    $fail++;
+                    $this->warn($invoice->invoice_number.': '.$e->getMessage());
                 }
-
-                $this->warn($invoice->invoice_number.': unsupported gateway '.$gatewayName);
-                $fail++;
-            } catch (\Throwable $e) {
-                $fail++;
-                $this->warn($invoice->invoice_number.': '.$e->getMessage());
             }
-        }
+        });
 
         $this->info("Withdrawable reconciliation: {$ok} ok, {$fail} failed/skipped.");
 

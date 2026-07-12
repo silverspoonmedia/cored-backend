@@ -177,6 +177,8 @@ class EnvironmentProfileManager
             $bootstrapped = true;
         } else {
             File::copy($this->profilePath($profile), $this->envPath());
+            $this->fillEmptySecrets($this->envPath());
+            $this->saveSnapshot($profile);
         }
 
         $this->setActiveProfile($profile);
@@ -236,6 +238,13 @@ class EnvironmentProfileManager
             $warnings[] = 'Could not generate APP_KEY: '.$exception->getMessage();
         }
 
+        $this->fillEmptySecrets($envPath);
+
+        return $warnings;
+    }
+
+    private function fillEmptySecrets(string $envPath): void
+    {
         if ($this->jwtSecretIsEmpty($envPath)) {
             if (realpath($envPath) === realpath($this->envPath())) {
                 Artisan::call('jwt:secret', ['--force' => true]);
@@ -244,7 +253,7 @@ class EnvironmentProfileManager
             }
         }
 
-        return $warnings;
+        $this->keyWriter->writeBlindIndexPepperIfEmpty($envPath);
     }
 
     private function jwtSecretIsEmpty(string $envPath): bool

@@ -33,7 +33,26 @@ composer install
 php artisan env:install local
 ```
 
-This copies `.env.local.example` → `.env`, seeds `.env.local`, sets `.env.profile`, and generates `APP_KEY` and `JWT_SECRET` when empty.
+This copies `.env.local.example` → `.env`, seeds `.env.local`, sets `.env.profile`, and generates `APP_KEY`, `JWT_SECRET`, and `ENCRYPTION_BLIND_INDEX_PEPPER` when empty.
+
+## Value types and quoting
+
+Committed templates (`.env.example` and `.env.{profile}.example`) follow a consistent quoting convention. Types are defined in [`EnvironmentVariableCatalog`](../app/Support/EnvironmentVariableCatalog.php).
+
+| Type | Format | Examples |
+|------|--------|----------|
+| **string** | Always double-quoted | `APP_ENV="local"`, `ENCRYPTION_AUDIT_DECRYPTS="cache_miss"`, `JWT_SECRET=""` |
+| **bool** | `true` / `false` without quotes | `APP_DEBUG=true`, `ENCRYPTION_SESSION_ENABLED=false` |
+| **int** | Digits without quotes | `DB_PORT=3306`, `JWT_TTL=60` |
+| **null** | Literal `null` without quotes | `SESSION_DOMAIN=null` |
+
+Additional rules:
+
+- Empty string placeholders use `KEY=""`. `env:install` and `env:switch` fill auto-generated secrets when still empty (`APP_KEY`, `JWT_SECRET`, `ENCRYPTION_BLIND_INDEX_PEPPER`).
+- Laravel variable interpolation stays inside quotes: `TWO_FACTOR_ISSUER="${APP_NAME}"`.
+- Do **not** quote bool, int, or null literals — config files cast `env()` results to the expected type.
+
+When adding or changing keys, update `.env.example`, all three profile templates, and `EnvironmentVariableCatalog::types()`.
 
 Overwrite an existing `.env`:
 
@@ -51,7 +70,7 @@ Then set at least:
 | `PUSHER_*` / `APP_NOTIFICATION_TYPE` | Optional locally (bell uses polling by default) |
 | `HCAPTCHA_*` | Disabled locally (`HCAPTCHA_ENABLED=false`) |
 | `OCI_*` | OCI API config + KMS crypto endpoint — see [oci-kms.md](./oci-kms.md) |
-| `ENCRYPTION_*` | Envelope encryption — see [envelope-encryption.md](./envelope-encryption.md). Key vars: `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` (default `86400`), `ENCRYPTION_AUDIT_DECRYPTS`, `ENCRYPTION_BLIND_INDEX_PEPPER`, `ENCRYPTION_SESSION_ENABLED` |
+| `ENCRYPTION_*` | Envelope encryption — see [envelope-encryption.md](./envelope-encryption.md). Key vars: `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` (default `86400`), `ENCRYPTION_AUDIT_DECRYPTS`, `ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS`, `ENCRYPTION_BLIND_INDEX_PEPPER`, `ENCRYPTION_SESSION_ENABLED` |
 
 ```bash
 php artisan migrate
@@ -246,6 +265,7 @@ Local development can stay on `config:clear` only. Staging/production should use
 | `SESSION_ENCRYPT` | `false` | `true` | `true` |
 | `ENCRYPTION_SESSION_ENABLED` | `false` | `false` | `false` |
 | `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` | `86400` | `86400` | `86400` |
+| `ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS` | `false` | `false` | `false` |
 | `HCAPTCHA_ENABLED` | `false` | `true` | `true` |
 | `MAIL_MAILER` | `log` | `smtp` | `smtp` |
 | `CACHE_STORE` / `QUEUE_CONNECTION` | `database` | `redis` | `redis` |

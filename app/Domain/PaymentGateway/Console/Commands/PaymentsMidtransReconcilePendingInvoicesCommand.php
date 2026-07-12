@@ -8,6 +8,7 @@ use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 // Service
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransInvoiceSynchronizer;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransSdk;
+use App\Support\Encryption\DecryptSourceContext;
 
 // External
 use Midtrans\Transaction;
@@ -50,16 +51,18 @@ class PaymentsMidtransReconcilePendingInvoicesCommand extends Command
         $ok = 0;
         $fail = 0;
 
-        foreach ($invoiceRows as $invoice) {
-            try {
-                $status = Transaction::status($invoice->invoice_number);
-                $synchronizer->sync($invoice, $status);
-                $ok++;
-            } catch (\Throwable $e) {
-                $fail++;
-                $this->warn($invoice->invoice_number.': '.$e->getMessage());
+        DecryptSourceContext::run('cron.midtrans_reconcile_pending', function () use ($invoiceRows, $synchronizer, &$ok, &$fail): void {
+            foreach ($invoiceRows as $invoice) {
+                try {
+                    $status = Transaction::status($invoice->invoice_number);
+                    $synchronizer->sync($invoice, $status);
+                    $ok++;
+                } catch (\Throwable $e) {
+                    $fail++;
+                    $this->warn($invoice->invoice_number.': '.$e->getMessage());
+                }
             }
-        }
+        });
 
         $this->info("Reconciled {$ok} invoice(s); {$fail} failed.");
 

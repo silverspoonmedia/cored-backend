@@ -34,13 +34,20 @@ return [
         env('ENCRYPTION_DECRYPTED_CACHE_TTL', 86400),
     ),
 
-    /** @deprecated Use decrypted_cache_max_ttl; kept for config consumers */
-    'decrypted_cache_ttl' => (int) env(
-        'ENCRYPTION_DECRYPTED_CACHE_MAX_TTL',
-        env('ENCRYPTION_DECRYPTED_CACHE_TTL', 86400),
-    ),
-
     'decrypted_cache_prefix' => 'encryption.decrypted',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Invoice payload decrypt tracing
+    |--------------------------------------------------------------------------
+    |
+    | When true, logs each decrypt/compare of invoice gateway_*_payload columns
+    | to storage/logs/invoice-payload-decrypt.log with explicit source labels
+    | (webhook, sync-status, checkout, cron, etc.).
+    |
+    */
+
+    'log_invoice_payload_decrypts' => (bool) env('ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS', false),
 
     /*
     |--------------------------------------------------------------------------

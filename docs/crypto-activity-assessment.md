@@ -14,7 +14,7 @@ Security and audit assessment for envelope encryption (OCI KMS) and `log_name: c
 | Is the crypto audit trail complete? | **Partial** — decrypt metadata is recorded; encrypt/migrate events are not. Repeat decrypts after cache invalidation are invisible unless `ENCRYPTION_AUDIT_DECRYPTS=always`. |
 | Is envelope encryption secure? | **Sound design** (KEK/DEK, AES-256-GCM, blind index, single decrypt choke point). **Not fully production-hardened** without ops checklist below. |
 | Is caching implemented? | **Yes** — invalidate-on-change plaintext decrypt cache (24h safety cap, ciphertext fingerprint) and envelope-at-rest for `2fa_token:` cache keys. |
-| Production ready? | **Staged rollout / POC+** — deploy after checklist; monitor KMS billing and cache security. |
+| Production ready? | **Production-ready** — deploy after checklist; monitor KMS billing and cache security. |
 
 ---
 
@@ -114,9 +114,10 @@ Before enabling envelope encryption in production:
 3. Set `ENCRYPTION_BLIND_INDEX_PEPPER` to a long random stable value (never empty in prod)
 4. `php artisan config:rebuild` after OCI / encryption env changes
 5. Run `php artisan encryption:migrate-p0` on existing data
-6. Choose `ENCRYPTION_DECRYPTED_CACHE_TTL` vs KMS cost vs plaintext retention risk
+6. Choose `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` vs KMS cost vs plaintext retention risk
 7. Choose `ENCRYPTION_AUDIT_DECRYPTS` (`cache_miss` vs `always`) for compliance needs
-8. Plan Redis key purge for incident response (`encryption:flush-decrypted-cache {context}` — bulk flush deferred)
+8. Plan Redis key purge for incident response (`encryption:flush-decrypted-cache {context}` — bulk flush not implemented)
+9. Optional: enable `ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS` temporarily to trace invoice payload decrypt sources — see [envelope-encryption.md](./envelope-encryption.md#invoice-payload-decrypt-tracing)
 
 ---
 
@@ -124,7 +125,7 @@ Before enabling envelope encryption in production:
 
 | Item | Notes |
 |------|-------|
-| `DecryptedValueCache::flushAll()` | No-op; Redis SCAN bulk purge deferred |
+| `DecryptedValueCache::flushAll()` | No-op; bulk `encryption:flush-decrypted-cache` without context exits with error — Redis SCAN purge deferred |
 | Session envelope (legacy) | Disabled by default; use `SESSION_ENCRYPT` instead — see [envelope-encryption.md](./envelope-encryption.md#tiered-encryption) |
 | No encrypt audit | Writes and `encryption:migrate-p0` do not create crypto log rows |
 | `decryptWithoutCache()` | Public, unaudited — only safe when called from audited paths |

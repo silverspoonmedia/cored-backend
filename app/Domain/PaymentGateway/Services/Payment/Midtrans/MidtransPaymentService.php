@@ -7,6 +7,7 @@ use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceActiveCheckoutCancellationService;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutGatewayResolver;
 use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
+use App\Support\Encryption\DecryptSourceContext;
 use Midtrans\CoreApi;
 use Midtrans\Snap;
 use Midtrans\Transaction;
@@ -27,6 +28,15 @@ class MidtransPaymentService
      * @return array{ok: true, data: array<string, mixed>, message_key: string, http: int}|array{ok: false, message: string, http: int}
      */
     public function createSnapToken(array $input): array
+    {
+        return DecryptSourceContext::run('payment.midtrans.checkout_snap', fn (): array => $this->createSnapTokenWithinContext($input));
+    }
+
+    /**
+     * @param  array{invoice_id: string, enabled_payments?: list<string>, credit_card?: array<string, mixed>, customer_details?: array<string, mixed>}  $input
+     * @return array{ok: true, data: array<string, mixed>, message_key: string, http: int}|array{ok: false, message: string, http: int}
+     */
+    private function createSnapTokenWithinContext(array $input): array
     {
         $invoiceModel = $this->invoices->findOrFail($input['invoice_id']);
         $this->checkoutCancellation->abandonActiveCheckout($invoiceModel);
@@ -100,6 +110,15 @@ class MidtransPaymentService
      * @return array{ok: true, data: array<string, mixed>, message_key: string, http: int}|array{ok: false, message: string, http: int}
      */
     public function charge(array $input): array
+    {
+        return DecryptSourceContext::run('payment.midtrans.checkout_charge', fn (): array => $this->chargeWithinContext($input));
+    }
+
+    /**
+     * @param  array{invoice_id: string, charge: array<string, mixed>}  $input
+     * @return array{ok: true, data: array<string, mixed>, message_key: string, http: int}|array{ok: false, message: string, http: int}
+     */
+    private function chargeWithinContext(array $input): array
     {
         $guardResult = $this->initiationGuard->ensurePayableForProvider($input['invoice_id'], 'midtrans');
         if (is_array($guardResult)) {
@@ -276,6 +295,14 @@ class MidtransPaymentService
      * @return array{ok: true, data: array<string, mixed>, message_key: string}|array{ok: false, message: string, http: int}
      */
     public function syncInvoiceStatus(Invoice $invoice): array
+    {
+        return DecryptSourceContext::run('payment.midtrans.sync_status', fn (): array => $this->syncInvoiceStatusWithinContext($invoice));
+    }
+
+    /**
+     * @return array{ok: true, data: array<string, mixed>, message_key: string}|array{ok: false, message: string, http: int}
+     */
+    private function syncInvoiceStatusWithinContext(Invoice $invoice): array
     {
         $this->assertMidtransInvoice($invoice);
 

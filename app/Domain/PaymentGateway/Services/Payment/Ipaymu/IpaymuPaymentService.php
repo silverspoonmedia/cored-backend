@@ -9,6 +9,7 @@ use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceActiveCheckoutCancellationService;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutGatewayResolver;
 use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
+use App\Support\Encryption\DecryptSourceContext;
 use iPaymu\iPaymu;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,15 @@ class IpaymuPaymentService
      * @return array{ok: true, data: array<string, mixed>, message_key: string, http: int}|array{ok: false, message: string, http: int}
      */
     public function createSnapToken(array $input): array
+    {
+        return DecryptSourceContext::run('payment.ipaymu.checkout_snap', fn (): array => $this->createSnapTokenWithinContext($input));
+    }
+
+    /**
+     * @param  array{invoice_id: string, buyer?: array{name?: string, email?: string, phone?: string}, return_url?: string, cancel_url?: string}  $input
+     * @return array{ok: true, data: array<string, mixed>, message_key: string, http: int}|array{ok: false, message: string, http: int}
+     */
+    private function createSnapTokenWithinContext(array $input): array
     {
         $invoiceModel = $this->invoices->findOrFail($input['invoice_id']);
         $this->checkoutCancellation->abandonActiveCheckout($invoiceModel);
@@ -121,6 +131,15 @@ class IpaymuPaymentService
      * @return array{ok: true, data: array<string, mixed>, message_key: string, http: int}|array{ok: false, message: string, http: int}
      */
     public function charge(array $input): array
+    {
+        return DecryptSourceContext::run('payment.ipaymu.checkout_charge', fn (): array => $this->chargeWithinContext($input));
+    }
+
+    /**
+     * @param  array{invoice_id: string, payment_method: string, payment_channel: string, buyer?: array{name?: string, email?: string, phone?: string}, expired?: string, expired_type?: string}  $input
+     * @return array{ok: true, data: array<string, mixed>, message_key: string, http: int}|array{ok: false, message: string, http: int}
+     */
+    private function chargeWithinContext(array $input): array
     {
         $guardResult = $this->initiationGuard->ensurePayableForProvider($input['invoice_id'], 'ipaymu', rejectActiveCheckout: true);
         if (is_array($guardResult)) {
@@ -235,6 +254,14 @@ class IpaymuPaymentService
      * @return array{ok: true, data: array<string, mixed>, message_key: string}|array{ok: false, message: string, http: int}
      */
     public function syncInvoiceStatus(Invoice $invoice): array
+    {
+        return DecryptSourceContext::run('payment.ipaymu.sync_status', fn (): array => $this->syncInvoiceStatusWithinContext($invoice));
+    }
+
+    /**
+     * @return array{ok: true, data: array<string, mixed>, message_key: string}|array{ok: false, message: string, http: int}
+     */
+    private function syncInvoiceStatusWithinContext(Invoice $invoice): array
     {
         $this->assertIpaymuInvoice($invoice);
 

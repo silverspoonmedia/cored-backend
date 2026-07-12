@@ -7,6 +7,7 @@ use App\Support\Encryption\Cache\SensitiveCacheValue;
 use App\Support\Encryption\DecryptedValueCache;
 use App\Support\Encryption\EncryptedEnvelope;
 use App\Support\Encryption\EnvelopeEncryptionService;
+use App\Support\Encryption\InvoicePayloadDecryptLogger;
 use App\Support\Oci\Kms\LocalKmsDekClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -29,6 +30,7 @@ class SensitiveCacheValueTest extends TestCase
             new LocalKmsDekClient,
             new DecryptedValueCache,
             new CryptoActivityRecorder,
+            new InvoicePayloadDecryptLogger,
         );
 
         $this->sensitiveCache = new SensitiveCacheValue($encryption);

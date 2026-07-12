@@ -86,7 +86,8 @@ Legacy `Crypt::encryptString` values are migrated lazily on read or via `php art
 | `ENCRYPTION_KMS_ENABLED` | `false` in PHPUnit; `true` in production |
 | `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` | Safety cap for decrypt cache (seconds, default `86400`); `0` = no cap (forever until forget) |
 | `ENCRYPTION_DECRYPTED_CACHE_TTL` | **Deprecated** — read when `MAX_TTL` unset (backward compat) |
-| `ENCRYPTION_AUDIT_DECRYPTS` | `cache_miss` (default) or `always` — decrypt activity log frequency |
+| `ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS` | `false` (default) — log invoice `gateway_*_payload` decrypt/compare events to `storage/logs/invoice-payload-decrypt.log` |
+| `ENCRYPTION_AUDIT_DECRYPTS` | `cache_miss` (default) or `always` — decrypt activity log frequency (string; quoted in templates — see [environment.md](./environment.md#value-types-and-quoting)) |
 | `ENCRYPTION_BLIND_INDEX_PEPPER` | HMAC pepper for blind indexes (required in production) |
 | `ENCRYPTION_SESSION_ENABLED` | `false` (default) — set `true` only to re-enable legacy OCI envelope sessions (`encrypted_database` driver) |
 
@@ -123,13 +124,38 @@ flowchart TD
 
 ## Decrypt cache and Redis
 
-POC uses the default Laravel cache store (`CACHE_STORE`). When staging/production switch to `redis` (see [octane-readiness.md](./octane-readiness.md)), decrypt cache entries move to Redis automatically with the same key prefix (`encryption.decrypted.*`) and safety-cap TTL.
+Decrypt cache follows `CACHE_STORE` (database in local dev, Redis in staging/production per [environment.md](./environment.md)). Entries use the same key prefix (`encryption.decrypted.*`) and safety-cap TTL regardless of store.
 
 Flush a single record context after key rotation or ciphertext update:
 
 ```bash
 php artisan encryption:flush-decrypted-cache users.two_factor_secret.{uuid}
 ```
+
+Bulk flush without a context is not implemented — the command exits with an error and prints an example context key.
+
+## Invoice payload decrypt tracing
+
+When `ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS=true`, each decrypt or compare of invoice `gateway_*_payload` columns is logged to `storage/logs/invoice-payload-decrypt.log` (channel `invoice_payload_decrypt`). Logs include explicit source labels from `DecryptSourceContext` — enable only during KMS noise investigations; keep `false` in normal operation.
+
+| Label | Trigger |
+|-------|---------|
+| `payment.midtrans.webhook` | Midtrans notification |
+| `payment.midtrans.sync_status` | Manual sync-status |
+| `payment.midtrans.invoice_sync` | Midtrans invoice synchronizer |
+| `payment.midtrans.checkout_snap` | Midtrans snap checkout |
+| `payment.midtrans.checkout_charge` | Midtrans charge checkout |
+| `payment.ipaymu.webhook` | iPaymu webhook |
+| `payment.ipaymu.sync_status` | Manual sync-status |
+| `payment.ipaymu.invoice_sync` | iPaymu invoice synchronizer |
+| `payment.ipaymu.checkout_snap` | iPaymu snap checkout |
+| `payment.ipaymu.checkout_charge` | iPaymu charge checkout |
+| `payment.ipaymu.return_url` | iPaymu return URL handler |
+| `invoice.checkout_session_resolve` | `InvoiceCheckoutInstructionResolver` |
+| `invoice.checkout_session_check` | `InvoiceActiveCheckoutCancellationService` |
+| `payment.initiation_guard` | `InvoicePaymentInitiationGuard` |
+| `cron.midtrans_reconcile_pending` | Scheduled Midtrans reconcile |
+| `cron.reconcile_withdrawable_funds` | Scheduled withdrawable-funds reconcile |
 
 ## Activity log
 

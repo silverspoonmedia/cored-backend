@@ -4,6 +4,7 @@ namespace App\Domain\PaymentGateway\Services\Payment\Midtrans;
 
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Support\ApiResponder;
+use App\Support\Encryption\DecryptSourceContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Midtrans\Transaction;
@@ -41,6 +42,16 @@ class MidtransPaymentNotificationService
             return ApiResponder::error(__('api/payments.midtrans.webhook_missing_order'), 422);
         }
 
+        return DecryptSourceContext::run('payment.midtrans.webhook', function () use ($orderId, $payload): JsonResponse {
+            return $this->handleVerifiedNotification($orderId, $payload);
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function handleVerifiedNotification(string $orderId, array $payload): JsonResponse
+    {
         $status = $this->resolveTransactionStatus($orderId, $payload);
 
         if ($status === null) {

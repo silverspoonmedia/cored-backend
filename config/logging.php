@@ -73,6 +73,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'invoice_payload_decrypt' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/invoice-payload-decrypt.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

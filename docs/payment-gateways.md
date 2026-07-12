@@ -170,6 +170,8 @@ POST /api/v1/invoices/{id}/channel-checkout
 
 **Blade resume flow:** [`checkout-panel.blade.php`](../resources/views/adminlte4/components/payments/checkout-panel.blade.php) passes `data-initial-checkout` from `checkout_session`; [`checkout.js`](../resources/js/payments/checkout.js) renders instructions on load. After a successful channel POST, the page performs a **full reload** (not inline render from the POST response). While instructions are visible, the script polls `sync-status` about every 15 seconds until paid or failed.
 
+**Envelope encryption:** `gateway_request_payload` and `gateway_response_payload` are **Tier-2 envelope** columns ([envelope-encryption.md](./envelope-encryption.md)). Checkout hydration and `sync-status` polling trigger decrypt reads; after the first cold miss per ciphertext fingerprint, subsequent reads are served from the decrypt cache. Identical sync responses skip re-encrypt (no spurious KMS `generateDek`). To trace which code path triggered a decrypt, enable `ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS=true` temporarily.
+
 **Vue SPA:** may read `checkout_session` from `GET /api/v1/invoices/{id}` or from channel-checkout responses; Gateway `checkout-context` aggregate does **not** include `checkout_session` — fetch the invoice separately when resuming.
 
 Provider-specific charge APIs (`POST .../transactions/charge`) remain available for programmatic use. Channel checkout uses [`InvoiceChannelCheckoutService`](../app/Domain/PaymentGateway/Services/Payment/InvoiceChannelCheckoutService.php) + [`InvoicePaymentInitiationGuard`](../app/Domain/PaymentGateway/Services/Payment/InvoicePaymentInitiationGuard.php) (same pre-payment sync rules as snap/charge).

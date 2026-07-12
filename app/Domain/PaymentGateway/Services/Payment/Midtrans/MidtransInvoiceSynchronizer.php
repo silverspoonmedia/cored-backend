@@ -12,6 +12,7 @@ use App\Domain\Playground\Models\Order;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\Billing\InvoiceFundsLedgerService;
 // Internal
+use App\Support\Encryption\DecryptSourceContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -28,6 +29,18 @@ class MidtransInvoiceSynchronizer
      * @param  object|array<string, mixed>  $apiResponse
      */
     public function sync(Invoice $invoice, object|array $apiResponse): Invoice
+    {
+        return DecryptSourceContext::run(
+            'payment.midtrans.invoice_sync',
+            fn (): Invoice => $this->syncWithinContext($invoice, $apiResponse),
+            ['invoice_id' => $invoice->id],
+        );
+    }
+
+    /**
+     * @param  object|array<string, mixed>  $apiResponse
+     */
+    private function syncWithinContext(Invoice $invoice, object|array $apiResponse): Invoice
     {
         $row = is_array($apiResponse) ? $apiResponse : json_decode(json_encode($apiResponse), true);
 

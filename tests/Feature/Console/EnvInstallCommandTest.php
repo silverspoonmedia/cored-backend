@@ -66,6 +66,11 @@ class EnvInstallCommandTest extends TestCase
         $this->assertStringContainsString('APP_PREVIOUS_KEYS=""', $env);
         $this->assertMatchesRegularExpression('/^JWT_SECRET=.+$/m', $env);
         $this->assertDoesNotMatchRegularExpression('/^JWT_SECRET=""$/m', $env);
+        $this->assertMatchesRegularExpression(
+            '/^ENCRYPTION_BLIND_INDEX_PEPPER="[a-f0-9]{64}"$/m',
+            $env,
+        );
+        $this->assertStringContainsString('ENCRYPTION_AUDIT_DECRYPTS="cache_miss"', $env);
         $this->assertFileExists(base_path('.env.local'));
         $this->assertSame('local', trim(File::get(base_path('.env.profile'))));
     }

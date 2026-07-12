@@ -15,6 +15,7 @@ class EnvelopeEncryptionService
         private readonly KmsDekClientInterface $kmsClient,
         private readonly DecryptedValueCache $decryptedValueCache,
         private readonly CryptoActivityRecorder $cryptoActivityRecorder,
+        private readonly InvoicePayloadDecryptLogger $invoicePayloadDecryptLogger,
     ) {}
 
     public function encrypt(string $plaintext, ?DecryptionContext $context = null): string
@@ -57,7 +58,7 @@ class EnvelopeEncryptionService
         return $envelope->toJson();
     }
 
-    public function decrypt(string $storedValue, DecryptionContext $context): string
+    public function decrypt(string $storedValue, DecryptionContext $context, string $operation = 'read'): string
     {
         $contextKey = $context->cacheKey();
         $cacheHit = $this->decryptedValueCache->has($contextKey, $storedValue);
@@ -67,6 +68,8 @@ class EnvelopeEncryptionService
             $storedValue,
             fn (): string => $this->decryptWithoutCache($storedValue),
         );
+
+        $this->invoicePayloadDecryptLogger->log($context, $cacheHit, $operation);
 
         if ($this->shouldAuditDecrypt($cacheHit, $context)) {
             $metadata = $this->resolveAuditMetadata($storedValue);
@@ -120,7 +123,7 @@ class EnvelopeEncryptionService
             return false;
         }
 
-        return hash_equals($plaintext, $this->decrypt($storedValue, $context));
+        return hash_equals($plaintext, $this->decrypt($storedValue, $context, 'compare'));
     }
 
     private function decryptEnvelope(string $storedValue): string
