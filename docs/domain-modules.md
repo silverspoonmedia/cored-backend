@@ -136,7 +136,7 @@ Prefer the Artisan flow:
 3. Fill in `routes/api/v1/{slug}.php` and `routes/web/{slug}.php`.
 4. Bind repositories / policies in the generated `*ServiceProvider` (already registered).
 5. Add tests under `tests/Domain/{Name}/`.
-6. If the domain exposes new **public URLs** or JSON shapes, update Gateway/Frontend in the same task.
+6. If the domain exposes new **public URLs** or JSON shapes, add a [downstream changelog](downstream-changelog/README.md) entry (Gateway/Frontend sync happens in a downstream sync session).
 7. To remove a locked domain later: set `'locked' => false` in `config/domains.php`, then `domain:remove {Name}`.
 8. Update this doc and [internal-monorepo-assessment.md](./internal-monorepo-assessment.md) if the domain map changes.
 

@@ -6,7 +6,8 @@ Session handoff guide for the **logical monorepo** migration inside Project Mono
 
 - [internal-monorepo-assessment.md](./internal-monorepo-assessment.md) — why, domain map, phases, deferrals
 - [domain-modules.md](./domain-modules.md) — conventions and how to add a domain
-- [ai-agent-guide.md](./ai-agent-guide.md) — three-project checklist
+- [ai-agent-guide.md](./ai-agent-guide.md) — agent workflow and downstream sync sessions
+- [downstream-changelog/README.md](./downstream-changelog/README.md) — Gateway/Frontend handoff log
 
 ---
 
@@ -236,7 +237,7 @@ php artisan route:list --path=api/v1/approvals   # confirm approval routes
 
 1. Composer path packages before logical domains are stable.
 2. Partial migration (API only, not Web Blade).
-3. Changing public URLs without Gateway/Frontend updates in the same task.
+3. Changing public URLs without a downstream changelog entry or a downstream sync session to update Gateway/Frontend.
 4. Merging three git repos without a clear operational win.
 5. Using `nwidart/laravel-modules` instead of plain `app/Domain/*`.
 

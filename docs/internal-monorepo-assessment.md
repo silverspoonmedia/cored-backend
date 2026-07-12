@@ -222,7 +222,7 @@ Closed 2026-07-09:
 1. Merging three git repos into one without a clear win.
 2. Shared PHP/TS libraries between Monolith, Gateway, and Frontend.
 3. Composer packages before logical domains and tests are stable.
-4. Changing public API URLs without Gateway/Frontend updates in the same task.
+4. Changing public API URLs without a downstream changelog entry or a downstream sync session to update Gateway/Frontend.
 
 ---
 
@@ -232,4 +232,5 @@ Closed 2026-07-09:
 - [internal-monorepo-porting.md](./internal-monorepo-porting.md) — porting implementation reference (migration order, scripts, gotchas)
 - [api-routing.md](./api-routing.md) — global vs versioned API
 - [spa-gateway-integration.md](./spa-gateway-integration.md) — three-project wiring
-- [ai-agent-guide.md](./ai-agent-guide.md) — agent checklist
+- [ai-agent-guide.md](./ai-agent-guide.md) — agent workflow and downstream sync sessions
+- [downstream-changelog/README.md](./downstream-changelog/README.md) — Gateway/Frontend handoff log

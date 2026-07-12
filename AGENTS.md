@@ -8,7 +8,7 @@
 
 `c:\laragon\www\monolith\docs\ai-agent-guide.md`
 
-Read it before cross-project features, API changes, or anything that touches Gateway or Frontend.
+Read it for architecture context. **Daily work stays in this repository only** — do not load or edit Gateway or Frontend unless the user's prompt contains the exact keyword **`downstream sync session`**. That keyword is the **only** trigger for cross-repo synchronization; paraphrases (for example "sync Gateway", "update Frontend", or "implement downstream changes") do **not** qualify. When Monolith changes affect HTTP contracts, log them in [docs/downstream-changelog/](docs/downstream-changelog/README.md) instead of opening the other repos.
 
 **Database safety:** Never run `migrate:fresh`, `migrate:refresh`, or `db:wipe` on non-sqlite without `ALLOW_DESTRUCTIVE_DB=true`. Prefer `composer test` in Monolith (`composer test -- --filter=…` for filtered runs). See [docs/database-safety.md](docs/database-safety.md).
 
@@ -16,7 +16,8 @@ Read it before cross-project features, API changes, or anything that touches Gat
 
 | Document | Topic |
 |----------|-------|
-| [README.md](README.md) | Living documentation rules, full-stack requirements |
+| [README.md](README.md) | Living documentation rules, Monolith full-stack requirements |
+| [docs/downstream-changelog/README.md](docs/downstream-changelog/README.md) | Handoff log for Gateway / Frontend sync sessions |
 | [docs/api-routing.md](docs/api-routing.md) | API structure |
 | [docs/jwt-authentication.md](docs/jwt-authentication.md) | Auth and permissions |
 | [docs/spa-gateway-integration.md](docs/spa-gateway-integration.md) | Monolith + Gateway + Vue wiring |
