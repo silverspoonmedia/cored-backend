@@ -2,6 +2,8 @@
 
 Handoff log for changes made in **Project Monolith** that Gateway and Frontend must eventually implement. Daily agent work stays in Monolith only; downstream repos are updated only when the user's prompt contains the exact keyword **`downstream sync session`**.
 
+This is **not** the Monolith session close-out log. Session documentation archives live in [upstream-changelog/](../upstream-changelog/README.md) and are written only during an **`upstream documentation session`**.
+
 Canonical workspace context: [ai-agent-guide.md](../ai-agent-guide.md).
 
 ---
@@ -98,6 +100,7 @@ flowchart LR
 
 ## Related docs
 
-- [ai-agent-guide.md](../ai-agent-guide.md) — default scope and workflow
+- [ai-agent-guide.md](../ai-agent-guide.md) — default scope, session keywords, and workflow
+- [upstream-changelog/README.md](../upstream-changelog/README.md) — Monolith session close-out (`upstream documentation session`)
 - [spa-gateway-integration.md](../spa-gateway-integration.md) — three-project wiring
 - [internal-monorepo-assessment.md](../internal-monorepo-assessment.md) — adaptation contract

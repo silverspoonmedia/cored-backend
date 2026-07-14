@@ -232,5 +232,6 @@ Closed 2026-07-09:
 - [internal-monorepo-porting.md](./internal-monorepo-porting.md) — porting implementation reference (migration order, scripts, gotchas)
 - [api-routing.md](./api-routing.md) — global vs versioned API
 - [spa-gateway-integration.md](./spa-gateway-integration.md) — three-project wiring
-- [ai-agent-guide.md](./ai-agent-guide.md) — agent workflow and downstream sync sessions
+- [ai-agent-guide.md](./ai-agent-guide.md) — agent workflow, session keywords, and downstream sync sessions
+- [upstream-changelog/README.md](./upstream-changelog/README.md) — Monolith session close-out (upstream documentation session)
 - [downstream-changelog/README.md](./downstream-changelog/README.md) — Gateway/Frontend handoff log

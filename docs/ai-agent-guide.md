@@ -1,6 +1,6 @@
 # AI Agent Guide — Monolith Workspace
 
-This document is the **canonical guide** for AI coding agents (Cursor, Copilot, etc.) working in the three-project Monolith workspace. Read it **before** implementing features, refactors, or downstream sync work.
+This document is the **canonical guide** for AI coding agents (Cursor, Copilot, etc.) working in the three-project Monolith workspace. Read it **before** implementing features, refactors, session close-out, or downstream sync work.
 
 Entry points in each repository: `AGENTS.md` at the project root.
 
@@ -16,6 +16,25 @@ When Monolith changes affect HTTP contracts (see [adaptation contract](#4-downst
 
 `AGENTS.md` remains the entry point on every task. This guide provides architecture context; implementation stays in Monolith unless the prompt contains **`downstream sync session`**.
 
+### Session lifecycle and keywords
+
+Monolith sessions have three phases. Loading [AGENTS.md](../AGENTS.md) is common at open and close; **keywords in the current prompt** decide the phase — not merely re-attaching the file.
+
+| Phase | Trigger | Agent action |
+|-------|---------|--------------|
+| **1. Open** | User loads AGENTS / this guide at chat start | Read architecture. Scope: Monolith only. Ready for work. |
+| **2. Work** | Prompt has **no** special session keyword | Implement and test in Monolith. Do **not** run close-out. |
+| **3. Close** | Exact keyword **`upstream documentation session`** | Improve Monolith docs for session work, then write [upstream-changelog/](./upstream-changelog/README.md). |
+
+| Keyword | Scope | Purpose |
+|---------|-------|---------|
+| *(none)* | Monolith | Phase 2 — daily implementation |
+| **`upstream documentation session`** | Monolith only | Phase 3 — improve docs + session changelog. Paraphrases do **not** qualify. |
+| **`downstream sync session`** | All three repos | Implement Gateway/Frontend from [downstream-changelog/pending/](./downstream-changelog/pending/). |
+
+Without **`upstream documentation session`**, stay in **phase 2** even if AGENTS.md was re-loaded. Full close-out procedure: [upstream-changelog/README.md](./upstream-changelog/README.md).
+
+---
 ---
 
 ## Workspace map
@@ -155,6 +174,7 @@ Read these for daily Monolith work. Do **not** load Gateway or Frontend doc inde
 | Document | Topic |
 |----------|-------|
 | [README.md](../README.md) | Living documentation rules, Monolith full-stack requirement, UUID conventions |
+| [docs/upstream-changelog/README.md](./upstream-changelog/README.md) | Session close-out log (`upstream documentation session`) |
 | [docs/downstream-changelog/README.md](./downstream-changelog/README.md) | Downstream handoff log and sync sessions |
 | [docs/api-routing.md](./api-routing.md) | Global vs versioned API layout |
 | [docs/jwt-authentication.md](./jwt-authentication.md) | Auth, 2FA, JWT, permissions |
@@ -217,14 +237,27 @@ Load these **only** when the user's prompt contains the exact keyword **`downstr
 
 ## Agent workflow checklist
 
-### Daily Monolith task
+### Daily Monolith task (phase 2)
 
 1. **Scope** — Monolith only. Do not open Gateway or Frontend without the **`downstream sync session`** keyword in the prompt.
 2. **Read** Monolith docs from the index above (start with [AGENTS.md](../AGENTS.md) and domain-specific guides).
 3. **Implement** with minimal scope; match existing naming, patterns, and folder layout.
 4. **Test** Monolith (`composer test` — see [database-safety.md](database-safety.md)).
-5. **Update** Monolith documentation in the same task.
-6. **Changelog** — if the adaptation contract triggers, add an entry under [downstream-changelog/pending/](./downstream-changelog/pending/) using [TEMPLATE.md](./downstream-changelog/TEMPLATE.md).
+5. **Update** Monolith documentation in the same task when behavior changes (living documentation).
+6. **Downstream changelog** — if the adaptation contract triggers, add an entry under [downstream-changelog/pending/](./downstream-changelog/pending/) using [TEMPLATE.md](./downstream-changelog/TEMPLATE.md).
+7. **Do not close out** — skip [upstream-changelog/](./upstream-changelog/README.md) unless the prompt contains **`upstream documentation session`**.
+
+### Upstream documentation session (phase 3 — close-out)
+
+1. **Confirm** the user's prompt contains the exact keyword **`upstream documentation session`**. If it does not, stay in phase 2 — do not invent a session changelog.
+2. **Inventory** work from this session (conversation, git status/diff, related files).
+3. **Improve** every Monolith guide made stale by that work (README + `docs/`; English only).
+4. **Downstream check** — if the adaptation contract still needs a handoff entry, create or update [downstream-changelog/pending/](./downstream-changelog/pending/).
+5. **Write** an upstream entry under [upstream-changelog/entries/](./upstream-changelog/entries/) using [TEMPLATE.md](./upstream-changelog/TEMPLATE.md).
+6. **Do not** open Gateway or Frontend unless the same prompt also contains **`downstream sync session`**.
+7. **Summarize** for the user: docs updated, upstream entry path, any downstream pending paths.
+
+Full procedure: [upstream-changelog/README.md](./upstream-changelog/README.md).
 
 ### Downstream sync session
 
@@ -237,10 +270,13 @@ Load these **only** when the user's prompt contains the exact keyword **`downstr
 7. **Archive** completed entries to `downstream-changelog/done/` and update downstream docs.
 
 ---
+---
 
 ## What not to do
 
 - Load or edit Gateway / Frontend unless the prompt contains the exact keyword **`downstream sync session`**.
+- Run an **`upstream documentation session`** close-out (or write [upstream-changelog/](./upstream-changelog/) entries) without the exact keyword in the prompt.
+- Treat re-loading [AGENTS.md](../AGENTS.md) alone as session close — without **`upstream documentation session`**, remain in work phase.
 - Rework Monolith architecture without strong justification — it is production-stable source of truth.
 - Put business logic or a database on Gateway.
 - Add Cloudflare Workers/Functions to Frontend for API proxying or BFF logic without Gateway-first assessment and explicit approval.

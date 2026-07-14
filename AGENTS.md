@@ -12,11 +12,34 @@ Read it for architecture context. **Daily work stays in this repository only** �
 
 **Database safety:** Never run `migrate:fresh`, `migrate:refresh`, or `db:wipe` on non-sqlite without `ALLOW_DESTRUCTIVE_DB=true`. Prefer `composer test` in Monolith (`composer test -- --filter=…` for filtered runs). See [docs/database-safety.md](docs/database-safety.md).
 
+## Session lifecycle (Monolith)
+
+This file is often loaded at **session open** and again at **session close**. Behavior depends on keywords in the **current user prompt**, not on whether `AGENTS.md` was attached.
+
+| Phase | When | Agent action |
+|-------|------|--------------|
+| **1. Open** | User loads this guide at the start of a chat | Read context. Default scope: Monolith only. Ready for work. |
+| **2. Work** | Any prompt **without** a special session keyword | Implement and test in Monolith. Do **not** run close-out. |
+| **3. Close** | Prompt contains exact keyword **`upstream documentation session`** | Improve Monolith `docs/` for session work, then write [docs/upstream-changelog/](docs/upstream-changelog/README.md). |
+
+### Keywords (exact phrase only)
+
+| Keyword | Meaning |
+|---------|---------|
+| *(none)* | Phase 2 — keep working in Monolith |
+| **`upstream documentation session`** | Phase 3 — close-out: improve docs + upstream changelog entry. Paraphrases do **not** qualify. |
+| **`downstream sync session`** | Cross-repo: implement Gateway/Frontend from [downstream-changelog/pending/](docs/downstream-changelog/pending/). Separate from close-out. |
+
+Without **`upstream documentation session`**, treat the session as still in **phase 2** even if this file was re-loaded.
+
+Full workflow: [docs/ai-agent-guide.md](docs/ai-agent-guide.md) · [docs/upstream-changelog/README.md](docs/upstream-changelog/README.md).
+
 ## Start here (this project)
 
 | Document | Topic |
 |----------|-------|
 | [README.md](README.md) | Living documentation rules, Monolith full-stack requirements |
+| [docs/upstream-changelog/README.md](docs/upstream-changelog/README.md) | Session close-out log (`upstream documentation session`) |
 | [docs/downstream-changelog/README.md](docs/downstream-changelog/README.md) | Handoff log for Gateway / Frontend sync sessions |
 | [docs/api-routing.md](docs/api-routing.md) | API structure |
 | [docs/jwt-authentication.md](docs/jwt-authentication.md) | Auth and permissions |
