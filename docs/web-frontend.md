@@ -350,6 +350,111 @@ Action buttons stay web-side because the browser submits a normal CSRF `<form>` 
 
 ---
 
+## UI/UX theming (soft override layer)
+
+The Blade frontend uses AdminLTE 4 / Bootstrap 5 via CDN as its base design system. A **soft CSS override layer** sits on top without altering Blade component structure, providing refined spacing, rounded corners, softer shadows, and consistent dark-mode behavior.
+
+### Where the overrides live
+
+| File | Scope |
+|------|-------|
+| `resources/css/monolith-overrides.css` | **Global override layer** (loaded via `@vite` in `assets-head.blade.php` on every page): design tokens (`--monolith-*`), card/layout/auth/sidebar/form/datatable soft overrides, Select2 dark mode, Bootstrap utility class dark fixes (`.bg-light`, `.text-bg-light`, `.table-bordered`, `pre.bg-light`, `code`, `.text-muted`, `.text-body`, `dt`/`dd`). Pure CSS — no Tailwind, so it does not conflict with Bootstrap. |
+| `resources/css/app.css` | Tailwind v4 entry (fonts, `@source` for pagination/storage views). Not loaded on Blade pages — reserved for future Tailwind usage. |
+| `resources/css/payments/order-invoice-show.css` | Payment order/invoice page (`ois-*` classes). Dark-mode aware via `[data-bs-theme="dark"]` custom property overrides. |
+| `resources/css/payments/channels-admin.css` | Payment channels admin page (`pc-admin-*` / `pc-channel-*` classes). Dark-mode aware via `[data-bs-theme="dark"]` custom property overrides. |
+
+### Design tokens
+
+Soft tokens are defined as CSS custom properties on `:root` and overridden under `[data-bs-theme="dark"]`:
+
+| Token | Light | Dark | Purpose |
+|-------|-------|------|---------|
+| `--monolith-radius` | `0.75rem` | same | Card / component border radius |
+| `--monolith-shadow-sm` | subtle slate | subtle black | Resting card shadow |
+| `--monolith-shadow-lg` | deeper slate | deeper black | Auth card / dropdown / modal |
+| `--monolith-border-subtle` | `rgba(15,23,42,.08)` | `rgba(255,255,255,.10)` | Dividers, card borders |
+| `--monolith-bg-surface` | `#ffffff` | `#1e293b` | Card / panel background |
+| `--monolith-bg-muted` | `#f8fafc` | `#0f172a` | Muted background (header, footer) |
+| `--monolith-text-muted` | `#64748b` | `#94a3b8` | Secondary text |
+
+### Dark mode behavior
+
+- **Theme toggle** lives in the navbar (`assets-scripts.blade.php`). It sets `data-bs-theme` on `<html>` and persists to `localStorage` (`lte-theme` key).
+- **Sidebar** respects the theme toggle — the previous forced `data-bs-theme="dark"` was removed so the sidebar follows the user's choice (light sidebar in light mode, dark in dark mode).
+- **Payment CSS** (`order-invoice-show.css`) uses `--ois-*` custom properties with `[data-bs-theme="dark"]` overrides for all hardcoded colors (card backgrounds, step states, channel chips, status badges, channel icons).
+- **Payment channels admin CSS** (`channels-admin.css`) uses `--pc-*` custom properties with `[data-bs-theme="dark"]` overrides for all hardcoded colors (intro gradient, step numbers, stat cards, channel cards, route items, channel icons, toast shadows).
+- **Select2** (loaded via CDN with `select2-bootstrap-5-theme`) has no built-in dark variant. Dark mode overrides are in `app.css` scoped to `[data-bs-theme="dark"] .select2-*` — selection, rendered text, placeholder, multi-choice chips, dropdown, results, search field all use Monolith surface tokens.
+- **Bootstrap utility class fixes** — `.bg-light`, `.text-bg-light`, `.table-bordered` borders, and `pre.bg-light` (used in activity-log detail) are overridden in dark mode so they no longer clash (white-on-dark). `code` elements get a warm color for legibility.
+- **All hardcoded hex colors** in payment CSS were replaced with theme-aware custom properties.
+
+### What the override layer changes (visually)
+
+1. **Cards** — softer shadow, rounded corners, subtle border, hover shadow lift
+2. **Layout** — content header breathing room, subtle bottom border, more content padding
+3. **Auth pages** — centered card with large soft shadow, gradient background (theme-aware), rounded inputs with indigo focus ring
+4. **Sidebar** — theme-aware background, nav-link hover state, rounded nav items, softer brand header
+5. **Forms** — rounded inputs, indigo focus ring, softer input-group icons
+6. **DataTables** — empty state with icon, softer processing panel, padded rows
+7. **Buttons / badges / alerts / dropdowns / modals** — consistent radius and soft shadows
+
+### Localization fix
+
+Two hardcoded Indonesian strings were replaced with translation keys (the keys already existed in `lang/{en,id,ja}/ui.php`):
+
+| File | Was (hardcoded) | Now |
+|------|-----------------|-----|
+| `adminlte4/components/alert.blade.php` | `Periksa kembali isian berikut:` | `__('ui.ajax.validation_failed')` |
+| `adminlte4/components/form/input.blade.php` | `Tampilkan kata sandi` (aria-label) | `__('ui.password.show')` |
+
+### Dark mode Blade fixes
+
+Bootstrap utility classes that are hardcoded light (not dark-aware) were fixed for dark mode readability:
+
+| File | Was | Now | Reason |
+|------|-----|-----|--------|
+| `adminlte4/activity-logs/index.blade.php:18` | `badge text-bg-light border text-muted` | `badge text-bg-light border` | `text-muted` conflicted with `text-bg-light` color in dark mode (text invisible) |
+| `adminlte4/activity-logs/show.blade.php:62` | `pre class="bg-light border rounded p-3 small mb-0"` | `pre class="bg-body-tertiary border rounded p-3 small mb-0"` | `bg-light` hardcoded white; `bg-body-tertiary` is dark-aware |
+
+In addition, the global CSS override layer (`monolith-overrides.css`) handles `.bg-light`, `.text-bg-light`, `.table-bordered`, `pre.bg-light`, `.text-muted`, `.text-body`, `code`, `dt`/`dd`, and Select2 dropdowns in dark mode — so pages that still use these utility classes remain readable without individual Blade changes.
+
+### Dark mode contrast audit (round 2)
+
+A full audit of all 83 Blade views found and fixed 4 remaining categories of dark mode contrast issues:
+
+**1. Invalid badge syntax (bug):**
+
+| File | Was | Now | Reason |
+|------|-----|-----|--------|
+| `adminlte4/approvals/show.blade.php:15` | `badge badge-{status}` | `badge text-bg-{status}` | `badge-warning` etc. is not valid Bootstrap 5.3 — badge got no styling at all |
+
+**2. Legacy `bg-*` badges migrated to `text-bg-*`:**
+
+Bootstrap 5.3 `text-bg-*` classes auto-contrast text+background. Legacy `bg-*` only sets background, leaving text to inherit parent color (fragile in dark mode).
+
+| File | Lines | Was | Now |
+|------|-------|-----|-----|
+| `adminlte4/admin/approval-workflows/show.blade.php` | 15, 68 | `bg-{success/secondary}`, `bg-primary` | `text-bg-{success/secondary}`, `text-bg-primary` |
+| `adminlte4/admin/approval-workflows/index.blade.php` | 38, 40 | `bg-success`, `bg-secondary` | `text-bg-success`, `text-bg-secondary` |
+| `adminlte4/approvals/my-pending.blade.php` | 62 | `bg-primary` | `text-bg-primary` |
+| `adminlte4/approvals/show.blade.php` | 46, 68 | `bg-{status}` | `text-bg-{status}` |
+
+**3. QR code `bg-white` dark mode adaptation:**
+
+`adminlte4/profile/two-factor.blade.php:14` — QR code image needs white background for scannability, but a raw white box in dark mode was jarring. Wrapped in a theme-aware container (`bg-body-tertiary border`) with the inner `bg-white` preserved only on the image itself.
+
+**4. Sidebar scrollbar theme-awareness:**
+
+`adminlte4/components/partials/assets-scripts.blade.php` — OverlayScrollbars was hardcoded to `os-theme-light`, showing a light scrollbar even in dark mode. Now dynamically detects `data-bs-theme` attribute and switches between `os-theme-light` / `os-theme-dark`, and updates on theme toggle.
+
+**Already working (no changes needed):**
+
+- `text-bg-light` badges (12 instances across 9 files) — already handled by `monolith-overrides.css`
+- `text-muted` (50+ instances) — already handled by `monolith-overrides.css`
+- `bg-body-tertiary`, `bg-body-secondary` — theme-aware by default
+- Payment channel / order-invoice CSS — custom properties correctly scoped to `.pc-admin` / `.ois` with `[data-bs-theme="dark"] .pc-admin` / `[data-bs-theme="dark"] .ois` dark overrides
+
+---
+
 ## Caveat: self-calls require a concurrent web server
 
 Because the web layer makes **real HTTP round-trips to its own host**, the server must be able to handle a second concurrent request while serving the first. Laragon (Apache/Nginx + multiple PHP workers) does this out of the box. For `php artisan serve` (single worker by default), set in `.env`:

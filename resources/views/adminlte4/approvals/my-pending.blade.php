@@ -59,7 +59,7 @@
                                     </td>
                                     <td>{{ $approval['document_type'] }}</td>
                                     <td>
-                                        <span class="badge bg-primary">
+                                        <span class="badge text-bg-primary">
                                             {{ $approval['step_order'] }}. {{ $approval['step_name'] }}
                                         </span>
                                     </td>

@@ -12,7 +12,7 @@
 <div class="sidebar-search px-3 pb-2">
     <input
         type="search"
-        class="form-control form-control-sm bg-dark-subtle border-0"
+        class="form-control form-control-sm border-0"
         placeholder="{{ __('web/sidebar.search_placeholder') }}"
         data-sidebar-nav-search
         autocomplete="off"

@@ -8,6 +8,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                'resources/css/monolith-overrides.css',
                 'resources/css/payments/channels-admin.css',
                 'resources/css/payments/order-invoice-show.css',
                 'resources/js/app.js',

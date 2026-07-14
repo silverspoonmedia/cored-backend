@@ -3,7 +3,7 @@
     $navigation is the sidebar-layout tree from NavigationComposer
     (MenuService::navigationTree, layout=sidebar). No hardcoded items.
 --}}
-<aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
+<aside class="app-sidebar bg-body-secondary shadow">
     <div class="sidebar-brand">
         <a href="{{ route('dashboard') }}" class="brand-link">
             <span class="brand-text fw-light"><b>Mono</b>lith</span>

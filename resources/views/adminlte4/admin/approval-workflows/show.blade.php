@@ -12,7 +12,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{{ $workflowData['name'] ?? '-' }}</h5>
-                    <span class="badge bg-{{ ($workflowData['is_active'] ?? false) ? 'success' : 'secondary' }}">
+                    <span class="badge text-bg-{{ ($workflowData['is_active'] ?? false) ? 'success' : 'secondary' }}">
                         {{ ($workflowData['is_active'] ?? false) ? __('approval.active') : __('approval.inactive') }}
                     </span>
                 </div>
@@ -65,7 +65,7 @@
                     <div class="card mb-3">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">
-                                <span class="badge bg-primary me-2">{{ $step['step_order'] }}</span>
+                                <span class="badge text-bg-primary me-2">{{ $step['step_order'] }}</span>
                                 {{ $step['step_name'] }}
                             </h6>
                             <div>

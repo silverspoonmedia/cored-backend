@@ -33,7 +33,7 @@
                     type="button"
                     class="input-group-text"
                     data-password-toggle
-                    aria-label="Tampilkan kata sandi"
+                    aria-label="{{ __('ui.password.show') }}"
                     aria-pressed="false"
                 >
                     <i class="bi bi-eye-slash" aria-hidden="true"></i>

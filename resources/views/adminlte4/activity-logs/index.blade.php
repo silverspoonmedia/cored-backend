@@ -15,7 +15,7 @@
                     @forelse ($entries as $entry)
                         <tr>
                             <td>
-                                <span class="badge text-bg-light border text-muted">{{ $entry['log_name'] ?? '—' }}</span>
+                                <span class="badge text-bg-light border">{{ $entry['log_name'] ?? '—' }}</span>
                                 {{ $entry['event_label'] ?? $entry['event'] ?? $entry['description'] }}
                             </td>
                             <td class="text-muted small">{{ $entry['subject_label'] ?? '—' }}</td>

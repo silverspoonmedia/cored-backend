@@ -12,7 +12,7 @@
     @else
         <x-adminlte4::card :title="__('approval.approval_details')">
             <x-slot name="tools">
-                <span class="badge badge-{{ $instance['status'] === 'PENDING' ? 'warning' : ($instance['status'] === 'APPROVED' ? 'success' : 'danger') }}">
+                <span class="badge text-bg-{{ $instance['status'] === 'PENDING' ? 'warning' : ($instance['status'] === 'APPROVED' ? 'success' : 'danger') }}">
                     {{ $instance['status'] }}
                 </span>
             </x-slot>
@@ -43,7 +43,7 @@
                     <div class="card-header">
                         <h5>
                             {{ $step['order'] }}. {{ $step['name'] }}
-                            <span class="badge bg-{{ $step['status'] === 'APPROVED' ? 'success' : ($step['status'] === 'IN_PROGRESS' ? 'primary' : 'secondary') }}">
+                            <span class="badge text-bg-{{ $step['status'] === 'APPROVED' ? 'success' : ($step['status'] === 'IN_PROGRESS' ? 'primary' : 'secondary') }}">
                                 {{ $step['status'] }}
                             </span>
                         </h5>
@@ -65,7 +65,7 @@
                                         <td>{{ $approver['slot_label'] }}</td>
                                         <td>{{ $approver['assigned_to']['name'] ?? '-' }}</td>
                                         <td>
-                                            <span class="badge bg-{{ $approver['status'] === 'APPROVED' ? 'success' : ($approver['status'] === 'WAITING' ? 'warning' : 'danger') }}">
+                                            <span class="badge text-bg-{{ $approver['status'] === 'APPROVED' ? 'success' : ($approver['status'] === 'WAITING' ? 'warning' : 'danger') }}">
                                                 {{ $approver['status'] }}
                                             </span>
                                         </td>
