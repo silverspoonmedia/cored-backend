@@ -347,6 +347,7 @@ Action buttons stay web-side because the browser submits a normal CSRF `<form>` 
 | `tests/Domain/Identity/Feature/Http/Controllers/Web/UserDatatableTest.php` | `Http::fake()` → asserts the proxy maps API keys to web URLs and returns an `error` key on API failure |
 | `tests/Feature/Http/Controllers/Web/UserFormAjaxTest.php` | AJAX mutation envelope: 422 field errors, 401 session flash + redirect, 403/500 error messages |
 | `tests/Feature/Http/Controllers/Web/WebCsrfErrorTest.php` | CSRF `TokenMismatchException` → JSON 419 envelope + session flash |
+| `tests/Feature/Http/Controllers/Web/ThemeOverrideCssTest.php` | CSS override layer: design tokens (accent, shadow, border), login gradient, interactive accent tints, asset link rendering |
 
 ---
 
@@ -370,32 +371,87 @@ Soft tokens are defined as CSS custom properties on `:root` and overridden under
 | Token | Light | Dark | Purpose |
 |-------|-------|------|---------|
 | `--monolith-radius` | `0.75rem` | same | Card / component border radius |
-| `--monolith-shadow-sm` | subtle slate | subtle black | Resting card shadow |
-| `--monolith-shadow-lg` | deeper slate | deeper black | Auth card / dropdown / modal |
-| `--monolith-border-subtle` | `rgba(15,23,42,.08)` | `rgba(255,255,255,.10)` | Dividers, card borders |
+| `--monolith-shadow-sm` | slate `0.06–0.08` | black `0.20–0.25` | Resting card shadow |
+| `--monolith-shadow-lg` | slate `0.14–0.08` | black `0.40–0.30` | Auth card / dropdown / modal |
+| `--monolith-border-subtle` | `rgba(15,23,42,.12)` | `rgba(255,255,255,.10)` | Dividers, card borders |
 | `--monolith-bg-surface` | `#ffffff` | `#1e293b` | Card / panel background |
-| `--monolith-bg-muted` | `#f8fafc` | `#0f172a` | Muted background (header, footer) |
+| `--monolith-bg-muted` | `#f1f5f9` | `#0f172a` | Muted background (header, footer) |
+| `--monolith-bg-surface-hover` | `#eef2ff` | `#334155` | Hover surface (indigo-tinted in light) |
+| `--monolith-text-body` | `#1e293b` | `#e2e8f0` | Body text (normalization counterpart) |
 | `--monolith-text-muted` | `#64748b` | `#94a3b8` | Secondary text |
+| `--monolith-text-strong` | `#0f172a` | `#f1f5f9` | Headings / card titles |
+| `--monolith-text-code` | `#c2410c` | `#fba74d` | Inline code color |
+| `--monolith-accent` | `#6366f1` | `#818cf8` | Indigo accent — active states, Select2 highlight |
+| `--monolith-accent-soft` | `rgba(99,102,241,.06)` | `rgba(129,140,248,.08)` | Hover tint for interactive surfaces |
+| `--monolith-accent-soft-hover` | `rgba(99,102,241,.10)` | `rgba(129,140,248,.14)` | Deeper hover accent |
+| `--monolith-focus-color` | `#6366f1` | `#818cf8` | Focus ring border color |
+| `--monolith-focus-ring` | `rgba(99,102,241,.12)` | `rgba(129,140,248,.15)` | Focus ring box-shadow |
+| `--monolith-gradient-start` | `#e0e7ff` | `#0f172a` | Login gradient start |
+| `--monolith-gradient-mid` | `#f1f5f9` | `#1e293b` | Login gradient mid |
+| `--monolith-gradient-end` | `#ede9fe` | `#1a2e1a` | Login gradient end |
+| `--monolith-status-{secondary,warning,success,danger}-{bg,text}` | solid hex | rgba overlay | Status badge colors (payment CSS) |
+| `--monolith-kind-{qris,va,ewallet}-{bg,text}` | solid hex | rgba overlay | Payment channel kind icon colors |
+
+### Counterpart parity principle
+
+Every visual concern that differs between light and dark mode is **token-driven** — defined once in `:root` (light) and once in `[data-bs-theme="dark"]`, then referenced via `var()` in component rules. No component rule hardcodes a hex that should differ between modes.
+
+**The rule:** if implementation A exists in one mode, A must also exist in the other.
+
+| Concern | Light token | Dark token | Component usage |
+|---------|-------------|------------|-----------------|
+| Body text | `--monolith-text-body: #1e293b` | `--monolith-text-body: #e2e8f0` | `body`, `.text-body`, `.card-body`, `dt`, `dd`, `.form-check-label` (both modes) |
+| Code color | `--monolith-text-code: #c2410c` | `--monolith-text-code: #fba74d` | `code` (both modes) |
+| Focus ring | `--monolith-focus-color/ring` | `--monolith-focus-color/ring` | `.form-control:focus`, `.form-select:focus`, `.login-box .form-control:focus`, `.breadcrumb-item a:hover` |
+| Login gradient | `--monolith-gradient-start/mid/end` | `--monolith-gradient-start/mid/end` | `.login-page` (both modes use the same `var()` call) |
+| Status badges | `--monolith-status-*-{bg,text}` | `--monolith-status-*-{bg,text}` | `.ois-status-*` (payment CSS, both modes) |
+| Kind icons | `--monolith-kind-*-{bg,text}` | `--monolith-kind-*-{bg,text}` | `.pc-kind-* .pc-channel-card__icon`, `.pc-kind-* .pc-checkout-channel__icon` (both modes) |
+
+**Before:** dark mode had an explicit text-normalization block (`body`, `.text-body`, `.card-body`, `code`, etc.) with no light counterpart; focus rings hardcoded `#6366f1` (light indigo) in both modes; login gradient hardcoded hex; payment CSS had light-mode hex with separate dark-mode rgba overrides.
+
+**After:** both modes define the same set of tokens; component rules reference `var()`; the dark-mode text-normalization block now uses `var(--monolith-text-body)` and a light-mode counterpart block sets the same properties explicitly.
+
+Payment CSS (`channels-admin.css`, `order-invoice-show.css`) follows the same pattern with its own namespaced tokens (`--pc-*`, `--ois-*`) — every kind-icon, status, and gradient color is a token defined in both light and dark blocks.
 
 ### Dark mode behavior
 
 - **Theme toggle** lives in the navbar (`assets-scripts.blade.php`). It sets `data-bs-theme` on `<html>` and persists to `localStorage` (`lte-theme` key).
 - **Sidebar** respects the theme toggle — the previous forced `data-bs-theme="dark"` was removed so the sidebar follows the user's choice (light sidebar in light mode, dark in dark mode).
-- **Payment CSS** (`order-invoice-show.css`) uses `--ois-*` custom properties with `[data-bs-theme="dark"]` overrides for all hardcoded colors (card backgrounds, step states, channel chips, status badges, channel icons).
-- **Payment channels admin CSS** (`channels-admin.css`) uses `--pc-*` custom properties with `[data-bs-theme="dark"]` overrides for all hardcoded colors (intro gradient, step numbers, stat cards, channel cards, route items, channel icons, toast shadows).
-- **Select2** (loaded via CDN with `select2-bootstrap-5-theme`) has no built-in dark variant. Dark mode overrides are in `app.css` scoped to `[data-bs-theme="dark"] .select2-*` — selection, rendered text, placeholder, multi-choice chips, dropdown, results, search field all use Monolith surface tokens.
-- **Bootstrap utility class fixes** — `.bg-light`, `.text-bg-light`, `.table-bordered` borders, and `pre.bg-light` (used in activity-log detail) are overridden in dark mode so they no longer clash (white-on-dark). `code` elements get a warm color for legibility.
-- **All hardcoded hex colors** in payment CSS were replaced with theme-aware custom properties.
+- **Payment CSS** (`order-invoice-show.css`) uses `--ois-*` custom properties defined in both `.ois` (light) and `[data-bs-theme="dark"] .ois` (dark) for all colors (card backgrounds, step states, channel chips, status badges, channel icons, hero gradient, kind icons).
+- **Payment channels admin CSS** (`channels-admin.css`) uses `--pc-*` custom properties defined in both `.pc-admin` (light) and `[data-bs-theme="dark"] .pc-admin` (dark) for all colors (intro gradient, step numbers, stat cards, channel cards, route items, channel icons, toast shadows, kind icons, status colors).
+- **Select2** (loaded via CDN with `select2-bootstrap-5-theme`) has no built-in dark variant. Dark mode overrides are in `monolith-overrides.css` scoped to `[data-bs-theme="dark"] .select2-*` — selection, rendered text, placeholder, multi-choice chips, dropdown, results, search field all use Monolith surface tokens. The highlighted-option background uses `var(--monolith-accent)`.
+- **Text normalization** — both modes explicitly set body text color (`--monolith-text-body`), code color (`--monolith-text-code`), and utility-class fixes (`.bg-light`, `.text-bg-light`, `.table-bordered`, `pre.bg-light`, `.text-muted`, `.text-body`, `.card-body`, `dt`/`dd`, `.form-check-label`, `hr`). The light-mode counterpart block mirrors the dark-mode block so both modes define the same set of concerns.
+- **Focus rings** use `var(--monolith-focus-color)` and `var(--monolith-focus-ring)` so the ring color switches automatically between light indigo (`#6366f1`) and dark indigo (`#818cf8`).
+- **Login gradient** uses `var(--monolith-gradient-start/mid/end)` tokens in both modes.
+- **All hardcoded hex colors** in payment CSS were replaced with theme-aware custom properties (kind icons, status badges, gradients).
 
 ### What the override layer changes (visually)
 
-1. **Cards** — softer shadow, rounded corners, subtle border, hover shadow lift
+1. **Cards** — softer shadow, rounded corners, subtle border, hover shadow lift + `translateY(-1px)` tactile lift, accent-tinted card title color
 2. **Layout** — content header breathing room, subtle bottom border, more content padding
-3. **Auth pages** — centered card with large soft shadow, gradient background (theme-aware), rounded inputs with indigo focus ring
-4. **Sidebar** — theme-aware background, nav-link hover state, rounded nav items, softer brand header
+3. **Auth pages** — centered card with large soft shadow, indigo→slate→violet gradient background (theme-aware), rounded inputs with indigo focus ring
+4. **Sidebar** — theme-aware background, indigo accent-tinted nav-link hover, active nav-link with accent background + left accent indicator bar, rounded nav items, softer brand header
 5. **Forms** — rounded inputs, indigo focus ring, softer input-group icons
-6. **DataTables** — empty state with icon, softer processing panel, padded rows
-7. **Buttons / badges / alerts / dropdowns / modals** — consistent radius and soft shadows
+6. **DataTables** — empty state with icon, softer processing panel, padded rows, indigo-tinted hover rows
+7. **Interactive surfaces** — dropdown items, list-group items, table rows all share the accent-soft hover tint for consistency
+8. **Buttons / badges / alerts / dropdowns / modals** — consistent radius and soft shadows
+
+### Light mode improvements (round 2)
+
+The original light mode was functional but visually flat: shadows were too faint (cards appeared to float without depth), borders were nearly invisible on white, the login gradient was muddy, and interactive hover states used a neutral grey that lacked personality. The dark mode already had an indigo accent (focus rings, Select2 highlights) but light mode had no corresponding accent system.
+
+Changes (light mode only; dark mode behavior preserved):
+
+| Area | Before | After |
+|------|--------|-------|
+| **Accent tokens** | none — only slate neutrals | `--monolith-accent` (`#6366f1` light / `#818cf8` dark), `--monolith-accent-soft`, `--monolith-accent-soft-hover` for consistent hover tints |
+| **Shadows** | `0.04–0.10` opacity (barely visible on white) | `0.06–0.14` opacity (real card lift, still soft) |
+| **Borders** | `rgba(15,23,42,.08)` (invisible on white) | `rgba(15,23,42,.12)` (cards read as distinct surfaces) |
+| **Login gradient** | `#eef2ff → #f8fafc → #ecfdf5` (pale, muddy) | `#e0e7ff → #f1f5f9 → #ede9fe` (indigo→slate→violet, vivid) |
+| **Sidebar hover/active** | neutral grey hover, active = bold only | indigo accent-soft hover, active = accent bg + left indicator bar |
+| **Table/dropdown/list hover** | neutral `bg-muted` grey | `accent-soft` indigo tint (matches focus ring color) |
+| **Card hover** | shadow lift only | shadow lift + `translateY(-1px)` tactile feedback |
+| **Card title** | inherits body color | `--monolith-text-strong` for sharper headings |
 
 ### Localization fix
 

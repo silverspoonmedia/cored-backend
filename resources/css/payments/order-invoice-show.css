@@ -18,6 +18,23 @@
     --ois-channel-text: #1e3a8a;
     --ois-link: #2563eb;
     --ois-link-hover: #1d4ed8;
+    --ois-hero-gradient-start: #eff6ff;
+    --ois-hero-gradient-mid: #f8fafc;
+    --ois-hero-gradient-end: #ecfdf5;
+    --ois-kind-qris-bg: #eef2ff;
+    --ois-kind-qris-text: #4338ca;
+    --ois-kind-va-bg: #ecfeff;
+    --ois-kind-va-text: #0e7490;
+    --ois-kind-ewallet-bg: #fff7ed;
+    --ois-kind-ewallet-text: #c2410c;
+    --ois-status-secondary-bg: #e2e8f0;
+    --ois-status-secondary-text: #334155;
+    --ois-status-warning-bg: #fef3c7;
+    --ois-status-warning-text: #92400e;
+    --ois-status-success-bg: #dcfce7;
+    --ois-status-success-text: #166534;
+    --ois-status-danger-bg: #fee2e2;
+    --ois-status-danger-text: #991b1b;
 }
 
 [data-bs-theme="dark"] .ois {
@@ -39,10 +56,27 @@
     --ois-channel-text: #93c5fd;
     --ois-link: #60a5fa;
     --ois-link-hover: #93c5fd;
+    --ois-hero-gradient-start: rgba(59, 130, 246, 0.08);
+    --ois-hero-gradient-mid: rgba(255, 255, 255, 0.02);
+    --ois-hero-gradient-end: rgba(34, 197, 94, 0.06);
+    --ois-kind-qris-bg: rgba(99, 102, 241, 0.15);
+    --ois-kind-qris-text: #a5b4fc;
+    --ois-kind-va-bg: rgba(6, 182, 212, 0.15);
+    --ois-kind-va-text: #67e8f9;
+    --ois-kind-ewallet-bg: rgba(249, 115, 22, 0.15);
+    --ois-kind-ewallet-text: #fdba74;
+    --ois-status-secondary-bg: rgba(148, 163, 184, 0.20);
+    --ois-status-secondary-text: #cbd5e1;
+    --ois-status-warning-bg: rgba(245, 158, 11, 0.18);
+    --ois-status-warning-text: #fcd34d;
+    --ois-status-success-bg: rgba(34, 197, 94, 0.18);
+    --ois-status-success-text: #86efac;
+    --ois-status-danger-bg: rgba(239, 68, 68, 0.18);
+    --ois-status-danger-text: #fca5a5;
 }
 
 .ois-hero {
-    background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 55%, #ecfdf5 100%);
+    background: linear-gradient(135deg, var(--ois-hero-gradient-start) 0%, var(--ois-hero-gradient-mid) 55%, var(--ois-hero-gradient-end) 100%);
     border: 1px solid var(--ois-border);
     border-radius: var(--ois-radius);
     padding: 1.35rem 1.5rem;
@@ -50,7 +84,7 @@
 }
 
 [data-bs-theme="dark"] .ois-hero {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(255, 255, 255, 0.02) 55%, rgba(34, 197, 94, 0.06) 100%);
+    background: linear-gradient(135deg, var(--ois-hero-gradient-start) 0%, var(--ois-hero-gradient-mid) 55%, var(--ois-hero-gradient-end) 100%);
 }
 
 .ois-hero__eyebrow {
@@ -280,33 +314,18 @@
 }
 
 .pc-kind-qris .pc-checkout-channel__icon {
-    background: #eef2ff;
-    color: #4338ca;
+    background: var(--ois-kind-qris-bg);
+    color: var(--ois-kind-qris-text);
 }
 
 .pc-kind-va .pc-checkout-channel__icon {
-    background: #ecfeff;
-    color: #0e7490;
+    background: var(--ois-kind-va-bg);
+    color: var(--ois-kind-va-text);
 }
 
 .pc-kind-ewallet .pc-checkout-channel__icon {
-    background: #fff7ed;
-    color: #c2410c;
-}
-
-[data-bs-theme="dark"] .pc-kind-qris .pc-checkout-channel__icon {
-    background: rgba(99, 102, 241, 0.15);
-    color: #a5b4fc;
-}
-
-[data-bs-theme="dark"] .pc-kind-va .pc-checkout-channel__icon {
-    background: rgba(6, 182, 212, 0.15);
-    color: #67e8f9;
-}
-
-[data-bs-theme="dark"] .pc-kind-ewallet .pc-checkout-channel__icon {
-    background: rgba(249, 115, 22, 0.15);
-    color: #fdba74;
+    background: var(--ois-kind-ewallet-bg);
+    color: var(--ois-kind-ewallet-text);
 }
 
 .pc-checkout-instructions {
@@ -317,41 +336,21 @@
 }
 
 .ois-status-secondary {
-    background: #e2e8f0 !important;
-    color: #334155 !important;
+    background: var(--ois-status-secondary-bg) !important;
+    color: var(--ois-status-secondary-text) !important;
 }
 
 .ois-status-warning {
-    background: #fef3c7 !important;
-    color: #92400e !important;
+    background: var(--ois-status-warning-bg) !important;
+    color: var(--ois-status-warning-text) !important;
 }
 
 .ois-status-success {
-    background: #dcfce7 !important;
-    color: #166534 !important;
+    background: var(--ois-status-success-bg) !important;
+    color: var(--ois-status-success-text) !important;
 }
 
 .ois-status-danger {
-    background: #fee2e2 !important;
-    color: #991b1b !important;
-}
-
-[data-bs-theme="dark"] .ois-status-secondary {
-    background: rgba(148, 163, 184, 0.20) !important;
-    color: #cbd5e1 !important;
-}
-
-[data-bs-theme="dark"] .ois-status-warning {
-    background: rgba(245, 158, 11, 0.18) !important;
-    color: #fcd34d !important;
-}
-
-[data-bs-theme="dark"] .ois-status-success {
-    background: rgba(34, 197, 94, 0.18) !important;
-    color: #86efac !important;
-}
-
-[data-bs-theme="dark"] .ois-status-danger {
-    background: rgba(239, 68, 68, 0.18) !important;
-    color: #fca5a5 !important;
+    background: var(--ois-status-danger-bg) !important;
+    color: var(--ois-status-danger-text) !important;
 }
