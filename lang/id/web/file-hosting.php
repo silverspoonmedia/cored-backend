@@ -1,0 +1,38 @@
+<?php
+
+return [
+    'title' => 'Hosting file',
+    'list_title' => 'File saya',
+    'trash' => 'Sampah',
+    'trash_title' => 'Sampah',
+    'trash_empty' => 'Sampah kosong.',
+    'back' => 'Kembali ke file',
+    'new_folder' => 'Folder baru',
+    'folder_name' => 'Nama folder',
+    'create' => 'Buat',
+    'cancel' => 'Batal',
+    'empty' => 'Folder ini kosong.',
+    'type_folder' => 'Folder',
+    'type_file' => 'File',
+    'quota_used' => 'Penyimpanan terpakai',
+    'confirm_delete_folder' => 'Pindahkan folder ini beserta isinya ke sampah?',
+    'confirm_delete_file' => 'Pindahkan file ini ke sampah?',
+    'columns' => [
+        'name' => 'Nama',
+        'type' => 'Tipe',
+        'size' => 'Ukuran',
+        'actions' => 'Aksi',
+        'deleted_at' => 'Dihapus pada',
+    ],
+    'upload' => [
+        'start' => 'Mulai unggah',
+        'too_many' => 'Terlalu banyak file dipilih.',
+        'wait' => 'Tunggu unggahan selesai.',
+        'failed' => 'Unggah gagal.',
+        'pending' => 'Menunggu',
+        'waiting' => 'Antri…',
+        'uploading' => 'Mengunggah…',
+        'done' => 'Selesai',
+        'remove' => 'Hapus',
+    ],
+];

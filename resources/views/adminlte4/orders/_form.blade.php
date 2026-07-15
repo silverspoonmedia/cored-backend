@@ -199,6 +199,7 @@
         </div>
     @endif
 
+    Ini ya
     <div
         class="mb-3"
         data-form-field="staged_attachments"
@@ -246,6 +247,7 @@
         <x-adminlte4::form.error name="staged_attachments" />
         <x-adminlte4::form.error name="staged_attachments.0" />
     </div>
+    Itu ya
 
     <div class="d-flex gap-2 mt-3">
         <x-adminlte4::form.submit :label="$submitLabel" class="btn btn-primary" />

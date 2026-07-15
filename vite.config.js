@@ -14,6 +14,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/notifications/bell.js',
                 'resources/js/orders/direct-upload.js',
+                'resources/js/file-hosting/direct-upload.js',
                 'resources/js/payments/checkout.js',
                 'resources/js/payments/channels-admin.js',
                 'resources/js/select2-init.js',

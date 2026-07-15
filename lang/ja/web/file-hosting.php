@@ -1,0 +1,38 @@
+<?php
+
+return [
+    'title' => 'ファイルホスティング',
+    'list_title' => 'マイファイル',
+    'trash' => 'ゴミ箱',
+    'trash_title' => 'ゴミ箱',
+    'trash_empty' => 'ゴミ箱は空です。',
+    'back' => 'ファイルに戻る',
+    'new_folder' => '新しいフォルダ',
+    'folder_name' => 'フォルダ名',
+    'create' => '作成',
+    'cancel' => 'キャンセル',
+    'empty' => 'このフォルダは空です。',
+    'type_folder' => 'フォルダ',
+    'type_file' => 'ファイル',
+    'quota_used' => '使用容量',
+    'confirm_delete_folder' => 'このフォルダと中身をゴミ箱へ移動しますか？',
+    'confirm_delete_file' => 'このファイルをゴミ箱へ移動しますか？',
+    'columns' => [
+        'name' => '名前',
+        'type' => '種類',
+        'size' => 'サイズ',
+        'actions' => '操作',
+        'deleted_at' => '削除日時',
+    ],
+    'upload' => [
+        'start' => 'アップロード開始',
+        'too_many' => '選択したファイルが多すぎます。',
+        'wait' => 'アップロードの完了を待ってください。',
+        'failed' => 'アップロードに失敗しました。',
+        'pending' => '待機中',
+        'waiting' => '順番待ち…',
+        'uploading' => 'アップロード中…',
+        'done' => '完了',
+        'remove' => '削除',
+    ],
+];

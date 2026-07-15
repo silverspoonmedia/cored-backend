@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RoleSeeder::class);
         $this->call(ProductRoleSeeder::class);
+        $this->call(FileHostingRoleSeeder::class);
         $this->call(NotificationTypeSettingSeeder::class);
 
         // Admin user (for Executive & Final Approval steps)

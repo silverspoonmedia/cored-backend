@@ -1,58 +1,27 @@
-# Product — catalog items (locked product domain)
+# Product — stub (catalog retired)
 
-First locked product module under `/api/v1/product/*`. Not platform core — removable only after unlock in `config/domains.php`.
+Locked product **scaffold** kept for registry / `domain_kind` demos. Catalog **Items** CRUD is no longer the primary product example.
 
-Code: `app/Domain/Product/`. Routes: `routes/api/v1/product.php`, `routes/web/product.php`.
+**Use instead:** [File Hosting](../file-hosting/README.md).
 
-## Surface
+## What remains
 
-| Layer | Implementation |
-|-------|----------------|
-| Model | `Item` (`product_items`, UUID v7, soft deletes, `LogsActivity`) |
-| Service | `ItemService` + `EloquentCrudRepository` + `DuplicateSkuException` |
-| API | `/api/v1/product/items` — auth JWT + product permissions |
-| Blade | `product-items.*` proxies API via `ApiClient` |
-| RBAC | `ProductRoleSeeder` — `domain_kind = product` |
+| Piece | Status |
+|-------|--------|
+| `config/domains.php` → `Product` locked | Kept |
+| `app/Domain/Product/` models/services | Code still on disk (historical); routes empty |
+| `routes/api/v1/product.php` | Stub group only |
+| `routes/web/product.php` | Empty |
+| `ProductRoleSeeder` | Still seeds product item roles/permissions (harmless) |
+| Menu “Product items” | Removed from `MenuSeeder` |
 
-## Product H-RBAC
+## Why stub, not delete
 
-| Role | Level | Permissions |
-|------|-------|-------------|
-| Product Admin | 100 | view/create/edit/delete product item |
-| Product Editor | 200 | view/create/edit product item |
-| Product Viewer | 300 | view product item |
+Plan choice: strip public surface after FileHosting is green, keep domain shell so agents can still study a second product entry without shipping catalog UI.
 
-- Names are product-prefixed (never `Admin` / `view user`).
-- Levels scoped by `domain_kind`; do not drive platform user-management hierarchy.
-- Seeder also grants item permissions to **core** `Admin` (cross-kind pivot) so demo admin can manage items without a product role.
-
-See [identity README — Core vs product RBAC](../identity/README.md#core-vs-product-rbac).
-
-## API
-
-| Method | URI | Permission |
-|--------|-----|------------|
-| GET | `/api/v1/product/items` | `view product item` |
-| GET | `/api/v1/product/items/{item}` | `view product item` |
-| POST | `/api/v1/product/items` | `create product item` |
-| PUT/PATCH | `/api/v1/product/items/{item}` | `edit product item` |
-| DELETE | `/api/v1/product/items/{item}` | `delete product item` |
-
-`{item}` = UUID.
-
-Payload fields: `sku`, `name`, `description`, `unit_price_cents`, `status` (`draft` \| `active` \| `archived`).
-
-## Seed / menu
-
-- `DatabaseSeeder` → `ProductRoleSeeder` after `RoleSeeder`
-- `MenuSeeder` adds **Product items** under Administration (gated by product-capable roles)
-
-## Tests
-
-`tests/Domain/Product/` — `composer test -- --filter=Product`
+To fully remove later: unlock in `config/domains.php`, then `domain:remove Product --force` (migrations stay).
 
 ## Related
 
-- [platform/architecture.md](../../platform/architecture.md) — locked product domains
-- [platform/crud.md](../../platform/crud.md) — layering checklist
-- [domains/playground/README.md](../playground/README.md) — demo patterns only (do not ship production on Playground)
+- [file-hosting/README.md](../file-hosting/README.md)
+- [platform/architecture.md](../../platform/architecture.md)

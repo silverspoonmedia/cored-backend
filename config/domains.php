@@ -23,4 +23,5 @@ return [
     'PaymentGateway' => ['core' => true],
     'Playground' => ['core' => false, 'locked' => true],
     'Product' => ['core' => false, 'locked' => true],
+    'FileHosting' => ['core' => false, 'locked' => true],
 ];

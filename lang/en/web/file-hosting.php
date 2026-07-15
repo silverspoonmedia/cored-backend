@@ -1,0 +1,38 @@
+<?php
+
+return [
+    'title' => 'File hosting',
+    'list_title' => 'My files',
+    'trash' => 'Trash',
+    'trash_title' => 'Trash',
+    'trash_empty' => 'Trash is empty.',
+    'back' => 'Back to files',
+    'new_folder' => 'New folder',
+    'folder_name' => 'Folder name',
+    'create' => 'Create',
+    'cancel' => 'Cancel',
+    'empty' => 'This folder is empty.',
+    'type_folder' => 'Folder',
+    'type_file' => 'File',
+    'quota_used' => 'Storage used',
+    'confirm_delete_folder' => 'Move this folder and its contents to trash?',
+    'confirm_delete_file' => 'Move this file to trash?',
+    'columns' => [
+        'name' => 'Name',
+        'type' => 'Type',
+        'size' => 'Size',
+        'actions' => 'Actions',
+        'deleted_at' => 'Deleted at',
+    ],
+    'upload' => [
+        'start' => 'Start upload',
+        'too_many' => 'Too many files selected.',
+        'wait' => 'Please wait for uploads to finish.',
+        'failed' => 'Upload failed.',
+        'pending' => 'Pending',
+        'waiting' => 'Waiting…',
+        'uploading' => 'Uploading…',
+        'done' => 'Done',
+        'remove' => 'Remove',
+    ],
+];

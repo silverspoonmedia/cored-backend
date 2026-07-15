@@ -102,6 +102,20 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
 
+        // File Hosting: own tree for every authenticated role that has view permission
+        // (User + internal + product FH roles). No extra menu RBAC gate — permission middleware
+        // on the page is enough; all seeded roles that can open files may see the link.
+        Menu::query()->create([
+            'parent_id' => $main->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'My Files', 'id' => 'File Saya', 'ja' => 'マイファイル'],
+            'icon' => 'bi bi-folder2-open',
+            'route' => 'file-hosting.index',
+            'type' => 'p',
+            'order' => 6,
+            'is_authenticate' => true,
+        ]);
+
         $admin = Menu::query()->create([
             'parent_id' => null,
             'layout' => MenuLayout::SIDEBAR,
@@ -131,24 +145,6 @@ class MenuSeeder extends Seeder
         ]);
         $workflowsItem->roles()->sync($adminRoleIds);
 
-        $productRoleIds = Role::query()
-            ->where('guard_name', 'api')
-            ->whereIn('name', ['Root', 'Admin', 'Product Admin', 'Product Editor', 'Product Viewer'])
-            ->pluck('id')
-            ->all();
-
-        $productItemsMenu = Menu::query()->create([
-            'parent_id' => $admin->id,
-            'layout' => MenuLayout::SIDEBAR,
-            'name' => ['en' => 'Product items', 'id' => 'Item produk', 'ja' => '商品アイテム'],
-            'icon' => 'bi bi-box-seam',
-            'route' => 'product-items.index',
-            'type' => 'p',
-            'order' => 2,
-            'is_authenticate' => true,
-        ]);
-        $productItemsMenu->roles()->sync($productRoleIds);
-
         $activityLogItem = Menu::query()->create([
             'parent_id' => $admin->id,
             'layout' => MenuLayout::SIDEBAR,
@@ -156,7 +152,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-journal-text',
             'route' => 'activity-logs.index',
             'type' => 'p',
-            'order' => 3,
+            'order' => 2,
             'is_authenticate' => true,
         ]);
         $activityLogItem->roles()->sync($adminRoleIds);
@@ -174,7 +170,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-credit-card',
             'route' => null,
             'type' => 'p',
-            'order' => 4,
+            'order' => 3,
             'is_authenticate' => true,
         ]);
         $payments->roles()->sync($paymentViewerRoleIds);
