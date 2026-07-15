@@ -131,6 +131,24 @@ class MenuSeeder extends Seeder
         ]);
         $workflowsItem->roles()->sync($adminRoleIds);
 
+        $productRoleIds = Role::query()
+            ->where('guard_name', 'api')
+            ->whereIn('name', ['Root', 'Admin', 'Product Admin', 'Product Editor', 'Product Viewer'])
+            ->pluck('id')
+            ->all();
+
+        $productItemsMenu = Menu::query()->create([
+            'parent_id' => $admin->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Product items', 'id' => 'Item produk', 'ja' => '商品アイテム'],
+            'icon' => 'bi bi-box-seam',
+            'route' => 'product-items.index',
+            'type' => 'p',
+            'order' => 2,
+            'is_authenticate' => true,
+        ]);
+        $productItemsMenu->roles()->sync($productRoleIds);
+
         $activityLogItem = Menu::query()->create([
             'parent_id' => $admin->id,
             'layout' => MenuLayout::SIDEBAR,
@@ -138,7 +156,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-journal-text',
             'route' => 'activity-logs.index',
             'type' => 'p',
-            'order' => 2,
+            'order' => 3,
             'is_authenticate' => true,
         ]);
         $activityLogItem->roles()->sync($adminRoleIds);

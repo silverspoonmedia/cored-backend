@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RoleSeeder::class);
+        $this->call(ProductRoleSeeder::class);
         $this->call(NotificationTypeSettingSeeder::class);
 
         // Admin user (for Executive & Final Approval steps)

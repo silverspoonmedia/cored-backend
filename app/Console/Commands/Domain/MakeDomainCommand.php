@@ -66,7 +66,7 @@ class MakeDomainCommand extends Command
         $this->line('Next steps:');
         $this->line('  1. Add controllers, services, models under the domain folder.');
         $this->line('  2. Define routes in the new route files.');
-        $this->line('  3. If public URLs or JSON shapes change, update Gateway/Frontend in the same task.');
+        $this->line('  3. If public URLs or JSON shapes change, write <info>docs/changelog/pending/</info> (Gateway/Frontend only in <info>downstream sync session</info>).');
         $this->line('  4. Run <info>composer test</info>.');
 
         return self::SUCCESS;

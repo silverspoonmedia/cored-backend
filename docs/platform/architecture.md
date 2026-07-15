@@ -40,6 +40,7 @@ app/
 │   ├── Notification/   # Activity notifications (core)
 │   ├── ActivityLog/    # Spatie audit trail (core)
 │   ├── Playground/     # Demo users, orders, attachments (locked)
+│   ├── Product/        # Product catalog items (locked product domain)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
 │   └── Approval/       # Approval matrix (core)
 ├── Http/Middleware/    # Kernel
@@ -67,6 +68,7 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `activity-log.php` | Activity logs |
 | `approval.php` | Approvals + workflow admin |
 | `payment-gateway.php` | Gateways, invoices, subscriptions |
+| `product.php` | Product items catalog |
 
 Global: `routes/api.php` (ping) + `routes/api/playground.php` (non-production).
 

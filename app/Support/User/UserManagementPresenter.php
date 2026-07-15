@@ -2,6 +2,7 @@
 
 namespace App\Support\User;
 
+use App\Domain\Identity\Enums\DomainKind;
 use App\Domain\Identity\Http\Resources\UserManagementResource;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
@@ -23,9 +24,16 @@ class UserManagementPresenter
      */
     public static function presentAssignableRoles(Collection $roles): array
     {
-        return $roles->map(fn (Role $role) => [
-            'name' => $role->name,
-            'level' => $role->level,
-        ])->values()->all();
+        return $roles->map(function (Role $role): array {
+            $domainKind = $role->domain_kind;
+
+            return [
+                'name' => $role->name,
+                'level' => $role->level,
+                'domain_kind' => $domainKind instanceof DomainKind
+                    ? $domainKind->value
+                    : (string) $domainKind,
+            ];
+        })->values()->all();
     }
 }

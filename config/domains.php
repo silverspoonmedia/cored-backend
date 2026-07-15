@@ -22,4 +22,5 @@ return [
     'Approval' => ['core' => true],
     'PaymentGateway' => ['core' => true],
     'Playground' => ['core' => false, 'locked' => true],
+    'Product' => ['core' => false, 'locked' => true],
 ];
