@@ -22,7 +22,7 @@
 
 @if ($errors->any())
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <strong><i class="bi bi-exclamation-octagon me-1"></i> Periksa kembali isian berikut:</strong>
+        <strong><i class="bi bi-exclamation-octagon me-1"></i> {{ __('ui.ajax.validation_failed') }}</strong>
         <ul class="mb-0 mt-2">
             @foreach ($errors->all() as $error)
                 <li>{{ $error }}</li>

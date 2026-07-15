@@ -35,9 +35,9 @@
                             <td>v{{ $workflow['version'] }}</td>
                             <td>
                                 @if($workflow['is_active'])
-                                    <span class="badge bg-success">{{ __('approval.active') }}</span>
+                                    <span class="badge text-bg-success">{{ __('approval.active') }}</span>
                                 @else
-                                    <span class="badge bg-secondary">{{ __('approval.inactive') }}</span>
+                                    <span class="badge text-bg-secondary">{{ __('approval.inactive') }}</span>
                                 @endif
                             </td>
                             <td>{{ $workflow['steps_count'] }}</td>

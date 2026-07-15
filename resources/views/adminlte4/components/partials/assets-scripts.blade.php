@@ -26,20 +26,30 @@
     <script>
         const SELECTOR_SIDEBAR_WRAPPER = '.sidebar-wrapper';
         const Default = {
-            scrollbarTheme: 'os-theme-light',
             scrollbarAutoHide: 'leave',
             scrollbarClickScroll: true,
         };
+        const getScrollbarTheme = () =>
+            document.documentElement.getAttribute('data-bs-theme') === 'dark'
+                ? 'os-theme-dark'
+                : 'os-theme-light';
         document.addEventListener('DOMContentLoaded', function () {
             const sidebarWrapper = document.querySelector(SELECTOR_SIDEBAR_WRAPPER);
             const isMobile = window.innerWidth <= 992;
             if (sidebarWrapper && OverlayScrollbarsGlobal?.OverlayScrollbars !== undefined && !isMobile) {
-                OverlayScrollbarsGlobal.OverlayScrollbars(sidebarWrapper, {
+                const osInstance = OverlayScrollbarsGlobal.OverlayScrollbars(sidebarWrapper, {
                     scrollbars: {
-                        theme: Default.scrollbarTheme,
+                        theme: getScrollbarTheme(),
                         autoHide: Default.scrollbarAutoHide,
                         clickScroll: Default.scrollbarClickScroll,
                     },
+                });
+                document.querySelectorAll('[data-bs-theme-value]').forEach((toggle) => {
+                    toggle.addEventListener('click', () => {
+                        osInstance.options({
+                            scrollbars: { theme: getScrollbarTheme() },
+                        });
+                    });
                 });
             }
         });

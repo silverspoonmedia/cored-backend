@@ -11,7 +11,9 @@
             <p class="text-muted small">{{ __('web/auth.two_factor_setup_qr_help') }}</p>
             @if(!empty($setup['qr_code_svg']))
                 <div class="mb-3 text-center">
-                    <img src="{{ $setup['qr_code_svg'] }}" alt="{{ __('web/auth.two_factor_qr_alt') }}" class="img-fluid border rounded p-2 bg-white" style="max-width: 220px;">
+                    <span class="d-inline-block p-2 rounded bg-body-tertiary border">
+                        <img src="{{ $setup['qr_code_svg'] }}" alt="{{ __('web/auth.two_factor_qr_alt') }}" class="img-fluid bg-white rounded" style="max-width: 200px;">
+                    </span>
                 </div>
             @endif
             <label class="form-label">{{ __('web/auth.two_factor_secret_label') }}</label>

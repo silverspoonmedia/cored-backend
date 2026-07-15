@@ -59,7 +59,7 @@
         @if (! empty($entry['properties']))
             <hr>
             <h6 class="mb-3">{{ __('web/activity-log.sections.properties') }}</h6>
-            <pre class="bg-light border rounded p-3 small mb-0">{{ json_encode($entry['properties'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+            <pre class="bg-body-tertiary border rounded p-3 small mb-0">{{ json_encode($entry['properties'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
         @endif
 
         <x-slot:actions>

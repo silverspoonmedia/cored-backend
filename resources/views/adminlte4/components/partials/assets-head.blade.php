@@ -35,3 +35,5 @@
     integrity="sha256-lalK6iapuNKGhnAUWocFdzfnnhN9yt67N2kW8j8RUyw="
     crossorigin="anonymous"
 />
+
+@vite('resources/css/monolith-overrides.css')

@@ -1,6 +1,6 @@
 # Three-project integration (Monolith + Gateway + Vue)
 
-**AI agents:** read the canonical [AI Agent Guide](ai-agent-guide.md) before implementing cross-project changes.
+**AI agents:** read the canonical [AI Agent Guide](ai-agent-guide.md). Daily work stays in Monolith; when HTTP contracts change, add a [changelog](changelog/README.md) entry under `pending/` instead of editing Gateway or Frontend in the same task. Use this guide for architecture context and **`downstream sync session`** work.
 
 End-to-end public stack:
 
