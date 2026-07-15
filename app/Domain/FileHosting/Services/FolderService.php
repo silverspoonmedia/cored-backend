@@ -2,6 +2,7 @@
 
 namespace App\Domain\FileHosting\Services;
 
+use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
@@ -14,6 +15,7 @@ class FolderService
     public function __construct(
         private readonly FolderRepositoryInterface $folders,
         private readonly AccessService $access,
+        private readonly VisibilityService $visibility,
     ) {}
 
     /**
@@ -50,6 +52,60 @@ class FolderService
             'folders' => $this->folders->children($ownerId, $folderId),
             'files' => $files,
         ];
+    }
+
+    /**
+     * Guest browse of a link-shared folder (and descendants via inherit).
+     *
+     * @return array{
+     *     owner_id: string,
+     *     folder: Folder,
+     *     breadcrumb: list<array{id: string, name: string}>,
+     *     folders: Collection<int, Folder>,
+     *     files: Collection<int, HostedFile>
+     * }
+     */
+    public function publicBrowse(string $folderId): array
+    {
+        $folder = Folder::query()->whereKey($folderId)->first();
+
+        if ($folder === null) {
+            throw new FileHostingException(__('api/file-hosting.folder_not_found'), 404);
+        }
+
+        $this->visibility->assertGuestCanReadFolder($folder);
+
+        $files = HostedFile::query()
+            ->where('user_id', $folder->user_id)
+            ->where('folder_id', $folder->id)
+            ->orderBy('name')
+            ->get();
+
+        $crumbs = [];
+        foreach (FolderAncestorChain::ancestors($folder) as $ancestor) {
+            $crumbs[] = $ancestor;
+        }
+        $crumbs[] = ['id' => $folder->id, 'name' => $folder->name];
+
+        return [
+            'owner_id' => $folder->user_id,
+            'folder' => $folder,
+            'breadcrumb' => $crumbs,
+            'folders' => $this->folders->children($folder->user_id, $folder->id),
+            'files' => $files,
+        ];
+    }
+
+    public function setVisibility(User $actor, string $folderId, string $visibility, ?string $userId = null): Folder
+    {
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $folder = $this->folders->findOwnedOrFail($ownerId, $folderId);
+        $this->access->assertCanMutateOwner($actor, $folder->owner);
+        $value = $this->visibility->normalize($visibility);
+
+        $folder->forceFill(['visibility' => $value->value])->save();
+
+        return $folder->refresh();
     }
 
     public function create(User $actor, string $name, ?string $parentId, ?string $userId = null): Folder

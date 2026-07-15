@@ -20,6 +20,7 @@ class Folder extends Model
         'parent_id',
         'name',
         'order',
+        'visibility',
     ];
 
     /**

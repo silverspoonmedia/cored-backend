@@ -35,9 +35,10 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
 
         $uploadId = (string) Str::uuid();
         $directory = trim((string) config('file-hosting.directory'), '/');
-        $safeName = Str::slug(pathinfo($name, PATHINFO_FILENAME)) ?: 'file';
+        $random = Str::lower(Str::random(40));
         $extension = strtolower((string) pathinfo($name, PATHINFO_EXTENSION));
-        $path = $directory.'/'.$ownerId.'/'.$uploadId.'/'.$safeName.($extension !== '' ? '.'.$extension : '');
+        $extension = preg_replace('/[^a-z0-9]+/', '', $extension) ?? '';
+        $path = $directory.'/'.$ownerId.'/'.$uploadId.'/'.$random.($extension !== '' ? '.'.$extension : '');
 
         $threshold = (int) config('file-hosting.multipart_threshold_bytes');
         $chunkSize = (int) config('file-hosting.chunk_size_bytes');

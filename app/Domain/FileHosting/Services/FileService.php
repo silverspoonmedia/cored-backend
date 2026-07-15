@@ -8,6 +8,7 @@ use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
 use App\Domain\FileHosting\Support\ObjectStorage;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class FileService
@@ -16,6 +17,8 @@ class FileService
         private readonly FolderRepositoryInterface $folders,
         private readonly AccessService $access,
         private readonly ObjectStorage $storage,
+        private readonly SignedDownloadService $signedDownloads,
+        private readonly VisibilityService $visibility,
     ) {}
 
     public function findOwnedOrFail(string $ownerId, string $fileId): HostedFile
@@ -32,11 +35,46 @@ class FileService
         return $file;
     }
 
+    public function findOrFail(string $fileId): HostedFile
+    {
+        $file = HostedFile::query()->whereKey($fileId)->first();
+
+        if ($file === null) {
+            throw new FileHostingException(__('api/file-hosting.file_not_found'), 404);
+        }
+
+        return $file;
+    }
+
     public function show(User $actor, string $fileId, ?string $userId = null): HostedFile
     {
         $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $file = $this->findOwnedOrFail($ownerId, $fileId);
 
-        return $this->findOwnedOrFail($ownerId, $fileId);
+        return $this->recordView($file);
+    }
+
+    /**
+     * Guest public show — link access only.
+     */
+    public function publicShow(string $fileId): HostedFile
+    {
+        $file = $this->findOrFail($fileId);
+        $this->visibility->assertGuestCanReadFile($file);
+
+        return $this->recordView($file);
+    }
+
+    public function setVisibility(User $actor, string $fileId, string $visibility, ?string $userId = null): HostedFile
+    {
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $file = $this->findOwnedOrFail($ownerId, $fileId);
+        $this->access->assertCanMutateOwner($actor, $file->owner);
+        $value = $this->visibility->normalize($visibility);
+
+        $file->forceFill(['visibility' => $value->value])->save();
+
+        return $file->refresh();
     }
 
     public function rename(User $actor, string $fileId, string $name, ?string $userId = null): HostedFile
@@ -45,7 +83,13 @@ class FileService
         $file = $this->findOwnedOrFail($ownerId, $fileId);
         $this->access->assertCanMutateOwner($actor, $file->owner);
         $this->assertUniqueName($ownerId, $file->folder_id, $name, $file->id);
-        $file->forceFill(['name' => $name])->save();
+
+        // Display name changed — invalidate disposition-bound signed URL.
+        $file->forceFill([
+            'name' => $name,
+            'signed_download_url' => null,
+            'signed_download_expires_at' => null,
+        ])->save();
 
         return $file->refresh();
     }
@@ -71,6 +115,10 @@ class FileService
         $ownerId = $this->access->resolveOwnerId($actor, $userId);
         $file = $this->findOwnedOrFail($ownerId, $fileId);
         $this->access->assertCanMutateOwner($actor, $file->owner);
+        $file->forceFill([
+            'signed_download_url' => null,
+            'signed_download_expires_at' => null,
+        ])->save();
         $file->delete();
     }
 
@@ -139,16 +187,56 @@ class FileService
             ->get();
     }
 
-    public function downloadUrl(User $actor, string $fileId, ?string $userId = null): string
+    /**
+     * @return array{url: string, expires_at: string}
+     */
+    public function download(User $actor, string $fileId, ?string $userId = null): array
     {
-        $file = $this->show($actor, $fileId, $userId);
-        $url = $file->temporaryDownloadUrl();
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $file = $this->findOwnedOrFail($ownerId, $fileId);
 
-        if ($url === null) {
-            throw new FileHostingException(__('api/file-hosting.download_unavailable'));
-        }
+        return $this->issueDownload($file);
+    }
 
-        return $url;
+    /**
+     * Guest public download — signed URL only (caller redirects 302).
+     *
+     * @return array{url: string, expires_at: string}
+     */
+    public function publicDownload(string $fileId): array
+    {
+        $file = $this->findOrFail($fileId);
+        $this->visibility->assertGuestCanReadFile($file);
+
+        return $this->issueDownload($file);
+    }
+
+    private function recordView(HostedFile $file): HostedFile
+    {
+        $file->forceFill([
+            'view_count' => (int) $file->view_count + 1,
+            'last_viewed_at' => Carbon::now(),
+        ])->save();
+
+        return $file->refresh();
+    }
+
+    /**
+     * @return array{url: string, expires_at: string}
+     */
+    private function issueDownload(HostedFile $file): array
+    {
+        $resolved = $this->signedDownloads->resolve($file);
+
+        $file->forceFill([
+            'download_count' => (int) $file->download_count + 1,
+            'last_downloaded_at' => Carbon::now(),
+        ])->save();
+
+        return [
+            'url' => $resolved['url'],
+            'expires_at' => $resolved['expires_at']->toIso8601String(),
+        ];
     }
 
     private function assertUniqueName(

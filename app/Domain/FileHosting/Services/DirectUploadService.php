@@ -288,10 +288,12 @@ class DirectUploadService
     private function buildPath(string $ownerId, string $uploadId, string $name): string
     {
         $directory = trim((string) config('file-hosting.directory'), '/');
-        $safeName = Str::slug(pathinfo($name, PATHINFO_FILENAME)) ?: 'file';
+        // Random object key — display name lives only in DB (Content-Disposition on download).
+        $random = Str::lower(Str::random(40));
         $extension = strtolower((string) pathinfo($name, PATHINFO_EXTENSION));
+        $extension = preg_replace('/[^a-z0-9]+/', '', $extension) ?? '';
 
-        return $directory.'/'.$ownerId.'/'.$uploadId.'/'.$safeName.($extension !== '' ? '.'.$extension : '');
+        return $directory.'/'.$ownerId.'/'.$uploadId.'/'.$random.($extension !== '' ? '.'.$extension : '');
     }
 
     private function isPathAllowed(string $path, string $ownerId): bool

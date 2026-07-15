@@ -41,4 +41,19 @@ return [
 
     'signed_download_ttl_minutes' => (int) env('FILE_HOSTING_SIGNED_DOWNLOAD_TTL', 15),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Treat cached signed URLs as expired this many seconds early.
+    |--------------------------------------------------------------------------
+    */
+    'signed_download_cache_margin_seconds' => (int) env('FILE_HOSTING_SIGNED_DOWNLOAD_CACHE_MARGIN', 60),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Laravel temporary signed URL TTL for guest web download hop
+    | (/s/f/{id}/download). Blocks unsigned direct download attempts.
+    |--------------------------------------------------------------------------
+    */
+    'public_download_signature_ttl_minutes' => (int) env('FILE_HOSTING_PUBLIC_DOWNLOAD_SIGNATURE_TTL', 5),
+
 ];

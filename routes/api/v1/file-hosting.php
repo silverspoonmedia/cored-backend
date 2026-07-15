@@ -8,6 +8,13 @@ use App\Domain\FileHosting\Http\Controllers\API\V1\TrashController;
 use App\Domain\FileHosting\Http\Controllers\API\V1\UploadController;
 use Illuminate\Support\Facades\Route;
 
+// Public (anyone with the link) — no auth.
+Route::prefix('file-hosting/public')->name('file-hosting.public.')->group(function (): void {
+    Route::get('files/{file}', [FileController::class, 'publicShow'])->whereUuid('file')->name('files.show');
+    Route::get('files/{file}/download', [FileController::class, 'publicDownload'])->whereUuid('file')->name('files.download');
+    Route::get('folders/{folder}', [FolderController::class, 'publicShow'])->whereUuid('folder')->name('folders.show');
+});
+
 Route::middleware('auth:api')->prefix('file-hosting')->name('file-hosting.')->group(function (): void {
     Route::middleware('permission:view file hosting folder|view file hosting file')->group(function (): void {
         Route::get('browse', BrowseController::class)->name('browse');
@@ -25,6 +32,7 @@ Route::middleware('auth:api')->prefix('file-hosting')->name('file-hosting.')->gr
     Route::middleware('permission:edit file hosting folder')->group(function (): void {
         Route::patch('folders/{folder}/rename', [FolderController::class, 'rename'])->whereUuid('folder')->name('folders.rename');
         Route::patch('folders/{folder}/move', [FolderController::class, 'move'])->whereUuid('folder')->name('folders.move');
+        Route::patch('folders/{folder}/visibility', [FolderController::class, 'setVisibility'])->whereUuid('folder')->name('folders.visibility');
         Route::post('folders/{folder}/restore', [FolderController::class, 'restore'])->whereUuid('folder')->name('folders.restore');
     });
 
@@ -36,6 +44,7 @@ Route::middleware('auth:api')->prefix('file-hosting')->name('file-hosting.')->gr
     Route::middleware('permission:edit file hosting file')->group(function (): void {
         Route::patch('files/{file}/rename', [FileController::class, 'rename'])->whereUuid('file')->name('files.rename');
         Route::patch('files/{file}/move', [FileController::class, 'move'])->whereUuid('file')->name('files.move');
+        Route::patch('files/{file}/visibility', [FileController::class, 'setVisibility'])->whereUuid('file')->name('files.visibility');
         Route::post('files/{file}/restore', [FileController::class, 'restore'])->whereUuid('file')->name('files.restore');
     });
 

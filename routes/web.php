@@ -26,6 +26,7 @@ Route::get('/', fn () => redirect()->route(Auth::guard('api')->check() ? 'dashbo
 Route::get('locale/{locale}', LocaleController::class)->name('locale.switch');
 
 require __DIR__.'/web/payment-ipaymu-return.php';
+require __DIR__.'/web/file-hosting-public.php';
 
 Route::middleware('web.guest')->group(function (): void {
     require __DIR__.'/web/identity-guest.php';

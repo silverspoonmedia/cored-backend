@@ -108,6 +108,115 @@ class FileManagerController extends Controller
         );
     }
 
+    public function show(Request $request, string $file): View|RedirectResponse
+    {
+        $query = array_filter([
+            'user_id' => $request->query('user_id'),
+        ], fn ($v) => $v !== null && $v !== '');
+
+        $response = $this->api()->get('file-hosting/files/'.$file, $query);
+
+        if (! $response->successful()) {
+            return redirect()
+                ->route('file-hosting.index', $query)
+                ->with('error', $this->apiMessage($response));
+        }
+
+        return $this->webView('file-hosting.show', [
+            'file' => $response->json('data', []),
+            'ownerUserId' => $request->query('user_id'),
+        ]);
+    }
+
+    public function download(Request $request, string $file): RedirectResponse
+    {
+        $query = array_filter([
+            'user_id' => $request->query('user_id'),
+        ], fn ($v) => $v !== null && $v !== '');
+
+        $response = $this->api()->get('file-hosting/files/'.$file.'/download', $query);
+
+        if (! $response->successful()) {
+            return redirect()
+                ->route('file-hosting.files.show', array_filter([
+                    'file' => $file,
+                    'user_id' => $request->query('user_id'),
+                ]))
+                ->with('error', $this->apiMessage($response));
+        }
+
+        $url = $response->json('data.url');
+
+        if (! is_string($url) || $url === '') {
+            return redirect()
+                ->route('file-hosting.files.show', array_filter([
+                    'file' => $file,
+                    'user_id' => $request->query('user_id'),
+                ]))
+                ->with('error', __('api/file-hosting.download_unavailable'));
+        }
+
+        return redirect()->away($url);
+    }
+
+    public function renameFile(Request $request, string $file): RedirectResponse|JsonResponse
+    {
+        $payload = $request->only(['name', 'user_id']);
+        $response = $this->api()->patch('file-hosting/files/'.$file.'/rename', $payload);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.index', array_filter([
+                'folder_id' => $request->input('return_folder_id'),
+                'user_id' => $request->input('user_id'),
+            ]))->with('success', __('api/file-hosting.file_renamed')),
+            __('api/file-hosting.file_renamed'),
+        );
+    }
+
+    public function renameFolder(Request $request, string $folder): RedirectResponse|JsonResponse
+    {
+        $payload = $request->only(['name', 'user_id']);
+        $response = $this->api()->patch('file-hosting/folders/'.$folder.'/rename', $payload);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.index', array_filter([
+                'folder_id' => $request->input('return_folder_id'),
+                'user_id' => $request->input('user_id'),
+            ]))->with('success', __('api/file-hosting.folder_renamed')),
+            __('api/file-hosting.folder_renamed'),
+        );
+    }
+
+    public function setFileVisibility(Request $request, string $file): RedirectResponse|JsonResponse
+    {
+        $payload = $request->only(['visibility', 'user_id']);
+        $response = $this->api()->patch('file-hosting/files/'.$file.'/visibility', $payload);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->back()->with('success', __('api/file-hosting.visibility_updated')),
+            __('api/file-hosting.visibility_updated'),
+        );
+    }
+
+    public function setFolderVisibility(Request $request, string $folder): RedirectResponse|JsonResponse
+    {
+        $payload = $request->only(['visibility', 'user_id']);
+        $response = $this->api()->patch('file-hosting/folders/'.$folder.'/visibility', $payload);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->back()->with('success', __('api/file-hosting.visibility_updated')),
+            __('api/file-hosting.visibility_updated'),
+        );
+    }
+
     public function initUpload(Request $request): JsonResponse
     {
         $response = $this->api()->post('file-hosting/uploads', $request->only([

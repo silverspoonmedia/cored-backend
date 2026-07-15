@@ -5,6 +5,7 @@ namespace App\Domain\FileHosting\Http\Controllers\API\V1;
 use App\Domain\FileHosting\Http\Requests\MoveFileRequest;
 use App\Domain\FileHosting\Http\Requests\RenameFileRequest;
 use App\Domain\FileHosting\Http\Requests\SearchRequest;
+use App\Domain\FileHosting\Http\Requests\SetVisibilityRequest;
 use App\Domain\FileHosting\Http\Resources\HostedFileResource;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\FileService;
@@ -51,6 +52,41 @@ class FileController extends Controller
         return $this->successResponse(
             $this->resolveResource(new HostedFileResource($updated)),
             __('api/file-hosting.file_renamed'),
+        );
+    }
+
+    public function setVisibility(SetVisibilityRequest $request, string $file): JsonResponse
+    {
+        $updated = $this->files->setVisibility(
+            $request->user(),
+            $file,
+            $request->validated('visibility'),
+            $request->validated('user_id'),
+        );
+
+        return $this->successResponse(
+            $this->resolveResource(new HostedFileResource($updated)),
+            __('api/file-hosting.visibility_updated'),
+        );
+    }
+
+    public function publicShow(string $file): JsonResponse
+    {
+        $model = $this->files->publicShow($file);
+
+        return $this->successResponse(
+            $this->resolveResource(new HostedFileResource($model)),
+            __('api/file-hosting.file_show_success'),
+        );
+    }
+
+    public function publicDownload(string $file): JsonResponse
+    {
+        $payload = $this->files->publicDownload($file);
+
+        return $this->successResponse(
+            $payload,
+            __('api/file-hosting.download_ready'),
         );
     }
 
@@ -109,14 +145,14 @@ class FileController extends Controller
     {
         $this->authorize('viewAny', HostedFile::class);
 
-        $url = $this->files->downloadUrl(
+        $payload = $this->files->download(
             $request->user(),
             $file,
             $request->query('user_id'),
         );
 
         return $this->successResponse(
-            ['url' => $url],
+            $payload,
             __('api/file-hosting.download_ready'),
         );
     }

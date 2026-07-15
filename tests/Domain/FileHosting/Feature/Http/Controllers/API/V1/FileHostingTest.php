@@ -5,13 +5,16 @@ namespace Tests\Domain\FileHosting\Feature\Http\Controllers\API\V1;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\DirectUploadService;
+use App\Domain\FileHosting\Services\SignedDownloadService;
 use App\Domain\Identity\Models\User;
 use Database\Seeders\FileHostingRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\Fakes\FakeFileHostingDirectUploadService;
+use Tests\Fakes\FakeSignedDownloadService;
 use Tests\TestCase;
 
 class FileHostingTest extends TestCase
@@ -30,6 +33,8 @@ class FileHostingTest extends TestCase
             'file-hosting.disk' => 'local',
             'file-hosting.default_quota_bytes' => 1024 * 1024,
             'file-hosting.allowed_mime_prefixes' => ['image/', 'application/', 'text/'],
+            'file-hosting.signed_download_ttl_minutes' => 15,
+            'file-hosting.signed_download_cache_margin_seconds' => 60,
         ]);
 
         Storage::fake('local');
@@ -37,6 +42,10 @@ class FileHostingTest extends TestCase
         $this->app->instance(
             DirectUploadService::class,
             $this->app->make(FakeFileHostingDirectUploadService::class),
+        );
+        $this->app->instance(
+            SignedDownloadService::class,
+            $this->app->make(FakeSignedDownloadService::class),
         );
     }
 
@@ -87,6 +96,10 @@ class FileHostingTest extends TestCase
             $init['path'],
         );
 
+        // Object key uses random segment, not the original basename slug.
+        $this->assertDoesNotMatchRegularExpression('/report\.pdf$/i', $init['path']);
+        $this->assertMatchesRegularExpression('/\/[a-z0-9]{40}\.pdf$/', $init['path']);
+
         $complete = $this->actingAsJwt($user)
             ->postJson('/api/v1/file-hosting/uploads/'.$init['upload_id'].'/complete', [
                 'parts' => [['part_number' => 1, 'etag' => 'abc', 'size' => 1024]],
@@ -102,6 +115,106 @@ class FileHostingTest extends TestCase
             ->getJson('/api/v1/file-hosting/browse')
             ->assertOk()
             ->assertJsonFragment(['name' => 'report.pdf']);
+    }
+
+    public function test_show_increments_view_count(): void
+    {
+        $user = $this->userWithRole('User');
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'notes.txt',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/abc/notes.txt',
+            'size' => 10,
+            'mime' => 'text/plain',
+            'view_count' => 0,
+            'download_count' => 0,
+        ]);
+
+        $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/files/'.$file->id)
+            ->assertOk()
+            ->assertJsonPath('data.view_count', 1);
+
+        $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/files/'.$file->id)
+            ->assertOk()
+            ->assertJsonPath('data.view_count', 2);
+
+        $this->assertNotNull($file->fresh()->last_viewed_at);
+    }
+
+    public function test_download_caches_signed_url_until_expiry(): void
+    {
+        $user = $this->userWithRole('User');
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'cache-me.pdf',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/xyz/random.pdf',
+            'size' => 10,
+            'mime' => 'application/pdf',
+        ]);
+
+        $first = $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/files/'.$file->id.'/download')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertNotEmpty($first['url']);
+        $this->assertNotEmpty($first['expires_at']);
+        $this->assertSame(1, $file->fresh()->download_count);
+
+        $second = $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/files/'.$file->id.'/download')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame($first['url'], $second['url']);
+        $this->assertSame($first['expires_at'], $second['expires_at']);
+        $this->assertSame(2, $file->fresh()->download_count);
+
+        Carbon::setTestNow(Carbon::parse($first['expires_at'])->addMinute());
+
+        $third = $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/files/'.$file->id.'/download')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertNotSame($first['url'], $third['url']);
+        $this->assertSame(3, $file->fresh()->download_count);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_rename_file_updates_name_and_clears_signed_cache(): void
+    {
+        $user = $this->userWithRole('User');
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'old-name.txt',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/r/old.txt',
+            'size' => 1,
+            'mime' => 'text/plain',
+            'signed_download_url' => 'https://fake-storage.test/stale',
+            'signed_download_expires_at' => now()->addHour(),
+        ]);
+
+        $this->actingAsJwt($user)
+            ->patchJson('/api/v1/file-hosting/files/'.$file->id.'/rename', [
+                'name' => 'new-name.txt',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'new-name.txt');
+
+        $fresh = $file->fresh();
+        $this->assertSame('new-name.txt', $fresh->name);
+        $this->assertNull($fresh->signed_download_url);
+        $this->assertNull($fresh->signed_download_expires_at);
     }
 
     public function test_user_cannot_browse_peer_tree(): void
@@ -336,6 +449,125 @@ class FileHostingTest extends TestCase
                 'name' => 'one.txt',
             ])
             ->assertStatus(422);
+    }
+
+    public function test_private_file_public_routes_return_not_found(): void
+    {
+        $user = $this->userWithRole('User');
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'secret.txt',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/secret.txt',
+            'size' => 1,
+            'mime' => 'text/plain',
+            'visibility' => 'private',
+        ]);
+
+        $this->getJson('/api/v1/file-hosting/public/files/'.$file->id)
+            ->assertStatus(404);
+
+        $this->getJson('/api/v1/file-hosting/public/files/'.$file->id.'/download')
+            ->assertStatus(404);
+    }
+
+    public function test_anyone_with_link_file_is_publicly_readable_and_downloadable(): void
+    {
+        $user = $this->userWithRole('User');
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'shared.pdf',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/shared.pdf',
+            'size' => 10,
+            'mime' => 'application/pdf',
+            'visibility' => 'private',
+        ]);
+
+        $this->actingAsJwt($user)
+            ->patchJson('/api/v1/file-hosting/files/'.$file->id.'/visibility', [
+                'visibility' => 'anyone_with_link',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.visibility', 'anyone_with_link')
+            ->assertJsonPath('data.share_url', route('file-hosting.public.files.show', $file->id));
+
+        $this->getJson('/api/v1/file-hosting/public/files/'.$file->id)
+            ->assertOk()
+            ->assertJsonPath('data.name', 'shared.pdf')
+            ->assertJsonPath('data.view_count', 1);
+
+        $download = $this->getJson('/api/v1/file-hosting/public/files/'.$file->id.'/download')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertNotEmpty($download['url']);
+        $this->assertNotEmpty($download['expires_at']);
+        $this->assertSame(1, $file->fresh()->download_count);
+    }
+
+    public function test_folder_anyone_with_link_inherits_to_private_child_file(): void
+    {
+        $user = $this->userWithRole('User');
+        $folder = Folder::query()->create([
+            'user_id' => $user->id,
+            'parent_id' => null,
+            'name' => 'Shared Docs',
+            'order' => 1,
+            'visibility' => 'anyone_with_link',
+        ]);
+
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => $folder->id,
+            'name' => 'inside.txt',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/inside.txt',
+            'size' => 5,
+            'mime' => 'text/plain',
+            'visibility' => 'private',
+        ]);
+
+        $browse = $this->getJson('/api/v1/file-hosting/public/folders/'.$folder->id)
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame($folder->id, $browse['folder']['id']);
+        $this->assertCount(1, $browse['files']);
+        $this->assertSame('inside.txt', $browse['files'][0]['name']);
+
+        $this->getJson('/api/v1/file-hosting/public/files/'.$file->id)
+            ->assertOk()
+            ->assertJsonPath('data.name', 'inside.txt');
+
+        $this->getJson('/api/v1/file-hosting/public/files/'.$file->id.'/download')
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['url', 'expires_at']]);
+    }
+
+    public function test_owner_can_set_folder_visibility_private_again(): void
+    {
+        $user = $this->userWithRole('User');
+        $folder = Folder::query()->create([
+            'user_id' => $user->id,
+            'parent_id' => null,
+            'name' => 'Toggle',
+            'order' => 1,
+            'visibility' => 'anyone_with_link',
+        ]);
+
+        $this->actingAsJwt($user)
+            ->patchJson('/api/v1/file-hosting/folders/'.$folder->id.'/visibility', [
+                'visibility' => 'private',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.visibility', 'private')
+            ->assertJsonPath('data.share_url', null);
+
+        $this->getJson('/api/v1/file-hosting/public/folders/'.$folder->id)
+            ->assertStatus(404);
     }
 
     private function userWithRole(string $roleName): User
