@@ -103,6 +103,7 @@ class LookupService
         }
 
         $query = Role::query()
+            ->core()
             ->where('guard_name', 'api')
             ->orderBy('level');
 
@@ -175,6 +176,7 @@ class LookupService
     private function hydrateRoles(array $ids): array
     {
         $roles = Role::query()
+            ->core()
             ->where('guard_name', 'api')
             ->whereIn('id', $ids)
             ->orderBy('level')
@@ -221,6 +223,8 @@ class LookupService
                     ->from($pivotTable)
                     ->join($rolesTable, "{$rolesTable}.id", '=', "{$pivotTable}.role_id")
                     ->where("{$pivotTable}.model_type", $userModel->getMorphClass())
+                    ->where("{$rolesTable}.domain_kind", 'core')
+                    ->whereNotNull("{$rolesTable}.level")
                     ->groupBy("{$pivotTable}.{$morphKey}")
                     ->havingRaw('MIN('.$rolesTable.'.level) >= ?', [$actorLevel]);
             });

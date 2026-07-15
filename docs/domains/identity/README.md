@@ -11,7 +11,7 @@ Auth is **not** on global `/api/*` — only versioned v1.
 | Guard | `api` (JWT driver) |
 | PK | UUID v7 (`HasUuids`) |
 | Token | Bearer JWT |
-| Authorization | Spatie roles/permissions (`guard_name: api`) |
+| Authorization | Spatie roles/permissions (`guard_name: api`, `domain_kind: core\|product`) |
 | Auth persistence | Dedicated `UserRepository` |
 | User admin | `UserManagementService` + `UserPolicy` + `RoleService` |
 | HTTP | Form Requests → thin controllers → Services |
@@ -67,17 +67,32 @@ Typical surface (all under `auth:api` where noted):
 
 JWT: Bearer header (API) or HttpOnly cookie on Blade/Gateway (`auth_token` → Bearer). Octane: no sticky claims; cleanup guards after token ops — [platform/octane](../../platform/octane.md).
 
-Roles seeded in `RoleSeeder` (Root, Admin, Moderator, Management, User). Example protected: `GET /api/v1/admin/ping` with permission middleware.
+Roles seeded in `RoleSeeder` (Root, Admin, Moderator, Management, User) — all **`domain_kind = core`**. Example protected: `GET /api/v1/admin/ping` with permission middleware.
+
+## Core vs product RBAC
+
+| Field | On | Values | Purpose |
+|-------|-----|--------|---------|
+| `domain_kind` | `roles`, `permissions` | `core`, `product` | Catalog ownership (platform vs product modules) |
+| `level` | `roles` only | unsigned int, nullable | Hierarchy **scoped per `domain_kind`** — unique `(domain_kind, level)` |
+
+- **Spatie names stay globally unique** on `(name, guard_name)`. Product must not reuse core names (`Admin`, `view user`, …). Prefer e.g. `Playground Admin`.
+- **H-RBAC user management uses core roles only.** Product role levels never change list/view/edit/delete/assignable for platform users.
+- **Permission checks** (`permission:…`, `$user->can()`) remain **name-based**; `domain_kind` tags seed ownership and future admin filters, not Gate resolution.
+- **Cross-kind pivots OK:** a core role may hold product permissions via `role_has_permissions`.
+- **Seeding:** [`RoleSeeder`](../../../database/seeders/RoleSeeder.php) = core catalog. Product modules add their own seeder (`domain_kind = product`, own level ladder).
+
+Enum: `App\Domain\Identity\Enums\DomainKind`. Models: scopes `Role::core()` / `Role::product()` (same on `Permission`).
 
 ## H-RBAC (user management)
 
-**Level:** lower number = higher authority. Root=1, Admin=100, Moderator=200, Management=300, User=400. Actor effective level = **min** of their roles.
+**Level (core only):** lower number = higher authority. Root=1, Admin=100, Moderator=200, Management=300, User=400. Actor effective level = **min** of their **core** roles with non-null `level`. Product roles are ignored for hierarchy math.
 
 | Operation | Rule |
 |-----------|------|
-| List/show | Target min level ≥ actor level (peers OK; higher authority hidden) |
-| Update/delete | **Every** target role level **>** actor level |
-| Assign role | Role level **>** actor level only |
+| List/show | Target min **core** level ≥ actor **core** level (peers OK; higher authority hidden) |
+| Update/delete | **Every** target **core** role level **>** actor **core** level |
+| Assign role | **Core** role level **>** actor level only (`/users/assignable-roles` is core-only) |
 
 Permissions: `view/create/edit/delete user` (space-separated names). Soft delete; cannot delete self (422).
 
