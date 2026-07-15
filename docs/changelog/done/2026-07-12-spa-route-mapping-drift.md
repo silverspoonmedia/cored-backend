@@ -1,4 +1,4 @@
-# Downstream changelog entry
+# Changelog entry
 
 > **Origin:** cross-repo desync audit (2026-07-12). Not triggered by a single Monolith PR — backlog discovered retroactively.
 
@@ -6,14 +6,33 @@
 
 Gateway `vue-routes.php` already maps payment and subscription Laravel route names to Vue paths, but Frontend `routeMap.ts` stops at `notifications.index` — ten route names are missing from the client-side fallback used by `resolveMenuPath()`. Separately, Monolith web routes use `payment.ipaymu.return` / `payment.ipaymu.cancel` while the Vue router uses `payments.ipaymu.return` / `payments.ipaymu.cancel`; neither naming scheme is in `vue-routes.php`, so `NotificationUrlTransformer` cannot resolve iPaymu landing links. Bootstrap sidebar usually works because Gateway `injectPaths` sets `path` on menu nodes, but locale refresh and notification deep links can break. Also fix stale Gateway `ExampleTest` (`GET /` → 200) so `test-workspace.ps1` can pass.
 
-## Monolith reference
+## Session metadata
 
 | Item | Detail |
 |------|--------|
 | Date | 2026-07-12 |
-| Commit / PR | Audit only — no Monolith code change required |
-| Files | `database/seeders/MenuSeeder.php` (payment menu `route` names); `routes/web/payment-ipaymu-return.php` (`payment.ipaymu.return`, `payment.ipaymu.cancel`) |
-| Routes | Web: `payment.ipaymu.return`, `payment.ipaymu.cancel`; menu routes: `payment-channels.index`, `payment-gateways.index`, `invoices.index`, `subscriptions.index`, plus subscription CRUD route names |
+| Keyword trigger | audit backlog |
+| Related commits / PR | Audit only — no Monolith code change required |
+
+## Delegation
+
+### Monolith (done / authoritative)
+
+- Web: `payment.ipaymu.return`, `payment.ipaymu.cancel` (`routes/web/payment-ipaymu-return.php`)
+- Menu routes: `payment-channels.index`, `payment-gateways.index`, `invoices.index`, `subscriptions.index`, plus subscription CRUD route names (`database/seeders/MenuSeeder.php`)
+
+### Monolith Gateway
+
+- [x] Add `payments.ipaymu.return` and `payments.ipaymu.cancel` to `config/vue-routes.php` `paths` (and optional aliases `payment.ipaymu.return` / `payment.ipaymu.cancel` if Monolith emits the singular form).
+- [ ] Verify `NotificationUrlTransformer` resolves iPaymu links after mapping (manual: seed or mock notification with `action_route`).
+- [x] Confirm existing payment/subscription entries in `vue-routes.php` stay aligned with `monolith-frontend/src/router/index.ts`.
+- [x] **Hygiene:** Fix or remove `tests/Feature/ExampleTest.php` (`GET /` expects 200 but Gateway has no `/` route) — blocks full workspace test script.
+
+### Monolith Frontend
+
+- [x] Add the ten payment/subscription route names to `src/router/routeMap.ts` (mirror `vue-routes.php` paths; use `:param` syntax consistent with existing entries).
+- [x] Optionally align Vue router `name` with Gateway mapping if aliases are added for `payment.ipaymu.*`.
+- [ ] Smoke-test `resolveMenuPath()` for payment menu items when `path` is null and only `route` is set (locale refresh path).
 
 ## API contract
 
@@ -34,7 +53,7 @@ No Monolith API URL or JSON shape change. This entry is about **route-name → S
 | `subscriptions.edit` | `/subscriptions/{subscription}/edit` |
 | `subscriptions.destroy` | `/subscriptions/{subscription}` |
 
-**Missing from Frontend `routeMap.ts`:** all ten rows above.
+**Missing from Frontend `routeMap.ts` (at audit time):** all ten rows above.
 
 **iPaymu return/cancel naming mismatch:**
 
@@ -42,22 +61,13 @@ No Monolith API URL or JSON shape change. This entry is about **route-name → S
 |-------|-------------------|-------------------|----------|
 | Monolith web | `payment.ipaymu.return` | `payment.ipaymu.cancel` | `/payment/ipaymu/return`, `/payment/ipaymu/cancel` (Blade) |
 | Vue router | `payments.ipaymu.return` | `payments.ipaymu.cancel` | `/payments/ipaymu/return`, `/payments/ipaymu/cancel` |
-| `vue-routes.php` | — | — | **not mapped** |
+| `vue-routes.php` | — | — | **not mapped** (at audit time) |
 
 **Recommended mapping for Gateway + Frontend:** pick one route name (prefer `payments.ipaymu.return` / `payments.ipaymu.cancel` to match existing Vue router) and map to `/payments/ipaymu/return` and `/payments/ipaymu/cancel`. If Monolith notifications ever emit `payment.ipaymu.*`, add aliases in `vue-routes.php` pointing to the same paths.
 
-## Gateway actions
+## Supersedes
 
-- [x] Add `payments.ipaymu.return` and `payments.ipaymu.cancel` to `config/vue-routes.php` `paths` (and optional aliases `payment.ipaymu.return` / `payment.ipaymu.cancel` if Monolith emits the singular form).
-- [ ] Verify `NotificationUrlTransformer` resolves iPaymu links after mapping (manual: seed or mock notification with `action_route`).
-- [x] Confirm existing payment/subscription entries in `vue-routes.php` stay aligned with `monolith-frontend/src/router/index.ts`.
-- [x] **Hygiene:** Fix or remove `tests/Feature/ExampleTest.php` (`GET /` expects 200 but Gateway has no `/` route) — blocks full workspace test script.
-
-## Frontend actions
-
-- [x] Add the ten payment/subscription route names to `src/router/routeMap.ts` (mirror `vue-routes.php` paths; use `:param` syntax consistent with existing entries).
-- [x] Optionally align Vue router `name` with Gateway mapping if aliases are added for `payment.ipaymu.*`.
-- [ ] Smoke-test `resolveMenuPath()` for payment menu items when `path` is null and only `route` is set (locale refresh path).
+- 
 
 ## Breaking change?
 
@@ -65,7 +75,7 @@ No Monolith API URL or JSON shape change. This entry is about **route-name → S
 |-----------|------------|
 | No | Additive route-map entries only; iPaymu mapping is new capability |
 
-## Test plan (downstream sync session)
+## Test plan
 
 | Repo | Command |
 |------|---------|

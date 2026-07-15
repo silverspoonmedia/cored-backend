@@ -1,4 +1,4 @@
-# Downstream changelog entry
+# Changelog entry
 
 > **Origin:** cross-repo desync audit (2026-07-12). Not triggered by a single Monolith PR — backlog discovered retroactively.
 
@@ -6,14 +6,37 @@
 
 Monolith Blade invoice show combines `GET /api/v1/invoices/{id}` (including `checkout_session` on every response) with active `payment-channels` and `checkout_mode` from `ResolvesPaymentCheckoutContext`. The Vue `InvoiceShowView` passes only `:invoice` to `PaymentCheckoutPanel`, which skips `load()` when the invoice prop is present — so `channelOptions` stay empty, `checkoutMode` defaults to `snap_fallback`, and `checkout_session` is never hydrated. Channel checkout, resume-after-refresh, and sync-status polling on `/invoices/:id` do not match Blade parity. Order and subscription show pages are OK (they use `fetchCheckoutContext` via `order-id` / `subscription-id`).
 
-## Monolith reference
+## Session metadata
 
 | Item | Detail |
 |------|--------|
 | Date | 2026-07-12 |
-| Commit / PR | Audit only — Monolith behavior is authoritative |
-| Files | `app/Domain/PaymentGateway/Http/Resources/InvoiceResource.php`; `app/Http/Controllers/Web/Concerns/ResolvesPaymentCheckoutContext.php`; `app/Domain/PaymentGateway/Http/Controllers/Web/InvoiceController.php`; `resources/views/adminlte4/components/payments/checkout-panel.blade.php`; `resources/js/payments/checkout.js` |
-| Routes | `GET /api/v1/invoices/{invoice}`; `GET /api/v1/payment-channels`; `POST /api/v1/invoices/{invoice}/channel-checkout`; `POST /api/v1/payments/providers/{provider}/invoices/{invoice}/sync-status` |
+| Keyword trigger | audit backlog |
+| Related commits / PR | Audit only — Monolith behavior is authoritative |
+
+## Delegation
+
+### Monolith (done / authoritative)
+
+- Blade invoice show: `InvoiceResource` includes `checkout_session`; `ResolvesPaymentCheckoutContext` supplies channels + `checkout_mode`.
+- Key files: `app/Domain/PaymentGateway/Http/Resources/InvoiceResource.php`; `app/Http/Controllers/Web/Concerns/ResolvesPaymentCheckoutContext.php`; `app/Domain/PaymentGateway/Http/Controllers/Web/InvoiceController.php`; `resources/views/adminlte4/components/payments/checkout-panel.blade.php`; `resources/js/payments/checkout.js`
+- Routes: `GET /api/v1/invoices/{invoice}`; `GET /api/v1/payment-channels`; `POST /api/v1/invoices/{invoice}/channel-checkout`; `POST /api/v1/payments/providers/{provider}/invoices/{invoice}/sync-status`
+
+### Monolith Gateway
+
+- [ ] **Optional (optimization):** Extend `PaymentCheckoutContextController` + `PaymentCheckoutContextAggregator` to accept `invoice_id` and return `{ invoice, payment_gateways, payment_channels, checkout_mode }` (invoice already includes `checkout_session` from Monolith). *Deferred — Frontend-only fix chosen for POC.*
+- [ ] If aggregate added: document in `monolith-gateway/docs/aggregate-endpoints.md` and add PHPUnit feature test. *Deferred.*
+- [x] If Frontend-only fix chosen: no Gateway code change required (catch-all already proxies invoice + payment-channels).
+
+### Monolith Frontend
+
+- [x] In `PaymentCheckoutPanel.vue`: when `invoice` prop is set (invoice-only mode), still initialize checkout context — fetch `GET /api/v1/payment-channels` and derive `checkout_mode` (mirror `ResolvesPaymentCheckoutContext`).
+- [x] Hydrate `channelInstructions` from `invoice.checkout_session` on mount (map shape to `ChannelCheckoutResult` / `PaymentInstructionsPanel` props).
+- [x] Start `sync-status` polling when active channel instructions are shown (mirror `checkout.js` `startPolling`).
+- [x] After `channelCheckout` success on invoice page: refetch invoice (`@paid` / parent `execute`) and re-hydrate session.
+- [x] Update `InvoiceShowView` if needed to pass `invoice-id` or trigger panel reload after payment.
+- [x] Add unit tests for checkout_session hydration logic (mock invoice with non-null `checkout_session`).
+- [ ] If Gateway adds `invoice_id` aggregate: switch invoice-only mode to `fetchCheckoutContext` variant. *Deferred.*
 
 ## API contract
 
@@ -50,21 +73,9 @@ Monolith Blade invoice show combines `GET /api/v1/invoices/{id}` (including `che
 2. On load: fetch channels → set `checkout_mode` and populate `PaymentChannelPicker`.
 3. After successful channel POST: reload invoice (Blade full page reload) or refetch invoice and re-hydrate session.
 
-## Gateway actions
+## Supersedes
 
-- [ ] **Optional (optimization):** Extend `PaymentCheckoutContextController` + `PaymentCheckoutContextAggregator` to accept `invoice_id` and return `{ invoice, payment_gateways, payment_channels, checkout_mode }` (invoice already includes `checkout_session` from Monolith). *Deferred — Frontend-only fix chosen for POC.*
-- [ ] If aggregate added: document in `monolith-gateway/docs/aggregate-endpoints.md` and add PHPUnit feature test. *Deferred.*
-- [x] If Frontend-only fix chosen: no Gateway code change required (catch-all already proxies invoice + payment-channels).
-
-## Frontend actions
-
-- [x] In `PaymentCheckoutPanel.vue`: when `invoice` prop is set (invoice-only mode), still initialize checkout context — fetch `GET /api/v1/payment-channels` and derive `checkout_mode` (mirror `ResolvesPaymentCheckoutContext`).
-- [x] Hydrate `channelInstructions` from `invoice.checkout_session` on mount (map shape to `ChannelCheckoutResult` / `PaymentInstructionsPanel` props).
-- [x] Start `sync-status` polling when active channel instructions are shown (mirror `checkout.js` `startPolling`).
-- [x] After `channelCheckout` success on invoice page: refetch invoice (`@paid` / parent `execute`) and re-hydrate session.
-- [x] Update `InvoiceShowView` if needed to pass `invoice-id` or trigger panel reload after payment.
-- [x] Add unit tests for checkout_session hydration logic (mock invoice with non-null `checkout_session`).
-- [ ] If Gateway adds `invoice_id` aggregate: switch invoice-only mode to `fetchCheckoutContext` variant. *Deferred.*
+- 
 
 ## Breaking change?
 
@@ -72,7 +83,7 @@ Monolith Blade invoice show combines `GET /api/v1/invoices/{id}` (including `che
 |-----------|------------|
 | No | SPA catches up to existing Monolith API; no contract change |
 
-## Test plan (downstream sync session)
+## Test plan
 
 | Repo | Command |
 |------|---------|

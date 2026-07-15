@@ -1,12 +1,24 @@
-# Downstream changelog entry
+# Changelog entry
 
 ## Summary
 
 Two sessions of UI/UX improvements to the Monolith Blade admin (AdminLTE 4 / Bootstrap 5). The work created a soft visual override layer, fixed widespread dark mode contrast issues, and corrected invalid Bootstrap badge syntax. **No API routes, URLs, JSON shapes, or route names were changed** — all modifications are Blade markup, CSS, and build config.
 
-The only downstream action required: the Frontend Vue SPA is missing the `ui.ajax.*` i18n namespace that Monolith Blade now references (Frontend already has `ui.password.show`/`hide`). The Frontend should add the `ui.ajax` keys to `src/i18n/{en,id,ja}.json` to maintain parity with Monolith `lang/{locale}/ui.php`.
+The only remaining downstream action: the Frontend Vue SPA is missing the `ui.ajax.*` i18n namespace that Monolith Blade now references (Frontend already has `ui.password.show`/`hide`). The Frontend should add the `ui.ajax` keys to `src/i18n/{en,id,ja}.json` to maintain parity with Monolith `lang/{locale}/ui.php`.
 
-### Session 1 — Soft override layer + initial dark mode fixes
+## Session metadata
+
+| Item | Detail |
+|------|--------|
+| Date | 2026-07-14 |
+| Keyword trigger | mid-task adaptation / session work |
+| Related commits / PR | Uncommitted — local working tree changes |
+
+## Delegation
+
+### Monolith (done in this session)
+
+#### Session 1 — Soft override layer + initial dark mode fixes
 
 - Created `resources/css/monolith-overrides.css` — global CSS override layer with design tokens (`--monolith-*`), soft shadows, rounded corners, theme-aware card/layout/auth/sidebar/form/datatable/badge/alert/dropdown/modal styles. Pure CSS (no Tailwind) to avoid Bootstrap conflicts. Loaded via `@vite` in `assets-head.blade.php` on every page.
 - Wired `monolith-overrides.css` into `vite.config.js` Vite input array.
@@ -22,7 +34,7 @@ The only downstream action required: the Frontend Vue SPA is missing the `ui.aja
 - Updated `resources/css/payments/order-invoice-show.css` — all hardcoded hex colors replaced with `--ois-*` custom properties + `[data-bs-theme="dark"] .ois` dark overrides.
 - Updated `resources/css/payments/channels-admin.css` — added `--pc-*` dark mode tokens + explicit text color overrides for `pc-*` elements.
 
-### Session 2 — CSS cascade bug fix + contrast audit
+#### Session 2 — CSS cascade bug fix + contrast audit
 
 - **Critical bug fix:** `channels-admin.css` and `order-invoice-show.css` had dark mode custom properties scoped to global `[data-bs-theme="dark"]` while light mode tokens were scoped to `.pc-admin` / `.ois`. Due to CSS custom property cascade rules (element-level declaration beats ancestor-level), dark tokens never applied. Fixed by scoping dark overrides to `[data-bs-theme="dark"] .pc-admin` and `[data-bs-theme="dark"] .ois`.
 - Migrated 8 legacy `bg-*` badges → `text-bg-*` in 5 approval view files (Bootstrap 5.3 `text-bg-*` auto-contrasts text+background).
@@ -30,16 +42,7 @@ The only downstream action required: the Frontend Vue SPA is missing the `ui.aja
 - Wrapped QR code `bg-white` with theme-aware container (`bg-body-tertiary border`) in `profile/two-factor.blade.php` — inner `bg-white` preserved for QR scannability.
 - Made sidebar scrollbar theme-aware in `assets-scripts.blade.php` — was hardcoded `os-theme-light`, now detects `data-bs-theme` and switches `os-theme-light`/`os-theme-dark`, updates on theme toggle.
 
-## Monolith reference
-
-| Item | Detail |
-|------|--------|
-| Date | 2026-07-14 |
-| Commit / PR | Uncommitted — local working tree changes |
-| Files | 18 modified + 1 new (see below) |
-| Routes | None changed (Blade/CSS only) |
-
-### Changed files
+#### Changed files
 
 | File | Change type |
 |------|-------------|
@@ -64,15 +67,11 @@ The only downstream action required: the Frontend Vue SPA is missing the `ui.aja
 | `vite.config.js` | Modified (added `monolith-overrides.css` to input) |
 | `docs/web-frontend.md` | Modified (documentation update) |
 
-## API contract
-
-Omitted — no API, URL, or JSON changes. All changes are Blade/CSS/build config.
-
-## Gateway actions
+### Monolith Gateway
 
 - [x] None required. Gateway is a pure API proxy with no Blade views, CSS assets, or i18n files. All four route families (`payment-channels`, `activity-logs`, `approvals`, `admin.approval-workflows`) are already mapped in `config/vue-routes.php` and remain unchanged.
 
-## Frontend actions
+### Monolith Frontend
 
 - [ ] Add `ui.ajax` i18n namespace to `src/i18n/en.json`, `src/i18n/id.json`, `src/i18n/ja.json`. The Frontend currently has only `ui.password.*` under the `ui` namespace. Monolith `lang/{locale}/ui.php` defines the full `ajax` sub-array:
 
@@ -113,19 +112,27 @@ Omitted — no API, URL, or JSON changes. All changes are Blade/CSS/build config
 
 - [ ] Optionally: if the Frontend has any hardcoded `bg-white` or `bg-light` utility classes, replace with `bg-body-tertiary` or `bg-body-secondary` for dark mode awareness. Again, not required — Frontend already uses Bootstrap-native `data-bs-theme` dark mode via `useTheme.ts` + `ThemeToggle.vue`.
 
+## API contract
+
+N/A — no API, URL, or JSON changes. All changes are Blade/CSS/build config.
+
+## Supersedes
+
+- 
+
 ## Breaking change?
 
 | Breaking? | Mitigation |
 |-----------|------------|
 | No | Blade-only changes + i18n key addition. No API/URL/route contract change. Frontend i18n addition is additive (new keys, no existing keys modified). |
 
-## Test plan (downstream sync session)
+## Test plan
 
 | Repo | Command |
 |------|---------|
 | Monolith | `composer test` |
 | Gateway | `php artisan test` (no changes expected — regression only) |
-| Frontend | `npm run test:unit --run`; `npm run build` |
+| Frontend | `npm run test:unit -- --run`; `npm run build` |
 
 **Manual checks (local Laragon + Vite):**
 

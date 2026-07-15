@@ -1,4 +1,4 @@
-# Upstream documentation entry
+# Changelog entry
 
 ## Summary
 
@@ -10,12 +10,13 @@ Two rounds of CSS theming work on the Monolith Blade admin (AdminLTE 4 / Bootstr
 |------|--------|
 | Date | 2026-07-15 |
 | Keyword trigger | `upstream documentation session` |
-| Scope | Monolith only |
 | Related commits / PR | Uncommitted — local working tree changes |
 
-## Work completed
+## Delegation
 
-### Round 1 — Light mode improvements
+### Monolith (done in this session)
+
+#### Round 1 — Light mode improvements
 
 - Strengthened light-mode shadows (`0.04–0.10` → `0.06–0.14` opacity) so cards have visible lift on white surfaces.
 - Strengthened light-mode border (`rgba(15,23,42,.08)` → `.12`) so cards read as distinct surfaces.
@@ -26,7 +27,7 @@ Two rounds of CSS theming work on the Monolith Blade admin (AdminLTE 4 / Bootstr
 - Card hover lifts slightly (`translateY(-1px)`) for tactile feedback.
 - Applied `--monolith-text-strong` to `.card-title` for sharper headings.
 
-### Round 2 — Counterpart parity refactor
+#### Round 2 — Counterpart parity refactor
 
 Eliminated 6 categories of one-directional implementations:
 
@@ -37,15 +38,16 @@ Eliminated 6 categories of one-directional implementations:
 5. **`--monolith-text-strong` underused** — only applied to `.card-title`. Now also on `.app-content-header h3` and `.login-logo`, reducing the need for per-element dark-mode color overrides.
 6. **Code color dark-only** — `#fba74d` was dark-only. Added `var(--monolith-text-code)` token (`#c2410c` light / `#fba74d` dark) and a light-mode `code` rule.
 
-### New tokens added (both `:root` + `[data-bs-theme="dark"]`)
+#### New tokens added (both `:root` + `[data-bs-theme="dark"]`)
 
 `--monolith-text-body`, `--monolith-text-code`, `--monolith-focus-color`, `--monolith-focus-ring`, `--monolith-gradient-start`, `--monolith-gradient-mid`, `--monolith-gradient-end`, `--monolith-status-secondary-{bg,text}`, `--monolith-status-warning-{bg,text}`, `--monolith-status-success-{bg,text}`, `--monolith-status-danger-{bg,text}`, `--monolith-kind-qris-{bg,text}`, `--monolith-kind-va-{bg,text}`, `--monolith-kind-ewallet-{bg,text}`.
 
 Same pattern mirrored as `--pc-*` (channels-admin.css) and `--ois-*` (order-invoice-show.css) in payment CSS.
 
-### Tests
+#### Tests
 
 Created `tests/Feature/Http/Controllers/Web/ThemeOverrideCssTest.php` — 23 tests / 170 assertions. Guards:
+
 - Token presence (accent, shadow, border, counterpart tokens in both `:root` and `[data-bs-theme="dark"]`)
 - No hardcoded `#6366f1` or `#e2e8f0` in component rules (only token definitions allowed)
 - Login gradient uses `var()` not hex
@@ -56,28 +58,45 @@ Created `tests/Feature/Http/Controllers/Web/ThemeOverrideCssTest.php` — 23 tes
 
 Full suite: 590 tests, 589 passed, 1 skipped (pre-existing), 2 risky (pre-existing). Vite build succeeded.
 
-## Documentation updated
+#### Documentation updated
 
 | Document | Change |
 |----------|--------|
-| [docs/web-frontend.md](docs/web-frontend.md) | Design tokens table expanded (21 new tokens); added "Counterpart parity principle" section with before/after table; updated "Dark mode behavior" section (text normalization counterpart, focus ring tokens, login gradient tokens, payment CSS token-ization); updated "What the override layer changes" section; added "Light mode improvements (round 2)" subsection; fixed Select2 dark mode reference (monolith-overrides.css, not app.css); added ThemeOverrideCssTest to test reference table |
+| [docs/web-frontend.md](../../web-frontend.md) | Design tokens table expanded (21 new tokens); added "Counterpart parity principle" section; updated dark mode / override layer sections; ThemeOverrideCssTest in test reference table |
 
-## Downstream impact
+### Monolith Gateway
 
-| Adaptation contract triggered? | Downstream changelog entry |
-|--------------------------------|----------------------------|
-| No | n/a — CSS/test-only changes, no HTTP contract change |
+- [x] None required — CSS/test-only changes, no HTTP contract change.
 
-The existing pending entry [docs/downstream-changelog/pending/2026-07-14-blade-dark-mode-theming.md](../downstream-changelog/pending/2026-07-14-blade-dark-mode-theming.md) is from a prior session and remains unchanged.
+### Monolith Frontend
 
-## Follow-ups (optional)
+- [x] None required — CSS/test-only changes, no SPA contract change. (Related i18n work for `ui.ajax` remains in [pending/2026-07-14-blade-dark-mode-theming.md](../pending/2026-07-14-blade-dark-mode-theming.md).)
 
-- The dark-mode text normalization block in `monolith-overrides.css` (lines ~540-590) is now partially redundant with the light-mode counterpart block since both use `var(--monolith-text-body)`. The dark block still wins specificity battles via `!important` on some rules; a future cleanup could consolidate the two blocks into a single mode-agnostic block. Low priority — current approach is safe.
-- `resources/css/app.css` is a mirror of `monolith-overrides.css` plus Tailwind imports, but is not loaded on any Blade page (only `monolith-overrides.css` is loaded via `@vite` in `assets-head.blade.php`). Consider removing the duplicated override section from `app.css` in a future session to eliminate the sync burden. Low priority.
+## API contract
+
+N/A — no API, URL, or JSON changes.
+
+## Supersedes
+
+- 
+
+## Breaking change?
+
+| Breaking? | Mitigation |
+|-----------|------------|
+| No | Blade CSS and tests only |
+
+## Test plan
+
+| Repo | Command |
+|------|---------|
+| Monolith | `composer test` |
+| Gateway | n/a |
+| Frontend | n/a |
 
 ## Status
 
 | Field | Value |
 |-------|-------|
-| Status | `recorded` |
-| Recorded | 2026-07-15 |
+| Status | `done` |
+| Synced | 2026-07-15 (Monolith-only; no Gateway/Frontend work) |

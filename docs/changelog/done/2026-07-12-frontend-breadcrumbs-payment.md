@@ -1,4 +1,4 @@
-# Downstream changelog entry
+# Changelog entry
 
 > **Origin:** cross-repo desync audit (2026-07-12). Not triggered by a single Monolith PR — backlog discovered retroactively.
 
@@ -6,18 +6,35 @@
 
 Vue router defines payment, invoice, subscription, and iPaymu return routes, but `src/router/breadcrumbs.ts` has no trail builders for them. `resolveBreadcrumbs()` falls back to dashboard-only for those screens. Users see incorrect navigation context on payment admin and billing pages compared to users, orders, menus, and approvals.
 
-## Monolith reference
+## Session metadata
 
 | Item | Detail |
 |------|--------|
 | Date | 2026-07-12 |
-| Commit / PR | Audit only — no Monolith change |
-| Files | `routes/web/payment-gateway.php` (web route names); `database/seeders/MenuSeeder.php` (menu labels); `lang/{locale}/` payment copy |
-| Routes | Web names: `payment-channels.index`, `payment-gateways.index`, `invoices.index`, `invoices.show`, `subscriptions.index`, `subscriptions.create`, `subscriptions.show`, `subscriptions.edit` |
+| Keyword trigger | audit backlog |
+| Related commits / PR | Audit only — no Monolith change |
+
+## Delegation
+
+### Monolith (done / authoritative)
+
+- Web route names: `payment-channels.index`, `payment-gateways.index`, `invoices.index`, `invoices.show`, `subscriptions.index`, `subscriptions.create`, `subscriptions.show`, `subscriptions.edit` (`routes/web/payment-gateway.php`)
+- Menu labels and payment copy: `database/seeders/MenuSeeder.php`; `lang/{locale}/`
+
+### Monolith Gateway
+
+- [x] None required (Frontend-only UX).
+
+### Monolith Frontend
+
+- [x] Add trail builders in `src/router/breadcrumbs.ts` for all payment/billing route names listed above (follow pattern: dashboard → section index → detail/edit).
+- [x] Reuse existing i18n keys where possible (`payments.channels.title`, `payments.gateways.title`, `payments.invoices.*`, `payments.subscriptions.*`, `payments.ipaymuReturn.title`) — add keys only if missing in `en`, `id`, `ja`.
+- [ ] Verify `AppLayout` breadcrumb bar on each payment screen shows correct hierarchy.
+- [x] Optional: add Vitest for `resolveBreadcrumbs()` on `invoices.show` and `subscriptions.edit`.
 
 ## API contract
 
-No API change. UX-only alignment with existing Vue route names:
+N/A — no API change. UX-only alignment with existing Vue route names:
 
 | Vue route `name` | Path |
 |------------------|------|
@@ -32,16 +49,9 @@ No API change. UX-only alignment with existing Vue route names:
 | `payments.ipaymu.return` | `/payments/ipaymu/return` |
 | `payments.ipaymu.cancel` | `/payments/ipaymu/cancel` |
 
-## Gateway actions
+## Supersedes
 
-- [x] None required (Frontend-only UX).
-
-## Frontend actions
-
-- [x] Add trail builders in `src/router/breadcrumbs.ts` for all payment/billing route names listed above (follow pattern: dashboard → section index → detail/edit).
-- [x] Reuse existing i18n keys where possible (`payments.channels.title`, `payments.gateways.title`, `payments.invoices.*`, `payments.subscriptions.*`, `payments.ipaymuReturn.title`) — add keys only if missing in `en`, `id`, `ja`.
-- [ ] Verify `AppLayout` breadcrumb bar on each payment screen shows correct hierarchy.
-- [x] Optional: add Vitest for `resolveBreadcrumbs()` on `invoices.show` and `subscriptions.edit`.
+- 
 
 ## Breaking change?
 
@@ -49,7 +59,7 @@ No API change. UX-only alignment with existing Vue route names:
 |-----------|------------|
 | No | Additive breadcrumb trails only |
 
-## Test plan (downstream sync session)
+## Test plan
 
 | Repo | Command |
 |------|---------|

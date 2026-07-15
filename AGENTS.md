@@ -8,7 +8,7 @@
 
 `c:\laragon\www\monolith\docs\ai-agent-guide.md`
 
-Read it for architecture context. **Daily work stays in this repository only** — do not load or edit Gateway or Frontend unless the user's prompt contains the exact keyword **`downstream sync session`**. That keyword is the **only** trigger for cross-repo synchronization; paraphrases (for example "sync Gateway", "update Frontend", or "implement downstream changes") do **not** qualify. When Monolith changes affect HTTP contracts, log them in [docs/downstream-changelog/](docs/downstream-changelog/README.md) instead of opening the other repos.
+Read it for architecture context. **Daily work stays in this repository only** — do not load or edit Gateway or Frontend unless the user's prompt contains the exact keyword **`downstream sync session`**. That keyword is the **only** trigger for cross-repo synchronization; paraphrases (for example "sync Gateway", "update Frontend", or "implement downstream changes") do **not** qualify. When Monolith changes affect HTTP contracts, log them in [docs/changelog/](docs/changelog/README.md) (`pending/`) instead of opening the other repos.
 
 **Database safety:** Never run `migrate:fresh`, `migrate:refresh`, or `db:wipe` on non-sqlite without `ALLOW_DESTRUCTIVE_DB=true`. Prefer `composer test` in Monolith (`composer test -- --filter=…` for filtered runs). See [docs/database-safety.md](docs/database-safety.md).
 
@@ -20,27 +20,27 @@ This file is often loaded at **session open** and again at **session close**. Be
 |-------|------|--------------|
 | **1. Open** | User loads this guide at the start of a chat | Read context. Default scope: Monolith only. Ready for work. |
 | **2. Work** | Any prompt **without** a special session keyword | Implement and test in Monolith. Do **not** run close-out. |
-| **3. Close** | Prompt contains exact keyword **`upstream documentation session`** | Improve Monolith `docs/` for session work, then write [docs/upstream-changelog/](docs/upstream-changelog/README.md). |
+| **3. Close** | Prompt contains exact keyword **`upstream documentation session`** | Improve Monolith `docs/` for session work, then write **one** entry under [docs/changelog/](docs/changelog/README.md) with Delegation. |
 
 ### Keywords (exact phrase only)
 
 | Keyword | Meaning |
 |---------|---------|
 | *(none)* | Phase 2 — keep working in Monolith |
-| **`upstream documentation session`** | Phase 3 — close-out: improve docs + upstream changelog entry. Paraphrases do **not** qualify. |
-| **`downstream sync session`** | Cross-repo: implement Gateway/Frontend from [downstream-changelog/pending/](docs/downstream-changelog/pending/). Separate from close-out. |
+| **`upstream documentation session`** | Phase 3 — close-out: improve docs + write changelog entry (`pending/` or `done/`). Paraphrases do **not** qualify. |
+| **`sync consolidation`** | Merge conflicting/overlapping `pending/` entries; newest wins, else verify Monolith code. Docs only — no Gateway/Frontend implement. |
+| **`downstream sync session`** | Cross-repo: implement [docs/changelog/pending/](docs/changelog/pending/) on Gateway/Frontend; move completed entries to `done/`. Separate from close-out. |
 
 Without **`upstream documentation session`**, treat the session as still in **phase 2** even if this file was re-loaded.
 
-Full workflow: [docs/ai-agent-guide.md](docs/ai-agent-guide.md) · [docs/upstream-changelog/README.md](docs/upstream-changelog/README.md).
+Full workflow: [docs/ai-agent-guide.md](docs/ai-agent-guide.md) · [docs/changelog/README.md](docs/changelog/README.md).
 
 ## Start here (this project)
 
 | Document | Topic |
 |----------|-------|
 | [README.md](README.md) | Living documentation rules, Monolith full-stack requirements |
-| [docs/upstream-changelog/README.md](docs/upstream-changelog/README.md) | Session close-out log (`upstream documentation session`) |
-| [docs/downstream-changelog/README.md](docs/downstream-changelog/README.md) | Handoff log for Gateway / Frontend sync sessions |
+| [docs/changelog/README.md](docs/changelog/README.md) | Session + sync log (`pending/` / `done/`, Delegation, consolidation) |
 | [docs/api-routing.md](docs/api-routing.md) | API structure |
 | [docs/jwt-authentication.md](docs/jwt-authentication.md) | Auth and permissions |
 | [docs/spa-gateway-integration.md](docs/spa-gateway-integration.md) | Monolith + Gateway + Vue wiring |
