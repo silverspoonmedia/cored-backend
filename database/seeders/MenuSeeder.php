@@ -174,7 +174,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-credit-card',
             'route' => null,
             'type' => 'p',
-            'order' => 3,
+            'order' => 4,
             'is_authenticate' => true,
         ]);
         $payments->roles()->sync($paymentViewerRoleIds);
@@ -234,7 +234,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-list-nested',
             'route' => null,
             'type' => 'p',
-            'order' => 4,
+            'order' => 5,
             'is_authenticate' => true,
         ]);
         $menus->roles()->sync($managementRoleIds);
