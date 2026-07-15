@@ -13,7 +13,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
  *
  * Laravel loads a single `.env` at boot — this command copies the right
  * `.env.{profile}.example` into `.env`, seeds a profile snapshot, and
- * generates secrets when they are empty. See docs/environment.md.
+ * generates secrets when they are empty. See docs/platform/environment.md.
  */
 #[AsCommand(name: 'env:install')]
 class EnvInstallCommand extends Command
@@ -73,7 +73,7 @@ class EnvInstallCommand extends Command
         $this->line('  • Set APP_URL, DB_* credentials, and any integration secrets.');
         $this->line('  • For staging/production: configure MAIL_*, PUSHER_*, CUSTOM_S3_*, HCAPTCHA_*.');
         $this->line('  • Run: php artisan migrate');
-        $this->line('  • See docs/environment.md for the full checklist.');
+        $this->line('  • See docs/platform/environment.md for the full checklist.');
 
         return self::SUCCESS;
     }

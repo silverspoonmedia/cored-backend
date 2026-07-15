@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Domain\Playground\Repositories\Contracts;
 
@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
  * Dedicated repository for the Order master-detail aggregate.
  *
  * Master-detail persistence spans two tables, so it does NOT belong in the
- * generic EloquentCrudRepository (see docs/crud-architecture.md). Every write
+ * generic EloquentCrudRepository (see docs/platform/crud.md). Every write
  * here runs inside a single DB transaction: the master row and its detail rows
  * commit together or not at all, so a failure never leaves orphaned data.
  */

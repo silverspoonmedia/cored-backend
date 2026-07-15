@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('log_name')->nullable()->index();
             $table->text('description');
-            // UUID morph columns — domain models use HasUuids (see docs/user-uuid-v7.md).
+            // UUID morph columns — domain models use HasUuids (see docs/platform/identifiers.md).
             $table->nullableUuidMorphs('subject', 'subject');
             $table->string('event')->nullable();
             $table->nullableUuidMorphs('causer', 'causer');

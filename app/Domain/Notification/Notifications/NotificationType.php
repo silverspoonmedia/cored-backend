@@ -9,7 +9,7 @@ namespace App\Domain\Notification\Notifications;
  * under `types.{type}`), a Bootstrap icon, and optional enum fallbacks when no
  * database setting exists. **Audience targeting** (roles + users) is stored in
  * `notification_type_settings` and managed via the admin UI — see
- * docs/notifications.md.
+ * docs/domains/notification/README.md.
  *
  * Adding a new action = add a case here + a lang entry + fire
  * ActivityNotificationEvent from wherever the action happens. No engine change.

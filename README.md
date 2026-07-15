@@ -1,22 +1,24 @@
-# Monolith
+﻿# Monolith
 
 Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, a **configurable approval matrix engine**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks and playground CRUD.
 
-It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that is a **pure consumer of the versioned API**: every web controller forwards to `/api/v1/*`, so validation, CRUD, and RBAC run **only once — in the API** (no duplicated business logic). The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**, which the web layer forwards to the API as a Bearer token. See **[Web Frontend (Blade + AdminLTE 4)](docs/web-frontend.md)**.
+It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that is a **pure consumer of the versioned API**: every web controller forwards to `/api/v1/*`, so validation, CRUD, and RBAC run **only once — in the API** (no duplicated business logic). The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**, which the web layer forwards to the API as a Bearer token. See **[Web Frontend (Blade + AdminLTE 4)](docs/web/blade-admin.md)**.
 
-A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the Blade UI via the public **monolith-gateway** BFF. Gateway proxies `/api/*` to this application, sets HttpOnly cookies for the SPA, and enforces `GATEWAY_SECRET` when `GATEWAY_ENFORCE=true`. See [Three-project integration (Monolith + Gateway + Vue)](docs/spa-gateway-integration.md) and [Environment configuration — Public gateway perimeter](docs/environment.md#public-gateway-perimeter). SPA guides: `monolith-frontend/docs/`. Gateway internals: `monolith-gateway/docs/`.
+A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the Blade UI via the public **monolith-gateway** BFF. Gateway proxies `/api/*` to this application, sets HttpOnly cookies for the SPA, and enforces `GATEWAY_SECRET` when `GATEWAY_ENFORCE=true`. See [Three-project integration (Monolith + Gateway + Vue)](docs/integration/spa-gateway.md) and [Environment configuration — Public gateway perimeter](docs/platform/environment.md#public-gateway-perimeter). SPA guides: `monolith-frontend/docs/`. Gateway internals: `monolith-gateway/docs/`.
 
-**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,Playground,Approval,PaymentGateway}/` (logical monorepo inside this repository). See [Domain modules](docs/domain-modules.md), [Internal monorepo assessment](docs/internal-monorepo-assessment.md), and [Internal monorepo porting](docs/internal-monorepo-porting.md). Gateway and Frontend stay separate repos; HTTP contract changes are logged in the [changelog](docs/changelog/README.md) (`pending/` → `done/`) and synced in a **`downstream sync session`**.
+**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,Playground,Approval,PaymentGateway}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)). Gateway and Frontend stay separate repos; HTTP contract changes are logged in the [changelog](docs/changelog/README.md) (`pending/` → `done/`) and synced in a **`downstream sync session`**.
 
 ### Living documentation (required)
 
-**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **AI agents:** read [AI Agent Guide](docs/ai-agent-guide.md) and root [AGENTS.md](AGENTS.md) on every task; daily work stays in Monolith only. Changes that affect Gateway or Frontend HTTP contracts are logged in [docs/changelog/](docs/changelog/README.md) (`pending/`) and implemented in a separate **`downstream sync session`** — not in every Monolith task. Conflicting pending entries are resolved with **`sync consolidation`** (newest wins; else verify Monolith code). To **close a Monolith session** (improve docs for work done, then write one changelog entry with Delegation), the prompt must contain the exact keyword **`upstream documentation session`** — see [Changelog](docs/changelog/README.md). Without that keyword, treat the session as still in the work phase. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, localization, or any behavior described here—do not let code and docs drift apart.
+**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **AI agents:** read [AI Agent Guide](docs/agents/guide.md) and root [AGENTS.md](AGENTS.md) on every task; daily work stays in Monolith only. Changes that affect Gateway or Frontend HTTP contracts are logged in [docs/changelog/](docs/changelog/README.md) (`pending/`) and implemented in a separate **`downstream sync session`** — not in every Monolith task. Conflicting pending entries are resolved with **`sync consolidation`** (newest wins; else verify Monolith code). To **close a Monolith session** (improve docs for work done, then write one changelog entry with Delegation), the prompt must contain the exact keyword **`upstream documentation session`** — see [Changelog](docs/changelog/README.md). Without that keyword, treat the session as still in the work phase. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, localization, or any behavior described here—do not let code and docs drift apart.
+
+**Documentation placement (required):** Living docs are organized **by domain** (mirror `app/Domain/*`) plus `platform/`, `web/`, `integration/`, and `agents/`. When adding or expanding documentation, put content in the matching section — **do not** create a new subject file at `docs/*.md` root. Prefer editing an existing guide; use `docs/archive/` only for historical assessments. Full rules: [docs/README.md — Rules for new documentation](docs/README.md#rules-for-new-documentation-mandatory).
 
 **All project documentation must be written in English** (README, `docs/`, and any new guides or sections you add).
 
-**Localization (required on every task that touches copy):** Any change that adds or modifies user-facing text — Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, or database content shown to users — must include translations for **all** supported locales (`en`, `id`, `ja` today) in the **same task/PR**. Use `__('…')` with application-owned files under `lang/{locale}/` (never hardcode strings), or Spatie translatable fields for database content. See [Localization](docs/localization.md#task-rule-required) for the full checklist and conventions.
+**Localization (required on every task that touches copy):** Any change that adds or modifies user-facing text — Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, or database content shown to users — must include translations for **all** supported locales (`en`, `id`, `ja` today) in the **same task/PR**. Use `__('…')` with application-owned files under `lang/{locale}/` (never hardcode strings), or Spatie translatable fields for database content. See [Localization](docs/platform/localization.md#task-rule-required) for the full checklist and conventions.
 
-**Octane / Swoole readiness (required on every task):** All new code must follow the mandatory patterns in [Octane / Swoole Readiness](docs/octane-readiness.md) to survive long-lived worker processes. Never store request/user state on static properties or singletons. Never mutate facade/guard state without cleanup. Never call `env()` outside config files. Never use `config()->set()` at runtime. This project is not yet running Octane, but every line of code must be written as if it will tomorrow.
+**Octane / Swoole readiness (required on every task):** All new code must follow the mandatory patterns in [Octane / Swoole Readiness](docs/platform/octane.md) to survive long-lived worker processes. Never store request/user state on static properties or singletons. Never mutate facade/guard state without cleanup. Never call `env()` outside config files. Never use `config()->set()` at runtime. This project is not yet running Octane, but every line of code must be written as if it will tomorrow.
 
 **Full-stack implementation (required on every Monolith task):** Every feature or change must be implemented end to end across **all relevant Monolith layers** in the **same task/PR** — do **not** ship work that only touches a single layer. This means API + Web + Blade + translations inside **this repository**; it does **not** require updating Gateway or Frontend in the same task (use the [changelog](docs/changelog/README.md) when HTTP contracts change). At minimum, a typical task should cover:
 
@@ -24,11 +26,11 @@ A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the 
 |-------|----------------|
 | **API** | Versioned routes (`/api/v1/*`), controllers, form requests, policies, repositories, and API responses |
 | **Web** | Web controllers that consume the API (`ConsumesApi` / `ApiClient`), routes in `routes/web.php` and `routes/web/*.php`, and request forwarding |
-| **Blade views** | Screens, forms, list tables, partials, and reusable components under `resources/views/{layout}/` (default layout: `adminlte4` via `WEB_LAYOUT` / `config/web.php`; see [web-frontend.md](docs/web-frontend.md#layout-namespace-and-configwebphp)) |
+| **Blade views** | Screens, forms, list tables, partials, and reusable components under `resources/views/{layout}/` (default layout: `adminlte4` via `WEB_LAYOUT` / `config/web.php`; see [web-frontend.md](docs/web/blade-admin.md#layout-namespace-and-configwebphp)) |
 | **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (`en`, `id`, `ja`) |
 | **Other (as applicable)** | Migrations, seeders, models, events/listeners, notifications, navigation menu entries, tests, and the relevant `docs/` guides |
 
-A task that adds an API endpoint without the matching web route, Blade screen, and translations is **incomplete**. Likewise, a Blade-only or API-only change without its counterpart layers is not acceptable. See [Web frontend](docs/web-frontend.md), [CRUD architecture](docs/crud-architecture.md), and [Localization](docs/localization.md) for layer-specific conventions.
+A task that adds an API endpoint without the matching web route, Blade screen, and translations is **incomplete**. Likewise, a Blade-only or API-only change without its counterpart layers is not acceptable. See [Web frontend](docs/web/blade-admin.md), [CRUD architecture](docs/platform/crud.md), and [Localization](docs/platform/localization.md) for layer-specific conventions.
 
 ---
 
@@ -54,7 +56,7 @@ This project does **not** use auto-increment integer primary keys for domain mod
 | `attachments` | `id` (PK), `attachable_id` (polymorphic FK via `uuidMorphs`), `user_id` (FK → `users`) |
 | Models | `App\Domain\Identity\Models\{User,Role,Permission}`, `App\Domain\Playground\Models\{Order,OrderDetail,Attachment}` use `HasUuids` |
 
-When you add a table that belongs to a user or another UUID-backed model, use `foreignUuid` (not `foreignId`). Do not pass integer IDs in validation or route binding. Full rationale, migration examples, and pitfalls (e.g. do not use DB `gen_random_uuid()` for v7) → **[User primary keys (UUID v7)](docs/user-uuid-v7.md)**.
+When you add a table that belongs to a user or another UUID-backed model, use `foreignUuid` (not `foreignId`). Do not pass integer IDs in validation or route binding. Full rationale, migration examples, and pitfalls (e.g. do not use DB `gen_random_uuid()` for v7) → **[User primary keys (UUID v7)](docs/platform/identifiers.md)**.
 
 ---
 
@@ -100,9 +102,9 @@ composer install
 php artisan env:install local
 ```
 
-This copies `.env.local.example` → `.env`, seeds a matching snapshot (`.env.local`), sets `.env.profile`, and generates `APP_KEY` and `JWT_SECRET` when empty. See [Environment configuration](docs/environment.md) for staging/production profiles.
+This copies `.env.local.example` → `.env`, seeds a matching snapshot (`.env.local`), sets `.env.profile`, and generates `APP_KEY` and `JWT_SECRET` when empty. See [Environment configuration](docs/platform/environment.md) for staging/production profiles.
 
-To swap between saved profiles later without losing values, use `php artisan env:switch {profile}` — see [Switching profiles](docs/environment.md#switching-profiles-local-dev).
+To swap between saved profiles later without losing values, use `php artisan env:switch {profile}` — see [Switching profiles](docs/platform/environment.md#switching-profiles-local-dev).
 
 Adjust at least:
 
@@ -112,10 +114,10 @@ Adjust at least:
 | `DB_*` | MySQL connection (`DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) |
 | `JWT_*` | `JWT_SECRET` is generated by `env:install`; re-run `php artisan jwt:secret` to rotate |
 | `MAIL_*` | Required for email verification and password reset in real use (tests use `array` driver) |
-| `BROADCAST_CONNECTION` / `PUSHER_*` | Optional locally (bell uses polling). For realtime, set `APP_NOTIFICATION_TYPE=realtime` plus Pusher or Socket-compatible credentials — see [Activity notifications](docs/notifications.md#realtime-vs-polling) |
+| `BROADCAST_CONNECTION` / `PUSHER_*` | Optional locally (bell uses polling). For realtime, set `APP_NOTIFICATION_TYPE=realtime` plus Pusher or Socket-compatible credentials — see [Activity notifications](docs/domains/notification/README.md#realtime-vs-polling) |
 | `APP_NOTIFICATION_TYPE` | `polling` (default) or `realtime` — controls navbar bell delivery mode |
 | `APP_NOTIFICATION_POLLING_INTERVAL` | Polling badge refresh interval in seconds (default `60`; only used in polling mode) |
-| `HCAPTCHA_*` | Optional locally (`HCAPTCHA_ENABLED=false`). In production, set `HCAPTCHA_ENABLED=true` plus `HCAPTCHA_SECRET` and `HCAPTCHA_SITEKEY` from the [hCaptcha dashboard](https://dashboard.hcaptcha.com/) — API: [JWT Authentication](docs/jwt-authentication.md#hcaptcha-defense-in-depth); Blade UI: [Web frontend](docs/web-frontend.md#hcaptcha-on-auth-forms) |
+| `HCAPTCHA_*` | Optional locally (`HCAPTCHA_ENABLED=false`). In production, set `HCAPTCHA_ENABLED=true` plus `HCAPTCHA_SECRET` and `HCAPTCHA_SITEKEY` from the [hCaptcha dashboard](https://dashboard.hcaptcha.com/) — API: [JWT Authentication](docs/domains/identity/README.md#hcaptcha-defense-in-depth); Blade UI: [Web frontend](docs/web/blade-admin.md#hcaptcha-on-auth-forms) |
 
 ### 3. Database migrations and seeders
 
@@ -133,16 +135,16 @@ php artisan db:seed
 | `finance@example.com` | `123456789` | Moderator | Finance approval step |
 | `user@example.com` | `123456789` | User | Regular user; order submission demo |
 
-**Two-factor authentication (2FA):** Users can enable TOTP-based 2FA from their profile. Once enabled, login returns a `two_factor_token` (not a JWT); the client must call `POST /api/v1/auth/two-factor/login` with the token and a valid TOTP code to obtain the real JWT. See [JWT Authentication & RBAC](docs/jwt-authentication.md#two-factor-authentication-2fa) for full API and web flow.
+**Two-factor authentication (2FA):** Users can enable TOTP-based 2FA from their profile. Once enabled, login returns a `two_factor_token` (not a JWT); the client must call `POST /api/v1/auth/two-factor/login` with the token and a valid TOTP code to obtain the real JWT. See [JWT Authentication & RBAC](docs/domains/identity/README.md#two-factor-authentication-2fa) for full API and web flow.
 
 To reset and reseed during development:
 
 ```bash
-# Requires ALLOW_DESTRUCTIVE_DB=true in .env — see docs/database-safety.md
+# Requires ALLOW_DESTRUCTIVE_DB=true in .env — see docs/platform/database-safety.md
 php artisan migrate:fresh --seed
 ```
 
-**Database safety:** Tests use SQLite; dev uses MySQL. Prefer `composer test` (runs `config:clear` first). Bare `php artisan test` is guarded on current code — see [docs/database-safety.md](docs/database-safety.md).
+**Database safety:** Tests use SQLite; dev uses MySQL. Prefer `composer test` (runs `config:clear` first). Bare `php artisan test` is guarded on current code — see [docs/platform/database-safety.md](docs/platform/database-safety.md).
 
 ### 4. Frontend assets
 
@@ -195,8 +197,8 @@ php artisan db:seed
 | Authenticated profile | `GET /api/v1/auth/me` with `Authorization: Bearer <token>` |
 | Tests | `composer test` (preferred; clears config cache first) |
 | Notification bell (polling) | Sign in, open dashboard — badge polls on load and every `APP_NOTIFICATION_POLLING_INTERVAL` s (default 60; `APP_NOTIFICATION_TYPE=polling` or missing Pusher credentials) |
-| Notification bell (realtime) | Set `APP_NOTIFICATION_TYPE=realtime` + `PUSHER_*`, run `npm run build`, trigger a notification (e.g. create user) — badge updates without reload; see [notifications.md](docs/notifications.md#realtime-vs-polling) |
-| Code style | `php artisan pint` — see [Laravel Pint](docs/laravel-pint.md) |
+| Notification bell (realtime) | Set `APP_NOTIFICATION_TYPE=realtime` + `PUSHER_*`, run `npm run build`, trigger a notification (e.g. create user) — badge updates without reload; see [notifications.md](docs/domains/notification/README.md#realtime-vs-polling) |
+| Code style | `php artisan pint` — see [Laravel Pint](docs/platform/tooling.md) |
 
 ---
 
@@ -206,7 +208,7 @@ php artisan db:seed
 
 **Last Audit:** 2026-06-16 (Audit #1 - 19/20 findings resolved)
 
-**Security Audit Procedure:** See [`docs/security-audit-procedure.md`](docs/security-audit-procedure.md) for repeatable audit methodology. Run security audits quarterly, before major deployments, or after significant feature changes.
+**Security Audit Procedure:** See [`docs/platform/security.md`](docs/platform/security.md) for repeatable audit methodology. Run security audits quarterly, before major deployments, or after significant feature changes.
 
 **Production Security Checklist:**
 - Set `APP_ENV=production` and `APP_DEBUG=false`
@@ -226,82 +228,82 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 
 | Document | Description |
 |----------|-------------|
-| [Domain modules](docs/domain-modules.md) | Core/locked/removable domains, `domain:list\|make\|remove`, layout |
-| [Internal monorepo assessment](docs/internal-monorepo-assessment.md) | Why logical monorepo, domain map, phases, Gateway/Frontend contract |
-| [Internal monorepo porting](docs/internal-monorepo-porting.md) | Implementation reference: migration order, scripts, gotchas, verification |
-| [API routing](docs/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
-| [CRUD architecture & repository pattern](docs/crud-architecture.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example, and the master-detail aggregate (Order + OrderDetail) with transactional writes |
-| [Playground (reference surface)](docs/playground.md) | Non-production `/api/playground/*` demos: simple CRUD (Users), master-detail Orders with **browser-direct chunked S3 uploads** (manual Start queue + configurable concurrency), and transactional writes |
-| [Payment gateways](docs/payment-gateways.md) | Midtrans/iPaymu, invoices, channel checkout, subscriptions, webhooks |
-| [Database safety](docs/database-safety.md) | Prevent dev DB wipe; test vs MySQL; `composer test`; recovery |
-| [Approval matrix engine](docs/approval-matrix-engine.md) | Generic, code-free configurable approval workflow engine with conditional steps, parallel approver modes, SLA tracking, and delegation management - integrated with Order document type |
-| [List display modes (query & DataTables)](docs/list-display-modes.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 5 / jQuery 3.7 |
-| [Dynamic navigation menu (hierarchy + RBAC)](docs/navigation-menu.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
-| [Activity notifications (per role + per user)](docs/notifications.md) | Generic event-driven notification engine: per-type audiences in **DB via seeder** (hybrid with code catalogue), per-user read state, navbar bell with polling or realtime websocket |
-| [Activity notifications — role vs user handling](docs/notifications-role-vs-user.md) | Reference for broadcast (per role) vs personal (per user) targeting, lifecycle, pitfalls, and flow-change decisions |
-| [Activity notifications — implementation guide](docs/notifications-implementation-guide.md) | **AI-agent playbook:** step-by-step checklists to add types, wire dispatch, change audience, translations, tests, and DataTable reload (hybrid enum + dynamic audience) |
-| [Activity log (audit trail)](docs/activity-log.md) | Spatie laravel-activitylog v5: immutable mutation audit (`activity_log`), automatic model logging, role-assignment events, API viewer + Blade screens |
-| [Authentication activity assessment](docs/auth-activity-assessment.md) | Auth event coverage matrix: login/logout/2FA/password → activity log vs file log, gaps and security notes |
-| [Web frontend (Blade + AdminLTE 4)](docs/web-frontend.md) | Server-rendered admin UI that **consumes the versioned API** (web = API client); JWT-in-HttpOnly-cookie auth forwarded as Bearer, reusable Blade components, `MonolithApi` AJAX error handling, order direct-upload widget, user & menu management screens |
+| [Domain modules](docs/platform/architecture.md) | Core/locked/removable domains, `domain:list\|make\|remove`, layout |
+| [Internal monorepo assessment](docs/archive/internal-monorepo-assessment.md) | Why logical monorepo, domain map, phases, Gateway/Frontend contract |
+| [Internal monorepo porting](docs/archive/internal-monorepo-porting.md) | Implementation reference: migration order, scripts, gotchas, verification |
+| [API routing](docs/platform/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
+| [CRUD architecture & repository pattern](docs/platform/crud.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example, and the master-detail aggregate (Order + OrderDetail) with transactional writes |
+| [Playground (reference surface)](docs/domains/playground/README.md) | Non-production `/api/playground/*` demos: simple CRUD (Users), master-detail Orders with **browser-direct chunked S3 uploads** (manual Start queue + configurable concurrency), and transactional writes |
+| [Payment gateways](docs/domains/payment-gateway/README.md) | Midtrans/iPaymu, invoices, channel checkout, subscriptions, webhooks |
+| [Database safety](docs/platform/database-safety.md) | Prevent dev DB wipe; test vs MySQL; `composer test`; recovery |
+| [Approval matrix engine](docs/domains/approval/README.md) | Generic, code-free configurable approval workflow engine with conditional steps, parallel approver modes, SLA tracking, and delegation management - integrated with Order document type |
+| [List display modes (query & DataTables)](docs/web/ui-patterns.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 5 / jQuery 3.7 |
+| [Dynamic navigation menu (hierarchy + RBAC)](docs/domains/navigation/README.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
+| [Activity notifications (per role + per user)](docs/domains/notification/README.md) | Generic event-driven notification engine: per-type audiences in **DB via seeder** (hybrid with code catalogue), per-user read state, navbar bell with polling or realtime websocket |
+| [Activity notifications — role vs user handling](docs/domains/notification/README.md) | Reference for broadcast (per role) vs personal (per user) targeting, lifecycle, pitfalls, and flow-change decisions |
+| [Activity notifications — implementation guide](docs/domains/notification/README.md) | **AI-agent playbook:** step-by-step checklists to add types, wire dispatch, change audience, translations, tests, and DataTable reload (hybrid enum + dynamic audience) |
+| [Activity log (audit trail)](docs/domains/activity-log/README.md) | Spatie laravel-activitylog v5: immutable mutation audit (`activity_log`), automatic model logging, role-assignment events, API viewer + Blade screens |
+| [Authentication activity assessment](docs/archive/auth-activity-assessment.md) | Auth event coverage matrix: login/logout/2FA/password → activity log vs file log, gaps and security notes |
+| [Web frontend (Blade + AdminLTE 4)](docs/web/blade-admin.md) | Server-rendered admin UI that **consumes the versioned API** (web = API client); JWT-in-HttpOnly-cookie auth forwarded as Bearer, reusable Blade components, `MonolithApi` AJAX error handling, order direct-upload widget, user & menu management screens |
 
 ### Authentication and authorization
 
 | Document | Description |
 |----------|-------------|
-| [JWT authentication & RBAC](docs/jwt-authentication.md) | JWT guard, register/login/refresh, Spatie roles & permissions, env config, local setup |
-| [User management & H-RBAC](docs/user-management-hrbac.md) | `/api/v1/users` CRUD, role hierarchy (`roles.level`), policies, permissions matrix |
-| [User primary keys (UUID v7)](docs/user-uuid-v7.md) | Why UUID v7 on `users`, migrations, and applying the same pattern to new models |
+| [JWT authentication & RBAC](docs/domains/identity/README.md) | JWT guard, register/login/refresh, Spatie roles & permissions, env config, local setup |
+| [User management & H-RBAC](docs/domains/identity/README.md) | `/api/v1/users` CRUD, role hierarchy (`roles.level`), policies, permissions matrix |
+| [User primary keys (UUID v7)](docs/platform/identifiers.md) | Why UUID v7 on `users`, migrations, and applying the same pattern to new models |
 
 ### Localization
 
 | Document | Description |
 |----------|-------------|
-| [Localization (multi-language)](docs/localization.md) | Cookie/user locale resolution, `laravel-lang/common` file packs, Spatie translatable models, `lang/` layout, and validation strategy |
+| [Localization (multi-language)](docs/platform/localization.md) | Cookie/user locale resolution, `laravel-lang/common` file packs, Spatie translatable models, `lang/` layout, and validation strategy |
 
 ### Tooling
 
 | Document | Description |
 |----------|-------------|
-| [Laravel Pint (Artisan wrapper)](docs/laravel-pint.md) | `php artisan pint` instead of calling the binary directly |
+| [Laravel Pint (Artisan wrapper)](docs/platform/tooling.md) | `php artisan pint` instead of calling the binary directly |
 
 ### Performance and deployment
 
 | Document | Description |
 |----------|-------------|
-| [Environment configuration](docs/environment.md) | Profile templates, `env:install`, `env:switch`, and production checklist |
-| [Octane / Swoole Readiness](docs/octane-readiness.md) | Rules and patterns for long-lived worker safety (mandatory before deploying Octane + Swoole) |
-| [Three-project integration (Monolith + Gateway + Vue)](docs/spa-gateway-integration.md) | Local Laragon wiring, gateway cookie auth, SPA vs Blade parity, production checklist; gateway internals in `monolith-gateway/docs/` |
+| [Environment configuration](docs/platform/environment.md) | Profile templates, `env:install`, `env:switch`, and production checklist |
+| [Octane / Swoole Readiness](docs/platform/octane.md) | Rules and patterns for long-lived worker safety (mandatory before deploying Octane + Swoole) |
+| [Three-project integration (Monolith + Gateway + Vue)](docs/integration/spa-gateway.md) | Local Laragon wiring, gateway cookie auth, SPA vs Blade parity, production checklist; gateway internals in `monolith-gateway/docs/` |
 
 ### Cross-links between docs
 
-- Auth endpoints and middleware → [jwt-authentication.md](docs/jwt-authentication.md)
-- User CRUD and hierarchy rules → [user-management-hrbac.md](docs/user-management-hrbac.md) (builds on JWT doc)
-- Route placement for new features → [api-routing.md](docs/api-routing.md)
-- Simple CRUD scaffolding (`Route::apiResource` + repository pattern) → [crud-architecture.md](docs/crud-architecture.md)
-- Non-production reference surface (simple CRUD + master-detail orders) → [playground.md](docs/playground.md)
-- Dual-mode list/index (query JSON vs DataTables + RBAC actions) → [list-display-modes.md](docs/list-display-modes.md)
-- Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/navigation-menu.md)
-- Role-targeted + personal activity notifications (events → roles/users) → [notifications.md](docs/notifications.md)
-- Broadcast vs personal targeting (role vs user lifecycle reference) → [notifications-role-vs-user.md](docs/notifications-role-vs-user.md)
-- Adding or changing a notification type (agent checklist) → [notifications-implementation-guide.md](docs/notifications-implementation-guide.md)
-- Immutable mutation audit trail (Spatie activitylog) → [activity-log.md](docs/activity-log.md)
-- Auth sessions and password events in activity log → [auth-activity-assessment.md](docs/auth-activity-assessment.md)
-- ID format for users and Spatie models → [user-uuid-v7.md](docs/user-uuid-v7.md)
-- Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi`/`MonolithApi` → [web-frontend.md](docs/web-frontend.md)
-- Order attachment direct-upload widget (manual queue, concurrency env) → [web-frontend.md — order direct-upload](docs/web-frontend.md#order-direct-upload-widget), [playground.md — web upload widget](docs/playground.md#web-upload-widget-manual-queue)
-- AJAX / DataTable error UX (auth expired, CSRF, proxy failures) → [web-frontend.md — AJAX error handling](docs/web-frontend.md#ajax-error-handling-contract)
-- hCaptcha on public auth (API validation + Blade widget) → [jwt-authentication.md](docs/jwt-authentication.md#hcaptcha-defense-in-depth), [web-frontend.md](docs/web-frontend.md#hcaptcha-on-auth-forms)
-- Multi-language (API, Blade, DB) → [localization.md](docs/localization.md)
-- Payments, channel checkout, invoices → [payment-gateways.md](docs/payment-gateways.md)
-- Database safety (tests vs MySQL, `ALLOW_DESTRUCTIVE_DB`) → [database-safety.md](docs/database-safety.md)
-- Long-lived worker safety for future Octane + Swoole deployment → [octane-readiness.md](docs/octane-readiness.md)
+- Auth endpoints and middleware → [jwt-authentication.md](docs/domains/identity/README.md)
+- User CRUD and hierarchy rules → [user-management-hrbac.md](docs/domains/identity/README.md) (builds on JWT doc)
+- Route placement for new features → [api-routing.md](docs/platform/api-routing.md)
+- Simple CRUD scaffolding (`Route::apiResource` + repository pattern) → [crud-architecture.md](docs/platform/crud.md)
+- Non-production reference surface (simple CRUD + master-detail orders) → [playground.md](docs/domains/playground/README.md)
+- Dual-mode list/index (query JSON vs DataTables + RBAC actions) → [list-display-modes.md](docs/web/ui-patterns.md)
+- Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/domains/navigation/README.md)
+- Role-targeted + personal activity notifications (events → roles/users) → [notifications.md](docs/domains/notification/README.md)
+- Broadcast vs personal targeting (role vs user lifecycle reference) → [notifications-role-vs-user.md](docs/domains/notification/README.md)
+- Adding or changing a notification type (agent checklist) → [notifications-implementation-guide.md](docs/domains/notification/README.md)
+- Immutable mutation audit trail (Spatie activitylog) → [activity-log.md](docs/domains/activity-log/README.md)
+- Auth sessions and password events in activity log → [auth-activity-assessment.md](docs/archive/auth-activity-assessment.md)
+- ID format for users and Spatie models → [user-uuid-v7.md](docs/platform/identifiers.md)
+- Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi`/`MonolithApi` → [web-frontend.md](docs/web/blade-admin.md)
+- Order attachment direct-upload widget (manual queue, concurrency env) → [web-frontend.md — order direct-upload](docs/web/blade-admin.md#order-direct-upload-widget), [playground.md — web upload widget](docs/domains/playground/README.md#web-upload-widget-manual-queue)
+- AJAX / DataTable error UX (auth expired, CSRF, proxy failures) → [web-frontend.md — AJAX error handling](docs/web/blade-admin.md#ajax-error-handling-contract)
+- hCaptcha on public auth (API validation + Blade widget) → [jwt-authentication.md](docs/domains/identity/README.md#hcaptcha-defense-in-depth), [web-frontend.md](docs/web/blade-admin.md#hcaptcha-on-auth-forms)
+- Multi-language (API, Blade, DB) → [localization.md](docs/platform/localization.md)
+- Payments, channel checkout, invoices → [payment-gateways.md](docs/domains/payment-gateway/README.md)
+- Database safety (tests vs MySQL, `ALLOW_DESTRUCTIVE_DB`) → [database-safety.md](docs/platform/database-safety.md)
+- Long-lived worker safety for future Octane + Swoole deployment → [octane-readiness.md](docs/platform/octane.md)
 
 ---
 
 ## Common Artisan commands
 
 ```bash
-php artisan env:install local    # Scaffold .env from local profile (see docs/environment.md)
+php artisan env:install local    # Scaffold .env from local profile (see docs/platform/environment.md)
 php artisan env:switch staging   # Swap active .env; keep per-profile snapshots
 php artisan env:switch           # Show active profile
 php artisan key:generate         # Generate APP_KEY when empty

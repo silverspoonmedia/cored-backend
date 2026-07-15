@@ -19,7 +19,7 @@ use Illuminate\View\View;
  * `/api/v1/notifications` (see {@see \App\Domain\Notification\Http\Controllers\API\V1\NotificationController})
  * via {@see ConsumesApi}. Role-based visibility and read state are owned by the
  * API. The navbar bell uses polling or realtime websocket delivery depending on
- * {@see BroadcastConnection}; see docs/notifications.md.
+ * {@see BroadcastConnection}; see docs/domains/notification/README.md.
  */
 class NotificationController extends Controller
 {

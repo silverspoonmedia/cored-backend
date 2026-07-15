@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Domain\Playground\Http\Controllers\API;
 
@@ -24,7 +24,7 @@ use Illuminate\Http\JsonResponse;
  * service owns business rules and totals; OrderRepository performs the atomic
  * two-table write inside a DB transaction (no orphaned data). Lives on the
  * global playground surface as a reference; production orders would sit on a
- * versioned route (see docs/api-routing.md).
+ * versioned route (see docs/platform/api-routing.md).
  */
 class PlaygroundOrderController extends Controller
 {

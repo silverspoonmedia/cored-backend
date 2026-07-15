@@ -246,7 +246,7 @@ done
 No automated test — manual verification only.
 
 **Residual Risk Notes:**
-Rate limiting is only effective if the attacker does not use distributed IPs. **Additional mitigation:** hCaptcha on public auth endpoints (`POST /api/v1/auth/login`, `register`, `forgot-password`, `two-factor/login`) — active when `HCAPTCHA_ENABLED=true`. See `config/hcaptcha.php`, `App\Support\Security\HcaptchaVerifier`, and `docs/jwt-authentication.md#hcaptcha-defense-in-depth`.
+Rate limiting is only effective if the attacker does not use distributed IPs. **Additional mitigation:** hCaptcha on public auth endpoints (`POST /api/v1/auth/login`, `register`, `forgot-password`, `two-factor/login`) — active when `HCAPTCHA_ENABLED=true`. See `config/hcaptcha.php`, `App\Support\Security\HcaptchaVerifier`, and `docs/domains/identity/README.md`.
 
 ---
 
@@ -876,7 +876,7 @@ rg "DB::raw|whereRaw|orderByRaw|selectRaw" --type php
 
 **Medium Term:**
 9. Set up Dependabot/Renovate for automated dependency updates
-10. ~~Implement CAPTCHA for auth endpoints (defense-in-depth)~~ **DONE** — manual hCaptcha (`config/hcaptcha.php`, `HcaptchaVerifier`, `ValidatesHcaptcha` trait, Blade `form.hcaptcha` / `form.auth-submit`); set `HCAPTCHA_ENABLED=true` in production — see `docs/jwt-authentication.md#hcaptcha-defense-in-depth`
+10. ~~Implement CAPTCHA for auth endpoints (defense-in-depth)~~ **DONE** — manual hCaptcha (`config/hcaptcha.php`, `HcaptchaVerifier`, `ValidatesHcaptcha` trait, Blade `form.hcaptcha` / `form.auth-submit`); set `HCAPTCHA_ENABLED=true` in production — see `docs/domains/identity/README.md`
 11. Review file upload handling in attachments
 12. Set up external logging/monitoring (Sentry, CloudWatch, etc.)
 
@@ -938,4 +938,4 @@ This audit does not guarantee the application is "100% secure." Security is an o
 
 **Next Audit:** Recommended Q3 2026 or after major feature releases
 
-**Notes:** First comprehensive security audit. Established baseline security posture. Created reusable audit procedure in `docs/security-audit-procedure.md`.
+**Notes:** First comprehensive security audit. Established baseline security posture. Created reusable audit procedure in `docs/platform/security.md`.

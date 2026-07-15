@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('attachments', function (Blueprint $table) {
-            // UUID v7 PK (project convention — see docs/user-uuid-v7.md). The
+            // UUID v7 PK (project convention — see docs/platform/identifiers.md). The
             // owning record is referenced polymorphically so ONE attachments
             // table can serve any model (orders today, anything tomorrow).
             $table->uuid('id')->primary();

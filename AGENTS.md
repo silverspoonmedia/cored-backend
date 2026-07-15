@@ -4,54 +4,54 @@
 
 ## Read first
 
-**Canonical workspace guide (all three projects):**
+**Canonical workspace guide:** [docs/agents/guide.md](docs/agents/guide.md)  
+**Doc map (by domain):** [docs/README.md](docs/README.md)
 
-`c:\laragon\www\monolith\docs\ai-agent-guide.md`
+**New documentation:** place under the matching domain / platform / web / integration section — **never** a new flat subject file at `docs/*.md` root. Full placement rules: [docs/README.md — Rules for new documentation](docs/README.md#rules-for-new-documentation-mandatory).
 
-Read it for architecture context. **Daily work stays in this repository only** — do not load or edit Gateway or Frontend unless the user's prompt contains the exact keyword **`downstream sync session`**. That keyword is the **only** trigger for cross-repo synchronization; paraphrases (for example "sync Gateway", "update Frontend", or "implement downstream changes") do **not** qualify. When Monolith changes affect HTTP contracts, log them in [docs/changelog/](docs/changelog/README.md) (`pending/`) instead of opening the other repos.
+Daily work stays in **this repository only** — do not load or edit Gateway or Frontend unless the prompt contains the exact keyword **`downstream sync session`**. Paraphrases do **not** qualify. When Monolith changes affect HTTP contracts, log them in [docs/changelog/](docs/changelog/README.md) (`pending/`) instead of opening the other repos.
 
-**Database safety:** Never run `migrate:fresh`, `migrate:refresh`, or `db:wipe` on non-sqlite without `ALLOW_DESTRUCTIVE_DB=true`. Prefer `composer test` in Monolith (`composer test -- --filter=…` for filtered runs). See [docs/database-safety.md](docs/database-safety.md).
+**Database safety:** Never run `migrate:fresh`, `migrate:refresh`, or `db:wipe` on non-sqlite without `ALLOW_DESTRUCTIVE_DB=true`. Prefer `composer test` (`composer test -- --filter=…`). See [docs/platform/database-safety.md](docs/platform/database-safety.md).
 
 ## Session lifecycle (Monolith)
 
-This file is often loaded at **session open** and again at **session close**. Behavior depends on keywords in the **current user prompt**, not on whether `AGENTS.md` was attached.
+Behavior depends on keywords in the **current user prompt**, not on whether this file was attached.
 
 | Phase | When | Agent action |
 |-------|------|--------------|
-| **1. Open** | User loads this guide at the start of a chat | Read context. Default scope: Monolith only. Ready for work. |
-| **2. Work** | Any prompt **without** a special session keyword | Implement and test in Monolith. Do **not** run close-out. |
-| **3. Close** | Prompt contains exact keyword **`upstream documentation session`** | Improve Monolith `docs/` for session work, then write **one** entry under [docs/changelog/](docs/changelog/README.md) with Delegation. |
+| **1. Open** | User loads this guide at chat start | Read context. Scope: Monolith only. Ready for work. |
+| **2. Work** | No special session keyword | Implement and test in Monolith. Do **not** run close-out. |
+| **3. Close** | Exact keyword **`upstream documentation session`** | Improve Monolith `docs/` for session work, then write **one** entry under [docs/changelog/](docs/changelog/README.md) with Delegation. |
 
 ### Keywords (exact phrase only)
 
 | Keyword | Meaning |
 |---------|---------|
 | *(none)* | Phase 2 — keep working in Monolith |
-| **`upstream documentation session`** | Phase 3 — close-out: improve docs + write changelog entry (`pending/` or `done/`). Paraphrases do **not** qualify. |
-| **`sync consolidation`** | Merge conflicting/overlapping `pending/` entries; newest wins, else verify Monolith code. Docs only — no Gateway/Frontend implement. |
-| **`downstream sync session`** | Cross-repo: implement [docs/changelog/pending/](docs/changelog/pending/) on Gateway/Frontend; move completed entries to `done/`. Separate from close-out. |
+| **`upstream documentation session`** | Phase 3 — docs + changelog entry (`pending/` or `done/`). Paraphrases do **not** qualify. |
+| **`sync consolidation`** | Merge conflicting `pending/` entries; newest wins, else verify Monolith code. Docs only. |
+| **`downstream sync session`** | Cross-repo: implement `docs/changelog/pending/` on Gateway/Frontend; move completed to `done/`. |
 
-Without **`upstream documentation session`**, treat the session as still in **phase 2** even if this file was re-loaded.
+Without **`upstream documentation session`**, stay in **phase 2** even if this file was re-loaded.
 
-Full workflow: [docs/ai-agent-guide.md](docs/ai-agent-guide.md) · [docs/changelog/README.md](docs/changelog/README.md).
+Full workflow: [docs/agents/guide.md](docs/agents/guide.md) · [docs/changelog/README.md](docs/changelog/README.md).
 
 ## Start here (this project)
 
 | Document | Topic |
 |----------|-------|
-| [README.md](README.md) | Living documentation rules, Monolith full-stack requirements |
-| [docs/changelog/README.md](docs/changelog/README.md) | Session + sync log (`pending/` / `done/`, Delegation, consolidation) |
-| [docs/api-routing.md](docs/api-routing.md) | API structure |
-| [docs/jwt-authentication.md](docs/jwt-authentication.md) | Auth and permissions |
-| [docs/spa-gateway-integration.md](docs/spa-gateway-integration.md) | Monolith + Gateway + Vue wiring |
-| [docs/crud-architecture.md](docs/crud-architecture.md) | CRUD and repositories |
-| [docs/domain-modules.md](docs/domain-modules.md) | Domain modules: core/locked/removable, `domain:list\|make\|remove` |
-| [docs/payment-gateways.md](docs/payment-gateways.md) | Midtrans/iPaymu, invoices, subscriptions, webhooks |
-| [docs/oci-kms.md](docs/oci-kms.md) | OCI KMS connectivity (KEK) |
-| [docs/envelope-encryption.md](docs/envelope-encryption.md) | Envelope encryption (DEK), P0 columns, decrypt cache, audit |
-| [docs/database-safety.md](docs/database-safety.md) | Prevent dev DB wipe; test vs MySQL; recovery |
-| [docs/internal-monorepo-assessment.md](docs/internal-monorepo-assessment.md) | Monorepo assessment and phase-4 deferral |
-| [docs/internal-monorepo-porting.md](docs/internal-monorepo-porting.md) | Porting implementation reference for session handoff |
+| [docs/README.md](docs/README.md) | Domain-oriented documentation index |
+| [README.md](README.md) | Living documentation rules, full-stack requirements |
+| [docs/changelog/README.md](docs/changelog/README.md) | Session + sync log (`pending/` / `done/`) |
+| [docs/platform/architecture.md](docs/platform/architecture.md) | Domain modules, `domain:*`, namespaces |
+| [docs/platform/api-routing.md](docs/platform/api-routing.md) | Global vs versioned API |
+| [docs/domains/identity/README.md](docs/domains/identity/README.md) | Auth, JWT, H-RBAC |
+| [docs/integration/spa-gateway.md](docs/integration/spa-gateway.md) | Monolith + Gateway + Vue |
+| [docs/platform/crud.md](docs/platform/crud.md) | Repository pattern |
+| [docs/domains/payment-gateway/README.md](docs/domains/payment-gateway/README.md) | Payments, invoices |
+| [docs/domains/payment-gateway/encryption.md](docs/domains/payment-gateway/encryption.md) | Envelope encryption + OCI KMS |
+| [docs/platform/database-safety.md](docs/platform/database-safety.md) | Dev DB wipe prevention |
+| [docs/web/blade-admin.md](docs/web/blade-admin.md) | Blade admin (API consumer) |
 
 ## Related repositories
 

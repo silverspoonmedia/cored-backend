@@ -4,7 +4,7 @@ Single session and sync log for **Project Monolith**. Entries record what Monoli
 
 This replaces the former split between `upstream-changelog/` (session archive) and `downstream-changelog/` (handoff). One entry shape, one folder tree, status by subfolder.
 
-Canonical workspace context: [ai-agent-guide.md](../ai-agent-guide.md).
+Canonical workspace context: [agents/guide.md](../agents/guide.md).
 
 ---
 
@@ -83,7 +83,7 @@ docs/changelog/
 
 ## When to write an entry
 
-Write an entry **only** during an **`upstream documentation session`** (required), or earlier during phase 2 if the [adaptation contract](../internal-monorepo-assessment.md#adaptation-contract-gateway--frontend) clearly fires (optional early write; still required on close if missing).
+Write an entry **only** during an **`upstream documentation session`** (required), or earlier during phase 2 if the [adaptation contract](../archive/internal-monorepo-assessment.md#adaptation-contract-gateway--frontend) clearly fires (optional early write; still required on close if missing).
 
 | Situation | Entry? | Folder |
 |-----------|--------|--------|
@@ -107,7 +107,7 @@ If unsure whether the work is "meaningful," write a short entry. False positives
 | New Gateway aggregate endpoint needed | **Yes** → `pending/` |
 | User-facing copy (SPA parity) | **Yes** → `pending/` — note Monolith `lang/{locale}/` keys; Frontend `src/i18n/` |
 
-Full table: [internal-monorepo-assessment.md](../internal-monorepo-assessment.md#adaptation-contract-gateway--frontend).
+Full table: [archive/internal-monorepo-assessment.md](../archive/internal-monorepo-assessment.md#adaptation-contract-gateway--frontend).
 
 ---
 
@@ -119,8 +119,8 @@ Start **only** when the user's prompt contains the exact keyword **`upstream doc
 2. **Inventory session work** — from conversation history, git status/diff, and related files: what changed and why.
 3. **Improve documentation** — update every Monolith guide that the session made stale or incomplete:
    - [README.md](../../README.md) living-documentation policy when setup/conventions change
-   - Domain guides under [docs/](../) (API, web frontend, auth, payments, etc.)
-   - [AGENTS.md](../../AGENTS.md) / [ai-agent-guide.md](../ai-agent-guide.md) when agent workflow itself changed
+   - Domain / platform / web / integration guides under [docs/](../) — place updates by domain, **never** a new flat `docs/*.md` subject file ([placement rules](../README.md#rules-for-new-documentation-mandatory))
+   - [AGENTS.md](../../AGENTS.md) / [agents/guide.md](../agents/guide.md) when agent workflow itself changed
    - English only (project rule)
 4. **Write one changelog entry** — copy [TEMPLATE.md](./TEMPLATE.md) to `pending/YYYY-MM-DD-<slug>.md` or `done/YYYY-MM-DD-<slug>.md` and fill every section that applies, including **Delegation** for Monolith / Gateway / Frontend.
 5. **Place correctly** — if Gateway and Frontend are both "None required," put the file in **`done/`** with Status `done`. Otherwise leave it in **`pending/`**.
@@ -209,7 +209,7 @@ flowchart TD
 
 ## Related docs
 
-- [ai-agent-guide.md](../ai-agent-guide.md) — default scope, session keywords, checklists
+- [agents/guide.md](../agents/guide.md) — default scope, session keywords, checklists
 - [AGENTS.md](../../AGENTS.md) — Monolith agent entry point
-- [spa-gateway-integration.md](../spa-gateway-integration.md) — three-project wiring
-- [internal-monorepo-assessment.md](../internal-monorepo-assessment.md) — adaptation contract
+- [integration/spa-gateway.md](../integration/spa-gateway.md) — three-project wiring
+- [archive/internal-monorepo-assessment.md](../archive/internal-monorepo-assessment.md) — adaptation contract

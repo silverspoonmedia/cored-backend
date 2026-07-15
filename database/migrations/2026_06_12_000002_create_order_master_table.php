@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('order_master', function (Blueprint $table) {
-            // UUID v7 PK (project convention — see docs/user-uuid-v7.md). Models
+            // UUID v7 PK (project convention — see docs/platform/identifiers.md). Models
             // using HasUuids generate the value in application code on create.
             $table->uuid('id')->primary();
             $table->string('order_number')->unique();
