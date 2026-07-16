@@ -11,6 +11,8 @@ use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\Playground\Models\Order;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\Billing\InvoiceFundsLedgerService;
+use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Services\ServiceFulfillmentService;
 // Internal
 use App\Support\Encryption\DecryptSourceContext;
 use Carbon\Carbon;
@@ -20,7 +22,8 @@ use Illuminate\Support\Facades\DB;
 class MidtransInvoiceSynchronizer
 {
     public function __construct(
-        private InvoiceFundsLedgerService $fundsLedger
+        private InvoiceFundsLedgerService $fundsLedger,
+        private ServiceFulfillmentService $serviceFulfillment,
     ) {}
 
     /**
@@ -103,11 +106,13 @@ class MidtransInvoiceSynchronizer
 
             $invoice->save();
 
-            // Use instanceof, not isForOrder(): invoiceable_type may be morph alias "order" or legacy FQCN App\Domain\PaymentGateway\Models\Order.
+            // Use instanceof, not isForOrder(): invoiceable_type may be morph alias "order" or legacy FQCN.
             if ($invoice->invoiceable instanceof Order) {
                 $this->syncOrderIfNeeded($invoice->invoiceable, $invoiceStatus);
             } elseif ($invoice->invoiceable instanceof Subscription) {
                 $this->syncSubscriptionIfNeeded($invoice->invoiceable, $invoiceStatus);
+            } elseif ($invoice->invoiceable instanceof ServicePurchase) {
+                $this->syncServicePurchaseIfNeeded($invoice->invoiceable, $invoiceStatus);
             }
 
             return $invoice->fresh();
@@ -199,6 +204,25 @@ class MidtransInvoiceSynchronizer
                 $subscription->status = SubscriptionStatus::Cancelled;
                 $subscription->save();
             }
+        }
+    }
+
+    protected function syncServicePurchaseIfNeeded(ServicePurchase $purchase, string $invoiceStatus): void
+    {
+        if (in_array($invoiceStatus, ['paid', 'partially_refunded'], true)) {
+            $this->serviceFulfillment->fulfill($purchase);
+
+            return;
+        }
+
+        if (in_array($invoiceStatus, ['cancelled', 'expired'], true)) {
+            $this->serviceFulfillment->markCancelled($purchase);
+
+            return;
+        }
+
+        if ($invoiceStatus === 'failed') {
+            $this->serviceFulfillment->markFailed($purchase);
         }
     }
 }

@@ -3,11 +3,10 @@
 namespace App\Domain\PaymentGateway\Services\Payment\Ipaymu;
 
 use App\Domain\PaymentGateway\Models\Invoice;
-use App\Domain\Playground\Models\Order;
-use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceActiveCheckoutCancellationService;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutGatewayResolver;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceCustomerDetailsResolver;
 use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
 use App\Support\Encryption\DecryptSourceContext;
 use iPaymu\iPaymu;
@@ -21,6 +20,7 @@ class IpaymuPaymentService
         private InvoicePaymentInitiationGuard $initiationGuard,
         private InvoiceCheckoutGatewayResolver $gatewayResolver,
         private InvoiceActiveCheckoutCancellationService $checkoutCancellation,
+        private InvoiceCustomerDetailsResolver $customerDetails,
     ) {}
 
     /**
@@ -166,10 +166,14 @@ class IpaymuPaymentService
         ]);
 
         $client->setBuyer($buyer);
+        // Merchant sale only — iPaymu adds channel fee on top (FeeDirection BUYER).
+        // Never send customer_gross_total: that already includes a prior fee and becomes SubTotal again.
+        $this->resetChannelFeeForFreshCharge($invoice);
         $this->applyCartFromInvoice($client, $invoice);
 
+        $merchantAmount = (float) $invoice->subtotal;
         $direct = [
-            'amount' => (float) $invoice->customer_gross_total,
+            'amount' => $merchantAmount,
             'paymentMethod' => $input['payment_method'],
             'paymentChannel' => $input['payment_channel'],
             'referenceId' => $invoice->invoice_number,
@@ -191,6 +195,11 @@ class IpaymuPaymentService
             $tid = data_get($response, 'Data.TransactionId');
             if (is_numeric($tid) && ! $this->hasExternalTransactionId($invoice)) {
                 $invoice->external_transaction_id = (string) $tid;
+            }
+
+            $data = $response['Data'] ?? null;
+            if (is_array($data)) {
+                $this->applyChargeResponseMoney($invoice, $data);
             }
         }
 
@@ -323,34 +332,7 @@ class IpaymuPaymentService
      */
     protected function resolveBuyer(Invoice $invoice, ?array $buyerFromRequest): array
     {
-        if (is_array($buyerFromRequest)
-            && isset($buyerFromRequest['name'], $buyerFromRequest['email'], $buyerFromRequest['phone'])) {
-            return [
-                'name' => (string) $buyerFromRequest['name'],
-                'email' => (string) $buyerFromRequest['email'],
-                'phone' => (string) $buyerFromRequest['phone'],
-            ];
-        }
-
-        $invoice->loadMissing('invoiceable');
-
-        if ($invoice->invoiceable instanceof Order) {
-            return [
-                'name' => (string) ($invoice->invoiceable->customer_name ?: 'Customer'),
-                'email' => (string) ($invoice->invoiceable->customer_email ?: 'noreply@example.invalid'),
-                'phone' => (string) ($invoice->invoiceable->customer_phone ?: '0000000000'),
-            ];
-        }
-
-        if ($invoice->invoiceable instanceof Subscription) {
-            return [
-                'name' => (string) ($invoice->invoiceable->subscriber_name ?: 'Subscriber'),
-                'email' => (string) ($invoice->invoiceable->subscriber_email ?: 'noreply@example.invalid'),
-                'phone' => (string) ($invoice->invoiceable->subscriber_phone ?: '0000000000'),
-            ];
-        }
-
-        abort(422, __('api/payments.ipaymu.buyer_required'));
+        return $this->customerDetails->forIpaymu($invoice, $buyerFromRequest);
     }
 
     protected function applyCartFromInvoice(iPaymu $client, Invoice $invoice): void
@@ -368,6 +350,70 @@ class IpaymuPaymentService
             'width' => ['10'],
             'height' => ['10'],
         ]);
+    }
+
+    /**
+     * Before a new charge, drop any fee/gross leftover from a previous attempt so cart = sale only.
+     */
+    protected function resetChannelFeeForFreshCharge(Invoice $invoice): void
+    {
+        $sub = round((float) $invoice->subtotal, 2);
+        $fee = round((float) $invoice->payment_channel_fee, 2);
+        $gross = round((float) $invoice->customer_gross_total, 2);
+
+        if ($fee === 0.0 && $gross === $sub) {
+            return;
+        }
+
+        $invoice->payment_channel_fee = 0;
+        $invoice->customer_gross_total = $sub;
+    }
+
+    /**
+     * Capture iPaymu fee + total from successful directPayment Data (SubTotal must match cart).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function applyChargeResponseMoney(Invoice $invoice, array $data): void
+    {
+        $apiSub = null;
+        foreach (['SubTotal', 'Subtotal', 'sub_total'] as $key) {
+            if (isset($data[$key]) && is_numeric($data[$key])) {
+                $apiSub = round((float) $data[$key], 2);
+                break;
+            }
+        }
+
+        $ourSub = round((float) $invoice->subtotal, 2);
+        if ($apiSub !== null && abs($apiSub - $ourSub) > 1.0) {
+            return;
+        }
+
+        $fee = null;
+        foreach (['Fee', 'fee'] as $key) {
+            if (isset($data[$key]) && is_numeric($data[$key])) {
+                $fee = round(max(0.0, (float) $data[$key]), 2);
+                break;
+            }
+        }
+
+        $total = null;
+        foreach (['Total', 'total', 'Amount', 'amount'] as $key) {
+            if (isset($data[$key]) && is_numeric($data[$key])) {
+                $total = round((float) $data[$key], 2);
+                break;
+            }
+        }
+
+        if ($fee !== null) {
+            $invoice->payment_channel_fee = $fee;
+        }
+
+        if ($total !== null) {
+            $invoice->customer_gross_total = $total;
+        } elseif ($fee !== null) {
+            $invoice->customer_gross_total = round($ourSub + $fee, 2);
+        }
     }
 
     protected function assertIpaymuInvoice(Invoice $invoice): void

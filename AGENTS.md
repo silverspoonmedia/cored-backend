@@ -50,6 +50,7 @@ Full workflow: [docs/agents/guide.md](docs/agents/guide.md) · [docs/changelog/R
 | [docs/platform/crud.md](docs/platform/crud.md) | Repository pattern |
 | [docs/domains/payment-gateway/README.md](docs/domains/payment-gateway/README.md) | Payments, invoices |
 | [docs/domains/payment-gateway/encryption.md](docs/domains/payment-gateway/encryption.md) | Envelope encryption + OCI KMS |
+| [docs/domains/service/README.md](docs/domains/service/README.md) | Catalog, entitlements, DB FX→IDR, FH grace/purge |
 | [docs/platform/database-safety.md](docs/platform/database-safety.md) | Dev DB wipe prevention |
 | [docs/web/blade-admin.md](docs/web/blade-admin.md) | Blade admin (API consumer) |
 

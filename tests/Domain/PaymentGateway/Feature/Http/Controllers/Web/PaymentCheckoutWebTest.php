@@ -141,23 +141,27 @@ class PaymentCheckoutWebTest extends TestCase
         });
     }
 
-    public function test_order_show_prefetches_payment_channels_from_versioned_api(): void
+    public function test_service_purchase_show_prefetches_payment_channels_from_versioned_api(): void
     {
-        $orderId = fake()->uuid();
+        $purchaseId = fake()->uuid();
         $invoiceId = fake()->uuid();
 
         Http::fake([
-            "*/api/playground/orders/{$orderId}" => Http::response([
+            "*/api/v1/service-purchases/{$purchaseId}" => Http::response([
                 'status' => 'success',
                 'data' => [
-                    'id' => $orderId,
-                    'order_number' => 'ORD-001',
+                    'id' => $purchaseId,
                     'status' => 'pending',
+                    'settlement_currency' => 'IDR',
+                    'settlement_amount' => 180000,
+                    'display_currency' => 'USD',
+                    'display_amount' => 10,
+                    'service' => ['name' => 'File Hosting Subscription'],
                     'invoice' => [
                         'id' => $invoiceId,
                         'status' => 'pending',
                         'currency' => 'IDR',
-                        'customer_gross_total' => 100000,
+                        'customer_gross_total' => 180000,
                         'payment_gateway' => ['name' => 'midtrans', 'display_name' => 'Midtrans'],
                     ],
                 ],
@@ -177,17 +181,13 @@ class PaymentCheckoutWebTest extends TestCase
 
         $admin = $this->actingWithJwtCookie(User::factory()->create());
 
-        $admin->get("/orders/{$orderId}")
+        $admin->get("/service-purchases/{$purchaseId}")
             ->assertOk()
             ->assertViewHas('checkoutMode', 'channel')
             ->assertViewHas('paymentChannels', fn (array $channels): bool => ($channels[0]['code'] ?? null) === 'qris');
 
         Http::assertSent(function ($request): bool {
             return str_contains($request->url(), '/api/v1/payment-channels');
-        });
-
-        Http::assertNotSent(function ($request): bool {
-            return str_contains($request->url(), '/api/playground/payment-channels');
         });
     }
 

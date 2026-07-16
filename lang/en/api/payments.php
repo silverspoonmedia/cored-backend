@@ -81,7 +81,7 @@ return [
         'active_payment_exists' => 'A payment session is already in progress for this invoice. Complete or cancel it before starting a new checkout.',
         'invoice_not_found' => 'No iPaymu invoice found for this order id.',
         'missing_transaction_id' => 'Invoice has no iPaymu transaction id yet; complete a payment session first.',
-        'buyer_required' => 'Provide buyer details or attach the invoice to an order/subscription with customer fields.',
+        'buyer_required' => 'Could not resolve buyer details from the request, invoiceable, or authenticated user profile.',
         'webhook_invalid_json' => 'Invalid JSON body.',
         'webhook_invalid_signature' => 'Invalid notification signature.',
         'webhook_invalid_va' => 'VA header does not match configured iPaymu VA.',

@@ -10,6 +10,7 @@ use App\Providers\Domain\PaymentGatewayServiceProvider;
 use App\Providers\Domain\PlaygroundServiceProvider;
 use App\Providers\Domain\ProductServiceProvider;
 use App\Providers\Domain\FileHostingServiceProvider;
+use App\Providers\Domain\ServiceServiceProvider;
 use App\Providers\EncryptionServiceProvider;
 
 return [
@@ -24,4 +25,5 @@ return [
     PaymentGatewayServiceProvider::class,
     ProductServiceProvider::class,
     FileHostingServiceProvider::class,
+    ServiceServiceProvider::class,
 ];

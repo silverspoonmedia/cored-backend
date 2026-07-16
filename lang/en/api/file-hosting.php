@@ -27,6 +27,7 @@ return [
     'trash_success' => 'Trash loaded.',
     'quota_success' => 'Quota loaded.',
     'quota_exceeded' => 'Storage quota exceeded.',
+    'quota_grace_blocked' => 'Your subscription is in the grace period. Renew to upload files again.',
     'folder_not_found' => 'Folder not found.',
     'file_not_found' => 'File not found.',
     'owner_not_found' => 'Owner not found.',

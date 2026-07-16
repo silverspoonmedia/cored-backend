@@ -37,27 +37,30 @@ Breadcrumbs::for('users.edit', function (Trail $trail): void {
     $trail->push(__('ui.breadcrumb.edit'));
 });
 
-// Orders (playground master-detail).
-Breadcrumbs::for('orders.index', function (Trail $trail): void {
+// Services (sellable catalog + purchase checkout).
+Breadcrumbs::for('services.index', function (Trail $trail): void {
     $trail->parent('dashboard');
-    $trail->push(__('web/orders.breadcrumb'), route('orders.index'));
+    $trail->push(__('web/services.breadcrumb'), route('services.index'));
 });
 
-Breadcrumbs::for('orders.create', function (Trail $trail): void {
-    $trail->parent('orders.index');
+Breadcrumbs::for('services.create', function (Trail $trail): void {
+    $trail->parent('services.index');
     $trail->push(__('ui.breadcrumb.add'));
 });
 
-Breadcrumbs::for('orders.edit', function (Trail $trail): void {
-    $trail->parent('orders.index');
+Breadcrumbs::for('services.edit', function (Trail $trail): void {
+    $trail->parent('services.index');
     $trail->push(__('ui.breadcrumb.edit'));
 });
 
-// Order detail — order number is dynamic, passed in by the view (no DB lookup
-// in the web layer, which is a pure API consumer).
-Breadcrumbs::for('orders.show', function (Trail $trail, string $orderNumber): void {
-    $trail->parent('orders.index');
-    $trail->push($orderNumber);
+Breadcrumbs::for('services.show', function (Trail $trail, string $serviceName): void {
+    $trail->parent('services.index');
+    $trail->push($serviceName);
+});
+
+Breadcrumbs::for('service-purchases.show', function (Trail $trail, string $purchaseId): void {
+    $trail->parent('services.index');
+    $trail->push(__('web/services.purchase_title'));
 });
 
 // Navigation menus.

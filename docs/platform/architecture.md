@@ -6,7 +6,7 @@ Logical monorepo: domain code under `app/Domain/{Domain}/` in one Laravel app an
 
 | Kind | Domains | `domain:remove` |
 |------|---------|-----------------|
-| **Core** (platform) | Identity, Navigation, Notification, ActivityLog, Approval, PaymentGateway + Kernel | **Always refused** — `DomainManager::PLATFORM_CORE`; flipping `core` in config does nothing |
+| **Core** (platform) | Identity, Navigation, Notification, ActivityLog, Approval, PaymentGateway, Service (catalog + entitlements + FX) + Kernel | **Always refused** — `DomainManager::PLATFORM_CORE`; flipping `core` in config does nothing |
 | **Locked** (product) | Default for `domain:make` | Refused until `'locked' => false` in [`config/domains.php`](../../config/domains.php) |
 | **Removable** | Playground, or `domain:make --removable` | Allowed (`--force`) |
 
@@ -39,10 +39,11 @@ app/
 │   ├── Navigation/     # Menu tree (core)
 │   ├── Notification/   # Activity notifications (core)
 │   ├── ActivityLog/    # Spatie audit trail (core)
-│   ├── Playground/     # Demo users, orders, attachments (locked)
+│   ├── Playground/     # Demo users CRUD only (locked; orders retired)
 │   ├── Product/        # Stub product scaffold (catalog retired)
 │   ├── FileHosting/    # Nested files, chunk S3 upload, Drive-lite share (locked product)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
+│   ├── Service/        # Catalog, entitlements, DB FX→IDR, FH grace/purge (core)
 │   └── Approval/       # Approval matrix (core)
 ├── Http/Middleware/    # Kernel
 ├── Repositories/Eloquent/EloquentCrudRepository.php
@@ -69,6 +70,7 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `activity-log.php` | Activity logs |
 | `approval.php` | Approvals + workflow admin |
 | `payment-gateway.php` | Gateways, invoices, subscriptions |
+| `service.php` | Service catalog, checkout, service purchases |
 | `product.php` | Product domain stub (empty) |
 | `file-hosting.php` | File hosting (auth + public share) folders/files/uploads |
 

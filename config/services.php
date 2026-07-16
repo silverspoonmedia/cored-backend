@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Frankfurter FX (ECB rates, no API key)
+    |--------------------------------------------------------------------------
+    | Used by Service domain checkout to convert display currency → IDR.
+    | @see https://www.frankfurter.app/docs/
+    */
+    'frankfurter' => [
+        'base_url' => env('FRANKFURTER_BASE_URL', 'https://api.frankfurter.app'),
+        'timeout' => (int) env('FRANKFURTER_TIMEOUT', 10),
+        'cache_ttl' => (int) env('FRANKFURTER_CACHE_TTL', 3600),
+    ],
+
 ];

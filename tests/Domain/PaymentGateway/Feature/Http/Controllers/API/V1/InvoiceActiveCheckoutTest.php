@@ -5,9 +5,6 @@ namespace Tests\Domain\PaymentGateway\Feature\Http\Controllers\API\V1;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceActiveCheckoutCancellationService;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
-use App\Domain\Playground\Models\Order;
-use App\Domain\Playground\Models\OrderDetail;
-use App\Domain\Playground\Services\OrderService;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransPaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -109,53 +106,6 @@ class InvoiceActiveCheckoutTest extends TestCase
         $this->assertNull($invoice->payment_channel_code);
         $this->assertNull($invoice->gateway_response_payload);
         $this->assertNull($invoice->payment_gateway_id);
-    }
-
-    public function test_order_update_abandons_checkout_when_grand_total_changes(): void
-    {
-        $order = Order::factory()->pending()->create([
-            'subtotal' => 240,
-            'discount' => 10,
-            'tax' => 5,
-            'grand_total' => 235,
-        ]);
-        OrderDetail::factory()->create([
-            'order_master_id' => $order->id,
-            'product_name' => 'Widget',
-            'quantity' => 2,
-            'unit_price' => 120,
-            'subtotal' => 240,
-        ]);
-
-        $invoice = $this->createPayableInvoice('midtrans', [
-            'invoiceable_id' => $order->id,
-            'invoiceable_type' => 'order',
-            'customer_gross_total' => 235,
-            'subtotal' => 235,
-            'payment_channel_code' => 'qris',
-            'external_transaction_id' => 'txn-order-edit-1',
-        ]);
-
-        $this->mock(InvoiceActiveCheckoutCancellationService::class, function ($mock): void {
-            $mock->shouldReceive('hasCheckoutSession')->once()->andReturn(true);
-            $mock->shouldReceive('abandonActiveCheckout')->once();
-        });
-
-        $updated = app(OrderService::class)->update($order->id, [
-            'customer_name' => $order->customer_name,
-            'customer_email' => $order->customer_email,
-            'customer_phone' => $order->customer_phone,
-            'discount' => 0,
-            'tax' => 0,
-            'status' => 'pending',
-            'details' => [
-                ['product_name' => 'Big ticket', 'quantity' => 1, 'unit_price' => 500, 'discount' => 0],
-            ],
-        ]);
-
-        $this->assertSame(500.0, (float) $updated->grand_total);
-        $invoice->refresh();
-        $this->assertSame(500.0, (float) $invoice->customer_gross_total);
     }
 
     public function test_channel_checkout_switches_ipaymu_va_channel_after_prior_session(): void

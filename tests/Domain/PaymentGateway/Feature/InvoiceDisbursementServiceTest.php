@@ -147,7 +147,7 @@ class InvoiceDisbursementServiceTest extends TestCase
 
         return Invoice::query()->create(array_merge([
             'invoiceable_id' => (string) Str::uuid(),
-            'invoiceable_type' => 'order',
+            'invoiceable_type' => 'service_purchase',
             'payment_gateway_id' => $gateway->id,
             'invoice_number' => Invoice::generateInvoiceNumber(),
             'payment_method' => 'bank_transfer',

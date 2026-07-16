@@ -6,6 +6,7 @@ use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceActiveCheckoutCancellationService;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutGatewayResolver;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceCustomerDetailsResolver;
 use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
 use App\Support\Encryption\DecryptSourceContext;
 use Midtrans\CoreApi;
@@ -21,6 +22,7 @@ class MidtransPaymentService
         private InvoicePaymentInitiationGuard $initiationGuard,
         private InvoiceCheckoutGatewayResolver $gatewayResolver,
         private InvoiceActiveCheckoutCancellationService $checkoutCancellation,
+        private InvoiceCustomerDetailsResolver $customerDetails,
     ) {}
 
     /**
@@ -141,6 +143,10 @@ class MidtransPaymentService
                 'order_id' => $invoice->invoice_number,
                 'gross_amount' => $gross,
             ],
+            'customer_details' => $this->customerDetails->forMidtrans(
+                $invoice,
+                $input['charge']['customer_details'] ?? null,
+            ),
         ];
 
         $merged = array_replace_recursive($base, $input['charge']);

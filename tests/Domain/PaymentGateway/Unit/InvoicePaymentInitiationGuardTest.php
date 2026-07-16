@@ -9,6 +9,7 @@ use App\Domain\PaymentGateway\Services\Billing\InvoiceFundsLedgerService;
 use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuInvoiceSynchronizer;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransInvoiceSynchronizer;
+use App\Domain\Service\Services\ServiceFulfillmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Mockery;
@@ -215,8 +216,14 @@ class InvoicePaymentInitiationGuardTest extends TestCase
     {
         return Mockery::mock(InvoicePaymentInitiationGuard::class, [
             app(InvoiceRepositoryInterface::class),
-            new MidtransInvoiceSynchronizer(app(InvoiceFundsLedgerService::class)),
-            new IpaymuInvoiceSynchronizer(app(InvoiceFundsLedgerService::class)),
+            new MidtransInvoiceSynchronizer(
+                app(InvoiceFundsLedgerService::class),
+                app(ServiceFulfillmentService::class),
+            ),
+            new IpaymuInvoiceSynchronizer(
+                app(InvoiceFundsLedgerService::class),
+                app(ServiceFulfillmentService::class),
+            ),
         ])->shouldAllowMockingProtectedMethods()->makePartial();
     }
 
@@ -240,7 +247,7 @@ class InvoicePaymentInitiationGuardTest extends TestCase
 
         return Invoice::query()->create(array_merge([
             'invoiceable_id' => (string) Str::uuid(),
-            'invoiceable_type' => 'order',
+            'invoiceable_type' => 'service_purchase',
             'payment_gateway_id' => $gateway->id,
             'invoice_number' => Invoice::generateInvoiceNumber(),
             'payment_method' => 'bank_transfer',

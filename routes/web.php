@@ -42,4 +42,5 @@ Route::middleware('web.auth')->group(function (): void {
     require __DIR__.'/web/notification.php';
     require __DIR__.'/web/product.php';
     require __DIR__.'/web/file-hosting.php';
+    require __DIR__.'/web/service.php';
 });

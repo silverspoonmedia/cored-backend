@@ -21,6 +21,7 @@ return [
     'ActivityLog' => ['core' => true],
     'Approval' => ['core' => true],
     'PaymentGateway' => ['core' => true],
+    'Service' => ['core' => true],
     'Playground' => ['core' => false, 'locked' => true],
     'Product' => ['core' => false, 'locked' => true],
     'FileHosting' => ['core' => false, 'locked' => true],

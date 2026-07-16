@@ -89,14 +89,14 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
 
-        // Master-detail playground reference (Order + OrderDetail). No RBAC in the
-        // playground, so it is visible to any authenticated viewer.
+        // Service catalog (sellable SaaS services + checkout). Visible to any
+        // authenticated viewer with view service (User role has it).
         Menu::query()->create([
             'parent_id' => $main->id,
             'layout' => MenuLayout::SIDEBAR,
-            'name' => ['en' => 'Orders', 'id' => 'Pesanan', 'ja' => '注文'],
-            'icon' => 'bi bi-cart',
-            'route' => 'orders.index',
+            'name' => ['en' => 'Services', 'id' => 'Layanan', 'ja' => 'サービス'],
+            'icon' => 'bi bi-box-seam',
+            'route' => 'services.index',
             'type' => 'p',
             'order' => 5,
             'is_authenticate' => true,

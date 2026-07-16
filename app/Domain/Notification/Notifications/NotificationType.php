@@ -22,6 +22,12 @@ enum NotificationType: string
     // Personal: a user's own account was updated (seen by that user only).
     case AccountUpdated = 'account_updated';
 
+    // Personal: subscription entered grace — renew or excess files will be removed.
+    case ServiceSubscriptionGrace = 'service_subscription_grace';
+
+    // Personal: subscription expired; free-tier purge applied.
+    case ServiceSubscriptionExpired = 'service_subscription_expired';
+
     /**
      * Bootstrap icon class rendered by the web bell.
      */
@@ -30,6 +36,8 @@ enum NotificationType: string
         return match ($this) {
             self::UserCreated => 'bi bi-person-plus',
             self::AccountUpdated => 'bi bi-person-gear',
+            self::ServiceSubscriptionGrace => 'bi bi-hourglass-split',
+            self::ServiceSubscriptionExpired => 'bi bi-exclamation-triangle',
         };
     }
 
@@ -42,7 +50,9 @@ enum NotificationType: string
     {
         return match ($this) {
             self::UserCreated => ['Root', 'Admin'],
-            self::AccountUpdated => [],
+            self::AccountUpdated,
+            self::ServiceSubscriptionGrace,
+            self::ServiceSubscriptionExpired => [],
         };
     }
 
@@ -62,7 +72,9 @@ enum NotificationType: string
     {
         return match ($this) {
             self::UserCreated => 'users-table',
-            self::AccountUpdated => null,
+            self::AccountUpdated,
+            self::ServiceSubscriptionGrace,
+            self::ServiceSubscriptionExpired => null,
         };
     }
 }

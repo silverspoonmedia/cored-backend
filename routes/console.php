@@ -13,3 +13,4 @@ Schedule::command('approval:escalate')->dailyAt('08:00');
 Schedule::command('approval:expire-delegations')->hourly();
 Schedule::command('payments:midtrans-reconcile-pending')->everyFiveMinutes();
 Schedule::command('payments:reconcile-withdrawable-funds')->everyTenMinutes();
+Schedule::command('service:process-entitlements')->hourly();

@@ -74,6 +74,17 @@ Dispatch only from service.
 
 Map `tableId()` to table id; ensure list page listens for bell ping.
 
+## Types used by Service (personal)
+
+Fired from `ServiceEntitlementLifecycleService` (scheduler), not controllers:
+
+| Type | Audience | When |
+|------|----------|------|
+| `service_subscription_grace` | Subject user | Subscription enters grace after `ends_at` |
+| `service_subscription_expired` | Subject user | Grace ends; free-tier purge applied |
+
+Seeder: `NotificationTypeSettingSeeder` (`notify_subject_user` true). Copy under `lang/{locale}/api/notifications.php` → `types.*`.
+
 ## Role vs user (decision)
 
 | Need | Mode |

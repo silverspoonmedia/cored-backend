@@ -31,6 +31,7 @@ class DomainManager
         'ActivityLog',
         'Approval',
         'PaymentGateway',
+        'Service',
     ];
 
     /** @var list<string> */

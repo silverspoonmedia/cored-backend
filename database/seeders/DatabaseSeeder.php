@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
         ]);
         $moderator->assignRole('Moderator');
 
-        // Regular user (for submitting orders)
+        // Regular user (can purchase services / use File Hosting)
         $user = User::factory()->create([
             'name' => 'Regular User',
             'email' => 'user@example.com',
@@ -57,5 +57,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ApprovalWorkflowSeeder::class);
         $this->call(PaymentGatewaySeeder::class);
         $this->call(PaymentChannelSeeder::class);
+        $this->call(CurrencySeeder::class);
+        $this->call(ServiceCatalogSeeder::class);
     }
 }

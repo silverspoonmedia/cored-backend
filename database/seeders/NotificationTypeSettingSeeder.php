@@ -36,6 +36,16 @@ class NotificationTypeSettingSeeder extends Seeder
             ['notify_subject_user' => true],
         );
 
+        NotificationTypeSetting::query()->firstOrCreate(
+            ['type' => NotificationType::ServiceSubscriptionGrace->value],
+            ['notify_subject_user' => true],
+        );
+
+        NotificationTypeSetting::query()->firstOrCreate(
+            ['type' => NotificationType::ServiceSubscriptionExpired->value],
+            ['notify_subject_user' => true],
+        );
+
         app(NotificationTypeSettingRepositoryInterface::class)->flushCache();
     }
 }

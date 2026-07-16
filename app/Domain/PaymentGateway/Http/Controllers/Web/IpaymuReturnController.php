@@ -6,8 +6,8 @@ use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
+use App\Domain\Service\Models\ServicePurchase;
 use App\Support\Encryption\DecryptSourceContext;
-use App\Domain\Playground\Models\Order;
 use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -113,9 +113,11 @@ class IpaymuReturnController extends Controller
             ? __('web/payments.ipaymu_return.cancelled')
             : $this->messageForStatus((string) $invoice->status);
 
-        if ($request->query('redirect') === 'order' && is_string($request->query('order')) && Str::isUuid($request->query('order'))) {
+        if ($request->query('redirect') === 'service_purchase'
+            && is_string($request->query('purchase'))
+            && Str::isUuid($request->query('purchase'))) {
             return redirect()
-                ->route('orders.show', $request->query('order'))
+                ->route('service-purchases.show', $request->query('purchase'))
                 ->with($flashKey, $flashMessage);
         }
 
@@ -127,9 +129,9 @@ class IpaymuReturnController extends Controller
                 ->with($flashKey, $flashMessage);
         }
 
-        if ($invoice->invoiceable instanceof Order) {
+        if ($invoice->invoiceable instanceof ServicePurchase) {
             return redirect()
-                ->route('orders.show', $invoice->invoiceable_id)
+                ->route('service-purchases.show', $invoice->invoiceable_id)
                 ->with($flashKey, $flashMessage);
         }
 
