@@ -29,7 +29,6 @@ class DomainManager
         'Navigation',
         'Notification',
         'ActivityLog',
-        'Approval',
         'PaymentGateway',
         'Service',
     ];

@@ -12,7 +12,7 @@ use Illuminate\View\View;
  * Web activity log — a pure consumer of the versioned API.
  *
  * Immutable audit entries from Spatie laravel-activitylog. Distinct from
- * {@see NotificationController} (in-app bell) and approval-domain logs.
+ * {@see NotificationController} (in-app bell).
  */
 class ActivityLogController extends Controller
 {

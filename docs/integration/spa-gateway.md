@@ -50,7 +50,7 @@ SQLite error with `Database: monolith` → often stale root `monolith` file or g
 
 ## SPA vs Blade parity
 
-Auth, users, menus, orders playground, activity logs, notifications, approvals, shell — aligned. Differences: locale switch surface (Blade `GET /locale/{locale}` vs SPA `POST /auth/locale` + client cookie); payment Snap UI **Vue only** (Blade channel-only).
+Auth, users, menus, orders playground, activity logs, notifications, shell — aligned. Differences: locale switch surface (Blade `GET /locale/{locale}` vs SPA `POST /auth/locale` + client cookie); payment Snap UI **Vue only** (Blade channel-only).
 
 ### Realtime (SPA)
 

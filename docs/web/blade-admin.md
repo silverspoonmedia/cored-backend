@@ -54,9 +54,9 @@ Client: `window.MonolithApi.handleResponse()` / `datatableAjaxError()`.
 
 ## Routes
 
-Domain files under `routes/web/*.php` loaded from `routes/web.php` with `web.guest` / `web.auth`. Exception: approval admin may add `role:Root|Admin` transport gate; API still authorizes.
+Domain files under `routes/web/*.php` loaded from `routes/web.php` with `web.guest` / `web.auth`. API still authorizes every forwarded call.
 
-Major groups: auth guest, dashboard/profile, users (+ datatable proxy), menus, notifications, orders (playground), activity-logs, payments/invoices, approvals.
+Major groups: auth guest, dashboard/profile, users (+ datatable proxy), menus, notifications, orders (playground), activity-logs, payments/invoices.
 
 Layout namespace: `WEB_LAYOUT` / `config/web.php` (default `adminlte4`).
 

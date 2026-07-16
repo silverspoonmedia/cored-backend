@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Domain\ActivityLog\Http\Requests\IndexActivityLogRequest;
 use App\Domain\ActivityLog\Http\Resources\ActivityLogResource;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
-use App\Domain\Approval\Models\ApprovalLog;
 use App\Domain\Identity\Models\User;
 use App\Domain\ActivityLog\Services\ActivityLogService;
 use App\Traits\ApiResponse;
@@ -16,8 +15,7 @@ use Spatie\Activitylog\Models\Activity;
 /**
  * Immutable audit trail entries from Spatie laravel-activitylog.
  *
- * Distinct from {@see NotificationController}
- * (in-app bell) and approval-domain {@see ApprovalLog}.
+ * Distinct from {@see NotificationController} (in-app bell).
  */
 class ActivityLogController extends Controller
 {

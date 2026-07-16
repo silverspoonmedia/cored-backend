@@ -78,17 +78,6 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
 
-        Menu::query()->create([
-            'parent_id' => $main->id,
-            'layout' => MenuLayout::SIDEBAR,
-            'name' => ['en' => 'My Approvals', 'id' => 'Approval Saya', 'ja' => '自分の承認'],
-            'icon' => 'bi bi-check2-square',
-            'route' => 'approvals.my-pending',
-            'type' => 'p',
-            'order' => 4,
-            'is_authenticate' => true,
-        ]);
-
         // Service catalog (sellable SaaS services + checkout). Visible to any
         // authenticated viewer with view service (User role has it).
         Menu::query()->create([
@@ -98,7 +87,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-box-seam',
             'route' => 'services.index',
             'type' => 'p',
-            'order' => 5,
+            'order' => 4,
             'is_authenticate' => true,
         ]);
 
@@ -112,7 +101,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-folder2-open',
             'route' => 'file-hosting.index',
             'type' => 'p',
-            'order' => 6,
+            'order' => 5,
             'is_authenticate' => true,
         ]);
 
@@ -133,18 +122,6 @@ class MenuSeeder extends Seeder
             ->pluck('id')
             ->all();
 
-        $workflowsItem = Menu::query()->create([
-            'parent_id' => $admin->id,
-            'layout' => MenuLayout::SIDEBAR,
-            'name' => ['en' => 'Approval Matrix', 'id' => 'Matriks Approval', 'ja' => '承認マトリックス'],
-            'icon' => 'bi bi-diagram-3',
-            'route' => 'admin.approval-workflows.index',
-            'type' => 'p',
-            'order' => 1,
-            'is_authenticate' => true,
-        ]);
-        $workflowsItem->roles()->sync($adminRoleIds);
-
         $activityLogItem = Menu::query()->create([
             'parent_id' => $admin->id,
             'layout' => MenuLayout::SIDEBAR,
@@ -152,7 +129,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-journal-text',
             'route' => 'activity-logs.index',
             'type' => 'p',
-            'order' => 2,
+            'order' => 1,
             'is_authenticate' => true,
         ]);
         $activityLogItem->roles()->sync($adminRoleIds);

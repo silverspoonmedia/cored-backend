@@ -1,12 +1,12 @@
 ﻿# Monolith
 
-Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, a **configurable approval matrix engine**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks and playground CRUD.
+Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks and playground CRUD.
 
 It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that is a **pure consumer of the versioned API**: every web controller forwards to `/api/v1/*`, so validation, CRUD, and RBAC run **only once — in the API** (no duplicated business logic). The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**, which the web layer forwards to the API as a Bearer token. See **[Web Frontend (Blade + AdminLTE 4)](docs/web/blade-admin.md)**.
 
 A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the Blade UI via the public **monolith-gateway** BFF. Gateway proxies `/api/*` to this application, sets HttpOnly cookies for the SPA, and enforces `GATEWAY_SECRET` when `GATEWAY_ENFORCE=true`. See [Three-project integration (Monolith + Gateway + Vue)](docs/integration/spa-gateway.md) and [Environment configuration — Public gateway perimeter](docs/platform/environment.md#public-gateway-perimeter). SPA guides: `monolith-frontend/docs/`. Gateway internals: `monolith-gateway/docs/`.
 
-**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,Playground,Approval,PaymentGateway}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)). Gateway and Frontend stay separate repos; HTTP contract changes are logged in the [changelog](docs/changelog/README.md) (`pending/` → `done/`) and synced in a **`downstream sync session`**.
+**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,Playground,PaymentGateway,Service,FileHosting,…}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)). Gateway and Frontend stay separate repos; HTTP contract changes are logged in the [changelog](docs/changelog/README.md) (`pending/` → `done/`) and synced in a **`downstream sync session`**.
 
 ### Living documentation (required)
 
@@ -126,14 +126,14 @@ php artisan migrate
 php artisan db:seed
 ```
 
-`DatabaseSeeder` runs `RoleSeeder` (roles, permissions, hierarchy levels), `NotificationTypeSettingSeeder`, sample users, navigation menus, and an approval workflow demo:
+`DatabaseSeeder` runs `RoleSeeder` (roles, permissions, hierarchy levels), `NotificationTypeSettingSeeder`, sample users, and navigation menus:
 
 | Email | Password | Role | Purpose |
 |-------|----------|------|---------|
-| `admin@example.com` | `123456789` | Admin | Default sign-in; executive/final approval steps |
-| `manager@example.com` | `123456789` | Management | Manager review step |
-| `finance@example.com` | `123456789` | Moderator | Finance approval step |
-| `user@example.com` | `123456789` | User | Regular user; order submission demo |
+| `admin@example.com` | `123456789` | Admin | Default sign-in |
+| `manager@example.com` | `123456789` | Management | Management role demo |
+| `finance@example.com` | `123456789` | Moderator | Moderator role demo |
+| `user@example.com` | `123456789` | User | Regular user |
 
 **Two-factor authentication (2FA):** Users can enable TOTP-based 2FA from their profile. Once enabled, login returns a `two_factor_token` (not a JWT); the client must call `POST /api/v1/auth/two-factor/login` with the token and a valid TOTP code to obtain the real JWT. See [JWT Authentication & RBAC](docs/domains/identity/README.md#two-factor-authentication-2fa) for full API and web flow.
 
@@ -236,7 +236,6 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [Playground (reference surface)](docs/domains/playground/README.md) | Non-production `/api/playground/*` demos: simple CRUD (Users), master-detail Orders with **browser-direct chunked S3 uploads** (manual Start queue + configurable concurrency), and transactional writes |
 | [Payment gateways](docs/domains/payment-gateway/README.md) | Midtrans/iPaymu, invoices, channel checkout, subscriptions, webhooks |
 | [Database safety](docs/platform/database-safety.md) | Prevent dev DB wipe; test vs MySQL; `composer test`; recovery |
-| [Approval matrix engine](docs/domains/approval/README.md) | Generic, code-free configurable approval workflow engine with conditional steps, parallel approver modes, SLA tracking, and delegation management - integrated with Order document type |
 | [List display modes (query & DataTables)](docs/web/ui-patterns.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 5 / jQuery 3.7 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/domains/navigation/README.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
 | [Activity notifications (per role + per user)](docs/domains/notification/README.md) | Generic event-driven notification engine: per-type audiences in **DB via seeder** (hybrid with code catalogue), per-user read state, navbar bell with polling or realtime websocket |

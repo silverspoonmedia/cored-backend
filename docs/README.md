@@ -38,7 +38,6 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Navigation | [domains/navigation/README.md](domains/navigation/README.md) — menu tree |
 | Notification | [domains/notification/README.md](domains/notification/README.md) — bell, role vs user |
 | ActivityLog | [domains/activity-log/README.md](domains/activity-log/README.md) — Spatie audit trail |
-| Approval | [domains/approval/README.md](domains/approval/README.md) — matrix engine |
 | PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) |
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, FH grace/purge (core) |
 | Playground | [domains/playground/README.md](domains/playground/README.md) — demo users CRUD (non-prod; orders retired) |

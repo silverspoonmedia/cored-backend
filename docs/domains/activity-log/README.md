@@ -1,12 +1,11 @@
 # ActivityLog — Spatie audit trail
 
-Immutable forensic log of domain mutations. **Not** the notification bell, **not** `approval_logs`.
+Immutable forensic log of domain mutations. **Not** the notification bell.
 
 | System | Table | Purpose |
 |--------|-------|---------|
 | Spatie activitylog | `activity_log` | Audit trail |
 | Notifications | `activity_notifications` | In-app bell |
-| Approval | `approval_logs` | Workflow journal |
 
 Code: `app/Domain/ActivityLog/`. Config: `config/activitylog.php`.
 

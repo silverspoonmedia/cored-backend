@@ -26,7 +26,7 @@ class ApiRoutingRegistrationTest extends TestCase
             ->assertJsonPath('status', 'success');
     }
 
-    public function test_approval_routes_are_registered_under_v1_prefix(): void
+    public function test_removed_approval_routes_are_not_registered(): void
     {
         $user = User::factory()->create();
         $user->assignRole('Admin');
@@ -34,6 +34,6 @@ class ApiRoutingRegistrationTest extends TestCase
 
         $this->withToken($token)
             ->getJson('/api/v1/approvals/my-pending')
-            ->assertOk();
+            ->assertNotFound();
     }
 }
