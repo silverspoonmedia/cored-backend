@@ -41,7 +41,7 @@ app/
 │   ├── ActivityLog/    # Spatie audit trail (core)
 │   ├── Playground/     # Demo users, orders, attachments (locked)
 │   ├── Product/        # Stub product scaffold (catalog retired)
-│   ├── FileHosting/    # Nested files + chunk S3 upload (locked product)
+│   ├── FileHosting/    # Nested files, chunk S3 upload, Drive-lite share (locked product)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
 │   └── Approval/       # Approval matrix (core)
 ├── Http/Middleware/    # Kernel
@@ -70,7 +70,7 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `approval.php` | Approvals + workflow admin |
 | `payment-gateway.php` | Gateways, invoices, subscriptions |
 | `product.php` | Product domain stub (empty) |
-| `file-hosting.php` | File hosting folders/files/uploads |
+| `file-hosting.php` | File hosting (auth + public share) folders/files/uploads |
 
 Global: `routes/api.php` (ping) + `routes/api/playground.php` (non-production).
 
