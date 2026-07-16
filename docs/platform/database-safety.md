@@ -34,7 +34,7 @@ php artisan db:seed
 # ALLOW_DESTRUCTIVE_DB=true then migrate:fresh --seed
 ```
 
-Default sign-in: `admin@example.com` / `123456789`. Orders/invoices are **not** recreated by seed.
+Default sign-in: `admin@example.com` / `123456789`. Invoices are **not** recreated by seed.
 
 ## Defense layers
 

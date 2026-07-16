@@ -1,6 +1,6 @@
 # Web frontend (Blade + AdminLTE 4)
 
-API-first Blade admin: every web controller forwards to `/api/v1/*` (or playground). **No business logic, Form Requests, or `$this->authorize()` in the web layer.**
+API-first Blade admin: every web controller forwards to `/api/v1/*`. **No business logic, Form Requests, or `$this->authorize()` in the web layer.**
 
 ```
 Browser → Web controller → ApiClient → /api/v1/* → Services / Policies
@@ -31,7 +31,7 @@ When `HCAPTCHA_ENABLED=true`: invisible widget + `MonolithHcaptcha.execute()` on
 
 | Piece | Role |
 |-------|------|
-| `ApiClient` | HTTP to same host `/api/v1`; Bearer from cookie; `withPrefix('api/playground')` for demo; forwards `locale` cookie |
+| `ApiClient` | HTTP to same host `/api/v1`; Bearer from cookie; optional `withPrefix()` for non-default mounts; forwards `locale` cookie |
 | `ConsumesApi` | Map API envelope → AJAX JSON or redirect; `stayOnPageOnSuccess` for edit-in-place; `apiPayload()` strips `_token`/`_method` (optional field allowlist) |
 
 Web forwards raw input (except `_token`/`_method`); **API validates**. Never call `$request->validate()` in a web controller — that reintroduces dual rule sources and drifts from FormRequests.
@@ -62,7 +62,7 @@ Client: `window.MonolithApi.handleResponse()` / `datatableAjaxError()`.
 
 Domain files under `routes/web/*.php` loaded from `routes/web.php` with `web.guest` / `web.auth`. API still authorizes every forwarded call.
 
-Major groups: auth guest, dashboard/profile, users (+ datatable proxy), menus, notifications, orders (playground), activity-logs, payments/invoices.
+Major groups: auth guest, dashboard/profile, users (+ datatable proxy), menus, notifications, activity-logs, payments/invoices, services, file-hosting.
 
 Layout namespace: `WEB_LAYOUT` / `config/web.php` (default `adminlte4`).
 

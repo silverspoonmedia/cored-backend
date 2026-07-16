@@ -30,13 +30,12 @@ class ApiClient
 {
     /**
      * Path prefix every call is mounted under. Defaults to the versioned API
-     * (`api/v1`) — where all production features live. The global playground
-     * surface (`api/playground`) is reachable via {@see self::withPrefix()}.
+     * (`api/v1`) — where all product features live. Override via {@see self::withPrefix()}.
      */
     private string $prefix = 'api/v1';
 
     /**
-     * Return a clone targeting a different API prefix (e.g. `api/playground`).
+     * Return a clone targeting a different API prefix (e.g. a non-default mount).
      * Immutable so the shared singleton's default prefix is never mutated.
      */
     public function withPrefix(string $prefix): self

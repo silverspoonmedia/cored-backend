@@ -189,7 +189,6 @@ Includes API feature tests (`FileHostingTest`), web controller tests (`FileManag
 ## Related
 
 - [service/README.md](../service/README.md) — entitlements, grace, renew, paid unlimited
-- [product/README.md](../product/README.md) — catalog stub (retired Items UI)
 - [identity/README.md](../identity/README.md) — H-RBAC / `domain_kind`
 - [platform/architecture.md](../../platform/architecture.md)
 - [integration/spa-gateway.md](../../integration/spa-gateway.md) — SPA path via Gateway

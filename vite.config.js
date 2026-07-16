@@ -14,7 +14,6 @@ export default defineConfig({
                 'resources/css/file-hosting/file-hosting.css',
                 'resources/js/app.js',
                 'resources/js/notifications/bell.js',
-                'resources/js/orders/direct-upload.js',
                 'resources/js/file-hosting/direct-upload.js',
                 'resources/js/file-hosting/file-manager.js',
                 'resources/js/payments/checkout.js',
