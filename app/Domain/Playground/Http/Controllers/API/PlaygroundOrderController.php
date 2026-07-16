@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Domain\Playground\Http\Controllers\API;
 
