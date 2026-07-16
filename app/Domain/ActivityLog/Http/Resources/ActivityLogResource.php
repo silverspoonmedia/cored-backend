@@ -5,7 +5,6 @@ namespace App\Domain\ActivityLog\Http\Resources;
 use App\Domain\ActivityLog\Support\CryptoActivityPropertyPresenter;
 use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Models\Menu;
-use App\Domain\Playground\Models\Order;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -71,7 +70,6 @@ class ActivityLogResource extends JsonResource
         if ($subject instanceof Model) {
             return match (true) {
                 $subject instanceof User => $subject->name.' ('.$subject->email.')',
-                $subject instanceof Order => $subject->order_number,
                 $subject instanceof Menu => is_array($subject->name)
                     ? ($subject->getTranslation('name', app()->getLocale()) ?: (string) reset($subject->name))
                     : (string) $subject->name,

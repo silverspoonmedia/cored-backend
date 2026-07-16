@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
-use App\Domain\Playground\Models\Attachment;
 use App\Support\Encryption\DecryptionContext;
 use App\Support\Encryption\EncryptedEnvelope;
 use App\Support\Encryption\EnvelopeEncryptionService;
@@ -29,7 +28,6 @@ class EncryptionMigrateP0Command extends Command
     {
         $counts = [
             'users.two_factor_secret' => $this->migrateUsers(),
-            'attachments.cached_url' => $this->migrateAttachments(),
             'invoices.gateway_request_payload' => $this->migrateInvoiceColumn('gateway_request_payload'),
             'invoices.gateway_response_payload' => $this->migrateInvoiceColumn('gateway_response_payload'),
             'cache.value' => $this->migrateSensitiveCacheRows(),
@@ -59,32 +57,6 @@ class EncryptionMigrateP0Command extends Command
 
                     $user->forceFill([
                         'two_factor_secret' => $this->encryption->migrateLegacyValue($raw),
-                    ])->saveQuietly();
-
-                    $migrated++;
-                }
-            });
-
-        return $migrated;
-    }
-
-    private function migrateAttachments(): int
-    {
-        $migrated = 0;
-
-        Attachment::query()
-            ->whereNotNull('cached_url')
-            ->orderBy('id')
-            ->chunkById(100, function ($attachments) use (&$migrated): void {
-                foreach ($attachments as $attachment) {
-                    $raw = $attachment->getRawOriginal('cached_url');
-
-                    if (! is_string($raw) || $raw === '' || EncryptedEnvelope::isEnvelopeJson($raw)) {
-                        continue;
-                    }
-
-                    $attachment->forceFill([
-                        'cached_url' => $this->encryption->migrateLegacyValue($raw),
                     ])->saveQuietly();
 
                     $migrated++;

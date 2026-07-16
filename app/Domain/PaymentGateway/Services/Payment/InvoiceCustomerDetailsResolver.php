@@ -5,7 +5,6 @@ namespace App\Domain\PaymentGateway\Services\Payment;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\Subscription;
-use App\Domain\Playground\Models\Order;
 use App\Domain\Service\Models\ServicePurchase;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -108,14 +107,6 @@ class InvoiceCustomerDetailsResolver
         $invoice->loadMissing('invoiceable');
 
         $invoiceable = $invoice->invoiceable;
-
-        if ($invoiceable instanceof Order) {
-            return array_filter([
-                'name' => $this->stringOrNull($invoiceable->customer_name),
-                'email' => $this->stringOrNull($invoiceable->customer_email),
-                'phone' => $this->stringOrNull($invoiceable->customer_phone),
-            ], fn ($v) => $v !== null);
-        }
 
         if ($invoiceable instanceof Subscription) {
             return array_filter([

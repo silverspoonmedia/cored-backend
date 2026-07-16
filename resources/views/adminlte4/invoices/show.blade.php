@@ -9,7 +9,6 @@
         $invoiceableType = (string) ($invoice['invoiceable_type'] ?? '');
         $invoiceableId = $invoice['invoiceable_id'] ?? null;
         $purchaseId = $invoiceableType === 'service_purchase' ? $invoiceableId : null;
-        $orderId = $invoiceableType === 'order' ? $invoiceableId : null;
 
         if ($invoiceStatus === 'paid') {
             $paymentUi = ['label' => __('web/payments.show.status.paid'), 'variant' => 'success', 'step' => 3];
@@ -102,13 +101,6 @@
                     <div class="ois-sidebar-card__title">{{ __('web/payments.invoices.view_purchase') }}</div>
                     <a href="{{ route('service-purchases.show', $purchaseId) }}" class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-box-arrow-up-right me-1"></i>{{ __('web/payments.invoices.view_purchase') }}
-                    </a>
-                </div>
-            @elseif ($orderId && \Illuminate\Support\Facades\Route::has('orders.show'))
-                <div class="ois-sidebar-card">
-                    <div class="ois-sidebar-card__title">{{ __('web/payments.invoices.view_order') }}</div>
-                    <a href="{{ route('orders.show', $orderId) }}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>{{ __('web/payments.invoices.view_order') }}
                     </a>
                 </div>
             @endif

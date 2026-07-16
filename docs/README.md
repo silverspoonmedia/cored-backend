@@ -19,7 +19,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 | Document | Topic |
 |----------|-------|
-| [architecture.md](platform/architecture.md) | Logical monorepo, core/locked/removable, routes, namespaces |
+| [architecture.md](platform/architecture.md) | Logical monorepo, kind core\|product + locked lifecycle, routes, namespaces |
 | [api-routing.md](platform/api-routing.md) | Global vs versioned API |
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
@@ -39,10 +39,8 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Notification | [domains/notification/README.md](domains/notification/README.md) — bell, role vs user |
 | ActivityLog | [domains/activity-log/README.md](domains/activity-log/README.md) — Spatie audit trail |
 | PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) |
-| Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, FH grace/purge (core) |
-| Playground | [domains/playground/README.md](domains/playground/README.md) — demo users CRUD (non-prod; orders retired) |
-| Product | [domains/product/README.md](domains/product/README.md) — stub scaffold (catalog retired) |
-| File Hosting | [domains/file-hosting/README.md](domains/file-hosting/README.md) — nested folders, chunk S3, link share (locked) |
+| Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, FH grace/purge (core domain) |
+| File Hosting | [domains/file-hosting/README.md](domains/file-hosting/README.md) — nested folders, chunk S3, link share (product, locked) |
 
 ## Web UI patterns
 

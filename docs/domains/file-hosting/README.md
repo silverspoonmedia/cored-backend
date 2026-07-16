@@ -1,6 +1,6 @@
 # File Hosting — product domain
 
-Locked product domain for personal nested folders, S3-compatible chunk upload, and Drive-lite link sharing.
+Product domain (`kind => product`, `locked => true`) for personal nested folders, S3-compatible chunk upload, and Drive-lite link sharing.
 
 | | |
 |--|--|
@@ -85,7 +85,7 @@ Browser-direct PUT / multipart lives in shared kernel support, not duplicated pe
 | `App\Support\Storage\SerializesDirectUploadSession` | Shared JSON session shape for init/status (`upload_id`, `strategy`, `parts`, …) |
 | `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, promote → `HostedFile` |
 
-Config for thresholds/TTL stays under `config/file-hosting.php`. Playground order attachments (if re-enabled) use the same engine with `config/attachments.php`.
+Config for thresholds/TTL stays under `config/file-hosting.php`.
 
 ### Public — no auth
 

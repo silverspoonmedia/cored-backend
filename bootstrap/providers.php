@@ -6,8 +6,6 @@ use App\Providers\Domain\IdentityServiceProvider;
 use App\Providers\Domain\NavigationServiceProvider;
 use App\Providers\Domain\NotificationServiceProvider;
 use App\Providers\Domain\PaymentGatewayServiceProvider;
-use App\Providers\Domain\PlaygroundServiceProvider;
-use App\Providers\Domain\ProductServiceProvider;
 use App\Providers\Domain\FileHostingServiceProvider;
 use App\Providers\Domain\ServiceServiceProvider;
 use App\Providers\EncryptionServiceProvider;
@@ -19,9 +17,7 @@ return [
     NavigationServiceProvider::class,
     NotificationServiceProvider::class,
     ActivityLogServiceProvider::class,
-    PlaygroundServiceProvider::class,
     PaymentGatewayServiceProvider::class,
-    ProductServiceProvider::class,
     FileHostingServiceProvider::class,
     ServiceServiceProvider::class,
 ];

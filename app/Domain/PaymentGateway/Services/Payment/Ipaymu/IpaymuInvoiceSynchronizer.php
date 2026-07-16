@@ -3,12 +3,10 @@
 namespace App\Domain\PaymentGateway\Services\Payment\Ipaymu;
 
 // Enum
-use App\Domain\Playground\Enums\OrderStatus;
 use App\Domain\PaymentGateway\Enums\SubscriptionStatus;
 // Service
 use App\Domain\PaymentGateway\Models\Invoice;
 // Model
-use App\Domain\Playground\Models\Order;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\Billing\InvoiceFundsLedgerService;
 use App\Domain\Service\Models\ServicePurchase;
@@ -120,9 +118,7 @@ class IpaymuInvoiceSynchronizer
 
             $invoice->save();
 
-            if ($invoice->invoiceable instanceof Order) {
-                $this->syncOrderIfNeeded($invoice->invoiceable, $invoiceStatus);
-            } elseif ($invoice->invoiceable instanceof Subscription) {
+            if ($invoice->invoiceable instanceof Subscription) {
                 $this->syncSubscriptionIfNeeded($invoice->invoiceable, $invoiceStatus);
             } elseif ($invoice->invoiceable instanceof ServicePurchase) {
                 $this->syncServicePurchaseIfNeeded($invoice->invoiceable, $invoiceStatus);
@@ -318,25 +314,6 @@ class IpaymuInvoiceSynchronizer
         }
 
         return null;
-    }
-
-    protected function syncOrderIfNeeded(Order $order, string $invoiceStatus): void
-    {
-        if (in_array($invoiceStatus, ['paid', 'partially_refunded'], true)) {
-            if ($order->status !== OrderStatus::Completed) {
-                $order->status = OrderStatus::Completed;
-                $order->save();
-            }
-
-            return;
-        }
-
-        if (in_array($invoiceStatus, ['cancelled', 'expired', 'failed'], true)) {
-            if ($order->status === OrderStatus::Pending) {
-                $order->status = OrderStatus::Cancelled;
-                $order->save();
-            }
-        }
     }
 
     protected function syncSubscriptionIfNeeded(Subscription $subscription, string $invoiceStatus): void

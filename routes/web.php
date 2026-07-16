@@ -34,11 +34,9 @@ Route::middleware('web.guest')->group(function (): void {
 Route::middleware('web.auth')->group(function (): void {
     require __DIR__.'/web/identity.php';
     require __DIR__.'/web/navigation.php';
-    require __DIR__.'/web/playground.php';
     require __DIR__.'/web/payment-gateway.php';
     require __DIR__.'/web/activity-log.php';
     require __DIR__.'/web/notification.php';
-    require __DIR__.'/web/product.php';
     require __DIR__.'/web/file-hosting.php';
     require __DIR__.'/web/service.php';
 });

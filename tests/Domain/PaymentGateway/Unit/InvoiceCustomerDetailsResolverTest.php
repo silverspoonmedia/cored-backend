@@ -8,7 +8,6 @@ use App\Domain\PaymentGateway\Enums\SubscriptionStatus;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceCustomerDetailsResolver;
-use App\Domain\Playground\Models\Order;
 use App\Domain\Service\Models\ServicePurchase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
@@ -79,22 +78,6 @@ class InvoiceCustomerDetailsResolverTest extends TestCase
         $this->assertSame('Override Name', $buyer['name']);
         $this->assertSame('override@example.com', $buyer['email']);
         $this->assertSame('08123456789', $buyer['phone']);
-    }
-
-    public function test_order_invoiceable_customer_fields(): void
-    {
-        $order = Order::factory()->create([
-            'customer_name' => 'Order Customer',
-            'customer_email' => 'order@example.com',
-            'customer_phone' => '08111111111',
-        ]);
-        $invoice = $this->invoiceFor($order->id, 'order');
-
-        $buyer = $this->resolver->forIpaymu($invoice);
-
-        $this->assertSame('Order Customer', $buyer['name']);
-        $this->assertSame('order@example.com', $buyer['email']);
-        $this->assertSame('08111111111', $buyer['phone']);
     }
 
     public function test_subscription_invoiceable_subscriber_fields(): void

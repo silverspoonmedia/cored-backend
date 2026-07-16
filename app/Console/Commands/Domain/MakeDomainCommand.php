@@ -12,11 +12,11 @@ class MakeDomainCommand extends Command
     /** @var string */
     protected $signature = 'domain:make
         {name : Domain name in StudlyCase or kebab-case (e.g. Billing, activity-log)}
-        {--locked : Create as locked against removal (default)}
-        {--removable : Create as removable (overrides --locked)}';
+        {--locked : Create as locked product against removal (default)}
+        {--removable : Create as removable product (overrides --locked)}';
 
     /** @var string */
-    protected $description = 'Scaffold a new domain module under app/Domain/* (locked by default)';
+    protected $description = 'Scaffold a new product domain module under app/Domain/* (locked by default)';
 
     public function handle(DomainManager $domains): int
     {
@@ -30,8 +30,8 @@ class MakeDomainCommand extends Command
 
         $locked = $this->resolveLocked();
 
-        $kind = $locked ? 'locked' : 'removable';
-        $this->info("Creating domain [{$name}] ({$kind})…");
+        $lifecycle = $locked ? 'locked' : 'removable';
+        $this->info("Creating domain [{$name}] (product, {$lifecycle})…");
         $this->newLine();
 
         try {
@@ -48,7 +48,7 @@ class MakeDomainCommand extends Command
 
         $slug = $domains->slug($name);
 
-        $this->components->info("Domain [{$name}] created ({$kind}).");
+        $this->components->info("Domain [{$name}] created (product, {$lifecycle}).");
         $this->line('Created:');
         $this->line("  - <info>app/Domain/{$name}/</info>");
         $this->line("  - <info>app/Providers/Domain/{$name}ServiceProvider.php</info>");
@@ -59,7 +59,7 @@ class MakeDomainCommand extends Command
 
         if ($locked) {
             $this->newLine();
-            $this->line('This domain is <comment>locked</comment>. To remove later: set <info>\'locked\' => false</info> in <info>config/domains.php</info>, then run <info>domain:remove</info>.');
+            $this->line('This product domain is <comment>locked</comment>. To remove later: set <info>\'locked\' => false</info> in <info>config/domains.php</info>, then run <info>domain:remove</info>.');
         }
 
         $this->newLine();

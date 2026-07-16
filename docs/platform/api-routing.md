@@ -6,7 +6,7 @@ Two **independent** layers: **global** (unversioned) and **versioned**. They do 
 
 | Layer | Role |
 |-------|------|
-| **Global** (`/api/*`) | Small stable surface: liveness, non-prod playground demos |
+| **Global** (`/api/*`) | Small stable surface: liveness only (`GET /api/ping`) |
 | **Versioned** (`/api/v{N}/*`) | **All product business logic** |
 
 Do not mirror the same endpoints on both layers. Breaking changes → new version (`v2`), not in-place contract breaks.
@@ -15,23 +15,24 @@ Do not mirror the same endpoints on both layers. Breaking changes → new versio
 
 | Layer | Route files | Controllers | Prefix | Name prefix |
 |-------|-------------|-------------|--------|-------------|
-| Global | `routes/api.php` + `routes/api/playground.php` | Domain Playground API | `/api` | *(none)* |
+| Global | `routes/api.php` | `App\Http\Controllers\API\PingController` | `/api` | *(none)* |
 | Versioned | `routes/api/v{N}.php` + `routes/api/v{N}/*.php` | `App\Domain\{Domain}\Http\Controllers\API\V{N}` | `/api/v{N}` | `api.v{N}.` |
 
 ## Directory layout
 
 ```
 routes/
-├── api.php
+├── api.php             # GET /api/ping only
 ├── web.php
 ├── api/
-│   ├── playground.php
 │   └── v1.php          # loader
 │       ├── identity.php
 │       ├── navigation.php
 │       ├── notification.php
 │       ├── activity-log.php
-│       └── payment-gateway.php
+│       ├── payment-gateway.php
+│       ├── service.php
+│       └── file-hosting.php
 └── web/
     ├── identity-guest.php
     ├── identity.php
@@ -39,7 +40,8 @@ routes/
     ├── notification.php
     ├── activity-log.php
     ├── payment-gateway.php
-    └── playground.php
+    ├── service.php
+    └── file-hosting.php
 ```
 
 Paths inside version files are relative to the version prefix.
@@ -64,8 +66,7 @@ JSON errors for `api/*` via `$exceptions->shouldRenderJsonWhen(...)`.
 
 | Path | When | Auth | Purpose |
 |------|------|------|---------|
-| `GET /api/ping` | Always | None | Liveness (`Pong Global`) |
-| `/api/playground/*` | Non-production | None | Demo CRUD — [Playground](../domains/playground/README.md) |
+| `GET /api/ping` | Always | None | Liveness (`api/common.pong`) |
 
 ## Versioned routes
 

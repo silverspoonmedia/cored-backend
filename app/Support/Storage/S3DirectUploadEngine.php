@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
  * Shared S3-compatible multipart / single-PUT presign engine.
  *
  * Domain upload services own session models, ownership, quota, and path layout;
- * this class owns only storage mechanics so FileHosting and Playground stay DRY.
+ * this class owns only storage mechanics so FileHosting (and other upload surfaces) stay DRY.
  */
 class S3DirectUploadEngine
 {

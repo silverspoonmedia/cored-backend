@@ -1,6 +1,3 @@
 <?php
 
-// use App\Http\Controllers\API\V2\PlaygroundController;
-// use Illuminate\Support\Facades\Route;
-
-// Route::get('ping', [PlaygroundController::class, 'ping']);
+// API v2 routes — reserved for future versioned surface.

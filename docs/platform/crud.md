@@ -1,8 +1,8 @@
 # CRUD architecture & repository pattern
 
-Simple API CRUD layering, when to use `EloquentCrudRepository`, and the Playground references.
+Simple API CRUD layering and when to use `EloquentCrudRepository`.
 
-Production features live on `/api/v1/*`. Playground under `/api/playground/*` is **demo only** (non-production). See [api-routing.md](api-routing.md), [architecture.md](architecture.md).
+Production features live on `/api/v1/*`. See [api-routing.md](api-routing.md), [architecture.md](architecture.md).
 
 ## When to use `EloquentCrudRepository`
 
@@ -30,7 +30,7 @@ Never put business logic in the generic repository. Standard five-action CRUD �
 Route::apiResource('users', UserController::class)->except(['create', 'edit']);
 ```
 
-**References:** Playground users (`routes/api/playground.php`, names `playground.users.*`); v1 users (`routes/api/v1/identity.php`).
+**References:** v1 users (`routes/api/v1/identity.php`); File Hosting folders/files under `routes/api/v1/file-hosting.php`.
 
 **Not** `apiResource` when you need extra actions, dual list/DataTable modes, per-verb permissions, or optional-auth reads — see [Navigation](../domains/navigation/README.md), [ui-patterns](../web/ui-patterns.md).
 
@@ -53,7 +53,7 @@ Do **not** copy-paste full rule arrays between Store/Update. Prefer domain `Http
 | Pattern | Example |
 |---------|---------|
 | Shared field map + modality | `App\Support\Http\Requests\Concerns\ModalFieldRules` (`storeRules` / `updateRules`) |
-| Domain catalog | Service `ServiceCatalogRules`, Product `ItemRules`, PaymentGateway gateway/subscription concerns |
+| Domain catalog | Service `ServiceCatalogRules`, PaymentGateway gateway/subscription concerns |
 | Micro-rules | FileHosting `FileHostingRequestRules` (rename/move/bulk/visibility via `Visibility::values()`) |
 | Identity users | `UserMutationRules` (assignable roles + password once) |
 
@@ -65,22 +65,17 @@ Keep separate Store/Update classes for route binding; only the **rules body** is
 HTTP → Form Request → Controller → Service → Repository → Model
 ```
 
-## Playground Users (simple CRUD)
+## Identity Users (simple CRUD)
 
-- Controller: `PlaygroundController` → `UserService` → `EloquentCrudRepositoryInterface` + `User::class`
-- Binding: kernel `AppServiceProvider`
-- Resources: `PlaygroundUserResource`
-- Rules example: disposable email, last-user delete
+Reference for shared-repo CRUD: Identity `UserController` → user services/repos under `app/Domain/Identity/`, routes in `routes/api/v1/identity.php`.
 
 API envelope: `ApiResponse` (`status`, `message`, optional `data`). List/show use Eloquent API Resources under `App\Domain\{Domain}\Http\Resources\…`.
 
-## Master-detail aggregates
+## Master-detail / aggregate writes
 
 Multi-table atomic writes → **dedicated repository** + `DB::transaction()`.
 
-**Reference:** Playground Orders — `OrderRepository` (`createWithDetails` / `updateWithDetails` / `deleteWithDetails`), `OrderService` (totals, rules), attachments via presigned S3. Detail sync is **ID-preserving** (update by id, insert without id, delete omitted lines).
-
-Full detail: [domains/playground/README.md](../domains/playground/README.md).
+Domain-specific examples: Service catalog prices, File Hosting folder trees + upload sessions. Prefer domain READMEs over inventing a global demo surface.
 
 ## Evolving to a dedicated repository
 
@@ -98,11 +93,5 @@ Do not extend `EloquentCrudRepository` with domain methods.
 3. Shared or dedicated repository
 4. API Resource(s) for list/show
 5. Thin controller
-6. `apiResource` or explicit routes as appropriate
-7. Unit (service/controller) + feature HTTP tests
-
-## Related
-
-- [web/blade-admin.md](../web/blade-admin.md) — Blade consumes same API
-- [domains/identity/README.md](../domains/identity/README.md) — production user CRUD
-- [identifiers.md](identifiers.md) — UUID keys
+6. Tests under `tests/Domain/{Domain}/`
+7. Routes under `routes/api/v1/{slug}.php`

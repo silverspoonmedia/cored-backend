@@ -2,31 +2,55 @@
 
 Logical monorepo: domain code under `app/Domain/{Domain}/` in one Laravel app and git repo. Gateway and Frontend are **separate repositories**; they depend on Monolith **HTTP contracts**, not PHP namespaces.
 
-## Core, locked, removable
+## Glossary (two axes)
 
-| Kind | Domains | `domain:remove` |
-|------|---------|-----------------|
-| **Core** (platform) | Identity, Navigation, Notification, ActivityLog, PaymentGateway, Service (catalog + entitlements + FX) + Kernel | **Always refused** — `DomainManager::PLATFORM_CORE`; flipping `core` in config does nothing |
-| **Locked** (product) | Default for `domain:make` | Refused until `'locked' => false` in [`config/domains.php`](../../config/domains.php) |
-| **Removable** | Playground, or `domain:make --removable` | Allowed (`--force`) |
+Do **not** collapse taxonomy and lifecycle into one label.
+
+| Term | Axis | Meaning |
+|------|------|---------|
+| **Core domain** | Taxonomy (`kind`) | Foundation. Without it the app does not run well (Identity, Navigation, Notification, ActivityLog, PaymentGateway, Service). |
+| **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (FileHosting). Extends core (Identity, H-RBAC, payments, …). |
+| **`locked`** | Lifecycle (product only) | `domain:remove` refuses until you set `'locked' => false` in [`config/domains.php`](../../config/domains.php). |
+| **Removable** | Derived | Product with `locked => false`. Not a config key. |
+| **`DomainManager::PLATFORM_CORE`** | Hard guard | Never-remove list. Config cannot override. |
+| **RBAC `domain_kind`** | Separate system | Spatie roles/permissions catalog ownership (`core` \| `product`). Same words, **not** this registry. See [Identity — Core vs product RBAC](../domains/identity/README.md#core-vs-product-rbac). |
+
+### Registry vs removal
+
+| Kind | Examples | `domain:remove` |
+|------|----------|-----------------|
+| **Core** | Identity, Navigation, Notification, ActivityLog, PaymentGateway, Service + Kernel | **Always refused** — `PLATFORM_CORE`; flipping `kind` in config does nothing |
+| **Product + locked** | Default for `domain:make`; FileHosting | Refused until `'locked' => false` in config |
+| **Product + removable** | `domain:make --removable` | Allowed (`--force`) |
 
 There is **no** `domain:unlock` command — unlock is a deliberate config edit.
+
+### Config shape
+
+```php
+// config/domains.php
+'Identity' => ['kind' => 'core'],
+'FileHosting' => ['kind' => 'product', 'locked' => true],
+// removable product: ['kind' => 'product', 'locked' => false]
+```
+
+Core entries omit `locked` (N/A). Product entries always carry `locked`.
 
 ## Day-2 commands
 
 ```powershell
 php artisan domain:list
-php artisan domain:make Billing                 # locked by default
+php artisan domain:make Billing                 # product, locked by default
 php artisan domain:make Scratch --removable
 php artisan domain:remove Scratch --force
-# Locked: edit config/domains.php → locked false, then domain:remove
+# Locked product: edit config/domains.php → locked false, then domain:remove
 ```
 
 | Command | Effect |
 |---------|--------|
-| `domain:list` | Name, kind, whether `app/Domain/{Name}` exists |
-| `domain:make` | Scaffold folders, provider, route stubs, tests; register everywhere |
-| `domain:remove` | Delete domain PHP/routes/tests/provider; **not** migrations |
+| `domain:list` | Name, **Kind** (`core`\|`product`), **Removal** (`never`\|`locked`\|`removable`), whether `app/Domain/{Name}` exists |
+| `domain:make` | Scaffold folders, provider, route stubs, tests; register as **product** (locked by default) |
+| `domain:remove` | Delete domain PHP/routes/tests/provider; **not** migrations. Refuses core and locked product. |
 
 Implementation: [`DomainManager`](../../app/Support/Domain/DomainManager.php), `app/Console/Commands/Domain/*`.
 
@@ -39,9 +63,7 @@ app/
 │   ├── Navigation/     # Menu tree (core)
 │   ├── Notification/   # Activity notifications (core)
 │   ├── ActivityLog/    # Spatie audit trail (core)
-│   ├── Playground/     # Demo users CRUD only (locked; orders retired)
-│   ├── Product/        # Stub product scaffold (catalog retired)
-│   ├── FileHosting/    # Nested files, chunk S3 upload, Drive-lite share (locked product)
+│   ├── FileHosting/    # Nested files, chunk S3 upload, Drive-lite share (product, locked)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
 │   └── Service/        # Catalog, entitlements, DB FX→IDR, FH grace/purge (core)
 ├── Http/Middleware/    # Kernel
@@ -69,10 +91,9 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `activity-log.php` | Activity logs |
 | `payment-gateway.php` | Gateways, invoices, subscriptions |
 | `service.php` | Service catalog, checkout, service purchases |
-| `product.php` | Product domain stub (empty) |
 | `file-hosting.php` | File hosting (auth + public share) folders/files/uploads |
 
-Global: `routes/api.php` (ping) + `routes/api/playground.php` (non-production).
+Global: `routes/api.php` — `GET /api/ping` only (`App\Http\Controllers\API\PingController`).
 
 **Public URLs stay stable** when route files split — e.g. `/api/v1/users/*`.
 
@@ -89,13 +110,13 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 ## Cross-domain dependencies
 
 - **Identity** (`User`, `Role`, `Permission`) is the hub — other domains import those models.
-- **RBAC catalog** lives in Identity only. Roles/permissions carry `domain_kind` (`core` | `product`) so platform and product catalogs share Spatie tables without colliding on hierarchy. This is **not** the same as the module registry in [`config/domains.php`](../../config/domains.php) (`core` / `locked` for `domain:remove`). Details: [identity README — Core vs product RBAC](../domains/identity/README.md#core-vs-product-rbac).
+- **RBAC catalog** lives in Identity only. Roles/permissions carry `domain_kind` (`core` | `product`) so platform and product catalogs share Spatie tables without colliding on hierarchy. This is **not** the same as the module registry in [`config/domains.php`](../../config/domains.php) (`kind` + `locked` for `domain:list` / `domain:remove`). Details: [identity README — Core vs product RBAC](../domains/identity/README.md#core-vs-product-rbac).
 - **Product H-RBAC when core is not enough:** Core seeds a fixed platform ladder (Root → User) and platform permissions. If a **product** domain needs a richer hierarchy, more roles, or domain-specific permissions, **add new roles and permissions with `domain_kind = product`** (own seeder, own level ladder). Do **not** overload or rename core roles. Spatie names stay globally unique — use product-prefixed names (e.g. `Billing Admin`, not a second `Admin`). Product levels never drive platform user-management H-RBAC; wire product authorization in that domain’s routes/policies/services.
 - Do not import domain services across boundaries unless explicit and documented.
 
 ## Adding a new domain
 
-1. `php artisan domain:make {Name}` (or `--removable`)
+1. `php artisan domain:make {Name}` (or `--removable`) — always scaffolds a **product** domain
 2. Implement under `app/Domain/{Name}/`
 3. Fill `routes/api/v1/{slug}.php` and `routes/web/{slug}.php`
 4. Bind repos/policies in the generated ServiceProvider

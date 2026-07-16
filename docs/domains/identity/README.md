@@ -76,7 +76,9 @@ Roles seeded in `RoleSeeder` (Root, Admin, Moderator, Management, User) — all 
 | `domain_kind` | `roles`, `permissions` | `core`, `product` | Catalog ownership (platform vs product modules) |
 | `level` | `roles` only | unsigned int, nullable | Hierarchy **scoped per `domain_kind`** — unique `(domain_kind, level)` |
 
-- **Spatie names stay globally unique** on `(name, guard_name)`. Product must not reuse core names (`Admin`, `view user`, …). Prefer e.g. `Playground Admin`.
+This is **not** the module registry in [`config/domains.php`](../../../config/domains.php) (`kind` + `locked` for `domain:list` / `domain:remove`). Same words (core/product) for taxonomy; different systems. See [platform/architecture.md](../../platform/architecture.md).
+
+- **Spatie names stay globally unique** on `(name, guard_name)`. Product must not reuse core names (`Admin`, `view user`, …). Prefer e.g. `File Hosting Admin`.
 - **H-RBAC user management uses core roles only.** Product role levels never change list/view/edit/delete/assignable for platform users.
 - **Permission checks** (`permission:…`, `$user->can()`) remain **name-based**; `domain_kind` tags seed ownership and future admin filters, not Gate resolution.
 - **Cross-kind pivots OK:** a core role may hold product permissions via `role_has_permissions`.

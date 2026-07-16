@@ -71,23 +71,27 @@ class DomainCommandsTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_domain_list_shows_core_locked_and_removable_kinds(): void
+    public function test_domain_list_shows_kind_and_removal_axes(): void
     {
         $domains = app(DomainManager::class);
 
         $this->assertSame('core', $domains->kind('Identity'));
         $this->assertSame('core', $domains->kind('PaymentGateway'));
-        $this->assertSame('locked', $domains->kind('Playground'));
+        $this->assertSame('product', $domains->kind('FileHosting'));
+
+        $this->assertSame('never', $domains->removalStatus('Identity'));
+        $this->assertSame('locked', $domains->removalStatus('FileHosting'));
 
         $this->artisan('domain:list')
             ->assertSuccessful()
             ->expectsOutputToContain('Identity')
             ->expectsOutputToContain('PaymentGateway')
-            ->expectsOutputToContain('Playground')
-            ->expectsOutputToContain('platform (never removable)');
+            ->expectsOutputToContain('FileHosting')
+            ->expectsOutputToContain('foundation (never removable)')
+            ->expectsOutputToContain('unlock via config/domains.php');
     }
 
-    public function test_domain_make_defaults_to_locked(): void
+    public function test_domain_make_defaults_to_locked_product(): void
     {
         $this->artisan('domain:make', [
             'name' => self::TEST_DOMAIN,
@@ -96,9 +100,12 @@ class DomainCommandsTest extends TestCase
 
         $config = File::get($this->domainsConfigPath);
         $this->assertStringContainsString(
-            "'".self::TEST_DOMAIN."' => ['core' => false, 'locked' => true]",
+            "'".self::TEST_DOMAIN."' => ['kind' => 'product', 'locked' => true]",
             $config
         );
+
+        $this->assertSame('product', app(DomainManager::class)->kind(self::TEST_DOMAIN));
+        $this->assertSame('locked', app(DomainManager::class)->removalStatus(self::TEST_DOMAIN));
 
         $this->artisan('domain:remove', [
             'name' => self::TEST_DOMAIN,
@@ -125,14 +132,16 @@ class DomainCommandsTest extends TestCase
         // Manual unlock — the only supported unlock path.
         $contents = File::get($this->domainsConfigPath);
         $contents = str_replace(
-            "'".self::TEST_DOMAIN."' => ['core' => false, 'locked' => true]",
-            "'".self::TEST_DOMAIN."' => ['core' => false, 'locked' => false]",
+            "'".self::TEST_DOMAIN."' => ['kind' => 'product', 'locked' => true]",
+            "'".self::TEST_DOMAIN."' => ['kind' => 'product', 'locked' => false]",
             $contents
         );
         File::put($this->domainsConfigPath, $contents);
         config([
-            'domains.'.self::TEST_DOMAIN => ['core' => false, 'locked' => false],
+            'domains.'.self::TEST_DOMAIN => ['kind' => 'product', 'locked' => false],
         ]);
+
+        $this->assertSame('removable', app(DomainManager::class)->removalStatus(self::TEST_DOMAIN));
 
         $this->artisan('domain:remove', [
             'name' => self::TEST_DOMAIN,
@@ -151,7 +160,7 @@ class DomainCommandsTest extends TestCase
 
         $config = File::get($this->domainsConfigPath);
         $this->assertStringContainsString(
-            "'".self::TEST_DOMAIN."' => ['core' => false, 'locked' => false]",
+            "'".self::TEST_DOMAIN."' => ['kind' => 'product', 'locked' => false]",
             $config
         );
 
@@ -211,14 +220,16 @@ class DomainCommandsTest extends TestCase
         // Prove config cannot unlock platform core.
         $contents = File::get($this->domainsConfigPath);
         $contents = str_replace(
-            "'Identity' => ['core' => true]",
-            "'Identity' => ['core' => false, 'locked' => false]",
+            "'Identity' => ['kind' => 'core']",
+            "'Identity' => ['kind' => 'product', 'locked' => false]",
             $contents
         );
         File::put($this->domainsConfigPath, $contents);
-        config(['domains.Identity' => ['core' => false, 'locked' => false]]);
+        config(['domains.Identity' => ['kind' => 'product', 'locked' => false]]);
 
         $this->assertTrue(app(DomainManager::class)->isPlatformCore('Identity'));
+        $this->assertSame('core', app(DomainManager::class)->kind('Identity'));
+        $this->assertSame('never', app(DomainManager::class)->removalStatus('Identity'));
 
         $this->artisan('domain:remove', [
             'name' => 'Identity',

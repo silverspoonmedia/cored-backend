@@ -35,7 +35,7 @@ Tabular index endpoints support:
 | default / `display_mode=query` | `{ status, message, data }` |
 | `display_mode=datatable` or `draw` present | Yajra JSON + per-row `actions[]` |
 
-Covered lists: playground users/orders, v1 users, menus list/trashed. Navigation **tree** excluded.
+Covered lists: v1 users, menus list/trashed, file-hosting lists where applicable. Navigation **tree** excluded.
 
 ### Actions contract
 

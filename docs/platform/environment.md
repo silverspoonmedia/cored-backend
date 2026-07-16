@@ -77,7 +77,6 @@ Never bare `config:cache` without verify. After secret changes: `config:rebuild`
 | `HCAPTCHA_ENABLED` | false | true |
 | Cache/queue | database | redis |
 | Notifications | polling | realtime |
-| Playground routes | on | on staging / **off** production |
 
 ## Production checklist
 
@@ -85,7 +84,7 @@ Never bare `config:cache` without verify. After secret changes: `config:rebuild`
 - Secure session cookies; `JWT_SECRET` set
 - `GATEWAY_ENFORCE=true` + strong `GATEWAY_SECRET` matching gateway
 - `config:rebuild`; `oci:kms-verify` if OCI
-- Playground absent: `route:list --path=api/playground` under production env
+- Liveness: `route:list --path=api/ping` shows `GET /api/ping`
 
 ## Public gateway perimeter
 
