@@ -70,13 +70,10 @@ class PaymentCheckoutController extends Controller
 
     public function createChannelCheckout(Request $request, string $invoice): JsonResponse
     {
-        $request->validate([
-            'channel_code' => ['required', 'string', 'max:64'],
-        ]);
-
-        $response = $this->api()->post("invoices/{$invoice}/channel-checkout", [
-            'channel_code' => $request->string('channel_code')->toString(),
-        ]);
+        $response = $this->api()->post(
+            "invoices/{$invoice}/channel-checkout",
+            $this->apiPayload($request, ['channel_code']),
+        );
 
         if (! $response->successful()) {
             $payload = [

@@ -36,6 +36,8 @@ Emails follow recipient `users.locale` (`HasLocalePreference` on `User`).
 
 Switch (Blade): `GET /locale/{locale}` — cookie; authenticated also updates `users.locale`.
 
+Both Blade (`Web\LocaleController`) and API (`POST /api/v1/auth/locale`) call `App\Support\Localization\LocalePreference::apply()` so cookie + user-column persist stay one implementation.
+
 ### Web ↔ API sync
 
 Blade proxies via real HTTP (`ApiClient`). Web resolves locale first; `ApiClient` forwards it as the `locale` cookie so the API request does not fall back to English.

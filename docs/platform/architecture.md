@@ -46,7 +46,7 @@ app/
 │   └── Service/        # Catalog, entitlements, DB FX→IDR, FH grace/purge (core)
 ├── Http/Middleware/    # Kernel
 ├── Repositories/Eloquent/EloquentCrudRepository.php
-├── Support/            # Api, DataTable, Web, Auth, Domain (Kernel)
+├── Support/            # Api, DataTable, Storage (S3 direct upload), Localization, Web, Auth, Domain (Kernel)
 ├── Exceptions/         # BusinessRuleException (Kernel)
 └── Providers/
     ├── AppServiceProvider.php

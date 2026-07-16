@@ -8,11 +8,13 @@ use App\Domain\PaymentGateway\Http\Requests\Payments\Midtrans\MidtransRefundRequ
 use App\Domain\PaymentGateway\Http\Requests\Payments\Midtrans\MidtransSnapTokenRequest;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransPaymentService;
-use App\Support\ApiResponder;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class MidtransPaymentController extends Controller
 {
+    use ApiResponse;
+
     public function __construct(
         private MidtransPaymentService $payments
     ) {}
@@ -70,11 +72,11 @@ class MidtransPaymentController extends Controller
     protected function fromServiceResult(array $result): JsonResponse
     {
         if (! $result['ok']) {
-            return ApiResponder::error($result['message'], $result['http']);
+            return $this->errorResponse($result['message'], $result['http']);
         }
 
         $code = $result['http'] ?? 200;
 
-        return ApiResponder::success($result['data'], __($result['message_key']), $code);
+        return $this->successResponse($result['data'], __($result['message_key']), $code);
     }
 }

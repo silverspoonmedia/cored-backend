@@ -36,7 +36,16 @@ class ServiceController extends Controller
 
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->post('services', $this->payload($request));
+        $response = $this->api()->post('services', $this->apiPayload($request, [
+            'code',
+            'name',
+            'description',
+            'billing_interval',
+            'fulfillment_target',
+            'entitlement',
+            'status',
+            'prices',
+        ]));
 
         return $this->respondFromApi(
             $request,
@@ -75,7 +84,16 @@ class ServiceController extends Controller
 
     public function update(Request $request, string $service): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->put("services/{$service}", $this->payload($request));
+        $response = $this->api()->put("services/{$service}", $this->apiPayload($request, [
+            'code',
+            'name',
+            'description',
+            'billing_interval',
+            'fulfillment_target',
+            'entitlement',
+            'status',
+            'prices',
+        ]));
 
         return $this->respondFromApi(
             $request,
@@ -127,46 +145,4 @@ class ServiceController extends Controller
         );
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function payload(Request $request): array
-    {
-        $data = $request->only([
-            'code',
-            'name',
-            'description',
-            'billing_interval',
-            'fulfillment_target',
-            'entitlement',
-            'status',
-        ]);
-
-        $prices = $request->input('prices');
-
-        if (is_array($prices)) {
-            $data['prices'] = array_values(array_filter(array_map(
-                function (mixed $row): ?array {
-                    if (! is_array($row)) {
-                        return null;
-                    }
-
-                    $currency = strtoupper(trim((string) ($row['currency'] ?? '')));
-                    $amount = $row['amount'] ?? null;
-
-                    if ($currency === '' || $amount === null || $amount === '') {
-                        return null;
-                    }
-
-                    return [
-                        'currency' => $currency,
-                        'amount' => $amount,
-                    ];
-                },
-                $prices,
-            )));
-        }
-
-        return $data;
-    }
 }

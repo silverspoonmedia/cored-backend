@@ -4,22 +4,22 @@ namespace App\Domain\Playground\Support\Orders;
 
 use App\Domain\Playground\Exceptions\AttachmentUploadException;
 use App\Domain\Playground\Models\AttachmentUpload;
-use Aws\S3\S3Client;
-use Illuminate\Filesystem\AwsS3V3Adapter;
+use App\Support\Storage\S3DirectUploadEngine;
+use App\Support\Storage\S3DirectUploadException;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
  * Orchestrates browser-direct uploads to an S3-compatible disk via presigned URLs.
  *
- * Small files receive a single presigned PUT; larger files use S3 multipart upload
- * with per-part presigned URLs. Session state lives in {@see AttachmentUpload}.
+ * Storage mechanics live in {@see S3DirectUploadEngine}; session state lives in
+ * {@see AttachmentUpload}.
  */
 class DirectAttachmentUploadService
 {
     public function __construct(
         private readonly OrderAttachmentStorage $attachmentStorage,
+        private readonly S3DirectUploadEngine $engine = new S3DirectUploadEngine,
     ) {}
 
     /**
@@ -42,25 +42,17 @@ class DirectAttachmentUploadService
 
         $threshold = (int) config('attachments.multipart_threshold_bytes');
         $chunkSize = (int) config('attachments.chunk_size_bytes');
-        $strategy = $size < $threshold
-            ? AttachmentUpload::STRATEGY_SINGLE
-            : AttachmentUpload::STRATEGY_MULTIPART;
+        $strategy = $this->engine->resolveStrategy($size, $threshold);
+        $partCount = $this->engine->expectedPartCount($strategy, $size, $chunkSize);
 
         $s3UploadId = null;
-        $partCount = 1;
 
-        if ($strategy === AttachmentUpload::STRATEGY_MULTIPART) {
-            $client = $this->s3Client($diskName);
-            $bucket = $this->bucket($diskName);
-
-            $result = $client->createMultipartUpload([
-                'Bucket' => $bucket,
-                'Key' => $path,
-                'ContentType' => $mime,
-            ]);
-
-            $s3UploadId = $result['UploadId'];
-            $partCount = (int) max(1, (int) ceil($size / $chunkSize));
+        if ($strategy === S3DirectUploadEngine::STRATEGY_MULTIPART) {
+            try {
+                $s3UploadId = $this->engine->createMultipartUpload($diskName, $path, $mime);
+            } catch (S3DirectUploadException $e) {
+                throw $this->mapEngineException($e);
+            }
         }
 
         $upload = AttachmentUpload::query()->create([
@@ -79,13 +71,17 @@ class DirectAttachmentUploadService
 
         $initialParts = $this->presignParts(
             $upload,
-            $this->missingPartNumbers($upload, $partCount),
+            $this->engine->missingPartNumbers(
+                $upload->recordedParts(),
+                $partCount,
+                (int) config('attachments.max_presigned_parts_per_response'),
+            ),
         );
 
         return [
             'upload' => $upload,
             'strategy' => $strategy,
-            'chunk_size' => $strategy === AttachmentUpload::STRATEGY_MULTIPART ? $chunkSize : $size,
+            'chunk_size' => $strategy === S3DirectUploadEngine::STRATEGY_MULTIPART ? $chunkSize : $size,
             'part_count' => $partCount,
             'parts' => $initialParts,
         ];
@@ -109,14 +105,18 @@ class DirectAttachmentUploadService
         return [
             'upload' => $upload,
             'strategy' => $upload->strategy,
-            'chunk_size' => $upload->strategy === AttachmentUpload::STRATEGY_MULTIPART
+            'chunk_size' => $upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART
                 ? (int) config('attachments.chunk_size_bytes')
                 : $upload->size,
             'part_count' => $partCount,
             'recorded_parts' => $upload->recordedParts(),
             'parts' => $this->presignParts(
                 $upload,
-                $this->missingPartNumbers($upload, $partCount),
+                $this->engine->missingPartNumbers(
+                    $upload->recordedParts(),
+                    $partCount,
+                    (int) config('attachments.max_presigned_parts_per_response'),
+                ),
             ),
         ];
     }
@@ -129,7 +129,7 @@ class DirectAttachmentUploadService
     {
         $upload = $this->findUsableUpload($uploadUuid);
 
-        if ($upload->strategy !== AttachmentUpload::STRATEGY_MULTIPART) {
+        if ($upload->strategy !== S3DirectUploadEngine::STRATEGY_MULTIPART) {
             throw new AttachmentUploadException(__('api/playground-attachment-uploads.multipart_only'));
         }
 
@@ -156,7 +156,7 @@ class DirectAttachmentUploadService
     {
         $upload = $this->findUsableUpload($uploadUuid);
 
-        if ($upload->strategy !== AttachmentUpload::STRATEGY_MULTIPART) {
+        if ($upload->strategy !== S3DirectUploadEngine::STRATEGY_MULTIPART) {
             throw new AttachmentUploadException(__('api/playground-attachment-uploads.multipart_only'));
         }
 
@@ -186,21 +186,32 @@ class DirectAttachmentUploadService
     public function complete(string $uploadUuid, ?array $parts = null): array
     {
         $upload = $this->findUsableUpload($uploadUuid);
+        $merged = $upload->parts;
 
-        if ($upload->strategy === AttachmentUpload::STRATEGY_SINGLE) {
+        if ($upload->strategy === S3DirectUploadEngine::STRATEGY_SINGLE) {
             if (! $this->attachmentStorage->pathExists($upload->path, $upload->disk)) {
                 throw new AttachmentUploadException(__('api/playground-attachment-uploads.object_missing'));
             }
         } else {
-            $merged = $this->mergeParts($upload, $parts);
-            $this->assertAllPartsPresent($upload, $merged);
-            $this->completeMultipartUpload($upload, $merged);
+            $merged = $this->engine->mergeParts($upload->recordedParts(), $parts);
+
+            try {
+                $this->engine->assertAllPartsPresent($merged, $this->expectedPartCount($upload));
+                $this->engine->completeMultipartUpload(
+                    $upload->disk,
+                    $upload->path,
+                    (string) $upload->s3_upload_id,
+                    $merged,
+                );
+            } catch (S3DirectUploadException $e) {
+                throw $this->mapEngineException($e);
+            }
         }
 
         $upload->forceFill([
             'status' => AttachmentUpload::STATUS_COMPLETED,
             'completed_at' => Carbon::now(),
-            'parts' => $upload->strategy === AttachmentUpload::STRATEGY_MULTIPART
+            'parts' => $upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART
                 ? $merged
                 : $upload->parts,
         ])->save();
@@ -223,15 +234,16 @@ class DirectAttachmentUploadService
             return;
         }
 
-        if ($upload->strategy === AttachmentUpload::STRATEGY_MULTIPART && $upload->s3_upload_id) {
-            $client = $this->s3Client($upload->disk);
-            $bucket = $this->bucket($upload->disk);
-
-            $client->abortMultipartUpload([
-                'Bucket' => $bucket,
-                'Key' => $upload->path,
-                'UploadId' => $upload->s3_upload_id,
-            ]);
+        if ($upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART && $upload->s3_upload_id) {
+            try {
+                $this->engine->abortMultipartUpload(
+                    $upload->disk,
+                    $upload->path,
+                    (string) $upload->s3_upload_id,
+                );
+            } catch (S3DirectUploadException $e) {
+                throw $this->mapEngineException($e);
+            }
         } elseif ($this->attachmentStorage->pathExists($upload->path, $upload->disk)) {
             $this->attachmentStorage->deleteMany([['path' => $upload->path, 'disk' => $upload->disk]]);
         }
@@ -287,18 +299,15 @@ class DirectAttachmentUploadService
 
     protected function assertUploadAllowed(string $name, string $mime, int $size): void
     {
-        if ($size <= 0) {
-            throw new AttachmentUploadException(__('api/playground-attachment-uploads.invalid_size'));
-        }
-
-        $maxSize = (int) config('attachments.max_file_size_bytes');
-
-        if ($size > $maxSize) {
-            throw new AttachmentUploadException(__('api/playground-attachment-uploads.file_too_large'));
-        }
-
-        if (trim($name) === '') {
-            throw new AttachmentUploadException(__('api/playground-attachment-uploads.invalid_name'));
+        try {
+            $this->engine->assertUploadAllowed(
+                $name,
+                $mime,
+                $size,
+                (int) config('attachments.max_file_size_bytes'),
+            );
+        } catch (S3DirectUploadException $e) {
+            throw $this->mapEngineException($e);
         }
     }
 
@@ -339,32 +348,11 @@ class DirectAttachmentUploadService
 
     private function expectedPartCount(AttachmentUpload $upload): int
     {
-        if ($upload->strategy === AttachmentUpload::STRATEGY_SINGLE) {
-            return 1;
-        }
-
-        $chunkSize = (int) config('attachments.chunk_size_bytes');
-
-        return (int) max(1, (int) ceil($upload->size / $chunkSize));
-    }
-
-    /**
-     * @return list<int>
-     */
-    private function missingPartNumbers(AttachmentUpload $upload, int $partCount): array
-    {
-        $recorded = array_column($upload->recordedParts(), 'part_number');
-        $missing = [];
-
-        for ($part = 1; $part <= $partCount; $part++) {
-            if (! in_array($part, $recorded, true)) {
-                $missing[] = $part;
-            }
-        }
-
-        $limit = (int) config('attachments.max_presigned_parts_per_response');
-
-        return array_slice($missing, 0, $limit);
+        return $this->engine->expectedPartCount(
+            $upload->strategy,
+            $upload->size,
+            (int) config('attachments.chunk_size_bytes'),
+        );
     }
 
     /**
@@ -373,133 +361,19 @@ class DirectAttachmentUploadService
      */
     private function presignParts(AttachmentUpload $upload, array $partNumbers): array
     {
-        if ($partNumbers === []) {
-            return [];
+        try {
+            return $this->engine->presignParts(
+                $upload->disk,
+                $upload->path,
+                $upload->strategy,
+                $upload->mime,
+                $upload->s3_upload_id,
+                $partNumbers,
+                (int) config('attachments.presign_ttl_minutes'),
+            );
+        } catch (S3DirectUploadException $e) {
+            throw $this->mapEngineException($e);
         }
-
-        $disk = $this->diskAdapter($upload->disk);
-        $expiresAt = Carbon::now()->addMinutes((int) config('attachments.presign_ttl_minutes'));
-        $signed = [];
-
-        if ($upload->strategy === AttachmentUpload::STRATEGY_SINGLE) {
-            $payload = $disk->temporaryUploadUrl($upload->path, $expiresAt, [
-                'ContentType' => $upload->mime,
-            ]);
-
-            return [[
-                'part_number' => 1,
-                'url' => $payload['url'],
-                'headers' => $payload['headers'] ?? [],
-            ]];
-        }
-
-        $client = $disk->getClient();
-        $bucket = $this->bucket($upload->disk);
-
-        foreach ($partNumbers as $partNumber) {
-            $command = $client->getCommand('UploadPart', [
-                'Bucket' => $bucket,
-                'Key' => $upload->path,
-                'UploadId' => $upload->s3_upload_id,
-                'PartNumber' => $partNumber,
-            ]);
-
-            $request = $client->createPresignedRequest($command, $expiresAt);
-            $signed[] = [
-                'part_number' => $partNumber,
-                'url' => (string) $request->getUri(),
-                'headers' => $request->getHeaders(),
-            ];
-        }
-
-        return $signed;
-    }
-
-    /**
-     * @param  list<array{part_number: int, etag: string, size?: int}>|null  $incoming
-     * @return list<array{part_number: int, etag: string, size: int}>
-     */
-    private function mergeParts(AttachmentUpload $upload, ?array $incoming): array
-    {
-        $byNumber = [];
-
-        foreach ($upload->recordedParts() as $part) {
-            $byNumber[(int) $part['part_number']] = [
-                'part_number' => (int) $part['part_number'],
-                'etag' => trim((string) $part['etag'], '"'),
-                'size' => (int) ($part['size'] ?? 0),
-            ];
-        }
-
-        foreach ($incoming ?? [] as $part) {
-            $partNumber = (int) ($part['part_number'] ?? 0);
-            $etag = trim((string) ($part['etag'] ?? ''), '"');
-
-            if ($partNumber < 1 || $etag === '') {
-                continue;
-            }
-
-            $byNumber[$partNumber] = [
-                'part_number' => $partNumber,
-                'etag' => $etag,
-                'size' => (int) ($part['size'] ?? 0),
-            ];
-        }
-
-        ksort($byNumber);
-
-        return array_values($byNumber);
-    }
-
-    /**
-     * @param  list<array{part_number: int, etag: string, size: int}>  $parts
-     */
-    private function assertAllPartsPresent(AttachmentUpload $upload, array $parts): void
-    {
-        $expected = $this->expectedPartCount($upload);
-
-        if (count($parts) !== $expected) {
-            throw new AttachmentUploadException(__('api/playground-attachment-uploads.incomplete_parts'));
-        }
-
-        for ($part = 1; $part <= $expected; $part++) {
-            $found = false;
-
-            foreach ($parts as $record) {
-                if ((int) $record['part_number'] === $part) {
-                    $found = true;
-                    break;
-                }
-            }
-
-            if (! $found) {
-                throw new AttachmentUploadException(__('api/playground-attachment-uploads.incomplete_parts'));
-            }
-        }
-    }
-
-    /**
-     * @param  list<array{part_number: int, etag: string, size: int}>  $parts
-     */
-    private function completeMultipartUpload(AttachmentUpload $upload, array $parts): void
-    {
-        $client = $this->s3Client($upload->disk);
-        $bucket = $this->bucket($upload->disk);
-
-        $client->completeMultipartUpload([
-            'Bucket' => $bucket,
-            'Key' => $upload->path,
-            'UploadId' => $upload->s3_upload_id,
-            'MultipartUpload' => [
-                'Parts' => array_map(
-                    fn (array $part): array => [
-                        'ETag' => '"'.$part['etag'].'"',
-                        'PartNumber' => $part['part_number'],
-                    ],
-                    $parts,
-                ),
-            ],
-        ]);
     }
 
     /**
@@ -517,30 +391,17 @@ class DirectAttachmentUploadService
         ];
     }
 
-    private function diskAdapter(string $diskName): AwsS3V3Adapter
+    private function mapEngineException(S3DirectUploadException $e): AttachmentUploadException
     {
-        $disk = Storage::disk($diskName);
+        $message = match ($e->reason) {
+            S3DirectUploadException::UNSUPPORTED_DISK => __('api/playground-attachment-uploads.unsupported_disk'),
+            S3DirectUploadException::INCOMPLETE_PARTS => __('api/playground-attachment-uploads.incomplete_parts'),
+            S3DirectUploadException::INVALID_SIZE => __('api/playground-attachment-uploads.invalid_size'),
+            S3DirectUploadException::FILE_TOO_LARGE => __('api/playground-attachment-uploads.file_too_large'),
+            S3DirectUploadException::INVALID_NAME => __('api/playground-attachment-uploads.invalid_name'),
+            default => $e->getMessage(),
+        };
 
-        if (! $disk instanceof AwsS3V3Adapter) {
-            throw new AttachmentUploadException(__('api/playground-attachment-uploads.unsupported_disk'));
-        }
-
-        return $disk;
-    }
-
-    private function s3Client(string $diskName): S3Client
-    {
-        return $this->diskAdapter($diskName)->getClient();
-    }
-
-    private function bucket(string $diskName): string
-    {
-        $bucket = config('filesystems.disks.'.$diskName.'.bucket');
-
-        if (! is_string($bucket) || $bucket === '') {
-            throw new AttachmentUploadException(__('api/playground-attachment-uploads.unsupported_disk'));
-        }
-
-        return $bucket;
+        return new AttachmentUploadException($message);
     }
 }

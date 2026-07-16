@@ -77,7 +77,7 @@ class OrderController extends Controller
 
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->post('orders', $this->payload($request));
+        $response = $this->api()->post('orders', $this->apiPayload($request));
 
         return $this->respondFromApi(
             $request,
@@ -115,7 +115,7 @@ class OrderController extends Controller
 
     public function update(Request $request, string $order): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->put("orders/{$order}", $this->payload($request));
+        $response = $this->api()->put("orders/{$order}", $this->apiPayload($request));
 
         return $this->respondFromApi(
             $request,
@@ -164,11 +164,6 @@ class OrderController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function payload(Request $request): array
-    {
-        return $request->except(['_token', '_method']);
-    }
-
     /**
      * Rewrite the API's allowed-action keys onto clickable web routes.
      *

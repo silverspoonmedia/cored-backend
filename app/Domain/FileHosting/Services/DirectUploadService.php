@@ -8,15 +8,16 @@ use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
 use App\Domain\FileHosting\Support\ObjectStorage;
 use App\Domain\Identity\Models\User;
-use Aws\S3\S3Client;
-use Illuminate\Filesystem\AwsS3V3Adapter;
+use App\Support\Storage\S3DirectUploadEngine;
+use App\Support\Storage\S3DirectUploadException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
  * Browser-direct uploads to S3-compatible storage with ownership + quota + promote-to-file.
+ *
+ * Storage mechanics live in {@see S3DirectUploadEngine}; this service owns domain rules only.
  */
 class DirectUploadService
 {
@@ -25,6 +26,7 @@ class DirectUploadService
         private readonly FolderRepositoryInterface $folders,
         private readonly AccessService $access,
         private readonly QuotaService $quota,
+        private readonly S3DirectUploadEngine $engine = new S3DirectUploadEngine,
     ) {}
 
     /**
@@ -63,25 +65,17 @@ class DirectUploadService
 
         $threshold = (int) config('file-hosting.multipart_threshold_bytes');
         $chunkSize = (int) config('file-hosting.chunk_size_bytes');
-        $strategy = $size < $threshold
-            ? FileUpload::STRATEGY_SINGLE
-            : FileUpload::STRATEGY_MULTIPART;
+        $strategy = $this->engine->resolveStrategy($size, $threshold);
+        $partCount = $this->engine->expectedPartCount($strategy, $size, $chunkSize);
 
         $s3UploadId = null;
-        $partCount = 1;
 
-        if ($strategy === FileUpload::STRATEGY_MULTIPART) {
-            $client = $this->s3Client($diskName);
-            $bucket = $this->bucket($diskName);
-
-            $result = $client->createMultipartUpload([
-                'Bucket' => $bucket,
-                'Key' => $path,
-                'ContentType' => $mime,
-            ]);
-
-            $s3UploadId = $result['UploadId'];
-            $partCount = (int) max(1, (int) ceil($size / $chunkSize));
+        if ($strategy === S3DirectUploadEngine::STRATEGY_MULTIPART) {
+            try {
+                $s3UploadId = $this->engine->createMultipartUpload($diskName, $path, $mime);
+            } catch (S3DirectUploadException $e) {
+                throw $this->mapEngineException($e);
+            }
         }
 
         $upload = FileUpload::query()->create([
@@ -101,13 +95,17 @@ class DirectUploadService
 
         $initialParts = $this->presignParts(
             $upload,
-            $this->missingPartNumbers($upload, $partCount),
+            $this->engine->missingPartNumbers(
+                $upload->recordedParts(),
+                $partCount,
+                (int) config('file-hosting.max_presigned_parts_per_response'),
+            ),
         );
 
         return [
             'upload' => $upload,
             'strategy' => $strategy,
-            'chunk_size' => $strategy === FileUpload::STRATEGY_MULTIPART ? $chunkSize : $size,
+            'chunk_size' => $strategy === S3DirectUploadEngine::STRATEGY_MULTIPART ? $chunkSize : $size,
             'part_count' => $partCount,
             'parts' => $initialParts,
         ];
@@ -131,14 +129,18 @@ class DirectUploadService
         return [
             'upload' => $upload,
             'strategy' => $upload->strategy,
-            'chunk_size' => $upload->strategy === FileUpload::STRATEGY_MULTIPART
+            'chunk_size' => $upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART
                 ? (int) config('file-hosting.chunk_size_bytes')
                 : $upload->size,
             'part_count' => $partCount,
             'recorded_parts' => $upload->recordedParts(),
             'parts' => $this->presignParts(
                 $upload,
-                $this->missingPartNumbers($upload, $partCount),
+                $this->engine->missingPartNumbers(
+                    $upload->recordedParts(),
+                    $partCount,
+                    (int) config('file-hosting.max_presigned_parts_per_response'),
+                ),
             ),
         ];
     }
@@ -151,7 +153,7 @@ class DirectUploadService
     {
         $upload = $this->findUsableUpload($actor, $uploadUuid);
 
-        if ($upload->strategy !== FileUpload::STRATEGY_MULTIPART) {
+        if ($upload->strategy !== S3DirectUploadEngine::STRATEGY_MULTIPART) {
             throw new FileHostingException(__('api/file-hosting.upload.multipart_only'));
         }
 
@@ -185,14 +187,24 @@ class DirectUploadService
         return DB::transaction(function () use ($upload, $parts): array {
             $merged = $upload->parts;
 
-            if ($upload->strategy === FileUpload::STRATEGY_SINGLE) {
+            if ($upload->strategy === S3DirectUploadEngine::STRATEGY_SINGLE) {
                 if (! $this->storage->pathExists($upload->path, $upload->disk)) {
                     throw new FileHostingException(__('api/file-hosting.upload.object_missing'));
                 }
             } else {
-                $merged = $this->mergeParts($upload, $parts);
-                $this->assertAllPartsPresent($upload, $merged);
-                $this->completeMultipartUpload($upload, $merged);
+                $merged = $this->engine->mergeParts($upload->recordedParts(), $parts);
+
+                try {
+                    $this->engine->assertAllPartsPresent($merged, $this->expectedPartCount($upload));
+                    $this->engine->completeMultipartUpload(
+                        $upload->disk,
+                        $upload->path,
+                        (string) $upload->s3_upload_id,
+                        $merged,
+                    );
+                } catch (S3DirectUploadException $e) {
+                    throw $this->mapEngineException($e);
+                }
             }
 
             $this->assertUniqueFileName($upload->user_id, $upload->folder_id, $upload->original_name);
@@ -210,7 +222,7 @@ class DirectUploadService
             $upload->forceFill([
                 'status' => FileUpload::STATUS_COMPLETED,
                 'completed_at' => Carbon::now(),
-                'parts' => $upload->strategy === FileUpload::STRATEGY_MULTIPART
+                'parts' => $upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART
                     ? $merged
                     : $upload->parts,
                 'promoted_file_id' => $file->id,
@@ -237,15 +249,16 @@ class DirectUploadService
             return;
         }
 
-        if ($upload->strategy === FileUpload::STRATEGY_MULTIPART && $upload->s3_upload_id) {
-            $client = $this->s3Client($upload->disk);
-            $bucket = $this->bucket($upload->disk);
-
-            $client->abortMultipartUpload([
-                'Bucket' => $bucket,
-                'Key' => $upload->path,
-                'UploadId' => $upload->s3_upload_id,
-            ]);
+        if ($upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART && $upload->s3_upload_id) {
+            try {
+                $this->engine->abortMultipartUpload(
+                    $upload->disk,
+                    $upload->path,
+                    (string) $upload->s3_upload_id,
+                );
+            } catch (S3DirectUploadException $e) {
+                throw $this->mapEngineException($e);
+            }
         } elseif ($this->storage->pathExists($upload->path, $upload->disk)) {
             $this->storage->deleteMany([['path' => $upload->path, 'disk' => $upload->disk]]);
         }
@@ -255,34 +268,19 @@ class DirectUploadService
 
     protected function assertUploadAllowed(string $name, string $mime, int $size): void
     {
-        if ($size <= 0) {
-            throw new FileHostingException(__('api/file-hosting.upload.invalid_size'));
-        }
-
-        $maxSize = (int) config('file-hosting.max_file_size_bytes');
-
-        if ($size > $maxSize) {
-            throw new FileHostingException(__('api/file-hosting.upload.file_too_large'));
-        }
-
-        if (trim($name) === '') {
-            throw new FileHostingException(__('api/file-hosting.upload.invalid_name'));
-        }
-
         $prefixes = config('file-hosting.allowed_mime_prefixes', []);
+        $prefixes = is_array($prefixes) ? $prefixes : [];
 
-        if (is_array($prefixes) && $prefixes !== []) {
-            $ok = false;
-            foreach ($prefixes as $prefix) {
-                if (is_string($prefix) && $prefix !== '' && str_starts_with($mime, $prefix)) {
-                    $ok = true;
-                    break;
-                }
-            }
-
-            if (! $ok) {
-                throw new FileHostingException(__('api/file-hosting.upload.mime_not_allowed'));
-            }
+        try {
+            $this->engine->assertUploadAllowed(
+                $name,
+                $mime,
+                $size,
+                (int) config('file-hosting.max_file_size_bytes'),
+                $prefixes,
+            );
+        } catch (S3DirectUploadException $e) {
+            throw $this->mapEngineException($e);
         }
     }
 
@@ -351,32 +349,11 @@ class DirectUploadService
 
     private function expectedPartCount(FileUpload $upload): int
     {
-        if ($upload->strategy === FileUpload::STRATEGY_SINGLE) {
-            return 1;
-        }
-
-        $chunkSize = (int) config('file-hosting.chunk_size_bytes');
-
-        return (int) max(1, (int) ceil($upload->size / $chunkSize));
-    }
-
-    /**
-     * @return list<int>
-     */
-    private function missingPartNumbers(FileUpload $upload, int $partCount): array
-    {
-        $recorded = array_column($upload->recordedParts(), 'part_number');
-        $missing = [];
-
-        for ($part = 1; $part <= $partCount; $part++) {
-            if (! in_array($part, $recorded, true)) {
-                $missing[] = $part;
-            }
-        }
-
-        $limit = (int) config('file-hosting.max_presigned_parts_per_response');
-
-        return array_slice($missing, 0, $limit);
+        return $this->engine->expectedPartCount(
+            $upload->strategy,
+            $upload->size,
+            (int) config('file-hosting.chunk_size_bytes'),
+        );
     }
 
     /**
@@ -385,133 +362,19 @@ class DirectUploadService
      */
     private function presignParts(FileUpload $upload, array $partNumbers): array
     {
-        if ($partNumbers === []) {
-            return [];
+        try {
+            return $this->engine->presignParts(
+                $upload->disk,
+                $upload->path,
+                $upload->strategy,
+                $upload->mime,
+                $upload->s3_upload_id,
+                $partNumbers,
+                (int) config('file-hosting.presign_ttl_minutes'),
+            );
+        } catch (S3DirectUploadException $e) {
+            throw $this->mapEngineException($e);
         }
-
-        $disk = $this->diskAdapter($upload->disk);
-        $expiresAt = Carbon::now()->addMinutes((int) config('file-hosting.presign_ttl_minutes'));
-
-        if ($upload->strategy === FileUpload::STRATEGY_SINGLE) {
-            $payload = $disk->temporaryUploadUrl($upload->path, $expiresAt, [
-                'ContentType' => $upload->mime,
-            ]);
-
-            return [[
-                'part_number' => 1,
-                'url' => $payload['url'],
-                'headers' => $payload['headers'] ?? [],
-            ]];
-        }
-
-        $client = $disk->getClient();
-        $bucket = $this->bucket($upload->disk);
-        $signed = [];
-
-        foreach ($partNumbers as $partNumber) {
-            $command = $client->getCommand('UploadPart', [
-                'Bucket' => $bucket,
-                'Key' => $upload->path,
-                'UploadId' => $upload->s3_upload_id,
-                'PartNumber' => $partNumber,
-            ]);
-
-            $request = $client->createPresignedRequest($command, $expiresAt);
-            $signed[] = [
-                'part_number' => $partNumber,
-                'url' => (string) $request->getUri(),
-                'headers' => $request->getHeaders(),
-            ];
-        }
-
-        return $signed;
-    }
-
-    /**
-     * @param  list<array{part_number: int, etag: string, size?: int}>|null  $incoming
-     * @return list<array{part_number: int, etag: string, size: int}>
-     */
-    private function mergeParts(FileUpload $upload, ?array $incoming): array
-    {
-        $byNumber = [];
-
-        foreach ($upload->recordedParts() as $part) {
-            $byNumber[(int) $part['part_number']] = [
-                'part_number' => (int) $part['part_number'],
-                'etag' => trim((string) $part['etag'], '"'),
-                'size' => (int) ($part['size'] ?? 0),
-            ];
-        }
-
-        foreach ($incoming ?? [] as $part) {
-            $partNumber = (int) ($part['part_number'] ?? 0);
-            $etag = trim((string) ($part['etag'] ?? ''), '"');
-
-            if ($partNumber < 1 || $etag === '') {
-                continue;
-            }
-
-            $byNumber[$partNumber] = [
-                'part_number' => $partNumber,
-                'etag' => $etag,
-                'size' => (int) ($part['size'] ?? 0),
-            ];
-        }
-
-        ksort($byNumber);
-
-        return array_values($byNumber);
-    }
-
-    /**
-     * @param  list<array{part_number: int, etag: string, size: int}>  $parts
-     */
-    private function assertAllPartsPresent(FileUpload $upload, array $parts): void
-    {
-        $expected = $this->expectedPartCount($upload);
-
-        if (count($parts) !== $expected) {
-            throw new FileHostingException(__('api/file-hosting.upload.incomplete_parts'));
-        }
-
-        for ($part = 1; $part <= $expected; $part++) {
-            $found = false;
-
-            foreach ($parts as $record) {
-                if ((int) $record['part_number'] === $part) {
-                    $found = true;
-                    break;
-                }
-            }
-
-            if (! $found) {
-                throw new FileHostingException(__('api/file-hosting.upload.incomplete_parts'));
-            }
-        }
-    }
-
-    /**
-     * @param  list<array{part_number: int, etag: string, size: int}>  $parts
-     */
-    private function completeMultipartUpload(FileUpload $upload, array $parts): void
-    {
-        $client = $this->s3Client($upload->disk);
-        $bucket = $this->bucket($upload->disk);
-
-        $client->completeMultipartUpload([
-            'Bucket' => $bucket,
-            'Key' => $upload->path,
-            'UploadId' => $upload->s3_upload_id,
-            'MultipartUpload' => [
-                'Parts' => array_map(
-                    fn (array $part): array => [
-                        'ETag' => '"'.$part['etag'].'"',
-                        'PartNumber' => $part['part_number'],
-                    ],
-                    $parts,
-                ),
-            ],
-        ]);
     }
 
     private function assertUniqueFileName(string $ownerId, ?string $folderId, string $name): void
@@ -525,22 +388,6 @@ class DirectUploadService
         if ($exists) {
             throw new FileHostingException(__('api/file-hosting.file_name_taken'));
         }
-    }
-
-    private function diskAdapter(string $diskName): AwsS3V3Adapter
-    {
-        $disk = Storage::disk($diskName);
-
-        if (! $disk instanceof AwsS3V3Adapter) {
-            throw new FileHostingException(__('api/file-hosting.upload.unsupported_disk'));
-        }
-
-        return $disk;
-    }
-
-    private function s3Client(string $diskName): S3Client
-    {
-        return $this->diskAdapter($diskName)->getClient();
     }
 
     /**
@@ -558,14 +405,18 @@ class DirectUploadService
         return (string) config('file-hosting.disk');
     }
 
-    private function bucket(string $diskName): string
+    private function mapEngineException(S3DirectUploadException $e): FileHostingException
     {
-        $bucket = config('filesystems.disks.'.$diskName.'.bucket');
+        $message = match ($e->reason) {
+            S3DirectUploadException::UNSUPPORTED_DISK => __('api/file-hosting.upload.unsupported_disk'),
+            S3DirectUploadException::INCOMPLETE_PARTS => __('api/file-hosting.upload.incomplete_parts'),
+            S3DirectUploadException::INVALID_SIZE => __('api/file-hosting.upload.invalid_size'),
+            S3DirectUploadException::FILE_TOO_LARGE => __('api/file-hosting.upload.file_too_large'),
+            S3DirectUploadException::INVALID_NAME => __('api/file-hosting.upload.invalid_name'),
+            S3DirectUploadException::MIME_NOT_ALLOWED => __('api/file-hosting.upload.mime_not_allowed'),
+            default => $e->getMessage(),
+        };
 
-        if (! is_string($bucket) || $bucket === '') {
-            throw new FileHostingException(__('api/file-hosting.upload.unsupported_disk'));
-        }
-
-        return $bucket;
+        return new FileHostingException($message);
     }
 }

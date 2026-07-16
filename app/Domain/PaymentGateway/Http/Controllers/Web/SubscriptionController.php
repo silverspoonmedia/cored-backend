@@ -58,7 +58,7 @@ class SubscriptionController extends Controller
 
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->post('subscriptions', $this->payload($request));
+        $response = $this->api()->post('subscriptions', $this->apiPayload($request));
 
         return $this->respondFromApi(
             $request,
@@ -96,7 +96,7 @@ class SubscriptionController extends Controller
 
     public function update(Request $request, string $subscription): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->put("subscriptions/{$subscription}", $this->payload($request));
+        $response = $this->api()->put("subscriptions/{$subscription}", $this->apiPayload($request));
 
         return $this->respondFromApi(
             $request,
@@ -116,14 +116,6 @@ class SubscriptionController extends Controller
             fn (): RedirectResponse => redirect()->route('subscriptions.index')->with('success', __('api/payments.subscriptions.deleted')),
             __('api/payments.subscriptions.deleted'),
         );
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function payload(Request $request): array
-    {
-        return $request->except(['_token', '_method']);
     }
 
     /**

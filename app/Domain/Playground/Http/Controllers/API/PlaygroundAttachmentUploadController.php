@@ -7,6 +7,7 @@ use App\Domain\Playground\Http\Requests\CompleteAttachmentUploadRequest;
 use App\Domain\Playground\Http\Requests\InitAttachmentUploadRequest;
 use App\Domain\Playground\Http\Requests\SignAttachmentUploadPartsRequest;
 use App\Domain\Playground\Support\Orders\DirectAttachmentUploadService;
+use App\Support\Storage\SerializesDirectUploadSession;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
@@ -16,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 class PlaygroundAttachmentUploadController extends Controller
 {
     use ApiResponse;
+    use SerializesDirectUploadSession;
 
     public function __construct(
         private readonly DirectAttachmentUploadService $uploads,
@@ -30,7 +32,7 @@ class PlaygroundAttachmentUploadController extends Controller
         );
 
         return $this->successResponse(
-            $this->serializeSession($result),
+            $this->serializeUploadSession($result),
             __('api/playground-attachment-uploads.initiated'),
             201,
         );
@@ -41,7 +43,7 @@ class PlaygroundAttachmentUploadController extends Controller
         $result = $this->uploads->status($upload);
 
         return $this->successResponse(
-            $this->serializeSession($result, includeRecorded: true),
+            $this->serializeUploadSession($result, includeRecorded: true),
             __('api/playground-attachment-uploads.status'),
         );
     }
@@ -80,30 +82,5 @@ class PlaygroundAttachmentUploadController extends Controller
         $this->uploads->abort($upload);
 
         return $this->successResponse(null, __('api/playground-attachment-uploads.aborted'));
-    }
-
-    /**
-     * @param  array<string, mixed>  $result
-     * @return array<string, mixed>
-     */
-    private function serializeSession(array $result, bool $includeRecorded = false): array
-    {
-        $upload = $result['upload'];
-
-        $payload = [
-            'upload_id' => $upload->id,
-            'strategy' => $result['strategy'],
-            'path' => $upload->path,
-            'chunk_size' => $result['chunk_size'],
-            'part_count' => $result['part_count'],
-            'parts' => $result['parts'],
-            'expires_at' => $upload->expires_at?->toIso8601String(),
-        ];
-
-        if ($includeRecorded) {
-            $payload['recorded_parts'] = $result['recorded_parts'] ?? $upload->recordedParts();
-        }
-
-        return $payload;
     }
 }

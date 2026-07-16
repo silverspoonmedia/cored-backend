@@ -32,9 +32,15 @@ When `HCAPTCHA_ENABLED=true`: invisible widget + `MonolithHcaptcha.execute()` on
 | Piece | Role |
 |-------|------|
 | `ApiClient` | HTTP to same host `/api/v1`; Bearer from cookie; `withPrefix('api/playground')` for demo; forwards `locale` cookie |
-| `ConsumesApi` | Map API envelope → AJAX JSON or redirect; `stayOnPageOnSuccess` for edit-in-place |
+| `ConsumesApi` | Map API envelope → AJAX JSON or redirect; `stayOnPageOnSuccess` for edit-in-place; `apiPayload()` strips `_token`/`_method` (optional field allowlist) |
 
-Web forwards raw input (except `_token`/`_method`); API validates.
+Web forwards raw input (except `_token`/`_method`); **API validates**. Never call `$request->validate()` in a web controller — that reintroduces dual rule sources and drifts from FormRequests.
+
+| Do | Don't |
+|----|--------|
+| `$this->apiPayload($request)` or `$this->apiPayload($request, ['field', …])` | Private `payload()` clones per controller |
+| Let API FormRequest normalize (prices, booleans) | Reshape domain data in Web before forward |
+| Rely on API 422 for bad input | Web-layer `validate()` then proxy |
 
 ### AJAX error contract
 

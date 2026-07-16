@@ -2,10 +2,13 @@
 
 namespace App\Domain\PaymentGateway\Http\Requests;
 
+use App\Domain\PaymentGateway\Http\Requests\Concerns\PaymentGatewayRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePaymentGatewayRequest extends FormRequest
 {
+    use PaymentGatewayRules;
+
     public function authorize(): bool
     {
         return true;
@@ -16,11 +19,6 @@ class StorePaymentGatewayRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'name' => ['required', 'string', 'max:64', 'unique:payment_gateways,name'],
-            'display_name' => ['required', 'string', 'max:255'],
-            'is_active' => ['sometimes', 'boolean'],
-            'priority' => ['sometimes', 'integer', 'min:0'],
-        ];
+        return $this->gatewayRules(forUpdate: false);
     }
 }

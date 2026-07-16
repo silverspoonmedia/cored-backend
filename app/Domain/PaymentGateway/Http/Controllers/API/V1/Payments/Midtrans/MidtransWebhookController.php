@@ -2,17 +2,19 @@
 
 namespace App\Domain\PaymentGateway\Http\Controllers\API\V1\Payments\Midtrans;
 
-use App\Http\Controllers\Controller;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransAccountLinkingWebhookService;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransNotificationPayloadType;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransPaymentNotificationService;
-use App\Support\ApiResponder;
+use App\Http\Controllers\Controller;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class MidtransWebhookController extends Controller
 {
+    use ApiResponse;
+
     public function __construct(
         private MidtransPaymentNotificationService $paymentNotification,
         private MidtransAccountLinkingWebhookService $accountLinkingWebhook
@@ -21,13 +23,13 @@ class MidtransWebhookController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         if ($request->isMethod('GET')) {
-            return ApiResponder::success(null, __('api/payments.midtrans.webhook_ping'));
+            return $this->successResponse(null, __('api/payments.midtrans.webhook_ping'));
         }
 
         $payload = $this->decodeJsonPayload($request);
 
         if ($payload === []) {
-            return ApiResponder::error(__('api/payments.midtrans.webhook_invalid_json'), 400);
+            return $this->errorResponse(__('api/payments.midtrans.webhook_invalid_json'), 400);
         }
 
         if (MidtransNotificationPayloadType::isAccountLinking($payload)) {
@@ -40,7 +42,7 @@ class MidtransWebhookController extends Controller
                 'subscription_id' => $payload['subscription']['id'] ?? $payload['id'] ?? null,
             ]);
 
-            return ApiResponder::success(null, __('api/payments.midtrans.webhook_subscription_ack'), 200);
+            return $this->successResponse(null, __('api/payments.midtrans.webhook_subscription_ack'), 200);
         }
 
         return $this->paymentNotification->handle($payload);

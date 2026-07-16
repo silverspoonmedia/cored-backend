@@ -2,10 +2,13 @@
 
 namespace App\Domain\FileHosting\Http\Requests;
 
+use App\Domain\FileHosting\Http\Requests\Concerns\FileHostingRequestRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class MoveFileRequest extends FormRequest
 {
+    use FileHostingRequestRules;
+
     public function authorize(): bool
     {
         return true;
@@ -16,9 +19,6 @@ class MoveFileRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'folder_id' => ['nullable', 'uuid'],
-            'user_id' => ['nullable', 'uuid'],
-        ];
+        return $this->moveTargetRules('folder_id');
     }
 }

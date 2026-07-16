@@ -2,16 +2,18 @@
 
 namespace App\Domain\PaymentGateway\Http\Controllers\API\V1;
 
-use App\Http\Controllers\Controller;
 use App\Domain\PaymentGateway\Http\Requests\IndexPaymentChannelRequest;
 use App\Domain\PaymentGateway\Http\Requests\UpdatePaymentChannelRequest;
 use App\Domain\PaymentGateway\Http\Resources\PaymentChannelResource;
 use App\Domain\PaymentGateway\Services\PaymentChannelService;
-use App\Support\ApiResponder;
+use App\Http\Controllers\Controller;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class PaymentChannelController extends Controller
 {
+    use ApiResponse;
+
     public function __construct(
         private PaymentChannelService $service,
     ) {}
@@ -22,7 +24,7 @@ class PaymentChannelController extends Controller
             ? $this->service->listAll()
             : $this->service->listAvailable();
 
-        return ApiResponder::success(
+        return $this->successResponse(
             PaymentChannelResource::collection($channels)->resolve($request),
             __('api/payments.channels.list'),
         );
@@ -33,10 +35,10 @@ class PaymentChannelController extends Controller
         $channel = $this->service->getByCode($code);
 
         if ($channel === null) {
-            return ApiResponder::error(__('api/payments.channels.not_found'), 404);
+            return $this->errorResponse(__('api/payments.channels.not_found'), 404);
         }
 
-        return ApiResponder::success(
+        return $this->successResponse(
             (new PaymentChannelResource($channel))->resolve(),
             __('api/payments.channels.show'),
         );
@@ -46,7 +48,7 @@ class PaymentChannelController extends Controller
     {
         $channel = $this->service->update($code, $request->validated());
 
-        return ApiResponder::success(
+        return $this->successResponse(
             (new PaymentChannelResource($channel))->resolve(),
             __('api/payments.channels.updated'),
         );

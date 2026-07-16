@@ -73,7 +73,7 @@ class UserController extends Controller
 
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->post('users', $this->payload($request));
+        $response = $this->api()->post('users', $this->apiPayload($request));
 
         return $this->respondFromApi(
             $request,
@@ -108,7 +108,7 @@ class UserController extends Controller
 
     public function update(Request $request, string $user): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->put("users/{$user}", $this->payload($request));
+        $response = $this->api()->put("users/{$user}", $this->apiPayload($request));
 
         return $this->respondFromApi(
             $request,
@@ -138,11 +138,6 @@ class UserController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function payload(Request $request): array
-    {
-        return $request->except(['_token', '_method']);
-    }
-
     /**
      * Rewrite the API's allowed-action keys onto clickable web routes. The API
      * decides WHICH actions the actor may take (RBAC); the web layer only maps

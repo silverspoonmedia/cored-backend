@@ -46,6 +46,19 @@ Route::apiResource('users', UserController::class)->except(['create', 'edit']);
 
 Business failures → `BusinessRuleException` subclasses (not `ValidationException`).
 
+### FormRequest DRY (store vs update)
+
+Do **not** copy-paste full rule arrays between Store/Update. Prefer domain `Http/Requests/Concerns/*` that share field definitions:
+
+| Pattern | Example |
+|---------|---------|
+| Shared field map + modality | `App\Support\Http\Requests\Concerns\ModalFieldRules` (`storeRules` / `updateRules`) |
+| Domain catalog | Service `ServiceCatalogRules`, Product `ItemRules`, PaymentGateway gateway/subscription concerns |
+| Micro-rules | FileHosting `FileHostingRequestRules` (rename/move/bulk/visibility via `Visibility::values()`) |
+| Identity users | `UserMutationRules` (assignable roles + password once) |
+
+Keep separate Store/Update classes for route binding; only the **rules body** is shared. Input normalization (e.g. service `prices[]` currency uppercasing) belongs in FormRequest `prepareForValidation`, not the web proxy.
+
 ## Request flow
 
 ```

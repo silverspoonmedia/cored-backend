@@ -26,12 +26,29 @@ trait ConsumesApi
     }
 
     /**
+     * Strip framework form noise and optionally allowlist fields for API forward.
+     *
+     * Web controllers must not re-validate or reshape domain data — the API
+     * FormRequest owns that. Prefer plain forward; use {@see $only} only as a
+     * thin field allowlist (not business normalization).
+     *
+     * @param  list<string>|null  $only
+     * @return array<string, mixed>
+     */
+    protected function apiPayload(Request $request, ?array $only = null): array
+    {
+        if ($only !== null) {
+            return $request->only($only);
+        }
+
+        return $request->except(['_token', '_method']);
+    }
+
+    /**
      * Translate a mutation response for either a full-page redirect or an AJAX
      * form (`Accept: application/json` / `X-Requested-With: XMLHttpRequest`).
      *
      * @param  Closure(Response): RedirectResponse  $onSuccess
-     */
-    /**
      * @param  bool  $stayOnPageOnSuccess  When true (AJAX only), success returns an
      *                                     inline message without `redirect`. Use for
      *                                     in-place actions (edit form save, send-link,

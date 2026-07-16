@@ -24,6 +24,10 @@ Sell / checkout now lives in the [Service](../service/README.md) domain (`Servic
 
 Do not re-expose `/api/playground/orders` or `/orders/*` as the product payment demo.
 
+### Attachment direct upload (residual)
+
+`DirectAttachmentUploadService` still demonstrates browser-direct S3 upload. Storage mechanics share `App\Support\Storage\S3DirectUploadEngine` with [File Hosting](../file-hosting/README.md); this class only owns session model + `attachments.*` config + order path layout. Prefer File Hosting for product uploads.
+
 ## Localization & tests
 
 API copy under `lang/*/api/playground.php`. Tests: `tests/Domain/Playground/` — users + production guard (orders tests deleted with surface).

@@ -36,7 +36,13 @@ class ItemController extends Controller
 
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->post('product/items', $this->payload($request));
+        $response = $this->api()->post('product/items', $this->apiPayload($request, [
+            'sku',
+            'name',
+            'description',
+            'unit_price_cents',
+            'status',
+        ]));
 
         return $this->respondFromApi(
             $request,
@@ -62,7 +68,13 @@ class ItemController extends Controller
 
     public function update(Request $request, string $item): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->put("product/items/{$item}", $this->payload($request));
+        $response = $this->api()->put("product/items/{$item}", $this->apiPayload($request, [
+            'sku',
+            'name',
+            'description',
+            'unit_price_cents',
+            'status',
+        ]));
 
         return $this->respondFromApi(
             $request,
@@ -85,19 +97,5 @@ class ItemController extends Controller
                 ->with('success', __('api/product-items.deleted')),
             __('api/product-items.deleted'),
         );
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function payload(Request $request): array
-    {
-        return $request->only([
-            'sku',
-            'name',
-            'description',
-            'unit_price_cents',
-            'status',
-        ]);
     }
 }

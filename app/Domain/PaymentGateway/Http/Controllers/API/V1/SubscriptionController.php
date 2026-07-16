@@ -2,22 +2,23 @@
 
 namespace App\Domain\PaymentGateway\Http\Controllers\API\V1;
 
-use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
-use App\Http\Controllers\Controller;
 use App\Domain\PaymentGateway\Http\Requests\IndexSubscriptionRequest;
 use App\Domain\PaymentGateway\Http\Requests\StoreSubscriptionRequest;
 use App\Domain\PaymentGateway\Http\Requests\UpdateSubscriptionRequest;
-use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Domain\PaymentGateway\Http\Resources\SubscriptionResource;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\SubscriptionService;
-use App\Support\ApiResponder;
-use App\Support\DataTable\DataTableResponseFactory;
 use App\Domain\PaymentGateway\Support\DataTable\SubscriptionRowActionResolver;
+use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\DataTable\DataTableResponseFactory;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class SubscriptionController extends Controller
 {
+    use ApiResponse;
     use ResolvesResourceArray;
     use RespondsWithListDisplayMode;
 
@@ -33,7 +34,7 @@ class SubscriptionController extends Controller
 
         return $this->respondToListDisplayMode(
             $request,
-            fn (): JsonResponse => ApiResponder::success(
+            fn (): JsonResponse => $this->successResponse(
                 $this->resolveResource(SubscriptionResource::collection($subscriptions)),
                 __('api/payments.subscriptions.list'),
             ),
@@ -47,7 +48,7 @@ class SubscriptionController extends Controller
 
     public function show(Subscription $subscription): JsonResponse
     {
-        return ApiResponder::success(
+        return $this->successResponse(
             $this->resolveResource(new SubscriptionResource($this->service->get($subscription->id))),
             __('api/payments.subscriptions.show'),
         );
@@ -57,7 +58,7 @@ class SubscriptionController extends Controller
     {
         $record = $this->service->create($request->validated());
 
-        return ApiResponder::success(
+        return $this->successResponse(
             $this->resolveResource(new SubscriptionResource($record)),
             __('api/payments.subscriptions.created'),
             201,
@@ -68,7 +69,7 @@ class SubscriptionController extends Controller
     {
         $record = $this->service->update($subscription->id, $request->validated());
 
-        return ApiResponder::success(
+        return $this->successResponse(
             $this->resolveResource(new SubscriptionResource($record)),
             __('api/payments.subscriptions.updated'),
         );
@@ -78,6 +79,6 @@ class SubscriptionController extends Controller
     {
         $this->service->delete($subscription->id);
 
-        return ApiResponder::success(null, __('api/payments.subscriptions.deleted'));
+        return $this->successResponse(null, __('api/payments.subscriptions.deleted'));
     }
 }

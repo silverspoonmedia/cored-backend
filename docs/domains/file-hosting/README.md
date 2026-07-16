@@ -75,6 +75,18 @@ manage any file hosting resource
 | Upload | init (optional `disk` = region key, resolved via `RegionResolver`; rejects disabled regions), status, sign-parts, complete, abort |
 | Search / trash / quota | as named |
 
+### Direct upload (S3 engine)
+
+Browser-direct PUT / multipart lives in shared kernel support, not duplicated per domain:
+
+| Piece | Role |
+|-------|------|
+| `App\Support\Storage\S3DirectUploadEngine` | Strategy (single vs multipart), presign, merge/assert parts, create/complete/abort multipart, size/mime guards |
+| `App\Support\Storage\SerializesDirectUploadSession` | Shared JSON session shape for init/status (`upload_id`, `strategy`, `parts`, …) |
+| `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, promote → `HostedFile` |
+
+Config for thresholds/TTL stays under `config/file-hosting.php`. Playground order attachments (if re-enabled) use the same engine with `config/attachments.php`.
+
 ### Public — no auth
 
 | Method | Path |

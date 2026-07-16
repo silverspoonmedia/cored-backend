@@ -2,22 +2,23 @@
 
 namespace App\Domain\PaymentGateway\Http\Controllers\API\V1;
 
-use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
-use App\Http\Controllers\Controller;
 use App\Domain\PaymentGateway\Http\Requests\IndexPaymentGatewayRequest;
 use App\Domain\PaymentGateway\Http\Requests\StorePaymentGatewayRequest;
 use App\Domain\PaymentGateway\Http\Requests\UpdatePaymentGatewayRequest;
-use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Domain\PaymentGateway\Http\Resources\PaymentGatewayResource;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\PaymentGatewayService;
-use App\Support\ApiResponder;
-use App\Support\DataTable\DataTableResponseFactory;
 use App\Domain\PaymentGateway\Support\DataTable\PaymentGatewayRowActionResolver;
+use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\DataTable\DataTableResponseFactory;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class PaymentGatewayController extends Controller
 {
+    use ApiResponse;
     use ResolvesResourceArray;
     use RespondsWithListDisplayMode;
 
@@ -33,7 +34,7 @@ class PaymentGatewayController extends Controller
 
         return $this->respondToListDisplayMode(
             $request,
-            fn (): JsonResponse => ApiResponder::success(
+            fn (): JsonResponse => $this->successResponse(
                 $this->resolveResource(PaymentGatewayResource::collection($gateways)),
                 __('api/payments.gateways.list'),
             ),
@@ -47,7 +48,7 @@ class PaymentGatewayController extends Controller
 
     public function show(PaymentGateway $paymentGateway): JsonResponse
     {
-        return ApiResponder::success(
+        return $this->successResponse(
             $this->resolveResource(new PaymentGatewayResource($this->service->get($paymentGateway->id))),
             __('api/payments.gateways.show'),
         );
@@ -57,7 +58,7 @@ class PaymentGatewayController extends Controller
     {
         $record = $this->service->create($request->validated());
 
-        return ApiResponder::success(
+        return $this->successResponse(
             $this->resolveResource(new PaymentGatewayResource($record)),
             __('api/payments.gateways.created'),
             201,
@@ -68,7 +69,7 @@ class PaymentGatewayController extends Controller
     {
         $record = $this->service->update($paymentGateway->id, $request->validated());
 
-        return ApiResponder::success(
+        return $this->successResponse(
             $this->resolveResource(new PaymentGatewayResource($record)),
             __('api/payments.gateways.updated'),
         );
@@ -78,6 +79,6 @@ class PaymentGatewayController extends Controller
     {
         $this->service->delete($paymentGateway->id);
 
-        return ApiResponder::success(null, __('api/payments.gateways.deleted'));
+        return $this->successResponse(null, __('api/payments.gateways.deleted'));
     }
 }
