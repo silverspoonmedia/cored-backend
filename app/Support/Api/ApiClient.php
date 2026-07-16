@@ -74,6 +74,14 @@ class ApiClient
     /**
      * @param  array<string, mixed>  $data
      */
+    public function patch(string $uri, array $data = []): Response
+    {
+        return $this->pending()->asJson()->patch($this->url($uri), $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function delete(string $uri, array $data = []): Response
     {
         return $this->pending()->asJson()->delete($this->url($uri), $data);

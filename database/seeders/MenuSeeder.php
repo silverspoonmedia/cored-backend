@@ -102,6 +102,20 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
 
+        // File Hosting: own tree for every authenticated role that has view permission
+        // (User + internal + product FH roles). No extra menu RBAC gate — permission middleware
+        // on the page is enough; all seeded roles that can open files may see the link.
+        Menu::query()->create([
+            'parent_id' => $main->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'My Files', 'id' => 'File Saya', 'ja' => 'マイファイル'],
+            'icon' => 'bi bi-folder2-open',
+            'route' => 'file-hosting.index',
+            'type' => 'p',
+            'order' => 6,
+            'is_authenticate' => true,
+        ]);
+
         $admin = Menu::query()->create([
             'parent_id' => null,
             'layout' => MenuLayout::SIDEBAR,
@@ -216,7 +230,7 @@ class MenuSeeder extends Seeder
             'icon' => 'bi bi-list-nested',
             'route' => null,
             'type' => 'p',
-            'order' => 4,
+            'order' => 5,
             'is_authenticate' => true,
         ]);
         $menus->roles()->sync($managementRoleIds);

@@ -40,6 +40,8 @@ app/
 │   ├── Notification/   # Activity notifications (core)
 │   ├── ActivityLog/    # Spatie audit trail (core)
 │   ├── Playground/     # Demo users, orders, attachments (locked)
+│   ├── Product/        # Stub product scaffold (catalog retired)
+│   ├── FileHosting/    # Nested files, chunk S3 upload, Drive-lite share (locked product)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
 │   └── Approval/       # Approval matrix (core)
 ├── Http/Middleware/    # Kernel
@@ -67,6 +69,8 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `activity-log.php` | Activity logs |
 | `approval.php` | Approvals + workflow admin |
 | `payment-gateway.php` | Gateways, invoices, subscriptions |
+| `product.php` | Product domain stub (empty) |
+| `file-hosting.php` | File hosting (auth + public share) folders/files/uploads |
 
 Global: `routes/api.php` (ping) + `routes/api/playground.php` (non-production).
 
@@ -85,6 +89,8 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 ## Cross-domain dependencies
 
 - **Identity** (`User`, `Role`, `Permission`) is the hub — other domains import those models.
+- **RBAC catalog** lives in Identity only. Roles/permissions carry `domain_kind` (`core` | `product`) so platform and product catalogs share Spatie tables without colliding on hierarchy. This is **not** the same as the module registry in [`config/domains.php`](../../config/domains.php) (`core` / `locked` for `domain:remove`). Details: [identity README — Core vs product RBAC](../domains/identity/README.md#core-vs-product-rbac).
+- **Product H-RBAC when core is not enough:** Core seeds a fixed platform ladder (Root → User) and platform permissions. If a **product** domain needs a richer hierarchy, more roles, or domain-specific permissions, **add new roles and permissions with `domain_kind = product`** (own seeder, own level ladder). Do **not** overload or rename core roles. Spatie names stay globally unique — use product-prefixed names (e.g. `Billing Admin`, not a second `Admin`). Product levels never drive platform user-management H-RBAC; wire product authorization in that domain’s routes/policies/services.
 - **Approval** is cross-cutting (`document_type` such as orders).
 - Do not import domain services across boundaries unless explicit and documented.
 
@@ -95,8 +101,9 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 3. Fill `routes/api/v1/{slug}.php` and `routes/web/{slug}.php`
 4. Bind repos/policies in the generated ServiceProvider
 5. Tests under `tests/Domain/{Name}/`
-6. New public URLs or JSON shapes → [changelog/pending/](../changelog/pending/)
-7. Update this doc and [docs/README.md](../README.md) if the domain map changes
+6. If the product needs its own H-RBAC (beyond core roles/permissions): seed product roles/permissions (`domain_kind = product`), unique names, optional product level ladder — see [Core vs product RBAC](../domains/identity/README.md#core-vs-product-rbac)
+7. New public URLs or JSON shapes → [changelog/pending/](../changelog/pending/)
+8. Update this doc and [docs/README.md](../README.md) if the domain map changes
 
 ## Deliberately not done
 

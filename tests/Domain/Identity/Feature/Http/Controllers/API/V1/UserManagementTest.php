@@ -185,6 +185,55 @@ class UserManagementTest extends TestCase
             ->assertJsonMissing(['name' => 'Root']);
     }
 
+    public function test_assignable_roles_include_domain_kind_core(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        $response = $this->actingAsJwt($admin)
+            ->getJson('/api/v1/users/assignable-roles')
+            ->assertOk();
+
+        $roles = collect($response->json('data'));
+        $this->assertNotEmpty($roles);
+        $roles->each(function (array $role): void {
+            $this->assertArrayHasKey('domain_kind', $role);
+            $this->assertSame('core', $role['domain_kind']);
+            $this->assertArrayHasKey('name', $role);
+            $this->assertArrayHasKey('level', $role);
+        });
+    }
+
+    public function test_user_show_roles_include_domain_kind(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $target = User::factory()->create();
+        $target->assignRole('Moderator');
+
+        $this->actingAsJwt($admin)
+            ->getJson('/api/v1/users/'.$target->id)
+            ->assertOk()
+            ->assertJsonPath('data.roles.0.name', 'Moderator')
+            ->assertJsonPath('data.roles.0.level', 200)
+            ->assertJsonPath('data.roles.0.domain_kind', 'core');
+    }
+
+    public function test_user_create_response_roles_include_domain_kind(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/users', [
+                'name' => 'Domain Kind User',
+                'email' => 'domainkind@example.com',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'role' => 'User',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.roles.0.name', 'User')
+            ->assertJsonPath('data.roles.0.domain_kind', 'core');
+    }
+
     public function test_moderator_cannot_delete_users(): void
     {
         $moderator = $this->userWithRole('Moderator');

@@ -41,6 +41,8 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Approval | [domains/approval/README.md](domains/approval/README.md) — matrix engine |
 | PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) |
 | Playground | [domains/playground/README.md](domains/playground/README.md) — demo CRUD (non-prod) |
+| Product | [domains/product/README.md](domains/product/README.md) — stub scaffold (catalog retired) |
+| File Hosting | [domains/file-hosting/README.md](domains/file-hosting/README.md) — nested folders, chunk S3, link share (locked) |
 
 ## Web UI patterns
 

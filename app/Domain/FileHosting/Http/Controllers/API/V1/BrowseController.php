@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Domain\FileHosting\Http\Controllers\API\V1;
+
+use App\Domain\FileHosting\Http\Resources\FolderResource;
+use App\Domain\FileHosting\Http\Resources\HostedFileResource;
+use App\Domain\FileHosting\Models\Folder;
+use App\Domain\FileHosting\Services\FolderService;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class BrowseController extends Controller
+{
+    use ApiResponse;
+    use ResolvesResourceArray;
+
+    public function __construct(
+        private readonly FolderService $folders,
+    ) {}
+
+    public function __invoke(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Folder::class);
+
+        $result = $this->folders->browse(
+            $request->user(),
+            $request->query('folder_id'),
+            $request->query('user_id'),
+        );
+
+        return $this->successResponse([
+            'owner_id' => $result['owner_id'],
+            'folder' => $result['folder'] !== null
+                ? $this->resolveResource(new FolderResource($result['folder']))
+                : null,
+            'breadcrumb' => $result['breadcrumb'],
+            'folders' => $this->resolveResource(FolderResource::collection($result['folders'])),
+            'files' => $this->resolveResource(HostedFileResource::collection($result['files'])),
+        ], __('api/file-hosting.browse_success'));
+    }
+}

@@ -275,7 +275,7 @@ export function initDirectUpload(root) {
     function createRow(file, status) {
         const row = document.createElement('div');
         row.className = 'mb-2';
-        row.dataset.rowId = crypto.randomUUID();
+        row.dataset.rowId = createRowId();
 
         const statusLabel = statusLabelFor(status);
 
@@ -393,6 +393,22 @@ export function initDirectUpload(root) {
             .replaceAll('<', '&lt;')
             .replaceAll('>', '&gt;')
             .replaceAll('"', '&quot;');
+    }
+
+    /**
+     * crypto.randomUUID() requires a secure context (HTTPS / localhost).
+     * http://*.test often throws — fall back for non-secure origins.
+     */
+    function createRowId() {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            try {
+                return crypto.randomUUID();
+            } catch {
+                // Not a secure context.
+            }
+        }
+
+        return 'row-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 11);
     }
 }
 

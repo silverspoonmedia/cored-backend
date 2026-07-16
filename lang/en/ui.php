@@ -52,6 +52,7 @@ return [
             'restore_menu' => 'Restore this menu item and its trashed subtree?',
             'delete_playground_user' => 'Delete this user?',
             'delete_playground_order' => 'Delete this order and all its line items?',
+            'delete_product_item' => 'Delete this product item?',
         ],
     ],
 ];

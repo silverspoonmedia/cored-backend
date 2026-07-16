@@ -2,15 +2,24 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Identity\Enums\DomainKind;
 use App\Domain\Identity\Models\Permission;
 use App\Domain\Identity\Models\Role;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeds platform (core) roles and permissions.
+ *
+ * Product domains should add their own seeders (e.g. PlaygroundRoleSeeder) with
+ * domain_kind = product and their own level ladder. Spatie still requires unique
+ * (name, guard_name) across kinds — do not reuse core role names like "Admin".
+ */
 class RoleSeeder extends Seeder
 {
     public function run(): void
     {
         $guard = 'api';
+        $domainKind = DomainKind::Core->value;
 
         $roles = [
             'Root' => 1,
@@ -23,7 +32,10 @@ class RoleSeeder extends Seeder
         foreach ($roles as $name => $level) {
             Role::query()->updateOrCreate(
                 ['name' => $name, 'guard_name' => $guard],
-                ['level' => $level],
+                [
+                    'level' => $level,
+                    'domain_kind' => $domainKind,
+                ],
             );
         }
 
@@ -46,10 +58,15 @@ class RoleSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::query()->firstOrCreate([
-                'name' => $permission,
-                'guard_name' => $guard,
-            ]);
+            Permission::query()->updateOrCreate(
+                [
+                    'name' => $permission,
+                    'guard_name' => $guard,
+                ],
+                [
+                    'domain_kind' => $domainKind,
+                ],
+            );
         }
 
         $rolePermissions = [
