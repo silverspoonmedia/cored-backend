@@ -62,23 +62,11 @@ return [
 
         's3Custom' => [
             'driver' => 's3',
-            'bucket' => env('CUSTOM_S3_BUCKET_PUBLIC_APAC'),
+            'bucket' => env('CUSTOM_S3_BUCKET_PUBLIC'),
             'region' => env('CUSTOM_S3_REGION', 'auto'),
             'key' => env('CUSTOM_S3_KEY'),
             'secret' => env('CUSTOM_S3_SECRET'),
             'endpoint' => env('CUSTOM_S3_ENDPOINT'),
-            'visibility' => 'public',
-            'throw' => true,
-            'domain' => env('CUSTOM_S3_BUCKET_PUBLIC_DOMAIN'),
-        ],
-
-        's3Customeu' => [
-            'driver' => 's3',
-            'bucket' => env('CUSTOM_S3_BUCKET_PUBLIC_EU'),
-            'region' => env('CUSTOM_S3_REGION', 'auto'),
-            'key' => env('CUSTOM_S3_KEY'),
-            'secret' => env('CUSTOM_S3_SECRET'),
-            'endpoint' => env('CUSTOM_S3_ENDPOINT_EU'),
             'visibility' => 'public',
             'throw' => true,
             'domain' => env('CUSTOM_S3_BUCKET_PUBLIC_DOMAIN'),
