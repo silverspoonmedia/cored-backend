@@ -33,6 +33,7 @@ return [
         'name' => 'Name',
         'type' => 'Type',
         'size' => 'Size',
+        'region' => 'Region',
         'visibility' => 'Visibility',
         'actions' => 'Actions',
         'deleted_at' => 'Deleted at',
@@ -87,6 +88,8 @@ return [
     'type_code' => 'Code file',
     'upload' => [
         'start' => 'Start upload',
+        'browse' => 'Browse files',
+        'region' => 'Upload region',
         'too_many' => 'Too many files selected.',
         'wait' => 'Please wait for uploads to finish.',
         'failed' => 'Upload failed.',
@@ -95,5 +98,23 @@ return [
         'uploading' => 'Uploading…',
         'done' => 'Done',
         'remove' => 'Remove',
+    ],
+
+    'regions' => [
+        'sea' => 'Southeast Asia',
+        'us' => 'United States',
+        'eu' => 'Europe',
+    ],
+
+    'bulk' => [
+        'selected' => 'selected',
+        'select_all' => 'Select all',
+        'select_item' => 'Select item',
+        'share' => 'Share',
+        'unshare' => 'Make private',
+        'delete' => 'Delete',
+        'confirm_share' => 'Share {n} selected items with anyone who has the link?',
+        'confirm_unshare' => 'Make {n} selected items private?',
+        'confirm_delete' => 'Move {n} selected items to trash?',
     ],
 ];

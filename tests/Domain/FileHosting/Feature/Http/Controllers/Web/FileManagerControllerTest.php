@@ -5,6 +5,7 @@ namespace Tests\Domain\FileHosting\Feature\Http\Controllers\Web;
 use App\Domain\Identity\Models\User;
 use Database\Seeders\FileHostingRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -430,6 +431,93 @@ class FileManagerControllerTest extends TestCase
         $user->getJson('/file-hosting')
             ->assertForbidden()
             ->assertJsonPath('message', 'Unauthorized.');
+    }
+
+    public function test_init_upload_forwards_disk_param_to_api(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $captured = null;
+
+        Http::fake(function (ClientRequest $request) use (&$captured) {
+            if (str_contains($request->url(), '/api/v1/file-hosting/uploads')) {
+                $captured = $request->data();
+
+                return Http::response([
+                    'status' => 'success',
+                    'data' => [
+                        'upload_id' => fake()->uuid(),
+                        'strategy' => 'single',
+                        'path' => 'file-hosting/x/y/z.pdf',
+                        'parts' => [],
+                    ],
+                ], 201);
+            }
+
+            return Http::response([], 200);
+        });
+
+        $user->post('/file-hosting/uploads', [
+            'name' => 'report.pdf',
+            'mime' => 'application/pdf',
+            'size' => 1024,
+            'disk' => 'sea',
+        ])->assertStatus(201);
+
+        $this->assertNotNull($captured);
+        $this->assertSame('sea', $captured['disk'] ?? null);
+    }
+
+    public function test_bulk_file_visibility_forwards_to_api(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $captured = null;
+
+        Http::fake(function (ClientRequest $request) use (&$captured) {
+            if (str_contains($request->url(), '/api/v1/file-hosting/files/bulk-visibility')) {
+                $captured = $request->data();
+
+                return Http::response([
+                    'status' => 'success',
+                    'data' => ['affected' => 2],
+                ], 200);
+            }
+
+            return Http::response([], 200);
+        });
+
+        $user->post('/file-hosting/files/bulk-visibility', [
+            'ids' => [fake()->uuid(), fake()->uuid()],
+            'visibility' => 'anyone_with_link',
+        ])->assertOk();
+
+        $this->assertNotNull($captured);
+        $this->assertSame('anyone_with_link', $captured['visibility'] ?? null);
+        $this->assertCount(2, $captured['ids'] ?? []);
+    }
+
+    public function test_bulk_file_destroy_forwards_to_api(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $captured = null;
+
+        Http::fake(function (ClientRequest $request) use (&$captured) {
+            if (str_contains($request->url(), '/api/v1/file-hosting/files/bulk')) {
+                $captured = $request->data();
+
+                return Http::response([
+                    'status' => 'success',
+                    'data' => ['affected' => 1],
+                ], 200);
+            }
+
+            return Http::response([], 200);
+        });
+
+        $user->delete('/file-hosting/files/bulk', ['ids' => [fake()->uuid()]])
+            ->assertOk();
+
+        $this->assertNotNull($captured);
+        $this->assertCount(1, $captured['ids'] ?? []);
     }
 
     private function actingWithApiGuard(User $user): static

@@ -29,6 +29,7 @@ export function initDirectUpload(root) {
     const queue = root.querySelector('[data-direct-upload-queue]');
     const stagedContainer = root.querySelector('[data-direct-upload-staged]');
     const startButton = root.querySelector('[data-direct-upload-start]');
+    const regionSelect = root.querySelector('[data-direct-upload-region]');
     const form = root.closest('form');
 
     /** @type {Map<string, {file: File, state: string}>} */
@@ -157,6 +158,10 @@ export function initDirectUpload(root) {
 
         if (config.userId) {
             initBody.user_id = config.userId;
+        }
+
+        if (regionSelect && regionSelect.value) {
+            initBody.disk = regionSelect.value;
         }
 
         const session = await apiJson(config.initUrl, 'POST', initBody);

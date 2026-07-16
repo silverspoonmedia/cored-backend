@@ -239,6 +239,37 @@ class FileService
         ];
     }
 
+    public function bulkSetVisibility(User $actor, array $fileIds, string $visibility, ?string $userId = null): int
+    {
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $value = $this->visibility->normalize($visibility);
+
+        return HostedFile::query()
+            ->where('user_id', $ownerId)
+            ->whereKey($fileIds)
+            ->update(['visibility' => $value->value]);
+    }
+
+    public function bulkSoftDelete(User $actor, array $fileIds, ?string $userId = null): int
+    {
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+
+        $files = HostedFile::query()
+            ->where('user_id', $ownerId)
+            ->whereKey($fileIds)
+            ->get();
+
+        foreach ($files as $file) {
+            $file->forceFill([
+                'signed_download_url' => null,
+                'signed_download_expires_at' => null,
+            ])->save();
+            $file->delete();
+        }
+
+        return $files->count();
+    }
+
     private function assertUniqueName(
         string $ownerId,
         ?string $folderId,

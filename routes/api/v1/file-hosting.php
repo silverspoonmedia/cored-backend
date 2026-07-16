@@ -33,24 +33,28 @@ Route::middleware('auth:api')->prefix('file-hosting')->name('file-hosting.')->gr
         Route::patch('folders/{folder}/rename', [FolderController::class, 'rename'])->whereUuid('folder')->name('folders.rename');
         Route::patch('folders/{folder}/move', [FolderController::class, 'move'])->whereUuid('folder')->name('folders.move');
         Route::patch('folders/{folder}/visibility', [FolderController::class, 'setVisibility'])->whereUuid('folder')->name('folders.visibility');
+        Route::post('folders/bulk-visibility', [FolderController::class, 'bulkSetVisibility'])->name('folders.bulk-visibility');
         Route::post('folders/{folder}/restore', [FolderController::class, 'restore'])->whereUuid('folder')->name('folders.restore');
     });
 
     Route::middleware('permission:delete file hosting folder')->group(function (): void {
         Route::delete('folders/{folder}', [FolderController::class, 'destroy'])->whereUuid('folder')->name('folders.destroy');
         Route::delete('folders/{folder}/force', [FolderController::class, 'forceDestroy'])->whereUuid('folder')->name('folders.force-destroy');
+        Route::delete('folders/bulk', [FolderController::class, 'bulkDestroy'])->name('folders.bulk-destroy');
     });
 
     Route::middleware('permission:edit file hosting file')->group(function (): void {
         Route::patch('files/{file}/rename', [FileController::class, 'rename'])->whereUuid('file')->name('files.rename');
         Route::patch('files/{file}/move', [FileController::class, 'move'])->whereUuid('file')->name('files.move');
         Route::patch('files/{file}/visibility', [FileController::class, 'setVisibility'])->whereUuid('file')->name('files.visibility');
+        Route::post('files/bulk-visibility', [FileController::class, 'bulkSetVisibility'])->name('files.bulk-visibility');
         Route::post('files/{file}/restore', [FileController::class, 'restore'])->whereUuid('file')->name('files.restore');
     });
 
     Route::middleware('permission:delete file hosting file')->group(function (): void {
         Route::delete('files/{file}', [FileController::class, 'destroy'])->whereUuid('file')->name('files.destroy');
         Route::delete('files/{file}/force', [FileController::class, 'forceDestroy'])->whereUuid('file')->name('files.force-destroy');
+        Route::delete('files/bulk', [FileController::class, 'bulkDestroy'])->name('files.bulk-destroy');
     });
 
     Route::middleware('permission:create file hosting file')->group(function (): void {

@@ -143,6 +143,33 @@ class FolderService
         $this->folders->softDeleteCascade($folder);
     }
 
+    public function bulkSetVisibility(User $actor, array $folderIds, string $visibility, ?string $userId = null): int
+    {
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $value = $this->visibility->normalize($visibility);
+
+        return Folder::query()
+            ->where('user_id', $ownerId)
+            ->whereKey($folderIds)
+            ->update(['visibility' => $value->value]);
+    }
+
+    public function bulkSoftDelete(User $actor, array $folderIds, ?string $userId = null): int
+    {
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+
+        $folders = Folder::query()
+            ->where('user_id', $ownerId)
+            ->whereKey($folderIds)
+            ->get();
+
+        foreach ($folders as $folder) {
+            $this->folders->softDeleteCascade($folder);
+        }
+
+        return $folders->count();
+    }
+
     public function restore(User $actor, string $folderId, ?string $userId = null): Folder
     {
         $ownerId = $this->access->resolveOwnerId($actor, $userId);

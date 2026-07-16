@@ -5,6 +5,12 @@
     $ownerQuery = array_filter(['user_id' => $ownerUserId]);
     $visPrivate = \App\Domain\FileHosting\Enums\Visibility::Private->value;
     $visLink = \App\Domain\FileHosting\Enums\Visibility::AnyoneWithLink->value;
+    $regions = (array) config('file-hosting.regions');
+    $uploadableRegions = array_filter(
+        $regions,
+        fn ($disk, $key): bool => ! \App\Domain\FileHosting\Support\RegionResolver::isDisabled((string) $key),
+        ARRAY_FILTER_USE_BOTH,
+    );
 
     $formatBytes = function (int $bytes): string {
         if ($bytes === 0) return '—';
@@ -20,6 +26,10 @@
         'fileShowBase' => url('file-hosting/files'),
         'fileRenameBase' => url('file-hosting/files'),
         'folderRenameBase' => url('file-hosting/folders'),
+        'bulkFileVisibilityUrl' => route('file-hosting.files.bulk-visibility'),
+        'bulkFolderVisibilityUrl' => route('file-hosting.folders.bulk-visibility'),
+        'bulkFileDeleteUrl' => route('file-hosting.files.bulk-destroy'),
+        'bulkFolderDeleteUrl' => route('file-hosting.folders.bulk-destroy'),
         'ownerUserId' => $ownerUserId,
         'currentFolderId' => $currentFolderId,
         'visLink' => $visLink,
@@ -125,8 +135,15 @@
                 <div class="fh-dropzone__actions">
                     <input type="file" class="d-none" data-direct-upload-input multiple>
                     <button type="button" class="btn btn-outline-primary btn-sm" onclick="this.closest('.fh-dropzone').querySelector('[data-direct-upload-input]').click()">
-                        <i class="bi bi-folder2-open me-1"></i>{{ __('web/file-hosting.upload.start') }}
+                        <i class="bi bi-folder2-open me-1"></i>{{ __('web/file-hosting.upload.browse') }}
                     </button>
+                    @if (count($uploadableRegions) > 1)
+                        <select class="form-select form-select-sm fh-dropzone__region" data-direct-upload-region aria-label="{{ __('web/file-hosting.upload.region') }}">
+                            @foreach ($uploadableRegions as $key => $diskName)
+                                <option value="{{ $key }}">{{ __('web/file-hosting.regions.'.$key) }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                     <button type="button" class="btn btn-primary btn-sm" data-direct-upload-start disabled>
                         <i class="bi bi-play-fill me-1"></i>{{ __('web/file-hosting.upload.start') }}
                     </button>
@@ -136,16 +153,45 @@
             @vite('resources/js/file-hosting/direct-upload.js')
         @endcan
 
+        {{-- Bulk action bar --}}
+        <div class="fh-bulk-bar" data-fh-bulk-bar style="display:none;">
+            <span class="fh-bulk-bar__count">
+                <strong data-fh-bulk-count>0</strong> {{ __('web/file-hosting.bulk.selected') }}
+            </span>
+            <div class="fh-bulk-bar__actions">
+                @can('edit file hosting file')
+                    <button type="button" class="btn btn-outline-success btn-sm" data-fh-bulk-action="share"
+                            data-fh-confirm="{{ __('web/file-hosting.bulk.confirm_share') }}">
+                        <i class="bi bi-share me-1"></i>{{ __('web/file-hosting.bulk.share') }}
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-fh-bulk-action="unshare"
+                            data-fh-confirm="{{ __('web/file-hosting.bulk.confirm_unshare') }}">
+                        <i class="bi bi-shield-lock me-1"></i>{{ __('web/file-hosting.bulk.unshare') }}
+                    </button>
+                @endcan
+                @can('delete file hosting file')
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-fh-bulk-action="delete"
+                            data-fh-confirm="{{ __('web/file-hosting.bulk.confirm_delete') }}">
+                        <i class="bi bi-trash me-1"></i>{{ __('web/file-hosting.bulk.delete') }}
+                    </button>
+                @endcan
+            </div>
+        </div>
+
         {{-- Table view --}}
         <div data-fh-view="table">
             <div class="table-responsive">
                 <table class="table fh-table">
                     <thead>
                         <tr>
+                            <th class="fh-table__select-cell">
+                                <input type="checkbox" class="form-check-input" data-fh-select-all aria-label="{{ __('web/file-hosting.bulk.select_all') }}">
+                            </th>
                             <th class="fh-table__icon-cell"></th>
                             <th>{{ __('web/file-hosting.columns.name') }}</th>
                             <th>{{ __('web/file-hosting.columns.type') }}</th>
                             <th>{{ __('web/file-hosting.columns.size') }}</th>
+                            <th>{{ __('web/file-hosting.columns.region') }}</th>
                             <th>{{ __('web/file-hosting.columns.visibility') }}</th>
                             <th class="text-end">{{ __('web/file-hosting.columns.actions') }}</th>
                         </tr>
@@ -154,6 +200,9 @@
                         @forelse ($folders as $folder)
                             @php $folderVis = $folder['visibility'] ?? $visPrivate; @endphp
                             <tr data-fh-row>
+                        <td class="fh-table__select-cell">
+                            <input type="checkbox" class="form-check-input" data-fh-select value="folder:{{ $folder['id'] }}" aria-label="{{ __('web/file-hosting.bulk.select_item') }}">
+                        </td>
                         <td class="fh-table__icon-cell">
                             <a href="{{ route('file-hosting.index', array_filter(array_merge($ownerQuery, ['folder_id' => $folder['id']]))) }}">
                                 @include('adminlte4.file-hosting.partials._file-icon', ['mime' => null, 'isFolder' => true])
@@ -206,6 +255,9 @@
                         @foreach ($files as $file)
                             @php $fileVis = $file['visibility'] ?? $visPrivate; @endphp
                             <tr data-fh-row>
+                        <td class="fh-table__select-cell">
+                            <input type="checkbox" class="form-check-input" data-fh-select value="file:{{ $file['id'] }}" aria-label="{{ __('web/file-hosting.bulk.select_item') }}">
+                        </td>
                         <td class="fh-table__icon-cell">
                             <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}">
                                 @include('adminlte4.file-hosting.partials._file-icon', ['mime' => $file['mime'] ?? null, 'isFolder' => false])
@@ -219,6 +271,17 @@
                         </td>
                         <td class="fh-table__type">{{ $file['mime'] ?? __('web/file-hosting.type_file') }}</td>
                         <td class="fh-table__size">{{ $formatBytes((int) ($file['size'] ?? 0)) }}</td>
+                        <td class="fh-table__region">
+                            @php
+                                $regionKey = $file['region']
+                                    ?? \App\Domain\FileHosting\Support\RegionResolver::keyForDisk((string) ($file['disk'] ?? ''));
+                            @endphp
+                            @if ($regionKey)
+                                <span class="badge text-bg-secondary fh-region-badge">{{ __('web/file-hosting.regions.'.$regionKey) }}</span>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
                         <td>@include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $fileVis])</td>
                         <td class="fh-table__actions">
                             <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
@@ -285,6 +348,7 @@
                     @foreach ($folders as $folder)
                         @php $folderVis = $folder['visibility'] ?? $visPrivate; @endphp
                         <div class="fh-file-card" data-fh-row>
+                            <input type="checkbox" class="form-check-input fh-file-card__select" data-fh-select value="folder:{{ $folder['id'] }}" aria-label="{{ __('web/file-hosting.bulk.select_item') }}">
                             <div class="fh-file-card__badge">
                                 @include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $folderVis])
                             </div>
@@ -323,6 +387,7 @@
                     @foreach ($files as $file)
                         @php $fileVis = $file['visibility'] ?? $visPrivate; @endphp
                         <div class="fh-file-card" data-fh-row>
+                            <input type="checkbox" class="form-check-input fh-file-card__select" data-fh-select value="file:{{ $file['id'] }}" aria-label="{{ __('web/file-hosting.bulk.select_item') }}">
                             <div class="fh-file-card__badge">
                                 @include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $fileVis])
                             </div>
@@ -335,7 +400,14 @@
                                class="fh-file-card__name" title="{{ $file['name'] ?? '' }}">
                                 {{ $file['name'] ?? '' }}
                             </a>
-                            <div class="fh-file-card__meta">{{ $formatBytes((int) ($file['size'] ?? 0)) }}</div>
+                            <div class="fh-file-card__meta">
+                                @php
+                                    $gridRegionKey = $file['region']
+                                        ?? \App\Domain\FileHosting\Support\RegionResolver::keyForDisk((string) ($file['disk'] ?? ''));
+                                @endphp
+                                {{ $formatBytes((int) ($file['size'] ?? 0)) }}
+                                @if ($gridRegionKey) · <span class="fh-file-card__region">{{ __('web/file-hosting.regions.'.$gridRegionKey) }}</span>@endif
+                            </div>
                             <div class="fh-file-card__actions">
                                 <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
                                    class="fh-table__action-btn" title="{{ __('web/file-hosting.view') }}">

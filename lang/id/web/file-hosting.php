@@ -33,6 +33,7 @@ return [
         'name' => 'Nama',
         'type' => 'Tipe',
         'size' => 'Ukuran',
+        'region' => 'Wilayah',
         'visibility' => 'Visibilitas',
         'actions' => 'Aksi',
         'deleted_at' => 'Dihapus pada',
@@ -87,6 +88,8 @@ return [
     'type_code' => 'File kode',
     'upload' => [
         'start' => 'Mulai unggah',
+        'browse' => 'Pilih file',
+        'region' => 'Wilayah unggah',
         'too_many' => 'Terlalu banyak file dipilih.',
         'wait' => 'Tunggu unggahan selesai.',
         'failed' => 'Unggah gagal.',
@@ -95,5 +98,23 @@ return [
         'uploading' => 'Mengunggah…',
         'done' => 'Selesai',
         'remove' => 'Hapus',
+    ],
+
+    'regions' => [
+        'sea' => 'Asia Tenggara',
+        'us' => 'Amerika Serikat',
+        'eu' => 'Eropa',
+    ],
+
+    'bulk' => [
+        'selected' => 'terpilih',
+        'select_all' => 'Pilih semua',
+        'select_item' => 'Pilih item',
+        'share' => 'Bagikan',
+        'unshare' => 'Jadikan privat',
+        'delete' => 'Hapus',
+        'confirm_share' => 'Bagikan {n} item terpilih ke siapa pun yang punya tautan?',
+        'confirm_unshare' => 'Jadikan {n} item terpilih privat?',
+        'confirm_delete' => 'Pindahkan {n} item terpilih ke tempat sampah?',
     ],
 ];

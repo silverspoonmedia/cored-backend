@@ -324,8 +324,36 @@ class FileManagerController extends Controller
     public function initUpload(Request $request): JsonResponse
     {
         $response = $this->api()->post('file-hosting/uploads', $request->only([
-            'name', 'mime', 'size', 'folder_id', 'user_id',
+            'name', 'mime', 'size', 'folder_id', 'user_id', 'disk',
         ]));
+
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function bulkFileVisibility(Request $request): JsonResponse
+    {
+        $response = $this->api()->post('file-hosting/files/bulk-visibility', $request->only(['ids', 'visibility', 'user_id']));
+
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function bulkFileDestroy(Request $request): JsonResponse
+    {
+        $response = $this->api()->delete('file-hosting/files/bulk', $request->only(['ids', 'user_id']));
+
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function bulkFolderVisibility(Request $request): JsonResponse
+    {
+        $response = $this->api()->post('file-hosting/folders/bulk-visibility', $request->only(['ids', 'visibility', 'user_id']));
+
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function bulkFolderDestroy(Request $request): JsonResponse
+    {
+        $response = $this->api()->delete('file-hosting/folders/bulk', $request->only(['ids', 'user_id']));
 
         return response()->json($response->json(), $response->status());
     }

@@ -39,6 +39,9 @@
         initModals();
         initAjaxActions();
         initCopyButtons();
+        initBulkActions();
+
+        const selected = new Set();
 
         // ---- View toggle ----
         function initViewToggle() {
@@ -198,7 +201,7 @@
             });
 
             dropzone.addEventListener('click', function (e) {
-                if (e.target === fileInput || e.target.closest('button')) {
+                if (e.target === fileInput || e.target.closest('button, select, input')) {
                     return;
                 }
                 fileInput.click();
@@ -479,6 +482,144 @@
                     showToast(config.messages.linkCopied, 'success');
                 });
             });
+        }
+
+        // ---- Bulk selection ----
+        function initBulkActions() {
+            document.addEventListener('change', function (e) {
+                const cb = e.target.closest('[data-fh-select]');
+                if (!cb) {
+                    return;
+                }
+
+                const key = cb.value;
+                if (cb.checked) {
+                    selected.add(key);
+                } else {
+                    selected.delete(key);
+                }
+                syncRowState(cb);
+                updateBulkBar();
+            });
+
+            document.addEventListener('change', function (e) {
+                const selectAll = e.target.closest('[data-fh-select-all]');
+                if (!selectAll) {
+                    return;
+                }
+
+                document.querySelectorAll('[data-fh-select]').forEach(function (cb) {
+                    cb.checked = selectAll.checked;
+                    const key = cb.value;
+                    if (selectAll.checked) {
+                        selected.add(key);
+                    } else {
+                        selected.delete(key);
+                    }
+                    syncRowState(cb);
+                });
+                updateBulkBar();
+            });
+
+            document.addEventListener('click', async function (e) {
+                const btn = e.target.closest('[data-fh-bulk-action]');
+                if (!btn) {
+                    return;
+                }
+
+                const action = btn.dataset.fhBulkAction;
+                if (selected.size === 0) {
+                    return;
+                }
+
+                const confirmMsg = btn.dataset.fhConfirm;
+                if (confirmMsg && !window.confirm(confirmMsg.replace('{n}', selected.size))) {
+                    return;
+                }
+
+                const fileIds = [];
+                const folderIds = [];
+                selected.forEach(function (key) {
+                    const sep = key.indexOf(':');
+                    const type = key.slice(0, sep);
+                    const id = key.slice(sep + 1);
+                    if (type === 'file') {
+                        fileIds.push(id);
+                    } else if (type === 'folder') {
+                        folderIds.push(id);
+                    }
+                });
+
+                btn.disabled = true;
+                try {
+                    const promises = [];
+
+                    if (action === 'share' || action === 'unshare') {
+                        const visibility = action === 'share' ? 'anyone_with_link' : 'private';
+                        if (fileIds.length) {
+                            promises.push(bulkFetch(config.bulkFileVisibilityUrl, 'POST', { ids: fileIds, visibility: visibility }));
+                        }
+                        if (folderIds.length) {
+                            promises.push(bulkFetch(config.bulkFolderVisibilityUrl, 'POST', { ids: folderIds, visibility: visibility }));
+                        }
+                    } else if (action === 'delete') {
+                        if (fileIds.length) {
+                            promises.push(bulkFetch(config.bulkFileDeleteUrl, 'DELETE', { ids: fileIds }));
+                        }
+                        if (folderIds.length) {
+                            promises.push(bulkFetch(config.bulkFolderDeleteUrl, 'DELETE', { ids: folderIds }));
+                        }
+                    }
+
+                    const responses = await Promise.all(promises);
+                    const data = responses.length ? (await responses[0].json().catch(function () { return {}; })) : {};
+                    if (responses.every(function (r) { return r.ok; })) {
+                        showToast(data.message || config.messages.success, 'success');
+                        selected.clear();
+                        setTimeout(function () { window.location.reload(); }, 600);
+                    } else {
+                        showToast(data.message || config.messages.error, 'error');
+                    }
+                } catch (err) {
+                    showToast(config.messages.networkError, 'error');
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        }
+
+        function bulkFetch(url, method, body) {
+            return fetch(url, {
+                method: method,
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(Object.assign({ user_id: config.ownerUserId || '' }, body)),
+            });
+        }
+
+        function syncRowState(cb) {
+            const row = cb.closest('tr, .fh-file-card');
+            if (row) {
+                row.classList.toggle('is-selected', cb.checked);
+            }
+        }
+
+        function updateBulkBar() {
+            const bar = document.querySelector('[data-fh-bulk-bar]');
+            if (!bar) {
+                return;
+            }
+            const count = selected.size;
+            bar.style.display = count > 0 ? '' : 'none';
+            const countEl = bar.querySelector('[data-fh-bulk-count]');
+            if (countEl) {
+                countEl.textContent = count;
+            }
         }
 
         // ---- Toast ----

@@ -90,6 +90,17 @@
                         <dt class="col-sm-3">{{ __('web/file-hosting.columns.size') }}</dt>
                         <dd class="col-sm-9">{{ $formatBytes((int) ($file['size'] ?? 0)) }}</dd>
 
+                        @php
+                            $showRegionKey = $file['region']
+                                ?? \App\Domain\FileHosting\Support\RegionResolver::keyForDisk((string) ($file['disk'] ?? ''));
+                        @endphp
+                        @if ($showRegionKey)
+                            <dt class="col-sm-3">{{ __('web/file-hosting.columns.region') }}</dt>
+                            <dd class="col-sm-9">
+                                <span class="badge text-bg-secondary fh-region-badge">{{ __('web/file-hosting.regions.'.$showRegionKey) }}</span>
+                            </dd>
+                        @endif
+
                         <dt class="col-sm-3">{{ __('web/file-hosting.columns.visibility') }}</dt>
                         <dd class="col-sm-9">
                             @include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $vis])

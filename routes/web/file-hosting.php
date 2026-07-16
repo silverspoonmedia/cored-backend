@@ -52,6 +52,15 @@ Route::delete('file-hosting/files/{file}/force', [FileManagerController::class, 
 Route::get('file-hosting/search', [FileManagerController::class, 'search'])
     ->name('file-hosting.search');
 
+Route::post('file-hosting/files/bulk-visibility', [FileManagerController::class, 'bulkFileVisibility'])
+    ->name('file-hosting.files.bulk-visibility');
+Route::delete('file-hosting/files/bulk', [FileManagerController::class, 'bulkFileDestroy'])
+    ->name('file-hosting.files.bulk-destroy');
+Route::post('file-hosting/folders/bulk-visibility', [FileManagerController::class, 'bulkFolderVisibility'])
+    ->name('file-hosting.folders.bulk-visibility');
+Route::delete('file-hosting/folders/bulk', [FileManagerController::class, 'bulkFolderDestroy'])
+    ->name('file-hosting.folders.bulk-destroy');
+
 Route::post('file-hosting/uploads', [FileManagerController::class, 'initUpload'])->name('file-hosting.uploads.store');
 Route::get('file-hosting/uploads/{upload}', [FileManagerController::class, 'uploadStatus'])
     ->whereUuid('upload')

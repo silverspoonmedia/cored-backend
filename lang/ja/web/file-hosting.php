@@ -33,6 +33,7 @@ return [
         'name' => '名前',
         'type' => '種類',
         'size' => 'サイズ',
+        'region' => '地域',
         'visibility' => '公開設定',
         'actions' => '操作',
         'deleted_at' => '削除日時',
@@ -87,6 +88,8 @@ return [
     'type_code' => 'コードファイル',
     'upload' => [
         'start' => 'アップロード開始',
+        'browse' => 'ファイルを選択',
+        'region' => 'アップロード地域',
         'too_many' => '選択したファイルが多すぎます。',
         'wait' => 'アップロードの完了を待ってください。',
         'failed' => 'アップロードに失敗しました。',
@@ -95,5 +98,23 @@ return [
         'uploading' => 'アップロード中…',
         'done' => '完了',
         'remove' => '削除',
+    ],
+
+    'regions' => [
+        'sea' => '東南アジア',
+        'us' => 'アメリカ合衆国',
+        'eu' => 'ヨーロッパ',
+    ],
+
+    'bulk' => [
+        'selected' => '選択中',
+        'select_all' => 'すべて選択',
+        'select_item' => 'アイテムを選択',
+        'share' => '共有',
+        'unshare' => '非公開にする',
+        'delete' => '削除',
+        'confirm_share' => '選択した {n} 件をリンクを知る全員に共有しますか？',
+        'confirm_unshare' => '選択した {n} 件を非公開にしますか？',
+        'confirm_delete' => '選択した {n} 件をゴミ箱に移動しますか？',
     ],
 ];

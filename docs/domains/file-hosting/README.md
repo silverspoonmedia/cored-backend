@@ -10,7 +10,7 @@ Locked product domain for personal nested folders, S3-compatible chunk upload, a
 | Web (auth) | `routes/web/file-hosting.php` |
 | Web (guest) | `routes/web/file-hosting-public.php` |
 | Seeder | `FileHostingRoleSeeder` (after core `RoleSeeder`) |
-| Docs close-out | [changelog pending session entry](../../changelog/pending/2026-07-16-file-hosting-product-domain.md) |
+| Docs close-out | [multi-region + bulk](../../changelog/pending/2026-07-16-file-hosting-multi-region-bulk.md) · [product domain](../../changelog/pending/2026-07-16-file-hosting-product-domain.md) |
 
 ## Concepts
 
@@ -28,6 +28,7 @@ Locked product domain for personal nested folders, S3-compatible chunk upload, a
 | Visibility | `private` \| `anyone_with_link` on folders and files |
 | Link secret | Resource UUID (Drive “anyone with the link”; not world-searchable) |
 | Inherit | Folder link-shared → guest may browse that folder and download files inside even if file is `private` |
+| Region | Per-file `disk` storage; region key derived via `RegionResolver::keyForDisk()`. `disabled_regions` blocks new uploads only — downloads still served. |
 | Ownership | Own resources; cross-user via product “any” + core `RoleService` hierarchy |
 
 ## Visibility
@@ -69,8 +70,9 @@ manage any file hosting resource
 | Browse | `GET browse?folder_id=&user_id=` |
 | Folders | create, rename, move, **visibility**, soft/force delete, restore |
 | Files | show (view++), rename, move, **visibility**, soft/force delete, restore |
+| Bulk | `POST files/bulk-visibility` + `POST folders/bulk-visibility` (`ids[]`, `visibility`); `DELETE files/bulk` + `DELETE folders/bulk` (`ids[]`) — owner-scoped, max 100 ids |
 | Download | `GET files/{id}/download` → `{ url, expires_at }` (download++; cache S3 URL) |
-| Upload | init, status, sign-parts, complete, abort |
+| Upload | init (optional `disk` = region key, resolved via `RegionResolver`; rejects disabled regions), status, sign-parts, complete, abort |
 | Search / trash / quota | as named |
 
 ### Public — no auth
@@ -91,11 +93,15 @@ manage any file hosting resource
 | `file-hosting.files.rename` | yes | Rename file (AJAX or form) |
 | `file-hosting.files.move` | yes | Move file to folder (AJAX) |
 | `file-hosting.files.visibility` | yes | Toggle private / anyone_with_link |
+| `file-hosting.files.bulk-visibility` | yes | Bulk set visibility (`ids[]`, `visibility`) — AJAX |
+| `file-hosting.files.bulk-destroy` | yes | Bulk soft-delete (`ids[]`) — AJAX |
 | `file-hosting.files.restore` | yes | Restore from trash |
 | `file-hosting.files.force-destroy` | yes | Permanently delete |
 | `file-hosting.folders.rename` | yes | Rename folder |
 | `file-hosting.folders.move` | yes | Move folder |
 | `file-hosting.folders.visibility` | yes | Toggle folder visibility |
+| `file-hosting.folders.bulk-visibility` | yes | Bulk set visibility (`ids[]`, `visibility`) — AJAX |
+| `file-hosting.folders.bulk-destroy` | yes | Bulk soft-delete (`ids[]`) — AJAX |
 | `file-hosting.folders.restore` | yes | Restore from trash |
 | `file-hosting.folders.force-destroy` | yes | Permanently delete |
 | `file-hosting.trash` | yes | Soft-deleted items + restore / force-delete |
@@ -111,7 +117,7 @@ Share link users copy = show URL (`/s/f/{uuid}` or `/s/d/{uuid}`). Download butt
 | Asset | Role |
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
-| `resources/js/file-hosting/file-manager.js` | Page controller: AJAX CRUD, live search, grid/list view toggle (localStorage), move modal tree, drag-drop, toast |
+| `resources/js/file-hosting/file-manager.js` | Page controller: AJAX CRUD, live search, grid/list view toggle (localStorage), move modal tree, drag-drop, region selector, bulk select/action (per-row + select-all checkboxes, share/unshare/delete), toast |
 | `resources/js/file-hosting/direct-upload.js` | Browser-direct chunked upload to S3 (unchanged) |
 | `resources/js/file-hosting/upload-queue.js` | Concurrency limiter (unchanged) |
 | `resources/views/adminlte4/file-hosting/partials/` | Reusable Blade partials: `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal` |
@@ -129,6 +135,8 @@ Menu: **My Files** → `file-hosting.index`.
 | Key | Role |
 |-----|------|
 | `disk` / `directory` | S3-compatible disk + key prefix |
+| `regions` | Region key → disk name map (e.g. `sea` → `s3Custom`); only regions with non-empty disk appear in upload dropdown |
+| `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
 | `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy |
 | `default_quota_bytes` | Per-user quota (0 = unlimited) |
 | `signed_download_ttl_minutes` | S3 GET temporary URL lifetime |

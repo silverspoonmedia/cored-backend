@@ -24,6 +24,7 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
         int $size,
         ?string $folderId = null,
         ?string $userId = null,
+        ?string $disk = null,
     ): array {
         $access = app(AccessService::class);
         $ownerId = $access->resolveOwnerId($actor, $userId);
@@ -52,7 +53,7 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
         $upload = FileUpload::query()->create([
             'user_id' => $ownerId,
             'folder_id' => $folderId,
-            'disk' => config('file-hosting.disk'),
+            'disk' => $this->resolveDiskName($disk),
             'path' => $path,
             's3_upload_id' => $strategy === FileUpload::STRATEGY_MULTIPART ? 'fake-upload-id' : null,
             'strategy' => $strategy,
