@@ -43,6 +43,7 @@ class DirectUploadService
         int $size,
         ?string $folderId = null,
         ?string $userId = null,
+        ?string $disk = null,
     ): array {
         $ownerId = $this->access->resolveOwnerId($actor, $userId);
         $owner = User::query()->findOrFail($ownerId);
@@ -55,7 +56,7 @@ class DirectUploadService
         $this->assertUploadAllowed($name, $mime, $size);
         $this->quota->assertCanAccept($ownerId, $size);
 
-        $diskName = (string) config('file-hosting.disk');
+        $diskName = $this->resolveDiskName($disk);
         $uploadId = (string) Str::uuid();
         $path = $this->buildPath($ownerId, $uploadId, $name);
         $expiresAt = Carbon::now()->addHours((int) config('file-hosting.session_ttl_hours'));
@@ -540,6 +541,21 @@ class DirectUploadService
     private function s3Client(string $diskName): S3Client
     {
         return $this->diskAdapter($diskName)->getClient();
+    }
+
+    /**
+     * Resolve a requested region key to its configured disk name.
+     * Unknown/missing keys fall back to the default file-hosting disk.
+     */
+    protected function resolveDiskName(?string $requested): string
+    {
+        $regions = (array) config('file-hosting.regions');
+
+        if ($requested !== null && $requested !== '' && isset($regions[$requested])) {
+            return (string) $regions[$requested];
+        }
+
+        return (string) config('file-hosting.disk');
     }
 
     private function bucket(string $diskName): string

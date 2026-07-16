@@ -4,6 +4,7 @@ namespace App\Domain\FileHosting\Http\Resources;
 
 use App\Domain\FileHosting\Enums\Visibility;
 use App\Domain\FileHosting\Services\VisibilityService;
+use App\Domain\FileHosting\Support\RegionResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,6 +27,7 @@ class HostedFileResource extends JsonResource
             'folder_id' => $this->folder_id,
             'name' => $this->name,
             'disk' => $this->disk,
+            'region' => RegionResolver::keyForDisk($this->disk),
             'path' => $this->path,
             'size' => $this->size,
             'mime' => $this->mime,

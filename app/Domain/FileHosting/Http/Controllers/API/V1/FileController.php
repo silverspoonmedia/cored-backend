@@ -2,6 +2,8 @@
 
 namespace App\Domain\FileHosting\Http\Controllers\API\V1;
 
+use App\Domain\FileHosting\Http\Requests\BulkDestroyRequest;
+use App\Domain\FileHosting\Http\Requests\BulkVisibilityRequest;
 use App\Domain\FileHosting\Http\Requests\MoveFileRequest;
 use App\Domain\FileHosting\Http\Requests\RenameFileRequest;
 use App\Domain\FileHosting\Http\Requests\SearchRequest;
@@ -170,6 +172,35 @@ class FileController extends Controller
         return $this->successResponse(
             $this->resolveResource(HostedFileResource::collection($results)),
             __('api/file-hosting.search_success'),
+        );
+    }
+
+    public function bulkSetVisibility(BulkVisibilityRequest $request): JsonResponse
+    {
+        $count = $this->files->bulkSetVisibility(
+            $request->user(),
+            $request->validated('ids'),
+            $request->validated('visibility'),
+            $request->validated('user_id'),
+        );
+
+        return $this->successResponse(
+            ['affected' => $count],
+            __('api/file-hosting.bulk_visibility_updated'),
+        );
+    }
+
+    public function bulkDestroy(BulkDestroyRequest $request): JsonResponse
+    {
+        $count = $this->files->bulkSoftDelete(
+            $request->user(),
+            $request->validated('ids'),
+            $request->validated('user_id'),
+        );
+
+        return $this->successResponse(
+            ['affected' => $count],
+            __('api/file-hosting.bulk_files_deleted'),
         );
     }
 }

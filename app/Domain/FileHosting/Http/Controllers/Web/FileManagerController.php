@@ -16,7 +16,7 @@ class FileManagerController extends Controller
 {
     use ConsumesApi;
 
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request): View|RedirectResponse|JsonResponse
     {
         $query = array_filter([
             'folder_id' => $request->query('folder_id'),
@@ -26,10 +26,18 @@ class FileManagerController extends Controller
         $response = $this->api()->get('file-hosting/browse', $query);
 
         if (! $response->successful()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $this->apiMessage($response)], $response->status());
+            }
+
             return redirect()->route('dashboard')->with('error', $this->apiMessage($response));
         }
 
         $data = $response->json('data', []);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $data]);
+        }
 
         $quota = $this->api()->get('file-hosting/quota', array_filter([
             'user_id' => $request->query('user_id'),
@@ -217,11 +225,135 @@ class FileManagerController extends Controller
         );
     }
 
+    public function moveFolder(Request $request, string $folder): RedirectResponse|JsonResponse
+    {
+        $payload = $request->only(['parent_id', 'user_id']);
+        $response = $this->api()->patch('file-hosting/folders/'.$folder.'/move', $payload);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.index', array_filter([
+                'folder_id' => $request->input('parent_id'),
+                'user_id' => $request->input('user_id'),
+            ]))->with('success', __('api/file-hosting.folder_moved')),
+            __('api/file-hosting.folder_moved'),
+        );
+    }
+
+    public function moveFile(Request $request, string $file): RedirectResponse|JsonResponse
+    {
+        $payload = $request->only(['folder_id', 'user_id']);
+        $response = $this->api()->patch('file-hosting/files/'.$file.'/move', $payload);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.index', array_filter([
+                'folder_id' => $request->input('folder_id'),
+                'user_id' => $request->input('user_id'),
+            ]))->with('success', __('api/file-hosting.file_moved')),
+            __('api/file-hosting.file_moved'),
+        );
+    }
+
+    public function restoreFolder(Request $request, string $folder): RedirectResponse|JsonResponse
+    {
+        $query = array_filter(['user_id' => $request->input('user_id')]);
+        $response = $this->api()->post('file-hosting/folders/'.$folder.'/restore', $query);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.trash', $query)->with('success', __('api/file-hosting.folder_restored')),
+            __('api/file-hosting.folder_restored'),
+        );
+    }
+
+    public function restoreFile(Request $request, string $file): RedirectResponse|JsonResponse
+    {
+        $query = array_filter(['user_id' => $request->input('user_id')]);
+        $response = $this->api()->post('file-hosting/files/'.$file.'/restore', $query);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.trash', $query)->with('success', __('api/file-hosting.file_restored')),
+            __('api/file-hosting.file_restored'),
+        );
+    }
+
+    public function forceDestroyFolder(Request $request, string $folder): RedirectResponse|JsonResponse
+    {
+        $query = array_filter(['user_id' => $request->input('user_id')]);
+        $response = $this->api()->delete('file-hosting/folders/'.$folder.'/force', $query);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.trash', $query)->with('success', __('api/file-hosting.folder_force_deleted')),
+            __('api/file-hosting.folder_force_deleted'),
+        );
+    }
+
+    public function forceDestroyFile(Request $request, string $file): RedirectResponse|JsonResponse
+    {
+        $query = array_filter(['user_id' => $request->input('user_id')]);
+        $response = $this->api()->delete('file-hosting/files/'.$file.'/force', $query);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.trash', $query)->with('success', __('api/file-hosting.file_force_deleted')),
+            __('api/file-hosting.file_force_deleted'),
+        );
+    }
+
+    public function search(Request $request): JsonResponse
+    {
+        $query = array_filter([
+            'q' => $request->query('q'),
+            'user_id' => $request->query('user_id'),
+        ], fn ($v) => $v !== null && $v !== '');
+
+        $response = $this->api()->get('file-hosting/search', $query);
+
+        return response()->json($response->json(), $response->status());
+    }
+
     public function initUpload(Request $request): JsonResponse
     {
         $response = $this->api()->post('file-hosting/uploads', $request->only([
-            'name', 'mime', 'size', 'folder_id', 'user_id',
+            'name', 'mime', 'size', 'folder_id', 'user_id', 'disk',
         ]));
+
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function bulkFileVisibility(Request $request): JsonResponse
+    {
+        $response = $this->api()->post('file-hosting/files/bulk-visibility', $request->only(['ids', 'visibility', 'user_id']));
+
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function bulkFileDestroy(Request $request): JsonResponse
+    {
+        $response = $this->api()->delete('file-hosting/files/bulk', $request->only(['ids', 'user_id']));
+
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function bulkFolderVisibility(Request $request): JsonResponse
+    {
+        $response = $this->api()->post('file-hosting/folders/bulk-visibility', $request->only(['ids', 'visibility', 'user_id']));
+
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function bulkFolderDestroy(Request $request): JsonResponse
+    {
+        $response = $this->api()->delete('file-hosting/folders/bulk', $request->only(['ids', 'user_id']));
 
         return response()->json($response->json(), $response->status());
     }

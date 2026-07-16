@@ -34,6 +34,7 @@ class UploadController extends Controller
             (int) $request->validated('size'),
             $request->validated('folder_id'),
             $request->validated('user_id'),
+            $request->validated('disk'),
         );
 
         return $this->successResponse(

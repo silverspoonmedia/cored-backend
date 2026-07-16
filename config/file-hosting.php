@@ -4,6 +4,32 @@ return [
 
     'disk' => env('FILE_HOSTING_DISK', 's3Custom'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Upload regions — region key → disk name.
+    | Only regions with a non-empty disk appear in the upload dropdown.
+    | Add a region: set FILE_HOSTING_REGION_XX_DISK env + define the disk
+    | in config/filesystems.php. No code change required.
+    |--------------------------------------------------------------------------
+    */
+    'regions' => array_filter([
+        'sea' => env('FILE_HOSTING_REGION_SEA_DISK', 's3Custom'),
+        'us'  => env('FILE_HOSTING_REGION_US_DISK'),
+        'eu'  => env('FILE_HOSTING_REGION_EU_DISK', 's3Customeu'),
+    ]),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Regions disabled for new uploads (still serve downloads).
+    | Comma-separated region keys. Files already stored on a disabled
+    | region's disk remain downloadable — only new uploads are blocked.
+    |--------------------------------------------------------------------------
+    */
+    'disabled_regions' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('FILE_HOSTING_DISABLED_REGIONS', '')),
+    ))),
+
     'directory' => env('FILE_HOSTING_DIRECTORY', 'file-hosting'),
 
     'chunk_size_bytes' => (int) env('FILE_HOSTING_CHUNK_SIZE', 8 * 1024 * 1024),

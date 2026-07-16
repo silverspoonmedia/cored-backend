@@ -181,7 +181,7 @@ class FileService
 
         return HostedFile::query()
             ->where('user_id', $ownerId)
-            ->where('name', 'like', $term)
+            ->whereRaw('LOWER(name) LIKE ?', [mb_strtolower($term)])
             ->orderBy('name')
             ->limit(100)
             ->get();
@@ -237,6 +237,37 @@ class FileService
             'url' => $resolved['url'],
             'expires_at' => $resolved['expires_at']->toIso8601String(),
         ];
+    }
+
+    public function bulkSetVisibility(User $actor, array $fileIds, string $visibility, ?string $userId = null): int
+    {
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $value = $this->visibility->normalize($visibility);
+
+        return HostedFile::query()
+            ->where('user_id', $ownerId)
+            ->whereKey($fileIds)
+            ->update(['visibility' => $value->value]);
+    }
+
+    public function bulkSoftDelete(User $actor, array $fileIds, ?string $userId = null): int
+    {
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+
+        $files = HostedFile::query()
+            ->where('user_id', $ownerId)
+            ->whereKey($fileIds)
+            ->get();
+
+        foreach ($files as $file) {
+            $file->forceFill([
+                'signed_download_url' => null,
+                'signed_download_expires_at' => null,
+            ])->save();
+            $file->delete();
+        }
+
+        return $files->count();
     }
 
     private function assertUniqueName(

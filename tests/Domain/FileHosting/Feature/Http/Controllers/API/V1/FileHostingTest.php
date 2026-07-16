@@ -3,6 +3,7 @@
 namespace Tests\Domain\FileHosting\Feature\Http\Controllers\API\V1;
 
 use App\Domain\FileHosting\Models\Folder;
+use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\DirectUploadService;
 use App\Domain\FileHosting\Services\SignedDownloadService;
@@ -361,6 +362,33 @@ class FileHostingTest extends TestCase
             ->assertJsonMissing(['name' => 'secret-alice.pdf']);
     }
 
+    public function test_search_is_case_insensitive(): void
+    {
+        $user = $this->userWithRole('User');
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'Aku-Ini.pdf',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/a.pdf',
+            'size' => 1,
+            'mime' => 'application/pdf',
+        ]);
+
+        // Lowercase query matches mixed-case filename.
+        $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/search?q=aku')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Aku-Ini.pdf']);
+
+        // Uppercase query matches same file.
+        $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/search?q=AKU')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Aku-Ini.pdf']);
+    }
+
     public function test_quota_exceeded_on_init(): void
     {
         $user = $this->userWithRole('User');
@@ -585,5 +613,282 @@ class FileHostingTest extends TestCase
         $token = auth('api')->login($user);
 
         return $this->withHeader('Authorization', 'Bearer '.$token);
+    }
+
+    public function test_init_accepts_disk_param_and_persists_resolved_disk(): void
+    {
+        config(['file-hosting.regions' => ['sea' => 'local', 'us' => 'local']]);
+
+        $user = $this->userWithRole('User');
+
+        $init = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'report.pdf',
+                'mime' => 'application/pdf',
+                'size' => 1024,
+                'disk' => 'sea',
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $upload = FileUpload::query()->whereKey($init['upload_id'])->firstOrFail();
+        $this->assertSame('local', $upload->disk);
+    }
+
+    public function test_init_falls_back_to_default_disk_when_disk_missing(): void
+    {
+        config(['file-hosting.regions' => ['sea' => 'local']]);
+
+        $user = $this->userWithRole('User');
+
+        $init = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'report.pdf',
+                'mime' => 'application/pdf',
+                'size' => 1024,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $upload = FileUpload::query()->whereKey($init['upload_id'])->firstOrFail();
+        $this->assertSame((string) config('file-hosting.disk'), $upload->disk);
+    }
+
+    public function test_init_rejects_disk_not_in_regions(): void
+    {
+        config(['file-hosting.regions' => ['sea' => 'local']]);
+
+        $user = $this->userWithRole('User');
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'report.pdf',
+                'mime' => 'application/pdf',
+                'size' => 1024,
+                'disk' => 'mars',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['disk']);
+    }
+
+    public function test_init_rejects_disabled_region_for_upload(): void
+    {
+        config([
+            'file-hosting.regions' => ['sea' => 'local', 'us' => 'local'],
+            'file-hosting.disabled_regions' => ['us'],
+        ]);
+
+        $user = $this->userWithRole('User');
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'report.pdf',
+                'mime' => 'application/pdf',
+                'size' => 1024,
+                'disk' => 'us',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['disk']);
+    }
+
+    public function test_browse_response_includes_region_key_for_files(): void
+    {
+        config(['file-hosting.regions' => ['sea' => 'local']]);
+
+        $user = $this->userWithRole('User');
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'pinned.pdf',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/pinned.pdf',
+            'size' => 10,
+            'mime' => 'application/pdf',
+        ]);
+
+        $browse = $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/browse')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertNotEmpty($browse['files']);
+        $this->assertSame('sea', $browse['files'][0]['region']);
+    }
+
+    public function test_disabled_region_still_serves_download(): void
+    {
+        config([
+            'file-hosting.regions' => ['sea' => 'local'],
+            'file-hosting.disabled_regions' => ['sea'],
+        ]);
+
+        $user = $this->userWithRole('User');
+
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'legacy.txt',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/legacy.txt',
+            'size' => 4,
+            'mime' => 'text/plain',
+        ]);
+
+        Storage::disk('local')->put($file->path, 'data');
+
+        // Disabled region blocks new uploads but not downloads.
+        $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/files/'.$file->id.'/download')
+            ->assertOk();
+    }
+
+    public function test_bulk_set_file_visibility(): void
+    {
+        $user = $this->userWithRole('User');
+        $ids = [];
+
+        for ($i = 0; $i < 3; $i++) {
+            $file = HostedFile::query()->create([
+                'user_id' => $user->id,
+                'folder_id' => null,
+                'name' => 'bulk-'.$i.'.txt',
+                'disk' => 'local',
+                'path' => 'file-hosting/'.$user->id.'/bulk-'.$i.'.txt',
+                'size' => 1,
+                'mime' => 'text/plain',
+            ]);
+            $ids[] = $file->id;
+        }
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/files/bulk-visibility', [
+                'ids' => $ids,
+                'visibility' => 'anyone_with_link',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.affected', 3);
+
+        foreach ($ids as $id) {
+            $this->assertSame('anyone_with_link', HostedFile::query()->whereKey($id)->value('visibility'));
+        }
+    }
+
+    public function test_bulk_set_file_visibility_scoped_to_owner(): void
+    {
+        $alice = $this->userWithRole('User');
+        $bob = $this->userWithRole('User');
+
+        $aliceFile = HostedFile::query()->create([
+            'user_id' => $alice->id,
+            'folder_id' => null,
+            'name' => 'alice.pdf',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$alice->id.'/alice.pdf',
+            'size' => 1,
+            'mime' => 'application/pdf',
+        ]);
+
+        $this->actingAsJwt($bob)
+            ->postJson('/api/v1/file-hosting/files/bulk-visibility', [
+                'ids' => [$aliceFile->id],
+                'visibility' => 'anyone_with_link',
+            ])
+            ->assertOk();
+
+        // Alice's file untouched — bulk is owner-scoped.
+        $this->assertSame('private', $aliceFile->fresh()->visibility);
+    }
+
+    public function test_bulk_delete_files(): void
+    {
+        $user = $this->userWithRole('User');
+        $ids = [];
+
+        for ($i = 0; $i < 3; $i++) {
+            $file = HostedFile::query()->create([
+                'user_id' => $user->id,
+                'folder_id' => null,
+                'name' => 'del-'.$i.'.txt',
+                'disk' => 'local',
+                'path' => 'file-hosting/'.$user->id.'/del-'.$i.'.txt',
+                'size' => 1,
+                'mime' => 'text/plain',
+            ]);
+            $ids[] = $file->id;
+        }
+
+        $this->actingAsJwt($user)
+            ->deleteJson('/api/v1/file-hosting/files/bulk', ['ids' => $ids])
+            ->assertOk()
+            ->assertJsonPath('data.affected', 3);
+
+        foreach ($ids as $id) {
+            $this->assertNotNull(HostedFile::withTrashed()->whereKey($id)->value('deleted_at'));
+        }
+    }
+
+    public function test_bulk_set_folder_visibility(): void
+    {
+        $user = $this->userWithRole('User');
+        $ids = [];
+
+        for ($i = 0; $i < 2; $i++) {
+            $folder = Folder::query()->create([
+                'user_id' => $user->id,
+                'parent_id' => null,
+                'name' => 'bulk-folder-'.$i,
+            ]);
+            $ids[] = $folder->id;
+        }
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/folders/bulk-visibility', [
+                'ids' => $ids,
+                'visibility' => 'anyone_with_link',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.affected', 2);
+
+        foreach ($ids as $id) {
+            $this->assertSame('anyone_with_link', Folder::query()->whereKey($id)->value('visibility'));
+        }
+    }
+
+    public function test_bulk_delete_folders(): void
+    {
+        $user = $this->userWithRole('User');
+        $ids = [];
+
+        for ($i = 0; $i < 2; $i++) {
+            $folder = Folder::query()->create([
+                'user_id' => $user->id,
+                'parent_id' => null,
+                'name' => 'del-folder-'.$i,
+            ]);
+            $ids[] = $folder->id;
+        }
+
+        $this->actingAsJwt($user)
+            ->deleteJson('/api/v1/file-hosting/folders/bulk', ['ids' => $ids])
+            ->assertOk()
+            ->assertJsonPath('data.affected', 2);
+
+        foreach ($ids as $id) {
+            $this->assertNotNull(Folder::withTrashed()->whereKey($id)->value('deleted_at'));
+        }
+    }
+
+    public function test_bulk_action_validates_empty_ids(): void
+    {
+        $user = $this->userWithRole('User');
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/files/bulk-visibility', [
+                'ids' => [],
+                'visibility' => 'private',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['ids']);
     }
 }

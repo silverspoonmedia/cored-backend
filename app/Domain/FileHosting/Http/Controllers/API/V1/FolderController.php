@@ -2,6 +2,8 @@
 
 namespace App\Domain\FileHosting\Http\Controllers\API\V1;
 
+use App\Domain\FileHosting\Http\Requests\BulkDestroyRequest;
+use App\Domain\FileHosting\Http\Requests\BulkVisibilityRequest;
 use App\Domain\FileHosting\Http\Requests\MoveFolderRequest;
 use App\Domain\FileHosting\Http\Requests\RenameFolderRequest;
 use App\Domain\FileHosting\Http\Requests\SetVisibilityRequest;
@@ -135,5 +137,34 @@ class FolderController extends Controller
         );
 
         return $this->successResponse(null, __('api/file-hosting.folder_force_deleted'));
+    }
+
+    public function bulkSetVisibility(BulkVisibilityRequest $request): JsonResponse
+    {
+        $count = $this->folders->bulkSetVisibility(
+            $request->user(),
+            $request->validated('ids'),
+            $request->validated('visibility'),
+            $request->validated('user_id'),
+        );
+
+        return $this->successResponse(
+            ['affected' => $count],
+            __('api/file-hosting.bulk_visibility_updated'),
+        );
+    }
+
+    public function bulkDestroy(BulkDestroyRequest $request): JsonResponse
+    {
+        $count = $this->folders->bulkSoftDelete(
+            $request->user(),
+            $request->validated('ids'),
+            $request->validated('user_id'),
+        );
+
+        return $this->successResponse(
+            ['affected' => $count],
+            __('api/file-hosting.bulk_folders_deleted'),
+        );
     }
 }
