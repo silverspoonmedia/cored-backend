@@ -181,7 +181,7 @@ class FileService
 
         return HostedFile::query()
             ->where('user_id', $ownerId)
-            ->where('name', 'like', $term)
+            ->whereRaw('LOWER(name) LIKE ?', [mb_strtolower($term)])
             ->orderBy('name')
             ->limit(100)
             ->get();

@@ -85,17 +85,42 @@ manage any file hosting resource
 
 | Route name | Auth | Purpose |
 |------------|------|---------|
-| `file-hosting.index` | yes | Browse + chunk upload; list View / Rename / Share / Delete |
-| `file-hosting.files.show` | yes | Detail, stats, visibility, download CTA |
+| `file-hosting.index` | yes | Browse + chunk upload; list/grid view, search, Rename / Move / Share / Delete |
+| `file-hosting.files.show` | yes | Detail, stats tiles, visibility, download CTA |
 | `file-hosting.files.download` | yes | Auth download → **302** S3 |
-| `file-hosting.trash` | yes | Soft-deleted items |
+| `file-hosting.files.rename` | yes | Rename file (AJAX or form) |
+| `file-hosting.files.move` | yes | Move file to folder (AJAX) |
+| `file-hosting.files.visibility` | yes | Toggle private / anyone_with_link |
+| `file-hosting.files.restore` | yes | Restore from trash |
+| `file-hosting.files.force-destroy` | yes | Permanently delete |
+| `file-hosting.folders.rename` | yes | Rename folder |
+| `file-hosting.folders.move` | yes | Move folder |
+| `file-hosting.folders.visibility` | yes | Toggle folder visibility |
+| `file-hosting.folders.restore` | yes | Restore from trash |
+| `file-hosting.folders.force-destroy` | yes | Permanently delete |
+| `file-hosting.trash` | yes | Soft-deleted items + restore / force-delete |
+| `file-hosting.search` | yes | AJAX JSON search endpoint (`GET ?q=`) |
 | `file-hosting.public.files.show` | no | `/s/f/{uuid}` guest page |
 | `file-hosting.public.files.download` | no | **Temporary signed** hop → **302** S3 (unsigned **403**) |
 | `file-hosting.public.folders.show` | no | `/s/d/{uuid}` guest folder list |
 
 Share link users copy = show URL (`/s/f/{uuid}` or `/s/d/{uuid}`). Download button on the show page is a short-lived Laravel signed URL (`public_download_signature_ttl_minutes`, default 5).
 
-Chunk widget: `resources/js/file-hosting/direct-upload.js` (+ `upload-queue.js`).
+### UI architecture
+
+| Asset | Role |
+|-------|------|
+| `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
+| `resources/js/file-hosting/file-manager.js` | Page controller: AJAX CRUD, live search, grid/list view toggle (localStorage), move modal tree, drag-drop, toast |
+| `resources/js/file-hosting/direct-upload.js` | Browser-direct chunked upload to S3 (unchanged) |
+| `resources/js/file-hosting/upload-queue.js` | Concurrency limiter (unchanged) |
+| `resources/views/adminlte4/file-hosting/partials/` | Reusable Blade partials: `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal` |
+
+All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `redirect`).
+
+File type icons map MIME → Bootstrap Icons via `_file-icon.blade.php` partial: image, PDF, video, audio, archive, spreadsheet, document, code, fallback — each with a color modifier (`.fh-icon--*`).
+
+Grid/list view toggle persists preference in `localStorage` key `fh-view-mode`. Default: list (table).
 
 Menu: **My Files** → `file-hosting.index`.
 
@@ -116,7 +141,7 @@ Menu: **My Files** → `file-hosting.index`.
 composer test -- --filter=FileHosting
 ```
 
-Includes API feature tests and `PublicDownloadSignedRouteTest` (unsigned 403, signed 302).
+Includes API feature tests (`FileHostingTest`), web controller tests (`FileManagerControllerTest`), and `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`.
 
 ## Related
 

@@ -1,0 +1,439 @@
+<?php
+
+namespace Tests\Domain\FileHosting\Feature\Http\Controllers\Web;
+
+use App\Domain\Identity\Models\User;
+use Database\Seeders\FileHostingRoleSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\SeedsRolesAndPermissions;
+use Tests\TestCase;
+
+/**
+ * Web FileManagerController is a thin API consumer via ConsumesApi.
+ *
+ * These tests mock the API responses (Http::fake) to verify the controller
+ * correctly forwards requests, renders views, and handles redirects.
+ * Full-stack API tests live in FileHostingTest.
+ */
+class FileManagerControllerTest extends TestCase
+{
+    use RefreshDatabase;
+    use SeedsRolesAndPermissions;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seedRolesAndPermissions();
+        $this->seed(FileHostingRoleSeeder::class);
+
+        config([
+            'file-hosting.disk' => 'local',
+            'file-hosting.default_quota_bytes' => 1024 * 1024,
+        ]);
+
+        Storage::fake('local');
+    }
+
+    public function test_index_renders_with_folders_and_files(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+
+        Http::fake([
+            '*/api/v1/file-hosting/browse*' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'owner_id' => fake()->uuid(),
+                    'folder' => null,
+                    'breadcrumb' => [],
+                    'folders' => [['id' => fake()->uuid(), 'name' => 'Documents', 'visibility' => 'private']],
+                    'files' => [['id' => fake()->uuid(), 'name' => 'report.pdf', 'mime' => 'application/pdf', 'size' => 1024, 'visibility' => 'private']],
+                ],
+            ], 200),
+            '*/api/v1/file-hosting/quota*' => Http::response([
+                'status' => 'success',
+                'data' => ['used_bytes' => 512, 'quota_bytes' => 1048576, 'remaining_bytes' => 1048064],
+            ], 200),
+        ]);
+
+        $response = $user->get('/file-hosting');
+
+        $response->assertOk();
+        $response->assertViewIs('adminlte4.file-hosting.index');
+        $response->assertViewHas('browse');
+        $response->assertViewHas('quota');
+    }
+
+    public function test_trash_renders_with_trashed_items(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+
+        Http::fake([
+            '*/api/v1/file-hosting/trash*' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'folders' => [['id' => fake()->uuid(), 'name' => 'Old Folder', 'deleted_at' => '2026-07-15']],
+                    'files' => [['id' => fake()->uuid(), 'name' => 'old.pdf', 'mime' => 'application/pdf', 'deleted_at' => '2026-07-15']],
+                ],
+            ], 200),
+        ]);
+
+        $response = $user->get('/file-hosting/trash');
+
+        $response->assertOk();
+        $response->assertViewIs('adminlte4.file-hosting.trash');
+        $response->assertViewHas('trash');
+    }
+
+    public function test_show_renders_file_detail(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/files/{$fileId}*" => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => $fileId,
+                    'name' => 'report.pdf',
+                    'mime' => 'application/pdf',
+                    'size' => 2048,
+                    'visibility' => 'private',
+                    'view_count' => 5,
+                    'download_count' => 2,
+                    'created_at' => '2026-07-15T00:00:00.000000Z',
+                ],
+            ], 200),
+        ]);
+
+        $response = $user->get("/file-hosting/files/{$fileId}");
+
+        $response->assertOk();
+        $response->assertViewIs('adminlte4.file-hosting.show');
+        $response->assertViewHas('file');
+    }
+
+    public function test_store_folder_redirects_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+
+        Http::fake([
+            '*/api/v1/file-hosting/folders*' => Http::response([
+                'status' => 'success',
+                'message' => 'Folder created.',
+                'data' => ['id' => fake()->uuid(), 'name' => 'New Folder'],
+            ], 201),
+        ]);
+
+        $user->post('/file-hosting/folders', ['name' => 'New Folder'])
+            ->assertRedirect(route('file-hosting.index'));
+    }
+
+    public function test_destroy_folder_redirects_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $folderId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/folders/{$folderId}*" => Http::response([
+                'status' => 'success',
+                'message' => 'Folder moved to trash.',
+            ], 200),
+        ]);
+
+        $user->delete("/file-hosting/folders/{$folderId}")
+            ->assertRedirect(route('file-hosting.index'));
+    }
+
+    public function test_destroy_file_redirects_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/files/{$fileId}*" => Http::response([
+                'status' => 'success',
+                'message' => 'File moved to trash.',
+            ], 200),
+        ]);
+
+        $user->delete("/file-hosting/files/{$fileId}")
+            ->assertRedirect(route('file-hosting.index'));
+    }
+
+    public function test_rename_file_redirects_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/files/{$fileId}/rename*" => Http::response([
+                'status' => 'success',
+                'message' => 'File renamed.',
+                'data' => ['id' => $fileId, 'name' => 'renamed.pdf'],
+            ], 200),
+        ]);
+
+        $user->patch("/file-hosting/files/{$fileId}/rename", ['name' => 'renamed.pdf'])
+            ->assertRedirect(route('file-hosting.index'));
+    }
+
+    public function test_rename_folder_redirects_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $folderId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/folders/{$folderId}/rename*" => Http::response([
+                'status' => 'success',
+                'message' => 'Folder renamed.',
+                'data' => ['id' => $folderId, 'name' => 'renamed'],
+            ], 200),
+        ]);
+
+        $user->patch("/file-hosting/folders/{$folderId}/rename", ['name' => 'renamed'])
+            ->assertRedirect(route('file-hosting.index'));
+    }
+
+    public function test_set_file_visibility_redirects_back_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/files/{$fileId}/visibility*" => Http::response([
+                'status' => 'success',
+                'message' => 'Visibility updated.',
+                'data' => ['id' => $fileId, 'visibility' => 'anyone_with_link'],
+            ], 200),
+        ]);
+
+        $user->patch("/file-hosting/files/{$fileId}/visibility", ['visibility' => 'anyone_with_link'])
+            ->assertRedirect();
+    }
+
+    public function test_set_folder_visibility_redirects_back_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $folderId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/folders/{$folderId}/visibility*" => Http::response([
+                'status' => 'success',
+                'message' => 'Visibility updated.',
+                'data' => ['id' => $folderId, 'visibility' => 'anyone_with_link'],
+            ], 200),
+        ]);
+
+        $user->patch("/file-hosting/folders/{$folderId}/visibility", ['visibility' => 'anyone_with_link'])
+            ->assertRedirect();
+    }
+
+    public function test_move_file_redirects_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+        $targetFolderId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/files/{$fileId}/move*" => Http::response([
+                'status' => 'success',
+                'message' => 'File moved.',
+                'data' => ['id' => $fileId, 'folder_id' => $targetFolderId],
+            ], 200),
+        ]);
+
+        $user->patch("/file-hosting/files/{$fileId}/move", ['folder_id' => $targetFolderId])
+            ->assertRedirect(route('file-hosting.index', ['folder_id' => $targetFolderId]));
+    }
+
+    public function test_move_folder_redirects_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $folderId = fake()->uuid();
+        $targetParentId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/folders/{$folderId}/move*" => Http::response([
+                'status' => 'success',
+                'message' => 'Folder moved.',
+                'data' => ['id' => $folderId, 'parent_id' => $targetParentId],
+            ], 200),
+        ]);
+
+        $user->patch("/file-hosting/folders/{$folderId}/move", ['parent_id' => $targetParentId])
+            ->assertRedirect(route('file-hosting.index', ['folder_id' => $targetParentId]));
+    }
+
+    public function test_restore_file_redirects_to_trash_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/files/{$fileId}/restore*" => Http::response([
+                'status' => 'success',
+                'message' => 'File restored.',
+                'data' => ['id' => $fileId],
+            ], 200),
+        ]);
+
+        $user->post("/file-hosting/files/{$fileId}/restore")
+            ->assertRedirect(route('file-hosting.trash'));
+    }
+
+    public function test_restore_folder_redirects_to_trash_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $folderId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/folders/{$folderId}/restore*" => Http::response([
+                'status' => 'success',
+                'message' => 'Folder restored.',
+                'data' => ['id' => $folderId],
+            ], 200),
+        ]);
+
+        $user->post("/file-hosting/folders/{$folderId}/restore")
+            ->assertRedirect(route('file-hosting.trash'));
+    }
+
+    public function test_force_destroy_file_redirects_to_trash_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/files/{$fileId}/force*" => Http::response([
+                'status' => 'success',
+                'message' => 'File permanently deleted.',
+            ], 200),
+        ]);
+
+        $user->delete("/file-hosting/files/{$fileId}/force")
+            ->assertRedirect(route('file-hosting.trash'));
+    }
+
+    public function test_force_destroy_folder_redirects_to_trash_on_success(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $folderId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/folders/{$folderId}/force*" => Http::response([
+                'status' => 'success',
+                'message' => 'Folder permanently deleted.',
+            ], 200),
+        ]);
+
+        $user->delete("/file-hosting/folders/{$folderId}/force")
+            ->assertRedirect(route('file-hosting.trash'));
+    }
+
+    public function test_search_returns_json_results(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+
+        Http::fake([
+            '*/api/v1/file-hosting/search*' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    ['id' => fake()->uuid(), 'name' => 'report.pdf', 'mime' => 'application/pdf', 'size' => 1024],
+                ],
+            ], 200),
+        ]);
+
+        $user->getJson('/file-hosting/search?q=report')
+            ->assertOk()
+            ->assertJsonStructure([
+                'status',
+                'data' => [['id', 'name', 'mime', 'size']],
+            ]);
+    }
+
+    public function test_download_redirects_to_storage_url(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/files/{$fileId}/download*" => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'url' => 'https://fake-storage.test/download/'.$fileId,
+                    'expires_at' => now()->addMinutes(15)->toISOString(),
+                ],
+            ], 200),
+        ]);
+
+        $user->get("/file-hosting/files/{$fileId}/download")
+            ->assertRedirect('https://fake-storage.test/download/'.$fileId);
+    }
+
+    public function test_index_redirects_to_dashboard_on_api_error(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+
+        Http::fake([
+            '*/api/v1/file-hosting/browse*' => Http::response([
+                'status' => 'error',
+                'message' => 'Unauthorized.',
+            ], 403),
+            '*/api/v1/file-hosting/quota*' => Http::response([
+                'status' => 'error',
+                'message' => 'Unauthorized.',
+            ], 403),
+        ]);
+
+        $user->get('/file-hosting')
+            ->assertRedirect(route('dashboard'));
+    }
+
+    public function test_index_returns_json_when_request_expects_json(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+
+        $browseData = [
+            'owner_id' => fake()->uuid(),
+            'folder' => null,
+            'breadcrumb' => [],
+            'folders' => [['id' => fake()->uuid(), 'name' => 'Docs', 'visibility' => 'private']],
+            'files' => [],
+        ];
+
+        Http::fake([
+            '*/api/v1/file-hosting/browse*' => Http::response([
+                'status' => 'success',
+                'data' => $browseData,
+            ], 200),
+        ]);
+
+        $user->getJson('/file-hosting')
+            ->assertOk()
+            ->assertJsonPath('data.folders.0.name', 'Docs');
+    }
+
+    public function test_index_returns_json_error_on_api_failure_when_expecting_json(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+
+        Http::fake([
+            '*/api/v1/file-hosting/browse*' => Http::response([
+                'status' => 'error',
+                'message' => 'Unauthorized.',
+            ], 403),
+        ]);
+
+        $user->getJson('/file-hosting')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Unauthorized.');
+    }
+
+    private function actingWithApiGuard(User $user): static
+    {
+        return $this->actingAs($user, 'api');
+    }
+}

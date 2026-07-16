@@ -361,6 +361,33 @@ class FileHostingTest extends TestCase
             ->assertJsonMissing(['name' => 'secret-alice.pdf']);
     }
 
+    public function test_search_is_case_insensitive(): void
+    {
+        $user = $this->userWithRole('User');
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'Aku-Ini.pdf',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/a.pdf',
+            'size' => 1,
+            'mime' => 'application/pdf',
+        ]);
+
+        // Lowercase query matches mixed-case filename.
+        $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/search?q=aku')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Aku-Ini.pdf']);
+
+        // Uppercase query matches same file.
+        $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/search?q=AKU')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Aku-Ini.pdf']);
+    }
+
     public function test_quota_exceeded_on_init(): void
     {
         $user = $this->userWithRole('User');
