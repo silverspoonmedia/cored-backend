@@ -27,6 +27,7 @@ return [
     'trash_success' => 'ゴミ箱を読み込みました。',
     'quota_success' => '容量情報を読み込みました。',
     'quota_exceeded' => 'ストレージ容量を超えています。',
+    'quota_grace_blocked' => 'サブスクリプションは猶予期間中です。再アップロードするには更新してください。',
     'folder_not_found' => 'フォルダが見つかりません。',
     'file_not_found' => 'ファイルが見つかりません。',
     'owner_not_found' => '所有者が見つかりません。',

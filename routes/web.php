@@ -12,8 +12,7 @@ use Illuminate\Support\Facades\Route;
 | forwards to `/api/v1/*` (see App\Support\Api\ApiClient) and only renders the
 | JSON it gets back. Business logic — validation, CRUD, RBAC — lives solely in
 | the API, so these routes carry NO `permission:` gate on most paths: the API
-| authorizes each forwarded call. Exception: `role:Root|Admin` on
-| `admin/approval-workflows/*` (transport-layer gate before API forwarding).
+| authorizes each forwarded call.
 | Web middleware here is transport-only: `web.guest`/`web.auth`
 | (who is logged in, where to redirect) and the JWT-cookie bridge that lets the
 | browser carry the same stateless token the API issues.
@@ -34,7 +33,6 @@ Route::middleware('web.guest')->group(function (): void {
 
 Route::middleware('web.auth')->group(function (): void {
     require __DIR__.'/web/identity.php';
-    require __DIR__.'/web/approval.php';
     require __DIR__.'/web/navigation.php';
     require __DIR__.'/web/playground.php';
     require __DIR__.'/web/payment-gateway.php';
@@ -42,4 +40,5 @@ Route::middleware('web.auth')->group(function (): void {
     require __DIR__.'/web/notification.php';
     require __DIR__.'/web/product.php';
     require __DIR__.'/web/file-hosting.php';
+    require __DIR__.'/web/service.php';
 });

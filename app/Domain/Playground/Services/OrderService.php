@@ -8,7 +8,6 @@ use App\Domain\Playground\Exceptions\OrderNotEditableException;
 use App\Domain\Playground\Exceptions\OrderRequiresDetailException;
 use App\Domain\Playground\Models\Order;
 use App\Domain\Playground\Repositories\Contracts\OrderRepositoryInterface;
-use App\Domain\Approval\Services\ApprovalService;
 use App\Domain\Playground\Support\Orders\DirectAttachmentUploadService;
 use App\Domain\Playground\Support\Orders\OrderAttachmentStorage;
 use Illuminate\Database\Eloquent\Collection;
@@ -28,7 +27,6 @@ class OrderService
         private readonly OrderRepositoryInterface $repository,
         private readonly OrderAttachmentStorage $attachments,
         private readonly DirectAttachmentUploadService $directUploads,
-        private readonly ApprovalService $approvalService,
         private readonly InvoiceAttachableServiceInterface $invoiceAttachable,
         private readonly InvoiceActiveCheckoutCancellationService $checkoutCancellation,
     ) {}
@@ -59,15 +57,6 @@ class OrderService
             $order = $this->repository->createWithDetails($master, $details, $stored);
 
             $this->invoiceAttachable->createPendingInvoiceForOrder($order, null);
-
-            try {
-                $this->approvalService->initiate($order, 'ORDER');
-            } catch (\Exception $e) {
-                \Log::warning('Failed to initiate approval for order', [
-                    'order_id' => $order->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
 
             return $order;
         } catch (Throwable $e) {

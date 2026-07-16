@@ -36,13 +36,12 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withEvents(discover: [
         __DIR__.'/../app/Domain/Identity/Listeners',
         __DIR__.'/../app/Domain/Notification/Listeners',
-        __DIR__.'/../app/Domain/Approval/Listeners',
     ])
     ->withCommands([
         __DIR__.'/../app/Console/Commands',
-        __DIR__.'/../app/Domain/Approval/Console/Commands',
         __DIR__.'/../app/Domain/Navigation/Console/Commands',
         __DIR__.'/../app/Domain/PaymentGateway/Console/Commands',
+        __DIR__.'/../app/Domain/Service/Console/Commands',
     ])
     ->withRouting(
         api: __DIR__.'/../routes/api.php',

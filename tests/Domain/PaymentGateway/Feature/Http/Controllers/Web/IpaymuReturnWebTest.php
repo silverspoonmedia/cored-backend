@@ -5,7 +5,7 @@ namespace Tests\Domain\PaymentGateway\Feature\Http\Controllers\Web;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
-use App\Domain\Playground\Models\Order;
+use App\Domain\Service\Models\ServicePurchase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -21,11 +21,11 @@ class IpaymuReturnWebTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_return_redirects_to_order_and_attempts_sync(): void
+    public function test_return_redirects_to_service_purchase_and_attempts_sync(): void
     {
-        $order = Order::factory()->pending()->create();
+        $purchase = ServicePurchase::factory()->pending()->create();
         $gateway = $this->ipaymuGateway();
-        $invoice = $this->createIpaymuInvoice($order, $gateway, [
+        $invoice = $this->createIpaymuInvoice($purchase, $gateway, [
             'external_transaction_id' => '217387',
         ]);
 
@@ -41,15 +41,15 @@ class IpaymuReturnWebTest extends TestCase
         $this->app->instance(IpaymuPaymentService::class, $payments);
 
         $this->get('/payment/ipaymu/return?trx_id=217387&status=berhasil')
-            ->assertRedirect(route('orders.show', $order->id))
+            ->assertRedirect(route('service-purchases.show', $purchase->id))
             ->assertSessionHas('info');
     }
 
-    public function test_return_honours_explicit_order_redirect_query(): void
+    public function test_return_honours_explicit_service_purchase_redirect_query(): void
     {
-        $order = Order::factory()->pending()->create();
+        $purchase = ServicePurchase::factory()->pending()->create();
         $gateway = $this->ipaymuGateway();
-        $this->createIpaymuInvoice($order, $gateway, [
+        $this->createIpaymuInvoice($purchase, $gateway, [
             'external_transaction_id' => '999001',
         ]);
 
@@ -62,22 +62,22 @@ class IpaymuReturnWebTest extends TestCase
         $this->app->instance(IpaymuPaymentService::class, $payments);
 
         $url = route('payment.ipaymu.return', [
-            'redirect' => 'order',
-            'order' => $order->id,
+            'redirect' => 'service_purchase',
+            'purchase' => $purchase->id,
             'invoice_id' => Invoice::query()->first()->id,
             'trx_id' => '999001',
         ]);
 
         $this->get($url)
-            ->assertRedirect(route('orders.show', $order->id))
+            ->assertRedirect(route('service-purchases.show', $purchase->id))
             ->assertSessionHas('info');
     }
 
     public function test_cancel_redirects_without_sync(): void
     {
-        $order = Order::factory()->pending()->create();
+        $purchase = ServicePurchase::factory()->pending()->create();
         $gateway = $this->ipaymuGateway();
-        $this->createIpaymuInvoice($order, $gateway, [
+        $this->createIpaymuInvoice($purchase, $gateway, [
             'external_transaction_id' => '888001',
         ]);
 
@@ -86,7 +86,7 @@ class IpaymuReturnWebTest extends TestCase
         $this->app->instance(IpaymuPaymentService::class, $payments);
 
         $this->get('/payment/ipaymu/cancel?trx_id=888001')
-            ->assertRedirect(route('orders.show', $order->id))
+            ->assertRedirect(route('service-purchases.show', $purchase->id))
             ->assertSessionHas('warning');
     }
 
@@ -110,18 +110,18 @@ class IpaymuReturnWebTest extends TestCase
     /**
      * @param  array<string, mixed>  $overrides
      */
-    private function createIpaymuInvoice(Order $order, PaymentGateway $gateway, array $overrides = []): Invoice
+    private function createIpaymuInvoice(ServicePurchase $purchase, PaymentGateway $gateway, array $overrides = []): Invoice
     {
         return Invoice::query()->create(array_merge([
-            'invoiceable_id' => $order->id,
-            'invoiceable_type' => 'order',
+            'invoiceable_id' => $purchase->id,
+            'invoiceable_type' => 'service_purchase',
             'payment_gateway_id' => $gateway->id,
             'invoice_number' => Invoice::generateInvoiceNumber(),
             'external_transaction_id' => null,
             'payment_method' => 'pending',
-            'subtotal' => $order->grand_total,
+            'subtotal' => $purchase->settlement_amount,
             'payment_channel_fee' => 0,
-            'customer_gross_total' => $order->grand_total,
+            'customer_gross_total' => $purchase->settlement_amount,
             'currency' => 'IDR',
             'status' => 'pending',
         ], $overrides));

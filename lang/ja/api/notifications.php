@@ -11,5 +11,7 @@ return [
     'types' => [
         'user_created' => '新しいユーザー :name (:email) が :actor によって追加されました。',
         'account_updated' => 'あなたのアカウントが :actor によって更新されました。',
+        'service_subscription_grace' => ':service のサブスクリプションが終了しました。:grace_days 日以内（:grace_ends_at まで）に更新しないと、無料枠を超えるファイルが削除されます。',
+        'service_subscription_expired' => ':service の猶予期間が終了しました。無料枠が適用され、:deleted 件のファイルが削除されました。',
     ],
 ];

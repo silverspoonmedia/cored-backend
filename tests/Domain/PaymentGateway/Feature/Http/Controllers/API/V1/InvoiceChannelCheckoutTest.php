@@ -201,6 +201,50 @@ class InvoiceChannelCheckoutTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_channel_checkout_service_purchase_without_buyer_body_succeeds(): void
+    {
+        $owner = User::factory()->create([
+            'name' => 'Purchase Owner',
+            'email' => 'owner@example.com',
+        ]);
+        $purchase = \App\Domain\Service\Models\ServicePurchase::factory()->pending()->create([
+            'user_id' => $owner->id,
+        ]);
+        $invoice = $this->createPayableInvoice(null, [
+            'invoiceable_id' => $purchase->id,
+            'invoiceable_type' => 'service_purchase',
+        ]);
+        $admin = $this->userWithRole('Admin');
+
+        $this->mock(IpaymuPaymentService::class, function ($mock) use ($invoice): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->withArgs(function (array $input) use ($invoice): bool {
+                    return ($input['invoice_id'] ?? null) === $invoice->id
+                        && ! array_key_exists('buyer', $input);
+                })
+                ->andReturn([
+                    'ok' => true,
+                    'data' => [
+                        'Status' => 200,
+                        'Data' => [
+                            'TransactionId' => 99901,
+                            'QrString' => 'qris-no-buyer',
+                        ],
+                    ],
+                    'message_key' => 'api/payments.ipaymu.charge_created',
+                    'http' => 201,
+                ]);
+        });
+
+        $this->partialMock(MidtransPaymentService::class);
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'qris'])
+            ->assertCreated()
+            ->assertJsonPath('status', 'success');
+    }
+
     private function userWithRole(string $role): User
     {
         $user = User::factory()->create();

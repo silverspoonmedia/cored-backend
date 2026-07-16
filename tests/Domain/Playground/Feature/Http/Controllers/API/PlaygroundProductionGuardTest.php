@@ -27,7 +27,7 @@ class PlaygroundProductionGuardTest extends TestCase
         $output = $this->artisanRouteList('local', 'api/playground');
 
         $this->assertStringContainsString('api/playground/users', $output);
-        $this->assertStringContainsString('api/playground/orders', $output);
+        $this->assertStringNotContainsString('api/playground/orders', $output);
     }
 
     public function test_ping_remains_available_in_production(): void

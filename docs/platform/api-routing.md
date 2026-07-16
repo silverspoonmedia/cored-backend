@@ -31,7 +31,6 @@ routes/
 │       ├── navigation.php
 │       ├── notification.php
 │       ├── activity-log.php
-│       ├── approval.php
 │       └── payment-gateway.php
 └── web/
     ├── identity-guest.php
@@ -39,7 +38,6 @@ routes/
     ├── navigation.php
     ├── notification.php
     ├── activity-log.php
-    ├── approval.php
     ├── payment-gateway.php
     └── playground.php
 ```
@@ -71,7 +69,7 @@ JSON errors for `api/*` via `$exceptions->shouldRenderJsonWhen(...)`.
 
 ## Versioned routes
 
-Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, approvals, payments.
+Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, payments.
 
 ## Adding a new API version
 

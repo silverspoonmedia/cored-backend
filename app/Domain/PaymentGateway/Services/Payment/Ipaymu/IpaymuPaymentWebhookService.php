@@ -126,8 +126,17 @@ class IpaymuPaymentWebhookService
         try {
             $this->synchronizer->sync($invoice, $status);
         } catch (\RuntimeException $e) {
+            $data = is_array($status['Data'] ?? null) ? $status['Data'] : [];
             Log::warning('iPaymu webhook sync rejected', [
                 'transaction_id' => $transactionId,
+                'invoice_id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'invoice_subtotal' => $invoice->subtotal,
+                'invoice_fee' => $invoice->payment_channel_fee,
+                'invoice_gross' => $invoice->customer_gross_total,
+                'ipaymu_subtotal' => $data['SubTotal'] ?? $data['sub_total'] ?? null,
+                'ipaymu_fee' => $data['Fee'] ?? $data['fee'] ?? null,
+                'ipaymu_amount' => $data['Amount'] ?? $data['amount'] ?? null,
                 'error' => $e->getMessage(),
             ]);
 

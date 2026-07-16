@@ -42,6 +42,7 @@ return [
         'show_title' => 'Invoice detail',
         'show_card_title' => 'Invoice :number',
         'view_order' => 'View order',
+        'view_purchase' => 'View service purchase',
         'back_to_list' => 'Back to invoices',
         'datatable' => [
             'empty' => 'No invoices found.',

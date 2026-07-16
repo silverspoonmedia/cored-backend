@@ -20,7 +20,6 @@ class DatabaseSeeder extends Seeder
         $this->call(FileHostingRoleSeeder::class);
         $this->call(NotificationTypeSettingSeeder::class);
 
-        // Admin user (for Executive & Final Approval steps)
         $admin = User::factory()->create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
@@ -28,7 +27,6 @@ class DatabaseSeeder extends Seeder
         ]);
         $admin->assignRole('Admin');
 
-        // Management user (for Manager Review step)
         $manager = User::factory()->create([
             'name' => 'Manager User',
             'email' => 'manager@example.com',
@@ -36,7 +34,6 @@ class DatabaseSeeder extends Seeder
         ]);
         $manager->assignRole('Management');
 
-        // Moderator user (for Finance Approval step)
         $moderator = User::factory()->create([
             'name' => 'Finance Controller',
             'email' => 'finance@example.com',
@@ -44,7 +41,6 @@ class DatabaseSeeder extends Seeder
         ]);
         $moderator->assignRole('Moderator');
 
-        // Regular user (for submitting orders)
         $user = User::factory()->create([
             'name' => 'Regular User',
             'email' => 'user@example.com',
@@ -54,8 +50,9 @@ class DatabaseSeeder extends Seeder
 
         $this->call(MenuSeeder::class);
         $this->call(MenuRbacSeeder::class);
-        $this->call(ApprovalWorkflowSeeder::class);
         $this->call(PaymentGatewaySeeder::class);
         $this->call(PaymentChannelSeeder::class);
+        $this->call(CurrencySeeder::class);
+        $this->call(ServiceCatalogSeeder::class);
     }
 }

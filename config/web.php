@@ -33,7 +33,6 @@ return [
         'notifications.read',
         'notifications.read-all',
         'users.datatable',
-        'orders.datatable',
         'navigation.tree',
     ],
 

@@ -81,7 +81,7 @@ return [
         'active_payment_exists' => 'Sesi pembayaran untuk invoice ini masih berjalan. Selesaikan atau batalkan sebelum memulai checkout baru.',
         'invoice_not_found' => 'Tidak ada invoice iPaymu untuk order id ini.',
         'missing_transaction_id' => 'Invoice belum memiliki transaction id iPaymu.',
-        'buyer_required' => 'Berikan detail pembeli atau lampirkan invoice ke order/langganan dengan data pelanggan.',
+        'buyer_required' => 'Tidak dapat menentukan detail pembeli dari request, invoiceable, atau profil pengguna yang login.',
         'webhook_invalid_json' => 'Body JSON tidak valid.',
         'webhook_invalid_signature' => 'Signature notifikasi tidak valid.',
         'webhook_invalid_va' => 'Header VA tidak cocok dengan VA iPaymu yang dikonfigurasi.',

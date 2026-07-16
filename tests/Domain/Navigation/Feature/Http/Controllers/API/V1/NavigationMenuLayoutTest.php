@@ -159,7 +159,7 @@ class NavigationMenuLayoutTest extends TestCase
         $this->repo()->createMenu(['name' => 'Sidebar A', 'type' => 'p', 'layout' => MenuLayout::SIDEBAR, 'route' => 'dashboard'], 'append', null);
         $this->repo()->createMenu(['name' => 'Navbar A', 'type' => 'p', 'layout' => MenuLayout::NAVBAR, 'route' => 'users.index'], 'append', null);
         $this->repo()->createMenu(['name' => 'Sidebar B', 'type' => 'p', 'layout' => MenuLayout::SIDEBAR, 'route' => 'notifications.index'], 'append', null);
-        $this->repo()->createMenu(['name' => 'Navbar B', 'type' => 'p', 'layout' => MenuLayout::NAVBAR, 'route' => 'orders.index'], 'append', null);
+        $this->repo()->createMenu(['name' => 'Navbar B', 'type' => 'p', 'layout' => MenuLayout::NAVBAR, 'route' => 'services.index'], 'append', null);
 
         $sidebarNames = collect($this->repo()->navigationTree(null, MenuLayout::SIDEBAR))->pluck('name')->all();
         $navbarNames = collect($this->repo()->navigationTree(null, MenuLayout::NAVBAR))->pluck('name')->all();

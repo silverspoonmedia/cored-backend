@@ -81,7 +81,7 @@ return [
         'active_payment_exists' => 'この請求書の支払いセッションが進行中です。新しいチェックアウトを開始する前に完了またはキャンセルしてください。',
         'invoice_not_found' => 'このorder idのiPaymu請求書が見つかりません。',
         'missing_transaction_id' => '請求書にまだiPaymuトランザクションIDがありません。',
-        'buyer_required' => '購入者情報を提供するか、顧客フィールド付きの注文/サブスクリプションに請求書を添付してください。',
+        'buyer_required' => 'リクエスト、請求対象、またはログイン中のユーザープロフィールから購入者情報を解決できませんでした。',
         'webhook_invalid_json' => '無効なJSONボディです。',
         'webhook_invalid_signature' => '無効な通知署名です。',
         'webhook_invalid_va' => 'VAヘッダーが設定されたiPaymu VAと一致しません。',

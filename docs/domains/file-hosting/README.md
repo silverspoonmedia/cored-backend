@@ -138,10 +138,33 @@ Menu: **My Files** → `file-hosting.index`.
 | `regions` | Region key → disk name map (e.g. `sea` → `s3Custom`); only regions with non-empty disk appear in upload dropdown |
 | `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
 | `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy |
-| `default_quota_bytes` | Per-user quota (0 = unlimited) |
+| `default_quota_bytes` | Fallback per-user quota when no override row (0 = unlimited) |
 | `signed_download_ttl_minutes` | S3 GET temporary URL lifetime |
 | `signed_download_cache_margin_seconds` | Treat cache expired early |
 | `public_download_signature_ttl_minutes` | Laravel signed hop for `/s/f/.../download` |
+
+## Quota
+
+| Source | Behavior |
+|--------|----------|
+| `config('file-hosting.default_quota_bytes')` | Free-tier default (typically 5 GiB) when no active/grace unlimited entitlement |
+| `file_hosting_user_quotas` | Denorm override: `quota_bytes` (`0` = unlimited), `source` / `source_id` from Service fulfillment |
+
+### Quota resolution (Service-aware)
+
+`QuotaService` source of truth order:
+
+| Priority | Condition | Effective quota | Upload |
+|----------|-----------|-----------------|--------|
+| 1 | Active `ServiceEntitlement` for `file_hosting` + `unlimited_quota` | unlimited (`0`) | OK |
+| 2 | Same entitlement in **grace** | unlimited display; files kept | **blocked** (`quota_grace_blocked`) |
+| 3 | Else | `UserQuota` row or `default_quota_bytes` | enforce free tier |
+
+On paid [Service](../service/README.md) subscription: entitlement active + denorm `UserQuota` unlimited. On grace expire: revoke override + `EnforceFreeTierQuotaService` (oldest-first retain free limit; soft-delete DB + hard-delete S3).
+
+**Purge rule (example):** files A 2 GiB (oldest), B 3 GiB, C 5 GiB with free limit 5 GiB → keep A+B (exactly 5 GiB), soft-delete C in DB and hard-delete C object on S3. Under-quota users are no-op. Re-run is idempotent.
+
+Scheduler entry point: `php artisan service:process-entitlements` (hourly).
 
 ## Tests
 
@@ -149,10 +172,11 @@ Menu: **My Files** → `file-hosting.index`.
 composer test -- --filter=FileHosting
 ```
 
-Includes API feature tests (`FileHostingTest`), web controller tests (`FileManagerControllerTest`), and `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`.
+Includes API feature tests (`FileHostingTest`), web controller tests (`FileManagerControllerTest`), and `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`. Service paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`.
 
 ## Related
 
+- [service/README.md](../service/README.md) — entitlements, grace, renew, paid unlimited
 - [product/README.md](../product/README.md) — catalog stub (retired Items UI)
 - [identity/README.md](../identity/README.md) — H-RBAC / `domain_kind`
 - [platform/architecture.md](../../platform/architecture.md)

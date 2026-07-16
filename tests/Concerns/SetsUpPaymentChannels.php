@@ -46,7 +46,7 @@ trait SetsUpPaymentChannels
 
         return Invoice::query()->create(array_merge([
             'invoiceable_id' => (string) Str::uuid(),
-            'invoiceable_type' => 'order',
+            'invoiceable_type' => 'service_purchase',
             'payment_gateway_id' => $gatewayId,
             'invoice_number' => Invoice::generateInvoiceNumber(),
             'payment_method' => 'pending',

@@ -4,6 +4,7 @@ namespace App\Domain\PaymentGateway\Models;
 
 use App\Domain\PaymentGateway\Enums\DisbursementStatus;
 use App\Domain\Playground\Models\Order;
+use App\Domain\Service\Models\ServicePurchase;
 use App\Support\Encryption\Casts\EnvelopeEncryptedArray;
 // Internal
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -107,6 +108,12 @@ class Invoice extends Model
     {
         return $this->invoiceable_type === 'subscription'
             || $this->invoiceable_type === Subscription::class;
+    }
+
+    public function isForServicePurchase(): bool
+    {
+        return $this->invoiceable_type === 'service_purchase'
+            || $this->invoiceable_type === ServicePurchase::class;
     }
 
     public static function generateInvoiceNumber(): string

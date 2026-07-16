@@ -1,6 +1,6 @@
 # Playground — demo CRUD (non-production)
 
-Reference implementations for simple CRUD and master-detail aggregates. **Disabled when `APP_ENV=production`.** Routes: `routes/api/playground.php` (from `routes/api.php`), `routes/web/playground.php`.
+Reference implementation for simple CRUD. **Disabled when `APP_ENV=production`.** Routes: `routes/api/playground.php` (from `routes/api.php`), `routes/web/playground.php` (empty — no Blade sell UI).
 
 Code: `app/Domain/Playground/`. Domain registry: **locked** product demo (removable after unlock).
 
@@ -10,39 +10,31 @@ Playground routes register only outside production. Do not treat as product API 
 
 ## Surfaces
 
-### Users (simple CRUD)
+### Users (simple CRUD) — active
 
 `Route::apiResource` → `PlaygroundController` → `UserService` → `EloquentCrudRepository` + Identity `User` model. Namespaced route names `playground.users.*`.
 
 Patterns: [platform/crud.md](../../platform/crud.md).
 
-### Orders (master-detail)
+### Orders (master-detail) — retired as sell path
 
-| Piece | Role |
-|-------|------|
-| `Order` / `OrderDetail` | UUID PKs, cascade details |
-| `OrderRepository` | `DB::transaction` create/update/delete with details |
-| `OrderService` | Totals from lines, business rules, attachments |
-| Attachments | Presigned S3 (`s3Custom`), staged uploads, polymorphic `attachments` |
+Order models, migrations, and factories remain on disk for historical data and residual PaymentGateway morph `order` compatibility. **Public routes and Blade UI were removed.**
 
-Update semantics: **ID-preserving line sync** (id present → update; no id → insert; missing → delete). Completed orders may be frozen (409).
+Sell / checkout now lives in the [Service](../service/README.md) domain (`ServicePurchase` + FX→IDR + PaymentGateway).
 
-Order create may start approval workflow — [approval](../approval/README.md). Invoices: [payment-gateway](../payment-gateway/README.md).
-
-### Attachments
-
-Browser-direct upload queue (`max_concurrent_uploads` / `ATTACHMENT_UPLOAD_MAX_CONCURRENT`). Metadata in DB; objects outside transaction with compensation on failure.
-
-## Web admin
-
-Blade screens proxy playground API for users/orders. Vite assets for upload widgets as documented in views.
+Do not re-expose `/api/playground/orders` or `/orders/*` as the product payment demo.
 
 ## Localization & tests
 
-API/web copy under `lang/*/api/playground.php` and web counterparts. Tests: `tests/Domain/Playground/` — `composer test -- --filter=Playground` or `Order`.
+API copy under `lang/*/api/playground.php`. Tests: `tests/Domain/Playground/` — users + production guard (orders tests deleted with surface).
+
+```powershell
+composer test -- --filter=Playground
+```
 
 ## Related
 
+- [service](../service/README.md) — current sellable catalog + checkout
+- [payment-gateway](../payment-gateway/README.md)
 - [platform/api-routing.md](../../platform/api-routing.md)
 - [platform/crud.md](../../platform/crud.md)
-- [web/blade-admin.md](../../web/blade-admin.md)

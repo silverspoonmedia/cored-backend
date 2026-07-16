@@ -55,6 +55,9 @@ class RoleSeeder extends Seeder
             'initiate payment',
             'view subscription',
             'manage subscription',
+            'view service',
+            'manage service',
+            'purchase service',
         ];
 
         foreach ($permissions as $permission) {
@@ -70,11 +73,11 @@ class RoleSeeder extends Seeder
         }
 
         $rolePermissions = [
-            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription'],
-            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription'],
-            'Moderator' => ['view user', 'create user', 'edit user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription'],
-            'Management' => ['view user', 'view menu', 'view notification', 'view payment gateway', 'view invoice', 'view subscription'],
-            'User' => ['view notification'],
+            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service'],
+            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service'],
+            'Moderator' => ['view user', 'create user', 'edit user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'purchase service'],
+            'Management' => ['view user', 'view menu', 'view notification', 'view payment gateway', 'view invoice', 'view subscription', 'view service'],
+            'User' => ['view notification', 'view service', 'purchase service'],
         ];
 
         foreach ($rolePermissions as $roleName => $permissionNames) {

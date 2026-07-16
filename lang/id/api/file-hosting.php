@@ -27,6 +27,7 @@ return [
     'trash_success' => 'Sampah dimuat.',
     'quota_success' => 'Kuota dimuat.',
     'quota_exceeded' => 'Kuota penyimpanan terlampaui.',
+    'quota_grace_blocked' => 'Langganan Anda dalam masa grace. Perpanjang untuk mengunggah lagi.',
     'folder_not_found' => 'Folder tidak ditemukan.',
     'file_not_found' => 'File tidak ditemukan.',
     'owner_not_found' => 'Pemilik tidak ditemukan.',

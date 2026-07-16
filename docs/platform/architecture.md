@@ -6,7 +6,7 @@ Logical monorepo: domain code under `app/Domain/{Domain}/` in one Laravel app an
 
 | Kind | Domains | `domain:remove` |
 |------|---------|-----------------|
-| **Core** (platform) | Identity, Navigation, Notification, ActivityLog, Approval, PaymentGateway + Kernel | **Always refused** — `DomainManager::PLATFORM_CORE`; flipping `core` in config does nothing |
+| **Core** (platform) | Identity, Navigation, Notification, ActivityLog, PaymentGateway, Service (catalog + entitlements + FX) + Kernel | **Always refused** — `DomainManager::PLATFORM_CORE`; flipping `core` in config does nothing |
 | **Locked** (product) | Default for `domain:make` | Refused until `'locked' => false` in [`config/domains.php`](../../config/domains.php) |
 | **Removable** | Playground, or `domain:make --removable` | Allowed (`--force`) |
 
@@ -39,11 +39,11 @@ app/
 │   ├── Navigation/     # Menu tree (core)
 │   ├── Notification/   # Activity notifications (core)
 │   ├── ActivityLog/    # Spatie audit trail (core)
-│   ├── Playground/     # Demo users, orders, attachments (locked)
+│   ├── Playground/     # Demo users CRUD only (locked; orders retired)
 │   ├── Product/        # Stub product scaffold (catalog retired)
 │   ├── FileHosting/    # Nested files, chunk S3 upload, Drive-lite share (locked product)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
-│   └── Approval/       # Approval matrix (core)
+│   └── Service/        # Catalog, entitlements, DB FX→IDR, FH grace/purge (core)
 ├── Http/Middleware/    # Kernel
 ├── Repositories/Eloquent/EloquentCrudRepository.php
 ├── Support/            # Api, DataTable, Web, Auth, Domain (Kernel)
@@ -67,14 +67,14 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `navigation.php` | Menus |
 | `notification.php` | Notifications |
 | `activity-log.php` | Activity logs |
-| `approval.php` | Approvals + workflow admin |
 | `payment-gateway.php` | Gateways, invoices, subscriptions |
+| `service.php` | Service catalog, checkout, service purchases |
 | `product.php` | Product domain stub (empty) |
 | `file-hosting.php` | File hosting (auth + public share) folders/files/uploads |
 
 Global: `routes/api.php` (ping) + `routes/api/playground.php` (non-production).
 
-**Public URLs stay stable** when route files split — e.g. `/api/v1/approvals/*`.
+**Public URLs stay stable** when route files split — e.g. `/api/v1/users/*`.
 
 ## Namespace convention
 
@@ -91,7 +91,6 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 - **Identity** (`User`, `Role`, `Permission`) is the hub — other domains import those models.
 - **RBAC catalog** lives in Identity only. Roles/permissions carry `domain_kind` (`core` | `product`) so platform and product catalogs share Spatie tables without colliding on hierarchy. This is **not** the same as the module registry in [`config/domains.php`](../../config/domains.php) (`core` / `locked` for `domain:remove`). Details: [identity README — Core vs product RBAC](../domains/identity/README.md#core-vs-product-rbac).
 - **Product H-RBAC when core is not enough:** Core seeds a fixed platform ladder (Root → User) and platform permissions. If a **product** domain needs a richer hierarchy, more roles, or domain-specific permissions, **add new roles and permissions with `domain_kind = product`** (own seeder, own level ladder). Do **not** overload or rename core roles. Spatie names stay globally unique — use product-prefixed names (e.g. `Billing Admin`, not a second `Admin`). Product levels never drive platform user-management H-RBAC; wire product authorization in that domain’s routes/policies/services.
-- **Approval** is cross-cutting (`document_type` such as orders).
 - Do not import domain services across boundaries unless explicit and documented.
 
 ## Adding a new domain

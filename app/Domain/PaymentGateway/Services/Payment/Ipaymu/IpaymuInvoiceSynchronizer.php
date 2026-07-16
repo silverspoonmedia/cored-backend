@@ -11,10 +11,13 @@ use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\Playground\Models\Order;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\Billing\InvoiceFundsLedgerService;
+use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Services\ServiceFulfillmentService;
 // Internal
 use App\Support\Encryption\DecryptSourceContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use iPaymu\iPaymu;
 
 // Class
@@ -25,7 +28,8 @@ use iPaymu\iPaymu;
 class IpaymuInvoiceSynchronizer
 {
     public function __construct(
-        private InvoiceFundsLedgerService $fundsLedger
+        private InvoiceFundsLedgerService $fundsLedger,
+        private ServiceFulfillmentService $serviceFulfillment,
     ) {}
 
     private const STATUS_EXPIRED = -2;
@@ -120,6 +124,8 @@ class IpaymuInvoiceSynchronizer
                 $this->syncOrderIfNeeded($invoice->invoiceable, $invoiceStatus);
             } elseif ($invoice->invoiceable instanceof Subscription) {
                 $this->syncSubscriptionIfNeeded($invoice->invoiceable, $invoiceStatus);
+            } elseif ($invoice->invoiceable instanceof ServicePurchase) {
+                $this->syncServicePurchaseIfNeeded($invoice->invoiceable, $invoiceStatus);
             }
 
             return $invoice->fresh();
@@ -128,13 +134,16 @@ class IpaymuInvoiceSynchronizer
 
     /**
      * Align {@see Invoice::$payment_channel_fee} and {@see Invoice::$customer_gross_total} from iPaymu
-     * `checkTransaction` Data (Amount, SubTotal, Fee) and validate against {@see Invoice::$subtotal}.
+     * `checkTransaction` / notify Data (Amount, SubTotal, Fee) and validate against {@see Invoice::$subtotal}.
      *
-     * @param  array<string, mixed>  $data  `checkTransaction` Data object (mixed key casing from JSON).
+     * Merchant sale stays on invoice.subtotal (source of truth). Provider fee + customer gross are updated.
+     * SubTotal may differ by up to 1 IDR (float / whole-rupiah noise); larger gaps reject the sync.
+     *
+     * @param  array<string, mixed>  $data  `checkTransaction` Data or notify body (mixed key casing).
      */
     protected function reconcileIpaymuMonetaryFields(Invoice $invoice, array $data): void
     {
-        $amount = $this->firstNumericField($data, ['Amount', 'amount']);
+        $amount = $this->firstNumericField($data, ['Amount', 'amount', 'Total', 'total']);
         if ($amount === null) {
             return;
         }
@@ -144,11 +153,54 @@ class IpaymuInvoiceSynchronizer
         $ourFee = round((float) $invoice->payment_channel_fee, 2);
         $ourGross = round((float) $invoice->customer_gross_total, 2);
 
-        $subTotal = $this->firstNumericField($data, ['SubTotal', 'Subtotal', 'sub_total']);
+        // Notify uses sub_total / paid_off; checkTransaction often uses SubTotal.
+        $subTotal = $this->firstNumericField($data, [
+            'SubTotal', 'Subtotal', 'sub_total', 'PaidOff', 'paid_off',
+        ]);
         if ($subTotal !== null) {
             $apiSub = round($subTotal, 2);
-            if ($apiSub !== $ourSub) {
+            $epsilon = $this->subtotalMatchEpsilon($invoice);
+
+            /*
+             * Primary: SubTotal === merchant sale (invoice.subtotal).
+             * Legacy self-heal: older charges sent customer_gross_total as amount, so iPaymu
+             * SubTotal equals our previous gross (sale + fee). Accept when:
+             *   apiSub ≈ ourGross  AND  apiSub > ourSub  AND  fee+gross identity holds.
+             * Then rewrite fee/gross from provider; leave subtotal (true sale) unchanged.
+             */
+            $matchesSale = $this->amountsClose($apiSub, $ourSub, $epsilon);
+            $matchesStaleGross = ! $matchesSale
+                && $ourGross > $ourSub
+                && $this->amountsClose($apiSub, $ourGross, $epsilon);
+
+            if (! $matchesSale && ! $matchesStaleGross) {
+                Log::warning('iPaymu SubTotal mismatch', [
+                    'invoice_id' => $invoice->id,
+                    'invoice_subtotal' => $ourSub,
+                    'invoice_fee' => $ourFee,
+                    'invoice_gross' => $ourGross,
+                    'ipaymu_subtotal' => $apiSub,
+                    'ipaymu_amount' => $gross,
+                    'epsilon' => $epsilon,
+                ]);
+
                 throw new \RuntimeException('iPaymu SubTotal does not match invoice subtotal.');
+            }
+
+            if ($matchesStaleGross) {
+                Log::notice('iPaymu SubTotal matched stale customer_gross_total; reconciling fee from provider', [
+                    'invoice_id' => $invoice->id,
+                    'invoice_subtotal' => $ourSub,
+                    'ipaymu_subtotal' => $apiSub,
+                    'ipaymu_amount' => $gross,
+                ]);
+            } elseif ($apiSub !== $ourSub) {
+                Log::notice('iPaymu SubTotal within epsilon of invoice subtotal', [
+                    'invoice_id' => $invoice->id,
+                    'invoice_subtotal' => $ourSub,
+                    'ipaymu_subtotal' => $apiSub,
+                    'epsilon' => $epsilon,
+                ]);
             }
 
             $fee = $this->firstNumericField($data, ['Fee', 'fee']);
@@ -167,17 +219,17 @@ class IpaymuInvoiceSynchronizer
             return;
         }
 
-        if ($gross === $ourGross) {
+        if ($this->amountsClose($gross, $ourGross)) {
             return;
         }
 
-        if ($gross === $ourSub && $ourFee === 0.0 && $ourGross === $ourSub) {
+        if ($this->amountsClose($gross, $ourSub) && $ourFee === 0.0 && $this->amountsClose($ourGross, $ourSub)) {
             $invoice->customer_gross_total = $gross;
 
             return;
         }
 
-        if ($ourFee === 0.0 && $ourGross === $ourSub && $gross > $ourSub) {
+        if ($ourFee === 0.0 && $this->amountsClose($ourGross, $ourSub) && $gross > $ourSub) {
             $invoice->payment_channel_fee = round($gross - $ourSub, 2);
             $invoice->customer_gross_total = $gross;
 
@@ -185,6 +237,16 @@ class IpaymuInvoiceSynchronizer
         }
 
         throw new \RuntimeException('iPaymu transaction amount does not match invoice totals.');
+    }
+
+    /**
+     * IDR PG rails are whole-rupiah; allow 1 unit drift. Other currencies keep 0.02.
+     */
+    protected function subtotalMatchEpsilon(Invoice $invoice): float
+    {
+        $currency = strtoupper((string) ($invoice->currency ?? 'IDR'));
+
+        return $currency === 'IDR' ? 1.0 : 0.02;
     }
 
     /**
@@ -210,6 +272,16 @@ class IpaymuInvoiceSynchronizer
     protected function amountsClose(float $a, float $b, float $epsilon = 0.02): bool
     {
         return abs(round($a, 2) - round($b, 2)) <= $epsilon;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     *
+     * @internal Exposed for unit tests via reflection-friendly access.
+     */
+    public function reconcileMonetaryFieldsForTest(Invoice $invoice, array $data): void
+    {
+        $this->reconcileIpaymuMonetaryFields($invoice, $data);
     }
 
     public function mapInvoiceStatus(int $paymentStatus): string
@@ -288,6 +360,25 @@ class IpaymuInvoiceSynchronizer
                 $subscription->status = SubscriptionStatus::Cancelled;
                 $subscription->save();
             }
+        }
+    }
+
+    protected function syncServicePurchaseIfNeeded(ServicePurchase $purchase, string $invoiceStatus): void
+    {
+        if (in_array($invoiceStatus, ['paid', 'partially_refunded'], true)) {
+            $this->serviceFulfillment->fulfill($purchase);
+
+            return;
+        }
+
+        if (in_array($invoiceStatus, ['cancelled', 'expired'], true)) {
+            $this->serviceFulfillment->markCancelled($purchase);
+
+            return;
+        }
+
+        if ($invoiceStatus === 'failed') {
+            $this->serviceFulfillment->markFailed($purchase);
         }
     }
 }

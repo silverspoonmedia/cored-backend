@@ -5,6 +5,13 @@ return [
         'prefer_channel_checkout' => filter_var(env('PAYMENT_PREFER_CHANNEL_CHECKOUT', true), FILTER_VALIDATE_BOOLEAN),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Default buyer phone (iPaymu requires phone; User profile has no phone yet)
+    |--------------------------------------------------------------------------
+    */
+    'default_buyer_phone' => env('PAYMENT_DEFAULT_BUYER_PHONE', '081000000000'),
+
     'gateways' => [
         'midtrans' => [
             'server_key' => env('MIDTRANS_SERVER_KEY'),
