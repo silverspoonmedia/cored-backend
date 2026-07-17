@@ -2,6 +2,7 @@
 
 use App\Providers\AppServiceProvider;
 use App\Providers\Domain\ActivityLogServiceProvider;
+use App\Providers\Domain\ErrorLogServiceProvider;
 use App\Providers\Domain\FileHostingServiceProvider;
 use App\Providers\Domain\IdentityServiceProvider;
 use App\Providers\Domain\NavigationServiceProvider;
@@ -20,6 +21,7 @@ return [
     NavigationServiceProvider::class,
     NotificationServiceProvider::class,
     ActivityLogServiceProvider::class,
+    ErrorLogServiceProvider::class,
     PaymentGatewayServiceProvider::class,
     ServiceServiceProvider::class,
 

@@ -38,6 +38,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Navigation | [domains/navigation/README.md](domains/navigation/README.md) — menu tree |
 | Notification | [domains/notification/README.md](domains/notification/README.md) — bell, role vs user |
 | ActivityLog | [domains/activity-log/README.md](domains/activity-log/README.md) — Spatie audit trail |
+| ErrorLog | [domains/error-log/README.md](domains/error-log/README.md) — grouped persistent app errors |
 | PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) |
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, FH grace/purge (core domain) |
 | File Hosting | [domains/file-hosting/README.md](domains/file-hosting/README.md) — nested folders, chunk S3, link share (product, locked) |

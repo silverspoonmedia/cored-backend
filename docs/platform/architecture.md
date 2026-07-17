@@ -8,7 +8,7 @@ Do **not** collapse taxonomy and lifecycle into one label.
 
 | Term | Axis | Meaning |
 |------|------|---------|
-| **Core domain** | Taxonomy (`kind`) | Foundation. Without it the app does not run well (Identity, Navigation, Notification, ActivityLog, PaymentGateway, Service). |
+| **Core domain** | Taxonomy (`kind`) | Foundation. Without it the app does not run well (Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service). |
 | **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (FileHosting). Extends core (Identity, H-RBAC, payments, …). |
 | **`locked`** | Lifecycle (product only) | `domain:remove` refuses until you set `'locked' => false` in [`config/domains.php`](../../config/domains.php). |
 | **Removable** | Derived | Product with `locked => false`. Not a config key. |
@@ -19,7 +19,7 @@ Do **not** collapse taxonomy and lifecycle into one label.
 
 | Kind | Examples | `domain:remove` |
 |------|----------|-----------------|
-| **Core** | Identity, Navigation, Notification, ActivityLog, PaymentGateway, Service + Kernel | **Always refused** — `PLATFORM_CORE`; flipping `kind` in config does nothing |
+| **Core** | Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service + Kernel | **Always refused** — `PLATFORM_CORE`; flipping `kind` in config does nothing |
 | **Product + locked** | Default for `domain:make`; FileHosting | Refused until `'locked' => false` in config |
 | **Product + removable** | `domain:make --removable` | Allowed (`--force`) |
 
@@ -63,6 +63,7 @@ app/
 │   ├── Navigation/     # Menu tree (core)
 │   ├── Notification/   # Activity notifications (core)
 │   ├── ActivityLog/    # Spatie audit trail (core)
+│   ├── ErrorLog/       # Grouped persistent app errors (core)
 │   ├── FileHosting/    # Nested files, chunk S3 upload, Drive-lite share (product, locked)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
 │   └── Service/        # Catalog, entitlements, DB FX→IDR, FH grace/purge (core)
@@ -91,6 +92,7 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `navigation.php` | Menus | core |
 | `notification.php` | Notifications | core |
 | `activity-log.php` | Activity logs | core |
+| `error-log.php` | Grouped persistent app errors | core |
 | `payment-gateway.php` | Gateways, invoices, subscriptions | core |
 | `service.php` | Service catalog, checkout, service purchases | core |
 | `file-hosting.php` | File hosting (auth + public share) folders/files/uploads | product |

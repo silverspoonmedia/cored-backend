@@ -33,6 +33,7 @@ class DomainManager
         'Navigation',
         'Notification',
         'ActivityLog',
+        'ErrorLog',
         'PaymentGateway',
         'Service',
     ];

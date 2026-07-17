@@ -68,6 +68,8 @@ final class EnvironmentVariableCatalog
             'LOG_STACK' => self::TYPE_STRING,
             'LOG_DEPRECATIONS_CHANNEL' => self::TYPE_NULL,
             'LOG_LEVEL' => self::TYPE_STRING,
+            'ERRORLOG_ENABLED' => self::TYPE_BOOL,
+            'ERRORLOG_CLEAN_AFTER_DAYS' => self::TYPE_INT,
             'DB_CONNECTION' => self::TYPE_STRING,
             'DB_HOST' => self::TYPE_STRING,
             'DB_PORT' => self::TYPE_INT,
