@@ -295,4 +295,12 @@ class S3DirectUploadEngineTest extends TestCase
             $this->engine->encodeProxyObjectKey('file-hosting/user id/obj.bin'),
         );
     }
+
+    #[Test]
+    public function format_etag_quotes_once(): void
+    {
+        $this->assertSame('"abc"', $this->engine->formatEtag('abc'));
+        $this->assertSame('"abc"', $this->engine->formatEtag('"abc"'));
+        $this->assertSame('"abc"', $this->engine->formatEtag('""abc""'));
+    }
 }

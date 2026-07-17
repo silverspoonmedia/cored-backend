@@ -89,10 +89,16 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
         $upload = FileUpload::query()->findOrFail($uploadUuid);
         Storage::disk($upload->disk)->put($upload->path, 'fake-binary');
 
+        $displayName = $this->allocateUniqueDisplayName(
+            $upload->user_id,
+            $upload->folder_id,
+            $upload->original_name,
+        );
+
         $file = HostedFile::query()->create([
             'user_id' => $upload->user_id,
             'folder_id' => $upload->folder_id,
-            'name' => $upload->original_name,
+            'name' => $displayName,
             'disk' => $upload->disk,
             'path' => $upload->path,
             'size' => $upload->size,

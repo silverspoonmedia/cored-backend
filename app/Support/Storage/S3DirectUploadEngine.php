@@ -2,10 +2,12 @@
 
 namespace App\Support\Storage;
 
+use Aws\Exception\AwsException;
 use Aws\S3\S3Client;
 use Illuminate\Filesystem\AwsS3V3Adapter;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 /**
  * Shared S3-compatible multipart / single-PUT presign engine.
@@ -79,13 +81,17 @@ class S3DirectUploadEngine
      */
     public function createMultipartUpload(string $diskName, string $path, string $mime): string
     {
-        $result = $this->s3Client($diskName)->createMultipartUpload([
-            'Bucket' => $this->bucket($diskName),
-            'Key' => $path,
-            'ContentType' => $mime,
-        ]);
+        try {
+            $result = $this->s3Client($diskName)->createMultipartUpload([
+                'Bucket' => $this->bucket($diskName),
+                'Key' => $path,
+                'ContentType' => $mime,
+            ]);
 
-        return (string) $result['UploadId'];
+            return (string) $result['UploadId'];
+        } catch (Throwable $e) {
+            throw $this->wrapUpstream($e);
+        }
     }
 
     /**
@@ -93,11 +99,15 @@ class S3DirectUploadEngine
      */
     public function abortMultipartUpload(string $diskName, string $path, string $s3UploadId): void
     {
-        $this->s3Client($diskName)->abortMultipartUpload([
-            'Bucket' => $this->bucket($diskName),
-            'Key' => $path,
-            'UploadId' => $s3UploadId,
-        ]);
+        try {
+            $this->s3Client($diskName)->abortMultipartUpload([
+                'Bucket' => $this->bucket($diskName),
+                'Key' => $path,
+                'UploadId' => $s3UploadId,
+            ]);
+        } catch (Throwable $e) {
+            throw $this->wrapUpstream($e);
+        }
     }
 
     /**
@@ -111,20 +121,51 @@ class S3DirectUploadEngine
         string $s3UploadId,
         array $parts,
     ): void {
-        $this->s3Client($diskName)->completeMultipartUpload([
-            'Bucket' => $this->bucket($diskName),
-            'Key' => $path,
-            'UploadId' => $s3UploadId,
-            'MultipartUpload' => [
-                'Parts' => array_map(
-                    fn (array $part): array => [
-                        'ETag' => '"'.$part['etag'].'"',
-                        'PartNumber' => $part['part_number'],
-                    ],
-                    $parts,
-                ),
-            ],
-        ]);
+        try {
+            $this->s3Client($diskName)->completeMultipartUpload([
+                'Bucket' => $this->bucket($diskName),
+                'Key' => $path,
+                'UploadId' => $s3UploadId,
+                'MultipartUpload' => [
+                    'Parts' => array_map(
+                        fn (array $part): array => [
+                            'ETag' => $this->formatEtag((string) $part['etag']),
+                            'PartNumber' => $part['part_number'],
+                        ],
+                        $parts,
+                    ),
+                ],
+            ]);
+        } catch (Throwable $e) {
+            throw $this->wrapUpstream($e);
+        }
+    }
+
+    /**
+     * S3 expects ETag quoted once; browser/Worker may already include quotes.
+     */
+    public function formatEtag(string $etag): string
+    {
+        return '"'.trim($etag, " \t\"'").'"';
+    }
+
+    /**
+     * @throws S3DirectUploadException
+     */
+    private function wrapUpstream(Throwable $e): S3DirectUploadException
+    {
+        if ($e instanceof S3DirectUploadException) {
+            return $e;
+        }
+
+        $message = $e instanceof AwsException
+            ? (string) ($e->getAwsErrorMessage() ?: $e->getAwsErrorCode() ?: $e->getMessage())
+            : $e->getMessage();
+
+        return new S3DirectUploadException(
+            S3DirectUploadException::UPSTREAM_FAILED,
+            $message !== '' ? $message : S3DirectUploadException::UPSTREAM_FAILED,
+        );
     }
 
     /**

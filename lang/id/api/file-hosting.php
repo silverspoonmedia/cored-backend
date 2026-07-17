@@ -61,5 +61,7 @@ return [
         'incomplete_parts' => 'Tidak semua bagian multipart terunggah.',
         'unsupported_disk' => 'Disk penyimpanan tidak mendukung unggah langsung.',
         'proxy_misconfigured' => 'Proxy unggah aktif tetapi tidak lengkap (token atau alias target disk hilang).',
+        'upstream_failed' => 'Penyimpanan menolak operasi unggah: :detail',
+        'upstream_failed_generic' => 'Penyimpanan menolak operasi unggah. Periksa path-style S3/B2 dan status multipart.',
     ],
 ];

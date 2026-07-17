@@ -22,6 +22,7 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Upload sessions | `file_hosting_uploads` — init → browser PUT (direct S3 **or** CF Worker proxy) → complete promotes row |
 | Part size | Default **10 MB** chunk + multipart threshold (`FILE_HOSTING_CHUNK_SIZE`) |
 | S3 object key | `file-hosting/{user_id}/{upload_id}/{random40}.{ext}` — display name only in DB |
+| Display name on upload | Preferred client name kept if free in that owner+folder (soft-deleted ignored). If taken → auto DB rename to `{stem} ({maxN+1}).{ext}` where `maxN` is highest active sibling index (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`). S3 object key stays random and is never renamed. Manual rename/move still rejects exact sibling collisions. |
 | Download bytes | Always **302 (or client follow)** to S3 temporary URL — **not** Monolith streaming |
 | S3 signed URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry |
 | Download filename | `ResponseContentDisposition` from DB `name` (random key stays on object) |
@@ -73,7 +74,7 @@ manage any file hosting resource
 | Files | show (view++), rename, move, **visibility**, soft/force delete, restore |
 | Bulk | `POST files/bulk-visibility` + `POST folders/bulk-visibility` (`ids[]`, `visibility`); `DELETE files/bulk` + `DELETE folders/bulk` (`ids[]`) — owner-scoped, max 100 ids |
 | Download | `GET files/{id}/download` → `{ url, expires_at }` (download++; cache S3 URL) |
-| Upload | init (optional `disk` = region key, resolved via `RegionResolver`; rejects disabled regions), status, sign-parts, complete, abort |
+| Upload | init (optional `disk` = region key; rejects disabled regions), status, sign-parts, complete (auto-renames duplicate display name), abort |
 | Search / trash / quota | as named |
 
 ### Direct upload (S3 engine + optional Worker proxy)
@@ -105,6 +106,8 @@ Config for thresholds/TTL/proxy: `config/file-hosting.php`.
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOMEU` | Alias for disk `s3Customeu` (optional) |
 
 **Fail closed:** if base URL is set but token or disk alias is missing → init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3.
+
+**B2 / path-style:** Monolith disk `s3Custom` must use `CUSTOM_S3_USE_PATH_STYLE=true` (default) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true`). Virtual-hosted Create + path-style UploadPart can produce a usable-looking flow that fails at complete with `NoSuchUpload`.
 
 **Worker project:** `c:\laragon\www\workers` — streaming SigV4 proxy; see that repo’s README. Spec history: [chore-now.md](./chore-now.md).
 

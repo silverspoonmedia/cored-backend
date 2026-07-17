@@ -67,6 +67,12 @@ return [
             'key' => env('CUSTOM_S3_KEY'),
             'secret' => env('CUSTOM_S3_SECRET'),
             'endpoint' => env('CUSTOM_S3_ENDPOINT'),
+            // B2 (and many S3-compatible APIs) need path-style so Create/Complete
+            // match CF Worker forcePathStyle uploads on the same UploadId.
+            'use_path_style_endpoint' => filter_var(
+                env('CUSTOM_S3_USE_PATH_STYLE', true),
+                FILTER_VALIDATE_BOOL,
+            ),
             'visibility' => 'public',
             'throw' => true,
             'domain' => env('CUSTOM_S3_BUCKET_DOMAIN'),

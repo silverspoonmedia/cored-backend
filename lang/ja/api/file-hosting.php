@@ -61,5 +61,7 @@ return [
         'incomplete_parts' => 'すべてのパートがアップロードされていません。',
         'unsupported_disk' => '設定されたディスクは直接アップロードに対応していません。',
         'proxy_misconfigured' => 'アップロードプロキシが有効ですが設定が不完全です（トークンまたはディスクのターゲット別名が不足）。',
+        'upstream_failed' => 'ストレージがアップロードを拒否しました: :detail',
+        'upstream_failed_generic' => 'ストレージがアップロードを拒否しました。S3/B2 の path-style 設定とマルチパート状態を確認してください。',
     ],
 ];

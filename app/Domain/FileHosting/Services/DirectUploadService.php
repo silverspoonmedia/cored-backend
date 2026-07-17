@@ -56,6 +56,8 @@ class DirectUploadService
         }
 
         $this->assertUploadAllowed($name, $mime, $size);
+        // Display-name collisions are resolved at complete (auto "name (N).ext"), not rejected here.
+        // S3 object keys stay unique via random path segments regardless of display name.
         $this->quota->assertCanAccept($ownerId, $size);
 
         $diskName = $this->resolveDiskName($disk);
@@ -185,6 +187,14 @@ class DirectUploadService
         $this->quota->assertCanAccept($upload->user_id, $upload->size);
 
         return DB::transaction(function () use ($upload, $parts): array {
+            // Allocate DB display name before irreversible S3 complete so a later
+            // rename failure cannot leave multipart finalized with no HostedFile row.
+            $displayName = $this->allocateUniqueDisplayName(
+                $upload->user_id,
+                $upload->folder_id,
+                $upload->original_name,
+            );
+
             $merged = $upload->parts;
 
             if ($upload->strategy === S3DirectUploadEngine::STRATEGY_SINGLE) {
@@ -207,12 +217,10 @@ class DirectUploadService
                 }
             }
 
-            $this->assertUniqueFileName($upload->user_id, $upload->folder_id, $upload->original_name);
-
             $file = HostedFile::query()->create([
                 'user_id' => $upload->user_id,
                 'folder_id' => $upload->folder_id,
-                'name' => $upload->original_name,
+                'name' => $displayName,
                 'disk' => $upload->disk,
                 'path' => $upload->path,
                 'size' => $upload->size,
@@ -377,17 +385,117 @@ class DirectUploadService
         }
     }
 
-    private function assertUniqueFileName(string $ownerId, ?string $folderId, string $name): void
+    /**
+     * Pick a free sibling display name for promote-to-file.
+     *
+     * Soft-deleted rows are ignored (default SoftDeletes scope). S3 keys are never renamed.
+     *
+     * Rules (preferred = client original name, e.g. "A.zip"):
+     * - If preferred free → use it.
+     * - Else → "{stem} ({maxN+1}).{ext}" where maxN is the highest active index among
+     *   preferred itself (counts as 1) and siblings matching "{stem} (N).{ext}".
+     *   Example: A.zip + A (3).zip active → next is A (4).zip even if (2) was deleted.
+     * - If A.zip and A (2).zip soft-deleted but A (3).zip remains → preferred free → A.zip again.
+     */
+    protected function allocateUniqueDisplayName(string $ownerId, ?string $folderId, string $preferred): string
     {
-        $exists = HostedFile::query()
+        $preferred = trim($preferred);
+
+        if ($preferred === '') {
+            throw new FileHostingException(__('api/file-hosting.upload.invalid_name'));
+        }
+
+        if (! $this->displayNameExists($ownerId, $folderId, $preferred)) {
+            return $preferred;
+        }
+
+        [$stem, $ext] = $this->splitDisplayName($preferred);
+        $maxSequence = $this->maxDisplayNameSequence($ownerId, $folderId, $stem, $ext);
+        $next = max(2, $maxSequence + 1);
+
+        for ($n = $next; $n < $next + 1000; $n++) {
+            $candidate = $this->formatNumberedDisplayName($stem, $ext, $n);
+
+            if (! $this->displayNameExists($ownerId, $folderId, $candidate)) {
+                return $candidate;
+            }
+        }
+
+        throw new FileHostingException(__('api/file-hosting.file_name_taken'));
+    }
+
+    protected function displayNameExists(string $ownerId, ?string $folderId, string $name): bool
+    {
+        return HostedFile::query()
             ->where('user_id', $ownerId)
             ->where('folder_id', $folderId)
             ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
             ->exists();
+    }
 
-        if ($exists) {
-            throw new FileHostingException(__('api/file-hosting.file_name_taken'));
+    /**
+     * Highest sequence in the "{stem}" / "{stem} (N)" family (same extension).
+     * Base name counts as 1 when present. Soft-deleted ignored.
+     *
+     * @return int 0 when no family members exist
+     */
+    protected function maxDisplayNameSequence(
+        string $ownerId,
+        ?string $folderId,
+        string $stem,
+        string $ext,
+    ): int {
+        $base = $this->formatNumberedDisplayName($stem, $ext, null);
+        $max = 0;
+
+        $names = HostedFile::query()
+            ->where('user_id', $ownerId)
+            ->where('folder_id', $folderId)
+            ->pluck('name');
+
+        $quotedStem = preg_quote($stem, '/');
+        $pattern = $ext === ''
+            ? '/^'.$quotedStem.' \((\d+)\)$/iu'
+            : '/^'.$quotedStem.' \((\d+)\)\.'.preg_quote($ext, '/').'$/iu';
+
+        foreach ($names as $name) {
+            if (! is_string($name) || $name === '') {
+                continue;
+            }
+
+            if (mb_strtolower($name) === mb_strtolower($base)) {
+                $max = max($max, 1);
+
+                continue;
+            }
+
+            if (preg_match($pattern, $name, $matches) === 1) {
+                $max = max($max, (int) $matches[1]);
+            }
         }
+
+        return $max;
+    }
+
+    /**
+     * @return array{0: string, 1: string} stem, extension without leading dot (may be empty)
+     */
+    protected function splitDisplayName(string $name): array
+    {
+        $ext = (string) pathinfo($name, PATHINFO_EXTENSION);
+        $stem = (string) pathinfo($name, PATHINFO_FILENAME);
+
+        return [$stem, $ext];
+    }
+
+    /**
+     * @param  int|null  $n  null = base name without " (N)"
+     */
+    protected function formatNumberedDisplayName(string $stem, string $ext, ?int $n): string
+    {
+        $body = $n === null ? $stem : $stem.' ('.$n.')';
+
+        return $ext === '' ? $body : $body.'.'.$ext;
     }
 
     /**
@@ -415,6 +523,9 @@ class DirectUploadService
             S3DirectUploadException::INVALID_NAME => __('api/file-hosting.upload.invalid_name'),
             S3DirectUploadException::MIME_NOT_ALLOWED => __('api/file-hosting.upload.mime_not_allowed'),
             S3DirectUploadException::PROXY_MISCONFIGURED => __('api/file-hosting.upload.proxy_misconfigured'),
+            S3DirectUploadException::UPSTREAM_FAILED => $e->getMessage() !== '' && $e->getMessage() !== S3DirectUploadException::UPSTREAM_FAILED
+                ? __('api/file-hosting.upload.upstream_failed', ['detail' => $e->getMessage()])
+                : __('api/file-hosting.upload.upstream_failed_generic'),
             default => $e->getMessage(),
         };
 

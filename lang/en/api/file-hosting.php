@@ -61,5 +61,7 @@ return [
         'incomplete_parts' => 'Not all multipart parts were uploaded.',
         'unsupported_disk' => 'Configured storage disk does not support direct uploads.',
         'proxy_misconfigured' => 'Upload proxy is enabled but incomplete (token or disk target alias missing).',
+        'upstream_failed' => 'Storage rejected the upload operation: :detail',
+        'upstream_failed_generic' => 'Storage rejected the upload operation. Check S3/B2 path-style settings and multipart state.',
     ],
 ];

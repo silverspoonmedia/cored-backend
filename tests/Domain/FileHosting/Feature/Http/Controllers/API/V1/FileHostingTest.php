@@ -118,6 +118,173 @@ class FileHostingTest extends TestCase
             ->assertJsonFragment(['name' => 'report.pdf']);
     }
 
+    public function test_upload_complete_auto_renames_duplicate_display_name(): void
+    {
+        $user = $this->userWithRole('User');
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'A.zip',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/existing/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.zip',
+            'size' => 100,
+            'mime' => 'application/zip',
+        ]);
+
+        $init = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'A.zip',
+                'mime' => 'application/zip',
+                'size' => 1024,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $complete = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads/'.$init['upload_id'].'/complete', [
+                'parts' => [['part_number' => 1, 'etag' => 'abc', 'size' => 1024]],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('A (2).zip', $complete['file']['name']);
+    }
+
+    public function test_upload_complete_sequence_skips_to_max_plus_one(): void
+    {
+        $user = $this->userWithRole('User');
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'A.zip',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/a/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.zip',
+            'size' => 1,
+            'mime' => 'application/zip',
+        ]);
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'A (3).zip',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/b/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.zip',
+            'size' => 1,
+            'mime' => 'application/zip',
+        ]);
+
+        $init = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'A.zip',
+                'mime' => 'application/zip',
+                'size' => 1024,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $complete = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads/'.$init['upload_id'].'/complete', [
+                'parts' => [['part_number' => 1, 'etag' => 'abc', 'size' => 1024]],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('A (4).zip', $complete['file']['name']);
+    }
+
+    public function test_upload_complete_reuses_base_name_after_soft_delete(): void
+    {
+        $user = $this->userWithRole('User');
+
+        $old = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'A.zip',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/old/cccccccccccccccccccccccccccccccccccccccc.zip',
+            'size' => 1,
+            'mime' => 'application/zip',
+        ]);
+        $old->delete();
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'A (3).zip',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/c3/dddddddddddddddddddddddddddddddddddddddd.zip',
+            'size' => 1,
+            'mime' => 'application/zip',
+        ]);
+
+        $init = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'A.zip',
+                'mime' => 'application/zip',
+                'size' => 1024,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $first = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads/'.$init['upload_id'].'/complete', [
+                'parts' => [['part_number' => 1, 'etag' => 'abc', 'size' => 1024]],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('A.zip', $first['file']['name']);
+
+        $init2 = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'A.zip',
+                'mime' => 'application/zip',
+                'size' => 1024,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $second = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads/'.$init2['upload_id'].'/complete', [
+                'parts' => [['part_number' => 1, 'etag' => 'def', 'size' => 1024]],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('A (4).zip', $second['file']['name']);
+    }
+
+    public function test_upload_init_allows_same_display_name_in_different_folder(): void
+    {
+        $user = $this->userWithRole('User');
+
+        $folder = Folder::query()->create([
+            'user_id' => $user->id,
+            'parent_id' => null,
+            'name' => 'Other',
+        ]);
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'report.pdf',
+            'disk' => 'local',
+            'path' => 'file-hosting/'.$user->id.'/existing/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.pdf',
+            'size' => 100,
+            'mime' => 'application/pdf',
+        ]);
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'report.pdf',
+                'mime' => 'application/pdf',
+                'size' => 1024,
+                'folder_id' => $folder->id,
+            ])
+            ->assertCreated();
+    }
+
     public function test_show_increments_view_count(): void
     {
         $user = $this->userWithRole('User');
