@@ -10,7 +10,7 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Web (auth) | `routes/web/file-hosting.php` |
 | Web (guest) | `routes/web/file-hosting-public.php` |
 | Seeder | `FileHostingRoleSeeder` (after core `RoleSeeder`) |
-| Docs close-out | [multi-region + bulk](../../changelog/pending/2026-07-16-file-hosting-multi-region-bulk.md) · [product domain](../../changelog/pending/2026-07-16-file-hosting-product-domain.md) |
+| Docs close-out | [hybrid proxy + display rename](../../changelog/done/2026-07-17-file-hosting-hybrid-proxy-display-rename.md) · [multi-region + bulk](../../changelog/pending/2026-07-16-file-hosting-multi-region-bulk.md) · [product domain](../../changelog/pending/2026-07-16-file-hosting-product-domain.md) |
 
 ## Concepts
 
@@ -92,30 +92,59 @@ Shared kernel pieces (not duplicated per domain):
 |-------|------|
 | `App\Support\Storage\S3DirectUploadEngine` | Strategy, direct presign **or** Worker proxy URLs, merge/assert parts, create/complete/abort multipart, size/mime guards |
 | `App\Support\Storage\SerializesDirectUploadSession` | Shared JSON session shape for init/status (`upload_id`, `strategy`, `parts`, …) |
-| `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, promote → `HostedFile` |
+| `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, **auto display-name allocation** on complete, promote → `HostedFile` |
 
 Config for thresholds/TTL/proxy: `config/file-hosting.php`.
+
+#### Display name on complete (auto-rename)
+
+Upload **init** no longer rejects a display name that already exists in the same owner+folder. On **complete**, `DirectUploadService::allocateUniqueDisplayName()` picks the DB `name`:
+
+| Active siblings (soft-deleted ignored) | Client preferred | Stored `name` |
+|----------------------------------------|------------------|---------------|
+| none | `A.zip` | `A.zip` |
+| `A.zip` | `A.zip` | `A (2).zip` |
+| `A.zip` + `A (3).zip` | `A.zip` | `A (4).zip` (max index + 1; holes not reused) |
+| base soft-deleted, `A (3).zip` remains | `A.zip` | `A.zip` (base free again) |
+
+S3 object keys stay unique (`…/{random40}.ext`) and are never renamed. Manual rename/move still enforces exact sibling uniqueness. Clients must show **`file.name` from complete**, not the original client filename.
 
 #### Hybrid proxy env
 
 | Env | Role |
 |-----|------|
-| `FILE_HOSTING_UPLOAD_PROXY_URL` | Worker origin (no trailing slash). Empty = direct S3 |
+| `FILE_HOSTING_UPLOAD_PROXY_URL` | Worker origin (no trailing slash). Empty = direct S3. Example production custom domain: `https://s3.silverspoon.me` |
 | `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Same value as Worker `S3_TARGETS.uploadToken` (Bearer) |
-| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM` | Worker target alias for disk `s3Custom` |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM` | Worker target **alias** for disk `s3Custom` (must match a key under Worker `S3_TARGETS.targets`, e.g. `sbs`) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOMEU` | Alias for disk `s3Customeu` (optional) |
 
-**Fail closed:** if base URL is set but token or disk alias is missing → init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3.
+**Where does `/t/{alias}/…` come from?** Monolith maps the upload session disk (e.g. `s3Custom`) → env alias via `upload_proxy.disk_targets`, then builds:
 
-**B2 / path-style:** Monolith disk `s3Custom` must use `CUSTOM_S3_USE_PATH_STYLE=true` (default) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true`). Virtual-hosted Create + path-style UploadPart can produce a usable-looking flow that fails at complete with `NoSuchUpload`.
+`{FILE_HOSTING_UPLOAD_PROXY_URL}/t/{alias}/{object-key}?partNumber=&uploadId=`
 
-**Worker project:** `c:\laragon\www\workers` — streaming SigV4 proxy; see that repo’s README. Spec history: [chore-now.md](./chore-now.md).
+plus headers `Authorization: Bearer …`, `X-S3-Target: {alias}`, `Content-Type`. The alias is **not** the B2 bucket name and **not** part of the S3 key; it only selects credentials/endpoint inside the Worker.
+
+**Fail closed:** if base URL is set but token or disk alias is missing → init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3. Upstream S3 failures map to `upstream_failed` where applicable.
+
+**B2 / path-style:** Monolith disk `s3Custom` must use `CUSTOM_S3_USE_PATH_STYLE=true` (default in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
+
+**Worker project:** `c:\laragon\www\workers` — Wrangler name **`cf-workers-s3-proxy`**. Streaming SigV4 proxy; production custom domain example `https://s3.silverspoon.me`. See that repo’s README. Spec history: [chore-now.md](./chore-now.md).
+
+**Deploy / secrets (ops):**
+
+| Step | Note |
+|------|------|
+| Runtime secret | `S3_TARGETS` is a **Worker secret**, not git, not `.dev.vars` on CF. Set with `npx wrangler secret put S3_TARGETS --name cf-workers-s3-proxy` (name must match deployed Worker). |
+| Dashboard Variables | Must be on the **same** Worker that serves the public hostname. UI “Variables” on another Worker / build env only → `/health` returns config missing. |
+| Alias rename | Change key + `defaultTarget` in `S3_TARGETS` **first**, then Monolith `FILE_HOSTING_UPLOAD_PROXY_TARGET_*`, then `php artisan config:clear`. In-flight sessions still using the old `/t/old-alias/…` may 400. |
+| Error bodies | Production Worker returns generic messages only (`Configuration invalid or missing`, `Internal server error`). Details stay in Workers Logs (`console.error`). |
 
 **Hybrid protocol (parts[] response):**
 
 - `url` = `{proxy}/t/{alias}/{encoded-key}` or with `?partNumber=&uploadId=` for multipart
 - `headers` = multi-value map: `Authorization: Bearer …`, `X-S3-Target`, `Content-Type`
 - Create/complete/abort still use Monolith disk credentials against real S3 (not the Worker)
+- Client `direct-upload.js` accepts header values as string or single-element array
 
 ### S3 provider CORS (browser-direct multipart)
 
@@ -282,7 +311,7 @@ Scheduler entry point: `php artisan service:process-entitlements` (hourly).
 composer test -- --filter=FileHosting
 ```
 
-Includes API feature tests (`FileHostingTest`), web controller tests (`FileManagerControllerTest`), and `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`. Service paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`.
+Includes API feature tests (`FileHostingTest` — including display-name auto-rename on complete), unit tests for `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest`), and `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`. Service paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Worker unit tests live in `c:\laragon\www\workers` (`npm test`).
 
 ## Related
 
