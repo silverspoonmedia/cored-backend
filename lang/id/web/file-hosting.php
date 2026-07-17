@@ -96,6 +96,7 @@ return [
         'pending' => 'Menunggu',
         'waiting' => 'Antri…',
         'uploading' => 'Mengunggah…',
+        'completing' => 'Menyelesaikan…',
         'done' => 'Selesai',
         'remove' => 'Hapus',
     ],

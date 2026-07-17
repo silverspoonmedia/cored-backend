@@ -10,7 +10,7 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Web (auth) | `routes/web/file-hosting.php` |
 | Web (guest) | `routes/web/file-hosting-public.php` |
 | Seeder | `FileHostingRoleSeeder` (after core `RoleSeeder`) |
-| Docs close-out | [hybrid proxy + display rename](../../changelog/done/2026-07-17-file-hosting-hybrid-proxy-display-rename.md) · [multi-region + bulk](../../changelog/pending/2026-07-16-file-hosting-multi-region-bulk.md) · [product domain](../../changelog/pending/2026-07-16-file-hosting-product-domain.md) |
+| Docs close-out | [upload progress speed + Finalizing](../../changelog/done/2026-07-18-file-hosting-upload-progress-speed.md) · [hybrid proxy + display rename](../../changelog/done/2026-07-17-file-hosting-hybrid-proxy-display-rename.md) · [multi-region + bulk](../../changelog/pending/2026-07-16-file-hosting-multi-region-bulk.md) · [product domain](../../changelog/pending/2026-07-16-file-hosting-product-domain.md) |
 
 ## Concepts
 
@@ -256,12 +256,12 @@ Share link users copy = show URL (`/s/f/{uuid}` or `/s/d/{uuid}`). Download butt
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
 | `resources/js/file-hosting/file-manager.js` | Page controller: AJAX CRUD, live search, grid/list view toggle (localStorage), move modal tree, drag-drop, region selector, bulk select/action (per-row + select-all checkboxes, share/unshare/delete), toast |
-| `resources/js/file-hosting/direct-upload.js` | Chunked upload: XHR PUT to server-provided part URLs (direct S3 or Worker proxy headers); **byte-level** progress via `xhr.upload.onprogress` + **session-average transfer rate** (shown next to bar) |
+| `resources/js/file-hosting/direct-upload.js` | Chunked upload: XHR PUT to server-provided part URLs (direct S3 or Worker proxy headers); **byte-level** progress via `xhr.upload.onprogress` + **session-average transfer rate** (shown next to bar); status **Finalizing…** while `POST …/complete` runs |
 | `resources/js/file-hosting/upload-progress.js` | Pure helpers: `computeTransferRate`, `formatTransferRate` (B/s–GB/s, 1024 base), `computeByteProgressPercent` — no DOM |
 | `resources/js/file-hosting/upload-queue.js` | Concurrency limiter (unchanged) |
 | `resources/views/adminlte4/file-hosting/partials/` | Reusable Blade partials: `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal` |
 
-**Upload progress UI (client-only):** Monolith never sees PUT body bytes (direct S3 or Worker). Progress % = `uploadedBytes / file.size`; speed = `uploadedBytes / elapsed` from first byte PUT to now (not a rolling window). Parts still upload sequentially per file. API session payloads do not include progress or speed fields.
+**Upload progress UI (client-only):** Monolith never sees PUT body bytes (direct S3 or Worker). Progress % = `uploadedBytes / file.size`; speed = `uploadedBytes / elapsed` from first byte PUT to now (not a rolling window). Parts still upload sequentially per file. After the last part PUT, the row shows **Finalizing…** (`upload.completing`) at 100% with speed cleared while the client calls `POST …/complete` (merge parts / promote `HostedFile`) — then **Done**. API session payloads do not include progress or speed fields.
 
 All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `redirect`).
 

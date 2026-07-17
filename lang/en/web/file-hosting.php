@@ -96,6 +96,7 @@ return [
         'pending' => 'Pending',
         'waiting' => 'Waiting…',
         'uploading' => 'Uploading…',
+        'completing' => 'Finalizing…',
         'done' => 'Done',
         'remove' => 'Remove',
     ],

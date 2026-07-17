@@ -246,6 +246,10 @@ export function initDirectUpload(root) {
             });
         }
 
+        // Bytes are on storage; complete merges parts / promotes the file on Monolith.
+        setRowStatus(row, 'completing');
+        updateProgress(row, 100);
+
         const completed = await apiJson(
             replaceToken(config.completeUrl, uploadId),
             'POST',
@@ -418,6 +422,8 @@ export function initDirectUpload(root) {
                 return config.messages.waiting || 'Waiting…';
             case 'uploading':
                 return config.messages.uploading || 'Uploading…';
+            case 'completing':
+                return config.messages.completing || 'Finalizing…';
             default:
                 return config.messages.uploading || 'Uploading…';
         }

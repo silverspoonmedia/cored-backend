@@ -123,6 +123,7 @@
                     'pending' => __('web/file-hosting.upload.pending'),
                     'waiting' => __('web/file-hosting.upload.waiting'),
                     'uploading' => __('web/file-hosting.upload.uploading'),
+                    'completing' => __('web/file-hosting.upload.completing'),
                     'done' => __('web/file-hosting.upload.done'),
                     'remove' => __('web/file-hosting.upload.remove'),
                 ]) }}"

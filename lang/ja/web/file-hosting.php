@@ -96,6 +96,7 @@ return [
         'pending' => '待機中',
         'waiting' => '順番待ち…',
         'uploading' => 'アップロード中…',
+        'completing' => '仕上げ中…',
         'done' => '完了',
         'remove' => '削除',
     ],
