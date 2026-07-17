@@ -13,8 +13,12 @@ use RuntimeException;
  * Keeps config/domains.php, bootstrap/providers.php, and route loaders in sync.
  * Does not touch migrations (DB history stays intact on remove).
  *
- * Platform core is hardcoded — flipping core in config cannot unlock remove.
- * Product domains use locked => true|false; unlock only by editing config by hand.
+ * Registry axes (see config/domains.php):
+ * - kind: core | product (taxonomy)
+ * - locked: product-only removal guard (lifecycle)
+ *
+ * Platform core is hardcoded — flipping kind in config cannot unlock remove.
+ * Product domains unlock only by editing locked => false by hand.
  */
 class DomainManager
 {
@@ -98,31 +102,29 @@ class DomainManager
     }
 
     /**
-     * Config `core` flag (informational for list/docs). Prefer isPlatformCore() for remove guards.
+     * Taxonomy: core foundation domain (PLATFORM_CORE or kind => core in config).
+     * Prefer isPlatformCore() for remove guards.
      */
     public function isCore(string $name): bool
     {
-        if ($this->isPlatformCore($name)) {
-            return true;
-        }
-
-        $name = $this->normalizeName($name);
-        $all = $this->all();
-
-        if (! array_key_exists($name, $all)) {
-            return false;
-        }
-
-        return (bool) ($all[$name]['core'] ?? false);
+        return $this->kind($name) === 'core';
     }
 
     /**
-     * Product lock from config. Platform core is always treated as locked for display/guards.
+     * Taxonomy: product / SaaS surface domain.
+     */
+    public function isProduct(string $name): bool
+    {
+        return $this->kind($name) === 'product';
+    }
+
+    /**
+     * Product removal lock from config. Core domains are never "locked" (use isPlatformCore).
      */
     public function isLocked(string $name): bool
     {
         if ($this->isPlatformCore($name)) {
-            return true;
+            return false;
         }
 
         $name = $this->normalizeName($name);
@@ -136,12 +138,33 @@ class DomainManager
     }
 
     /**
-     * Kind label for domain:list — core | locked | removable.
+     * Taxonomy label for domain:list — core | product only.
      */
     public function kind(string $name): string
     {
         if ($this->isPlatformCore($name)) {
             return 'core';
+        }
+
+        $name = $this->normalizeName($name);
+        $all = $this->all();
+
+        if (! array_key_exists($name, $all)) {
+            return 'product';
+        }
+
+        $kind = $all[$name]['kind'] ?? 'product';
+
+        return $kind === 'core' ? 'core' : 'product';
+    }
+
+    /**
+     * Lifecycle label for domain:list — never | locked | removable.
+     */
+    public function removalStatus(string $name): string
+    {
+        if ($this->isPlatformCore($name) || $this->kind($name) === 'core') {
+            return 'never';
         }
 
         if ($this->isLocked($name)) {
@@ -157,11 +180,11 @@ class DomainManager
     }
 
     /**
-     * @return array<string, array{core: bool, locked: bool}>
+     * @return array<string, array{kind: string, locked: bool}>
      */
     public function all(): array
     {
-        /** @var array<string, array{core?: bool, locked?: bool}> $raw */
+        /** @var array<string, array{kind?: string, core?: bool, locked?: bool}> $raw */
         $raw = (array) config('domains', []);
         $out = [];
 
@@ -170,10 +193,16 @@ class DomainManager
                 continue;
             }
 
+            if (! is_array($meta)) {
+                $meta = [];
+            }
+
             $platform = in_array($name, self::PLATFORM_CORE, true);
+            $kind = $this->resolveKindFromMeta($meta, $platform);
+
             $out[$name] = [
-                'core' => $platform || (bool) ($meta['core'] ?? false),
-                'locked' => $platform || (bool) ($meta['locked'] ?? false),
+                'kind' => $kind,
+                'locked' => $kind === 'product' && (bool) ($meta['locked'] ?? false),
             ];
         }
 
@@ -197,12 +226,6 @@ class DomainManager
 
     public function apiRoutePath(string $name): string
     {
-        $name = $this->normalizeName($name);
-
-        if ($name === 'Playground') {
-            return base_path('routes/api/playground.php');
-        }
-
         return base_path('routes/api/v1/'.$this->slug($name).'.php');
     }
 
@@ -250,7 +273,7 @@ class DomainManager
         File::ensureDirectoryExists($testsFeature);
         File::put($testsFeature.'/.gitkeep', '');
 
-        $this->registerInConfig($name, core: false, locked: $locked);
+        $this->registerInConfig($name, kind: 'product', locked: $locked);
         $this->registerProvider($name);
         $this->registerApiV1Require($name);
         $this->registerWebRequire($name);
@@ -318,7 +341,10 @@ class DomainManager
         return $warnings;
     }
 
-    public function registerInConfig(string $name, bool $core = false, bool $locked = true): void
+    /**
+     * @param  'core'|'product'  $kind
+     */
+    public function registerInConfig(string $name, string $kind = 'product', bool $locked = true): void
     {
         $name = $this->normalizeName($name);
         $path = config_path('domains.php');
@@ -328,9 +354,14 @@ class DomainManager
             return;
         }
 
-        $coreLiteral = $core ? 'true' : 'false';
-        $lockedLiteral = $locked ? 'true' : 'false';
-        $entry = "    '{$name}' => ['core' => {$coreLiteral}, 'locked' => {$lockedLiteral}],\n];";
+        if ($kind === 'core') {
+            $entry = "    '{$name}' => ['kind' => 'core'],\n];";
+            $runtime = ['kind' => 'core'];
+        } else {
+            $lockedLiteral = $locked ? 'true' : 'false';
+            $entry = "    '{$name}' => ['kind' => 'product', 'locked' => {$lockedLiteral}],\n];";
+            $runtime = ['kind' => 'product', 'locked' => $locked];
+        }
 
         $updated = preg_replace('/\];\s*$/', $entry, $contents, 1);
         if ($updated === null || $updated === $contents) {
@@ -338,7 +369,7 @@ class DomainManager
         }
 
         File::put($path, $updated);
-        config(["domains.{$name}" => ['core' => $core, 'locked' => $locked]]);
+        config(["domains.{$name}" => $runtime]);
     }
 
     public function unregisterFromConfig(string $name): void
@@ -466,13 +497,6 @@ class DomainManager
         if (File::isFile($v1)) {
             $this->removeLinesContaining($v1, "require __DIR__.'/v1/{$slug}.php';");
         }
-
-        if ($name === 'Playground') {
-            $api = base_path('routes/api.php');
-            $this->removeLinesContaining($api, "require __DIR__.'/api/playground.php';");
-            $this->removeLinesContaining($api, 'use App\\Domain\\Playground\\Http\\Controllers\\API\\PlaygroundController;');
-            $this->removeLinesContaining($api, "Route::get('ping', [PlaygroundController::class, 'ping']);");
-        }
     }
 
     public function unregisterWebRequire(string $name): void
@@ -539,6 +563,27 @@ class DomainManager
         $warnings[] = 'If menus or permissions referenced this domain, clean them up manually.';
 
         return $warnings;
+    }
+
+    /**
+     * @param  array{kind?: string, core?: bool, locked?: bool}  $meta
+     */
+    private function resolveKindFromMeta(array $meta, bool $platform): string
+    {
+        if ($platform) {
+            return 'core';
+        }
+
+        if (isset($meta['kind']) && is_string($meta['kind'])) {
+            return $meta['kind'] === 'core' ? 'core' : 'product';
+        }
+
+        // Legacy boolean core flag (pre-rename) — treat as kind.
+        if (array_key_exists('core', $meta)) {
+            return (bool) $meta['core'] ? 'core' : 'product';
+        }
+
+        return 'product';
     }
 
     private function removeLinesContaining(string $path, string $needle): void

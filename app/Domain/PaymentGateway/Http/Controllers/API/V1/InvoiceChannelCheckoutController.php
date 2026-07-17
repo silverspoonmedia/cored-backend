@@ -2,15 +2,17 @@
 
 namespace App\Domain\PaymentGateway\Http\Controllers\API\V1;
 
-use App\Http\Controllers\Controller;
 use App\Domain\PaymentGateway\Http\Requests\InvoiceChannelCheckoutRequest;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceChannelCheckoutService;
-use App\Support\ApiResponder;
+use App\Http\Controllers\Controller;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class InvoiceChannelCheckoutController extends Controller
 {
+    use ApiResponse;
+
     public function __construct(
         private InvoiceChannelCheckoutService $checkout,
     ) {}
@@ -29,10 +31,10 @@ class InvoiceChannelCheckoutController extends Controller
                 ];
             }
 
-            return ApiResponder::error($result['message'], $result['http'], $errorData);
+            return $this->errorResponse($result['message'], $result['http'], $errorData);
         }
 
-        return ApiResponder::success(
+        return $this->successResponse(
             $result['data'],
             __($result['message_key']),
             $result['http'],

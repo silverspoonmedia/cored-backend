@@ -43,7 +43,7 @@ Legacy ordered v4 only if required: `HasVersion4Uuids` — not for new tables.
 
 ## Already on UUID
 
-`users`, Spatie roles/permissions pivots, `order_master` / `order_detail`, `attachments`, sessions `user_id`, JWT `sub`.
+`users`, Spatie roles/permissions pivots, File Hosting / Service / Payment tables that use UUIDs, sessions `user_id`, JWT `sub`.
 
 ## Local reset
 

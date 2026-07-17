@@ -1,6 +1,6 @@
 # PaymentGateway — Midtrans, iPaymu, invoices, subscriptions
 
-Core domain `App\Domain\PaymentGateway\`. Secrets in env/config, not DB. Polymorphic invoices → **service_purchase** (primary product sell path) / PG `subscription` demo morph (legacy morph `order` still mapped for historical rows). Idempotent webhooks via unique `(payment_gateway_id, external_transaction_id)`.
+Core domain `App\Domain\PaymentGateway\`. Secrets in env/config, not DB. Polymorphic invoices → **service_purchase** (primary product sell path) / PG `subscription` demo morph. Idempotent webhooks via unique `(payment_gateway_id, external_transaction_id)`.
 
 **Product SaaS subscriptions** (periods, grace, File Hosting quota) live in the [Service](../service/README.md) domain (`ServiceEntitlement`) — **not** the PaymentGateway `Subscription` model.
 
@@ -13,7 +13,7 @@ Http/       API V1 + Web proxies
 Console/    payments:*
 ```
 
-Registry: **core** in `config/domains.php`.
+Registry: **`kind => core`** in [`config/domains.php`](../../../config/domains.php); listed in `DomainManager::PLATFORM_CORE`.
 
 ## API surface (`/api/v1/*`)
 
@@ -49,8 +49,6 @@ Mismatch beyond epsilon → reject sync (no paid status / no fulfillment). Fee +
 
 **Charge amount:** iPaymu direct/cart must send **merchant sale** (`invoice.subtotal`) only. Sending `customer_gross_total` (sale + prior fee) makes iPaymu treat that as a new SubTotal and add fee again — webhook then fails SubTotal match. Charge response may update fee/gross; before a new charge, fee is reset to 0 and gross = subtotal.
 
-Legacy Playground Order → invoice path is **retired** from public routes; synchronizers still tolerate morph `order` if old rows exist.
-
 | Surface | Channel mode | Snap/redirect fallback |
 |---------|--------------|------------------------|
 | **Vue** (via Gateway) | Channel picker + instructions | Yes |
@@ -74,7 +72,7 @@ Response: normalized instructions (VA numbers, QR, expiry, etc.). All routes fai
 | Priority | Source |
 |----------|--------|
 | 1 | Request `buyer` / `customer_details` (partial merge) |
-| 2 | Invoiceable: Order `customer_*`, Subscription `subscriber_*`, ServicePurchase → `user.name` / `user.email` |
+| 2 | Invoiceable: Subscription `subscriber_*`, ServicePurchase → `user.name` / `user.email` |
 | 3 | Authenticated user profile |
 | 4 | Phone: request → invoiceable → `config('payment.default_buyer_phone')` (User has no phone column yet) |
 
@@ -88,7 +86,7 @@ Payment-first order/invoice show: hero, steps, `checkout-panel`, `checkout.js`. 
 
 ## Permissions & morph map
 
-Permissions in RoleSeeder (`view invoice`, `initiate payment`, `manage payment gateway`, …). Morph map registers invoiceables (`service_purchase`, `subscription`, legacy `order`).
+Permissions in RoleSeeder (`view invoice`, `initiate payment`, `manage payment gateway`, …). Morph map registers invoiceables (`service_purchase`, `subscription`).
 
 ## Scheduler / commands
 
@@ -113,6 +111,6 @@ HTTP contract changes → [changelog/pending](../../changelog/pending/). SPA/Gat
 ## Related
 
 - [service](../service/README.md) — catalog + FX + service_purchase invoiceable
-- [playground](../playground/README.md) — orders sell path retired
+- [file-hosting](../file-hosting/README.md) — primary product domain fulfilled from Service
 - [platform/environment.md](../../platform/environment.md)
 - [integration/spa-gateway.md](../../integration/spa-gateway.md)

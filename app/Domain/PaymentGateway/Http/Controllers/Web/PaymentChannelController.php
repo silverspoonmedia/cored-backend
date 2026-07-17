@@ -27,13 +27,10 @@ class PaymentChannelController extends Controller
 
     public function update(Request $request, string $code): JsonResponse
     {
-        $request->validate([
-            'is_active' => ['required', 'boolean'],
-        ]);
-
-        $response = $this->api()->put("payment-channels/{$code}", [
-            'is_active' => $request->boolean('is_active'),
-        ]);
+        $response = $this->api()->put(
+            "payment-channels/{$code}",
+            $this->apiPayload($request, ['is_active']),
+        );
 
         if (! $response->successful()) {
             return response()->json([
@@ -51,14 +48,10 @@ class PaymentChannelController extends Controller
 
     public function updateRoute(Request $request, string $route): JsonResponse
     {
-        $request->validate([
-            'is_active' => ['sometimes', 'boolean'],
-            'priority' => ['sometimes', 'integer', 'min:0', 'max:9999'],
-        ]);
-
-        $payload = $request->only(['is_active', 'priority']);
-
-        $response = $this->api()->put("payment-channel-routes/{$route}", $payload);
+        $response = $this->api()->put(
+            "payment-channel-routes/{$route}",
+            $this->apiPayload($request, ['is_active', 'priority']),
+        );
 
         if (! $response->successful()) {
             return response()->json([

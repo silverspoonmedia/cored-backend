@@ -2,13 +2,14 @@
 
 namespace App\Domain\Identity\Http\Controllers\API\V1\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Domain\Identity\Models\User;
-use App\Support\Localization\LocaleCookie;
+use App\Http\Controllers\Controller;
+use App\Support\Localization\LocalePreference;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class LocaleController extends Controller
 {
@@ -16,24 +17,13 @@ class LocaleController extends Controller
 
     public function update(Request $request): JsonResponse
     {
-        $supported = config('localization.supported_locales', ['en', 'id', 'ja']);
-
         $validated = $request->validate([
-            'locale' => ['required', 'string', 'in:'.implode(',', $supported)],
+            'locale' => ['required', 'string', Rule::in(LocalePreference::supported())],
         ]);
 
         $locale = $validated['locale'];
-        LocaleCookie::queue($locale);
-
         $user = Auth::guard('api')->user();
-
-        if ($user instanceof User) {
-            $column = config('localization.user_column');
-
-            if (is_string($column) && $column !== '' && $user->{$column} !== $locale) {
-                $user->forceFill([$column => $locale])->save();
-            }
-        }
+        LocalePreference::apply($locale, $user instanceof User ? $user : null);
 
         return $this->successResponse(['locale' => $locale], __('api/common.updated'));
     }

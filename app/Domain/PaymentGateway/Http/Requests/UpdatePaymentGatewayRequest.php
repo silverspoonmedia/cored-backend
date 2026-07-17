@@ -2,11 +2,13 @@
 
 namespace App\Domain\PaymentGateway\Http\Requests;
 
+use App\Domain\PaymentGateway\Http\Requests\Concerns\PaymentGatewayRules;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdatePaymentGatewayRequest extends FormRequest
 {
+    use PaymentGatewayRules;
+
     public function authorize(): bool
     {
         return true;
@@ -19,11 +21,6 @@ class UpdatePaymentGatewayRequest extends FormRequest
     {
         $id = (string) $this->route('payment_gateway');
 
-        return [
-            'name' => ['sometimes', 'string', 'max:64', Rule::unique('payment_gateways', 'name')->ignore($id)],
-            'display_name' => ['sometimes', 'string', 'max:255'],
-            'is_active' => ['sometimes', 'boolean'],
-            'priority' => ['sometimes', 'integer', 'min:0'],
-        ];
+        return $this->gatewayRules(forUpdate: true, ignoreId: $id);
     }
 }

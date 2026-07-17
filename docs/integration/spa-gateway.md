@@ -38,9 +38,9 @@ Proxy rewrites cookie domain to `localhost`.
 | Vue | Browser → Gateway → Monolith | HttpOnly cookie on gateway → Bearer upstream |
 | Blade | Browser → Monolith web → same-host API | Cookie → Bearer; enforce off locally |
 
-## Playground
+## Global API
 
-`/api/playground/*` global (not v1); off in production. Gateway catch-all proxies same path.
+Monolith global surface is **`GET /api/ping` only**. Product features live under `/api/v1/*`. The former `/api/playground/*` demo surface was removed.
 
 ## Gateway is stateless
 
@@ -50,7 +50,7 @@ SQLite error with `Database: monolith` → often stale root `monolith` file or g
 
 ## SPA vs Blade parity
 
-Auth, users, menus, orders playground, activity logs, notifications, shell — aligned. Differences: locale switch surface (Blade `GET /locale/{locale}` vs SPA `POST /auth/locale` + client cookie); payment Snap UI **Vue only** (Blade channel-only).
+Auth, users, menus, activity logs, notifications, shell, payments, services, file hosting — aligned where both surfaces exist. Differences: locale switch surface (Blade `GET /locale/{locale}` vs SPA `POST /auth/locale` + client cookie); payment Snap UI **Vue only** (Blade channel-only).
 
 ### Realtime (SPA)
 

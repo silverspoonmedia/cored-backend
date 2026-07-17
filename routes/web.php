@@ -18,12 +18,15 @@ use Illuminate\Support\Facades\Route;
 | browser carry the same stateless token the API issues.
 |
 | Domain route files live under routes/web/*.php (loaded below).
+| Authenticated domain requires: core first, product last (see config/domains.php).
+| Guest/public specials are auth-surface groups, not kind taxonomy.
 */
 
 Route::get('/', fn () => redirect()->route(Auth::guard('api')->check() ? 'dashboard' : 'login'));
 
 Route::get('locale/{locale}', LocaleController::class)->name('locale.switch');
 
+// Public / provider return (no web.auth) — not ordered by domain kind.
 require __DIR__.'/web/payment-ipaymu-return.php';
 require __DIR__.'/web/file-hosting-public.php';
 
@@ -32,13 +35,14 @@ Route::middleware('web.guest')->group(function (): void {
 });
 
 Route::middleware('web.auth')->group(function (): void {
+    // Core domains
     require __DIR__.'/web/identity.php';
     require __DIR__.'/web/navigation.php';
-    require __DIR__.'/web/playground.php';
-    require __DIR__.'/web/payment-gateway.php';
-    require __DIR__.'/web/activity-log.php';
     require __DIR__.'/web/notification.php';
-    require __DIR__.'/web/product.php';
-    require __DIR__.'/web/file-hosting.php';
+    require __DIR__.'/web/activity-log.php';
+    require __DIR__.'/web/payment-gateway.php';
     require __DIR__.'/web/service.php';
+
+    // Product domains (domain:make injects into this group; keep product last)
+    require __DIR__.'/web/file-hosting.php';
 });

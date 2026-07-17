@@ -2,12 +2,13 @@
 
 namespace App\Domain\Identity\Http\Requests;
 
-use App\Domain\Identity\Services\Rbac\RoleService;
+use App\Domain\Identity\Http\Requests\Concerns\UserMutationRules;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
+    use UserMutationRules;
+
     public function authorize(): bool
     {
         return true;
@@ -18,17 +19,7 @@ class StoreUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        /** @var RoleService $roleService */
-        $roleService = app(RoleService::class);
-        $assignableNames = $roleService->getAssignableRoles($this->user())->pluck('name')->all();
-
-        return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
-            'password_confirmation' => ['required', 'string', 'same:password'],
-            'role' => ['required', 'string', Rule::in($assignableNames)],
-        ];
+        return $this->userStoreRules();
     }
 
     /**
@@ -36,8 +27,6 @@ class StoreUserRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
-            'role.in' => __('forms/users.role_not_assignable'),
-        ];
+        return $this->userRoleMessages();
     }
 }

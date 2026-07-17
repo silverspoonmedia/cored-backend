@@ -2,7 +2,7 @@
 
 ## Summary
 
-Monolith fully removes the Approval matrix engine (domain code, API/Web surfaces, schedules, seeders, menus, Blade, lang, tests, and `approval_*` tables). Playground `OrderService` no longer initiates workflows; order `status` stays at default `pending` unless changed elsewhere. Downstream Gateway/Frontend still expose or call these endpoints until a **`downstream sync session`**.
+Monolith fully removes the Approval matrix engine (domain code, API/Web surfaces, schedules, seeders, menus, Blade, lang, tests). `approval_*` create/drop migration files were later deleted in residual rewrite history — see [remove-playground-product-poc-domains](./2026-07-16-remove-playground-product-poc-domains.md). Playground domain itself was also removed; ignore any Order/Playground test filters. Downstream Gateway/Frontend still expose or call approval endpoints until a **`downstream sync session`**.
 
 ## Session metadata
 
@@ -20,7 +20,7 @@ Monolith fully removes the Approval matrix engine (domain code, API/Web surfaces
 - Unregistered provider, event/command discovery, schedules, `PLATFORM_CORE` / `config/domains.php`.
 - Detached `OrderService` from `ApprovalService` (create no longer auto-initiates).
 - Dropped menu items My Approvals + Approval Matrix from `MenuSeeder`.
-- Migration `2026_07_16_220001_drop_approval_tables` drops all `approval_*` tables.
+- Approval schema: create + drop migration files removed in residual cleanup (rewrite history); operator may need `migrate:fresh` or manual table/migration-row cleanup if env still has fossils.
 - Docs: removed domain README + legacy dump; updated architecture, api-routing, blade-admin, spa-gateway, activity-log, root README, docs index.
 - Routing test asserts `/api/v1/approvals/my-pending` returns 404.
 
@@ -36,7 +36,7 @@ Monolith fully removes the Approval matrix engine (domain code, API/Web surfaces
 - [ ] Remove Vue routes, API clients, stores, i18n, and views for My Approvals and Approval Matrix admin.
 - [ ] Remove navigation/menu entries that deep-link to approval screens.
 - [ ] Remove unit/e2e tests covering approval flows.
-- [ ] Ensure order create UI no longer expects approval side-effects (status stays `pending`).
+- [ ] No order create UI (Playground removed) — drop any approval side-effect assumptions on orders.
 
 ## API contract
 

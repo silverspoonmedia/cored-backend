@@ -1,12 +1,12 @@
 ﻿# Monolith
 
-Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks and playground CRUD.
+Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks (`GET /api/ping`).
 
 It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that is a **pure consumer of the versioned API**: every web controller forwards to `/api/v1/*`, so validation, CRUD, and RBAC run **only once — in the API** (no duplicated business logic). The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**, which the web layer forwards to the API as a Bearer token. See **[Web Frontend (Blade + AdminLTE 4)](docs/web/blade-admin.md)**.
 
 A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the Blade UI via the public **monolith-gateway** BFF. Gateway proxies `/api/*` to this application, sets HttpOnly cookies for the SPA, and enforces `GATEWAY_SECRET` when `GATEWAY_ENFORCE=true`. See [Three-project integration (Monolith + Gateway + Vue)](docs/integration/spa-gateway.md) and [Environment configuration — Public gateway perimeter](docs/platform/environment.md#public-gateway-perimeter). SPA guides: `monolith-frontend/docs/`. Gateway internals: `monolith-gateway/docs/`.
 
-**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,Playground,PaymentGateway,Service,FileHosting,…}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)). Gateway and Frontend stay separate repos; HTTP contract changes are logged in the [changelog](docs/changelog/README.md) (`pending/` → `done/`) and synced in a **`downstream sync session`**.
+**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,FileHosting,…}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)). Gateway and Frontend stay separate repos; HTTP contract changes are logged in the [changelog](docs/changelog/README.md) (`pending/` → `done/`) and synced in a **`downstream sync session`**.
 
 ### Living documentation (required)
 
@@ -52,9 +52,7 @@ This project does **not** use auto-increment integer primary keys for domain mod
 | `users` | `id` (PK) |
 | `sessions` | `user_id` → `users.id` |
 | Spatie (`roles`, `permissions`, pivots) | `id`, `model_id`, `role_id`, `permission_id` |
-| `order_master` / `order_detail` | `id` (PK), `order_detail.order_master_id` (FK) |
-| `attachments` | `id` (PK), `attachable_id` (polymorphic FK via `uuidMorphs`), `user_id` (FK → `users`) |
-| Models | `App\Domain\Identity\Models\{User,Role,Permission}`, `App\Domain\Playground\Models\{Order,OrderDetail,Attachment}` use `HasUuids` |
+| Models | `App\Domain\Identity\Models\{User,Role,Permission}` and other domain models use `HasUuids` where applicable |
 
 When you add a table that belongs to a user or another UUID-backed model, use `foreignUuid` (not `foreignId`). Do not pass integer IDs in validation or route binding. Full rationale, migration examples, and pitfalls (e.g. do not use DB `gen_random_uuid()` for v7) → **[User primary keys (UUID v7)](docs/platform/identifiers.md)**.
 
@@ -216,7 +214,6 @@ php artisan db:seed
 - Set `SESSION_ENCRYPT=true` (encrypt session data)
 - Verify `JWT_SECRET` is generated and strong
 - Set `HCAPTCHA_ENABLED=true` with valid `HCAPTCHA_SECRET` and `HCAPTCHA_SITEKEY` (defense-in-depth on public auth endpoints)
-- Playground routes are automatically disabled in production
 
 ---
 
@@ -232,9 +229,9 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [Internal monorepo assessment](docs/archive/internal-monorepo-assessment.md) | Why logical monorepo, domain map, phases, Gateway/Frontend contract |
 | [Internal monorepo porting](docs/archive/internal-monorepo-porting.md) | Implementation reference: migration order, scripts, gotchas, verification |
 | [API routing](docs/platform/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
-| [CRUD architecture & repository pattern](docs/platform/crud.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources, playground example, and the master-detail aggregate (Order + OrderDetail) with transactional writes |
-| [Playground (reference surface)](docs/domains/playground/README.md) | Non-production `/api/playground/*` demos: simple CRUD (Users), master-detail Orders with **browser-direct chunked S3 uploads** (manual Start queue + configurable concurrency), and transactional writes |
+| [CRUD architecture & repository pattern](docs/platform/crud.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources |
 | [Payment gateways](docs/domains/payment-gateway/README.md) | Midtrans/iPaymu, invoices, channel checkout, subscriptions, webhooks |
+| [File Hosting](docs/domains/file-hosting/README.md) | Product domain: nested folders, chunk S3 upload, link share |
 | [Database safety](docs/platform/database-safety.md) | Prevent dev DB wipe; test vs MySQL; `composer test`; recovery |
 | [List display modes (query & DataTables)](docs/web/ui-patterns.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 5 / jQuery 3.7 |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/domains/navigation/README.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
@@ -279,7 +276,6 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - User CRUD and hierarchy rules → [user-management-hrbac.md](docs/domains/identity/README.md) (builds on JWT doc)
 - Route placement for new features → [api-routing.md](docs/platform/api-routing.md)
 - Simple CRUD scaffolding (`Route::apiResource` + repository pattern) → [crud-architecture.md](docs/platform/crud.md)
-- Non-production reference surface (simple CRUD + master-detail orders) → [playground.md](docs/domains/playground/README.md)
 - Dual-mode list/index (query JSON vs DataTables + RBAC actions) → [list-display-modes.md](docs/web/ui-patterns.md)
 - Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/domains/navigation/README.md)
 - Role-targeted + personal activity notifications (events → roles/users) → [notifications.md](docs/domains/notification/README.md)
@@ -289,7 +285,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - Auth sessions and password events in activity log → [auth-activity-assessment.md](docs/archive/auth-activity-assessment.md)
 - ID format for users and Spatie models → [user-uuid-v7.md](docs/platform/identifiers.md)
 - Blade admin frontend (API client), JWT-cookie → Bearer, `ApiClient`/`ConsumesApi`/`MonolithApi` → [web-frontend.md](docs/web/blade-admin.md)
-- Order attachment direct-upload widget (manual queue, concurrency env) → [web-frontend.md — order direct-upload](docs/web/blade-admin.md#order-direct-upload-widget), [playground.md — web upload widget](docs/domains/playground/README.md#web-upload-widget-manual-queue)
+- File Hosting direct-upload (chunked S3) → [file-hosting README](docs/domains/file-hosting/README.md)
 - AJAX / DataTable error UX (auth expired, CSRF, proxy failures) → [web-frontend.md — AJAX error handling](docs/web/blade-admin.md#ajax-error-handling-contract)
 - hCaptcha on public auth (API validation + Blade widget) → [jwt-authentication.md](docs/domains/identity/README.md#hcaptcha-defense-in-depth), [web-frontend.md](docs/web/blade-admin.md#hcaptcha-on-auth-forms)
 - Multi-language (API, Blade, DB) → [localization.md](docs/platform/localization.md)

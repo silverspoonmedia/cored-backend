@@ -2,10 +2,13 @@
 
 namespace App\Domain\FileHosting\Http\Requests;
 
+use App\Domain\FileHosting\Http\Requests\Concerns\FileHostingRequestRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class RenameFolderRequest extends FormRequest
 {
+    use FileHostingRequestRules;
+
     public function authorize(): bool
     {
         return true;
@@ -16,9 +19,6 @@ class RenameFolderRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'name' => ['required', 'string', 'max:255'],
-            'user_id' => ['nullable', 'uuid'],
-        ];
+        return $this->renameRules();
     }
 }

@@ -36,4 +36,17 @@ class ApiRoutingRegistrationTest extends TestCase
             ->getJson('/api/v1/approvals/my-pending')
             ->assertNotFound();
     }
+
+    public function test_removed_playground_and_product_routes_are_not_registered(): void
+    {
+        $this->getJson('/api/playground/users')->assertNotFound();
+
+        $user = User::factory()->create();
+        $user->assignRole('Admin');
+        $token = auth('api')->login($user);
+
+        $this->withToken($token)
+            ->getJson('/api/v1/product/items')
+            ->assertNotFound();
+    }
 }

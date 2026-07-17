@@ -3,7 +3,6 @@
 namespace App\Domain\PaymentGateway\Models;
 
 use App\Domain\PaymentGateway\Enums\DisbursementStatus;
-use App\Domain\Playground\Models\Order;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Support\Encryption\Casts\EnvelopeEncryptedArray;
 // Internal
@@ -96,12 +95,6 @@ class Invoice extends Model
     public function isDisbursementCompleted(): bool
     {
         return $this->disbursement_status === DisbursementStatus::Completed;
-    }
-
-    public function isForOrder(): bool
-    {
-        return $this->invoiceable_type === 'order'
-            || $this->invoiceable_type === Order::class;
     }
 
     public function isForSubscription(): bool

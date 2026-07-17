@@ -2,10 +2,13 @@
 
 namespace App\Domain\FileHosting\Http\Requests;
 
+use App\Domain\FileHosting\Http\Requests\Concerns\FileHostingRequestRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BulkVisibilityRequest extends FormRequest
 {
+    use FileHostingRequestRules;
+
     public function authorize(): bool
     {
         return true;
@@ -16,11 +19,6 @@ class BulkVisibilityRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'ids' => ['required', 'array', 'min:1', 'max:100'],
-            'ids.*' => ['required', 'uuid'],
-            'visibility' => ['required', 'string', 'in:private,anyone_with_link'],
-            'user_id' => ['nullable', 'uuid'],
-        ];
+        return array_merge($this->bulkIdsRules(), $this->visibilityRules());
     }
 }

@@ -34,23 +34,21 @@ Monolith gains a **core Service** domain: multi-currency catalog, Frankfurter FX
   - `POST /api/v1/services/{id}/checkout`
   - `GET /api/v1/service-purchases/{id}`
 - [ ] Optional aggregate: service catalog + checkout context (channels) if Vue combines fetches
-- [ ] Stop documenting/proxying playground order sell as primary payment demo if still referenced
 - [ ] Tests for new proxy paths
+- [ ] Playground order sell path is **gone** on Monolith — see [remove-playground-product-poc-domains](./2026-07-16-remove-playground-product-poc-domains.md); do not proxy `/api/playground/*`
 
 ### Monolith Frontend
 
 - [ ] Service catalog list/detail + checkout flow against Gateway
-- [ ] Purchase payment hub (reuse channel checkout patterns from orders/invoices)
+- [ ] Purchase payment hub (reuse channel checkout patterns from invoices / service purchases)
 - [ ] i18n for service/purchase strings
-- [ ] Remove or re-route any playground **orders** sell UI that assumed Monolith Order invoiceable
+- [ ] No playground orders UI (domain removed)
 
 ## API contract
 
 **Before:**
 
-Playground sell path (non-prod):
-
-- `POST /api/playground/orders` → free-text lines → pending invoice morph `order`, currency hard-coded IDR
+Legacy POC sell path (removed): playground orders → morph `order` (no longer in Monolith).
 
 **After:**
 

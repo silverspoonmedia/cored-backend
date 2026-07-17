@@ -2,10 +2,13 @@
 
 namespace App\Domain\FileHosting\Http\Requests;
 
+use App\Domain\FileHosting\Http\Requests\Concerns\FileHostingRequestRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BulkDestroyRequest extends FormRequest
 {
+    use FileHostingRequestRules;
+
     public function authorize(): bool
     {
         return true;
@@ -16,10 +19,6 @@ class BulkDestroyRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'ids' => ['required', 'array', 'min:1', 'max:100'],
-            'ids.*' => ['required', 'uuid'],
-            'user_id' => ['nullable', 'uuid'],
-        ];
+        return $this->bulkIdsRules();
     }
 }

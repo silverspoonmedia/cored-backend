@@ -15,7 +15,7 @@ trait ResolvesPaymentCheckoutContext
     protected function paymentCheckoutContext(): array
     {
         // Payment channels always live on the versioned API. Controllers such as
-        // OrderController override api() to target api/playground — using that
+        // Domain web controllers may override api() with a custom prefix — using that
         // client here would hit a non-existent route and force snap_fallback.
         $response = app(ApiClient::class)->get('payment-channels');
 

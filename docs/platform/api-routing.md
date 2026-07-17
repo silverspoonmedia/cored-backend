@@ -6,7 +6,7 @@ Two **independent** layers: **global** (unversioned) and **versioned**. They do 
 
 | Layer | Role |
 |-------|------|
-| **Global** (`/api/*`) | Small stable surface: liveness, non-prod playground demos |
+| **Global** (`/api/*`) | Small stable surface: liveness only (`GET /api/ping`) |
 | **Versioned** (`/api/v{N}/*`) | **All product business logic** |
 
 Do not mirror the same endpoints on both layers. Breaking changes → new version (`v2`), not in-place contract breaks.
@@ -15,34 +15,40 @@ Do not mirror the same endpoints on both layers. Breaking changes → new versio
 
 | Layer | Route files | Controllers | Prefix | Name prefix |
 |-------|-------------|-------------|--------|-------------|
-| Global | `routes/api.php` + `routes/api/playground.php` | Domain Playground API | `/api` | *(none)* |
+| Global | `routes/api.php` | `App\Http\Controllers\API\PingController` | `/api` | *(none)* |
 | Versioned | `routes/api/v{N}.php` + `routes/api/v{N}/*.php` | `App\Domain\{Domain}\Http\Controllers\API\V{N}` | `/api/v{N}` | `api.v{N}.` |
 
 ## Directory layout
 
 ```
 routes/
-├── api.php
-├── web.php
+├── api.php             # GET /api/ping only
+├── web.php             # loader: guest/public specials + web.auth (core then product)
 ├── api/
-│   ├── playground.php
-│   └── v1.php          # loader
-│       ├── identity.php
-│       ├── navigation.php
-│       ├── notification.php
-│       ├── activity-log.php
-│       └── payment-gateway.php
+│   └── v1.php          # loader — // Core requires, then // Product
+│       ├── identity.php          # core
+│       ├── navigation.php        # core
+│       ├── notification.php      # core
+│       ├── activity-log.php      # core
+│       ├── payment-gateway.php   # core
+│       ├── service.php           # core
+│       └── file-hosting.php      # product
 └── web/
-    ├── identity-guest.php
-    ├── identity.php
-    ├── navigation.php
-    ├── notification.php
-    ├── activity-log.php
-    ├── payment-gateway.php
-    └── playground.php
+    ├── identity-guest.php        # web.guest (auth surface, not kind)
+    ├── identity.php              # core
+    ├── navigation.php            # core
+    ├── notification.php          # core
+    ├── activity-log.php          # core
+    ├── payment-gateway.php       # core
+    ├── service.php               # core
+    ├── file-hosting.php          # product (web.auth)
+    ├── file-hosting-public.php   # public share
+    └── payment-ipaymu-return.php # provider return
 ```
 
 Paths inside version files are relative to the version prefix.
+
+**Kind ordering:** loaders keep core domain files before product (comment sections only). No `core/` / `product/` route subdirectories — see [architecture.md](architecture.md).
 
 ## Registration (`bootstrap/app.php`)
 
@@ -64,12 +70,11 @@ JSON errors for `api/*` via `$exceptions->shouldRenderJsonWhen(...)`.
 
 | Path | When | Auth | Purpose |
 |------|------|------|---------|
-| `GET /api/ping` | Always | None | Liveness (`Pong Global`) |
-| `/api/playground/*` | Non-production | None | Demo CRUD — [Playground](../domains/playground/README.md) |
+| `GET /api/ping` | Always | None | Liveness (`api/common.pong`) |
 
 ## Versioned routes
 
-Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, payments.
+Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, payments, services, file-hosting.
 
 ## Adding a new API version
 
@@ -85,6 +90,7 @@ Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes
 4. One loader per version; domain files underneath.
 5. Breaking changes require a new version.
 6. Route names use `api.v{N}.` prefix.
+7. In loaders, core requires before product; `domain:make` appends — keep product block last when reordering.
 
 ## Verify
 

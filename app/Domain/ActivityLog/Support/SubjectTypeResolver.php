@@ -3,7 +3,6 @@
 namespace App\Domain\ActivityLog\Support;
 
 use App\Domain\Navigation\Models\Menu;
-use App\Domain\Playground\Models\Order;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,7 +14,6 @@ class SubjectTypeResolver
     /** @var array<string, class-string<Model>> */
     private const ALIASES = [
         'user' => User::class,
-        'order' => Order::class,
         'menu' => Menu::class,
     ];
 

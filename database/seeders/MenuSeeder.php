@@ -91,17 +91,28 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
 
-        // File Hosting: own tree for every authenticated role that has view permission
-        // (User + internal + product FH roles). No extra menu RBAC gate — permission middleware
-        // on the page is enough; all seeded roles that can open files may see the link.
+        // Product surfaces (presentation only — not config/domains.php registry).
+        // Fresh seed only; existing DBs keep prior tree until menus are re-seeded.
+        $products = Menu::query()->create([
+            'parent_id' => null,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Products', 'id' => 'Produk', 'ja' => 'プロダクト'],
+            'icon' => null,
+            'route' => null,
+            'type' => 'h',
+            'order' => 2,
+            'is_authenticate' => true,
+        ]);
+
+        // File Hosting: no extra menu RBAC gate — permission middleware on the page.
         Menu::query()->create([
-            'parent_id' => $main->id,
+            'parent_id' => $products->id,
             'layout' => MenuLayout::SIDEBAR,
             'name' => ['en' => 'My Files', 'id' => 'File Saya', 'ja' => 'マイファイル'],
             'icon' => 'bi bi-folder2-open',
             'route' => 'file-hosting.index',
             'type' => 'p',
-            'order' => 5,
+            'order' => 1,
             'is_authenticate' => true,
         ]);
 
@@ -112,7 +123,7 @@ class MenuSeeder extends Seeder
             'icon' => null,
             'route' => null,
             'type' => 'h',
-            'order' => 2,
+            'order' => 3,
             'is_authenticate' => true,
         ]);
 

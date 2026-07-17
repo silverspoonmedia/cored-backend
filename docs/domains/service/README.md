@@ -1,11 +1,11 @@
 # Service — sellable catalog, entitlements, multi-currency FX checkout
 
-**Core** platform domain for SaaS services sold by the project (subscriptions + one-time). Replaces the Playground Order sell path as the invoiceable source for payment checkout.
+**Core** platform domain for SaaS services sold by the project (subscriptions + one-time). Primary invoiceable source for payment checkout (`service_purchase` morph).
 
 | | |
 |--|--|
 | Code | `app/Domain/Service/` |
-| Registry | `core => true` in [`config/domains.php`](../../../config/domains.php); listed in `DomainManager::PLATFORM_CORE` |
+| Registry | `kind => core` in [`config/domains.php`](../../../config/domains.php); listed in `DomainManager::PLATFORM_CORE` |
 | API | `routes/api/v1/service.php` → `/api/v1/services`, `/api/v1/service-purchases` |
 | Web | `routes/web/service.php` → `services.*`, `service-purchases.*` |
 | FX | Frankfurter → **DB** `exchange_rate_snapshots` + L1 cache; settle **IDR** |
@@ -22,7 +22,7 @@
 
 **Not** PaymentGateway `Subscription` (free-text demo morph). Product lifecycle lives here.
 
-Money convention: **decimal(15,2)** (same as invoices). Do not use Product `unit_price_cents`.
+Money convention: **decimal(15,2)** (same as invoices).
 
 ## Service types
 
@@ -157,6 +157,5 @@ Coverage: FX snapshot DB + cache, entitlement period/renew, grace upload block, 
 - [payment-gateway](../payment-gateway/README.md) — settle IDR; product sub ≠ PG Subscription
 - [file-hosting](../file-hosting/README.md) — quota states + purge
 - [notification](../notification/README.md) — grace/expired types
-- [playground](../playground/README.md) — Order sell path retired
 - [platform/architecture.md](../../platform/architecture.md)
 - Changelog: [pending/2026-07-16-service-entitlements-fx-db-grace.md](../../changelog/pending/2026-07-16-service-entitlements-fx-db-grace.md)

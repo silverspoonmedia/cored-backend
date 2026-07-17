@@ -10,6 +10,7 @@ use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\DirectUploadService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\Storage\SerializesDirectUploadSession;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class UploadController extends Controller
 {
     use ApiResponse;
     use ResolvesResourceArray;
+    use SerializesDirectUploadSession;
 
     public function __construct(
         private readonly DirectUploadService $uploads,
@@ -38,7 +40,9 @@ class UploadController extends Controller
         );
 
         return $this->successResponse(
-            $this->serializeSession($result),
+            $this->serializeUploadSession($result, extra: [
+                'folder_id' => $result['upload']->folder_id,
+            ]),
             __('api/file-hosting.upload.initiated'),
             201,
         );
@@ -51,7 +55,9 @@ class UploadController extends Controller
         $result = $this->uploads->status($request->user(), $upload);
 
         return $this->successResponse(
-            $this->serializeSession($result, includeRecorded: true),
+            $this->serializeUploadSession($result, includeRecorded: true, extra: [
+                'folder_id' => $result['upload']->folder_id,
+            ]),
             __('api/file-hosting.upload.status'),
         );
     }
@@ -95,31 +101,5 @@ class UploadController extends Controller
         $this->uploads->abort($request->user(), $upload);
 
         return $this->successResponse(null, __('api/file-hosting.upload.aborted'));
-    }
-
-    /**
-     * @param  array<string, mixed>  $result
-     * @return array<string, mixed>
-     */
-    private function serializeSession(array $result, bool $includeRecorded = false): array
-    {
-        $upload = $result['upload'];
-
-        $payload = [
-            'upload_id' => $upload->id,
-            'strategy' => $result['strategy'],
-            'path' => $upload->path,
-            'folder_id' => $upload->folder_id,
-            'chunk_size' => $result['chunk_size'],
-            'part_count' => $result['part_count'],
-            'parts' => $result['parts'],
-            'expires_at' => $upload->expires_at?->toIso8601String(),
-        ];
-
-        if ($includeRecorded) {
-            $payload['recorded_parts'] = $result['recorded_parts'] ?? $upload->recordedParts();
-        }
-
-        return $payload;
     }
 }

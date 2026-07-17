@@ -2,12 +2,13 @@
 
 namespace App\Domain\FileHosting\Http\Requests;
 
-use App\Domain\FileHosting\Enums\Visibility;
+use App\Domain\FileHosting\Http\Requests\Concerns\FileHostingRequestRules;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class SetVisibilityRequest extends FormRequest
 {
+    use FileHostingRequestRules;
+
     public function authorize(): bool
     {
         return true;
@@ -18,9 +19,8 @@ class SetVisibilityRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'visibility' => ['required', 'string', Rule::in(Visibility::values())],
+        return array_merge($this->visibilityRules(), [
             'user_id' => ['nullable', 'uuid'],
-        ];
+        ]);
     }
 }

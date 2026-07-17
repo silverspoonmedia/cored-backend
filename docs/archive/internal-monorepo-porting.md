@@ -225,7 +225,7 @@ One-shot porting scripts (`migrate-domain-*`, `fix-domain-*`, `scripts/domains/*
 cd c:\laragon\www\monolith
 composer dump-autoload                           # required after moving/renaming classes
 composer test                                    # run for current pass count (historical snapshots: 392–395+ in 2026-07-10 assessment)
-php artisan domain:list                          # core / locked / removable registry
+php artisan domain:list                          # kind core|product + removal never|locked|removable (see platform/architecture.md)
 .\scripts\remove-empty-dirs.ps1 -WhatIf          # expect: no empty dirs in scope
 .\scripts\test-workspace.ps1                     # Monolith + Gateway + Frontend
 php artisan route:list --path=api/v1/approvals   # confirm approval routes

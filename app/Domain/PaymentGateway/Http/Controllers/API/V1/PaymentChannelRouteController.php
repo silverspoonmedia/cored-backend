@@ -6,11 +6,13 @@ use App\Domain\PaymentGateway\Http\Requests\UpdatePaymentChannelRouteRequest;
 use App\Domain\PaymentGateway\Http\Resources\PaymentChannelRouteResource;
 use App\Domain\PaymentGateway\Services\PaymentChannelService;
 use App\Http\Controllers\Controller;
-use App\Support\ApiResponder;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class PaymentChannelRouteController extends Controller
 {
+    use ApiResponse;
+
     public function __construct(
         private PaymentChannelService $service,
     ) {}
@@ -19,7 +21,7 @@ class PaymentChannelRouteController extends Controller
     {
         $updated = $this->service->updateRoute($route, $request->validated());
 
-        return ApiResponder::success(
+        return $this->successResponse(
             (new PaymentChannelRouteResource($updated))->resolve(),
             __('api/payments.channels.route_updated'),
         );

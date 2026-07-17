@@ -2,13 +2,14 @@
 
 namespace App\Domain\Identity\Http\Requests;
 
+use App\Domain\Identity\Http\Requests\Concerns\UserMutationRules;
 use App\Domain\Identity\Models\User;
-use App\Domain\Identity\Services\Rbac\RoleService;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
 {
+    use UserMutationRules;
+
     public function authorize(): bool
     {
         return true;
@@ -22,23 +23,7 @@ class UpdateUserRequest extends FormRequest
         /** @var User $target */
         $target = $this->route('user');
 
-        /** @var RoleService $roleService */
-        $roleService = app(RoleService::class);
-        $assignableNames = $roleService->getAssignableRoles($this->user())->pluck('name')->all();
-
-        return [
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'email' => [
-                'sometimes',
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email')->ignore($target->id),
-            ],
-            'password' => ['sometimes', 'nullable', 'string', 'min:8'],
-            'password_confirmation' => ['required_with:password', 'string', 'same:password'],
-            'role' => ['sometimes', 'required', 'string', Rule::in($assignableNames)],
-        ];
+        return $this->userUpdateRules($target);
     }
 
     /**
@@ -46,8 +31,6 @@ class UpdateUserRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
-            'role.in' => __('forms/users.role_not_assignable'),
-        ];
+        return $this->userRoleMessages();
     }
 }

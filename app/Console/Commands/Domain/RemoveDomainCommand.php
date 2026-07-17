@@ -11,11 +11,11 @@ class RemoveDomainCommand extends Command
 {
     /** @var string */
     protected $signature = 'domain:remove
-        {name : Domain name to remove (must be unlocked and non-core)}
+        {name : Domain name to remove (must be unlocked product; core always refused)}
         {--force : Skip confirmation prompt}';
 
     /** @var string */
-    protected $description = 'Remove an unlocked non-core domain module (refuses platform core and locked domains)';
+    protected $description = 'Remove an unlocked product domain module (refuses core and locked product domains)';
 
     public function handle(DomainManager $domains): int
     {
@@ -27,9 +27,9 @@ class RemoveDomainCommand extends Command
             return self::FAILURE;
         }
 
-        if ($domains->isPlatformCore($name)) {
+        if ($domains->isPlatformCore($name) || $domains->isCore($name)) {
             $this->error(
-                "Domain [{$name}] is platform core and cannot be removed. Config cannot override this."
+                "Domain [{$name}] is core and cannot be removed. Config cannot override platform core."
             );
 
             return self::FAILURE;
@@ -37,7 +37,7 @@ class RemoveDomainCommand extends Command
 
         if ($domains->isLocked($name)) {
             $this->error(
-                "Domain [{$name}] is locked. Set 'locked' => false in config/domains.php manually, then re-run domain:remove."
+                "Product domain [{$name}] is locked. Set 'locked' => false in config/domains.php manually, then re-run domain:remove."
             );
 
             return self::FAILURE;
