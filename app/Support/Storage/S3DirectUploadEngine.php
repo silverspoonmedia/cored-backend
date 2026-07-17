@@ -146,6 +146,17 @@ class S3DirectUploadEngine
             return [];
         }
 
+        if ($this->isUploadProxyEnabled()) {
+            return $this->proxyUploadParts(
+                $diskName,
+                $path,
+                $strategy,
+                $mime,
+                $s3UploadId,
+                $partNumbers,
+            );
+        }
+
         $disk = $this->diskAdapter($diskName);
         $expiresAt = Carbon::now()->addMinutes($presignTtlMinutes);
 
@@ -182,6 +193,106 @@ class S3DirectUploadEngine
         }
 
         return $signed;
+    }
+
+    /**
+     * Whether optional CF Worker proxy is configured (base_url non-empty).
+     * Token + disk alias are validated when building proxy URLs (fail closed).
+     */
+    public function isUploadProxyEnabled(): bool
+    {
+        $baseUrl = (string) config('file-hosting.upload_proxy.base_url', '');
+
+        return $baseUrl !== '';
+    }
+
+    /**
+     * Build Worker PUT / UploadPart URLs (no S3 browser presign).
+     * Worker re-signs with target credentials and streams the body.
+     *
+     * @param  list<int>  $partNumbers
+     * @return list<array{part_number: int, url: string, headers: array<string, list<string>>}>
+     *
+     * @throws S3DirectUploadException
+     */
+    public function proxyUploadParts(
+        string $diskName,
+        string $path,
+        string $strategy,
+        string $mime,
+        ?string $s3UploadId,
+        array $partNumbers,
+    ): array {
+        if ($partNumbers === []) {
+            return [];
+        }
+
+        $baseUrl = rtrim((string) config('file-hosting.upload_proxy.base_url', ''), '/');
+        $token = (string) config('file-hosting.upload_proxy.token', '');
+        $diskTargets = (array) config('file-hosting.upload_proxy.disk_targets', []);
+        $alias = isset($diskTargets[$diskName]) ? (string) $diskTargets[$diskName] : '';
+
+        if ($baseUrl === '' || $token === '' || $alias === '') {
+            throw new S3DirectUploadException(S3DirectUploadException::PROXY_MISCONFIGURED);
+        }
+
+        if ($strategy === self::STRATEGY_MULTIPART && ($s3UploadId === null || $s3UploadId === '')) {
+            throw new S3DirectUploadException(S3DirectUploadException::INCOMPLETE_PARTS);
+        }
+
+        $headers = [
+            'Authorization' => ['Bearer '.$token],
+            'X-S3-Target' => [$alias],
+            'Content-Type' => [$mime !== '' ? $mime : 'application/octet-stream'],
+        ];
+
+        $keyPath = $this->encodeProxyObjectKey($path);
+        $objectUrl = $baseUrl.'/t/'.rawurlencode($alias).'/'.$keyPath;
+        $parts = [];
+
+        foreach ($partNumbers as $partNumber) {
+            $partNumber = (int) $partNumber;
+
+            if ($strategy === self::STRATEGY_SINGLE) {
+                $parts[] = [
+                    'part_number' => 1,
+                    'url' => $objectUrl,
+                    'headers' => $headers,
+                ];
+
+                continue;
+            }
+
+            $query = http_build_query([
+                'partNumber' => $partNumber,
+                'uploadId' => $s3UploadId,
+            ]);
+
+            $parts[] = [
+                'part_number' => $partNumber,
+                'url' => $objectUrl.'?'.$query,
+                'headers' => $headers,
+            ];
+        }
+
+        return $parts;
+    }
+
+    /**
+     * URL-encode each path segment for Worker /t/{alias}/{key...} routes.
+     */
+    public function encodeProxyObjectKey(string $path): string
+    {
+        $trimmed = trim($path, '/');
+
+        if ($trimmed === '') {
+            return '';
+        }
+
+        return implode('/', array_map(
+            static fn (string $segment): string => rawurlencode($segment),
+            explode('/', $trimmed),
+        ));
     }
 
     /**

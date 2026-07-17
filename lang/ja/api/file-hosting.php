@@ -60,5 +60,6 @@ return [
         'invalid_part_number' => 'パート番号が無効です。',
         'incomplete_parts' => 'すべてのパートがアップロードされていません。',
         'unsupported_disk' => '設定されたディスクは直接アップロードに対応していません。',
+        'proxy_misconfigured' => 'アップロードプロキシが有効ですが設定が不完全です（トークンまたはディスクのターゲット別名が不足）。',
     ],
 ];

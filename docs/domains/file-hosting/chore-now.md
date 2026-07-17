@@ -1,6 +1,28 @@
+# Chore: CF Worker S3 upload proxy — status
+
+**Status:** Implemented (hybrid wiring + standalone Worker).
+
+| Deliverable | Location |
+|-------------|----------|
+| Worker (Wrangler TS) | `c:\laragon\www\workers` |
+| Monolith hybrid config | `config/file-hosting.php` → `upload_proxy` |
+| Proxy URL builder | `App\Support\Storage\S3DirectUploadEngine::proxyUploadParts` |
+| Client header normalize | `resources/js/file-hosting/direct-upload.js` (`putPart`) |
+| Product docs | [README.md](./README.md) (Direct upload + hybrid proxy) |
+
+## Agreed architecture (hybrid)
+
+1. **Monolith** = control plane: quota, session row, `CreateMultipartUpload`, `Complete`/`Abort`, promote → `HostedFile`.
+2. **Browser** = PUT/UploadPart bytes only.
+3. **Optional Worker** = when `FILE_HOSTING_UPLOAD_PROXY_URL` is set, Monolith returns Worker URLs + Bearer / `X-S3-Target` headers instead of S3 presigns. Worker streams + re-signs SigV4 to the target bucket.
+4. **Part size:** default **10 MB** (`FILE_HOSTING_CHUNK_SIZE` / `FILE_HOSTING_MULTIPART_THRESHOLD`).
+5. Empty proxy URL → **direct S3** (previous behaviour). Incomplete proxy config → **fail closed**.
+
+## Original Worker requirements (satisfied)
+
 Create a complete Cloudflare Worker project using Wrangler that acts as a secure, streaming multipart upload proxy for any S3-compatible storage (primarily Backblaze B2, but also other vendors). The Worker receives multipart upload requests from clients (especially from APAC) and streams each part to the target S3 endpoint without fully buffering the body in memory.
 
-Core goal: Clients upload parts (recommended 10-50 MB) to the nearest Cloudflare edge. The Worker re-signs the request with the correct credentials and streams the body to the remote S3-compatible service.
+Core goal: Clients upload parts (recommended **10 MB**, max ≤ 50 MB for Free plan safety) to the nearest Cloudflare edge. The Worker re-signs the request with the correct credentials and streams the body to the remote S3-compatible service.
 
 ### Configuration Grouping (Strict Enforcement)
 
@@ -88,6 +110,8 @@ This grouping makes one Worker able to proxy to many buckets and even different 
 4. Client uploads each part to the Worker (Worker streams the part to S3).
 5. Client completes or aborts via the Worker.
 6. All responses look like real S3 responses so existing S3 SDKs or custom clients work with minimal changes.
+
+*(Standalone clients may use the full Worker façade above. Monolith File Hosting uses hybrid: steps 3 and 5 on Monolith server SDK; step 4 only through the Worker when proxy is enabled.)*
 
 ### Additional Rules for the Code
 

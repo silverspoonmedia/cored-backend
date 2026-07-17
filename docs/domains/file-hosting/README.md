@@ -19,7 +19,8 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Virtual root | `folder_id = null` = “My Files” (no auto DB folder row) |
 | Nested folders | `parent_id` tree per owner; breadcrumb via `FolderAncestorChain` |
 | Files | `file_hosting_files` — denormalized `user_id`, optional `folder_id` |
-| Upload sessions | `file_hosting_uploads` — presign PUT (single/multipart) → complete promotes row |
+| Upload sessions | `file_hosting_uploads` — init → browser PUT (direct S3 **or** CF Worker proxy) → complete promotes row |
+| Part size | Default **10 MB** chunk + multipart threshold (`FILE_HOSTING_CHUNK_SIZE`) |
 | S3 object key | `file-hosting/{user_id}/{upload_id}/{random40}.{ext}` — display name only in DB |
 | Download bytes | Always **302 (or client follow)** to S3 temporary URL — **not** Monolith streaming |
 | S3 signed URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry |
@@ -75,21 +76,49 @@ manage any file hosting resource
 | Upload | init (optional `disk` = region key, resolved via `RegionResolver`; rejects disabled regions), status, sign-parts, complete, abort |
 | Search / trash / quota | as named |
 
-### Direct upload (S3 engine)
+### Direct upload (S3 engine + optional Worker proxy)
 
-Browser-direct PUT / multipart lives in shared kernel support, not duplicated per domain:
+Control plane (init / sign-parts / complete / abort) always stays on Monolith. Browser **byte** path is either:
+
+| Mode | When | Browser PUT target |
+|------|------|--------------------|
+| **Direct S3** (default) | `FILE_HOSTING_UPLOAD_PROXY_URL` empty | Presigned S3 URL from `temporaryUploadUrl` / `UploadPart` |
+| **Hybrid proxy** | base URL + token + disk→alias set | CF Worker `/t/{alias}/{key}` (+ `partNumber`/`uploadId` for multipart); Worker re-signs + streams to S3 |
+
+Shared kernel pieces (not duplicated per domain):
 
 | Piece | Role |
 |-------|------|
-| `App\Support\Storage\S3DirectUploadEngine` | Strategy (single vs multipart), presign, merge/assert parts, create/complete/abort multipart, size/mime guards |
+| `App\Support\Storage\S3DirectUploadEngine` | Strategy, direct presign **or** Worker proxy URLs, merge/assert parts, create/complete/abort multipart, size/mime guards |
 | `App\Support\Storage\SerializesDirectUploadSession` | Shared JSON session shape for init/status (`upload_id`, `strategy`, `parts`, …) |
 | `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, promote → `HostedFile` |
 
-Config for thresholds/TTL stays under `config/file-hosting.php`.
+Config for thresholds/TTL/proxy: `config/file-hosting.php`.
+
+#### Hybrid proxy env
+
+| Env | Role |
+|-----|------|
+| `FILE_HOSTING_UPLOAD_PROXY_URL` | Worker origin (no trailing slash). Empty = direct S3 |
+| `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Same value as Worker `S3_TARGETS.uploadToken` (Bearer) |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM` | Worker target alias for disk `s3Custom` |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOMEU` | Alias for disk `s3Customeu` (optional) |
+
+**Fail closed:** if base URL is set but token or disk alias is missing → init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3.
+
+**Worker project:** `c:\laragon\www\workers` — streaming SigV4 proxy; see that repo’s README. Spec history: [chore-now.md](./chore-now.md).
+
+**Hybrid protocol (parts[] response):**
+
+- `url` = `{proxy}/t/{alias}/{encoded-key}` or with `?partNumber=&uploadId=` for multipart
+- `headers` = multi-value map: `Authorization: Bearer …`, `X-S3-Target`, `Content-Type`
+- Create/complete/abort still use Monolith disk credentials against real S3 (not the Worker)
 
 ### S3 provider CORS (browser-direct multipart)
 
-Browser uploads **directly** to the S3-compatible endpoint (presigned PUT / UploadPart). That is a cross-origin request from the app origin (Blade admin or SPA) to the bucket host. Without bucket CORS, the browser blocks the PUT and may hide `ETag` — multipart **complete** then cannot send part ETags.
+When proxy is **off**, browser uploads **directly** to the S3-compatible endpoint (presigned PUT / UploadPart). That is a cross-origin request from the app origin (Blade admin or SPA) to the bucket host. Without bucket CORS, the browser blocks the PUT and may hide `ETag` — multipart **complete** then cannot send part ETags.
+
+When proxy is **on**, browser talks to the **Worker** origin — Worker CORS must allow app origin(s) and **expose `ETag`**. Bucket CORS is still needed for downloads (and for direct mode).
 
 | Requirement | Why |
 |-------------|-----|
@@ -195,7 +224,7 @@ Share link users copy = show URL (`/s/f/{uuid}` or `/s/d/{uuid}`). Download butt
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
 | `resources/js/file-hosting/file-manager.js` | Page controller: AJAX CRUD, live search, grid/list view toggle (localStorage), move modal tree, drag-drop, region selector, bulk select/action (per-row + select-all checkboxes, share/unshare/delete), toast |
-| `resources/js/file-hosting/direct-upload.js` | Browser-direct chunked upload to S3 (unchanged) |
+| `resources/js/file-hosting/direct-upload.js` | Chunked upload: PUT to server-provided part URLs (direct S3 or Worker proxy headers) |
 | `resources/js/file-hosting/upload-queue.js` | Concurrency limiter (unchanged) |
 | `resources/views/adminlte4/file-hosting/partials/` | Reusable Blade partials: `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal` |
 
@@ -214,7 +243,8 @@ Menu: **My Files** → `file-hosting.index`.
 | `disk` / `directory` | S3-compatible disk + key prefix |
 | `regions` | Region key → disk name map (e.g. `sea` → `s3Custom`); only regions with non-empty disk appear in upload dropdown |
 | `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
-| `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy |
+| `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **10 MiB** each) |
+| `upload_proxy.*` | Optional CF Worker hybrid byte path (`base_url`, `token`, `disk_targets`) |
 | `default_quota_bytes` | Fallback per-user quota when no override row (0 = unlimited) |
 | `signed_download_ttl_minutes` | S3 GET temporary URL lifetime |
 | `signed_download_cache_margin_seconds` | Treat cache expired early |

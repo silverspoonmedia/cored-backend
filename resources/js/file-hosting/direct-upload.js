@@ -230,9 +230,12 @@ export function initDirectUpload(root) {
     async function putPart(body, url, headers, contentType) {
         const requestHeaders = new Headers();
 
+        // Server may send AWS-style multi-value maps { Key: ["v"] } or flat { Key: "v" }.
         Object.entries(headers || {}).forEach(function ([key, values]) {
-            if (Array.isArray(values) && values[0]) {
-                requestHeaders.set(key, values[0]);
+            if (Array.isArray(values) && values[0] != null && values[0] !== '') {
+                requestHeaders.set(key, String(values[0]));
+            } else if (typeof values === 'string' && values !== '') {
+                requestHeaders.set(key, values);
             }
         });
 

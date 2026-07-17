@@ -60,5 +60,6 @@ return [
         'invalid_part_number' => 'Invalid part number.',
         'incomplete_parts' => 'Not all multipart parts were uploaded.',
         'unsupported_disk' => 'Configured storage disk does not support direct uploads.',
+        'proxy_misconfigured' => 'Upload proxy is enabled but incomplete (token or disk target alias missing).',
     ],
 ];

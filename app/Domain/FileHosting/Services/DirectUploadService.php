@@ -414,6 +414,7 @@ class DirectUploadService
             S3DirectUploadException::FILE_TOO_LARGE => __('api/file-hosting.upload.file_too_large'),
             S3DirectUploadException::INVALID_NAME => __('api/file-hosting.upload.invalid_name'),
             S3DirectUploadException::MIME_NOT_ALLOWED => __('api/file-hosting.upload.mime_not_allowed'),
+            S3DirectUploadException::PROXY_MISCONFIGURED => __('api/file-hosting.upload.proxy_misconfigured'),
             default => $e->getMessage(),
         };
 

@@ -60,5 +60,6 @@ return [
         'invalid_part_number' => 'Nomor bagian tidak valid.',
         'incomplete_parts' => 'Tidak semua bagian multipart terunggah.',
         'unsupported_disk' => 'Disk penyimpanan tidak mendukung unggah langsung.',
+        'proxy_misconfigured' => 'Proxy unggah aktif tetapi tidak lengkap (token atau alias target disk hilang).',
     ],
 ];
