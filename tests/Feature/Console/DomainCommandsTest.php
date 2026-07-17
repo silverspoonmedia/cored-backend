@@ -259,6 +259,45 @@ class DomainCommandsTest extends TestCase
         ])->assertFailed();
     }
 
+    public function test_loaders_list_core_requires_before_product(): void
+    {
+        $api = File::get($this->apiV1Path);
+        $this->assertLessThan(
+            strpos($api, "require __DIR__.'/v1/file-hosting.php';"),
+            strpos($api, "require __DIR__.'/v1/identity.php';"),
+            'API loader: core identity must appear before product file-hosting'
+        );
+        $this->assertLessThan(
+            strpos($api, "require __DIR__.'/v1/file-hosting.php';"),
+            strpos($api, "require __DIR__.'/v1/service.php';"),
+            'API loader: core service must appear before product file-hosting'
+        );
+
+        $web = File::get($this->webPath);
+        $this->assertLessThan(
+            strpos($web, "require __DIR__.'/web/file-hosting.php';"),
+            strpos($web, "require __DIR__.'/web/identity.php';"),
+            'Web loader: core identity must appear before product file-hosting'
+        );
+        $this->assertLessThan(
+            strpos($web, "require __DIR__.'/web/file-hosting.php';"),
+            strpos($web, "require __DIR__.'/web/service.php';"),
+            'Web loader: core service must appear before product file-hosting'
+        );
+
+        $providers = File::get($this->providersPath);
+        $this->assertLessThan(
+            strpos($providers, 'FileHostingServiceProvider::class'),
+            strpos($providers, 'IdentityServiceProvider::class'),
+            'Providers: core Identity must appear before product FileHosting'
+        );
+        $this->assertLessThan(
+            strpos($providers, 'FileHostingServiceProvider::class'),
+            strpos($providers, 'ServiceServiceProvider::class'),
+            'Providers: core Service must appear before product FileHosting'
+        );
+    }
+
     private function purgeTestDomainArtifacts(): void
     {
         $domainDir = app_path('Domain/'.self::TEST_DOMAIN);

@@ -83,15 +83,17 @@ Tests: `tests/Domain/{Domain}/` (PHPUnit suite `Domain`).
 
 API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/web.php` → `routes/web/{domain}.php`.
 
-| API file | Domain |
-|----------|--------|
-| `identity.php` | Auth, users, lookups, admin |
-| `navigation.php` | Menus |
-| `notification.php` | Notifications |
-| `activity-log.php` | Activity logs |
-| `payment-gateway.php` | Gateways, invoices, subscriptions |
-| `service.php` | Service catalog, checkout, service purchases |
-| `file-hosting.php` | File hosting (auth + public share) folders/files/uploads |
+**Loader convention (presentation only):** list **core** requires first, **product** last, with short `// Core` / `// Product` comment sections. Same order in `bootstrap/providers.php` and `config/domains.php`. Does **not** change URL paths or route names. `domain:make` still appends; re-order once if a new product lands mid-file. Guest/public web specials (`identity-guest`, `file-hosting-public`, provider returns) stay outside kind sections — those groups are auth surface, not taxonomy.
+
+| API file | Domain | Kind |
+|----------|--------|------|
+| `identity.php` | Auth, users, lookups, admin | core |
+| `navigation.php` | Menus | core |
+| `notification.php` | Notifications | core |
+| `activity-log.php` | Activity logs | core |
+| `payment-gateway.php` | Gateways, invoices, subscriptions | core |
+| `service.php` | Service catalog, checkout, service purchases | core |
+| `file-hosting.php` | File hosting (auth + public share) folders/files/uploads | product |
 
 Global: `routes/api.php` — `GET /api/ping` only (`App\Http\Controllers\API\PingController`).
 
@@ -131,5 +133,8 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 - No `nwidart/laravel-modules`
 - No merge of Gateway/Frontend into this repo
 - No dynamic provider auto-discovery — `bootstrap/providers.php` stays explicit
+- No `routes/api/v1/core|product/` subfolders — kind is registry + comment sections, not filesystem trees
+- No `domain` / `domain_kind` column on menus — nav is a UX tree; module taxonomy stays in `config/domains.php` (and RBAC catalog separately)
+- No auto menu registration from `domain:make` — seed / admin CRUD is enough at this scale
 
 Historical migration notes: [archive/internal-monorepo-assessment.md](../archive/internal-monorepo-assessment.md), [archive/internal-monorepo-porting.md](../archive/internal-monorepo-porting.md).

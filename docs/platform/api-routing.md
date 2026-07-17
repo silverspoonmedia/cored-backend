@@ -23,28 +23,32 @@ Do not mirror the same endpoints on both layers. Breaking changes → new versio
 ```
 routes/
 ├── api.php             # GET /api/ping only
-├── web.php
+├── web.php             # loader: guest/public specials + web.auth (core then product)
 ├── api/
-│   └── v1.php          # loader
-│       ├── identity.php
-│       ├── navigation.php
-│       ├── notification.php
-│       ├── activity-log.php
-│       ├── payment-gateway.php
-│       ├── service.php
-│       └── file-hosting.php
+│   └── v1.php          # loader — // Core requires, then // Product
+│       ├── identity.php          # core
+│       ├── navigation.php        # core
+│       ├── notification.php      # core
+│       ├── activity-log.php      # core
+│       ├── payment-gateway.php   # core
+│       ├── service.php           # core
+│       └── file-hosting.php      # product
 └── web/
-    ├── identity-guest.php
-    ├── identity.php
-    ├── navigation.php
-    ├── notification.php
-    ├── activity-log.php
-    ├── payment-gateway.php
-    ├── service.php
-    └── file-hosting.php
+    ├── identity-guest.php        # web.guest (auth surface, not kind)
+    ├── identity.php              # core
+    ├── navigation.php            # core
+    ├── notification.php          # core
+    ├── activity-log.php          # core
+    ├── payment-gateway.php       # core
+    ├── service.php               # core
+    ├── file-hosting.php          # product (web.auth)
+    ├── file-hosting-public.php   # public share
+    └── payment-ipaymu-return.php # provider return
 ```
 
 Paths inside version files are relative to the version prefix.
+
+**Kind ordering:** loaders keep core domain files before product (comment sections only). No `core/` / `product/` route subdirectories — see [architecture.md](architecture.md).
 
 ## Registration (`bootstrap/app.php`)
 
@@ -86,6 +90,7 @@ Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes
 4. One loader per version; domain files underneath.
 5. Breaking changes require a new version.
 6. Route names use `api.v{N}.` prefix.
+7. In loaders, core requires before product; `domain:make` appends — keep product block last when reordering.
 
 ## Verify
 

@@ -22,13 +22,21 @@
  *
  * Provider classes still register in bootstrap/providers.php; Artisan domain:*
  * commands keep this file and providers/routes in sync.
+ *
+ * Convention: list core entries first, product entries last. Loaders
+ * (routes/api/v1.php, routes/web.php web.auth, bootstrap/providers.php) follow
+ * the same core → product order with comment sections — presentation only.
  */
+
 return [
+    // Core
     'Identity' => ['kind' => 'core'],
     'Navigation' => ['kind' => 'core'],
     'Notification' => ['kind' => 'core'],
     'ActivityLog' => ['kind' => 'core'],
     'PaymentGateway' => ['kind' => 'core'],
     'Service' => ['kind' => 'core'],
+
+    // Product
     'FileHosting' => ['kind' => 'product', 'locked' => true],
 ];

@@ -73,7 +73,9 @@ Active menus cached; per-request tree filters by layout + RBAC. Invalidate on me
 
 ## Seeding
 
-`MenuSeeder` — sample hierarchy; re-run safe patterns.
+`MenuSeeder` — sample hierarchy; early-returns if any menu row exists (fresh seed only). Default sidebar headers: **Menu** (core UX: dashboard, users, notifications, services), **Products** (product surfaces, e.g. File Hosting “My Files”), **Administration** (activity log, payments, nav admin).
+
+Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module registry stays in [`config/domains.php`](../../../config/domains.php); RBAC catalog ownership is separate (`domain_kind` on roles/permissions). Do not add schema just to mirror those axes.
 
 ## Related
 
