@@ -6,18 +6,19 @@ use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
+use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
 use App\Domain\Identity\Models\User;
 use App\Support\Storage\S3DirectUploadEngine;
 use App\Support\Storage\S3DirectUploadException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 /**
  * Browser-direct uploads to S3-compatible storage with ownership + quota + promote-to-file.
  *
  * Storage mechanics live in {@see S3DirectUploadEngine}; this service owns domain rules only.
+ * DB `path` stores object id only; full S3 key is resolved via {@see ObjectKeyResolver}.
  */
 class DirectUploadService
 {
@@ -26,6 +27,7 @@ class DirectUploadService
         private readonly FolderRepositoryInterface $folders,
         private readonly AccessService $access,
         private readonly QuotaService $quota,
+        private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
         private readonly S3DirectUploadEngine $engine = new S3DirectUploadEngine,
     ) {}
 
@@ -57,12 +59,12 @@ class DirectUploadService
 
         $this->assertUploadAllowed($name, $mime, $size);
         // Display-name collisions are resolved at complete (auto "name (N).ext"), not rejected here.
-        // S3 object keys stay unique via random path segments regardless of display name.
+        // S3 object keys stay unique via random object id regardless of display name.
         $this->quota->assertCanAccept($ownerId, $size);
 
         $diskName = $this->resolveDiskName($disk);
-        $uploadId = (string) Str::uuid();
-        $path = $this->buildPath($ownerId, $uploadId, $name);
+        $objectId = $this->objectKeys->generateObjectId();
+        $objectKey = $this->objectKeys->objectKey($ownerId, $objectId);
         $expiresAt = Carbon::now()->addHours((int) config('file-hosting.session_ttl_hours'));
 
         $threshold = (int) config('file-hosting.multipart_threshold_bytes');
@@ -74,7 +76,7 @@ class DirectUploadService
 
         if ($strategy === S3DirectUploadEngine::STRATEGY_MULTIPART) {
             try {
-                $s3UploadId = $this->engine->createMultipartUpload($diskName, $path, $mime);
+                $s3UploadId = $this->engine->createMultipartUpload($diskName, $objectKey, $mime);
             } catch (S3DirectUploadException $e) {
                 throw $this->mapEngineException($e);
             }
@@ -84,7 +86,7 @@ class DirectUploadService
             'user_id' => $ownerId,
             'folder_id' => $folderId,
             'disk' => $diskName,
-            'path' => $path,
+            'path' => $objectId,
             's3_upload_id' => $s3UploadId,
             'strategy' => $strategy,
             'original_name' => $name,
@@ -196,9 +198,10 @@ class DirectUploadService
             );
 
             $merged = $upload->parts;
+            $objectKey = $this->objectKeys->objectKey($upload->user_id, $upload->path);
 
             if ($upload->strategy === S3DirectUploadEngine::STRATEGY_SINGLE) {
-                if (! $this->storage->pathExists($upload->path, $upload->disk)) {
+                if (! $this->storage->pathExists($objectKey, $upload->disk)) {
                     throw new FileHostingException(__('api/file-hosting.upload.object_missing'));
                 }
             } else {
@@ -208,7 +211,7 @@ class DirectUploadService
                     $this->engine->assertAllPartsPresent($merged, $this->expectedPartCount($upload));
                     $this->engine->completeMultipartUpload(
                         $upload->disk,
-                        $upload->path,
+                        $objectKey,
                         (string) $upload->s3_upload_id,
                         $merged,
                     );
@@ -257,18 +260,20 @@ class DirectUploadService
             return;
         }
 
+        $objectKey = $this->objectKeys->objectKey($upload->user_id, $upload->path);
+
         if ($upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART && $upload->s3_upload_id) {
             try {
                 $this->engine->abortMultipartUpload(
                     $upload->disk,
-                    $upload->path,
+                    $objectKey,
                     (string) $upload->s3_upload_id,
                 );
             } catch (S3DirectUploadException $e) {
                 throw $this->mapEngineException($e);
             }
-        } elseif ($this->storage->pathExists($upload->path, $upload->disk)) {
-            $this->storage->deleteMany([['path' => $upload->path, 'disk' => $upload->disk]]);
+        } elseif ($this->storage->pathExists($objectKey, $upload->disk)) {
+            $this->storage->deleteMany([['path' => $objectKey, 'disk' => $upload->disk]]);
         }
 
         $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
@@ -290,25 +295,6 @@ class DirectUploadService
         } catch (S3DirectUploadException $e) {
             throw $this->mapEngineException($e);
         }
-    }
-
-    private function buildPath(string $ownerId, string $uploadId, string $name): string
-    {
-        $directory = trim((string) config('file-hosting.directory'), '/');
-        // Random object key — display name lives only in DB (Content-Disposition on download).
-        $random = Str::lower(Str::random(40));
-        $extension = strtolower((string) pathinfo($name, PATHINFO_EXTENSION));
-        $extension = preg_replace('/[^a-z0-9]+/', '', $extension) ?? '';
-
-        return $directory.'/'.$ownerId.'/'.$uploadId.'/'.$random.($extension !== '' ? '.'.$extension : '');
-    }
-
-    private function isPathAllowed(string $path, string $ownerId): bool
-    {
-        $directory = trim((string) config('file-hosting.directory'), '/');
-        $prefix = $directory.'/'.$ownerId.'/';
-
-        return str_starts_with($path, $prefix);
     }
 
     private function findUsableUpload(User $actor, string $uploadUuid): FileUpload
@@ -333,7 +319,7 @@ class DirectUploadService
             throw new FileHostingException(__('api/file-hosting.upload.already_promoted'));
         }
 
-        if (! $this->isPathAllowed($upload->path, $upload->user_id)) {
+        if (! $this->objectKeys->isValidObjectId($upload->path)) {
             throw new FileHostingException(__('api/file-hosting.upload.invalid_path'));
         }
 
@@ -373,7 +359,7 @@ class DirectUploadService
         try {
             return $this->engine->presignParts(
                 $upload->disk,
-                $upload->path,
+                $this->objectKeys->objectKey($upload->user_id, $upload->path),
                 $upload->strategy,
                 $upload->mime,
                 $upload->s3_upload_id,

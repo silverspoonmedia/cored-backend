@@ -7,10 +7,10 @@ use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\AccessService;
 use App\Domain\FileHosting\Services\DirectUploadService;
 use App\Domain\FileHosting\Services\QuotaService;
+use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\Identity\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 /**
  * Test double for File Hosting direct uploads on a faked disk (no real S3).
@@ -34,12 +34,8 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
         $this->assertUploadAllowed($name, $mime, $size);
         app(QuotaService::class)->assertCanAccept($ownerId, $size);
 
-        $uploadId = (string) Str::uuid();
-        $directory = trim((string) config('file-hosting.directory'), '/');
-        $random = Str::lower(Str::random(40));
-        $extension = strtolower((string) pathinfo($name, PATHINFO_EXTENSION));
-        $extension = preg_replace('/[^a-z0-9]+/', '', $extension) ?? '';
-        $path = $directory.'/'.$ownerId.'/'.$uploadId.'/'.$random.($extension !== '' ? '.'.$extension : '');
+        $keys = app(ObjectKeyResolver::class);
+        $objectId = $keys->generateObjectId();
 
         $threshold = (int) config('file-hosting.multipart_threshold_bytes');
         $chunkSize = (int) config('file-hosting.chunk_size_bytes');
@@ -54,7 +50,7 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             'user_id' => $ownerId,
             'folder_id' => $folderId,
             'disk' => $this->resolveDiskName($disk),
-            'path' => $path,
+            'path' => $objectId,
             's3_upload_id' => $strategy === FileUpload::STRATEGY_MULTIPART ? 'fake-upload-id' : null,
             'strategy' => $strategy,
             'original_name' => $name,
@@ -87,7 +83,8 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
     public function complete(User $actor, string $uploadUuid, ?array $parts = null): array
     {
         $upload = FileUpload::query()->findOrFail($uploadUuid);
-        Storage::disk($upload->disk)->put($upload->path, 'fake-binary');
+        $objectKey = app(ObjectKeyResolver::class)->objectKey($upload->user_id, $upload->path);
+        Storage::disk($upload->disk)->put($objectKey, 'fake-binary');
 
         $displayName = $this->allocateUniqueDisplayName(
             $upload->user_id,
@@ -161,7 +158,8 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             return;
         }
 
-        Storage::disk($upload->disk)->delete($upload->path);
+        $objectKey = app(ObjectKeyResolver::class)->objectKey($upload->user_id, $upload->path);
+        Storage::disk($upload->disk)->delete($objectKey);
         $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
     }
 }

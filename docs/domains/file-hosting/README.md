@@ -21,8 +21,9 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Files | `file_hosting_files` — denormalized `user_id`, optional `folder_id` |
 | Upload sessions | `file_hosting_uploads` — init → browser PUT (direct S3 **or** CF Worker proxy) → complete promotes row |
 | Part size | Default **10 MB** chunk + multipart threshold (`FILE_HOSTING_CHUNK_SIZE`) |
-| S3 object key | `file-hosting/{user_id}/{upload_id}/{random40}.{ext}` — display name only in DB |
-| Display name on upload | Preferred client name kept if free in that owner+folder (soft-deleted ignored). If taken → auto DB rename to `{stem} ({maxN+1}).{ext}` where `maxN` is highest active sibling index (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`). S3 object key stays random and is never renamed. Manual rename/move still rejects exact sibling collisions. |
+| DB `path` | Object id only: 40 lowercase alnum chars (`Str::random(40)`). **Not** a full S3 key. |
+| S3 object key | `file-hosting/{user_id}/{objectId}` — resolved at runtime via `ObjectKeyResolver` from `user_id` + `path` + config `directory`. No `folder_id`, no extension, no upload session id in the key. |
+| Display name on upload | Preferred client name kept if free in that owner+folder (soft-deleted ignored). If taken → auto DB rename to `{stem} ({maxN+1}).{ext}` where `maxN` is highest active sibling index (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`). S3 object key stays random and is never renamed. Manual rename/move still rejects exact sibling collisions. Move/rename are **DB-only** (folder tree lives in `folder_id` / `name`). |
 | Download bytes | Always **302 (or client follow)** to S3 temporary URL — **not** Monolith streaming |
 | S3 signed URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry |
 | Download filename | `ResponseContentDisposition` from DB `name` (random key stays on object) |
@@ -107,7 +108,7 @@ Upload **init** no longer rejects a display name that already exists in the same
 | `A.zip` + `A (3).zip` | `A.zip` | `A (4).zip` (max index + 1; holes not reused) |
 | base soft-deleted, `A (3).zip` remains | `A.zip` | `A.zip` (base free again) |
 
-S3 object keys stay unique (`…/{random40}.ext`) and are never renamed. Manual rename/move still enforces exact sibling uniqueness. Clients must show **`file.name` from complete**, not the original client filename.
+S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never renamed or moved when the display name / folder changes. Manual rename/move still enforces exact sibling uniqueness. Clients must show **`file.name` from complete**, not the original client filename. API `path` is the object id only.
 
 #### Hybrid proxy env
 
@@ -275,7 +276,7 @@ Menu: **My Files** → `file-hosting.index`.
 
 | Key | Role |
 |-----|------|
-| `disk` / `directory` | S3-compatible disk + key prefix |
+| `disk` / `directory` | S3-compatible disk + key prefix (`FILE_HOSTING_DIRECTORY`, default `file-hosting`). Prefix is **not** stored in DB `path`. |
 | `regions` | Region key → disk name map (e.g. `sea` → `s3Custom`); only regions with non-empty disk appear in upload dropdown |
 | `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
 | `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **10 MiB** each) |
@@ -317,7 +318,7 @@ npm run test:js
 
 | Suite | What it covers |
 |-------|----------------|
-| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — including display-name auto-rename on complete), unit tests for `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest`), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`. |
+| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest`), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`. |
 | Vitest `npm run test:js` | Pure client helpers in `resources/js/file-hosting/upload-progress.test.js` (transfer rate, format, byte percent). Pattern: `resources/js/**/*.test.js`. |
 | Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Worker unit tests: `c:\laragon\www\workers` (`npm test`). |
 

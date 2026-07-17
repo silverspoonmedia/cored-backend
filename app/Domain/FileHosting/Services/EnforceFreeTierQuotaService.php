@@ -3,6 +3,7 @@
 namespace App\Domain\FileHosting\Services;
 
 use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +19,7 @@ class EnforceFreeTierQuotaService
     public function __construct(
         private readonly ObjectStorage $storage,
         private readonly QuotaService $quota,
+        private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
     ) {}
 
     /**
@@ -46,7 +48,7 @@ class EnforceFreeTierQuotaService
             ->where('user_id', $userId)
             ->orderBy('created_at')
             ->orderBy('id')
-            ->get(['id', 'size', 'disk', 'path', 'created_at']);
+            ->get(['id', 'user_id', 'size', 'disk', 'path', 'created_at']);
 
         $running = 0;
         $toDelete = [];
@@ -89,7 +91,10 @@ class EnforceFreeTierQuotaService
     private function purgeFile(HostedFile $file): void
     {
         DB::transaction(function () use ($file): void {
-            $this->storage->deleteMany([['disk' => $file->disk, 'path' => $file->path]]);
+            $this->storage->deleteMany([[
+                'disk' => $file->disk,
+                'path' => $this->objectKeys->objectKey($file->user_id, $file->path),
+            ]]);
 
             if (! $file->trashed()) {
                 $file->delete();

@@ -447,7 +447,7 @@ class FileManagerControllerTest extends TestCase
                     'data' => [
                         'upload_id' => fake()->uuid(),
                         'strategy' => 'single',
-                        'path' => 'file-hosting/x/y/z.pdf',
+                        'path' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
                         'parts' => [],
                     ],
                 ], 201);

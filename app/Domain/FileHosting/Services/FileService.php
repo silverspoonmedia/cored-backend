@@ -5,6 +5,7 @@ namespace App\Domain\FileHosting\Services;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
+use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -19,6 +20,7 @@ class FileService
         private readonly ObjectStorage $storage,
         private readonly SignedDownloadService $signedDownloads,
         private readonly VisibilityService $visibility,
+        private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
     ) {}
 
     public function findOwnedOrFail(string $ownerId, string $fileId): HostedFile
@@ -153,7 +155,10 @@ class FileService
         $this->access->assertCanMutateOwner($actor, $file->owner);
 
         DB::transaction(function () use ($file): void {
-            $this->storage->deleteMany([['disk' => $file->disk, 'path' => $file->path]]);
+            $this->storage->deleteMany([[
+                'disk' => $file->disk,
+                'path' => $this->objectKeys->objectKey($file->user_id, $file->path),
+            ]]);
             $file->forceDelete();
         });
     }

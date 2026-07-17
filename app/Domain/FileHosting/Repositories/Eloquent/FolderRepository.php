@@ -7,6 +7,7 @@ use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
 use App\Domain\FileHosting\Support\FolderAncestorChain;
+use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class FolderRepository implements FolderRepositoryInterface
 {
     public function __construct(
         private readonly ObjectStorage $storage,
+        private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
     ) {}
 
     public function findOwned(string $ownerId, string $folderId): ?Folder
@@ -199,7 +201,7 @@ class FolderRepository implements FolderRepositoryInterface
 
         $this->storage->deleteMany($files->map(fn (HostedFile $f) => [
             'disk' => $f->disk,
-            'path' => $f->path,
+            'path' => $this->objectKeys->objectKey($f->user_id, $f->path),
         ]));
 
         foreach ($files as $file) {

@@ -85,7 +85,7 @@ class AllocateUniqueDisplayNameTest extends TestCase
             'folder_id' => null,
             'name' => $name,
             'disk' => 'local',
-            'path' => 'file-hosting/'.$this->ownerId.'/'.str_replace('.', '', uniqid('', true)).'/'.str_repeat('a', 40).'.zip',
+            'path' => substr(hash('sha256', uniqid('', true)), 0, 40),
             'size' => 1,
             'mime' => 'application/zip',
         ]);
