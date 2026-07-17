@@ -49,6 +49,7 @@ class RoleSeeder extends Seeder
             'restore menu',
             'view notification',
             'view activity log',
+            'view error log',
             'view payment gateway',
             'manage payment gateway',
             'view invoice',
@@ -73,8 +74,8 @@ class RoleSeeder extends Seeder
         }
 
         $rolePermissions = [
-            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service'],
-            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service'],
+            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view error log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service'],
+            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view error log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service'],
             'Moderator' => ['view user', 'create user', 'edit user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'purchase service'],
             'Management' => ['view user', 'view menu', 'view notification', 'view payment gateway', 'view invoice', 'view subscription', 'view service'],
             'User' => ['view notification', 'view service', 'purchase service'],

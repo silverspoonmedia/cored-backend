@@ -1,5 +1,8 @@
 <?php
 
+use App\Domain\ErrorLog\Support\ErrorLogRecorder;
+use App\Domain\Identity\Models\User;
+use App\Exceptions\BusinessRuleException;
 use App\Http\Middleware\AuthenticateWithJwtCookie;
 use App\Http\Middleware\EnsureGatewayRequest;
 use App\Http\Middleware\EnsureWebAuthenticated;
@@ -7,7 +10,6 @@ use App\Http\Middleware\OptionalJwtAuthenticate;
 use App\Http\Middleware\RedirectIfWebAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
-use App\Domain\Identity\Models\User;
 use App\Support\ApiResponder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -39,6 +41,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ])
     ->withCommands([
         __DIR__.'/../app/Console/Commands',
+        __DIR__.'/../app/Domain/ErrorLog/Console/Commands',
         __DIR__.'/../app/Domain/Navigation/Console/Commands',
         __DIR__.'/../app/Domain/PaymentGateway/Console/Commands',
         __DIR__.'/../app/Domain/Service/Console/Commands',
@@ -115,6 +118,14 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        $exceptions->dontReport([
+            BusinessRuleException::class,
+        ]);
+
+        $exceptions->reportable(function (\Throwable $e): void {
+            app(ErrorLogRecorder::class)->recordException($e);
+        });
 
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
             if (! $request->is('api/*')) {

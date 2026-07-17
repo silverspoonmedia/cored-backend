@@ -145,6 +145,18 @@ class MenuSeeder extends Seeder
         ]);
         $activityLogItem->roles()->sync($adminRoleIds);
 
+        $errorLogItem = Menu::query()->create([
+            'parent_id' => $admin->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Error log', 'id' => 'Log Error', 'ja' => 'エラーログ'],
+            'icon' => 'bi bi-bug',
+            'route' => 'error-logs.index',
+            'type' => 'p',
+            'order' => 2,
+            'is_authenticate' => true,
+        ]);
+        $errorLogItem->roles()->sync($adminRoleIds);
+
         $paymentViewerRoleIds = Role::query()
             ->where('guard_name', 'api')
             ->whereIn('name', ['Root', 'Admin', 'Moderator', 'Management'])

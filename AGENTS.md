@@ -46,6 +46,7 @@ Full workflow: [docs/agents/guide.md](docs/agents/guide.md) · [docs/changelog/R
 | [docs/platform/architecture.md](docs/platform/architecture.md) | Domain modules, `domain:*`, namespaces |
 | [docs/platform/api-routing.md](docs/platform/api-routing.md) | Global vs versioned API |
 | [docs/domains/identity/README.md](docs/domains/identity/README.md) | Auth, JWT, H-RBAC |
+| [docs/domains/error-log/README.md](docs/domains/error-log/README.md) | Grouped persistent app errors |
 | [docs/integration/spa-gateway.md](docs/integration/spa-gateway.md) | Monolith + Gateway + Vue |
 | [docs/platform/crud.md](docs/platform/crud.md) | Repository pattern |
 | [docs/domains/payment-gateway/README.md](docs/domains/payment-gateway/README.md) | Payments, invoices |

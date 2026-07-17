@@ -62,7 +62,7 @@ Client: `window.MonolithApi.handleResponse()` / `datatableAjaxError()`.
 
 Domain files under `routes/web/*.php` loaded from `routes/web.php` with `web.guest` / `web.auth`. API still authorizes every forwarded call.
 
-Major groups: auth guest, dashboard/profile, users (+ datatable proxy), menus, notifications, activity-logs, payments/invoices, services, file-hosting.
+Major groups: auth guest, dashboard/profile, users (+ datatable proxy), menus, notifications, activity-logs, error-logs, payments/invoices, services, file-hosting.
 
 Layout namespace: `WEB_LAYOUT` / `config/web.php` (default `adminlte4`).
 

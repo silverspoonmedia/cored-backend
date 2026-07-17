@@ -63,4 +63,5 @@ php artisan activitylog:clean   # default retention 365 days
 
 - [identity](../identity/README.md)
 - [notification](../notification/README.md)
+- [error-log](../error-log/README.md) — grouped runtime failures (not audit)
 - [platform/octane.md](../../platform/octane.md)

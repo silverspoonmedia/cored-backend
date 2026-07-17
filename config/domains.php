@@ -34,6 +34,7 @@ return [
     'Navigation' => ['kind' => 'core'],
     'Notification' => ['kind' => 'core'],
     'ActivityLog' => ['kind' => 'core'],
+    'ErrorLog' => ['kind' => 'core'],
     'PaymentGateway' => ['kind' => 'core'],
     'Service' => ['kind' => 'core'],
 

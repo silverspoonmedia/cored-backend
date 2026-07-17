@@ -33,6 +33,10 @@ Full long-form prompt and history templates lived in the pre-reorg security proc
 
 Auth observability maps to Spatie activitylog (`log_name: auth`) plus Laravel log. See [activity-log](../domains/activity-log/README.md) for viewer UI.
 
+## Application error log (persistent)
+
+Runtime failures (reportable exceptions + `Log::error` and above) are stored in the **ErrorLog** domain (`error_logs`), grouped by fingerprint. Admin-only: `permission:view error log`. Context is redacted (passwords, tokens, etc.). File logs under `storage/logs/` remain dual-write. See [error-log](../domains/error-log/README.md).
+
 | Auth action | Activity (`auth`) | Notes |
 |-------------|-------------------|-------|
 | Login success | `login` | `login_method`: password \| two_factor |
@@ -55,4 +59,5 @@ Historical assessment detail: [archive/auth-activity-assessment.md](../archive/a
 
 - [domains/identity/README.md](../domains/identity/README.md)
 - [domains/activity-log/README.md](../domains/activity-log/README.md)
+- [domains/error-log/README.md](../domains/error-log/README.md)
 - [database-safety.md](database-safety.md)

@@ -102,7 +102,17 @@ PHPUnit: `APP_ENV=testing`, sqlite, `GATEWAY_ENFORCE=false`, CSRF bypass for web
 
 Payment: `checkout_mode` derived from active channels at runtime — see [payment-gateway](../domains/payment-gateway/README.md). Encryption env: [encryption](../domains/payment-gateway/encryption.md).
 
+## Persistent error log
+
+| Variable | Role |
+|----------|------|
+| `ERRORLOG_ENABLED` | Store reportable exceptions + `Log::error+` in DB (`true` / `false`) |
+| `ERRORLOG_CLEAN_AFTER_DAYS` | Retention for `php artisan errorlog:clean` |
+
+Independent of `LOG_CHANNEL` file logs. Domain guide: [error-log](../domains/error-log/README.md).
+
 ## Related
 
 - [integration/spa-gateway.md](../integration/spa-gateway.md)
 - [octane.md](octane.md)
+- [domains/error-log/README.md](../domains/error-log/README.md)

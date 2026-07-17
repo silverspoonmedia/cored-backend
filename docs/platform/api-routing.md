@@ -30,6 +30,7 @@ routes/
 │       ├── navigation.php        # core
 │       ├── notification.php      # core
 │       ├── activity-log.php      # core
+│       ├── error-log.php         # core
 │       ├── payment-gateway.php   # core
 │       ├── service.php           # core
 │       └── file-hosting.php      # product
@@ -39,6 +40,7 @@ routes/
     ├── navigation.php            # core
     ├── notification.php          # core
     ├── activity-log.php          # core
+    ├── error-log.php             # core
     ├── payment-gateway.php       # core
     ├── service.php               # core
     ├── file-hosting.php          # product (web.auth)
@@ -74,7 +76,7 @@ JSON errors for `api/*` via `$exceptions->shouldRenderJsonWhen(...)`.
 
 ## Versioned routes
 
-Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, payments, services, file-hosting.
+Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, error-logs, payments, services, file-hosting.
 
 ## Adding a new API version
 
