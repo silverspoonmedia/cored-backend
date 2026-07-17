@@ -15,7 +15,7 @@ return [
     'regions' => array_filter([
         'sea' => env('FILE_HOSTING_REGION_SEA_DISK', 's3Custom'),
         'us'  => env('FILE_HOSTING_REGION_US_DISK'),
-        'eu'  => env('FILE_HOSTING_REGION_EU_DISK', 's3Customeu'),
+        'eu'  => env('FILE_HOSTING_REGION_EU_DISK'),
     ]),
 
     /*

@@ -62,14 +62,14 @@ return [
 
         's3Custom' => [
             'driver' => 's3',
-            'bucket' => env('CUSTOM_S3_BUCKET_PUBLIC'),
+            'bucket' => env('CUSTOM_S3_BUCKET'),
             'region' => env('CUSTOM_S3_REGION', 'auto'),
             'key' => env('CUSTOM_S3_KEY'),
             'secret' => env('CUSTOM_S3_SECRET'),
             'endpoint' => env('CUSTOM_S3_ENDPOINT'),
             'visibility' => 'public',
             'throw' => true,
-            'domain' => env('CUSTOM_S3_BUCKET_PUBLIC_DOMAIN'),
+            'domain' => env('CUSTOM_S3_BUCKET_DOMAIN'),
         ],
 
     ],

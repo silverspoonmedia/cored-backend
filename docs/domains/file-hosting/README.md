@@ -87,6 +87,71 @@ Browser-direct PUT / multipart lives in shared kernel support, not duplicated pe
 
 Config for thresholds/TTL stays under `config/file-hosting.php`.
 
+### S3 provider CORS (browser-direct multipart)
+
+Browser uploads **directly** to the S3-compatible endpoint (presigned PUT / UploadPart). That is a cross-origin request from the app origin (Blade admin or SPA) to the bucket host. Without bucket CORS, the browser blocks the PUT and may hide `ETag` — multipart **complete** then cannot send part ETags.
+
+| Requirement | Why |
+|-------------|-----|
+| Allow app origin(s) | Preflight + actual PUT/GET from browser |
+| Methods include `PUT`, `GET`, `HEAD` (and `DELETE` if abort/cleanup uses it) | Match presign strategy |
+| Allow `Content-Type` (or `*`) | Signed part uploads send a content type |
+| **Expose `ETag`** | JS must read part ETag after each PUT to finish multipart |
+
+Replace origin placeholders with real front-end hosts (e.g. admin URL, SPA URL). Do **not** leave a bare `"https"` in production — that is not a valid browser origin.
+
+#### Cloudflare R2
+
+R2 supports paste-in CORS under the bucket **CORS Policy** setting.
+
+```json
+[
+  {
+    "AllowedOrigins": [
+      "https://your-app.example"
+    ],
+    "AllowedMethods": [
+      "PUT",
+      "GET",
+      "HEAD",
+      "DELETE"
+    ],
+    "AllowedHeaders": [
+      "Content-Type"
+    ],
+    "ExposeHeaders": [
+      "ETag"
+    ],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+Add every origin that performs browser-direct upload (local dev, staging, production). Multiple origins = multiple entries in `AllowedOrigins`.
+
+#### Backblaze B2
+
+B2 bucket CORS is not a simple dashboard paste for all setups — use the [B2 CLI](https://www.backblaze.com/b2/docs/quick_command_line.html).
+
+1. Install the B2 CLI.
+2. Authenticate (`b2 account authorize` / equivalent for your CLI version).
+3. Apply CORS rules on the bucket (replace `replaceWithBucketName` and origins). Windows example with `b2.exe`:
+
+```bash
+b2.exe bucket update --cors-rules "[{\"corsRuleName\":\"ETagUploader\",\"allowedOrigins\":[\"https://your-app.example\"],\"allowedHeaders\":[\"*\"],\"allowedOperations\":[\"b2_download_file_by_id\",\"b2_download_file_by_name\",\"b2_upload_file\",\"b2_upload_part\",\"s3_put\",\"s3_post\",\"s3_get\",\"s3_head\"],\"exposeHeaders\":[\"ETag\",\"x-bz-content-sha1\"],\"maxAgeSeconds\":3600}]" replaceWithBucketName allPublic
+```
+
+| Field | Notes |
+|-------|--------|
+| `corsRuleName` | Label only (`ETagUploader`) |
+| `allowedOrigins` | Real app origin(s); JSON array inside the escaped string |
+| `allowedOperations` | Native B2 + S3-compatible ops used by download and multipart upload |
+| `exposeHeaders` | `ETag` required for multipart; `x-bz-content-sha1` is B2-specific |
+
+CLI version, auth subcommand names, and bucket visibility flags differ by install — if the update fails, check `b2 bucket update --help` for your binary. Success = browser multipart PUT returns readable `ETag`; failure usually surfaces as CORS preflight errors or missing `ETag` in JS.
+
+Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin + PUT/GET/HEAD + expose `ETag`. Exact JSON/CLI shape is vendor-specific.
+
 ### Public — no auth
 
 | Method | Path |
