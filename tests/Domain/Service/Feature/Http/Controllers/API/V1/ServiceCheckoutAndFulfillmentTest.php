@@ -10,6 +10,7 @@ use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePrice;
 use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Support\FileHostingCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -23,13 +24,19 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
     use SeedsCurrencies;
     use SeedsRolesAndPermissions;
 
+    private int $free;
+
+    private int $main1Tb;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->seedRolesAndPermissions();
         $this->seedCurrencies();
-        config(['file-hosting.default_quota_bytes' => 5 * 1024 * 1024 * 1024]);
+        $this->free = FileHostingCatalog::freeBytes();
+        $this->main1Tb = FileHostingCatalog::main1TbBytes();
+        config(['file-hosting.default_quota_bytes' => $this->free]);
     }
 
     public function test_checkout_endpoint_creates_purchase_and_pending_invoice(): void
@@ -41,16 +48,15 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
         ]);
 
         $user = $this->userWithRole('User');
-        $service = Service::factory()->fileHostingMonthly()->create();
-        ServicePrice::factory()->usd(10)->create(['service_id' => $service->id]);
+        $service = Service::factory()->fileHostingMain1Tb()->create();
+        ServicePrice::factory()->usd(24.95)->create(['service_id' => $service->id]);
 
         $this->actingAsJwt($user)
             ->postJson('/api/v1/services/'.$service->id.'/checkout', ['currency' => 'USD'])
             ->assertCreated()
             ->assertJsonPath('data.display_currency', 'USD')
-            ->assertJsonPath('data.display_amount', 10)
+            ->assertJsonPath('data.display_amount', 24.95)
             ->assertJsonPath('data.settlement_currency', 'IDR')
-            ->assertJsonPath('data.settlement_amount', 180000)
             ->assertJsonPath('data.invoice.currency', 'IDR')
             ->assertJsonPath('data.invoice.status', 'pending');
 
@@ -61,16 +67,16 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
         ]);
     }
 
-    public function test_paid_sync_fulfills_unlimited_file_hosting_quota(): void
+    public function test_paid_sync_fulfills_main_plan_quota(): void
     {
         $user = $this->userWithRole('User');
-        $service = Service::factory()->fileHostingMonthly()->create();
-        ServicePrice::factory()->usd(10)->create(['service_id' => $service->id]);
+        $service = Service::factory()->fileHostingMain1Tb()->create();
+        ServicePrice::factory()->usd(24.95)->create(['service_id' => $service->id]);
 
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $service->id,
-            'settlement_amount' => 180000,
+            'settlement_amount' => 449100,
         ]);
 
         $invoice = Invoice::query()->create([
@@ -80,22 +86,23 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
             'invoice_number' => Invoice::generateInvoiceNumber(),
             'external_transaction_id' => null,
             'payment_method' => 'pending',
-            'subtotal' => 180000,
+            'subtotal' => 449100,
             'payment_channel_fee' => 0,
-            'customer_gross_total' => 180000,
+            'customer_gross_total' => 449100,
             'currency' => 'IDR',
             'status' => 'pending',
         ]);
 
         $quotaBefore = app(QuotaService::class)->usage($user->id);
-        $this->assertSame(5 * 1024 * 1024 * 1024, $quotaBefore['quota_bytes']);
+        $this->assertSame($this->free, $quotaBefore['quota_bytes']);
+        $this->assertSame('free', $quotaBefore['state']);
 
         app(MidtransInvoiceSynchronizer::class)->sync($invoice, [
             'transaction_status' => 'settlement',
             'payment_type' => 'qris',
             'fraud_status' => 'accept',
             'transaction_id' => 'mid-txn-1',
-            'gross_amount' => '180000.00',
+            'gross_amount' => '449100.00',
             'settlement_time' => now()->toDateTimeString(),
         ]);
 
@@ -104,27 +111,27 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
         $this->assertNotNull($purchase->period_start);
         $this->assertNotNull($purchase->period_end);
 
+        $expected = $this->free + $this->main1Tb;
         $quotaAfter = app(QuotaService::class)->usage($user->id);
-        $this->assertSame(0, $quotaAfter['quota_bytes']);
-        $this->assertNull($quotaAfter['remaining_bytes']);
-        $this->assertSame('unlimited', $quotaAfter['state']);
+        $this->assertSame($expected, $quotaAfter['quota_bytes']);
+        $this->assertSame($expected, $quotaAfter['remaining_bytes']);
+        $this->assertSame('paid', $quotaAfter['state']);
 
         $this->assertDatabaseHas('file_hosting_user_quotas', [
             'user_id' => $user->id,
-            'quota_bytes' => 0,
-            'source' => 'service_purchase',
-            'source_id' => $purchase->id,
+            'quota_bytes' => $expected,
+            'source' => 'service_recompute',
         ]);
 
         $this->assertDatabaseHas('service_entitlements', [
             'user_id' => $user->id,
             'service_id' => $service->id,
             'status' => 'active',
+            'quantity' => 1,
             'source_purchase_id' => $purchase->id,
         ]);
 
-        // Unlimited: assertCanAccept does not throw even far above former default.
-        app(QuotaService::class)->assertCanAccept($user->id, 50 * 1024 * 1024 * 1024);
+        app(QuotaService::class)->assertCanAccept($user->id, $this->main1Tb);
     }
 
     public function test_purchase_show_for_owner(): void

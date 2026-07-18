@@ -9,10 +9,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * After subscription grace ends: keep oldest files until free-tier limit.
- * Excess: hard-delete object storage + soft-delete DB row (quota sum ignores trash).
+ * Keep oldest files until a byte limit; purge overflow (S3 hard-delete + soft-delete DB).
  *
- * Sort: created_at ASC, id ASC. Accumulate; files that would exceed free limit are removed.
+ * Sort: created_at ASC, id ASC. Used after entitlement expire to match effective quota.
  */
 class EnforceFreeTierQuotaService
 {
@@ -23,11 +22,23 @@ class EnforceFreeTierQuotaService
     ) {}
 
     /**
+     * Purge to free-tier limit (legacy name).
+     *
      * @return array{deleted: int, freed_bytes: int, retained_bytes: int, limit_bytes: int}
      */
     public function enforce(string $userId): array
     {
-        $limit = $this->quota->freeTierQuotaBytes();
+        return $this->enforceToLimit($userId, $this->quota->freeTierQuotaBytes());
+    }
+
+    /**
+     * Purge to an arbitrary effective limit (e.g. after recompute).
+     *
+     * @return array{deleted: int, freed_bytes: int, retained_bytes: int, limit_bytes: int}
+     */
+    public function enforceToLimit(string $userId, int $limitBytes): array
+    {
+        $limit = max(0, $limitBytes);
 
         if ($limit <= 0) {
             return ['deleted' => 0, 'freed_bytes' => 0, 'retained_bytes' => 0, 'limit_bytes' => $limit];
@@ -72,7 +83,7 @@ class EnforceFreeTierQuotaService
             $freed += (int) $file->size;
         }
 
-        Log::info('file_hosting.enforce_free_tier', [
+        Log::info('file_hosting.enforce_to_limit', [
             'user_id' => $userId,
             'limit_bytes' => $limit,
             'deleted' => count($toDelete),

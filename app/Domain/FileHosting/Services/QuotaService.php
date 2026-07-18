@@ -35,12 +35,13 @@ class QuotaService
 
     public function assertCanAccept(string $userId, int $incomingBytes): void
     {
-        if ($this->entitlements->graceFileHostingFor($userId) !== null) {
+        if ($this->entitlements->hasGraceFileHosting($userId)) {
             throw new FileHostingException(__('api/file-hosting.quota_grace_blocked'), 422);
         }
 
         $quota = $this->quotaBytesFor($userId);
 
+        // True unlimited only if explicitly 0 and not free-tier path (reserved; tiers always > 0).
         if ($quota <= 0) {
             return;
         }
@@ -53,21 +54,10 @@ class QuotaService
     }
 
     /**
-     * Active unlimited entitlement → 0 (unlimited).
-     * Grace → still report previous override or unlimited for display; uploads blocked separately.
-     * Else UserQuota override or free-tier default.
+     * Prefer denorm UserQuota (recomputed on fulfill/expire). Fallback: free tier only.
      */
     public function quotaBytesFor(string $userId): int
     {
-        if ($this->entitlements->activeUnlimitedFileHostingFor($userId) !== null) {
-            return 0;
-        }
-
-        if ($this->entitlements->graceFileHostingFor($userId) !== null) {
-            // Grace: keep files; block uploads only. Report unlimited so UI shows grace messaging separately.
-            return 0;
-        }
-
         $override = UserQuota::query()
             ->where('user_id', $userId)
             ->value('quota_bytes');
@@ -76,7 +66,7 @@ class QuotaService
             return (int) $override;
         }
 
-        return (int) config('file-hosting.default_quota_bytes', 5 * 1024 * 1024 * 1024);
+        return $this->freeTierQuotaBytes();
     }
 
     public function freeTierQuotaBytes(): int
@@ -85,16 +75,16 @@ class QuotaService
     }
 
     /**
-     * @return 'unlimited'|'grace'|'free'
+     * @return 'paid'|'grace'|'free'
      */
     public function storageStateFor(string $userId): string
     {
-        if ($this->entitlements->activeUnlimitedFileHostingFor($userId) !== null) {
-            return 'unlimited';
+        if ($this->entitlements->hasGraceFileHosting($userId)) {
+            return 'grace';
         }
 
-        if ($this->entitlements->graceFileHostingFor($userId) !== null) {
-            return 'grace';
+        if ($this->entitlements->hasActivePaidFileHosting($userId)) {
+            return 'paid';
         }
 
         return 'free';

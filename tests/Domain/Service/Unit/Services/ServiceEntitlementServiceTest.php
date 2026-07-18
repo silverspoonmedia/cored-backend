@@ -31,7 +31,7 @@ class ServiceEntitlementServiceTest extends TestCase
         $catalog = Service::factory()->create([
             'billing_interval' => BillingInterval::Once,
             'fulfillment_target' => 'file_hosting',
-            'entitlement' => 'unlimited_quota',
+            'entitlement' => 'storage_quota',
         ]);
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
@@ -52,7 +52,7 @@ class ServiceEntitlementServiceTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMonthly()->create();
+        $catalog = Service::factory()->fileHostingMain1Tb()->create();
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $catalog->id,
@@ -61,6 +61,7 @@ class ServiceEntitlementServiceTest extends TestCase
         $result = $this->service->activateFromPurchase($purchase);
 
         $this->assertSame(EntitlementStatus::Active, $result['entitlement']->status);
+        $this->assertSame(1, $result['entitlement']->quantity);
         $this->assertTrue(
             $result['period_end']->equalTo(Carbon::parse('2026-08-16 12:00:00'))
         );
@@ -76,7 +77,7 @@ class ServiceEntitlementServiceTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMonthly()->create();
+        $catalog = Service::factory()->fileHostingMain1Tb()->create();
         $first = ServicePurchase::factory()->create([
             'user_id' => $user->id,
             'service_id' => $catalog->id,
@@ -94,7 +95,8 @@ class ServiceEntitlementServiceTest extends TestCase
 
         $result = $this->service->activateFromPurchase($renew);
 
-        // Remaining until Aug 16; +1 month → Sep 16
+        // Remaining until Aug 16; +1 month → Sep 16; main quantity stays 1
+        $this->assertSame(1, $result['entitlement']->quantity);
         $this->assertTrue(
             $result['entitlement']->ends_at->equalTo(Carbon::parse('2026-09-16 12:00:00'))
         );
@@ -107,7 +109,7 @@ class ServiceEntitlementServiceTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMonthly()->create();
+        $catalog = Service::factory()->fileHostingMain1Tb()->create();
         $first = ServicePurchase::factory()->create([
             'user_id' => $user->id,
             'service_id' => $catalog->id,

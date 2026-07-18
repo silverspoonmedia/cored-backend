@@ -4,15 +4,20 @@ namespace App\Domain\Service\Services;
 
 use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\EntitlementStatus;
-use App\Domain\Service\Models\Service;
+use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Support\FileHostingCatalog;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
 class ServiceEntitlementService
 {
     /**
      * Activate or extend entitlement from a paid purchase.
+     *
+     * Addon: each paid purchase increments quantity while active/grace.
+     * Main: quantity always 1.
      *
      * @return array{entitlement: ServiceEntitlement, period_start: ?Carbon, period_end: ?Carbon}
      */
@@ -35,9 +40,12 @@ class ServiceEntitlementService
             'service_id' => $service->id,
         ]);
 
+        $quantity = $this->nextQuantity($entitlement, $service->isAddonPlan());
+
         if ($interval->isOneTime()) {
             $entitlement->fill([
                 'status' => EntitlementStatus::Active,
+                'quantity' => $quantity,
                 'starts_at' => $entitlement->starts_at ?? $now,
                 'ends_at' => null,
                 'grace_ends_at' => null,
@@ -67,6 +75,7 @@ class ServiceEntitlementService
 
         $entitlement->fill([
             'status' => EntitlementStatus::Active,
+            'quantity' => $quantity,
             'starts_at' => $entitlement->starts_at ?? $now,
             'ends_at' => $periodEnd,
             'grace_ends_at' => null,
@@ -82,30 +91,88 @@ class ServiceEntitlementService
         ];
     }
 
-    public function activeUnlimitedFileHostingFor(string $userId): ?ServiceEntitlement
+    /**
+     * Expire other paid main entitlements so only $keepServiceId remains active.
+     */
+    public function expireOtherPaidMains(string $userId, string $keepServiceId): int
+    {
+        $count = 0;
+
+        $rows = ServiceEntitlement::query()
+            ->where('user_id', $userId)
+            ->where('service_id', '!=', $keepServiceId)
+            ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
+            ->whereHas('service', function ($q): void {
+                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                    ->where('plan_kind', PlanKind::Main)
+                    ->where('code', '!=', FileHostingCatalog::CODE_FREE);
+            })
+            ->get();
+
+        foreach ($rows as $row) {
+            $this->markExpired($row);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * @return Collection<int, ServiceEntitlement>
+     */
+    public function activePaidFileHostingEntitlements(string $userId): Collection
     {
         return ServiceEntitlement::query()
             ->where('user_id', $userId)
             ->where('status', EntitlementStatus::Active)
             ->whereHas('service', function ($q): void {
-                $q->where('fulfillment_target', 'file_hosting')
-                    ->where('entitlement', 'unlimited_quota');
+                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                    ->whereIn('plan_kind', [PlanKind::Main, PlanKind::Addon])
+                    ->where('code', '!=', FileHostingCatalog::CODE_FREE)
+                    ->where('storage_bytes', '>', 0);
             })
-            ->orderByDesc('ends_at')
-            ->first();
+            ->with('service')
+            ->get();
     }
 
-    public function graceFileHostingFor(string $userId): ?ServiceEntitlement
+    /**
+     * @return Collection<int, ServiceEntitlement>
+     */
+    public function graceFileHostingEntitlements(string $userId): Collection
     {
         return ServiceEntitlement::query()
             ->where('user_id', $userId)
             ->where('status', EntitlementStatus::Grace)
             ->whereHas('service', function ($q): void {
-                $q->where('fulfillment_target', 'file_hosting')
-                    ->where('entitlement', 'unlimited_quota');
+                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                    ->whereIn('plan_kind', [PlanKind::Main, PlanKind::Addon])
+                    ->where('code', '!=', FileHostingCatalog::CODE_FREE)
+                    ->where('storage_bytes', '>', 0);
             })
-            ->orderByDesc('grace_ends_at')
-            ->first();
+            ->with('service')
+            ->get();
+    }
+
+    public function hasActivePaidFileHosting(string $userId): bool
+    {
+        return $this->activePaidFileHostingEntitlements($userId)->isNotEmpty();
+    }
+
+    public function hasGraceFileHosting(string $userId): bool
+    {
+        return $this->graceFileHostingEntitlements($userId)->isNotEmpty();
+    }
+
+    /** @deprecated Use hasGraceFileHosting */
+    public function graceFileHostingFor(string $userId): ?ServiceEntitlement
+    {
+        return $this->graceFileHostingEntitlements($userId)->first();
+    }
+
+    /** @deprecated Unlimited removed; use hasActivePaidFileHosting */
+    public function activeUnlimitedFileHostingFor(string $userId): ?ServiceEntitlement
+    {
+        return $this->activePaidFileHostingEntitlements($userId)->first();
     }
 
     public function enterGrace(ServiceEntitlement $entitlement): ServiceEntitlement
@@ -126,5 +193,28 @@ class ServiceEntitlementService
         $entitlement->save();
 
         return $entitlement->refresh();
+    }
+
+    private function nextQuantity(ServiceEntitlement $entitlement, bool $isAddon): int
+    {
+        if (! $isAddon) {
+            return 1;
+        }
+
+        if (! $entitlement->exists) {
+            return 1;
+        }
+
+        $wasContributing = in_array(
+            $entitlement->status,
+            [EntitlementStatus::Active, EntitlementStatus::Grace],
+            true,
+        );
+
+        if ($wasContributing) {
+            return max(1, (int) $entitlement->quantity) + 1;
+        }
+
+        return 1;
     }
 }

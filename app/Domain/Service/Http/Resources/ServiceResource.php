@@ -3,6 +3,7 @@
 namespace App\Domain\Service\Http\Resources;
 
 use App\Domain\Service\Enums\BillingInterval;
+use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
 use App\Domain\Service\Models\Service;
 use Illuminate\Http\Request;
@@ -29,6 +30,10 @@ class ServiceResource extends JsonResource
             'billing_interval' => $interval instanceof BillingInterval ? $interval->value : (string) $interval,
             'fulfillment_target' => $this->fulfillment_target,
             'entitlement' => $this->entitlement,
+            'plan_kind' => $this->plan_kind instanceof PlanKind
+                ? $this->plan_kind->value
+                : $this->plan_kind,
+            'storage_bytes' => (int) $this->storage_bytes,
             'status' => $status instanceof ServiceStatus ? $status->value : (string) $status,
             'prices' => ServicePriceResource::collection($this->whenLoaded('prices')),
             'created_at' => $this->created_at?->toIso8601String(),

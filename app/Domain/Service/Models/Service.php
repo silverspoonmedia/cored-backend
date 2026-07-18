@@ -3,7 +3,9 @@
 namespace App\Domain\Service\Models;
 
 use App\Domain\Service\Enums\BillingInterval;
+use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
+use App\Domain\Service\Support\FileHostingCatalog;
 use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +29,8 @@ class Service extends Model
         'billing_interval',
         'fulfillment_target',
         'entitlement',
+        'plan_kind',
+        'storage_bytes',
         'status',
     ];
 
@@ -37,6 +41,8 @@ class Service extends Model
     {
         return [
             'billing_interval' => BillingInterval::class,
+            'plan_kind' => PlanKind::class,
+            'storage_bytes' => 'integer',
             'status' => ServiceStatus::class,
         ];
     }
@@ -96,6 +102,31 @@ class Service extends Model
     public function isActive(): bool
     {
         return $this->status === ServiceStatus::Active;
+    }
+
+    public function isFileHostingStoragePlan(): bool
+    {
+        if ($this->fulfillment_target !== FileHostingCatalog::FULFILLMENT_TARGET) {
+            return false;
+        }
+
+        if (FileHostingCatalog::isFreeCode($this->code)) {
+            return false;
+        }
+
+        $kind = $this->plan_kind;
+
+        return $kind === PlanKind::Main || $kind === PlanKind::Addon;
+    }
+
+    public function isPaidMainPlan(): bool
+    {
+        return $this->isFileHostingStoragePlan() && $this->plan_kind === PlanKind::Main;
+    }
+
+    public function isAddonPlan(): bool
+    {
+        return $this->isFileHostingStoragePlan() && $this->plan_kind === PlanKind::Addon;
     }
 
     public function priceFor(string $currency): ?ServicePrice

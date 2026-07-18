@@ -115,6 +115,10 @@
                                 {{ __('web/services.entitlement.'.$entitlementStatus) }}
                             @endif
                         </dd>
+                        @if (data_get($entitlement, 'quantity'))
+                            <dt class="col-5">{{ __('web/services.show.entitlement_quantity') }}</dt>
+                            <dd class="col-7">{{ data_get($entitlement, 'quantity') }}</dd>
+                        @endif
                         @if (data_get($entitlement, 'ends_at'))
                             <dt class="col-5">{{ __('web/services.show.entitlement_ends') }}</dt>
                             <dd class="col-7">{{ data_get($entitlement, 'ends_at') }}</dd>

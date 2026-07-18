@@ -11,6 +11,7 @@ use App\Domain\Service\Models\Currency;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Support\FileHostingCatalog;
 use Illuminate\Support\Facades\DB;
 
 class ServiceCheckoutService
@@ -28,6 +29,10 @@ class ServiceCheckoutService
         $currency = strtoupper(trim($currency));
 
         if (! $service->isActive()) {
+            throw new ServiceException(__('api/services.not_available'), 422);
+        }
+
+        if (FileHostingCatalog::isFreeCode($service->code)) {
             throw new ServiceException(__('api/services.not_available'), 422);
         }
 

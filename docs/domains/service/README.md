@@ -17,8 +17,8 @@
 
 1. **Catalog** of sellable services with multi-currency list prices (codes in `currencies`)
 2. **Checkout** that settles to **IDR** for Midtrans/iPaymu (rate history in DB)
-3. **Entitlements** with period (subscription) or permanent (one-time)
-4. **Fulfillment** into product domains (File Hosting unlimited while active)
+3. **Entitlements** with period (subscription) or permanent (one-time), plus **quantity** for stackable addons
+4. **Fulfillment** into product domains (File Hosting **main + stackable addons**, free 5 GiB always stacked)
 
 **Not** PaymentGateway `Subscription` (free-text demo morph). Product lifecycle lives here.
 
@@ -41,12 +41,33 @@ Money convention: **decimal(15,2)** (same as invoices).
 |-------|------|
 | `currencies` | Active FX codes; `decimal_places` (IDR=0); `is_settlement` (IDR) |
 | `exchange_rate_snapshots` | Rate history (provider, rate, fetched_at, optional payload) |
-| `services` | Catalog: `code`, `billing_interval`, `fulfillment_target`, `entitlement`, `status` |
+| `services` | Catalog: `code`, `billing_interval`, `fulfillment_target`, `entitlement`, **`plan_kind`** (`main`\|`addon`), **`storage_bytes`**, `status` |
 | `service_prices` | List price per currency (validated against `currencies`) |
 | `service_purchases` | Invoiceable money event: display + settlement + FX + optional `period_*` |
-| `service_entitlements` | One row per user+service: `active` / `grace` / `expired` / `cancelled` |
+| `service_entitlements` | One row per user+service: `active` / `grace` / `expired` / `cancelled` + **`quantity`** (addon stack count; main always 1) |
 
-POC seed: `file-hosting.subscription.monthly` — USD 10 / month — `fulfillment_target=file_hosting`, `entitlement=unlimited_quota`.
+### File Hosting catalog (seed)
+
+| Code | Name | Kind | Storage | USD/mo | Notes |
+|------|------|------|---------|--------|-------|
+| `file-hosting.plan.free` | Gratis | main | 5 GiB | 0 | **Display only** (`draft`); runtime free always from config, always stacked. Not purchasable. |
+| `file-hosting.plan.1tb.monthly` | Standard 1 TB | main | 1 TiB | 24.95 | Exclusive paid main |
+| `file-hosting.plan.2tb.monthly` | Standard 2 TB | main | 2 TiB | 54.95 | Exclusive paid main |
+| `file-hosting.addon.100gb.monthly` | Standard +100 GB | addon | 100 GiB | 2.95 | Stackable; `quantity++` per paid purchase |
+| `file-hosting.addon.500gb.monthly` | Standard +500 GB | addon | 500 GiB | 14.50 | Stackable |
+
+Legacy `file-hosting.subscription.monthly` (unlimited POC) is **archived** on seed.
+
+**Effective FH quota:**
+
+```
+effective_bytes =
+  free_tier_bytes                                          # always (config 5 GiB)
+  + (active_or_grace main.storage_bytes)                   # at most one paid main
+  + sum(active_or_grace addon.storage_bytes * quantity)
+```
+
+Constants / codes: `App\Domain\Service\Support\FileHostingCatalog`.
 
 ## Multi-currency / FX
 
@@ -68,22 +89,27 @@ Checkout → pending purchase + pending invoice
   → ServiceFulfillmentService
        mark purchase paid + period_start/end
        ServiceEntitlementService activate/extend
-       file_hosting + unlimited_quota → UserQuota denorm (quota_bytes=0)
+         main: quantity = 1; expire other paid mains for user
+         addon: quantity += 1 while active/grace (else reset to 1)
+       file_hosting plan (main|addon) → FileHostingQuotaRecomputeService
+         write UserQuota denorm (source=service_recompute)
 ```
 
-## Subscription lifecycle (File Hosting unlimited)
+Free catalog SKU is blocked at checkout and skipped on fulfill.
+
+## Subscription lifecycle (File Hosting main + addons)
 
 | State | Upload | Quota |
 |-------|--------|-------|
-| **active** | OK | unlimited (`0`) |
-| **grace** (ends_at passed, ≤7d) | **blocked** | files kept; notify once |
-| **expired** (grace_ends_at passed) | free tier | `default_quota_bytes` (5 GiB); purge excess |
+| **active** paid main and/or addons | OK | free + main + Σ(addon×qty) |
+| **grace** (any paid FH line; ends_at passed, ≤7d) | **blocked** | effective bytes still from recompute (files kept); notify once |
+| **expired** (grace_ends_at passed on a line) | recompute remaining lines | `enforceToLimit(effective)`; if no paid left → free 5 GiB |
 
 Commands (also scheduled hourly):
 
-- `service:process-entitlements` → enter grace for due actives; expire grace + purge
+- `service:process-entitlements` → enter grace for due actives; expire grace → recompute → purge to **effective** limit (not always free-only)
 
-Purge rule (oldest first retain free tier): sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + hard-delete S3 for overflow. See [file-hosting](../file-hosting/README.md).
+Purge rule: sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + hard-delete S3 for overflow. See [file-hosting](../file-hosting/README.md).
 
 ## Permissions (core RBAC)
 
@@ -102,12 +128,14 @@ Purge rule (oldest first retain free tier): sort `created_at ASC, id ASC`; accum
 | POST | `/api/v1/services/{id}/checkout` | Body `{ "currency": "USD" }` → purchase + pending invoice |
 | GET | `/api/v1/service-purchases/{id}` | Purchase + invoice + **entitlement** (if any) |
 
-Purchase resource fields of note: `period_start`, `period_end`, `fx_rate_snapshot_id`, `entitlement.{status,ends_at,grace_ends_at,is_permanent}`.
+Catalog resource fields of note: `plan_kind`, `storage_bytes`.
+
+Purchase resource fields of note: `period_start`, `period_end`, `fx_rate_snapshot_id`, `entitlement.{status,quantity,ends_at,grace_ends_at,is_permanent}`.
 
 ## Web (Blade)
 
-- Catalog index/create/edit/show (API consumer); billing interval includes quarterly
-- Purchase hub: payment panel + period + entitlement status; grace banner when `status=grace`
+- Catalog index/create/edit/show (API consumer); billing interval includes quarterly; form fields `plan_kind` + `storage_bytes`
+- Purchase hub: payment panel + period + entitlement status/quantity; grace banner when `status=grace`
 
 ## PaymentGateway integration
 
@@ -131,17 +159,19 @@ Morph alias: `service_purchase` → `ServicePurchase`.
 
 Documented in `.env.example` for Frankfurter; grace/settlement via `config/service.php` + optional env.
 
-**Deploy order:** migrate `2026_07_16_100001`…`100003` → `CurrencySeeder` → catalog prices (currency FK validation).
+**Deploy order:** migrate through `2026_07_18_100001` (plan_kind/storage_bytes/quantity) → `CurrencySeeder` → `ServiceCatalogSeeder`.
 
 **Scheduler:** `service:process-entitlements` hourly (`routes/console.php`). Requires `schedule:work` / cron.
 
 ## Manual verify
 
-1. Buy monthly FH → unlimited; entitlement `ends_at` ~+1 month  
-2. Force `ends_at` past → run command → grace: upload 422; bell notify  
-3. Force `grace_ends_at` past → free tier + oldest-first purge  
-4. Renew in grace (same SKU checkout) → active + unlimited restored  
-5. Checkout USD → row in `exchange_rate_snapshots` + IDR invoice  
+1. Buy main 1 TB → quota = 1 TiB + free 5 GiB; state `paid`; one active main  
+2. Buy main 2 TB while 1 TB active → old main expired; quota = 2 TiB + free  
+3. Buy +100 GB ×3 → entitlement `quantity=3`; quota includes 300 GiB  
+4. No main + +500 GB ×2 → free + 1000 GiB  
+5. Force any paid `ends_at` past → grace: upload 422; bell notify  
+6. Force `grace_ends_at` past → recompute remaining lines + purge to effective limit  
+7. Checkout USD → row in `exchange_rate_snapshots` + IDR invoice  
 
 ## Tests
 
@@ -150,12 +180,12 @@ composer test -- --filter=Service
 composer test -- --filter=EnforceFreeTierQuota
 ```
 
-Coverage: FX snapshot DB + cache, entitlement period/renew, grace upload block, expire → free tier, purge oldest-first, checkout FX→IDR.
+Coverage: FX snapshot DB + cache, entitlement period/renew/quantity, main replace, addon stack matrix, grace upload block, expire → recompute + purge, checkout FX→IDR. Matrix: `FileHostingPlanQuotaMatrixTest`.
 
 ## Related
 
 - [payment-gateway](../payment-gateway/README.md) — settle IDR; product sub ≠ PG Subscription
-- [file-hosting](../file-hosting/README.md) — quota states + purge
+- [file-hosting](../file-hosting/README.md) — quota recompute + states paid/grace/free
 - [notification](../notification/README.md) — grace/expired types
 - [platform/architecture.md](../../platform/architecture.md)
 - Changelog: [pending/2026-07-16-service-entitlements-fx-db-grace.md](../../changelog/pending/2026-07-16-service-entitlements-fx-db-grace.md)

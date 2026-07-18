@@ -281,7 +281,7 @@ Menu: **My Files** → `file-hosting.index`.
 | `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
 | `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **10 MiB** each) |
 | `upload_proxy.*` | Optional CF Worker hybrid byte path (`base_url`, `token`, `disk_targets`) |
-| `default_quota_bytes` | Fallback per-user quota when no override row (0 = unlimited) |
+| `default_quota_bytes` | Free-tier base always stacked (typically 5 GiB); also used when no `UserQuota` denorm row |
 | `signed_download_ttl_minutes` | S3 GET temporary URL lifetime |
 | `signed_download_cache_margin_seconds` | Treat cache expired early |
 | `public_download_signature_ttl_minutes` | Laravel signed hop for `/s/f/.../download` |
@@ -290,22 +290,30 @@ Menu: **My Files** → `file-hosting.index`.
 
 | Source | Behavior |
 |--------|----------|
-| `config('file-hosting.default_quota_bytes')` | Free-tier default (typically 5 GiB) when no active/grace unlimited entitlement |
-| `file_hosting_user_quotas` | Denorm override: `quota_bytes` (`0` = unlimited), `source` / `source_id` from Service fulfillment |
+| `config('file-hosting.default_quota_bytes')` | Free tier **always stacked** on paid main + addons (typically 5 GiB) |
+| `file_hosting_user_quotas` | Denorm after recompute: `quota_bytes` = free + main + Σ(addon×qty), `source=service_recompute` |
+| `FileHostingQuotaRecomputeService` | Single source of truth write on fulfill / expire |
 
-### Quota resolution (Service-aware)
+### Effective quota formula
 
-`QuotaService` source of truth order:
+```
+effective_bytes =
+  free_tier_bytes
+  + (active_or_grace paid main.storage_bytes)   # at most one
+  + sum(active_or_grace addon.storage_bytes * quantity)
+```
 
-| Priority | Condition | Effective quota | Upload |
-|----------|-----------|-----------------|--------|
-| 1 | Active `ServiceEntitlement` for `file_hosting` + `unlimited_quota` | unlimited (`0`) | OK |
-| 2 | Same entitlement in **grace** | unlimited display; files kept | **blocked** (`quota_grace_blocked`) |
-| 3 | Else | `UserQuota` row or `default_quota_bytes` | enforce free tier |
+| `state` | Condition | Upload |
+|---------|-----------|--------|
+| `paid` | Any active paid FH main/addon entitlement | OK (numeric cap) |
+| `grace` | Any paid FH line in grace | **blocked** (`quota_grace_blocked`); files kept |
+| `free` | No paid active/grace lines | free tier only |
 
-On paid [Service](../service/README.md) subscription: entitlement active + denorm `UserQuota` unlimited. On grace expire: revoke override + `EnforceFreeTierQuotaService` (oldest-first retain free limit; soft-delete DB + hard-delete S3).
+Runtime `QuotaService::quotaBytesFor` reads denorm `UserQuota` (written on fulfill/expire). No unlimited short-circuit (`quota_bytes === 0` reserved only if true unlimited is reintroduced later).
 
-**Purge rule (example):** files A 2 GiB (oldest), B 3 GiB, C 5 GiB with free limit 5 GiB → keep A+B (exactly 5 GiB), soft-delete C in DB and hard-delete C object on S3. Under-quota users are no-op. Re-run is idempotent.
+On paid [Service](../service/README.md) fulfill: main replace / addon quantity + recompute. On grace expire: recompute remaining lines + `EnforceFreeTierQuotaService::enforceToLimit(effective)` (oldest-first; soft-delete DB + hard-delete S3).
+
+**Purge rule (example):** files A 2 GiB (oldest), B 3 GiB, C 5 GiB with limit 5 GiB → keep A+B (exactly 5 GiB), soft-delete C in DB and hard-delete C object on S3. Under-limit users are no-op. Re-run is idempotent.
 
 Scheduler entry point: `php artisan service:process-entitlements` (hourly).
 
@@ -324,7 +332,7 @@ npm run test:js
 
 ## Related
 
-- [service/README.md](../service/README.md) — entitlements, grace, renew, paid unlimited
+- [service/README.md](../service/README.md) — main/addon catalog, quantity, grace, recompute
 - [identity/README.md](../identity/README.md) — H-RBAC / `domain_kind`
 - [platform/architecture.md](../../platform/architecture.md)
 - [integration/spa-gateway.md](../../integration/spa-gateway.md) — SPA path via Gateway

@@ -2,18 +2,20 @@
 
 namespace App\Domain\Service\Services;
 
+use App\Domain\FileHosting\Services\EnforceFreeTierQuotaService;
+use App\Domain\FileHosting\Services\FileHostingQuotaRecomputeService;
 use App\Domain\Notification\Notifications\NotificationType;
 use App\Domain\Notification\Services\NotificationService;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\ServiceEntitlement;
-use App\Domain\FileHosting\Services\EnforceFreeTierQuotaService;
+use App\Domain\Service\Support\FileHostingCatalog;
 use Illuminate\Support\Facades\Log;
 
 class ServiceEntitlementLifecycleService
 {
     public function __construct(
         private readonly ServiceEntitlementService $entitlements,
-        private readonly ServiceFulfillmentService $fulfillment,
+        private readonly FileHostingQuotaRecomputeService $quotaRecompute,
         private readonly EnforceFreeTierQuotaService $purge,
         private readonly NotificationService $notifications,
     ) {}
@@ -26,7 +28,7 @@ class ServiceEntitlementLifecycleService
         return [
             'entered_grace' => $this->enterGraceForDue(),
             'expired' => $this->expireGraceDue(),
-            'purged_users' => 0, // counted inside expire
+            'purged_users' => 0,
         ];
     }
 
@@ -66,13 +68,20 @@ class ServiceEntitlementLifecycleService
                 foreach ($rows as $entitlement) {
                     /** @var ServiceEntitlement $entitlement */
                     $this->entitlements->markExpired($entitlement);
-                    $this->fulfillment->revokeFileHostingUnlimited($entitlement->user_id);
 
-                    if ($entitlement->service?->fulfillment_target === 'file_hosting') {
-                        $result = $this->purge->enforce($entitlement->user_id);
+                    $isFh = $entitlement->service?->fulfillment_target === FileHostingCatalog::FULFILLMENT_TARGET
+                        || $entitlement->service?->isFileHostingStoragePlan();
+
+                    if ($isFh) {
+                        $computed = $this->quotaRecompute->recompute($entitlement->user_id);
+                        $result = $this->purge->enforceToLimit(
+                            $entitlement->user_id,
+                            $computed['quota_bytes'],
+                        );
                         Log::info('service.entitlement.expired_purged', [
                             'entitlement_id' => $entitlement->id,
                             'user_id' => $entitlement->user_id,
+                            'quota' => $computed,
                             'purge' => $result,
                         ]);
                         $this->notifyExpired($entitlement->fresh(['user', 'service']), $result);
