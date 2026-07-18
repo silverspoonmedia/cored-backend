@@ -11,23 +11,15 @@ use App\Domain\Service\Support\FileHostingCatalog;
 use Illuminate\Database\Seeder;
 
 /**
- * File Hosting catalog: free (display), paid mains (exclusive), stackable addons.
+ * File Hosting catalog: paid mains (exclusive) + stackable addons.
+ * Free tier is config behaviour only — not a catalog SKU.
  */
 class ServiceCatalogSeeder extends Seeder
 {
     public function run(): void
     {
         $this->retireLegacyUnlimited();
-
-        $this->seedPlan(
-            code: FileHostingCatalog::CODE_FREE,
-            name: 'Gratis',
-            description: 'Free File Hosting tier (5 GB). Runtime free storage always stacks; this SKU is catalog display only.',
-            planKind: PlanKind::Main,
-            storageBytes: FileHostingCatalog::freeBytes(),
-            amountUsd: 0.00,
-            purchasable: false,
-        );
+        $this->removeFreeCatalogSku();
 
         $this->seedPlan(
             code: FileHostingCatalog::CODE_MAIN_1TB,
@@ -50,7 +42,7 @@ class ServiceCatalogSeeder extends Seeder
         $this->seedPlan(
             code: FileHostingCatalog::CODE_ADDON_100GB,
             name: 'Standard +100 GB',
-            description: 'Stackable storage addon: +100 GB per unit, billed monthly.',
+            description: 'Stackable storage addon: +100 GB per unit. Anniversary fixed from first buy; stack renews together.',
             planKind: PlanKind::Addon,
             storageBytes: FileHostingCatalog::addon100GbBytes(),
             amountUsd: 2.95,
@@ -59,11 +51,23 @@ class ServiceCatalogSeeder extends Seeder
         $this->seedPlan(
             code: FileHostingCatalog::CODE_ADDON_500GB,
             name: 'Standard +500 GB',
-            description: 'Stackable storage addon: +500 GB per unit, billed monthly.',
+            description: 'Stackable storage addon: +500 GB per unit. Anniversary fixed from first buy; stack renews together.',
             planKind: PlanKind::Addon,
             storageBytes: FileHostingCatalog::addon500GbBytes(),
             amountUsd: 14.50,
         );
+    }
+
+    private function removeFreeCatalogSku(): void
+    {
+        $free = Service::query()->where('code', FileHostingCatalog::CODE_FREE)->first();
+
+        if ($free === null) {
+            return;
+        }
+
+        $free->prices()->delete();
+        $free->forceDelete();
     }
 
     private function retireLegacyUnlimited(): void
@@ -90,7 +94,6 @@ class ServiceCatalogSeeder extends Seeder
         PlanKind $planKind,
         int $storageBytes,
         float $amountUsd,
-        bool $purchasable = true,
     ): void {
         $service = Service::query()->updateOrCreate(
             ['code' => $code],
@@ -102,7 +105,7 @@ class ServiceCatalogSeeder extends Seeder
                 'entitlement' => 'storage_quota',
                 'plan_kind' => $planKind,
                 'storage_bytes' => $storageBytes,
-                'status' => $purchasable ? ServiceStatus::Active : ServiceStatus::Draft,
+                'status' => ServiceStatus::Active,
             ],
         );
 

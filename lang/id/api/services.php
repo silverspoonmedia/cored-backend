@@ -14,6 +14,8 @@ return [
     'currency_not_supported' => 'Mata uang :currency tidak didukung.',
     'prices_invalid' => 'Harga layanan tidak valid.',
     'fx_unavailable' => 'Kurs sementara tidak tersedia. Coba lagi nanti.',
+    'addon_renewal_due' => 'Stack addon storage Anda sudah jatuh tempo. Bayar invoice stack sebelum membeli unit tambahan.',
+    'addon_renewal_pending' => 'Anda masih memiliki invoice perpanjangan stack addon yang pending. Selesaikan pembayaran sebelum membeli unit tambahan.',
     'policy' => [
         'denied' => 'Anda tidak diizinkan melakukan aksi ini pada layanan.',
     ],

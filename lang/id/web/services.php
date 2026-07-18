@@ -59,6 +59,18 @@ return [
         'entitlement_quantity' => 'Kuantitas',
         'entitlement_ends' => 'Berakhir',
         'entitlement_grace' => 'Grace berakhir',
+        'change_type' => 'Jenis perubahan',
+        'list_amount' => 'Harga katalog',
+        'credit_amount' => 'Kredit sisa',
+        'surplus_days' => 'Hari ekstra dari kredit',
+    ],
+    'change_type' => [
+        'new' => 'Plan baru',
+        'renew' => 'Perpanjang',
+        'upgrade' => 'Upgrade',
+        'downgrade' => 'Downgrade',
+        'addon_unit' => 'Unit addon',
+        'addon_renewal' => 'Perpanjangan stack addon',
     ],
     'entitlement' => [
         'active' => 'Aktif',

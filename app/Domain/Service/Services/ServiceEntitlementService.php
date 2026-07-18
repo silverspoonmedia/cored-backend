@@ -5,19 +5,27 @@ namespace App\Domain\Service\Services;
 use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PlanKind;
+use App\Domain\Service\Enums\PurchaseChangeType;
+use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Support\FileHostingBillingPeriod;
 use App\Domain\Service\Support\FileHostingCatalog;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
 class ServiceEntitlementService
 {
+    public function __construct(
+        private readonly MainPlanChangeCalculator $planChange,
+    ) {}
+
     /**
      * Activate or extend entitlement from a paid purchase.
      *
-     * Addon: each paid purchase increments quantity while active/grace.
-     * Main: quantity always 1.
+     * Main renew: stack period from remaining ends_at.
+     * Main up/down: now + period + surplus_days.
+     * Addon unit: quantity++; ends_at fixed (shared anniversary).
      *
      * @return array{entitlement: ServiceEntitlement, period_start: ?Carbon, period_end: ?Carbon}
      */
@@ -40,7 +48,14 @@ class ServiceEntitlementService
             'service_id' => $service->id,
         ]);
 
-        $quantity = $this->nextQuantity($entitlement, $service->isAddonPlan());
+        $changeType = $purchase->change_type instanceof PurchaseChangeType
+            ? $purchase->change_type
+            : ($purchase->change_type
+                ? PurchaseChangeType::tryFrom((string) $purchase->change_type)
+                : null);
+
+        $isAddon = $service->isAddonPlan();
+        $quantity = $this->nextQuantity($entitlement, $isAddon);
 
         if ($interval->isOneTime()) {
             $entitlement->fill([
@@ -61,17 +76,41 @@ class ServiceEntitlementService
             ];
         }
 
-        $base = $now;
-        if ($entitlement->exists
-            && $entitlement->ends_at !== null
-            && $entitlement->ends_at->greaterThan($now)
-            && in_array($entitlement->status, [EntitlementStatus::Active, EntitlementStatus::Grace], true)
-        ) {
-            $base = $entitlement->ends_at;
+        if ($isAddon) {
+            return $this->activateAddon($entitlement, $purchase, $interval, $now, $quantity);
         }
 
-        $periodStart = $base->copy();
-        $periodEnd = $interval->addPeriod($base);
+        return $this->activateMain($entitlement, $purchase, $interval, $now, $changeType);
+    }
+
+    /**
+     * @return array{entitlement: ServiceEntitlement, period_start: Carbon, period_end: Carbon}
+     */
+    private function activateAddon(
+        ServiceEntitlement $entitlement,
+        ServicePurchase $purchase,
+        BillingInterval $interval,
+        Carbon $now,
+        int $quantity,
+    ): array {
+        $wasContributing = $entitlement->exists
+            && in_array($entitlement->status, [EntitlementStatus::Active, EntitlementStatus::Grace], true)
+            && $entitlement->ends_at !== null
+            && $entitlement->ends_at->greaterThan($now);
+
+        if ($wasContributing) {
+            // quantity++ only; anniversary clock frozen
+            $periodEnd = $entitlement->ends_at->copy();
+            $periodStart = $now->copy();
+        } else {
+            $shared = $this->planChange->sharedAddonEndsAt($purchase->user_id);
+            if ($shared !== null && $shared->greaterThan($now)) {
+                $periodEnd = $shared->copy();
+            } else {
+                $periodEnd = $this->addPeriod($interval, $now, $purchase->service);
+            }
+            $periodStart = $now->copy();
+        }
 
         $entitlement->fill([
             'status' => EntitlementStatus::Active,
@@ -92,8 +131,108 @@ class ServiceEntitlementService
     }
 
     /**
-     * Expire other paid main entitlements so only $keepServiceId remains active.
+     * @return array{entitlement: ServiceEntitlement, period_start: Carbon, period_end: Carbon}
      */
+    private function activateMain(
+        ServiceEntitlement $entitlement,
+        ServicePurchase $purchase,
+        BillingInterval $interval,
+        Carbon $now,
+        ?PurchaseChangeType $changeType,
+    ): array {
+        $surplusDays = max(0, (int) ($purchase->surplus_days ?? 0));
+        $isSwitch = $changeType?->isMainSwitch() ?? false;
+        $service = $purchase->service;
+
+        if ($isSwitch) {
+            $periodStart = $now->copy();
+            $periodEnd = $this->addPeriod($interval, $now, $service)->addDays($surplusDays);
+        } else {
+            // renew or new: stack remaining time when same SKU active/grace
+            $base = $now;
+            if ($entitlement->exists
+                && $entitlement->ends_at !== null
+                && $entitlement->ends_at->greaterThan($now)
+                && in_array($entitlement->status, [EntitlementStatus::Active, EntitlementStatus::Grace], true)
+            ) {
+                $base = $entitlement->ends_at;
+            }
+            $periodStart = $base->copy();
+            $periodEnd = $this->addPeriod($interval, $base, $service);
+            if ($surplusDays > 0) {
+                $periodEnd = $periodEnd->addDays($surplusDays);
+            }
+        }
+
+        $entitlement->fill([
+            'status' => EntitlementStatus::Active,
+            'quantity' => 1,
+            'starts_at' => $entitlement->starts_at ?? $now,
+            'ends_at' => $periodEnd,
+            'grace_ends_at' => null,
+            'grace_notified_at' => null,
+            'source_purchase_id' => $purchase->id,
+        ]);
+        $entitlement->save();
+
+        return [
+            'entitlement' => $entitlement,
+            'period_start' => $periodStart,
+            'period_end' => $periodEnd,
+        ];
+    }
+
+    /**
+     * Extend all active/grace addon entitlements by one billing period (stack renewal).
+     *
+     * @return array{extended: int, period_end: ?Carbon}
+     */
+    public function extendAllAddons(string $userId): array
+    {
+        $rows = ServiceEntitlement::query()
+            ->where('user_id', $userId)
+            ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
+            ->whereHas('service', function ($q): void {
+                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                    ->where('plan_kind', PlanKind::Addon)
+                    ->where('storage_bytes', '>', 0);
+            })
+            ->with('service')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return ['extended' => 0, 'period_end' => null];
+        }
+
+        $sharedEnd = null;
+        foreach ($rows as $row) {
+            if ($row->ends_at === null) {
+                continue;
+            }
+            if ($sharedEnd === null || $row->ends_at->lessThan($sharedEnd)) {
+                $sharedEnd = $row->ends_at->copy();
+            }
+        }
+
+        $base = $sharedEnd !== null && $sharedEnd->greaterThan(now())
+            ? $sharedEnd
+            : now();
+
+        $periodEnd = FileHostingBillingPeriod::add($base);
+        $count = 0;
+
+        foreach ($rows as $row) {
+            $row->status = EntitlementStatus::Active;
+            $row->ends_at = $periodEnd->copy();
+            $row->grace_ends_at = null;
+            $row->grace_notified_at = null;
+            $row->save();
+            $count++;
+        }
+
+        return ['extended' => $count, 'period_end' => $periodEnd];
+    }
+
     public function expireOtherPaidMains(string $userId, string $keepServiceId): int
     {
         $count = 0;
@@ -147,6 +286,23 @@ class ServiceEntitlementService
                 $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
                     ->whereIn('plan_kind', [PlanKind::Main, PlanKind::Addon])
                     ->where('code', '!=', FileHostingCatalog::CODE_FREE)
+                    ->where('storage_bytes', '>', 0);
+            })
+            ->with('service')
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, ServiceEntitlement>
+     */
+    public function activeAddonEntitlements(string $userId): Collection
+    {
+        return ServiceEntitlement::query()
+            ->where('user_id', $userId)
+            ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
+            ->whereHas('service', function ($q): void {
+                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                    ->where('plan_kind', PlanKind::Addon)
                     ->where('storage_bytes', '>', 0);
             })
             ->with('service')
@@ -209,12 +365,27 @@ class ServiceEntitlementService
             $entitlement->status,
             [EntitlementStatus::Active, EntitlementStatus::Grace],
             true,
-        );
+        )
+            && $entitlement->ends_at !== null
+            && $entitlement->ends_at->greaterThan(now());
 
         if ($wasContributing) {
             return max(1, (int) $entitlement->quantity) + 1;
         }
 
         return 1;
+    }
+
+    /**
+     * FH storage plans use fixed 30-day periods (aligned with credit math).
+     * Other services keep calendar interval via {@see BillingInterval::addPeriod}.
+     */
+    private function addPeriod(BillingInterval $interval, Carbon $from, ?Service $service): Carbon
+    {
+        if ($service?->isFileHostingStoragePlan()) {
+            return FileHostingBillingPeriod::add($from);
+        }
+
+        return $interval->addPeriod($from);
     }
 }

@@ -59,6 +59,18 @@ return [
         'entitlement_quantity' => 'Quantity',
         'entitlement_ends' => 'Ends at',
         'entitlement_grace' => 'Grace ends',
+        'change_type' => 'Change type',
+        'list_amount' => 'List price',
+        'credit_amount' => 'Unused credit',
+        'surplus_days' => 'Extra days from credit',
+    ],
+    'change_type' => [
+        'new' => 'New plan',
+        'renew' => 'Renew',
+        'upgrade' => 'Upgrade',
+        'downgrade' => 'Downgrade',
+        'addon_unit' => 'Addon unit',
+        'addon_renewal' => 'Addon stack renewal',
     ],
     'entitlement' => [
         'active' => 'Active',

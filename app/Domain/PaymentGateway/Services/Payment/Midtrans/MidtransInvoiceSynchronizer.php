@@ -9,6 +9,7 @@ use App\Domain\PaymentGateway\Models\Invoice;
 // Model
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\Billing\InvoiceFundsLedgerService;
+use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceFulfillmentService;
 // Internal
@@ -108,6 +109,8 @@ class MidtransInvoiceSynchronizer
                 $this->syncSubscriptionIfNeeded($invoice->invoiceable, $invoiceStatus);
             } elseif ($invoice->invoiceable instanceof ServicePurchase) {
                 $this->syncServicePurchaseIfNeeded($invoice->invoiceable, $invoiceStatus);
+            } elseif ($invoice->invoiceable instanceof ServiceAddonRenewal) {
+                $this->syncServiceAddonRenewalIfNeeded($invoice->invoiceable, $invoiceStatus);
             }
 
             return $invoice->fresh();
@@ -199,6 +202,25 @@ class MidtransInvoiceSynchronizer
 
         if ($invoiceStatus === 'failed') {
             $this->serviceFulfillment->markFailed($purchase);
+        }
+    }
+
+    protected function syncServiceAddonRenewalIfNeeded(ServiceAddonRenewal $renewal, string $invoiceStatus): void
+    {
+        if (in_array($invoiceStatus, ['paid', 'partially_refunded'], true)) {
+            $this->serviceFulfillment->fulfillAddonRenewal($renewal);
+
+            return;
+        }
+
+        if (in_array($invoiceStatus, ['cancelled', 'expired'], true)) {
+            $this->serviceFulfillment->markAddonRenewalCancelled($renewal);
+
+            return;
+        }
+
+        if ($invoiceStatus === 'failed') {
+            $this->serviceFulfillment->markAddonRenewalFailed($renewal);
         }
     }
 }

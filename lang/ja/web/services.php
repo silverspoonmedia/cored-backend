@@ -59,6 +59,18 @@ return [
         'entitlement_quantity' => '数量',
         'entitlement_ends' => '終了日',
         'entitlement_grace' => '猶予終了',
+        'change_type' => '変更種別',
+        'list_amount' => '定価',
+        'credit_amount' => '未使用クレジット',
+        'surplus_days' => 'クレジットによる追加日数',
+    ],
+    'change_type' => [
+        'new' => '新規プラン',
+        'renew' => '更新',
+        'upgrade' => 'アップグレード',
+        'downgrade' => 'ダウングレード',
+        'addon_unit' => 'アドオン単位',
+        'addon_renewal' => 'アドオン一括更新',
     ],
     'entitlement' => [
         'active' => '有効',
