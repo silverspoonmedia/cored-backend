@@ -65,7 +65,7 @@ Typical surface (all under `auth:api` where noted):
 | Email | verify, resend |
 | 2FA setup | start, confirm, disable, QR |
 
-JWT: Bearer header (API) or HttpOnly cookie on Blade/Gateway (`auth_token` → Bearer). Octane: no sticky claims; cleanup guards after token ops — [platform/octane](../../platform/octane.md).
+JWT: Bearer header (API) or HttpOnly cookie on Blade (`auth_token` → Bearer). Octane: no sticky claims; cleanup guards after token ops — [platform/octane](../../platform/octane.md).
 
 Roles seeded in `RoleSeeder` (Root, Admin, Moderator, Management, User) — all **`domain_kind = core`**. Example protected: `GET /api/v1/admin/ping` with permission middleware.
 

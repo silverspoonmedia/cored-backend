@@ -27,7 +27,7 @@ Registry: **`kind => core`** in [`config/domains.php`](../../../config/domains.p
 
 ### Webhooks
 
-Public on Gateway URL; Gateway proxies to Monolith with secret. Verify signatures in Monolith. Set `MIDTRANS_NOTIFY_URL` / `IPAYMU_NOTIFY_URL` to **Gateway** public paths.
+Provider notify URLs should hit Monolith public webhook routes (or a trusted reverse proxy that forwards to them). Verify signatures in Monolith. Set `MIDTRANS_NOTIFY_URL` / `IPAYMU_NOTIFY_URL` to the public paths providers can reach.
 
 ## Checkout model
 
@@ -51,10 +51,10 @@ Mismatch beyond epsilon → reject sync (no paid status / no fulfillment). Fee +
 
 | Surface | Channel mode | Snap/redirect fallback |
 |---------|--------------|------------------------|
-| **Vue** (via Gateway) | Channel picker + instructions | Yes |
+| **API** | Channel picker + instructions | Yes (`snap_fallback` when no active channels) |
 | **Blade** | Channel only | **No** Snap UI — message when no channels |
 
-`checkout_mode` = `channel` when active channels exist; else `snap_fallback` (Vue). Aggregate: Gateway `checkout-context` (downstream docs).
+`checkout_mode` = `channel` when active channels exist; else `snap_fallback` (API clients may use hosted Snap; Blade stays channel-only).
 
 ### Channel checkout
 
@@ -65,7 +65,7 @@ POST /api/v1/invoices/{id}/channel-checkout
 { "channel_code": "qris", "buyer": { … } }   // buyer optional
 ```
 
-Response: normalized instructions (VA numbers, QR, expiry, etc.). All routes fail → `snap_fallback_available: true` for Vue.
+Response: normalized instructions (VA numbers, QR, expiry, etc.). All routes fail → `snap_fallback_available: true` for API clients that support Snap.
 
 **Buyer / customer autofill** (`InvoiceCustomerDetailsResolver`):
 
@@ -82,7 +82,7 @@ Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation 
 
 ## Blade / assets
 
-Payment-first order/invoice show: hero, steps, `checkout-panel`, `checkout.js`. Web proxies: channel-checkout, sync-status, snap-token (API/Vue).
+Payment-first order/invoice show: hero, steps, `checkout-panel`, `checkout.js`. Web proxies: channel-checkout, sync-status, snap-token (API).
 
 ## Permissions & morph map
 
@@ -100,10 +100,6 @@ Permissions in RoleSeeder (`view invoice`, `initiate payment`, `manage payment g
 
 Sensitive invoice payloads, 2FA, etc.: [encryption.md](encryption.md).
 
-## Three-project
-
-HTTP contract changes → [changelog/pending](../../changelog/pending/). SPA/Gateway implementation in **`downstream sync session`** only.
-
 ## Tests
 
 `composer test -- --filter=Payment` (and related Invoice/Channel filters).
@@ -113,4 +109,3 @@ HTTP contract changes → [changelog/pending](../../changelog/pending/). SPA/Gat
 - [service](../service/README.md) — catalog + FX + service_purchase invoiceable
 - [file-hosting](../file-hosting/README.md) — primary product domain fulfilled from Service
 - [platform/environment.md](../../platform/environment.md)
-- [integration/spa-gateway.md](../../integration/spa-gateway.md)

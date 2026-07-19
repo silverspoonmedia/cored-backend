@@ -12,8 +12,6 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         config([
-            'gateway.enforce' => false,
-            'gateway.secret' => 'testing-gateway-secret',
             'encryption.kms_enabled' => false,
             'encryption.blind_index_pepper' => 'testing-blind-index-pepper',
             'encryption.encrypt_sessions' => false,

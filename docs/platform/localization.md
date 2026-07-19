@@ -42,9 +42,7 @@ Both Blade (`Web\LocaleController`) and API (`POST /api/v1/auth/locale`) call `A
 
 Blade proxies via real HTTP (`ApiClient`). Web resolves locale first; `ApiClient` forwards it as the `locale` cookie so the API request does not fall back to English.
 
-### Vue SPA
-
-Client-driven: `localStorage` + cookie; authenticated `POST /api/v1/auth/locale`. Axios may send `Accept-Language`; Monolith still uses db → cookie → default (**not** Accept-Language alone). See [spa-gateway](../integration/spa-gateway.md).
+Authenticated clients may also call `POST /api/v1/auth/locale`. Resolution order remains db → cookie → default (**not** `Accept-Language` alone).
 
 ## Folder layout (app-owned)
 

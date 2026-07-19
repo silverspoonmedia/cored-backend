@@ -82,23 +82,13 @@ Never bare `config:cache` without verify. After secret changes: `config:rebuild`
 
 - `APP_ENV=production`, `APP_DEBUG=false`
 - Secure session cookies; `JWT_SECRET` set
-- `GATEWAY_ENFORCE=true` + strong `GATEWAY_SECRET` matching gateway
 - `config:rebuild`; `oci:kms-verify` if OCI
 - Liveness: `route:list --path=api/ping` shows `GET /api/ping`
-
-## Public gateway perimeter
-
-| Variable | Purpose |
-|----------|---------|
-| `GATEWAY_ENFORCE` | Reject API without gateway secret / allowlisted IP |
-| `GATEWAY_SECRET` | Shared with `MONOLITH_GATEWAY_SECRET` on gateway |
-| `GATEWAY_ALLOWED_IPS` | Optional IPs bypassing secret header |
-
-Local: `GATEWAY_ENFORCE=false`. `VITE_*` in Monolith templates are docs placeholders for Frontend build only.
+- Network exposure: firewall / reverse proxy as needed (no in-app shared-secret API perimeter)
 
 ## Testing environment
 
-PHPUnit: `APP_ENV=testing`, sqlite, `GATEWAY_ENFORCE=false`, CSRF bypass for web proxy tests. Prefer `composer test`. See [database-safety.md](database-safety.md).
+PHPUnit: `APP_ENV=testing`, sqlite, CSRF bypass for web proxy tests. Prefer `composer test`. See [database-safety.md](database-safety.md).
 
 Payment: `checkout_mode` derived from active channels at runtime — see [payment-gateway](../domains/payment-gateway/README.md). Encryption env: [encryption](../domains/payment-gateway/encryption.md).
 
@@ -113,6 +103,5 @@ Independent of `LOG_CHANNEL` file logs. Domain guide: [error-log](../domains/err
 
 ## Related
 
-- [integration/spa-gateway.md](../integration/spa-gateway.md)
 - [octane.md](octane.md)
 - [domains/error-log/README.md](../domains/error-log/README.md)

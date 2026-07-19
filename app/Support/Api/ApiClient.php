@@ -184,12 +184,6 @@ class ApiClient
         // the multipart helpers add asMultipart().
         $client = Http::acceptJson();
 
-        $gatewaySecret = (string) config('gateway.secret');
-
-        if ($gatewaySecret !== '') {
-            $client = $client->withHeaders(['X-Gateway-Secret' => $gatewaySecret]);
-        }
-
         $token = request()?->cookie(AuthCookie::NAME);
 
         if (is_string($token) && $token !== '') {

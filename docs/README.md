@@ -1,4 +1,4 @@
-# Documentation index — Project Monolith
+# Documentation index — Monolith
 
 Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **platform**, **web**, and **integration** buckets. Do **not** add new subject files at `docs/*.md` root — put content under the correct folder.
 
@@ -8,12 +8,11 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 | Need | Open |
 |------|------|
-| Agent scope, keywords, three-repo rules | [agents/guide.md](agents/guide.md) · root [AGENTS.md](../AGENTS.md) |
+| Agent scope, session keywords | [agents/guide.md](agents/guide.md) · root [AGENTS.md](../AGENTS.md) |
 | Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
-| Session / Gateway / Frontend handoff | [changelog/README.md](changelog/README.md) |
-| Env profiles, secrets, gateway perimeter | [platform/environment.md](platform/environment.md) |
+| Session log (agent changelog) | [changelog/README.md](changelog/README.md) |
+| Env profiles, secrets | [platform/environment.md](platform/environment.md) |
 | Blade admin (API consumer) | [web/blade-admin.md](web/blade-admin.md) |
-| SPA + Gateway wiring | [integration/spa-gateway.md](integration/spa-gateway.md) |
 
 ## Platform (kernel / cross-cutting)
 
@@ -23,7 +22,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [api-routing.md](platform/api-routing.md) | Global vs versioned API |
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
-| [environment.md](platform/environment.md) | `.env` profiles, config cache, gateway perimeter |
+| [environment.md](platform/environment.md) | `.env` profiles, config cache |
 | [localization.md](platform/localization.md) | `en` / `id` / `ja` task rules |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |
@@ -54,12 +53,13 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 | Document | Topic |
 |----------|-------|
-| [spa-gateway.md](integration/spa-gateway.md) | Monolith + Gateway + Vue |
 | [changelog/](changelog/README.md) | Session log (`pending/` → `done/`) — **stays at this path** |
+
+`docs/integration/` is reserved for future external-client / integration guides. No living guide currently lives there.
 
 ## Archive (not daily reading)
 
-Historical assessments and one-shot audits: [archive/](archive/). Prefer living docs above.
+Historical assessments and one-shot audits: [archive/](archive/). Prefer living docs above. Archive files may mention a former three-repo workflow; that model is dissolved — use living guides for current behavior.
 
 ## Rules for new documentation (mandatory)
 
@@ -72,9 +72,9 @@ Historical assessments and one-shot audits: [archive/](archive/). Prefer living 
 | A business domain under `app/Domain/{Name}/` | `docs/domains/{kebab-name}/` | Prefer `README.md`; split only when a subtopic is large (e.g. `encryption.md`) |
 | Kernel / cross-cutting (routes, CRUD pattern, UUID, env, i18n, DB safety, Octane, security process, tooling) | `docs/platform/` | One concern per file; extend existing when possible |
 | Blade admin only (cookie bridge, ApiClient, layout, pure UI widgets shared across domains) | `docs/web/` | e.g. `blade-admin.md`, `ui-patterns.md` |
-| Three-repo wiring (Gateway, Vue SPA, production perimeter) | `docs/integration/` | e.g. `spa-gateway.md` |
+| External clients / third-party integration wiring | `docs/integration/` | Prefer one concern per file; only when not domain-owned |
 | Agent scope / session keywords | `docs/agents/` | `guide.md` only unless a dedicated agent ops page is justified |
-| Session handoff / HTTP contract log | `docs/changelog/` | Entry via [TEMPLATE.md](changelog/TEMPLATE.md) — **do not** invent a parallel log tree |
+| Session log / agent change notes | `docs/changelog/` | Entry via [TEMPLATE.md](changelog/TEMPLATE.md) — **do not** invent a parallel log tree |
 | One-shot assessment, migration narrative, audit snapshot, design dump | `docs/archive/` | Not linked from daily learning paths except as “historical” |
 
 ### Decision checklist (before writing a new file)
@@ -83,7 +83,7 @@ Historical assessments and one-shot audits: [archive/](archive/). Prefer living 
 2. **Is it domain-owned business behavior?** → `docs/domains/{domain}/README.md` (or a sibling under that folder).
 3. **Is it shared kernel / convention?** → `docs/platform/`.
 4. **Is it Blade UX plumbing, not domain rules?** → `docs/web/`.
-5. **Is it multi-repo HTTP / SPA?** → `docs/integration/` + changelog if contracts change.
+5. **Is it external client / third-party integration?** → `docs/integration/`.
 6. **Is it historical only?** → `docs/archive/` (do not bloat living guides).
 7. **New `app/Domain/*` module?** → Add `docs/domains/{name}/README.md` and a row in **this index** in the same task.
 8. **Language:** English only. Keep living guides **compact**; long design notes go to archive.
@@ -95,7 +95,7 @@ Historical assessments and one-shot audits: [archive/](archive/). Prefer living 
 | New `docs/some-feature.md` at root | Subject sprawl — breaks domain learning path |
 | Third parallel guide for the same topic | Horizontal duplication (notifications ×3 was the anti-pattern) |
 | Mixing current product surface with gap analysis / dual-status dumps | Living docs go stale; archive the dump |
-| Documenting Gateway/Frontend contracts only in Monolith prose without `changelog/pending/` when HTTP changes | Downstream sync will miss it |
+| Changing behavior without updating the matching living guide | Code and docs drift |
 | Skipping this index after adding a domain folder | Agents and humans lose the map |
 
 Full-stack, localization, Octane, and database-safety task rules still apply — see root [README.md](../README.md).

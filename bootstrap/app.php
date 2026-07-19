@@ -4,7 +4,6 @@ use App\Domain\ErrorLog\Support\ErrorLogRecorder;
 use App\Domain\Identity\Models\User;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Middleware\AuthenticateWithJwtCookie;
-use App\Http\Middleware\EnsureGatewayRequest;
 use App\Http\Middleware\EnsureWebAuthenticated;
 use App\Http\Middleware\OptionalJwtAuthenticate;
 use App\Http\Middleware\RedirectIfWebAuthenticated;
@@ -87,10 +86,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
             AuthenticateWithJwtCookie::class,
             SetLocale::class,
             SecurityHeaders::class,
-        ]);
-
-        $middleware->api(prepend: [
-            EnsureGatewayRequest::class,
         ]);
 
         $middleware->api(append: [

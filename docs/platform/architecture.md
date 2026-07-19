@@ -1,6 +1,6 @@
 # Domain modules (internal monorepo)
 
-Logical monorepo: domain code under `app/Domain/{Domain}/` in one Laravel app and git repo. Gateway and Frontend are **separate repositories**; they depend on Monolith **HTTP contracts**, not PHP namespaces.
+Logical monorepo: domain code under `app/Domain/{Domain}/` in one Laravel app and git repo.
 
 ## Glossary (two axes)
 
@@ -133,7 +133,6 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 
 - No Composer path packages (`packages/*`) until justified
 - No `nwidart/laravel-modules`
-- No merge of Gateway/Frontend into this repo
 - No dynamic provider auto-discovery — `bootstrap/providers.php` stays explicit
 - No `routes/api/v1/core|product/` subfolders — kind is registry + comment sections, not filesystem trees
 - No `domain` / `domain_kind` column on menus — nav is a UX tree; module taxonomy stays in `config/domains.php` (and RBAC catalog separately)

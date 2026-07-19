@@ -72,7 +72,7 @@ CDN AdminLTE 4 / Bootstrap 5 / Icons. Scripts order: `MonolithApi` → `ajax-for
 
 ### Theming
 
-Soft override CSS layer (light/dark) under layout assets — keep tokenized variables; parity with SPA when theming changes (changelog if HTTP/CSS contract affects SPA).
+Soft override CSS layer (light/dark) under layout assets — keep tokenized variables.
 
 ## Concurrent server note
 
@@ -81,4 +81,3 @@ Web → API is a **real HTTP** call to the same app. PHP built-in server single-
 ## Related
 
 - [domains/*](../domains/) for domain-specific web proxies  
-- [integration/spa-gateway.md](../integration/spa-gateway.md) — Vue path  

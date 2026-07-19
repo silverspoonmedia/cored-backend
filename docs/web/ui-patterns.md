@@ -19,12 +19,9 @@ Implementation: Identity `LookupService` / `LookupController`. Blade proxies: `G
 
 Components: `form.select` / `multiselect` (`ajaxUrl`, `select2`). Assets: `select2-init.js` (Vite). Attribute: `data-monolith-select2` (**not** `data-select2` — jQuery collision).
 
-SPA: frontend form-selects doc; Gateway aggregates return menu record only — options via lookups.
-
 ### Troubleshooting
 
 - Native select still showing → `npm run build` / `dev`; ensure select2 scripts after jQuery  
-- Vue `select2 is not a function` → same jQuery instance registration  
 
 ## List display modes (query & DataTables)
 

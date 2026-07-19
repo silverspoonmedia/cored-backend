@@ -4,13 +4,11 @@ Laravel 13 API application with **JWT authentication**, **TOTP two-factor authen
 
 It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that is a **pure consumer of the versioned API**: every web controller forwards to `/api/v1/*`, so validation, CRUD, and RBAC run **only once — in the API** (no duplicated business logic). The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**, which the web layer forwards to the API as a Bearer token. See **[Web Frontend (Blade + AdminLTE 4)](docs/web/blade-admin.md)**.
 
-A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the Blade UI via the public **monolith-gateway** BFF. Gateway proxies `/api/*` to this application, sets HttpOnly cookies for the SPA, and enforces `GATEWAY_SECRET` when `GATEWAY_ENFORCE=true`. See [Three-project integration (Monolith + Gateway + Vue)](docs/integration/spa-gateway.md) and [Environment configuration — Public gateway perimeter](docs/platform/environment.md#public-gateway-perimeter). SPA guides: `monolith-frontend/docs/`. Gateway internals: `monolith-gateway/docs/`.
-
-**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,FileHosting,…}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)). Gateway and Frontend stay separate repos; HTTP contract changes are logged in the [changelog](docs/changelog/README.md) (`pending/` → `done/`) and synced in a **`downstream sync session`**.
+**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,FileHosting,…}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)). Session notes for agent work live in the [changelog](docs/changelog/README.md) (`pending/` drafts → `done/` closed sessions).
 
 ### Living documentation (required)
 
-**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **AI agents:** read [AI Agent Guide](docs/agents/guide.md) and root [AGENTS.md](AGENTS.md) on every task; daily work stays in Monolith only. Changes that affect Gateway or Frontend HTTP contracts are logged in [docs/changelog/](docs/changelog/README.md) (`pending/`) and implemented in a separate **`downstream sync session`** — not in every Monolith task. Conflicting pending entries are resolved with **`sync consolidation`** (newest wins; else verify Monolith code). To **close a Monolith session** (improve docs for work done, then write one changelog entry with Delegation), the prompt must contain the exact keyword **`upstream documentation session`** — see [Changelog](docs/changelog/README.md). Without that keyword, treat the session as still in the work phase. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, localization, or any behavior described here—do not let code and docs drift apart.
+**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **AI agents:** read [AI Agent Guide](docs/agents/guide.md) and root [AGENTS.md](AGENTS.md) on every task; work stays in this repository. To **close a session** (improve docs for work done, then write one changelog entry with Monolith outcomes), the prompt must contain the exact keyword **`upstream documentation session`** — see [Changelog](docs/changelog/README.md). Without that keyword, treat the session as still in the work phase. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, localization, or any behavior described here—do not let code and docs drift apart.
 
 **Documentation placement (required):** Living docs are organized **by domain** (mirror `app/Domain/*`) plus `platform/`, `web/`, `integration/`, and `agents/`. When adding or expanding documentation, put content in the matching section — **do not** create a new subject file at `docs/*.md` root. Prefer editing an existing guide; use `docs/archive/` only for historical assessments. Full rules: [docs/README.md — Rules for new documentation](docs/README.md#rules-for-new-documentation-mandatory).
 
@@ -20,7 +18,7 @@ A separate **Vue SPA** (`monolith-frontend` on Cloudflare Pages) can mirror the 
 
 **Octane / Swoole readiness (required on every task):** All new code must follow the mandatory patterns in [Octane / Swoole Readiness](docs/platform/octane.md) to survive long-lived worker processes. Never store request/user state on static properties or singletons. Never mutate facade/guard state without cleanup. Never call `env()` outside config files. Never use `config()->set()` at runtime. This project is not yet running Octane, but every line of code must be written as if it will tomorrow.
 
-**Full-stack implementation (required on every Monolith task):** Every feature or change must be implemented end to end across **all relevant Monolith layers** in the **same task/PR** — do **not** ship work that only touches a single layer. This means API + Web + Blade + translations inside **this repository**; it does **not** require updating Gateway or Frontend in the same task (use the [changelog](docs/changelog/README.md) when HTTP contracts change). At minimum, a typical task should cover:
+**Full-stack implementation (required on every Monolith task):** Every feature or change must be implemented end to end across **all relevant Monolith layers** in the **same task/PR** — do **not** ship work that only touches a single layer. This means API + Web + Blade + translations inside **this repository**. At minimum, a typical task should cover:
 
 | Layer | What to touch |
 |-------|----------------|
@@ -226,7 +224,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | Document | Description |
 |----------|-------------|
 | [Domain modules](docs/platform/architecture.md) | Core/locked/removable domains, `domain:list\|make\|remove`, layout |
-| [Internal monorepo assessment](docs/archive/internal-monorepo-assessment.md) | Why logical monorepo, domain map, phases, Gateway/Frontend contract |
+| [Internal monorepo assessment](docs/archive/internal-monorepo-assessment.md) | Historical: why logical monorepo, domain map, phases (archive only) |
 | [Internal monorepo porting](docs/archive/internal-monorepo-porting.md) | Implementation reference: migration order, scripts, gotchas, verification |
 | [API routing](docs/platform/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
 | [CRUD architecture & repository pattern](docs/platform/crud.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources |
@@ -268,8 +266,6 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 |----------|-------------|
 | [Environment configuration](docs/platform/environment.md) | Profile templates, `env:install`, `env:switch`, and production checklist |
 | [Octane / Swoole Readiness](docs/platform/octane.md) | Rules and patterns for long-lived worker safety (mandatory before deploying Octane + Swoole) |
-| [Three-project integration (Monolith + Gateway + Vue)](docs/integration/spa-gateway.md) | Local Laragon wiring, gateway cookie auth, SPA vs Blade parity, production checklist; gateway internals in `monolith-gateway/docs/` |
-
 ### Cross-links between docs
 
 - Auth endpoints and middleware → [jwt-authentication.md](docs/domains/identity/README.md)
