@@ -17,6 +17,7 @@ class Folder extends Model
 
     protected $fillable = [
         'user_id',
+        'workspace_id',
         'parent_id',
         'name',
         'order',
@@ -42,11 +43,24 @@ class Folder extends Model
     }
 
     /**
+     * @return BelongsTo<Workspace, $this>
+     */
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class, 'workspace_id');
+    }
+
+    /**
      * @return BelongsTo<Folder, $this>
      */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function isWorkspaceResource(): bool
+    {
+        return $this->workspace_id !== null;
     }
 
     /**

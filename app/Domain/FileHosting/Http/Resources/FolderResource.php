@@ -23,6 +23,7 @@ class FolderResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
+            'workspace_id' => $this->workspace_id,
             'parent_id' => $this->parent_id,
             'name' => $this->name,
             'order' => $this->order,

@@ -19,6 +19,14 @@ final class FileHostingCatalog
 
     public const CODE_ADDON_500GB = 'file-hosting.addon.500gb.monthly';
 
+    /** Stackable +1 owned team workspace slot per unit ($1 POC). storage_bytes = 0. */
+    public const CODE_ADDON_WORKSPACE_SLOT = 'file-hosting.addon.workspace-slot.monthly';
+
+    public const ENTITLEMENT_WORKSPACE_SLOTS = 'workspace_slots';
+
+    /** Base owned active workspaces included with any paid FH storage plan. */
+    public const BASE_OWNED_WORKSPACE_SLOTS = 10;
+
     /** Legacy unlimited POC — retired. */
     public const CODE_LEGACY_UNLIMITED = 'file-hosting.subscription.monthly';
 
@@ -54,5 +62,10 @@ final class FileHostingCatalog
     public static function isFreeCode(?string $code): bool
     {
         return $code === self::CODE_FREE;
+    }
+
+    public static function isWorkspaceSlotCode(?string $code): bool
+    {
+        return $code === self::CODE_ADDON_WORKSPACE_SLOT;
     }
 }

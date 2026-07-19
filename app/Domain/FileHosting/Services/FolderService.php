@@ -5,8 +5,10 @@ namespace App\Domain\FileHosting\Services;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
 use App\Domain\FileHosting\Support\FolderAncestorChain;
+use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -16,47 +18,52 @@ class FolderService
         private readonly FolderRepositoryInterface $folders,
         private readonly AccessService $access,
         private readonly VisibilityService $visibility,
+        private readonly WorkspaceAccessService $workspaceAccess,
+        private readonly WorkspaceActivityRecorder $activity,
     ) {}
 
     /**
      * @return array{
      *     owner_id: string,
+     *     workspace_id: string|null,
      *     folder: Folder|null,
      *     breadcrumb: list<array{id: string|null, name: string}>,
      *     folders: Collection<int, Folder>,
      *     files: Collection<int, HostedFile>
      * }
      */
-    public function browse(User $actor, ?string $folderId, ?string $userId = null): array
+    public function browse(User $actor, ?string $folderId, ?string $userId = null, ?string $workspaceId = null): array
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $folder = null;
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: false);
+        $wsId = $workspace?->id;
 
+        $folder = null;
         if ($folderId !== null) {
-            $folder = $this->folders->findOwnedOrFail($ownerId, $folderId);
+            $folder = $this->folders->findOwnedOrFail($ownerId, $folderId, $wsId);
         }
 
         $files = HostedFile::query()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $wsId)
             ->where('folder_id', $folderId)
             ->orderBy('name')
             ->get();
 
+        $rootLabel = $workspace !== null
+            ? $workspace->name
+            : __('api/file-hosting.root_label');
+
         return [
             'owner_id' => $ownerId,
+            'workspace_id' => $wsId,
             'folder' => $folder,
-            'breadcrumb' => FolderAncestorChain::breadcrumb(
-                $folder,
-                __('api/file-hosting.root_label'),
-            ),
-            'folders' => $this->folders->children($ownerId, $folderId),
+            'breadcrumb' => FolderAncestorChain::breadcrumb($folder, $rootLabel),
+            'folders' => $this->folders->children($ownerId, $folderId, $wsId),
             'files' => $files,
         ];
     }
 
     /**
-     * Guest browse of a link-shared folder (and descendants via inherit).
-     *
      * @return array{
      *     owner_id: string,
      *     folder: Folder,
@@ -77,6 +84,7 @@ class FolderService
 
         $files = HostedFile::query()
             ->where('user_id', $folder->user_id)
+            ->where('workspace_id', $folder->workspace_id)
             ->where('folder_id', $folder->id)
             ->orderBy('name')
             ->get();
@@ -91,115 +99,214 @@ class FolderService
             'owner_id' => $folder->user_id,
             'folder' => $folder,
             'breadcrumb' => $crumbs,
-            'folders' => $this->folders->children($folder->user_id, $folder->id),
+            'folders' => $this->folders->children($folder->user_id, $folder->id, $folder->workspace_id),
             'files' => $files,
         ];
     }
 
-    public function setVisibility(User $actor, string $folderId, string $visibility, ?string $userId = null): Folder
+    public function setVisibility(User $actor, string $folderId, string $visibility, ?string $userId = null, ?string $workspaceId = null): Folder
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $folder = $this->folders->findOwnedOrFail($ownerId, $folderId);
-        $this->access->assertCanMutateOwner($actor, $folder->owner);
+        $folder = $this->resolveFolderForMutate($actor, $folderId, $userId, $workspaceId);
+        $from = (string) $folder->visibility;
         $value = $this->visibility->normalize($visibility);
 
         $folder->forceFill(['visibility' => $value->value])->save();
+        $folder = $folder->refresh();
 
-        return $folder->refresh();
+        if ($folder->workspace_id !== null) {
+            $ws = $this->workspaceAccess->findOrFail($folder->workspace_id);
+            $this->activity->folderVisibilityChanged($ws, $actor, $folder, $from, $value->value);
+        }
+
+        return $folder;
     }
 
-    public function create(User $actor, string $name, ?string $parentId, ?string $userId = null): Folder
+    public function create(User $actor, string $name, ?string $parentId, ?string $userId = null, ?string $workspaceId = null): Folder
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $owner = User::query()->findOrFail($ownerId);
-        $this->access->assertCanMutateOwner($actor, $owner);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
+        $wsId = $workspace?->id;
 
-        return $this->folders->create($ownerId, $parentId, $name);
+        $folder = $this->folders->create($ownerId, $parentId, $name, $wsId);
+
+        if ($workspace !== null) {
+            $this->activity->folderCreated($workspace, $actor, $folder);
+        }
+
+        return $folder;
     }
 
-    public function rename(User $actor, string $folderId, string $name, ?string $userId = null): Folder
+    public function rename(User $actor, string $folderId, string $name, ?string $userId = null, ?string $workspaceId = null): Folder
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $folder = $this->folders->findOwnedOrFail($ownerId, $folderId);
-        $this->access->assertCanMutateOwner($actor, $folder->owner);
+        $folder = $this->resolveFolderForMutate($actor, $folderId, $userId, $workspaceId);
+        $from = $folder->name;
+        $folder = $this->folders->rename($folder, $name);
 
-        return $this->folders->rename($folder, $name);
+        if ($folder->workspace_id !== null) {
+            $ws = $this->workspaceAccess->findOrFail($folder->workspace_id);
+            $this->activity->folderRenamed($ws, $actor, $folder, $from, $name);
+        }
+
+        return $folder;
     }
 
-    public function move(User $actor, string $folderId, ?string $parentId, ?string $userId = null): Folder
+    public function move(User $actor, string $folderId, ?string $parentId, ?string $userId = null, ?string $workspaceId = null): Folder
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $folder = $this->folders->findOwnedOrFail($ownerId, $folderId);
-        $this->access->assertCanMutateOwner($actor, $folder->owner);
+        $folder = $this->resolveFolderForMutate($actor, $folderId, $userId, $workspaceId);
+        $fromParent = $folder->parent_id;
+        $folder = $this->folders->move($folder, $parentId);
 
-        return $this->folders->move($folder, $parentId);
+        if ($folder->workspace_id !== null) {
+            $ws = $this->workspaceAccess->findOrFail($folder->workspace_id);
+            $this->activity->folderMoved($ws, $actor, $folder, $fromParent, $parentId);
+        }
+
+        return $folder;
     }
 
-    public function softDelete(User $actor, string $folderId, ?string $userId = null): void
+    public function softDelete(User $actor, string $folderId, ?string $userId = null, ?string $workspaceId = null): void
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $folder = $this->folders->findOwnedOrFail($ownerId, $folderId);
-        $this->access->assertCanMutateOwner($actor, $folder->owner);
+        $folder = $this->resolveFolderForMutate($actor, $folderId, $userId, $workspaceId);
+        $workspace = $folder->workspace_id !== null
+            ? $this->workspaceAccess->findOrFail($folder->workspace_id)
+            : null;
+
         $this->folders->softDeleteCascade($folder);
+
+        if ($workspace !== null) {
+            $this->activity->folderSoftDeleted($workspace, $actor, $folder);
+        }
     }
 
-    public function bulkSetVisibility(User $actor, array $folderIds, string $visibility, ?string $userId = null): int
+    public function bulkSetVisibility(User $actor, array $folderIds, string $visibility, ?string $userId = null, ?string $workspaceId = null): int
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
         $value = $this->visibility->normalize($visibility);
 
-        return Folder::query()
+        $query = Folder::query()
             ->where('user_id', $ownerId)
-            ->whereKey($folderIds)
-            ->update(['visibility' => $value->value]);
+            ->where('workspace_id', $workspace?->id)
+            ->whereKey($folderIds);
+
+        return $query->update(['visibility' => $value->value]);
     }
 
-    public function bulkSoftDelete(User $actor, array $folderIds, ?string $userId = null): int
+    public function bulkSoftDelete(User $actor, array $folderIds, ?string $userId = null, ?string $workspaceId = null): int
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
 
         $folders = Folder::query()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspace?->id)
             ->whereKey($folderIds)
             ->get();
 
         foreach ($folders as $folder) {
             $this->folders->softDeleteCascade($folder);
+            if ($workspace !== null) {
+                $this->activity->folderSoftDeleted($workspace, $actor, $folder);
+            }
         }
 
         return $folders->count();
     }
 
-    public function restore(User $actor, string $folderId, ?string $userId = null): Folder
+    public function restore(User $actor, string $folderId, ?string $userId = null, ?string $workspaceId = null): Folder
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
+
         $folder = Folder::onlyTrashed()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspace?->id)
             ->whereKey($folderId)
             ->firstOrFail();
-        $this->access->assertCanMutateOwner($actor, $folder->owner);
 
-        return $this->folders->restore($folder);
+        $folder = $this->folders->restore($folder);
+
+        if ($workspace !== null) {
+            $this->activity->folderRestored($workspace, $actor, $folder);
+        }
+
+        return $folder;
     }
 
-    public function forceDelete(User $actor, string $folderId, ?string $userId = null): void
+    public function forceDelete(User $actor, string $folderId, ?string $userId = null, ?string $workspaceId = null): void
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
+
         $folder = Folder::withTrashed()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspace?->id)
             ->whereKey($folderId)
             ->firstOrFail();
-        $this->access->assertCanMutateOwner($actor, $folder->owner);
+
         $this->folders->forceDeleteCascade($folder);
+
+        if ($workspace !== null) {
+            $this->activity->folderForceDeleted($workspace, $actor, $folder);
+        }
     }
 
     /**
      * @return Collection<int, Folder>
      */
-    public function trash(User $actor, ?string $userId = null): Collection
+    public function trash(User $actor, ?string $userId = null, ?string $workspaceId = null): Collection
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: false);
 
-        return $this->folders->trashed($ownerId);
+        return $this->folders->trashed($ownerId, $workspace?->id);
+    }
+
+    /**
+     * @return array{0: string, 1: Workspace|null}
+     */
+    private function resolveScope(User $actor, ?string $userId, ?string $workspaceId, bool $mutate): array
+    {
+        if ($workspaceId !== null && $workspaceId !== '') {
+            $workspace = $this->workspaceAccess->findOrFail($workspaceId);
+            if ($mutate) {
+                $this->workspaceAccess->assertCanMutate($workspace, $actor);
+            } else {
+                $this->workspaceAccess->assertCanView($workspace, $actor);
+            }
+
+            return [$this->workspaceAccess->storageOwnerId($workspace), $workspace];
+        }
+
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $owner = User::query()->findOrFail($ownerId);
+        if ($mutate) {
+            $this->access->assertCanMutateOwner($actor, $owner);
+        } else {
+            $this->access->assertCanViewOwner($actor, $owner);
+        }
+
+        return [$ownerId, null];
+    }
+
+    private function resolveFolderForMutate(User $actor, string $folderId, ?string $userId, ?string $workspaceId): Folder
+    {
+        // Prefer explicit workspace; else load folder and branch on its workspace_id
+        if ($workspaceId !== null && $workspaceId !== '') {
+            [$ownerId] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
+
+            return $this->folders->findOwnedOrFail($ownerId, $folderId, $workspaceId);
+        }
+
+        $folder = Folder::query()->whereKey($folderId)->first();
+        if ($folder === null) {
+            throw new FileHostingException(__('api/file-hosting.folder_not_found'), 404);
+        }
+
+        if ($folder->workspace_id !== null) {
+            $this->workspaceAccess->assertResourceMutate($actor, $folder);
+
+            return $folder;
+        }
+
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $folder = $this->folders->findOwnedOrFail($ownerId, $folderId, null);
+        $this->access->assertCanMutateOwner($actor, $folder->owner);
+
+        return $folder;
     }
 }

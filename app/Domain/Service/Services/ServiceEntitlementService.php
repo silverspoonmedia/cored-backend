@@ -193,9 +193,9 @@ class ServiceEntitlementService
             ->where('user_id', $userId)
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
             ->whereHas('service', function ($q): void {
+                // Storage + workspace-slot addons share the stack anniversary.
                 $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
-                    ->where('plan_kind', PlanKind::Addon)
-                    ->where('storage_bytes', '>', 0);
+                    ->where('plan_kind', PlanKind::Addon);
             })
             ->with('service')
             ->get();
@@ -301,12 +301,38 @@ class ServiceEntitlementService
             ->where('user_id', $userId)
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
             ->whereHas('service', function ($q): void {
+                // Includes storage addons and workspace-slot SKUs (storage_bytes may be 0).
                 $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
-                    ->where('plan_kind', PlanKind::Addon)
-                    ->where('storage_bytes', '>', 0);
+                    ->where('plan_kind', PlanKind::Addon);
             })
             ->with('service')
             ->get();
+    }
+
+    /**
+     * Active/grace workspace-slot addon quantity sum (extra owned team slots).
+     */
+    public function workspaceSlotExtraQuantity(string $userId): int
+    {
+        $rows = ServiceEntitlement::query()
+            ->where('user_id', $userId)
+            ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
+            ->whereHas('service', function ($q): void {
+                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                    ->where('plan_kind', PlanKind::Addon)
+                    ->where(function ($inner): void {
+                        $inner->where('code', FileHostingCatalog::CODE_ADDON_WORKSPACE_SLOT)
+                            ->orWhere('entitlement', FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS);
+                    });
+            })
+            ->get();
+
+        $total = 0;
+        foreach ($rows as $row) {
+            $total += max(0, (int) $row->quantity);
+        }
+
+        return $total;
     }
 
     public function hasActivePaidFileHosting(string $userId): bool

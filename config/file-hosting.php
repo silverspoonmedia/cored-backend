@@ -63,6 +63,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Owned team workspaces included with any active paid FH storage plan.
+    | Extra slots via catalog file-hosting.addon.workspace-slot.monthly (+1 each).
+    |--------------------------------------------------------------------------
+    */
+    'base_owned_workspace_slots' => (int) env(
+        'FILE_HOSTING_BASE_OWNED_WORKSPACE_SLOTS',
+        \App\Domain\Service\Support\FileHostingCatalog::BASE_OWNED_WORKSPACE_SLOTS,
+    ),
+
+    /*
+    |--------------------------------------------------------------------------
     | Allowed MIME prefixes (empty = allow all non-empty mime from client).
     |--------------------------------------------------------------------------
     */

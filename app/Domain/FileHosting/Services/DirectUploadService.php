@@ -5,9 +5,11 @@ namespace App\Domain\FileHosting\Services;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
+use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
 use App\Support\Storage\S3DirectUploadEngine;
 use App\Support\Storage\S3DirectUploadException;
@@ -19,6 +21,7 @@ use Illuminate\Support\Facades\DB;
  *
  * Storage mechanics live in {@see S3DirectUploadEngine}; this service owns domain rules only.
  * DB `path` stores object id only; full S3 key is resolved via {@see ObjectKeyResolver}.
+ * Team uploads bill owner quota; S3 key uses owner user id.
  */
 class DirectUploadService
 {
@@ -27,6 +30,8 @@ class DirectUploadService
         private readonly FolderRepositoryInterface $folders,
         private readonly AccessService $access,
         private readonly QuotaService $quota,
+        private readonly WorkspaceAccessService $workspaceAccess,
+        private readonly WorkspaceActivityRecorder $activity,
         private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
         private readonly S3DirectUploadEngine $engine = new S3DirectUploadEngine,
     ) {}
@@ -48,18 +53,21 @@ class DirectUploadService
         ?string $folderId = null,
         ?string $userId = null,
         ?string $disk = null,
+        ?string $workspaceId = null,
     ): array {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $owner = User::query()->findOrFail($ownerId);
-        $this->access->assertCanMutateOwner($actor, $owner);
+        [$ownerId, $workspace] = $this->resolveUploadScope($actor, $userId, $workspaceId);
+        $wsId = $workspace?->id;
 
         if ($folderId !== null) {
-            $this->folders->findOwnedOrFail($ownerId, $folderId);
+            $this->folders->findOwnedOrFail($ownerId, $folderId, $wsId);
         }
 
         $this->assertUploadAllowed($name, $mime, $size);
+        // Cap concurrent pending sessions against storage owner (same row as quota).
+        $this->assertUnderConcurrentUploadLimit($ownerId);
         // Display-name collisions are resolved at complete (auto "name (N).ext"), not rejected here.
         // S3 object keys stay unique via random object id regardless of display name.
+        // Team files always charge the workspace owner's quota (pending sessions reserved).
         $this->quota->assertCanAccept($ownerId, $size);
 
         $diskName = $this->resolveDiskName($disk);
@@ -84,6 +92,7 @@ class DirectUploadService
 
         $upload = FileUpload::query()->create([
             'user_id' => $ownerId,
+            'workspace_id' => $wsId,
             'folder_id' => $folderId,
             'disk' => $diskName,
             'path' => $objectId,
@@ -185,16 +194,44 @@ class DirectUploadService
      */
     public function complete(User $actor, string $uploadUuid, ?array $parts = null): array
     {
-        $upload = $this->findUsableUpload($actor, $uploadUuid);
-        $this->quota->assertCanAccept($upload->user_id, $upload->size);
+        // Access check outside lock (cheap fail-fast); re-lock + re-validate inside txn.
+        $this->findUsableUpload($actor, $uploadUuid);
 
-        return DB::transaction(function () use ($upload, $parts): array {
+        return DB::transaction(function () use ($actor, $uploadUuid, $parts): array {
+            $upload = FileUpload::query()
+                ->whereKey($uploadUuid)
+                ->lockForUpdate()
+                ->first();
+
+            if ($upload === null) {
+                throw new FileHostingException(__('api/file-hosting.upload.not_found'), 404);
+            }
+
+            if ($upload->status === FileUpload::STATUS_COMPLETED) {
+                throw new FileHostingException(__('api/file-hosting.upload.already_promoted'), 422);
+            }
+
+            if ($upload->status !== FileUpload::STATUS_PENDING) {
+                throw new FileHostingException(__('api/file-hosting.upload.not_pending'), 422);
+            }
+
+            if ($upload->isExpired()) {
+                throw new FileHostingException(__('api/file-hosting.upload.expired'), 422);
+            }
+
+            // Re-assert mutate rights after lock (archive may have raced).
+            $this->assertCanCompleteUpload($actor, $upload);
+
+            // Exclude this session from pending reservation (it is the incoming size).
+            $this->quota->assertCanAccept($upload->user_id, $upload->size, $upload->id);
+
             // Allocate DB display name before irreversible S3 complete so a later
             // rename failure cannot leave multipart finalized with no HostedFile row.
             $displayName = $this->allocateUniqueDisplayName(
                 $upload->user_id,
                 $upload->folder_id,
                 $upload->original_name,
+                $upload->workspace_id,
             );
 
             $merged = $upload->parts;
@@ -222,6 +259,8 @@ class DirectUploadService
 
             $file = HostedFile::query()->create([
                 'user_id' => $upload->user_id,
+                'workspace_id' => $upload->workspace_id,
+                'created_by' => $actor->id,
                 'folder_id' => $upload->folder_id,
                 'name' => $displayName,
                 'disk' => $upload->disk,
@@ -238,6 +277,11 @@ class DirectUploadService
                     : $upload->parts,
                 'promoted_file_id' => $file->id,
             ])->save();
+
+            if ($upload->workspace_id !== null) {
+                $workspace = $this->workspaceAccess->findOrFail($upload->workspace_id);
+                $this->activity->fileCreated($workspace, $actor, $file);
+            }
 
             return [
                 'upload' => $upload->refresh(),
@@ -297,6 +341,77 @@ class DirectUploadService
         }
     }
 
+    /**
+     * Server-side concurrent session cap for a storage owner (pending non-expired rows).
+     */
+    protected function assertUnderConcurrentUploadLimit(string $ownerUserId): void
+    {
+        $max = (int) config('file-hosting.max_concurrent_uploads', 0);
+        if ($max <= 0) {
+            return;
+        }
+
+        $count = FileUpload::query()
+            ->where('user_id', $ownerUserId)
+            ->where('status', FileUpload::STATUS_PENDING)
+            ->where(function ($q): void {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->count();
+
+        if ($count >= $max) {
+            throw new FileHostingException(__('api/file-hosting.upload.too_many_concurrent'), 422);
+        }
+    }
+
+    /**
+     * Best-effort abort all pending uploads for a workspace (e.g. on archive).
+     */
+    public function abortPendingForWorkspace(string $workspaceId): int
+    {
+        $uploads = FileUpload::query()
+            ->where('workspace_id', $workspaceId)
+            ->where('status', FileUpload::STATUS_PENDING)
+            ->get();
+
+        $aborted = 0;
+        foreach ($uploads as $upload) {
+            $this->forceAbortPending($upload);
+            $aborted++;
+        }
+
+        return $aborted;
+    }
+
+    /**
+     * Abort without actor ACL (system / archive path).
+     */
+    public function forceAbortPending(FileUpload $upload): void
+    {
+        if ($upload->status !== FileUpload::STATUS_PENDING) {
+            return;
+        }
+
+        $objectKey = $this->objectKeys->objectKey($upload->user_id, $upload->path);
+
+        if ($upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART && $upload->s3_upload_id) {
+            try {
+                $this->engine->abortMultipartUpload(
+                    $upload->disk,
+                    $objectKey,
+                    (string) $upload->s3_upload_id,
+                );
+            } catch (S3DirectUploadException) {
+                // Best-effort: still mark aborted so complete cannot promote.
+            }
+        } elseif ($this->storage->pathExists($objectKey, $upload->disk)) {
+            $this->storage->deleteMany([['path' => $objectKey, 'disk' => $upload->disk]]);
+        }
+
+        $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
+    }
+
     private function findUsableUpload(User $actor, string $uploadUuid): FileUpload
     {
         $upload = FileUpload::query()->find($uploadUuid);
@@ -326,8 +441,28 @@ class DirectUploadService
         return $upload;
     }
 
+    private function assertCanCompleteUpload(User $actor, FileUpload $upload): void
+    {
+        $this->assertCanAccessUpload($actor, $upload, mutate: true);
+
+        if (! $this->objectKeys->isValidObjectId($upload->path)) {
+            throw new FileHostingException(__('api/file-hosting.upload.invalid_path'));
+        }
+    }
+
     private function assertCanAccessUpload(User $actor, FileUpload $upload, bool $mutate): void
     {
+        if ($upload->workspace_id !== null) {
+            $workspace = $this->workspaceAccess->findOrFail($upload->workspace_id);
+            if ($mutate) {
+                $this->workspaceAccess->assertCanMutate($workspace, $actor);
+            } else {
+                $this->workspaceAccess->assertCanView($workspace, $actor);
+            }
+
+            return;
+        }
+
         $owner = User::query()->find($upload->user_id);
 
         if ($owner === null) {
@@ -339,6 +474,26 @@ class DirectUploadService
         } else {
             $this->access->assertCanViewOwner($actor, $owner);
         }
+    }
+
+    /**
+     * @return array{0: string, 1: Workspace|null}
+     */
+    private function resolveUploadScope(User $actor, ?string $userId, ?string $workspaceId): array
+    {
+        if ($workspaceId !== null && $workspaceId !== '') {
+            $workspace = $this->workspaceAccess->findOrFail($workspaceId);
+            $this->workspaceAccess->assertCanMutate($workspace, $actor);
+            $this->workspaceAccess->assertOwnerEligibleForCollab($workspace->owner_user_id);
+
+            return [$this->workspaceAccess->storageOwnerId($workspace), $workspace];
+        }
+
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $owner = User::query()->findOrFail($ownerId);
+        $this->access->assertCanMutateOwner($actor, $owner);
+
+        return [$ownerId, null];
     }
 
     private function expectedPartCount(FileUpload $upload): int
@@ -383,26 +538,30 @@ class DirectUploadService
      *   Example: A.zip + A (3).zip active → next is A (4).zip even if (2) was deleted.
      * - If A.zip and A (2).zip soft-deleted but A (3).zip remains → preferred free → A.zip again.
      */
-    protected function allocateUniqueDisplayName(string $ownerId, ?string $folderId, string $preferred): string
-    {
+    protected function allocateUniqueDisplayName(
+        string $ownerId,
+        ?string $folderId,
+        string $preferred,
+        ?string $workspaceId = null,
+    ): string {
         $preferred = trim($preferred);
 
         if ($preferred === '') {
             throw new FileHostingException(__('api/file-hosting.upload.invalid_name'));
         }
 
-        if (! $this->displayNameExists($ownerId, $folderId, $preferred)) {
+        if (! $this->displayNameExists($ownerId, $folderId, $preferred, $workspaceId)) {
             return $preferred;
         }
 
         [$stem, $ext] = $this->splitDisplayName($preferred);
-        $maxSequence = $this->maxDisplayNameSequence($ownerId, $folderId, $stem, $ext);
+        $maxSequence = $this->maxDisplayNameSequence($ownerId, $folderId, $stem, $ext, $workspaceId);
         $next = max(2, $maxSequence + 1);
 
         for ($n = $next; $n < $next + 1000; $n++) {
             $candidate = $this->formatNumberedDisplayName($stem, $ext, $n);
 
-            if (! $this->displayNameExists($ownerId, $folderId, $candidate)) {
+            if (! $this->displayNameExists($ownerId, $folderId, $candidate, $workspaceId)) {
                 return $candidate;
             }
         }
@@ -410,10 +569,15 @@ class DirectUploadService
         throw new FileHostingException(__('api/file-hosting.file_name_taken'));
     }
 
-    protected function displayNameExists(string $ownerId, ?string $folderId, string $name): bool
-    {
+    protected function displayNameExists(
+        string $ownerId,
+        ?string $folderId,
+        string $name,
+        ?string $workspaceId = null,
+    ): bool {
         return HostedFile::query()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspaceId)
             ->where('folder_id', $folderId)
             ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
             ->exists();
@@ -430,12 +594,14 @@ class DirectUploadService
         ?string $folderId,
         string $stem,
         string $ext,
+        ?string $workspaceId = null,
     ): int {
         $base = $this->formatNumberedDisplayName($stem, $ext, null);
         $max = 0;
 
         $names = HostedFile::query()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspaceId)
             ->where('folder_id', $folderId)
             ->pluck('name');
 

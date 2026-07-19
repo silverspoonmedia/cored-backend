@@ -95,6 +95,21 @@ class ServiceFactory extends Factory
         ]);
     }
 
+    public function fileHostingAddonWorkspaceSlot(): static
+    {
+        return $this->state(fn (): array => [
+            'code' => FileHostingCatalog::CODE_ADDON_WORKSPACE_SLOT,
+            'name' => 'Team Workspace Slot',
+            'description' => 'Stackable +1 owned team workspace slot.',
+            'billing_interval' => BillingInterval::Monthly,
+            'fulfillment_target' => FileHostingCatalog::FULFILLMENT_TARGET,
+            'entitlement' => FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+            'plan_kind' => PlanKind::Addon,
+            'storage_bytes' => 0,
+            'status' => ServiceStatus::Active,
+        ]);
+    }
+
     /** @deprecated Use fileHostingMain1Tb() — kept name for temporary test greps. */
     public function fileHostingMonthly(): static
     {

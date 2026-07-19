@@ -97,9 +97,9 @@ class MainPlanChangeCalculator
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
             ->whereNotNull('ends_at')
             ->whereHas('service', function ($q): void {
+                // Storage + workspace-slot addons share one anniversary clock.
                 $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
-                    ->where('plan_kind', PlanKind::Addon)
-                    ->where('storage_bytes', '>', 0);
+                    ->where('plan_kind', PlanKind::Addon);
             })
             ->orderBy('ends_at')
             ->value('ends_at');
@@ -119,8 +119,7 @@ class MainPlanChangeCalculator
             ->where('ends_at', '<=', now())
             ->whereHas('service', function ($q): void {
                 $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
-                    ->where('plan_kind', PlanKind::Addon)
-                    ->where('storage_bytes', '>', 0);
+                    ->where('plan_kind', PlanKind::Addon);
             })
             ->exists();
     }

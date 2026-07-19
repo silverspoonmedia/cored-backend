@@ -16,6 +16,8 @@ class HostedFile extends Model
 
     protected $fillable = [
         'user_id',
+        'workspace_id',
+        'created_by',
         'folder_id',
         'name',
         'disk',
@@ -56,11 +58,32 @@ class HostedFile extends Model
     }
 
     /**
+     * @return BelongsTo<Workspace, $this>
+     */
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class, 'workspace_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
      * @return BelongsTo<Folder, $this>
      */
     public function folder(): BelongsTo
     {
         return $this->belongsTo(Folder::class, 'folder_id');
+    }
+
+    public function isWorkspaceResource(): bool
+    {
+        return $this->workspace_id !== null;
     }
 
     public function hasUsableSignedDownloadUrl(): bool

@@ -9,6 +9,7 @@ use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
 use App\Domain\FileHosting\Support\FolderAncestorChain;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -19,17 +20,16 @@ class FolderRepository implements FolderRepositoryInterface
         private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
     ) {}
 
-    public function findOwned(string $ownerId, string $folderId): ?Folder
+    public function findOwned(string $ownerId, string $folderId, ?string $workspaceId = null): ?Folder
     {
-        return Folder::query()
-            ->where('user_id', $ownerId)
+        return $this->scopedQuery($ownerId, $workspaceId)
             ->whereKey($folderId)
             ->first();
     }
 
-    public function findOwnedOrFail(string $ownerId, string $folderId): Folder
+    public function findOwnedOrFail(string $ownerId, string $folderId, ?string $workspaceId = null): Folder
     {
-        $folder = $this->findOwned($ownerId, $folderId);
+        $folder = $this->findOwned($ownerId, $folderId, $workspaceId);
 
         if ($folder === null) {
             throw new FileHostingException(__('api/file-hosting.folder_not_found'), 404);
@@ -38,32 +38,33 @@ class FolderRepository implements FolderRepositoryInterface
         return $folder;
     }
 
-    public function children(string $ownerId, ?string $parentId): Collection
+    public function children(string $ownerId, ?string $parentId, ?string $workspaceId = null): Collection
     {
-        return Folder::query()
-            ->where('user_id', $ownerId)
+        return $this->scopedQuery($ownerId, $workspaceId)
             ->where('parent_id', $parentId)
             ->orderBy('order')
             ->orderBy('name')
             ->get();
     }
 
-    public function create(string $ownerId, ?string $parentId, string $name): Folder
+    public function create(string $ownerId, ?string $parentId, string $name, ?string $workspaceId = null): Folder
     {
-        return DB::transaction(function () use ($ownerId, $parentId, $name): Folder {
+        return DB::transaction(function () use ($ownerId, $parentId, $name, $workspaceId): Folder {
             if ($parentId !== null) {
-                $this->findOwnedOrFail($ownerId, $parentId);
+                $parent = $this->findOwnedOrFail($ownerId, $parentId, $workspaceId);
+                // Parent defines workspace scope if not explicitly passed
+                $workspaceId = $parent->workspace_id;
             }
 
-            $this->assertUniqueSiblingName($ownerId, $parentId, $name);
+            $this->assertUniqueSiblingName($ownerId, $parentId, $name, null, $workspaceId);
 
-            $order = (int) Folder::query()
-                ->where('user_id', $ownerId)
+            $order = (int) $this->scopedQuery($ownerId, $workspaceId)
                 ->where('parent_id', $parentId)
                 ->max('order');
 
             return Folder::query()->create([
                 'user_id' => $ownerId,
+                'workspace_id' => $workspaceId,
                 'parent_id' => $parentId,
                 'name' => $name,
                 'order' => $order + 1,
@@ -74,7 +75,13 @@ class FolderRepository implements FolderRepositoryInterface
     public function rename(Folder $folder, string $name): Folder
     {
         return DB::transaction(function () use ($folder, $name): Folder {
-            $this->assertUniqueSiblingName($folder->user_id, $folder->parent_id, $name, $folder->id);
+            $this->assertUniqueSiblingName(
+                $folder->user_id,
+                $folder->parent_id,
+                $name,
+                $folder->id,
+                $folder->workspace_id,
+            );
             $folder->forceFill(['name' => $name])->save();
 
             return $folder->refresh();
@@ -89,19 +96,24 @@ class FolderRepository implements FolderRepositoryInterface
             }
 
             if ($newParentId !== null) {
-                $parent = $this->findOwnedOrFail($folder->user_id, $newParentId);
+                $parent = $this->findOwnedOrFail($folder->user_id, $newParentId, $folder->workspace_id);
 
                 if (FolderAncestorChain::isSelfOrDescendant($folder, $parent->id)) {
                     throw new FileHostingException(__('api/file-hosting.folder_cycle'));
                 }
             }
 
-            $this->assertUniqueSiblingName($folder->user_id, $newParentId, $folder->name, $folder->id);
+            $this->assertUniqueSiblingName(
+                $folder->user_id,
+                $newParentId,
+                $folder->name,
+                $folder->id,
+                $folder->workspace_id,
+            );
 
             $folder->forceFill(['order' => null])->save();
 
-            $order = (int) Folder::query()
-                ->where('user_id', $folder->user_id)
+            $order = (int) $this->scopedQuery($folder->user_id, $folder->workspace_id)
                 ->where('parent_id', $newParentId)
                 ->max('order');
 
@@ -125,8 +137,7 @@ class FolderRepository implements FolderRepositoryInterface
     {
         return DB::transaction(function () use ($folder): Folder {
             if ($folder->parent_id !== null) {
-                $parentExists = Folder::query()
-                    ->where('user_id', $folder->user_id)
+                $parentExists = $this->scopedQuery($folder->user_id, $folder->workspace_id)
                     ->whereKey($folder->parent_id)
                     ->exists();
 
@@ -136,15 +147,23 @@ class FolderRepository implements FolderRepositoryInterface
             }
 
             $folder->restore();
-            $this->assertUniqueSiblingName($folder->user_id, $folder->parent_id, $folder->name, $folder->id);
+            $this->assertUniqueSiblingName(
+                $folder->user_id,
+                $folder->parent_id,
+                $folder->name,
+                $folder->id,
+                $folder->workspace_id,
+            );
 
             HostedFile::onlyTrashed()
                 ->where('user_id', $folder->user_id)
+                ->where('workspace_id', $folder->workspace_id)
                 ->where('folder_id', $folder->id)
                 ->restore();
 
             Folder::onlyTrashed()
                 ->where('user_id', $folder->user_id)
+                ->where('workspace_id', $folder->workspace_id)
                 ->where('parent_id', $folder->id)
                 ->get()
                 ->each(fn (Folder $child) => $this->restore($child));
@@ -160,24 +179,43 @@ class FolderRepository implements FolderRepositoryInterface
         });
     }
 
-    public function trashed(string $ownerId): Collection
+    public function trashed(string $ownerId, ?string $workspaceId = null): Collection
     {
-        return Folder::onlyTrashed()
-            ->where('user_id', $ownerId)
+        return $this->scopedQuery($ownerId, $workspaceId, onlyTrashed: true)
             ->orderByDesc('deleted_at')
             ->get();
+    }
+
+    /**
+     * @return Builder<Folder>
+     */
+    private function scopedQuery(string $ownerId, ?string $workspaceId, bool $onlyTrashed = false): Builder
+    {
+        $query = $onlyTrashed ? Folder::onlyTrashed() : Folder::query();
+
+        $query->where('user_id', $ownerId);
+
+        if ($workspaceId === null) {
+            $query->whereNull('workspace_id');
+        } else {
+            $query->where('workspace_id', $workspaceId);
+        }
+
+        return $query;
     }
 
     private function softDeleteTree(Folder $folder): void
     {
         Folder::query()
             ->where('user_id', $folder->user_id)
+            ->where('workspace_id', $folder->workspace_id)
             ->where('parent_id', $folder->id)
             ->get()
             ->each(fn (Folder $child) => $this->softDeleteTree($child));
 
         HostedFile::query()
             ->where('user_id', $folder->user_id)
+            ->where('workspace_id', $folder->workspace_id)
             ->where('folder_id', $folder->id)
             ->get()
             ->each(fn (HostedFile $file) => $file->delete());
@@ -190,12 +228,14 @@ class FolderRepository implements FolderRepositoryInterface
     {
         Folder::withTrashed()
             ->where('user_id', $folder->user_id)
+            ->where('workspace_id', $folder->workspace_id)
             ->where('parent_id', $folder->id)
             ->get()
             ->each(fn (Folder $child) => $this->forceDeleteTree($child));
 
         $files = HostedFile::withTrashed()
             ->where('user_id', $folder->user_id)
+            ->where('workspace_id', $folder->workspace_id)
             ->where('folder_id', $folder->id)
             ->get();
 
@@ -216,9 +256,9 @@ class FolderRepository implements FolderRepositoryInterface
         ?string $parentId,
         string $name,
         ?string $ignoreId = null,
+        ?string $workspaceId = null,
     ): void {
-        $query = Folder::query()
-            ->where('user_id', $ownerId)
+        $query = $this->scopedQuery($ownerId, $workspaceId)
             ->where('parent_id', $parentId)
             ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)]);
 

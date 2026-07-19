@@ -1,6 +1,6 @@
 # File Hosting — product domain
 
-Product domain (`kind => product`, `locked => true`) for personal nested folders, S3-compatible chunk upload, and Drive-lite link sharing.
+Product domain (`kind => product`, `locked => true`) for personal nested folders, S3-compatible chunk upload, Drive-lite link sharing, and **Collaborative Works** (paid team workspaces).
 
 | | |
 |--|--|
@@ -19,13 +19,13 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Virtual root | `folder_id = null` = “My Files” (no auto DB folder row) |
 | Nested folders | `parent_id` tree per owner; breadcrumb via `FolderAncestorChain` |
 | Files | `file_hosting_files` — denormalized `user_id`, optional `folder_id` |
-| Upload sessions | `file_hosting_uploads` — init → browser PUT (direct S3 **or** CF Worker proxy) → complete promotes row |
+| Upload sessions | `file_hosting_uploads` — init → browser PUT (direct S3 **or** CF Worker proxy) → complete promotes row. **Control plane** (init / sign-parts / complete / abort) always Monolith→S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. |
 | Part size | Default **10 MB** chunk + multipart threshold (`FILE_HOSTING_CHUNK_SIZE`) |
 | DB `path` | Object id only: 40 lowercase alnum chars (`Str::random(40)`). **Not** a full S3 key. |
 | S3 object key | `file-hosting/{user_id}/{objectId}` — resolved at runtime via `ObjectKeyResolver` from `user_id` + `path` + config `directory`. No `folder_id`, no extension, no upload session id in the key. |
 | Display name on upload | Preferred client name kept if free in that owner+folder (soft-deleted ignored). If taken → auto DB rename to `{stem} ({maxN+1}).{ext}` where `maxN` is highest active sibling index (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`). S3 object key stays random and is never renamed. Manual rename/move still rejects exact sibling collisions. Move/rename are **DB-only** (folder tree lives in `folder_id` / `name`). |
 | Download bytes | Always **302 (or client follow)** to S3 temporary URL — **not** Monolith streaming |
-| S3 signed URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry |
+| S3 signed URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry. **Cleared on visibility change** (and rename/delete) so private revoke cannot reuse a still-valid temp link |
 | Download filename | `ResponseContentDisposition` from DB `name` (random key stays on object) |
 | Stats | `view_count` / `download_count` + last_* timestamps (no event log) |
 | Visibility | `private` \| `anyone_with_link` on folders and files |
@@ -33,6 +33,59 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Inherit | Folder link-shared → guest may browse that folder and download files inside even if file is `private` |
 | Region | Per-file `disk` storage; region key derived via `RegionResolver::keyForDisk()`. `disabled_regions` blocks new uploads only — downloads still served. |
 | Ownership | Own resources; cross-user via product “any” + core `RoleService` hierarchy |
+| Collaborative Works | Paid perk for **owners**; free users may **join** as members. Blade UX on File Hosting page (not a separate dynamic menu). |
+
+## Collaborative Works (team storage)
+
+Paid owners (active **main or storage addon** FH entitlement, not free-only) may own **multiple** team workspaces. Members invited by email; **free collaborators allowed** if owner is paid. **Multi-membership is first-class:** a user may own several workspaces and simultaneously join others as admin/editor/viewer. Owning does not block joining.
+
+| Role | Capabilities |
+|------|----------------|
+| Owner | Create/archive workspace, invite/remove, all file ops, full activity |
+| Admin | Manage members (invite/role/remove), all file ops, activity |
+| Editor | Upload/rename/move/delete; no member mgmt |
+| Viewer | Browse + download only |
+
+| Plan state | Can create / own team | Can join team | Personal files |
+|------------|----------------------|---------------|----------------|
+| Free | No | Yes (invite token) | Yes (free tier) |
+| Paid | Yes — up to **owned slot limit** | Yes (unlimited joins) | Yes |
+| Grace | No new create / collab mutations | Existing membership may still view if owner not grace-blocked | Read; upload blocked |
+
+### Owned workspace slots
+
+| Source | Slots |
+|--------|-------|
+| Base (any active paid **storage** plan — main or storage addon) | `config('file-hosting.base_owned_workspace_slots')` default **10** |
+| Addon `file-hosting.addon.workspace-slot.monthly` | **+1 per quantity unit** ($1 USD POC); stackable; `storage_bytes = 0` |
+| Formula | `owned_limit = (paid storage ? base : 0) + sum(active/grace slot qty)` |
+| Used | Count of **Active** workspaces where `owner_user_id` = user |
+
+Only **Active** workspaces consume slots. **Archive** frees a slot; create always inserts a new row (no reactivate-first-archived). Slot expiry that leaves `used > limit` does **not** auto-archive existing teams — only blocks **new** create (known edge).
+
+Workspace-slot SKU is **not** a storage plan: does not raise GiB quota, does not alone grant “paid” collab (create still needs `hasActivePaidFileHosting`). It participates in the shared addon anniversary stack with storage addons.
+
+| Context | Role source |
+|---------|-------------|
+| Personal drive (`workspace_id` null) | Owner of own files only |
+| Workspace you own | Always `owner` (`roleFor` + member row) |
+| Workspace you joined | Invite role (`admin` / `editor` / `viewer`) |
+
+**Switcher:** `GET workspaces` returns **active** workspaces only (owned **or** active member). Payload includes `my_role` and `is_owner` for UI labels (Yours vs Joined). Blade: toolbar **dropdown** (Personal + teams + create/join + slot counter) and **Team** offcanvas when in team context (members, invite, activity, archive). Personal tree never mixes with any team tree.
+
+**Billing / quota:** Team files use **that workspace owner’s** storage pool (`user_id` = owner, `workspace_id` set). S3 key stays `file-hosting/{owner_user_id}/{objectId}`. `created_by` records uploader for audit. When browsing joined B, quota bar still reflects the logged-in user’s personal usage (owner pool for B is separate).
+
+**Paid gate:** `WorkspaceAccessService::assertOwnerEligibleForCollab` — requires `hasActivePaidFileHosting` on the **workspace owner** (create / invite / accept / team upload). Create also runs `assertCanCreateOwnedWorkspace` (slot limit). Joiner need not be paid.
+
+**Quota API flags:** `GET /api/v1/file-hosting/quota` includes `state` (`free`\|`paid`\|`grace`), `collaborative_works`, `can_create_workspace` (paid **and** under slot limit), `owned_workspace_used`, `owned_workspace_limit`, plus `used_bytes` (committed files), `pending_bytes` (non-expired pending uploads), `reserved_bytes` (`used + pending`), `remaining_bytes` against reserved.
+
+**Blade UX:** Compact toolbar controls (not a full-width card). Free → upgrade CTA inside switcher dropdown + accept invite. Paid → create (while under limit), invite (token flash; no email delivery in MVP), members (owner **or** admin), activity in offcanvas. Web routes: `POST file-hosting/workspaces`, invites accept/store, member remove, archive.
+
+**Activity:** Spatie `log_name = file_hosting.workspace`, properties include `workspace_id`. Explicit recorder (`WorkspaceActivityRecorder`) on membership + file/folder mutations. Download events off in v1. API: `GET /api/v1/file-hosting/workspaces/{id}/activity` (any active member).
+
+**Tables:** `file_hosting_workspaces` (no unique on `owner_user_id`; index `(owner_user_id, status)`), `file_hosting_workspace_members`, `file_hosting_workspace_invites`; nullable `workspace_id` on folders/files/uploads; `created_by` on files.
+
+**Browse:** `GET browse?workspace_id=` for team tree; omit for personal. Never leak personal through workspace.
 
 ## Visibility
 
@@ -70,13 +123,14 @@ manage any file hosting resource
 
 | Area | Endpoints |
 |------|-----------|
-| Browse | `GET browse?folder_id=&user_id=` |
-| Folders | create, rename, move, **visibility**, soft/force delete, restore |
-| Files | show (view++), rename, move, **visibility**, soft/force delete, restore |
-| Bulk | `POST files/bulk-visibility` + `POST folders/bulk-visibility` (`ids[]`, `visibility`); `DELETE files/bulk` + `DELETE folders/bulk` (`ids[]`) — owner-scoped, max 100 ids |
+| Browse | `GET browse?folder_id=&user_id=&workspace_id=` |
+| Folders | create, rename, move, **visibility**, soft/force delete, restore (optional `workspace_id`) |
+| Files | show (view++), rename, move, **visibility**, soft/force delete, restore (optional `workspace_id`) |
+| Bulk | `POST files/bulk-visibility` + `POST folders/bulk-visibility` (`ids[]`, `visibility`); `DELETE files/bulk` + `DELETE folders/bulk` (`ids[]`) — owner/workspace-scoped, max 100 ids |
 | Download | `GET files/{id}/download` → `{ url, expires_at }` (download++; cache S3 URL) |
-| Upload | init (optional `disk` = region key; rejects disabled regions), status, sign-parts, complete (auto-renames duplicate display name), abort |
-| Search / trash / quota | as named |
+| Upload | init (optional `disk`, optional `workspace_id`), status, sign-parts, complete (auto-renames duplicate display name), abort |
+| Workspaces | `GET/POST workspaces`, show, archive, members, invite, accept invite, update/remove member, activity |
+| Search / trash / quota | as named (trash/search accept `workspace_id`) |
 
 ### Direct upload (S3 engine + optional Worker proxy)
 
@@ -282,6 +336,7 @@ Menu: **My Files** → `file-hosting.index`.
 | `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **10 MiB** each) |
 | `upload_proxy.*` | Optional CF Worker hybrid byte path (`base_url`, `token`, `disk_targets`) |
 | `default_quota_bytes` | Free-tier base always stacked (typically 5 GiB); also used when no `UserQuota` denorm row |
+| `max_concurrent_uploads` | Server-side cap on pending non-expired upload sessions per storage owner (default 2) |
 | `signed_download_ttl_minutes` | S3 GET temporary URL lifetime |
 | `signed_download_cache_margin_seconds` | Treat cache expired early |
 | `public_download_signature_ttl_minutes` | Laravel signed hop for `/s/f/.../download` |
@@ -319,6 +374,8 @@ Scheduler entry point: `php artisan service:process-entitlements` (hourly).
 
 ## Tests
 
+**Production qualification suite (50 IDs, automated):** `tests/Domain/FileHosting/Qualification/FileHostingQualification{Low,Normal,Medium,Hard,Anomaly}Test.php` — method names `test_FH_L01_…` … `test_FH_A10_…`. Run: `composer test -- --filter=FileHostingQualification`.
+
 ```bash
 composer test -- --filter=FileHosting
 npm run test:js
@@ -326,9 +383,10 @@ npm run test:js
 
 | Suite | What it covers |
 |-------|----------------|
-| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest`), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`. |
+| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest`), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). |
 | Vitest `npm run test:js` | Pure client helpers in `resources/js/file-hosting/upload-progress.test.js` (transfer rate, format, byte percent). Pattern: `resources/js/**/*.test.js`. |
 | Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Worker unit tests: `c:\laragon\www\workers` (`npm test`). |
+| Qualification | `composer test -- --filter=FileHostingQualification` — 50 IDs (Low/Normal/Medium/Hard/Anomaly) |
 
 ## Related
 

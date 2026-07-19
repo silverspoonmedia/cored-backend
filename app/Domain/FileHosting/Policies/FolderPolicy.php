@@ -4,6 +4,7 @@ namespace App\Domain\FileHosting\Policies;
 
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Services\AccessService;
+use App\Domain\FileHosting\Services\WorkspaceAccessService;
 use App\Domain\Identity\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;
@@ -14,6 +15,7 @@ class FolderPolicy
 
     public function __construct(
         private readonly AccessService $access,
+        private readonly WorkspaceAccessService $workspaceAccess,
     ) {}
 
     public function viewAny(User $actor): Response
@@ -25,6 +27,14 @@ class FolderPolicy
     {
         if (! $actor->can('view file hosting folder')) {
             return $this->deny(__('api/file-hosting.policy.denied'));
+        }
+
+        if ($folder->workspace_id !== null) {
+            $workspace = $folder->workspace ?? $this->workspaceAccess->findOrFail($folder->workspace_id);
+
+            return $this->workspaceAccess->canView($workspace, $actor)
+                ? $this->allow()
+                : $this->deny(__('api/file-hosting.workspace.access_denied'));
         }
 
         return $this->access->canViewOwner($actor, $folder->owner)
@@ -43,6 +53,14 @@ class FolderPolicy
             return $this->deny(__('api/file-hosting.policy.denied'));
         }
 
+        if ($folder->workspace_id !== null) {
+            $workspace = $folder->workspace ?? $this->workspaceAccess->findOrFail($folder->workspace_id);
+
+            return $this->workspaceAccess->canMutate($workspace, $actor)
+                ? $this->allow()
+                : $this->deny(__('api/file-hosting.workspace.mutate_denied'));
+        }
+
         return $this->access->canMutateOwner($actor, $folder->owner)
             ? $this->allow()
             : $this->deny(__('api/file-hosting.policy.hierarchy_mutate'));
@@ -52,6 +70,14 @@ class FolderPolicy
     {
         if (! $actor->can('delete file hosting folder')) {
             return $this->deny(__('api/file-hosting.policy.denied'));
+        }
+
+        if ($folder->workspace_id !== null) {
+            $workspace = $folder->workspace ?? $this->workspaceAccess->findOrFail($folder->workspace_id);
+
+            return $this->workspaceAccess->canMutate($workspace, $actor)
+                ? $this->allow()
+                : $this->deny(__('api/file-hosting.workspace.mutate_denied'));
         }
 
         return $this->access->canMutateOwner($actor, $folder->owner)

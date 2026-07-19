@@ -956,6 +956,30 @@
     gap: 0.5rem;
 }
 
+/* ---- Workspace switcher (toolbar) + team offcanvas ---- */
+.fh-workspace-switcher__menu {
+    min-width: 280px;
+    max-width: min(360px, 92vw);
+}
+
+.fh-workspace-switcher__label {
+    max-width: 140px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+}
+
+.fh-team-offcanvas {
+    width: min(420px, 100vw);
+}
+
+.fh-team-offcanvas__activity {
+    max-height: 280px;
+    overflow: auto;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 576px) {
     .fh-toolbar {
@@ -972,5 +996,9 @@
 
     .fh-stats {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .fh-workspace-switcher__label {
+        max-width: 90px;
     }
 }

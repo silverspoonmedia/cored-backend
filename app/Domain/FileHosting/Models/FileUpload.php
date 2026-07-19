@@ -27,6 +27,7 @@ class FileUpload extends Model
 
     protected $fillable = [
         'user_id',
+        'workspace_id',
         'folder_id',
         'disk',
         'path',
@@ -61,6 +62,14 @@ class FileUpload extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<Workspace, $this>
+     */
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class, 'workspace_id');
     }
 
     /**

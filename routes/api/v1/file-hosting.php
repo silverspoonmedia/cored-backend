@@ -6,6 +6,7 @@ use App\Domain\FileHosting\Http\Controllers\API\V1\FolderController;
 use App\Domain\FileHosting\Http\Controllers\API\V1\QuotaController;
 use App\Domain\FileHosting\Http\Controllers\API\V1\TrashController;
 use App\Domain\FileHosting\Http\Controllers\API\V1\UploadController;
+use App\Domain\FileHosting\Http\Controllers\API\V1\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
 // Public (anyone with the link) — no auth.
@@ -16,6 +17,27 @@ Route::prefix('file-hosting/public')->name('file-hosting.public.')->group(functi
 });
 
 Route::middleware('auth:api')->prefix('file-hosting')->name('file-hosting.')->group(function (): void {
+    // Collaborative workspaces (paid owner perk; membership separate from platform H-RBAC)
+    Route::middleware('permission:view file hosting folder|view file hosting file')->group(function (): void {
+        Route::get('workspaces', [WorkspaceController::class, 'index'])->name('workspaces.index');
+        Route::get('workspaces/{workspace}', [WorkspaceController::class, 'show'])->whereUuid('workspace')->name('workspaces.show');
+        Route::get('workspaces/{workspace}/members', [WorkspaceController::class, 'members'])->whereUuid('workspace')->name('workspaces.members');
+        Route::get('workspaces/{workspace}/activity', [WorkspaceController::class, 'activity'])->whereUuid('workspace')->name('workspaces.activity');
+        Route::post('workspaces/invites/accept', [WorkspaceController::class, 'acceptInvite'])->name('workspaces.invites.accept');
+    });
+
+    Route::middleware('permission:create file hosting folder')->group(function (): void {
+        Route::post('workspaces', [WorkspaceController::class, 'store'])->name('workspaces.store');
+        Route::post('workspaces/{workspace}/invites', [WorkspaceController::class, 'invite'])->whereUuid('workspace')->name('workspaces.invites.store');
+        Route::patch('workspaces/{workspace}/members/{user}', [WorkspaceController::class, 'updateMemberRole'])
+            ->whereUuid(['workspace', 'user'])
+            ->name('workspaces.members.update');
+        Route::delete('workspaces/{workspace}/members/{user}', [WorkspaceController::class, 'removeMember'])
+            ->whereUuid(['workspace', 'user'])
+            ->name('workspaces.members.destroy');
+        Route::post('workspaces/{workspace}/archive', [WorkspaceController::class, 'archive'])->whereUuid('workspace')->name('workspaces.archive');
+    });
+
     Route::middleware('permission:view file hosting folder|view file hosting file')->group(function (): void {
         Route::get('browse', BrowseController::class)->name('browse');
         Route::get('trash', TrashController::class)->name('trash');

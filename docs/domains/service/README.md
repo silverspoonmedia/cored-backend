@@ -19,6 +19,7 @@
 2. **Checkout** that settles to **IDR** for Midtrans/iPaymu (rate history in DB)
 3. **Entitlements** with period (subscription) or permanent (one-time), plus **quantity** for stackable addons
 4. **Fulfillment** into product domains (File Hosting **main + stackable addons**, free 5 GiB always stacked)
+5. **Paid perk gate** for File Hosting Collaborative Works (workspace create/invite/team upload) via `hasActivePaidFileHosting` (storage main/addon only). Extra owned team slots via catalog SKU `file-hosting.addon.workspace-slot.monthly`
 
 **Not** PaymentGateway `Subscription` (free-text demo morph). Product lifecycle lives here.
 
@@ -44,7 +45,9 @@ Money convention: **decimal(15,2)** (same as invoices).
 | `services` | Catalog: `code`, `billing_interval`, `fulfillment_target`, `entitlement`, **`plan_kind`** (`main`\|`addon`), **`storage_bytes`**, `status` |
 | `service_prices` | List price per currency (validated against `currencies`) |
 | `service_purchases` | Invoiceable money event: display/list/credit/charge, `change_type`, `surplus_days`, settlement + FX + `period_*` |
-| `service_entitlements` | One row per user+service: `active` / `grace` / `expired` / `cancelled` + **`quantity`*### File Hosting catalog (seed)
+| `service_entitlements` | One row per user+service: `active` / `grace` / `expired` / `cancelled` + **`quantity`** |
+
+### File Hosting catalog (seed)
 
 | Code | Name | Kind | Storage | USD/mo | Notes |
 |------|------|------|---------|--------|-------|
@@ -52,8 +55,11 @@ Money convention: **decimal(15,2)** (same as invoices).
 | `file-hosting.plan.2tb.monthly` | Standard 2 TB | main | 2 TiB | 54.95 | Exclusive paid main |
 | `file-hosting.addon.100gb.monthly` | Standard +100 GB | addon | 100 GiB | 2.95 | Stackable qty; fixed anniversary |
 | `file-hosting.addon.500gb.monthly` | Standard +500 GB | addon | 500 GiB | 14.50 | Stackable qty; fixed anniversary |
+| `file-hosting.addon.workspace-slot.monthly` | Team Workspace Slot | addon | 0 | 1.00 | +1 owned team slot per qty; not storage; stack anniversary with storage addons |
 
 **Free tier is not a catalog SKU.** Runtime free always from `config('file-hosting.default_quota_bytes')` (5 GiB), always stacked. Seeder deletes any legacy `file-hosting.plan.free` row. Legacy `file-hosting.subscription.monthly` (unlimited POC) is archived on seed.
+
+**Helpers:** `Service::isFileHostingStoragePlan()` requires `storage_bytes > 0` (excludes slot SKU). `Service::isAddonPlan()` includes storage **and** slot addons. `Service::isWorkspaceSlotAddon()` for slot-only checks. Paid collab gate queries still use `storage_bytes > 0`.
 
 **Effective FH quota:**
 
@@ -61,7 +67,16 @@ Money convention: **decimal(15,2)** (same as invoices).
 effective_bytes =
   free_tier_bytes                                          # always (config 5 GiB)
   + (active_or_grace main.storage_bytes)                   # at most one paid main
-  + sum(active_or_grace addon.storage_bytes * quantity)
+  + sum(active_or_grace storage_addon.storage_bytes * quantity)
+  # workspace-slot addon: storage_bytes = 0 → no GiB contribution
+```
+
+**Owned team slots (File Hosting):**
+
+```
+owned_limit =
+  (hasActivePaidFileHosting ? base_owned_workspace_slots : 0)   # default 10
+  + sum(active_or_grace workspace_slot.quantity)
 ```
 
 Constants / codes: `App\Domain\Service\Support\FileHostingCatalog`.
@@ -232,7 +247,7 @@ composer test -- --filter=EnforceFreeTierQuota
 composer test -- --filter=FileHostingBilling
 ```
 
-Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main renew/up/down, fixed 30-day FH periods, addon fixed anniversary, block unit buy when stack due/pending, addon stack renewal invoice, quota matrix, grace/expire. Key tests: `MainPlanChangeCalculatorTest`, `MainPlanFairnessFulfillmentTest`, `AddonAnniversaryTest`, `ServiceCheckoutZeroChargeTest`, `FileHostingPlanQuotaMatrixTest`, `FileHostingAdminJourneyScenarioTest`.
+Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main renew/up/down, fixed 30-day FH periods, addon fixed anniversary, block unit buy when stack due/pending, addon stack renewal invoice, quota matrix, grace/expire, collaborative works paid gate. Key tests: `MainPlanChangeCalculatorTest`, `MainPlanFairnessFulfillmentTest`, `AddonAnniversaryTest`, `ServiceCheckoutZeroChargeTest`, `FileHostingPlanQuotaMatrixTest`, `FileHostingAdminJourneyScenarioTest`, `WorkspaceCollaborativeWorksTest`.
 
 **Use-case matrix (45):** permanent regression suite — `FileHostingBillingTameUseCasesTest`, `FileHostingBillingNormalUseCasesTest`, `FileHostingBillingAnomalyUseCasesTest` + `FileHostingBillingScenarioHarness`.
 

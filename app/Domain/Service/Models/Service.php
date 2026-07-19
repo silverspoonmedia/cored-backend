@@ -104,7 +104,22 @@ class Service extends Model
         return $this->status === ServiceStatus::Active;
     }
 
+    /**
+     * Paid main/addon that contributes storage_bytes (excludes workspace-slot SKU).
+     */
     public function isFileHostingStoragePlan(): bool
+    {
+        if (! $this->isFileHostingCatalogPlan()) {
+            return false;
+        }
+
+        return (int) $this->storage_bytes > 0;
+    }
+
+    /**
+     * Any FH catalog SKU (storage main/addon or non-storage slot addon).
+     */
+    public function isFileHostingCatalogPlan(): bool
     {
         if ($this->fulfillment_target !== FileHostingCatalog::FULFILLMENT_TARGET) {
             return false;
@@ -124,9 +139,22 @@ class Service extends Model
         return $this->isFileHostingStoragePlan() && $this->plan_kind === PlanKind::Main;
     }
 
+    /**
+     * Stackable FH addon (storage or workspace slots). Not mains.
+     */
     public function isAddonPlan(): bool
     {
-        return $this->isFileHostingStoragePlan() && $this->plan_kind === PlanKind::Addon;
+        return $this->isFileHostingCatalogPlan() && $this->plan_kind === PlanKind::Addon;
+    }
+
+    public function isWorkspaceSlotAddon(): bool
+    {
+        if (! $this->isAddonPlan()) {
+            return false;
+        }
+
+        return FileHostingCatalog::isWorkspaceSlotCode($this->code)
+            || $this->entitlement === FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS;
     }
 
     public function priceFor(string $currency): ?ServicePrice

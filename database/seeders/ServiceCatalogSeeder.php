@@ -56,6 +56,16 @@ class ServiceCatalogSeeder extends Seeder
             storageBytes: FileHostingCatalog::addon500GbBytes(),
             amountUsd: 14.50,
         );
+
+        $this->seedPlan(
+            code: FileHostingCatalog::CODE_ADDON_WORKSPACE_SLOT,
+            name: 'Team Workspace Slot',
+            description: 'Stackable +1 owned team workspace slot per unit. Does not add storage. Requires paid FH plan for base slots.',
+            planKind: PlanKind::Addon,
+            storageBytes: 0,
+            amountUsd: 1.00,
+            entitlement: FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+        );
     }
 
     private function removeFreeCatalogSku(): void
@@ -94,6 +104,7 @@ class ServiceCatalogSeeder extends Seeder
         PlanKind $planKind,
         int $storageBytes,
         float $amountUsd,
+        string $entitlement = 'storage_quota',
     ): void {
         $service = Service::query()->updateOrCreate(
             ['code' => $code],
@@ -102,7 +113,7 @@ class ServiceCatalogSeeder extends Seeder
                 'description' => $description,
                 'billing_interval' => BillingInterval::Monthly,
                 'fulfillment_target' => FileHostingCatalog::FULFILLMENT_TARGET,
-                'entitlement' => 'storage_quota',
+                'entitlement' => $entitlement,
                 'plan_kind' => $planKind,
                 'storage_bytes' => $storageBytes,
                 'status' => ServiceStatus::Active,

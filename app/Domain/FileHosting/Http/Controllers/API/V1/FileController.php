@@ -34,6 +34,7 @@ class FileController extends Controller
             $request->user(),
             $file,
             $request->query('user_id'),
+            $request->query('workspace_id'),
         );
 
         return $this->successResponse(
@@ -49,6 +50,7 @@ class FileController extends Controller
             $file,
             $request->validated('name'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(
@@ -64,6 +66,7 @@ class FileController extends Controller
             $file,
             $request->validated('visibility'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(
@@ -99,6 +102,7 @@ class FileController extends Controller
             $file,
             $request->validated('folder_id'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(
@@ -113,6 +117,7 @@ class FileController extends Controller
             $request->user(),
             $file,
             $request->query('user_id'),
+            $request->query('workspace_id'),
         );
 
         return $this->successResponse(null, __('api/file-hosting.file_deleted'));
@@ -124,6 +129,7 @@ class FileController extends Controller
             $request->user(),
             $file,
             $request->query('user_id') ?? $request->input('user_id'),
+            $request->query('workspace_id') ?? $request->input('workspace_id'),
         );
 
         return $this->successResponse(
@@ -138,6 +144,7 @@ class FileController extends Controller
             $request->user(),
             $file,
             $request->query('user_id') ?? $request->input('user_id'),
+            $request->query('workspace_id') ?? $request->input('workspace_id'),
         );
 
         return $this->successResponse(null, __('api/file-hosting.file_force_deleted'));
@@ -151,6 +158,7 @@ class FileController extends Controller
             $request->user(),
             $file,
             $request->query('user_id'),
+            $request->query('workspace_id'),
         );
 
         return $this->successResponse(
@@ -167,6 +175,7 @@ class FileController extends Controller
             $request->user(),
             $request->validated('q'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(
@@ -182,6 +191,7 @@ class FileController extends Controller
             $request->validated('ids'),
             $request->validated('visibility'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(
@@ -196,6 +206,7 @@ class FileController extends Controller
             $request->user(),
             $request->validated('ids'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(

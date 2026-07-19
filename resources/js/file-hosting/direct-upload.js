@@ -24,6 +24,7 @@ export function initDirectUpload(root) {
         signPartsUrl: root.dataset.signPartsUrl,
         folderId: root.dataset.folderId || null,
         userId: root.dataset.userId || null,
+        workspaceId: root.dataset.workspaceId || null,
         reloadOnComplete: root.dataset.reloadOnComplete === '1',
         maxFiles: parseInt(root.dataset.maxFiles || '20', 10),
         maxConcurrent: Math.max(1, parseInt(root.dataset.maxConcurrent || '2', 10)),
@@ -159,6 +160,9 @@ export function initDirectUpload(root) {
 
         if (config.folderId) {
             initBody.folder_id = config.folderId;
+        }
+        if (config.workspaceId) {
+            initBody.workspace_id = config.workspaceId;
         }
 
         if (config.userId) {

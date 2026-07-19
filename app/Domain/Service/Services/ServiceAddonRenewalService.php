@@ -37,9 +37,9 @@ class ServiceAddonRenewalService
             ->whereNotNull('ends_at')
             ->where('ends_at', '<=', now())
             ->whereHas('service', function ($q): void {
+                // Storage + workspace-slot addons share stack renewal.
                 $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
-                    ->where('plan_kind', PlanKind::Addon)
-                    ->where('storage_bytes', '>', 0);
+                    ->where('plan_kind', PlanKind::Addon);
             })
             ->distinct()
             ->pluck('user_id');

@@ -21,6 +21,7 @@ class FileManagerController extends Controller
         $query = array_filter([
             'folder_id' => $request->query('folder_id'),
             'user_id' => $request->query('user_id'),
+            'workspace_id' => $request->query('workspace_id'),
         ], fn ($v) => $v !== null && $v !== '');
 
         $response = $this->api()->get('file-hosting/browse', $query);
@@ -42,13 +43,133 @@ class FileManagerController extends Controller
         $quota = $this->api()->get('file-hosting/quota', array_filter([
             'user_id' => $request->query('user_id'),
         ]));
+        $quotaData = $quota->successful() ? $quota->json('data', []) : null;
+
+        $workspaces = $this->api()->get('file-hosting/workspaces');
+        $workspaceList = $workspaces->successful() ? ($workspaces->json('data') ?? []) : [];
+        if (! is_array($workspaceList)) {
+            $workspaceList = [];
+        }
+
+        $activity = [];
+        $members = [];
+        $workspaceId = $request->query('workspace_id');
+        $currentWorkspace = null;
+        if ($workspaceId) {
+            $act = $this->api()->get('file-hosting/workspaces/'.$workspaceId.'/activity', ['limit' => 30]);
+            $activity = $act->successful() ? ($act->json('data') ?? []) : [];
+
+            $mem = $this->api()->get('file-hosting/workspaces/'.$workspaceId.'/members');
+            $members = $mem->successful() ? ($mem->json('data') ?? []) : [];
+
+            $show = $this->api()->get('file-hosting/workspaces/'.$workspaceId);
+            $currentWorkspace = $show->successful() ? $show->json('data') : null;
+        }
 
         return $this->webView('file-hosting.index', [
             'browse' => $data,
-            'quota' => $quota->successful() ? $quota->json('data', []) : null,
+            'quota' => $quotaData,
             'ownerUserId' => $request->query('user_id'),
             'currentFolderId' => $request->query('folder_id'),
+            'workspaceId' => $workspaceId,
+            'workspaces' => $workspaceList,
+            'workspaceActivity' => $activity,
+            'workspaceMembers' => is_array($members) ? $members : [],
+            'currentWorkspace' => $currentWorkspace,
+            'planState' => is_array($quotaData) ? ($quotaData['state'] ?? 'free') : 'free',
+            'canCreateWorkspace' => is_array($quotaData) && ($quotaData['can_create_workspace'] ?? false) === true,
+            'collaborativeWorks' => is_array($quotaData) && ($quotaData['collaborative_works'] ?? false) === true,
+            'ownedWorkspaceUsed' => is_array($quotaData) ? (int) ($quotaData['owned_workspace_used'] ?? 0) : 0,
+            'ownedWorkspaceLimit' => is_array($quotaData) ? (int) ($quotaData['owned_workspace_limit'] ?? 0) : 0,
         ]);
+    }
+
+    public function storeWorkspace(Request $request): RedirectResponse|JsonResponse
+    {
+        $response = $this->api()->post('file-hosting/workspaces', $request->only(['name']));
+
+        $workspaceId = $response->successful()
+            ? ($response->json('data.id') ?? null)
+            : null;
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.index', array_filter([
+                'workspace_id' => $workspaceId,
+            ]))->with('success', __('api/file-hosting.workspace.created')),
+            __('api/file-hosting.workspace.created'),
+        );
+    }
+
+    public function inviteWorkspaceMember(Request $request, string $workspace): RedirectResponse|JsonResponse
+    {
+        $response = $this->api()->post(
+            'file-hosting/workspaces/'.$workspace.'/invites',
+            $request->only(['email', 'role']),
+        );
+
+        $token = $response->successful() ? ($response->json('data.token') ?? null) : null;
+        $email = $response->successful() ? ($response->json('data.email') ?? $request->input('email')) : null;
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.index', [
+                'workspace_id' => $workspace,
+            ])->with('success', __('api/file-hosting.workspace.invite_sent'))
+                ->with('workspace_invite_token', $token)
+                ->with('workspace_invite_email', $email),
+            __('api/file-hosting.workspace.invite_sent'),
+        );
+    }
+
+    public function acceptWorkspaceInvite(Request $request): RedirectResponse|JsonResponse
+    {
+        $response = $this->api()->post(
+            'file-hosting/workspaces/invites/accept',
+            $request->only(['token']),
+        );
+
+        $workspaceId = $response->successful()
+            ? ($response->json('data.workspace_id') ?? null)
+            : null;
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.index', array_filter([
+                'workspace_id' => $workspaceId,
+            ]))->with('success', __('api/file-hosting.workspace.invite_accepted')),
+            __('api/file-hosting.workspace.invite_accepted'),
+        );
+    }
+
+    public function removeWorkspaceMember(Request $request, string $workspace, string $user): RedirectResponse|JsonResponse
+    {
+        $response = $this->api()->delete('file-hosting/workspaces/'.$workspace.'/members/'.$user);
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.index', [
+                'workspace_id' => $workspace,
+            ])->with('success', __('api/file-hosting.workspace.member_removed')),
+            __('api/file-hosting.workspace.member_removed'),
+        );
+    }
+
+    public function archiveWorkspace(Request $request, string $workspace): RedirectResponse|JsonResponse
+    {
+        $response = $this->api()->post('file-hosting/workspaces/'.$workspace.'/archive');
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()->route('file-hosting.index')
+                ->with('success', __('api/file-hosting.workspace.archived_success')),
+            __('api/file-hosting.workspace.archived_success'),
+        );
     }
 
     public function trash(Request $request): View|RedirectResponse
@@ -71,7 +192,7 @@ class FileManagerController extends Controller
 
     public function storeFolder(Request $request): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->post('file-hosting/folders', $request->only(['name', 'parent_id', 'user_id']));
+        $response = $this->api()->post('file-hosting/folders', $request->only(['name', 'parent_id', 'user_id', 'workspace_id']));
 
         return $this->respondFromApi(
             $request,
@@ -79,6 +200,7 @@ class FileManagerController extends Controller
             fn (): RedirectResponse => redirect()->route('file-hosting.index', array_filter([
                 'folder_id' => $request->input('parent_id'),
                 'user_id' => $request->input('user_id'),
+                'workspace_id' => $request->input('workspace_id'),
             ]))->with('success', __('api/file-hosting.folder_created')),
             __('api/file-hosting.folder_created'),
         );
@@ -324,7 +446,7 @@ class FileManagerController extends Controller
     public function initUpload(Request $request): JsonResponse
     {
         $response = $this->api()->post('file-hosting/uploads', $request->only([
-            'name', 'mime', 'size', 'folder_id', 'user_id', 'disk',
+            'name', 'mime', 'size', 'folder_id', 'user_id', 'workspace_id', 'disk',
         ]));
 
         return response()->json($response->json(), $response->status());

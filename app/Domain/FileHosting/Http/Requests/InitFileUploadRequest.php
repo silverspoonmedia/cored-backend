@@ -24,6 +24,7 @@ class InitFileUploadRequest extends FormRequest
             'size' => ['required', 'integer', 'min:1'],
             'folder_id' => ['nullable', 'uuid'],
             'user_id' => ['nullable', 'uuid'],
+            'workspace_id' => ['nullable', 'uuid'],
             'disk' => $uploadable === []
                 ? ['nullable', 'string']
                 : ['nullable', 'string', 'in:'.implode(',', $uploadable)],
