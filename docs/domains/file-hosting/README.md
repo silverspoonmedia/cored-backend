@@ -393,4 +393,3 @@ npm run test:js
 - [service/README.md](../service/README.md) — main/addon catalog, quantity, grace, recompute
 - [identity/README.md](../identity/README.md) — H-RBAC / `domain_kind`
 - [platform/architecture.md](../../platform/architecture.md)
-- [integration/spa-gateway.md](../../integration/spa-gateway.md) — SPA path via Gateway

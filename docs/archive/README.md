@@ -2,6 +2,8 @@
 
 Historical assessments, one-shot audits, and migration handoffs. **Not** for daily learning — use [docs/README.md](../README.md) living guides.
 
+Some archive files describe a former three-repo workspace (Monolith + Gateway + Frontend). That workflow is dissolved; treat those sections as historical only.
+
 | File | What it was |
 |------|-------------|
 | [internal-monorepo-assessment.md](internal-monorepo-assessment.md) | Pre/post logical monorepo assessment |

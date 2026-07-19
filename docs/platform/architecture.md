@@ -1,6 +1,6 @@
 # Domain modules (internal monorepo)
 
-Logical monorepo: domain code under `app/Domain/{Domain}/` in one Laravel app and git repo. Gateway and Frontend are **separate repositories**; they depend on Monolith **HTTP contracts**, not PHP namespaces.
+Logical monorepo: domain code under `app/Domain/{Domain}/` in one Laravel app and git repo.
 
 ## Glossary (two axes)
 
