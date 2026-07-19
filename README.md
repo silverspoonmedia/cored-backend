@@ -224,7 +224,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | Document | Description |
 |----------|-------------|
 | [Domain modules](docs/platform/architecture.md) | Core/locked/removable domains, `domain:list\|make\|remove`, layout |
-| [Internal monorepo assessment](docs/archive/internal-monorepo-assessment.md) | Why logical monorepo, domain map, phases, Gateway/Frontend contract |
+| [Internal monorepo assessment](docs/archive/internal-monorepo-assessment.md) | Historical: why logical monorepo, domain map, phases (archive only) |
 | [Internal monorepo porting](docs/archive/internal-monorepo-porting.md) | Implementation reference: migration order, scripts, gotchas, verification |
 | [API routing](docs/platform/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
 | [CRUD architecture & repository pattern](docs/platform/crud.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources |

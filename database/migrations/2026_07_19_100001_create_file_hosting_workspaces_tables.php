@@ -15,8 +15,8 @@ return new class extends Migration
             $table->string('status', 32)->default('active'); // active|archived
             $table->timestamps();
 
-            $table->unique('owner_user_id'); // v1: one workspace per owner
-            $table->index(['status', 'owner_user_id']);
+            // Multi-owned: many workspaces per owner; slot counts use (owner, status).
+            $table->index(['owner_user_id', 'status'], 'fh_workspaces_owner_status_idx');
         });
 
         Schema::create('file_hosting_workspace_members', function (Blueprint $table): void {
