@@ -4,6 +4,7 @@ namespace App\Domain\FileHosting\Services;
 
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\Storage;
  */
 class SignedDownloadService
 {
+    public function __construct(
+        private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
+    ) {}
+
     /**
      * @return array{url: string, expires_at: Carbon}
      */
@@ -66,12 +71,14 @@ class SignedDownloadService
             $options['ResponseContentType'] = $file->mime;
         }
 
+        $objectKey = $this->objectKeys->objectKey($file->user_id, $file->path);
+
         try {
-            $url = $disk->temporaryUrl($file->path, $expiresAt, $options);
+            $url = $disk->temporaryUrl($objectKey, $expiresAt, $options);
         } catch (\Throwable) {
             // Some adapters reject options; retry bare temporaryUrl.
             try {
-                $url = $disk->temporaryUrl($file->path, $expiresAt);
+                $url = $disk->temporaryUrl($objectKey, $expiresAt);
             } catch (\Throwable) {
                 throw new FileHostingException(__('api/file-hosting.download_unavailable'));
             }

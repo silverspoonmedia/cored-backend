@@ -3,6 +3,7 @@
 namespace App\Domain\Service\Http\Resources;
 
 use App\Domain\PaymentGateway\Http\Resources\InvoiceResource;
+use App\Domain\Service\Enums\PurchaseChangeType;
 use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\ServicePurchase;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class ServicePurchaseResource extends JsonResource
     public function toArray(Request $request): array
     {
         $status = $this->status;
+        $changeType = $this->change_type;
 
         return [
             'id' => $this->id,
@@ -26,6 +28,16 @@ class ServicePurchaseResource extends JsonResource
             'service_id' => $this->service_id,
             'display_currency' => $this->display_currency,
             'display_amount' => (float) $this->display_amount,
+            'list_amount' => $this->list_amount !== null ? (float) $this->list_amount : null,
+            'credit_amount' => (float) ($this->credit_amount ?? 0),
+            'charge_amount' => $this->charge_amount !== null
+                ? (float) $this->charge_amount
+                : (float) $this->display_amount,
+            'surplus_days' => (int) ($this->surplus_days ?? 0),
+            'change_type' => $changeType instanceof PurchaseChangeType
+                ? $changeType->value
+                : $changeType,
+            'previous_entitlement_id' => $this->previous_entitlement_id,
             'settlement_currency' => $this->settlement_currency,
             'settlement_amount' => (float) $this->settlement_amount,
             'fx_rate' => $this->fx_rate !== null ? (float) $this->fx_rate : null,

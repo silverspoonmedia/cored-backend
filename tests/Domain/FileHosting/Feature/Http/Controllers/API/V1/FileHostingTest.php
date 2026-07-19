@@ -92,14 +92,10 @@ class FileHostingTest extends TestCase
             ->assertCreated()
             ->json('data');
 
-        $this->assertStringStartsWith(
-            'file-hosting/'.$user->id.'/',
-            $init['path'],
-        );
-
-        // Object key uses random segment, not the original basename slug.
-        $this->assertDoesNotMatchRegularExpression('/report\.pdf$/i', $init['path']);
-        $this->assertMatchesRegularExpression('/\/[a-z0-9]{40}\.pdf$/', $init['path']);
+        // DB path is object id only (not full S3 key).
+        $this->assertMatchesRegularExpression('/^[a-z0-9]{40}$/', $init['path']);
+        $this->assertStringNotContainsString('/', $init['path']);
+        $this->assertDoesNotMatchRegularExpression('/report/i', $init['path']);
 
         $complete = $this->actingAsJwt($user)
             ->postJson('/api/v1/file-hosting/uploads/'.$init['upload_id'].'/complete', [
@@ -111,11 +107,181 @@ class FileHostingTest extends TestCase
         $this->assertSame('report.pdf', $complete['file']['name']);
         $this->assertSame($user->id, $complete['file']['user_id']);
         $this->assertNull($complete['file']['folder_id']);
+        $this->assertSame($init['path'], $complete['file']['path']);
+        $this->assertMatchesRegularExpression('/^[a-z0-9]{40}$/', $complete['file']['path']);
+        Storage::disk('local')->assertExists('file-hosting/'.$user->id.'/'.$complete['file']['path']);
 
         $this->actingAsJwt($user)
             ->getJson('/api/v1/file-hosting/browse')
             ->assertOk()
             ->assertJsonFragment(['name' => 'report.pdf']);
+    }
+
+    public function test_upload_complete_auto_renames_duplicate_display_name(): void
+    {
+        $user = $this->userWithRole('User');
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'A.zip',
+            'disk' => 'local',
+            'path' => 'c470d52e05c90343d8980849afc5ccd4df3a2af1',
+            'size' => 100,
+            'mime' => 'application/zip',
+        ]);
+
+        $init = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'A.zip',
+                'mime' => 'application/zip',
+                'size' => 1024,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $complete = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads/'.$init['upload_id'].'/complete', [
+                'parts' => [['part_number' => 1, 'etag' => 'abc', 'size' => 1024]],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('A (2).zip', $complete['file']['name']);
+    }
+
+    public function test_upload_complete_sequence_skips_to_max_plus_one(): void
+    {
+        $user = $this->userWithRole('User');
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'A.zip',
+            'disk' => 'local',
+            'path' => 'bd697fe15bb9d3ae0c133a431e76056e5a438309',
+            'size' => 1,
+            'mime' => 'application/zip',
+        ]);
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'A (3).zip',
+            'disk' => 'local',
+            'path' => '1d2208eee0c5db3a3abae1f7d2ea6b8abeabed28',
+            'size' => 1,
+            'mime' => 'application/zip',
+        ]);
+
+        $init = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'A.zip',
+                'mime' => 'application/zip',
+                'size' => 1024,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $complete = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads/'.$init['upload_id'].'/complete', [
+                'parts' => [['part_number' => 1, 'etag' => 'abc', 'size' => 1024]],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('A (4).zip', $complete['file']['name']);
+    }
+
+    public function test_upload_complete_reuses_base_name_after_soft_delete(): void
+    {
+        $user = $this->userWithRole('User');
+
+        $old = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'A.zip',
+            'disk' => 'local',
+            'path' => 'ac5f00cd72a1cb45598e2cc0b61d32e8647cbdba',
+            'size' => 1,
+            'mime' => 'application/zip',
+        ]);
+        $old->delete();
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'A (3).zip',
+            'disk' => 'local',
+            'path' => 'a6afb8f143b98d597d9a24f90b3496520a194219',
+            'size' => 1,
+            'mime' => 'application/zip',
+        ]);
+
+        $init = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'A.zip',
+                'mime' => 'application/zip',
+                'size' => 1024,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $first = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads/'.$init['upload_id'].'/complete', [
+                'parts' => [['part_number' => 1, 'etag' => 'abc', 'size' => 1024]],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('A.zip', $first['file']['name']);
+
+        $init2 = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'A.zip',
+                'mime' => 'application/zip',
+                'size' => 1024,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $second = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads/'.$init2['upload_id'].'/complete', [
+                'parts' => [['part_number' => 1, 'etag' => 'def', 'size' => 1024]],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('A (4).zip', $second['file']['name']);
+    }
+
+    public function test_upload_init_allows_same_display_name_in_different_folder(): void
+    {
+        $user = $this->userWithRole('User');
+
+        $folder = Folder::query()->create([
+            'user_id' => $user->id,
+            'parent_id' => null,
+            'name' => 'Other',
+        ]);
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'report.pdf',
+            'disk' => 'local',
+            'path' => 'e9f56ffdeb91c49855d86f8ccfd73ff1d069723a',
+            'size' => 100,
+            'mime' => 'application/pdf',
+        ]);
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/uploads', [
+                'name' => 'report.pdf',
+                'mime' => 'application/pdf',
+                'size' => 1024,
+                'folder_id' => $folder->id,
+            ])
+            ->assertCreated();
     }
 
     public function test_show_increments_view_count(): void
@@ -126,7 +292,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'notes.txt',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/abc/notes.txt',
+            'path' => '479885d63d1e19cb0f52fe90af0a842691809c1e',
             'size' => 10,
             'mime' => 'text/plain',
             'view_count' => 0,
@@ -154,7 +320,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'cache-me.pdf',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/xyz/random.pdf',
+            'path' => '5dccef45920d9faf8fda1986927ff2767e8a4a24',
             'size' => 10,
             'mime' => 'application/pdf',
         ]);
@@ -198,7 +364,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'old-name.txt',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/r/old.txt',
+            'path' => '32ae4296236ce03a3b5c1b006cfa765334e238c7',
             'size' => 1,
             'mime' => 'text/plain',
             'signed_download_url' => 'https://fake-storage.test/stale',
@@ -291,12 +457,13 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'gone.txt',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/gone.txt',
+            'path' => 'f6652577c6db6b8dc2719a7af938fccdcfbaf796',
             'size' => 10,
             'mime' => 'text/plain',
         ]);
 
-        Storage::disk('local')->put($file->path, 'x');
+        $objectKey = 'file-hosting/'.$user->id.'/'.$file->path;
+        Storage::disk('local')->put($objectKey, 'x');
 
         $this->actingAsJwt($user)
             ->deleteJson('/api/v1/file-hosting/files/'.$file->id)
@@ -327,7 +494,7 @@ class FileHostingTest extends TestCase
             ->assertOk();
 
         $this->assertDatabaseMissing('file_hosting_files', ['id' => $file->id]);
-        Storage::disk('local')->assertMissing($file->path);
+        Storage::disk('local')->assertMissing($objectKey);
     }
 
     public function test_search_is_scoped_to_owner(): void
@@ -340,7 +507,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'secret-alice.pdf',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$alice->id.'/a.pdf',
+            'path' => '55abfed1c28ec86c101066dde69d8fa74da72092',
             'size' => 1,
             'mime' => 'application/pdf',
         ]);
@@ -350,7 +517,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'secret-bob.pdf',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$bob->id.'/b.pdf',
+            'path' => '41e52952442e648c489451c389951a05757f596e',
             'size' => 1,
             'mime' => 'application/pdf',
         ]);
@@ -371,7 +538,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'Aku-Ini.pdf',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/a.pdf',
+            'path' => '4c23630df751803f037fdbd7fb393e52f9ba8b91',
             'size' => 1,
             'mime' => 'application/pdf',
         ]);
@@ -398,7 +565,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'big.bin',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/big.bin',
+            'path' => 'dab81daa8455fd309df2acd6ef318f59cfe86040',
             'size' => 1024 * 1024,
             'mime' => 'application/octet-stream',
         ]);
@@ -422,7 +589,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'a.txt',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/a.txt',
+            'path' => 'e15cfbbd338856e01551aa4b949bc123b1c4ca49',
             'size' => 100,
             'mime' => 'text/plain',
         ]);
@@ -457,7 +624,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'one.txt',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/one.txt',
+            'path' => '9d82e7cf74ef012b8e46a35e8db529cd7d9eac20',
             'size' => 1,
             'mime' => 'text/plain',
         ]);
@@ -467,7 +634,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'two.txt',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/two.txt',
+            'path' => 'b4203f23d4b297aadb73851b5989e8a0b0a03168',
             'size' => 1,
             'mime' => 'text/plain',
         ]);
@@ -487,7 +654,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'secret.txt',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/secret.txt',
+            'path' => '9e64c04d1b2d18e6bfde2e27fe7e8c96c404582c',
             'size' => 1,
             'mime' => 'text/plain',
             'visibility' => 'private',
@@ -508,7 +675,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'shared.pdf',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/shared.pdf',
+            'path' => 'a17d56f8fe251b3a5587944f08e9b8fea2fc47e7',
             'size' => 10,
             'mime' => 'application/pdf',
             'visibility' => 'private',
@@ -552,7 +719,7 @@ class FileHostingTest extends TestCase
             'folder_id' => $folder->id,
             'name' => 'inside.txt',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/inside.txt',
+            'path' => '35fa0dfc79df4c99fdbe71cebfab24881e7f6144',
             'size' => 5,
             'mime' => 'text/plain',
             'visibility' => 'private',
@@ -702,7 +869,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'pinned.pdf',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/pinned.pdf',
+            'path' => '9922fb348f00a3b5f38bab3332287ce11cedffba',
             'size' => 10,
             'mime' => 'application/pdf',
         ]);
@@ -730,12 +897,12 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'legacy.txt',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/legacy.txt',
+            'path' => 'e3458cd89b386db64aeae1b2329c66b589b977ef',
             'size' => 4,
             'mime' => 'text/plain',
         ]);
 
-        Storage::disk('local')->put($file->path, 'data');
+        Storage::disk('local')->put('file-hosting/'.$user->id.'/'.$file->path, 'data');
 
         // Disabled region blocks new uploads but not downloads.
         $this->actingAsJwt($user)
@@ -754,7 +921,7 @@ class FileHostingTest extends TestCase
                 'folder_id' => null,
                 'name' => 'bulk-'.$i.'.txt',
                 'disk' => 'local',
-                'path' => 'file-hosting/'.$user->id.'/bulk-'.$i.'.txt',
+                'path' => substr(hash('sha256', 'bulk-'.$i), 0, 40),
                 'size' => 1,
                 'mime' => 'text/plain',
             ]);
@@ -784,7 +951,7 @@ class FileHostingTest extends TestCase
             'folder_id' => null,
             'name' => 'alice.pdf',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$alice->id.'/alice.pdf',
+            'path' => 'fab315e2f6e812e6e935debf135f53ceb60bd3a8',
             'size' => 1,
             'mime' => 'application/pdf',
         ]);
@@ -811,7 +978,7 @@ class FileHostingTest extends TestCase
                 'folder_id' => null,
                 'name' => 'del-'.$i.'.txt',
                 'disk' => 'local',
-                'path' => 'file-hosting/'.$user->id.'/del-'.$i.'.txt',
+                'path' => substr(hash('sha256', 'del-'.$i), 0, 40),
                 'size' => 1,
                 'mime' => 'text/plain',
             ]);

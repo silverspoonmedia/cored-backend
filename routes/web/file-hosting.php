@@ -5,6 +5,21 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('file-hosting', [FileManagerController::class, 'index'])->name('file-hosting.index');
 Route::get('file-hosting/trash', [FileManagerController::class, 'trash'])->name('file-hosting.trash');
+
+// Collaborative workspaces (Blade consumer of API)
+Route::post('file-hosting/workspaces', [FileManagerController::class, 'storeWorkspace'])->name('file-hosting.workspaces.store');
+Route::post('file-hosting/workspaces/invites/accept', [FileManagerController::class, 'acceptWorkspaceInvite'])
+    ->name('file-hosting.workspaces.invites.accept');
+Route::post('file-hosting/workspaces/{workspace}/invites', [FileManagerController::class, 'inviteWorkspaceMember'])
+    ->whereUuid('workspace')
+    ->name('file-hosting.workspaces.invites.store');
+Route::delete('file-hosting/workspaces/{workspace}/members/{user}', [FileManagerController::class, 'removeWorkspaceMember'])
+    ->whereUuid(['workspace', 'user'])
+    ->name('file-hosting.workspaces.members.destroy');
+Route::post('file-hosting/workspaces/{workspace}/archive', [FileManagerController::class, 'archiveWorkspace'])
+    ->whereUuid('workspace')
+    ->name('file-hosting.workspaces.archive');
+
 Route::post('file-hosting/folders', [FileManagerController::class, 'storeFolder'])->name('file-hosting.folders.store');
 Route::match(['put', 'patch'], 'file-hosting/folders/{folder}/rename', [FileManagerController::class, 'renameFolder'])
     ->whereUuid('folder')

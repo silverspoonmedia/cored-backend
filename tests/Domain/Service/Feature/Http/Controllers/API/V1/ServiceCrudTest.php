@@ -31,21 +31,25 @@ class ServiceCrudTest extends TestCase
 
         $this->actingAsJwt($admin)
             ->postJson('/api/v1/services', [
-                'code' => 'file-hosting.subscription.monthly',
-                'name' => 'File Hosting',
-                'description' => 'Unlimited storage',
+                'code' => 'file-hosting.plan.1tb.monthly',
+                'name' => 'Standard 1 TB',
+                'description' => 'Main plan 1 TB',
                 'billing_interval' => 'monthly',
                 'fulfillment_target' => 'file_hosting',
-                'entitlement' => 'unlimited_quota',
+                'entitlement' => 'storage_quota',
+                'plan_kind' => 'main',
+                'storage_bytes' => 1099511627776,
                 'status' => 'active',
                 'prices' => [
-                    ['currency' => 'USD', 'amount' => 10],
+                    ['currency' => 'USD', 'amount' => 24.95],
                 ],
             ])
             ->assertCreated()
-            ->assertJsonPath('data.code', 'file-hosting.subscription.monthly')
+            ->assertJsonPath('data.code', 'file-hosting.plan.1tb.monthly')
+            ->assertJsonPath('data.plan_kind', 'main')
+            ->assertJsonPath('data.storage_bytes', 1099511627776)
             ->assertJsonPath('data.prices.0.currency', 'USD')
-            ->assertJsonPath('data.prices.0.amount', 10);
+            ->assertJsonPath('data.prices.0.amount', 24.95);
 
         $this->actingAsJwt($admin)
             ->getJson('/api/v1/services')

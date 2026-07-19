@@ -3,6 +3,7 @@
 namespace App\Domain\Service\Services;
 
 use App\Domain\Service\Enums\BillingInterval;
+use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
 use App\Domain\Service\Exceptions\DuplicateServiceCodeException;
 use App\Domain\Service\Exceptions\ServiceException;
@@ -100,6 +101,8 @@ class ServiceCatalogService
             'billing_interval',
             'fulfillment_target',
             'entitlement',
+            'plan_kind',
+            'storage_bytes',
             'status',
         ]));
 
@@ -115,7 +118,17 @@ class ServiceCatalogService
             $payload['status'] = ServiceStatus::from($payload['status'])->value;
         }
 
-        foreach (['fulfillment_target', 'entitlement', 'description'] as $nullable) {
+        if (isset($payload['plan_kind']) && is_string($payload['plan_kind'])) {
+            $payload['plan_kind'] = $payload['plan_kind'] === ''
+                ? null
+                : PlanKind::from($payload['plan_kind'])->value;
+        }
+
+        if (array_key_exists('storage_bytes', $payload)) {
+            $payload['storage_bytes'] = max(0, (int) $payload['storage_bytes']);
+        }
+
+        foreach (['fulfillment_target', 'entitlement', 'description', 'plan_kind'] as $nullable) {
             if (array_key_exists($nullable, $payload) && $payload[$nullable] === '') {
                 $payload[$nullable] = null;
             }

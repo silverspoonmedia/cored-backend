@@ -14,6 +14,14 @@
         'yearly' => __('web/services.form.interval_yearly'),
         'once' => __('web/services.form.interval_once'),
     ];
+    $planKindOptions = [
+        '' => __('web/services.form.plan_kind_none'),
+        'main' => __('web/services.form.plan_kind_main'),
+        'addon' => __('web/services.form.plan_kind_addon'),
+    ];
+    $planKindSelected = is_object($service ?? null)
+        ? (is_object($service->plan_kind ?? null) ? $service->plan_kind->value : ($service->plan_kind ?? ''))
+        : '';
     $existingPrices = is_object($service ?? null) && isset($service->prices)
         ? (array) $service->prices
         : (is_array($service->prices ?? null) ? $service->prices : [['currency' => 'USD', 'amount' => '10']]);
@@ -56,6 +64,19 @@
         name="entitlement"
         :label="__('web/services.form.entitlement')"
         :value="$service->entitlement ?? null"
+    />
+    <x-adminlte4::form.select
+        name="plan_kind"
+        :label="__('web/services.form.plan_kind')"
+        :options="$planKindOptions"
+        :selected="$planKindSelected"
+    />
+    <x-adminlte4::form.input
+        name="storage_bytes"
+        type="number"
+        :label="__('web/services.form.storage_bytes')"
+        :value="$service->storage_bytes ?? 0"
+        min="0"
     />
     <x-adminlte4::form.select
         name="status"

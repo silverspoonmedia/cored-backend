@@ -35,8 +35,10 @@ class EnforceFreeTierQuotaServiceTest extends TestCase
         $storage->shouldReceive('deleteMany')
             ->once()
             ->withArgs(function (array $objects) use ($c): bool {
+                $expected = 'file-hosting/'.$c->user_id.'/'.$c->path;
+
                 return count($objects) === 1
-                    && ($objects[0]['path'] ?? null) === $c->path;
+                    && ($objects[0]['path'] ?? null) === $expected;
             });
 
         $this->app->instance(ObjectStorage::class, $storage);
@@ -77,7 +79,7 @@ class EnforceFreeTierQuotaServiceTest extends TestCase
             'folder_id' => null,
             'name' => $name,
             'disk' => 's3Custom',
-            'path' => 'file-hosting/'.$userId.'/'.$name,
+            'path' => substr(hash('sha256', $userId.'|'.$name), 0, 40),
             'size' => $size,
             'mime' => 'application/octet-stream',
             'visibility' => 'private',

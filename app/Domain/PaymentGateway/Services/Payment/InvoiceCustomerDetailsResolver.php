@@ -5,6 +5,7 @@ namespace App\Domain\PaymentGateway\Services\Payment;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\Subscription;
+use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServicePurchase;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -116,7 +117,7 @@ class InvoiceCustomerDetailsResolver
             ], fn ($v) => $v !== null);
         }
 
-        if ($invoiceable instanceof ServicePurchase) {
+        if ($invoiceable instanceof ServicePurchase || $invoiceable instanceof ServiceAddonRenewal) {
             $invoiceable->loadMissing('user');
 
             return $this->fromUser($invoiceable->user);
@@ -129,7 +130,7 @@ class InvoiceCustomerDetailsResolver
     {
         $invoice->loadMissing('invoiceable');
 
-        if ($invoice->invoiceable instanceof ServicePurchase) {
+        if ($invoice->invoiceable instanceof ServicePurchase || $invoice->invoiceable instanceof ServiceAddonRenewal) {
             $invoice->invoiceable->loadMissing('user');
 
             return $invoice->invoiceable->user;

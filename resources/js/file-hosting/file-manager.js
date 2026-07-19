@@ -111,6 +111,9 @@
             if (config.ownerUserId) {
                 params.set('user_id', config.ownerUserId);
             }
+            if (config.workspaceId) {
+                params.set('workspace_id', config.workspaceId);
+            }
 
             try {
                 const response = await fetch(config.searchUrl + '?' + params.toString(), {
@@ -299,6 +302,9 @@
             const params = new URLSearchParams();
             if (config.ownerUserId) {
                 params.set('user_id', config.ownerUserId);
+            }
+            if (config.workspaceId) {
+                params.set('workspace_id', config.workspaceId);
             }
 
             try {
@@ -598,7 +604,10 @@
                     'X-CSRF-TOKEN': csrfToken,
                 },
                 credentials: 'same-origin',
-                body: JSON.stringify(Object.assign({ user_id: config.ownerUserId || '' }, body)),
+                body: JSON.stringify(Object.assign({
+                    user_id: config.ownerUserId || '',
+                    workspace_id: config.workspaceId || '',
+                }, body)),
             });
         }
 
@@ -655,6 +664,9 @@
             const params = new URLSearchParams();
             if (config.ownerUserId) {
                 params.set('user_id', config.ownerUserId);
+            }
+            if (config.workspaceId) {
+                params.set('workspace_id', config.workspaceId);
             }
             const query = params.toString();
             return config.fileShowBase + '/' + fileId + (query ? '?' + query : '');

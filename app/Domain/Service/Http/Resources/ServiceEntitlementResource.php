@@ -24,6 +24,7 @@ class ServiceEntitlementResource extends JsonResource
             'user_id' => $this->user_id,
             'service_id' => $this->service_id,
             'status' => $status instanceof EntitlementStatus ? $status->value : (string) $status,
+            'quantity' => max(1, (int) $this->quantity),
             'starts_at' => $this->starts_at?->toIso8601String(),
             'ends_at' => $this->ends_at?->toIso8601String(),
             'grace_ends_at' => $this->grace_ends_at?->toIso8601String(),

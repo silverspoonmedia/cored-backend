@@ -23,6 +23,12 @@ class S3DirectUploadException extends RuntimeException
 
     public const MIME_NOT_ALLOWED = 'mime_not_allowed';
 
+    /** Upload proxy base_url set but token missing or disk has no target alias. */
+    public const PROXY_MISCONFIGURED = 'proxy_misconfigured';
+
+    /** Upstream S3-compatible API rejected create/complete/abort (e.g. NoSuchUpload). */
+    public const UPSTREAM_FAILED = 'upstream_failed';
+
     public function __construct(
         public readonly string $reason,
         string $message = '',

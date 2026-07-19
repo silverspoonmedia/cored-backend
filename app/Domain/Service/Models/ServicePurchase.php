@@ -4,6 +4,7 @@ namespace App\Domain\Service\Models;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\Service\Enums\PurchaseChangeType;
 use App\Domain\Service\Enums\PurchaseStatus;
 use Database\Factories\ServicePurchaseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -24,6 +25,12 @@ class ServicePurchase extends Model
         'service_id',
         'display_currency',
         'display_amount',
+        'list_amount',
+        'credit_amount',
+        'charge_amount',
+        'surplus_days',
+        'previous_entitlement_id',
+        'change_type',
         'settlement_currency',
         'settlement_amount',
         'fx_rate',
@@ -42,12 +49,17 @@ class ServicePurchase extends Model
     {
         return [
             'display_amount' => 'decimal:2',
+            'list_amount' => 'decimal:2',
+            'credit_amount' => 'decimal:2',
+            'charge_amount' => 'decimal:2',
+            'surplus_days' => 'integer',
             'settlement_amount' => 'decimal:2',
             'fx_rate' => 'decimal:8',
             'fx_fetched_at' => 'datetime',
             'period_start' => 'datetime',
             'period_end' => 'datetime',
             'status' => PurchaseStatus::class,
+            'change_type' => PurchaseChangeType::class,
         ];
     }
 
@@ -78,6 +90,14 @@ class ServicePurchase extends Model
     public function fxRateSnapshot(): BelongsTo
     {
         return $this->belongsTo(ExchangeRateSnapshot::class, 'fx_rate_snapshot_id');
+    }
+
+    /**
+     * @return BelongsTo<ServiceEntitlement, $this>
+     */
+    public function previousEntitlement(): BelongsTo
+    {
+        return $this->belongsTo(ServiceEntitlement::class, 'previous_entitlement_id');
     }
 
     /**

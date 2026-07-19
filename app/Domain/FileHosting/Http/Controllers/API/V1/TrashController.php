@@ -28,13 +28,14 @@ class TrashController extends Controller
         $this->authorize('viewAny', Folder::class);
 
         $userId = $request->query('user_id');
+        $workspaceId = $request->query('workspace_id');
 
         return $this->successResponse([
             'folders' => $this->resolveResource(
-                FolderResource::collection($this->folders->trash($request->user(), $userId)),
+                FolderResource::collection($this->folders->trash($request->user(), $userId, $workspaceId)),
             ),
             'files' => $this->resolveResource(
-                HostedFileResource::collection($this->files->trash($request->user(), $userId)),
+                HostedFileResource::collection($this->files->trash($request->user(), $userId, $workspaceId)),
             ),
         ], __('api/file-hosting.trash_success'));
     }

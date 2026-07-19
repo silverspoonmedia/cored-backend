@@ -18,6 +18,7 @@ class ServiceEntitlement extends Model
         'user_id',
         'service_id',
         'status',
+        'quantity',
         'starts_at',
         'ends_at',
         'grace_ends_at',
@@ -32,6 +33,7 @@ class ServiceEntitlement extends Model
     {
         return [
             'status' => EntitlementStatus::class,
+            'quantity' => 'integer',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'grace_ends_at' => 'datetime',
@@ -78,15 +80,17 @@ class ServiceEntitlement extends Model
         return $this->ends_at === null && $this->isActive();
     }
 
-    public function grantsUnlimitedFileHosting(): bool
+    public function storageContributionBytes(): int
     {
-        if (! $this->isActive()) {
-            return false;
-        }
-
         $this->loadMissing('service');
 
-        return $this->service?->fulfillment_target === 'file_hosting'
-            && $this->service?->entitlement === 'unlimited_quota';
+        if ($this->service === null || ! $this->service->isFileHostingStoragePlan()) {
+            return 0;
+        }
+
+        $unit = max(0, (int) $this->service->storage_bytes);
+        $qty = max(1, (int) $this->quantity);
+
+        return $unit * $qty;
     }
 }

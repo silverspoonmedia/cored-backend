@@ -2,6 +2,11 @@
  * Browser-direct chunked uploads for File Hosting (S3-compatible presigned URLs).
  */
 import { runWithConcurrency } from './upload-queue.js';
+import {
+    computeByteProgressPercent,
+    computeTransferRate,
+    formatTransferRate,
+} from './upload-progress.js';
 
 export function initDirectUpload(root) {
     if (!root || root.dataset.directUploadBound === '1') {
@@ -19,6 +24,7 @@ export function initDirectUpload(root) {
         signPartsUrl: root.dataset.signPartsUrl,
         folderId: root.dataset.folderId || null,
         userId: root.dataset.userId || null,
+        workspaceId: root.dataset.workspaceId || null,
         reloadOnComplete: root.dataset.reloadOnComplete === '1',
         maxFiles: parseInt(root.dataset.maxFiles || '20', 10),
         maxConcurrent: Math.max(1, parseInt(root.dataset.maxConcurrent || '2', 10)),
@@ -155,6 +161,9 @@ export function initDirectUpload(root) {
         if (config.folderId) {
             initBody.folder_id = config.folderId;
         }
+        if (config.workspaceId) {
+            initBody.workspace_id = config.workspaceId;
+        }
 
         if (config.userId) {
             initBody.user_id = config.userId;
@@ -169,17 +178,37 @@ export function initDirectUpload(root) {
         const data = session.data;
         const uploadId = data.upload_id;
         const parts = [];
+        const totalBytes = file.size;
+        let baseBytes = 0;
+        const startedAt = performance.now();
+
+        function reportProgress(loadedInPart) {
+            const uploaded = baseBytes + loadedInPart;
+            const elapsedMs = performance.now() - startedAt;
+            const percent = computeByteProgressPercent(uploaded, totalBytes);
+            const rate = computeTransferRate(uploaded, elapsedMs);
+            updateProgress(row, percent, rate);
+        }
 
         if (data.strategy === 'single') {
             const part = data.parts[0];
-            const etag = await putPart(file, part.url, part.headers || {}, file.type || 'application/octet-stream');
+            const etag = await putPart(
+                file,
+                part.url,
+                part.headers || {},
+                file.type || 'application/octet-stream',
+                function (event) {
+                    reportProgress(event.loaded);
+                },
+            );
             parts.push({ part_number: 1, etag: etag, size: file.size });
-            updateProgress(row, 100);
+            baseBytes = file.size;
+            reportProgress(0);
         } else {
             const chunkSize = data.chunk_size;
             const partCount = data.part_count;
             let signedParts = data.parts || [];
-            const uploaded = new Map();
+            const uploadedParts = new Map();
 
             for (let partNumber = 1; partNumber <= partCount; partNumber++) {
                 let signed = signedParts.find(function (p) {
@@ -202,15 +231,28 @@ export function initDirectUpload(root) {
                 const start = (partNumber - 1) * chunkSize;
                 const end = Math.min(start + chunkSize, file.size);
                 const chunk = file.slice(start, end);
-                const etag = await putPart(chunk, signed.url, signed.headers || {});
-                uploaded.set(partNumber, { part_number: partNumber, etag: etag, size: chunk.size });
-                updateProgress(row, Math.round((partNumber / partCount) * 100));
+                const etag = await putPart(
+                    chunk,
+                    signed.url,
+                    signed.headers || {},
+                    undefined,
+                    function (event) {
+                        reportProgress(event.loaded);
+                    },
+                );
+                uploadedParts.set(partNumber, { part_number: partNumber, etag: etag, size: chunk.size });
+                baseBytes += chunk.size;
+                reportProgress(0);
             }
 
-            uploaded.forEach(function (value) {
+            uploadedParts.forEach(function (value) {
                 parts.push(value);
             });
         }
+
+        // Bytes are on storage; complete merges parts / promotes the file on Monolith.
+        setRowStatus(row, 'completing');
+        updateProgress(row, 100);
 
         const completed = await apiJson(
             replaceToken(config.completeUrl, uploadId),
@@ -227,36 +269,80 @@ export function initDirectUpload(root) {
         }
     }
 
-    async function putPart(body, url, headers, contentType) {
-        const requestHeaders = new Headers();
+    /**
+     * PUT one part via XHR so upload.onprogress can drive byte-level progress + speed.
+     *
+     * @param {Blob|File} body
+     * @param {string} url
+     * @param {Record<string, string|string[]>} headers
+     * @param {string} [contentType]
+     * @param {(event: { loaded: number, total: number }) => void} [onProgress]
+     * @returns {Promise<string>} ETag without quotes
+     */
+    function putPart(body, url, headers, contentType, onProgress) {
+        return new Promise(function (resolve, reject) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', url);
 
-        Object.entries(headers || {}).forEach(function ([key, values]) {
-            if (Array.isArray(values) && values[0]) {
-                requestHeaders.set(key, values[0]);
+            // Server may send AWS-style multi-value maps { Key: ["v"] } or flat { Key: "v" }.
+            let hasContentType = false;
+            Object.entries(headers || {}).forEach(function ([key, values]) {
+                let value = null;
+                if (Array.isArray(values) && values[0] != null && values[0] !== '') {
+                    value = String(values[0]);
+                } else if (typeof values === 'string' && values !== '') {
+                    value = values;
+                }
+                if (value == null) {
+                    return;
+                }
+                xhr.setRequestHeader(key, value);
+                if (key.toLowerCase() === 'content-type') {
+                    hasContentType = true;
+                }
+            });
+
+            if (contentType && !hasContentType) {
+                xhr.setRequestHeader('Content-Type', contentType);
             }
+
+            if (typeof onProgress === 'function' && xhr.upload) {
+                xhr.upload.onprogress = function (event) {
+                    if (event.lengthComputable || event.loaded > 0) {
+                        onProgress({
+                            loaded: event.loaded,
+                            total: event.total || 0,
+                        });
+                    }
+                };
+            }
+
+            xhr.onload = function () {
+                if (xhr.status < 200 || xhr.status >= 300) {
+                    reject(new Error('Storage PUT failed with status ' + xhr.status));
+                    return;
+                }
+
+                const etag = xhr.getResponseHeader('ETag') || xhr.getResponseHeader('etag');
+
+                if (!etag) {
+                    reject(new Error('Missing ETag header from storage response'));
+                    return;
+                }
+
+                resolve(etag.replaceAll('"', ''));
+            };
+
+            xhr.onerror = function () {
+                reject(new Error('Storage PUT network error'));
+            };
+
+            xhr.onabort = function () {
+                reject(new Error('Storage PUT aborted'));
+            };
+
+            xhr.send(body);
         });
-
-        if (contentType && !requestHeaders.has('Content-Type')) {
-            requestHeaders.set('Content-Type', contentType);
-        }
-
-        const response = await fetch(url, {
-            method: 'PUT',
-            body: body,
-            headers: requestHeaders,
-        });
-
-        if (!response.ok) {
-            throw new Error('Storage PUT failed with status ' + response.status);
-        }
-
-        const etag = response.headers.get('ETag') || response.headers.get('etag');
-
-        if (!etag) {
-            throw new Error('Missing ETag header from storage response');
-        }
-
-        return etag.replaceAll('"', '');
     }
 
     function addStagedInput(uploadId, label) {
@@ -312,8 +398,11 @@ export function initDirectUpload(root) {
                 : '')
             + '</span>'
             + '</div>'
-            + '<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">'
-            + '<div class="progress-bar" data-upload-progress style="width: 0%"></div>'
+            + '<div class="d-flex justify-content-between align-items-center small mb-1">'
+            + '<div class="progress flex-grow-1 me-2" role="progressbar" aria-valuemin="0" aria-valuemax="100">'
+            + '<div class="progress-bar" data-upload-progress style="width: 0%">0%</div>'
+            + '</div>'
+            + '<span class="text-muted text-nowrap" data-upload-speed></span>'
             + '</div>';
 
         if (status === 'pending') {
@@ -337,6 +426,8 @@ export function initDirectUpload(root) {
                 return config.messages.waiting || 'Waiting…';
             case 'uploading':
                 return config.messages.uploading || 'Uploading…';
+            case 'completing':
+                return config.messages.completing || 'Finalizing…';
             default:
                 return config.messages.uploading || 'Uploading…';
         }
@@ -355,11 +446,26 @@ export function initDirectUpload(root) {
         }
     }
 
-    function updateProgress(row, percent) {
+    /**
+     * @param {HTMLElement} row
+     * @param {number} percent
+     * @param {number} [bytesPerSecond]
+     */
+    function updateProgress(row, percent, bytesPerSecond) {
         const bar = row.querySelector('[data-upload-progress]');
         if (bar) {
             bar.style.width = percent + '%';
             bar.textContent = percent + '%';
+            bar.setAttribute('aria-valuenow', String(percent));
+        }
+
+        const speedEl = row.querySelector('[data-upload-speed]');
+        if (speedEl) {
+            if (bytesPerSecond != null && bytesPerSecond > 0 && percent < 100) {
+                speedEl.textContent = formatTransferRate(bytesPerSecond);
+            } else if (percent >= 100) {
+                speedEl.textContent = '';
+            }
         }
     }
 
@@ -369,6 +475,10 @@ export function initDirectUpload(root) {
             status.textContent = config.messages.done || 'Done';
         }
         updateProgress(row, 100);
+        const speedEl = row.querySelector('[data-upload-speed]');
+        if (speedEl) {
+            speedEl.textContent = '';
+        }
         row.querySelector('.progress-bar')?.classList.add('bg-success');
     }
 
@@ -377,6 +487,10 @@ export function initDirectUpload(root) {
         if (status) {
             status.textContent = message;
             status.classList.add('text-danger');
+        }
+        const speedEl = row.querySelector('[data-upload-speed]');
+        if (speedEl) {
+            speedEl.textContent = '';
         }
         row.querySelector('.progress-bar')?.classList.add('bg-danger');
     }

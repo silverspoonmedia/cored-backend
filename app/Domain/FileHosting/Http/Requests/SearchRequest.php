@@ -19,6 +19,7 @@ class SearchRequest extends FormRequest
         return [
             'q' => ['required', 'string', 'min:1', 'max:255'],
             'user_id' => ['nullable', 'uuid'],
+            'workspace_id' => ['nullable', 'uuid'],
         ];
     }
 }

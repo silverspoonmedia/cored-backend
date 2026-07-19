@@ -13,6 +13,7 @@ use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceEntitlementLifecycleService;
 use App\Domain\Service\Services\ServiceFulfillmentService;
+use App\Domain\Service\Support\FileHostingCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -21,19 +22,25 @@ class ServiceEntitlementLifecycleTest extends TestCase
 {
     use RefreshDatabase;
 
+    private int $free;
+
+    private int $main1Tb;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->free = FileHostingCatalog::freeBytes();
+        $this->main1Tb = FileHostingCatalog::main1TbBytes();
         config([
-            'file-hosting.default_quota_bytes' => 5 * 1024 * 1024 * 1024,
+            'file-hosting.default_quota_bytes' => $this->free,
             'service.grace_days' => 7,
         ]);
     }
 
-    public function test_fulfill_grants_active_entitlement_and_unlimited_quota(): void
+    public function test_fulfill_grants_active_entitlement_and_paid_quota(): void
     {
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMonthly()->create();
+        $catalog = Service::factory()->fileHostingMain1Tb()->create();
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $catalog->id,
@@ -45,22 +52,25 @@ class ServiceEntitlementLifecycleTest extends TestCase
         $this->assertSame(PurchaseStatus::Paid, $purchase->status);
         $this->assertNotNull($purchase->period_end);
 
+        $expected = $this->free + $this->main1Tb;
         $quota = app(QuotaService::class)->usage($user->id);
-        $this->assertSame(0, $quota['quota_bytes']);
-        $this->assertSame('unlimited', $quota['state']);
+        $this->assertSame($expected, $quota['quota_bytes']);
+        $this->assertSame('paid', $quota['state']);
+        $this->assertSame($expected, $quota['remaining_bytes']);
 
-        app(QuotaService::class)->assertCanAccept($user->id, 50 * 1024 * 1024 * 1024);
+        app(QuotaService::class)->assertCanAccept($user->id, $this->main1Tb);
     }
 
     public function test_grace_blocks_upload(): void
     {
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMonthly()->create();
+        $catalog = Service::factory()->fileHostingMain1Tb()->create();
 
         ServiceEntitlement::query()->create([
             'user_id' => $user->id,
             'service_id' => $catalog->id,
             'status' => EntitlementStatus::Grace,
+            'quantity' => 1,
             'starts_at' => now()->subMonth(),
             'ends_at' => now()->subDay(),
             'grace_ends_at' => now()->addDays(6),
@@ -68,8 +78,8 @@ class ServiceEntitlementLifecycleTest extends TestCase
 
         UserQuota::query()->create([
             'user_id' => $user->id,
-            'quota_bytes' => 0,
-            'source' => 'service_purchase',
+            'quota_bytes' => $this->free + $this->main1Tb,
+            'source' => 'service_recompute',
             'source_id' => null,
         ]);
 
@@ -84,12 +94,13 @@ class ServiceEntitlementLifecycleTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMonthly()->create();
+        $catalog = Service::factory()->fileHostingMain1Tb()->create();
 
         ServiceEntitlement::query()->create([
             'user_id' => $user->id,
             'service_id' => $catalog->id,
             'status' => EntitlementStatus::Active,
+            'quantity' => 1,
             'starts_at' => now()->subMonth(),
             'ends_at' => now()->subHour(),
         ]);
@@ -105,17 +116,18 @@ class ServiceEntitlementLifecycleTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_expire_revokes_unlimited_and_sets_free_quota(): void
+    public function test_expire_recomputes_to_free_quota(): void
     {
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMonthly()->create();
+        $catalog = Service::factory()->fileHostingMain1Tb()->create();
 
         ServiceEntitlement::query()->create([
             'user_id' => $user->id,
             'service_id' => $catalog->id,
             'status' => EntitlementStatus::Grace,
+            'quantity' => 1,
             'starts_at' => now()->subMonths(2),
             'ends_at' => now()->subDays(8),
             'grace_ends_at' => now()->subHour(),
@@ -123,18 +135,22 @@ class ServiceEntitlementLifecycleTest extends TestCase
 
         UserQuota::query()->create([
             'user_id' => $user->id,
-            'quota_bytes' => 0,
-            'source' => 'service_purchase',
+            'quota_bytes' => $this->free + $this->main1Tb,
+            'source' => 'service_recompute',
             'source_id' => null,
         ]);
 
         $count = app(ServiceEntitlementLifecycleService::class)->expireGraceDue();
 
         $this->assertSame(1, $count);
-        $this->assertDatabaseMissing('file_hosting_user_quotas', ['user_id' => $user->id]);
+        $this->assertDatabaseHas('file_hosting_user_quotas', [
+            'user_id' => $user->id,
+            'quota_bytes' => $this->free,
+            'source' => 'service_recompute',
+        ]);
 
         $quota = app(QuotaService::class)->usage($user->id);
-        $this->assertSame(5 * 1024 * 1024 * 1024, $quota['quota_bytes']);
+        $this->assertSame($this->free, $quota['quota_bytes']);
         $this->assertSame('free', $quota['state']);
 
         Carbon::setTestNow();

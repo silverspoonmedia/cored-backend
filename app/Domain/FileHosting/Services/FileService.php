@@ -4,8 +4,11 @@ namespace App\Domain\FileHosting\Services;
 
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
+use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
+use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -19,14 +22,24 @@ class FileService
         private readonly ObjectStorage $storage,
         private readonly SignedDownloadService $signedDownloads,
         private readonly VisibilityService $visibility,
+        private readonly WorkspaceAccessService $workspaceAccess,
+        private readonly WorkspaceActivityRecorder $activity,
+        private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
     ) {}
 
-    public function findOwnedOrFail(string $ownerId, string $fileId): HostedFile
+    public function findOwnedOrFail(string $ownerId, string $fileId, ?string $workspaceId = null): HostedFile
     {
-        $file = HostedFile::query()
+        $query = HostedFile::query()
             ->where('user_id', $ownerId)
-            ->whereKey($fileId)
-            ->first();
+            ->whereKey($fileId);
+
+        if ($workspaceId === null) {
+            $query->whereNull('workspace_id');
+        } else {
+            $query->where('workspace_id', $workspaceId);
+        }
+
+        $file = $query->first();
 
         if ($file === null) {
             throw new FileHostingException(__('api/file-hosting.file_not_found'), 404);
@@ -46,17 +59,13 @@ class FileService
         return $file;
     }
 
-    public function show(User $actor, string $fileId, ?string $userId = null): HostedFile
+    public function show(User $actor, string $fileId, ?string $userId = null, ?string $workspaceId = null): HostedFile
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $file = $this->findOwnedOrFail($ownerId, $fileId);
+        $file = $this->resolveFileForView($actor, $fileId, $userId, $workspaceId);
 
         return $this->recordView($file);
     }
 
-    /**
-     * Guest public show — link access only.
-     */
     public function publicShow(string $fileId): HostedFile
     {
         $file = $this->findOrFail($fileId);
@@ -65,108 +74,148 @@ class FileService
         return $this->recordView($file);
     }
 
-    public function setVisibility(User $actor, string $fileId, string $visibility, ?string $userId = null): HostedFile
+    public function setVisibility(User $actor, string $fileId, string $visibility, ?string $userId = null, ?string $workspaceId = null): HostedFile
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $file = $this->findOwnedOrFail($ownerId, $fileId);
-        $this->access->assertCanMutateOwner($actor, $file->owner);
+        $file = $this->resolveFileForMutate($actor, $fileId, $userId, $workspaceId);
+        $from = (string) $file->visibility;
         $value = $this->visibility->normalize($visibility);
 
-        $file->forceFill(['visibility' => $value->value])->save();
+        // Always drop cached S3 URL so private revoke cannot reuse a still-valid temp link.
+        $file->forceFill([
+            'visibility' => $value->value,
+            'signed_download_url' => null,
+            'signed_download_expires_at' => null,
+        ])->save();
+        $file = $file->refresh();
 
-        return $file->refresh();
+        if ($file->workspace_id !== null) {
+            $ws = $this->workspaceAccess->findOrFail($file->workspace_id);
+            $this->activity->fileVisibilityChanged($ws, $actor, $file, $from, $value->value);
+        }
+
+        return $file;
     }
 
-    public function rename(User $actor, string $fileId, string $name, ?string $userId = null): HostedFile
+    public function rename(User $actor, string $fileId, string $name, ?string $userId = null, ?string $workspaceId = null): HostedFile
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $file = $this->findOwnedOrFail($ownerId, $fileId);
-        $this->access->assertCanMutateOwner($actor, $file->owner);
-        $this->assertUniqueName($ownerId, $file->folder_id, $name, $file->id);
+        $file = $this->resolveFileForMutate($actor, $fileId, $userId, $workspaceId);
+        $from = $file->name;
+        $this->assertUniqueName($file->user_id, $file->folder_id, $name, $file->id, $file->workspace_id);
 
-        // Display name changed — invalidate disposition-bound signed URL.
         $file->forceFill([
             'name' => $name,
             'signed_download_url' => null,
             'signed_download_expires_at' => null,
         ])->save();
+        $file = $file->refresh();
 
-        return $file->refresh();
-    }
-
-    public function move(User $actor, string $fileId, ?string $folderId, ?string $userId = null): HostedFile
-    {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $file = $this->findOwnedOrFail($ownerId, $fileId);
-        $this->access->assertCanMutateOwner($actor, $file->owner);
-
-        if ($folderId !== null) {
-            $this->folders->findOwnedOrFail($ownerId, $folderId);
+        if ($file->workspace_id !== null) {
+            $ws = $this->workspaceAccess->findOrFail($file->workspace_id);
+            $this->activity->fileRenamed($ws, $actor, $file, $from, $name);
         }
 
-        $this->assertUniqueName($ownerId, $folderId, $file->name, $file->id);
-        $file->forceFill(['folder_id' => $folderId])->save();
-
-        return $file->refresh();
+        return $file;
     }
 
-    public function softDelete(User $actor, string $fileId, ?string $userId = null): void
+    public function move(User $actor, string $fileId, ?string $folderId, ?string $userId = null, ?string $workspaceId = null): HostedFile
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $file = $this->findOwnedOrFail($ownerId, $fileId);
-        $this->access->assertCanMutateOwner($actor, $file->owner);
+        $file = $this->resolveFileForMutate($actor, $fileId, $userId, $workspaceId);
+        $fromFolder = $file->folder_id;
+
+        if ($folderId !== null) {
+            $this->folders->findOwnedOrFail($file->user_id, $folderId, $file->workspace_id);
+        }
+
+        $this->assertUniqueName($file->user_id, $folderId, $file->name, $file->id, $file->workspace_id);
+        $file->forceFill(['folder_id' => $folderId])->save();
+        $file = $file->refresh();
+
+        if ($file->workspace_id !== null) {
+            $ws = $this->workspaceAccess->findOrFail($file->workspace_id);
+            $this->activity->fileMoved($ws, $actor, $file, $fromFolder, $folderId);
+        }
+
+        return $file;
+    }
+
+    public function softDelete(User $actor, string $fileId, ?string $userId = null, ?string $workspaceId = null): void
+    {
+        $file = $this->resolveFileForMutate($actor, $fileId, $userId, $workspaceId);
+        $workspace = $file->workspace_id !== null
+            ? $this->workspaceAccess->findOrFail($file->workspace_id)
+            : null;
+
         $file->forceFill([
             'signed_download_url' => null,
             'signed_download_expires_at' => null,
         ])->save();
         $file->delete();
+
+        if ($workspace !== null) {
+            $this->activity->fileSoftDeleted($workspace, $actor, $file);
+        }
     }
 
-    public function restore(User $actor, string $fileId, ?string $userId = null): HostedFile
+    public function restore(User $actor, string $fileId, ?string $userId = null, ?string $workspaceId = null): HostedFile
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
+
         $file = HostedFile::onlyTrashed()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspace?->id)
             ->whereKey($fileId)
             ->firstOrFail();
-        $this->access->assertCanMutateOwner($actor, $file->owner);
 
         if ($file->folder_id !== null) {
-            $folderExists = $this->folders->findOwned($ownerId, $file->folder_id) !== null;
+            $folderExists = $this->folders->findOwned($ownerId, $file->folder_id, $workspace?->id) !== null;
             if (! $folderExists) {
                 $file->folder_id = null;
             }
         }
 
         $file->restore();
+        $file = $file->refresh();
 
-        return $file->refresh();
+        if ($workspace !== null) {
+            $this->activity->fileRestored($workspace, $actor, $file);
+        }
+
+        return $file;
     }
 
-    public function forceDelete(User $actor, string $fileId, ?string $userId = null): void
+    public function forceDelete(User $actor, string $fileId, ?string $userId = null, ?string $workspaceId = null): void
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
+
         $file = HostedFile::withTrashed()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspace?->id)
             ->whereKey($fileId)
             ->firstOrFail();
-        $this->access->assertCanMutateOwner($actor, $file->owner);
 
         DB::transaction(function () use ($file): void {
-            $this->storage->deleteMany([['disk' => $file->disk, 'path' => $file->path]]);
+            $this->storage->deleteMany([[
+                'disk' => $file->disk,
+                'path' => $this->objectKeys->objectKey($file->user_id, $file->path),
+            ]]);
             $file->forceDelete();
         });
+
+        if ($workspace !== null) {
+            $this->activity->fileForceDeleted($workspace, $actor, $file);
+        }
     }
 
     /**
      * @return Collection<int, HostedFile>
      */
-    public function trash(User $actor, ?string $userId = null): Collection
+    public function trash(User $actor, ?string $userId = null, ?string $workspaceId = null): Collection
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: false);
 
         return HostedFile::onlyTrashed()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspace?->id)
             ->orderByDesc('deleted_at')
             ->get();
     }
@@ -174,13 +223,14 @@ class FileService
     /**
      * @return Collection<int, HostedFile>
      */
-    public function search(User $actor, string $query, ?string $userId = null): Collection
+    public function search(User $actor, string $query, ?string $userId = null, ?string $workspaceId = null): Collection
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: false);
         $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $query).'%';
 
         return HostedFile::query()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspace?->id)
             ->whereRaw('LOWER(name) LIKE ?', [mb_strtolower($term)])
             ->orderBy('name')
             ->limit(100)
@@ -190,17 +240,14 @@ class FileService
     /**
      * @return array{url: string, expires_at: string}
      */
-    public function download(User $actor, string $fileId, ?string $userId = null): array
+    public function download(User $actor, string $fileId, ?string $userId = null, ?string $workspaceId = null): array
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
-        $file = $this->findOwnedOrFail($ownerId, $fileId);
+        $file = $this->resolveFileForView($actor, $fileId, $userId, $workspaceId);
 
         return $this->issueDownload($file);
     }
 
     /**
-     * Guest public download — signed URL only (caller redirects 302).
-     *
      * @return array{url: string, expires_at: string}
      */
     public function publicDownload(string $fileId): array
@@ -239,23 +286,25 @@ class FileService
         ];
     }
 
-    public function bulkSetVisibility(User $actor, array $fileIds, string $visibility, ?string $userId = null): int
+    public function bulkSetVisibility(User $actor, array $fileIds, string $visibility, ?string $userId = null, ?string $workspaceId = null): int
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
         $value = $this->visibility->normalize($visibility);
 
         return HostedFile::query()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspace?->id)
             ->whereKey($fileIds)
             ->update(['visibility' => $value->value]);
     }
 
-    public function bulkSoftDelete(User $actor, array $fileIds, ?string $userId = null): int
+    public function bulkSoftDelete(User $actor, array $fileIds, ?string $userId = null, ?string $workspaceId = null): int
     {
-        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
 
         $files = HostedFile::query()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspace?->id)
             ->whereKey($fileIds)
             ->get();
 
@@ -265,6 +314,9 @@ class FileService
                 'signed_download_expires_at' => null,
             ])->save();
             $file->delete();
+            if ($workspace !== null) {
+                $this->activity->fileSoftDeleted($workspace, $actor, $file);
+            }
         }
 
         return $files->count();
@@ -275,9 +327,11 @@ class FileService
         ?string $folderId,
         string $name,
         ?string $ignoreId = null,
+        ?string $workspaceId = null,
     ): void {
         $query = HostedFile::query()
             ->where('user_id', $ownerId)
+            ->where('workspace_id', $workspaceId)
             ->where('folder_id', $folderId)
             ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)]);
 
@@ -288,5 +342,74 @@ class FileService
         if ($query->exists()) {
             throw new FileHostingException(__('api/file-hosting.file_name_taken'));
         }
+    }
+
+    /**
+     * @return array{0: string, 1: Workspace|null}
+     */
+    private function resolveScope(User $actor, ?string $userId, ?string $workspaceId, bool $mutate): array
+    {
+        if ($workspaceId !== null && $workspaceId !== '') {
+            $workspace = $this->workspaceAccess->findOrFail($workspaceId);
+            if ($mutate) {
+                $this->workspaceAccess->assertCanMutate($workspace, $actor);
+            } else {
+                $this->workspaceAccess->assertCanView($workspace, $actor);
+            }
+
+            return [$this->workspaceAccess->storageOwnerId($workspace), $workspace];
+        }
+
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $owner = User::query()->findOrFail($ownerId);
+        if ($mutate) {
+            $this->access->assertCanMutateOwner($actor, $owner);
+        } else {
+            $this->access->assertCanViewOwner($actor, $owner);
+        }
+
+        return [$ownerId, null];
+    }
+
+    private function resolveFileForView(User $actor, string $fileId, ?string $userId, ?string $workspaceId): HostedFile
+    {
+        if ($workspaceId !== null && $workspaceId !== '') {
+            [$ownerId] = $this->resolveScope($actor, $userId, $workspaceId, mutate: false);
+
+            return $this->findOwnedOrFail($ownerId, $fileId, $workspaceId);
+        }
+
+        $file = $this->findOrFail($fileId);
+        if ($file->workspace_id !== null) {
+            $this->workspaceAccess->assertResourceView($actor, $file);
+
+            return $file;
+        }
+
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+
+        return $this->findOwnedOrFail($ownerId, $fileId, null);
+    }
+
+    private function resolveFileForMutate(User $actor, string $fileId, ?string $userId, ?string $workspaceId): HostedFile
+    {
+        if ($workspaceId !== null && $workspaceId !== '') {
+            [$ownerId] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
+
+            return $this->findOwnedOrFail($ownerId, $fileId, $workspaceId);
+        }
+
+        $file = $this->findOrFail($fileId);
+        if ($file->workspace_id !== null) {
+            $this->workspaceAccess->assertResourceMutate($actor, $file);
+
+            return $file;
+        }
+
+        $ownerId = $this->access->resolveOwnerId($actor, $userId);
+        $file = $this->findOwnedOrFail($ownerId, $fileId, null);
+        $this->access->assertCanMutateOwner($actor, $file->owner);
+
+        return $file;
     }
 }

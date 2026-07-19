@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('payments:midtrans-reconcile-pending')->everyFiveMinutes();
 Schedule::command('payments:reconcile-withdrawable-funds')->everyTenMinutes();
 Schedule::command('service:process-entitlements')->hourly();
+Schedule::command('service:process-addon-renewals')->hourly();

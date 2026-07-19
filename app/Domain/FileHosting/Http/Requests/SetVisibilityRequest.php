@@ -21,6 +21,7 @@ class SetVisibilityRequest extends FormRequest
     {
         return array_merge($this->visibilityRules(), [
             'user_id' => ['nullable', 'uuid'],
+            'workspace_id' => ['nullable', 'uuid'],
         ]);
     }
 }

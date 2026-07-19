@@ -20,6 +20,7 @@ class StoreFolderRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'parent_id' => ['nullable', 'uuid'],
             'user_id' => ['nullable', 'uuid'],
+            'workspace_id' => ['nullable', 'uuid'],
         ];
     }
 }

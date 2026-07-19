@@ -17,8 +17,9 @@
 
 1. **Catalog** of sellable services with multi-currency list prices (codes in `currencies`)
 2. **Checkout** that settles to **IDR** for Midtrans/iPaymu (rate history in DB)
-3. **Entitlements** with period (subscription) or permanent (one-time)
-4. **Fulfillment** into product domains (File Hosting unlimited while active)
+3. **Entitlements** with period (subscription) or permanent (one-time), plus **quantity** for stackable addons
+4. **Fulfillment** into product domains (File Hosting **main + stackable addons**, free 5 GiB always stacked)
+5. **Paid perk gate** for File Hosting Collaborative Works (workspace create/invite/team upload) via `hasActivePaidFileHosting` (storage main/addon only). Extra owned team slots via catalog SKU `file-hosting.addon.workspace-slot.monthly`
 
 **Not** PaymentGateway `Subscription` (free-text demo morph). Product lifecycle lives here.
 
@@ -41,49 +42,136 @@ Money convention: **decimal(15,2)** (same as invoices).
 |-------|------|
 | `currencies` | Active FX codes; `decimal_places` (IDR=0); `is_settlement` (IDR) |
 | `exchange_rate_snapshots` | Rate history (provider, rate, fetched_at, optional payload) |
-| `services` | Catalog: `code`, `billing_interval`, `fulfillment_target`, `entitlement`, `status` |
+| `services` | Catalog: `code`, `billing_interval`, `fulfillment_target`, `entitlement`, **`plan_kind`** (`main`\|`addon`), **`storage_bytes`**, `status` |
 | `service_prices` | List price per currency (validated against `currencies`) |
-| `service_purchases` | Invoiceable money event: display + settlement + FX + optional `period_*` |
-| `service_entitlements` | One row per user+service: `active` / `grace` / `expired` / `cancelled` |
+| `service_purchases` | Invoiceable money event: display/list/credit/charge, `change_type`, `surplus_days`, settlement + FX + `period_*` |
+| `service_entitlements` | One row per user+service: `active` / `grace` / `expired` / `cancelled` + **`quantity`** |
 
-POC seed: `file-hosting.subscription.monthly` — USD 10 / month — `fulfillment_target=file_hosting`, `entitlement=unlimited_quota`.
+### File Hosting catalog (seed)
+
+| Code | Name | Kind | Storage | USD/mo | Notes |
+|------|------|------|---------|--------|-------|
+| `file-hosting.plan.1tb.monthly` | Standard 1 TB | main | 1 TiB | 24.95 | Exclusive paid main |
+| `file-hosting.plan.2tb.monthly` | Standard 2 TB | main | 2 TiB | 54.95 | Exclusive paid main |
+| `file-hosting.addon.100gb.monthly` | Standard +100 GB | addon | 100 GiB | 2.95 | Stackable qty; fixed anniversary |
+| `file-hosting.addon.500gb.monthly` | Standard +500 GB | addon | 500 GiB | 14.50 | Stackable qty; fixed anniversary |
+| `file-hosting.addon.workspace-slot.monthly` | Team Workspace Slot | addon | 0 | 1.00 | +1 owned team slot per qty; not storage; stack anniversary with storage addons |
+
+**Free tier is not a catalog SKU.** Runtime free always from `config('file-hosting.default_quota_bytes')` (5 GiB), always stacked. Seeder deletes any legacy `file-hosting.plan.free` row. Legacy `file-hosting.subscription.monthly` (unlimited POC) is archived on seed.
+
+**Helpers:** `Service::isFileHostingStoragePlan()` requires `storage_bytes > 0` (excludes slot SKU). `Service::isAddonPlan()` includes storage **and** slot addons. `Service::isWorkspaceSlotAddon()` for slot-only checks. Paid collab gate queries still use `storage_bytes > 0`.
+
+**Effective FH quota:**
+
+```
+effective_bytes =
+  free_tier_bytes                                          # always (config 5 GiB)
+  + (active_or_grace main.storage_bytes)                   # at most one paid main
+  + sum(active_or_grace storage_addon.storage_bytes * quantity)
+  # workspace-slot addon: storage_bytes = 0 → no GiB contribution
+```
+
+**Owned team slots (File Hosting):**
+
+```
+owned_limit =
+  (hasActivePaidFileHosting ? base_owned_workspace_slots : 0)   # default 10
+  + sum(active_or_grace workspace_slot.quantity)
+```
+
+Constants / codes: `App\Domain\Service\Support\FileHostingCatalog`.
+
+### Main plan change (renew / upgrade / downgrade)
+
+Checkout classifies via `MainPlanChangeCalculator` (compare current active/grace paid main vs target `storage_bytes`):
+
+| `change_type` | When | Charge |
+|---------------|------|--------|
+| `new` | No current paid main | Full list |
+| `renew` | Same `service_id` | Full list; stack `ends_at` from remaining end |
+| `upgrade` | Target storage > current | `max(0, list − unused_credit)` |
+| `downgrade` | Target storage < current | same; surplus credit → **extra days** on new plan |
+
+**Billing period (FH storage plans):** fixed **+30 days** (`FileHostingBillingPeriod`), not calendar `addMonth`. Credit divisor uses the same 30 days.
+
+**Unused gap:**
+
+```
+unused_credit = (remaining_days / 30) * last_paid_list_amount
+net_charge    = max(0, list_new − unused_credit)
+surplus_days  = floor(max(0, unused_credit − list_new) / list_new * 30)
+```
+
+- Credit base = **`list_amount`** of last paid purchase for that entitlement (never net `charge`/`display` after discount). Legacy rows without `list_amount` fall back to `display_amount`, then catalog list.
+- `$0` charge: **immediate fulfill** (no Midtrans invoice). Next switch still credits from stored **list**, not the $0 charge.
+- Paid up/down: expire other mains; `ends_at = now + 30 days + surplus_days`.
+- Purchase stores: `change_type`, `list_amount`, `credit_amount`, `charge_amount` (= `display_amount`), `surplus_days`, `previous_entitlement_id`.
+
+### Addon fixed anniversary + stack renewal
+
+| Event | Quantity | `ends_at` |
+|-------|----------|-----------|
+| First addon buy (or rebuy after expired) | 1 | `now + 30 days` (or shared anniversary if user already has another active addon) |
+| Additional unit buy (same or other addon SKU) | `quantity++` | **unchanged** (shared clock) |
+| Anniversary due **or** pending stack renewal | — | **Unit checkout blocked** (422); pay stack first |
+| Anniversary due | unchanged | Scheduler creates **one** pending invoice for full stack |
+
+**Addon renewal invoice** (`service_addon_renewals` + lines, morph `service_addon_renewal`):
+
+```
+display_total = Σ(quantity × unit_list_price) across active/grace addons
+→ FX → pending Invoice
+on paid → extend ALL addon ends_at by +30 days; quantities stay
+```
+
+Command (hourly): `service:process-addon-renewals`. No auto-charge. Unpaid renewals do not cancel access in this task (grace path still from entitlement lifecycle), but **block** further addon unit buys until paid or stack no longer due.
+
+**Not** PG `/subscriptions` — that table is free-text demo invoiceable only. Product SaaS lives in Service domain.
 
 ## Multi-currency / FX
 
 ```
-Display price (e.g. USD 10)
+Display charge (list or net after credit)
   → ExchangeRateService
        prefer L1 cache → fresh DB snapshot within TTL → else Frankfurter + INSERT snapshot
   → round with currencies.decimal_places (IDR whole rupiah)
-  → ServicePurchase (fx_rate*, fx_rate_snapshot_id) + Invoice IDR
+  → ServicePurchase / ServiceAddonRenewal + Invoice IDR
 ```
 
-Same-currency (IDR→IDR) skips HTTP; no snapshot row.
+Same-currency (IDR→IDR) skips HTTP; no snapshot row. Zero-charge skips FX HTTP (`provider=zero_charge`).
 
 ## Checkout + fulfillment
 
 ```
-Checkout → pending purchase + pending invoice
-  → PG paid webhook/sync
+Checkout → MainPlanChangeCalculator quote
+  → if charge > 0: pending purchase + pending invoice
+  → if charge = 0: purchase + immediate fulfill
+  → PG paid webhook/sync (when invoice)
   → ServiceFulfillmentService
-       mark purchase paid + period_start/end
-       ServiceEntitlementService activate/extend
-       file_hosting + unlimited_quota → UserQuota denorm (quota_bytes=0)
+       activate/extend entitlement
+         main renew: stack ends_at; up/down: now+period+surplus; expire other mains
+         addon unit: qty++; ends_at frozen / shared
+       FileHostingQuotaRecomputeService
 ```
 
-## Subscription lifecycle (File Hosting unlimited)
+## Subscription lifecycle (File Hosting main + addons)
 
 | State | Upload | Quota |
 |-------|--------|-------|
-| **active** | OK | unlimited (`0`) |
-| **grace** (ends_at passed, ≤7d) | **blocked** | files kept; notify once |
-| **expired** (grace_ends_at passed) | free tier | `default_quota_bytes` (5 GiB); purge excess |
+| **active** paid main and/or addons | OK | free + main + Σ(addon×qty) |
+| **grace** (any paid FH line; ends_at passed, ≤7d) | **blocked** | effective bytes still from recompute (files kept); notify once |
+| **expired** (grace_ends_at passed on a line) | recompute remaining lines | `enforceToLimit(effective)`; if no paid left → free 5 GiB |
 
 Commands (also scheduled hourly):
 
-- `service:process-entitlements` → enter grace for due actives; expire grace + purge
+- `service:process-entitlements` → enter grace for due actives; expire grace → recompute → purge to **effective** limit
+- `service:process-addon-renewals` → pending full-stack addon invoices when anniversary due
 
-Purge rule (oldest first retain free tier): sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + hard-delete S3 for overflow. See [file-hosting](../file-hosting/README.md).
+Purge rule: sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + hard-delete S3 for overflow. See [file-hosting](../file-hosting/README.md).
+
+* limit (not always free-only)
+
+Purge rule: sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + hard-delete S3 for overflow. See [file-hosting](../file-hosting/README.md).
 
 ## Permissions (core RBAC)
 
@@ -99,24 +187,30 @@ Purge rule (oldest first retain free tier): sort `created_at ASC, id ASC`; accum
 |--------|------|--------|
 | GET/POST | `/api/v1/services` | List / create (prices nested; currency must exist) |
 | GET/PUT/DELETE | `/api/v1/services/{id}` | Show / update / soft-delete |
-| POST | `/api/v1/services/{id}/checkout` | Body `{ "currency": "USD" }` → purchase + pending invoice |
+| POST | `/api/v1/services/{id}/checkout` | Body `{ "currency": "USD" }` → purchase (+ invoice if charge > 0); quote fields on purchase |
 | GET | `/api/v1/service-purchases/{id}` | Purchase + invoice + **entitlement** (if any) |
 
-Purchase resource fields of note: `period_start`, `period_end`, `fx_rate_snapshot_id`, `entitlement.{status,ends_at,grace_ends_at,is_permanent}`.
+Catalog resource fields of note: `plan_kind`, `storage_bytes`.
+
+Purchase resource fields of note: `change_type`, `list_amount`, `credit_amount`, `charge_amount`, `surplus_days`, `period_start`, `period_end`, `entitlement.{status,quantity,ends_at,grace_ends_at,is_permanent}`.
 
 ## Web (Blade)
 
-- Catalog index/create/edit/show (API consumer); billing interval includes quarterly
-- Purchase hub: payment panel + period + entitlement status; grace banner when `status=grace`
+- Catalog index/create/edit/show (API consumer); form fields `plan_kind` + `storage_bytes`
+- Purchase hub: payment panel + quote breakdown (list/credit/charge/surplus) + entitlement status/quantity; grace banner when `status=grace`
+- **Not** product UI on PG `/subscriptions`
 
 ## PaymentGateway integration
 
-Morph alias: `service_purchase` → `ServicePurchase`.
+Morph aliases:
+- `service_purchase` → `ServicePurchase`
+- `service_addon_renewal` → `ServiceAddonRenewal`
+- `subscription` → PG demo `Subscription` only
 
-- `InvoiceAttachableService::createPendingInvoiceForServicePurchase`
-- Midtrans/iPaymu synchronizers call `ServiceFulfillmentService` on paid/cancel/fail
+- `InvoiceAttachableService::createPendingInvoiceForServicePurchase` / `…ForServiceAddonRenewal`
+- Midtrans/iPaymu synchronizers fulfill purchase or addon renewal on paid
 - iPaymu return can redirect to `service-purchases.show`
-- Product subscription ≠ PG `Subscription` model
+- Product SaaS ≠ PG `Subscription` model
 
 ## Config / env
 
@@ -131,31 +225,37 @@ Morph alias: `service_purchase` → `ServicePurchase`.
 
 Documented in `.env.example` for Frankfurter; grace/settlement via `config/service.php` + optional env.
 
-**Deploy order:** migrate `2026_07_16_100001`…`100003` → `CurrencySeeder` → catalog prices (currency FK validation).
+**Deploy order:** migrate through `2026_07_18_110002` (purchase quote fields + addon renewals) → `CurrencySeeder` → `ServiceCatalogSeeder` (removes free SKU if present).
 
-**Scheduler:** `service:process-entitlements` hourly (`routes/console.php`). Requires `schedule:work` / cron.
+**Scheduler** (`routes/console.php`): `service:process-entitlements` hourly; `service:process-addon-renewals` hourly. Requires `schedule:work` / cron.
 
 ## Manual verify
 
-1. Buy monthly FH → unlimited; entitlement `ends_at` ~+1 month  
-2. Force `ends_at` past → run command → grace: upload 422; bell notify  
-3. Force `grace_ends_at` past → free tier + oldest-first purge  
-4. Renew in grace (same SKU checkout) → active + unlimited restored  
-5. Checkout USD → row in `exchange_rate_snapshots` + IDR invoice  
+1. Buy main 1 TB → quota = 1 TiB + free 5 GiB; state `paid`  
+2. Mid-cycle upgrade/downgrade → credit applied; $0 path fulfills without PG  
+3. Buy +100 GB ×3 same day → `quantity=3`, **same** `ends_at` (not +3 months)  
+4. Second addon SKU mid-cycle → shares anniversary  
+5. Force addon `ends_at` past → `service:process-addon-renewals` → one pending invoice full stack; pay extends all  
+6. Force main grace/expire → recompute + purge to effective limit  
+7. Checkout USD with charge → FX snapshot + IDR invoice  
 
 ## Tests
 
 ```powershell
 composer test -- --filter=Service
 composer test -- --filter=EnforceFreeTierQuota
+composer test -- --filter=FileHostingBilling
 ```
 
-Coverage: FX snapshot DB + cache, entitlement period/renew, grace upload block, expire → free tier, purge oldest-first, checkout FX→IDR.
+Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main renew/up/down, fixed 30-day FH periods, addon fixed anniversary, block unit buy when stack due/pending, addon stack renewal invoice, quota matrix, grace/expire, collaborative works paid gate. Key tests: `MainPlanChangeCalculatorTest`, `MainPlanFairnessFulfillmentTest`, `AddonAnniversaryTest`, `ServiceCheckoutZeroChargeTest`, `FileHostingPlanQuotaMatrixTest`, `FileHostingAdminJourneyScenarioTest`, `WorkspaceCollaborativeWorksTest`.
+
+**Use-case matrix (45):** permanent regression suite — `FileHostingBillingTameUseCasesTest`, `FileHostingBillingNormalUseCasesTest`, `FileHostingBillingAnomalyUseCasesTest` + `FileHostingBillingScenarioHarness`.
 
 ## Related
 
 - [payment-gateway](../payment-gateway/README.md) — settle IDR; product sub ≠ PG Subscription
-- [file-hosting](../file-hosting/README.md) — quota states + purge
+- [file-hosting](../file-hosting/README.md) — quota recompute + states paid/grace/free
 - [notification](../notification/README.md) — grace/expired types
 - [platform/architecture.md](../../platform/architecture.md)
 - Changelog: [pending/2026-07-16-service-entitlements-fx-db-grace.md](../../changelog/pending/2026-07-16-service-entitlements-fx-db-grace.md)
+- Changelog: [pending/2026-07-18-main-addon-fairness.md](../../changelog/pending/2026-07-18-main-addon-fairness.md)

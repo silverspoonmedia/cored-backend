@@ -2,15 +2,18 @@
 
 namespace App\Domain\Service\Services;
 
-use App\Domain\FileHosting\Models\UserQuota;
+use App\Domain\FileHosting\Services\FileHostingQuotaRecomputeService;
 use App\Domain\Service\Enums\PurchaseStatus;
+use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Support\FileHostingCatalog;
 use Illuminate\Support\Facades\Log;
 
 class ServiceFulfillmentService
 {
     public function __construct(
         private readonly ServiceEntitlementService $entitlements,
+        private readonly FileHostingQuotaRecomputeService $quotaRecompute,
     ) {}
 
     public function fulfill(ServicePurchase $purchase): void
@@ -21,6 +24,19 @@ class ServiceFulfillmentService
             return;
         }
 
+        $service = $purchase->service;
+
+        if ($service !== null && FileHostingCatalog::isFreeCode($service->code)) {
+            Log::info('service.fulfillment.skipped_free_catalog', [
+                'purchase_id' => $purchase->id,
+                'service_code' => $service->code,
+            ]);
+            $purchase->status = PurchaseStatus::Paid;
+            $purchase->save();
+
+            return;
+        }
+
         $result = $this->entitlements->activateFromPurchase($purchase);
 
         $purchase->status = PurchaseStatus::Paid;
@@ -28,11 +44,14 @@ class ServiceFulfillmentService
         $purchase->period_end = $result['period_end'];
         $purchase->save();
 
-        $target = $purchase->service?->fulfillment_target;
-        $entitlement = $purchase->service?->entitlement;
+        $target = $service?->fulfillment_target;
 
-        if ($target === 'file_hosting' && $entitlement === 'unlimited_quota') {
-            $this->grantUnlimitedFileHostingQuota($purchase);
+        if ($target === FileHostingCatalog::FULFILLMENT_TARGET && $service?->isFileHostingStoragePlan()) {
+            if ($service->isPaidMainPlan()) {
+                $this->entitlements->expireOtherPaidMains($purchase->user_id, $service->id);
+            }
+
+            $this->quotaRecompute->recompute($purchase->user_id);
 
             return;
         }
@@ -41,9 +60,26 @@ class ServiceFulfillmentService
             Log::info('service.fulfillment.unhandled_target', [
                 'purchase_id' => $purchase->id,
                 'fulfillment_target' => $target,
-                'entitlement' => $entitlement,
+                'entitlement' => $service?->entitlement,
+                'plan_kind' => $service?->plan_kind?->value ?? $service?->plan_kind,
             ]);
         }
+    }
+
+    public function fulfillAddonRenewal(ServiceAddonRenewal $renewal): void
+    {
+        if ($renewal->status === PurchaseStatus::Paid) {
+            return;
+        }
+
+        $result = $this->entitlements->extendAllAddons($renewal->user_id);
+
+        $renewal->status = PurchaseStatus::Paid;
+        $renewal->period_start = now();
+        $renewal->period_end = $result['period_end'];
+        $renewal->save();
+
+        $this->quotaRecompute->recompute($renewal->user_id);
     }
 
     public function markCancelled(ServicePurchase $purchase): void
@@ -66,23 +102,31 @@ class ServiceFulfillmentService
         $purchase->save();
     }
 
-    public function revokeFileHostingUnlimited(string $userId): void
+    public function markAddonRenewalCancelled(ServiceAddonRenewal $renewal): void
     {
-        UserQuota::query()
-            ->where('user_id', $userId)
-            ->where('source', 'service_purchase')
-            ->delete();
+        if (in_array($renewal->status, [PurchaseStatus::Paid, PurchaseStatus::Cancelled], true)) {
+            return;
+        }
+
+        $renewal->status = PurchaseStatus::Cancelled;
+        $renewal->save();
     }
 
-    private function grantUnlimitedFileHostingQuota(ServicePurchase $purchase): void
+    public function markAddonRenewalFailed(ServiceAddonRenewal $renewal): void
     {
-        UserQuota::query()->updateOrCreate(
-            ['user_id' => $purchase->user_id],
-            [
-                'quota_bytes' => 0,
-                'source' => 'service_purchase',
-                'source_id' => $purchase->id,
-            ],
-        );
+        if ($renewal->status === PurchaseStatus::Paid) {
+            return;
+        }
+
+        $renewal->status = PurchaseStatus::Failed;
+        $renewal->save();
+    }
+
+    /**
+     * @deprecated Prefer recompute after expire.
+     */
+    public function revokeFileHostingUnlimited(string $userId): void
+    {
+        $this->quotaRecompute->recompute($userId);
     }
 }

@@ -13,6 +13,10 @@
             <dd class="col-sm-9">{{ data_get($service, 'status') }}</dd>
             <dt class="col-sm-3">{{ __('web/services.columns.interval') }}</dt>
             <dd class="col-sm-9">{{ data_get($service, 'billing_interval') }}</dd>
+            <dt class="col-sm-3">{{ __('web/services.form.plan_kind') }}</dt>
+            <dd class="col-sm-9">{{ data_get($service, 'plan_kind') ?: '—' }}</dd>
+            <dt class="col-sm-3">{{ __('web/services.form.storage_bytes') }}</dt>
+            <dd class="col-sm-9">{{ number_format((int) data_get($service, 'storage_bytes', 0)) }}</dd>
             <dt class="col-sm-3">{{ __('web/services.columns.prices') }}</dt>
             <dd class="col-sm-9">
                 @forelse ($prices as $price)

@@ -14,6 +14,8 @@ return [
     'currency_not_supported' => 'Currency :currency is not supported.',
     'prices_invalid' => 'Service prices are invalid.',
     'fx_unavailable' => 'Exchange rate is temporarily unavailable. Try again later.',
+    'addon_renewal_due' => 'Your addon storage stack is due for renewal. Pay the stack invoice before buying more units.',
+    'addon_renewal_pending' => 'You already have a pending addon stack renewal. Complete payment before buying more units.',
     'policy' => [
         'denied' => 'You are not allowed to perform this action on services.',
     ],

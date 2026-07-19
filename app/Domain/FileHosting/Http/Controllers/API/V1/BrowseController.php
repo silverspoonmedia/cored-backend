@@ -29,10 +29,12 @@ class BrowseController extends Controller
             $request->user(),
             $request->query('folder_id'),
             $request->query('user_id'),
+            $request->query('workspace_id'),
         );
 
         return $this->successResponse([
             'owner_id' => $result['owner_id'],
+            'workspace_id' => $result['workspace_id'],
             'folder' => $result['folder'] !== null
                 ? $this->resolveResource(new FolderResource($result['folder']))
                 : null,

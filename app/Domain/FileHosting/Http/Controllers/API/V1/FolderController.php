@@ -36,6 +36,7 @@ class FolderController extends Controller
             $request->validated('name'),
             $request->validated('parent_id'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(
@@ -52,6 +53,7 @@ class FolderController extends Controller
             $folder,
             $request->validated('name'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(
@@ -67,6 +69,7 @@ class FolderController extends Controller
             $folder,
             $request->validated('visibility'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(
@@ -95,6 +98,7 @@ class FolderController extends Controller
             $folder,
             $request->validated('parent_id'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(
@@ -109,6 +113,7 @@ class FolderController extends Controller
             $request->user(),
             $folder,
             $request->query('user_id'),
+            $request->query('workspace_id'),
         );
 
         return $this->successResponse(null, __('api/file-hosting.folder_deleted'));
@@ -120,6 +125,7 @@ class FolderController extends Controller
             $request->user(),
             $folder,
             $request->query('user_id') ?? $request->input('user_id'),
+            $request->query('workspace_id') ?? $request->input('workspace_id'),
         );
 
         return $this->successResponse(
@@ -134,6 +140,7 @@ class FolderController extends Controller
             $request->user(),
             $folder,
             $request->query('user_id') ?? $request->input('user_id'),
+            $request->query('workspace_id') ?? $request->input('workspace_id'),
         );
 
         return $this->successResponse(null, __('api/file-hosting.folder_force_deleted'));
@@ -146,6 +153,7 @@ class FolderController extends Controller
             $request->validated('ids'),
             $request->validated('visibility'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(
@@ -160,6 +168,7 @@ class FolderController extends Controller
             $request->user(),
             $request->validated('ids'),
             $request->validated('user_id'),
+            $request->validated('workspace_id'),
         );
 
         return $this->successResponse(

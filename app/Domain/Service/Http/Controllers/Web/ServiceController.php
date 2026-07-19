@@ -43,6 +43,8 @@ class ServiceController extends Controller
             'billing_interval',
             'fulfillment_target',
             'entitlement',
+            'plan_kind',
+            'storage_bytes',
             'status',
             'prices',
         ]));
@@ -91,6 +93,8 @@ class ServiceController extends Controller
             'billing_interval',
             'fulfillment_target',
             'entitlement',
+            'plan_kind',
+            'storage_bytes',
             'status',
             'prices',
         ]));

@@ -84,11 +84,33 @@
             <div class="ois-sidebar-card">
                 <div class="ois-sidebar-card__title">{{ __('web/services.purchase_title') }}</div>
                 <dl class="row mb-0 small">
+                    @if (data_get($purchase, 'change_type'))
+                        <dt class="col-5">{{ __('web/services.show.change_type') }}</dt>
+                        <dd class="col-7">{{ __('web/services.change_type.'.data_get($purchase, 'change_type')) }}</dd>
+                    @endif
+                    @if (data_get($purchase, 'list_amount') !== null)
+                        <dt class="col-5">{{ __('web/services.show.list_amount') }}</dt>
+                        <dd class="col-7">
+                            {{ data_get($purchase, 'display_currency') }}
+                            {{ number_format((float) data_get($purchase, 'list_amount', 0), 2) }}
+                        </dd>
+                    @endif
+                    @if ((float) data_get($purchase, 'credit_amount', 0) > 0)
+                        <dt class="col-5">{{ __('web/services.show.credit_amount') }}</dt>
+                        <dd class="col-7">
+                            {{ data_get($purchase, 'display_currency') }}
+                            {{ number_format((float) data_get($purchase, 'credit_amount', 0), 2) }}
+                        </dd>
+                    @endif
                     <dt class="col-5">{{ __('web/services.show.display_amount') }}</dt>
                     <dd class="col-7">
                         {{ data_get($purchase, 'display_currency') }}
-                        {{ number_format((float) data_get($purchase, 'display_amount', 0), 2) }}
+                        {{ number_format((float) data_get($purchase, 'charge_amount', data_get($purchase, 'display_amount', 0)), 2) }}
                     </dd>
+                    @if ((int) data_get($purchase, 'surplus_days', 0) > 0)
+                        <dt class="col-5">{{ __('web/services.show.surplus_days') }}</dt>
+                        <dd class="col-7">{{ data_get($purchase, 'surplus_days') }}</dd>
+                    @endif
                     <dt class="col-5">{{ __('web/services.show.settlement_amount') }}</dt>
                     <dd class="col-7">
                         {{ data_get($purchase, 'settlement_currency', 'IDR') }}
@@ -115,6 +137,10 @@
                                 {{ __('web/services.entitlement.'.$entitlementStatus) }}
                             @endif
                         </dd>
+                        @if (data_get($entitlement, 'quantity'))
+                            <dt class="col-5">{{ __('web/services.show.entitlement_quantity') }}</dt>
+                            <dd class="col-7">{{ data_get($entitlement, 'quantity') }}</dd>
+                        @endif
                         @if (data_get($entitlement, 'ends_at'))
                             <dt class="col-5">{{ __('web/services.show.entitlement_ends') }}</dt>
                             <dd class="col-7">{{ data_get($entitlement, 'ends_at') }}</dd>

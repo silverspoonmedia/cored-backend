@@ -3,6 +3,7 @@
 namespace App\Domain\Service\Http\Requests\Concerns;
 
 use App\Domain\Service\Enums\BillingInterval;
+use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
 use App\Support\Http\Requests\Concerns\ModalFieldRules;
 use Illuminate\Validation\Rule;
@@ -23,6 +24,8 @@ trait ServiceCatalogRules
             'billing_interval' => ['string', Rule::in(BillingInterval::values())],
             'fulfillment_target' => [null, 'nullable', 'string', 'max:64'],
             'entitlement' => [null, 'nullable', 'string', 'max:64'],
+            'plan_kind' => [null, 'nullable', 'string', Rule::in(PlanKind::values())],
+            'storage_bytes' => [null, 'nullable', 'integer', 'min:0'],
             'status' => ['string', Rule::in(ServiceStatus::values())],
             'prices' => [null, 'sometimes', 'array'],
             'prices.*.currency' => [

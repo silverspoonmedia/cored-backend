@@ -3,7 +3,9 @@
 namespace App\Domain\Service\Models;
 
 use App\Domain\Service\Enums\BillingInterval;
+use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
+use App\Domain\Service\Support\FileHostingCatalog;
 use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +29,8 @@ class Service extends Model
         'billing_interval',
         'fulfillment_target',
         'entitlement',
+        'plan_kind',
+        'storage_bytes',
         'status',
     ];
 
@@ -37,6 +41,8 @@ class Service extends Model
     {
         return [
             'billing_interval' => BillingInterval::class,
+            'plan_kind' => PlanKind::class,
+            'storage_bytes' => 'integer',
             'status' => ServiceStatus::class,
         ];
     }
@@ -96,6 +102,59 @@ class Service extends Model
     public function isActive(): bool
     {
         return $this->status === ServiceStatus::Active;
+    }
+
+    /**
+     * Paid main/addon that contributes storage_bytes (excludes workspace-slot SKU).
+     */
+    public function isFileHostingStoragePlan(): bool
+    {
+        if (! $this->isFileHostingCatalogPlan()) {
+            return false;
+        }
+
+        return (int) $this->storage_bytes > 0;
+    }
+
+    /**
+     * Any FH catalog SKU (storage main/addon or non-storage slot addon).
+     */
+    public function isFileHostingCatalogPlan(): bool
+    {
+        if ($this->fulfillment_target !== FileHostingCatalog::FULFILLMENT_TARGET) {
+            return false;
+        }
+
+        if (FileHostingCatalog::isFreeCode($this->code)) {
+            return false;
+        }
+
+        $kind = $this->plan_kind;
+
+        return $kind === PlanKind::Main || $kind === PlanKind::Addon;
+    }
+
+    public function isPaidMainPlan(): bool
+    {
+        return $this->isFileHostingStoragePlan() && $this->plan_kind === PlanKind::Main;
+    }
+
+    /**
+     * Stackable FH addon (storage or workspace slots). Not mains.
+     */
+    public function isAddonPlan(): bool
+    {
+        return $this->isFileHostingCatalogPlan() && $this->plan_kind === PlanKind::Addon;
+    }
+
+    public function isWorkspaceSlotAddon(): bool
+    {
+        if (! $this->isAddonPlan()) {
+            return false;
+        }
+
+        return FileHostingCatalog::isWorkspaceSlotCode($this->code)
+            || $this->entitlement === FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS;
     }
 
     public function priceFor(string $currency): ?ServicePrice

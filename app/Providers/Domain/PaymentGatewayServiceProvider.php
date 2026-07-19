@@ -12,6 +12,7 @@ use App\Domain\PaymentGateway\Repositories\Eloquent\InvoiceRepository;
 use App\Domain\PaymentGateway\Repositories\Eloquent\PaymentGatewayRepository;
 use App\Domain\PaymentGateway\Repositories\Eloquent\SubscriptionRepository;
 use App\Domain\PaymentGateway\Services\InvoiceAttachableService;
+use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServicePurchase;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -32,6 +33,7 @@ class PaymentGatewayServiceProvider extends ServiceProvider
         Relation::morphMap([
             'subscription' => Subscription::class,
             'service_purchase' => ServicePurchase::class,
+            'service_addon_renewal' => ServiceAddonRenewal::class,
         ]);
 
         $this->app->afterResolving(Schedule::class, function (Schedule $schedule): void {

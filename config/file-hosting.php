@@ -15,7 +15,7 @@ return [
     'regions' => array_filter([
         'sea' => env('FILE_HOSTING_REGION_SEA_DISK', 's3Custom'),
         'us'  => env('FILE_HOSTING_REGION_US_DISK'),
-        'eu'  => env('FILE_HOSTING_REGION_EU_DISK', 's3Customeu'),
+        'eu'  => env('FILE_HOSTING_REGION_EU_DISK'),
     ]),
 
     /*
@@ -32,9 +32,15 @@ return [
 
     'directory' => env('FILE_HOSTING_DIRECTORY', 'file-hosting'),
 
-    'chunk_size_bytes' => (int) env('FILE_HOSTING_CHUNK_SIZE', 8 * 1024 * 1024),
+    /*
+    |--------------------------------------------------------------------------
+    | Browser part size (recommended 10 MB for CF Worker Free body limits).
+    | multipart_threshold_bytes: size < threshold → single PUT; else multipart.
+    |--------------------------------------------------------------------------
+    */
+    'chunk_size_bytes' => (int) env('FILE_HOSTING_CHUNK_SIZE', 10 * 1024 * 1024),
 
-    'multipart_threshold_bytes' => (int) env('FILE_HOSTING_MULTIPART_THRESHOLD', 8 * 1024 * 1024),
+    'multipart_threshold_bytes' => (int) env('FILE_HOSTING_MULTIPART_THRESHOLD', 10 * 1024 * 1024),
 
     'max_file_size_bytes' => (int) env('FILE_HOSTING_MAX_FILE_SIZE', 5 * 1024 * 1024 * 1024),
 
@@ -54,6 +60,17 @@ return [
     |--------------------------------------------------------------------------
     */
     'default_quota_bytes' => (int) env('FILE_HOSTING_DEFAULT_QUOTA_BYTES', 5 * 1024 * 1024 * 1024),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Owned team workspaces included with any active paid FH storage plan.
+    | Extra slots via catalog file-hosting.addon.workspace-slot.monthly (+1 each).
+    |--------------------------------------------------------------------------
+    */
+    'base_owned_workspace_slots' => (int) env(
+        'FILE_HOSTING_BASE_OWNED_WORKSPACE_SLOTS',
+        \App\Domain\Service\Support\FileHostingCatalog::BASE_OWNED_WORKSPACE_SLOTS,
+    ),
 
     /*
     |--------------------------------------------------------------------------
@@ -81,5 +98,23 @@ return [
     |--------------------------------------------------------------------------
     */
     'public_download_signature_ttl_minutes' => (int) env('FILE_HOSTING_PUBLIC_DOWNLOAD_SIGNATURE_TTL', 5),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Optional Cloudflare Worker upload proxy (hybrid mode).
+    | Empty base_url → browser-direct S3 presign (legacy path).
+    | When base_url + token + disk alias are set, Monolith returns Worker
+    | URLs for PUT/UploadPart only; create/complete/abort stay on the server SDK.
+    | Alias values must match Worker S3_TARGETS.targets keys.
+    |--------------------------------------------------------------------------
+    */
+    'upload_proxy' => [
+        'base_url' => rtrim((string) env('FILE_HOSTING_UPLOAD_PROXY_URL', ''), '/'),
+        'token' => (string) env('FILE_HOSTING_UPLOAD_PROXY_TOKEN', ''),
+        'disk_targets' => array_filter([
+            's3Custom' => env('FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM'),
+            's3Customeu' => env('FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOMEU'),
+        ]),
+    ],
 
 ];

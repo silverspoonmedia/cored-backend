@@ -7,16 +7,16 @@ use Illuminate\Database\Eloquent\Collection;
 
 interface FolderRepositoryInterface
 {
-    public function findOwned(string $ownerId, string $folderId): ?Folder;
+    public function findOwned(string $ownerId, string $folderId, ?string $workspaceId = null): ?Folder;
 
-    public function findOwnedOrFail(string $ownerId, string $folderId): Folder;
+    public function findOwnedOrFail(string $ownerId, string $folderId, ?string $workspaceId = null): Folder;
 
     /**
      * @return Collection<int, Folder>
      */
-    public function children(string $ownerId, ?string $parentId): Collection;
+    public function children(string $ownerId, ?string $parentId, ?string $workspaceId = null): Collection;
 
-    public function create(string $ownerId, ?string $parentId, string $name): Folder;
+    public function create(string $ownerId, ?string $parentId, string $name, ?string $workspaceId = null): Folder;
 
     public function rename(Folder $folder, string $name): Folder;
 
@@ -31,5 +31,5 @@ interface FolderRepositoryInterface
     /**
      * @return Collection<int, Folder>
      */
-    public function trashed(string $ownerId): Collection;
+    public function trashed(string $ownerId, ?string $workspaceId = null): Collection;
 }

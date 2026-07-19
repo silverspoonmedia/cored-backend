@@ -2,7 +2,13 @@
     $breadcrumb = $browse['breadcrumb'] ?? [];
     $folders = collect($browse['folders'] ?? []);
     $files = collect($browse['files'] ?? []);
-    $ownerQuery = array_filter(['user_id' => $ownerUserId]);
+    $workspaceId = $workspaceId ?? null;
+    $workspaces = collect($workspaces ?? []);
+    $workspaceActivity = collect($workspaceActivity ?? []);
+    $ownerQuery = array_filter([
+        'user_id' => $ownerUserId,
+        'workspace_id' => $workspaceId,
+    ]);
     $visPrivate = \App\Domain\FileHosting\Enums\Visibility::Private->value;
     $visLink = \App\Domain\FileHosting\Enums\Visibility::AnyoneWithLink->value;
     $regions = (array) config('file-hosting.regions');
@@ -31,6 +37,7 @@
         'bulkFileDeleteUrl' => route('file-hosting.files.bulk-destroy'),
         'bulkFolderDeleteUrl' => route('file-hosting.folders.bulk-destroy'),
         'ownerUserId' => $ownerUserId,
+        'workspaceId' => $workspaceId,
         'currentFolderId' => $currentFolderId,
         'visLink' => $visLink,
         'messages' => [
@@ -77,12 +84,35 @@
                     <i class="bi bi-folder-plus me-1"></i> {{ __('web/file-hosting.new_folder') }}
                 </button>
             @endcan
+
+            @include('adminlte4.file-hosting.partials._workspace-switcher', [
+                'planState' => $planState ?? 'free',
+                'canCreateWorkspace' => $canCreateWorkspace ?? false,
+                'workspaceId' => $workspaceId,
+                'currentWorkspace' => $currentWorkspace ?? null,
+                'workspaces' => $workspaces,
+                'ownerUserId' => $ownerUserId,
+                'ownedWorkspaceUsed' => $ownedWorkspaceUsed ?? 0,
+                'ownedWorkspaceLimit' => $ownedWorkspaceLimit ?? 0,
+            ])
         </div>
+
+        @include('adminlte4.file-hosting.partials._team-offcanvas', [
+            'workspaceId' => $workspaceId,
+            'currentWorkspace' => $currentWorkspace ?? null,
+            'workspaceMembers' => $workspaceMembers ?? [],
+            'workspaceActivity' => $workspaceActivity ?? [],
+        ])
 
         {{-- Breadcrumb --}}
         <nav class="fh-breadcrumb" aria-label="breadcrumb">
             <a href="{{ route('file-hosting.index', $ownerQuery) }}" class="fh-breadcrumb__item {{ empty($breadcrumb) ? 'is-active' : '' }}">
-                <i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>{{ __('web/file-hosting.root_label') }}
+                <i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>
+                @if($workspaceId)
+                    {{ $currentWorkspace['name'] ?? __('web/file-hosting.workspace_team') }}
+                @else
+                    {{ __('web/file-hosting.root_label') }}
+                @endif
             </a>
             @foreach ($breadcrumb as $crumb)
                 <i class="bi bi-chevron-right fh-breadcrumb__sep"></i>
@@ -109,6 +139,7 @@
                 data-reload-on-complete="1"
                 data-folder-id="{{ $currentFolderId }}"
                 data-user-id="{{ $ownerUserId }}"
+                data-workspace-id="{{ $workspaceId }}"
                 data-init-url="{{ route('file-hosting.uploads.store') }}"
                 data-status-url="{{ url('file-hosting/uploads/__UPLOAD__') }}"
                 data-complete-url="{{ url('file-hosting/uploads/__UPLOAD__/complete') }}"
@@ -123,6 +154,7 @@
                     'pending' => __('web/file-hosting.upload.pending'),
                     'waiting' => __('web/file-hosting.upload.waiting'),
                     'uploading' => __('web/file-hosting.upload.uploading'),
+                    'completing' => __('web/file-hosting.upload.completing'),
                     'done' => __('web/file-hosting.upload.done'),
                     'remove' => __('web/file-hosting.upload.remove'),
                 ]) }}"
@@ -449,6 +481,9 @@
                     @endif
                     @if ($ownerUserId)
                         <input type="hidden" name="user_id" value="{{ $ownerUserId }}">
+                        @if($workspaceId)
+                            <input type="hidden" name="workspace_id" value="{{ $workspaceId }}">
+                        @endif
                     @endif
                     <div class="modal-header">
                         <h5 class="modal-title">
@@ -479,6 +514,9 @@
                     <input type="hidden" name="return_folder_id" value="{{ $currentFolderId }}">
                     @if ($ownerUserId)
                         <input type="hidden" name="user_id" value="{{ $ownerUserId }}">
+                        @if($workspaceId)
+                            <input type="hidden" name="workspace_id" value="{{ $workspaceId }}">
+                        @endif
                     @endif
                     <div class="modal-header">
                         <h5 class="modal-title">
@@ -506,6 +544,9 @@
                     @method('PATCH')
                     @if ($ownerUserId)
                         <input type="hidden" name="user_id" value="{{ $ownerUserId }}">
+                        @if($workspaceId)
+                            <input type="hidden" name="workspace_id" value="{{ $workspaceId }}">
+                        @endif
                     @endif
                     <div class="modal-header">
                         <h5 class="modal-title">
@@ -558,6 +599,9 @@
                     <input type="hidden" name="return_folder_id" value="{{ $currentFolderId }}">
                     @if ($ownerUserId)
                         <input type="hidden" name="user_id" value="{{ $ownerUserId }}">
+                        @if($workspaceId)
+                            <input type="hidden" name="workspace_id" value="{{ $workspaceId }}">
+                        @endif
                     @endif
                     <div class="modal-header">
                         <h5 class="modal-title">
@@ -584,6 +628,9 @@
                     @method('PATCH')
                     @if ($ownerUserId)
                         <input type="hidden" name="user_id" value="{{ $ownerUserId }}">
+                        @if($workspaceId)
+                            <input type="hidden" name="workspace_id" value="{{ $workspaceId }}">
+                        @endif
                     @endif
                     <div class="modal-header">
                         <h5 class="modal-title">

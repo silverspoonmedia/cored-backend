@@ -97,7 +97,7 @@ class PublicDownloadSignedRouteTest extends TestCase
             'folder_id' => null,
             'name' => 'shared.pdf',
             'disk' => 'local',
-            'path' => 'file-hosting/'.$user->id.'/shared.pdf',
+            'path' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
             'size' => 10,
             'mime' => 'application/pdf',
             'visibility' => 'anyone_with_link',
