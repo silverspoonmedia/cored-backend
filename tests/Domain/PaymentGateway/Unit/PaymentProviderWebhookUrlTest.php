@@ -14,20 +14,20 @@ class PaymentProviderWebhookUrlTest extends TestCase
 
     public function test_midtrans_uses_env_override_when_set(): void
     {
-        config()->set('payment.gateways.midtrans.notify_url', 'https://gateway.example/api/v1/payments/providers/midtrans/webhook');
+        config()->set('payment.gateways.midtrans.notify_url', 'https://api.example/api/v1/payments/providers/midtrans/webhook');
 
         $this->assertSame(
-            'https://gateway.example/api/v1/payments/providers/midtrans/webhook',
+            'https://api.example/api/v1/payments/providers/midtrans/webhook',
             MidtransNotifyUrl::webhookUrl(),
         );
     }
 
     public function test_ipaymu_uses_env_override_when_set(): void
     {
-        config()->set('payment.gateways.ipaymu.notify_url', 'https://gateway.example/api/v1/payments/providers/ipaymu/webhook');
+        config()->set('payment.gateways.ipaymu.notify_url', 'https://api.example/api/v1/payments/providers/ipaymu/webhook');
 
         $this->assertSame(
-            'https://gateway.example/api/v1/payments/providers/ipaymu/webhook',
+            'https://api.example/api/v1/payments/providers/ipaymu/webhook',
             IpaymuNotifyUrl::webhookUrl(),
         );
     }

@@ -45,7 +45,6 @@ Full workflow: [docs/agents/guide.md](docs/agents/guide.md) · [docs/changelog/R
 | [docs/platform/api-routing.md](docs/platform/api-routing.md) | Global vs versioned API |
 | [docs/domains/identity/README.md](docs/domains/identity/README.md) | Auth, JWT, H-RBAC |
 | [docs/domains/error-log/README.md](docs/domains/error-log/README.md) | Grouped persistent app errors |
-| [docs/integration/api-perimeter.md](docs/integration/api-perimeter.md) | Trusted-proxy / `GATEWAY_*` API perimeter |
 | [docs/platform/crud.md](docs/platform/crud.md) | Repository pattern |
 | [docs/domains/payment-gateway/README.md](docs/domains/payment-gateway/README.md) | Payments, invoices |
 | [docs/domains/payment-gateway/encryption.md](docs/domains/payment-gateway/encryption.md) | Envelope encryption + OCI KMS |

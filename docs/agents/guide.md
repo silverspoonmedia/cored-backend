@@ -27,10 +27,9 @@ Full procedure: [changelog/README.md](../changelog/README.md).
 
 ```
 Browser → Blade admin (AdminLTE) → same-host /api/v1/* (JWT cookie → Bearer)
-Optional trusted proxy → /api/v1/* (X-Gateway-Secret when GATEWAY_ENFORCE=true)
 ```
 
-API perimeter: [integration/api-perimeter.md](../integration/api-perimeter.md).
+API auth is JWT + Spatie RBAC. There is no shared-secret API perimeter middleware; protect network exposure with firewall / reverse proxy as needed.
 
 ## Mandatory principles
 

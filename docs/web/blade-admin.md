@@ -81,4 +81,3 @@ Web → API is a **real HTTP** call to the same app. PHP built-in server single-
 ## Related
 
 - [domains/*](../domains/) for domain-specific web proxies  
-- [integration/api-perimeter.md](../integration/api-perimeter.md) — trusted-proxy / `GATEWAY_*` perimeter  

@@ -126,4 +126,3 @@ flowchart TD
 
 - [agents/guide.md](../agents/guide.md) — scope, session keywords, checklists
 - [AGENTS.md](../../AGENTS.md) — agent entry point
-- [integration/api-perimeter.md](../integration/api-perimeter.md) — trusted-proxy / `GATEWAY_*` perimeter

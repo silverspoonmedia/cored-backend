@@ -109,4 +109,3 @@ Sensitive invoice payloads, 2FA, etc.: [encryption.md](encryption.md).
 - [service](../service/README.md) — catalog + FX + service_purchase invoiceable
 - [file-hosting](../file-hosting/README.md) — primary product domain fulfilled from Service
 - [platform/environment.md](../../platform/environment.md)
-- [integration/api-perimeter.md](../../integration/api-perimeter.md)

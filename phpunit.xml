@@ -41,8 +41,6 @@
         <env name="AUTH_GUARD" value="api"/>
         <env name="AUTH_DEFAULT_ROLE" value="User"/>
         <env name="HCAPTCHA_ENABLED" value="false"/>
-        <env name="GATEWAY_ENFORCE" value="false"/>
-        <env name="GATEWAY_SECRET" value="testing-gateway-secret"/>
         <env name="ENCRYPTION_KMS_ENABLED" value="false"/>
         <env name="ENCRYPTION_BLIND_INDEX_PEPPER" value="testing-blind-index-pepper"/>
         <env name="ENCRYPTION_DECRYPTED_CACHE_MAX_TTL" value="60"/>

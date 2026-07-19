@@ -4,8 +4,6 @@ Laravel 13 API application with **JWT authentication**, **TOTP two-factor authen
 
 It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that is a **pure consumer of the versioned API**: every web controller forwards to `/api/v1/*`, so validation, CRUD, and RBAC run **only once — in the API** (no duplicated business logic). The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**, which the web layer forwards to the API as a Bearer token. See **[Web Frontend (Blade + AdminLTE 4)](docs/web/blade-admin.md)**.
 
-Optional **API perimeter** (`GATEWAY_ENFORCE` / `GATEWAY_SECRET` / `X-Gateway-Secret`) can require a trusted secret or allowlisted IP on API requests. See [API perimeter](docs/integration/api-perimeter.md) and [Environment configuration — API perimeter](docs/platform/environment.md#api-perimeter).
-
 **Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,FileHosting,…}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)). Session notes for agent work live in the [changelog](docs/changelog/README.md) (`pending/` drafts → `done/` closed sessions).
 
 ### Living documentation (required)
@@ -268,8 +266,6 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 |----------|-------------|
 | [Environment configuration](docs/platform/environment.md) | Profile templates, `env:install`, `env:switch`, and production checklist |
 | [Octane / Swoole Readiness](docs/platform/octane.md) | Rules and patterns for long-lived worker safety (mandatory before deploying Octane + Swoole) |
-| [API perimeter](docs/integration/api-perimeter.md) | Trusted-proxy / `GATEWAY_*` secret header, Blade same-host path, production checklist |
-
 ### Cross-links between docs
 
 - Auth endpoints and middleware → [jwt-authentication.md](docs/domains/identity/README.md)
