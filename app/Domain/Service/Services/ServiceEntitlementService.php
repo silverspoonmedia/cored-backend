@@ -11,6 +11,7 @@ use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Support\FileHostingBillingPeriod;
 use App\Domain\Service\Support\FileHostingCatalog;
+use App\Support\Product\Services\ProductAnalyticsService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
@@ -18,6 +19,7 @@ class ServiceEntitlementService
 {
     public function __construct(
         private readonly MainPlanChangeCalculator $planChange,
+        private readonly ProductAnalyticsService $analytics,
     ) {}
 
     /**
@@ -48,6 +50,12 @@ class ServiceEntitlementService
             'service_id' => $service->id,
         ]);
 
+        // Capture the user's File Hosting tier BEFORE the entitlement mutation —
+        // needed by moveUserTier to transfer the contribution between buckets.
+        // Only relevant when this purchase is a paid FH storage plan; otherwise
+        // the value is unused.
+        $oldTier = $this->fileHostingTierForUser($purchase->user_id);
+
         $changeType = $purchase->change_type instanceof PurchaseChangeType
             ? $purchase->change_type
             : ($purchase->change_type
@@ -69,6 +77,8 @@ class ServiceEntitlementService
             ]);
             $entitlement->save();
 
+            $this->syncFileHostingTier($purchase->user_id, $service, $oldTier);
+
             return [
                 'entitlement' => $entitlement,
                 'period_start' => null,
@@ -77,10 +87,16 @@ class ServiceEntitlementService
         }
 
         if ($isAddon) {
-            return $this->activateAddon($entitlement, $purchase, $interval, $now, $quantity);
+            $result = $this->activateAddon($entitlement, $purchase, $interval, $now, $quantity);
+            $this->syncFileHostingTier($purchase->user_id, $service, $oldTier);
+
+            return $result;
         }
 
-        return $this->activateMain($entitlement, $purchase, $interval, $now, $changeType);
+        $result = $this->activateMain($entitlement, $purchase, $interval, $now, $changeType);
+        $this->syncFileHostingTier($purchase->user_id, $service, $oldTier);
+
+        return $result;
     }
 
     /**
@@ -359,6 +375,11 @@ class ServiceEntitlementService
 
     public function enterGrace(ServiceEntitlement $entitlement): ServiceEntitlement
     {
+        $service = $entitlement->service;
+        $oldTier = $service !== null && $service->isFileHostingStoragePlan()
+            ? $this->fileHostingTierForUser($entitlement->user_id)
+            : 'free';
+
         $graceDays = max(1, (int) config('service.grace_days', 7));
         $endsAt = $entitlement->ends_at ?? now();
 
@@ -366,15 +387,93 @@ class ServiceEntitlementService
         $entitlement->grace_ends_at = $endsAt->copy()->addDays($graceDays);
         $entitlement->save();
 
+        $this->syncFileHostingTierFromEntitlement($entitlement, 'grace', $oldTier);
+
         return $entitlement->refresh();
     }
 
     public function markExpired(ServiceEntitlement $entitlement): ServiceEntitlement
     {
+        $service = $entitlement->service;
+        $oldTier = $service !== null && $service->isFileHostingStoragePlan()
+            ? $this->fileHostingTierForUser($entitlement->user_id)
+            : 'free';
+
         $entitlement->status = EntitlementStatus::Expired;
         $entitlement->save();
 
+        $this->syncFileHostingTierAfterExpiry($entitlement, $oldTier);
+
         return $entitlement->refresh();
+    }
+
+    /**
+     * Resolve the user's current File Hosting tier. Used to capture the
+     * "before" tier for moveUserTier on entitlement mutations.
+     */
+    private function fileHostingTierForUser(string $userId): string
+    {
+        if ($this->hasGraceFileHosting($userId)) {
+            return 'grace';
+        }
+
+        if ($this->hasActivePaidFileHosting($userId)) {
+            return 'paid';
+        }
+
+        return 'free';
+    }
+
+    /**
+     * Move the user's FileHosting contribution to the paid bucket after an
+     * entitlement activation. Only fires for paid FH storage plans.
+     */
+    private function syncFileHostingTier(string $userId, ?Service $service, string $oldTier): void
+    {
+        if ($service === null || ! $service->isFileHostingStoragePlan()) {
+            return;
+        }
+
+        $this->analytics->moveUserTier('FileHosting', $userId, $oldTier, 'paid');
+    }
+
+    /**
+     * Move the user's FileHosting contribution to the given tier (grace).
+     */
+    private function syncFileHostingTierFromEntitlement(ServiceEntitlement $entitlement, string $tier, string $oldTier): void
+    {
+        $service = $entitlement->service;
+        if ($service === null || ! $service->isFileHostingStoragePlan()) {
+            return;
+        }
+
+        $this->analytics->moveUserTier('FileHosting', $entitlement->user_id, $oldTier, $tier);
+    }
+
+    /**
+     * After expiry, resolve the new tier: if the user still has any active or
+     * grace paid FH storage entitlement, keep that label; otherwise fall to free.
+     */
+    private function syncFileHostingTierAfterExpiry(ServiceEntitlement $entitlement, string $oldTier): void
+    {
+        $service = $entitlement->service;
+        if ($service === null || ! $service->isFileHostingStoragePlan()) {
+            return;
+        }
+
+        if ($this->hasGraceFileHosting($entitlement->user_id)) {
+            $this->analytics->moveUserTier('FileHosting', $entitlement->user_id, $oldTier, 'grace');
+
+            return;
+        }
+
+        if ($this->hasActivePaidFileHosting($entitlement->user_id)) {
+            $this->analytics->moveUserTier('FileHosting', $entitlement->user_id, $oldTier, 'paid');
+
+            return;
+        }
+
+        $this->analytics->moveUserTier('FileHosting', $entitlement->user_id, $oldTier, 'free');
     }
 
     private function nextQuantity(ServiceEntitlement $entitlement, bool $isAddon): int

@@ -11,6 +11,8 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use App\Support\Localization\TranslationResolver;
 use App\Domain\Navigation\Support\MenuLayout;
+use App\Support\Product\ProductRegistry;
+use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -32,6 +34,8 @@ class MenuRepository implements MenuRepositoryInterface
      * Sentinel for grouping root-level menus (parent_id === null).
      */
     private const ROOT = '__root__';
+
+    public function __construct(private readonly ProductActivationService $productActivations) {}
 
     public function navigationTree(?User $user, string $layout): array
     {
@@ -556,6 +560,17 @@ class MenuRepository implements MenuRepositoryInterface
 
         if ($node['is_authenticate'] && ! $user) {
             return false;
+        }
+
+        // Product-activation gate: hide menu nodes bound to a product the
+        // authenticated user is not Active on. Routes not in the map return
+        // null and skip the check. Guests skip this (no auth gate).
+        if ($user && $node['route'] !== null) {
+            $productKey = ProductRegistry::productKeyByMenuRoute($node['route']);
+
+            if ($productKey !== null && ! $this->productActivations->isActive($user->id, $productKey)) {
+                return false;
+            }
         }
 
         if ($node['role_names'] === []) {

@@ -14,6 +14,8 @@ Do **not** collapse taxonomy and lifecycle into one label.
 | **Removable** | Derived | Product with `locked => false`. Not a config key. |
 | **`DomainManager::PLATFORM_CORE`** | Hard guard | Never-remove list. Config cannot override. |
 | **RBAC `domain_kind`** | Separate system | Spatie roles/permissions catalog ownership (`core` \| `product`). Same words, **not** this registry. See [Identity — Core vs product RBAC](../domains/identity/README.md#core-vs-product-rbac). |
+| **Product activation** | Runtime access | Per-user product state (`pending` \| `active` \| `suspended` \| `expired`) in `product_activations`. Tracked by `App\Support\Product\ProductActivationService`, gated by the `product.active` middleware. **Not** module taxonomy and **not** RBAC catalog — a third axis. See [Product Activations](../domains/product-activations/README.md). |
+| **Product analytics** | Denormalized per-(product, tier, metric) counters | Aggregate rows in `product_analytics` (`storage_used_bytes`, `file_count`, `workspace_count_owned`, …) — one row per `(product_key, tier, metric_key)` bucket. Incremented/decremented on domain mutations by `ProductAnalyticsService`; tier transitions move a user's contribution between buckets via `moveUserTier`. Per-user drill-down reads source tables directly. See [Product Activations § Stored analytics](../domains/product-activations/README.md#stored-analytics-v3). |
 
 ### Registry vs removal
 
@@ -69,7 +71,7 @@ app/
 │   └── Service/        # Catalog, entitlements, DB FX→IDR, FH grace/purge (core)
 ├── Http/Middleware/    # Kernel
 ├── Repositories/Eloquent/EloquentCrudRepository.php
-├── Support/            # Api, DataTable, Storage (S3 direct upload), Localization, Web, Auth, Domain (Kernel)
+├── Support/            # Api, DataTable, Storage (S3 direct upload), Localization, Web, Auth, Domain, Product (Kernel)
 ├── Exceptions/         # BusinessRuleException (Kernel)
 └── Providers/
     ├── AppServiceProvider.php
@@ -96,6 +98,8 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `payment-gateway.php` | Gateways, invoices, subscriptions | core |
 | `service.php` | Service catalog, checkout, service purchases | core |
 | `file-hosting.php` | File hosting (auth + public share) folders/files/uploads | product |
+
+Kernel product registry (`app/Support/Product`): `product-activations.php` is **not** a domain route file — it mounts the cross-domain Product Activation API (self-service + admin). Loaded from `routes/api/v1.php` between core and product domain requires.
 
 Global: `routes/api.php` — `GET /api/ping` only (`App\Http\Controllers\API\PingController`).
 

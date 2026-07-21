@@ -3,10 +3,13 @@
 namespace App\Domain\Service\Services;
 
 use App\Domain\FileHosting\Services\FileHostingQuotaRecomputeService;
+use App\Domain\Identity\Models\User;
 use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Support\FileHostingCatalog;
+use App\Support\Product\ProductRegistry;
+use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Support\Facades\Log;
 
 class ServiceFulfillmentService
@@ -14,6 +17,7 @@ class ServiceFulfillmentService
     public function __construct(
         private readonly ServiceEntitlementService $entitlements,
         private readonly FileHostingQuotaRecomputeService $quotaRecompute,
+        private readonly ProductActivationService $productActivations,
     ) {}
 
     public function fulfill(ServicePurchase $purchase): void
@@ -52,17 +56,50 @@ class ServiceFulfillmentService
             }
 
             $this->quotaRecompute->recompute($purchase->user_id);
+            $this->ensureProductActive($purchase->user_id, $target);
 
             return;
         }
 
         if ($target !== null) {
-            Log::info('service.fulfillment.unhandled_target', [
+            $this->ensureProductActive($purchase->user_id, $target);
+
+            Log::info('service.fulfillment.target_dispatched', [
                 'purchase_id' => $purchase->id,
                 'fulfillment_target' => $target,
                 'entitlement' => $service?->entitlement,
                 'plan_kind' => $service?->plan_kind?->value ?? $service?->plan_kind,
             ]);
+
+            return;
+        }
+    }
+
+    /**
+     * Keep the product activation row Active when an entitlement activates.
+     * Implicit products: lazy-create if missing. Explicit products: no-op
+     * here (admin approval is the gate). Logs unhandled targets for review.
+     */
+    private function ensureProductActive(string $userId, string $fulfillmentTarget): void
+    {
+        $productKey = ProductRegistry::productKeyByFulfillmentTarget($fulfillmentTarget);
+
+        if ($productKey === null) {
+            Log::info('service.fulfillment.unhandled_target', [
+                'fulfillment_target' => $fulfillmentTarget,
+            ]);
+
+            return;
+        }
+
+        $user = User::query()->find($userId);
+
+        if ($user === null) {
+            return;
+        }
+
+        if (ProductRegistry::isImplicit($productKey)) {
+            $this->productActivations->activateImplicit($user, $productKey, 'fulfillment');
         }
     }
 

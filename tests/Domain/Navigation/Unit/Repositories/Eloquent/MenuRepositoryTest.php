@@ -26,7 +26,7 @@ class MenuRepositoryTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->repository = new MenuRepository;
+        $this->repository = app(MenuRepository::class);
     }
 
     public function test_create_appends_with_contiguous_order(): void

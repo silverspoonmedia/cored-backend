@@ -13,9 +13,14 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface;
 use App\Support\Auth\UserPresenter;
 use App\Support\Encryption\Cache\SensitiveCacheValue;
+use App\Support\Product\Exceptions\ProductActivationException;
+use App\Support\Product\Exceptions\ProductNotFoundException;
+use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use PHPOpenSourceSaver\JWTAuth\JWTGuard;
 
@@ -29,6 +34,7 @@ class AuthService
         private readonly UserRepositoryInterface $users,
         private readonly TwoFactorService $twoFactor,
         private readonly SensitiveCacheValue $sensitiveCache,
+        private readonly ProductActivationService $productActivations,
     ) {}
 
     /**
@@ -37,16 +43,41 @@ class AuthService
      */
     public function register(array $data): array
     {
-        $user = $this->users->create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $data['password'],
-        ]);
+        return DB::transaction(function () use ($data): array {
+            $user = $this->users->create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+            ]);
 
-        $user->assignRole(config('auth.default_role', 'User'));
-        $user->sendEmailVerificationNotification();
+            $user->assignRole(config('auth.default_role', 'User'));
+            $user->sendEmailVerificationNotification();
 
-        return $this->buildAuthPayload($user);
+            $this->activateImplicitProducts($user);
+
+            return $this->buildAuthPayload($user);
+        });
+    }
+
+    /**
+     * Auto-activate every implicit product for a newly registered user.
+     * Failures are logged but do not abort registration — a user without
+     * an activation row still authenticates; the middleware lazy-creates
+     * implicit activations on first product access.
+     */
+    private function activateImplicitProducts(User $user): void
+    {
+        foreach (\App\Support\Product\ProductRegistry::implicitProductKeys() as $productKey) {
+            try {
+                $this->productActivations->activateImplicit($user, $productKey, 'register_hook');
+            } catch (ProductActivationException|ProductNotFoundException $e) {
+                Log::warning('auth.register.product_activation_failed', [
+                    'user_id' => $user->id,
+                    'product_key' => $productKey,
+                    'reason' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**

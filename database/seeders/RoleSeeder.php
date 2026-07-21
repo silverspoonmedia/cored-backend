@@ -59,6 +59,8 @@ class RoleSeeder extends Seeder
             'view service',
             'manage service',
             'purchase service',
+            'view product activations',
+            'manage product activations',
         ];
 
         foreach ($permissions as $permission) {
@@ -74,10 +76,10 @@ class RoleSeeder extends Seeder
         }
 
         $rolePermissions = [
-            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view error log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service'],
-            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view error log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service'],
-            'Moderator' => ['view user', 'create user', 'edit user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'purchase service'],
-            'Management' => ['view user', 'view menu', 'view notification', 'view payment gateway', 'view invoice', 'view subscription', 'view service'],
+            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view error log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service', 'view product activations', 'manage product activations'],
+            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view error log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service', 'view product activations', 'manage product activations'],
+            'Moderator' => ['view user', 'create user', 'edit user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'purchase service', 'view product activations'],
+            'Management' => ['view user', 'view menu', 'view notification', 'view payment gateway', 'view invoice', 'view subscription', 'view service', 'view product activations'],
             'User' => ['view notification', 'view service', 'purchase service'],
         ];
 

@@ -3,6 +3,7 @@
 namespace App\Domain\FileHosting\Models;
 
 use App\Domain\Identity\Models\User;
+use App\Support\Product\Services\ProductAnalyticsService;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -47,6 +48,60 @@ class HostedFile extends Model
             'last_viewed_at' => 'datetime',
             'signed_download_expires_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Analytics hooks: keep product_analytics counters in sync on file
+     * lifecycle. `deleted` fires for both soft and force deletes. `restored`
+     * fires on model-instance restore (not bulk query restore — that blind
+     * spot is handled explicitly in FolderRepository::restore).
+     */
+    protected static function booted(): void
+    {
+        static::created(function (HostedFile $file): void {
+            app(ProductAnalyticsService::class)->increment(
+                'FileHosting',
+                $file->user_id,
+                'storage_used_bytes',
+                (int) $file->size,
+            );
+            app(ProductAnalyticsService::class)->increment(
+                'FileHosting',
+                $file->user_id,
+                'file_count',
+                1,
+            );
+        });
+
+        static::deleted(function (HostedFile $file): void {
+            app(ProductAnalyticsService::class)->decrement(
+                'FileHosting',
+                $file->user_id,
+                'storage_used_bytes',
+                (int) $file->size,
+            );
+            app(ProductAnalyticsService::class)->decrement(
+                'FileHosting',
+                $file->user_id,
+                'file_count',
+                1,
+            );
+        });
+
+        static::restored(function (HostedFile $file): void {
+            app(ProductAnalyticsService::class)->increment(
+                'FileHosting',
+                $file->user_id,
+                'storage_used_bytes',
+                (int) $file->size,
+            );
+            app(ProductAnalyticsService::class)->increment(
+                'FileHosting',
+                $file->user_id,
+                'file_count',
+                1,
+            );
+        });
     }
 
     /**
