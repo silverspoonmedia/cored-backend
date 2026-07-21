@@ -10,6 +10,7 @@ return [
         'back' => '戻る',
         'search' => '検索',
         'logout' => 'ログアウト',
+        'reset' => 'リセット',
     ],
     'labels' => [
         'email' => 'メールアドレス',
@@ -19,6 +20,11 @@ return [
         'permissions' => '権限',
         'status' => 'ステータス',
         'language' => '言語',
+        'actions' => 'アクション',
+        'main_navigation' => 'メインナビゲーション',
+        'breadcrumb' => 'パンくずリスト',
+        'users_table' => 'ユーザー',
+        'user_menu' => 'アカウントメニュー',
     ],
     'status' => [
         'verified' => '確認済み',
@@ -35,6 +41,11 @@ return [
     'password' => [
         'show' => 'パスワードを表示',
         'hide' => 'パスワードを非表示',
+    ],
+    'skip_to_content' => 'メインコンテンツへスキップ',
+    'empty_state' => [
+        'default_title' => 'まだデータがありません',
+        'default_message' => '作成されるとここに表示されます。',
     ],
     'breadcrumb' => [
         'add' => '追加',

@@ -9,7 +9,9 @@
         @endcan
 
         <div class="table-responsive">
-            <table id="users-table" class="table table-hover align-middle mb-0 w-100"></table>
+            <table id="users-table" class="table table-hover align-middle mb-0 w-100" aria-label="{{ __('ui.labels.users_table') }}">
+                <caption class="visually-hidden">{{ __('web/users.list_title') }}</caption>
+            </table>
         </div>
     </x-adminlte4::card>
 

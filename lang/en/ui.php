@@ -10,6 +10,7 @@ return [
         'back' => 'Back',
         'search' => 'Search',
         'logout' => 'Log out',
+        'reset' => 'Reset',
     ],
     'labels' => [
         'email' => 'Email address',
@@ -19,6 +20,11 @@ return [
         'permissions' => 'Permissions',
         'status' => 'Status',
         'language' => 'Language',
+        'actions' => 'Actions',
+        'main_navigation' => 'Main navigation',
+        'breadcrumb' => 'Breadcrumb',
+        'users_table' => 'Users',
+        'user_menu' => 'Account menu',
     ],
     'status' => [
         'verified' => 'Verified',
@@ -35,6 +41,11 @@ return [
     'password' => [
         'show' => 'Show password',
         'hide' => 'Hide password',
+    ],
+    'skip_to_content' => 'Skip to main content',
+    'empty_state' => [
+        'default_title' => 'Nothing here yet',
+        'default_message' => 'Items will appear here once they are created.',
     ],
     'breadcrumb' => [
         'add' => 'Add',

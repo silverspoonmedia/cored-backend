@@ -1,7 +1,7 @@
 <x-adminlte4::layouts.auth :title="__('web/auth.login_title')" :heading="__('web/auth.login_heading')">
     <x-adminlte4::form.ajax :action="route('login.store')">
-        <x-adminlte4::form.input name="email" type="email" :placeholder="__('web/auth.email_placeholder')" icon="bi-envelope" required autofocus autocomplete="email" />
-        <x-adminlte4::form.input name="password" type="password" :placeholder="__('web/auth.password_placeholder')" icon="bi-lock-fill" required autocomplete="current-password" />
+        <x-adminlte4::form.input name="email" type="email" :label="__('ui.labels.email')" :placeholder="__('web/auth.email_placeholder')" icon="bi-envelope" required autofocus autocomplete="email" />
+        <x-adminlte4::form.input name="password" type="password" :label="__('ui.labels.password')" :placeholder="__('web/auth.password_placeholder')" icon="bi-lock-fill" required autocomplete="current-password" />
 
         <x-adminlte4::form.hcaptcha />
 

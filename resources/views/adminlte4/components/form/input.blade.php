@@ -40,10 +40,10 @@
                 </button>
             @endif
             @if ($icon)
-                <span class="input-group-text"><i class="bi {{ $icon }}"></i></span>
+                <span class="input-group-text"><i class="bi {{ $icon }}" aria-hidden="true"></i></span>
             @endif
-            <x-adminlte4::form.error :name="$name" />
         </div>
+        <x-adminlte4::form.error :name="$name" />
     @else
         <input
             type="{{ $type }}"

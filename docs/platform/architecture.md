@@ -126,8 +126,7 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 4. Bind repos/policies in the generated ServiceProvider
 5. Tests under `tests/Domain/{Name}/`
 6. If the product needs its own H-RBAC (beyond core roles/permissions): seed product roles/permissions (`domain_kind = product`), unique names, optional product level ladder — see [Core vs product RBAC](../domains/identity/README.md#core-vs-product-rbac)
-7. New public URLs or JSON shapes → [changelog/pending/](../changelog/pending/)
-8. Update this doc and [docs/README.md](../README.md) if the domain map changes
+7. Update this doc and [docs/README.md](../README.md) if the domain map changes
 
 ## Deliberately not done
 

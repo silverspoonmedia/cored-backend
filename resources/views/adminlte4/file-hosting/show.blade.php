@@ -189,8 +189,8 @@
 
     @can('edit file hosting file')
         <div class="modal fade" id="fhRenameFileModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <form method="POST" action="#" class="modal-content" id="fhRenameFileForm">
+            <div class="modal-dialog modal-fullscreen-sm-down">
+                  <form method="POST" action="#" class="modal-content" id="fhRenameFileForm">
                     @csrf
                     @method('PATCH')
                     <input type="hidden" name="return_folder_id" value="{{ $folderId }}">
@@ -214,8 +214,8 @@
         </div>
 
         <div class="modal fade" id="fhShareFileModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <form method="POST" action="#" class="modal-content" id="fhShareFileForm">
+            <div class="modal-dialog modal-fullscreen-sm-down">
+                  <form method="POST" action="#" class="modal-content" id="fhShareFileForm">
                     @csrf
                     @method('PATCH')
                     @if ($ownerUserId)

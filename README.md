@@ -4,31 +4,15 @@ Laravel 13 API application with **JWT authentication**, **TOTP two-factor authen
 
 It also ships a server-rendered **Blade admin frontend** (AdminLTE 4 / Bootstrap 5) that is a **pure consumer of the versioned API**: every web controller forwards to `/api/v1/*`, so validation, CRUD, and RBAC run **only once — in the API** (no duplicated business logic). The browser authenticates with the **same stateless JWT, carried in an HttpOnly cookie**, which the web layer forwards to the API as a Bearer token. See **[Web Frontend (Blade + AdminLTE 4)](docs/web/blade-admin.md)**.
 
-**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,FileHosting,…}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)). Session notes for agent work live in the [changelog](docs/changelog/README.md) (`pending/` drafts → `done/` closed sessions).
+**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,FileHosting,…}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)).
 
 ### Living documentation (required)
 
-**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work. **AI agents:** read [AI Agent Guide](docs/agents/guide.md) and root [AGENTS.md](AGENTS.md) on every task; work stays in this repository. To **close a session** (improve docs for work done, then write one changelog entry with Monolith outcomes), the prompt must contain the exact keyword **`upstream documentation session`** — see [Changelog](docs/changelog/README.md). Without that keyword, treat the session as still in the work phase. **Always update the relevant documentation** (README and/or files in `docs/`) when your changes affect setup, conventions, the API, auth, the data schema, localization, or any behavior described here—do not let code and docs drift apart.
+**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work.
 
-**Documentation placement (required):** Living docs are organized **by domain** (mirror `app/Domain/*`) plus `platform/`, `web/`, `integration/`, and `agents/`. When adding or expanding documentation, put content in the matching section — **do not** create a new subject file at `docs/*.md` root. Prefer editing an existing guide; use `docs/archive/` only for historical assessments. Full rules: [docs/README.md — Rules for new documentation](docs/README.md#rules-for-new-documentation-mandatory).
+**AI agents:** read [docs/agents/core-rules.md](docs/agents/core-rules.md) and root [AGENTS.md](AGENTS.md) on every task — mandatory full-stack, living-docs, database-safety, Octane, and localization rules live there, in one place. Work stays in this repository.
 
 **All project documentation must be written in English** (README, `docs/`, and any new guides or sections you add).
-
-**Localization (required on every task that touches copy):** Any change that adds or modifies user-facing text — Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, or database content shown to users — must include translations for **all** supported locales (`en`, `id`, `ja` today) in the **same task/PR**. Use `__('…')` with application-owned files under `lang/{locale}/` (never hardcode strings), or Spatie translatable fields for database content. See [Localization](docs/platform/localization.md#task-rule-required) for the full checklist and conventions.
-
-**Octane / Swoole readiness (required on every task):** All new code must follow the mandatory patterns in [Octane / Swoole Readiness](docs/platform/octane.md) to survive long-lived worker processes. Never store request/user state on static properties or singletons. Never mutate facade/guard state without cleanup. Never call `env()` outside config files. Never use `config()->set()` at runtime. This project is not yet running Octane, but every line of code must be written as if it will tomorrow.
-
-**Full-stack implementation (required on every Monolith task):** Every feature or change must be implemented end to end across **all relevant Monolith layers** in the **same task/PR** — do **not** ship work that only touches a single layer. This means API + Web + Blade + translations inside **this repository**. At minimum, a typical task should cover:
-
-| Layer | What to touch |
-|-------|----------------|
-| **API** | Versioned routes (`/api/v1/*`), controllers, form requests, policies, repositories, and API responses |
-| **Web** | Web controllers that consume the API (`ConsumesApi` / `ApiClient`), routes in `routes/web.php` and `routes/web/*.php`, and request forwarding |
-| **Blade views** | Screens, forms, list tables, partials, and reusable components under `resources/views/{layout}/` (default layout: `adminlte4` via `WEB_LAYOUT` / `config/web.php`; see [web-frontend.md](docs/web/blade-admin.md#layout-namespace-and-configwebphp)) |
-| **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (`en`, `id`, `ja`) |
-| **Other (as applicable)** | Migrations, seeders, models, events/listeners, notifications, navigation menu entries, tests, and the relevant `docs/` guides |
-
-A task that adds an API endpoint without the matching web route, Blade screen, and translations is **incomplete**. Likewise, a Blade-only or API-only change without its counterpart layers is not acceptable. See [Web frontend](docs/web/blade-admin.md), [CRUD architecture](docs/platform/crud.md), and [Localization](docs/platform/localization.md) for layer-specific conventions.
 
 ---
 
@@ -76,8 +60,6 @@ On **Laragon** (Windows), enable PHP 8.3+ and create a MySQL database named `mon
 ```powershell
 cd monolith; php artisan migrate; php artisan db:seed
 ```
-
-**AI Agent token optimization:** Some AI models implement strict prompt caching and may repeatedly mention token optimization or usage statistics in their responses. If your AI agent exhibits this behavior (e.g., frequently commenting on token consumption, suggesting cache optimization strategies unprompted, or adding token-related warnings to routine operations), instruct it to omit unnecessary optimization commentary unless token usage is directly relevant to the current task. The agent should focus on delivering requested functionality without meta-commentary about the interaction itself—nagging about tokens wastes more tokens than it saves.
 
 ---
 
@@ -151,7 +133,7 @@ npm install
 npm run build
 ```
 
-`package.json` includes `laravel-echo` and `pusher-js` as runtime dependencies. Vite entries are declared in `vite.config.js` (`resources/js/app.js`, `resources/js/notifications/bell.js`, `resources/js/payments/checkout.js`, `resources/js/payments/channels-admin.js`, `resources/css/payments/order-invoice-show.css`, and others).
+`package.json` includes `laravel-echo` and `pusher-js` as runtime dependencies. Vite entries are declared in `vite.config.js` (`resources/js/notifications/bell.js`, `resources/js/payments/checkout.js`, `resources/js/payments/channels-admin.js`, `resources/css/monolith-overrides.css`, `resources/css/payments/order-invoice-show.css`, and others).
 
 For local development with hot reload:
 

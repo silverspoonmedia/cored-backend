@@ -4,6 +4,7 @@ use App\Domain\PaymentGateway\Http\Controllers\Web\InvoiceController;
 use App\Domain\PaymentGateway\Http\Controllers\Web\PaymentChannelController;
 use App\Domain\PaymentGateway\Http\Controllers\Web\PaymentCheckoutController;
 use App\Domain\PaymentGateway\Http\Controllers\Web\PaymentGatewayController;
+use App\Domain\PaymentGateway\Http\Controllers\Web\QrCodeController;
 use App\Domain\PaymentGateway\Http\Controllers\Web\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,3 +34,6 @@ Route::get('subscriptions/datatable', [SubscriptionController::class, 'datatable
 Route::get('subscriptions/create', [SubscriptionController::class, 'create'])->name('subscriptions.create');
 Route::get('subscriptions/{subscription}/edit', [SubscriptionController::class, 'edit'])->whereUuid('subscription')->name('subscriptions.edit');
 Route::apiResource('subscriptions', SubscriptionController::class)->except(['create', 'edit'])->whereUuid('subscription');
+
+// Local QR generator — replaces third-party api.qrserver.com fallback.
+Route::get('qr', [QrCodeController::class, 'show'])->name('qr.show');

@@ -134,6 +134,18 @@ function initNotificationBell(config) {
     const badge = bell.querySelector('[data-notification-badge]');
     const list = bell.querySelector('[data-notification-list]');
     const header = bell.querySelector('[data-notification-header]');
+
+    if (badge) {
+        badge.setAttribute('role', 'status');
+        badge.setAttribute('aria-live', 'polite');
+        badge.setAttribute('aria-label', badge.getAttribute('aria-label') || labels?.badge || 'Unread notifications');
+    }
+
+    if (list) {
+        list.setAttribute('aria-live', 'polite');
+        list.setAttribute('aria-atomic', 'false');
+    }
+
     const headerDefault = header ? header.textContent : '';
     const { urls, labels, realtime, pollingIntervalSeconds = 60, userId, broadcast } = config;
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';

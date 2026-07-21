@@ -5,6 +5,7 @@ return [
     'breadcrumb' => 'Notifications',
     'list_title' => 'All notifications',
     'bell_label' => 'Notifications',
+    'unread_count_label' => 'Unread notifications',
     'header_count' => ':count Notifications',
     'view_all' => 'View all',
     'mark_all_read' => 'Mark all as read',

@@ -10,6 +10,7 @@ return [
         'back' => 'Kembali',
         'search' => 'Cari',
         'logout' => 'Keluar',
+        'reset' => 'Reset',
     ],
     'labels' => [
         'email' => 'Alamat email',
@@ -19,6 +20,11 @@ return [
         'permissions' => 'Hak Akses',
         'status' => 'Status',
         'language' => 'Bahasa',
+        'actions' => 'Aksi',
+        'main_navigation' => 'Navigasi utama',
+        'breadcrumb' => 'Breadcrumb',
+        'users_table' => 'Pengguna',
+        'user_menu' => 'Menu akun',
     ],
     'status' => [
         'verified' => 'Terverifikasi',
@@ -35,6 +41,11 @@ return [
     'password' => [
         'show' => 'Tampilkan kata sandi',
         'hide' => 'Sembunyikan kata sandi',
+    ],
+    'skip_to_content' => 'Lewati ke konten utama',
+    'empty_state' => [
+        'default_title' => 'Belum ada data',
+        'default_message' => 'Item akan muncul di sini setelah dibuat.',
     ],
     'breadcrumb' => [
         'add' => 'Tambah',

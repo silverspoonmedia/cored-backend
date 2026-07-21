@@ -109,8 +109,7 @@ function filterChannels(cards, query, countLabel, noResultsEl, messages) {
         ].join(' ');
 
         const matches = needle === '' || haystack.includes(needle);
-        card.toggleAttribute('data-hidden', !matches);
-        card.style.display = matches ? '' : 'none';
+        card.setAttribute('data-hidden', matches ? 'false' : 'true');
 
         if (matches) {
             visible += 1;
@@ -230,8 +229,22 @@ function resortRouteList(card, primaryLabel) {
         return aPriority - bPriority;
     });
 
+    // Preserve focus across DOM reordering: if the active element lives inside
+    // an item that moves, the browser drops focus. Snapshot + restore by id.
+    const active = document.activeElement;
+    const activeItem = active ? active.closest('[data-payment-route-item]') : null;
+    const activeId = active && active.id ? active.id : null;
+    const restoreFocus = activeItem && list.contains(activeItem);
+
     items.forEach((item) => list.appendChild(item));
     refreshPrimaryRouteMarkers(card, primaryLabel);
+
+    if (restoreFocus && activeId) {
+        const restored = document.getElementById(activeId);
+        if (restored && typeof restored.focus === 'function') {
+            restored.focus();
+        }
+    }
 }
 
 function showToast(element, message, type) {

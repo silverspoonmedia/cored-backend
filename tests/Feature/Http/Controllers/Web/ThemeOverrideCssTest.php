@@ -8,12 +8,10 @@ use Tests\TestCase;
  * Verifies the Monolith soft-override CSS layer ships the design tokens
  * and component overrides needed for light-mode polish.
  *
- * The override layer lives in two mirror files:
- *   - resources/css/monolith-overrides.css  (loaded on every Blade page)
- *   - resources/css/app.css                 (Tailwind entry, same tokens)
- *
- * Both must stay in sync. These tests guard against accidental token drift
- * and ensure the light-mode accent system is present.
+ * The override layer lives in resources/css/monolith-overrides.css
+ * and is loaded on every Blade page via @vite in assets-head.blade.php.
+ * These tests guard against accidental token drift and ensure the
+ * light-mode accent system is present.
  */
 class ThemeOverrideCssTest extends TestCase
 {
@@ -22,7 +20,6 @@ class ThemeOverrideCssTest extends TestCase
     {
         return [
             'monolith-overrides' => resource_path('css/monolith-overrides.css'),
-            'app' => resource_path('css/app.css'),
         ];
     }
 
@@ -130,6 +127,46 @@ class ThemeOverrideCssTest extends TestCase
 
             // Card hover includes translateY(-1px) for tactile lift
             $this->assertStringContainsString('translateY(-1px)', $css, "{$label} missing card hover lift.");
+        }
+    }
+
+    public function test_card_hover_lift_is_scoped_to_interactive_cards(): void
+    {
+        foreach ($this->overrideFiles() as $label => $path) {
+            $css = file_get_contents($path);
+
+            // The global `.card:hover` lift was removed to avoid jank on
+            // non-interactive cards. The unscoped selector must not appear
+            // as its own rule (only as a chained suffix like `a.card:hover`).
+            $this->assertDoesNotMatchRegularExpression(
+                '/^\.card:hover\s*\{/m',
+                $css,
+                "{$label} still ships global .card:hover lift as a standalone rule.",
+            );
+            $this->assertStringContainsString('.card.is-clickable:hover', $css, "{$label} missing scoped .card.is-clickable:hover rule.");
+        }
+    }
+
+    public function test_dark_gradient_end_uses_indigo_palette(): void
+    {
+        foreach ($this->overrideFiles() as $label => $path) {
+            $css = file_get_contents($path);
+
+            // The dark-mode gradient-end was a green-tinted typo (#1a2e1a) in
+            // an indigo/slate palette. It must now resolve to an indigo shade.
+            $this->assertStringNotContainsString('--monolith-gradient-end: #1a2e1a', $css, "{$label} dark gradient-end still green typo.");
+            $this->assertStringContainsString('--monolith-gradient-end: #312e81', $css, "{$label} dark gradient-end not indigo.");
+        }
+    }
+
+    public function test_reduced_motion_media_query_is_present(): void
+    {
+        foreach ($this->overrideFiles() as $label => $path) {
+            $css = file_get_contents($path);
+
+            $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $css, "{$label} missing prefers-reduced-motion guard.");
+            $this->assertStringContainsString('animation-duration: 0.01ms', $css, "{$label} reduced-motion must shorten animations.");
+            $this->assertStringContainsString('transition-duration: 0.01ms', $css, "{$label} reduced-motion must shorten transitions.");
         }
     }
 
@@ -349,5 +386,24 @@ class ThemeOverrideCssTest extends TestCase
             $this->assertStringContainsString("{$prefix}mid:", $css, "{$label} missing gradient-mid token.");
             $this->assertStringContainsString("{$prefix}end:", $css, "{$label} missing gradient-end token.");
         }
+    }
+
+    public function test_file_hosting_toolbar_renders_symmetrical_border(): void
+    {
+        $css = (string) file_get_contents(resource_path('css/file-hosting/file-hosting.css'));
+
+        // The toolbar used to ship only border-bottom + a half-rounded radius,
+        // making it look like a half-box. It must now declare a full border and
+        // a uniform border-radius so the search box reads as a symmetric shell.
+        $this->assertMatchesRegularExpression(
+            '/\.fh-toolbar\s*\{[^}]*\bborder:\s*1px solid[^}]*\}/s',
+            $css,
+            'file-hosting .fh-toolbar must declare a full border for visual symmetry.',
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '/\.fh-toolbar\s*\{[^}]*border-radius:\s*var\(--fh-radius\)\s+var\(--fh-radius\)\s+0\s+0/s',
+            $css,
+            'file-hosting .fh-toolbar must not carry the old half-rounded radius.',
+        );
     }
 }

@@ -3,20 +3,30 @@
     <div class="container-fluid">
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a class="nav-link" data-lte-toggle="sidebar" href="#" role="button" aria-label="{{ __('web/navbar.toggle_sidebar') }}">
-                    <i class="bi bi-list"></i>
+                <a class="nav-link" data-lte-toggle="sidebar" href="#" role="button" aria-label="{{ __('web/navbar.toggle_sidebar') }}" aria-expanded="false">
+                    <i class="bi bi-list" aria-hidden="true"></i>
                 </a>
             </li>
             <x-adminlte4::nav.bar-tree :items="$navbarNavigation ?? []" />
+            @if (! empty($navbarNavigation))
+                <li class="nav-item dropdown d-md-none">
+                    <a class="nav-link" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-label="{{ __('ui.labels.main_navigation') }}">
+                        <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <x-adminlte4::nav.bar-tree :items="$navbarNavigation" nested />
+                    </ul>
+                </li>
+            @endif
         </ul>
 
         <ul class="navbar-nav ms-auto">
             {{-- Color mode toggle --}}
             <li class="nav-item dropdown">
                 <a class="nav-link" href="#" id="bd-theme" aria-label="{{ __('web/navbar.toggle_theme') }}" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-sun-fill" data-lte-theme-icon="light"></i>
-                    <i class="bi bi-moon-fill d-none" data-lte-theme-icon="dark"></i>
-                    <i class="bi bi-circle-half d-none" data-lte-theme-icon="auto"></i>
+                    <i class="bi bi-sun-fill" data-lte-theme-icon="light" aria-hidden="true"></i>
+                    <i class="bi bi-moon-fill d-none" data-lte-theme-icon="dark" aria-hidden="true"></i>
+                    <i class="bi bi-circle-half d-none" data-lte-theme-icon="auto" aria-hidden="true"></i>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bd-theme" style="--bs-dropdown-min-width: 8rem">
                     <li>
@@ -39,8 +49,8 @@
 
             {{-- Locale switcher --}}
             <li class="nav-item dropdown">
-                <a class="nav-link" href="#" data-bs-toggle="dropdown" aria-label="{{ __('ui.labels.language') }}">
-                    <i class="bi bi-translate"></i>
+                <a class="nav-link" href="#" data-bs-toggle="dropdown" aria-label="{{ __('ui.labels.language') }}" aria-expanded="false">
+                    <i class="bi bi-translate" aria-hidden="true"></i>
                     <span class="d-none d-md-inline ms-1 text-uppercase">{{ app()->getLocale() }}</span>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -62,8 +72,8 @@
                     id="notification-bell"
                     data-notification-config='@json($notificationBellConfig ?? null)'
                 >
-                    <a class="nav-link" href="#" data-bs-toggle="dropdown" aria-label="{{ __('web/notifications.bell_label') }}">
-                        <i class="bi bi-bell-fill"></i>
+                    <a class="nav-link" href="#" data-bs-toggle="dropdown" aria-label="{{ __('web/notifications.bell_label') }}" aria-expanded="false">
+                        <i class="bi bi-bell-fill" aria-hidden="true"></i>
                         <span class="navbar-badge badge text-bg-danger d-none" data-notification-badge>0</span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
@@ -72,6 +82,7 @@
                             <x-adminlte4::form.ajax :action="route('notifications.read-all')" :show-alert="false" class="m-0">
                                 <button type="submit" class="btn btn-link btn-sm p-0 text-decoration-none" data-notification-read-all>
                                     {{ __('web/notifications.mark_all_read') }}
+                                    <span class="spinner-border spinner-border-sm d-none ms-1" data-form-submit-spinner role="status" aria-hidden="true"></span>
                                 </button>
                             </x-adminlte4::form.ajax>
                         </span>
@@ -89,8 +100,8 @@
 
             {{-- User menu --}}
             <li class="nav-item dropdown user-menu">
-                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle fs-5"></i>
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('ui.labels.user_menu') }}">
+                    <i class="bi bi-person-circle fs-5" aria-hidden="true"></i>
                     <span class="d-none d-md-inline ms-1">{{ $user?->name }}</span>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
@@ -114,7 +125,8 @@
                     <li class="user-footer">
                         <x-adminlte4::form.ajax :action="route('logout')" :show-alert="false" class="float-end">
                             <button type="submit" class="btn btn-outline-danger btn-sm">
-                                <i class="bi bi-box-arrow-right"></i> {{ __('ui.actions.logout') }}
+                                <i class="bi bi-box-arrow-right" aria-hidden="true"></i> {{ __('ui.actions.logout') }}
+                                <span class="spinner-border spinner-border-sm d-none ms-1" data-form-submit-spinner role="status" aria-hidden="true"></span>
                             </button>
                         </x-adminlte4::form.ajax>
                     </li>

@@ -22,7 +22,8 @@ export function resolveQrImageSrc(qrUrl, qrString) {
         return '';
     }
 
-    return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(payload)}`;
+    // Local endpoint (chillerlan/php-qrcode) — no third-party leak.
+    return `${window.monolithQrBaseUrl ?? '/qr'}?data=${encodeURIComponent(payload)}`;
 }
 
 /**

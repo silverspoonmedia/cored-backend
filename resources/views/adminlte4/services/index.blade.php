@@ -56,7 +56,9 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-muted text-center py-4">{{ __('web/services.empty') }}</td>
+                            <td colspan="6">
+                                <x-adminlte4::empty-state icon="bi-box-seam" :title="__('web/services.empty')" />
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>

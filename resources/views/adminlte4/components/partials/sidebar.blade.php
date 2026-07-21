@@ -6,7 +6,7 @@
 <aside class="app-sidebar bg-body-secondary shadow">
     <div class="sidebar-brand">
         <a href="{{ route('dashboard') }}" class="brand-link">
-            <span class="brand-text fw-light"><b>Mono</b>lith</span>
+            <span class="brand-text fw-light"><strong>Mono</strong>lith</span>
         </a>
     </div>
 
@@ -19,7 +19,7 @@
                 class="nav sidebar-menu flex-column"
                 data-lte-toggle="treeview"
                 role="navigation"
-                aria-label="Main navigation"
+                aria-label="{{ __('ui.labels.main_navigation') }}"
                 data-accordion="false"
             >
                 <x-adminlte4::nav.tree :items="$navigation ?? []" />

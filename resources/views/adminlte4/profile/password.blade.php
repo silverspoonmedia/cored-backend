@@ -7,7 +7,10 @@
                     <x-adminlte4::form.input name="password" type="password" :label="__('web/profile.new_password')" required autocomplete="new-password" />
                     <x-adminlte4::form.input name="password_confirmation" type="password" :label="__('web/profile.confirm_password')" required autocomplete="new-password" />
 
-                    <x-adminlte4::form.submit :label="__('ui.actions.save')" class="btn btn-primary" />
+                    <div class="d-flex gap-2">
+                        <x-adminlte4::form.submit :label="__('ui.actions.save')" class="btn btn-primary" />
+                        <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">{{ __('ui.actions.cancel') }}</a>
+                    </div>
                 </x-adminlte4::form.ajax>
             </x-adminlte4::card>
         </div>

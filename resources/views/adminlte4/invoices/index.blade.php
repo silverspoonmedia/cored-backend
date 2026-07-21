@@ -1,7 +1,7 @@
 <x-adminlte4::layouts.app :title="__('web/payments.invoices.title')">
     <x-adminlte4::card :title="__('web/payments.invoices.list_title')">
         <div class="table-responsive">
-            <table id="invoices-table" class="table table-hover align-middle mb-0 w-100"></table>
+            <table id="invoices-table" class="table table-hover align-middle mb-0 w-100" aria-label="{{ __('web/payments.invoices.list_title') }}"></table>
         </div>
     </x-adminlte4::card>
 

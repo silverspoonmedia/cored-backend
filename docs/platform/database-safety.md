@@ -49,4 +49,4 @@ Default sign-in: `admin@example.com` / `123456789`. Invoices are **not** recreat
 
 - Prefer `composer test` / `composer test -- --filter=…`
 - Never `migrate:fresh` / `db:wipe` on non-sqlite without `ALLOW_DESTRUCTIVE_DB=true`
-- See [AGENTS.md](../../AGENTS.md), [agents/guide.md](../agents/guide.md)
+- See [AGENTS.md](../../AGENTS.md), [agents/core-rules.md](../agents/core-rules.md)

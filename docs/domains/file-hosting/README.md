@@ -10,7 +10,6 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Web (auth) | `routes/web/file-hosting.php` |
 | Web (guest) | `routes/web/file-hosting-public.php` |
 | Seeder | `FileHostingRoleSeeder` (after core `RoleSeeder`) |
-| Docs close-out | [upload progress speed + Finalizing](../../changelog/done/2026-07-18-file-hosting-upload-progress-speed.md) · [hybrid proxy + display rename](../../changelog/done/2026-07-17-file-hosting-hybrid-proxy-display-rename.md) · [multi-region + bulk](../../changelog/pending/2026-07-16-file-hosting-multi-region-bulk.md) · [product domain](../../changelog/pending/2026-07-16-file-hosting-product-domain.md) |
 
 ## Concepts
 

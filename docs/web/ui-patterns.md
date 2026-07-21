@@ -44,6 +44,99 @@ e.g. `GET /users/datatable` → API `?display_mode=datatable` + Bearer from cook
 
 Implementation helpers under `App\Support\DataTable\*`; domain row action resolvers per list.
 
+## Accessibility (ARIA)
+
+The Blade admin follows WCAG 2.1 AA. Guards live in `tests/Feature/Http/Controllers/Web/AccessibilityBladeTest.php`.
+
+### Required invariants
+
+| Area | Rule | Where |
+|------|------|-------|
+| Skip link | `<a href="#main-content" class="visually-hidden-focusable">` first in `<body>`; `<main id="main-content">` | `layouts/app.blade.php`, `layouts/auth.blade.php` |
+| Auth inputs | Visible `<label>` (not placeholder-only) | `auth/*.blade.php` via `form.input :label` |
+| Icon-only buttons | `aria-label` + `title` | `menus/index.blade.php`, navbar toggles |
+| Navbar dropdowns | `aria-expanded="false"` initial (Bootstrap updates dynamically) | `navbar.blade.php` |
+| Active nav | `aria-current="page"` | `nav/tree.blade.php`, `nav/bar-tree.blade.php`, `sidebar-nav-search.blade.php` JS |
+| Breadcrumbs | `<nav aria-label="breadcrumb">`; every parent must expose a clickable `route()` URL (no plain-text parents) | `partials/breadcrumbs.blade.php`, `routes/breadcrumbs.php` |
+| DataTables | `aria-label` on `<table>`; `<caption>` where helpful | `users/index.blade.php`, `invoices/index.blade.php`, `payment-gateways/index.blade.php` |
+| Status regions | `role="status"` + `aria-live="polite"` | `payment-status-hero.blade.php`, bell badge (`bell.js`), toasts (`file-manager.js`) |
+| Toggle buttons | `aria-pressed` | `checkout.js` channel buttons |
+| Interactive divs | `role="button"` + `tabindex="0"` + Enter/Space handler | file-hosting dropzone, move-tree items (`file-manager.js`) |
+
+### Lang keys
+
+Added under `lang/{en,id,ja}/ui.php`: `skip_to_content`, `labels.actions`, `labels.main_navigation`, `labels.breadcrumb`, `labels.users_table`, `labels.user_menu`, `actions.reset`.
+
+## Responsive
+
+Mobile-first adjustments live in CSS (not inline Blade styles), guarded by `ThemeOverrideCssTest`.
+
+### Reduced motion
+
+Both `monolith-overrides.css` and `file-hosting.css` ship `@media (prefers-reduced-motion: reduce)` blocks that shorten animations/transitions to `0.01ms` and disable card hover lift. Required for WCAG 2.3.3.
+
+### Mobile navigation fallback
+
+`bar-tree.blade.php` items are `d-none d-md-block` on the navbar row. On mobile (`< md`), the navbar renders a "More" dropdown (`d-md-none`) that exposes the same tree as nested `dropdown-item`s, so navbar-layout menu items stay reachable without the sidebar.
+
+### Modals
+
+File-hosting modals (`show.blade.php` rename/share, `_move-modal.blade.php`) use `modal-fullscreen-sm-down` so they fill the viewport on phones.
+
+### Inline styles
+
+Inline `style="max-width: …"` / `padding-left: …px` were removed. Use utility classes (`ps-3`, `ps-4`) or the `.monolith-truncate-md` helper (28rem, full-width under 576px).
+
+### Radius consistency
+
+`payments/channels-admin.css` uses `var(--pc-radius)` for every border-radius (previously mixed 0.5 / 0.65 / 0.75rem).
+
+## Empty states
+
+Use `<x-adminlte4::empty-state :icon="…" :title="…" :message="…" />` for all "no data" rows/panels. It renders `role="status"`, a muted icon, title, and optional message.
+
+Convention for table empty rows:
+
+```blade
+@empty
+    <tr>
+        <td colspan="N">
+            <x-adminlte4::empty-state icon="bi-inbox" :title="__('web/domain.empty')" />
+        </td>
+    </tr>
+@endforelse
+```
+
+Adopted in: `notifications/index`, `services/index`, `error-logs/index`, `activity-logs/index`, `menus/index`. File-hosting trash keeps its own `.fh-empty` block (richer icon layout).
+
+## Toasts (replacing window.alert)
+
+Checkout errors/confirmations use `showCheckoutToast(message, type)` (`checkout.js`) with `.ois-toast` styles in `order-invoice-show.css`. The toast container exposes `role="status"` + `aria-live="polite"`. `window.alert` is forbidden in checkout.
+
+## Theme-color meta
+
+`assets-head.blade.php` pins `<meta name="theme-color">` to `#6366f1` (indigo accent) for light and `#1e293b` (slate) for dark — matches the `--monolith-accent` token, not Bootstrap blue.
+
+## Action buttons (list rows)
+
+Row action groups use a single `btn-group` with direct-children buttons only. Nested `<form>` inside `btn-group` breaks alignment.
+
+### Destructive cascade pattern
+
+When a delete action has a cascade variant (e.g. menus with descendants), render **one** delete trigger per row that opens a shared confirmation modal. The modal carries a cascade checkbox; JS swaps the form `action` between the default and cascade URLs before submit. Do not stack two sibling delete buttons inline.
+
+Reference: `menus/index.blade.php` (`#menuDeleteConfirmModal` + `data-menu-cascade-url` + `data-menu-confirm-template`).
+
+## Card alignment (paired columns)
+
+When two cards sit in sibling columns (e.g. `users/edit.blade.php` edit form + recent activity), both must align flush: no `mt-3` on either card. If one column may be empty at runtime, render an `<x-adminlte4::empty-state>` inside the card so the column does not collapse and break the grid symmetry.
+
+Reference: `users/_activity_history.blade.php`.
+
+## File-hosting toolbar
+
+`.fh-toolbar` declares a full `border: 1px solid var(--fh-border)` and uniform `border-radius: var(--fh-radius)` so the search box reads as a symmetric shell (not a half-open bar). The list-view empty row spans all columns (`colspan="8"`).
+
 ## Related
 
 - [blade-admin.md](blade-admin.md)

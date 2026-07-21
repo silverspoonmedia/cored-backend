@@ -147,6 +147,9 @@
                 data-sign-parts-url="{{ url('file-hosting/uploads/__UPLOAD__/sign-parts') }}"
                 data-max-files="{{ (int) config('file-hosting.max_files_per_batch', 20) }}"
                 data-max-concurrent="{{ (int) config('file-hosting.max_concurrent_uploads', 2) }}"
+                role="button"
+                tabindex="0"
+                aria-label="{{ __('web/file-hosting.upload_here') }}"
                 data-messages="{{ json_encode([
                     'tooManyFiles' => __('web/file-hosting.upload.too_many'),
                     'waitForUploads' => __('web/file-hosting.upload.wait'),
@@ -160,14 +163,14 @@
                 ]) }}"
             >
                 <div class="fh-dropzone__icon">
-                    <i class="bi bi-cloud-arrow-up"></i>
+                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
                 </div>
                 <div class="fh-dropzone__text">{{ __('web/file-hosting.upload_here') }}</div>
                 <div class="fh-dropzone__hint">{{ __('web/file-hosting.drag_drop_hint') }}</div>
                 <div class="fh-dropzone__actions">
                     <input type="file" class="d-none" data-direct-upload-input multiple>
                     <button type="button" class="btn btn-outline-primary btn-sm" onclick="this.closest('.fh-dropzone').querySelector('[data-direct-upload-input]').click()">
-                        <i class="bi bi-folder2-open me-1"></i>{{ __('web/file-hosting.upload.browse') }}
+                        <i class="bi bi-folder2-open me-1" aria-hidden="true"></i>{{ __('web/file-hosting.upload.browse') }}
                     </button>
                     @if (count($uploadableRegions) > 1)
                         <select class="form-select form-select-sm fh-dropzone__region" data-direct-upload-region aria-label="{{ __('web/file-hosting.upload.region') }}">
@@ -355,7 +358,7 @@
 
                         @if ($folders->isEmpty() && $files->isEmpty())
                             <tr>
-                                <td colspan="6">
+                                <td colspan="8">
                                     <div class="fh-empty">
                                         <i class="bi bi-folder2-open fh-empty__icon"></i>
                                         <div class="fh-empty__text">{{ __('web/file-hosting.empty') }}</div>

@@ -6,7 +6,7 @@
     'badges' => [],
 ])
 
-<div class="ois-hero">
+<div class="ois-hero" role="status" aria-live="polite" aria-atomic="true">
     @if ($eyebrow !== '')
         <div class="ois-hero__eyebrow">{{ $eyebrow }}</div>
     @endif

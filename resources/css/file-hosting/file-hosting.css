@@ -87,14 +87,14 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.625rem;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--fh-border);
+    padding: 0.75rem;
+    border: 1px solid var(--fh-border);
+    border-radius: var(--fh-radius);
     margin-bottom: 1rem;
     position: sticky;
     top: 0;
     z-index: 10;
     background: var(--fh-surface);
-    border-radius: var(--fh-radius) var(--fh-radius) 0 0;
 }
 
 .fh-toolbar__search {
@@ -1000,5 +1000,17 @@
 
     .fh-workspace-switcher__label {
         max-width: 90px;
+    }
+}
+
+/* ---- Reduced motion: respect user preference (WCAG 2.3.3) ---- */
+@media (prefers-reduced-motion: reduce) {
+    .fh-toast {
+        animation: none;
+    }
+
+    .fh-file-card,
+    .fh-dropzone {
+        transition: none;
     }
 }

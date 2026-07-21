@@ -30,46 +30,29 @@
         </dl>
 
         @can('purchase service')
-            @if (data_get($service, 'status') === 'active' && $prices->isNotEmpty())
-                <form action="{{ route('services.checkout', data_get($service, 'id')) }}" method="POST" class="d-flex gap-2 align-items-end">
-                    @csrf
-                    <div>
-                        <label class="form-label" for="checkout-currency">{{ __('web/services.show.checkout_currency') }}</label>
-                        <select name="currency" id="checkout-currency" class="form-select">
-                            @foreach ($prices as $price)
-                                <option value="{{ data_get($price, 'currency') }}" @selected(data_get($price, 'currency') === $defaultCurrency)>
-                                    {{ data_get($price, 'currency') }} — {{ number_format((float) data_get($price, 'amount', 0), 2) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-credit-card me-1"></i>{{ __('web/services.show.start_checkout') }}
-                    </button>
-                </form>
-            @endif
+            @php($canInitiatePayment = true)
         @else
-            @can('initiate payment')
-                @if (data_get($service, 'status') === 'active' && $prices->isNotEmpty())
-                    <form action="{{ route('services.checkout', data_get($service, 'id')) }}" method="POST" class="d-flex gap-2 align-items-end">
-                        @csrf
-                        <div>
-                            <label class="form-label" for="checkout-currency-alt">{{ __('web/services.show.checkout_currency') }}</label>
-                            <select name="currency" id="checkout-currency-alt" class="form-select">
-                                @foreach ($prices as $price)
-                                    <option value="{{ data_get($price, 'currency') }}">
-                                        {{ data_get($price, 'currency') }} — {{ number_format((float) data_get($price, 'amount', 0), 2) }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-credit-card me-1"></i>{{ __('web/services.show.start_checkout') }}
-                        </button>
-                    </form>
-                @endif
-            @endcan
+            @php($canInitiatePayment = \Illuminate\Support\Facades\Gate::allows('initiate payment'))
         @endcan
+
+        @if (($canInitiatePayment) && data_get($service, 'status') === 'active' && $prices->isNotEmpty())
+            <form action="{{ route('services.checkout', data_get($service, 'id')) }}" method="POST" class="d-flex gap-2 align-items-end">
+                @csrf
+                <div>
+                    <label class="form-label" for="checkout-currency">{{ __('web/services.show.checkout_currency') }}</label>
+                    <select name="currency" id="checkout-currency" class="form-select">
+                        @foreach ($prices as $price)
+                            <option value="{{ data_get($price, 'currency') }}" @selected(data_get($price, 'currency') === $defaultCurrency)>
+                                {{ data_get($price, 'currency') }} — {{ number_format((float) data_get($price, 'amount', 0), 2) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-credit-card me-1" aria-hidden="true"></i>{{ __('web/services.show.start_checkout') }}
+                </button>
+            </form>
+        @endif
 
         <div class="mt-3">
             <a href="{{ route('services.index') }}" class="btn btn-outline-secondary btn-sm">{{ __('ui.actions.back') }}</a>

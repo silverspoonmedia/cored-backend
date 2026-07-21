@@ -4,8 +4,11 @@
             <p class="text-success"><i class="bi bi-shield-check me-1"></i> {{ __('web/auth.two_factor_is_enabled') }}</p>
 
             <x-adminlte4::form.ajax :action="route('profile.two-factor.disable')" class="mt-3">
-                <x-adminlte4::form.input name="code" type="text" :placeholder="__('web/auth.two_factor_code_placeholder')" required inputmode="numeric" pattern="[0-9]*" />
-                <x-adminlte4::form.submit :label="__('web/auth.two_factor_disable_button')" class="btn btn-danger" />
+                <x-adminlte4::form.input name="code" type="text" :label="__('web/auth.two_factor_code_label')" :placeholder="__('web/auth.two_factor_code_placeholder')" required inputmode="numeric" pattern="[0-9]*" />
+                <div class="d-flex gap-2">
+                    <x-adminlte4::form.submit :label="__('web/auth.two_factor_disable_button')" class="btn btn-danger" />
+                    <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">{{ __('ui.actions.cancel') }}</a>
+                </div>
             </x-adminlte4::form.ajax>
         @elseif(!empty($setup))
             <p class="text-muted small">{{ __('web/auth.two_factor_setup_qr_help') }}</p>
@@ -21,8 +24,11 @@
             <p class="small text-muted">{{ __('web/auth.two_factor_qr_url_label') }}: <a href="{{ $setup['qr_code_url'] }}" target="_blank" rel="noopener noreferrer">{{ __('web/auth.two_factor_open_app') }}</a></p>
 
             <x-adminlte4::form.ajax :action="route('profile.two-factor.confirm')" class="mt-3">
-                <x-adminlte4::form.input name="code" type="text" :placeholder="__('web/auth.two_factor_code_placeholder')" required autofocus inputmode="numeric" pattern="[0-9]*" />
-                <x-adminlte4::form.submit :label="__('web/auth.two_factor_confirm_button')" class="btn btn-primary" />
+                <x-adminlte4::form.input name="code" type="text" :label="__('web/auth.two_factor_code_label')" :placeholder="__('web/auth.two_factor_code_placeholder')" required autofocus inputmode="numeric" pattern="[0-9]*" />
+                <div class="d-flex gap-2">
+                    <x-adminlte4::form.submit :label="__('web/auth.two_factor_confirm_button')" class="btn btn-primary" />
+                    <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">{{ __('ui.actions.cancel') }}</a>
+                </div>
             </x-adminlte4::form.ajax>
 
             <x-adminlte4::form.ajax :action="route('profile.two-factor.setup')" class="mt-2">

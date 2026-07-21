@@ -39,7 +39,7 @@
                     @endif
                 </div>
 
-                <div>
+                <div class="mb-3">
                     <strong>{{ __('ui.labels.permissions') }}:</strong>
                     @forelse ($profile['permissions'] as $permission)
                         <span class="badge text-bg-secondary">{{ $permission }}</span>

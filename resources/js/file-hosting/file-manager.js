@@ -209,6 +209,16 @@
                 }
                 fileInput.click();
             });
+
+            dropzone.addEventListener('keydown', function (e) {
+                if (e.target === fileInput || e.target.closest('button, select, input')) {
+                    return;
+                }
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    fileInput.click();
+                }
+            });
         }
 
         // ---- Modals (rename, share, move) ----
@@ -337,10 +347,20 @@
             // Root option
             const rootItem = document.createElement('div');
             rootItem.className = 'fh-move-tree__item fh-move-tree__root is-selected';
-            rootItem.innerHTML = '<i class="bi bi-folder2-open fh-move-tree__icon"></i> ' + escapeHtml(config.messages.rootLabel);
+            rootItem.setAttribute('role', 'button');
+            rootItem.setAttribute('tabindex', '0');
+            rootItem.setAttribute('aria-current', 'true');
+            rootItem.innerHTML = '<i class="bi bi-folder2-open fh-move-tree__icon" aria-hidden="true"></i> ' + escapeHtml(config.messages.rootLabel);
             rootItem.addEventListener('click', function () {
                 selectMoveItem(container, rootItem);
                 hiddenInput.value = '';
+            });
+            rootItem.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    selectMoveItem(container, rootItem);
+                    hiddenInput.value = '';
+                }
             });
             container.appendChild(rootItem);
 
@@ -357,16 +377,28 @@
                 const isSelected = config.currentFolderId === folder.id;
                 if (isSelected) {
                     item.classList.add('is-selected');
+                    item.setAttribute('aria-current', 'true');
                     hiddenInput.value = folder.id;
                 }
 
-                item.innerHTML = '<i class="bi bi-folder-fill fh-move-tree__icon"></i> ' + escapeHtml(folder.name || '');
+                item.innerHTML = '<i class="bi bi-folder-fill fh-move-tree__icon" aria-hidden="true"></i> ' + escapeHtml(folder.name || '');
 
                 if (!item.classList.contains('is-current')) {
+                    item.setAttribute('role', 'button');
+                    item.setAttribute('tabindex', '0');
                     item.addEventListener('click', function () {
                         selectMoveItem(container, item);
                         hiddenInput.value = folder.id;
                     });
+                    item.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            selectMoveItem(container, item);
+                            hiddenInput.value = folder.id;
+                        }
+                    });
+                } else {
+                    item.setAttribute('aria-disabled', 'true');
                 }
 
                 container.appendChild(item);
@@ -380,8 +412,10 @@
         function selectMoveItem(container, item) {
             container.querySelectorAll('.fh-move-tree__item').forEach(function (el) {
                 el.classList.remove('is-selected');
+                el.removeAttribute('aria-current');
             });
             item.classList.add('is-selected');
+            item.setAttribute('aria-current', 'true');
         }
 
         // ---- AJAX actions ----
@@ -637,15 +671,19 @@
             if (!container) {
                 container = document.createElement('div');
                 container.className = 'fh-toast-container';
+                container.setAttribute('role', 'status');
+                container.setAttribute('aria-live', 'polite');
+                container.setAttribute('aria-atomic', 'false');
                 document.body.appendChild(container);
             }
 
             const toast = document.createElement('div');
             toast.className = 'fh-toast is-' + (type || 'success');
+            toast.setAttribute('role', 'status');
 
             const icon = type === 'error' ? 'bi-x-circle-fill' : 'bi-check-circle-fill';
             toast.innerHTML =
-                '<i class="bi ' + icon + ' fh-toast__icon"></i>'
+                '<i class="bi ' + icon + ' fh-toast__icon" aria-hidden="true"></i>'
                 + '<div class="fh-toast__body">' + escapeHtml(message) + '</div>';
 
             container.appendChild(toast);
