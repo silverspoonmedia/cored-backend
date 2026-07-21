@@ -6,7 +6,7 @@ Session handoff guide for the **logical monorepo** migration inside Project Mono
 
 - [internal-monorepo-assessment.md](./internal-monorepo-assessment.md) — why, domain map, phases, deferrals
 - [domain-modules.md](../platform/architecture.md) — conventions and how to add a domain
-- [ai-agent-guide.md](../agents/guide.md) — agent workflow and downstream sync sessions
+- [ai-agent-guide.md](../agents/core-rules.md) — agent workflow and downstream sync sessions
 
 ---
 

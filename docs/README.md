@@ -8,7 +8,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 | Need | Open |
 |------|------|
-| Agent scope | [agents/guide.md](agents/guide.md) · root [AGENTS.md](../AGENTS.md) |
+| Agent scope | [agents/core-rules.md](agents/core-rules.md) · root [AGENTS.md](../AGENTS.md) |
 | Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
 | Env profiles, secrets | [platform/environment.md](platform/environment.md) |
 | Blade admin (API consumer) | [web/blade-admin.md](web/blade-admin.md) |
@@ -68,7 +68,7 @@ Historical assessments and one-shot audits: [archive/](archive/). Prefer living 
 | Kernel / cross-cutting (routes, CRUD pattern, UUID, env, i18n, DB safety, Octane, security process, tooling) | `docs/platform/` | One concern per file; extend existing when possible |
 | Blade admin only (cookie bridge, ApiClient, layout, pure UI widgets shared across domains) | `docs/web/` | e.g. `blade-admin.md`, `ui-patterns.md` |
 | External clients / third-party integration wiring | `docs/integration/` | Prefer one concern per file; only when not domain-owned |
-| Agent scope | `docs/agents/` | `guide.md` only unless a dedicated agent ops page is justified |
+| Agent scope | `docs/agents/` | `core-rules.md` only unless a dedicated agent ops page is justified |
 | One-shot assessment, migration narrative, audit snapshot, design dump | `docs/archive/` | Not linked from daily learning paths except as “historical” |
 
 ### Decision checklist (before writing a new file)

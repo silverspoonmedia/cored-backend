@@ -2,7 +2,7 @@
 
 This document records the assessment, decisions, and outcomes for organizing **Project Monolith** as an internal logical monorepo. Gateway and Frontend remain **separate git repositories** with their own history.
 
-Canonical workspace context: [agents/guide.md](../agents/guide.md).
+Canonical workspace context: [agents/core-rules.md](../agents/core-rules.md).
 
 ---
 
@@ -234,4 +234,4 @@ Closed 2026-07-09:
 - [internal-monorepo-porting.md](./internal-monorepo-porting.md) — porting implementation reference (migration order, scripts, gotchas)
 - [api-routing.md](../platform/api-routing.md) — global vs versioned API
 - [spa-gateway-integration.md](../integration/spa-gateway.md) — three-project wiring
-- [ai-agent-guide.md](../agents/guide.md) — agent workflow and downstream sync sessions
+- [ai-agent-guide.md](../agents/core-rules.md) — agent workflow and downstream sync sessions
