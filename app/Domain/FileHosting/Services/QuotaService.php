@@ -6,7 +6,13 @@ use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Models\UserQuota;
+use App\Domain\Service\Enums\EntitlementStatus;
+use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Services\ServiceEntitlementService;
+use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Enums\PlanKind;
+use App\Support\Product\Models\ProductActivation;
+use Illuminate\Support\Collection;
 
 class QuotaService
 {
@@ -142,5 +148,80 @@ class QuotaService
         }
 
         return 'free';
+    }
+
+    /**
+     * Enumerate user IDs currently on a given File Hosting tier.
+     *
+     * Paid / grace resolved from active entitlements. Free = FileHosting
+     * product activations minus paid minus grace. 'n/a' yields an empty
+     * collection — only materializes during a partial backfill window.
+     *
+     * @return list<string>
+     */
+    public function userIdsForTier(string $tier): array
+    {
+        return match ($tier) {
+            'paid' => $this->paidFileHostingUserIds(),
+            'grace' => $this->graceFileHostingUserIds(),
+            'free' => $this->freeFileHostingUserIds(),
+            default => [],
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function paidFileHostingUserIds(): array
+    {
+        return ServiceEntitlement::query()
+            ->where('status', EntitlementStatus::Active)
+            ->whereHas('service', function ($q): void {
+                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                    ->whereIn('plan_kind', [PlanKind::Main, PlanKind::Addon])
+                    ->where('code', '!=', FileHostingCatalog::CODE_FREE)
+                    ->where('storage_bytes', '>', 0);
+            })
+            ->pluck('user_id')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function graceFileHostingUserIds(): array
+    {
+        return ServiceEntitlement::query()
+            ->where('status', EntitlementStatus::Grace)
+            ->whereHas('service', function ($q): void {
+                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                    ->whereIn('plan_kind', [PlanKind::Main, PlanKind::Addon])
+                    ->where('code', '!=', FileHostingCatalog::CODE_FREE)
+                    ->where('storage_bytes', '>', 0);
+            })
+            ->pluck('user_id')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Free = FileHosting product activation users minus paid minus grace.
+     *
+     * @return list<string>
+     */
+    private function freeFileHostingUserIds(): array
+    {
+        $excluded = array_merge($this->paidFileHostingUserIds(), $this->graceFileHostingUserIds());
+
+        return ProductActivation::query()
+            ->where('product_key', 'FileHosting')
+            ->whereNotIn('user_id', $excluded)
+            ->pluck('user_id')
+            ->unique()
+            ->values()
+            ->all();
     }
 }

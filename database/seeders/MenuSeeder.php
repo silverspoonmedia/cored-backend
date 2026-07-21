@@ -157,6 +157,18 @@ class MenuSeeder extends Seeder
         ]);
         $errorLogItem->roles()->sync($adminRoleIds);
 
+        $productActivationsItem = Menu::query()->create([
+            'parent_id' => $admin->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Product activations', 'id' => 'Aktivasi Produk', 'ja' => 'プロダクト有効化'],
+            'icon' => 'bi bi-toggle-on',
+            'route' => 'product-activations.index',
+            'type' => 'p',
+            'order' => 4,
+            'is_authenticate' => true,
+        ]);
+        $productActivationsItem->roles()->sync($managementRoleIds);
+
         $paymentViewerRoleIds = Role::query()
             ->where('guard_name', 'api')
             ->whereIn('name', ['Root', 'Admin', 'Moderator', 'Management'])

@@ -80,6 +80,9 @@ class WorkspaceService
 
             $this->activity->workspaceCreated($workspace, $actor);
 
+            app(\App\Support\Product\Services\ProductAnalyticsService::class)
+                ->increment('FileHosting', $actor->id, 'workspace_count_owned', 1);
+
             return $workspace->load('owner');
         });
     }

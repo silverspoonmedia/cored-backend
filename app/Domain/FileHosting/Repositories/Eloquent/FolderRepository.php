@@ -161,6 +161,18 @@ class FolderRepository implements FolderRepositoryInterface
                 ->where('folder_id', $folder->id)
                 ->restore();
 
+            // Bulk query restore above does NOT fire Eloquent `restored` event,
+            // so analytics counters are updated explicitly here.
+            $restoredActive = HostedFile::query()
+                ->where('user_id', $folder->user_id)
+                ->where('workspace_id', $folder->workspace_id)
+                ->where('folder_id', $folder->id)
+                ->get();
+
+            $analytics = app(\App\Support\Product\Services\ProductAnalyticsService::class);
+            $analytics->increment('FileHosting', $folder->user_id, 'file_count', $restoredActive->count());
+            $analytics->increment('FileHosting', $folder->user_id, 'storage_used_bytes', (int) $restoredActive->sum('size'));
+
             Folder::onlyTrashed()
                 ->where('user_id', $folder->user_id)
                 ->where('workspace_id', $folder->workspace_id)

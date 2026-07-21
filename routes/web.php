@@ -44,6 +44,9 @@ Route::middleware('web.auth')->group(function (): void {
     require __DIR__.'/web/payment-gateway.php';
     require __DIR__.'/web/service.php';
 
+    // Kernel product registry (App\Support\Product)
+    require __DIR__.'/web/product-activations.php';
+
     // Product domains (domain:make injects into this group; keep product last)
     require __DIR__.'/web/file-hosting.php';
 });

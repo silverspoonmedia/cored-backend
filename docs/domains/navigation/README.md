@@ -39,9 +39,12 @@ Node visible only if **it and every ancestor** pass:
 2. If includes non-empty → viewer in includes  
 3. Guest-only hidden when authenticated  
 4. Authenticate-required hidden for guests  
-5. If roles attached → viewer has any; no roles → open to those who passed above  
+5. **Product-activation gate** — if the node's `route` is bound to a product via `config/products.php` `menu_routes`, the viewer must have an `active` activation for that product. Hidden when suspended / expired / pending / not provisioned. Skipped for guests (no auth gate) and for routes not in the map. See [Product Activations — Menu visibility](../product-activations/README.md#menu-visibility-v2).
+6. If roles attached → viewer has any; no roles → open to those who passed above  
 
 Empty header/parent branches pruned (except leaf parent with a `route`). Invalid combos rejected at validation (`guest_only` + `authenticate` / roles).
+
+`MenuRepository` resolves `ProductRegistry::productKeyByMenuRoute` per leaf node and calls `ProductActivationService::isActive`. The global snapshot cache stays product-agnostic; the product check runs live per request (same pattern as role checks).
 
 ## API (`/api/v1/navigation/menus`)
 

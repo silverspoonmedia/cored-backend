@@ -40,6 +40,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) |
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, FH grace/purge (core domain) |
 | File Hosting | [domains/file-hosting/README.md](domains/file-hosting/README.md) — nested folders, chunk S3, link share (product, locked) |
+| Product Activations | [domains/product-activations/README.md](domains/product-activations/README.md) — kernel runtime-access registry for product domains |
 
 ## Web UI patterns
 

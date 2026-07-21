@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Domain\Identity\Models\User;
+use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\App;
 
 class DatabaseSeeder extends Seeder
 {
@@ -47,11 +49,28 @@ class DatabaseSeeder extends Seeder
         ]);
         $user->assignRole('User');
 
+        $this->seedProductActivations($admin, $manager, $moderator, $user);
+
         $this->call(MenuSeeder::class);
         $this->call(MenuRbacSeeder::class);
         $this->call(PaymentGatewaySeeder::class);
         $this->call(PaymentChannelSeeder::class);
         $this->call(CurrencySeeder::class);
         $this->call(ServiceCatalogSeeder::class);
+    }
+
+    /**
+     * Activate implicit products for seeded users so the registry has rows
+     * out of the box (mirrors what happens on register for real users).
+     */
+    private function seedProductActivations(User ...$users): void
+    {
+        $service = App::make(ProductActivationService::class);
+
+        foreach ($users as $user) {
+            foreach (\App\Support\Product\ProductRegistry::implicitProductKeys() as $productKey) {
+                $service->activateImplicit($user, $productKey, 'seeder');
+            }
+        }
     }
 }

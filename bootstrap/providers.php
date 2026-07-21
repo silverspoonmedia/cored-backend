@@ -10,11 +10,13 @@ use App\Providers\Domain\NotificationServiceProvider;
 use App\Providers\Domain\PaymentGatewayServiceProvider;
 use App\Providers\Domain\ServiceServiceProvider;
 use App\Providers\EncryptionServiceProvider;
+use App\Providers\ProductServiceProvider;
 
 return [
     // Kernel
     AppServiceProvider::class,
     EncryptionServiceProvider::class,
+    ProductServiceProvider::class,
 
     // Core domains (config/domains.php kind=core)
     IdentityServiceProvider::class,

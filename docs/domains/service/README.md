@@ -152,7 +152,10 @@ Checkout → MainPlanChangeCalculator quote
          main renew: stack ends_at; up/down: now+period+surplus; expire other mains
          addon unit: qty++; ends_at frozen / shared
        FileHostingQuotaRecomputeService
+       ensureProductActive (fulfillment_target → product_activations row kept Active)
 ```
+
+Fulfillment hook: `ServiceFulfillmentService::ensureProductActive` maps the Service catalog `fulfillment_target` (e.g. `file_hosting`) to a product key via `ProductRegistry::productKeyByFulfillmentTarget` and keeps the implicit product activation Active when an entitlement activates. Explicit products are **not** auto-activated here — admin approval remains the gate. See [Product Activations](../product-activations/README.md).
 
 ## Subscription lifecycle (File Hosting main + addons)
 
