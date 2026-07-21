@@ -257,5 +257,3 @@ Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main r
 - [file-hosting](../file-hosting/README.md) — quota recompute + states paid/grace/free
 - [notification](../notification/README.md) — grace/expired types
 - [platform/architecture.md](../../platform/architecture.md)
-- Changelog: [pending/2026-07-16-service-entitlements-fx-db-grace.md](../../changelog/pending/2026-07-16-service-entitlements-fx-db-grace.md)
-- Changelog: [pending/2026-07-18-main-addon-fairness.md](../../changelog/pending/2026-07-18-main-addon-fairness.md)

@@ -6,23 +6,6 @@ Canonical guide for AI coding agents. Root entry: [AGENTS.md](../../AGENTS.md). 
 
 Daily work stays in **this repository** — Laravel 13 API + Blade admin. Domain logic, DB, JWT/RBAC, and versioned routes (`/api/v1/*`) live here.
 
-### Session lifecycle and keywords
-
-Keywords must appear in the **current user prompt**. Re-loading AGENTS.md alone does not change phase.
-
-| Phase | Trigger | Action |
-|-------|---------|--------|
-| **1. Open** | Load AGENTS / this guide | Scope: this repository. Ready for work. |
-| **2. Work** | No special keyword | Implement + test. No close-out. |
-| **3. Close** | **`upstream documentation session`** | Improve docs for session work; write **one** changelog entry (Monolith outcomes only). |
-
-| Keyword | Purpose |
-|---------|---------|
-| *(none)* | Phase 2 |
-| **`upstream documentation session`** | Phase 3 — docs + changelog |
-
-Full procedure: [changelog/README.md](../changelog/README.md).
-
 ## Request flow
 
 ```
@@ -55,26 +38,16 @@ Use [docs/README.md](../README.md) — domain folders under `docs/domains/`, pla
 
 ## Agent workflow checklist
 
-### Daily work (phase 2)
+### Daily work
 
 1. Scope: this repository.
 2. Read domain/platform docs from [docs/README.md](../README.md).
 3. Implement; match existing patterns.
 4. Test: `composer test` ([database-safety](../platform/database-safety.md)).
-5. Update living docs when behavior changes — placement rules above.
-6. No close-out without **`upstream documentation session`**.
-
-### Upstream documentation session (phase 3)
-
-1. Confirm exact keyword in prompt.
-2. Inventory session work; fix stale docs (English).
-3. One changelog entry with Monolith outcomes; place in `done/` when the session is closed, or `pending/` only for incomplete draft notes.
-4. Summarize for the user: docs updated + changelog path.
+5. Update living docs when behavior changes — placement rules above, same task/PR.
 
 ## What not to do
 
-- Close-out without the exact keyword **`upstream documentation session`**.
-- Treat AGENTS reload as session close.
 - `migrate:fresh` / `db:wipe` on non-sqlite without `ALLOW_DESTRUCTIVE_DB=true`.
 - Assume Blade has hosted Snap checkout UI — channel-only on Blade; see [payment-gateway](../domains/payment-gateway/README.md).
-- Create new documentation as a subject file at `docs/*.md` root — place under `domains/`, `platform/`, `web/`, `integration/`, `agents/`, `changelog/`, or `archive/` per [docs/README.md](../README.md#rules-for-new-documentation-mandatory).
+- Create new documentation as a subject file at `docs/*.md` root — place under `domains/`, `platform/`, `web/`, `integration/`, `agents/`, or `archive/` per [docs/README.md](../README.md#rules-for-new-documentation-mandatory).
