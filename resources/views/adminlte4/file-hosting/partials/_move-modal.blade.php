@@ -9,7 +9,7 @@
      */
 @endphp
 <div class="modal fade" id="{{ $modalId }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-fullscreen-sm-down">
         <form method="POST" action="#" class="modal-content" id="{{ $formId }}">
             @csrf
             @method('PATCH')

@@ -151,7 +151,7 @@ npm install
 npm run build
 ```
 
-`package.json` includes `laravel-echo` and `pusher-js` as runtime dependencies. Vite entries are declared in `vite.config.js` (`resources/js/app.js`, `resources/js/notifications/bell.js`, `resources/js/payments/checkout.js`, `resources/js/payments/channels-admin.js`, `resources/css/payments/order-invoice-show.css`, and others).
+`package.json` includes `laravel-echo` and `pusher-js` as runtime dependencies. Vite entries are declared in `vite.config.js` (`resources/js/notifications/bell.js`, `resources/js/payments/checkout.js`, `resources/js/payments/channels-admin.js`, `resources/css/monolith-overrides.css`, `resources/css/payments/order-invoice-show.css`, and others).
 
 For local development with hot reload:
 

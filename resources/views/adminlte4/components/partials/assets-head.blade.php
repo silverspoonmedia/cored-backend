@@ -3,8 +3,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
 <meta name="csrf-token" content="{{ csrf_token() }}" />
 <meta name="color-scheme" content="light dark" />
-<meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#6366f1" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#1e293b" media="(prefers-color-scheme: dark)" />
 @if(session('datatable_reload'))
 <meta name="datatable-reload" content="{{ session('datatable_reload') }}" />
 @endif

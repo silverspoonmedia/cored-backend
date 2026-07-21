@@ -5,6 +5,7 @@ return [
     'breadcrumb' => '通知',
     'list_title' => 'すべての通知',
     'bell_label' => '通知',
+    'unread_count_label' => '未読通知',
     'header_count' => '通知 :count 件',
     'view_all' => 'すべて表示',
     'mark_all_read' => 'すべて既読にする',

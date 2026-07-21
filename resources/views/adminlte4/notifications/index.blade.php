@@ -41,7 +41,9 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="3" class="text-center text-muted py-4">{{ __('web/notifications.empty') }}</td>
+                            <td colspan="3">
+                                <x-adminlte4::empty-state icon="bi-bell-slash" :title="__('web/notifications.empty')" />
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>

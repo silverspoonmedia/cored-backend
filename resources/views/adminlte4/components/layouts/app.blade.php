@@ -9,10 +9,13 @@
     </head>
     <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
         <div class="app-wrapper">
+            <a href="#main-content" class="visually-hidden-focusable skip-link p-2">
+                {{ __('ui.skip_to_content') }}
+            </a>
             <x-adminlte4::partials.navbar />
             <x-adminlte4::partials.sidebar />
 
-            <main class="app-main">
+            <main class="app-main" id="main-content">
                 <div class="app-content-header">
                     <div class="container-fluid">
                         <div class="row align-items-center">

@@ -1,6 +1,6 @@
 <x-adminlte4::layouts.auth :title="__('web/auth.forgot_password_title')" :heading="__('web/auth.forgot_password_heading')">
     <x-adminlte4::form.ajax :action="route('password.email')">
-        <x-adminlte4::form.input name="email" type="email" :placeholder="__('web/auth.email_placeholder')" icon="bi-envelope" required autofocus autocomplete="email" />
+        <x-adminlte4::form.input name="email" type="email" :label="__('ui.labels.email')" :placeholder="__('web/auth.email_placeholder')" icon="bi-envelope" required autofocus autocomplete="email" />
 
         <x-adminlte4::form.auth-submit :label="__('web/auth.send_reset_link')" class="btn btn-primary" />
     </x-adminlte4::form.ajax>

@@ -93,9 +93,11 @@
                 >
                     {{ __('web/payments.checkout.pay_with_channel') }}
                 </button>
-                <button type="button" class="btn btn-outline-secondary d-none" data-payment-sync-status>
+                <button type="button" class="btn btn-outline-secondary d-none" data-payment-sync-status
+                        title="{{ __('web/payments.checkout.confirm_paid_help') }}">
                     {{ __('web/payments.checkout.confirm_paid') }}
                 </button>
+                <small class="text-muted d-none" data-payment-sync-help>{{ __('web/payments.checkout.confirm_paid_help') }}</small>
             </div>
 
             <div class="d-none pc-checkout-instructions mb-0" data-payment-instructions></div>

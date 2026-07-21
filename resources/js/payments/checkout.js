@@ -35,6 +35,35 @@ function initChannelCheckout(root, csrfToken, messages) {
     let pickerCollapsed = false;
     let hasActiveInstructions = false;
 
+    function ensureToastContainer() {
+        let container = root.querySelector('[data-payment-toast-container]');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'ois-toast-container';
+            container.setAttribute('data-payment-toast-container', '');
+            container.setAttribute('role', 'status');
+            container.setAttribute('aria-live', 'polite');
+            container.setAttribute('aria-atomic', 'false');
+            root.appendChild(container);
+        }
+
+        return container;
+    }
+
+    function showCheckoutToast(message, type) {
+        const container = ensureToastContainer();
+        const toast = document.createElement('div');
+        toast.className = 'ois-toast is-' + (type || 'info');
+        toast.setAttribute('role', 'status');
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        window.setTimeout(() => {
+            toast.classList.add('is-leaving');
+            window.setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
     function stopPolling() {
         if (window.__paymentCheckoutPollTimer) {
             clearInterval(window.__paymentCheckoutPollTimer);
@@ -73,7 +102,9 @@ function initChannelCheckout(root, csrfToken, messages) {
 
         selectedChannel = code;
         picker?.querySelectorAll('[data-payment-channel-option]').forEach((button) => {
-            button.classList.toggle('is-selected', button.getAttribute('data-payment-channel-option') === code);
+            const isSelected = button.getAttribute('data-payment-channel-option') === code;
+            button.classList.toggle('is-selected', isSelected);
+            button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
         });
 
         if (checkoutButton) {
@@ -156,7 +187,7 @@ function initChannelCheckout(root, csrfToken, messages) {
             window.location.reload();
         } catch (error) {
             const message = error instanceof Error ? error.message : (messages.channelFailed ?? 'Channel checkout failed.');
-            window.alert(message);
+            showCheckoutToast(message, 'error');
         } finally {
             checkoutButton.disabled = false;
             checkoutButton.textContent = originalLabel;
@@ -230,7 +261,7 @@ function renderInstructions(container, data, messages) {
             const value = button.getAttribute('data-copy-value') ?? '';
             const copied = await copyToClipboard(value);
 
-            window.alert(copied ? (messages.copied ?? 'Copied') : (messages.copyFailed ?? 'Could not copy'));
+            showCheckoutToast(copied ? (messages.copied ?? 'Copied') : (messages.copyFailed ?? 'Could not copy'), copied ? 'success' : 'error');
         });
     });
 }
@@ -276,12 +307,12 @@ async function syncStatus(syncStatusUrl, csrfToken, messages, silent) {
         }
 
         if (!silent) {
-            window.alert(messages.syncPending ?? 'Payment is still pending.');
+            showCheckoutToast(messages.syncPending ?? 'Payment is still pending.', 'info');
         }
     } catch (error) {
         if (!silent) {
             const message = error instanceof Error ? error.message : (messages.syncFailed ?? 'Sync failed.');
-            window.alert(message);
+            showCheckoutToast(message, 'error');
         }
     }
 }

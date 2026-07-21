@@ -29,7 +29,9 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">{{ __('web/activity-log.empty') }}</td>
+                            <td colspan="5">
+                                <x-adminlte4::empty-state icon="bi-clock-history" :title="__('web/activity-log.empty')" />
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>

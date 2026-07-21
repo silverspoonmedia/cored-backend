@@ -218,6 +218,7 @@
                                                                 <div>
                                                                     <label class="form-label small text-muted mb-0" for="route-priority-{{ $routeId }}">
                                                                         {{ __('web/payments.channels.route_columns.priority') }}
+                                                                        <span class="text-muted fst-italic">({{ __('web/payments.channels.priority_autosave_hint') }})</span>
                                                                     </label>
                                                                     <input
                                                                         id="route-priority-{{ $routeId }}"

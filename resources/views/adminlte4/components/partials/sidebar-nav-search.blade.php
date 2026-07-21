@@ -108,9 +108,9 @@
                 if (children.length > 0) {
                     const openClass = isSearching || active ? 'menu-open' : '';
                     html += `<li class="nav-item ${openClass}">`;
-                    html += `<a href="${escapeHtml(href)}" class="nav-link ${active ? 'active' : ''}">`;
-                    html += `<i class="nav-icon ${escapeHtml(icon)}"></i>`;
-                    html += `<p>${escapeHtml(item.name)}<i class="nav-arrow bi bi-chevron-right"></i></p>`;
+                    html += `<a href="${escapeHtml(href)}" class="nav-link ${active ? 'active' : ''}"${active ? ' aria-current="page"' : ''}>`;
+                    html += `<i class="nav-icon ${escapeHtml(icon)}" aria-hidden="true"></i>`;
+                    html += `<p>${escapeHtml(item.name)}<i class="nav-arrow bi bi-chevron-right" aria-hidden="true"></i></p>`;
                     html += '</a>';
                     html += `<ul class="nav nav-treeview">${renderTree(children, isSearching)}</ul>`;
                     html += '</li>';
@@ -118,8 +118,8 @@
                 }
 
                 html += `<li class="nav-item">`;
-                html += `<a href="${escapeHtml(href)}" class="nav-link ${active ? 'active' : ''}">`;
-                html += `<i class="nav-icon ${escapeHtml(icon)}"></i>`;
+                html += `<a href="${escapeHtml(href)}" class="nav-link ${active ? 'active' : ''}"${active ? ' aria-current="page"' : ''}>`;
+                html += `<i class="nav-icon ${escapeHtml(icon)}" aria-hidden="true"></i>`;
                 html += `<p>${escapeHtml(item.name)}</p>`;
                 html += '</a></li>';
             }

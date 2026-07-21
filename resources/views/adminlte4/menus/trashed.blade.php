@@ -65,10 +65,9 @@
                                     <x-adminlte4::form.ajax
                                         :action="route('menus.restore', ['menu' => $menu['id'], 'layout' => $selectedLayout])"
                                         class="d-inline"
-                                        onsubmit="return confirm(@json(__('web/menus.restore_confirm')));"
                                     >
-                                        <button type="submit" class="btn btn-sm btn-success">
-                                            <i class="bi bi-arrow-counterclockwise me-1"></i> {{ __('web/menus.restore') }}
+                                        <button type="submit" class="btn btn-sm btn-success" aria-label="{{ __('web/menus.restore') }}">
+                                            <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i> {{ __('web/menus.restore') }}
                                         </button>
                                     </x-adminlte4::form.ajax>
                                 @endcan

@@ -84,7 +84,7 @@
     --monolith-focus-ring: rgba(129, 140, 248, 0.15);
     --monolith-gradient-start: #0f172a;
     --monolith-gradient-mid: #1e293b;
-    --monolith-gradient-end: #1a2e1a;
+    --monolith-gradient-end: #312e81;
     --monolith-status-secondary-bg: rgba(148, 163, 184, 0.20);
     --monolith-status-secondary-text: #cbd5e1;
     --monolith-status-warning-bg: rgba(245, 158, 11, 0.18);
@@ -109,7 +109,9 @@
     transition: box-shadow var(--monolith-transition), transform var(--monolith-transition);
 }
 
-.card:hover {
+.card.is-clickable:hover,
+.fh-file-card:hover,
+a.card:hover {
     box-shadow: var(--monolith-shadow);
     transform: translateY(-1px);
 }
@@ -627,4 +629,33 @@ code {
 [data-bs-theme="dark"] hr {
     border-color: var(--monolith-border-subtle);
     opacity: 1;
+}
+
+/* ---- Reduced motion: respect user preference (WCAG 2.3.3) ---- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .card.is-clickable:hover,
+    .fh-file-card:hover,
+    a.card:hover {
+        transform: none;
+    }
+}
+
+/* ---- Responsive truncation helpers (replace inline max-width) ---- */
+.monolith-truncate-md {
+    max-width: 28rem;
+}
+
+@media (max-width: 575.98px) {
+    .monolith-truncate-md {
+        max-width: 100%;
+    }
 }

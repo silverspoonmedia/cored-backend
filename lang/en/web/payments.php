@@ -141,6 +141,7 @@ return [
         'channel_ready' => 'Complete payment using the instructions below.',
         'channel_failed' => 'Could not start channel checkout',
         'confirm_paid' => 'I have paid',
+        'confirm_paid_help' => 'If you have completed payment outside this screen (e.g. cash or bank transfer), click here to re-check the invoice status.',
         'change_channel' => 'Change payment channel',
         'no_channels' => 'No payment methods are available for this invoice.',
         'permission_required' => 'You do not have permission to start a payment. Ask an administrator for the “initiate payment” permission.',
@@ -178,6 +179,7 @@ return [
         'inactive_channel' => 'Hidden from checkout',
         'primary_route' => 'Tried first',
         'priority_hint' => 'Lower number = higher priority',
+        'priority_autosave_hint' => 'saved automatically',
         'visible_count' => '{0} No channels|{1} :count channel visible|[2,*] :count channels visible',
         'route_count' => '{0} No routes|{1} :count route|[2,*] :count routes',
         'status' => [

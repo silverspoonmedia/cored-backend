@@ -47,7 +47,6 @@ The only remaining downstream action: the Frontend Vue SPA is missing the `ui.aj
 | File | Change type |
 |------|-------------|
 | `resources/css/monolith-overrides.css` | **New** â€” global CSS override layer |
-| `resources/css/app.css` | Modified (Tailwind imports restructured) |
 | `resources/css/payments/channels-admin.css` | Modified (dark mode tokens, cascade fix, text colors) |
 | `resources/css/payments/order-invoice-show.css` | Modified (dark mode tokens, cascade fix) |
 | `resources/views/adminlte4/components/partials/assets-head.blade.php` | Modified (load `monolith-overrides.css` via `@vite`) |

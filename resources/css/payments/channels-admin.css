@@ -111,7 +111,7 @@
 .pc-admin__intro-icon {
     width: 2.75rem;
     height: 2.75rem;
-    border-radius: 0.75rem;
+    border-radius: var(--pc-radius);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -135,7 +135,7 @@
 .pc-admin__step {
     background: var(--pc-step-bg);
     border: 1px solid var(--pc-border);
-    border-radius: 0.65rem;
+    border-radius: var(--pc-radius);
     padding: 0.85rem 1rem;
 }
 
@@ -218,7 +218,7 @@
 .pc-channel-card__icon {
     width: 2.75rem;
     height: 2.75rem;
-    border-radius: 0.75rem;
+    border-radius: var(--pc-radius);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -286,7 +286,7 @@
     gap: 0.85rem;
     align-items: center;
     border: 1px solid var(--pc-border);
-    border-radius: 0.65rem;
+    border-radius: var(--pc-radius);
     padding: 0.75rem 0.9rem;
     background: var(--pc-card-bg);
 }
@@ -361,7 +361,7 @@
     min-width: 16rem;
     max-width: 24rem;
     padding: 0.85rem 1rem;
-    border-radius: 0.65rem;
+    border-radius: var(--pc-radius);
     color: #fff;
     box-shadow: 0 12px 30px var(--pc-toast-shadow);
     opacity: 0;

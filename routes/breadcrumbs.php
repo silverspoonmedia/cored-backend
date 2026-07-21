@@ -86,8 +86,8 @@ Breadcrumbs::for('menus.trashed', function (Trail $trail): void {
 
 // Activity audit log.
 Breadcrumbs::for('activity-logs.index', function (Trail $trail): void {
-    $trail->parent('dashboard');
-    $trail->push(__('web/activity-log.breadcrumb'));
+	$trail->parent('dashboard');
+	$trail->push(__('web/activity-log.breadcrumb'), route('activity-logs.index'));
 });
 
 Breadcrumbs::for('activity-logs.show', function (Trail $trail): void {
@@ -97,12 +97,12 @@ Breadcrumbs::for('activity-logs.show', function (Trail $trail): void {
 
 // Notifications.
 Breadcrumbs::for('notifications.index', function (Trail $trail): void {
-    $trail->parent('dashboard');
-    $trail->push(__('web/notifications.breadcrumb'));
+	$trail->parent('dashboard');
+	$trail->push(__('web/notifications.breadcrumb'), route('notifications.index'));
 });
 
 // Self-service profile.
 Breadcrumbs::for('profile.password.edit', function (Trail $trail): void {
-    $trail->parent('dashboard');
-    $trail->push(__('web/profile.password_title'));
+	$trail->parent('dashboard');
+	$trail->push(__('web/profile.password_title'), route('profile.password.edit'));
 });

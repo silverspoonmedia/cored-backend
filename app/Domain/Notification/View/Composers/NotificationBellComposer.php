@@ -32,6 +32,7 @@ class NotificationBellComposer
                 'labels' => [
                     'empty' => __('web/notifications.empty'),
                     'header' => __('web/notifications.header_count'),
+                    'badge' => __('web/notifications.unread_count_label'),
                 ],
                 'realtime' => $realtime,
                 'pollingIntervalSeconds' => max(1, (int) config('notifications.polling_interval')),

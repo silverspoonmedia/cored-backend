@@ -44,11 +44,11 @@
         <x-adminlte4::nav.tree :items="$children" />
     @elseif (! empty($children))
         <li class="nav-item {{ $active ? 'menu-open' : '' }}">
-            <a href="{{ $href($item['route'] ?? null) }}" class="nav-link {{ $active ? 'active' : '' }}">
-                <i class="nav-icon {{ $item['icon'] ?: 'bi bi-circle' }}"></i>
+            <a href="{{ $href($item['route'] ?? null) }}" class="nav-link {{ $active ? 'active' : '' }}" @if ($active) aria-current="page" @endif>
+                <i class="nav-icon {{ $item['icon'] ?: 'bi bi-circle' }}" aria-hidden="true"></i>
                 <p>
                     {{ $item['name'] }}
-                    <i class="nav-arrow bi bi-chevron-right"></i>
+                    <i class="nav-arrow bi bi-chevron-right" aria-hidden="true"></i>
                 </p>
             </a>
             <ul class="nav nav-treeview">
@@ -57,8 +57,8 @@
         </li>
     @else
         <li class="nav-item">
-            <a href="{{ $href($item['route'] ?? null) }}" class="nav-link {{ $active ? 'active' : '' }}">
-                <i class="nav-icon {{ $item['icon'] ?: 'bi bi-circle' }}"></i>
+            <a href="{{ $href($item['route'] ?? null) }}" class="nav-link {{ $active ? 'active' : '' }}" @if ($active) aria-current="page" @endif>
+                <i class="nav-icon {{ $item['icon'] ?: 'bi bi-circle' }}" aria-hidden="true"></i>
                 <p>{{ $item['name'] }}</p>
             </a>
         </li>

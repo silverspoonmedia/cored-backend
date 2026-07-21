@@ -1,5 +1,5 @@
 @if (count($activityLogs ?? []) > 0)
-    <x-adminlte4::card :title="__('web/activity-log.user_history_title')" class="mt-3">
+    <x-adminlte4::card :title="__('web/activity-log.user_history_title')">
         <div class="table-responsive">
             <table class="table table-sm table-hover align-middle mb-0">
                 <thead>
@@ -24,5 +24,9 @@
                 </tbody>
             </table>
         </div>
+    </x-adminlte4::card>
+@else
+    <x-adminlte4::card :title="__('web/activity-log.user_history_title')">
+        <x-adminlte4::empty-state icon="bi-clock-history" :message="__('web/activity-log.empty')" />
     </x-adminlte4::card>
 @endif
