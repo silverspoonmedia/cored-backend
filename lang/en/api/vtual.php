@@ -35,6 +35,16 @@ return [
         'profile_not_found' => 'No channel found for this profile on the platform.',
         'profile_unsupported_platform' => 'Profile resolve is not supported for this platform.',
     ],
+    'content' => [
+        'external_id_required' => 'Platform content id is required.',
+        'appearance_primary_via_set' => 'Primary host channel cannot be attached as an appearance. Use setPrimary.',
+        'appearance_role_invalid' => 'Invalid content appearance role.',
+        'appearance_platform_mismatch' => 'Appearance channel must be on the same platform as the content.',
+        'appearance_already_primary' => 'This channel is already the primary host for the content.',
+        'appearance_already_attached' => 'This channel is already linked as an appearance on the content.',
+        'appearance_not_found' => 'Content appearance not found for this channel.',
+        'cannot_detach_primary' => 'Cannot detach the primary host channel. Set another primary first.',
+    ],
     'platform' => [
         'list_success' => 'Platforms loaded.',
     ],

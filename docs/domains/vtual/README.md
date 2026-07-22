@@ -26,7 +26,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Platform | Seeded catalog: youtube, twitch, **kick** (kick `enabled = false`). |
 | Platform credential | Child table `vtual_platform_credentials`: multi-key per platform, envelope-encrypted `secret_payload`, mask-only API. |
 | Channel | External channel on a creator; unique `(platform_id, external_id)` (canonical platform id only). Register with free-form `profile` (id / handle / URL) → resolve via platform API → store `external_id` + current `handle`. Status starts `pending`. Refresh re-fetches by `external_id` to backfill handle/display. |
-| Content | Normalized shell table (`vtual_contents`) for live/archive/vod — **no sync workers in foundation**. |
+| Content | Canonical platform item (`vtual_contents`): **one row** per `(platform_id, external_id)`. `channel_id`/`creator_id` = **primary host** (API truth). Extra channels via **appearances** — not multi-ownership. Sync workers still foundation-only. |
 | External links | Morph `vtual_external_links` for creator/management social/donation URLs (schema ready; minimal API in foundation). |
 
 ### Identity model (locked product decision)
@@ -35,10 +35,53 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 User (Identity) 1 --- N CreatorMember --- N Creator
 Management 1 --- N ManagementMember --- N User
 Management 1 --- N ManagementCreator --- N Creator  (left_at nullable)
-Creator 1 --- N Channel --- N Content
+Creator 1 --- N Channel
+Channel 1 --- N Content (primary host via contents.channel_id)
+Content 1 --- N ContentAppearance --- N Channel  (primary | collaborator | network)
+**Glossary (do not conflate):**
+
+| Term | Means | Does **not** mean |
+|------|--------|-------------------|
+| Creator membership `owner` | User role on a creator profile | Channel “owns” content |
+| **Primary host channel** | Upload/host from platform API (`snippet.channelId` on YouTube) | Multi equal owners |
+| **Appearance** | Extra registered channel linked to the same content row | Second content row / dual ownership |
+| Canonical content | One `vtual_contents` row per platform video/stream id | One row per channel that shows the video |
+
+YouTube Data API: `videos.list` returns **one** `snippet.channelId` (host). Multi-channel product UI (collab / network) is modeled as appearances, not multi-owner content.
 ```
 
 Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtual_managements`.
+### Content primary host and appearances
+
+Canonical content is **not** multi-owned. Same platform video may **appear** on multiple registered channels.
+
+| Piece | Role |
+|-------|------|
+| `vtual_contents` | One row per `(platform_id, external_id)`; `channel_id` + `creator_id` = primary host |
+| `vtual_content_appearances` | Pivot: `content_id` + `channel_id` + denormalized `creator_id` + `role` |
+| `ContentAppearanceRole` | `primary` (host), `collaborator` (official collab when known), `network` (sibling/brand) |
+| `ContentService` | Worker foundation: `upsertFromPrimary`, `attachAppearance`, `detachAppearance`, `setPrimary`, `listForChannel` / `listForCreator` |
+
+**Example (validated):** [youtube.com/watch?v=aVlelUsoFkY](https://www.youtube.com/watch?v=aVlelUsoFkY)
+
+| | |
+|--|--|
+| `external_id` | `aVlelUsoFkY` |
+| Primary host | Neuron `UCEMMrXP3_WeKiOunPYixMfA` (API / oEmbed author) |
+| Network appearance | Hipotesa `UCKAV3scmhfcH5Ozc6ICZGRQ` (product association; not a second host row) |
+
+**API limitation (no collab partner list):** `fetchVideos` / `PlatformVideoDto` expose a single host `channelExternalId` (`snippet.channelId` on YouTube; one `user_id` on Twitch). Data API does **not** return a list of "also appears on" channels. YouTube `brandPartner` is Creator Initiated Brand Partner Access — **not** multi-channel collab/network UI. Therefore **auto-detect / log / backfill appearances from platform HTTP is cancelled by design** (no safe signal).
+
+**Late-join channel (ops path):** host channel + content exist first; a second channel (e.g. Hipotesa) is registered later.
+
+1. `ChannelService::create` only inserts the channel row — it does **not** touch `vtual_contents` or appearances.
+2. Until someone calls `ContentService::attachAppearance`, `listForChannel` for the new channel is empty for that video (expected).
+3. Explicit attach (`network` or `collaborator`) then shows the same canonical content row on both feeds; primary host stays the API host.
+
+**Not implemented / cancelled:** auto-discovery of network/collab from description, scrape, or "API log"; public Content REST CRUD. Attach is explicit (worker/admin) only.
+
+**Forbidden wording in product copy:** “owned by multiple channels”, “multi-owner content”. Use primary host + appearance.
+
 
 ## Activation
 
@@ -444,13 +487,14 @@ Web UI: link from credentials index → **API probe**.
 | Item | Status |
 |------|--------|
 | YouTube WebSub / PubSubHubbub | Not implemented (manual HTTP clients ready) |
-| YouTube/Twitch content upsert into `vtual_contents` | Not implemented (DTO layer only) |
+| YouTube/Twitch content upsert into `vtual_contents` | `ContentService::upsertFromPrimary` foundation (no sync workers) |
 | Twitch EventSub | Not implemented |
 | Live poll scheduler / CCV snapshots | Not implemented (`fetchStreamsByUserIds` ready for workers) |
 | Soft credential failover (401/403) | Implemented default **OFF** (`VTUAL_CREDENTIAL_FAILOVER_ENABLED`) |
 | Reveal plaintext credential endpoint | Explicitly out of scope |
 | Kick integration | Deferred; disabled seed |
-| Content lifecycle sync + CCV snapshots | Table only |
+| Content lifecycle sync + CCV snapshots | Table + appearances model; no live sync workers |
+| Auto collab/network appearance discovery | **Cancelled** (no platform partner list; explicit `attachAppearance` only) |
 | Multi-stream session correlation | Not implemented |
 | Public homepage / SEO creator & management profiles | Not implemented |
 | Paid Service catalog SKUs for Vtual | Not implemented |
@@ -473,6 +517,7 @@ composer test -- --filter=PlatformCredential
 | `ChannelProfileInputParserTest` / `ChannelProfileResolverTest` | Parse matrix YT/Twitch; handle → canonical id via Http::fake |
 | `PlatformCredentialSecretsTest` | Payload normalize / fingerprint / reject unknown keys |
 | `PlatformCredentialServiceTest` | pending create, pickActive, Test YT/Twitch, getAppAccessToken reuse/remint, secret rotate reset, forever decrypt cache |
+| `ContentServiceTest` | Primary host + network appearance, late-join no auto-attach, listForChannel/Creator, detach/setPrimary invariants |
 | `PlatformApiGatewayTest` / `BatchIdChunkerTest` | Manual HTTP clients: multi-id, batch max, parts, auth, 401 markFailed + ErrorLog + soft failover (no secrets) |
 | `PlatformCredentialApiTest` | Masked CRUD + Test, RBAC, Root/Admin OK, User/Moderator 403, validation 422 |
 | `DecryptedValueCacheTest` | vtual resource TTL 0 past global cap; non-mapped type still expires |

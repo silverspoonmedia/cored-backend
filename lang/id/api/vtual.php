@@ -35,6 +35,16 @@ return [
         'profile_not_found' => 'Channel tidak ditemukan untuk profil ini di platform.',
         'profile_unsupported_platform' => 'Resolve profil tidak didukung untuk platform ini.',
     ],
+    'content' => [
+        'external_id_required' => 'ID konten platform wajib diisi.',
+        'appearance_primary_via_set' => 'Channel host primer tidak bisa ditambahkan sebagai appearance. Gunakan setPrimary.',
+        'appearance_role_invalid' => 'Role appearance konten tidak valid.',
+        'appearance_platform_mismatch' => 'Channel appearance harus pada platform yang sama dengan konten.',
+        'appearance_already_primary' => 'Channel ini sudah menjadi host primer konten.',
+        'appearance_already_attached' => 'Channel ini sudah terhubung sebagai appearance pada konten.',
+        'appearance_not_found' => 'Appearance konten untuk channel ini tidak ditemukan.',
+        'cannot_detach_primary' => 'Host primer tidak bisa dilepas. Tetapkan host primer lain terlebih dahulu.',
+    ],
     'platform' => [
         'list_success' => 'Daftar platform dimuat.',
     ],

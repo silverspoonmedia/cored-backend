@@ -35,6 +35,16 @@ return [
         'profile_not_found' => 'このプロフィールに一致するチャンネルがプラットフォーム上にありません。',
         'profile_unsupported_platform' => 'このプラットフォームではプロフィール解決に対応していません。',
     ],
+    'content' => [
+        'external_id_required' => 'プラットフォームのコンテンツ ID は必須です。',
+        'appearance_primary_via_set' => 'プライマリホストチャンネルは appearance として追加できません。setPrimary を使ってください。',
+        'appearance_role_invalid' => 'コンテンツ appearance のロールが無効です。',
+        'appearance_platform_mismatch' => 'appearance チャンネルはコンテンツと同じプラットフォームである必要があります。',
+        'appearance_already_primary' => 'このチャンネルは既にコンテンツのプライマリホストです。',
+        'appearance_already_attached' => 'このチャンネルは既にコンテンツの appearance としてリンクされています。',
+        'appearance_not_found' => 'このチャンネルのコンテンツ appearance が見つかりません。',
+        'cannot_detach_primary' => 'プライマリホストは取り外せません。先に別のプライマリを設定してください。',
+    ],
     'platform' => [
         'list_success' => 'プラットフォーム一覧を読み込みました。',
     ],

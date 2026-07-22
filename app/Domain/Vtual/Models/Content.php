@@ -2,13 +2,20 @@
 
 namespace App\Domain\Vtual\Models;
 
+use App\Domain\Vtual\Enums\ContentAppearanceRole;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * Canonical platform content (one row per platform + external_id).
+ * channel_id / creator_id = primary host; multi-channel via appearances, not multi-ownership.
+ */
 class Content extends Model
 {
     use HasUuids;
@@ -51,6 +58,8 @@ class Content extends Model
     }
 
     /**
+     * Primary host creator (denormalized from primary channel).
+     *
      * @return BelongsTo<Creator, $this>
      */
     public function creator(): BelongsTo
@@ -59,6 +68,8 @@ class Content extends Model
     }
 
     /**
+     * Primary host channel (platform upload/host).
+     *
      * @return BelongsTo<Channel, $this>
      */
     public function channel(): BelongsTo
@@ -72,5 +83,33 @@ class Content extends Model
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class, 'platform_id');
+    }
+
+    /**
+     * @return HasMany<ContentAppearance, $this>
+     */
+    public function appearances(): HasMany
+    {
+        return $this->hasMany(ContentAppearance::class, 'content_id');
+    }
+
+    /**
+     * All channels this content appears on (primary + associations).
+     *
+     * @return BelongsToMany<Channel, $this>
+     */
+    public function channels(): BelongsToMany
+    {
+        return $this->belongsToMany(Channel::class, 'vtual_content_appearances', 'content_id', 'channel_id')
+            ->withPivot(['id', 'creator_id', 'role'])
+            ->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<ContentAppearance, $this>
+     */
+    public function primaryAppearance(): HasMany
+    {
+        return $this->appearances()->where('role', ContentAppearanceRole::Primary->value);
     }
 }
