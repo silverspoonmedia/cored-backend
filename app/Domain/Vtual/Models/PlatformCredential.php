@@ -42,6 +42,8 @@ class PlatformCredential extends Model
         'last_used_at',
         'last_error_at',
         'last_error_message',
+        'consecutive_auth_failures',
+        'failover_skip_until',
         'verified_at',
         'created_by',
     ];
@@ -74,6 +76,8 @@ class PlatformCredential extends Model
             'priority' => 'integer',
             'last_used_at' => 'datetime',
             'last_error_at' => 'datetime',
+            'consecutive_auth_failures' => 'integer',
+            'failover_skip_until' => 'datetime',
             'verified_at' => 'datetime',
         ];
     }

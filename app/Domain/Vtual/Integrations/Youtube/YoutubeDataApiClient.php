@@ -60,6 +60,7 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
                     'key' => $apiKey,
                 ],
                 platformKey: PlatformKey::Youtube->value,
+                logContext: $this->httpLogContext('fetch_videos'),
             );
         } catch (PlatformApiException $e) {
             $this->handleAuthFailure($e, $this->credentials);
@@ -94,6 +95,7 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
                     'key' => $apiKey,
                 ],
                 platformKey: PlatformKey::Youtube->value,
+                logContext: $this->httpLogContext('fetch_channels'),
             );
         } catch (PlatformApiException $e) {
             $this->handleAuthFailure($e, $this->credentials);
@@ -134,6 +136,7 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
                 $this->baseUrl().'/channels',
                 $query,
                 platformKey: PlatformKey::Youtube->value,
+                logContext: $this->httpLogContext('resolve_channel'),
             );
         } catch (PlatformApiException $e) {
             $this->handleAuthFailure($e, $this->credentials);

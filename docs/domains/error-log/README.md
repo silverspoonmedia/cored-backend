@@ -44,6 +44,8 @@ flowchart LR
 - Anything while `ERRORLOG_ENABLED=false`
 - Nested writes while the recorder is already active (recursion guard)
 
+Domains may still call `ErrorLogRecorder::recordLog()` for **intentional ops signals** that are not thrown as reportable exceptions — e.g. vTual `PlatformErrorLogger` for platform HTTP / credential Test failures (`PlatformApiException` is a BRE and would be skipped by `recordException`).
+
 ## Fingerprint grouping
 
 ```

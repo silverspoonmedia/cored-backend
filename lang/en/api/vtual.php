@@ -87,6 +87,7 @@ return [
         'handle_required' => 'Channel handle or login is required.',
         'upstream_error' => 'Platform :platform request failed (HTTP :status).',
         'upstream_error_detail' => 'Platform :platform request failed (HTTP :status): :detail',
+        'upstream_connection_error' => 'Platform :platform connection failed.',
         'probe_success' => 'Platform API probe completed.',
         'probe_failed' => 'Platform API probe failed unexpectedly.',
         'probe_ids_required' => 'At least one id is required for this method.',

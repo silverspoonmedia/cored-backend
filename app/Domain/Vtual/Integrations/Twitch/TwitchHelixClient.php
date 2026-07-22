@@ -54,7 +54,7 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
         $ids = BatchIdChunker::normalize($externalIds, $max, 'video ids');
 
         try {
-            $response = $this->helixGet('/videos', $this->repeatedParam('id', $ids));
+            $response = $this->helixGet('/videos', $this->repeatedParam('id', $ids), 'fetch_videos');
         } catch (PlatformApiException $e) {
             $this->handleAuthFailure($e, $this->credentials);
         }
@@ -74,7 +74,7 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
         $ids = BatchIdChunker::normalize($externalIds, $max, 'channel ids');
 
         try {
-            $response = $this->helixGet('/users', $this->repeatedParam('id', $ids));
+            $response = $this->helixGet('/users', $this->repeatedParam('id', $ids), 'fetch_channels');
         } catch (PlatformApiException $e) {
             $this->handleAuthFailure($e, $this->credentials);
         }
@@ -95,7 +95,7 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
         }
 
         try {
-            $response = $this->helixGet('/users', ['login' => strtolower($login)]);
+            $response = $this->helixGet('/users', ['login' => strtolower($login)], 'resolve_channel');
         } catch (PlatformApiException $e) {
             $this->handleAuthFailure($e, $this->credentials);
         }
@@ -116,7 +116,7 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
         $ids = BatchIdChunker::normalize($userExternalIds, $max, 'user ids');
 
         try {
-            $response = $this->helixGet('/streams', $this->repeatedParam('user_id', $ids));
+            $response = $this->helixGet('/streams', $this->repeatedParam('user_id', $ids), 'fetch_streams');
         } catch (PlatformApiException $e) {
             $this->handleAuthFailure($e, $this->credentials);
         }
@@ -132,7 +132,7 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
     /**
      * @param  array<string, string|list<string>>  $query
      */
-    private function helixGet(string $path, array $query): Response
+    private function helixGet(string $path, array $query, string $operation): Response
     {
         $url = $this->baseUrl().$path;
         $pairs = [];
@@ -149,7 +149,13 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
             $url .= '?'.implode('&', $pairs);
         }
 
-        return PlatformHttp::get($url, [], $this->authedRequest(), PlatformKey::Twitch->value);
+        return PlatformHttp::get(
+            $url,
+            [],
+            $this->authedRequest(),
+            PlatformKey::Twitch->value,
+            $this->httpLogContext($operation),
+        );
     }
 
     /**

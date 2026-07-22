@@ -62,6 +62,8 @@ return [
         'test' => 'Test',
         'verified_at' => 'Verified',
         'runtime_expires' => 'Runtime token expires',
+        'auth_failures' => 'Auth fails',
+        'failover_skip' => 'Failover skip until',
         'save' => 'Save',
         'update' => 'Update',
         'disable' => 'Disable',

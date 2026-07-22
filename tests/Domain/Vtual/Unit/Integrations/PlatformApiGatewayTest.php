@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Vtual\Unit\Integrations;
 
+use App\Domain\ErrorLog\Models\ErrorLog;
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
@@ -290,11 +291,232 @@ class PlatformApiGatewayTest extends TestCase
             $this->assertStringNotContainsString('super-secret-api-key-zzzz', $e->getMessage());
         }
 
-        $cred = $this->credentials->pickActive($this->youtube);
-        // Still active status; markFailed only stamps error.
+        // Still active status; recordAuthFailure stamps error + counter; default failover OFF → no skip.
         $failed = $this->youtube->credentials()->first();
         $this->assertNotNull($failed?->last_error_at);
         $this->assertStringNotContainsString('super-secret-api-key-zzzz', (string) $failed->last_error_message);
+        $this->assertSame(1, (int) $failed->consecutive_auth_failures);
+        $this->assertNull($failed->failover_skip_until);
+        $this->assertSame(PlatformCredentialStatus::Active, $failed->status);
+        Http::assertSentCount(1);
+
+        // Ops signal: ErrorLog via PlatformHttp (BRE PlatformApiException would not auto-store).
+        $this->assertDatabaseCount('error_logs', 1);
+        $row = ErrorLog::query()->firstOrFail();
+        $this->assertSame(ErrorLog::TYPE_LOG, $row->type);
+        $this->assertStringContainsString('youtube', strtolower($row->message));
+        $this->assertStringNotContainsString('super-secret-api-key-zzzz', $row->message);
+        $context = $row->context ?? [];
+        $this->assertSame('vtual', $context['domain'] ?? null);
+        $this->assertSame('platform_http', $context['component'] ?? null);
+        $this->assertSame('youtube', $context['platform'] ?? null);
+        $this->assertSame(401, $context['upstream_status'] ?? null);
+        $this->assertSame((string) $failed->id, $context['credential_id'] ?? null);
+        $this->assertSame('www.googleapis.com', $context['url_host'] ?? null);
+        $this->assertStringContainsString('/youtube/v3/videos', (string) ($context['url_path'] ?? ''));
+        $this->assertStringNotContainsString('key=', json_encode($context) ?: '');
+        $this->assertStringNotContainsString('super-secret-api-key-zzzz', json_encode($context) ?: '');
+    }
+
+    #[Test]
+    public function youtube_500_writes_error_log_without_mark_failed(): void
+    {
+        $this->activateYoutubeCredential('yt-key-no-leak');
+
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'error' => ['message' => 'Backend Error'],
+            ], 500),
+        ]);
+
+        try {
+            $this->gateway->fetchVideos(PlatformKey::Youtube, ['vid1']);
+            $this->fail('Expected PlatformApiException');
+        } catch (PlatformApiException $e) {
+            $this->assertSame(500, $e->upstreamStatus);
+        }
+
+        $cred = $this->youtube->credentials()->first();
+        $this->assertNull($cred?->last_error_at);
+
+        $this->assertDatabaseCount('error_logs', 1);
+        $row = ErrorLog::query()->firstOrFail();
+        $context = $row->context ?? [];
+        $this->assertSame(500, $context['upstream_status'] ?? null);
+        $this->assertSame('youtube', $context['platform'] ?? null);
+        $this->assertSame((string) $cred->id, $context['credential_id'] ?? null);
+        $this->assertStringNotContainsString('yt-key-no-leak', $row->message);
+        $this->assertStringNotContainsString('yt-key-no-leak', json_encode($context) ?: '');
+    }
+
+    #[Test]
+    public function credential_mark_failed_writes_error_log(): void
+    {
+        $this->activateYoutubeCredential('yt-mark-failed-key');
+        $credential = $this->youtube->credentials()->firstOrFail();
+
+        $this->credentials->markFailed($credential, 'Test probe rejected api key');
+
+        $this->assertDatabaseCount('error_logs', 1);
+        $row = ErrorLog::query()->firstOrFail();
+        $this->assertStringContainsString('Test probe rejected', $row->message);
+        $context = $row->context ?? [];
+        $this->assertSame('platform_credential', $context['component'] ?? null);
+        $this->assertSame('credential_mark_failed', $context['event'] ?? null);
+        $this->assertSame((string) $credential->id, $context['credential_id'] ?? null);
+        $this->assertSame('youtube', $context['platform'] ?? null);
+    }
+
+    #[Test]
+    public function failover_on_switches_to_next_credential_after_401(): void
+    {
+        config([
+            'vtual.credential.failover.enabled' => true,
+            'vtual.credential.failover.auth_fail_threshold' => 1,
+            'vtual.credential.failover.max_retries_per_call' => 1,
+            'vtual.credential.failover.skip_minutes' => 30,
+        ]);
+
+        $primary = $this->activateYoutubeCredential('bad-key-primary', priority: 10, label: 'yt-primary');
+        $backup = $this->activateYoutubeCredential('good-key-backup', priority: 20, label: 'yt-backup');
+
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::sequence()
+                ->push(['error' => ['message' => 'API key not valid']], 401)
+                ->push([
+                    'items' => [
+                        [
+                            'id' => 'vid1',
+                            'snippet' => [
+                                'title' => 'OK',
+                                'description' => '',
+                                'channelId' => 'UCabc',
+                                'publishedAt' => '2026-01-01T00:00:00Z',
+                                'liveBroadcastContent' => 'none',
+                                'thumbnails' => [],
+                            ],
+                            'contentDetails' => ['duration' => 'PT1M'],
+                            'statistics' => ['viewCount' => '1'],
+                            'status' => ['privacyStatus' => 'public'],
+                            'liveStreamingDetails' => [],
+                        ],
+                    ],
+                ], 200),
+        ]);
+
+        $result = $this->gateway->fetchVideos(PlatformKey::Youtube, ['vid1']);
+        $this->assertCount(1, $result);
+        Http::assertSentCount(2);
+
+        $primary->refresh();
+        $backup->refresh();
+        $this->assertSame(1, (int) $primary->consecutive_auth_failures);
+        $this->assertNotNull($primary->failover_skip_until);
+        $this->assertSame(PlatformCredentialStatus::Active, $primary->status);
+        $this->assertSame(0, (int) $backup->consecutive_auth_failures);
+        $this->assertNull($backup->failover_skip_until);
+        $this->assertNotNull($backup->last_used_at);
+
+        $picked = $this->credentials->pickActive($this->youtube);
+        $this->assertSame((string) $backup->id, (string) $picked?->id);
+    }
+
+    #[Test]
+    public function failover_on_single_credential_does_not_loop(): void
+    {
+        config([
+            'vtual.credential.failover.enabled' => true,
+            'vtual.credential.failover.auth_fail_threshold' => 1,
+            'vtual.credential.failover.max_retries_per_call' => 1,
+        ]);
+
+        $only = $this->activateYoutubeCredential('only-bad-key', priority: 10);
+
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'error' => ['message' => 'API key not valid'],
+            ], 401),
+        ]);
+
+        try {
+            $this->gateway->fetchVideos(PlatformKey::Youtube, ['vid1']);
+            $this->fail('Expected PlatformApiException');
+        } catch (PlatformApiException $e) {
+            $this->assertSame(401, $e->upstreamStatus);
+        }
+
+        Http::assertSentCount(1);
+        $only->refresh();
+        $this->assertNotNull($only->failover_skip_until);
+        $this->assertSame(1, (int) $only->consecutive_auth_failures);
+    }
+
+    #[Test]
+    public function youtube_500_does_not_soft_demote_or_switch(): void
+    {
+        config([
+            'vtual.credential.failover.enabled' => true,
+            'vtual.credential.failover.auth_fail_threshold' => 1,
+            'vtual.credential.failover.max_retries_per_call' => 1,
+        ]);
+
+        $primary = $this->activateYoutubeCredential('key-a', priority: 10, label: 'yt-a');
+        $this->activateYoutubeCredential('key-b', priority: 20, label: 'yt-b');
+
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'error' => ['message' => 'Backend Error'],
+            ], 500),
+        ]);
+
+        try {
+            $this->gateway->fetchVideos(PlatformKey::Youtube, ['vid1']);
+            $this->fail('Expected PlatformApiException');
+        } catch (PlatformApiException $e) {
+            $this->assertSame(500, $e->upstreamStatus);
+        }
+
+        Http::assertSentCount(1);
+        $primary->refresh();
+        $this->assertSame(0, (int) $primary->consecutive_auth_failures);
+        $this->assertNull($primary->failover_skip_until);
+        $this->assertNull($primary->last_error_at);
+    }
+
+    #[Test]
+    public function pick_active_skips_soft_demoted_until_cooldown(): void
+    {
+        $primary = $this->activateYoutubeCredential('key-primary', priority: 10, label: 'yt-p');
+        $backup = $this->activateYoutubeCredential('key-backup', priority: 20, label: 'yt-b');
+
+        $primary->forceFill([
+            'failover_skip_until' => now()->addMinutes(30),
+            'consecutive_auth_failures' => 2,
+        ])->save();
+
+        $picked = $this->credentials->pickActive($this->youtube);
+        $this->assertSame((string) $backup->id, (string) $picked?->id);
+
+        $primary->forceFill(['failover_skip_until' => now()->subMinute()])->save();
+        $pickedAgain = $this->credentials->pickActive($this->youtube);
+        $this->assertSame((string) $primary->id, (string) $pickedAgain?->id);
+    }
+
+    #[Test]
+    public function mark_used_clears_auth_failure_state(): void
+    {
+        $cred = $this->activateYoutubeCredential('key-clear');
+        $cred->forceFill([
+            'consecutive_auth_failures' => 3,
+            'failover_skip_until' => now()->addHour(),
+        ])->save();
+
+        $this->credentials->markUsed($cred->fresh());
+        $cred->refresh();
+
+        $this->assertSame(0, (int) $cred->consecutive_auth_failures);
+        $this->assertNull($cred->failover_skip_until);
+        $this->assertNotNull($cred->last_used_at);
     }
 
     #[Test]
@@ -330,17 +552,24 @@ class PlatformApiGatewayTest extends TestCase
         $this->assertSame('handlechan', $channel->handle);
     }
 
-    private function activateYoutubeCredential(string $apiKey): void
-    {
+    private function activateYoutubeCredential(
+        string $apiKey,
+        int $priority = 100,
+        ?string $label = null,
+    ): \App\Domain\Vtual\Models\PlatformCredential {
         $credential = $this->credentials->create($this->admin, $this->youtube, [
-            'label' => 'yt-gateway-'.uniqid(),
+            'label' => $label ?? 'yt-gateway-'.uniqid(),
             'type' => PlatformCredentialType::ApiKey->value,
+            'priority' => $priority,
             'secret' => ['api_key' => $apiKey],
         ]);
         $credential->forceFill([
             'status' => PlatformCredentialStatus::Active,
             'verified_at' => now(),
+            'priority' => $priority,
         ])->save();
+
+        return $credential->fresh();
     }
 
     private function activateTwitchCredential(): void

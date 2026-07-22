@@ -62,6 +62,8 @@ return [
         'test' => 'Test',
         'verified_at' => 'Diverifikasi',
         'runtime_expires' => 'Token runtime kedaluwarsa',
+        'auth_failures' => 'Gagal auth',
+        'failover_skip' => 'Skip failover hingga',
         'save' => 'Simpan',
         'update' => 'Perbarui',
         'disable' => 'Nonaktifkan',

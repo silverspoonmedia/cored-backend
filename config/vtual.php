@@ -24,6 +24,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Credential failover (soft demote)
+    |--------------------------------------------------------------------------
+    |
+    | Default OFF. On 401/403 only: increment consecutive_auth_failures; at
+    | threshold set failover_skip_until (status stays active). Gateway retries
+    | once with next pickActive. Never auto-promotes pending.
+    |
+    */
+    'credential' => [
+        'failover' => [
+            'enabled' => (bool) env('VTUAL_CREDENTIAL_FAILOVER_ENABLED', false),
+            'auth_fail_threshold' => (int) env('VTUAL_CREDENTIAL_AUTH_FAIL_THRESHOLD', 2),
+            'skip_minutes' => (int) env('VTUAL_CREDENTIAL_FAILOVER_SKIP_MINUTES', 30),
+            // 1 = one alternate credential after the first failure path allows switch
+            'max_retries_per_call' => (int) env('VTUAL_CREDENTIAL_FAILOVER_MAX_RETRIES', 1),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Manual platform HTTP clients (Data API / Helix)
     |--------------------------------------------------------------------------
     |

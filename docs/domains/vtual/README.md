@@ -177,10 +177,10 @@ flowchart TD
 
 | Method | Behavior |
 |--------|----------|
-| `pickActive(Platform)` | First `status=active` by priority ASC (pending never selected) |
+| `pickActive(Platform, excludeIds?)` | First eligible `active` by priority ASC; skips soft-demoted; pending never selected |
 | `resolvePayload($c)` | Decrypt admin secrets (decrypt cache) |
 | `getAppAccessToken($c)` | Twitch `oauth_app` only: reuse `runtime_payload` if `expires_at > now + skew` (default 300s); else re-mint under cache lock `vtual.cred.token.{id}` |
-| `markUsed` / `markFailed` | Stamp use / error; `markFailed` forgets decrypt cache for secret + runtime |
+| `markUsed` / `markFailed` / `recordAuthFailure` | Use clears failover state; auth path increments counter + optional soft demote; `markFailed` forgets decrypt cache |
 
 Config: `config/vtual.php` → `credential_test.*` (`youtube_probe_channel_id`, `twitch_token_skew_seconds`, `http_timeout`).
 
@@ -291,7 +291,36 @@ Requires **active** platform credential (same as gateway). Parser → `ChannelPr
 2. `PlatformCredentialService::pickActive` — only `status=active` (post-Test).
 3. YouTube: `resolvePayload` → `key=` query param.
 4. Twitch: `getAppAccessToken` + `Client-Id` + `Authorization: Bearer`.
-5. Success → `markUsed`. HTTP 401/403 → `markFailed` (decrypt cache forget). No auto-rotate.
+5. Success → `markUsed` (clears failover counters). HTTP 401/403 → `recordAuthFailure` (last_error + consecutive counter; soft demote when failover enabled).
+
+### ErrorLog for platform HTTP failures
+
+`PlatformApiException` extends `BusinessRuleException`, so uncaught `report()` / `recordException` **skip** it (intentional API noise filter). Platform upstream failures are **ops signals** (bad key, quota, outage) and must still land in `error_logs` for manual credential decisions.
+
+| Path | Writes `error_logs`? | Notes |
+|------|----------------------|-------|
+| `PlatformHttp::get` non-2xx / connection fail | **Yes** via `PlatformErrorLogger` → `ErrorLogRecorder::recordLog` | Context: `domain=vtual`, `component=platform_http`, `platform`, `upstream_status`, `url_host` + `url_path` only (never query/`key=`/tokens), optional `credential_id` + `operation` |
+| HTTP 401/403 → `markFailed` | Credential `last_error_*` + ErrorLog from **PlatformHttp only** | `markFailed(..., logToErrorLog: false)` avoids double row |
+| Credential **Test** / Twitch token mint fail → `markFailed` | **Yes** (`component=platform_credential`, `event=credential_mark_failed`) | Incomplete secret / probe reject with no HTTP client path |
+| Auto-rotate on log | **No** hard rotate | Soft failover is separate (config flag); ErrorLog is audit only |
+
+Do **not** reclassify all BRE as reportable. Do **not** put secrets in message/context.
+### Soft credential failover
+
+Default **OFF** (`config/vtual.php` → `credential.failover`, env `VTUAL_CREDENTIAL_FAILOVER_ENABLED`).
+
+| Rule | Behavior |
+|------|----------|
+| Trigger | Upstream **401/403** only (`recordAuthFailure`) |
+| Soft demote | Status stays `active`; `consecutive_auth_failures++`; at threshold set `failover_skip_until` |
+| `pickActive` | Skips rows with future `failover_skip_until`; optional `excludeIds`; priority ASC |
+| Gateway retry | `PlatformApiGateway` fetch* methods: max `max_retries_per_call` (default 1) alternate credential |
+| Clear | `markUsed` / successful **Test** zero counter and clear skip |
+| Not trigger | 429, 5xx, connection errors, business 4xx |
+| Never | Auto-promote `pending`; hard `disabled` on auth fail; pool burn |
+
+Workers should call gateway `fetch*` / `resolveChannel` (failover). Direct `client()` is single-pick only.
+
 
 ### Shared operations (interchangeable)
 
@@ -406,7 +435,7 @@ Web UI: link from credentials index → **API probe**.
 
 ### Tests
 
-`tests/Domain/Vtual/Unit/Integrations/PlatformApiGatewayTest.php`, `BatchIdChunkerTest.php` — `Http::fake`, batch caps, parts whitelist, auth headers, 401 → `markFailed`, unsupported ops.
+`tests/Domain/Vtual/Unit/Integrations/PlatformApiGatewayTest.php`, `BatchIdChunkerTest.php` — `Http::fake`, batch caps, parts whitelist, auth headers, 401 → `markFailed` + ErrorLog (no secrets), unsupported ops.
 
 `PlatformApiProbeApiTest` / `PlatformApiProbeWebTest` — admin probe gate, multi-id path, Twitch streams/channels profile normalize (login → user_id).
 
@@ -418,7 +447,7 @@ Web UI: link from credentials index → **API probe**.
 | YouTube/Twitch content upsert into `vtual_contents` | Not implemented (DTO layer only) |
 | Twitch EventSub | Not implemented |
 | Live poll scheduler / CCV snapshots | Not implemented (`fetchStreamsByUserIds` ready for workers) |
-| Automatic credential rotation on 401 | Not implemented |
+| Soft credential failover (401/403) | Implemented default **OFF** (`VTUAL_CREDENTIAL_FAILOVER_ENABLED`) |
 | Reveal plaintext credential endpoint | Explicitly out of scope |
 | Kick integration | Deferred; disabled seed |
 | Content lifecycle sync + CCV snapshots | Table only |
@@ -444,7 +473,7 @@ composer test -- --filter=PlatformCredential
 | `ChannelProfileInputParserTest` / `ChannelProfileResolverTest` | Parse matrix YT/Twitch; handle → canonical id via Http::fake |
 | `PlatformCredentialSecretsTest` | Payload normalize / fingerprint / reject unknown keys |
 | `PlatformCredentialServiceTest` | pending create, pickActive, Test YT/Twitch, getAppAccessToken reuse/remint, secret rotate reset, forever decrypt cache |
-| `PlatformApiGatewayTest` / `BatchIdChunkerTest` | Manual HTTP clients: multi-id, batch max, parts, auth, 401 markFailed |
+| `PlatformApiGatewayTest` / `BatchIdChunkerTest` | Manual HTTP clients: multi-id, batch max, parts, auth, 401 markFailed + ErrorLog + soft failover (no secrets) |
 | `PlatformCredentialApiTest` | Masked CRUD + Test, RBAC, Root/Admin OK, User/Moderator 403, validation 422 |
 | `DecryptedValueCacheTest` | vtual resource TTL 0 past global cap; non-mapped type still expires |
 | `VtualApiTest` | CRUD API, product gate, lazy activation, peer isolation |

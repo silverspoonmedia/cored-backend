@@ -62,6 +62,8 @@ return [
         'test' => 'Test',
         'verified_at' => '検証日時',
         'runtime_expires' => 'ランタイムトークン期限',
+        'auth_failures' => '認証失敗回数',
+        'failover_skip' => 'フェイルオーバー除外期限',
         'save' => '保存',
         'update' => '更新',
         'disable' => '無効化',

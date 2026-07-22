@@ -40,6 +40,8 @@ class PlatformCredentialResource extends JsonResource
             'last_used_at' => $credential->last_used_at?->toIso8601String(),
             'last_error_at' => $credential->last_error_at?->toIso8601String(),
             'last_error_message' => $credential->last_error_message,
+            'consecutive_auth_failures' => (int) ($credential->consecutive_auth_failures ?? 0),
+            'failover_skip_until' => $credential->failover_skip_until?->toIso8601String(),
             'created_by' => $credential->created_by,
             'created_at' => $credential->created_at?->toIso8601String(),
             'updated_at' => $credential->updated_at?->toIso8601String(),

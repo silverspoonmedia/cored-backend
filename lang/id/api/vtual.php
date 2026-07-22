@@ -87,6 +87,7 @@ return [
         'handle_required' => 'Handle atau login channel wajib diisi.',
         'upstream_error' => 'Request platform :platform gagal (HTTP :status).',
         'upstream_error_detail' => 'Request platform :platform gagal (HTTP :status): :detail',
+        'upstream_connection_error' => 'Koneksi ke platform :platform gagal.',
         'probe_success' => 'Probe API platform selesai.',
         'probe_failed' => 'Probe API platform gagal tak terduga.',
         'probe_ids_required' => 'Minimal satu id wajib untuk method ini.',

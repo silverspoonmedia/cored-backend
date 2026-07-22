@@ -87,6 +87,7 @@ return [
         'handle_required' => 'チャンネルのハンドルまたはログインが必要です。',
         'upstream_error' => 'プラットフォーム :platform へのリクエストが失敗しました（HTTP :status）。',
         'upstream_error_detail' => 'プラットフォーム :platform へのリクエストが失敗しました（HTTP :status）: :detail',
+        'upstream_connection_error' => 'プラットフォーム :platform への接続に失敗しました。',
         'probe_success' => 'プラットフォーム API プローブが完了しました。',
         'probe_failed' => 'プラットフォーム API プローブが予期せず失敗しました。',
         'probe_ids_required' => 'このメソッドには少なくとも 1 つの id が必要です。',

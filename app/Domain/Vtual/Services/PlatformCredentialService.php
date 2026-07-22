@@ -7,6 +7,7 @@ use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
+use App\Domain\Vtual\Integrations\Support\PlatformErrorLogger;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Models\PlatformCredential;
 use App\Domain\Vtual\Services\Probes\TwitchOauthAppProbe;
@@ -152,17 +153,28 @@ class PlatformCredentialService
     }
 
     /**
-     * Future sync workers: first active credential by priority ASC.
-     * Pending credentials never selected.
+     * First eligible active credential by priority ASC.
+     * Pending never selected. Soft-demoted rows (failover_skip_until in future) skipped.
+     *
+     * @param  list<string>  $excludeIds
      */
-    public function pickActive(Platform $platform): ?PlatformCredential
+    public function pickActive(Platform $platform, array $excludeIds = []): ?PlatformCredential
     {
-        return PlatformCredential::query()
+        $query = PlatformCredential::query()
             ->where('platform_id', $platform->id)
             ->where('status', PlatformCredentialStatus::Active)
+            ->where(function ($q): void {
+                $q->whereNull('failover_skip_until')
+                    ->orWhere('failover_skip_until', '<=', now());
+            })
             ->orderBy('priority')
-            ->orderBy('created_at')
-            ->first();
+            ->orderBy('created_at');
+
+        if ($excludeIds !== []) {
+            $query->whereNotIn('id', $excludeIds);
+        }
+
+        return $query->first();
     }
 
     /**
@@ -198,6 +210,8 @@ class PlatformCredentialService
             $locked->verified_at = now();
             $locked->last_error_at = null;
             $locked->last_error_message = null;
+            $locked->consecutive_auth_failures = 0;
+            $locked->failover_skip_until = null;
             $locked->last_used_at = now();
 
             if (is_array($result->runtime) && $result->runtime !== []) {
@@ -284,17 +298,80 @@ class PlatformCredentialService
     }
 
     /**
-     * Healthy use: stamp last_used_at only. Does not invalidate decrypt cache.
+     * Healthy use: stamp last_used_at and clear soft-failover state.
+     * Does not invalidate decrypt cache.
      */
     public function markUsed(PlatformCredential $credential): void
     {
-        $credential->forceFill(['last_used_at' => now()])->save();
+        $credential->forceFill([
+            'last_used_at' => now(),
+            'consecutive_auth_failures' => 0,
+            'failover_skip_until' => null,
+        ])->save();
     }
 
     /**
-     * Integration failure: record error and force next secret resolve to re-decrypt.
+     * Clear soft-failover counters without stamping last_used_at.
      */
-    public function markFailed(PlatformCredential $credential, string $message): void
+    public function clearAuthFailureState(PlatformCredential $credential): void
+    {
+        $credential->forceFill([
+            'consecutive_auth_failures' => 0,
+            'failover_skip_until' => null,
+        ])->save();
+    }
+
+    /**
+     * Auth-local failure (401/403): stamp last_error_*, increment consecutive failures,
+     * soft-demote when failover enabled and threshold met. Does not change status.
+     * PlatformHttp already wrote ErrorLog for the HTTP response.
+     */
+    public function recordAuthFailure(PlatformCredential $credential, string $message): void
+    {
+        $this->markFailed($credential, $message, logToErrorLog: false);
+
+        $credential->refresh();
+        $failures = (int) $credential->consecutive_auth_failures + 1;
+        $enabled = (bool) config('vtual.credential.failover.enabled', false);
+        $threshold = max(1, (int) config('vtual.credential.failover.auth_fail_threshold', 2));
+        $skipMinutes = max(1, (int) config('vtual.credential.failover.skip_minutes', 30));
+
+        $attrs = ['consecutive_auth_failures' => $failures];
+        $demoted = false;
+
+        if ($enabled && $failures >= $threshold) {
+            $attrs['failover_skip_until'] = now()->addMinutes($skipMinutes);
+            $demoted = true;
+        }
+
+        $credential->forceFill($attrs)->save();
+
+        if (! $demoted) {
+            return;
+        }
+
+        $credential->loadMissing('platform');
+        $platformKey = $credential->platform?->key;
+        $platform = $platformKey instanceof PlatformKey
+            ? $platformKey->value
+            : (is_string($platformKey) ? $platformKey : null);
+
+        PlatformErrorLogger::log('Platform credential soft-demoted for failover', [
+            'component' => 'platform_credential',
+            'event' => 'credential_failover_demoted',
+            'credential_id' => (string) $credential->id,
+            'platform' => $platform,
+            'consecutive_auth_failures' => $failures,
+            'skip_until' => $credential->failover_skip_until?->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Integration failure: stamp last_error_* and force next secret resolve to re-decrypt.
+     *
+     * @param  bool  $logToErrorLog  False when PlatformHttp already recorded the same HTTP failure.
+     */
+    public function markFailed(PlatformCredential $credential, string $message, bool $logToErrorLog = true): void
     {
         $trimmed = trim($message);
         if (mb_strlen($trimmed) > 255) {
@@ -307,6 +384,23 @@ class PlatformCredentialService
         ])->save();
 
         $this->invalidateDecryptCache($credential);
+
+        if (! $logToErrorLog) {
+            return;
+        }
+
+        $credential->loadMissing('platform');
+        $platformKey = $credential->platform?->key;
+        $platform = $platformKey instanceof PlatformKey
+            ? $platformKey->value
+            : (is_string($platformKey) ? $platformKey : null);
+
+        PlatformErrorLogger::log($trimmed !== '' ? $trimmed : 'Platform credential failure', [
+            'component' => 'platform_credential',
+            'event' => 'credential_mark_failed',
+            'credential_id' => (string) $credential->id,
+            'platform' => $platform,
+        ]);
     }
 
     /**

@@ -24,6 +24,8 @@
                         <th>{{ __('web/vtual.credentials.hint') }}</th>
                         <th>{{ __('web/vtual.credentials.verified_at') }}</th>
                         <th>{{ __('web/vtual.credentials.runtime_expires') }}</th>
+                        <th>{{ __('web/vtual.credentials.auth_failures') }}</th>
+                        <th>{{ __('web/vtual.credentials.failover_skip') }}</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -57,6 +59,8 @@
                                     —
                                 @endif
                             </td>
+                            <td class="small text-muted">{{ $credential['consecutive_auth_failures'] ?? 0 }}</td>
+                            <td class="small text-muted">{{ $credential['failover_skip_until'] ?? '—' }}</td>
                             <td class="text-end text-nowrap">
                                 @if (in_array($status, ['pending', 'active'], true))
                                     <form method="POST"
@@ -92,7 +96,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="8" class="bg-body-tertiary">
+                            <td colspan="10" class="bg-body-tertiary">
                                 <form method="POST"
                                       action="{{ route('vtual.admin.credentials.update', $credential['id']) }}"
                                       class="row g-2 align-items-end p-2">

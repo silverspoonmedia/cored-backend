@@ -32,9 +32,25 @@ trait UsesPlatformCredential
     {
         $credential = $this->credential;
         if ($credential !== null && in_array($e->upstreamStatus, [401, 403], true)) {
-            $credentials->markFailed($credential, $e->getMessage());
+            // PlatformHttp already wrote ErrorLog for this HTTP failure (with credential_id).
+            $credentials->recordAuthFailure($credential, $e->getMessage());
         }
 
         throw $e;
+    }
+
+    /**
+     * Safe ops context for PlatformHttp — never secrets.
+     *
+     * @return array{credential_id?: string, operation?: string}
+     */
+    protected function httpLogContext(string $operation): array
+    {
+        $context = ['operation' => $operation];
+        if ($this->credential !== null) {
+            $context['credential_id'] = (string) $this->credential->id;
+        }
+
+        return $context;
     }
 }
