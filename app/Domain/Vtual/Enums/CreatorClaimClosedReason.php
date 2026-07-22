@@ -13,6 +13,9 @@ enum CreatorClaimClosedReason: string
     /** Claim TTL expired. */
     case Expired = 'expired';
 
+    /** Creator profile was absorbed into another profile (merge). */
+    case Merged = 'merged';
+
     /**
      * @return list<string>
      */

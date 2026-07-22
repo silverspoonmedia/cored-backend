@@ -11,6 +11,14 @@ return [
         'name_required' => 'Nama tampilan wajib diisi.',
         'slug_taken' => 'Slug creator ini sudah digunakan.',
     ],
+    'merge' => [
+        'success' => 'Profil digabung. Source diarsipkan; data sekarang di profil destination.',
+        'self' => 'Tidak bisa merge profil ke dirinya sendiri.',
+        'owner_required' => 'Anda harus owner di source dan destination untuk merge.',
+        'destination_archived' => 'Profil destination sudah diarsipkan dan tidak bisa menerima merge.',
+        'source_archived' => 'Profil source sudah diarsipkan.',
+        'channel_clash' => 'Kedua profil punya channel platform yang sama (:external_id). Arsipkan atau hapus salah satu dulu.',
+    ],
     'claim' => [
         'claimable_success' => 'Daftar creator yang bisa di-claim dimuat.',
         'list_success' => 'Claim Anda dimuat.',

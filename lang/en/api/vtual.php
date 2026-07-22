@@ -11,6 +11,14 @@ return [
         'name_required' => 'Display name is required.',
         'slug_taken' => 'This creator slug is already taken.',
     ],
+    'merge' => [
+        'success' => 'Profile merged. Source was archived; data now lives on the destination profile.',
+        'self' => 'Cannot merge a profile into itself.',
+        'owner_required' => 'You must be owner of both the source and destination profiles to merge.',
+        'destination_archived' => 'Destination profile is archived and cannot receive a merge.',
+        'source_archived' => 'Source profile is already archived.',
+        'channel_clash' => 'Both profiles have the same platform channel (:external_id). Archive or remove one channel first.',
+    ],
     'claim' => [
         'claimable_success' => 'Claimable creators loaded.',
         'list_success' => 'Your claims loaded.',

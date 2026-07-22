@@ -75,6 +75,12 @@ return [
         'verify_channel' => 'Verify bio',
         'cancel_channel_claim' => 'Cancel',
         'empty_channel_claims' => 'No pending channel claims.',
+        'section_merge' => 'Merge into another profile',
+        'merge_help' => 'Moves all channels, links, and content ties from this profile into the destination. This profile is then archived (not claimable). Destination name/slug stay unchanged. Cannot undo.',
+        'merge_destination' => 'Destination profile',
+        'merge_pick' => 'Select destination…',
+        'merge_submit' => 'Merge into selected',
+        'merge_confirm' => 'Merge this profile into the selected one? All data moves to the destination and this profile will be archived. This cannot be undone.',
     ],
     'claims' => [
         'title' => 'Become a vTuber / Claim profile',

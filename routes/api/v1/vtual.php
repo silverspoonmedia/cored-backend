@@ -65,7 +65,11 @@ Route::middleware(['auth:api', 'product.active:Vtual'])->prefix('vtual')->name('
 
     Route::middleware('permission:edit vtual creator')->group(function (): void {
         Route::patch('creators/{creator}', [CreatorController::class, 'update'])->whereUuid('creator')->name('creators.update');
-        // POST channels starts a bio-token claim (not an active channel).
+        // Absorb source into destination (owner on both or manage any).
+        Route::post('creators/{creator}/merge', [CreatorController::class, 'merge'])
+            ->whereUuid('creator')
+            ->name('creators.merge');
+        // POST channels: staff seed active / owner starts bio claim.
         Route::post('creators/{creator}/channels', [ChannelClaimController::class, 'store'])
             ->whereUuid('creator')
             ->name('creators.channels.store');

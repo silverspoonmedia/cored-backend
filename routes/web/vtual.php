@@ -29,6 +29,9 @@ Route::get('vtual/profiles/{creator}', [CreatorProfileController::class, 'show']
 Route::patch('vtual/profiles/{creator}', [CreatorProfileController::class, 'update'])
     ->whereUuid('creator')
     ->name('vtual.profiles.update');
+Route::post('vtual/profiles/{creator}/merge', [CreatorProfileController::class, 'merge'])
+    ->whereUuid('creator')
+    ->name('vtual.profiles.merge');
 Route::post('vtual/profiles/{creator}/channels', [CreatorProfileController::class, 'storeChannel'])
     ->whereUuid('creator')
     ->name('vtual.profiles.channels.store');

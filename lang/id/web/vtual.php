@@ -75,6 +75,12 @@ return [
         'verify_channel' => 'Verifikasi bio',
         'cancel_channel_claim' => 'Batal',
         'empty_channel_claims' => 'Tidak ada claim channel pending.',
+        'section_merge' => 'Gabung ke profil lain',
+        'merge_help' => 'Memindahkan semua channel, link, dan ikatan konten dari profil ini ke destination. Profil ini kemudian diarsipkan (tidak claimable). Nama/slug destination tetap. Tidak bisa dibatalkan.',
+        'merge_destination' => 'Profil destination',
+        'merge_pick' => 'Pilih destination…',
+        'merge_submit' => 'Gabung ke yang dipilih',
+        'merge_confirm' => 'Gabung profil ini ke yang dipilih? Semua data pindah ke destination dan profil ini diarsipkan. Tidak bisa dibatalkan.',
     ],
     'claims' => [
         'title' => 'Jadi vTuber / Klaim profil',

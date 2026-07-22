@@ -568,7 +568,8 @@ Web UI: link from credentials index → **API probe**.
 | Auto collab/network appearance discovery | **Cancelled** (no platform partner list; explicit `attachAppearance` only) |
 | Creator claim Existing (bio token) | **Phase 1 implemented** (orphan seed + verify + Accept Anyway) |
 | Channel claim (attach channel) | **Implemented** dual path: staff seed instant active; non-staff pending claim + bio / Accept Anyway |
-| Claim Add New + survey + appeal + merge | Not implemented (phase 2+) |
+| Claim Add New + survey + appeal | Not implemented (phase 2+) |
+| Profile merge (absorb) | **Implemented** (same-owner or staff; source archived) |
 | Ideal Viewer-only until claim (strip User create creator) | Follow-up; not in phase 1 |
 | Multi-stream session correlation | Not implemented |
 | Public homepage / SEO creator & management profiles | Not implemented |
@@ -594,6 +595,7 @@ composer test -- --filter=PlatformCredential
 | `PlatformCredentialSecretsTest` | Payload normalize / fingerprint / reject unknown keys |
 | `PlatformCredentialServiceTest` | pending create, pickActive, Test YT/Twitch, getAppAccessToken reuse/remint, secret rotate reset, forever decrypt cache |
 | `ContentServiceTest` | Primary host + network appearance, late-join no auto-attach, listForChannel/Creator, detach/setPrimary invariants |
+| `CreatorMergeServiceTest` | Absorb channels/links; clash 422; non-owner 403; staff orphans; pending claims `merged` |
 | `CreatorClaimServiceTest` | Orphan create, claimable list, bio verify Http::fake, cooldown, Accept Anyway, already-owned (no attempt burn), winner supersedes other pending, max_pending_per_user, staff listPending |
 | `PlatformApiGatewayTest` / `BatchIdChunkerTest` | Manual HTTP clients: multi-id, batch max, parts, auth, 401 markFailed + ErrorLog + soft failover (no secrets) |
 | `PlatformCredentialApiTest` | Masked CRUD + Test, RBAC, Root/Admin OK, User/Moderator 403, validation 422 |
@@ -602,17 +604,26 @@ composer test -- --filter=PlatformCredential
 | `RegisterVtualActivationTest` | Register creates implicit Vtual activation |
 
 
-## Future: merge / reparent (not implemented)
+## Profile merge (absorb) — implemented
 
-One User may own many Creators; each Creator has its own channels. Ops sometimes need to consolidate.
+One User may own many Creators. **Merge** absorbs source into destination (same owner on both, or staff `manage any`).
 
-**Recommended later (no code yet):**
+| Step | Behavior |
+|------|----------|
+| Auth | Owner membership on **both** profiles, or `manage any vtual resource` |
+| Move | Channels, external links, contents + appearances `creator_id`, management assignments |
+| Cancel | Pending creator claims + channel claims on source → `cancelled` + `closed_reason=merged` |
+| Keep | Destination `display_name` / `slug` / `bio` / `avatar`; verified claim audit rows on source |
+| Conflict | Same `(platform_id, external_id)` on both → 422 (no partial move) |
+| Source after | **Archived** (`status=archived`), members stripped, slug mangled to `merged-{slug}-{suffix}` so it is **not claimable** |
 
-1. **Channel reparent (same owner)** — move `channel.creator_id` from profile A → B when actor owns both (or staff). Respect global unique `(platform_id, external_id)`; re-point primary host / appearances carefully. Lowest risk; product copy: “Move channel to another of my profiles.”
-2. **Profile absorb** — target takes source channels + external links; re-point contents; archive source; cancel open claims; audit log. Explicit confirm only.
-3. **No auto-merge across different Users** without dual ownership proof or staff override.
+**Do not** leave source active without members (would become claimable empty shell). Soft-delete / hard-delete not used.
 
-**Do not:** silent merge by email; transfer without audit; dual primary hosts for one video.
+API: `POST /api/v1/vtual/creators/{source}/merge` body `{ "destination_id": "uuid" }`.  
+Web: manage profile → Merge into another profile (owner + ≥2 targets).
+
+Not implemented: field pick from source, cross-user merge without dual ownership, single-channel reparent-only API, undo.
+
 
 ## Related
 

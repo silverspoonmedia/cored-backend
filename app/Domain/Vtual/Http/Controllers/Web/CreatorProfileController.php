@@ -40,6 +40,7 @@ class CreatorProfileController extends Controller
         $channelClaims = $this->api()->get('vtual/creators/'.$creator.'/channel-claims');
         $links = $this->api()->get('vtual/creators/'.$creator.'/links');
         $platforms = $this->api()->get('vtual/platforms');
+        $allProfiles = $this->api()->get('vtual/creators');
 
         $data = $response->json('data', []);
         $linkRows = $links->successful()
@@ -47,6 +48,16 @@ class CreatorProfileController extends Controller
             : collect($data['external_links'] ?? []);
 
         $canManageAny = auth()->user()?->can('manage any vtual resource') ?? false;
+        $canMerge = ($data['my_role'] ?? null) === 'owner' || $canManageAny;
+
+        $mergeTargets = collect();
+        if ($canMerge && $allProfiles->successful()) {
+            $mergeTargets = collect($allProfiles->json('data', []))
+                ->filter(fn (array $p) => ($p['id'] ?? '') !== $creator
+                    && ($p['status'] ?? '') === 'active'
+                    && (($p['my_role'] ?? null) === 'owner' || $canManageAny))
+                ->values();
+        }
 
         return $this->webView('vtual.profiles.show', [
             'creator' => $data,
@@ -56,7 +67,26 @@ class CreatorProfileController extends Controller
             'platforms' => $platforms->successful() ? collect($platforms->json('data', [])) : collect(),
             'canMutate' => in_array($data['my_role'] ?? null, ['owner', 'editor'], true) || $canManageAny,
             'canAcceptAnyway' => $canManageAny,
+            'canMerge' => $canMerge,
+            'mergeTargets' => $mergeTargets,
         ]);
+    }
+
+    public function merge(Request $request, string $creator): RedirectResponse
+    {
+        $response = $this->api()->post('vtual/creators/'.$creator.'/merge', $this->apiPayload($request, [
+            'destination_id',
+        ]));
+
+        if (! $response->successful()) {
+            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
+        }
+
+        $destinationId = (string) ($response->json('data.id') ?? $request->input('destination_id'));
+
+        return redirect()
+            ->route('vtual.profiles.show', $destinationId !== '' ? $destinationId : $creator)
+            ->with('success', $this->apiMessage($response));
     }
 
     public function update(Request $request, string $creator): RedirectResponse

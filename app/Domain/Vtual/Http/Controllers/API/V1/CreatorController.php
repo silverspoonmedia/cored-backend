@@ -2,10 +2,12 @@
 
 namespace App\Domain\Vtual\Http\Controllers\API\V1;
 
+use App\Domain\Vtual\Http\Requests\MergeCreatorRequest;
 use App\Domain\Vtual\Http\Requests\StoreCreatorRequest;
 use App\Domain\Vtual\Http\Requests\UpdateCreatorRequest;
 use App\Domain\Vtual\Http\Resources\CreatorResource;
 use App\Domain\Vtual\Models\Creator;
+use App\Domain\Vtual\Services\CreatorMergeService;
 use App\Domain\Vtual\Services\CreatorService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
@@ -20,6 +22,7 @@ class CreatorController extends Controller
 
     public function __construct(
         private readonly CreatorService $creators,
+        private readonly CreatorMergeService $merge,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -94,6 +97,22 @@ class CreatorController extends Controller
         return $this->successResponse(
             $this->resolveResource(new CreatorResource($archived)),
             __('api/vtual.creator.archived'),
+        );
+    }
+
+    /**
+     * Absorb source profile into destination (owner on both, or manage any).
+     */
+    public function merge(MergeCreatorRequest $request, Creator $creator): JsonResponse
+    {
+        $this->authorize('update', $creator);
+
+        $destinationId = (string) $request->validated('destination_id');
+        $destination = $this->merge->merge($request->user(), $creator->id, $destinationId);
+
+        return $this->successResponse(
+            $this->resolveResource(new CreatorResource($destination)),
+            __('api/vtual.merge.success'),
         );
     }
 }

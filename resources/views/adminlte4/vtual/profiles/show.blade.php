@@ -48,6 +48,38 @@
             </dl>
         @endif
 
+        {{-- Merge into another profile --}}
+        @if (!empty($canMerge) && isset($mergeTargets) && $mergeTargets->isNotEmpty())
+            <h5 class="mb-2">{{ __('web/vtual.profiles.section_merge') }}</h5>
+            <form method="POST" action="{{ route('vtual.profiles.merge', $creatorId) }}"
+                  class="border border-warning rounded p-3 mb-4"
+                  onsubmit="return confirm(@json(__('web/vtual.profiles.merge_confirm')));">
+                @csrf
+                <p class="small text-muted mb-2">{{ __('web/vtual.profiles.merge_help') }}</p>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-8">
+                        <label class="form-label">{{ __('web/vtual.profiles.merge_destination') }}</label>
+                        <select name="destination_id" class="form-select form-select-sm" required>
+                            <option value="">{{ __('web/vtual.profiles.merge_pick') }}</option>
+                            @foreach ($mergeTargets as $target)
+                                <option value="{{ $target['id'] }}">
+                                    {{ $target['display_name'] ?? $target['slug'] ?? $target['id'] }}
+                                    @if (!empty($target['slug']))
+                                        ({{ $target['slug'] }})
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-warning btn-sm w-100">
+                            {{ __('web/vtual.profiles.merge_submit') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        @endif
+
         {{-- External links --}}
         <h5 class="mb-2">{{ __('web/vtual.profiles.section_links') }}</h5>
         @if ($canMutate)
