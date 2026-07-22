@@ -49,4 +49,5 @@ Route::middleware('web.auth')->group(function (): void {
 
     // Product domains (domain:make injects into this group; keep product last)
     require __DIR__.'/web/file-hosting.php';
+    require __DIR__.'/web/vtual.php';
 });

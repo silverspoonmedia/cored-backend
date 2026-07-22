@@ -14,3 +14,4 @@ require __DIR__.'/v1/product-activations.php';
 
 // Product domains (kind=product). domain:make appends here; keep product requires last.
 require __DIR__.'/v1/file-hosting.php';
+require __DIR__.'/v1/vtual.php';

@@ -40,4 +40,5 @@ return [
 
     // Product
     'FileHosting' => ['kind' => 'product', 'locked' => true],
+    'Vtual' => ['kind' => 'product', 'locked' => true],
 ];

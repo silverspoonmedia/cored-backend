@@ -116,6 +116,18 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
 
+        // vTual: hidden when product activation is not active (config/products.php menu_routes).
+        Menu::query()->create([
+            'parent_id' => $products->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'vTual', 'id' => 'vTual', 'ja' => 'vTual'],
+            'icon' => 'bi bi-broadcast',
+            'route' => 'vtual.index',
+            'type' => 'p',
+            'order' => 2,
+            'is_authenticate' => true,
+        ]);
+
         $admin = Menu::query()->create([
             'parent_id' => null,
             'layout' => MenuLayout::SIDEBAR,
