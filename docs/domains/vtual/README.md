@@ -249,12 +249,88 @@ Layout: `resources/views/{WEB_LAYOUT}/vtual/` (default `adminlte4`).
 - `ChannelService::create` rejects disabled platforms (no scrape path).
 - Re-enable only after official API decision (see archive audit).
 
+## Platform HTTP clients (manual fetch)
+
+Worker-facing foundation for **pull** reads against YouTube Data API v3 and Twitch Helix. No WebSub/EventSub, no `vtual_contents` persistence in this layer.
+
+### Layout
+
+```
+app/Domain/Vtual/Integrations/
+  PlatformApiGateway.php          # public facade
+  PlatformClientRegistry.php
+  Youtube/YoutubeDataApiClient.php
+  Twitch/TwitchHelixClient.php
+  Contracts/{PlatformClient,FetchesVideos,FetchesChannels,ResolvesChannel,FetchesStreams}.php
+  Dto/{PlatformVideoDto,PlatformChannelDto,PlatformStreamDto,YoutubeParts}.php
+  Support/{BatchIdChunker,PlatformHttp}.php
+  Enums/PlatformApiOperation.php
+```
+
+### Credential flow
+
+1. `PlatformApiGateway` resolves `Platform` by key; rejects disabled (Kick).
+2. `PlatformCredentialService::pickActive` — only `status=active` (post-Test).
+3. YouTube: `resolvePayload` → `key=` query param.
+4. Twitch: `getAppAccessToken` + `Client-Id` + `Authorization: Bearer`.
+5. Success → `markUsed`. HTTP 401/403 → `markFailed` (decrypt cache forget). No auto-rotate.
+
+### Shared operations (interchangeable)
+
+| Method | YouTube | Twitch | Batch max |
+|--------|---------|--------|-----------|
+| `fetchVideos(ids, parts?)` | `GET /videos?id=&part=` | `GET /helix/videos?id=` (repeated `id`) | **50** |
+| `fetchChannels(ids, parts?)` | `GET /channels?id=&part=` | `GET /helix/users?id=` | **50** |
+| `resolveChannel(handle)` | `channels?forHandle=` | `users?login=` | 1 |
+
+`parts` is YouTube-only (whitelist in `config/vtual.php` → `youtube.allowed_*_parts`). Twitch ignores parts.
+
+Batch rules (`config/vtual.http.batch`):
+
+- Hard-fail if caller passes more than max on single `fetch*` (no silent multi-request).
+- `fetchVideosChunked` auto-splits for large lists.
+
+Product flags `supports_live` / `supports_vod` gate **ingestion policy**, not raw HTTP capability. Twitch still implements `fetchVideos` (Helix past broadcasts) even when `supports_vod=false`.
+
+### Platform-specific (no god-method)
+
+| Method | Platform | Notes |
+|--------|----------|-------|
+| `fetchStreamsByUserIds` | Twitch only | `GET /helix/streams?user_id=` (max 100). Throws `UnsupportedPlatformOperation` on YouTube. |
+| Channel catalog / uploads playlist | — | Not implemented (YT `playlistItems` / Twitch `videos?user_id=` differ). |
+| Live discovery via `search.list` | — | Documented only; separate quota bucket — avoid as primary path. |
+
+### Normalized DTOs
+
+Workers consume `PlatformVideoDto` / `PlatformChannelDto` / `PlatformStreamDto` (stable fields toward `vtual_contents` / `vtual_channels`). Mappers are per-client; no shared raw JSON shape.
+
+### Config
+
+See `config/vtual.php`: `http.timeout`, `http.batch.*`, `youtube.default_*_parts`, `youtube.allowed_*_parts`, `twitch.helix_base_url`.
+
+### Usage
+
+```php
+$gateway = app(\App\Domain\Vtual\Integrations\PlatformApiGateway::class);
+
+$videos = $gateway->fetchVideos(\App\Domain\Vtual\Enums\PlatformKey::Youtube, ['dQw4w9WgXcQ']);
+$videos = $gateway->fetchVideos(\App\Domain\Vtual\Enums\PlatformKey::Twitch, ['9001']);
+
+$streams = $gateway->fetchStreamsByUserIds(\App\Domain\Vtual\Enums\PlatformKey::Twitch, ['12345']);
+```
+
+### Tests
+
+`tests/Domain/Vtual/Unit/Integrations/PlatformApiGatewayTest.php`, `BatchIdChunkerTest.php` — `Http::fake`, batch caps, parts whitelist, auth headers, 401 → `markFailed`, unsupported ops.
+
 ## Known limitations (deferred)
 
 | Item | Status |
 |------|--------|
-| YouTube WebSub / Data API adapters | Not implemented (`pickActive` + Test gate ready) |
-| Twitch EventSub / Helix live poll | Not implemented |
+| YouTube WebSub / PubSubHubbub | Not implemented (manual HTTP clients ready) |
+| YouTube/Twitch content upsert into `vtual_contents` | Not implemented (DTO layer only) |
+| Twitch EventSub | Not implemented |
+| Live poll scheduler / CCV snapshots | Not implemented (`fetchStreamsByUserIds` ready for workers) |
 | Automatic credential rotation on 401 | Not implemented |
 | Reveal plaintext credential endpoint | Explicitly out of scope |
 | Kick integration | Deferred; disabled seed |
@@ -280,6 +356,7 @@ composer test -- --filter=PlatformCredential
 | `ChannelServiceTest` | Pending channel, Kick disabled, duplicate external id |
 | `PlatformCredentialSecretsTest` | Payload normalize / fingerprint / reject unknown keys |
 | `PlatformCredentialServiceTest` | pending create, pickActive, Test YT/Twitch, getAppAccessToken reuse/remint, secret rotate reset, forever decrypt cache |
+| `PlatformApiGatewayTest` / `BatchIdChunkerTest` | Manual HTTP clients: multi-id, batch max, parts, auth, 401 markFailed |
 | `PlatformCredentialApiTest` | Masked CRUD + Test, RBAC, Root/Admin OK, User/Moderator 403, validation 422 |
 | `DecryptedValueCacheTest` | vtual resource TTL 0 past global cap; non-mapped type still expires |
 | `VtualApiTest` | CRUD API, product gate, lazy activation, peer isolation |
