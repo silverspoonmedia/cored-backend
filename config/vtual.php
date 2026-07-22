@@ -80,6 +80,7 @@ return [
             'snippet',
             'contentDetails',
             'statistics',
+            'brandingSettings',
         ],
 
         'allowed_video_parts' => [
@@ -109,6 +110,47 @@ return [
 
     'twitch' => [
         'helix_base_url' => 'https://api.twitch.tv/helix',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Creator claim (bio token / Accept Anyway)
+    |--------------------------------------------------------------------------
+    |
+    | Phase 1: claim orphan (no owner member) profiles by putting a token in
+    | the platform channel About/bio, or staff Accept Anyway when enabled.
+    |
+    */
+    'claim' => [
+        'token_prefix' => env('VTUAL_CLAIM_TOKEN_PREFIX', 'vtual-claim-'),
+        'token_bytes' => (int) env('VTUAL_CLAIM_TOKEN_BYTES', 6),
+        'ttl_hours' => (int) env('VTUAL_CLAIM_TTL_HOURS', 24),
+        'verify_cooldown_seconds' => (int) env('VTUAL_CLAIM_VERIFY_COOLDOWN', 60),
+        'max_attempts' => (int) env('VTUAL_CLAIM_MAX_ATTEMPTS', 20),
+        // Soft cap on concurrent pending claims per user (audit rows kept).
+        'max_pending_per_user' => (int) env('VTUAL_CLAIM_MAX_PENDING', 5),
+        // Local/dev default ON for QA without editing live bios.
+        'accept_anyway_enabled' => (bool) env('VTUAL_CLAIM_ACCEPT_ANYWAY', true),
+        'vtuber_role' => 'Vtual vTuber',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Channel claim (attach channel via bio token / Accept Anyway)
+    |--------------------------------------------------------------------------
+    |
+    | Add channel on a vTuber profile does NOT auto-bind. Resolve → pending
+    | claim + token in platform About/bio → verify (or staff Accept Anyway)
+    | → insert active vtual_channels row.
+    |
+    */
+    'channel_claim' => [
+        'token_prefix' => env('VTUAL_CHANNEL_CLAIM_TOKEN_PREFIX', 'vtual-ch-'),
+        'token_bytes' => (int) env('VTUAL_CHANNEL_CLAIM_TOKEN_BYTES', 6),
+        'ttl_hours' => (int) env('VTUAL_CHANNEL_CLAIM_TTL_HOURS', 24),
+        'verify_cooldown_seconds' => (int) env('VTUAL_CHANNEL_CLAIM_VERIFY_COOLDOWN', 60),
+        'max_attempts' => (int) env('VTUAL_CHANNEL_CLAIM_MAX_ATTEMPTS', 20),
+        'accept_anyway_enabled' => (bool) env('VTUAL_CHANNEL_CLAIM_ACCEPT_ANYWAY', env('VTUAL_CLAIM_ACCEPT_ANYWAY', true)),
     ],
 
 ];

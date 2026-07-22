@@ -22,6 +22,7 @@ class VtualRoleSeeder extends Seeder
         $roles = [
             'Vtual Admin' => 2100,
             'Vtual Editor' => 2200,
+            'Vtual vTuber' => 2250,
             'Vtual Viewer' => 2300,
         ];
 
@@ -45,6 +46,7 @@ class VtualRoleSeeder extends Seeder
             'edit vtual management',
             'view vtual channel',
             'create vtual channel',
+            'claim vtual creator',
         ];
 
         $anyPermissions = [
@@ -69,10 +71,12 @@ class VtualRoleSeeder extends Seeder
         $rolePermissions = [
             'Vtual Admin' => $allPermissions,
             'Vtual Editor' => $ownPermissions,
+            'Vtual vTuber' => $ownPermissions,
             'Vtual Viewer' => [
                 'view vtual creator',
                 'view vtual management',
                 'view vtual channel',
+                'claim vtual creator',
             ],
         ];
 

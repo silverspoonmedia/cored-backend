@@ -1,7 +1,10 @@
 <?php
 
+use App\Domain\Vtual\Http\Controllers\API\V1\ChannelClaimController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ChannelController;
+use App\Domain\Vtual\Http\Controllers\API\V1\CreatorClaimController;
 use App\Domain\Vtual\Http\Controllers\API\V1\CreatorController;
+use App\Domain\Vtual\Http\Controllers\API\V1\ExternalLinkController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ManagementController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformApiProbeController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformController;
@@ -16,21 +19,77 @@ Route::middleware(['auth:api', 'product.active:Vtual'])->prefix('vtual')->name('
         Route::get('creators/{creator}/channels', [ChannelController::class, 'index'])
             ->whereUuid('creator')
             ->name('creators.channels.index');
+        Route::get('creators/{creator}/channel-claims', [ChannelClaimController::class, 'index'])
+            ->whereUuid('creator')
+            ->name('creators.channel-claims.index');
+        Route::get('creators/{creator}/links', [ExternalLinkController::class, 'index'])
+            ->whereUuid('creator')
+            ->name('creators.links.index');
         Route::get('channels/{channel}', [ChannelController::class, 'show'])->whereUuid('channel')->name('channels.show');
+        Route::get('channel-claims/{channelClaim}', [ChannelClaimController::class, 'show'])
+            ->whereUuid('channelClaim')
+            ->name('channel-claims.show');
     });
 
     Route::middleware('permission:create vtual creator')->group(function (): void {
         Route::post('creators', [CreatorController::class, 'store'])->name('creators.store');
     });
 
+    Route::middleware('permission:manage any vtual resource')->group(function (): void {
+        Route::post('creators/orphan', [CreatorController::class, 'storeOrphan'])->name('creators.orphan');
+        Route::get('claims/pending', [CreatorClaimController::class, 'pending'])->name('claims.pending');
+        Route::post('claims/{claim}/accept-anyway', [CreatorClaimController::class, 'acceptAnyway'])
+            ->whereUuid('claim')
+            ->name('claims.accept-anyway');
+        Route::post('channel-claims/{channelClaim}/accept-anyway', [ChannelClaimController::class, 'acceptAnyway'])
+            ->whereUuid('channelClaim')
+            ->name('channel-claims.accept-anyway');
+    });
+
+    // Claim existing orphan creator (bio token / Accept Anyway).
+    Route::middleware('permission:claim vtual creator')->group(function (): void {
+        Route::get('claims/claimable-creators', [CreatorClaimController::class, 'claimable'])
+            ->name('claims.claimable');
+        Route::get('claims/mine', [CreatorClaimController::class, 'mine'])->name('claims.mine');
+        Route::post('claims', [CreatorClaimController::class, 'store'])->name('claims.store');
+        Route::get('claims/{claim}', [CreatorClaimController::class, 'show'])
+            ->whereUuid('claim')
+            ->name('claims.show');
+        Route::post('claims/{claim}/verify', [CreatorClaimController::class, 'verify'])
+            ->whereUuid('claim')
+            ->name('claims.verify');
+        Route::post('claims/{claim}/cancel', [CreatorClaimController::class, 'cancel'])
+            ->whereUuid('claim')
+            ->name('claims.cancel');
+    });
+
     Route::middleware('permission:edit vtual creator')->group(function (): void {
         Route::patch('creators/{creator}', [CreatorController::class, 'update'])->whereUuid('creator')->name('creators.update');
-        Route::post('creators/{creator}/channels', [ChannelController::class, 'store'])
+        // POST channels starts a bio-token claim (not an active channel).
+        Route::post('creators/{creator}/channels', [ChannelClaimController::class, 'store'])
             ->whereUuid('creator')
             ->name('creators.channels.store');
+        Route::post('channel-claims/{channelClaim}/verify', [ChannelClaimController::class, 'verify'])
+            ->whereUuid('channelClaim')
+            ->name('channel-claims.verify');
+        Route::post('channel-claims/{channelClaim}/cancel', [ChannelClaimController::class, 'cancel'])
+            ->whereUuid('channelClaim')
+            ->name('channel-claims.cancel');
         Route::post('channels/{channel}/refresh', [ChannelController::class, 'refresh'])
             ->whereUuid('channel')
             ->name('channels.refresh');
+        Route::post('channels/{channel}/archive', [ChannelController::class, 'archive'])
+            ->whereUuid('channel')
+            ->name('channels.archive');
+        Route::post('creators/{creator}/links', [ExternalLinkController::class, 'store'])
+            ->whereUuid('creator')
+            ->name('creators.links.store');
+        Route::patch('links/{link}', [ExternalLinkController::class, 'update'])
+            ->whereUuid('link')
+            ->name('links.update');
+        Route::delete('links/{link}', [ExternalLinkController::class, 'destroy'])
+            ->whereUuid('link')
+            ->name('links.destroy');
     });
 
     Route::middleware('permission:delete vtual creator')->group(function (): void {

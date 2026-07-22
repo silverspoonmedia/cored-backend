@@ -11,7 +11,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Web | `routes/web/vtual.php` |
 | Seeder | `VtualRoleSeeder` (after core `RoleSeeder`; also seeds platforms) |
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
-| Menu auto-hide | `vtual.index` via `menu_routes`; hidden when activation not `active` |
+| Menu auto-hide | `vtual.index`, `vtual.profiles.index`, `vtual.claims.*`, credentials routes via `menu_routes`; hidden when activation not `active` |
 | Legacy audit | [archive/vtual-legacy-audit.md](../../archive/vtual-legacy-audit.md) |
 
 ## Concepts
@@ -19,15 +19,18 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Concept | Behavior |
 |---------|----------|
 | Creator | Public profile separate from Identity `User` (`vtual_creators`). Soft delete + `status` active/archived. |
-| Creator membership | `vtual_creator_members`: one user may own/edit/view **many** creators (`owner` \| `editor` \| `viewer`). Create always inserts actor as `owner`. |
+| Creator membership | `vtual_creator_members`: one user may own/edit/view **many** creators (`owner` \| `editor` \| `viewer`). Self-create inserts actor as `owner`. Staff `createOrphan` seeds **no** members (claimable). |
+| Creator claim (phase 1) | `vtual_creator_claims`: claim **orphan** (no owner member) via channel bio token or staff **Accept Anyway**. On success: `CreatorMember` owner + Spatie product role `Vtual vTuber`. Losing pendings stay as audit log (`cancelled` + `closed_reason=superseded`). |
+| Channel claim | `vtual_channel_claims`: attach platform channel to a managed creator via bio token (`vtual-ch-…`) or staff **Accept Anyway**. Channel row created only on success. Reuses claim status/via/closed_reason enums. Config: `config/vtual.php` `channel_claim.*`. |
 | Management | Talent org (`vtual_managements`), not core Spatie role `Management`. |
 | Management staff | `vtual_management_members` (`owner` \| `admin` \| `staff`). |
 | Creator assignment | `vtual_management_creators` with `joined_at` / `left_at` (historical leave without hard delete). |
 | Platform | Seeded catalog: youtube, twitch, **kick** (kick `enabled = false`). |
 | Platform credential | Child table `vtual_platform_credentials`: multi-key per platform, envelope-encrypted `secret_payload`, mask-only API. |
-| Channel | External channel on a creator; unique `(platform_id, external_id)` (canonical platform id only). Register with free-form `profile` (id / handle / URL) → resolve via platform API → store `external_id` + current `handle`. Status starts `pending`. Refresh re-fetches by `external_id` to backfill handle/display. |
-| Content | Canonical platform item (`vtual_contents`): **one row** per `(platform_id, external_id)`. `channel_id`/`creator_id` = **primary host** (API truth). Extra channels via **appearances** — not multi-ownership. Sync workers still foundation-only. |
-| External links | Morph `vtual_external_links` for creator/management social/donation URLs (schema ready; minimal API in foundation). |
+| Channel | External channel on a creator; unique `(platform_id, external_id)`. **Add channel does not auto-bind.** `POST creators/{id}/channels` starts `vtual_channel_claims` (resolve profile → pending + `vtual-ch-` token in About/bio). On verify / staff Accept Anyway: `ChannelService::activateFromDto` inserts **active** row with profile snapshot (`description`, `avatar_url`, `banner_url`, `platform_created_at`). Refresh re-syncs snapshot on existing channels; soft remove = **`archived`**. |
+| Content | Canonical platform item (`vtual_contents`): **one row** per `(platform_id, external_id)`. `channel_id`/`creator_id` = **primary host** (API truth). Extra channels via **appearances** — not multi-ownership. Sync workers still foundation-only. Content manage UI **out of scope** this phase. |
+| External links | Morph `vtual_external_links` for creator (and management) social/donation/website URLs. Creator-scoped CRUD via `ExternalLinkService` + API under `/creators/{id}/links` and `/links/{id}`. |
+| User vs vTuber Profile | **User** = Identity login (`users`). **vTuber Profile** = `vtual_creators` (public-facing bio, links, channels, content). Membership is **private**: product UI must not expose that two profiles share the same User. |
 
 ### Identity model (locked product decision)
 
@@ -51,6 +54,46 @@ YouTube Data API: `videos.list` returns **one** `snippet.channelId` (host). Mult
 ```
 
 Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtual_managements`.
+
+### Creator claim (phase 1 - binding)
+
+**Problem:** chicken-and-egg - staff want registry profiles before a real vtuber account exists; users want to prove they control a platform channel.
+
+| Path | Who | Behavior |
+|------|-----|----------|
+| Internal seed | Root / Admin / Moderator (`manage any vtual resource`) | `POST /api/v1/vtual/creators/orphan` creates creator **without** owner membership; then register channels as usual. Staff UI: `/vtual/admin/registry` (orphan form only — do not self-bind staff as owner; use a separate account if staff is also a vtuber) |
+| External claim Existing | User with `claim vtual creator` | Pick claimable creator + proof channel, receive token `vtual-claim-...`, put token in YouTube About / Twitch bio, then `POST .../claims/{id}/verify` re-fetches description via production `ChannelProfileResolver` |
+| Accept Anyway | Staff + `VTUAL_CLAIM_ACCEPT_ANYWAY` | Skip bio check (QA / local default **ON**) |
+| Staff pending queue | `manage any` | `GET /api/v1/vtual/claims/pending` + web `/vtual/admin/registry` |
+
+**On verify success:** insert `vtual_creator_members` role `owner` for claimant; assign product role **`Vtual vTuber`** (level 2250, own perms similar to Editor); **close all other pending claims** for that creator (`status=cancelled`, `closed_reason=superseded`). Rows are **kept as audit log** (no hard-delete this phase).
+
+**Race / already owned:** `verify` / `acceptAnyway` check claimable **before** burning rate-limit attempts; if already owned, claim closes as superseded. Winner path uses creator row lock + `closeCompetingClaims`.
+
+**Spam soft-guard:** `vtual.claim.max_pending_per_user` (default 5) + cooldown + max attempts. Restarting the same creator cancels the user's prior pending for that creator (`closed_reason=user_cancel`) and does not double-count against the cap.
+
+**Not claimable:** creators that already have an `owner` member. Double-owner race fails hard (no silent steal).
+
+**Web surfaces (split):**
+
+| Surface | Route | Audience |
+|---------|-------|----------|
+| Overview hub | `/vtual` | All product users — creators list + "Where to go" cards |
+| My vTuber profiles | `/vtual/profiles` | Membership list (staff with view/manage any: all active); Manage CTA |
+| Manage profile | `/vtual/profiles/{id}` | Edit profile meta, external links CRUD, channel add / verify-refresh / archive. Content section stub only. Legacy `/vtual/creators/{id}` uses same controller. |
+| Claim as vTuber | `/vtual/claims` | Users — claimable list + my pending; **no** orphan create, **no** management |
+| Registry + pending | `/vtual/admin/registry` | Staff — orphan seed + pending claims table (platform + handle on proof channel; **Claim expires** = request TTL) + Accept Anyway |
+| Claim detail | `/vtual/claims/{id}` | Claimant or staff — shows **Claimant name/email** before Accept Anyway bypass |
+| Platform credentials | `/vtual/admin/platform-credentials` | Root/Admin |
+
+**Privacy:** Manage UI never shows "same User owns these profiles" to third parties. List scope is actor-accessible only.
+
+**In-page nav:** shared partial `resources/views/adminlte4/vtual/partials/nav.blade.php` (Overview / My profiles / Claim / Registry / Credentials).
+
+**Sidebar:** Products → **vTual** parent with children Overview, My profiles, Claim as vTuber, Registry & pending (staff roles). `MenuSeeder` upgrades existing tree idempotently via `ensureVtualMenuBranch()`; re-run `php artisan db:seed --class=MenuSeeder` then `php artisan menu:flush-cache` on existing installs.
+
+**Out of scope (this phase):** management product UI, survey form, Add New approval queue, appeal / permanent reject, multi-profile merge, OAuth login proof, auto-purge of old cancelled rows, stripping core `User` `create vtual creator` (API legacy self-create still exists; staff Blade seeds orphans only).
+
 ### Content primary host and appearances
 
 Canonical content is **not** multi-owned. Same platform video may **appear** on multiple registered channels.
@@ -74,7 +117,7 @@ Canonical content is **not** multi-owned. Same platform video may **appear** on 
 
 **Late-join channel (ops path):** host channel + content exist first; a second channel (e.g. Hipotesa) is registered later.
 
-1. `ChannelService::create` only inserts the channel row — it does **not** touch `vtual_contents` or appearances.
+1. `ChannelService::activateFromDto` (post-claim) only inserts the channel row — it does **not** touch `vtual_contents` or appearances.
 2. Until someone calls `ContentService::attachAppearance`, `listForChannel` for the new channel is empty for that video (expected).
 3. Explicit attach (`network` or `collaborator`) then shows the same canonical content row on both feeds; primary host stays the API host.
 
@@ -90,7 +133,13 @@ Canonical content is **not** multi-owned. Same platform video may **appear** on 
 'Vtual' => [
     'activation_type' => 'implicit',
     'fulfillment_target' => null,
-    'menu_routes' => ['vtual.index'],
+    'menu_routes' => [
+        'vtual.index',
+        'vtual.profiles.index',
+        'vtual.claims.index',
+        'vtual.claims.staff',
+        'vtual.admin.credentials.index',
+    ],
 ],
 ```
 
@@ -113,7 +162,7 @@ Own (granted to core `User` + product roles):
 ```text
 view vtual creator | create vtual creator | edit vtual creator | delete vtual creator
 view vtual management | create vtual management | edit vtual management
-view vtual channel | create vtual channel
+view vtual channel | create vtual channel | claim vtual creator
 ```
 
 Any (internal core roles Root/Admin/Moderator/Management + product Admin):
@@ -123,7 +172,7 @@ view any vtual resource
 manage any vtual resource
 ```
 
-Product roles (levels 2100–2300): `Vtual Admin`, `Vtual Editor`, `Vtual Viewer`.
+Product roles (levels 2100–2300): `Vtual Admin`, `Vtual Editor`, `Vtual vTuber` (2250), `Vtual Viewer`. Permission `claim vtual creator` on User / Viewer / vTuber / Editor / Admin (+ staff via manage any).
 
 Resource scope:
 
@@ -254,8 +303,12 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 | GET | `/platforms` | view vtual creator | Platform catalog (includes disabled Kick) — **no credentials** |
 | GET/POST | `/creators` | view / create | List (scoped) / create (actor becomes owner) |
 | GET/PATCH/DELETE | `/creators/{id}` | view / edit / delete | Show / update / archive |
-| GET/POST | `/creators/{id}/channels` | view channel / edit creator | List / register channel |
+| GET/POST | `/creators/{id}/channels` | view channel / edit creator | List (non-archived) / register channel (`active` after resolve) |
 | GET | `/channels/{id}` | view channel | Show channel |
+| POST | `/channels/{id}/refresh` | edit creator | Re-resolve by `external_id`; set `active` |
+| POST | `/channels/{id}/archive` | edit creator | Soft archive (`archived`) |
+| GET/POST | `/creators/{id}/links` | view / edit creator | List / create external links |
+| PATCH/DELETE | `/links/{id}` | edit creator | Update / delete external link |
 | GET/POST | `/managements` | view / create | List / create management |
 | GET/PATCH | `/managements/{id}` | view / edit | Show / update |
 | POST | `/managements/{id}/creators` | edit management | Assign creator |
@@ -289,7 +342,7 @@ Layout: `resources/views/{WEB_LAYOUT}/vtual/` (default `adminlte4`).
 ## Kick strategy (foundation)
 
 - Platform row exists with `enabled = false`.
-- `ChannelService::create` rejects disabled platforms (no scrape path); Kick has no profile resolve.
+- `ChannelClaimService::start` / platform resolve rejects disabled platforms (no scrape path); Kick has no profile resolve.
 - Re-enable only after official API decision (see archive audit).
 
 ## Platform HTTP clients (manual fetch)
@@ -324,7 +377,25 @@ app/Domain/Vtual/Integrations/
 
 Requires **active** platform credential (same as gateway). Parser → `ChannelProfileResolver` → `fetchChannels` or `resolveChannel` → persist DTO.
 
-**Refresh** (`POST /api/v1/vtual/channels/{id}/refresh`): re-fetch by stored `external_id` only; updates `handle`, `display_name`, `url`, `last_synced_at`. Does not change `external_id`.
+**Create** (`POST /api/v1/vtual/creators/{id}/channels`): body `{ platform_key, profile }`. Successful platform resolve stores canonical identity and status **`active`** (no second verify click required).
+
+**Profile snapshot columns** (intersection YouTube + Twitch from existing channel/user endpoints; auto-filled on create/refresh):
+
+| Column | YouTube | Twitch | Notes |
+|--------|---------|--------|-------|
+| `description` | `snippet.description` | `description` | channel bio |
+| `avatar_url` | best `snippet.thumbnails` (high→medium→default) | `profile_image_url` | DTO `thumbnailUrl` |
+| `banner_url` | `brandingSettings.image.bannerExternalUrl` | `offline_image_url` | Twitch offline banner ≠ YT banner pixel-perfect |
+| `platform_created_at` | `snippet.publishedAt` | `created_at` | platform account/channel birth |
+
+Not shared this phase (no dual-platform signal without extra APIs): subscriber/follower counts, video_count, view_count (Twitch deprecated), country, broadcaster_type. Existing rows: click **Verify / refresh** to backfill snapshot.
+
+
+**Refresh / verify** (`POST /api/v1/vtual/channels/{id}/refresh`): re-fetch by stored `external_id` only; updates `handle`, `display_name`, `url`, `last_synced_at`, sets status **`active`**. Does not change `external_id`. Rejects archived channels.
+
+**Archive** (`POST /api/v1/vtual/channels/{id}/archive`): soft-remove (`status=archived`); hidden from default list. No hard-delete this phase.
+
+**External links** (`ExternalLinkService`): creator-scoped CRUD gated by `CreatorAccessService` (membership mutate or `manage any`). Kinds: `social` | `donation` | `website` | `other`.
 
 **Workers:** always call streams/videos APIs with stored `external_id` (Twitch `user_id`, YT channel id) — never login/handle as batch id.
 
@@ -495,6 +566,10 @@ Web UI: link from credentials index → **API probe**.
 | Kick integration | Deferred; disabled seed |
 | Content lifecycle sync + CCV snapshots | Table + appearances model; no live sync workers |
 | Auto collab/network appearance discovery | **Cancelled** (no platform partner list; explicit `attachAppearance` only) |
+| Creator claim Existing (bio token) | **Phase 1 implemented** (orphan seed + verify + Accept Anyway) |
+| Channel claim (attach channel) | **Implemented** (pending claim table + bio verify + Accept Anyway; no auto-bind on add) |
+| Claim Add New + survey + appeal + merge | Not implemented (phase 2+) |
+| Ideal Viewer-only until claim (strip User create creator) | Follow-up; not in phase 1 |
 | Multi-stream session correlation | Not implemented |
 | Public homepage / SEO creator & management profiles | Not implemented |
 | Paid Service catalog SKUs for Vtual | Not implemented |
@@ -513,11 +588,13 @@ composer test -- --filter=PlatformCredential
 | `CreatorMemberRoleTest` | Mutate / manage members matrix |
 | `CreatorServiceTest` | Multi-creator ownership, slug collision, archive |
 | `ManagementServiceTest` | Owner membership, assign/unassign `left_at` |
-| `ChannelServiceTest` | Profile resolve on create, Kick disabled, duplicate after resolve, refresh handle |
+| `ChannelServiceTest` | `activateFromDto` snapshot, duplicate external_id, refresh/archive |
+| `ChannelClaimServiceTest` | Start pending only; verify bio token; Accept Anyway; taken external_id blocked |
 | `ChannelProfileInputParserTest` / `ChannelProfileResolverTest` | Parse matrix YT/Twitch; handle → canonical id via Http::fake |
 | `PlatformCredentialSecretsTest` | Payload normalize / fingerprint / reject unknown keys |
 | `PlatformCredentialServiceTest` | pending create, pickActive, Test YT/Twitch, getAppAccessToken reuse/remint, secret rotate reset, forever decrypt cache |
 | `ContentServiceTest` | Primary host + network appearance, late-join no auto-attach, listForChannel/Creator, detach/setPrimary invariants |
+| `CreatorClaimServiceTest` | Orphan create, claimable list, bio verify Http::fake, cooldown, Accept Anyway, already-owned (no attempt burn), winner supersedes other pending, max_pending_per_user, staff listPending |
 | `PlatformApiGatewayTest` / `BatchIdChunkerTest` | Manual HTTP clients: multi-id, batch max, parts, auth, 401 markFailed + ErrorLog + soft failover (no secrets) |
 | `PlatformCredentialApiTest` | Masked CRUD + Test, RBAC, Root/Admin OK, User/Moderator 403, validation 422 |
 | `DecryptedValueCacheTest` | vtual resource TTL 0 past global cap; non-mapped type still expires |

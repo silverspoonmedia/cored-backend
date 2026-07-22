@@ -29,8 +29,16 @@ class CreatorResource extends JsonResource
             'avatar_url' => $this->avatar_url,
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,
             'my_role' => $myRole,
+            'channels_count' => $this->when(
+                isset($this->channels_count),
+                fn () => (int) $this->channels_count,
+            ),
             'members' => $this->whenLoaded('members', fn () => CreatorMemberResource::collection($this->members)),
             'channels' => $this->whenLoaded('channels', fn () => ChannelResource::collection($this->channels)),
+            'external_links' => $this->whenLoaded(
+                'externalLinks',
+                fn () => ExternalLinkResource::collection($this->externalLinks),
+            ),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

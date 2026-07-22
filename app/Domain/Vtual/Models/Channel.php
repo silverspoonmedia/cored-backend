@@ -23,7 +23,11 @@ class Channel extends Model
         'external_id',
         'handle',
         'display_name',
+        'description',
+        'avatar_url',
+        'banner_url',
         'url',
+        'platform_created_at',
         'status',
         'last_synced_at',
     ];
@@ -35,6 +39,7 @@ class Channel extends Model
     {
         return [
             'status' => ChannelStatus::class,
+            'platform_created_at' => 'datetime',
             'last_synced_at' => 'datetime',
         ];
     }

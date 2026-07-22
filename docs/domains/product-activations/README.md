@@ -43,7 +43,12 @@ Declared in `config/products.php`:
 'Vtual' => [
     'activation_type' => 'implicit',
     'fulfillment_target' => null,
-    'menu_routes' => ['vtual.index'],
+    'menu_routes' => [
+        'vtual.index',
+        'vtual.claims.index',
+        'vtual.claims.staff',
+        'vtual.admin.credentials.index',
+    ],
 ],
 ```
 

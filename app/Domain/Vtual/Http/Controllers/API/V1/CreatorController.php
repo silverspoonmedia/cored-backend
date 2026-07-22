@@ -45,6 +45,22 @@ class CreatorController extends Controller
         );
     }
 
+    /**
+     * Staff-only: seed orphan creator (no owner membership) for later claim.
+     */
+    public function storeOrphan(StoreCreatorRequest $request): JsonResponse
+    {
+        $this->authorize('create', Creator::class);
+
+        $creator = $this->creators->createOrphan($request->user(), $request->validated());
+
+        return $this->successResponse(
+            $this->resolveResource(new CreatorResource($creator)),
+            __('api/vtual.creator.orphan_created'),
+            201,
+        );
+    }
+
     public function show(Request $request, Creator $creator): JsonResponse
     {
         $this->authorize('view', $creator);

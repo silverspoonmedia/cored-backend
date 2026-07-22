@@ -238,6 +238,11 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
         $snippet = is_array($item['snippet'] ?? null) ? $item['snippet'] : [];
         $thumbnails = is_array($snippet['thumbnails'] ?? null) ? $snippet['thumbnails'] : [];
         $customUrl = isset($snippet['customUrl']) ? ltrim((string) $snippet['customUrl'], '@') : null;
+        $branding = is_array($item['brandingSettings'] ?? null) ? $item['brandingSettings'] : [];
+        $brandingImage = is_array($branding['image'] ?? null) ? $branding['image'] : [];
+        $banner = isset($brandingImage['bannerExternalUrl']) && is_string($brandingImage['bannerExternalUrl'])
+            ? $brandingImage['bannerExternalUrl']
+            : null;
 
         return new PlatformChannelDto(
             platform: PlatformKey::Youtube,
@@ -247,6 +252,8 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
             description: isset($snippet['description']) ? (string) $snippet['description'] : null,
             thumbnailUrl: $this->pickThumbnail($thumbnails),
             url: $id !== '' ? 'https://www.youtube.com/channel/'.$id : null,
+            bannerUrl: $banner !== null && $banner !== '' ? $banner : null,
+            platformCreatedAt: $this->parseTime($snippet['publishedAt'] ?? null),
             raw: null,
         );
     }

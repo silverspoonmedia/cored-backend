@@ -1,6 +1,7 @@
 <x-adminlte4::layouts.app :title="__('web/vtual.credentials.title')">
     <x-adminlte4::card :title="__('web/vtual.credentials.title')">
         <p class="text-muted small mb-3">{{ __('web/vtual.credentials.subtitle') }}</p>
+        @include('adminlte4.vtual.partials.nav')
 
         <div class="mb-3">
             <a href="{{ route('vtual.admin.platform-api-probe') }}" class="btn btn-outline-primary btn-sm">

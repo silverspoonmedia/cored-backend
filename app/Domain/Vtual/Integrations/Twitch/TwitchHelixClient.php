@@ -251,6 +251,7 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
     {
         $id = (string) ($item['id'] ?? '');
         $login = isset($item['login']) ? (string) $item['login'] : null;
+        $offline = isset($item['offline_image_url']) ? (string) $item['offline_image_url'] : null;
 
         return new PlatformChannelDto(
             platform: PlatformKey::Twitch,
@@ -260,6 +261,8 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
             description: isset($item['description']) ? (string) $item['description'] : null,
             thumbnailUrl: isset($item['profile_image_url']) ? (string) $item['profile_image_url'] : null,
             url: $login !== null && $login !== '' ? 'https://www.twitch.tv/'.$login : null,
+            bannerUrl: $offline !== null && $offline !== '' ? $offline : null,
+            platformCreatedAt: $this->parseTime($item['created_at'] ?? null),
             raw: null,
         );
     }

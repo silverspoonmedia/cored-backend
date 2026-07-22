@@ -6,6 +6,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
+use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
@@ -28,39 +29,21 @@ class ChannelService
 
         return Channel::query()
             ->where('creator_id', $creator->id)
+            ->where('status', '!=', ChannelStatus::Archived)
             ->with('platform')
             ->orderBy('created_at')
             ->get();
     }
 
     /**
-     * Register channel from free-form profile (id, handle/login, or URL).
-     * Resolves via platform API; stores canonical external_id + current handle.
-     *
-     * @param  array{platform_key: string, profile: string}  $data
+     * Activate a channel after ownership proof (ChannelClaimService verify / Accept Anyway).
+     * Not a public “bind now” path — product add-channel must go through bio claim first.
      */
-    public function create(User $actor, string $creatorId, array $data): Channel
-    {
-        $creator = $this->creatorAccess->findOrFail($creatorId);
-        $this->creatorAccess->assertCanMutate($creator, $actor);
-
-        $platform = Platform::query()->where('key', $data['platform_key'])->first();
-        if ($platform === null) {
-            throw new VtualException(__('api/vtual.channel.platform_unknown'), 422);
-        }
-
-        if (! $platform->isEnabled()) {
-            throw new VtualException(__('api/vtual.channel.platform_disabled'), 422);
-        }
-
-        $platformKey = $this->platformKey($platform);
-        $profile = trim((string) ($data['profile'] ?? ''));
-        if ($profile === '') {
-            throw new VtualException(__('api/vtual.channel.profile_required'), 422);
-        }
-
-        $dto = $this->profiles->resolve($platformKey, $profile);
-
+    public function activateFromDto(
+        string $creatorId,
+        Platform $platform,
+        PlatformChannelDto $dto,
+    ): Channel {
         $exists = Channel::query()
             ->where('platform_id', $platform->id)
             ->where('external_id', $dto->externalId)
@@ -70,27 +53,29 @@ class ChannelService
             throw new VtualException(__('api/vtual.channel.external_id_taken'), 422);
         }
 
-        $channel = Channel::query()->create([
-            'creator_id' => $creator->id,
-            'platform_id' => $platform->id,
-            'external_id' => $dto->externalId,
-            'handle' => $dto->handle,
-            'display_name' => $dto->displayName,
-            'url' => $dto->url,
-            'status' => ChannelStatus::Pending,
-            'last_synced_at' => now(),
-        ]);
+        $channel = Channel::query()->create(array_merge(
+            [
+                'creator_id' => $creatorId,
+                'platform_id' => $platform->id,
+                'external_id' => $dto->externalId,
+            ],
+            $this->attributesFromDto($dto),
+        ));
 
         return $channel->load('platform');
     }
 
     /**
-     * Re-fetch profile by stored external_id; update handle/display/url (identity stable).
+     * Re-fetch profile by stored external_id; update snapshot fields and mark active (verify).
      */
     public function refresh(User $actor, string $channelId): Channel
     {
         $channel = Channel::query()->with(['platform', 'creator'])->findOrFail($channelId);
         $this->creatorAccess->assertCanMutate($channel->creator, $actor);
+
+        if ($channel->status === ChannelStatus::Archived) {
+            throw new VtualException(__('api/vtual.channel.archived'), 422);
+        }
 
         $platform = $channel->platform;
         if ($platform === null || ! $platform->isEnabled()) {
@@ -102,11 +87,21 @@ class ChannelService
             (string) $channel->external_id,
         );
 
+        $channel->forceFill($this->attributesFromDto($dto))->save();
+
+        return $channel->refresh()->load('platform');
+    }
+
+    /**
+     * Soft-remove channel from manage UI (status archived; row kept).
+     */
+    public function archive(User $actor, string $channelId): Channel
+    {
+        $channel = Channel::query()->with(['platform', 'creator'])->findOrFail($channelId);
+        $this->creatorAccess->assertCanMutate($channel->creator, $actor);
+
         $channel->forceFill([
-            'handle' => $dto->handle,
-            'display_name' => $dto->displayName,
-            'url' => $dto->url,
-            'last_synced_at' => now(),
+            'status' => ChannelStatus::Archived,
         ])->save();
 
         return $channel->refresh()->load('platform');
@@ -118,6 +113,26 @@ class ChannelService
         $this->creatorAccess->assertCanView($channel->creator, $actor);
 
         return $channel;
+    }
+
+    /**
+     * Shared snapshot fields from platform resolve (create + refresh).
+     *
+     * @return array<string, mixed>
+     */
+    private function attributesFromDto(PlatformChannelDto $dto): array
+    {
+        return [
+            'handle' => $dto->handle,
+            'display_name' => $dto->displayName,
+            'description' => $dto->description,
+            'avatar_url' => $dto->thumbnailUrl,
+            'banner_url' => $dto->bannerUrl,
+            'url' => $dto->url,
+            'platform_created_at' => $dto->platformCreatedAt,
+            'status' => ChannelStatus::Active,
+            'last_synced_at' => now(),
+        ];
     }
 
     private function platformKey(Platform $platform): PlatformKey

@@ -1,0 +1,145 @@
+<?php
+
+namespace App\Domain\Vtual\Http\Controllers\Web;
+
+use App\Http\Controllers\Web\Concerns\ConsumesApi;
+use App\Http\Controllers\Web\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+/**
+ * User claim surface + staff registry/pending — consumes /api/v1/vtual/claims/*.
+ */
+class CreatorClaimController extends Controller
+{
+    use ConsumesApi;
+
+    /**
+     * User: claimable orphans + my pending claims (no orphan create).
+     */
+    public function index(): View|RedirectResponse
+    {
+        $claimable = $this->api()->get('vtual/claims/claimable-creators');
+        $mine = $this->api()->get('vtual/claims/mine');
+
+        if (! $claimable->successful()) {
+            return redirect()->route('vtual.index')->with('error', $this->apiMessage($claimable));
+        }
+
+        return $this->webView('vtual.claims.index', [
+            'claimable' => collect($claimable->json('data', [])),
+            'mine' => $mine->successful() ? collect($mine->json('data', [])) : collect(),
+            'canManageAny' => auth()->user()?->can('manage any vtual resource') ?? false,
+        ]);
+    }
+
+    /**
+     * Staff: orphan seed form + pending claims queue.
+     */
+    public function staffRegistry(): View|RedirectResponse
+    {
+        if (! (auth()->user()?->can('manage any vtual resource') ?? false)) {
+            return redirect()->route('vtual.index')->with('error', __('api/vtual.policy.denied'));
+        }
+
+        $pending = $this->api()->get('vtual/claims/pending');
+        if (! $pending->successful()) {
+            return redirect()->route('vtual.index')->with('error', $this->apiMessage($pending));
+        }
+
+        return $this->webView('vtual.claims.staff', [
+            'pending' => collect($pending->json('data', [])),
+            'acceptAnywayEnabled' => (bool) config('vtual.claim.accept_anyway_enabled', false),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $response = $this->api()->post('vtual/claims', $this->apiPayload($request, [
+            'creator_id',
+            'channel_id',
+        ]));
+
+        if (! $response->successful()) {
+            return redirect()->route('vtual.claims.index')->with('error', $this->apiMessage($response));
+        }
+
+        $id = $response->json('data.id');
+
+        if (is_string($id) && $id !== '') {
+            return redirect()->route('vtual.claims.show', $id)->with('success', $this->apiMessage($response));
+        }
+
+        return redirect()->route('vtual.claims.index')->with('success', $this->apiMessage($response));
+    }
+
+    public function show(string $claim): View|RedirectResponse
+    {
+        $response = $this->api()->get('vtual/claims/'.$claim);
+
+        if (! $response->successful()) {
+            return redirect()->route('vtual.claims.index')->with('error', $this->apiMessage($response));
+        }
+
+        return $this->webView('vtual.claims.show', [
+            'claim' => $response->json('data', []),
+            'acceptAnywayEnabled' => (bool) config('vtual.claim.accept_anyway_enabled', false),
+            'canManageAny' => auth()->user()?->can('manage any vtual resource') ?? false,
+        ]);
+    }
+
+    public function verify(string $claim): RedirectResponse
+    {
+        $response = $this->api()->post('vtual/claims/'.$claim.'/verify');
+
+        if (! $response->successful()) {
+            return redirect()->route('vtual.claims.show', $claim)->with('error', $this->apiMessage($response));
+        }
+
+        return redirect()->route('vtual.claims.show', $claim)->with('success', $this->apiMessage($response));
+    }
+
+    public function cancel(string $claim): RedirectResponse
+    {
+        $response = $this->api()->post('vtual/claims/'.$claim.'/cancel');
+
+        if (! $response->successful()) {
+            return redirect()->route('vtual.claims.show', $claim)->with('error', $this->apiMessage($response));
+        }
+
+        return redirect()->route('vtual.claims.index')->with('success', $this->apiMessage($response));
+    }
+
+    public function acceptAnyway(string $claim): RedirectResponse
+    {
+        $response = $this->api()->post('vtual/claims/'.$claim.'/accept-anyway');
+
+        if (! $response->successful()) {
+            return redirect()->route('vtual.claims.show', $claim)->with('error', $this->apiMessage($response));
+        }
+
+        return redirect()->route('vtual.claims.staff')->with('success', $this->apiMessage($response));
+    }
+
+    public function storeOrphan(Request $request): RedirectResponse
+    {
+        $response = $this->api()->post('vtual/creators/orphan', $this->apiPayload($request, [
+            'display_name',
+            'slug',
+            'bio',
+            'avatar_url',
+        ]));
+
+        if (! $response->successful()) {
+            return redirect()->route('vtual.claims.staff')->with('error', $this->apiMessage($response));
+        }
+
+        $id = $response->json('data.id');
+        if (is_string($id) && $id !== '') {
+            return redirect()->route('vtual.creators.show', $id)->with('success', $this->apiMessage($response));
+        }
+
+        return redirect()->route('vtual.claims.staff')->with('success', $this->apiMessage($response));
+    }
+}

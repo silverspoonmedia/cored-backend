@@ -3,9 +3,14 @@
 namespace App\Domain\Vtual\Integrations\Dto;
 
 use App\Domain\Vtual\Enums\PlatformKey;
+use Carbon\CarbonInterface;
 
 /**
  * Normalized channel/user resource for workers (maps toward vtual_channels).
+ *
+ * Intersection fields (YouTube + Twitch from existing channel/user endpoints):
+ * externalId, handle, displayName, description, thumbnailUrl (avatar),
+ * bannerUrl, url, platformCreatedAt.
  */
 final class PlatformChannelDto
 {
@@ -20,6 +25,8 @@ final class PlatformChannelDto
         public readonly ?string $description,
         public readonly ?string $thumbnailUrl,
         public readonly ?string $url,
+        public readonly ?string $bannerUrl = null,
+        public readonly ?CarbonInterface $platformCreatedAt = null,
         public readonly ?array $raw = null,
     ) {}
 
@@ -35,7 +42,9 @@ final class PlatformChannelDto
             'display_name' => $this->displayName,
             'description' => $this->description,
             'thumbnail_url' => $this->thumbnailUrl,
+            'banner_url' => $this->bannerUrl,
             'url' => $this->url,
+            'platform_created_at' => $this->platformCreatedAt?->toIso8601String(),
         ];
     }
 }

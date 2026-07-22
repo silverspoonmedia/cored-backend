@@ -6,11 +6,15 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
+use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
+use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
+use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Services\ChannelService;
 use App\Domain\Vtual\Services\CreatorService;
 use App\Domain\Vtual\Services\PlatformCredentialService;
+use Carbon\Carbon;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -19,6 +23,10 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
+/**
+ * ChannelService: activateFromDto (post-claim), refresh, archive.
+ * Public add-channel is ChannelClaimService (see ChannelClaimServiceTest).
+ */
 class ChannelServiceTest extends TestCase
 {
     use RefreshDatabase;
@@ -29,6 +37,8 @@ class ChannelServiceTest extends TestCase
     private ChannelService $channels;
 
     private CreatorService $creators;
+
+    private ChannelProfileResolver $profiles;
 
     private PlatformCredentialService $credentials;
 
@@ -45,6 +55,7 @@ class ChannelServiceTest extends TestCase
         $this->seed(VtualRoleSeeder::class);
         $this->channels = app(ChannelService::class);
         $this->creators = app(CreatorService::class);
+        $this->profiles = app(ChannelProfileResolver::class);
         $this->credentials = app(PlatformCredentialService::class);
         $this->admin = $this->userWithRole('Admin');
         $this->youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
@@ -52,7 +63,7 @@ class ChannelServiceTest extends TestCase
     }
 
     #[Test]
-    public function create_youtube_by_handle_stores_canonical_id(): void
+    public function activate_youtube_dto_stores_canonical_snapshot(): void
     {
         $this->activateYoutubeCredential();
         $this->fakeYoutubeChannel(self::YT_ID, 'stream', 'Stream Channel');
@@ -60,38 +71,23 @@ class ChannelServiceTest extends TestCase
         $user = $this->userWithRole('User');
         $creator = $this->creators->create($user, ['display_name' => 'Stream']);
 
-        $channel = $this->channels->create($user, $creator->id, [
-            'platform_key' => 'youtube',
-            'profile' => '@stream',
-        ]);
+        $dto = $this->profiles->resolve(PlatformKey::Youtube, '@stream');
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
 
-        $this->assertSame(ChannelStatus::Pending, $channel->status);
+        $this->assertSame(ChannelStatus::Active, $channel->status);
         $this->assertSame(self::YT_ID, $channel->external_id);
         $this->assertSame('stream', $channel->handle);
         $this->assertSame('Stream Channel', $channel->display_name);
+        $this->assertSame('YouTube channel bio', $channel->description);
+        $this->assertSame('https://img.example/hi.jpg', $channel->avatar_url);
+        $this->assertSame('https://img.example/banner.jpg', $channel->banner_url);
+        $this->assertNotNull($channel->platform_created_at);
+        $this->assertSame('2017-04-19', $channel->platform_created_at->toDateString());
         $this->assertNotNull($channel->last_synced_at);
     }
 
     #[Test]
-    public function create_youtube_by_id_fills_handle_from_api(): void
-    {
-        $this->activateYoutubeCredential();
-        $this->fakeYoutubeChannel(self::YT_ID, 'fromid', 'From Id');
-
-        $user = $this->userWithRole('User');
-        $creator = $this->creators->create($user, ['display_name' => 'Stream']);
-
-        $channel = $this->channels->create($user, $creator->id, [
-            'platform_key' => 'youtube',
-            'profile' => self::YT_ID,
-        ]);
-
-        $this->assertSame(self::YT_ID, $channel->external_id);
-        $this->assertSame('fromid', $channel->handle);
-    }
-
-    #[Test]
-    public function create_twitch_by_login_stores_numeric_id(): void
+    public function activate_twitch_dto_stores_numeric_id(): void
     {
         $this->activateTwitchCredential();
         Http::fake([
@@ -106,8 +102,10 @@ class ChannelServiceTest extends TestCase
                         'id' => '40934651',
                         'login' => 'ludwig',
                         'display_name' => 'Ludwig',
-                        'description' => '',
+                        'description' => 'Twitch bio here',
                         'profile_image_url' => 'https://img.example/l.png',
+                        'offline_image_url' => 'https://img.example/offline.png',
+                        'created_at' => '2019-10-10T07:35:05Z',
                     ],
                 ],
             ], 200),
@@ -116,49 +114,40 @@ class ChannelServiceTest extends TestCase
         $user = $this->userWithRole('User');
         $creator = $this->creators->create($user, ['display_name' => 'Stream']);
 
-        $channel = $this->channels->create($user, $creator->id, [
-            'platform_key' => 'twitch',
-            'profile' => 'https://www.twitch.tv/ludwig',
-        ]);
+        $dto = $this->profiles->resolve(PlatformKey::Twitch, 'https://www.twitch.tv/ludwig');
+        $channel = $this->channels->activateFromDto($creator->id, $this->twitch, $dto);
 
         $this->assertSame('40934651', $channel->external_id);
         $this->assertSame('ludwig', $channel->handle);
-    }
-
-    #[Test]
-    public function kick_platform_is_rejected_while_disabled(): void
-    {
-        $user = $this->userWithRole('User');
-        $creator = $this->creators->create($user, ['display_name' => 'Stream']);
-
-        $this->expectException(VtualException::class);
-
-        $this->channels->create($user, $creator->id, [
-            'platform_key' => 'kick',
-            'profile' => 'kick-user-1',
-        ]);
+        $this->assertSame('Twitch bio here', $channel->description);
+        $this->assertSame('https://img.example/l.png', $channel->avatar_url);
+        $this->assertSame('https://img.example/offline.png', $channel->banner_url);
+        $this->assertNotNull($channel->platform_created_at);
+        $this->assertSame('2019-10-10', $channel->platform_created_at->toDateString());
     }
 
     #[Test]
     public function duplicate_platform_external_id_rejected(): void
     {
-        $this->activateYoutubeCredential();
-        $this->fakeYoutubeChannel(self::YT_ID, 'stream', 'Stream');
-
         $user = $this->userWithRole('User');
         $creator = $this->creators->create($user, ['display_name' => 'Stream']);
 
-        $this->channels->create($user, $creator->id, [
-            'platform_key' => 'youtube',
-            'profile' => self::YT_ID,
-        ]);
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'stream',
+            displayName: 'Stream',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: 'https://youtube.com/channel/'.self::YT_ID,
+            bannerUrl: null,
+            platformCreatedAt: Carbon::parse('2017-04-19T14:57:55Z'),
+        );
+
+        $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
 
         $this->expectException(VtualException::class);
-
-        $this->channels->create($user, $creator->id, [
-            'platform_key' => 'youtube',
-            'profile' => '@stream',
-        ]);
+        $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
     }
 
     #[Test]
@@ -174,9 +163,17 @@ class ChannelServiceTest extends TestCase
                             'id' => self::YT_ID,
                             'snippet' => [
                                 'title' => 'Old Name',
-                                'description' => '',
+                                'description' => 'Old bio',
                                 'customUrl' => '@oldhandle',
-                                'thumbnails' => [],
+                                'publishedAt' => '2017-04-19T14:57:55Z',
+                                'thumbnails' => [
+                                    'high' => ['url' => 'https://img.example/old-av.jpg'],
+                                ],
+                            ],
+                            'brandingSettings' => [
+                                'image' => [
+                                    'bannerExternalUrl' => 'https://img.example/old-banner.jpg',
+                                ],
                             ],
                         ],
                     ],
@@ -187,9 +184,17 @@ class ChannelServiceTest extends TestCase
                             'id' => self::YT_ID,
                             'snippet' => [
                                 'title' => 'New Name',
-                                'description' => '',
+                                'description' => 'New bio',
                                 'customUrl' => '@newhandle',
-                                'thumbnails' => [],
+                                'publishedAt' => '2017-04-19T14:57:55Z',
+                                'thumbnails' => [
+                                    'high' => ['url' => 'https://img.example/new-av.jpg'],
+                                ],
+                            ],
+                            'brandingSettings' => [
+                                'image' => [
+                                    'bannerExternalUrl' => 'https://img.example/new-banner.jpg',
+                                ],
                             ],
                         ],
                     ],
@@ -199,37 +204,61 @@ class ChannelServiceTest extends TestCase
         $user = $this->userWithRole('User');
         $creator = $this->creators->create($user, ['display_name' => 'Stream']);
 
-        $channel = $this->channels->create($user, $creator->id, [
-            'platform_key' => 'youtube',
-            'profile' => self::YT_ID,
-        ]);
+        $dto = $this->profiles->resolve(PlatformKey::Youtube, self::YT_ID);
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
 
         $this->assertSame('oldhandle', $channel->handle);
+        $this->assertSame('Old bio', $channel->description);
 
         $refreshed = $this->channels->refresh($user, $channel->id);
 
         $this->assertSame(self::YT_ID, $refreshed->external_id);
         $this->assertSame('newhandle', $refreshed->handle);
         $this->assertSame('New Name', $refreshed->display_name);
+        $this->assertSame('New bio', $refreshed->description);
+        $this->assertSame('https://img.example/new-av.jpg', $refreshed->avatar_url);
+        $this->assertSame('https://img.example/new-banner.jpg', $refreshed->banner_url);
+        $this->assertSame(ChannelStatus::Active, $refreshed->status);
     }
 
     #[Test]
-    public function profile_not_found_throws(): void
+    public function archive_sets_status_and_hides_from_list(): void
+    {
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Stream']);
+
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'stream',
+            displayName: 'Stream Channel',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: null,
+        );
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+
+        $archived = $this->channels->archive($user, $channel->id);
+
+        $this->assertSame(ChannelStatus::Archived, $archived->status);
+        $this->assertCount(0, $this->channels->listForCreator($user, $creator->id));
+    }
+
+    #[Test]
+    public function refresh_rejects_archived_channel(): void
     {
         $this->activateYoutubeCredential();
-        Http::fake([
-            'www.googleapis.com/youtube/v3/channels*' => Http::response(['items' => []], 200),
-        ]);
+        $this->fakeYoutubeChannel(self::YT_ID, 'stream', 'Stream Channel');
 
         $user = $this->userWithRole('User');
         $creator = $this->creators->create($user, ['display_name' => 'Stream']);
 
-        $this->expectException(VtualException::class);
+        $dto = $this->profiles->resolve(PlatformKey::Youtube, self::YT_ID);
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+        $this->channels->archive($user, $channel->id);
 
-        $this->channels->create($user, $creator->id, [
-            'platform_key' => 'youtube',
-            'profile' => '@missingchannel',
-        ]);
+        $this->expectException(VtualException::class);
+        $this->channels->refresh($user, $channel->id);
     }
 
     private function fakeYoutubeChannel(string $id, string $handle, string $title): void
@@ -241,10 +270,16 @@ class ChannelServiceTest extends TestCase
                         'id' => $id,
                         'snippet' => [
                             'title' => $title,
-                            'description' => '',
+                            'description' => 'YouTube channel bio',
                             'customUrl' => '@'.$handle,
+                            'publishedAt' => '2017-04-19T14:57:55Z',
                             'thumbnails' => [
                                 'high' => ['url' => 'https://img.example/hi.jpg'],
+                            ],
+                        ],
+                        'brandingSettings' => [
+                            'image' => [
+                                'bannerExternalUrl' => 'https://img.example/banner.jpg',
                             ],
                         ],
                     ],
@@ -256,9 +291,9 @@ class ChannelServiceTest extends TestCase
     private function activateYoutubeCredential(): void
     {
         $credential = $this->credentials->create($this->admin, $this->youtube, [
-            'label' => 'yt-ch-'.uniqid(),
+            'label' => 'yt-channel-test',
             'type' => PlatformCredentialType::ApiKey->value,
-            'secret' => ['api_key' => 'yt-ch-key'],
+            'secret' => ['api_key' => 'yt-api-test-key'],
         ]);
         $credential->forceFill([
             'status' => PlatformCredentialStatus::Active,
@@ -269,11 +304,11 @@ class ChannelServiceTest extends TestCase
     private function activateTwitchCredential(): void
     {
         $credential = $this->credentials->create($this->admin, $this->twitch, [
-            'label' => 'tw-ch-'.uniqid(),
+            'label' => 'tw-channel-test',
             'type' => PlatformCredentialType::OauthApp->value,
             'secret' => [
-                'client_id' => 'tw-client-id',
-                'client_secret' => 'tw-client-secret',
+                'client_id' => 'tw-client',
+                'client_secret' => 'tw-secret',
             ],
         ]);
         $credential->forceFill([
@@ -284,9 +319,11 @@ class ChannelServiceTest extends TestCase
 
     private function userWithRole(string $role): User
     {
-        $user = User::factory()->create([
-            'email' => 'u'.uniqid('', true).'@example.com',
+        $user = User::query()->create([
+            'name' => $role.' User',
+            'email' => strtolower($role).'-ch-'.uniqid().'@example.com',
             'password' => Hash::make('password'),
+            'email_verified_at' => now(),
         ]);
         $user->assignRole($role);
 

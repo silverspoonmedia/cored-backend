@@ -95,6 +95,8 @@ class ChannelProfileResolver
             description: $dto->description,
             thumbnailUrl: $dto->thumbnailUrl,
             url: $dto->url,
+            bannerUrl: $dto->bannerUrl,
+            platformCreatedAt: $dto->platformCreatedAt,
             raw: $dto->raw,
         );
     }

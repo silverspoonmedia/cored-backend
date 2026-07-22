@@ -2,7 +2,6 @@
 
 namespace App\Domain\Vtual\Http\Controllers\API\V1;
 
-use App\Domain\Vtual\Http\Requests\StoreChannelRequest;
 use App\Domain\Vtual\Http\Resources\ChannelResource;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Creator;
@@ -35,20 +34,6 @@ class ChannelController extends Controller
         );
     }
 
-    public function store(StoreChannelRequest $request, Creator $creator): JsonResponse
-    {
-        $this->authorize('create', Channel::class);
-        $this->authorize('update', $creator);
-
-        $channel = $this->channels->create($request->user(), $creator->id, $request->validated());
-
-        return $this->successResponse(
-            $this->resolveResource(new ChannelResource($channel)),
-            __('api/vtual.channel.created'),
-            201,
-        );
-    }
-
     public function show(Request $request, Channel $channel): JsonResponse
     {
         $this->authorize('view', $channel);
@@ -71,6 +56,19 @@ class ChannelController extends Controller
         return $this->successResponse(
             $this->resolveResource(new ChannelResource($refreshed)),
             __('api/vtual.channel.refreshed'),
+        );
+    }
+
+    public function archive(Request $request, Channel $channel): JsonResponse
+    {
+        $this->authorize('create', Channel::class);
+        $this->authorize('view', $channel);
+
+        $archived = $this->channels->archive($request->user(), $channel->id);
+
+        return $this->successResponse(
+            $this->resolveResource(new ChannelResource($archived)),
+            __('api/vtual.channel.archived'),
         );
     }
 }

@@ -128,7 +128,8 @@ class VtualApiTest extends TestCase
             ->assertCreated()
             ->json('data');
 
-        $this->actingAsJwt($user)
+        // POST channels starts a bio-token claim (not an active channel row).
+        $claim = $this->actingAsJwt($user)
             ->postJson('/api/v1/vtual/creators/'.$creator['id'].'/channels', [
                 'platform_key' => 'youtube',
                 'profile' => '@talent',
@@ -136,7 +137,23 @@ class VtualApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.status', 'pending')
             ->assertJsonPath('data.external_id', $ytId)
-            ->assertJsonPath('data.handle', 'talent');
+            ->assertJsonPath('data.handle', 'talent')
+            ->json('data');
+
+        $this->assertNotEmpty($claim['token'] ?? null);
+        $this->assertNull($claim['channel_id'] ?? null);
+
+        // Staff Accept Anyway activates the channel.
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/channel-claims/'.$claim['id'].'/accept-anyway')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'verified');
+
+        $this->actingAsJwt($user)
+            ->getJson('/api/v1/vtual/creators/'.$creator['id'].'/channels')
+            ->assertOk()
+            ->assertJsonPath('data.0.external_id', $ytId)
+            ->assertJsonPath('data.0.status', 'active');
 
         $management = $this->actingAsJwt($user)
             ->postJson('/api/v1/vtual/managements', ['name' => 'Agency'])

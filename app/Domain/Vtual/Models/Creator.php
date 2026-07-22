@@ -43,11 +43,27 @@ class Creator extends Model
     }
 
     /**
+     * @return HasMany<CreatorClaim, $this>
+     */
+    public function claims(): HasMany
+    {
+        return $this->hasMany(CreatorClaim::class, 'creator_id');
+    }
+
+    /**
      * @return HasMany<Channel, $this>
      */
     public function channels(): HasMany
     {
         return $this->hasMany(Channel::class, 'creator_id');
+    }
+
+    /**
+     * @return HasMany<ChannelClaim, $this>
+     */
+    public function channelClaims(): HasMany
+    {
+        return $this->hasMany(ChannelClaim::class, 'creator_id');
     }
 
     /**

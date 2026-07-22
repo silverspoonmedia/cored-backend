@@ -28,6 +28,7 @@ class CreatorService
         if ($actor->can('view any vtual resource') || $actor->can('manage any vtual resource')) {
             return Creator::query()
                 ->where('status', EntityStatus::Active)
+                ->withCount('channels')
                 ->orderBy('display_name')
                 ->get();
         }
@@ -39,6 +40,7 @@ class CreatorService
         return Creator::query()
             ->whereIn('id', $ids)
             ->where('status', EntityStatus::Active)
+            ->withCount('channels')
             ->orderBy('display_name')
             ->get();
     }
@@ -47,6 +49,60 @@ class CreatorService
      * @param  array{display_name: string, slug?: string|null, bio?: string|null, avatar_url?: string|null}  $data
      */
     public function create(User $actor, array $data): Creator
+    {
+        return $this->createInternal($actor, $data, bindOwner: true);
+    }
+
+    /**
+     * Staff seed: active creator with no membership (claimable orphan).
+     *
+     * @param  array{display_name: string, slug?: string|null, bio?: string|null, avatar_url?: string|null}  $data
+     */
+    public function createOrphan(User $actor, array $data): Creator
+    {
+        if (! $actor->can('manage any vtual resource')) {
+            throw new VtualException(__('api/vtual.policy.denied'), 403);
+        }
+
+        return $this->createInternal($actor, $data, bindOwner: false);
+    }
+
+    /**
+     * Claimable = active + no owner membership (admin-seeded orphan).
+     */
+    public function isClaimable(Creator $creator): bool
+    {
+        if ($creator->status !== EntityStatus::Active) {
+            return false;
+        }
+
+        return ! CreatorMember::query()
+            ->where('creator_id', $creator->id)
+            ->where('role', CreatorMemberRole::Owner)
+            ->exists();
+    }
+
+    /**
+     * Active creators without an owner member (for claim UI).
+     *
+     * @return Collection<int, Creator>
+     */
+    public function listClaimable(): Collection
+    {
+        return Creator::query()
+            ->where('status', EntityStatus::Active)
+            ->whereDoesntHave('members', function ($q): void {
+                $q->where('role', CreatorMemberRole::Owner);
+            })
+            ->with(['channels.platform'])
+            ->orderBy('display_name')
+            ->get();
+    }
+
+    /**
+     * @param  array{display_name: string, slug?: string|null, bio?: string|null, avatar_url?: string|null}  $data
+     */
+    private function createInternal(User $actor, array $data, bool $bindOwner): Creator
     {
         $displayName = trim($data['display_name']);
         if ($displayName === '') {
@@ -57,7 +113,7 @@ class CreatorService
             ? trim($data['slug'])
             : $displayName;
 
-        return DB::transaction(function () use ($actor, $data, $displayName, $baseSlug): Creator {
+        return DB::transaction(function () use ($actor, $data, $displayName, $baseSlug, $bindOwner): Creator {
             $slug = SlugGenerator::unique($baseSlug, fn (string $s): bool => Creator::query()
                 ->where('slug', $s)
                 ->exists());
@@ -70,11 +126,13 @@ class CreatorService
                 'status' => EntityStatus::Active,
             ]);
 
-            CreatorMember::query()->create([
-                'creator_id' => $creator->id,
-                'user_id' => $actor->id,
-                'role' => CreatorMemberRole::Owner,
-            ]);
+            if ($bindOwner) {
+                CreatorMember::query()->create([
+                    'creator_id' => $creator->id,
+                    'user_id' => $actor->id,
+                    'role' => CreatorMemberRole::Owner,
+                ]);
+            }
 
             return $creator->load('members.user');
         });
@@ -85,7 +143,11 @@ class CreatorService
         $creator = $this->access->findOrFail($creatorId);
         $this->access->assertCanView($creator, $actor);
 
-        return $creator->load(['members.user', 'channels.platform']);
+        return $creator->load([
+            'members.user',
+            'channels.platform',
+            'externalLinks',
+        ])->loadCount('channels');
     }
 
     /**
