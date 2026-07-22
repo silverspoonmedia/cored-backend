@@ -313,6 +313,50 @@
             </table>
         </div>
 
+        <h6 class="mb-2">{{ __('web/vtual.profiles.section_archived_channels') }}</h6>
+        <div class="table-responsive mb-4">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>{{ __('web/vtual.platform') }}</th>
+                        <th>{{ __('web/vtual.external_id') }}</th>
+                        <th>{{ __('web/vtual.handle') }}</th>
+                        <th>{{ __('web/vtual.status') }}</th>
+                        @if ($canMutate)<th></th>@endif
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse (($archivedChannels ?? collect()) as $channel)
+                        <tr>
+                            <td>{{ $channel['platform']['name'] ?? $channel['platform']['key'] ?? '' }}</td>
+                            <td><code>{{ $channel['external_id'] ?? '' }}</code></td>
+                            <td>{{ $channel['handle'] ?? '—' }}</td>
+                            <td><span class="badge text-bg-secondary">{{ $channel['status'] ?? '' }}</span></td>
+                            @if ($canMutate)
+                                <td class="text-end text-nowrap">
+                                    <form method="POST"
+                                          action="{{ route('vtual.profiles.channels.restore', [$creatorId, $channel['id']]) }}"
+                                          class="d-inline"
+                                          onsubmit="return confirm(@json(__('web/vtual.profiles.restore_channel_confirm')));">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-success btn-sm">
+                                            {{ __('web/vtual.restore_channel') }}
+                                        </button>
+                                    </form>
+                                </td>
+                            @endif
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ $canMutate ? 5 : 4 }}">
+                                <span class="text-muted small">{{ __('web/vtual.profiles.empty_archived_channels') }}</span>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
         {{-- Content stub --}}
         <h5 class="mb-2">{{ __('web/vtual.profiles.section_content') }}</h5>
         <p class="text-muted small mb-0">{{ __('web/vtual.profiles.content_stub') }}</p>

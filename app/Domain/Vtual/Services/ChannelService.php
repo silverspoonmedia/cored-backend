@@ -3,6 +3,7 @@
 namespace App\Domain\Vtual\Services;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Vtual\Enums\ChannelFetchPoolReason;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
@@ -17,9 +18,12 @@ class ChannelService
     public function __construct(
         private readonly CreatorAccessService $creatorAccess,
         private readonly ChannelProfileResolver $profiles,
+        private readonly ChannelFetchPoolService $fetchPool,
     ) {}
 
     /**
+     * Non-archived channels for manage/list UI.
+     *
      * @return Collection<int, Channel>
      */
     public function listForCreator(User $actor, string $creatorId): Collection
@@ -32,6 +36,24 @@ class ChannelService
             ->where('status', '!=', ChannelStatus::Archived)
             ->with('platform')
             ->orderBy('created_at')
+            ->get();
+    }
+
+    /**
+     * Archived channels only (restore UI).
+     *
+     * @return Collection<int, Channel>
+     */
+    public function listArchivedForCreator(User $actor, string $creatorId): Collection
+    {
+        $creator = $this->creatorAccess->findOrFail($creatorId);
+        $this->creatorAccess->assertCanView($creator, $actor);
+
+        return Channel::query()
+            ->where('creator_id', $creator->id)
+            ->where('status', ChannelStatus::Archived)
+            ->with('platform')
+            ->orderByDesc('updated_at')
             ->get();
     }
 
@@ -101,7 +123,8 @@ class ChannelService
     }
 
     /**
-     * Re-fetch profile by stored external_id; update snapshot fields and mark active (verify).
+     * Queue profile re-fetch by stored external_id (channel fetch pool).
+     * Snapshot updates after pool flush (size 50 or max wait), not in this request.
      */
     public function refresh(User $actor, string $channelId): Channel
     {
@@ -117,14 +140,14 @@ class ChannelService
             throw new VtualException(__('api/vtual.channel.platform_disabled'), 422);
         }
 
-        $dto = $this->profiles->resolveByExternalId(
-            $this->platformKey($platform),
+        $this->fetchPool->enqueue(
+            $platform,
             (string) $channel->external_id,
+            (string) $channel->id,
+            ChannelFetchPoolReason::Refresh,
         );
 
-        $channel->forceFill($this->attributesFromDto($dto))->save();
-
-        return $channel->refresh()->load('platform');
+        return $channel->load('platform');
     }
 
     /**
@@ -137,6 +160,25 @@ class ChannelService
 
         $channel->forceFill([
             'status' => ChannelStatus::Archived,
+        ])->save();
+
+        return $channel->refresh()->load('platform');
+    }
+
+    /**
+     * Restore archived channel to active (no platform re-fetch; use refresh after).
+     */
+    public function restore(User $actor, string $channelId): Channel
+    {
+        $channel = Channel::query()->with(['platform', 'creator'])->findOrFail($channelId);
+        $this->creatorAccess->assertCanMutate($channel->creator, $actor);
+
+        if ($channel->status !== ChannelStatus::Archived) {
+            throw new VtualException(__('api/vtual.channel.not_archived'), 422);
+        }
+
+        $channel->forceFill([
+            'status' => ChannelStatus::Active,
         ])->save();
 
         return $channel->refresh()->load('platform');

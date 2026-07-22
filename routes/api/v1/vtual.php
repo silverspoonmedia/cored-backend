@@ -19,6 +19,9 @@ Route::middleware(['auth:api', 'product.active:Vtual'])->prefix('vtual')->name('
         Route::get('creators/{creator}/channels', [ChannelController::class, 'index'])
             ->whereUuid('creator')
             ->name('creators.channels.index');
+        Route::get('creators/{creator}/channels/archived', [ChannelController::class, 'archivedIndex'])
+            ->whereUuid('creator')
+            ->name('creators.channels.archived');
         Route::get('creators/{creator}/channel-claims', [ChannelClaimController::class, 'index'])
             ->whereUuid('creator')
             ->name('creators.channel-claims.index');
@@ -85,6 +88,9 @@ Route::middleware(['auth:api', 'product.active:Vtual'])->prefix('vtual')->name('
         Route::post('channels/{channel}/archive', [ChannelController::class, 'archive'])
             ->whereUuid('channel')
             ->name('channels.archive');
+        Route::post('channels/{channel}/restore', [ChannelController::class, 'restore'])
+            ->whereUuid('channel')
+            ->name('channels.restore');
         Route::post('creators/{creator}/links', [ExternalLinkController::class, 'store'])
             ->whereUuid('creator')
             ->name('creators.links.store');

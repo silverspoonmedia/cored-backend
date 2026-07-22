@@ -153,4 +153,24 @@ return [
         'accept_anyway_enabled' => (bool) env('VTUAL_CHANNEL_CLAIM_ACCEPT_ANYWAY', env('VTUAL_CLAIM_ACCEPT_ANYWAY', true)),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Channel fetch pool (batch by external_id)
+    |--------------------------------------------------------------------------
+    |
+    | Non-interactive channel snapshot fetches (refresh, scheduled resync) are
+    | enqueued then flushed when pending count hits threshold OR oldest item
+    | exceeds max_wait. Single locked flusher prevents double HTTP for the same
+    | claimed set. Interactive claim/seed/verify stay sync single-id.
+    |
+    */
+    'channel_pool' => [
+        'threshold' => (int) env('VTUAL_CHANNEL_POOL_THRESHOLD', 50),
+        'max_wait_minutes' => (int) env('VTUAL_CHANNEL_POOL_MAX_WAIT_MINUTES', 15),
+        'schedule_every_minutes' => (int) env('VTUAL_CHANNEL_POOL_SCHEDULE_MINUTES', 1),
+        'resync_stale_hours' => (int) env('VTUAL_CHANNEL_POOL_RESYNC_STALE_HOURS', 24),
+        'resync_enqueue_limit' => (int) env('VTUAL_CHANNEL_POOL_RESYNC_ENQUEUE_LIMIT', 200),
+        'flush_lock_seconds' => (int) env('VTUAL_CHANNEL_POOL_FLUSH_LOCK_SECONDS', 30),
+    ],
+
 ];

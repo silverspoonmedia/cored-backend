@@ -1,17 +1,18 @@
-# vTual — product domain (foundation)
+# vTual — product domain
 
-Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Foundation ships creator/management/channel/content schema and CRUD skeleton **without** live YouTube/Twitch/Kick ingestion.
+Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and admin Blade surfaces. **Scheduled content ingestion** (live/VOD poll workers) and **push** (WebSub / EventSub) remain deferred — see [implementation-status.md](implementation-status.md).
 
 | | |
 |--|--|
 | Code | `app/Domain/Vtual/` |
-| Config | [`config/products.php`](../../../config/products.php) key `Vtual` |
+| Config | [`config/products.php`](../../../config/products.php) key `Vtual` · [`config/vtual.php`](../../../config/vtual.php) |
 | Registry | [`config/domains.php`](../../../config/domains.php) `Vtual` product locked |
 | API | `routes/api/v1/vtual.php` |
 | Web | `routes/web/vtual.php` |
 | Seeder | `VtualRoleSeeder` (after core `RoleSeeder`; also seeds platforms) |
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
 | Menu auto-hide | `vtual.index`, `vtual.profiles.index`, `vtual.claims.*`, credentials routes via `menu_routes`; hidden when activation not `active` |
+| Progress tracker | [implementation-status.md](implementation-status.md) — done / not done / next |
 | Legacy audit | [archive/vtual-legacy-audit.md](../../archive/vtual-legacy-audit.md) |
 
 ## Concepts
@@ -27,9 +28,11 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Creator assignment | `vtual_management_creators` with `joined_at` / `left_at` (historical leave without hard delete). |
 | Platform | Seeded catalog: youtube, twitch, **kick** (kick `enabled = false`). |
 | Platform credential | Child table `vtual_platform_credentials`: multi-key per platform, envelope-encrypted `secret_payload`, mask-only API. |
-| Channel | External channel on a creator; unique `(platform_id, external_id)`. **Dual path on** `POST creators/{id}/channels`: (1) **Staff** (`manage any vtual resource`) → `ChannelService::seedForStaff` resolve + insert **active** immediately (orphan proof-channel seed; no claim row). (2) **Owner/editor** → `ChannelClaimService::start` pending + bio token; verify / Accept Anyway → `activateFromDto`. Snapshot: `description`, `avatar_url`, `banner_url`, `platform_created_at`. Refresh re-syncs; soft remove = **`archived`**. |
+| Channel | External channel on a creator; unique `(platform_id, external_id)`. **Dual path on** `POST creators/{id}/channels`: (1) **Staff** (`manage any vtual resource`) → `ChannelService::seedForStaff` resolve + insert **active** immediately (orphan proof-channel seed; no claim row). (2) **Owner/editor** → `ChannelClaimService::start` pending + bio token; verify / Accept Anyway → `activateFromDto`. Snapshot: `description`, `avatar_url`, `banner_url`, `platform_created_at`. Refresh **enqueues** channel fetch pool (batch 50 / max wait 15m); soft remove = **`archived`**; **restore** returns archived → **active** (no auto re-fetch). |
 | Content | Canonical platform item (`vtual_contents`): **one row** per `(platform_id, external_id)`. `channel_id`/`creator_id` = **primary host** (API truth). Extra channels via **appearances** — not multi-ownership. Sync workers still foundation-only. Content manage UI **out of scope** this phase. |
 | External links | Morph `vtual_external_links` for creator (and management) social/donation/website URLs. Creator-scoped CRUD via `ExternalLinkService` + API under `/creators/{id}/links` and `/links/{id}`. |
+| Profile merge | Absorb source Creator into destination (same owner or manage-any). Source archived. See [Profile merge](#profile-merge-absorb--implemented). |
+| Channel fetch pool | Non-interactive channel snapshot batch: refresh + scheduled resync. Threshold 50 or max wait 15m. Interactive claim/seed/verify stay sync. |
 | User vs vTuber Profile | **User** = Identity login (`users`). **vTuber Profile** = `vtual_creators` (public-facing bio, links, channels, content). Membership is **private**: product UI must not expose that two profiles share the same User. |
 
 ### Identity model (locked product decision)
@@ -92,7 +95,9 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 
 **Sidebar:** Products → **vTual** parent with children Overview, My profiles, Claim as vTuber, Registry & pending (staff roles). `MenuSeeder` upgrades existing tree idempotently via `ensureVtualMenuBranch()`; re-run `php artisan db:seed --class=MenuSeeder` then `php artisan menu:flush-cache` on existing installs.
 
-**Out of scope (this phase):** management product UI, survey form, Add New approval queue, appeal / permanent reject, multi-profile merge, OAuth login proof, auto-purge of old cancelled rows, stripping core `User` `create vtual creator` (API legacy self-create still exists; staff Blade seeds orphans only).
+**Out of scope (claim UI phase leftovers):** management product UI, survey form, **Add New** approval queue, appeal / permanent reject, OAuth login proof, auto-purge of old cancelled rows, stripping core `User` `create vtual creator` (API legacy self-create still exists; staff Blade seeds orphans only).
+
+**Shipped later (do not list as missing):** [profile merge (absorb)](#profile-merge-absorb--implemented), channel archive/restore, [channel fetch pool](#platform-http-clients-manual-fetch) (refresh/resync). Full matrix: [implementation-status.md](implementation-status.md).
 
 ### Content primary host and appearances
 
@@ -305,8 +310,10 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 | GET/PATCH/DELETE | `/creators/{id}` | view / edit / delete | Show / update / archive |
 | GET/POST | `/creators/{id}/channels` | view channel / edit creator | List (non-archived) / register channel (`active` after resolve) |
 | GET | `/channels/{id}` | view channel | Show channel |
-| POST | `/channels/{id}/refresh` | edit creator | Re-resolve by `external_id`; set `active` |
+| POST | `/channels/{id}/refresh` | edit creator | Enqueue pool refresh by `external_id` (async batch) |
+| GET | `/creators/{id}/channels/archived` | view channel | List archived only |
 | POST | `/channels/{id}/archive` | edit creator | Soft archive (`archived`) |
+| POST | `/channels/{id}/restore` | edit creator | Restore archived → `active` |
 | GET/POST | `/creators/{id}/links` | view / edit creator | List / create external links |
 | PATCH/DELETE | `/links/{id}` | edit creator | Update / delete external link |
 | GET/POST | `/managements` | view / create | List / create management |
@@ -391,9 +398,13 @@ Requires **active** platform credential (same as gateway). Parser → `ChannelPr
 Not shared this phase (no dual-platform signal without extra APIs): subscriber/follower counts, video_count, view_count (Twitch deprecated), country, broadcaster_type. Existing rows: click **Verify / refresh** to backfill snapshot.
 
 
-**Refresh / verify** (`POST /api/v1/vtual/channels/{id}/refresh`): re-fetch by stored `external_id` only; updates `handle`, `display_name`, `url`, `last_synced_at`, sets status **`active`**. Does not change `external_id`. Rejects archived channels.
+**Refresh** (`POST /api/v1/vtual/channels/{id}/refresh`): enqueues `vtual_channel_fetch_pool` by stored `external_id` (no immediate platform HTTP). Snapshot updates on pool flush. Rejects archived channels.
+
+**Channel fetch pool:** non-interactive only (refresh + scheduled resync). Flush when pending unique ids per platform ≥ `config(vtual.channel_pool.threshold)` (50) **or** oldest pending age ≥ `max_wait_minutes` (15). Single `Cache::lock` + claim-to-`processing` prevents double HTTP for the same set. Interactive claim/seed/verify/handle resolve stay sync. Command: `php artisan vtual:flush-channel-pool` (`--force`, `--platform=`, `--resync`). Schedule: every minute flush + hourly `--resync`.
 
 **Archive** (`POST /api/v1/vtual/channels/{id}/archive`): soft-remove (`status=archived`); hidden from default list. No hard-delete this phase.
+
+**Restore** (`POST /api/v1/vtual/channels/{id}/restore`): archived → `active` only; no platform re-fetch (use refresh after). Non-archived → 422. List archived via `GET /creators/{id}/channels/archived`.
 
 **External links** (`ExternalLinkService`): creator-scoped CRUD gated by `CreatorAccessService` (membership mutate or `manage any`). Kinds: `social` | `donation` | `website` | `other`.
 
@@ -589,7 +600,8 @@ composer test -- --filter=PlatformCredential
 | `CreatorMemberRoleTest` | Mutate / manage members matrix |
 | `CreatorServiceTest` | Multi-creator ownership, slug collision, archive |
 | `ManagementServiceTest` | Owner membership, assign/unassign `left_at` |
-| `ChannelServiceTest` | `seedForStaff` (manage any), non-staff denied, `activateFromDto`, refresh/archive |
+| `ChannelFetchPoolServiceTest` | Pool threshold/age/force flush; coalesce; single HTTP; apply snapshot |
+| `ChannelServiceTest` | `seedForStaff` (manage any), non-staff denied, `activateFromDto`, refresh enqueues pool, archive/restore |
 | `ChannelClaimServiceTest` | Start pending only; verify bio token; Accept Anyway; taken external_id blocked |
 | `ChannelProfileInputParserTest` / `ChannelProfileResolverTest` | Parse matrix YT/Twitch; handle → canonical id via Http::fake |
 | `PlatformCredentialSecretsTest` | Payload normalize / fingerprint / reject unknown keys |
@@ -627,8 +639,9 @@ Not implemented: field pick from source, cross-user merge without dual ownership
 
 ## Related
 
+- [implementation-status.md](implementation-status.md) — done / not done / next (living progress tracker)
 - [product-activations/README.md](../product-activations/README.md) — runtime gate
 - [file-hosting/README.md](../file-hosting/README.md) — sibling product domain pattern
-- [identity/README.md](../identity/README.md) — User hub, product RBAC `domain_kind`
+- [identity/README.md](../identity/README.md) — User hub, product RBAC domain_kind
 - [platform/architecture.md](../../platform/architecture.md) — domain registry
 - [archive/vtual-legacy-audit.md](../../archive/vtual-legacy-audit.md) — broadercast claim ledger

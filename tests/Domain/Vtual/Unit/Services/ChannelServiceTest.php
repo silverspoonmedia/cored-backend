@@ -24,7 +24,7 @@ use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
 /**
- * ChannelService: seedForStaff (manage any), activateFromDto, refresh, archive.
+ * ChannelService: seedForStaff (manage any), activateFromDto, refresh, archive, restore.
  * Non-staff add-channel is ChannelClaimService (see ChannelClaimServiceTest).
  */
 class ChannelServiceTest extends TestCase
@@ -188,54 +188,32 @@ class ChannelServiceTest extends TestCase
     }
 
     #[Test]
-    public function refresh_updates_handle_keeps_external_id(): void
+    public function refresh_enqueues_pool_item_without_immediate_http(): void
     {
         $this->activateYoutubeCredential();
 
         Http::fake([
-            'www.googleapis.com/youtube/v3/channels*' => Http::sequence()
-                ->push([
-                    'items' => [
-                        [
-                            'id' => self::YT_ID,
-                            'snippet' => [
-                                'title' => 'Old Name',
-                                'description' => 'Old bio',
-                                'customUrl' => '@oldhandle',
-                                'publishedAt' => '2017-04-19T14:57:55Z',
-                                'thumbnails' => [
-                                    'high' => ['url' => 'https://img.example/old-av.jpg'],
-                                ],
+            'www.googleapis.com/youtube/v3/channels*' => Http::response([
+                'items' => [
+                    [
+                        'id' => self::YT_ID,
+                        'snippet' => [
+                            'title' => 'Old Name',
+                            'description' => 'Old bio',
+                            'customUrl' => '@oldhandle',
+                            'publishedAt' => '2017-04-19T14:57:55Z',
+                            'thumbnails' => [
+                                'high' => ['url' => 'https://img.example/old-av.jpg'],
                             ],
-                            'brandingSettings' => [
-                                'image' => [
-                                    'bannerExternalUrl' => 'https://img.example/old-banner.jpg',
-                                ],
+                        ],
+                        'brandingSettings' => [
+                            'image' => [
+                                'bannerExternalUrl' => 'https://img.example/old-banner.jpg',
                             ],
                         ],
                     ],
-                ], 200)
-                ->push([
-                    'items' => [
-                        [
-                            'id' => self::YT_ID,
-                            'snippet' => [
-                                'title' => 'New Name',
-                                'description' => 'New bio',
-                                'customUrl' => '@newhandle',
-                                'publishedAt' => '2017-04-19T14:57:55Z',
-                                'thumbnails' => [
-                                    'high' => ['url' => 'https://img.example/new-av.jpg'],
-                                ],
-                            ],
-                            'brandingSettings' => [
-                                'image' => [
-                                    'bannerExternalUrl' => 'https://img.example/new-banner.jpg',
-                                ],
-                            ],
-                        ],
-                    ],
-                ], 200),
+                ],
+            ], 200),
         ]);
 
         $user = $this->userWithRole('User');
@@ -244,18 +222,20 @@ class ChannelServiceTest extends TestCase
         $dto = $this->profiles->resolve(PlatformKey::Youtube, self::YT_ID);
         $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
 
-        $this->assertSame('oldhandle', $channel->handle);
-        $this->assertSame('Old bio', $channel->description);
+        Http::fake([
+            'www.googleapis.com/youtube/v3/channels*' => function (): void {
+                $this->fail('refresh() must not call platform HTTP directly; it should enqueue.');
+            },
+        ]);
 
-        $refreshed = $this->channels->refresh($user, $channel->id);
+        $result = $this->channels->refresh($user, $channel->id);
 
-        $this->assertSame(self::YT_ID, $refreshed->external_id);
-        $this->assertSame('newhandle', $refreshed->handle);
-        $this->assertSame('New Name', $refreshed->display_name);
-        $this->assertSame('New bio', $refreshed->description);
-        $this->assertSame('https://img.example/new-av.jpg', $refreshed->avatar_url);
-        $this->assertSame('https://img.example/new-banner.jpg', $refreshed->banner_url);
-        $this->assertSame(ChannelStatus::Active, $refreshed->status);
+        $this->assertSame((string) $channel->id, (string) $result->id);
+        $this->assertSame(1, \App\Domain\Vtual\Models\ChannelFetchPoolItem::query()
+            ->where('platform_id', $this->youtube->id)
+            ->where('external_id', self::YT_ID)
+            ->where('status', \App\Domain\Vtual\Enums\ChannelFetchPoolStatus::Pending->value)
+            ->count());
     }
 
     #[Test]
@@ -279,6 +259,76 @@ class ChannelServiceTest extends TestCase
 
         $this->assertSame(ChannelStatus::Archived, $archived->status);
         $this->assertCount(0, $this->channels->listForCreator($user, $creator->id));
+        $this->assertCount(1, $this->channels->listArchivedForCreator($user, $creator->id));
+    }
+
+    #[Test]
+    public function restore_returns_channel_to_active_list(): void
+    {
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Stream']);
+
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'stream',
+            displayName: 'Stream Channel',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: null,
+        );
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+        $this->channels->archive($user, $channel->id);
+
+        $restored = $this->channels->restore($user, $channel->id);
+
+        $this->assertSame(ChannelStatus::Active, $restored->status);
+        $this->assertCount(1, $this->channels->listForCreator($user, $creator->id));
+        $this->assertCount(0, $this->channels->listArchivedForCreator($user, $creator->id));
+    }
+
+    #[Test]
+    public function restore_rejects_non_archived_channel(): void
+    {
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Stream']);
+
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'stream',
+            displayName: 'Stream Channel',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: null,
+        );
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+
+        $this->expectException(VtualException::class);
+        $this->channels->restore($user, $channel->id);
+    }
+
+    #[Test]
+    public function restore_rejects_non_member(): void
+    {
+        $owner = $this->userWithRole('User');
+        $peer = $this->userWithRole('User');
+        $creator = $this->creators->create($owner, ['display_name' => 'Stream']);
+
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'stream',
+            displayName: 'Stream Channel',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: null,
+        );
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+        $this->channels->archive($owner, $channel->id);
+
+        $this->expectException(VtualException::class);
+        $this->channels->restore($peer, $channel->id);
     }
 
     #[Test]

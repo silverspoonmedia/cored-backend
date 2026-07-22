@@ -37,6 +37,7 @@ class CreatorProfileController extends Controller
         }
 
         $channels = $this->api()->get('vtual/creators/'.$creator.'/channels');
+        $archivedChannels = $this->api()->get('vtual/creators/'.$creator.'/channels/archived');
         $channelClaims = $this->api()->get('vtual/creators/'.$creator.'/channel-claims');
         $links = $this->api()->get('vtual/creators/'.$creator.'/links');
         $platforms = $this->api()->get('vtual/platforms');
@@ -62,6 +63,9 @@ class CreatorProfileController extends Controller
         return $this->webView('vtual.profiles.show', [
             'creator' => $data,
             'channels' => $channels->successful() ? collect($channels->json('data', [])) : collect(),
+            'archivedChannels' => $archivedChannels->successful()
+                ? collect($archivedChannels->json('data', []))
+                : collect(),
             'channelClaims' => $channelClaims->successful() ? collect($channelClaims->json('data', [])) : collect(),
             'links' => $linkRows,
             'platforms' => $platforms->successful() ? collect($platforms->json('data', [])) : collect(),
@@ -167,6 +171,17 @@ class CreatorProfileController extends Controller
     public function archiveChannel(string $creator, string $channel): RedirectResponse
     {
         $response = $this->api()->post('vtual/channels/'.$channel.'/archive');
+
+        if (! $response->successful()) {
+            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
+        }
+
+        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+    }
+
+    public function restoreChannel(string $creator, string $channel): RedirectResponse
+    {
+        $response = $this->api()->post('vtual/channels/'.$channel.'/restore');
 
         if (! $response->successful()) {
             return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));

@@ -50,6 +50,9 @@ Route::post('vtual/profiles/{creator}/channels/{channel}/refresh', [CreatorProfi
 Route::post('vtual/profiles/{creator}/channels/{channel}/archive', [CreatorProfileController::class, 'archiveChannel'])
     ->whereUuid(['creator', 'channel'])
     ->name('vtual.profiles.channels.archive');
+Route::post('vtual/profiles/{creator}/channels/{channel}/restore', [CreatorProfileController::class, 'restoreChannel'])
+    ->whereUuid(['creator', 'channel'])
+    ->name('vtual.profiles.channels.restore');
 Route::post('vtual/profiles/{creator}/links', [CreatorProfileController::class, 'storeLink'])
     ->whereUuid('creator')
     ->name('vtual.profiles.links.store');

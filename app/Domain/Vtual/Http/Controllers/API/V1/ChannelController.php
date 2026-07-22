@@ -34,6 +34,19 @@ class ChannelController extends Controller
         );
     }
 
+    public function archivedIndex(Request $request, Creator $creator): JsonResponse
+    {
+        $this->authorize('viewAny', Channel::class);
+        $this->authorize('view', $creator);
+
+        return $this->successResponse(
+            $this->resolveResource(ChannelResource::collection(
+                $this->channels->listArchivedForCreator($request->user(), $creator->id)
+            )),
+            __('api/vtual.channel.archived_list_success'),
+        );
+    }
+
     public function show(Request $request, Channel $channel): JsonResponse
     {
         $this->authorize('view', $channel);
@@ -51,11 +64,11 @@ class ChannelController extends Controller
         $this->authorize('create', Channel::class);
         $this->authorize('view', $channel);
 
-        $refreshed = $this->channels->refresh($request->user(), $channel->id);
+        $queued = $this->channels->refresh($request->user(), $channel->id);
 
         return $this->successResponse(
-            $this->resolveResource(new ChannelResource($refreshed)),
-            __('api/vtual.channel.refreshed'),
+            $this->resolveResource(new ChannelResource($queued)),
+            __('api/vtual.channel.refresh_queued'),
         );
     }
 
@@ -69,6 +82,19 @@ class ChannelController extends Controller
         return $this->successResponse(
             $this->resolveResource(new ChannelResource($archived)),
             __('api/vtual.channel.archived'),
+        );
+    }
+
+    public function restore(Request $request, Channel $channel): JsonResponse
+    {
+        $this->authorize('create', Channel::class);
+        $this->authorize('view', $channel);
+
+        $restored = $this->channels->restore($request->user(), $channel->id);
+
+        return $this->successResponse(
+            $this->resolveResource(new ChannelResource($restored)),
+            __('api/vtual.channel.restored'),
         );
     }
 }
