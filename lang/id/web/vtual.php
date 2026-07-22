@@ -68,7 +68,7 @@ return [
         'link_kind' => 'Jenis',
         'empty_links' => 'Belum ada link eksternal.',
         'save_profile' => 'Simpan profil',
-        'channel_claim_start_help' => 'Mulai bukti kepemilikan: resolve profil platform, tempel token di About/bio channel, lalu verifikasi. Channel terikat hanya setelah sukses.',
+        'channel_claim_start_help' => 'Owner: mulai bukti kepemilikan — tempel token di About/bio channel, lalu verifikasi. Staff (Root/Admin/Moderator): resolve dan daftarkan channel langsung (tanpa claim bio).',
         'claim_token' => 'Token bukti',
         'claim_token_help' => 'Tempel string ini persis ke About/bio channel di platform, lalu klik Verifikasi.',
         'claim_expires' => 'Claim kedaluwarsa',

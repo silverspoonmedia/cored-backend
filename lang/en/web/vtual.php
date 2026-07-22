@@ -68,7 +68,7 @@ return [
         'link_kind' => 'Kind',
         'empty_links' => 'No external links yet.',
         'save_profile' => 'Save profile',
-        'channel_claim_start_help' => 'Starts ownership proof: resolve platform profile, then paste the token into channel About/bio and verify. Channel binds only after success.',
+        'channel_claim_start_help' => 'Owners: starts ownership proof — paste the token into channel About/bio, then verify. Staff (Root/Admin/Moderator): resolves and registers the channel immediately (no bio claim).',
         'claim_token' => 'Proof token',
         'claim_token_help' => 'Paste this exact string into the platform channel About/bio, then click Verify.',
         'claim_expires' => 'Claim expires',

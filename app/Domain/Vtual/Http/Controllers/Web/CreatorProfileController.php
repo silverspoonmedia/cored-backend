@@ -77,7 +77,7 @@ class CreatorProfileController extends Controller
 
     public function storeChannel(Request $request, string $creator): RedirectResponse
     {
-        // Starts channel claim (pending + token); does not bind active channel yet.
+        // Staff (manage any): instant active channel. Others: pending bio claim.
         $response = $this->api()->post('vtual/creators/'.$creator.'/channels', $this->apiPayload($request, [
             'platform_key',
             'profile',

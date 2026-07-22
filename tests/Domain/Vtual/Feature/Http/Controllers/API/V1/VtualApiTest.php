@@ -128,7 +128,7 @@ class VtualApiTest extends TestCase
             ->assertCreated()
             ->json('data');
 
-        // POST channels starts a bio-token claim (not an active channel row).
+        // Non-staff POST channels starts a bio-token claim (not an active channel row).
         $claim = $this->actingAsJwt($user)
             ->postJson('/api/v1/vtual/creators/'.$creator['id'].'/channels', [
                 'platform_key' => 'youtube',
@@ -172,6 +172,61 @@ class VtualApiTest extends TestCase
             ->json('data');
 
         $this->assertNotEmpty($show['creators'] ?? []);
+    }
+
+    #[Test]
+    public function staff_post_channel_seeds_active_without_claim(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+
+        $youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
+        $credential = app(PlatformCredentialService::class)->create($admin, $youtube, [
+            'label' => 'yt-staff-seed',
+            'type' => PlatformCredentialType::ApiKey->value,
+            'secret' => ['api_key' => 'yt-api-staff-seed'],
+        ]);
+        $credential->forceFill([
+            'status' => PlatformCredentialStatus::Active,
+            'verified_at' => now(),
+        ])->save();
+
+        $ytId = 'UCPkKpOHxEDcwmUAnRpIu-Ng';
+        Http::fake([
+            'www.googleapis.com/youtube/v3/channels*' => Http::response([
+                'items' => [
+                    [
+                        'id' => $ytId,
+                        'snippet' => [
+                            'title' => 'Orphan YT',
+                            'description' => 'seeded',
+                            'customUrl' => '@orphan',
+                            'thumbnails' => [],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $orphan = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/orphan', ['display_name' => 'Staff Orphan'])
+            ->assertCreated()
+            ->json('data');
+
+        $channel = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/'.$orphan['id'].'/channels', [
+                'platform_key' => 'youtube',
+                'profile' => '@orphan',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('data.external_id', $ytId)
+            ->assertJsonPath('data.handle', 'orphan')
+            ->json('data');
+
+        // Response is ChannelResource (no claim token field).
+        $this->assertArrayNotHasKey('token', $channel);
+        $this->assertSame(0, \App\Domain\Vtual\Models\ChannelClaim::query()->count());
     }
 
     #[Test]

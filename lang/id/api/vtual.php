@@ -47,6 +47,7 @@ return [
         'list_success' => 'Daftar channel dimuat.',
         'show_success' => 'Channel dimuat.',
         'created' => 'Channel didaftarkan dan diverifikasi.',
+        'seeded' => 'Channel di-resolve dan didaftarkan (seed staff; tanpa claim bio).',
         'refreshed' => 'Profil channel diperbarui dan diverifikasi dari platform.',
         'archived' => 'Channel diarsipkan.',
         'platform_unknown' => 'Platform tidak dikenal.',

@@ -47,6 +47,7 @@ return [
         'list_success' => 'Channels loaded.',
         'show_success' => 'Channel loaded.',
         'created' => 'Channel registered and verified.',
+        'seeded' => 'Channel resolved and registered (staff seed; no bio claim).',
         'refreshed' => 'Channel profile refreshed and verified from platform.',
         'archived' => 'Channel archived.',
         'platform_unknown' => 'Unknown platform.',

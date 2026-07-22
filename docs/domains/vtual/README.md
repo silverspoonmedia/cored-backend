@@ -21,13 +21,13 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Creator | Public profile separate from Identity `User` (`vtual_creators`). Soft delete + `status` active/archived. |
 | Creator membership | `vtual_creator_members`: one user may own/edit/view **many** creators (`owner` \| `editor` \| `viewer`). Self-create inserts actor as `owner`. Staff `createOrphan` seeds **no** members (claimable). |
 | Creator claim (phase 1) | `vtual_creator_claims`: claim **orphan** (no owner member) via channel bio token or staff **Accept Anyway**. On success: `CreatorMember` owner + Spatie product role `Vtual vTuber`. Losing pendings stay as audit log (`cancelled` + `closed_reason=superseded`). |
-| Channel claim | `vtual_channel_claims`: attach platform channel to a managed creator via bio token (`vtual-ch-…`) or staff **Accept Anyway**. Channel row created only on success. Reuses claim status/via/closed_reason enums. Config: `config/vtual.php` `channel_claim.*`. |
+| Channel claim | **Non-staff only:** `vtual_channel_claims` attach via bio token (`vtual-ch-…`) or staff **Accept Anyway** on a pending claim. Channel row only after success. Config: `config/vtual.php` `channel_claim.*`. |
 | Management | Talent org (`vtual_managements`), not core Spatie role `Management`. |
 | Management staff | `vtual_management_members` (`owner` \| `admin` \| `staff`). |
 | Creator assignment | `vtual_management_creators` with `joined_at` / `left_at` (historical leave without hard delete). |
 | Platform | Seeded catalog: youtube, twitch, **kick** (kick `enabled = false`). |
 | Platform credential | Child table `vtual_platform_credentials`: multi-key per platform, envelope-encrypted `secret_payload`, mask-only API. |
-| Channel | External channel on a creator; unique `(platform_id, external_id)`. **Add channel does not auto-bind.** `POST creators/{id}/channels` starts `vtual_channel_claims` (resolve profile → pending + `vtual-ch-` token in About/bio). On verify / staff Accept Anyway: `ChannelService::activateFromDto` inserts **active** row with profile snapshot (`description`, `avatar_url`, `banner_url`, `platform_created_at`). Refresh re-syncs snapshot on existing channels; soft remove = **`archived`**. |
+| Channel | External channel on a creator; unique `(platform_id, external_id)`. **Dual path on** `POST creators/{id}/channels`: (1) **Staff** (`manage any vtual resource`) → `ChannelService::seedForStaff` resolve + insert **active** immediately (orphan proof-channel seed; no claim row). (2) **Owner/editor** → `ChannelClaimService::start` pending + bio token; verify / Accept Anyway → `activateFromDto`. Snapshot: `description`, `avatar_url`, `banner_url`, `platform_created_at`. Refresh re-syncs; soft remove = **`archived`**. |
 | Content | Canonical platform item (`vtual_contents`): **one row** per `(platform_id, external_id)`. `channel_id`/`creator_id` = **primary host** (API truth). Extra channels via **appearances** — not multi-ownership. Sync workers still foundation-only. Content manage UI **out of scope** this phase. |
 | External links | Morph `vtual_external_links` for creator (and management) social/donation/website URLs. Creator-scoped CRUD via `ExternalLinkService` + API under `/creators/{id}/links` and `/links/{id}`. |
 | User vs vTuber Profile | **User** = Identity login (`users`). **vTuber Profile** = `vtual_creators` (public-facing bio, links, channels, content). Membership is **private**: product UI must not expose that two profiles share the same User. |
@@ -567,7 +567,7 @@ Web UI: link from credentials index → **API probe**.
 | Content lifecycle sync + CCV snapshots | Table + appearances model; no live sync workers |
 | Auto collab/network appearance discovery | **Cancelled** (no platform partner list; explicit `attachAppearance` only) |
 | Creator claim Existing (bio token) | **Phase 1 implemented** (orphan seed + verify + Accept Anyway) |
-| Channel claim (attach channel) | **Implemented** (pending claim table + bio verify + Accept Anyway; no auto-bind on add) |
+| Channel claim (attach channel) | **Implemented** dual path: staff seed instant active; non-staff pending claim + bio / Accept Anyway |
 | Claim Add New + survey + appeal + merge | Not implemented (phase 2+) |
 | Ideal Viewer-only until claim (strip User create creator) | Follow-up; not in phase 1 |
 | Multi-stream session correlation | Not implemented |
@@ -588,7 +588,7 @@ composer test -- --filter=PlatformCredential
 | `CreatorMemberRoleTest` | Mutate / manage members matrix |
 | `CreatorServiceTest` | Multi-creator ownership, slug collision, archive |
 | `ManagementServiceTest` | Owner membership, assign/unassign `left_at` |
-| `ChannelServiceTest` | `activateFromDto` snapshot, duplicate external_id, refresh/archive |
+| `ChannelServiceTest` | `seedForStaff` (manage any), non-staff denied, `activateFromDto`, refresh/archive |
 | `ChannelClaimServiceTest` | Start pending only; verify bio token; Accept Anyway; taken external_id blocked |
 | `ChannelProfileInputParserTest` / `ChannelProfileResolverTest` | Parse matrix YT/Twitch; handle → canonical id via Http::fake |
 | `PlatformCredentialSecretsTest` | Payload normalize / fingerprint / reject unknown keys |
@@ -598,8 +598,21 @@ composer test -- --filter=PlatformCredential
 | `PlatformApiGatewayTest` / `BatchIdChunkerTest` | Manual HTTP clients: multi-id, batch max, parts, auth, 401 markFailed + ErrorLog + soft failover (no secrets) |
 | `PlatformCredentialApiTest` | Masked CRUD + Test, RBAC, Root/Admin OK, User/Moderator 403, validation 422 |
 | `DecryptedValueCacheTest` | vtual resource TTL 0 past global cap; non-mapped type still expires |
-| `VtualApiTest` | CRUD API, product gate, lazy activation, peer isolation |
+| `VtualApiTest` | CRUD API, user channel claim path, staff seed active channel, product gate, peer isolation |
 | `RegisterVtualActivationTest` | Register creates implicit Vtual activation |
+
+
+## Future: merge / reparent (not implemented)
+
+One User may own many Creators; each Creator has its own channels. Ops sometimes need to consolidate.
+
+**Recommended later (no code yet):**
+
+1. **Channel reparent (same owner)** — move `channel.creator_id` from profile A → B when actor owns both (or staff). Respect global unique `(platform_id, external_id)`; re-point primary host / appearances carefully. Lowest risk; product copy: “Move channel to another of my profiles.”
+2. **Profile absorb** — target takes source channels + external links; re-point contents; archive source; cancel open claims; audit log. Explicit confirm only.
+3. **No auto-merge across different Users** without dual ownership proof or staff override.
+
+**Do not:** silent merge by email; transfer without audit; dual primary hosts for one video.
 
 ## Related
 

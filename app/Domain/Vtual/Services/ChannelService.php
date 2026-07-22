@@ -36,8 +36,43 @@ class ChannelService
     }
 
     /**
-     * Activate a channel after ownership proof (ChannelClaimService verify / Accept Anyway).
-     * Not a public “bind now” path — product add-channel must go through bio claim first.
+     * Staff-only instant bind: resolve platform profile → insert active channel.
+     * Used to seed proof channels on orphans (and any profile staff may mutate).
+     * Non-staff product path must use ChannelClaimService (bio token).
+     *
+     * @param  array{platform_key: string, profile: string}  $data
+     */
+    public function seedForStaff(User $actor, string $creatorId, array $data): Channel
+    {
+        if (! $actor->can('manage any vtual resource')) {
+            throw new VtualException(__('api/vtual.policy.denied'), 403);
+        }
+
+        $creator = $this->creatorAccess->findOrFail($creatorId);
+        // manage any already mutates; still load creator for existence / soft-delete.
+        $this->creatorAccess->assertCanMutate($creator, $actor);
+
+        $platform = Platform::query()->where('key', $data['platform_key'] ?? null)->first();
+        if ($platform === null) {
+            throw new VtualException(__('api/vtual.channel.platform_unknown'), 422);
+        }
+        if (! $platform->isEnabled()) {
+            throw new VtualException(__('api/vtual.channel.platform_disabled'), 422);
+        }
+
+        $profile = trim((string) ($data['profile'] ?? ''));
+        if ($profile === '') {
+            throw new VtualException(__('api/vtual.channel.profile_required'), 422);
+        }
+
+        $dto = $this->profiles->resolve($this->platformKey($platform), $profile);
+
+        return $this->activateFromDto((string) $creator->id, $platform, $dto);
+    }
+
+    /**
+     * Activate a channel after ownership proof (ChannelClaimService verify / Accept Anyway)
+     * or staff seedForStaff. Not a general public “bind now” for non-staff.
      */
     public function activateFromDto(
         string $creatorId,

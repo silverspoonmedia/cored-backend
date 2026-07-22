@@ -68,7 +68,7 @@ return [
         'link_kind' => '種類',
         'empty_links' => '外部リンクはまだありません。',
         'save_profile' => 'プロフィールを保存',
-        'channel_claim_start_help' => '所有証明を開始: プラットフォームを解決し、トークンを About/bio に貼り、検証。成功後のみチャンネルが紐付きます。',
+        'channel_claim_start_help' => 'オーナー: 所有証明 — トークンを About/bio に貼り検証。スタッフ（Root/Admin/Moderator）: 即時解決・登録（bio クレーム不要）。',
         'claim_token' => '証明トークン',
         'claim_token_help' => 'この文字列をプラットフォームのチャンネル About/bio に貼り、検証を押してください。',
         'claim_expires' => 'クレーム期限',

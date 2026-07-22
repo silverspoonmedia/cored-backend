@@ -24,8 +24,8 @@ use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
 /**
- * ChannelService: activateFromDto (post-claim), refresh, archive.
- * Public add-channel is ChannelClaimService (see ChannelClaimServiceTest).
+ * ChannelService: seedForStaff (manage any), activateFromDto, refresh, archive.
+ * Non-staff add-channel is ChannelClaimService (see ChannelClaimServiceTest).
  */
 class ChannelServiceTest extends TestCase
 {
@@ -60,6 +60,43 @@ class ChannelServiceTest extends TestCase
         $this->admin = $this->userWithRole('Admin');
         $this->youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
         $this->twitch = Platform::query()->where('key', 'twitch')->firstOrFail();
+    }
+
+    #[Test]
+    public function seed_for_staff_resolves_and_activates_without_claim(): void
+    {
+        $this->activateYoutubeCredential();
+        $this->fakeYoutubeChannel(self::YT_ID, 'stream', 'Stream Channel');
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Orphan Seed']);
+
+        $channel = $this->channels->seedForStaff($this->admin, $orphan->id, [
+            'platform_key' => 'youtube',
+            'profile' => '@stream',
+        ]);
+
+        $this->assertSame(ChannelStatus::Active, $channel->status);
+        $this->assertSame(self::YT_ID, $channel->external_id);
+        $this->assertSame('stream', $channel->handle);
+        $this->assertSame('Stream Channel', $channel->display_name);
+        $this->assertSame((string) $orphan->id, (string) $channel->creator_id);
+        $this->assertSame(0, \App\Domain\Vtual\Models\ChannelClaim::query()->count());
+    }
+
+    #[Test]
+    public function seed_for_staff_rejects_non_staff(): void
+    {
+        $this->activateYoutubeCredential();
+        $this->fakeYoutubeChannel(self::YT_ID, 'stream', 'Stream Channel');
+
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Owned']);
+
+        $this->expectException(VtualException::class);
+        $this->channels->seedForStaff($user, $creator->id, [
+            'platform_key' => 'youtube',
+            'profile' => self::YT_ID,
+        ]);
     }
 
     #[Test]

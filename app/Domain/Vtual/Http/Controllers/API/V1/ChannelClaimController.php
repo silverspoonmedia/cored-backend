@@ -4,10 +4,12 @@ namespace App\Domain\Vtual\Http\Controllers\API\V1;
 
 use App\Domain\Vtual\Http\Requests\StoreChannelRequest;
 use App\Domain\Vtual\Http\Resources\ChannelClaimResource;
+use App\Domain\Vtual\Http\Resources\ChannelResource;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\ChannelClaim;
 use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Services\ChannelClaimService;
+use App\Domain\Vtual\Services\ChannelService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Traits\ApiResponse;
@@ -21,6 +23,7 @@ class ChannelClaimController extends Controller
 
     public function __construct(
         private readonly ChannelClaimService $claims,
+        private readonly ChannelService $channels,
     ) {}
 
     public function index(Request $request, Creator $creator): JsonResponse
@@ -36,14 +39,29 @@ class ChannelClaimController extends Controller
     }
 
     /**
-     * Start channel attach claim (does not insert active channel).
+     * Dual path:
+     * - manage any (staff): resolve + active channel immediately (no claim row).
+     * - owner/editor: start bio-token channel claim (pending only).
      */
     public function store(StoreChannelRequest $request, Creator $creator): JsonResponse
     {
         $this->authorize('create', Channel::class);
         $this->authorize('update', $creator);
 
-        $claim = $this->claims->start($request->user(), $creator->id, $request->validated());
+        $actor = $request->user();
+        $data = $request->validated();
+
+        if ($actor->can('manage any vtual resource')) {
+            $channel = $this->channels->seedForStaff($actor, $creator->id, $data);
+
+            return $this->successResponse(
+                $this->resolveResource(new ChannelResource($channel)),
+                __('api/vtual.channel.seeded'),
+                201,
+            );
+        }
+
+        $claim = $this->claims->start($actor, $creator->id, $data);
 
         return $this->successResponse(
             $this->resolveResource(new ChannelClaimResource($claim)),
