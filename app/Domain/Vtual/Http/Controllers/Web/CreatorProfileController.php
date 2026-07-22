@@ -4,6 +4,7 @@ namespace App\Domain\Vtual\Http\Controllers\Web;
 
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -76,24 +77,27 @@ class CreatorProfileController extends Controller
         ]);
     }
 
-    public function merge(Request $request, string $creator): RedirectResponse
+    public function merge(Request $request, string $creator): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/creators/'.$creator.'/merge', $this->apiPayload($request, [
             'destination_id',
         ]));
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
+        return $this->respondFromApi(
+            $request,
+            $response,
+            function ($resp) use ($creator) {
+                $destinationId = (string) ($resp->json('data.id') ?? request()->input('destination_id'));
 
-        $destinationId = (string) ($response->json('data.id') ?? $request->input('destination_id'));
-
-        return redirect()
-            ->route('vtual.profiles.show', $destinationId !== '' ? $destinationId : $creator)
-            ->with('success', $this->apiMessage($response));
+                return redirect()
+                    ->route('vtual.profiles.show', $destinationId !== '' ? $destinationId : $creator)
+                    ->with('success', $this->apiMessage($resp, __('web/vtual.ajax.merge_done')));
+            },
+            __('web/vtual.ajax.merge_done'),
+        );
     }
 
-    public function update(Request $request, string $creator): RedirectResponse
+    public function update(Request $request, string $creator): RedirectResponse|JsonResponse
     {
         $response = $this->api()->patch('vtual/creators/'.$creator, $this->apiPayload($request, [
             'display_name',
@@ -102,14 +106,17 @@ class CreatorProfileController extends Controller
             'avatar_url',
         ]));
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.profiles.show', $creator)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.profile_saved'))),
+            __('web/vtual.ajax.profile_saved'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function storeChannel(Request $request, string $creator): RedirectResponse
+    public function storeChannel(Request $request, string $creator): RedirectResponse|JsonResponse
     {
         // Staff (manage any): instant active channel. Others: pending bio claim.
         $response = $this->api()->post('vtual/creators/'.$creator.'/channels', $this->apiPayload($request, [
@@ -117,80 +124,101 @@ class CreatorProfileController extends Controller
             'profile',
         ]));
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.profiles.show', $creator)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.channel_added'))),
+            __('web/vtual.ajax.channel_added'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function verifyChannelClaim(string $creator, string $claim): RedirectResponse
+    public function verifyChannelClaim(Request $request, string $creator, string $claim): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/channel-claims/'.$claim.'/verify');
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.profiles.show', $creator)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.claim_verified'))),
+            __('web/vtual.ajax.claim_verified'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function cancelChannelClaim(string $creator, string $claim): RedirectResponse
+    public function cancelChannelClaim(Request $request, string $creator, string $claim): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/channel-claims/'.$claim.'/cancel');
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.profiles.show', $creator)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.claim_cancelled'))),
+            __('web/vtual.ajax.claim_cancelled'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function acceptAnywayChannelClaim(string $creator, string $claim): RedirectResponse
+    public function acceptAnywayChannelClaim(Request $request, string $creator, string $claim): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/channel-claims/'.$claim.'/accept-anyway');
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.profiles.show', $creator)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.claim_accepted'))),
+            __('web/vtual.ajax.claim_accepted'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function refreshChannel(string $creator, string $channel): RedirectResponse
+    public function refreshChannel(Request $request, string $creator, string $channel): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/channels/'.$channel.'/refresh');
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.profiles.show', $creator)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.channel_refreshed'))),
+            __('web/vtual.ajax.channel_refreshed'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function archiveChannel(string $creator, string $channel): RedirectResponse
+    public function archiveChannel(Request $request, string $creator, string $channel): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/channels/'.$channel.'/archive');
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.profiles.show', $creator)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.channel_archived'))),
+            __('web/vtual.ajax.channel_archived'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function restoreChannel(string $creator, string $channel): RedirectResponse
+    public function restoreChannel(Request $request, string $creator, string $channel): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/channels/'.$channel.'/restore');
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.profiles.show', $creator)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.channel_restored'))),
+            __('web/vtual.ajax.channel_restored'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function storeLink(Request $request, string $creator): RedirectResponse
+    public function storeLink(Request $request, string $creator): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/creators/'.$creator.'/links', $this->apiPayload($request, [
             'label',
@@ -199,14 +227,17 @@ class CreatorProfileController extends Controller
             'sort_order',
         ]));
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.profiles.show', $creator)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.link_added'))),
+            __('web/vtual.ajax.link_added'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function updateLink(Request $request, string $creator, string $link): RedirectResponse
+    public function updateLink(Request $request, string $creator, string $link): RedirectResponse|JsonResponse
     {
         $response = $this->api()->patch('vtual/links/'.$link, $this->apiPayload($request, [
             'label',
@@ -215,21 +246,27 @@ class CreatorProfileController extends Controller
             'sort_order',
         ]));
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.profiles.show', $creator)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.link_updated'))),
+            __('web/vtual.ajax.link_updated'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function destroyLink(string $creator, string $link): RedirectResponse
+    public function destroyLink(Request $request, string $creator, string $link): RedirectResponse|JsonResponse
     {
         $response = $this->api()->delete('vtual/links/'.$link);
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.profiles.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.profiles.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.profiles.show', $creator)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.link_deleted'))),
+            __('web/vtual.ajax.link_deleted'),
+            stayOnPageOnSuccess: true,
+        );
     }
 }

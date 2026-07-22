@@ -4,14 +4,15 @@
         @include('adminlte4.vtual.partials.nav')
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" aria-label="{{ __('web/vtual.table.caption_profiles') }}">
+                <caption class="visually-hidden">{{ __('web/vtual.table.caption_profiles') }}</caption>
                 <thead>
                     <tr>
                         <th>{{ __('web/vtual.display_name') }}</th>
                         <th>{{ __('web/vtual.slug') }}</th>
                         <th>{{ __('web/vtual.status') }}</th>
                         <th>{{ __('web/vtual.profiles.channels_count') }}</th>
-                        <th></th>
+                        <th class="text-end">{{ __('web/vtual.table.label_actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -19,7 +20,7 @@
                         <tr>
                             <td>{{ $profile['display_name'] ?? '' }}</td>
                             <td><code>{{ $profile['slug'] ?? '' }}</code></td>
-                            <td><span class="badge text-bg-light border">{{ $profile['status'] ?? '' }}</span></td>
+                            <td><x-adminlte4::vtual.status-badge :status="$profile['status'] ?? ''" /></td>
                             <td>{{ $profile['channels_count'] ?? '—' }}</td>
                             <td class="text-end">
                                 <a href="{{ route('vtual.profiles.show', $profile['id']) }}" class="btn btn-primary btn-sm">

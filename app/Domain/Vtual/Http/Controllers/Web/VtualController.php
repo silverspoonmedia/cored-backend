@@ -4,6 +4,7 @@ namespace App\Domain\Vtual\Http\Controllers\Web;
 
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -32,7 +33,7 @@ class VtualController extends Controller
         ]);
     }
 
-    public function storeCreator(Request $request): RedirectResponse
+    public function storeCreator(Request $request): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/creators', $this->apiPayload($request, [
             'display_name',
@@ -41,14 +42,16 @@ class VtualController extends Controller
             'avatar_url',
         ]));
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.index')->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.index')->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.index')
+                ->with('success', $this->apiMessage($response)),
+            __('web/vtual.ajax.profile_saved'),
+        );
     }
 
-    public function storeManagement(Request $request): RedirectResponse
+    public function storeManagement(Request $request): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/managements', $this->apiPayload($request, [
             'name',
@@ -57,53 +60,12 @@ class VtualController extends Controller
             'logo_url',
         ]));
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.index')->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.index')->with('success', $this->apiMessage($response));
-    }
-
-    public function showCreator(string $creator): View|RedirectResponse
-    {
-        $response = $this->api()->get('vtual/creators/'.$creator);
-
-        if (! $response->successful()) {
-            return redirect()->route('vtual.index')->with('error', $this->apiMessage($response));
-        }
-
-        $channels = $this->api()->get('vtual/creators/'.$creator.'/channels');
-        $platforms = $this->api()->get('vtual/platforms');
-
-        return $this->webView('vtual.creators.show', [
-            'creator' => $response->json('data', []),
-            'channels' => $channels->successful() ? collect($channels->json('data', [])) : collect(),
-            'platforms' => $platforms->successful() ? collect($platforms->json('data', [])) : collect(),
-        ]);
-    }
-
-    public function storeChannel(Request $request, string $creator): RedirectResponse
-    {
-        $response = $this->api()->post('vtual/creators/'.$creator.'/channels', $this->apiPayload($request, [
-            'platform_key',
-            'profile',
-        ]));
-
-        if (! $response->successful()) {
-            return redirect()->route('vtual.creators.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.creators.show', $creator)->with('success', $this->apiMessage($response));
-    }
-
-    public function refreshChannel(string $creator, string $channel): RedirectResponse
-    {
-        $response = $this->api()->post('vtual/channels/'.$channel.'/refresh');
-
-        if (! $response->successful()) {
-            return redirect()->route('vtual.creators.show', $creator)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.creators.show', $creator)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.index')
+                ->with('success', $this->apiMessage($response)),
+            __('web/vtual.ajax.profile_saved'),
+        );
     }
 }

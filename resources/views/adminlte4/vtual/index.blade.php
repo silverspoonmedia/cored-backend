@@ -29,7 +29,7 @@
                 @if ($canClaim)
                     <div class="col-md-6 col-lg-3">
                         <a href="{{ route('vtual.claims.index') }}" class="text-decoration-none text-body">
-                            <div class="border rounded p-2 h-100">
+                            <div class="border rounded p-2 h-100 border-primary">
                                 <strong class="d-block mb-1">{{ __('web/vtual.nav.claim') }}</strong>
                                 <p class="small text-muted mb-0">{{ __('web/vtual.nav.hub_claim') }}</p>
                             </div>
@@ -49,7 +49,7 @@
                 @if ($canManageCredentials)
                     <div class="col-md-6 col-lg-3">
                         <a href="{{ route('vtual.admin.credentials.index') }}" class="text-decoration-none text-body">
-                            <div class="border rounded p-2 h-100">
+                            <div class="border rounded p-2 h-100 border-dark">
                                 <strong class="d-block mb-1">{{ __('web/vtual.nav.credentials') }}</strong>
                                 <p class="small text-muted mb-0">{{ __('web/vtual.nav.hub_credentials') }}</p>
                             </div>
@@ -66,19 +66,20 @@
                     <p class="text-muted small">{{ __('web/vtual.claims.orphan_help') }}</p>
                     <p class="mb-3">
                         <a href="{{ route('vtual.claims.staff') }}" class="btn btn-warning btn-sm">
-                            {{ __('web/vtual.claims.orphan_create') }}
+                            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>{{ __('web/vtual.claims.orphan_create') }}
                         </a>
                     </p>
                 @endif
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0" aria-label="{{ __('web/vtual.table.caption_creators') }}">
+                        <caption class="visually-hidden">{{ __('web/vtual.table.caption_creators') }}</caption>
                         <thead>
                             <tr>
                                 <th>{{ __('web/vtual.display_name') }}</th>
-                                <th>Slug</th>
+                                <th>{{ __('web/vtual.slug') }}</th>
                                 <th>{{ __('web/vtual.status') }}</th>
-                                <th></th>
+                                <th class="text-end">{{ __('web/vtual.table.label_actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -86,7 +87,7 @@
                                 <tr>
                                     <td>{{ $creator['display_name'] ?? '' }}</td>
                                     <td><code>{{ $creator['slug'] ?? '' }}</code></td>
-                                    <td><span class="badge text-bg-light border">{{ $creator['status'] ?? '' }}</span></td>
+                                    <td><x-adminlte4::vtual.status-badge :status="$creator['status'] ?? ''" /></td>
                                     <td class="text-end">
                                         <a href="{{ route('vtual.profiles.show', $creator['id']) }}" class="btn btn-outline-info btn-sm">
                                             {{ __('web/vtual.manage') }}

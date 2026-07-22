@@ -10,45 +10,45 @@
             'route' => 'vtual.index',
             'active' => request()->routeIs('vtual.index'),
             'show' => true,
-            'class' => 'btn-outline-secondary',
         ],
         [
             'label' => __('web/vtual.nav.profiles'),
             'route' => 'vtual.profiles.index',
             'active' => request()->routeIs('vtual.profiles.*', 'vtual.creators.*'),
             'show' => true,
-            'class' => 'btn-outline-info',
         ],
         [
             'label' => __('web/vtual.nav.claim'),
             'route' => 'vtual.claims.index',
             'active' => request()->routeIs('vtual.claims.index', 'vtual.claims.show'),
             'show' => $canClaim,
-            'class' => 'btn-outline-primary',
         ],
         [
             'label' => __('web/vtual.nav.registry'),
             'route' => 'vtual.claims.staff',
             'active' => request()->routeIs('vtual.claims.staff'),
             'show' => $canManageAny,
-            'class' => 'btn-outline-warning',
         ],
         [
             'label' => __('web/vtual.nav.credentials'),
             'route' => 'vtual.admin.credentials.index',
             'active' => request()->routeIs('vtual.admin.credentials.*', 'vtual.admin.platform-api-probe*'),
             'show' => $canManageCredentials,
-            'class' => 'btn-outline-dark',
         ],
     ];
 @endphp
-<p class="mb-3 d-flex flex-wrap gap-2">
-    @foreach ($items as $item)
-        @if ($item['show'])
-            <a href="{{ route($item['route']) }}"
-               class="btn btn-sm {{ $item['active'] ? str_replace('outline-', '', $item['class']) : $item['class'] }}">
-                {{ $item['label'] }}
-            </a>
-        @endif
-    @endforeach
-</p>
+<nav aria-label="{{ __('web/vtual.title') }}">
+    <ul class="nav nav-pills mb-3 flex-wrap gap-1">
+        @foreach ($items as $item)
+            @if ($item['show'])
+                <li class="nav-item">
+                    <a href="{{ route($item['route']) }}"
+                       class="nav-link py-1 px-2 {{ $item['active'] ? 'active' : '' }}"
+                       @if ($item['active']) aria-current="page" @endif>
+                        {{ $item['label'] }}
+                    </a>
+                </li>
+            @endif
+        @endforeach
+    </ul>
+</nav>

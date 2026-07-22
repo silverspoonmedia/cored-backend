@@ -410,4 +410,47 @@ class AccessibilityBladeTest extends TestCase
         $this->assertStringContainsString('data-menu-cascade-url', $blade, 'menus index delete trigger must carry the cascade URL data attribute.');
         $this->assertStringContainsString('data-menu-confirm-template', $blade, 'menus index modal must expose the confirm text template via data attribute.');
     }
+
+    public function test_vtual_confirm_modal_partial_exposes_aria_labelledby(): void
+    {
+        $blade = (string) file_get_contents(resource_path('views/adminlte4/vtual/partials/_confirm-modal.blade.php'));
+
+        $this->assertStringContainsString('aria-labelledby="vtualConfirmLabel"', $blade);
+        $this->assertStringContainsString('aria-hidden="true"', $blade);
+        $this->assertStringContainsString('tabindex="-1"', $blade);
+        $this->assertStringContainsString('btn-close', $blade, 'confirm modal must ship a dismiss button with aria-label.');
+    }
+
+    public function test_vtual_nav_partial_renders_aria_current_on_active_link(): void
+    {
+        $blade = (string) file_get_contents(resource_path('views/adminlte4/vtual/partials/nav.blade.php'));
+
+        $this->assertStringContainsString('aria-current="page"', $blade);
+        $this->assertStringContainsString('aria-label', $blade, 'nav partial must wrap items in an aria-label <nav>.');
+    }
+
+    public function test_vtual_status_badge_partial_renders_badge_class(): void
+    {
+        $blade = (string) file_get_contents(resource_path('views/adminlte4/components/vtual/status-badge.blade.php'));
+
+        $this->assertStringContainsString('text-bg-success', $blade, 'active status must map to success badge.');
+        $this->assertStringContainsString('text-bg-warning', $blade, 'pending status must map to warning badge.');
+        $this->assertStringContainsString('text-bg-secondary', $blade, 'archived/disabled status must map to secondary badge.');
+    }
+
+    public function test_vtual_confirm_modal_js_does_not_use_native_confirm(): void
+    {
+        $js = (string) file_get_contents(resource_path('js/vtual/confirm-modal.js'));
+
+        $this->assertStringNotContainsString('confirm(', $js, 'confirm-modal.js must not call native confirm().');
+        $this->assertStringContainsString('requestSubmit', $js, 'confirm-modal.js must submit the AJAX form via requestSubmit().');
+    }
+
+    public function test_vtual_credential_form_js_toggles_secret_fields(): void
+    {
+        $js = (string) file_get_contents(resource_path('js/vtual/credential-form.js'));
+
+        $this->assertStringContainsString('data-secret-fields', $js);
+        $this->assertStringContainsString("classList.toggle('d-none'", $js);
+    }
 }

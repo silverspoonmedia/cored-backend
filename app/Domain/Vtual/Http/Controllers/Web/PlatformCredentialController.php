@@ -4,6 +4,7 @@ namespace App\Domain\Vtual\Http\Controllers\Web;
 
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -48,7 +49,7 @@ class PlatformCredentialController extends Controller
         ]);
     }
 
-    public function store(Request $request, string $platform): RedirectResponse
+    public function store(Request $request, string $platform): RedirectResponse|JsonResponse
     {
         $type = (string) $request->input('type', '');
         $secret = $this->secretFromRequest($request, $type);
@@ -63,21 +64,16 @@ class PlatformCredentialController extends Controller
 
         $response = $this->api()->post('vtual/admin/platforms/'.$platform.'/credentials', $payload);
 
-        if (! $response->successful()) {
-            return redirect()
-                ->route('vtual.admin.credentials.platform', $platform)
-                ->with('error', $this->apiMessage($response))
-                ->withInput($request->except([
-                    'api_key', 'client_id', 'client_secret', 'access_token', 'refresh_token',
-                ]));
-        }
-
-        return redirect()
-            ->route('vtual.admin.credentials.platform', $platform)
-            ->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.admin.credentials.platform', $platform)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.credential_saved'))),
+            __('web/vtual.ajax.credential_saved'),
+        );
     }
 
-    public function update(Request $request, string $credential): RedirectResponse
+    public function update(Request $request, string $credential): RedirectResponse|JsonResponse
     {
         $platformId = (string) $request->input('platform_id');
         $type = (string) $request->input('type', '');
@@ -95,63 +91,65 @@ class PlatformCredentialController extends Controller
 
         $response = $this->api()->patch('vtual/admin/credentials/'.$credential, $payload);
 
-        $redirect = $platformId !== ''
-            ? redirect()->route('vtual.admin.credentials.platform', $platformId)
-            : redirect()->route('vtual.admin.credentials.index');
-
-        if (! $response->successful()) {
-            return $redirect->with('error', $this->apiMessage($response));
-        }
-
-        return $redirect->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => $this->platformRedirect($platformId)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.credential_saved'))),
+            __('web/vtual.ajax.credential_saved'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function destroy(Request $request, string $credential): RedirectResponse
+    public function destroy(Request $request, string $credential): RedirectResponse|JsonResponse
     {
         $platformId = (string) $request->input('platform_id');
         $response = $this->api()->delete('vtual/admin/credentials/'.$credential);
 
-        $redirect = $platformId !== ''
-            ? redirect()->route('vtual.admin.credentials.platform', $platformId)
-            : redirect()->route('vtual.admin.credentials.index');
-
-        if (! $response->successful()) {
-            return $redirect->with('error', $this->apiMessage($response));
-        }
-
-        return $redirect->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => $this->platformRedirect($platformId)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.credential_deleted'))),
+            __('web/vtual.ajax.credential_deleted'),
+        );
     }
 
-    public function disable(Request $request, string $credential): RedirectResponse
+    public function disable(Request $request, string $credential): RedirectResponse|JsonResponse
     {
         $platformId = (string) $request->input('platform_id');
         $response = $this->api()->post('vtual/admin/credentials/'.$credential.'/disable');
 
-        $redirect = $platformId !== ''
-            ? redirect()->route('vtual.admin.credentials.platform', $platformId)
-            : redirect()->route('vtual.admin.credentials.index');
-
-        if (! $response->successful()) {
-            return $redirect->with('error', $this->apiMessage($response));
-        }
-
-        return $redirect->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => $this->platformRedirect($platformId)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.credential_disabled'))),
+            __('web/vtual.ajax.credential_disabled'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function test(Request $request, string $credential): RedirectResponse
+    public function test(Request $request, string $credential): RedirectResponse|JsonResponse
     {
         $platformId = (string) $request->input('platform_id');
         $response = $this->api()->post('vtual/admin/credentials/'.$credential.'/test');
 
-        $redirect = $platformId !== ''
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => $this->platformRedirect($platformId)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.credential_tested'))),
+            __('web/vtual.ajax.credential_tested'),
+            stayOnPageOnSuccess: true,
+        );
+    }
+
+    private function platformRedirect(string $platformId): RedirectResponse
+    {
+        return $platformId !== ''
             ? redirect()->route('vtual.admin.credentials.platform', $platformId)
             : redirect()->route('vtual.admin.credentials.index');
-
-        if (! $response->successful()) {
-            return $redirect->with('error', $this->apiMessage($response));
-        }
-
-        return $redirect->with('success', $this->apiMessage($response));
     }
 
     /**

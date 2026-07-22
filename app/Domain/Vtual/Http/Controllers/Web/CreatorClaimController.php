@@ -4,6 +4,7 @@ namespace App\Domain\Vtual\Http\Controllers\Web;
 
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -54,24 +55,27 @@ class CreatorClaimController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/claims', $this->apiPayload($request, [
             'creator_id',
             'channel_id',
         ]));
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.claims.index')->with('error', $this->apiMessage($response));
-        }
+        return $this->respondFromApi(
+            $request,
+            $response,
+            function ($resp) {
+                $id = $resp->json('data.id');
 
-        $id = $response->json('data.id');
-
-        if (is_string($id) && $id !== '') {
-            return redirect()->route('vtual.claims.show', $id)->with('success', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.claims.index')->with('success', $this->apiMessage($response));
+                return (is_string($id) && $id !== '')
+                    ? redirect()->route('vtual.claims.show', $id)
+                        ->with('success', $this->apiMessage($resp, __('web/vtual.ajax.claim_started')))
+                    : redirect()->route('vtual.claims.index')
+                        ->with('success', $this->apiMessage($resp, __('web/vtual.ajax.claim_started')));
+            },
+            __('web/vtual.ajax.claim_started'),
+        );
     }
 
     public function show(string $claim): View|RedirectResponse
@@ -89,40 +93,47 @@ class CreatorClaimController extends Controller
         ]);
     }
 
-    public function verify(string $claim): RedirectResponse
+    public function verify(Request $request, string $claim): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/claims/'.$claim.'/verify');
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.claims.show', $claim)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.claims.show', $claim)->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.claims.show', $claim)
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.claim_verified'))),
+            __('web/vtual.ajax.claim_verified'),
+            stayOnPageOnSuccess: true,
+        );
     }
 
-    public function cancel(string $claim): RedirectResponse
+    public function cancel(Request $request, string $claim): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/claims/'.$claim.'/cancel');
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.claims.show', $claim)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.claims.index')->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.claims.index')
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.claim_cancelled'))),
+            __('web/vtual.ajax.claim_cancelled'),
+        );
     }
 
-    public function acceptAnyway(string $claim): RedirectResponse
+    public function acceptAnyway(Request $request, string $claim): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/claims/'.$claim.'/accept-anyway');
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.claims.show', $claim)->with('error', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.claims.staff')->with('success', $this->apiMessage($response));
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn () => redirect()->route('vtual.claims.staff')
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.claim_accepted'))),
+            __('web/vtual.ajax.claim_accepted'),
+        );
     }
 
-    public function storeOrphan(Request $request): RedirectResponse
+    public function storeOrphan(Request $request): RedirectResponse|JsonResponse
     {
         $response = $this->api()->post('vtual/creators/orphan', $this->apiPayload($request, [
             'display_name',
@@ -131,15 +142,19 @@ class CreatorClaimController extends Controller
             'avatar_url',
         ]));
 
-        if (! $response->successful()) {
-            return redirect()->route('vtual.claims.staff')->with('error', $this->apiMessage($response));
-        }
+        return $this->respondFromApi(
+            $request,
+            $response,
+            function ($resp) {
+                $id = $resp->json('data.id');
 
-        $id = $response->json('data.id');
-        if (is_string($id) && $id !== '') {
-            return redirect()->route('vtual.creators.show', $id)->with('success', $this->apiMessage($response));
-        }
-
-        return redirect()->route('vtual.claims.staff')->with('success', $this->apiMessage($response));
+                return (is_string($id) && $id !== '')
+                    ? redirect()->route('vtual.profiles.show', $id)
+                        ->with('success', $this->apiMessage($resp, __('web/vtual.ajax.orphan_created')))
+                    : redirect()->route('vtual.claims.staff')
+                        ->with('success', $this->apiMessage($resp, __('web/vtual.ajax.orphan_created')));
+            },
+            __('web/vtual.ajax.orphan_created'),
+        );
     }
 }

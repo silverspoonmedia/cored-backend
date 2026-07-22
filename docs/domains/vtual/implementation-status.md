@@ -7,7 +7,7 @@ Tracks what the **vTual product domain** has shipped in Monolith versus the orig
 | Domain guide (behavior detail) | [README.md](README.md) |
 | Code | `app/Domain/Vtual/` |
 | Config | [`config/vtual.php`](../../../config/vtual.php), product key `Vtual` in [`config/products.php`](../../../config/products.php) |
-| Last reviewed | 2026-07-22 |
+| Last reviewed | 2026-07-23 |
 
 ---
 
@@ -71,6 +71,7 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Content model foundation** | Primary host + appearances; explicit attach; no auto collab from API | `ContentService`, appearances migration, README content section |
 | **Error logging** | Platform HTTP failures can log to ErrorLog | platform client / gateway error path + docs |
 | **i18n** | en / id / ja for API + web vtual strings | `lang/*/api/vtual.php`, `lang/*/web/vtual.php` |
+| **Web UI/UX overhaul** | Full-suite Blade polish: AJAX forms (`x-adminlte4::form.ajax`), Bootstrap modal confirmations (shared `_confirm-modal`), WCAG 2.1 AA (aria-label, caption, aria-current, role=status), `_status-badge` component, `profiles/show` split to 5 partials, dead code removal (`creators/show`), inline JS extracted to Vite (`confirm-modal.js`, `credential-form.js`), 4 web controllers refactored to `ConsumesApi::respondFromApi` | `resources/views/adminlte4/vtual/**`, `resources/js/vtual/**`, `app/Domain/Vtual/Http/Controllers/Web/*`, `tests/Feature/Http/Controllers/Web/VtualBladeWebTest.php`, `tests/Feature/Http/Controllers/Web/AccessibilityBladeTest.php` (vtual assertions) |
 
 ### Tests (unit / feature present)
 
@@ -86,6 +87,7 @@ Representative suite under `tests/Domain/Vtual/`:
 | `PlatformApiGatewayTest` / client tests | Batch + ops |
 | `PlatformCredentialServiceTest` | Test gate, tokens, failover knobs |
 | `VtualApiTest` / probe web-api tests | HTTP surface smoke |
+| `VtualBladeWebTest` | Web view rendering, AJAX form presence, modal confirm, a11y invariants after UI/UX overhaul |
 
 ---
 
@@ -143,6 +145,7 @@ Not a commitment — default backlog for the next sessions:
 | Credentials UI | `/vtual/admin/platform-credentials` |
 | Registry / pending claims | `/vtual/admin/registry` |
 | My profiles | `/vtual/profiles` |
+| Build Vite assets (after JS/CSS change) | `npm run build` |
 
 ### Config knobs (`config/vtual.php`)
 
@@ -172,6 +175,7 @@ High-level order of work that landed in this long implementation arc (not exhaus
 8. Channel archive restore  
 9. Channel fetch pool (50 / 15m) + artisan/schedule  
 10. This status doc + README gap close  
+11. Web UI/UX overhaul — AJAX forms, Bootstrap modal confirmations, WCAG 2.1 AA, partial extraction, dead code removal, respondFromApi refactor  
 
 ---
 

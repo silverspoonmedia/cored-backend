@@ -15,6 +15,8 @@ export default defineConfig({
                 'resources/js/payments/checkout.js',
                 'resources/js/payments/channels-admin.js',
                 'resources/js/select2-init.js',
+                'resources/js/vtual/confirm-modal.js',
+                'resources/js/vtual/credential-form.js',
             ],
             refresh: true,
         }),

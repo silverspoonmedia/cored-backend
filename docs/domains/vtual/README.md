@@ -330,14 +330,28 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 
 | Route | View |
 |-------|------|
-| `GET vtual` (`vtual.index`) | Creators + managements lists + create forms + platform badges |
-| `GET vtual/creators/{id}` | Creator detail + channel register form |
+| `GET vtual` (`vtual.index`) | Hub cards + creators table + platform list |
+| `GET vtual/profiles` (`vtual.profiles.index`) | My profiles table |
+| `GET vtual/profiles/{id}` (`vtual.profiles.show`) | Profile manage: meta form, merge, links, channels (claims + active + archived) |
+| `GET vtual/claims` (`vtual.claims.index`) | Claimable orphans + my pending claims |
+| `GET vtual/claims/{id}` (`vtual.claims.show`) | Claim detail + verify/cancel/accept-anyway |
+| `GET vtual/admin/registry` (`vtual.claims.staff`) | Staff orphan seed + pending claims queue |
 | `GET vtual/admin/platform-credentials` | Admin platform list → drill into credentials |
 | `GET vtual/admin/platforms/{id}/credentials` | Credential table + create/update/Test (mask only; no app tokens) |
-| `POST vtual/admin/credentials/{id}/test` | Forward Test to API |
-| Mutations | POST/PATCH/DELETE forward via `ConsumesApi` to versioned API |
+| `GET vtual/admin/platform-api-probe` | Live platform API probe (Root/Admin) |
+| Mutations | POST/PATCH/DELETE forward via `ConsumesApi::respondFromApi` to versioned API |
 
 Layout: `resources/views/{WEB_LAYOUT}/vtual/` (default `adminlte4`).
+
+### UI/UX patterns (overhaul 2026-07)
+
+- **AJAX forms**: all mutations use `x-adminlte4::form.ajax` + `ConsumesApi::respondFromApi` (no full page reload; validation errors inline via `data-form-field` / `data-field-error`).
+- **Confirmation modals**: shared `_confirm-modal.blade.php` partial + `confirm-modal.js` (Vite). Trigger buttons carry `data-bs-toggle="modal"` + `data-confirm-body`. Native `confirm()` banned.
+- **Status badges**: shared `x-adminlte4::vtual.status-badge` anonymous component (color-mapped: active→success, pending→warning, archived/disabled→secondary).
+- **Accessibility (WCAG 2.1 AA)**: `<caption>` on every data table, `aria-current="page"` on active nav, `aria-label` on icon-only buttons, `role="status"` + `aria-live` on result regions, visible `<label>` on inputs.
+- **Partials**: `profiles/show.blade.php` composes 5 partials (`_profile-meta-form`, `_profile-merge-form`, `_profile-links`, `_profile-channels`, `_profile-content-stub`).
+- **JS extraction**: inline JS moved to `resources/js/vtual/confirm-modal.js` + `credential-form.js`, registered in `vite.config.js`.
+- **i18n**: all user-facing strings via `__('web/vtual.*')` (en/id/ja); `ajax.*`, `confirm.*`, `table.*` keys added.
 
 ## Seeders
 
@@ -564,6 +578,10 @@ Web UI: link from credentials index → **API probe**.
 
 `PlatformApiProbeApiTest` / `PlatformApiProbeWebTest` — admin probe gate, multi-id path, Twitch streams/channels profile normalize (login → user_id).
 
+`VtualBladeWebTest` — web view rendering, AJAX form presence, modal confirm, partial inclusion after UI/UX overhaul.
+
+`AccessibilityBladeTest` (vtual assertions) — `_confirm-modal`, `vtual-nav`, `status-badge`, `confirm-modal.js`, `credential-form.js` a11y invariants (WCAG 2.1 AA).
+
 ## Known limitations (deferred)
 
 | Item | Status |
@@ -592,6 +610,7 @@ Web UI: link from credentials index → **API probe**.
 ```bash
 composer test -- --filter=Vtual
 composer test -- --filter=PlatformCredential
+composer test -- --filter=AccessibilityBlade
 ```
 
 | Suite | Coverage |
@@ -614,6 +633,8 @@ composer test -- --filter=PlatformCredential
 | `DecryptedValueCacheTest` | vtual resource TTL 0 past global cap; non-mapped type still expires |
 | `VtualApiTest` | CRUD API, user channel claim path, staff seed active channel, product gate, peer isolation |
 | `RegisterVtualActivationTest` | Register creates implicit Vtual activation |
+| `VtualBladeWebTest` | Web view rendering, AJAX form presence, modal confirm, partial inclusion |
+| `AccessibilityBladeTest` (vtual) | `_confirm-modal`, `vtual-nav`, `status-badge`, `confirm-modal.js`, `credential-form.js` a11y invariants |
 
 
 ## Profile merge (absorb) — implemented

@@ -5,19 +5,20 @@
 
         <div class="mb-3">
             <a href="{{ route('vtual.admin.platform-api-probe') }}" class="btn btn-outline-primary btn-sm">
-                {{ __('web/vtual.probe.open_probe') }}
+                <i class="bi bi-bug me-1" aria-hidden="true"></i>{{ __('web/vtual.probe.open_probe') }}
             </a>
         </div>
 
         <h5 class="mb-2">{{ __('web/vtual.credentials.platforms') }}</h5>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" aria-label="{{ __('web/vtual.table.caption_platforms') }}">
+                <caption class="visually-hidden">{{ __('web/vtual.table.caption_platforms') }}</caption>
                 <thead>
                     <tr>
                         <th>{{ __('web/vtual.name') }}</th>
                         <th>Key</th>
                         <th>{{ __('web/vtual.status') }}</th>
-                        <th></th>
+                        <th class="text-end">{{ __('web/vtual.table.label_actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
