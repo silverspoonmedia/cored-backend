@@ -169,6 +169,22 @@ class MenuSeeder extends Seeder
         ]);
         $errorLogItem->roles()->sync($adminRoleIds);
 
+        $vtualCredentialsItem = Menu::query()->create([
+            'parent_id' => $admin->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => [
+                'en' => 'vTual platform credentials',
+                'id' => 'Kredensial platform vTual',
+                'ja' => 'vTual プラットフォーム認証情報',
+            ],
+            'icon' => 'bi bi-key',
+            'route' => 'vtual.admin.credentials.index',
+            'type' => 'p',
+            'order' => 6,
+            'is_authenticate' => true,
+        ]);
+        $vtualCredentialsItem->roles()->sync($adminRoleIds);
+
         $productActivationsItem = Menu::query()->create([
             'parent_id' => $admin->id,
             'layout' => MenuLayout::SIDEBAR,

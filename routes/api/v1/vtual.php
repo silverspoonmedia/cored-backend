@@ -4,6 +4,7 @@ use App\Domain\Vtual\Http\Controllers\API\V1\ChannelController;
 use App\Domain\Vtual\Http\Controllers\API\V1\CreatorController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ManagementController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformController;
+use App\Domain\Vtual\Http\Controllers\API\V1\PlatformCredentialController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:api', 'product.active:Vtual'])->prefix('vtual')->name('vtual.')->group(function (): void {
@@ -53,5 +54,35 @@ Route::middleware(['auth:api', 'product.active:Vtual'])->prefix('vtual')->name('
         Route::delete('managements/{management}/creators/{creator}', [ManagementController::class, 'unassignCreator'])
             ->whereUuid(['management', 'creator'])
             ->name('managements.creators.unassign');
+    });
+
+    // Admin: platform integration credentials (Root/Admin core perms only).
+    Route::prefix('admin')->name('admin.')->group(function (): void {
+        Route::middleware('permission:view vtual platform credentials')->group(function (): void {
+            Route::get('platforms/{platform}/credentials', [PlatformCredentialController::class, 'index'])
+                ->whereUuid('platform')
+                ->name('platforms.credentials.index');
+            Route::get('credentials/{credential}', [PlatformCredentialController::class, 'show'])
+                ->whereUuid('credential')
+                ->name('credentials.show');
+        });
+
+        Route::middleware('permission:manage vtual platform credentials')->group(function (): void {
+            Route::post('platforms/{platform}/credentials', [PlatformCredentialController::class, 'store'])
+                ->whereUuid('platform')
+                ->name('platforms.credentials.store');
+            Route::patch('credentials/{credential}', [PlatformCredentialController::class, 'update'])
+                ->whereUuid('credential')
+                ->name('credentials.update');
+            Route::delete('credentials/{credential}', [PlatformCredentialController::class, 'destroy'])
+                ->whereUuid('credential')
+                ->name('credentials.destroy');
+            Route::post('credentials/{credential}/disable', [PlatformCredentialController::class, 'disable'])
+                ->whereUuid('credential')
+                ->name('credentials.disable');
+            Route::post('credentials/{credential}/test', [PlatformCredentialController::class, 'test'])
+                ->whereUuid('credential')
+                ->name('credentials.test');
+        });
     });
 });

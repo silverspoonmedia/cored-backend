@@ -22,7 +22,11 @@ class DecryptedValueCache
         return Cache::has($this->valueKey($contextKey, $hash));
     }
 
-    public function remember(string $contextKey, string $storedValue, callable $resolver): mixed
+    /**
+     * @param  (callable(): mixed)  $resolver
+     * @param  int|null  $ttl  Seconds; null = global decrypted_cache_max_ttl; 0 = forever until forget
+     */
+    public function remember(string $contextKey, string $storedValue, callable $resolver, ?int $ttl = null): mixed
     {
         $hash = self::ciphertextFingerprint($storedValue);
         $valueKey = $this->valueKey($contextKey, $hash);
@@ -34,7 +38,7 @@ class DecryptedValueCache
             Cache::forget($this->valueKey($contextKey, $previousHash));
         }
 
-        $maxTtl = $this->maxTtl();
+        $maxTtl = $ttl ?? $this->maxTtl();
 
         $value = $maxTtl > 0
             ? Cache::remember($valueKey, $maxTtl, $resolver)

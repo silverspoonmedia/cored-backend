@@ -67,6 +67,7 @@ class EnvelopeEncryptionService
             $contextKey,
             $storedValue,
             fn (): string => $this->decryptWithoutCache($storedValue),
+            $this->resolveDecryptCacheTtl($context),
         );
 
         $this->invoicePayloadDecryptLogger->log($context, $cacheHit, $operation);
@@ -167,6 +168,22 @@ class EnvelopeEncryptionService
         } catch (\Throwable) {
             return $storedValue;
         }
+    }
+
+    /**
+     * Per-resource_type TTL from config map; else global decrypted_cache_max_ttl.
+     * 0 = forever until forget.
+     */
+    public function resolveDecryptCacheTtl(DecryptionContext $context): int
+    {
+        $byType = (array) config('encryption.decrypted_cache_ttl_by_resource_type', []);
+        $resourceType = $context->resourceType;
+
+        if (array_key_exists($resourceType, $byType)) {
+            return (int) $byType[$resourceType];
+        }
+
+        return (int) config('encryption.decrypted_cache_max_ttl', 86400);
     }
 
     private function shouldAuditDecrypt(bool $cacheHit, DecryptionContext $context): bool

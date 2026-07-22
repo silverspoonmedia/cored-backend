@@ -42,6 +42,14 @@ class Platform extends Model
         return $this->hasMany(Channel::class, 'platform_id');
     }
 
+    /**
+     * @return HasMany<PlatformCredential, $this>
+     */
+    public function credentials(): HasMany
+    {
+        return $this->hasMany(PlatformCredential::class, 'platform_id');
+    }
+
     public function isEnabled(): bool
     {
         return $this->enabled === true;
