@@ -29,4 +29,26 @@ final class PlatformStreamDto
         public readonly bool $isLive = true,
         public readonly ?array $raw = null,
     ) {}
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [
+            'platform' => $this->platform->value,
+            'external_id' => $this->externalId,
+            'user_external_id' => $this->userExternalId,
+            'user_login' => $this->userLogin,
+            'user_name' => $this->userName,
+            'title' => $this->title,
+            'game_name' => $this->gameName,
+            'thumbnail_url' => $this->thumbnailUrl,
+            'url' => $this->url,
+            'concurrent_viewers' => $this->concurrentViewers,
+            'started_at' => $this->startedAt?->toIso8601String(),
+            'language' => $this->language,
+            'is_live' => $this->isLive,
+        ];
+    }
 }

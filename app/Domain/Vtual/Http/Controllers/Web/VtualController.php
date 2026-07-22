@@ -86,11 +86,19 @@ class VtualController extends Controller
     {
         $response = $this->api()->post('vtual/creators/'.$creator.'/channels', $this->apiPayload($request, [
             'platform_key',
-            'external_id',
-            'handle',
-            'display_name',
-            'url',
+            'profile',
         ]));
+
+        if (! $response->successful()) {
+            return redirect()->route('vtual.creators.show', $creator)->with('error', $this->apiMessage($response));
+        }
+
+        return redirect()->route('vtual.creators.show', $creator)->with('success', $this->apiMessage($response));
+    }
+
+    public function refreshChannel(string $creator, string $channel): RedirectResponse
+    {
+        $response = $this->api()->post('vtual/channels/'.$channel.'/refresh');
 
         if (! $response->successful()) {
             return redirect()->route('vtual.creators.show', $creator)->with('error', $this->apiMessage($response));

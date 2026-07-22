@@ -25,7 +25,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Creator assignment | `vtual_management_creators` with `joined_at` / `left_at` (historical leave without hard delete). |
 | Platform | Seeded catalog: youtube, twitch, **kick** (kick `enabled = false`). |
 | Platform credential | Child table `vtual_platform_credentials`: multi-key per platform, envelope-encrypted `secret_payload`, mask-only API. |
-| Channel | External channel on a creator; unique `(platform_id, external_id)`; status starts `pending`. |
+| Channel | External channel on a creator; unique `(platform_id, external_id)` (canonical platform id only). Register with free-form `profile` (id / handle / URL) → resolve via platform API → store `external_id` + current `handle`. Status starts `pending`. Refresh re-fetches by `external_id` to backfill handle/display. |
 | Content | Normalized shell table (`vtual_contents`) for live/archive/vod — **no sync workers in foundation**. |
 | External links | Morph `vtual_external_links` for creator/management social/donation URLs (schema ready; minimal API in foundation). |
 
@@ -246,7 +246,7 @@ Layout: `resources/views/{WEB_LAYOUT}/vtual/` (default `adminlte4`).
 ## Kick strategy (foundation)
 
 - Platform row exists with `enabled = false`.
-- `ChannelService::create` rejects disabled platforms (no scrape path).
+- `ChannelService::create` rejects disabled platforms (no scrape path); Kick has no profile resolve.
 - Re-enable only after official API decision (see archive audit).
 
 ## Platform HTTP clients (manual fetch)
@@ -263,9 +263,27 @@ app/Domain/Vtual/Integrations/
   Twitch/TwitchHelixClient.php
   Contracts/{PlatformClient,FetchesVideos,FetchesChannels,ResolvesChannel,FetchesStreams}.php
   Dto/{PlatformVideoDto,PlatformChannelDto,PlatformStreamDto,YoutubeParts}.php
-  Support/{BatchIdChunker,PlatformHttp}.php
+  Support/{BatchIdChunker,PlatformHttp,ChannelProfileInput,ChannelProfileInputParser,ChannelProfileResolver}.php
   Enums/PlatformApiOperation.php
 ```
+
+### Channel profile identity (canonical vs handle)
+
+| Platform | `external_id` (stable, unique) | `handle` (mutable, display) |
+|----------|--------------------------------|-----------------------------|
+| YouTube | Channel id `UC…` | bare handle (no `@`) from `customUrl` |
+| Twitch | Numeric user id | lowercase login |
+
+**Register** (`POST /api/v1/vtual/creators/{id}/channels`): body `{ platform_key, profile }`. `profile` accepts:
+
+- YouTube: `UC…`, `@handle`, `youtube.com/@handle`, `youtube.com/channel/UC…`
+- Twitch: numeric id, login, `twitch.tv/login`
+
+Requires **active** platform credential (same as gateway). Parser → `ChannelProfileResolver` → `fetchChannels` or `resolveChannel` → persist DTO.
+
+**Refresh** (`POST /api/v1/vtual/channels/{id}/refresh`): re-fetch by stored `external_id` only; updates `handle`, `display_name`, `url`, `last_synced_at`. Does not change `external_id`.
+
+**Workers:** always call streams/videos APIs with stored `external_id` (Twitch `user_id`, YT channel id) — never login/handle as batch id.
 
 ### Credential flow
 
@@ -319,9 +337,78 @@ $videos = $gateway->fetchVideos(\App\Domain\Vtual\Enums\PlatformKey::Twitch, ['9
 $streams = $gateway->fetchStreamsByUserIds(\App\Domain\Vtual\Enums\PlatformKey::Twitch, ['12345']);
 ```
 
+### Admin probe (permanent Root/Admin debug)
+
+Permanent debug surface for **production** `PlatformApiGateway` — **not** temporary. Root/Admin only (`manage vtual platform credentials`). Uses the **active** credential; hits live YouTube/Twitch (or `Http::fake` in tests). No secrets in response.
+
+| Surface | Method | Path |
+|---------|--------|------|
+| Web form | GET/POST | `/vtual/admin/platform-api-probe` |
+| API | POST | `/api/v1/vtual/admin/platform-api/probe` |
+
+**Methods:** `fetch_videos`, `fetch_videos_chunked`, `fetch_channels`, `resolve_channel`, `fetch_streams` (Twitch only).
+
+#### Agent rule — production mirror (mandatory)
+
+Probe **must** exercise the same production paths workers use. Results must represent real gateway method output (same clients, credentials, DTOs, errors).
+
+| Allowed | Forbidden |
+|---------|-----------|
+| Call `PlatformApiGateway` methods only | Duplicate Helix/YouTube HTTP clients or alternate query builders |
+| Input validation + optional profile normalize via **existing** production helpers (`ChannelProfileInputParser` / `ChannelProfileResolver`) | Probe-only business rules or fake success shapes |
+| Serialize gateway DTOs (`PlatformDtoSerializer`) for display | Alternate DTO mapping that diverges from production clients |
+
+Flow:
+
+```text
+Probe form/API
+  → PlatformApiProbeService (input parse / optional profile normalize)
+  → PlatformApiGateway (credential + client + capability)
+  → YoutubeDataApiClient / TwitchHelixClient
+  → DTO serialize → JSON
+```
+
+When **adding, removing, or renaming** a worker-facing gateway method that should be manually testable, update in the **same PR**:
+
+1. `PlatformApiProbeService::METHODS` + `run()` match arm
+2. `PlatformApiProbeRequest` validation (`Rule::in`)
+3. Web labels/help in `lang/{en,id,ja}/web/vtual.php` (`probe.method_*`, `ids_help`)
+4. Feature tests (`PlatformApiProbeApiTest` / `PlatformApiProbeWebTest`)
+5. This README section (methods table + notes)
+
+Video/VOD ids stay raw (no profile resolve). Channel/stream profile normalize is the shared production resolver used by channel register — not probe-only logic.
+
+#### Profile normalization
+
+Same `ChannelProfileInputParser` + `ChannelProfileResolver` as channel register:
+
+| Method | IDs field | Behavior |
+|--------|-----------|----------|
+| `fetch_streams` | user id, login, `@handle`, or profile URL | Normalize → canonical `user_id` → gateway `fetchStreamsByUserIds` |
+| `fetch_channels` | channel/user id, handle/login, or URL | Normalize → canonical id → gateway `fetchChannels` |
+| `fetch_videos` / `fetch_videos_chunked` | raw video/VOD ids | **No** profile resolve → gateway as-is |
+| `resolve_channel` | `handle` (or single id) | Gateway `resolveChannel` |
+
+Example: Twitch `ids=2xrakai` on `fetch_streams` resolves to `997729120` then streams. Response includes `resolved: [{ input, external_id, handle }]` for debug transparency.
+
+**Body (API / form):**
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `platform` | yes | `youtube` \| `twitch` |
+| `method` | yes | see above |
+| `ids` | for multi-id methods | array or comma/space string; max 50 videos/channels, 100 streams |
+| `handle` | for `resolve_channel` | YouTube `@handle` or Twitch login |
+| `parts` | optional | YouTube only; comma list or array |
+| `chunked` | optional | if true and method is `fetch_videos`, maps to `fetch_videos_chunked` |
+
+Web UI: link from credentials index → **API probe**.
+
 ### Tests
 
 `tests/Domain/Vtual/Unit/Integrations/PlatformApiGatewayTest.php`, `BatchIdChunkerTest.php` — `Http::fake`, batch caps, parts whitelist, auth headers, 401 → `markFailed`, unsupported ops.
+
+`PlatformApiProbeApiTest` / `PlatformApiProbeWebTest` — admin probe gate, multi-id path, Twitch streams/channels profile normalize (login → user_id).
 
 ## Known limitations (deferred)
 
@@ -353,7 +440,8 @@ composer test -- --filter=PlatformCredential
 | `CreatorMemberRoleTest` | Mutate / manage members matrix |
 | `CreatorServiceTest` | Multi-creator ownership, slug collision, archive |
 | `ManagementServiceTest` | Owner membership, assign/unassign `left_at` |
-| `ChannelServiceTest` | Pending channel, Kick disabled, duplicate external id |
+| `ChannelServiceTest` | Profile resolve on create, Kick disabled, duplicate after resolve, refresh handle |
+| `ChannelProfileInputParserTest` / `ChannelProfileResolverTest` | Parse matrix YT/Twitch; handle → canonical id via Http::fake |
 | `PlatformCredentialSecretsTest` | Payload normalize / fingerprint / reject unknown keys |
 | `PlatformCredentialServiceTest` | pending create, pickActive, Test YT/Twitch, getAppAccessToken reuse/remint, secret rotate reset, forever decrypt cache |
 | `PlatformApiGatewayTest` / `BatchIdChunkerTest` | Manual HTTP clients: multi-id, batch max, parts, auth, 401 markFailed |

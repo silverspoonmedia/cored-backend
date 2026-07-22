@@ -27,13 +27,15 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">{{ __('web/vtual.external_id') }}</label>
-                    <input type="text" name="external_id" class="form-control form-control-sm" required maxlength="191">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">{{ __('web/vtual.handle') }}</label>
-                    <input type="text" name="handle" class="form-control form-control-sm" maxlength="191">
+                <div class="col-md-6">
+                    <label class="form-label">{{ __('web/vtual.profile') }}</label>
+                    <input type="text"
+                           name="profile"
+                           class="form-control form-control-sm font-monospace"
+                           required
+                           maxlength="512"
+                           placeholder="UC… / @handle / login / URL">
+                    <div class="form-text">{{ __('web/vtual.profile_help') }}</div>
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary btn-sm w-100">{{ __('web/vtual.add_channel') }}</button>
@@ -49,6 +51,7 @@
                         <th>{{ __('web/vtual.external_id') }}</th>
                         <th>{{ __('web/vtual.handle') }}</th>
                         <th>{{ __('web/vtual.status') }}</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,10 +61,20 @@
                             <td><code>{{ $channel['external_id'] ?? '' }}</code></td>
                             <td>{{ $channel['handle'] ?? '—' }}</td>
                             <td><span class="badge text-bg-light border">{{ $channel['status'] ?? '' }}</span></td>
+                            <td class="text-end">
+                                <form method="POST"
+                                      action="{{ route('vtual.creators.channels.refresh', [$creator['id'], $channel['id']]) }}"
+                                      class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                        {{ __('web/vtual.refresh_channel') }}
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4">
+                            <td colspan="5">
                                 <x-adminlte4::empty-state icon="bi-link-45deg" :title="__('web/vtual.empty_channels')" />
                             </td>
                         </tr>

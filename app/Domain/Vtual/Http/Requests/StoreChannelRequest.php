@@ -20,10 +20,7 @@ class StoreChannelRequest extends FormRequest
     {
         return [
             'platform_key' => ['required', 'string', Rule::in(PlatformKey::values())],
-            'external_id' => ['required', 'string', 'max:191'],
-            'handle' => ['nullable', 'string', 'max:191'],
-            'display_name' => ['nullable', 'string', 'max:191'],
-            'url' => ['nullable', 'string', 'max:2048', 'url'],
+            'profile' => ['required', 'string', 'max:512'],
         ];
     }
 }

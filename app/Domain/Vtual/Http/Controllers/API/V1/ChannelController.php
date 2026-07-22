@@ -60,4 +60,17 @@ class ChannelController extends Controller
             __('api/vtual.channel.show_success'),
         );
     }
+
+    public function refresh(Request $request, Channel $channel): JsonResponse
+    {
+        $this->authorize('create', Channel::class);
+        $this->authorize('view', $channel);
+
+        $refreshed = $this->channels->refresh($request->user(), $channel->id);
+
+        return $this->successResponse(
+            $this->resolveResource(new ChannelResource($refreshed)),
+            __('api/vtual.channel.refreshed'),
+        );
+    }
 }

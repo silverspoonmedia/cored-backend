@@ -2,6 +2,12 @@
     <x-adminlte4::card :title="__('web/vtual.credentials.title')">
         <p class="text-muted small mb-3">{{ __('web/vtual.credentials.subtitle') }}</p>
 
+        <div class="mb-3">
+            <a href="{{ route('vtual.admin.platform-api-probe') }}" class="btn btn-outline-primary btn-sm">
+                {{ __('web/vtual.probe.open_probe') }}
+            </a>
+        </div>
+
         <h5 class="mb-2">{{ __('web/vtual.credentials.platforms') }}</h5>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">

@@ -22,4 +22,20 @@ final class PlatformChannelDto
         public readonly ?string $url,
         public readonly ?array $raw = null,
     ) {}
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [
+            'platform' => $this->platform->value,
+            'external_id' => $this->externalId,
+            'handle' => $this->handle,
+            'display_name' => $this->displayName,
+            'description' => $this->description,
+            'thumbnail_url' => $this->thumbnailUrl,
+            'url' => $this->url,
+        ];
+    }
 }

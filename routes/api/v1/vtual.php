@@ -3,6 +3,7 @@
 use App\Domain\Vtual\Http\Controllers\API\V1\ChannelController;
 use App\Domain\Vtual\Http\Controllers\API\V1\CreatorController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ManagementController;
+use App\Domain\Vtual\Http\Controllers\API\V1\PlatformApiProbeController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformCredentialController;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +28,9 @@ Route::middleware(['auth:api', 'product.active:Vtual'])->prefix('vtual')->name('
         Route::post('creators/{creator}/channels', [ChannelController::class, 'store'])
             ->whereUuid('creator')
             ->name('creators.channels.store');
+        Route::post('channels/{channel}/refresh', [ChannelController::class, 'refresh'])
+            ->whereUuid('channel')
+            ->name('channels.refresh');
     });
 
     Route::middleware('permission:delete vtual creator')->group(function (): void {
@@ -83,6 +87,9 @@ Route::middleware(['auth:api', 'product.active:Vtual'])->prefix('vtual')->name('
             Route::post('credentials/{credential}/test', [PlatformCredentialController::class, 'test'])
                 ->whereUuid('credential')
                 ->name('credentials.test');
+            // Manual PlatformApiGateway probe (Root/Admin). Hits live YouTube/Twitch.
+            Route::post('platform-api/probe', PlatformApiProbeController::class)
+                ->name('platform-api.probe');
         });
     });
 });

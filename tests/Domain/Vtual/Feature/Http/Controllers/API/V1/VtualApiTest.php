@@ -3,11 +3,16 @@
 namespace Tests\Domain\Vtual\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Vtual\Enums\PlatformCredentialStatus;
+use App\Domain\Vtual\Enums\PlatformCredentialType;
+use App\Domain\Vtual\Models\Platform;
+use App\Domain\Vtual\Services\PlatformCredentialService;
 use App\Support\Product\Enums\ProductActivationState;
 use App\Support\Product\Services\ProductActivationService;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
@@ -89,6 +94,35 @@ class VtualApiTest extends TestCase
         $user = $this->userWithRole('User');
         $this->activations->activateImplicit($user, 'Vtual');
 
+        $admin = $this->userWithRole('Admin');
+        $youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
+        $credential = app(PlatformCredentialService::class)->create($admin, $youtube, [
+            'label' => 'yt-api-test',
+            'type' => PlatformCredentialType::ApiKey->value,
+            'secret' => ['api_key' => 'yt-api-test-key'],
+        ]);
+        $credential->forceFill([
+            'status' => PlatformCredentialStatus::Active,
+            'verified_at' => now(),
+        ])->save();
+
+        $ytId = 'UCPkKpOHxEDcwmUAnRpIu-Ng';
+        Http::fake([
+            'www.googleapis.com/youtube/v3/channels*' => Http::response([
+                'items' => [
+                    [
+                        'id' => $ytId,
+                        'snippet' => [
+                            'title' => 'Talent YT',
+                            'description' => '',
+                            'customUrl' => '@talent',
+                            'thumbnails' => [],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
         $creator = $this->actingAsJwt($user)
             ->postJson('/api/v1/vtual/creators', ['display_name' => 'Talent'])
             ->assertCreated()
@@ -97,10 +131,12 @@ class VtualApiTest extends TestCase
         $this->actingAsJwt($user)
             ->postJson('/api/v1/vtual/creators/'.$creator['id'].'/channels', [
                 'platform_key' => 'youtube',
-                'external_id' => 'UCabc',
+                'profile' => '@talent',
             ])
             ->assertCreated()
-            ->assertJsonPath('data.status', 'pending');
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('data.external_id', $ytId)
+            ->assertJsonPath('data.handle', 'talent');
 
         $management = $this->actingAsJwt($user)
             ->postJson('/api/v1/vtual/managements', ['name' => 'Agency'])
