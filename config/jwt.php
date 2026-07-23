@@ -96,6 +96,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Silent refresh skew (Blade admin)
+    |--------------------------------------------------------------------------
+    |
+    | Minutes before access-token `exp` when RefreshJwtCookie proactively issues
+    | a new JWT and rewrites the HttpOnly auth_token cookie. Keeps short JWT_TTL
+    | while active browser sessions slide within JWT_REFRESH_TTL.
+    |
+    */
+    'refresh_skew' => (int) env('JWT_REFRESH_SKEW', 5),
+
+    /*
+    |--------------------------------------------------------------------------
     | Remember-me token TTL
     |--------------------------------------------------------------------------
     |
@@ -247,7 +259,9 @@ return [
     |
     */
 
-    'blacklist_grace_period' => (int) env('JWT_BLACKLIST_GRACE_PERIOD', 0),
+    // Seconds the predecessor JWT stays acceptable after refresh (parallel tabs /
+    // in-flight ApiClient calls). Zero caused random multi-tab 401 after silent refresh.
+    'blacklist_grace_period' => (int) env('JWT_BLACKLIST_GRACE_PERIOD', 30),
 
     /*
     |--------------------------------------------------------------------------

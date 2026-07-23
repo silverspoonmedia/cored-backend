@@ -134,28 +134,49 @@ class AuthService
     }
 
     /**
-     * @return array<string, mixed>
+     * Refresh the JWT currently on the request (Authorization: Bearer).
+     * Works for valid tokens and expired tokens still inside jwt.refresh_ttl.
+     *
+     * @return array{user: array<string, mixed>, token: string, token_type: string, expires_in: int, remember: bool}
      */
     public function refresh(): array
     {
-        $guard = $this->guard();
+        $tokenString = request()->bearerToken();
 
-        return $this->withTokenLifetime(false, function (int $ttlMinutes) use ($guard) {
-            Auth::forgetGuards();
-            $guard = $this->guard();
-            $guard->setTTL($ttlMinutes);
+        if (! is_string($tokenString) || $tokenString === '') {
+            throw new \PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException('Token not provided');
+        }
 
-            /** @var User $user */
-            $user = $guard->user();
-            $token = $guard->refresh();
-
-            return $this->buildAuthPayload($user, $token, $ttlMinutes, false);
-        });
+        return $this->refreshFromToken($tokenString);
     }
 
     /**
-     * @return array<string, mixed>
+     * Refresh a raw JWT string (cookie or Bearer). Single refresh - no double-issue.
+     * Expired tokens are accepted while within jwt.refresh_ttl (package refresh flow).
+     *
+     * @return array{user: array<string, mixed>, token: string, token_type: string, expires_in: int, remember: bool}
      */
+    public function refreshFromToken(string $token): array
+    {
+        return $this->withTokenLifetime(false, function (int $ttlMinutes) use ($token) {
+            Auth::forgetGuards();
+            $guard = $this->guard();
+            $guard->setTTL($ttlMinutes);
+            $guard->setToken($token);
+
+            $newToken = $guard->refresh();
+
+            /** @var User|null $user */
+            $user = $guard->setToken($newToken)->user();
+
+            if (! $user instanceof User) {
+                throw new \PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException('User not found');
+            }
+
+            return $this->buildAuthPayload($user, $newToken, $ttlMinutes, false);
+        });
+    }
+
     public function loginWithTwoFactorToken(string $twoFactorToken, string $code): array
     {
         $cacheKey = $this->twoFactorCacheKey($twoFactorToken);

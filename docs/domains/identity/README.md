@@ -46,9 +46,18 @@ app/Domain/Identity/
 
 | Variable | Notes |
 |----------|-------|
-| `JWT_SECRET`, `JWT_TTL`, `JWT_REFRESH_TTL` | Token lifecycle |
+| `JWT_SECRET` | HS256 signing secret |
+| `JWT_TTL` | Access token lifetime (minutes). Default 60. Blade identity cookie max-age tracks this. |
+| `JWT_REFRESH_TTL` | Window (minutes from `iat`) in which an expired access token can still be refreshed. Default 20160 (~14d). |
+| `JWT_REMEMBER_TTL` | Access TTL when `remember_me=true` on login |
+| `JWT_REFRESH_SKEW` | Minutes before `exp` when Blade `RefreshJwtCookie` proactively refreshes. Default 5. |
+| `JWT_BLACKLIST_GRACE_PERIOD` | Seconds the predecessor JWT stays valid after refresh (parallel tabs). Default **30**. |
 | `AUTH_GUARD=api`, `AUTH_DEFAULT_ROLE=User` | |
 | `HCAPTCHA_ENABLED`, `HCAPTCHA_*` | Public auth endpoints when enabled |
+
+### Blade silent refresh
+
+Blade does **not** use the Laravel session guard for identity. After login, `auth_token` is the only identity cookie. `RefreshJwtCookie` + `AuthService::refreshFromToken` slide access tokens within `JWT_REFRESH_TTL` so admins are not hard-kicked at `JWT_TTL`. API: `POST /api/v1/auth/refresh` (Bearer; single refresh inside `AuthService` — no double `jwt.refresh` middleware). Details: [web/blade-admin](../../web/blade-admin.md#silent-refresh-sliding-access).
 
 ### hCaptcha
 
@@ -65,7 +74,7 @@ Typical surface (all under `auth:api` where noted):
 | Email | verify, resend |
 | 2FA setup | start, confirm, disable, QR |
 
-JWT: Bearer header (API) or HttpOnly cookie on Blade (`auth_token` → Bearer). Octane: no sticky claims; cleanup guards after token ops — [platform/octane](../../platform/octane.md).
+JWT: Bearer header (API) or HttpOnly cookie on Blade (`auth_token` → Bearer via `AuthenticateWithJwtCookie` + silent `RefreshJwtCookie`). Octane: no sticky claims; cleanup guards after token ops — [platform/octane](../../platform/octane.md).
 
 **Register side-effect:** `AuthService::register` auto-activates every implicit Product domain declared in [`config/products.php`](../../../config/products.php) (e.g. FileHosting) by inserting a `product_activations` row with `state = active` and `source = register_hook`. Failures are logged but do not abort registration — the `product.active` middleware lazy-creates a missing implicit activation on first product endpoint hit. See [Product Activations](../product-activations/README.md).
 

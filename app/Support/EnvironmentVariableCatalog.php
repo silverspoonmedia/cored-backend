@@ -59,6 +59,8 @@ final class EnvironmentVariableCatalog
             'JWT_TTL' => self::TYPE_INT,
             'JWT_REFRESH_TTL' => self::TYPE_INT,
             'JWT_REMEMBER_TTL' => self::TYPE_INT,
+            'JWT_REFRESH_SKEW' => self::TYPE_INT,
+            'JWT_BLACKLIST_GRACE_PERIOD' => self::TYPE_INT,
             'AUTH_GUARD' => self::TYPE_STRING,
             'AUTH_DEFAULT_ROLE' => self::TYPE_STRING,
             'AUTH_VERIFICATION_EXPIRE' => self::TYPE_INT,

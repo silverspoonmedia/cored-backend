@@ -20,7 +20,12 @@ trait IssuesAuthCookie
     protected function redirectAuthenticated(array $payload, string $route = 'dashboard', ?Request $request = null): RedirectResponse
     {
         $request ??= request();
+
         $cookie = AuthCookie::make($payload['token'], (int) $payload['expires_in']);
+
+        // Attach on the redirect AND queue so AJAX JSON (withRedirectCookies) and
+        // AddQueuedCookiesToResponse both see auth_token.
+        cookie()->queue($cookie);
 
         return redirect()
             ->to(IntendedUrl::resolve($request, route($route)))

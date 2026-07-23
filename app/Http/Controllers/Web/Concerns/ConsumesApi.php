@@ -104,7 +104,9 @@ trait ConsumesApi
             ], 422);
         }
 
-        if (in_array($response->status(), [401, 419], true)) {
+        // Auth death only. Web CSRF 419 is handled by the exception renderer
+        // (`reload: true`); never map API 419 as "session expired" login kick.
+        if ($response->status() === 401) {
             $message = __('web/session.expired');
             $request->session()->flash('error', $message);
 
@@ -126,7 +128,7 @@ trait ConsumesApi
      *
      * - 2xx        → the success closure (typically redirect with a flash)
      * - 422        → back with validation errors + old input (API is the validator)
-     * - 401/419    → back to login (token expired/revoked)
+     * - 401        → back to login (JWT expired/revoked — not Laravel session)
      * - other 4xx/5xx → back with the API's error message flashed
      *
      * @param  Closure(Response): RedirectResponse  $onSuccess
@@ -143,7 +145,7 @@ trait ConsumesApi
                 ->withErrors($response->json('errors', []));
         }
 
-        if (in_array($response->status(), [401, 419], true)) {
+        if ($response->status() === 401) {
             return redirect()
                 ->route('login')
                 ->with('error', __('web/session.expired'));
@@ -166,11 +168,16 @@ trait ConsumesApi
     }
 
     /**
-     * Copy Set-Cookie headers from a redirect (e.g. login issues the JWT cookie).
+     * Copy Set-Cookie headers from a redirect, and any cookies queued during the
+     * request (e.g. IssuesAuthCookie / RefreshJwtCookie via cookie()->queue).
      */
     protected function withRedirectCookies(JsonResponse $json, RedirectResponse $redirect): JsonResponse
     {
         foreach ($redirect->headers->getCookies() as $cookie) {
+            $json->headers->setCookie($cookie);
+        }
+
+        foreach (cookie()->getQueuedCookies() as $cookie) {
             $json->headers->setCookie($cookie);
         }
 
