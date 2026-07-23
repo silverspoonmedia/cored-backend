@@ -7,10 +7,11 @@ use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Models\UserQuota;
 use App\Domain\Service\Enums\EntitlementStatus;
+use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Services\ServiceEntitlementService;
 use App\Domain\Service\Support\FileHostingCatalog;
-use App\Domain\Service\Enums\PlanKind;
+use App\Support\Presentation\BytePresenter;
 use App\Support\Product\Models\ProductActivation;
 use Illuminate\Support\Collection;
 
@@ -23,10 +24,15 @@ class QuotaService
     /**
      * @return array{
      *     used_bytes: int,
+     *     used_bytes_human: string|null,
      *     pending_bytes: int,
+     *     pending_bytes_human: string|null,
      *     reserved_bytes: int,
+     *     reserved_bytes_human: string|null,
      *     quota_bytes: int,
+     *     quota_bytes_human: string|null,
      *     remaining_bytes: int|null,
+     *     remaining_bytes_human: string|null,
      *     state: string,
      *     collaborative_works: bool,
      *     can_create_workspace: bool,
@@ -50,10 +56,17 @@ class QuotaService
 
         return [
             'used_bytes' => $used,
+            'used_bytes_human' => BytePresenter::human($used),
             'pending_bytes' => $pending,
+            'pending_bytes_human' => BytePresenter::human($pending),
             'reserved_bytes' => $reserved,
+            'reserved_bytes_human' => BytePresenter::human($reserved),
             'quota_bytes' => $quota,
+            'quota_bytes_human' => BytePresenter::human($quota),
             'remaining_bytes' => $quota > 0 ? max(0, $quota - $reserved) : null,
+            'remaining_bytes_human' => $quota > 0
+                ? BytePresenter::human(max(0, $quota - $reserved))
+                : null,
             'state' => $state,
             // Paid main/storage-addon only. Free = no collab; grace = renew first.
             'collaborative_works' => $collab,

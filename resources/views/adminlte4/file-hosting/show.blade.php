@@ -6,13 +6,6 @@
     $visLink = \App\Domain\FileHosting\Enums\Visibility::AnyoneWithLink->value;
     $visPrivate = \App\Domain\FileHosting\Enums\Visibility::Private->value;
 
-    $formatBytes = function (int $bytes): string {
-        if ($bytes === 0) return '0 B';
-        if ($bytes < 1024) return $bytes . ' B';
-        if ($bytes < 1024 * 1024) return number_format($bytes / 1024, 1) . ' KB';
-        if ($bytes < 1024 * 1024 * 1024) return number_format($bytes / (1024 * 1024), 1) . ' MB';
-        return number_format($bytes / (1024 * 1024 * 1024), 1) . ' GB';
-    };
 @endphp
 
 <x-adminlte4::layouts.app :title="__('web/file-hosting.show_title')">
@@ -40,7 +33,7 @@
                         <div class="flex-grow-1 min-w-0">
                             <div class="fh-detail__hero-name">{{ $file['name'] ?? '' }}</div>
                             <div class="fh-detail__hero-meta">
-                                {{ $file['mime'] ?? __('web/file-hosting.type_file') }} · {{ $formatBytes((int) ($file['size'] ?? 0)) }}
+                                {{ $file['mime'] ?? __('web/file-hosting.type_file') }} · {{ $file['size_human'] ?? '0 B' }}
                             </div>
                         </div>
                     </div>
@@ -65,14 +58,14 @@
                         <div class="fh-stat">
                             <div class="fh-stat__icon"><i class="bi bi-clock-history"></i></div>
                             <div class="fh-stat__body">
-                                <div class="fh-stat__value small">{{ $file['last_viewed_at'] ?? '—' }}</div>
+                                <div class="fh-stat__value small">{{ $file['last_viewed_at_human'] ?? $file['last_viewed_at_formatted'] ?? $file['last_viewed_at'] ?? '—' }}</div>
                                 <div class="fh-stat__label">{{ __('web/file-hosting.stats.last_viewed') }}</div>
                             </div>
                         </div>
                         <div class="fh-stat">
                             <div class="fh-stat__icon"><i class="bi bi-clock-history"></i></div>
                             <div class="fh-stat__body">
-                                <div class="fh-stat__value small">{{ $file['last_downloaded_at'] ?? '—' }}</div>
+                                <div class="fh-stat__value small">{{ $file['last_downloaded_at_human'] ?? $file['last_downloaded_at_formatted'] ?? $file['last_downloaded_at'] ?? '—' }}</div>
                                 <div class="fh-stat__label">{{ __('web/file-hosting.stats.last_downloaded') }}</div>
                             </div>
                         </div>
@@ -88,7 +81,7 @@
                         <dd class="col-sm-9">{{ $file['mime'] ?? __('web/file-hosting.type_file') }}</dd>
 
                         <dt class="col-sm-3">{{ __('web/file-hosting.columns.size') }}</dt>
-                        <dd class="col-sm-9">{{ $formatBytes((int) ($file['size'] ?? 0)) }}</dd>
+                        <dd class="col-sm-9">{{ $file['size_human'] ?? '0 B' }}</dd>
 
                         @php
                             $showRegionKey = $file['region']
@@ -107,7 +100,7 @@
                         </dd>
 
                         <dt class="col-sm-3">{{ __('web/file-hosting.created_at') }}</dt>
-                        <dd class="col-sm-9">{{ $file['created_at'] ?? '—' }}</dd>
+                        <dd class="col-sm-9">{{ $file['created_at_formatted'] ?? $file['created_at'] ?? '—' }}</dd>
                     </dl>
                 </x-adminlte4::card>
             </div>

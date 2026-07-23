@@ -43,8 +43,8 @@
     <x-adminlte4::payments.payment-status-hero
         :eyebrow="__('web/payments.invoices.title')"
         :title="$invoice['invoice_number'] ?? $invoice['id'] ?? '—'"
-        :amount="$invoice['customer_gross_total'] ?? null"
-        :currency="$invoice['currency'] ?? 'IDR'"
+        :amount="$invoice['customer_gross_total_formatted'] ?? null"
+        :currency="''"
         :badges="$heroBadges"
     />
 
@@ -68,11 +68,11 @@
                 <div class="ois-sidebar-card__title">{{ __('web/payments.invoices.fields.total') }}</div>
                 <dl class="row mb-0 small">
                     <dt class="col-5">{{ __('web/payments.invoices.fields.subtotal') }}</dt>
-                    <dd class="col-7">{{ ($invoice['currency'] ?? '') }} {{ $invoice['subtotal'] ?? '—' }}</dd>
+                    <dd class="col-7">{{ $invoice['subtotal_formatted'] ?? '—' }}</dd>
                     <dt class="col-5">{{ __('web/payments.invoices.fields.fee') }}</dt>
-                    <dd class="col-7">{{ ($invoice['currency'] ?? '') }} {{ $invoice['payment_channel_fee'] ?? '—' }}</dd>
+                    <dd class="col-7">{{ $invoice['payment_channel_fee_formatted'] ?? '—' }}</dd>
                     <dt class="col-5 fw-bold">{{ __('web/payments.invoices.fields.total') }}</dt>
-                    <dd class="col-7 fw-bold">{{ ($invoice['currency'] ?? '') }} {{ $invoice['customer_gross_total'] ?? '—' }}</dd>
+                    <dd class="col-7 fw-bold">{{ $invoice['customer_gross_total_formatted'] ?? '—' }}</dd>
                 </dl>
             </div>
 
@@ -88,11 +88,11 @@
                         @endif
                     </dd>
                     <dt class="col-5">{{ __('web/payments.invoices.fields.paid_at') }}</dt>
-                    <dd class="col-7">{{ $invoice['paid_at'] ?? '—' }}</dd>
+                    <dd class="col-7">{{ $invoice['paid_at_formatted'] ?? $invoice['paid_at'] ?? '—' }}</dd>
                     <dt class="col-5">{{ __('web/payments.invoices.fields.expired_at') }}</dt>
-                    <dd class="col-7">{{ $invoice['expired_at'] ?? '—' }}</dd>
+                    <dd class="col-7">{{ $invoice['expired_at_formatted'] ?? $invoice['expired_at'] ?? '—' }}</dd>
                     <dt class="col-5">{{ __('web/payments.invoices.fields.created_at') }}</dt>
-                    <dd class="col-7">{{ $invoice['created_at'] ?? '—' }}</dd>
+                    <dd class="col-7">{{ $invoice['created_at_formatted'] ?? $invoice['created_at'] ?? '—' }}</dd>
                 </dl>
             </div>
 

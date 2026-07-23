@@ -35,6 +35,8 @@ Primary sell path: [Service](../service/README.md) checkout → `ServicePurchase
 
 **IDR amounts:** Service FX settlement rounds to **whole rupiah** (`ExchangeRateService`). Invoice `subtotal` / initial `customer_gross_total` are whole IDR before channel fee.
 
+**API display companions:** `InvoiceResource` / `SubscriptionResource` keep raw money + ISO timestamps and add `*_formatted` (money with currency code) and `*_formatted` / `*_human` (dates). Blade and DataTables bind companions only — see [platform/crud presentation](../../platform/crud.md#api-resource-presentation-dual-fields).
+
 ### iPaymu monetary reconcile
 
 On webhook / `checkTransaction` sync (`IpaymuInvoiceSynchronizer`):

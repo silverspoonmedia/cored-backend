@@ -4,6 +4,7 @@ namespace App\Domain\Notification\Http\Resources;
 
 use App\Domain\Notification\Models\ActivityNotification;
 use App\Domain\Notification\Notifications\NotificationType;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,6 +13,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class NotificationResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
@@ -28,7 +31,7 @@ class NotificationResource extends JsonResource
             'action_params' => $this->action_params ?? [],
             // `is_read` is set by the repository (withCount alias); default false.
             'is_read' => (bool) ($this->getAttribute('is_read') ?? false),
-            'created_at' => $this->created_at?->toIso8601String(),
+            ...$this->dateFields('created_at', $this->created_at),
         ];
     }
 

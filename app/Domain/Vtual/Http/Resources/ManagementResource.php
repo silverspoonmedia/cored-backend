@@ -3,12 +3,16 @@
 namespace App\Domain\Vtual\Http\Resources;
 
 use App\Domain\Vtual\Services\ManagementAccessService;
+use App\Http\Resources\Concerns\FormatsPresentation;
+use App\Support\Presentation\DatePresenter;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin \App\Domain\Vtual\Models\Management */
 class ManagementResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
@@ -33,16 +37,22 @@ class ManagementResource extends JsonResource
             'creators' => $this->whenLoaded('creatorAssignments', function () {
                 return $this->creatorAssignments
                     ->filter(fn ($a) => $a->left_at === null && $a->relationLoaded('creator'))
-                    ->map(fn ($a) => [
-                        'assignment_id' => $a->id,
-                        'joined_at' => $a->joined_at?->toIso8601String(),
-                        'creator' => (new CreatorResource($a->creator))->resolve(),
-                    ])
+                    ->map(function ($a) {
+                        [$iso, $formatted, $human] = DatePresenter::pack($a->joined_at);
+
+                        return [
+                            'assignment_id' => $a->id,
+                            'joined_at' => $iso,
+                            'joined_at_formatted' => $formatted,
+                            'joined_at_human' => $human,
+                            'creator' => (new CreatorResource($a->creator))->resolve(),
+                        ];
+                    })
                     ->values()
                     ->all();
             }),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            ...$this->dateFields('created_at', $this->created_at),
+            ...$this->dateFields('updated_at', $this->updated_at),
         ];
     }
 }

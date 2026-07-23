@@ -13,8 +13,15 @@
 
     <h1 class="ois-hero__title">{{ $title }}</h1>
 
-    @if ($amount !== null)
-        <p class="ois-hero__amount">{{ $currency }} {{ is_numeric($amount) ? number_format((float) $amount, 2) : $amount }}</p>
+    @if ($amount !== null && $amount !== '')
+        {{-- Prefer Resource *_formatted (currency included). Raw numeric + currency is legacy only. --}}
+        <p class="ois-hero__amount">
+            @if (is_numeric($amount))
+                {{ trim($currency.' '.$amount) }}
+            @else
+                {{ $amount }}
+            @endif
+        </p>
     @endif
 
     @if (is_array($badges) && $badges !== [])

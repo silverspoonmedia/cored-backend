@@ -24,7 +24,8 @@
                     @forelse ($services as $service)
                         @php
                             $prices = collect($service['prices'] ?? [])
-                                ->map(fn ($p) => ($p['currency'] ?? '').' '.number_format((float) ($p['amount'] ?? 0), 2))
+                                ->map(fn ($p) => $p['amount_formatted'] ?? trim(($p['currency'] ?? '').' '.($p['amount'] ?? '')))
+                                ->filter()
                                 ->implode(', ');
                         @endphp
                         <tr>

@@ -3,12 +3,15 @@
 namespace App\Domain\Vtual\Http\Resources;
 
 use App\Domain\Vtual\Services\CreatorAccessService;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin \App\Domain\Vtual\Models\Creator */
 class CreatorResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
@@ -39,8 +42,8 @@ class CreatorResource extends JsonResource
                 'externalLinks',
                 fn () => ExternalLinkResource::collection($this->externalLinks),
             ),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            ...$this->dateFields('created_at', $this->created_at),
+            ...$this->dateFields('updated_at', $this->updated_at),
         ];
     }
 }

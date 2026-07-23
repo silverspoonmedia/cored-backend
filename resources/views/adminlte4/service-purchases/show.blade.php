@@ -39,8 +39,8 @@
     <x-adminlte4::payments.payment-status-hero
         :eyebrow="__('web/services.breadcrumb')"
         :title="$serviceName"
-        :amount="data_get($purchase, 'settlement_amount', 0)"
-        :currency="data_get($purchase, 'settlement_currency', 'IDR')"
+        :amount="data_get($purchase, 'settlement_amount_formatted')"
+        :currency="''"
         :badges="$heroBadges"
     />
 
@@ -90,32 +90,24 @@
                     @endif
                     @if (data_get($purchase, 'list_amount') !== null)
                         <dt class="col-5">{{ __('web/services.show.list_amount') }}</dt>
-                        <dd class="col-7">
-                            {{ data_get($purchase, 'display_currency') }}
-                            {{ number_format((float) data_get($purchase, 'list_amount', 0), 2) }}
-                        </dd>
+                        <dd class="col-7">{{ data_get($purchase, 'list_amount_formatted') ?: '—' }}</dd>
                     @endif
                     @if ((float) data_get($purchase, 'credit_amount', 0) > 0)
                         <dt class="col-5">{{ __('web/services.show.credit_amount') }}</dt>
-                        <dd class="col-7">
-                            {{ data_get($purchase, 'display_currency') }}
-                            {{ number_format((float) data_get($purchase, 'credit_amount', 0), 2) }}
-                        </dd>
+                        <dd class="col-7">{{ data_get($purchase, 'credit_amount_formatted') ?: '—' }}</dd>
                     @endif
                     <dt class="col-5">{{ __('web/services.show.display_amount') }}</dt>
                     <dd class="col-7">
-                        {{ data_get($purchase, 'display_currency') }}
-                        {{ number_format((float) data_get($purchase, 'charge_amount', data_get($purchase, 'display_amount', 0)), 2) }}
+                        {{ data_get($purchase, 'charge_amount_formatted')
+                            ?: data_get($purchase, 'display_amount_formatted')
+                            ?: '—' }}
                     </dd>
                     @if ((int) data_get($purchase, 'surplus_days', 0) > 0)
                         <dt class="col-5">{{ __('web/services.show.surplus_days') }}</dt>
                         <dd class="col-7">{{ data_get($purchase, 'surplus_days') }}</dd>
                     @endif
                     <dt class="col-5">{{ __('web/services.show.settlement_amount') }}</dt>
-                    <dd class="col-7">
-                        {{ data_get($purchase, 'settlement_currency', 'IDR') }}
-                        {{ number_format((float) data_get($purchase, 'settlement_amount', 0), 2) }}
-                    </dd>
+                    <dd class="col-7">{{ data_get($purchase, 'settlement_amount_formatted') ?: '—' }}</dd>
                     <dt class="col-5">{{ __('web/services.show.fx_rate') }}</dt>
                     <dd class="col-7">{{ data_get($purchase, 'fx_rate') ?: '—' }}</dd>
                     <dt class="col-5">{{ __('web/services.show.status') }}</dt>
@@ -123,9 +115,9 @@
                     @if (data_get($purchase, 'period_start') || data_get($purchase, 'period_end'))
                         <dt class="col-5">{{ __('web/services.show.period') }}</dt>
                         <dd class="col-7">
-                            {{ data_get($purchase, 'period_start') ?: '—' }}
+                            {{ data_get($purchase, 'period_start_formatted') ?: data_get($purchase, 'period_start') ?: '—' }}
                             →
-                            {{ data_get($purchase, 'period_end') ?: '—' }}
+                            {{ data_get($purchase, 'period_end_formatted') ?: data_get($purchase, 'period_end') ?: '—' }}
                         </dd>
                     @endif
                     @if ($entitlement)

@@ -2,7 +2,7 @@
     /**
      * Quota progress bar.
      *
-     * @var array|null $quota  ['used_bytes' => int, 'quota_bytes' => int, 'remaining_bytes' => int, 'state' => string]
+     * @var array|null $quota  Resource-shaped usage payload with raw + *_human companions
      */
     if (! $quota) {
         return;
@@ -14,21 +14,8 @@
     $pct = $limit > 0 ? min(100, ($used / $limit) * 100) : 0;
     $fillClass = $pct >= 90 ? 'is-danger' : ($pct >= 75 ? 'is-warn' : '');
 
-    $formatBytes = function (int $bytes): string {
-        if ($bytes === 0) {
-            return '0 B';
-        }
-        if ($bytes < 1024) {
-            return $bytes . ' B';
-        }
-        if ($bytes < 1024 * 1024) {
-            return number_format($bytes / 1024, 1) . ' KB';
-        }
-        if ($bytes < 1024 * 1024 * 1024) {
-            return number_format($bytes / (1024 * 1024), 1) . ' MB';
-        }
-        return number_format($bytes / (1024 * 1024 * 1024), 1) . ' GB';
-    };
+    $usedLabel = $quota['used_bytes_human'] ?? '0 B';
+    $limitLabel = $quota['quota_bytes_human'] ?? null;
 
     $stateLabel = match ($state) {
         'paid' => __('web/file-hosting.collab.badge_paid'),
@@ -48,9 +35,9 @@
             <span class="badge {{ $stateClass }} ms-1" style="font-size: .65rem; vertical-align: middle;">{{ $stateLabel }}</span>
         </span>
         <span class="fh-quota__value">
-            {{ $formatBytes($used) }}
+            {{ $usedLabel }}
             @if ($limit > 0)
-                / {{ $formatBytes($limit) }}
+                / {{ $limitLabel ?? '0 B' }}
             @else
                 / {{ __('web/file-hosting.quota_unlimited') }}
             @endif

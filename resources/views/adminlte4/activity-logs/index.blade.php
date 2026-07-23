@@ -20,7 +20,7 @@
                             </td>
                             <td class="text-muted small">{{ $entry['subject_label'] ?? '—' }}</td>
                             <td class="text-muted small">{{ data_get($entry, 'causer.name', '—') }}</td>
-                            <td class="text-muted small">{{ $entry['created_at'] ?? '—' }}</td>
+                            <td class="text-muted small">{{ $entry['created_at_human'] ?? $entry['created_at_formatted'] ?? $entry['created_at'] ?? '—' }}</td>
                             <td class="text-end">
                                 <a href="{{ route('activity-logs.show', $entry['id']) }}" class="btn btn-outline-secondary btn-sm">
                                     {{ __('web/activity-log.view_detail') }}

@@ -29,14 +29,21 @@
                         { data: 'invoice_number', title: @json(__('web/payments.invoices.datatable.columns.invoice_number')) },
                         { data: 'status', title: @json(__('web/payments.invoices.datatable.columns.status')) },
                         {
-                            data: 'customer_gross_total',
+                            data: 'customer_gross_total_formatted',
                             title: @json(__('web/payments.invoices.datatable.columns.total')),
-                            render: function (value, type, row) {
-                                const currency = row.currency || '';
-                                return value != null ? currency + ' ' + value : '—';
+                            orderable: false,
+                            render: function (value) {
+                                return value != null && value !== '' ? value : '—';
                             },
                         },
-                        { data: 'created_at', title: @json(__('web/payments.invoices.datatable.columns.created_at')) },
+                        {
+                            data: 'created_at_formatted',
+                            title: @json(__('web/payments.invoices.datatable.columns.created_at')),
+                            orderable: false,
+                            render: function (value, type, row) {
+                                return value || row.created_at || '—';
+                            },
+                        },
                         {
                             data: 'actions',
                             title: @json(__('web/payments.invoices.datatable.columns.actions')),

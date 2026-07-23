@@ -41,7 +41,7 @@
                                     <span class="badge text-bg-primary" data-notification-status>{{ __('web/notifications.status.unread') }}</span>
                                 @endif
                             </td>
-                            <td class="text-muted small">{{ $notification['created_at'] }}</td>
+                            <td class="text-muted small">{{ $notification['created_at_human'] ?? $notification['created_at_formatted'] ?? $notification['created_at'] ?? '—' }}</td>
                         </tr>
                     @empty
                         <tr>

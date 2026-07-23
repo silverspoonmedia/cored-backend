@@ -3,6 +3,7 @@
 namespace App\Domain\Navigation\Http\Resources;
 
 use App\Domain\Navigation\Models\Menu;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 
 /**
@@ -10,14 +11,16 @@ use Illuminate\Http\Request;
  */
 class MenuDetailResource extends MenuListResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         return array_merge(parent::toArray($request), [
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            ...$this->dateFields('created_at', $this->created_at),
+            ...$this->dateFields('updated_at', $this->updated_at),
         ]);
     }
 }

@@ -79,7 +79,7 @@ Workspace-slot SKU is **not** a storage plan: does not raise GiB quota, does not
 
 **Paid gate:** `WorkspaceAccessService::assertOwnerEligibleForCollab` — requires `hasActivePaidFileHosting` on the **workspace owner** (create / invite / accept / team upload). Create also runs `assertCanCreateOwnedWorkspace` (slot limit). Joiner need not be paid.
 
-**Quota API flags:** `GET /api/v1/file-hosting/quota` includes `state` (`free`\|`paid`\|`grace`), `collaborative_works`, `can_create_workspace` (paid **and** under slot limit), `owned_workspace_used`, `owned_workspace_limit`, plus `used_bytes` (committed files), `pending_bytes` (non-expired pending uploads), `reserved_bytes` (`used + pending`), `remaining_bytes` against reserved.
+**Quota API flags:** `GET /api/v1/file-hosting/quota` includes `state` (`free`\|`paid`\|`grace`), `collaborative_works`, `can_create_workspace` (paid **and** under slot limit), `owned_workspace_used`, `owned_workspace_limit`, plus raw `used_bytes` / `pending_bytes` / `reserved_bytes` / `quota_bytes` / `remaining_bytes` and matching `*_human` companions (`BytePresenter`). `HostedFileResource` exposes `size` + `size_human` and dual-field timestamps. Blade uses companions only — no view-layer `$formatBytes`.
 
 **Blade UX:** Compact toolbar controls (not a full-width card). Free → upgrade CTA inside switcher dropdown + accept invite. Paid → create (while under limit), invite (token flash; no email delivery in MVP), members (owner **or** admin), activity in offcanvas. Web routes: `POST file-hosting/workspaces`, invites accept/store, member remove, archive.
 

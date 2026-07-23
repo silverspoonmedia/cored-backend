@@ -163,8 +163,8 @@
                                 </span>
                             </td>
                             <td>{{ $activation['source'] ?? '—' }}</td>
-                            <td>{{ isset($activation['activated_at']) ? \Illuminate\Support\Carbon::parse($activation['activated_at'])->diffForHumans() : '—' }}</td>
-                            <td>{{ isset($activation['updated_at']) ? \Illuminate\Support\Carbon::parse($activation['updated_at'])->diffForHumans() : '—' }}</td>
+                            <td>{{ $activation['activated_at_human'] ?? $activation['activated_at_formatted'] ?? $activation['activated_at'] ?? '—' }}</td>
+                            <td>{{ $activation['updated_at_human'] ?? $activation['updated_at_formatted'] ?? $activation['updated_at'] ?? '—' }}</td>
                             <td class="text-end">
                                 @if ($canManage)
                                     @if ($state === 'active')

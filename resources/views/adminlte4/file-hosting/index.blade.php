@@ -18,14 +18,6 @@
         ARRAY_FILTER_USE_BOTH,
     );
 
-    $formatBytes = function (int $bytes): string {
-        if ($bytes === 0) return '—';
-        if ($bytes < 1024) return $bytes . ' B';
-        if ($bytes < 1024 * 1024) return number_format($bytes / 1024, 1) . ' KB';
-        if ($bytes < 1024 * 1024 * 1024) return number_format($bytes / (1024 * 1024), 1) . ' MB';
-        return number_format($bytes / (1024 * 1024 * 1024), 1) . ' GB';
-    };
-
     $fmConfig = [
         'searchUrl' => route('file-hosting.search'),
         'browseUrl' => route('file-hosting.index', $ownerQuery),
@@ -305,7 +297,7 @@
                             </a>
                         </td>
                         <td class="fh-table__type">{{ $file['mime'] ?? __('web/file-hosting.type_file') }}</td>
-                        <td class="fh-table__size">{{ $formatBytes((int) ($file['size'] ?? 0)) }}</td>
+                        <td class="fh-table__size">{{ $file['size_human'] ?? '—' }}</td>
                         <td class="fh-table__region">
                             @php
                                 $regionKey = $file['region']
@@ -440,7 +432,7 @@
                                     $gridRegionKey = $file['region']
                                         ?? \App\Domain\FileHosting\Support\RegionResolver::keyForDisk((string) ($file['disk'] ?? ''));
                                 @endphp
-                                {{ $formatBytes((int) ($file['size'] ?? 0)) }}
+                                {{ $file['size_human'] ?? '—' }}
                                 @if ($gridRegionKey) · <span class="fh-file-card__region">{{ __('web/file-hosting.regions.'.$gridRegionKey) }}</span>@endif
                             </div>
                             <div class="fh-file-card__actions">

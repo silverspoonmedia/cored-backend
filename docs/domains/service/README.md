@@ -193,9 +193,9 @@ Purge rule: sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + ha
 | POST | `/api/v1/services/{id}/checkout` | Body `{ "currency": "USD" }` → purchase (+ invoice if charge > 0); quote fields on purchase |
 | GET | `/api/v1/service-purchases/{id}` | Purchase + invoice + **entitlement** (if any) |
 
-Catalog resource fields of note: `plan_kind`, `storage_bytes`.
+Catalog resource fields of note: `plan_kind`, `storage_bytes` (+ `storage_bytes_human`), prices as `amount` + `amount_formatted`.
 
-Purchase resource fields of note: `change_type`, `list_amount`, `credit_amount`, `charge_amount`, `surplus_days`, `period_start`, `period_end`, `entitlement.{status,quantity,ends_at,grace_ends_at,is_permanent}`.
+Purchase resource fields of note: `change_type`, raw money (`list_amount`, `credit_amount`, `charge_amount`, `display_amount`, `settlement_amount`) each with `*_formatted`, `surplus_days`, period timestamps with `*_formatted` / `*_human`, `entitlement.{status,quantity,ends_at,grace_ends_at,is_permanent}` (dates dual-field). Display contract: [platform/crud presentation](../../platform/crud.md#api-resource-presentation-dual-fields).
 
 ## Web (Blade)
 

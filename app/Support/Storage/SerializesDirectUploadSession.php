@@ -2,6 +2,8 @@
 
 namespace App\Support\Storage;
 
+use App\Support\Presentation\DatePresenter;
+
 /**
  * Shared JSON shape for direct-upload session responses (init + status).
  *
@@ -27,6 +29,7 @@ trait SerializesDirectUploadSession
         array $extra = [],
     ): array {
         $upload = $result['upload'];
+        [$expiresIso, $expiresFormatted, $expiresHuman] = DatePresenter::pack($upload->expires_at ?? null);
 
         $payload = array_merge([
             'upload_id' => $upload->id,
@@ -35,7 +38,9 @@ trait SerializesDirectUploadSession
             'chunk_size' => $result['chunk_size'],
             'part_count' => $result['part_count'],
             'parts' => $result['parts'],
-            'expires_at' => $upload->expires_at?->toIso8601String(),
+            'expires_at' => $expiresIso,
+            'expires_at_formatted' => $expiresFormatted,
+            'expires_at_human' => $expiresHuman,
         ], $extra);
 
         if ($includeRecorded) {

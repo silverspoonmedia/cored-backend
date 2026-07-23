@@ -3,6 +3,7 @@
 namespace App\Domain\Vtual\Http\Resources;
 
 use App\Domain\Vtual\Models\PlatformCredential;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -13,6 +14,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class PlatformCredentialResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
@@ -35,16 +38,16 @@ class PlatformCredentialResource extends JsonResource
             'secret_hint' => $credential->secret_hint,
             'has_secret' => $credential->secret_hint !== null && $credential->secret_hint !== '',
             'has_runtime' => $credential->hasRuntimePayload(),
-            'runtime_expires_at' => $credential->runtimeExpiresAt()?->toIso8601String(),
-            'verified_at' => $credential->verified_at?->toIso8601String(),
-            'last_used_at' => $credential->last_used_at?->toIso8601String(),
-            'last_error_at' => $credential->last_error_at?->toIso8601String(),
+            ...$this->dateFields('runtime_expires_at', $credential->runtimeExpiresAt()),
+            ...$this->dateFields('verified_at', $credential->verified_at),
+            ...$this->dateFields('last_used_at', $credential->last_used_at),
+            ...$this->dateFields('last_error_at', $credential->last_error_at),
             'last_error_message' => $credential->last_error_message,
             'consecutive_auth_failures' => (int) ($credential->consecutive_auth_failures ?? 0),
-            'failover_skip_until' => $credential->failover_skip_until?->toIso8601String(),
+            ...$this->dateFields('failover_skip_until', $credential->failover_skip_until),
             'created_by' => $credential->created_by,
-            'created_at' => $credential->created_at?->toIso8601String(),
-            'updated_at' => $credential->updated_at?->toIso8601String(),
+            ...$this->dateFields('created_at', $credential->created_at),
+            ...$this->dateFields('updated_at', $credential->updated_at),
         ];
     }
 }

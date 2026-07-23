@@ -166,7 +166,7 @@
                 <ul class="list-group list-group-flush small fh-team-offcanvas__activity">
                     @foreach ($workspaceActivity->take(30) as $row)
                         <li class="list-group-item px-0 py-1">
-                            <span class="text-muted">{{ $row['created_at'] ?? '' }}</span>
+                            <span class="text-muted">{{ $row['created_at_formatted'] ?? $row['created_at'] ?? '' }}</span>
                             —
                             <strong>{{ $row['causer']['email'] ?? $row['causer']['name'] ?? 'system' }}</strong>
                             {{ $row['event'] ?? $row['description'] ?? '' }}

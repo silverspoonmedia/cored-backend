@@ -20,7 +20,7 @@
             <dd class="col-sm-9">{{ $subscription['billing_cycle'] ?? '—' }}</dd>
 
             <dt class="col-sm-3">{{ __('web/payments.subscriptions.fields.amount') }}</dt>
-            <dd class="col-sm-9">{{ ($subscription['currency'] ?? '') }} {{ $subscription['amount'] ?? '—' }}</dd>
+            <dd class="col-sm-9">{{ $subscription['amount_formatted'] ?? '—' }}</dd>
 
             <dt class="col-sm-3">{{ __('web/payments.subscriptions.fields.status') }}</dt>
             <dd class="col-sm-9"><span class="badge text-bg-light border">{{ $subscription['status'] ?? '—' }}</span></dd>
@@ -29,16 +29,16 @@
             <dd class="col-sm-9">{{ ! empty($subscription['auto_renew']) ? 'Yes' : 'No' }}</dd>
 
             <dt class="col-sm-3">{{ __('web/payments.subscriptions.fields.started_at') }}</dt>
-            <dd class="col-sm-9">{{ $subscription['started_at'] ?? '—' }}</dd>
+            <dd class="col-sm-9">{{ $subscription['started_at_formatted'] ?? $subscription['started_at'] ?? '—' }}</dd>
 
             <dt class="col-sm-3">{{ __('web/payments.subscriptions.fields.expires_at') }}</dt>
-            <dd class="col-sm-9">{{ $subscription['expires_at'] ?? '—' }}</dd>
+            <dd class="col-sm-9">{{ $subscription['expires_at_formatted'] ?? $subscription['expires_at'] ?? '—' }}</dd>
 
             <dt class="col-sm-3">{{ __('web/payments.subscriptions.fields.trial_ends_at') }}</dt>
-            <dd class="col-sm-9">{{ $subscription['trial_ends_at'] ?? '—' }}</dd>
+            <dd class="col-sm-9">{{ $subscription['trial_ends_at_formatted'] ?? $subscription['trial_ends_at'] ?? '—' }}</dd>
 
             <dt class="col-sm-3">{{ __('web/payments.subscriptions.fields.created_at') }}</dt>
-            <dd class="col-sm-9">{{ $subscription['created_at'] ?? '—' }}</dd>
+            <dd class="col-sm-9">{{ $subscription['created_at_formatted'] ?? $subscription['created_at'] ?? '—' }}</dd>
         </dl>
 
         <x-slot:actions>

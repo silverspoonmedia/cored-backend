@@ -14,8 +14,15 @@
     $isPayable = in_array($status, ['pending', 'challenge'], true);
     $gatewayName = data_get($invoice, 'payment_gateway.display_name', data_get($invoice, 'payment_gateway.name'));
     $showGateway = data_get($invoice, 'payment_gateway.id') || data_get($invoice, 'payment_channel_code');
-    $currency = data_get($invoice, 'currency', 'IDR');
-    $amount = number_format((float) data_get($invoice, 'customer_gross_total', 0), 2);
+    // Prefer Resource companion (includes currency). Raw fallback keeps code + number.
+    $formattedTotal = data_get($invoice, 'customer_gross_total_formatted');
+    if (is_string($formattedTotal) && $formattedTotal !== '') {
+        $currency = '';
+        $amount = $formattedTotal;
+    } else {
+        $currency = data_get($invoice, 'currency', 'IDR');
+        $amount = data_get($invoice, 'customer_gross_total', '0');
+    }
     $useChannelCheckout = $checkoutMode === 'channel' && is_array($paymentChannels) && $paymentChannels !== [];
 
     $channelKindIcons = [

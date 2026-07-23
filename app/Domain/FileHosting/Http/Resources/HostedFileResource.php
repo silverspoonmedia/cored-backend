@@ -5,12 +5,15 @@ namespace App\Domain\FileHosting\Http\Resources;
 use App\Domain\FileHosting\Enums\Visibility;
 use App\Domain\FileHosting\Services\VisibilityService;
 use App\Domain\FileHosting\Support\RegionResolver;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin \App\Domain\FileHosting\Models\HostedFile */
 class HostedFileResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
@@ -31,18 +34,18 @@ class HostedFileResource extends JsonResource
             'disk' => $this->disk,
             'region' => RegionResolver::keyForDisk($this->disk),
             'path' => $this->path,
-            'size' => $this->size,
+            ...$this->byteFields('size', $this->size),
             'mime' => $this->mime,
             'checksum' => $this->checksum,
             'visibility' => $visibility,
             'share_url' => $shareUrl,
             'download_count' => (int) $this->download_count,
             'view_count' => (int) $this->view_count,
-            'last_downloaded_at' => $this->last_downloaded_at?->toIso8601String(),
-            'last_viewed_at' => $this->last_viewed_at?->toIso8601String(),
-            'deleted_at' => $this->deleted_at?->toIso8601String(),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            ...$this->dateFields('last_downloaded_at', $this->last_downloaded_at),
+            ...$this->dateFields('last_viewed_at', $this->last_viewed_at),
+            ...$this->dateFields('deleted_at', $this->deleted_at),
+            ...$this->dateFields('created_at', $this->created_at),
+            ...$this->dateFields('updated_at', $this->updated_at),
         ];
     }
 }

@@ -2,12 +2,15 @@
 
 namespace App\Domain\Vtual\Http\Resources;
 
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin \App\Domain\Vtual\Models\ChannelClaim */
 class ChannelClaimResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
@@ -29,9 +32,9 @@ class ChannelClaimResource extends JsonResource
                 ? $this->closed_reason->value
                 : $this->closed_reason,
             'attempt_count' => $this->attempt_count,
-            'last_attempt_at' => $this->last_attempt_at?->toIso8601String(),
-            'expires_at' => $this->expires_at?->toIso8601String(),
-            'verified_at' => $this->verified_at?->toIso8601String(),
+            ...$this->dateFields('last_attempt_at', $this->last_attempt_at),
+            ...$this->dateFields('expires_at', $this->expires_at),
+            ...$this->dateFields('verified_at', $this->verified_at),
             'verified_via' => $this->verified_via instanceof \BackedEnum
                 ? $this->verified_via->value
                 : $this->verified_via,
@@ -45,8 +48,8 @@ class ChannelClaimResource extends JsonResource
                 'name' => $this->user?->name,
                 'email' => $this->user?->email,
             ]),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            ...$this->dateFields('created_at', $this->created_at),
+            ...$this->dateFields('updated_at', $this->updated_at),
         ];
     }
 }

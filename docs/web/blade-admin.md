@@ -87,6 +87,19 @@ Layout namespace: `WEB_LAYOUT` / `config/web.php` (default `adminlte4`).
 
 CDN AdminLTE 4 / Bootstrap 5 / Icons. Scripts order: `MonolithApi` → `ajax-form` → page scripts. Forms: `x-adminlte4::form.ajax`. Select2: [ui-patterns](ui-patterns.md).
 
+### Display data from API Resources
+
+Blade is an API consumer. Money, dates, and byte sizes arrive **already human-readable** from Eloquent Resources (dual fields). See [platform/crud.md — API Resource presentation](../platform/crud.md#api-resource-presentation-dual-fields).
+
+| Do | Don't |
+|----|--------|
+| Dump `amount_formatted`, `created_at_formatted` / `created_at_human`, `size_human` | `number_format(...)` on money from API |
+| Bind DataTables columns to `*_formatted` / `*_human` | Concatenate `currency + ' ' + raw` in JS |
+| Use quota `used_bytes_human` / `quota_bytes_human` | Copy-paste `$formatBytes` closures in Blade |
+| Pass preformatted strings into payment hero / checkout callouts | `Carbon::parse(...)->diffForHumans()` in views |
+
+Raw numeric/ISO fields remain available for conditionals (`if ((float) credit_amount > 0)`) and math — never for primary display.
+
 ### Theming
 
 Soft override CSS layer (light/dark) under layout assets — keep tokenized variables.

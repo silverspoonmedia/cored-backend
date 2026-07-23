@@ -6,6 +6,7 @@ use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
 use App\Domain\Service\Models\Service;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,6 +15,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class ServiceResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
@@ -33,11 +36,11 @@ class ServiceResource extends JsonResource
             'plan_kind' => $this->plan_kind instanceof PlanKind
                 ? $this->plan_kind->value
                 : $this->plan_kind,
-            'storage_bytes' => (int) $this->storage_bytes,
+            ...$this->byteFields('storage_bytes', $this->storage_bytes),
             'status' => $status instanceof ServiceStatus ? $status->value : (string) $status,
             'prices' => ServicePriceResource::collection($this->whenLoaded('prices')),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            ...$this->dateFields('created_at', $this->created_at),
+            ...$this->dateFields('updated_at', $this->updated_at),
         ];
     }
 }

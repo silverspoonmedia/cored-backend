@@ -71,6 +71,41 @@ Reference for shared-repo CRUD: Identity `UserController` → user services/repo
 
 API envelope: `ApiResponse` (`status`, `message`, optional `data`). List/show use Eloquent API Resources under `App\Domain\{Domain}\Http\Resources\…`.
 
+## API Resource presentation (dual fields)
+
+Human-readable display is produced **in Eloquent Resources** (or presenters that emit API arrays), never in Blade/services/models.
+
+| Kind | Raw field (machine) | Display companions |
+|------|---------------------|--------------------|
+| DateTime | `created_at` ISO-8601 | `created_at_formatted` (absolute), `created_at_human` (relative) |
+| Money | `amount` / `subtotal` numeric | `{field}_formatted` (`CURRENCY` + locale number, 2 dp) |
+| Bytes | `size` / `storage_bytes` int | `{field}_human` (`1.5 MB`) |
+
+**Helpers**
+
+| Piece | Role |
+|-------|------|
+| `App\Support\Presentation\{Date,Money,Byte}Presenter` | Pure formatters; locale from `app()->getLocale()` |
+| `App\Http\Resources\Concerns\FormatsPresentation` | `dateFields` / `moneyFields` / `byteFields` merge helpers for `toArray()` |
+
+```php
+return [
+    ...$this->dateFields('created_at', $this->created_at),
+    ...$this->moneyFields('subtotal', $this->subtotal, $this->currency),
+    ...$this->byteFields('size', $this->size),
+];
+```
+
+Rules:
+
+- Null raw → null companions (not empty string).
+- Keep raw types for math / gateway / interop; companions are display-only additive (non-breaking).
+- Money always pairs with the currency field on the same payload (`currency`, `display_currency`, `settlement_currency`).
+- Non-Resource array presenters (`UserPresenter`, upload session serializers, quota usage) call the same `*Presenter` classes.
+- **Do not** `number_format` / `diffForHumans` / ad-hoc byte math in Blade for API data.
+
+Tests: `tests/Unit/Support/Presentation/*`, `tests/Unit/Http/Resources/PresentationResourceTest.php`.
+
 ## Master-detail / aggregate writes
 
 Multi-table atomic writes → **dedicated repository** + `DB::transaction()`.
@@ -91,7 +126,8 @@ Do not extend `EloquentCrudRepository` with domain methods.
 1. Form Request(s) + `authorize()`
 2. Service + `BusinessRuleException` subclasses
 3. Shared or dedicated repository
-4. API Resource(s) for list/show
+4. API Resource(s) for list/show — dual-field presentation for any date/money/bytes (see above)
 5. Thin controller
-6. Tests under `tests/Domain/{Domain}/`
+6. Tests under `tests/Domain/{Domain}/` (assert companions when display fields matter)
 7. Routes under `routes/api/v1/{slug}.php`
+8. Blade/DataTables consume `*_formatted` / `*_human` only — no view-layer reformatting

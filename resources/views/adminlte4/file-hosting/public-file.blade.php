@@ -1,12 +1,3 @@
-@php
-    $formatBytes = function (int $bytes): string {
-        if ($bytes === 0) return '0 B';
-        if ($bytes < 1024) return $bytes . ' B';
-        if ($bytes < 1024 * 1024) return number_format($bytes / 1024, 1) . ' KB';
-        if ($bytes < 1024 * 1024 * 1024) return number_format($bytes / (1024 * 1024), 1) . ' MB';
-        return number_format($bytes / (1024 * 1024 * 1024), 1) . ' GB';
-    };
-@endphp
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-bs-theme="light">
 <head>
@@ -39,7 +30,7 @@
                 <div class="fh-public__meta-label">{{ __('web/file-hosting.columns.type') }}</div>
                 <div class="fh-public__meta-value">{{ $file['mime'] ?? '—' }}</div>
                 <div class="fh-public__meta-label">{{ __('web/file-hosting.columns.size') }}</div>
-                <div class="fh-public__meta-value">{{ $formatBytes((int) ($file['size'] ?? 0)) }}</div>
+                <div class="fh-public__meta-value">{{ $file['size_human'] ?? '0 B' }}</div>
             </div>
             <div class="fh-public__actions">
                 <a href="{{ $downloadUrl }}" class="btn btn-primary btn-lg">

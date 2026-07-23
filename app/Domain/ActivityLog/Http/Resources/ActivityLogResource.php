@@ -5,6 +5,7 @@ namespace App\Domain\ActivityLog\Http\Resources;
 use App\Domain\ActivityLog\Support\CryptoActivityPropertyPresenter;
 use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Models\Menu;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -15,6 +16,8 @@ use Spatie\Activitylog\Models\Activity;
  */
 class ActivityLogResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
@@ -32,7 +35,7 @@ class ActivityLogResource extends JsonResource
             'causer' => $this->resolveCauser(),
             'attribute_changes' => $this->attribute_changes?->toArray() ?? [],
             'properties' => $this->resolveProperties(),
-            'created_at' => $this->created_at?->toIso8601String(),
+            ...$this->dateFields('created_at', $this->created_at),
         ];
     }
 
