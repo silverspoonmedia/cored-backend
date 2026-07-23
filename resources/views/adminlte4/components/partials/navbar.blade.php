@@ -79,7 +79,7 @@
                     <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
                         <span class="dropdown-item dropdown-header d-flex justify-content-between align-items-center">
                             <span data-notification-header>{{ __('web/notifications.title') }}</span>
-                            <x-adminlte4::form.ajax :action="route('notifications.read-all')" :show-alert="false" class="m-0">
+                            <x-adminlte4::form.ajax :action="route('notifications.read-all')" :show-alert="false" class="m-0" data-notification-read-all-form>
                                 <button type="submit" class="btn btn-link btn-sm p-0 text-decoration-none" data-notification-read-all>
                                     {{ __('web/notifications.mark_all_read') }}
                                     <span class="spinner-border spinner-border-sm d-none ms-1" data-form-submit-spinner role="status" aria-hidden="true"></span>

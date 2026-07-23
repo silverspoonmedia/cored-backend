@@ -163,6 +163,16 @@ function initNotificationBell(config) {
     const headerDefault = header ? header.textContent : '';
 
     function setBadge(count) {
+        const readAllButton = bell.querySelector('[data-notification-read-all]');
+
+        if (readAllButton) {
+            readAllButton.disabled = count <= 0;
+        }
+
+        document.dispatchEvent(new CustomEvent('notification-unread-count:changed', {
+            detail: { unread: count },
+        }));
+
         if (count > 0) {
             badge.textContent = count > 99 ? '99+' : String(count);
             badge.classList.remove('d-none');
@@ -298,6 +308,8 @@ function initNotificationBell(config) {
             tabSync.addEventListener('message', (event) => {
                 if (event.data?.type === 'ping') {
                     onRealtimePing(event.data.eventData || null, true);
+                } else if (event.data?.type === 'read-all') {
+                    applyReadAllState(false);
                 }
             });
         } catch {
@@ -472,16 +484,25 @@ function initNotificationBell(config) {
 
     bell.addEventListener('show.bs.dropdown', refreshList);
 
-    const readAll = bell.querySelector('[data-notification-read-all]');
-
-    if (readAll) {
-        readAll.closest('form')?.addEventListener('submit', () => {
-            setTimeout(() => {
-                refreshBadge();
-                refreshList();
-            }, 400);
+    function applyReadAllState(syncTabs = true) {
+        setBadge(0);
+        list?.querySelectorAll('[data-notification-id]').forEach((item) => {
+            item.classList.remove('fw-semibold');
         });
+        document.dispatchEvent(new CustomEvent('notification-read-all:applied'));
+
+        if (syncTabs) {
+            tabSync?.postMessage({ type: 'read-all', at: Date.now() });
+        }
     }
+
+    // Generic AJAX infrastructure emits success with the submitted form. Apply
+    // mark-all state immediately; no redirect, hard reload, timer, or count fetch.
+    document.addEventListener('ajax-form:success', (event) => {
+        if (event.detail?.form?.matches('[data-notification-read-all-form]')) {
+            applyReadAllState(true);
+        }
+    });
 
     if (realtime) {
         startRealtime();

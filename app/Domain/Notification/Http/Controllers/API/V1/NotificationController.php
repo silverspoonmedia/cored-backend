@@ -81,7 +81,7 @@ class NotificationController extends Controller
         $count = $this->notifications->markAllAsRead($this->actor());
 
         return $this->successResponse(
-            ['marked' => $count],
+            ['marked' => $count, 'unread' => 0],
             __('api/notifications.marked_all_read'),
         );
     }
