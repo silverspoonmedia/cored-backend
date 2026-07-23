@@ -116,6 +116,68 @@ class NotificationTest extends TestCase
             ->assertJsonCount(1, 'data');
     }
 
+    public function test_updating_a_user_also_broadcasts_a_list_reload_to_root_and_admin(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $target = $this->userWithRole('Moderator');
+
+        $this->actingAsJwt($admin)
+            ->putJson("/api/v1/users/{$target->id}", ['name' => 'Renamed'])
+            ->assertOk();
+
+        // Broadcast list-change signal: Root + Admin audience, users-table reload,
+        // subject NOT a personal target.
+        $broadcast = ActivityNotification::query()
+            ->where('type', NotificationType::UserUpdated->value)
+            ->firstOrFail();
+        $roles = $broadcast->roles->pluck('name')->sort()->values()->all();
+        $this->assertSame(['Admin', 'Root'], $roles);
+        $this->assertFalse($broadcast->targetUsers->contains('id', $target->id));
+        $this->assertSame('users-table', NotificationType::UserUpdated->tableId());
+    }
+
+    public function test_admin_editing_another_user_does_not_see_the_personal_account_updated(): void
+    {
+        // Regression for the mis-target bug: editing khaled must not surface the
+        // personal "Your account was updated" note in the actor-admin's bell,
+        // even if a stray role pivot polluted the type setting.
+        $admin = $this->userWithRole('Admin');
+        $target = $this->userWithRole('Moderator');
+
+        $this->actingAsJwt($admin)
+            ->putJson("/api/v1/users/{$target->id}", ['name' => 'Renamed'])
+            ->assertOk();
+
+        // Admin sees the broadcast list-reload note (user_updated) but never the
+        // personal account_updated addressed to the target.
+        $adminList = $this->actingAsJwt($admin)
+            ->getJson('/api/v1/notifications')
+            ->assertOk()
+            ->json('data');
+
+        $types = array_column($adminList, 'type');
+        $this->assertContains(NotificationType::UserUpdated->value, $types);
+        $this->assertNotContains(NotificationType::AccountUpdated->value, $types);
+    }
+
+    public function test_deleting_a_user_broadcasts_a_list_reload_to_root_and_admin(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $target = $this->userWithRole('User');
+
+        $this->actingAsJwt($admin)
+            ->deleteJson("/api/v1/users/{$target->id}")
+            ->assertOk();
+
+        $broadcast = ActivityNotification::query()
+            ->where('type', NotificationType::UserDeleted->value)
+            ->firstOrFail();
+        $roles = $broadcast->roles->pluck('name')->sort()->values()->all();
+        $this->assertSame(['Admin', 'Root'], $roles);
+        $this->assertSame($target->email, $broadcast->data['email']);
+        $this->assertSame('users-table', NotificationType::UserDeleted->tableId());
+    }
+
     public function test_self_edit_does_not_create_a_personal_notification(): void
     {
         // Self-edit can't reach the HTTP endpoint (UserPolicy denies equal-level
@@ -196,7 +258,37 @@ class NotificationTest extends TestCase
         );
 
         Event::assertDispatched(UserActivityNotificationReceived::class, function (UserActivityNotificationReceived $event) use ($alice): bool {
-            return $event->userId === $alice->id;
+            return $event->userId === $alice->id
+                && $event->unreadCount === 1
+                && $event->broadcastWith()['unread_count'] === 1;
+        });
+    }
+
+    public function test_realtime_payload_carries_absolute_unread_count_for_recipient(): void
+    {
+        Event::fake([UserActivityNotificationReceived::class]);
+
+        $this->configurePusherBroadcasting();
+        config(['notifications.delivery' => 'realtime']);
+
+        $alice = $this->userWithRole('User');
+
+        // First notification creates unread count 1; second event must carry 2.
+        app(NotificationService::class)->sendToUsers(
+            NotificationType::AccountUpdated,
+            [$alice->id],
+            ['name' => $alice->name, 'actor' => 'Admin User'],
+        );
+        app(NotificationService::class)->sendToUsers(
+            NotificationType::AccountUpdated,
+            [$alice->id],
+            ['name' => $alice->name, 'actor' => 'Admin User'],
+        );
+
+        Event::assertDispatched(UserActivityNotificationReceived::class, function (UserActivityNotificationReceived $event) use ($alice): bool {
+            return $event->userId === $alice->id
+                && $event->unreadCount === 2
+                && $event->broadcastWith()['unread_count'] === 2;
         });
     }
 

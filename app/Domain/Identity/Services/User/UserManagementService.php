@@ -114,10 +114,11 @@ class UserManagementService
             }
         }
 
-        // Personal notification: tell the affected user their account changed —
-        // but not when they edited themselves (they already know). Audience is
-        // resolved from notification type settings (notify_subject_user).
         if ($actor->id !== $user->id) {
+            // Personal notification: tell the affected user their account changed.
+            // Force roles: [] so a polluted type-setting can't broadcast this
+            // personal note to admin roles — audience is the subject only
+            // (via notify_subject_user + subject_user_id).
             ActivityNotificationEvent::dispatch(
                 NotificationType::AccountUpdated,
                 [
@@ -125,6 +126,20 @@ class UserManagementService
                     'actor' => $actor->name,
                     'subject_user_id' => $user->id,
                 ],
+                roles: [],
+            );
+
+            // Broadcast list-change signal to Root + Admin so any open /users
+            // DataTable reloads live. Separate from the personal note above.
+            ActivityNotificationEvent::dispatch(
+                NotificationType::UserUpdated,
+                [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'actor' => $actor->name,
+                ],
+                actionRoute: 'users.edit',
+                actionParams: ['user' => $user->id],
             );
         }
 
@@ -133,7 +148,23 @@ class UserManagementService
 
     public function delete(User $actor, string $id): void
     {
+        // Capture identity before soft delete so the broadcast can name the row.
+        $user = $this->users->findByIdOrFail($id);
+        $name = $user->name;
+        $email = $user->email;
+
         $this->users->softDelete($id);
+
+        // Broadcast list-change signal to Root + Admin so open /users tables
+        // reload. No action route — the row is gone.
+        ActivityNotificationEvent::dispatch(
+            NotificationType::UserDeleted,
+            [
+                'name' => $name,
+                'email' => $email,
+                'actor' => $actor->name,
+            ],
+        );
     }
 
     private function assertRoleAssignable(User $actor, string $roleName): void

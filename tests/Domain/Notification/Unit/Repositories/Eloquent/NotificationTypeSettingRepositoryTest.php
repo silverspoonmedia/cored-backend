@@ -73,4 +73,37 @@ class NotificationTypeSettingRepositoryTest extends TestCase
 
         $this->assertSame(['Moderator'], $audience['roles']);
     }
+
+    /**
+     * Regression: the snapshot cache must store plain primitives, not hydrated
+     * Eloquent models. Caching model graphs in a persistent store can deserialize
+     * into __PHP_Incomplete_Class and blow up resolveAudience with a TypeError.
+     * A cache round-trip (rememberForever ➜ get) must still resolve cleanly.
+     */
+    public function test_resolve_audience_reads_from_cached_primitive_snapshot(): void
+    {
+        $repo = new NotificationTypeSettingRepository;
+
+        $setting = NotificationTypeSetting::factory()->create([
+            'type' => NotificationType::UserCreated->value,
+            'notify_subject_user' => false,
+        ]);
+        $setting->roles()->sync(Role::query()->whereIn('name', ['Root', 'Admin'])->pluck('id'));
+
+        $repo->flushCache();
+
+        // First call populates the cache.
+        $first = $repo->resolveAudience(NotificationType::UserCreated);
+
+        // Second call (fresh repo instance) must read the cached snapshot and
+        // still return the same primitive audience without touching models.
+        $second = (new NotificationTypeSettingRepository)->resolveAudience(NotificationType::UserCreated);
+
+        $cached = \Illuminate\Support\Facades\Cache::get('notification_type_settings.snapshot');
+
+        $this->assertIsArray($cached, 'snapshot cache must hold a plain array');
+        $this->assertIsArray($cached[NotificationType::UserCreated->value]['roles'] ?? null);
+        $this->assertEqualsCanonicalizing(['Root', 'Admin'], $first['roles']);
+        $this->assertEqualsCanonicalizing($first['roles'], $second['roles']);
+    }
 }

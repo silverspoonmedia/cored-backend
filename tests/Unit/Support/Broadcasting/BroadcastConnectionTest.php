@@ -92,4 +92,33 @@ class BroadcastConnectionTest extends TestCase
             'authEndpoint' => url('/broadcasting/auth'),
         ], BroadcastConnection::clientConfig());
     }
+
+    public function test_client_config_strips_default_pusher_rest_api_host(): void
+    {
+        // Laravel's pusher options default host to api-{cluster}.pusher.com for
+        // the server-side REST client. That must not reach Echo as wsHost.
+        config([
+            'notifications.delivery' => 'realtime',
+            'broadcasting.default' => 'pusher',
+            'broadcasting.connections.pusher' => [
+                'driver' => 'pusher',
+                'key' => 'public-key',
+                'secret' => 'secret',
+                'app_id' => 'app',
+                'options' => [
+                    'cluster' => 'eu',
+                    'host' => 'api-eu.pusher.com',
+                    'port' => 443,
+                    'scheme' => 'https',
+                ],
+            ],
+        ]);
+
+        $config = BroadcastConnection::clientConfig();
+
+        $this->assertNotNull($config);
+        $this->assertNull($config['host']);
+        $this->assertSame('eu', $config['cluster']);
+        $this->assertSame('public-key', $config['key']);
+    }
 }
