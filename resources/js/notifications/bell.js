@@ -442,7 +442,14 @@ function initNotificationBell(config) {
         }
 
         try {
-            echoInstance = createNotificationEcho(broadcast, csrf);
+            // Reuse a page-level Echo when File Hosting (or another module) already
+            // opened the socket — avoids double Pusher connections.
+            if (window.__monolithEcho) {
+                echoInstance = window.__monolithEcho;
+            } else {
+                echoInstance = createNotificationEcho(broadcast, csrf);
+                window.__monolithEcho = echoInstance;
+            }
 
             // Single source of truth for realtime health. Polling is gated behind a
             // grace window so a healthy socket never runs polling in parallel; a

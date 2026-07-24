@@ -7,6 +7,7 @@ use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
+use App\Domain\FileHosting\Support\FileHostingRealtime;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
 use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
@@ -32,6 +33,7 @@ class DirectUploadService
         private readonly QuotaService $quota,
         private readonly WorkspaceAccessService $workspaceAccess,
         private readonly WorkspaceActivityRecorder $activity,
+        private readonly FileHostingRealtime $realtime,
         private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
         private readonly S3DirectUploadEngine $engine = new S3DirectUploadEngine,
     ) {}
@@ -115,6 +117,8 @@ class DirectUploadService
             ),
         );
 
+        $this->realtime->quotaChanged($ownerId);
+
         return [
             'upload' => $upload,
             'strategy' => $strategy,
@@ -197,7 +201,7 @@ class DirectUploadService
         // Access check outside lock (cheap fail-fast); re-lock + re-validate inside txn.
         $this->findUsableUpload($actor, $uploadUuid);
 
-        return DB::transaction(function () use ($actor, $uploadUuid, $parts): array {
+        $result = DB::transaction(function () use ($actor, $uploadUuid, $parts): array {
             $upload = FileUpload::query()
                 ->whereKey($uploadUuid)
                 ->lockForUpdate()
@@ -288,6 +292,12 @@ class DirectUploadService
                 'file' => $file,
             ];
         });
+
+        // Broadcast after commit so peers never see a listing for a rolled-back row.
+        $this->realtime->fileListing('create', $result['file'], $actor);
+        $this->realtime->quotaChanged((string) $result['file']->user_id);
+
+        return $result;
     }
 
     public function abort(User $actor, string $uploadUuid): void
@@ -321,6 +331,7 @@ class DirectUploadService
         }
 
         $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
+        $this->realtime->quotaChanged((string) $upload->user_id);
     }
 
     protected function assertUploadAllowed(string $name, string $mime, int $size): void

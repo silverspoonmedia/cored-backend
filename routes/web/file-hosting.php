@@ -5,11 +5,18 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('file-hosting', [FileManagerController::class, 'index'])->name('file-hosting.index');
 Route::get('file-hosting/trash', [FileManagerController::class, 'trash'])->name('file-hosting.trash');
+Route::get('file-hosting/quota', [FileManagerController::class, 'quota'])->name('file-hosting.quota');
 
 // Collaborative workspaces (Blade consumer of API)
 Route::post('file-hosting/workspaces', [FileManagerController::class, 'storeWorkspace'])->name('file-hosting.workspaces.store');
 Route::post('file-hosting/workspaces/invites/accept', [FileManagerController::class, 'acceptWorkspaceInvite'])
     ->name('file-hosting.workspaces.invites.accept');
+Route::get('file-hosting/workspaces/{workspace}/members', [FileManagerController::class, 'workspaceMembers'])
+    ->whereUuid('workspace')
+    ->name('file-hosting.workspaces.members.index');
+Route::get('file-hosting/workspaces/{workspace}/activity', [FileManagerController::class, 'workspaceActivity'])
+    ->whereUuid('workspace')
+    ->name('file-hosting.workspaces.activity');
 Route::post('file-hosting/workspaces/{workspace}/invites', [FileManagerController::class, 'inviteWorkspaceMember'])
     ->whereUuid('workspace')
     ->name('file-hosting.workspaces.invites.store');

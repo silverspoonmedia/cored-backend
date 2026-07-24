@@ -132,6 +132,8 @@ export function initDirectUpload(root) {
             }
         });
 
+        let anySucceeded = false;
+
         try {
             await runWithConcurrency(items, config.maxConcurrent, async function (item) {
                 setRowStatus(item.row, 'uploading');
@@ -139,6 +141,7 @@ export function initDirectUpload(root) {
 
                 try {
                     await uploadFile(item.file, item.row, item.rowId);
+                    anySucceeded = true;
                 } catch (error) {
                     console.error('Direct upload failed', error);
                     markRowError(item.row, config.messages.uploadFailed || 'Upload failed.');
@@ -148,7 +151,51 @@ export function initDirectUpload(root) {
         } finally {
             batchRunning = false;
             updateStartButton();
+            // One soft-refresh after the whole batch — never mid-file, never hard reload
+            // when the file manager is on the page.
+            if (anySucceeded && config.reloadOnComplete) {
+                refreshListingAfterUpload();
+            }
         }
+    }
+
+    /**
+     * Soft-refresh listing/quota after uploads. Prefer manager soft-refetch; never
+     * hard-reload when `[data-file-manager]` is present (SPA-ish contract).
+     */
+    function refreshListingAfterUpload() {
+        const manager = document.querySelector('[data-file-manager]');
+        const soft = typeof window.fileHostingSoftRefresh === 'function'
+            ? window.fileHostingSoftRefresh
+            : (manager && typeof manager.__fhSoftRefresh === 'function'
+                ? manager.__fhSoftRefresh.bind(manager)
+                : null);
+
+        if (soft) {
+            soft();
+            return;
+        }
+
+        // Manager not bound yet (script order race) — short retry, then give up.
+        // Still no hard reload on FH pages: listing will catch up via WS / next action.
+        if (manager) {
+            let attempts = 0;
+            const timer = setInterval(function () {
+                attempts += 1;
+                if (typeof window.fileHostingSoftRefresh === 'function') {
+                    clearInterval(timer);
+                    window.fileHostingSoftRefresh();
+                    return;
+                }
+                if (attempts >= 10) {
+                    clearInterval(timer);
+                }
+            }, 100);
+            return;
+        }
+
+        // No file manager on this page (standalone dropzone) — hard reload is OK.
+        window.location.reload();
     }
 
     async function uploadFile(file, row, rowId) {
@@ -264,8 +311,10 @@ export function initDirectUpload(root) {
         markRowDone(row, label);
         active.set(rowId, { file, state: 'done' });
 
-        if (config.reloadOnComplete) {
-            window.location.reload();
+        // Per-file: optional optimistic row inject. Full soft-refresh runs once at batch end.
+        const hosted = completed.data?.file;
+        if (hosted && typeof window.fileHostingUpsertFile === 'function') {
+            window.fileHostingUpsertFile(hosted);
         }
     }
 

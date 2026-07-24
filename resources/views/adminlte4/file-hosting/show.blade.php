@@ -9,18 +9,31 @@
 @endphp
 
 <x-adminlte4::layouts.app :title="__('web/file-hosting.show_title')">
-    <div class="fh-manager" data-file-manager data-config="{{ json_encode([
-        'ownerUserId' => $ownerUserId,
-        'messages' => [
-            'searchNoResults' => __('web/file-hosting.search_no_results'),
-            'rootLabel' => __('web/file-hosting.root_label'),
-            'loadFailed' => __('web/file-hosting.load_failed'),
-            'linkCopied' => __('web/file-hosting.link_copied'),
-            'success' => __('web/file-hosting.ajax_success'),
-            'error' => __('web/file-hosting.ajax_error'),
-            'networkError' => __('web/file-hosting.network_error'),
-        ],
-    ]) }}">
+    @php
+        $fhRealtime = app(\App\Domain\FileHosting\Support\FileHostingRealtime::class);
+        $fhBroadcast = $fhRealtime->clientConfig();
+        $showFmConfig = [
+            'ownerUserId' => $ownerUserId,
+            'workspaceId' => $file['workspace_id'] ?? null,
+            'realtime' => [
+                'enabled' => $fhBroadcast !== null,
+                'broadcast' => $fhBroadcast,
+                'userId' => auth('api')->id(),
+                'page' => 'show',
+                'fileId' => $file['id'] ?? null,
+            ],
+            'messages' => [
+                'searchNoResults' => __('web/file-hosting.search_no_results'),
+                'rootLabel' => __('web/file-hosting.root_label'),
+                'loadFailed' => __('web/file-hosting.load_failed'),
+                'linkCopied' => __('web/file-hosting.link_copied'),
+                'success' => __('web/file-hosting.ajax_success'),
+                'error' => __('web/file-hosting.ajax_error'),
+                'networkError' => __('web/file-hosting.network_error'),
+            ],
+        ];
+    @endphp
+    <div class="fh-manager" data-file-manager data-config="{{ json_encode($showFmConfig) }}">
         <div class="row g-3">
             {{-- Main column --}}
             <div class="col-lg-8">
@@ -44,14 +57,14 @@
                         <div class="fh-stat">
                             <div class="fh-stat__icon"><i class="bi bi-eye"></i></div>
                             <div class="fh-stat__body">
-                                <div class="fh-stat__value">{{ (int) ($file['view_count'] ?? 0) }}</div>
+                                <div class="fh-stat__value" data-fh-stat="views">{{ (int) ($file['view_count'] ?? 0) }}</div>
                                 <div class="fh-stat__label">{{ __('web/file-hosting.stats.views') }}</div>
                             </div>
                         </div>
                         <div class="fh-stat">
                             <div class="fh-stat__icon"><i class="bi bi-download"></i></div>
                             <div class="fh-stat__body">
-                                <div class="fh-stat__value">{{ (int) ($file['download_count'] ?? 0) }}</div>
+                                <div class="fh-stat__value" data-fh-stat="downloads">{{ (int) ($file['download_count'] ?? 0) }}</div>
                                 <div class="fh-stat__label">{{ __('web/file-hosting.stats.downloads') }}</div>
                             </div>
                         </div>

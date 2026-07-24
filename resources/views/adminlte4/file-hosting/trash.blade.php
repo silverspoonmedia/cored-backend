@@ -1,11 +1,34 @@
 @php
     $folders = collect($trash['folders'] ?? []);
     $files = collect($trash['files'] ?? []);
-    $ownerQuery = array_filter(['user_id' => $ownerUserId]);
+    $workspaceId = $workspaceId ?? null;
+    $ownerQuery = array_filter([
+        'user_id' => $ownerUserId,
+        'workspace_id' => $workspaceId,
+    ]);
+    $fhRealtime = app(\App\Domain\FileHosting\Support\FileHostingRealtime::class);
+    $fhBroadcast = $fhRealtime->clientConfig();
+    $trashConfig = [
+        'ownerUserId' => $ownerUserId,
+        'workspaceId' => $workspaceId,
+        'browseUrl' => route('file-hosting.index', $ownerQuery),
+        'trashUrl' => route('file-hosting.trash', $ownerQuery),
+        'realtime' => [
+            'enabled' => $fhBroadcast !== null,
+            'broadcast' => $fhBroadcast,
+            'userId' => auth('api')->id(),
+            'page' => 'trash',
+        ],
+        'messages' => [
+            'success' => __('web/file-hosting.ajax_success'),
+            'error' => __('web/file-hosting.ajax_error'),
+            'networkError' => __('web/file-hosting.network_error'),
+        ],
+    ];
 @endphp
 
 <x-adminlte4::layouts.app :title="__('web/file-hosting.trash_title')">
-    <div class="fh-manager" data-file-manager data-config="{{ json_encode(['ownerUserId' => $ownerUserId, 'messages' => ['success' => __('web/file-hosting.ajax_success'), 'error' => __('web/file-hosting.ajax_error'), 'networkError' => __('web/file-hosting.network_error')]]) }}">
+    <div class="fh-manager" data-file-manager data-config="{{ json_encode($trashConfig) }}">
         <x-adminlte4::card :title="__('web/file-hosting.trash_title')">
             <x-slot:actions>
                 <a href="{{ route('file-hosting.index', $ownerQuery) }}" class="btn btn-outline-secondary btn-sm">
@@ -26,7 +49,7 @@
                     </thead>
                     <tbody>
                         @foreach ($folders as $folder)
-                            <tr data-fh-row>
+                            <tr data-fh-row data-fh-entity="folder" data-fh-id="{{ $folder['id'] }}">
                         <td class="fh-table__icon-cell">
                             @include('adminlte4.file-hosting.partials._file-icon', ['mime' => null, 'isFolder' => true])
                         </td>
@@ -63,7 +86,7 @@
                 @endforeach
 
                         @foreach ($files as $file)
-                            <tr data-fh-row>
+                            <tr data-fh-row data-fh-entity="file" data-fh-id="{{ $file['id'] }}">
                         <td class="fh-table__icon-cell">
                             @include('adminlte4.file-hosting.partials._file-icon', ['mime' => $file['mime'] ?? null, 'isFolder' => false])
                         </td>

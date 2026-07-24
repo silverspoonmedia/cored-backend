@@ -64,6 +64,36 @@ class BroadcastConnectionTest extends TestCase
         $this->assertNull(BroadcastConnection::clientConfig());
     }
 
+    public function test_socket_client_config_works_without_notification_realtime(): void
+    {
+        config([
+            'notifications.delivery' => 'polling',
+            'broadcasting.default' => 'pusher',
+            'broadcasting.connections.pusher' => [
+                'driver' => 'pusher',
+                'key' => 'public-key',
+                'secret' => 'secret',
+                'app_id' => 'app',
+                'options' => [
+                    'cluster' => 'ap1',
+                    'host' => 'ws.example.test',
+                    'port' => 6001,
+                    'scheme' => 'https',
+                ],
+            ],
+        ]);
+
+        $this->assertNull(BroadcastConnection::clientConfig());
+        $this->assertSame([
+            'key' => 'public-key',
+            'cluster' => 'ap1',
+            'host' => 'ws.example.test',
+            'port' => 6001,
+            'scheme' => 'https',
+            'authEndpoint' => url('/broadcasting/auth'),
+        ], BroadcastConnection::socketClientConfig());
+    }
+
     public function test_client_config_exposes_public_pusher_fields_in_realtime_mode(): void
     {
         config([

@@ -46,12 +46,29 @@ class BroadcastConnection
 
     /**
      * Client-safe Pusher / Echo options for the Blade bell (no secrets).
+     * Requires APP_NOTIFICATION_TYPE=realtime AND configured credentials.
      *
      * @return array<string, mixed>|null
      */
     public static function clientConfig(): ?array
     {
         if (! self::usesRealtimeNotifications()) {
+            return null;
+        }
+
+        return self::socketClientConfig();
+    }
+
+    /**
+     * Client-safe Pusher / Echo options whenever a broadcast driver is configured.
+     * Independent of APP_NOTIFICATION_TYPE so other domains (e.g. File Hosting
+     * live listing) can use websockets while the bell stays on polling.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function socketClientConfig(): ?array
+    {
+        if (! self::isConfigured()) {
             return null;
         }
 

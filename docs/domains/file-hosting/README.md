@@ -303,7 +303,10 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 | `file-hosting.folders.bulk-destroy` | yes | Bulk soft-delete (`ids[]`) — AJAX |
 | `file-hosting.folders.restore` | yes | Restore from trash |
 | `file-hosting.folders.force-destroy` | yes | Permanently delete |
-| `file-hosting.trash` | yes | Soft-deleted items + restore / force-delete |
+| `file-hosting.trash` | yes | Soft-deleted items + restore / force-delete; JSON when `Accept: application/json` |
+| `file-hosting.quota` | yes | JSON soft-refetch for the quota bar (`Accept: application/json`) |
+| `file-hosting.workspaces.members.index` | yes | JSON members list for team offcanvas soft-refetch |
+| `file-hosting.workspaces.activity` | yes | JSON activity feed for team offcanvas soft-refetch |
 | `file-hosting.search` | yes | AJAX JSON search endpoint (`GET ?q=`) |
 | `file-hosting.public.files.show` | no | `/s/f/{uuid}` guest page |
 | `file-hosting.public.files.download` | no | **Temporary signed** hop → **302** S3 (unsigned **403**) |
@@ -316,21 +319,86 @@ Share link users copy = show URL (`/s/f/{uuid}` or `/s/d/{uuid}`). Download butt
 | Asset | Role |
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
-| `resources/js/file-hosting/file-manager.js` | Page controller: AJAX CRUD, live search, grid/list view toggle (localStorage), move modal tree, drag-drop, region selector, bulk select/action (per-row + select-all checkboxes, share/unshare/delete), toast |
-| `resources/js/file-hosting/direct-upload.js` | Chunked upload: XHR PUT to server-provided part URLs (direct S3 or Worker proxy headers); **byte-level** progress via `xhr.upload.onprogress` + **session-average transfer rate** (shown next to bar); status **Finalizing…** while `POST …/complete` runs |
+| `resources/js/file-hosting/file-manager.js` | Page controller: AJAX CRUD, live search, grid/list view toggle (localStorage), move modal tree, drag-drop, region selector, bulk select/action, toast, soft-refetch hooks for live listing |
+| `resources/js/file-hosting/realtime.js` | Dedicated FH Echo subscribe (user/workspace private channels), health + fallback poll, soft-refetch helpers |
+| `resources/js/file-hosting/listing-ui.js` | Browse JSON → table/grid re-render, light single-entity DOM patch, quota bar re-render, show-page stats |
+| `resources/js/file-hosting/direct-upload.js` | Chunked upload: XHR PUT to server-provided part URLs (direct S3 or Worker proxy headers); **byte-level** progress via `xhr.upload.onprogress` + **session-average transfer rate** (shown next to bar); status **Finalizing…** while `POST …/complete` runs; on complete calls `window.fileHostingSoftRefresh` (no hard reload when manager present) |
 | `resources/js/file-hosting/upload-progress.js` | Pure helpers: `computeTransferRate`, `formatTransferRate` (B/s–GB/s, 1024 base), `computeByteProgressPercent` — no DOM |
 | `resources/js/file-hosting/upload-queue.js` | Concurrency limiter (unchanged) |
-| `resources/views/adminlte4/file-hosting/partials/` | Reusable Blade partials: `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal` |
+| `resources/views/adminlte4/file-hosting/partials/` | Reusable Blade partials: `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal`, `_team-offcanvas` |
 
 **Upload progress UI (client-only):** Monolith never sees PUT body bytes (direct S3 or Worker). Progress % = `uploadedBytes / file.size`; speed = `uploadedBytes / elapsed` from first byte PUT to now (not a rolling window). Parts still upload sequentially per file. After the last part PUT, the row shows **Finalizing…** (`upload.completing`) at 100% with speed cleared while the client calls `POST …/complete` (merge parts / promote `HostedFile`) — then **Done**. API session payloads do not include progress or speed fields.
 
-All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `redirect`).
+All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `redirect`). Successful mutations **do not** hard-reload the page when the manager is bound — they soft-refetch browse/quota (and peers update via WebSocket).
 
 File type icons map MIME → Bootstrap Icons via `_file-icon.blade.php` partial: image, PDF, video, audio, archive, spreadsheet, document, code, fallback — each with a color modifier (`.fh-icon--*`).
 
 Grid/list view toggle persists preference in `localStorage` key `fh-view-mode`. Default: list (table).
 
+Row identity for live patch: `data-fh-entity` (`file`|`folder`) + `data-fh-id` on table rows and grid cards. Quota mount: `[data-fh-quota]`. Show counters: `[data-fh-stat="views|downloads"]`. Team offcanvas: `[data-fh-members-body]`, `[data-fh-activity-list]`.
+
 Menu: **My Files** → `file-hosting.index`.
+
+## Realtime / live listing
+
+File Hosting listing stays live via **dedicated private channels**. It does **not** use the notification bell, `NotificationType`, or DataTable `table_id` (those remain for `/users` and similar admin lists — see [notification/README.md](../notification/README.md)).
+
+### Gate
+
+| Check | Behavior |
+|-------|----------|
+| `BroadcastConnection::isConfigured()` | Pusher/Reverb credentials present → events may broadcast |
+| `APP_NOTIFICATION_TYPE` | **Independent.** FH listing can use websockets while the bell stays on HTTP polling |
+| Client config | `BroadcastConnection::socketClientConfig()` / `FileHostingRealtime::clientConfig()` — same public fields as the bell, without requiring notification realtime mode |
+
+When unconfigured, services still complete business work; no broadcast is dispatched. The browser falls back to a visible-tab soft-refetch poll (~60s after ~30s degrade grace), same health shape as the notification docs.
+
+### Channels (`routes/channels.php`)
+
+| Channel | Auth | Payload fan-out |
+|---------|------|-----------------|
+| `private-file-hosting.user.{userId}` | `$user->id === $userId` | Personal drive listing + storage-owner **quota** pings |
+| `private-file-hosting.workspace.{workspaceId}` | `WorkspaceAccessService::canView` (active member/owner/staff view) | Team listing, members, activity, team file stats |
+
+Personal resources (`workspace_id` null) → user channel of storage owner. Team resources → workspace channel only (not every member's user channel).
+
+### Events (`app/Domain/FileHosting/Events/`, `ShouldBroadcastNow`)
+
+| Event | `broadcastAs` | Payload (contract) |
+|-------|---------------|--------------------|
+| `ListingChanged` | `listing.changed` | `action`, `entity_type` (`file`\|`folder`), `entity_id`, `entity_ids[]` (bulk), `owner_user_id`, `workspace_id`, `folder_id`, `from_folder_id`, `actor_id`, optional `resource` snapshot |
+| `QuotaChanged` | `quota.changed` | `owner_user_id` (client soft-refetches quota JSON) |
+| `WorkspaceMembersChanged` | `members.changed` | `workspace_id`, `action` (`invited`\|`joined`\|`removed`\|`role_changed`\|`archived`), `user_id`, `actor_id` |
+| `WorkspaceActivityAppended` | `activity.appended` | `workspace_id`, `actor_id` (invalidation; client refetches activity) |
+| `FileStatsChanged` | `file.stats.changed` | `file_id`, `view_count`, `download_count` (show page only) |
+
+**Bulk ops:** one `listing.changed` with `action: bulk_*` + `entity_ids[]` (invalidation / soft-refetch), not N broadcasts.
+
+Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + resource snapshot + activity fan. Services emit **after successful persist only** (no Eloquent observers for business mutations).
+
+### Emit points (side-effect only; business rules unchanged)
+
+| Service | When |
+|---------|------|
+| `FileService` | visibility, rename, move, soft/force delete, restore, bulks; view/download → `FileStatsChanged` only |
+| `FolderService` | create, visibility, rename, move, soft/force delete, restore, bulks |
+| `DirectUploadService` | initiate/abort → quota; complete (after commit) → listing `create` + quota |
+| `WorkspaceService` | invite, accept, role change, remove, archive → members + activity |
+
+### Client strategy
+
+1. Inject `realtime.broadcast` + `userId` on index / trash / show via Blade `data-config` when socket config exists.
+2. Prefer **one** browser Echo (`window.__monolithEcho`) shared with the notification bell when both are active.
+3. Subscribe to personal or workspace channel based on `workspaceId` / `ownerUserId`.
+4. **Apply:** soft-refetch browse JSON for current folder (correctness floor); light DOM patch for delete/rename when `resource` / row identity allow; quota bar via `GET file-hosting/quota`; team members/activity soft-refetch; show page listens for matching `file_id` stats.
+5. Replace hard `location.reload()` after mutations/upload complete with soft-refetch when the manager is bound.
+6. Health: WS primary → 30s grace → visible-tab poll ~60s; reconnect stops poll + one catch-up soft-refetch.
+
+### Not live
+
+- S3 **byte** upload progress (still client-only XHR; peers do not see mid-upload bytes).
+- Public share pages (`/s/f`, `/s/d`) — guest SSR, no authenticated Echo.
+- Notification bell unread / `table_id` DataTables.
 
 ## Config highlights
 
@@ -389,7 +457,7 @@ npm run test:js
 
 | Suite | What it covers |
 |-------|----------------|
-| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest`), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). |
+| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest`), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
 | Vitest `npm run test:js` | Pure client helpers in `resources/js/file-hosting/upload-progress.test.js` (transfer rate, format, byte percent). Pattern: `resources/js/**/*.test.js`. |
 | Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Worker unit tests: `c:\laragon\www\workers` (`npm test`). |
 | Qualification | `composer test -- --filter=FileHostingQualification` — 50 IDs (Low/Normal/Medium/Hard/Anomaly) |
@@ -398,4 +466,5 @@ npm run test:js
 
 - [service/README.md](../service/README.md) — main/addon catalog, quantity, grace, recompute
 - [identity/README.md](../identity/README.md) — H-RBAC / `domain_kind`
+- [notification/README.md](../notification/README.md) — bell + DataTable `table_id` (FH listing does **not** use this bus)
 - [platform/architecture.md](../../platform/architecture.md)

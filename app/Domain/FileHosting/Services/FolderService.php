@@ -7,6 +7,7 @@ use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
+use App\Domain\FileHosting\Support\FileHostingRealtime;
 use App\Domain\FileHosting\Support\FolderAncestorChain;
 use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
@@ -20,6 +21,7 @@ class FolderService
         private readonly VisibilityService $visibility,
         private readonly WorkspaceAccessService $workspaceAccess,
         private readonly WorkspaceActivityRecorder $activity,
+        private readonly FileHostingRealtime $realtime,
     ) {}
 
     /**
@@ -118,6 +120,8 @@ class FolderService
             $this->activity->folderVisibilityChanged($ws, $actor, $folder, $from, $value->value);
         }
 
+        $this->realtime->folderListing('visibility', $folder, $actor);
+
         return $folder;
     }
 
@@ -131,6 +135,8 @@ class FolderService
         if ($workspace !== null) {
             $this->activity->folderCreated($workspace, $actor, $folder);
         }
+
+        $this->realtime->folderListing('create', $folder, $actor);
 
         return $folder;
     }
@@ -146,6 +152,8 @@ class FolderService
             $this->activity->folderRenamed($ws, $actor, $folder, $from, $name);
         }
 
+        $this->realtime->folderListing('rename', $folder, $actor);
+
         return $folder;
     }
 
@@ -159,6 +167,8 @@ class FolderService
             $ws = $this->workspaceAccess->findOrFail($folder->workspace_id);
             $this->activity->folderMoved($ws, $actor, $folder, $fromParent, $parentId);
         }
+
+        $this->realtime->folderListing('move', $folder, $actor, fromFolderId: $fromParent);
 
         return $folder;
     }
@@ -175,6 +185,9 @@ class FolderService
         if ($workspace !== null) {
             $this->activity->folderSoftDeleted($workspace, $actor, $folder);
         }
+
+        $this->realtime->folderListing('soft_delete', $folder, $actor, includeResource: false);
+        $this->realtime->quotaChanged((string) $folder->user_id);
     }
 
     public function bulkSetVisibility(User $actor, array $folderIds, string $visibility, ?string $userId = null, ?string $workspaceId = null): int
@@ -182,12 +195,24 @@ class FolderService
         [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
         $value = $this->visibility->normalize($visibility);
 
-        $query = Folder::query()
+        $count = Folder::query()
             ->where('user_id', $ownerId)
             ->where('workspace_id', $workspace?->id)
-            ->whereKey($folderIds);
+            ->whereKey($folderIds)
+            ->update(['visibility' => $value->value]);
 
-        return $query->update(['visibility' => $value->value]);
+        if ($count > 0) {
+            $this->realtime->bulkListing(
+                'bulk_visibility',
+                'folder',
+                $folderIds,
+                $ownerId,
+                $workspace?->id,
+                $actor,
+            );
+        }
+
+        return $count;
     }
 
     public function bulkSoftDelete(User $actor, array $folderIds, ?string $userId = null, ?string $workspaceId = null): int
@@ -207,7 +232,20 @@ class FolderService
             }
         }
 
-        return $folders->count();
+        $count = $folders->count();
+        if ($count > 0) {
+            $this->realtime->bulkListing(
+                'bulk_soft_delete',
+                'folder',
+                $folders->pluck('id')->all(),
+                $ownerId,
+                $workspace?->id,
+                $actor,
+            );
+            $this->realtime->quotaChanged($ownerId);
+        }
+
+        return $count;
     }
 
     public function restore(User $actor, string $folderId, ?string $userId = null, ?string $workspaceId = null): Folder
@@ -226,6 +264,9 @@ class FolderService
             $this->activity->folderRestored($workspace, $actor, $folder);
         }
 
+        $this->realtime->folderListing('restore', $folder, $actor);
+        $this->realtime->quotaChanged((string) $folder->user_id);
+
         return $folder;
     }
 
@@ -239,11 +280,32 @@ class FolderService
             ->whereKey($folderId)
             ->firstOrFail();
 
+        $snapshot = [
+            'id' => $folder->id,
+            'user_id' => $folder->user_id,
+            'workspace_id' => $folder->workspace_id,
+            'parent_id' => $folder->parent_id,
+        ];
+
         $this->folders->forceDeleteCascade($folder);
 
         if ($workspace !== null) {
             $this->activity->folderForceDeleted($workspace, $actor, $folder);
         }
+
+        $this->realtime->listingChanged(
+            action: 'force_delete',
+            entityType: 'folder',
+            entityId: $snapshot['id'],
+            ownerUserId: (string) $snapshot['user_id'],
+            workspaceId: $snapshot['workspace_id'],
+            folderId: $snapshot['parent_id'],
+            actorId: $actor->id,
+        );
+        if ($snapshot['workspace_id'] !== null) {
+            $this->realtime->activityAppended((string) $snapshot['workspace_id'], $actor->id);
+        }
+        $this->realtime->quotaChanged((string) $snapshot['user_id']);
     }
 
     /**

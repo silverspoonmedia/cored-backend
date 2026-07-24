@@ -18,9 +18,21 @@
         ARRAY_FILTER_USE_BOTH,
     );
 
+    $fhRealtime = app(\App\Domain\FileHosting\Support\FileHostingRealtime::class);
+    $fhBroadcast = $fhRealtime->clientConfig();
+    $authUser = auth('api')->user();
+
     $fmConfig = [
         'searchUrl' => route('file-hosting.search'),
         'browseUrl' => route('file-hosting.index', $ownerQuery),
+        'quotaUrl' => route('file-hosting.quota', $ownerQuery),
+        'trashUrl' => route('file-hosting.trash', $ownerQuery),
+        'membersUrl' => $workspaceId
+            ? route('file-hosting.workspaces.members.index', $workspaceId)
+            : null,
+        'activityUrl' => $workspaceId
+            ? route('file-hosting.workspaces.activity', $workspaceId)
+            : null,
         'fileShowBase' => url('file-hosting/files'),
         'fileRenameBase' => url('file-hosting/files'),
         'folderRenameBase' => url('file-hosting/folders'),
@@ -32,6 +44,21 @@
         'workspaceId' => $workspaceId,
         'currentFolderId' => $currentFolderId,
         'visLink' => $visLink,
+        'realtime' => [
+            'enabled' => $fhBroadcast !== null,
+            'broadcast' => $fhBroadcast,
+            'userId' => $authUser?->id,
+            'page' => 'index',
+        ],
+        'quotaLabels' => [
+            'used' => __('web/file-hosting.quota_used'),
+            'unlimited' => __('web/file-hosting.quota_unlimited'),
+            'states' => [
+                'free' => __('web/file-hosting.collab.badge_free'),
+                'paid' => __('web/file-hosting.collab.badge_paid'),
+                'grace' => __('web/file-hosting.collab.badge_grace'),
+            ],
+        ],
         'messages' => [
             'searchNoResults' => __('web/file-hosting.search_no_results'),
             'rootLabel' => __('web/file-hosting.root_label'),
@@ -40,6 +67,9 @@
             'success' => __('web/file-hosting.ajax_success'),
             'error' => __('web/file-hosting.ajax_error'),
             'networkError' => __('web/file-hosting.network_error'),
+            'typeFolder' => __('web/file-hosting.type_folder'),
+            'typeFile' => __('web/file-hosting.type_file'),
+            'emptyFolder' => __('web/file-hosting.empty'),
         ],
     ];
 @endphp
@@ -120,7 +150,9 @@
         </nav>
 
         {{-- Quota --}}
-        @include('adminlte4.file-hosting.partials._quota-bar', ['quota' => $quota])
+        <div data-fh-quota>
+            @include('adminlte4.file-hosting.partials._quota-bar', ['quota' => $quota])
+        </div>
 
         {{-- Upload dropzone --}}
         @can('create file hosting file')
@@ -226,7 +258,7 @@
                     <tbody>
                         @forelse ($folders as $folder)
                             @php $folderVis = $folder['visibility'] ?? $visPrivate; @endphp
-                            <tr data-fh-row>
+                            <tr data-fh-row data-fh-entity="folder" data-fh-id="{{ $folder['id'] }}">
                         <td class="fh-table__select-cell">
                             <input type="checkbox" class="form-check-input" data-fh-select value="folder:{{ $folder['id'] }}" aria-label="{{ __('web/file-hosting.bulk.select_item') }}">
                         </td>
@@ -238,7 +270,7 @@
                         <td>
                             <a href="{{ route('file-hosting.index', array_filter(array_merge($ownerQuery, ['folder_id' => $folder['id']]))) }}"
                                class="fh-table__name">
-                                <span class="fh-table__name-text">{{ $folder['name'] ?? '' }}</span>
+                                <span class="fh-table__name-text" data-fh-name>{{ $folder['name'] ?? '' }}</span>
                             </a>
                         </td>
                         <td class="fh-table__type">{{ __('web/file-hosting.type_folder') }}</td>
@@ -281,7 +313,7 @@
 
                         @foreach ($files as $file)
                             @php $fileVis = $file['visibility'] ?? $visPrivate; @endphp
-                            <tr data-fh-row>
+                            <tr data-fh-row data-fh-entity="file" data-fh-id="{{ $file['id'] }}">
                         <td class="fh-table__select-cell">
                             <input type="checkbox" class="form-check-input" data-fh-select value="file:{{ $file['id'] }}" aria-label="{{ __('web/file-hosting.bulk.select_item') }}">
                         </td>
@@ -293,7 +325,7 @@
                         <td>
                             <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
                                class="fh-table__name" title="{{ $file['name'] ?? '' }}">
-                                <span class="fh-table__name-text">{{ $file['name'] ?? '' }}</span>
+                                <span class="fh-table__name-text" data-fh-name>{{ $file['name'] ?? '' }}</span>
                             </a>
                         </td>
                         <td class="fh-table__type">{{ $file['mime'] ?? __('web/file-hosting.type_file') }}</td>
@@ -374,7 +406,7 @@
                 <div class="fh-grid">
                     @foreach ($folders as $folder)
                         @php $folderVis = $folder['visibility'] ?? $visPrivate; @endphp
-                        <div class="fh-file-card" data-fh-row>
+                        <div class="fh-file-card" data-fh-row data-fh-entity="folder" data-fh-id="{{ $folder['id'] }}">
                             <input type="checkbox" class="form-check-input fh-file-card__select" data-fh-select value="folder:{{ $folder['id'] }}" aria-label="{{ __('web/file-hosting.bulk.select_item') }}">
                             <div class="fh-file-card__badge">
                                 @include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $folderVis])
@@ -385,7 +417,7 @@
                                 </a>
                             </div>
                             <a href="{{ route('file-hosting.index', array_filter(array_merge($ownerQuery, ['folder_id' => $folder['id']]))) }}"
-                               class="fh-file-card__name" title="{{ $folder['name'] ?? '' }}">
+                               class="fh-file-card__name" title="{{ $folder['name'] ?? '' }}" data-fh-name>
                                 {{ $folder['name'] ?? '' }}
                             </a>
                             <div class="fh-file-card__meta">{{ __('web/file-hosting.type_folder') }}</div>
@@ -413,7 +445,7 @@
 
                     @foreach ($files as $file)
                         @php $fileVis = $file['visibility'] ?? $visPrivate; @endphp
-                        <div class="fh-file-card" data-fh-row>
+                        <div class="fh-file-card" data-fh-row data-fh-entity="file" data-fh-id="{{ $file['id'] }}">
                             <input type="checkbox" class="form-check-input fh-file-card__select" data-fh-select value="file:{{ $file['id'] }}" aria-label="{{ __('web/file-hosting.bulk.select_item') }}">
                             <div class="fh-file-card__badge">
                                 @include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $fileVis])
@@ -424,7 +456,7 @@
                                 </a>
                             </div>
                             <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
-                               class="fh-file-card__name" title="{{ $file['name'] ?? '' }}">
+                               class="fh-file-card__name" title="{{ $file['name'] ?? '' }}" data-fh-name>
                                 {{ $file['name'] ?? '' }}
                             </a>
                             <div class="fh-file-card__meta">
