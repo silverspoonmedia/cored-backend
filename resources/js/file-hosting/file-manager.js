@@ -1011,16 +1011,22 @@ function initFileManager(root) {
             config.activityUrl = config.workspaceId
                 ? `/file-hosting/workspaces/${config.workspaceId}/activity`
                 : null;
-            // Keep direct-upload context in sync.
+            // Keep direct-upload context in sync via the flat data-* attrs the
+            // uploader reads live per upload (buildInitContext). Empty -> remove attr
+            // so it reads as null (root), never a stale folder.
             root.querySelectorAll('[data-direct-upload]').forEach((el) => {
-                try {
-                    const cfg = JSON.parse(el.dataset.config || '{}');
-                    cfg.folderId = config.currentFolderId;
-                    cfg.workspaceId = config.workspaceId;
-                    cfg.userId = config.ownerUserId;
-                    el.dataset.config = JSON.stringify(cfg);
-                } catch {
-                    // ignore
+                if (config.currentFolderId) {
+                    el.dataset.folderId = config.currentFolderId;
+                } else {
+                    delete el.dataset.folderId;
+                }
+                if (config.workspaceId) {
+                    el.dataset.workspaceId = config.workspaceId;
+                } else {
+                    delete el.dataset.workspaceId;
+                }
+                if (config.ownerUserId) {
+                    el.dataset.userId = config.ownerUserId;
                 }
             });
             const folderHidden = root.querySelector('#fhNewFolderModal input[name="parent_id"], #fhNewFolderModal [name="parent_id"]');

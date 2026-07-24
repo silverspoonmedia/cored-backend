@@ -8,6 +8,35 @@ import {
     formatTransferRate,
 } from './upload-progress.js';
 
+/**
+ * Resolve mutable upload context (folder / user / workspace) from a live dataset.
+ *
+ * Read at each upload start — never frozen at init — so SPA soft-navigation into a
+ * folder targets that folder instead of root. The SPA router keeps the dropzone's
+ * flat `data-folder-id` / `data-user-id` / `data-workspace-id` attributes in sync.
+ *
+ * @param {DOMStringMap} dataset
+ * @returns {{ folder_id?: string, user_id?: string, workspace_id?: string }}
+ */
+export function buildInitContext(dataset) {
+    const context = {};
+    const folderId = dataset?.folderId || null;
+    const userId = dataset?.userId || null;
+    const workspaceId = dataset?.workspaceId || null;
+
+    if (folderId) {
+        context.folder_id = folderId;
+    }
+    if (workspaceId) {
+        context.workspace_id = workspaceId;
+    }
+    if (userId) {
+        context.user_id = userId;
+    }
+
+    return context;
+}
+
 export function initDirectUpload(root) {
     if (!root || root.dataset.directUploadBound === '1') {
         return;
@@ -22,9 +51,7 @@ export function initDirectUpload(root) {
         completeUrl: root.dataset.completeUrl,
         abortUrl: root.dataset.abortUrl,
         signPartsUrl: root.dataset.signPartsUrl,
-        folderId: root.dataset.folderId || null,
-        userId: root.dataset.userId || null,
-        workspaceId: root.dataset.workspaceId || null,
+        // folder/user/workspace are read live per upload via buildInitContext(root.dataset).
         reloadOnComplete: root.dataset.reloadOnComplete === '1',
         maxFiles: parseInt(root.dataset.maxFiles || '20', 10),
         maxConcurrent: Math.max(1, parseInt(root.dataset.maxConcurrent || '2', 10)),
@@ -203,18 +230,9 @@ export function initDirectUpload(root) {
             name: file.name,
             mime: file.type || 'application/octet-stream',
             size: file.size,
+            // Live context: SPA nav mutates the dropzone data-* attrs; never freeze at init.
+            ...buildInitContext(root.dataset),
         };
-
-        if (config.folderId) {
-            initBody.folder_id = config.folderId;
-        }
-        if (config.workspaceId) {
-            initBody.workspace_id = config.workspaceId;
-        }
-
-        if (config.userId) {
-            initBody.user_id = config.userId;
-        }
 
         if (regionSelect && regionSelect.value) {
             initBody.disk = regionSelect.value;
@@ -615,6 +633,8 @@ export function initDirectUpload(root) {
     }
 }
 
-document.querySelectorAll('[data-direct-upload]').forEach(function (root) {
-    initDirectUpload(root);
-});
+if (typeof document !== 'undefined') {
+    document.querySelectorAll('[data-direct-upload]').forEach(function (root) {
+        initDirectUpload(root);
+    });
+}

@@ -364,7 +364,7 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
 | `resources/js/file-hosting/router.js` | Client router: parse `/file-hosting/*` + public `/s/*`, intercept in-app links, `navigate` + `popstate` |
-| `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk (incl. **Move** → same multi-move modal as context), toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch; Drive-like select/menu/drag; `.is-fh-busy` mutation spinner |
+| `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk (incl. **Move** → same multi-move modal as context), toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch; Drive-like select/menu/drag; `.is-fh-busy` mutation spinner. On soft-nav, `syncConfigFromRoute` mirrors the current folder/workspace/user onto the dropzone's flat `data-folder-id` / `data-workspace-id` / `data-user-id` (empty → attribute removed = root) so uploads target the folder you soft-navigated into |
 | `resources/js/file-hosting/selection.js` | Browse listing selection: click = select, Ctrl/Cmd toggle, Shift range, Escape clear; name/icon single-click selects (open on double-click); ignores virtual parent `...` for bulk keys |
 | `resources/js/file-hosting/context-menu.js` | Right-click: Open / Rename / Move / Share / Delete (modals + bulk endpoints); multi-move via move modal tree; parent `...` → Open only |
 | `resources/js/file-hosting/drag-move.js` | Drag selected onto folder **or** breadcrumb parent/root **or** listing `...` (`data-fh-drop-folder`) → sequential `PATCH …/move` (`application/x-fh-items` so OS file drops still hit upload dropzone); parent row not draggable |
@@ -373,7 +373,7 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 | `resources/js/file-hosting/trash-ui.js` | Trash JSON → table rows (restore/force-delete actions); **no** `location.reload` |
 | `resources/js/file-hosting/show-ui.js` | Soft file detail panel from `GET file-hosting/files/{id}` JSON |
 | `resources/js/file-hosting/public-app.js` | Public soft SPA for `/s/f/{id}` + `/s/d/{id}` (no Echo) |
-| `resources/js/file-hosting/direct-upload.js` | Chunked upload; queue shows human file size; on complete calls `window.fileHostingSoftRefresh` / `fileHostingUpsertFile` (no hard reload) |
+| `resources/js/file-hosting/direct-upload.js` | Chunked upload; queue shows human file size; **folder/user/workspace context resolved live per upload** via `buildInitContext(root.dataset)` (never frozen at init); on complete calls `window.fileHostingSoftRefresh` / `fileHostingUpsertFile` (no hard reload) |
 | `resources/js/file-hosting/upload-progress.js` | Pure helpers: transfer rate + byte progress — no DOM |
 | `resources/js/file-hosting/upload-queue.js` | Concurrency limiter |
 | `resources/views/adminlte4/file-hosting/partials/` | `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal`, `_team-offcanvas`, `_workspace-switcher` |
