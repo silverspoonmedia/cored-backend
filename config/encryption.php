@@ -34,6 +34,15 @@ return [
         env('ENCRYPTION_DECRYPTED_CACHE_TTL', 86400),
     ),
 
+    /*
+    | Per-resource_type override for decrypted plaintext cache TTL (seconds).
+    | 0 = forever until forgetByContext / encrypt / cast set / explicit invalidate.
+    | Keys not listed fall back to decrypted_cache_max_ttl.
+    */
+    'decrypted_cache_ttl_by_resource_type' => [
+        'vtual_platform_credentials' => 0,
+    ],
+
     'decrypted_cache_prefix' => 'encryption.decrypted',
 
     /*

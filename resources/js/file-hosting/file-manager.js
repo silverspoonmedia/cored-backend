@@ -1,23 +1,29 @@
 /**
  * File Hosting — AJAX file manager controller.
  *
- * Wraps around direct-upload.js (unchanged) and adds:
+ * Wraps around direct-upload.js and adds:
  * - AJAX CRUD (rename, visibility, delete, restore, force-delete, move)
  * - Live search dropdown
  * - Grid/list view toggle (persisted in localStorage)
  * - Move modal with folder tree
  * - Drag-drop zone enhancement
  * - Toast notifications
+ * - WebSocket live listing (soft-refetch + light DOM patch)
  *
  * All mutations go through web routes (FileManagerController) via fetch.
- * MonolithApi.handleResponse handles redirect/validation/error envelope.
  */
-(function () {
-    'use strict';
+import { browseUrlWithContext, fetchJson, initFileHostingRealtime } from './realtime';
+import {
+    applyBrowsePayload,
+    applyFileStats,
+    applyQuotaPayload,
+    tryPatchListing,
+    upsertFileRow,
+} from './listing-ui';
 
-    const STORAGE_KEY = 'fh-view-mode';
+const STORAGE_KEY = 'fh-view-mode';
 
-    function initFileManager(root) {
+function initFileManager(root) {
         if (!root || root.dataset.fhBound === '1') {
             return;
         }
@@ -32,6 +38,140 @@
         const tableView = root.querySelector('[data-fh-view="table"]');
         const gridView = root.querySelector('[data-fh-view="grid"]');
         const dropzone = root.querySelector('[data-fh-dropzone]');
+        const quotaMount = root.querySelector('[data-fh-quota]') || document.querySelector('[data-fh-quota]');
+
+        let listingBusy = false;
+
+        async function softRefetchListing() {
+            if (!config.browseUrl) {
+                return;
+            }
+            // Coalesce concurrent WS + upload-complete refresh into one in-flight request.
+            if (listingBusy) {
+                softRefetchListing.pending = true;
+                return;
+            }
+            listingBusy = true;
+            try {
+                do {
+                    softRefetchListing.pending = false;
+                    const url = browseUrlWithContext(config.browseUrl, config);
+                    const json = await fetchJson(url, csrfToken);
+                    if (json?.data) {
+                        applyBrowsePayload(root, json.data, config);
+                    }
+                } while (softRefetchListing.pending);
+            } finally {
+                listingBusy = false;
+            }
+        }
+
+        async function softRefetchQuota() {
+            if (!config.quotaUrl || !quotaMount) {
+                return;
+            }
+            const json = await fetchJson(config.quotaUrl, csrfToken);
+            if (json?.data) {
+                applyQuotaPayload(quotaMount, json.data, config.quotaLabels || {});
+            }
+        }
+
+        async function softRefetchTrash() {
+            if (!config.trashUrl) {
+                return;
+            }
+            // Trash rows lack a full client re-renderer; full soft navigation keeps parity.
+            const url = config.trashUrl;
+            const json = await fetchJson(url, csrfToken);
+            if (json?.data) {
+                // Minimal: remove rows not in trash payload / leave full reload fallback
+                window.location.reload();
+            }
+        }
+
+        async function softRefetchMembers() {
+            if (!config.membersUrl) {
+                return;
+            }
+            const json = await fetchJson(config.membersUrl, csrfToken);
+            const mount = document.querySelector('[data-fh-members-body]');
+            if (!mount || !json?.data) {
+                return;
+            }
+            // Invalidate: simplest correct path for team table
+            const rows = Array.isArray(json.data) ? json.data : [];
+            mount.innerHTML = rows.map((m) => {
+                const name = m.user?.name || m.user?.email || m.user_id || '';
+                const role = m.role || '';
+                return `<tr data-fh-member-id="${m.user_id || ''}"><td>${escapeHtml(name)}</td><td>${escapeHtml(role)}</td></tr>`;
+            }).join('') || `<tr><td colspan="3" class="text-muted">${escapeHtml(config.messages?.empty || '')}</td></tr>`;
+        }
+
+        async function softRefetchActivity() {
+            if (!config.activityUrl) {
+                return;
+            }
+            const json = await fetchJson(config.activityUrl, csrfToken);
+            const mount = document.querySelector('[data-fh-activity-list]');
+            if (!mount || !json?.data) {
+                return;
+            }
+            const rows = Array.isArray(json.data) ? json.data : [];
+            mount.innerHTML = rows.map((a) => {
+                const desc = a.description || a.event || '';
+                const when = a.created_at || a.created_at_human || '';
+                return `<li class="list-group-item small"><div>${escapeHtml(desc)}</div><div class="text-muted">${escapeHtml(when)}</div></li>`;
+            }).join('') || '';
+        }
+
+        function onListingPatch(payload) {
+            return tryPatchListing(payload, root, config);
+        }
+
+        function onFileStats(payload) {
+            applyFileStats(root, payload);
+        }
+
+        function onMembersChanged(payload) {
+            if (payload?.action === 'archived' || payload?.action === 'removed') {
+                const selfId = config.realtime?.userId;
+                if (payload.action === 'archived' || (payload.action === 'removed' && payload.user_id === selfId)) {
+                    window.location.href = config.browseUrl || '/file-hosting';
+                }
+            }
+        }
+
+        // Expose soft refresh BEFORE realtime init so upload complete never falls
+        // through to hard reload if Echo setup throws.
+        root.__fhSoftRefresh = function () {
+            softRefetchListing();
+            softRefetchQuota();
+        };
+        window.fileHostingSoftRefresh = root.__fhSoftRefresh;
+        window.fileHostingUpsertFile = function (file) {
+            return upsertFileRow(root, file, config);
+        };
+
+        if (config.realtime?.enabled) {
+            try {
+                initFileHostingRealtime({
+                    root,
+                    config,
+                    csrf: csrfToken,
+                    onListingRefresh: softRefetchListing,
+                    onQuotaRefresh: softRefetchQuota,
+                    onTrashRefresh: softRefetchTrash,
+                    onMembersRefresh: softRefetchMembers,
+                    onActivityRefresh: softRefetchActivity,
+                    onListingPatch,
+                    onFileStats,
+                    onMembersChanged,
+                });
+            } catch (err) {
+                console.warn('File Hosting realtime init failed; soft-refetch still available.', err);
+                window.fileHostingRealtime = { enabled: false, connected: false, degraded: true };
+            }
+        }
 
         initViewToggle();
         initSearch();
@@ -485,8 +625,12 @@
                             }, 300);
                         } else {
                             setTimeout(function () {
-                                window.location.reload();
-                            }, 600);
+                                if (typeof root.__fhSoftRefresh === 'function') {
+                                    root.__fhSoftRefresh();
+                                } else {
+                                    window.location.reload();
+                                }
+                            }, 400);
                         }
                     }
                 } else {
@@ -616,7 +760,13 @@
                     if (responses.every(function (r) { return r.ok; })) {
                         showToast(data.message || config.messages.success, 'success');
                         selected.clear();
-                        setTimeout(function () { window.location.reload(); }, 600);
+                        setTimeout(function () {
+                            if (typeof root.__fhSoftRefresh === 'function') {
+                                root.__fhSoftRefresh();
+                            } else {
+                                window.location.reload();
+                            }
+                        }, 400);
                     } else {
                         showToast(data.message || config.messages.error, 'error');
                     }
@@ -763,9 +913,8 @@
                 .replaceAll('>', '&gt;')
                 .replaceAll('"', '&quot;');
         }
-    }
+}
 
-    document.querySelectorAll('[data-file-manager]').forEach(function (root) {
-        initFileManager(root);
-    });
-})();
+document.querySelectorAll('[data-file-manager]').forEach(function (root) {
+    initFileManager(root);
+});

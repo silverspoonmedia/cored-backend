@@ -1,0 +1,320 @@
+<?php
+
+namespace App\Domain\Vtual\Services;
+
+use App\Domain\Vtual\Enums\ContentAppearanceRole;
+use App\Domain\Vtual\Enums\ContentStatus;
+use App\Domain\Vtual\Enums\ContentType;
+use App\Domain\Vtual\Exceptions\VtualException;
+use App\Domain\Vtual\Models\Channel;
+use App\Domain\Vtual\Models\Content;
+use App\Domain\Vtual\Models\ContentAppearance;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+/**
+ * Worker-facing content persistence: one row per platform external_id (canonical).
+ * Primary host channel is API truth; extra channels are appearances (not multi-ownership).
+ */
+class ContentService
+{
+    /**
+     * Create or update canonical content for a registered primary (host) channel.
+     * Syncs denormalized FKs and the primary appearance row.
+     *
+     * @param  array{
+     *     external_id: string,
+     *     type?: string|ContentType|null,
+     *     status?: string|ContentStatus|null,
+     *     title?: string|null,
+     *     description?: string|null,
+     *     thumbnail_url?: string|null,
+     *     url?: string|null,
+     *     concurrent_viewers?: int|null,
+     *     scheduled_at?: mixed,
+     *     started_at?: mixed,
+     *     ended_at?: mixed,
+     *     published_at?: mixed,
+     * }  $data
+     */
+    public function upsertFromPrimary(Channel $primaryChannel, array $data): Content
+    {
+        $externalId = trim((string) ($data['external_id'] ?? ''));
+        if ($externalId === '') {
+            throw new VtualException(__('api/vtual.content.external_id_required'), 422);
+        }
+
+        return DB::transaction(function () use ($primaryChannel, $data, $externalId): Content {
+            $lockedChannel = Channel::query()->whereKey($primaryChannel->id)->lockForUpdate()->firstOrFail();
+
+            $content = Content::query()
+                ->where('platform_id', $lockedChannel->platform_id)
+                ->where('external_id', $externalId)
+                ->lockForUpdate()
+                ->first();
+
+            $attrs = [
+                'creator_id' => $lockedChannel->creator_id,
+                'channel_id' => $lockedChannel->id,
+                'platform_id' => $lockedChannel->platform_id,
+                'external_id' => $externalId,
+                'type' => $this->resolveType($data['type'] ?? null),
+                'status' => $this->resolveStatus($data['status'] ?? null),
+                'title' => $data['title'] ?? null,
+                'description' => $data['description'] ?? null,
+                'thumbnail_url' => $data['thumbnail_url'] ?? null,
+                'url' => $data['url'] ?? null,
+                'concurrent_viewers' => $data['concurrent_viewers'] ?? null,
+                'scheduled_at' => $data['scheduled_at'] ?? null,
+                'started_at' => $data['started_at'] ?? null,
+                'ended_at' => $data['ended_at'] ?? null,
+                'published_at' => $data['published_at'] ?? null,
+            ];
+
+            if ($content === null) {
+                $content = new Content($attrs);
+                $content->id = (string) Str::uuid7();
+                $content->save();
+            } else {
+                // Keep existing non-primary appearances; only re-host primary FKs + metadata.
+                $content->fill($attrs)->save();
+            }
+
+            $this->syncPrimaryAppearance($content, $lockedChannel);
+
+            return $content->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $content;
+        });
+    }
+
+    /**
+     * Link an additional registered channel as an appearance (collaborator or network).
+     * Cannot attach role=primary — use setPrimary.
+     */
+    public function attachAppearance(
+        Content $content,
+        Channel $channel,
+        ContentAppearanceRole $role,
+    ): ContentAppearance {
+        if ($role === ContentAppearanceRole::Primary) {
+            throw new VtualException(__('api/vtual.content.appearance_primary_via_set'), 422);
+        }
+
+        if (! in_array($role, ContentAppearanceRole::nonPrimary(), true)) {
+            throw new VtualException(__('api/vtual.content.appearance_role_invalid'), 422);
+        }
+
+        return DB::transaction(function () use ($content, $channel, $role): ContentAppearance {
+            $locked = Content::query()->whereKey($content->id)->lockForUpdate()->firstOrFail();
+            $lockedChannel = Channel::query()->whereKey($channel->id)->lockForUpdate()->firstOrFail();
+
+            if ((string) $lockedChannel->platform_id !== (string) $locked->platform_id) {
+                throw new VtualException(__('api/vtual.content.appearance_platform_mismatch'), 422);
+            }
+
+            if ((string) $lockedChannel->id === (string) $locked->channel_id) {
+                throw new VtualException(__('api/vtual.content.appearance_already_primary'), 422);
+            }
+
+            $existing = ContentAppearance::query()
+                ->where('content_id', $locked->id)
+                ->where('channel_id', $lockedChannel->id)
+                ->first();
+
+            if ($existing !== null) {
+                throw new VtualException(__('api/vtual.content.appearance_already_attached'), 422);
+            }
+
+            $appearance = new ContentAppearance([
+                'content_id' => $locked->id,
+                'channel_id' => $lockedChannel->id,
+                'creator_id' => $lockedChannel->creator_id,
+                'role' => $role,
+            ]);
+            $appearance->id = (string) Str::uuid7();
+            $appearance->save();
+
+            return $appearance->load(['channel', 'creator', 'content']);
+        });
+    }
+
+    /**
+     * Remove a non-primary appearance. Primary host cannot be detached this way.
+     */
+    public function detachAppearance(Content $content, Channel $channel): void
+    {
+        DB::transaction(function () use ($content, $channel): void {
+            $locked = Content::query()->whereKey($content->id)->lockForUpdate()->firstOrFail();
+
+            $appearance = ContentAppearance::query()
+                ->where('content_id', $locked->id)
+                ->where('channel_id', $channel->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($appearance === null) {
+                throw new VtualException(__('api/vtual.content.appearance_not_found'), 422);
+            }
+
+            if ($appearance->role === ContentAppearanceRole::Primary) {
+                throw new VtualException(__('api/vtual.content.cannot_detach_primary'), 422);
+            }
+
+            $appearance->delete();
+        });
+    }
+
+    /**
+     * Move primary host to another registered channel on the same platform.
+     * Previous primary becomes demotedRole (network|collaborator).
+     */
+    public function setPrimary(
+        Content $content,
+        Channel $newPrimary,
+        ContentAppearanceRole $demotedRole = ContentAppearanceRole::Network,
+    ): Content {
+        if ($demotedRole === ContentAppearanceRole::Primary) {
+            throw new VtualException(__('api/vtual.content.appearance_role_invalid'), 422);
+        }
+
+        return DB::transaction(function () use ($content, $newPrimary, $demotedRole): Content {
+            $locked = Content::query()->whereKey($content->id)->lockForUpdate()->firstOrFail();
+            $channel = Channel::query()->whereKey($newPrimary->id)->lockForUpdate()->firstOrFail();
+
+            if ((string) $channel->platform_id !== (string) $locked->platform_id) {
+                throw new VtualException(__('api/vtual.content.appearance_platform_mismatch'), 422);
+            }
+
+            if ((string) $channel->id === (string) $locked->channel_id) {
+                return $locked->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $locked;
+            }
+
+            $oldPrimaryId = (string) $locked->channel_id;
+
+            $locked->forceFill([
+                'channel_id' => $channel->id,
+                'creator_id' => $channel->creator_id,
+            ])->save();
+
+            // Demote previous primary appearance (or create if missing).
+            $oldAppearance = ContentAppearance::query()
+                ->where('content_id', $locked->id)
+                ->where('channel_id', $oldPrimaryId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($oldAppearance !== null) {
+                $oldAppearance->forceFill(['role' => $demotedRole])->save();
+            } else {
+                $oldChannel = Channel::query()->whereKey($oldPrimaryId)->first();
+                if ($oldChannel !== null) {
+                    $row = new ContentAppearance([
+                        'content_id' => $locked->id,
+                        'channel_id' => $oldChannel->id,
+                        'creator_id' => $oldChannel->creator_id,
+                        'role' => $demotedRole,
+                    ]);
+                    $row->id = (string) Str::uuid7();
+                    $row->save();
+                }
+            }
+
+            $this->syncPrimaryAppearance($locked, $channel);
+
+            return $locked->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $locked;
+        });
+    }
+
+    /**
+     * Contents where channel is primary host or has any appearance.
+     *
+     * @return Collection<int, Content>
+     */
+    public function listForChannel(string $channelId): Collection
+    {
+        return Content::query()
+            ->where(function ($q) use ($channelId): void {
+                $q->where('channel_id', $channelId)
+                    ->orWhereHas('appearances', fn ($a) => $a->where('channel_id', $channelId));
+            })
+            ->with(['channel', 'creator', 'platform', 'appearances'])
+            ->orderByDesc('published_at')
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
+     * Contents where creator is primary host or appears via any linked channel.
+     *
+     * @return Collection<int, Content>
+     */
+    public function listForCreator(string $creatorId): Collection
+    {
+        return Content::query()
+            ->where(function ($q) use ($creatorId): void {
+                $q->where('creator_id', $creatorId)
+                    ->orWhereHas('appearances', fn ($a) => $a->where('creator_id', $creatorId));
+            })
+            ->with(['channel', 'creator', 'platform', 'appearances'])
+            ->orderByDesc('published_at')
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    private function syncPrimaryAppearance(Content $content, Channel $primaryChannel): void
+    {
+        // Ensure only one primary role row.
+        ContentAppearance::query()
+            ->where('content_id', $content->id)
+            ->where('role', ContentAppearanceRole::Primary)
+            ->where('channel_id', '!=', $primaryChannel->id)
+            ->update(['role' => ContentAppearanceRole::Network->value]);
+
+        $appearance = ContentAppearance::query()
+            ->where('content_id', $content->id)
+            ->where('channel_id', $primaryChannel->id)
+            ->first();
+
+        if ($appearance === null) {
+            $appearance = new ContentAppearance([
+                'content_id' => $content->id,
+                'channel_id' => $primaryChannel->id,
+                'creator_id' => $primaryChannel->creator_id,
+                'role' => ContentAppearanceRole::Primary,
+            ]);
+            $appearance->id = (string) Str::uuid7();
+            $appearance->save();
+
+            return;
+        }
+
+        $appearance->forceFill([
+            'creator_id' => $primaryChannel->creator_id,
+            'role' => ContentAppearanceRole::Primary,
+        ])->save();
+    }
+
+    private function resolveType(mixed $type): ContentType
+    {
+        if ($type instanceof ContentType) {
+            return $type;
+        }
+        if (is_string($type) && $type !== '') {
+            return ContentType::from($type);
+        }
+
+        return ContentType::Vod;
+    }
+
+    private function resolveStatus(mixed $status): ContentStatus
+    {
+        if ($status instanceof ContentStatus) {
+            return $status;
+        }
+        if (is_string($status) && $status !== '') {
+            return ContentStatus::from($status);
+        }
+
+        return ContentStatus::Unknown;
+    }
+}

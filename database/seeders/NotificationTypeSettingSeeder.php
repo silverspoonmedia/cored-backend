@@ -18,34 +18,44 @@ class NotificationTypeSettingSeeder extends Seeder
 
     public function run(): void
     {
-        $userCreated = NotificationTypeSetting::query()->firstOrCreate(
-            ['type' => NotificationType::UserCreated->value],
+        // Broadcast list-change signals seen by Root + Admin (drive DataTable reload).
+        $this->broadcastToAdmins(NotificationType::UserCreated);
+        $this->broadcastToAdmins(NotificationType::UserUpdated);
+        $this->broadcastToAdmins(NotificationType::UserDeleted);
+
+        // Personal types: subject user only. Sync roles([]) idempotently so any
+        // stray role pivots (data pollution) get cleared — a personal note must
+        // never broadcast to admin roles.
+        $this->personal(NotificationType::AccountUpdated);
+        $this->personal(NotificationType::ServiceSubscriptionGrace);
+        $this->personal(NotificationType::ServiceSubscriptionExpired);
+
+        app(NotificationTypeSettingRepositoryInterface::class)->flushCache();
+    }
+
+    private function broadcastToAdmins(NotificationType $type): void
+    {
+        $setting = NotificationTypeSetting::query()->firstOrCreate(
+            ['type' => $type->value],
             ['notify_subject_user' => false],
         );
 
-        $userCreated->roles()->sync(
+        $setting->roles()->sync(
             Role::query()
                 ->where('guard_name', 'api')
                 ->whereIn('name', ['Root', 'Admin'])
                 ->pluck('id')
                 ->all(),
         );
+    }
 
-        NotificationTypeSetting::query()->firstOrCreate(
-            ['type' => NotificationType::AccountUpdated->value],
+    private function personal(NotificationType $type): void
+    {
+        $setting = NotificationTypeSetting::query()->firstOrCreate(
+            ['type' => $type->value],
             ['notify_subject_user' => true],
         );
 
-        NotificationTypeSetting::query()->firstOrCreate(
-            ['type' => NotificationType::ServiceSubscriptionGrace->value],
-            ['notify_subject_user' => true],
-        );
-
-        NotificationTypeSetting::query()->firstOrCreate(
-            ['type' => NotificationType::ServiceSubscriptionExpired->value],
-            ['notify_subject_user' => true],
-        );
-
-        app(NotificationTypeSettingRepositoryInterface::class)->flushCache();
+        $setting->roles()->sync([]);
     }
 }

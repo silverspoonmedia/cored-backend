@@ -37,4 +37,15 @@ return [
         'fulfillment_target' => 'file_hosting',
         'menu_routes' => ['file-hosting.index'],
     ],
+    'Vtual' => [
+        'activation_type' => 'implicit',
+        'fulfillment_target' => null,
+        'menu_routes' => [
+            'vtual.index',
+            'vtual.profiles.index',
+            'vtual.claims.index',
+            'vtual.claims.staff',
+            'vtual.admin.credentials.index',
+        ],
+    ],
 ];

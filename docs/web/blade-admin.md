@@ -17,11 +17,26 @@ API issues JWT; browser stores it as HttpOnly `auth_token`; web forwards as Bear
 |-------|------|
 | `AuthCookie` | Set/forget cookie (`expires_in`) |
 | `AuthenticateWithJwtCookie` | Bind cookie to `api` guard (never rejects — bad token = guest) |
-| `web.auth` / `web.guest` | Redirect gates |
+| `RefreshJwtCookie` | Silent refresh near `exp` or when expired-but-refreshable; rewrites cookie + re-binds guard |
+| `web.auth` / `web.guest` | Redirect gates (run **after** refresh) |
 | `IntendedUrl` | Post-login return URL (full-page GET only; excludes bell/datatable/tree) |
 | `IssuesAuthCookie` | Login/register → cookie + redirect |
 
-Session holds CSRF, flash, intended URL only — **not** identity.
+**Session holds CSRF, flash, intended URL only — not identity.** If the admin is “kicked out”, debug `auth_token` / `JWT_TTL` / refresh window first, not `SESSION_LIFETIME`.
+
+### Silent refresh (sliding access)
+
+Access JWT hard-expires at `JWT_TTL` (default 60 minutes). Blade never used Laravel’s session guard for login, so without refresh every protected page dies at TTL even while the user is active.
+
+`RefreshJwtCookie` (web stack, after `AuthenticateWithJwtCookie`):
+
+1. Cookie present + valid + remaining life ≤ `JWT_REFRESH_SKEW` minutes → `AuthService::refreshFromToken`, queue new `auth_token`, re-bind `api` guard, swap request cookie so same-request `ApiClient` uses the new Bearer.
+2. Cookie present + guard guest (expired access) but still inside `JWT_REFRESH_TTL` → same refresh path so `web.auth` still passes.
+3. Past refresh window / blacklisted / invalid → leave guest; `web.auth` redirects to login and forgets the stale cookie.
+
+Multi-tab / parallel AJAX: set `JWT_BLACKLIST_GRACE_PERIOD` (default **30s**) so the predecessor JWT stays acceptable briefly after refresh. Grace period `0` causes random 401s right after silent refresh.
+
+Env knobs: [identity](../domains/identity/README.md#configuration), [environment](../platform/environment.md).
 
 ### hCaptcha
 
@@ -47,9 +62,11 @@ Web forwards raw input (except `_token`/`_method`); **API validates**. Never cal
 | Status | UX |
 |--------|-----|
 | 422 + errors | Inline fields + alert; `ajax-form:invalid` |
-| 401/419 auth | Flash + redirect login |
-| CSRF 419 | `reload: true` after alert |
-| 403/5xx | Message alert |
+| **401** (auth death) | Flash `web/session.expired` + redirect login |
+| CSRF **419** (web) | `reload: true` after alert — **not** treated as auth logout |
+| 403/5xx | Message alert (do **not** clear `auth_token`) |
+
+`ConsumesApi` maps only API **401** to the login redirect. Web CSRF 419 is handled by the exception renderer. Dashboard forgets `auth_token` only on `auth/me` **401**; transport/5xx keeps the cookie and surfaces an error.
 
 Client: `window.MonolithApi.handleResponse()` / `datatableAjaxError()`.
 
@@ -69,6 +86,19 @@ Layout namespace: `WEB_LAYOUT` / `config/web.php` (default `adminlte4`).
 ## Views
 
 CDN AdminLTE 4 / Bootstrap 5 / Icons. Scripts order: `MonolithApi` → `ajax-form` → page scripts. Forms: `x-adminlte4::form.ajax`. Select2: [ui-patterns](ui-patterns.md).
+
+### Display data from API Resources
+
+Blade is an API consumer. Money, dates, and byte sizes arrive **already human-readable** from Eloquent Resources (dual fields). See [platform/crud.md — API Resource presentation](../platform/crud.md#api-resource-presentation-dual-fields).
+
+| Do | Don't |
+|----|--------|
+| Dump `amount_formatted`, `created_at_formatted` / `created_at_human`, `size_human` | `number_format(...)` on money from API |
+| Bind DataTables columns to `*_formatted` / `*_human` | Concatenate `currency + ' ' + raw` in JS |
+| Use quota `used_bytes_human` / `quota_bytes_human` | Copy-paste `$formatBytes` closures in Blade |
+| Pass preformatted strings into payment hero / checkout callouts | `Carbon::parse(...)->diffForHumans()` in views |
+
+Raw numeric/ISO fields remain available for conditionals (`if ((float) credit_amount > 0)`) and math — never for primary display.
 
 ### Theming
 

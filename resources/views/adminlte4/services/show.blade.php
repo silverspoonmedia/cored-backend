@@ -16,11 +16,11 @@
             <dt class="col-sm-3">{{ __('web/services.form.plan_kind') }}</dt>
             <dd class="col-sm-9">{{ data_get($service, 'plan_kind') ?: '—' }}</dd>
             <dt class="col-sm-3">{{ __('web/services.form.storage_bytes') }}</dt>
-            <dd class="col-sm-9">{{ number_format((int) data_get($service, 'storage_bytes', 0)) }}</dd>
+            <dd class="col-sm-9">{{ data_get($service, 'storage_bytes_human') ?: data_get($service, 'storage_bytes', 0) }}</dd>
             <dt class="col-sm-3">{{ __('web/services.columns.prices') }}</dt>
             <dd class="col-sm-9">
                 @forelse ($prices as $price)
-                    <div>{{ data_get($price, 'currency') }} {{ number_format((float) data_get($price, 'amount', 0), 2) }}</div>
+                    <div>{{ data_get($price, 'amount_formatted') ?: (data_get($price, 'currency').' '.data_get($price, 'amount')) }}</div>
                 @empty
                     —
                 @endforelse
@@ -43,7 +43,7 @@
                     <select name="currency" id="checkout-currency" class="form-select">
                         @foreach ($prices as $price)
                             <option value="{{ data_get($price, 'currency') }}" @selected(data_get($price, 'currency') === $defaultCurrency)>
-                                {{ data_get($price, 'currency') }} — {{ number_format((float) data_get($price, 'amount', 0), 2) }}
+                                {{ data_get($price, 'amount_formatted') ?: (data_get($price, 'currency').' — '.data_get($price, 'amount')) }}
                             </option>
                         @endforeach
                     </select>

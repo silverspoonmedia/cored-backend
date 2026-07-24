@@ -21,7 +21,10 @@ class MenuSeeder extends Seeder
 
     public function run(): void
     {
+        // Existing installs: upgrade flat vTual leaf into parent + children (idempotent).
         if (Menu::query()->exists()) {
+            $this->ensureVtualMenuBranch();
+
             return;
         }
 
@@ -116,6 +119,9 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
 
+        // vTual: parent + children (hidden when product activation off via menu_routes).
+        $this->seedVtualBranchUnder($products->id, 2);
+
         $admin = Menu::query()->create([
             'parent_id' => null,
             'layout' => MenuLayout::SIDEBAR,
@@ -156,6 +162,22 @@ class MenuSeeder extends Seeder
             'is_authenticate' => true,
         ]);
         $errorLogItem->roles()->sync($adminRoleIds);
+
+        $vtualCredentialsItem = Menu::query()->create([
+            'parent_id' => $admin->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => [
+                'en' => 'vTual platform credentials',
+                'id' => 'Kredensial platform vTual',
+                'ja' => 'vTual プラットフォーム認証情報',
+            ],
+            'icon' => 'bi bi-key',
+            'route' => 'vtual.admin.credentials.index',
+            'type' => 'p',
+            'order' => 6,
+            'is_authenticate' => true,
+        ]);
+        $vtualCredentialsItem->roles()->sync($adminRoleIds);
 
         $productActivationsItem = Menu::query()->create([
             'parent_id' => $admin->id,
@@ -282,5 +304,174 @@ class MenuSeeder extends Seeder
         ]);
 
         app(MenuRepositoryInterface::class)->flushNavigationCache();
+    }
+
+    /**
+     * Fresh install: create vTual parent under Products with overview / claim / registry children.
+     */
+    private function seedVtualBranchUnder(string $productsId, int $order): void
+    {
+        $staffRoleIds = Role::query()
+            ->where('guard_name', 'api')
+            ->whereIn('name', ['Root', 'Admin', 'Moderator'])
+            ->pluck('id')
+            ->all();
+
+        $parent = Menu::query()->create([
+            'parent_id' => $productsId,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'vTual', 'id' => 'vTual', 'ja' => 'vTual'],
+            'icon' => 'bi bi-broadcast',
+            'route' => null,
+            'type' => 'p',
+            'order' => $order,
+            'is_authenticate' => true,
+        ]);
+
+        $this->createVtualChildren($parent->id, $staffRoleIds);
+    }
+
+    /**
+     * Existing installs: convert flat vTual leaf (route=vtual.index) into parent + children.
+     * Idempotent — safe to re-run.
+     */
+    private function ensureVtualMenuBranch(): void
+    {
+        $staffRoleIds = Role::query()
+            ->where('guard_name', 'api')
+            ->whereIn('name', ['Root', 'Admin', 'Moderator'])
+            ->pluck('id')
+            ->all();
+
+        // Already has claim child → branch present; ensure newer children (idempotent add).
+        if (Menu::query()->where('route', 'vtual.claims.index')->exists()) {
+            $registry = Menu::query()->where('route', 'vtual.claims.staff')->first();
+            if ($registry !== null && $staffRoleIds !== []) {
+                $registry->roles()->sync($staffRoleIds);
+            }
+
+            $parent = Menu::query()->where('route', 'vtual.claims.index')->first()?->parent_id;
+            if ($parent !== null) {
+                $this->createVtualChildren($parent, $staffRoleIds);
+            }
+
+            app(MenuRepositoryInterface::class)->flushNavigationCache();
+
+            return;
+        }
+
+        $leaf = Menu::query()
+            ->where('route', 'vtual.index')
+            ->where('type', 'p')
+            ->first();
+
+        if ($leaf === null) {
+            $products = Menu::query()
+                ->whereNull('parent_id')
+                ->where('type', 'h')
+                ->where('layout', MenuLayout::SIDEBAR)
+                ->get()
+                ->first(fn (Menu $m) => $m->getTranslation('name', 'en') === 'Products');
+
+            if ($products === null) {
+                return;
+            }
+
+            $this->seedVtualBranchUnder($products->id, 2);
+            app(MenuRepositoryInterface::class)->flushNavigationCache();
+
+            return;
+        }
+
+        // Promote leaf to parent (no direct route; children hold destinations).
+        $leaf->forceFill([
+            'route' => null,
+            'icon' => $leaf->icon ?: 'bi bi-broadcast',
+        ])->save();
+
+        $this->createVtualChildren($leaf->id, $staffRoleIds);
+        app(MenuRepositoryInterface::class)->flushNavigationCache();
+    }
+
+    /**
+     * @param  list<string|int>  $staffRoleIds
+     */
+    private function createVtualChildren(string $parentId, array $staffRoleIds): void
+    {
+        $children = [
+            [
+                'name' => ['en' => 'Overview', 'id' => 'Ringkasan', 'ja' => '概要'],
+                'icon' => 'bi bi-house',
+                'route' => 'vtual.index',
+                'order' => 1,
+                'staff_only' => false,
+            ],
+            [
+                'name' => ['en' => 'My profiles', 'id' => 'Profil saya', 'ja' => 'マイプロフィール'],
+                'icon' => 'bi bi-person-badge',
+                'route' => 'vtual.profiles.index',
+                'order' => 2,
+                'staff_only' => false,
+            ],
+            [
+                'name' => ['en' => 'Claim as vTuber', 'id' => 'Klaim sebagai vTuber', 'ja' => 'vTuber としてクレーム'],
+                'icon' => 'bi bi-person-check',
+                'route' => 'vtual.claims.index',
+                'order' => 3,
+                'staff_only' => false,
+            ],
+            [
+                'name' => ['en' => 'Registry & pending', 'id' => 'Registry & pending', 'ja' => 'レジストリと保留'],
+                'icon' => 'bi bi-inbox',
+                'route' => 'vtual.claims.staff',
+                'order' => 4,
+                'staff_only' => true,
+            ],
+        ];
+
+        // Update existing first (high order → low) so unique (parent, type, order) never clashes
+        // when inserting a new sibling into a middle slot (e.g. My profiles at order 2).
+        $existingChildren = [];
+        $missingChildren = [];
+        foreach ($children as $child) {
+            if (Menu::query()->where('route', $child['route'])->exists()) {
+                $existingChildren[] = $child;
+            } else {
+                $missingChildren[] = $child;
+            }
+        }
+
+        usort($existingChildren, static fn (array $a, array $b): int => $b['order'] <=> $a['order']);
+
+        foreach (array_merge($existingChildren, $missingChildren) as $child) {
+            $existing = Menu::query()->where('route', $child['route'])->first();
+            if ($existing !== null) {
+                $existing->forceFill([
+                    'parent_id' => $parentId,
+                    'layout' => MenuLayout::SIDEBAR,
+                    'name' => $child['name'],
+                    'icon' => $child['icon'],
+                    'type' => 'c',
+                    'order' => $child['order'],
+                    'is_authenticate' => true,
+                ])->save();
+                $item = $existing;
+            } else {
+                $item = Menu::query()->create([
+                    'parent_id' => $parentId,
+                    'layout' => MenuLayout::SIDEBAR,
+                    'name' => $child['name'],
+                    'icon' => $child['icon'],
+                    'route' => $child['route'],
+                    'type' => 'c',
+                    'order' => $child['order'],
+                    'is_authenticate' => true,
+                ]);
+            }
+
+            if ($child['staff_only'] && $staffRoleIds !== []) {
+                $item->roles()->sync($staffRoleIds);
+            }
+        }
     }
 }

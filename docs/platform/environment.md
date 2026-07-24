@@ -78,10 +78,25 @@ Never bare `config:cache` without verify. After secret changes: `config:rebuild`
 | Cache/queue | database | redis |
 | Notifications | polling | realtime |
 
+## JWT lifecycle (Blade identity)
+
+Blade identity is the HttpOnly `auth_token` cookie (JWT), **not** the Laravel session cookie. Session still needs secure/encrypt settings for CSRF/flash.
+
+| Variable | Role |
+|----------|------|
+| `JWT_TTL` | Access token minutes (cookie max-age) |
+| `JWT_REFRESH_TTL` | Refresh window minutes from `iat` |
+| `JWT_REMEMBER_TTL` | Access TTL when remember-me login |
+| `JWT_REFRESH_SKEW` | Proactive Blade refresh minutes before `exp` |
+| `JWT_BLACKLIST_GRACE_PERIOD` | Seconds old JWT accepted after refresh (parallel tabs; default 30) |
+
+See [identity](../domains/identity/README.md#configuration) and [blade-admin silent refresh](../web/blade-admin.md#silent-refresh-sliding-access).
+
 ## Production checklist
 
 - `APP_ENV=production`, `APP_DEBUG=false`
 - Secure session cookies; `JWT_SECRET` set
+- Prefer non-zero `JWT_BLACKLIST_GRACE_PERIOD` when Blade silent refresh is enabled
 - `config:rebuild`; `oci:kms-verify` if OCI
 - Liveness: `route:list --path=api/ping` shows `GET /api/ping`
 - Network exposure: firewall / reverse proxy as needed (no in-app shared-secret API perimeter)

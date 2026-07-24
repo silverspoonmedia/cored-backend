@@ -86,11 +86,23 @@ class NotificationController extends Controller
     {
         $response = $this->api()->post('notifications/read-all');
 
+        if ($request->expectsJson() && $response->successful()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => __('api/notifications.marked_all_read'),
+                'data' => [
+                    'marked' => (int) $response->json('data.marked', 0),
+                    'unread' => (int) $response->json('data.unread', 0),
+                ],
+            ]);
+        }
+
         return $this->respondFromApi(
             $request,
             $response,
             fn (): RedirectResponse => back()->with('success', __('api/notifications.marked_all_read')),
             __('api/notifications.marked_all_read'),
+            stayOnPageOnSuccess: true,
         );
     }
 

@@ -7,6 +7,7 @@ use App\Http\Middleware\AuthenticateWithJwtCookie;
 use App\Http\Middleware\EnsureWebAuthenticated;
 use App\Http\Middleware\OptionalJwtAuthenticate;
 use App\Http\Middleware\RedirectIfWebAuthenticated;
+use App\Http\Middleware\RefreshJwtCookie;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Support\ApiResponder;
@@ -82,8 +83,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // The Blade frontend authenticates with the same stateless JWT as the
         // API, carried in an HttpOnly cookie. Reading it on every web request
         // lets `permission:`/`role:` middleware and policies work unchanged.
+        // RefreshJwtCookie silently extends access tokens within refresh_ttl so
+        // active admins are not hard-kicked at JWT_TTL.
         $middleware->web(append: [
             AuthenticateWithJwtCookie::class,
+            RefreshJwtCookie::class,
             SetLocale::class,
             SecurityHeaders::class,
         ]);
@@ -93,8 +97,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Resolve locale after auth middleware so users.locale wins over cookie.
+        // Refresh must run after cookie→guard bind and before route `web.auth`.
         $middleware->priority([
             AuthenticateWithJwtCookie::class,
+            RefreshJwtCookie::class,
             OptionalJwtAuthenticate::class,
             Authenticate::class,
             SetLocale::class,

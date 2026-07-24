@@ -49,6 +49,12 @@
                     onSuccess(data);
                 }
 
+                // Let feature UIs update in-place after a successful generic AJAX
+                // form without coupling shared infrastructure to domain markup.
+                document.dispatchEvent(new CustomEvent('ajax-form:success', {
+                    detail: { data: data, form: form },
+                }));
+
                 return { handled: true, success: true };
             }
 

@@ -64,6 +64,36 @@ class BroadcastConnectionTest extends TestCase
         $this->assertNull(BroadcastConnection::clientConfig());
     }
 
+    public function test_socket_client_config_works_without_notification_realtime(): void
+    {
+        config([
+            'notifications.delivery' => 'polling',
+            'broadcasting.default' => 'pusher',
+            'broadcasting.connections.pusher' => [
+                'driver' => 'pusher',
+                'key' => 'public-key',
+                'secret' => 'secret',
+                'app_id' => 'app',
+                'options' => [
+                    'cluster' => 'ap1',
+                    'host' => 'ws.example.test',
+                    'port' => 6001,
+                    'scheme' => 'https',
+                ],
+            ],
+        ]);
+
+        $this->assertNull(BroadcastConnection::clientConfig());
+        $this->assertSame([
+            'key' => 'public-key',
+            'cluster' => 'ap1',
+            'host' => 'ws.example.test',
+            'port' => 6001,
+            'scheme' => 'https',
+            'authEndpoint' => url('/broadcasting/auth'),
+        ], BroadcastConnection::socketClientConfig());
+    }
+
     public function test_client_config_exposes_public_pusher_fields_in_realtime_mode(): void
     {
         config([
@@ -91,5 +121,34 @@ class BroadcastConnectionTest extends TestCase
             'scheme' => 'https',
             'authEndpoint' => url('/broadcasting/auth'),
         ], BroadcastConnection::clientConfig());
+    }
+
+    public function test_client_config_strips_default_pusher_rest_api_host(): void
+    {
+        // Laravel's pusher options default host to api-{cluster}.pusher.com for
+        // the server-side REST client. That must not reach Echo as wsHost.
+        config([
+            'notifications.delivery' => 'realtime',
+            'broadcasting.default' => 'pusher',
+            'broadcasting.connections.pusher' => [
+                'driver' => 'pusher',
+                'key' => 'public-key',
+                'secret' => 'secret',
+                'app_id' => 'app',
+                'options' => [
+                    'cluster' => 'eu',
+                    'host' => 'api-eu.pusher.com',
+                    'port' => 443,
+                    'scheme' => 'https',
+                ],
+            ],
+        ]);
+
+        $config = BroadcastConnection::clientConfig();
+
+        $this->assertNotNull($config);
+        $this->assertNull($config['host']);
+        $this->assertSame('eu', $config['cluster']);
+        $this->assertSame('public-key', $config['key']);
     }
 }

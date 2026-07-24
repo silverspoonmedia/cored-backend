@@ -131,6 +131,20 @@ function initNotificationBell(config) {
         return;
     }
 
+    // Destructure config BEFORE any use of its fields. `const` bindings live in a
+    // temporal dead zone until this line, so touching `labels` earlier throws a
+    // ReferenceError that the caller's try/catch swallows — killing the whole bell.
+    const {
+        urls,
+        labels,
+        realtime,
+        pollingIntervalSeconds = 60,
+        initialUnreadCount = 0,
+        userId,
+        broadcast,
+    } = config;
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
     const badge = bell.querySelector('[data-notification-badge]');
     const list = bell.querySelector('[data-notification-list]');
     const header = bell.querySelector('[data-notification-header]');
@@ -147,10 +161,18 @@ function initNotificationBell(config) {
     }
 
     const headerDefault = header ? header.textContent : '';
-    const { urls, labels, realtime, pollingIntervalSeconds = 60, userId, broadcast } = config;
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
     function setBadge(count) {
+        const readAllButton = bell.querySelector('[data-notification-read-all]');
+
+        if (readAllButton) {
+            readAllButton.disabled = count <= 0;
+        }
+
+        document.dispatchEvent(new CustomEvent('notification-unread-count:changed', {
+            detail: { unread: count },
+        }));
+
         if (count > 0) {
             badge.textContent = count > 99 ? '99+' : String(count);
             badge.classList.remove('d-none');
@@ -166,6 +188,9 @@ function initNotificationBell(config) {
             }
         }
     }
+
+    // Server-rendered bootstrap avoids an initial unread-count HTTP request.
+    setBadge(Number(initialUnreadCount) || 0);
 
     async function refreshBadge() {
         try {
@@ -254,7 +279,11 @@ function initNotificationBell(config) {
     }
 
     function onRealtimePing(eventData = null, fromTabSync = false) {
-        refreshBadge();
+        // Realtime payload carries the recipient's absolute unread count. Set the
+        // badge directly; do not turn a WS event into an HTTP unread-count request.
+        if (Number.isFinite(Number(eventData?.unread_count))) {
+            setBadge(Number(eventData.unread_count));
+        }
 
         if (isDropdownOpen()) {
             refreshList();
@@ -279,6 +308,8 @@ function initNotificationBell(config) {
             tabSync.addEventListener('message', (event) => {
                 if (event.data?.type === 'ping') {
                     onRealtimePing(event.data.eventData || null, true);
+                } else if (event.data?.type === 'read-all') {
+                    applyReadAllState(false);
                 }
             });
         } catch {
@@ -287,7 +318,12 @@ function initNotificationBell(config) {
     }
 
     function onTabVisible() {
-        refreshBadge();
+        // Healthy WS keeps count current. HTTP reconciliation belongs only to
+        // degraded/polling mode; focus itself must not become hidden polling.
+        if (window.notificationRealtime?.enabled === false
+            || window.notificationRealtime?.degraded === true) {
+            refreshBadge();
+        }
 
         if (isDropdownOpen()) {
             refreshList();
@@ -313,31 +349,137 @@ function initNotificationBell(config) {
     /** @type {import('laravel-echo').default | null} */
     let echoInstance = null;
 
+    // Guards against starting the polling interval twice (e.g. realtime setup
+    // succeeds, then the websocket later drops and we fall back to polling).
+    let pollingStarted = false;
+    let badgePollTimer = null;
+
+    // Realtime health tracking. WebSocket is the primary path; polling only kicks
+    // in after the socket stays non-connected past a grace window, and stops again
+    // on reconnect — so the two never overlap while the socket is healthy.
+    const REALTIME_GRACE_MS = 30_000;
+    let graceTimer = null;
+    let hasConnectedOnce = false;
+
+    function setRealtimeHealth(connected, degraded = false) {
+        window.notificationRealtime = { enabled: true, connected, degraded };
+
+        // `connected: false` alone means connecting / inside grace — NOT degraded.
+        // Only emit the fallback event once the 30s grace actually expires.
+        if (connected) {
+            window.dispatchEvent(new CustomEvent('notification-realtime:connected'));
+        } else if (degraded) {
+            window.dispatchEvent(new CustomEvent('notification-realtime:degraded'));
+        }
+    }
+
+    function stopPolling() {
+        if (badgePollTimer) {
+            clearInterval(badgePollTimer);
+            badgePollTimer = null;
+        }
+
+        pollingStarted = false;
+    }
+
     function startPolling() {
+        if (pollingStarted) {
+            return;
+        }
+
+        pollingStarted = true;
+
         const intervalMs = Math.max(1000, Number(pollingIntervalSeconds) * 1000 || 60_000);
 
         refreshBadge();
-        setInterval(refreshBadge, intervalMs);
+        badgePollTimer = setInterval(refreshBadge, intervalMs);
+    }
+
+    // WS recovered (or connected for the first time): cancel any pending grace,
+    // kill fallback polling, mark healthy, and do one catch-up fetch.
+    function onRealtimeConnected() {
+        if (graceTimer) {
+            clearTimeout(graceTimer);
+            graceTimer = null;
+        }
+
+        stopPolling();
+        setRealtimeHealth(true);
+
+        // First connect uses the server-rendered initial count. Later reconnects
+        // reconcile once over HTTP in case events were missed while disconnected.
+        if (hasConnectedOnce) {
+            refreshBadge();
+        }
+
+        hasConnectedOnce = true;
+    }
+
+    // WS is not connected. Start a grace timer once; if still down when it fires,
+    // enter degraded mode (turn on polling). A later reconnect cancels it.
+    function onRealtimeNotConnected() {
+        setRealtimeHealth(false);
+
+        if (graceTimer || badgePollTimer) {
+            return;
+        }
+
+        graceTimer = setTimeout(() => {
+            graceTimer = null;
+            setRealtimeHealth(false, true);
+            startPolling();
+        }, REALTIME_GRACE_MS);
     }
 
     function startRealtime() {
         const pusherKey = broadcast?.key ?? import.meta.env.VITE_PUSHER_APP_KEY;
 
         if (!broadcast?.authEndpoint || !userId || !pusherKey) {
+            window.notificationRealtime = { enabled: false, connected: false };
             startPolling();
 
             return;
         }
 
         try {
-            echoInstance = createNotificationEcho(broadcast, csrf);
+            // Reuse a page-level Echo when File Hosting (or another module) already
+            // opened the socket — avoids double Pusher connections.
+            if (window.__monolithEcho) {
+                echoInstance = window.__monolithEcho;
+            } else {
+                echoInstance = createNotificationEcho(broadcast, csrf);
+                window.__monolithEcho = echoInstance;
+            }
+
+            // Single source of truth for realtime health. Polling is gated behind a
+            // grace window so a healthy socket never runs polling in parallel; a
+            // reconnect tears the fallback back down.
+            const connection = echoInstance?.connector?.pusher?.connection;
+
+            if (connection) {
+                connection.bind('state_change', ({ current }) => {
+                    if (current === 'connected') {
+                        onRealtimeConnected();
+                    } else {
+                        onRealtimeNotConnected();
+                    }
+                });
+
+                // Echo may already be `connecting` before this listener binds.
+                // Seed health from the current state so fallback grace cannot be
+                // skipped when no subsequent failure transition arrives.
+                if (connection.state === 'connected') {
+                    onRealtimeConnected();
+                } else {
+                    onRealtimeNotConnected();
+                }
+            }
 
             echoInstance
                 .private(`App.Models.User.${userId}`)
                 .listen('.activity-notification.received', (e) => onRealtimePing(e, false));
-
-            refreshBadge();
         } catch {
+            window.notificationRealtime = { enabled: false, connected: false };
             startPolling();
         }
     }
@@ -349,20 +491,30 @@ function initNotificationBell(config) {
 
     bell.addEventListener('show.bs.dropdown', refreshList);
 
-    const readAll = bell.querySelector('[data-notification-read-all]');
-
-    if (readAll) {
-        readAll.closest('form')?.addEventListener('submit', () => {
-            setTimeout(() => {
-                refreshBadge();
-                refreshList();
-            }, 400);
+    function applyReadAllState(syncTabs = true) {
+        setBadge(0);
+        list?.querySelectorAll('[data-notification-id]').forEach((item) => {
+            item.classList.remove('fw-semibold');
         });
+        document.dispatchEvent(new CustomEvent('notification-read-all:applied'));
+
+        if (syncTabs) {
+            tabSync?.postMessage({ type: 'read-all', at: Date.now() });
+        }
     }
+
+    // Generic AJAX infrastructure emits success with the submitted form. Apply
+    // mark-all state immediately; no redirect, hard reload, timer, or count fetch.
+    document.addEventListener('ajax-form:success', (event) => {
+        if (event.detail?.form?.matches('[data-notification-read-all-form]')) {
+            applyReadAllState(true);
+        }
+    });
 
     if (realtime) {
         startRealtime();
     } else {
+        window.notificationRealtime = { enabled: false, connected: false };
         startPolling();
     }
 }
@@ -372,8 +524,10 @@ const bellRoot = document.getElementById('notification-bell');
 if (bellRoot?.dataset.notificationConfig) {
     try {
         initNotificationBell(JSON.parse(bellRoot.dataset.notificationConfig));
-    } catch {
-        // Misconfigured JSON — bell stays inert.
+    } catch (error) {
+        // Misconfigured JSON or init failure — bell stays inert. Surface it once
+        // so silent init failures (e.g. a TDZ regression) don't go unnoticed.
+        console.warn('Notification bell failed to initialize:', error);
     }
 }
 

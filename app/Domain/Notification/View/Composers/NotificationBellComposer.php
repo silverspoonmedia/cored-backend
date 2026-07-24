@@ -3,6 +3,7 @@
 namespace App\Domain\Notification\View\Composers;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Notification\Services\NotificationService;
 use App\Support\Broadcasting\BroadcastConnection;
 use App\Support\Web\WebLayout;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,10 @@ use Illuminate\View\View;
  */
 class NotificationBellComposer
 {
+    public function __construct(
+        private readonly NotificationService $notifications,
+    ) {}
+
     public function compose(View $view): void
     {
         $user = Auth::guard('api')->user();
@@ -34,6 +39,9 @@ class NotificationBellComposer
                     'header' => __('web/notifications.header_count'),
                     'badge' => __('web/notifications.unread_count_label'),
                 ],
+                // Bootstrap badge state in the rendered page. Realtime events then
+                // carry absolute counts, so a healthy WS needs no unread-count HTTP.
+                'initialUnreadCount' => $this->notifications->unreadCount($user),
                 'realtime' => $realtime,
                 'pollingIntervalSeconds' => max(1, (int) config('notifications.polling_interval')),
                 'userId' => $userId,

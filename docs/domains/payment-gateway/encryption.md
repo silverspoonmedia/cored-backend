@@ -16,8 +16,8 @@ Tiered crypto for sensitive columns. KEK = OCI KMS master key; DEK per value (AE
 | Piece | Role |
 |-------|------|
 | `OciKmsClient` / `LocalKmsDekClient` | generate/unwrap DEK |
-| `EnvelopeEncryptionService` | encrypt/decrypt; **sole** decrypt audit choke point |
-| `DecryptedValueCache` | Plaintext until change or TTL cap |
+| `EnvelopeEncryptionService` | encrypt/decrypt; **sole** decrypt audit choke point; resolves per-resource TTL |
+| `DecryptedValueCache` | Plaintext until change, explicit forget, or TTL cap |
 | `EnvelopeEncrypted*` casts | Model integration |
 | `CryptoActivityRecorder` | `log_name: crypto` |
 
@@ -26,6 +26,22 @@ Tiered crypto for sensitive columns. KEK = OCI KMS master key; DEK per value (AE
 - One KEK (`OCI_KMS_KEY_ID`); many DEKs  
 - Decrypt cache + fingerprint; skip re-encrypt when plaintext unchanged  
 - No KMS retry loops on IAM failure  
+
+### Decrypt cache TTL
+
+| Config | Meaning |
+|--------|---------|
+| `encryption.decrypted_cache_max_ttl` | Global safety cap (seconds). Default `86400`. `0` = forever until forget. |
+| `encryption.decrypted_cache_ttl_by_resource_type` | Per-`resourceType` override. Missing key → global. |
+
+Current map:
+
+| resourceType | TTL |
+|--------------|-----|
+| `vtual_platform_credentials` | `0` (forever until secret/runtime rewrite / `markFailed` / flush) |
+| (all others) | global `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` |
+
+Prod/Octane: use a **shared** cache store (Redis). Per-worker `array` cache breaks forever semantics across processes.
 
 Envelope JSON v1: `v`, `alg`, `kms_key_id`, `dek_ciphertext`, `iv`, `tag`, `ciphertext`.
 
@@ -38,6 +54,7 @@ Envelope JSON v1: `v`, `alg`, `kms_key_id`, `dek_ciphertext`, `iv`, `tag`, `ciph
 | attachments | `cached_url` |
 | password_reset_tokens | token + blind index |
 | cache | `2fa_token:*` values only |
+| vtual_platform_credentials | `secret_payload`, `runtime_payload` (purpose `vtual`; forever decrypt cache; runtime = system tokens e.g. Twitch app access) |
 
 ## Env (encryption)
 

@@ -103,4 +103,78 @@ class DecryptedValueCacheTest extends TestCase
 
         $this->assertSame(2, Activity::query()->where('log_name', 'crypto')->count());
     }
+
+    public function test_vtual_platform_credentials_resource_uses_forever_ttl(): void
+    {
+        config([
+            'encryption.decrypted_cache_max_ttl' => 86400,
+            'encryption.decrypted_cache_ttl_by_resource_type' => [
+                'vtual_platform_credentials' => 0,
+            ],
+            'encryption.audit_decrypts' => 'cache_miss',
+        ]);
+
+        Carbon::setTestNow('2026-01-01 00:00:00');
+        Cache::flush();
+
+        $service = new EnvelopeEncryptionService(
+            new LocalKmsDekClient,
+            new DecryptedValueCache,
+            new CryptoActivityRecorder,
+            new InvoicePayloadDecryptLogger,
+        );
+
+        $context = new DecryptionContext(
+            'vtual_platform_credentials',
+            'cred-1',
+            'secret_payload',
+            'vtual',
+        );
+        $this->assertSame(0, $service->resolveDecryptCacheTtl($context));
+
+        $envelope = $service->encrypt('{"api_key":"x"}', $context);
+        $service->decrypt($envelope, $context);
+
+        // Beyond global 86400 safety cap — still a hit when resource TTL is 0.
+        Carbon::setTestNow('2026-01-03 00:00:00');
+        $service->decrypt($envelope, $context);
+
+        $this->assertSame(1, Activity::query()->where('log_name', 'crypto')->count());
+
+        Carbon::setTestNow();
+    }
+
+    public function test_non_mapped_resource_type_uses_global_ttl(): void
+    {
+        config([
+            'encryption.decrypted_cache_max_ttl' => 60,
+            'encryption.decrypted_cache_ttl_by_resource_type' => [
+                'vtual_platform_credentials' => 0,
+            ],
+            'encryption.audit_decrypts' => 'cache_miss',
+        ]);
+
+        Carbon::setTestNow('2026-01-01 00:00:00');
+        Cache::flush();
+
+        $service = new EnvelopeEncryptionService(
+            new LocalKmsDekClient,
+            new DecryptedValueCache,
+            new CryptoActivityRecorder,
+            new InvoicePayloadDecryptLogger,
+        );
+
+        $context = new DecryptionContext('users', 'user-ttl', 'two_factor_secret', 'test');
+        $this->assertSame(60, $service->resolveDecryptCacheTtl($context));
+
+        $envelope = $service->encrypt('cached-secret', $context);
+        $service->decrypt($envelope, $context);
+        $this->assertSame(1, Activity::query()->where('log_name', 'crypto')->count());
+
+        Carbon::setTestNow('2026-01-01 00:02:00'); // past 60s
+        $service->decrypt($envelope, $context);
+        $this->assertSame(2, Activity::query()->where('log_name', 'crypto')->count());
+
+        Carbon::setTestNow();
+    }
 }

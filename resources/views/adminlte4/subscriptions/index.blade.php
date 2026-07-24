@@ -37,11 +37,11 @@
                         { data: 'plan_name', title: @json(__('web/payments.subscriptions.datatable.columns.plan_name')) },
                         { data: 'status', title: @json(__('web/payments.subscriptions.datatable.columns.status')) },
                         {
-                            data: 'amount',
+                            data: 'amount_formatted',
                             title: @json(__('web/payments.subscriptions.datatable.columns.amount')),
-                            render: function (value, type, row) {
-                                const currency = row.currency || '';
-                                return value != null ? currency + ' ' + value : '—';
+                            orderable: false,
+                            render: function (value) {
+                                return value != null && value !== '' ? value : '—';
                             },
                         },
                         {

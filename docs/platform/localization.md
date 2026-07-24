@@ -71,6 +71,12 @@ Managed files listed in `config/localization.php` → `managed_files`.
 - `php artisan lang:add …` / `lang:update` for managed packs
 - `LocaleParityTest` fails if app-owned keys drift across locales
 
+## Number & date display (not lang files)
+
+User-facing **numbers and datetimes** (money separators, absolute dates, relative “2 hours ago”) follow `app()->getLocale()` via `App\Support\Presentation\{Date,Money,Byte}Presenter` at the API Resource layer. They are **not** translated through `lang/{locale}/*` string keys.
+
+Blade must not reformat those values — consume Resource companions (`*_formatted`, `*_human`). Contract: [platform/crud.md — API Resource presentation](crud.md#api-resource-presentation-dual-fields).
+
 ## Related
 
 - [web/blade-admin.md](../web/blade-admin.md)

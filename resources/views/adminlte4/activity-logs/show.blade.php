@@ -21,7 +21,7 @@
             </dd>
 
             <dt class="col-sm-3">{{ __('web/activity-log.fields.created_at') }}</dt>
-            <dd class="col-sm-9">{{ $entry['created_at'] ?? '—' }}</dd>
+            <dd class="col-sm-9">{{ $entry['created_at_formatted'] ?? $entry['created_at'] ?? '—' }}</dd>
         </dl>
 
         @if (! empty($entry['attribute_changes']))

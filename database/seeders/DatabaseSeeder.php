@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RoleSeeder::class);
         $this->call(FileHostingRoleSeeder::class);
+        $this->call(VtualRoleSeeder::class);
         $this->call(NotificationTypeSettingSeeder::class);
 
         $admin = User::factory()->create([

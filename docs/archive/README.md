@@ -11,5 +11,6 @@ Some archive files describe a former three-repo workspace (Monolith + Gateway + 
 | [auth-activity-assessment.md](auth-activity-assessment.md) | Auth event → activity log matrix (living summary in [platform/security.md](../platform/security.md)) |
 | [crypto-activity-assessment.md](crypto-activity-assessment.md) | Envelope decrypt audit deep dive (living: [payment-gateway/encryption.md](../domains/payment-gateway/encryption.md)) |
 | [AUDIT-LOG.md](AUDIT-LOG.md) | 2026-06-27 docs vs code audit notes |
+| [vtual-legacy-audit.md](vtual-legacy-audit.md) | broadercastv2 claim ledger + gap analysis before Vtual product domain |
 
 Living architecture: [platform/architecture.md](../platform/architecture.md).

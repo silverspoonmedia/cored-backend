@@ -6,6 +6,7 @@ use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
+use App\Domain\FileHosting\Support\FileHostingRealtime;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
 use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
@@ -24,6 +25,7 @@ class FileService
         private readonly VisibilityService $visibility,
         private readonly WorkspaceAccessService $workspaceAccess,
         private readonly WorkspaceActivityRecorder $activity,
+        private readonly FileHostingRealtime $realtime,
         private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
     ) {}
 
@@ -93,6 +95,8 @@ class FileService
             $this->activity->fileVisibilityChanged($ws, $actor, $file, $from, $value->value);
         }
 
+        $this->realtime->fileListing('visibility', $file, $actor);
+
         return $file;
     }
 
@@ -113,6 +117,8 @@ class FileService
             $ws = $this->workspaceAccess->findOrFail($file->workspace_id);
             $this->activity->fileRenamed($ws, $actor, $file, $from, $name);
         }
+
+        $this->realtime->fileListing('rename', $file, $actor);
 
         return $file;
     }
@@ -135,6 +141,8 @@ class FileService
             $this->activity->fileMoved($ws, $actor, $file, $fromFolder, $folderId);
         }
 
+        $this->realtime->fileListing('move', $file, $actor, fromFolderId: $fromFolder);
+
         return $file;
     }
 
@@ -154,6 +162,9 @@ class FileService
         if ($workspace !== null) {
             $this->activity->fileSoftDeleted($workspace, $actor, $file);
         }
+
+        $this->realtime->fileListing('soft_delete', $file, $actor, includeResource: false);
+        $this->realtime->quotaChanged((string) $file->user_id);
     }
 
     public function restore(User $actor, string $fileId, ?string $userId = null, ?string $workspaceId = null): HostedFile
@@ -180,6 +191,9 @@ class FileService
             $this->activity->fileRestored($workspace, $actor, $file);
         }
 
+        $this->realtime->fileListing('restore', $file, $actor);
+        $this->realtime->quotaChanged((string) $file->user_id);
+
         return $file;
     }
 
@@ -193,6 +207,13 @@ class FileService
             ->whereKey($fileId)
             ->firstOrFail();
 
+        $snapshot = [
+            'id' => $file->id,
+            'user_id' => $file->user_id,
+            'workspace_id' => $file->workspace_id,
+            'folder_id' => $file->folder_id,
+        ];
+
         DB::transaction(function () use ($file): void {
             $this->storage->deleteMany([[
                 'disk' => $file->disk,
@@ -204,6 +225,20 @@ class FileService
         if ($workspace !== null) {
             $this->activity->fileForceDeleted($workspace, $actor, $file);
         }
+
+        $this->realtime->listingChanged(
+            action: 'force_delete',
+            entityType: 'file',
+            entityId: $snapshot['id'],
+            ownerUserId: (string) $snapshot['user_id'],
+            workspaceId: $snapshot['workspace_id'],
+            folderId: $snapshot['folder_id'],
+            actorId: $actor->id,
+        );
+        if ($snapshot['workspace_id'] !== null) {
+            $this->realtime->activityAppended((string) $snapshot['workspace_id'], $actor->id);
+        }
+        $this->realtime->quotaChanged((string) $snapshot['user_id']);
     }
 
     /**
@@ -264,8 +299,10 @@ class FileService
             'view_count' => (int) $file->view_count + 1,
             'last_viewed_at' => Carbon::now(),
         ])->save();
+        $file = $file->refresh();
+        $this->realtime->fileStats($file);
 
-        return $file->refresh();
+        return $file;
     }
 
     /**
@@ -279,6 +316,8 @@ class FileService
             'download_count' => (int) $file->download_count + 1,
             'last_downloaded_at' => Carbon::now(),
         ])->save();
+        $file->refresh();
+        $this->realtime->fileStats($file);
 
         return [
             'url' => $resolved['url'],
@@ -291,11 +330,24 @@ class FileService
         [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
         $value = $this->visibility->normalize($visibility);
 
-        return HostedFile::query()
+        $count = HostedFile::query()
             ->where('user_id', $ownerId)
             ->where('workspace_id', $workspace?->id)
             ->whereKey($fileIds)
             ->update(['visibility' => $value->value]);
+
+        if ($count > 0) {
+            $this->realtime->bulkListing(
+                'bulk_visibility',
+                'file',
+                $fileIds,
+                $ownerId,
+                $workspace?->id,
+                $actor,
+            );
+        }
+
+        return $count;
     }
 
     public function bulkSoftDelete(User $actor, array $fileIds, ?string $userId = null, ?string $workspaceId = null): int
@@ -319,7 +371,20 @@ class FileService
             }
         }
 
-        return $files->count();
+        $count = $files->count();
+        if ($count > 0) {
+            $this->realtime->bulkListing(
+                'bulk_soft_delete',
+                'file',
+                $files->pluck('id')->all(),
+                $ownerId,
+                $workspace?->id,
+                $actor,
+            );
+            $this->realtime->quotaChanged($ownerId);
+        }
+
+        return $count;
     }
 
     private function assertUniqueName(

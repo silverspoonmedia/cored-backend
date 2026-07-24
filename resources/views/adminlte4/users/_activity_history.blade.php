@@ -18,7 +18,7 @@
                                 </a>
                             </td>
                             <td class="text-muted small">{{ data_get($entry, 'causer.name', '—') }}</td>
-                            <td class="text-muted small">{{ $entry['created_at'] ?? '—' }}</td>
+                            <td class="text-muted small">{{ $entry['created_at_human'] ?? $entry['created_at_formatted'] ?? $entry['created_at'] ?? '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

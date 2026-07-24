@@ -4,6 +4,7 @@ namespace App\Domain\Service\Http\Resources;
 
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\ServiceEntitlement;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,6 +13,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class ServiceEntitlementResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
@@ -25,9 +28,9 @@ class ServiceEntitlementResource extends JsonResource
             'service_id' => $this->service_id,
             'status' => $status instanceof EntitlementStatus ? $status->value : (string) $status,
             'quantity' => max(1, (int) $this->quantity),
-            'starts_at' => $this->starts_at?->toIso8601String(),
-            'ends_at' => $this->ends_at?->toIso8601String(),
-            'grace_ends_at' => $this->grace_ends_at?->toIso8601String(),
+            ...$this->dateFields('starts_at', $this->starts_at),
+            ...$this->dateFields('ends_at', $this->ends_at),
+            ...$this->dateFields('grace_ends_at', $this->grace_ends_at),
             'source_purchase_id' => $this->source_purchase_id,
             'is_permanent' => $this->ends_at === null && $status === EntitlementStatus::Active,
         ];

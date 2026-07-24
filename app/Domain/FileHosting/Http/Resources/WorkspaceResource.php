@@ -3,12 +3,15 @@
 namespace App\Domain\FileHosting\Http\Resources;
 
 use App\Domain\FileHosting\Services\WorkspaceAccessService;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin \App\Domain\FileHosting\Models\Workspace */
 class WorkspaceResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
@@ -37,8 +40,8 @@ class WorkspaceResource extends JsonResource
                 'email' => $this->owner->email,
             ]),
             'members' => $this->whenLoaded('activeMembers', fn () => WorkspaceMemberResource::collection($this->activeMembers)),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            ...$this->dateFields('created_at', $this->created_at),
+            ...$this->dateFields('updated_at', $this->updated_at),
         ];
     }
 }

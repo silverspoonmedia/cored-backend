@@ -16,7 +16,14 @@ export function createNotificationEcho(broadcast, csrf) {
 
     const key = broadcast.key ?? import.meta.env.VITE_PUSHER_APP_KEY;
     const cluster = broadcast.cluster ?? import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'mt1';
-    const host = broadcast.host ?? import.meta.env.VITE_PUSHER_HOST ?? undefined;
+    // Only honour an explicit non-empty host (self-hosted / Reverb). Empty VITE
+    // vars and Laravel's default `api-{cluster}.pusher.com` REST host must not
+    // become wsHost — that kills the Pusher-hosted WebSocket connection.
+    const rawHost = broadcast.host ?? import.meta.env.VITE_PUSHER_HOST ?? '';
+    const host = typeof rawHost === 'string' && rawHost.trim() !== ''
+        && !/^api-[a-z0-9-]+\.pusher\.com$/i.test(rawHost.trim())
+        ? rawHost.trim()
+        : undefined;
     const port = Number(broadcast.port ?? import.meta.env.VITE_PUSHER_PORT ?? 443);
     const scheme = broadcast.scheme ?? import.meta.env.VITE_PUSHER_SCHEME ?? 'https';
 

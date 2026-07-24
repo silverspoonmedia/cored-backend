@@ -9,7 +9,7 @@ Do **not** collapse taxonomy and lifecycle into one label.
 | Term | Axis | Meaning |
 |------|------|---------|
 | **Core domain** | Taxonomy (`kind`) | Foundation. Without it the app does not run well (Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service). |
-| **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (FileHosting). Extends core (Identity, H-RBAC, payments, …). |
+| **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (FileHosting, Vtual). Extends core (Identity, H-RBAC, payments, …). |
 | **`locked`** | Lifecycle (product only) | `domain:remove` refuses until you set `'locked' => false` in [`config/domains.php`](../../config/domains.php). |
 | **Removable** | Derived | Product with `locked => false`. Not a config key. |
 | **`DomainManager::PLATFORM_CORE`** | Hard guard | Never-remove list. Config cannot override. |
@@ -22,7 +22,7 @@ Do **not** collapse taxonomy and lifecycle into one label.
 | Kind | Examples | `domain:remove` |
 |------|----------|-----------------|
 | **Core** | Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service + Kernel | **Always refused** — `PLATFORM_CORE`; flipping `kind` in config does nothing |
-| **Product + locked** | Default for `domain:make`; FileHosting | Refused until `'locked' => false` in config |
+| **Product + locked** | Default for `domain:make`; FileHosting, Vtual | Refused until `'locked' => false` in config |
 | **Product + removable** | `domain:make --removable` | Allowed (`--force`) |
 
 There is **no** `domain:unlock` command — unlock is a deliberate config edit.
@@ -33,6 +33,7 @@ There is **no** `domain:unlock` command — unlock is a deliberate config edit.
 // config/domains.php
 'Identity' => ['kind' => 'core'],
 'FileHosting' => ['kind' => 'product', 'locked' => true],
+'Vtual' => ['kind' => 'product', 'locked' => true],
 // removable product: ['kind' => 'product', 'locked' => false]
 ```
 
@@ -67,6 +68,7 @@ app/
 │   ├── ActivityLog/    # Spatie audit trail (core)
 │   ├── ErrorLog/       # Grouped persistent app errors (core)
 │   ├── FileHosting/    # Nested files, chunk S3 upload, Drive-lite share (product, locked)
+│   ├── Vtual/          # Creator aggregator foundation (product, locked)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
 │   └── Service/        # Catalog, entitlements, DB FX→IDR, FH grace/purge (core)
 ├── Http/Middleware/    # Kernel
@@ -98,6 +100,7 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `payment-gateway.php` | Gateways, invoices, subscriptions | core |
 | `service.php` | Service catalog, checkout, service purchases | core |
 | `file-hosting.php` | File hosting (auth + public share) folders/files/uploads | product |
+| `vtual.php` | vTual creators, managements, channels (foundation) | product |
 
 Kernel product registry (`app/Support/Product`): `product-activations.php` is **not** a domain route file — it mounts the cross-domain Product Activation API (self-service + admin). Loaded from `routes/api/v1.php` between core and product domain requires.
 

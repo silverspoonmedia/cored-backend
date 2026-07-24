@@ -172,22 +172,73 @@ class FileManagerController extends Controller
         );
     }
 
-    public function trash(Request $request): View|RedirectResponse
+    public function trash(Request $request): View|RedirectResponse|JsonResponse
     {
         $query = array_filter([
             'user_id' => $request->query('user_id'),
+            'workspace_id' => $request->query('workspace_id'),
         ], fn ($v) => $v !== null && $v !== '');
 
         $response = $this->api()->get('file-hosting/trash', $query);
 
         if (! $response->successful()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $this->apiMessage($response)], $response->status());
+            }
+
             return redirect()->route('file-hosting.index')->with('error', $this->apiMessage($response));
         }
 
+        $data = $response->json('data', []);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $data]);
+        }
+
         return $this->webView('file-hosting.trash', [
-            'trash' => $response->json('data', []),
+            'trash' => $data,
             'ownerUserId' => $request->query('user_id'),
+            'workspaceId' => $request->query('workspace_id'),
         ]);
+    }
+
+    public function quota(Request $request): JsonResponse
+    {
+        $query = array_filter([
+            'user_id' => $request->query('user_id'),
+        ], fn ($v) => $v !== null && $v !== '');
+
+        $response = $this->api()->get('file-hosting/quota', $query);
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json(['data' => $response->json('data', [])]);
+    }
+
+    public function workspaceMembers(Request $request, string $workspace): JsonResponse
+    {
+        $response = $this->api()->get('file-hosting/workspaces/'.$workspace.'/members');
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json(['data' => $response->json('data', [])]);
+    }
+
+    public function workspaceActivity(Request $request, string $workspace): JsonResponse
+    {
+        $response = $this->api()->get('file-hosting/workspaces/'.$workspace.'/activity', [
+            'limit' => (int) $request->query('limit', 30),
+        ]);
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json(['data' => $response->json('data', [])]);
     }
 
     public function storeFolder(Request $request): RedirectResponse|JsonResponse

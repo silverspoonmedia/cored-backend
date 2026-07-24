@@ -2,10 +2,13 @@
 
 namespace App\Support\Product\Http\Resources;
 
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductActivationResource extends JsonResource
 {
+    use FormatsPresentation;
+
     public function toArray($request): array
     {
         return [
@@ -15,12 +18,12 @@ class ProductActivationResource extends JsonResource
             'activation_type' => $this->whenNotNull($this->activation_type?->value),
             'state' => $this->state->value,
             'provisioning_payload' => $this->provisioning_payload,
-            'activated_at' => $this->activated_at?->toIso8601String(),
-            'suspended_at' => $this->suspended_at?->toIso8601String(),
-            'expired_at' => $this->expired_at?->toIso8601String(),
+            ...$this->dateFields('activated_at', $this->activated_at),
+            ...$this->dateFields('suspended_at', $this->suspended_at),
+            ...$this->dateFields('expired_at', $this->expired_at),
             'source' => $this->source,
-            'updated_at' => $this->updated_at?->toIso8601String(),
-            'created_at' => $this->created_at?->toIso8601String(),
+            ...$this->dateFields('updated_at', $this->updated_at),
+            ...$this->dateFields('created_at', $this->created_at),
 
             'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,

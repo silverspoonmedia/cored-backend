@@ -10,6 +10,7 @@ use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Models\WorkspaceInvite;
 use App\Domain\FileHosting\Models\WorkspaceMember;
+use App\Domain\FileHosting\Support\FileHostingRealtime;
 use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -22,6 +23,7 @@ class WorkspaceService
     public function __construct(
         private readonly WorkspaceAccessService $workspaceAccess,
         private readonly WorkspaceActivityRecorder $activity,
+        private readonly FileHostingRealtime $realtime,
     ) {}
 
     /**
@@ -115,6 +117,8 @@ class WorkspaceService
         app(DirectUploadService::class)->abortPendingForWorkspace($workspace->id);
 
         $this->activity->workspaceArchived($workspace, $actor);
+        $this->realtime->membersChanged((string) $workspace->id, 'archived', actorId: $actor->id);
+        $this->realtime->activityAppended((string) $workspace->id, $actor->id);
 
         return $workspace->refresh();
     }
@@ -186,6 +190,8 @@ class WorkspaceService
         ]);
 
         $this->activity->memberInvited($workspace, $actor, $email, $roleEnum->value);
+        $this->realtime->membersChanged((string) $workspace->id, 'invited', userId: $target?->id, actorId: $actor->id);
+        $this->realtime->activityAppended((string) $workspace->id, $actor->id);
 
         return $invite->load(['workspace', 'inviter']);
     }
@@ -221,7 +227,7 @@ class WorkspaceService
 
         $this->workspaceAccess->assertOwnerEligibleForCollab($workspace->owner_user_id);
 
-        return DB::transaction(function () use ($actor, $invite, $workspace): WorkspaceMember {
+        $member = DB::transaction(function () use ($actor, $invite, $workspace): WorkspaceMember {
             $member = WorkspaceMember::query()->updateOrCreate(
                 [
                     'workspace_id' => $workspace->id,
@@ -244,6 +250,11 @@ class WorkspaceService
 
             return $member->load('user');
         });
+
+        $this->realtime->membersChanged((string) $workspace->id, 'joined', userId: $actor->id, actorId: $actor->id);
+        $this->realtime->activityAppended((string) $workspace->id, $actor->id);
+
+        return $member;
     }
 
     public function updateMemberRole(User $actor, string $workspaceId, string $memberUserId, string $role): WorkspaceMember
@@ -271,6 +282,8 @@ class WorkspaceService
 
         $target = User::query()->findOrFail($memberUserId);
         $this->activity->memberRoleChanged($workspace, $actor, $target, $from, $roleEnum->value);
+        $this->realtime->membersChanged((string) $workspace->id, 'role_changed', userId: $memberUserId, actorId: $actor->id);
+        $this->realtime->activityAppended((string) $workspace->id, $actor->id);
 
         return $member->fresh(['user']);
     }
@@ -294,6 +307,8 @@ class WorkspaceService
 
         $target = User::query()->findOrFail($memberUserId);
         $this->activity->memberRemoved($workspace, $actor, $target);
+        $this->realtime->membersChanged((string) $workspace->id, 'removed', userId: $memberUserId, actorId: $actor->id);
+        $this->realtime->activityAppended((string) $workspace->id, $actor->id);
     }
 
     /**

@@ -46,12 +46,29 @@ class BroadcastConnection
 
     /**
      * Client-safe Pusher / Echo options for the Blade bell (no secrets).
+     * Requires APP_NOTIFICATION_TYPE=realtime AND configured credentials.
      *
      * @return array<string, mixed>|null
      */
     public static function clientConfig(): ?array
     {
         if (! self::usesRealtimeNotifications()) {
+            return null;
+        }
+
+        return self::socketClientConfig();
+    }
+
+    /**
+     * Client-safe Pusher / Echo options whenever a broadcast driver is configured.
+     * Independent of APP_NOTIFICATION_TYPE so other domains (e.g. File Hosting
+     * live listing) can use websockets while the bell stays on polling.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function socketClientConfig(): ?array
+    {
+        if (! self::isConfigured()) {
             return null;
         }
 
@@ -64,13 +81,36 @@ class BroadcastConnection
 
         $options = is_array($config['options'] ?? null) ? $config['options'] : [];
 
+        // Only pass a host override for self-hosted / Reverb sockets. Laravel's
+        // default pusher options set host to `api-{cluster}.pusher.com` (the REST
+        // API host). Echo treats any host as wsHost and then the browser never
+        // reaches Pusher's real WebSocket endpoint — silent "always polling".
+        $host = self::clientSocketHost($options['host'] ?? null);
+
         return [
             'key' => $config['key'],
             'cluster' => $options['cluster'] ?? null,
-            'host' => $options['host'] ?? null,
+            'host' => $host,
             'port' => (int) ($options['port'] ?? 443),
             'scheme' => $options['scheme'] ?? 'https',
             'authEndpoint' => url('/broadcasting/auth'),
         ];
+    }
+
+    /**
+     * Socket host for the browser Echo client, or null for Pusher-hosted WS.
+     */
+    private static function clientSocketHost(mixed $host): ?string
+    {
+        if (! is_string($host) || $host === '') {
+            return null;
+        }
+
+        // Default Laravel pusher REST host — must NOT be used as wsHost.
+        if (preg_match('/^api-[a-z0-9-]+\.pusher\.com$/i', $host) === 1) {
+            return null;
+        }
+
+        return $host;
     }
 }

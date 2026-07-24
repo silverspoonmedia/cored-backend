@@ -4,13 +4,6 @@
     $folders = collect($browse['folders'] ?? []);
     $files = collect($browse['files'] ?? []);
 
-    $formatBytes = function (int $bytes): string {
-        if ($bytes === 0) return '—';
-        if ($bytes < 1024) return $bytes . ' B';
-        if ($bytes < 1024 * 1024) return number_format($bytes / 1024, 1) . ' KB';
-        if ($bytes < 1024 * 1024 * 1024) return number_format($bytes / (1024 * 1024), 1) . ' MB';
-        return number_format($bytes / (1024 * 1024 * 1024), 1) . ' GB';
-    };
 @endphp
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-bs-theme="light">
@@ -99,7 +92,7 @@
                             </a>
                         </td>
                         <td class="fh-table__type">{{ $file['mime'] ?? __('web/file-hosting.type_file') }}</td>
-                        <td class="fh-table__size">{{ $formatBytes((int) ($file['size'] ?? 0)) }}</td>
+                        <td class="fh-table__size">{{ $file['size_human'] ?? '—' }}</td>
                     </tr>
                 @endforeach
                         </tbody>

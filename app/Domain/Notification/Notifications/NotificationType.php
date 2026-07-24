@@ -19,6 +19,13 @@ enum NotificationType: string
     // Broadcast: a new user was created (seen by Root + Admin).
     case UserCreated = 'user_created';
 
+    // Broadcast: an existing user was updated (seen by Root + Admin) — drives the
+    // users list live reload. Distinct from AccountUpdated, which is personal.
+    case UserUpdated = 'user_updated';
+
+    // Broadcast: a user was deleted (seen by Root + Admin) — drives list reload.
+    case UserDeleted = 'user_deleted';
+
     // Personal: a user's own account was updated (seen by that user only).
     case AccountUpdated = 'account_updated';
 
@@ -35,6 +42,8 @@ enum NotificationType: string
     {
         return match ($this) {
             self::UserCreated => 'bi bi-person-plus',
+            self::UserUpdated => 'bi bi-person-gear',
+            self::UserDeleted => 'bi bi-person-x',
             self::AccountUpdated => 'bi bi-person-gear',
             self::ServiceSubscriptionGrace => 'bi bi-hourglass-split',
             self::ServiceSubscriptionExpired => 'bi bi-exclamation-triangle',
@@ -49,7 +58,9 @@ enum NotificationType: string
     public function defaultRoles(): array
     {
         return match ($this) {
-            self::UserCreated => ['Root', 'Admin'],
+            self::UserCreated,
+            self::UserUpdated,
+            self::UserDeleted => ['Root', 'Admin'],
             self::AccountUpdated,
             self::ServiceSubscriptionGrace,
             self::ServiceSubscriptionExpired => [],
@@ -71,7 +82,9 @@ enum NotificationType: string
     public function tableId(): ?string
     {
         return match ($this) {
-            self::UserCreated => 'users-table',
+            self::UserCreated,
+            self::UserUpdated,
+            self::UserDeleted => 'users-table',
             self::AccountUpdated,
             self::ServiceSubscriptionGrace,
             self::ServiceSubscriptionExpired => null,

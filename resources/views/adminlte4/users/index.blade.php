@@ -68,6 +68,63 @@
                 // Expose DataTable API for live reload via notifications
                 window.dataTables = window.dataTables || {};
                 window.dataTables['users-table'] = table;
+
+                // WebSocket is the primary live-reload path (bell ping ->
+                // reloadDataTable). Polling is ONLY a fallback: it runs while the
+                // socket is degraded (down past the bell's grace window) and is torn
+                // down the moment it reconnects, so the two never overlap.
+                let lastReload = 0;
+                let tablePollTimer = null;
+
+                function refreshUsersTable() {
+                    if (document.visibilityState !== 'visible') {
+                        return;
+                    }
+
+                    const now = Date.now();
+
+                    if (now - lastReload < 2000) {
+                        return; // debounce
+                    }
+
+                    lastReload = now;
+                    table.ajax.reload(null, false); // false = keep current paging
+                }
+
+                function startTablePolling() {
+                    if (tablePollTimer) {
+                        return;
+                    }
+
+                    refreshUsersTable();
+                    tablePollTimer = setInterval(refreshUsersTable, 60000);
+                }
+
+                function stopTablePolling() {
+                    if (tablePollTimer) {
+                        clearInterval(tablePollTimer);
+                        tablePollTimer = null;
+                    }
+                }
+
+                // Follow the realtime health broadcast by bell.js: healthy socket =>
+                // no polling (pure WS); degraded => polling on; reconnect => polling
+                // off + one catch-up reload.
+                window.addEventListener('notification-realtime:connected', function () {
+                    stopTablePolling();
+                    refreshUsersTable();
+                });
+                window.addEventListener('notification-realtime:degraded', startTablePolling);
+
+                // Initial state: bell.js may have set health before this inline script
+                // ran. Start polling only if realtime is disabled entirely (pure
+                // polling mode) or already degraded; otherwise wait for events so a
+                // healthy socket never triggers polling.
+                const realtimeHealth = window.notificationRealtime;
+
+                if (realtimeHealth && (realtimeHealth.enabled === false || realtimeHealth.degraded === true)) {
+                    startTablePolling();
+                }
             });
         </script>
     </x-slot:scripts>

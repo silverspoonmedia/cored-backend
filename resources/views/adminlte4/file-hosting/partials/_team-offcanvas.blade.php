@@ -97,7 +97,7 @@
                             <th></th>
                         </tr>
                         </thead>
-                        <tbody>
+                        <tbody data-fh-members-body>
                         @foreach ($workspaceMembers as $m)
                             @php
                                 $mUserId = $m['user_id'] ?? null;
@@ -163,10 +163,10 @@
         <div class="border-top pt-3 flex-grow-1 d-flex flex-column min-h-0">
             <strong class="small d-block mb-2">{{ __('web/file-hosting.workspace_activity') }}</strong>
             @if ($workspaceActivity->isNotEmpty())
-                <ul class="list-group list-group-flush small fh-team-offcanvas__activity">
+                <ul class="list-group list-group-flush small fh-team-offcanvas__activity" data-fh-activity-list>
                     @foreach ($workspaceActivity->take(30) as $row)
                         <li class="list-group-item px-0 py-1">
-                            <span class="text-muted">{{ $row['created_at'] ?? '' }}</span>
+                            <span class="text-muted">{{ $row['created_at_formatted'] ?? $row['created_at'] ?? '' }}</span>
                             —
                             <strong>{{ $row['causer']['email'] ?? $row['causer']['name'] ?? 'system' }}</strong>
                             {{ $row['event'] ?? $row['description'] ?? '' }}

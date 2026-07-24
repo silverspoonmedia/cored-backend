@@ -3,6 +3,7 @@
 namespace App\Domain\Service\Http\Resources;
 
 use App\Domain\Service\Models\ServicePrice;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,6 +12,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class ServicePriceResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
@@ -19,7 +22,7 @@ class ServicePriceResource extends JsonResource
         return [
             'id' => $this->id,
             'currency' => $this->currency,
-            'amount' => (float) $this->amount,
+            ...$this->moneyFields('amount', $this->amount, $this->currency, asFloat: true),
         ];
     }
 }

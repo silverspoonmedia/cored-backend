@@ -80,3 +80,4 @@ Any change that adds or modifies user-facing text (Blade labels, API `message` s
 - Assume Blade has hosted Snap checkout UI — channel-only on Blade; see [payment-gateway](../domains/payment-gateway/README.md).
 - Create new documentation as a subject file at `docs/*.md` root — place under `domains/`, `platform/`, `web/`, `integration/`, `agents/`, or `archive/` per [docs/README.md](../README.md#rules-for-new-documentation-mandatory).
 - Ship a change touching only one of API / Web / Blade / translations when the others are affected, without an explicit `[backend]`/`[frontend]` scope tag (rule 1).
+- Change vTual `PlatformApiGateway` surface without updating the admin platform-api-probe in the same PR — probe must mirror production methods; see [vTual README — Admin probe](../domains/vtual/README.md#admin-probe-permanent-rootadmin-debug).

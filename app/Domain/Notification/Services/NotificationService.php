@@ -137,9 +137,21 @@ class NotificationService
         }
 
         $type = NotificationType::from($notification->type);
+        $recipientIds = $this->notifications->recipientUserIds($notification);
+        $recipients = User::query()->whereKey($recipientIds)->get()->keyBy('id');
 
-        foreach ($this->notifications->recipientUserIds($notification) as $userId) {
-            event(new UserActivityNotificationReceived($userId, $type));
+        foreach ($recipientIds as $userId) {
+            $recipient = $recipients->get($userId);
+
+            if (! $recipient instanceof User) {
+                continue;
+            }
+
+            event(new UserActivityNotificationReceived(
+                $userId,
+                $type,
+                $this->notifications->unreadCountForViewer($recipient),
+            ));
         }
     }
 }

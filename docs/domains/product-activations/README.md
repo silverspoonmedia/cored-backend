@@ -29,7 +29,7 @@ Paid entitlement was already tracked by `service_entitlements` (Active / Grace /
 
 | Type | Behavior | Example |
 |------|----------|---------|
-| **Implicit** | Auto-activated on register. No provisioning step. Lifecycle: `active` ↔ `suspended`. | File Hosting |
+| **Implicit** | Auto-activated on register. No provisioning step. Lifecycle: `active` ↔ `suspended`. | File Hosting, Vtual |
 | **Explicit** | Requires provisioning / approval before `active`. Lifecycle: `pending` → `active` → `suspended` → `expired`. | Future products (e.g. KYC-gated billing) |
 
 Declared in `config/products.php`:
@@ -39,6 +39,16 @@ Declared in `config/products.php`:
     'activation_type' => 'implicit',
     'fulfillment_target' => 'file_hosting',
     'menu_routes' => ['file-hosting.index'], // menu routes hidden when not Active
+],
+'Vtual' => [
+    'activation_type' => 'implicit',
+    'fulfillment_target' => null,
+    'menu_routes' => [
+        'vtual.index',
+        'vtual.claims.index',
+        'vtual.claims.staff',
+        'vtual.admin.credentials.index',
+    ],
 ],
 ```
 
@@ -291,4 +301,5 @@ composer test -- --filter=Product
 - [service/README.md](../service/README.md) — paid entitlement, `fulfillment_target` dispatch
 - [identity/README.md](../identity/README.md) — register flow, H-RBAC
 - [file-hosting/README.md](../file-hosting/README.md) — first implicit product, middleware wiring
+- [vtual/README.md](../vtual/README.md) — second implicit product (creator aggregator foundation)
 - [platform/architecture.md](../../platform/architecture.md) — kernel `app/Support/*` layout

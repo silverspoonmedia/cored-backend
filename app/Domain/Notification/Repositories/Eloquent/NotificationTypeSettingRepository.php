@@ -19,12 +19,12 @@ class NotificationTypeSettingRepository implements NotificationTypeSettingReposi
      */
     public function listAll(): Collection
     {
-        return $this->snapshot()->values();
+        return $this->freshSettings()->values();
     }
 
     public function findByType(string $type): ?NotificationTypeSetting
     {
-        return $this->snapshot()->get($type);
+        return $this->freshSettings()->get($type);
     }
 
     public function read(string $type): NotificationTypeSetting
@@ -72,12 +72,12 @@ class NotificationTypeSettingRepository implements NotificationTypeSettingReposi
         ?array $overrideRoles = null,
         array $overrideUsers = [],
     ): array {
-        $setting = $this->findByType($type->value);
+        $setting = $this->snapshot()[$type->value] ?? null;
 
         if ($overrideRoles !== null) {
             $roles = $overrideRoles;
         } elseif ($setting !== null) {
-            $roles = $setting->roles->pluck('name')->values()->all();
+            $roles = $setting['roles'];
         } else {
             $roles = $type->defaultRoles();
         }
@@ -87,10 +87,10 @@ class NotificationTypeSettingRepository implements NotificationTypeSettingReposi
         if ($setting !== null) {
             $users = array_values(array_unique([
                 ...$users,
-                ...$setting->targetUsers->pluck('id')->all(),
+                ...$setting['users'],
             ]));
 
-            if ($setting->notify_subject_user) {
+            if ($setting['notify_subject_user']) {
                 $subjectId = $data['subject_user_id'] ?? null;
 
                 if (is_string($subjectId) && $subjectId !== '') {
@@ -111,18 +111,42 @@ class NotificationTypeSettingRepository implements NotificationTypeSettingReposi
     }
 
     /**
-     * @return Collection<string, NotificationTypeSetting>
+     * Cached audience snapshot as PLAIN PRIMITIVES keyed by type.
+     *
+     * We deliberately never cache hydrated Eloquent models here. A persistent
+     * cache store (database/redis) serializes whatever it's given; storing model
+     * graphs means a class/relation change (or an autoload mismatch on another
+     * host) deserializes into __PHP_Incomplete_Class, which then violates the
+     * Collection return type and throws a TypeError. Primitives are immune.
+     *
+     * @return array<string, array{notify_subject_user: bool, roles: list<string>, users: list<string>}>
      */
-    private function snapshot(): Collection
+    private function snapshot(): array
     {
-        /** @var Collection<string, NotificationTypeSetting> $settings */
-        $settings = Cache::rememberForever(self::CACHE_KEY, function (): Collection {
-            return NotificationTypeSetting::query()
-                ->with(['roles', 'targetUsers'])
-                ->get()
-                ->keyBy('type');
+        /** @var array<string, array{notify_subject_user: bool, roles: list<string>, users: list<string>}> $snapshot */
+        $snapshot = Cache::rememberForever(self::CACHE_KEY, function (): array {
+            return $this->freshSettings()
+                ->map(fn (NotificationTypeSetting $setting): array => [
+                    'notify_subject_user' => (bool) $setting->notify_subject_user,
+                    'roles' => $setting->roles->pluck('name')->values()->all(),
+                    'users' => $setting->targetUsers->pluck('id')->values()->all(),
+                ])
+                ->all();
         });
 
-        return $settings;
+        return $snapshot;
+    }
+
+    /**
+     * Fresh, uncached settings keyed by type (with relations eager loaded).
+     *
+     * @return Collection<string, NotificationTypeSetting>
+     */
+    private function freshSettings(): Collection
+    {
+        return NotificationTypeSetting::query()
+            ->with(['roles', 'targetUsers'])
+            ->get()
+            ->keyBy('type');
     }
 }

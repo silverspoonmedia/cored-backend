@@ -50,8 +50,10 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
             ->name('two-factor.disable');
     });
 
+    // Single refresh inside AuthService (no jwt.refresh middleware — that layer
+    // would double-refresh and race the blacklist before the controller returns).
     Route::post('refresh', [AuthController::class, 'refresh'])
-        ->middleware('jwt.refresh')
+        ->middleware('throttle:30,1')
         ->name('refresh');
 });
 

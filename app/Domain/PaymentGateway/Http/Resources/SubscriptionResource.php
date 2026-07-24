@@ -3,17 +3,22 @@
 namespace App\Domain\PaymentGateway\Http\Resources;
 
 use App\Domain\PaymentGateway\Models\Subscription;
+use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin Subscription */
 class SubscriptionResource extends JsonResource
 {
+    use FormatsPresentation;
+
     /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
+        $currency = $this->currency;
+
         return [
             'id' => $this->id,
             'subscription_number' => $this->subscription_number,
@@ -23,17 +28,17 @@ class SubscriptionResource extends JsonResource
             'plan_name' => $this->plan_name,
             'plan_description' => $this->plan_description,
             'billing_cycle' => $this->billing_cycle?->value ?? $this->billing_cycle,
-            'amount' => $this->amount,
-            'currency' => $this->currency,
+            ...$this->moneyFields('amount', $this->amount, $currency),
+            'currency' => $currency,
             'status' => $this->status?->value ?? $this->status,
-            'trial_ends_at' => $this->trial_ends_at?->toIso8601String(),
-            'started_at' => $this->started_at?->toIso8601String(),
-            'expires_at' => $this->expires_at?->toIso8601String(),
+            ...$this->dateFields('trial_ends_at', $this->trial_ends_at),
+            ...$this->dateFields('started_at', $this->started_at),
+            ...$this->dateFields('expires_at', $this->expires_at),
             'auto_renew' => $this->auto_renew,
-            'cancelled_at' => $this->cancelled_at?->toIso8601String(),
+            ...$this->dateFields('cancelled_at', $this->cancelled_at),
             'invoice' => $this->whenLoaded('invoice', fn () => new InvoiceResource($this->invoice)),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            ...$this->dateFields('created_at', $this->created_at),
+            ...$this->dateFields('updated_at', $this->updated_at),
         ];
     }
 }
