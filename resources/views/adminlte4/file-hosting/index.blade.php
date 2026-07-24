@@ -317,6 +317,11 @@
                 <strong data-fh-bulk-count>0</strong> {{ __('web/file-hosting.bulk.selected') }}
             </span>
             <div class="fh-bulk-bar__actions">
+                @canany(['edit file hosting file', 'edit file hosting folder'])
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-fh-bulk-action="move">
+                        <i class="bi bi-folder-symlink me-1"></i>{{ __('web/file-hosting.bulk.move') }}
+                    </button>
+                @endcanany
                 @can('edit file hosting file')
                     <button type="button" class="btn btn-outline-success btn-sm" data-fh-bulk-action="share"
                             data-fh-confirm="{{ __('web/file-hosting.bulk.confirm_share') }}">

@@ -188,6 +188,7 @@ return [
         'selected' => '選択中',
         'select_all' => 'すべて選択',
         'select_item' => 'アイテムを選択',
+        'move' => '移動',
         'share' => '共有',
         'unshare' => '非公開にする',
         'delete' => '削除',

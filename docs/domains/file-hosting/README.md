@@ -14,6 +14,22 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Menu auto-hide | `file-hosting.index` menu route bound via `config/products.php` `menu_routes`; hidden when user's FH activation is not `active` |
 | Analytics | `HostedFile` Eloquent events (`created`/`deleted`/`restored`) + `WorkspaceService::create` + `FolderRepository::restore` write to `product_analytics` via `ProductAnalyticsService` (see [Product Activations § Stored analytics](../product-activations/README.md#stored-analytics-v3)) |
 
+### Current product surface
+
+What FH is **today** (auth browse + guest share). Deep dives live in sections below.
+
+| Surface | Behavior |
+|---------|----------|
+| Auth UI | Blade SSR first paint + **FH-only client router** + vanilla ES modules — **not** React/Inertia and **not** a monorepo-wide SPA. See [UI architecture / SPA shell](#ui-architecture--spa-shell). |
+| Browse gestures | Drive-like select / context menu / drag-move; bulk bar **Move / share / unshare / delete**. Single and bulk stay in lockstep — [Drive-like listing](#drive-like-listing-interactions-browse-only), [Action surface parity](#action-surface-parity-single--bulk). |
+| Nested folders | Virtual first row/card **`...`** (parent) + breadcrumb chips as drop targets (`data-fh-drop-folder`). Root has no `...`. |
+| Live listing | Dedicated private Echo channels + soft-refetch (listing/quota/trash/show). **Not** the notification bell bus. See [Realtime / live listing](#realtime--live-listing). |
+| Display names | Upload complete + **file/folder move** auto-rename on sibling collision (`UniqueDisplayNameAllocator`). Manual rename still rejects exact collisions. |
+| Public share | Guest `/s/f` / `/s/d` only when storage owner is **paid** (`QuotaService::ownerCanPublicShare`). Free/grace → 404 even if DB says `anyone_with_link`. See [Visibility](#visibility). |
+| Storage regions | Multi-disk `s3FileHosting*` (+ legacy `s3Custom` alias). Region column/badge only when multi-region config **or** historical multi-disk usage. |
+| Hard navigation | **Download hops only** (auth + signed public → 302 S3). In-shell mutations and folder/file/trash/show soft-nav do **not** rely on `location.reload`. |
+| Busy / upload UX | Mutations toggle `.is-fh-busy` spinner overlay; upload queue shows human file size. |
+
 ## Concepts
 
 | Concept | Behavior |
@@ -302,7 +318,7 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 
 | Route name | Auth | Purpose |
 |------------|------|---------|
-| `file-hosting.index` | yes | Browse + chunk upload; list/grid view, search, Rename / Move / Share / Delete |
+| `file-hosting.index` | yes | Browse + chunk upload; list/grid; Drive-like select/context/drag; bulk **Move**/share/unshare/delete; SPA soft-nav (no hard reload on mutations) |
 | `file-hosting.files.show` | yes | Detail, stats tiles, visibility, download CTA |
 | `file-hosting.files.download` | yes | Auth download -> **302** S3 |
 | `file-hosting.files.rename` | yes | Rename file (AJAX or form) |
@@ -338,16 +354,16 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
 | `resources/js/file-hosting/router.js` | Client router: parse `/file-hosting/*` + public `/s/*`, intercept in-app links, `navigate` + `popstate` |
-| `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk, toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch; wires Drive-like select/menu/drag |
-| `resources/js/file-hosting/selection.js` | Browse listing selection: click = select, Ctrl/Cmd toggle, Shift range, Escape clear; name/icon single-click selects (open on double-click) |
-| `resources/js/file-hosting/context-menu.js` | Right-click menu: Open / Rename / Move / Share / Delete (reuses modals + bulk endpoints; multi-move via move modal tree) |
-| `resources/js/file-hosting/drag-move.js` | Drag selected rows onto a folder → sequential `PATCH …/move` (`application/x-fh-items` so upload dropzone still gets OS files) |
+| `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk (incl. **Move** → same multi-move modal as context), toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch; Drive-like select/menu/drag; `.is-fh-busy` mutation spinner |
+| `resources/js/file-hosting/selection.js` | Browse listing selection: click = select, Ctrl/Cmd toggle, Shift range, Escape clear; name/icon single-click selects (open on double-click); ignores virtual parent `...` for bulk keys |
+| `resources/js/file-hosting/context-menu.js` | Right-click: Open / Rename / Move / Share / Delete (modals + bulk endpoints); multi-move via move modal tree; parent `...` → Open only |
+| `resources/js/file-hosting/drag-move.js` | Drag selected onto folder **or** breadcrumb parent/root **or** listing `...` (`data-fh-drop-folder`) → sequential `PATCH …/move` (`application/x-fh-items` so OS file drops still hit upload dropzone); parent row not draggable |
 | `resources/js/file-hosting/realtime.js` | Dedicated FH Echo subscribe (user/workspace private channels), health + fallback poll; `page`/`fileId`/`workspaceId` live-read from config |
-| `resources/js/file-hosting/listing-ui.js` | Browse JSON → table/grid, breadcrumb soft-update, light DOM patch, quota bar, show stats |
+| `resources/js/file-hosting/listing-ui.js` | Browse JSON → table/grid (incl. virtual parent `...` row/card when nested), breadcrumb soft-update (`data-fh-drop-folder`), light DOM patch, quota bar, show stats |
 | `resources/js/file-hosting/trash-ui.js` | Trash JSON → table rows (restore/force-delete actions); **no** `location.reload` |
 | `resources/js/file-hosting/show-ui.js` | Soft file detail panel from `GET file-hosting/files/{id}` JSON |
 | `resources/js/file-hosting/public-app.js` | Public soft SPA for `/s/f/{id}` + `/s/d/{id}` (no Echo) |
-| `resources/js/file-hosting/direct-upload.js` | Chunked upload; on complete calls `window.fileHostingSoftRefresh` / `fileHostingUpsertFile` (no hard reload) |
+| `resources/js/file-hosting/direct-upload.js` | Chunked upload; queue shows human file size; on complete calls `window.fileHostingSoftRefresh` / `fileHostingUpsertFile` (no hard reload) |
 | `resources/js/file-hosting/upload-progress.js` | Pure helpers: transfer rate + byte progress — no DOM |
 | `resources/js/file-hosting/upload-queue.js` | Concurrency limiter |
 | `resources/views/adminlte4/file-hosting/partials/` | `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal`, `_team-offcanvas`, `_workspace-switcher` |
@@ -363,7 +379,7 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 
 **Always full navigation:** file download hops (`…/download` → signed S3), non-FH routes, plans/services links, cold load of show/trash when listing shell is missing.
 
-**Mutations:** all FH forms/buttons use `fetch` + `Accept: application/json`. `ConsumesApi::jsonFromApi` forwards API `data` entity so the shell can soft-update. Shell **ignores** `redirect` for same-shell actions (no hard reload). Success → soft-refetch listing/quota/trash/show or soft-nav.
+**Mutations:** all FH forms/buttons use `fetch` + `Accept: application/json`. `ConsumesApi::jsonFromApi` forwards API `data` entity so the shell can soft-update. Shell **ignores** `redirect` for same-shell actions. Success path for in-shell FH actions **never depends on** `window.location.reload` — soft-refetch listing/quota/trash/show or soft-nav instead. Post-mutation soft-refetch and [Realtime / live listing](#realtime--live-listing) Echo invalidation share the same paint helpers (`listing-ui` / `trash-ui` / `show-ui` / quota).
 
 
 #### Drive-like listing interactions (browse only)
@@ -381,13 +397,27 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 | Nested listing first row/card **`...`** | Virtual parent folder (not a real model): open = go up; drag onto it = move up; no checkbox/bulk/rename/share/delete |
 | Escape | Clear selection + close context menu |
 
-Checkbox + bulk bar (share/unshare/delete) and per-row toolbar Move modal remain. Trash/public pages are out of scope.
+Checkbox + bulk bar (**Move** / share / unshare / delete) and per-row toolbar remain. Trash/public pages are out of scope.
+
+#### Action surface parity (single ↔ bulk)
+
+Listing mutations must stay **in lockstep** across surfaces. When shipping a new mutating action, implement **both** per-row/context **and** bulk (bar + multi context) unless the action is inherently single-entity — then mark **N/A** here.
+
+| Action | Single row / context (1 item) | Bulk bar / multi context | Notes |
+|--------|-------------------------------|--------------------------|--------|
+| Open | yes | N/A | navigation only |
+| Rename | yes | N/A | needs one name |
+| Move | yes | yes (bar + multi context + drag) | sequential `PATCH …/move`; display-name auto-rename on collision |
+| Share / Make private | yes | yes | bulk visibility endpoints |
+| Delete | yes | yes | bulk destroy endpoints |
+
+**Agent/dev rule:** do not add a row-only mutator and leave the bulk bar lagging. Open/Rename stay N/A by design; everything else that changes storage state needs a multi-select path (or an explicit table update explaining why not).
 
 **Busy UI:** mutations (move/delete/forms/bulk/context share-delete) toggle `.is-fh-busy` + centered spinner overlay (distinct from soft-nav `.is-fh-loading`).
 
 **Upload queue:** staged rows show human file size next to the name (`File.size` at pick time).
 
-**Manual QA:** single select highlight; ctrl multi; shift range; dblclick open; context rename/move/share/delete; drag file→folder; drag onto parent/root breadcrumb or listing `...` parent row; nested empty still shows `...`; root has no `...`; drag multi; refuse drop on self; spinner on move/delete; upload row shows size; OS file drop still uploads.
+**Manual QA:** single select highlight; ctrl multi; shift range; dblclick open; context rename/move/share/delete; bulk bar Move multi-select; drag file→folder; drag onto parent/root breadcrumb or listing `...` parent row; nested empty still shows `...`; root has no `...`; drag multi; refuse drop on self; spinner on move/delete; upload row shows size; OS file drop still uploads.
 **Shell markers:** `[data-file-manager][data-fh-spa]`, panels `[data-fh-panel="browse|trash|show"]`, breadcrumb `[data-fh-breadcrumb]`, trash body `[data-fh-trash-body]`.
 
 #### Soft-nav rules (public)
@@ -428,6 +458,8 @@ Menu: **My Files** -> `file-hosting.index`.
 ## Realtime / live listing
 
 File Hosting listing stays live via **dedicated private channels**. It does **not** use the notification bell, `NotificationType`, or DataTable `table_id` (those remain for `/users` and similar admin lists — see [notification/README.md](../notification/README.md)).
+
+**With the SPA shell:** Echo events invalidate the current view; the client soft-refetches JSON and re-paints via the same helpers as post-mutation success ([UI architecture / SPA shell](#ui-architecture--spa-shell)). Router owns in-app navigation; download hops stay full page.
 
 ### Gate
 
@@ -567,4 +599,7 @@ npm run test:js
 - [service/README.md](../service/README.md) — main/addon catalog, quantity, grace, recompute
 - [identity/README.md](../identity/README.md) — H-RBAC / `domain_kind`
 - [notification/README.md](../notification/README.md) — bell + DataTable `table_id` (FH listing does **not** use this bus)
+- [web/ui-patterns.md](../../web/ui-patterns.md) — admin a11y / responsive patterns (FH dropzone, modals); full browse SPA is domain-local — see [UI architecture / SPA shell](#ui-architecture--spa-shell)
 - [platform/architecture.md](../../platform/architecture.md)
+
+FH SPA shell is **product-scoped** (this domain only). It is not a monorepo-wide AdminLTE SPA migration.

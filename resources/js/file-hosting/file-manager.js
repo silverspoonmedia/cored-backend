@@ -1247,6 +1247,16 @@ function initFileManager(root) {
                     return;
                 }
 
+                // Move: same multi-move modal path as context menu (no confirm dialog).
+                if (action === 'move') {
+                    if (contextMenu && typeof contextMenu.openMultiMovePicker === 'function') {
+                        contextMenu.openMultiMovePicker(Array.from(selected));
+                    } else {
+                        showToast(config.messages?.error || 'Error', 'error');
+                    }
+                    return;
+                }
+
                 const confirmMsg = btn.dataset.fhConfirm;
                 if (confirmMsg && !window.confirm(confirmMsg.replace('{n}', selected.size))) {
                     return;

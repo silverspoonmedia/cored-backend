@@ -63,6 +63,8 @@ The Blade admin follows WCAG 2.1 AA. Guards live in `tests/Feature/Http/Controll
 | Toggle buttons | `aria-pressed` | `checkout.js` channel buttons |
 | Interactive divs | `role="button"` + `tabindex="0"` + Enter/Space handler | file-hosting dropzone, move-tree items (`file-manager.js`) |
 
+File Hosting browse is a **domain-local SPA shell** (select, context menu, drag-move, bulk bar, soft-nav, live listing) — not a global AdminLTE SPA. Full behavior and asset map: [domains/file-hosting/README.md — UI architecture / SPA shell](../domains/file-hosting/README.md#ui-architecture--spa-shell).
+
 ### Lang keys
 
 Added under `lang/{en,id,ja}/ui.php`: `skip_to_content`, `labels.actions`, `labels.main_navigation`, `labels.breadcrumb`, `labels.users_table`, `labels.user_menu`, `actions.reset`.

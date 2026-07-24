@@ -188,6 +188,7 @@ return [
         'selected' => 'selected',
         'select_all' => 'Select all',
         'select_item' => 'Select item',
+        'move' => 'Move',
         'share' => 'Share',
         'unshare' => 'Make private',
         'delete' => 'Delete',

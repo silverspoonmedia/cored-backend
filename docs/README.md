@@ -39,7 +39,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | ErrorLog | [domains/error-log/README.md](domains/error-log/README.md) — grouped persistent app errors |
 | PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) |
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, FH grace/purge (core domain) |
-| File Hosting | [domains/file-hosting/README.md](domains/file-hosting/README.md) — nested folders, chunk S3, link share (product, locked) |
+| File Hosting | [domains/file-hosting/README.md](domains/file-hosting/README.md) — nested folders, multi-disk S3, paid link share, collab workspaces, Blade SPA shell + live listing (product, locked) |
 | vTual | [domains/vtual/README.md](domains/vtual/README.md) — creator aggregator (product, locked); progress [implementation-status.md](domains/vtual/implementation-status.md); legacy audit [archive/vtual-legacy-audit.md](archive/vtual-legacy-audit.md) |
 | Product Activations | [domains/product-activations/README.md](domains/product-activations/README.md) — kernel runtime-access registry for product domains |
 

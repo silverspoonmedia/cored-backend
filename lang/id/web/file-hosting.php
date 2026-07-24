@@ -188,6 +188,7 @@ return [
         'selected' => 'terpilih',
         'select_all' => 'Pilih semua',
         'select_item' => 'Pilih item',
+        'move' => 'Pindahkan',
         'share' => 'Bagikan',
         'unshare' => 'Jadikan privat',
         'delete' => 'Hapus',
