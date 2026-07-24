@@ -54,8 +54,9 @@ class MakeDomainCommand extends Command
         $this->line("  - <info>app/Providers/Domain/{$name}ServiceProvider.php</info>");
         $this->line("  - <info>routes/api/v1/{$slug}.php</info>");
         $this->line("  - <info>routes/web/{$slug}.php</info>");
+        $this->line("  - <info>database/seeders/{$name}RoleSeeder.php</info> (Beta tester role + Public visibility)");
         $this->line("  - <info>tests/Domain/{$name}/Feature/</info>");
-        $this->line('Registered in config/domains.php, bootstrap/providers.php, routes/api/v1.php, routes/web.php.');
+        $this->line('Registered in config/domains.php, bootstrap/providers.php, routes/api/v1.php, routes/web.php, database/seeders/DatabaseSeeder.php.');
 
         if ($locked) {
             $this->newLine();
@@ -65,9 +66,10 @@ class MakeDomainCommand extends Command
         $this->newLine();
         $this->line('Next steps:');
         $this->line('  1. Add controllers, services, models under the domain folder.');
-        $this->line('  2. Define routes in the new route files.');
-        $this->line('  3. If public URLs or JSON shapes change, update the matching living docs in the same task.');
-        $this->line('  4. Run <info>composer test</info>.');
+        $this->line('  2. Define routes in the new route files. Gate them with <info>domain.access:'.$name.'</info> + <info>product.active:'.$name.'</info>.');
+        $this->line("  3. Run <info>php artisan db:seed --class={$name}RoleSeeder</info> to create the Beta tester role + visibility row.");
+        $this->line('  4. If public URLs or JSON shapes change, update the matching living docs in the same task.');
+        $this->line('  5. Run <info>composer test</info>.');
 
         return self::SUCCESS;
     }

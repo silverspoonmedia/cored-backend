@@ -240,6 +240,16 @@ class DomainManager
         return base_path('tests/Domain/'.$this->normalizeName($name));
     }
 
+    public function roleSeederShortClass(string $name): string
+    {
+        return $this->normalizeName($name).'RoleSeeder';
+    }
+
+    public function roleSeederPath(string $name): string
+    {
+        return database_path('seeders/'.$this->roleSeederShortClass($name).'.php');
+    }
+
     public function scaffold(string $name, bool $locked = true): void
     {
         $name = $this->normalizeName($name);
@@ -269,6 +279,7 @@ class DomainManager
         File::put($this->providerPath($name), $this->providerStub($name));
         File::put($this->apiRoutePath($name), $this->routeStub($name, 'API'));
         File::put($this->webRoutePath($name), $this->routeStub($name, 'Web'));
+        File::put($this->roleSeederPath($name), $this->roleSeederStub($name));
 
         $testsFeature = $this->testsPath($name).'/Feature';
         File::ensureDirectoryExists($testsFeature);
@@ -278,6 +289,7 @@ class DomainManager
         $this->registerProvider($name);
         $this->registerApiV1Require($name);
         $this->registerWebRequire($name);
+        $this->registerDomainSeeder($name);
     }
 
     /**
@@ -311,6 +323,7 @@ class DomainManager
         $this->unregisterProvider($name);
         $this->unregisterApiRequires($name);
         $this->unregisterWebRequire($name);
+        $this->unregisterDomainSeeder($name);
         $this->stripBootstrapDiscoveries($name);
 
         if (File::isDirectory($this->domainPath($name))) {
@@ -337,6 +350,10 @@ class DomainManager
 
         if (File::isFile($this->webRoutePath($name))) {
             File::delete($this->webRoutePath($name));
+        }
+
+        if (File::isFile($this->roleSeederPath($name))) {
+            File::delete($this->roleSeederPath($name));
         }
 
         return $warnings;
@@ -489,6 +506,58 @@ class DomainManager
         File::put($path, $updated);
     }
 
+    /**
+     * Inject a `$this->call({Name}RoleSeeder::class);` line into
+     * DatabaseSeeder::run so the generated product RBAC seeder runs. Anchored
+     * before DomainAccessSeeder (which only handles the built-in products).
+     */
+    public function registerDomainSeeder(string $name): void
+    {
+        $short = $this->roleSeederShortClass($name);
+        $path = database_path('seeders/DatabaseSeeder.php');
+
+        if (! File::isFile($path)) {
+            return;
+        }
+
+        $contents = File::get($path);
+        $call = "        \$this->call({$short}::class);";
+
+        if (str_contains($contents, "{$short}::class")) {
+            return;
+        }
+
+        $anchor = '        $this->call(DomainAccessSeeder::class);';
+
+        if (str_contains($contents, $anchor)) {
+            $updated = str_replace($anchor, $call."\n".$anchor, $contents);
+        } else {
+            // Fallback: append after RoleSeeder call.
+            $updated = preg_replace(
+                '/(\$this->call\(RoleSeeder::class\);\n)/',
+                "$1{$call}\n",
+                $contents,
+                1
+            ) ?? $contents;
+        }
+
+        if ($updated !== $contents) {
+            File::put($path, $updated);
+        }
+    }
+
+    public function unregisterDomainSeeder(string $name): void
+    {
+        $short = $this->roleSeederShortClass($name);
+        $path = database_path('seeders/DatabaseSeeder.php');
+
+        if (! File::isFile($path)) {
+            return;
+        }
+
+        $this->removeLinesContaining($path, "\$this->call({$short}::class);");
+    }
+
     public function unregisterApiRequires(string $name): void
     {
         $name = $this->normalizeName($name);
@@ -615,6 +684,48 @@ class {$short} extends ServiceProvider
     public function register(): void
     {
         //
+    }
+}
+
+PHP;
+    }
+
+    private function roleSeederStub(string $name): string
+    {
+        $name = $this->normalizeName($name);
+        $short = $this->roleSeederShortClass($name);
+
+        return <<<PHP
+<?php
+
+namespace Database\\Seeders;
+
+use App\\Support\\DomainAccess\\Enums\\DomainVisibility;
+use App\\Support\\DomainAccess\\Models\\ProductDomainVisibility;
+use Database\\Seeders\\Concerns\\SeedsBetaTesterRole;
+use Illuminate\\Database\\Seeder;
+
+/**
+ * RBAC + access seeder for the {$name} product domain.
+ *
+ * Seeds the "Beta tester {$name}" role (domain_kind = product) with its
+ * "access ... product" permission and a Public visibility row so the domain
+ * is reachable by default. Flip it to Private from the admin UI when ready.
+ *
+ * Add the domain's own H-RBAC roles/permissions below as the module grows.
+ */
+class {$short} extends Seeder
+{
+    use SeedsBetaTesterRole;
+
+    public function run(): void
+    {
+        \$this->seedBetaTesterRole('{$name}');
+
+        ProductDomainVisibility::query()->updateOrCreate(
+            ['product_key' => '{$name}'],
+            ['visibility' => DomainVisibility::Public->value],
+        );
     }
 }
 

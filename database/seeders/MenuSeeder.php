@@ -179,6 +179,18 @@ class MenuSeeder extends Seeder
         ]);
         $vtualCredentialsItem->roles()->sync($adminRoleIds);
 
+        $domainAccessItem = Menu::query()->create([
+            'parent_id' => $admin->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Product domain access', 'id' => 'Akses Domain Produk', 'ja' => 'プロダクトドメインアクセス'],
+            'icon' => 'bi bi-shield-lock',
+            'route' => 'domain-access.index',
+            'type' => 'p',
+            'order' => 7,
+            'is_authenticate' => true,
+        ]);
+        $domainAccessItem->roles()->sync($adminRoleIds);
+
         $productActivationsItem = Menu::query()->create([
             'parent_id' => $admin->id,
             'layout' => MenuLayout::SIDEBAR,

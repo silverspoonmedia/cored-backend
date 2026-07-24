@@ -3,7 +3,8 @@
 use App\Domain\FileHosting\Http\Controllers\Web\FileManagerController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('file-hosting', [FileManagerController::class, 'index'])->name('file-hosting.index');
+Route::middleware('domain.access:FileHosting')->group(function (): void {
+    Route::get('file-hosting', [FileManagerController::class, 'index'])->name('file-hosting.index');
 Route::get('file-hosting/trash', [FileManagerController::class, 'trash'])->name('file-hosting.trash');
 Route::get('file-hosting/quota', [FileManagerController::class, 'quota'])->name('file-hosting.quota');
 
@@ -98,3 +99,4 @@ Route::post('file-hosting/uploads/{upload}/complete', [FileManagerController::cl
 Route::delete('file-hosting/uploads/{upload}', [FileManagerController::class, 'abortUpload'])
     ->whereUuid('upload')
     ->name('file-hosting.uploads.destroy');
+});
