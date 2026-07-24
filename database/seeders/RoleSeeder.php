@@ -63,6 +63,8 @@ class RoleSeeder extends Seeder
             'manage product activations',
             'view vtual platform credentials',
             'manage vtual platform credentials',
+            'view domain access',
+            'manage domain access',
         ];
 
         foreach ($permissions as $permission) {
@@ -78,8 +80,8 @@ class RoleSeeder extends Seeder
         }
 
         $rolePermissions = [
-            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view error log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service', 'view product activations', 'manage product activations', 'view vtual platform credentials', 'manage vtual platform credentials'],
-            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view error log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service', 'view product activations', 'manage product activations', 'view vtual platform credentials', 'manage vtual platform credentials'],
+            'Root' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view error log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service', 'view product activations', 'manage product activations', 'view vtual platform credentials', 'manage vtual platform credentials', 'view domain access', 'manage domain access'],
+            'Admin' => ['view user', 'create user', 'edit user', 'delete user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view activity log', 'view error log', 'view payment gateway', 'manage payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'manage service', 'purchase service', 'view product activations', 'manage product activations', 'view vtual platform credentials', 'manage vtual platform credentials', 'view domain access', 'manage domain access'],
             'Moderator' => ['view user', 'create user', 'edit user', 'view menu', 'manage menu', 'restore menu', 'view notification', 'view payment gateway', 'view invoice', 'initiate payment', 'view subscription', 'manage subscription', 'view service', 'purchase service', 'view product activations'],
             'Management' => ['view user', 'view menu', 'view notification', 'view payment gateway', 'view invoice', 'view subscription', 'view service', 'view product activations'],
             'User' => ['view notification', 'view service', 'purchase service'],

@@ -7,7 +7,8 @@ use App\Domain\Vtual\Http\Controllers\Web\PlatformCredentialController;
 use App\Domain\Vtual\Http\Controllers\Web\VtualController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('vtual', [VtualController::class, 'index'])->name('vtual.index');
+Route::middleware('domain.access:Vtual')->group(function (): void {
+    Route::get('vtual', [VtualController::class, 'index'])->name('vtual.index');
 Route::post('vtual/creators', [VtualController::class, 'storeCreator'])->name('vtual.creators.store');
 // Legacy creator show → profiles manage URL (product language).
 Route::get('vtual/creators/{creator}', [CreatorProfileController::class, 'show'])
@@ -111,4 +112,5 @@ Route::middleware('permission:manage vtual platform credentials')->group(functio
         ->name('vtual.admin.platform-api-probe');
     Route::post('vtual/admin/platform-api-probe', [PlatformApiProbeController::class, 'run'])
         ->name('vtual.admin.platform-api-probe.run');
+});
 });

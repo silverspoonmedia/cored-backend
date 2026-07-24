@@ -15,6 +15,7 @@ export default defineConfig({
                 'resources/js/file-hosting/public-app.js',
                 'resources/js/payments/checkout.js',
                 'resources/js/payments/channels-admin.js',
+                'resources/js/domain-access/toggle.js',
                 'resources/js/select2-init.js',
                 'resources/js/vtual/confirm-modal.js',
                 'resources/js/vtual/credential-form.js',

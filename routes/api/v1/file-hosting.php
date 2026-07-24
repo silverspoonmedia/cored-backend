@@ -16,7 +16,7 @@ Route::prefix('file-hosting/public')->name('file-hosting.public.')->group(functi
     Route::get('folders/{folder}', [FolderController::class, 'publicShow'])->whereUuid('folder')->name('folders.show');
 });
 
-Route::middleware(['auth:api', 'product.active:FileHosting'])->prefix('file-hosting')->name('file-hosting.')->group(function (): void {
+Route::middleware(['auth:api', 'domain.access:FileHosting', 'product.active:FileHosting'])->prefix('file-hosting')->name('file-hosting.')->group(function (): void {
     // Collaborative workspaces (paid owner perk; membership separate from platform H-RBAC)
     Route::middleware('permission:view file hosting folder|view file hosting file')->group(function (): void {
         Route::get('workspaces', [WorkspaceController::class, 'index'])->name('workspaces.index');

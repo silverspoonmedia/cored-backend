@@ -10,6 +10,7 @@ use App\Providers\Domain\NotificationServiceProvider;
 use App\Providers\Domain\PaymentGatewayServiceProvider;
 use App\Providers\Domain\ServiceServiceProvider;
 use App\Providers\Domain\VtualServiceProvider;
+use App\Providers\DomainAccessServiceProvider;
 use App\Providers\EncryptionServiceProvider;
 use App\Providers\ProductServiceProvider;
 
@@ -18,6 +19,7 @@ return [
     AppServiceProvider::class,
     EncryptionServiceProvider::class,
     ProductServiceProvider::class,
+    DomainAccessServiceProvider::class,
 
     // Core domains (config/domains.php kind=core)
     IdentityServiceProvider::class,

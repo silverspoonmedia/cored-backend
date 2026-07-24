@@ -15,6 +15,7 @@ Do **not** collapse taxonomy and lifecycle into one label.
 | **`DomainManager::PLATFORM_CORE`** | Hard guard | Never-remove list. Config cannot override. |
 | **RBAC `domain_kind`** | Separate system | Spatie roles/permissions catalog ownership (`core` \| `product`). Same words, **not** this registry. See [Identity — Core vs product RBAC](../domains/identity/README.md#core-vs-product-rbac). |
 | **Product activation** | Runtime access | Per-user product state (`pending` \| `active` \| `suspended` \| `expired`) in `product_activations`. Tracked by `App\Support\Product\ProductActivationService`, gated by the `product.active` middleware. **Not** module taxonomy and **not** RBAC catalog — a third axis. See [Product Activations](../domains/product-activations/README.md). |
+| **Domain visibility** | Global product gate | Per-domain `public` \| `private` flag in `product_domain_visibilities`. Tracked by `App\Support\DomainAccess\DomainAccessService`, enforced by the `domain.access:{Domain}` middleware on web + API product groups. Private = Root/Admin/`Beta tester {Domain}` only. A fourth axis — **not** per-user activation. See [Domain Access](../domains/domain-access/README.md). |
 | **Product analytics** | Denormalized per-(product, tier, metric) counters | Aggregate rows in `product_analytics` (`storage_used_bytes`, `file_count`, `workspace_count_owned`, …) — one row per `(product_key, tier, metric_key)` bucket. Incremented/decremented on domain mutations by `ProductAnalyticsService`; tier transitions move a user's contribution between buckets via `moveUserTier`. Per-user drill-down reads source tables directly. See [Product Activations § Stored analytics](../domains/product-activations/README.md#stored-analytics-v3). |
 
 ### Registry vs removal
@@ -52,7 +53,7 @@ php artisan domain:remove Scratch --force
 | Command | Effect |
 |---------|--------|
 | `domain:list` | Name, **Kind** (`core`\|`product`), **Removal** (`never`\|`locked`\|`removable`), whether `app/Domain/{Name}` exists |
-| `domain:make` | Scaffold folders, provider, route stubs, tests; register as **product** (locked by default) |
+| `domain:make` | Scaffold folders, provider, route stubs, tests, **`{Name}RoleSeeder`** (Beta tester role + `access {domain} product` permission + Public visibility row); register as **product** (locked by default) and wire the seeder into `DatabaseSeeder` |
 | `domain:remove` | Delete domain PHP/routes/tests/provider; **not** migrations. Refuses core and locked product. |
 
 Implementation: [`DomainManager`](../../app/Support/Domain/DomainManager.php), `app/Console/Commands/Domain/*`.
@@ -127,13 +128,14 @@ Shared infra: `App\Support\*`, `App\Http\Middleware\*`, `EloquentCrudRepository`
 
 ## Adding a new domain
 
-1. `php artisan domain:make {Name}` (or `--removable`) — always scaffolds a **product** domain
+1. `php artisan domain:make {Name}` (or `--removable`) — always scaffolds a **product** domain (also generates `database/seeders/{Name}RoleSeeder.php` and registers it in `DatabaseSeeder`)
 2. Implement under `app/Domain/{Name}/`
-3. Fill `routes/api/v1/{slug}.php` and `routes/web/{slug}.php`
-4. Bind repos/policies in the generated ServiceProvider
-5. Tests under `tests/Domain/{Name}/`
-6. If the product needs its own H-RBAC (beyond core roles/permissions): seed product roles/permissions (`domain_kind = product`), unique names, optional product level ladder — see [Core vs product RBAC](../domains/identity/README.md#core-vs-product-rbac)
-7. Update this doc and [docs/README.md](../README.md) if the domain map changes
+3. Fill `routes/api/v1/{slug}.php` and `routes/web/{slug}.php` — gate the product group with `domain.access:{Name}` **before** `product.active:{Name}` / `permission:` (see [Domain Access](../domains/domain-access/README.md))
+4. Run `php artisan db:seed --class={Name}RoleSeeder` to create the Beta tester role + Public visibility row
+5. Bind repos/policies in the generated ServiceProvider
+6. Tests under `tests/Domain/{Name}/`
+7. If the product needs its own H-RBAC (beyond core roles/permissions): seed product roles/permissions (`domain_kind = product`), unique names, optional product level ladder — see [Core vs product RBAC](../domains/identity/README.md#core-vs-product-rbac)
+8. Update this doc and [docs/README.md](../README.md) if the domain map changes
 
 ## Deliberately not done
 
