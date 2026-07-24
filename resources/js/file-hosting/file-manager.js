@@ -23,6 +23,9 @@ import {
 import { createFhRouter, parseFhUrl } from './router';
 import { applyTrashPayload } from './trash-ui';
 import { applyShowPayload, patchShowFile } from './show-ui';
+import { createSelectionController } from './selection';
+import { createContextMenu } from './context-menu';
+import { createDragMove, moveItemsRequest } from './drag-move';
 
 const STORAGE_KEY = 'fh-view-mode';
 
@@ -49,6 +52,9 @@ function initFileManager(root) {
         let router = null;
         let currentShowFileId = config.realtime?.fileId || null;
         const selected = new Set();
+        let selection = null;
+        let dragMove = null;
+        let contextMenu = null;
 
         function setLoading(on) {
             root.classList.toggle('is-fh-loading', Boolean(on));
@@ -90,6 +96,14 @@ function initFileManager(root) {
                         applyBrowsePayload(root, json.data, config);
                         if (json.data.folder?.id !== undefined) {
                             config.currentFolderId = json.data.folder?.id || null;
+                        }
+                        // Soft-refetch replaces rows — drop stale selection + re-enable DnD.
+                        selected.clear();
+                        if (selection) {
+                            selection.syncDom();
+                        }
+                        if (dragMove) {
+                            dragMove.makeRowsDraggable();
                         }
                     }
                 } while (softRefetchListing.pending);
@@ -258,7 +272,11 @@ function initFileManager(root) {
         };
         window.fileHostingSoftRefresh = root.__fhSoftRefresh;
         window.fileHostingUpsertFile = function (file) {
-            return upsertFileRow(root, file, config);
+            const result = upsertFileRow(root, file, config);
+            if (dragMove) {
+                dragMove.makeRowsDraggable();
+            }
+            return result;
         };
         window.fileHostingNavigate = function (href, opts) {
             if (router) {
@@ -277,6 +295,7 @@ function initFileManager(root) {
         initAjaxForms();
         initCopyButtons();
         initBulkActions();
+        initDriveLikeInteractions();
         if (spaShell) {
             initSpaRouter();
         }
@@ -490,7 +509,16 @@ function initFileManager(root) {
             });
 
             bindPopulateModal('fhMoveFileModal', function (btn, modal) {
-                modal.querySelector('#fhMoveFileForm').action = config.fileRenameBase + '/' + btn.dataset.id + '/move';
+                const form = modal.querySelector('#fhMoveFileForm');
+                // Multi-move from context menu uses dataset.fhMultiMoveKeys; tree still loads.
+                if (btn.dataset.id === '__multi__' || form?.dataset?.fhMultiMoveKeys) {
+                    if (form) {
+                        form.action = (config.fileRenameBase || '') + '/__multi__/move';
+                    }
+                    loadMoveTree(modal, 'folder_id', null);
+                    return;
+                }
+                form.action = config.fileRenameBase + '/' + btn.dataset.id + '/move';
                 loadMoveTree(modal, 'folder_id', btn.dataset.id);
             });
 
@@ -770,6 +798,53 @@ function initFileManager(root) {
                 return;
             }
 
+            // Context-menu multi-move: fan-out sequential PATCH to chosen folder.
+            if (form.id === 'fhMoveFileForm' && form.dataset.fhMultiMoveKeys) {
+                let keys = [];
+                try {
+                    keys = JSON.parse(form.dataset.fhMultiMoveKeys || '[]');
+                } catch (err) {
+                    keys = [];
+                }
+                const targetInput = form.querySelector('[data-fh-move-target]');
+                const targetFolderId = targetInput?.value || null;
+                const submitBtn = form.querySelector('[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                }
+                try {
+                    const result = await moveItemsRequest({
+                        keys,
+                        targetFolderId: targetFolderId || null,
+                        config,
+                        csrfToken,
+                        parseKey: function (key) {
+                            return selection ? selection.parseKey(key) : null;
+                        },
+                    });
+                    if (result.ok) {
+                        showToast(result.message || config.messages.moved || config.messages.success, 'success');
+                        const modalEl = form.closest('.modal');
+                        if (modalEl && window.bootstrap?.Modal) {
+                            window.bootstrap.Modal.getInstance(modalEl)?.hide();
+                        }
+                        delete form.dataset.fhMultiMoveKeys;
+                        selected.clear();
+                        if (selection) {
+                            selection.syncDom();
+                        }
+                        root.__fhSoftRefresh();
+                    } else {
+                        showToast(result.message || config.messages.moveFailed || config.messages.error, 'error');
+                    }
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                    }
+                }
+                return;
+            }
+
             const action = form.getAttribute('action') || window.location.href;
             const methodInput = form.querySelector('input[name="_method"]');
             const method = (methodInput?.value || form.method || 'POST').toUpperCase();
@@ -1016,11 +1091,74 @@ function initFileManager(root) {
             });
         }
 
+        // ---- Drive-like select / context menu / drag-move ----
+        function initDriveLikeInteractions() {
+            selection = createSelectionController(selected, root, {
+                onChange: updateBulkBar,
+            });
+
+            async function moveItems(keys, targetFolderId) {
+                return moveItemsRequest({
+                    keys,
+                    targetFolderId,
+                    config,
+                    csrfToken,
+                    parseKey: function (key) {
+                        return selection.parseKey(key);
+                    },
+                });
+            }
+
+            function openHref(href) {
+                if (router && typeof router.go === 'function') {
+                    router.go(href);
+                } else if (typeof window.fileHostingNavigate === 'function') {
+                    window.fileHostingNavigate(href);
+                } else {
+                    window.location.href = href;
+                }
+            }
+
+            selection.bind(function (href) {
+                openHref(href);
+            });
+
+            dragMove = createDragMove({
+                root,
+                selected,
+                config,
+                selection,
+                moveItems,
+                showToast,
+                softRefresh: function () {
+                    root.__fhSoftRefresh();
+                },
+            });
+            dragMove.bind();
+
+            contextMenu = createContextMenu({
+                root,
+                selected,
+                config,
+                selection,
+                openHref,
+                moveItems,
+                bulkFetch,
+                showToast,
+                softRefresh: function () {
+                    root.__fhSoftRefresh();
+                },
+                csrfToken,
+                loadMoveTree,
+            });
+            contextMenu.bind();
+        }
+
         // ---- Bulk selection ----
         function initBulkActions() {
             document.addEventListener('change', function (e) {
                 const cb = e.target.closest('[data-fh-select]');
-                if (!cb) {
+                if (!cb || !root.contains(cb)) {
                     return;
                 }
 
@@ -1030,17 +1168,21 @@ function initFileManager(root) {
                 } else {
                     selected.delete(key);
                 }
-                syncRowState(cb);
-                updateBulkBar();
+                if (selection) {
+                    selection.syncDom();
+                } else {
+                    syncRowState(cb);
+                    updateBulkBar();
+                }
             });
 
             document.addEventListener('change', function (e) {
                 const selectAll = e.target.closest('[data-fh-select-all]');
-                if (!selectAll) {
+                if (!selectAll || !root.contains(selectAll)) {
                     return;
                 }
 
-                document.querySelectorAll('[data-fh-select]').forEach(function (cb) {
+                root.querySelectorAll('[data-fh-select]').forEach(function (cb) {
                     cb.checked = selectAll.checked;
                     const key = cb.value;
                     if (selectAll.checked) {
@@ -1048,9 +1190,12 @@ function initFileManager(root) {
                     } else {
                         selected.delete(key);
                     }
-                    syncRowState(cb);
                 });
-                updateBulkBar();
+                if (selection) {
+                    selection.syncDom();
+                } else {
+                    updateBulkBar();
+                }
             });
 
             document.addEventListener('click', async function (e) {

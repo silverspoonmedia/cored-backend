@@ -338,7 +338,10 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
 | `resources/js/file-hosting/router.js` | Client router: parse `/file-hosting/*` + public `/s/*`, intercept in-app links, `navigate` + `popstate` |
-| `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk, toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch |
+| `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk, toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch; wires Drive-like select/menu/drag |
+| `resources/js/file-hosting/selection.js` | Browse listing selection: click = select, Ctrl/Cmd toggle, Shift range, Escape clear; name/icon single-click selects (open on double-click) |
+| `resources/js/file-hosting/context-menu.js` | Right-click menu: Open / Rename / Move / Share / Delete (reuses modals + bulk endpoints; multi-move via move modal tree) |
+| `resources/js/file-hosting/drag-move.js` | Drag selected rows onto a folder → sequential `PATCH …/move` (`application/x-fh-items` so upload dropzone still gets OS files) |
 | `resources/js/file-hosting/realtime.js` | Dedicated FH Echo subscribe (user/workspace private channels), health + fallback poll; `page`/`fileId`/`workspaceId` live-read from config |
 | `resources/js/file-hosting/listing-ui.js` | Browse JSON → table/grid, breadcrumb soft-update, light DOM patch, quota bar, show stats |
 | `resources/js/file-hosting/trash-ui.js` | Trash JSON → table rows (restore/force-delete actions); **no** `location.reload` |
@@ -362,6 +365,23 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 
 **Mutations:** all FH forms/buttons use `fetch` + `Accept: application/json`. `ConsumesApi::jsonFromApi` forwards API `data` entity so the shell can soft-update. Shell **ignores** `redirect` for same-shell actions (no hard reload). Success → soft-refetch listing/quota/trash/show or soft-nav.
 
+
+#### Drive-like listing interactions (browse only)
+
+| Gesture | Behavior |
+|---------|----------|
+| Click row/card (not checkbox/actions) | Select only that item |
+| Ctrl/Cmd+click | Toggle multi-select |
+| Shift+click | Range select in visible list/grid order |
+| Click name/icon | Select (does **not** open) |
+| Double-click name/icon/row | Open (folder browse / file show via SPA router) |
+| Right-click item | Select if needed + context menu (Open, Rename, Move, Share, Delete) |
+| Drag selected onto a **folder** row/card | Move into that folder (server auto-renames display-name collisions) |
+| Escape | Clear selection + close context menu |
+
+Checkbox + bulk bar (share/unshare/delete) and per-row toolbar Move modal remain. Trash/public pages are out of scope.
+
+**Manual QA:** single select highlight; ctrl multi; shift range; dblclick open; context rename/move/share/delete; drag file→folder; drag multi; refuse drop on self; OS file drop still uploads.
 **Shell markers:** `[data-file-manager][data-fh-spa]`, panels `[data-fh-panel="browse|trash|show"]`, breadcrumb `[data-fh-breadcrumb]`, trash body `[data-fh-trash-body]`.
 
 #### Soft-nav rules (public)
