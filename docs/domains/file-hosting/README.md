@@ -25,7 +25,7 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Part size | Default **10 MB** chunk + multipart threshold (`FILE_HOSTING_CHUNK_SIZE`) |
 | DB `path` | Object id only: 40 lowercase alnum chars (`Str::random(40)`). **Not** a full S3 key. |
 | S3 object key | `file-hosting/{user_id}/{objectId}` — resolved at runtime via `ObjectKeyResolver` from `user_id` + `path` + config `directory`. No `folder_id`, no extension, no upload session id in the key. |
-| Display name on upload | Preferred client name kept if free in that owner+folder (soft-deleted ignored). If taken -> auto DB rename to `{stem} ({maxN+1}).{ext}` where `maxN` is highest active sibling index (`A.zip` = 1, `A (3).zip` = 3 -> next `A (4).zip`). S3 object key stays random and is never renamed. Manual rename/move still rejects exact sibling collisions. Move/rename are **DB-only** (folder tree lives in `folder_id` / `name`). |
+| Display name | Preferred name kept if free in that owner+folder/parent (soft-deleted ignored). If taken on **upload complete** or **file/folder move** → auto DB rename to `{stem} ({maxN+1}).{ext}` (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`; folders without ext → `Docs (2)`). Shared allocator: `UniqueDisplayNameAllocator`. **Manual rename** still rejects exact sibling collisions (user chose the name). S3 object key stays random and is never renamed. Move/rename are **DB-only**. |
 | Download bytes | Always **302 (or client follow)** to S3 temporary URL — **not** Monolith streaming |
 | S3 signed URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry. **Cleared on visibility change** (and rename/delete) so private revoke cannot reuse a still-valid temp link |
 | Download filename | `ResponseContentDisposition` from DB `name` (random key stays on object) |
@@ -168,18 +168,21 @@ Shared kernel pieces (not duplicated per domain):
 
 Config for thresholds/TTL/proxy: `config/file-hosting.php`.
 
-#### Display name on complete (auto-rename)
+#### Display name uniqueness (auto-rename)
 
-Upload **init** no longer rejects a display name that already exists in the same owner+folder. On **complete**, `DirectUploadService::allocateUniqueDisplayName()` picks the DB `name`:
+Shared helper: `App\Domain\FileHosting\Support\UniqueDisplayNameAllocator` (used by upload complete, **file move**, **folder move**). Soft-deleted siblings are ignored.
 
-| Active siblings (soft-deleted ignored) | Client preferred | Stored `name` |
-|----------------------------------------|------------------|---------------|
+Upload **init** does not reject a display name that already exists in the same owner+folder. On **complete** / **move**, the allocator picks the DB `name`:
+
+| Active siblings (soft-deleted ignored) | Preferred | Result |
+|----------------------------------------|-----------|--------|
 | none | `A.zip` | `A.zip` |
-| `A.zip` | `A.zip` | `A (2).zip` |
+| `A.zip` | `A.zip` (upload or move into folder) | mover/upload becomes `A (2).zip` |
 | `A.zip` + `A (3).zip` | `A.zip` | `A (4).zip` (max index + 1; holes not reused) |
 | base soft-deleted, `A (3).zip` remains | `A.zip` | `A.zip` (base free again) |
+| folder sibling `Docs` | move folder `Docs` into same parent | mover becomes `Docs (2)` |
 
-S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never renamed or moved when the display name / folder changes. Manual rename/move still enforces exact sibling uniqueness. Clients must show **`file.name` from complete**, not the original client filename. API `path` is the object id only.
+S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never renamed or moved when the display name / folder changes. **Manual rename** still enforces exact sibling uniqueness (422). Clients must show **`file.name` from complete/move response**, not the original client filename. API `path` is the object id only.
 
 #### Hybrid proxy env
 

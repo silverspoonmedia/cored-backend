@@ -9,6 +9,7 @@ use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
 use App\Domain\FileHosting\Support\FolderAncestorChain;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
+use App\Domain\FileHosting\Support\UniqueDisplayNameAllocator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ class FolderRepository implements FolderRepositoryInterface
 {
     public function __construct(
         private readonly ObjectStorage $storage,
+        private readonly UniqueDisplayNameAllocator $displayNames = new UniqueDisplayNameAllocator,
         private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
     ) {}
 
@@ -103,12 +105,13 @@ class FolderRepository implements FolderRepositoryInterface
                 }
             }
 
-            $this->assertUniqueSiblingName(
+            // Match file upload/move: auto "Name (N)" on sibling collision — never reject move.
+            $displayName = $this->displayNames->allocateFolder(
                 $folder->user_id,
                 $newParentId,
                 $folder->name,
-                $folder->id,
                 $folder->workspace_id,
+                $folder->id,
             );
 
             $folder->forceFill(['order' => null])->save();
@@ -119,6 +122,7 @@ class FolderRepository implements FolderRepositoryInterface
 
             $folder->forceFill([
                 'parent_id' => $newParentId,
+                'name' => $displayName,
                 'order' => $order + 1,
             ])->save();
 

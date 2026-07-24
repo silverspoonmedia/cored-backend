@@ -426,6 +426,120 @@ class FileHostingTest extends TestCase
             ->assertStatus(403);
     }
 
+    public function test_move_file_auto_renames_on_sibling_collision(): void
+    {
+        $user = $this->userWithRole('User');
+
+        $target = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/folders', ['name' => 'Target'])
+            ->assertCreated()
+            ->json('data');
+
+        $source = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/folders', ['name' => 'Source'])
+            ->assertCreated()
+            ->json('data');
+
+        HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => $target['id'],
+            'name' => 'A.zip',
+            'disk' => 'local',
+            'path' => substr(hash('sha256', 'target-a'), 0, 40),
+            'size' => 10,
+            'mime' => 'application/zip',
+        ]);
+
+        $moving = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => $source['id'],
+            'name' => 'A.zip',
+            'disk' => 'local',
+            'path' => substr(hash('sha256', 'source-a'), 0, 40),
+            'size' => 20,
+            'mime' => 'application/zip',
+            'signed_download_url' => 'https://example.test/old-signed',
+            'signed_download_expires_at' => now()->addHour(),
+        ]);
+
+        $moved = $this->actingAsJwt($user)
+            ->patchJson('/api/v1/file-hosting/files/'.$moving->id.'/move', [
+                'folder_id' => $target['id'],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame($target['id'], $moved['folder_id']);
+        $this->assertSame('A (2).zip', $moved['name']);
+        $this->assertNull($moving->fresh()->signed_download_url);
+        $this->assertSame('A.zip', HostedFile::query()
+            ->where('folder_id', $target['id'])
+            ->where('path', substr(hash('sha256', 'target-a'), 0, 40))
+            ->value('name'));
+    }
+
+    public function test_move_file_keeps_name_when_free(): void
+    {
+        $user = $this->userWithRole('User');
+
+        $target = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/folders', ['name' => 'Target'])
+            ->assertCreated()
+            ->json('data');
+
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'unique.pdf',
+            'disk' => 'local',
+            'path' => substr(hash('sha256', 'unique-pdf'), 0, 40),
+            'size' => 10,
+            'mime' => 'application/pdf',
+        ]);
+
+        $moved = $this->actingAsJwt($user)
+            ->patchJson('/api/v1/file-hosting/files/'.$file->id.'/move', [
+                'folder_id' => $target['id'],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame($target['id'], $moved['folder_id']);
+        $this->assertSame('unique.pdf', $moved['name']);
+    }
+
+    public function test_move_folder_auto_renames_on_sibling_collision(): void
+    {
+        $user = $this->userWithRole('User');
+
+        $parent = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/folders', ['name' => 'Parent'])
+            ->assertCreated()
+            ->json('data');
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/folders', [
+                'name' => 'Docs',
+                'parent_id' => $parent['id'],
+            ])
+            ->assertCreated();
+
+        $moving = $this->actingAsJwt($user)
+            ->postJson('/api/v1/file-hosting/folders', ['name' => 'Docs'])
+            ->assertCreated()
+            ->json('data');
+
+        $moved = $this->actingAsJwt($user)
+            ->patchJson('/api/v1/file-hosting/folders/'.$moving['id'].'/move', [
+                'parent_id' => $parent['id'],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame($parent['id'], $moved['parent_id']);
+        $this->assertSame('Docs (2)', $moved['name']);
+    }
+
     public function test_move_folder_into_self_is_rejected(): void
     {
         $user = $this->userWithRole('User');
