@@ -15,6 +15,7 @@
  * @param {(msg: string, type?: string) => void} deps.showToast
  * @param {() => void} deps.softRefresh
  * @param {string} deps.csrfToken
+ * @param {(on: boolean) => void} [deps.setBusy]
  */
 export function createContextMenu(deps) {
     const {
@@ -28,6 +29,7 @@ export function createContextMenu(deps) {
         showToast,
         softRefresh,
         csrfToken,
+        setBusy,
     } = deps;
 
     const labels = {
@@ -131,6 +133,16 @@ export function createContextMenu(deps) {
         if (!menu) {
             return;
         }
+        // Virtual parent "..." row: Open only.
+        if (lastFocusKey === 'parent') {
+            setEnabled('open', true);
+            setEnabled('rename', false);
+            setEnabled('move', false);
+            setEnabled('share', false);
+            setEnabled('delete', false);
+            return;
+        }
+
         const count = selected.size;
         const key = primaryKey();
         const parsed = key ? selection.parseKey(key) : null;
@@ -221,6 +233,20 @@ export function createContextMenu(deps) {
     }
 
     async function runAction(action) {
+        // Parent "..." virtual row — open only.
+        if (lastFocusKey === 'parent') {
+            if (action !== 'open') {
+                return;
+            }
+            const parentRow = root.querySelector('[data-fh-row][data-fh-entity="parent"]');
+            const link = parentRow?.querySelector('a[href]');
+            const href = link?.getAttribute('href');
+            if (href && typeof openHref === 'function') {
+                openHref(href);
+            }
+            return;
+        }
+
         const key = primaryKey();
         if (!key) {
             return;
@@ -362,6 +388,9 @@ export function createContextMenu(deps) {
             return;
         }
 
+        if (typeof setBusy === 'function') {
+            setBusy(true);
+        }
         try {
             const promises = [];
             if (fileIds.length && config.bulkFileVisibilityUrl) {
@@ -381,6 +410,10 @@ export function createContextMenu(deps) {
             }
         } catch (err) {
             showToast(config.messages?.networkError || 'Network error', 'error');
+        } finally {
+            if (typeof setBusy === 'function') {
+                setBusy(false);
+            }
         }
     }
 
@@ -410,6 +443,9 @@ export function createContextMenu(deps) {
             return;
         }
 
+        if (typeof setBusy === 'function') {
+            setBusy(true);
+        }
         try {
             const promises = [];
             if (fileIds.length && config.bulkFileDeleteUrl) {
@@ -455,6 +491,10 @@ export function createContextMenu(deps) {
             }
         } catch (err) {
             showToast(config.messages?.networkError || 'Network error', 'error');
+        } finally {
+            if (typeof setBusy === 'function') {
+                setBusy(false);
+            }
         }
     }
 
@@ -465,7 +505,7 @@ export function createContextMenu(deps) {
             return;
         }
 
-        const row = e.target.closest('[data-fh-row][data-fh-entity][data-fh-id]');
+        const row = e.target.closest('[data-fh-row][data-fh-entity]');
         if (!row || !browse.contains(row)) {
             hide();
             return;
@@ -473,6 +513,19 @@ export function createContextMenu(deps) {
 
         // Don't override browser menu on real form controls only.
         if (e.target.closest('input, textarea, select')) {
+            return;
+        }
+
+        // Virtual parent "..." — Open only, no bulk key.
+        if (row.getAttribute('data-fh-entity') === 'parent') {
+            e.preventDefault();
+            lastFocusKey = 'parent';
+            showAt(e.clientX, e.clientY);
+            return;
+        }
+
+        if (!row.getAttribute('data-fh-id')) {
+            hide();
             return;
         }
 

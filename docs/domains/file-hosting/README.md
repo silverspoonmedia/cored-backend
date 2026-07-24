@@ -377,11 +377,17 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 | Double-click name/icon/row | Open (folder browse / file show via SPA router) |
 | Right-click item | Select if needed + context menu (Open, Rename, Move, Share, Delete) |
 | Drag selected onto a **folder** row/card | Move into that folder (server auto-renames display-name collisions) |
+| Drag selected onto **breadcrumb** parent / root chip | Move up (`data-fh-drop-folder`; root → `folder_id`/`parent_id` null) |
+| Nested listing first row/card **`...`** | Virtual parent folder (not a real model): open = go up; drag onto it = move up; no checkbox/bulk/rename/share/delete |
 | Escape | Clear selection + close context menu |
 
 Checkbox + bulk bar (share/unshare/delete) and per-row toolbar Move modal remain. Trash/public pages are out of scope.
 
-**Manual QA:** single select highlight; ctrl multi; shift range; dblclick open; context rename/move/share/delete; drag file→folder; drag multi; refuse drop on self; OS file drop still uploads.
+**Busy UI:** mutations (move/delete/forms/bulk/context share-delete) toggle `.is-fh-busy` + centered spinner overlay (distinct from soft-nav `.is-fh-loading`).
+
+**Upload queue:** staged rows show human file size next to the name (`File.size` at pick time).
+
+**Manual QA:** single select highlight; ctrl multi; shift range; dblclick open; context rename/move/share/delete; drag file→folder; drag onto parent/root breadcrumb or listing `...` parent row; nested empty still shows `...`; root has no `...`; drag multi; refuse drop on self; spinner on move/delete; upload row shows size; OS file drop still uploads.
 **Shell markers:** `[data-file-manager][data-fh-spa]`, panels `[data-fh-panel="browse|trash|show"]`, breadcrumb `[data-fh-breadcrumb]`, trash body `[data-fh-trash-body]`.
 
 #### Soft-nav rules (public)

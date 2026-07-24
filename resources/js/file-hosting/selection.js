@@ -233,7 +233,8 @@ export function createSelectionController(selected, root, opts = {}) {
      */
     function handleRowDblClick(e, openFn) {
         const browse = root.querySelector('[data-fh-panel="browse"]') || root;
-        const row = e.target.closest('[data-fh-row][data-fh-entity][data-fh-id]');
+        // Parent "..." has entity but no id — still openable.
+        const row = e.target.closest('[data-fh-row][data-fh-entity]');
         if (!row || !browse.contains(row)) {
             return;
         }

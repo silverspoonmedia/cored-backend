@@ -431,16 +431,20 @@ export function initDirectUpload(root) {
 
     function createRow(file, status) {
         const row = document.createElement('div');
-        row.className = 'mb-2';
+        row.className = 'mb-2 fh-upload-row';
         row.dataset.rowId = createRowId();
 
         const statusLabel = statusLabelFor(status);
+        const sizeLabel = formatUploadSize(file.size);
 
         row.innerHTML =
-            '<div class="d-flex justify-content-between align-items-center small mb-1">'
-            + '<span>' + escapeHtml(file.name) + '</span>'
-            + '<span class="d-flex align-items-center gap-2">'
-            + '<span data-upload-status>' + escapeHtml(statusLabel) + '</span>'
+            '<div class="d-flex justify-content-between align-items-center small mb-1 fh-upload-row__header">'
+            + '<span class="fh-upload-row__name text-truncate me-2" title="' + escapeHtml(file.name) + '">'
+            + escapeHtml(file.name)
+            + ' <span class="fh-upload-row__size text-muted">(' + escapeHtml(sizeLabel) + ')</span>'
+            + '</span>'
+            + '<span class="d-flex align-items-center gap-2 flex-shrink-0">'
+            + '<span data-upload-status class="fh-upload-row__status">' + escapeHtml(statusLabel) + '</span>'
             + (status === 'pending'
                 ? '<button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1" data-upload-remove-pending title="'
                     + escapeHtml(config.messages.remove || 'Remove') + '">&times;</button>'
@@ -448,8 +452,8 @@ export function initDirectUpload(root) {
             + '</span>'
             + '</div>'
             + '<div class="d-flex justify-content-between align-items-center small mb-1">'
-            + '<div class="progress flex-grow-1 me-2" role="progressbar" aria-valuemin="0" aria-valuemax="100">'
-            + '<div class="progress-bar" data-upload-progress style="width: 0%">0%</div>'
+            + '<div class="progress flex-grow-1 me-2 fh-upload-row__progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">'
+            + '<div class="progress-bar fh-upload-row__progress-bar" data-upload-progress style="width: 0%">0%</div>'
             + '</div>'
             + '<span class="text-muted text-nowrap" data-upload-speed></span>'
             + '</div>';
@@ -570,6 +574,20 @@ export function initDirectUpload(root) {
 
     function replaceToken(template, uploadId) {
         return template.replace('__UPLOAD__', uploadId);
+    }
+
+    function formatUploadSize(bytes) {
+        const n = Number(bytes) || 0;
+        if (n < 1024) {
+            return n + ' B';
+        }
+        if (n < 1024 * 1024) {
+            return (n / 1024).toFixed(n < 10 * 1024 ? 1 : 0) + ' KB';
+        }
+        if (n < 1024 * 1024 * 1024) {
+            return (n / (1024 * 1024)).toFixed(n < 10 * 1024 * 1024 ? 1 : 0) + ' MB';
+        }
+        return (n / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
     }
 
     function escapeHtml(value) {

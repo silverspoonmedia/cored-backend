@@ -42,6 +42,11 @@ export function applyBrowsePayload(root, browseData, config) {
 
     const folders = browseData.folders || [];
     const files = browseData.files || [];
+    const crumbs = browseData.breadcrumb || [];
+    // Derive parent for "..." row (second-to-last crumb when nested).
+    const parentMeta = parentFolderMeta(config, crumbs);
+    config.parentFolderId = parentMeta.show ? parentMeta.parentId : null;
+
     const tbody = root.querySelector('[data-fh-view="table"] tbody');
     const grid = root.querySelector('[data-fh-view="grid"]');
 
@@ -51,18 +56,20 @@ export function applyBrowsePayload(root, browseData, config) {
     }
 
     if (tbody) {
-        tbody.innerHTML = renderTableRows(folders, files, config);
+        tbody.innerHTML = renderTableRows(folders, files, config, crumbs);
     }
     if (grid) {
-        // Normalize grid shell: empty state OR .fh-grid of cards
-        if (folders.length === 0 && files.length === 0) {
+        const cards = renderGridCards(folders, files, config, crumbs);
+        if (folders.length === 0 && files.length === 0 && !parentMeta.show) {
             grid.innerHTML = emptyStateHtml(config);
+        } else if (folders.length === 0 && files.length === 0 && parentMeta.show) {
+            grid.innerHTML = `<div class="fh-grid">${cards}</div>`;
         } else {
-            grid.innerHTML = `<div class="fh-grid">${renderGridCards(folders, files, config)}</div>`;
+            grid.innerHTML = `<div class="fh-grid">${cards}</div>`;
         }
     }
 
-    applyBreadcrumb(root, browseData.breadcrumb || [], config);
+    applyBreadcrumb(root, crumbs, config);
 
     // Clear bulk selection after full replace
     root.querySelectorAll('[data-fh-select]').forEach((cb) => {
@@ -114,22 +121,26 @@ export function applyBreadcrumb(root, crumbs, config) {
     const parts = [];
     const list = Array.isArray(crumbs) ? crumbs : [];
 
-    // First crumb is often root (id null)
+    // First crumb is often root (id null). Non-active crumbs are drag-move drop targets.
     list.forEach((crumb, index) => {
         const isLast = index === list.length - 1;
         const id = crumb?.id ?? null;
         const name = crumb?.name || (id ? '' : rootLabel);
+        const icon = index === 0
+            ? '<i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>'
+            : '';
         if (index > 0) {
             parts.push('<i class="bi bi-chevron-right fh-breadcrumb__sep"></i>');
         }
         if (isLast) {
             parts.push(
-                `<span class="fh-breadcrumb__item is-active">${index === 0 ? '<i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>' : ''}${escapeHtml(name)}</span>`,
+                `<span class="fh-breadcrumb__item is-active">${icon}${escapeHtml(name)}</span>`,
             );
         } else {
             const href = browseBase + qs(id ? { folder_id: id } : {});
+            const drop = id ? escapeHtml(String(id)) : 'root';
             parts.push(
-                `<a href="${escapeHtml(href)}" class="fh-breadcrumb__item" data-fh-soft-nav>${index === 0 ? '<i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>' : ''}${escapeHtml(name)}</a>`,
+                `<a href="${escapeHtml(href)}" class="fh-breadcrumb__item" data-fh-soft-nav data-fh-drop-folder="${drop}">${icon}${escapeHtml(name)}</a>`,
             );
         }
     });
@@ -380,28 +391,121 @@ function tableColspan(config) {
     return showRegionColumn(config) ? 8 : 7;
 }
 
-function renderTableRows(folders, files, config) {
+/**
+ * Virtual "..." parent row metadata.
+ * Parent id = second-to-last breadcrumb crumb (null = drive root).
+ *
+ * @param {object} config
+ * @param {Array<{id: string|null, name?: string}>} [crumbs]
+ * @returns {{ show: boolean, parentId: string|null, href: string, drop: string, title: string }}
+ */
+export function parentFolderMeta(config, crumbs) {
+    const currentId = config.currentFolderId || null;
+    const title = config.messages?.parentFolder || 'Parent folder';
+    if (!currentId) {
+        return { show: false, parentId: null, href: rootHref(config), drop: 'root', title };
+    }
+
+    const list = Array.isArray(crumbs) ? crumbs : [];
+    let parentId = null;
+    if (list.length >= 2) {
+        parentId = list[list.length - 2]?.id ?? null;
+    }
+    // Normalize empty string to null (root).
+    if (parentId === '' || parentId === undefined) {
+        parentId = null;
+    }
+
+    const href = parentId ? folderHref(parentId, config) : rootHref(config);
+    const drop = parentId ? String(parentId) : 'root';
+
+    return { show: true, parentId, href, drop, title };
+}
+
+function rootHref(config) {
+    const base = config.browseUrl || window.location.pathname;
+    const u = new URL(base, window.location.origin);
+    u.searchParams.delete('folder_id');
+    if (config.workspaceId) {
+        u.searchParams.set('workspace_id', config.workspaceId);
+    } else {
+        u.searchParams.delete('workspace_id');
+    }
+    if (config.ownerUserId) {
+        u.searchParams.set('user_id', config.ownerUserId);
+    } else {
+        u.searchParams.delete('user_id');
+    }
+    return u.pathname + u.search;
+}
+
+function tableParentRow(meta, config) {
+    const href = escapeHtml(meta.href);
+    const drop = escapeHtml(meta.drop);
+    const title = escapeHtml(meta.title);
+    const region = folderRegionCellHtml(config);
+    return `<tr data-fh-row data-fh-entity="parent" data-fh-drop-folder="${drop}" class="fh-parent-row" title="${title}">
+<td class="fh-table__select-cell"></td>
+<td class="fh-table__icon-cell"><a href="${href}" data-fh-soft-nav aria-label="${title}"><i class="bi bi-folder2 fh-icon--folder fh-parent-row__icon" aria-hidden="true"></i></a></td>
+<td><a href="${href}" class="fh-table__name" data-fh-soft-nav title="${title}"><span class="fh-table__name-text">...</span></a></td>
+<td class="fh-table__type text-muted">${escapeHtml(title)}</td>
+<td class="fh-table__size">&mdash;</td>
+${region}
+<td></td>
+<td class="fh-table__actions"></td>
+</tr>`;
+}
+
+function gridParentCard(meta, config) {
+    const href = escapeHtml(meta.href);
+    const drop = escapeHtml(meta.drop);
+    const title = escapeHtml(meta.title);
+    return `<div class="fh-file-card is-parent" data-fh-row data-fh-entity="parent" data-fh-drop-folder="${drop}" title="${title}">
+<div class="fh-file-card__icon"><a href="${href}" data-fh-soft-nav aria-label="${title}"><i class="bi bi-folder2 fh-icon--folder fh-parent-row__icon" aria-hidden="true"></i></a></div>
+<a href="${href}" class="fh-file-card__name" data-fh-soft-nav title="${title}">...</a>
+<div class="fh-file-card__meta">${escapeHtml(title)}</div>
+</div>`;
+}
+
+function renderTableRows(folders, files, config, crumbs) {
     const parts = [];
+    const meta = parentFolderMeta(config, crumbs);
+    if (meta.show) {
+        parts.push(tableParentRow(meta, config));
+    }
     folders.forEach((f) => {
         parts.push(tableFolderRow(f, config));
     });
     files.forEach((f) => {
         parts.push(tableFileRow(f, config));
     });
-    if (!parts.length) {
-        const msg = escapeHtml(config.messages?.emptyFolder || 'Empty');
-        return `<tr data-fh-empty><td colspan="${tableColspan(config)}">
+    if (parts.length === 0 || (parts.length === 1 && meta.show && folders.length === 0 && files.length === 0)) {
+        if (!meta.show) {
+            const msg = escapeHtml(config.messages?.emptyFolder || 'Empty');
+            return `<tr data-fh-empty><td colspan="${tableColspan(config)}">
   <div class="fh-empty">
     <i class="bi bi-folder2-open fh-empty__icon"></i>
     <div class="fh-empty__text">${msg}</div>
   </div>
 </td></tr>`;
+        }
+        // Nested empty: keep "..." + empty hint row.
+        const msg = escapeHtml(config.messages?.emptyFolder || 'Empty');
+        parts.push(`<tr data-fh-empty><td colspan="${tableColspan(config)}">
+  <div class="fh-empty fh-empty--compact">
+    <div class="fh-empty__text">${msg}</div>
+  </div>
+</td></tr>`);
     }
     return parts.join('');
 }
 
-function renderGridCards(folders, files, config) {
+function renderGridCards(folders, files, config, crumbs) {
     const parts = [];
+    const meta = parentFolderMeta(config, crumbs);
+    if (meta.show) {
+        parts.push(gridParentCard(meta, config));
+    }
     folders.forEach((f) => {
         parts.push(gridFolderCard(f, config));
     });

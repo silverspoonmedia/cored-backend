@@ -20,6 +20,22 @@
     $showRegion = \App\Domain\FileHosting\Support\RegionResolver::shouldDisplayRegion();
     $tableColspan = $showRegion ? 8 : 7;
 
+    // Virtual "..." parent row when nested (second-to-last breadcrumb = parent; null = root).
+    $parentFolderShow = filled($currentFolderId);
+    $parentFolderId = null;
+    $parentFolderHref = route('file-hosting.index', $ownerQuery);
+    $parentFolderDrop = 'root';
+    if ($parentFolderShow) {
+        $crumbCount = count($breadcrumb);
+        if ($crumbCount >= 2) {
+            $parentFolderId = $breadcrumb[$crumbCount - 2]['id'] ?? null;
+        }
+        if (filled($parentFolderId)) {
+            $parentFolderHref = route('file-hosting.index', array_filter(array_merge($ownerQuery, ['folder_id' => $parentFolderId])));
+            $parentFolderDrop = (string) $parentFolderId;
+        }
+    }
+
     $fhRealtime = app(\App\Domain\FileHosting\Support\FileHostingRealtime::class);
     $fhBroadcast = $fhRealtime->clientConfig();
     $authUser = auth('api')->user();
@@ -88,6 +104,7 @@
             'typeFolder' => __('web/file-hosting.type_folder'),
             'typeFile' => __('web/file-hosting.type_file'),
             'emptyFolder' => __('web/file-hosting.empty'),
+            'parentFolder' => __('web/file-hosting.parent_folder'),
             // Soft-refetch row render needs the same labels Blade SSR uses.
             'visibility' => [
                 'private' => __('web/file-hosting.visibility.private'),
@@ -194,21 +211,37 @@
 
         {{-- Breadcrumb --}}
         <nav class="fh-breadcrumb" aria-label="breadcrumb" data-fh-breadcrumb data-fh-browse-chrome>
-            <a href="{{ route('file-hosting.index', $ownerQuery) }}" class="fh-breadcrumb__item {{ empty($breadcrumb) ? 'is-active' : '' }}">
-                <i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>
-                @if($workspaceId)
-                    {{ $currentWorkspace['name'] ?? __('web/file-hosting.workspace_team') }}
-                @else
-                    {{ __('web/file-hosting.root_label') }}
-                @endif
-            </a>
+            @if (empty($breadcrumb))
+                <span class="fh-breadcrumb__item is-active">
+                    <i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>
+                    @if($workspaceId)
+                        {{ $currentWorkspace['name'] ?? __('web/file-hosting.workspace_team') }}
+                    @else
+                        {{ __('web/file-hosting.root_label') }}
+                    @endif
+                </span>
+            @else
+                <a href="{{ route('file-hosting.index', $ownerQuery) }}"
+                   class="fh-breadcrumb__item"
+                   data-fh-soft-nav
+                   data-fh-drop-folder="root">
+                    <i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>
+                    @if($workspaceId)
+                        {{ $currentWorkspace['name'] ?? __('web/file-hosting.workspace_team') }}
+                    @else
+                        {{ __('web/file-hosting.root_label') }}
+                    @endif
+                </a>
+            @endif
             @foreach ($breadcrumb as $crumb)
                 <i class="bi bi-chevron-right fh-breadcrumb__sep"></i>
                 @if ($loop->last)
                     <span class="fh-breadcrumb__item is-active">{{ $crumb['name'] }}</span>
                 @else
                     <a href="{{ route('file-hosting.index', array_filter(array_merge($ownerQuery, ['folder_id' => $crumb['id']]))) }}"
-                       class="fh-breadcrumb__item">
+                       class="fh-breadcrumb__item"
+                       data-fh-soft-nav
+                       data-fh-drop-folder="{{ $crumb['id'] }}">
                         {{ $crumb['name'] }}
                     </a>
                 @endif
@@ -326,6 +359,28 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @if ($parentFolderShow)
+                            <tr data-fh-row data-fh-entity="parent" data-fh-drop-folder="{{ $parentFolderDrop }}" class="fh-parent-row" title="{{ __('web/file-hosting.parent_folder') }}">
+                                <td class="fh-table__select-cell"></td>
+                                <td class="fh-table__icon-cell">
+                                    <a href="{{ $parentFolderHref }}" data-fh-soft-nav aria-label="{{ __('web/file-hosting.parent_folder') }}">
+                                        <i class="bi bi-folder2 fh-icon--folder fh-parent-row__icon" aria-hidden="true"></i>
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="{{ $parentFolderHref }}" class="fh-table__name" data-fh-soft-nav title="{{ __('web/file-hosting.parent_folder') }}">
+                                        <span class="fh-table__name-text">...</span>
+                                    </a>
+                                </td>
+                                <td class="fh-table__type text-muted">{{ __('web/file-hosting.parent_folder') }}</td>
+                                <td class="fh-table__size">&mdash;</td>
+                                @if ($showRegion)
+                                    <td class="fh-table__region"><span class="text-muted">&mdash;</span></td>
+                                @endif
+                                <td></td>
+                                <td class="fh-table__actions"></td>
+                            </tr>
+                        @endif
                         @forelse ($folders as $folder)
                             @php $folderVis = $folder['visibility'] ?? $visPrivate; @endphp
                             <tr data-fh-row data-fh-entity="folder" data-fh-id="{{ $folder['id'] }}">
@@ -456,10 +511,12 @@
                 @endforeach
 
                         @if ($folders->isEmpty() && $files->isEmpty())
-                            <tr>
+                            <tr data-fh-empty>
                                 <td colspan="{{ $tableColspan }}">
-                                    <div class="fh-empty">
-                                        <i class="bi bi-folder2-open fh-empty__icon"></i>
+                                    <div class="fh-empty{{ $parentFolderShow ? ' fh-empty--compact' : '' }}">
+                                        @unless ($parentFolderShow)
+                                            <i class="bi bi-folder2-open fh-empty__icon"></i>
+                                        @endunless
                                         <div class="fh-empty__text">{{ __('web/file-hosting.empty') }}</div>
                                     </div>
                                 </td>
@@ -472,13 +529,24 @@
 
         {{-- Grid view --}}
         <div data-fh-view="grid" class="d-none">
-            @if ($folders->isEmpty() && $files->isEmpty())
+            @if ($folders->isEmpty() && $files->isEmpty() && ! $parentFolderShow)
                 <div class="fh-empty">
                     <i class="bi bi-folder2-open fh-empty__icon"></i>
                     <div class="fh-empty__text">{{ __('web/file-hosting.empty') }}</div>
                 </div>
             @else
                 <div class="fh-grid">
+                    @if ($parentFolderShow)
+                        <div class="fh-file-card is-parent" data-fh-row data-fh-entity="parent" data-fh-drop-folder="{{ $parentFolderDrop }}" title="{{ __('web/file-hosting.parent_folder') }}">
+                            <div class="fh-file-card__icon">
+                                <a href="{{ $parentFolderHref }}" data-fh-soft-nav aria-label="{{ __('web/file-hosting.parent_folder') }}">
+                                    <i class="bi bi-folder2 fh-icon--folder fh-parent-row__icon" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                            <a href="{{ $parentFolderHref }}" class="fh-file-card__name" data-fh-soft-nav title="{{ __('web/file-hosting.parent_folder') }}">...</a>
+                            <div class="fh-file-card__meta">{{ __('web/file-hosting.parent_folder') }}</div>
+                        </div>
+                    @endif
                     @foreach ($folders as $folder)
                         @php $folderVis = $folder['visibility'] ?? $visPrivate; @endphp
                         <div class="fh-file-card" data-fh-row data-fh-entity="folder" data-fh-id="{{ $folder['id'] }}">

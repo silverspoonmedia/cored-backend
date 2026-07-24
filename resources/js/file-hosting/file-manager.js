@@ -60,6 +60,36 @@ function initFileManager(root) {
             root.classList.toggle('is-fh-loading', Boolean(on));
         }
 
+        /** Mutation busy overlay (move/delete/forms) — distinct from soft-nav is-fh-loading. */
+        let busyDepth = 0;
+        function setBusy(on) {
+            if (on) {
+                busyDepth += 1;
+            } else {
+                busyDepth = Math.max(0, busyDepth - 1);
+            }
+            const active = busyDepth > 0;
+            root.classList.toggle('is-fh-busy', active);
+            root.setAttribute('aria-busy', active ? 'true' : 'false');
+            ensureBusyOverlay();
+        }
+
+        function ensureBusyOverlay() {
+            let overlay = root.querySelector('[data-fh-busy-overlay]');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'fh-busy-overlay';
+                overlay.setAttribute('data-fh-busy-overlay', '');
+                overlay.setAttribute('aria-hidden', 'true');
+                overlay.innerHTML =
+                    '<div class="fh-busy-overlay__inner" role="status">'
+                    + '<div class="spinner-border text-primary" aria-hidden="true"></div>'
+                    + '<span class="fh-busy-overlay__label visually-hidden">Working…</span>'
+                    + '</div>';
+                root.appendChild(overlay);
+            }
+        }
+
         function showPanel(name) {
             root.querySelectorAll('[data-fh-panel]').forEach((panel) => {
                 const match = panel.getAttribute('data-fh-panel') === name;
@@ -710,6 +740,7 @@ function initFileManager(root) {
             }
 
             btn.disabled = true;
+            setBusy(true);
 
             try {
                 const body = JSON.stringify({
@@ -762,6 +793,7 @@ function initFileManager(root) {
                 showToast(config.messages.networkError, 'error');
             } finally {
                 btn.disabled = false;
+                setBusy(false);
             }
         }
 
@@ -812,6 +844,7 @@ function initFileManager(root) {
                 if (submitBtn) {
                     submitBtn.disabled = true;
                 }
+                setBusy(true);
                 try {
                     const result = await moveItemsRequest({
                         keys,
@@ -841,6 +874,7 @@ function initFileManager(root) {
                     if (submitBtn) {
                         submitBtn.disabled = false;
                     }
+                    setBusy(false);
                 }
                 return;
             }
@@ -868,6 +902,7 @@ function initFileManager(root) {
             if (submitBtn) {
                 submitBtn.disabled = true;
             }
+            setBusy(true);
 
             try {
                 const response = await fetch(action, {
@@ -941,6 +976,7 @@ function initFileManager(root) {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                 }
+                setBusy(false);
             }
         }
 
@@ -1133,6 +1169,7 @@ function initFileManager(root) {
                 softRefresh: function () {
                     root.__fhSoftRefresh();
                 },
+                setBusy,
             });
             dragMove.bind();
 
@@ -1150,6 +1187,7 @@ function initFileManager(root) {
                 },
                 csrfToken,
                 loadMoveTree,
+                setBusy,
             });
             contextMenu.bind();
         }
@@ -1228,6 +1266,7 @@ function initFileManager(root) {
                 });
 
                 btn.disabled = true;
+                setBusy(true);
                 try {
                     const promises = [];
 
@@ -1267,6 +1306,7 @@ function initFileManager(root) {
                     showToast(config.messages.networkError, 'error');
                 } finally {
                     btn.disabled = false;
+                    setBusy(false);
                 }
             });
         }

@@ -1,5 +1,5 @@
 /**
- * Drag selected listing items onto a folder to move (Drive-like).
+ * Drag selected listing items onto a folder (or breadcrumb parent/root) to move.
  * MIME type application/x-fh-items so OS-file drops still hit the upload dropzone.
  */
 
@@ -14,9 +14,10 @@ export const FH_ITEMS_MIME = 'application/x-fh-items';
  * @param {(keys: string[], targetFolderId: string|null) => Promise<{ok: boolean, message?: string}>} deps.moveItems
  * @param {(msg: string, type?: string) => void} deps.showToast
  * @param {() => void} deps.softRefresh
+ * @param {(on: boolean) => void} [deps.setBusy]
  */
 export function createDragMove(deps) {
-    const { root, selected, config, selection, moveItems, showToast, softRefresh } = deps;
+    const { root, selected, config, selection, moveItems, showToast, softRefresh, setBusy } = deps;
 
     let dragging = false;
 
@@ -24,7 +25,6 @@ export function createDragMove(deps) {
         if (!dt || !dt.types) {
             return false;
         }
-        // types may be DOMStringList
         return Array.from(dt.types).includes(FH_ITEMS_MIME);
     }
 
@@ -40,35 +40,53 @@ export function createDragMove(deps) {
         });
     }
 
-    function folderTargetFromEvent(e) {
+    /**
+     * @returns {{ folderId: string|null, el: HTMLElement }|null}
+     * folderId null = drive root.
+     */
+    function moveTargetFromEvent(e) {
+        // Prefer explicit breadcrumb drop chips (parent / root).
+        const crumb = e.target.closest('[data-fh-drop-folder]');
+        if (crumb && root.contains(crumb)) {
+            const raw = crumb.getAttribute('data-fh-drop-folder') || '';
+            const folderId = raw === '' || raw === 'root' ? null : raw;
+            return { folderId, el: crumb };
+        }
+
         const row = e.target.closest('[data-fh-row][data-fh-entity="folder"][data-fh-id]');
-        if (!row) {
+        if (!row || !root.contains(row)) {
+            return null;
+        }
+        if (row.closest('[data-fh-panel="trash"]')) {
             return null;
         }
         const browse = root.querySelector('[data-fh-panel="browse"]') || root;
-        if (!browse.contains(row)) {
+        if (!browse.contains(row) && !row.closest('[data-fh-view]')) {
             return null;
         }
-        return row;
+        return { folderId: row.getAttribute('data-fh-id'), el: row };
     }
 
+    /**
+     * @param {string|null} folderId
+     * @param {string[]} keys
+     */
     function canDropOnFolder(folderId, keys) {
-        if (!folderId) {
-            return false;
-        }
-        // Cannot drop onto a selected folder being moved (self / multi).
-        if (keys.includes('folder:' + folderId)) {
-            return false;
+        // Root (null) is always a valid destination for items not already at root
+        // (server no-ops same-parent moves; we still allow the gesture).
+        if (folderId !== null && folderId !== undefined && folderId !== '') {
+            if (keys.includes('folder:' + folderId)) {
+                return false;
+            }
         }
         return true;
     }
 
     function onDragStart(e) {
         const row = e.target.closest('[data-fh-row][data-fh-entity][data-fh-id]');
-        if (!row) {
+        if (!row || row.getAttribute('data-fh-entity') === 'parent') {
             return;
         }
-        // Don't start item-drag from interactive controls.
         if (selection.isInteractiveTarget(e.target) && !e.target.closest('[data-fh-row]')) {
             e.preventDefault();
             return;
@@ -92,7 +110,6 @@ export function createDragMove(deps) {
         dragging = true;
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData(FH_ITEMS_MIME, JSON.stringify(keys));
-        // Some browsers need a text/plain fallback for DnD to activate.
         e.dataTransfer.setData('text/plain', keys.join(','));
 
         keys.forEach((k) => {
@@ -119,43 +136,40 @@ export function createDragMove(deps) {
         if (!isFhDrag(e.dataTransfer) && !dragging) {
             return;
         }
-        // Only accept our payload (when types available).
         if (e.dataTransfer && e.dataTransfer.types && !isFhDrag(e.dataTransfer) && !dragging) {
             return;
         }
 
-        const folderRow = folderTargetFromEvent(e);
-        if (!folderRow) {
+        const target = moveTargetFromEvent(e);
+        if (!target) {
             clearDropTargets();
             return;
         }
 
-        const folderId = folderRow.getAttribute('data-fh-id');
         const keys = Array.from(selected);
-        if (!canDropOnFolder(folderId, keys)) {
+        if (!canDropOnFolder(target.folderId, keys)) {
             clearDropTargets();
             return;
         }
 
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        if (!folderRow.classList.contains('is-drop-target')) {
+        if (!target.el.classList.contains('is-drop-target')) {
             clearDropTargets();
-            folderRow.classList.add('is-drop-target');
+            target.el.classList.add('is-drop-target');
         }
     }
 
     function onDragLeave(e) {
-        const folderRow = e.target.closest('[data-fh-row].is-drop-target');
-        if (!folderRow) {
+        const dropEl = e.target.closest('.is-drop-target');
+        if (!dropEl) {
             return;
         }
-        // Leaving into a child still inside the row — ignore.
         const related = e.relatedTarget;
-        if (related && folderRow.contains(related)) {
+        if (related && dropEl.contains(related)) {
             return;
         }
-        folderRow.classList.remove('is-drop-target');
+        dropEl.classList.remove('is-drop-target');
     }
 
     async function onDrop(e) {
@@ -163,8 +177,8 @@ export function createDragMove(deps) {
             return;
         }
 
-        const folderRow = folderTargetFromEvent(e);
-        if (!folderRow) {
+        const target = moveTargetFromEvent(e);
+        if (!target) {
             return;
         }
 
@@ -186,38 +200,55 @@ export function createDragMove(deps) {
             keys = Array.from(selected);
         }
 
-        const folderId = folderRow.getAttribute('data-fh-id');
         clearDropTargets();
         clearDragSources();
         dragging = false;
 
-        if (!canDropOnFolder(folderId, keys)) {
+        if (!canDropOnFolder(target.folderId, keys)) {
             showToast(config.messages?.moveInvalid || config.messages?.error || 'Cannot move here', 'error');
             return;
         }
 
-        const result = await moveItems(keys, folderId);
-        if (result?.ok) {
-            showToast(result.message || config.messages?.moved || config.messages?.success || 'Moved', 'success');
-            selected.clear();
-            selection.syncDom();
-            softRefresh();
-        } else {
-            showToast(result?.message || config.messages?.moveFailed || config.messages?.error || 'Move failed', 'error');
+        if (typeof setBusy === 'function') {
+            setBusy(true);
+        }
+        try {
+            const result = await moveItems(keys, target.folderId);
+            if (result?.ok) {
+                showToast(result.message || config.messages?.moved || config.messages?.success || 'Moved', 'success');
+                selected.clear();
+                selection.syncDom();
+                softRefresh();
+            } else {
+                showToast(result?.message || config.messages?.moveFailed || config.messages?.error || 'Move failed', 'error');
+            }
+        } finally {
+            if (typeof setBusy === 'function') {
+                setBusy(false);
+            }
         }
     }
 
     function makeRowsDraggable() {
         root.querySelectorAll('[data-fh-panel="browse"] [data-fh-row], [data-fh-view] [data-fh-row]').forEach((row) => {
-            // Trash panel rows may match if not scoped — skip trash.
             if (row.closest('[data-fh-panel="trash"]')) {
                 return;
             }
             if (!row.closest('[data-fh-view], [data-fh-panel="browse"]')) {
                 return;
             }
+            // Virtual parent "..." is drop target only — not movable.
+            if (row.getAttribute('data-fh-entity') === 'parent') {
+                row.removeAttribute('draggable');
+                row.querySelectorAll('a[href]').forEach((a) => {
+                    a.setAttribute('draggable', 'false');
+                });
+                return;
+            }
+            if (!row.getAttribute('data-fh-id')) {
+                return;
+            }
             row.setAttribute('draggable', 'true');
-            // Prevent <a> native image/link drag from fighting row HTML5 DnD.
             row.querySelectorAll('a[href]').forEach((a) => {
                 a.setAttribute('draggable', 'false');
             });
@@ -225,7 +256,6 @@ export function createDragMove(deps) {
     }
 
     function bind() {
-        // Event delegation on root.
         root.addEventListener('dragstart', onDragStart);
         root.addEventListener('dragend', onDragEnd);
         root.addEventListener('dragover', onDragOver);
@@ -264,8 +294,7 @@ export async function moveItemsRequest(opts) {
             continue;
         }
 
-        // Skip moving a folder into itself.
-        if (parsed.type === 'folder' && parsed.id === targetFolderId) {
+        if (parsed.type === 'folder' && targetFolderId && parsed.id === targetFolderId) {
             continue;
         }
 

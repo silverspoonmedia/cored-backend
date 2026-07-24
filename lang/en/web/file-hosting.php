@@ -67,6 +67,7 @@ return [
     'move_invalid' => 'Cannot move here.',
     'select_folder' => 'Select destination folder',
     'root_label' => 'My Files',
+    'parent_folder' => 'Parent folder',
     'workspace_personal' => 'Personal',
     'workspace_team' => 'Team workspace',
     'workspace_activity' => 'Team activity',

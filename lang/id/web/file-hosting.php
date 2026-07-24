@@ -67,6 +67,7 @@ return [
     'move_to' => 'Pindahkan ke',
     'select_folder' => 'Pilih folder tujuan',
     'root_label' => 'File saya',
+    'parent_folder' => 'Folder induk',
     'workspace_personal' => 'Pribadi',
     'workspace_team' => 'Workspace tim',
     'workspace_activity' => 'Aktivitas tim',

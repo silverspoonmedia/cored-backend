@@ -67,6 +67,7 @@ return [
     'move_to' => '移動先',
     'select_folder' => '移動先フォルダを選択',
     'root_label' => 'マイファイル',
+    'parent_folder' => '親フォルダ',
     'workspace_personal' => '個人',
     'workspace_team' => 'チームワークスペース',
     'workspace_activity' => 'チームアクティビティ',
