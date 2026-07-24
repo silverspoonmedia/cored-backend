@@ -27,7 +27,7 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Display names | Upload complete + **file/folder move** auto-rename on sibling collision (`UniqueDisplayNameAllocator`). Manual rename still rejects exact collisions. |
 | Public share | Guest `/s/f` / `/s/d` only when storage owner is **paid** (`QuotaService::ownerCanPublicShare`). Free/grace → 404 even if DB says `anyone_with_link`. See [Visibility](#visibility). |
 | Storage regions | Multi-disk `s3FileHosting*` (+ legacy `s3Custom` alias). Region column/badge only when multi-region config **or** historical multi-disk usage. |
-| Hard navigation | **Download hops only** (auth + signed public → 302 S3). In-shell mutations and folder/file/trash/show soft-nav do **not** rely on `location.reload`. |
+| Hard navigation | **Download hops only** (auth + signed public → 302 storage URL: CF Worker when proxy on, else S3). In-shell mutations and folder/file/trash/show soft-nav do **not** rely on `location.reload`. |
 | Busy / upload UX | Mutations toggle `.is-fh-busy` spinner overlay; upload queue shows human file size. |
 
 ## Concepts
@@ -42,9 +42,9 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | DB `path` | Object id only: 40 lowercase alnum chars (`Str::random(40)`). **Not** a full S3 key. |
 | S3 object key | `file-hosting/{user_id}/{objectId}` — resolved at runtime via `ObjectKeyResolver` from `user_id` + `path` + config `directory`. No `folder_id`, no extension, no upload session id in the key. |
 | Display name | Preferred name kept if free in that owner+folder/parent (soft-deleted ignored). If taken on **upload complete** or **file/folder move** → auto DB rename to `{stem} ({maxN+1}).{ext}` (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`; folders without ext → `Docs (2)`). Shared allocator: `UniqueDisplayNameAllocator`. **Manual rename** still rejects exact sibling collisions (user chose the name). S3 object key stays random and is never renamed. Move/rename are **DB-only**. |
-| Download bytes | Always **302 (or client follow)** to S3 temporary URL — **not** Monolith streaming |
-| S3 signed URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry. **Cleared on visibility change** (and rename/delete) so private revoke cannot reuse a still-valid temp link |
-| Download filename | `ResponseContentDisposition` from DB `name` (random key stays on object) |
+| Download bytes | Always **302 (or client follow)** to a storage URL — **not** Monolith streaming. Proxy on → CF Worker HMAC GetObject (B2 **Bandwidth Alliance** path). Proxy off → direct S3 temporary URL |
+| Signed download URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry **and** URL host matches current proxy mode (stale B2 URL reminted when proxy enabled; stale Worker URL reminted when proxy off). **Cleared on visibility change** (and rename/delete) so private revoke cannot reuse a still-valid link |
+| Download filename | `response-content-disposition` (Worker) / `ResponseContentDisposition` (direct S3) from DB `name` (random key stays on object) |
 | Stats | `view_count` / `download_count` + last_* timestamps (no event log) |
 | Visibility | `private` \| `anyone_with_link` on folders and files |
 | Link secret | Resource UUID (Drive “anyone with the link”; not world-searchable) |
@@ -160,19 +160,19 @@ Middleware stack: `auth:api` -> `product.active:FileHosting` (runtime activation
 | Folders | create, rename, move, **visibility**, soft/force delete, restore (optional `workspace_id`) |
 | Files | show (view++), rename, move, **visibility**, soft/force delete, restore (optional `workspace_id`) |
 | Bulk | `POST files/bulk-visibility` + `POST folders/bulk-visibility` (`ids[]`, `visibility`); `DELETE files/bulk` + `DELETE folders/bulk` (`ids[]`) — owner/workspace-scoped, max 100 ids |
-| Download | `GET files/{id}/download` -> `{ url, expires_at }` (download++; cache S3 URL) |
+| Download | `GET files/{id}/download` -> `{ url, expires_at }` (download++; cache Worker HMAC URL or S3 temp URL) |
 | Upload | init (optional `disk`, optional `workspace_id`), status, sign-parts, complete (auto-renames duplicate display name), abort |
 | Workspaces | `GET/POST workspaces`, show, archive, members, invite, accept invite, update/remove member, activity |
 | Search / trash / quota | as named (trash/search accept `workspace_id`) |
 
-### Direct upload (S3 engine + optional Worker proxy)
+### Direct upload/download (S3 engine + optional Worker proxy)
 
-Control plane (init / sign-parts / complete / abort) always stays on Monolith. Browser **byte** path is either:
+Control plane (init / sign-parts / complete / abort / mint download URL) always stays on Monolith. Browser **byte** path is either:
 
-| Mode | When | Browser PUT target |
+| Mode | When | Browser data plane |
 |------|------|--------------------|
-| **Direct S3** (default) | `FILE_HOSTING_UPLOAD_PROXY_URL` empty | Presigned S3 URL from `temporaryUploadUrl` / `UploadPart` |
-| **Hybrid proxy** | base URL + token + disk->alias set | CF Worker `/t/{alias}/{key}` (+ `partNumber`/`uploadId` for multipart); Worker re-signs + streams to S3 |
+| **Direct S3** (default) | `FILE_HOSTING_UPLOAD_PROXY_URL` empty | Presigned S3 PUT/UploadPart + S3 temporary GET URL |
+| **Hybrid proxy** | base URL + token + disk->alias set | Upload: CF Worker `/t/{alias}/{key}` (+ multipart query) + Bearer. Download: same path + HMAC query (`exp`, `sig`, optional `disp`/`ctype`) — no raw token |
 
 Shared kernel pieces (not duplicated per domain):
 
@@ -181,6 +181,9 @@ Shared kernel pieces (not duplicated per domain):
 | `App\Support\Storage\S3DirectUploadEngine` | Strategy, direct presign **or** Worker proxy URLs, merge/assert parts, create/complete/abort multipart, size/mime guards |
 | `App\Support\Storage\SerializesDirectUploadSession` | Shared JSON session shape for init/status (`upload_id`, `strategy`, `parts`, …) |
 | `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, **auto display-name allocation** on complete, promote -> `HostedFile` |
+| `SignedDownloadService` | Caches download URL: Worker HMAC GetObject when proxy on (B2 **Bandwidth Alliance**), else S3 `temporaryUrl`; remints when cached host disagrees with proxy mode |
+
+**Bandwidth Alliance:** client-direct B2 temporary URLs bill B2 egress after free tier. With proxy on, the browser only hits the Worker origin; the Worker streams GetObject from B2 over Cloudflare. Monolith never streams file bytes.
 
 Config for thresholds/TTL/proxy: `config/file-hosting.php`.
 
@@ -204,24 +207,25 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 
 | Env | Role |
 |-----|------|
-| `FILE_HOSTING_UPLOAD_PROXY_URL` | Worker origin (no trailing slash). Empty = direct S3. Example production custom domain: `https://s3.silverspoon.me` |
-| `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Same value as Worker `S3_TARGETS.uploadToken` (Bearer) |
+| `FILE_HOSTING_UPLOAD_PROXY_URL` | Worker origin (no trailing slash). Empty = direct S3 for **upload + download**. Example production custom domain: `https://s3.silverspoon.me` |
+| `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Same value as Worker `S3_TARGETS.uploadToken` — upload **Bearer** + download **HMAC secret** (never put raw token in download URLs) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_CE` | Worker target **alias** for disk `s3FileHostingCe` (must match a key under Worker `S3_TARGETS.targets`, e.g. `sbs`) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_US` | Alias for disk `s3FileHostingUs` (optional) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_EU` | Alias for disk `s3FileHostingEu` (optional) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM` | Legacy fallback for CE / `s3Custom` disk rows (same alias as `TARGET_CE` when CE env empty) |
 
-**Where does `/t/{alias}/…` come from?** Monolith maps the upload session disk (e.g. `s3FileHostingCe` or legacy `s3Custom`) -> env alias via `upload_proxy.disk_targets`, then builds:
+**Where does `/t/{alias}/…` come from?** Monolith maps the file/upload disk (e.g. `s3FileHostingCe` or legacy `s3Custom`) -> env alias via `upload_proxy.disk_targets`, then builds:
 
-`{FILE_HOSTING_UPLOAD_PROXY_URL}/t/{alias}/{object-key}?partNumber=&uploadId=`
+- Upload: `{PROXY}/t/{alias}/{object-key}?partNumber=&uploadId=` + headers `Authorization: Bearer …`, `X-S3-Target: {alias}`, `Content-Type`
+- Download: `{PROXY}/t/{alias}/{object-key}?exp={unix}&disp=…&ctype=…&sig={hmacHex}` (HMAC over LF-separated `GET`, alias, objectKey, exp, disposition, contentType; secret = proxy token)
 
-plus headers `Authorization: Bearer …`, `X-S3-Target: {alias}`, `Content-Type`. The alias is **not** the B2 bucket name and **not** part of the S3 key; it only selects credentials/endpoint inside the Worker.
+The alias is **not** the B2 bucket name and **not** part of the S3 key; it only selects credentials/endpoint inside the Worker. The browser never receives B2 application keys or the raw upload token on download links.
 
 **Fail closed:** if base URL is set but token or disk alias is missing -> init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3. Upstream S3 failures map to `upstream_failed` where applicable.
 
 **B2 / path-style:** Monolith FH disks (`s3FileHostingCe` and legacy alias `s3Custom`) must use path-style endpoints (`FILE_HOSTING_S3_CE_USE_PATH_STYLE` / `CUSTOM_S3_USE_PATH_STYLE`, default true in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
 
-**Worker project:** `c:\laragon\www\workers` — Wrangler name **`cf-workers-s3-proxy`**. Streaming SigV4 proxy; production custom domain example `https://s3.silverspoon.me`. See that repo’s README. Spec history: [chore-now.md](./chore-now.md).
+**Worker project:** `c:\laragon\www\workers` — Wrangler name **`cf-workers-s3-proxy`**. Streaming SigV4 proxy for **upload + download** (GetObject HMAC); production custom domain example `https://s3.silverspoon.me`. See that repo’s README. Spec history: [chore-now.md](./chore-now.md).
 
 **Deploy / secrets (ops):**
 
@@ -239,11 +243,17 @@ plus headers `Authorization: Bearer …`, `X-S3-Target: {alias}`, `Content-Type`
 - Create/complete/abort still use Monolith disk credentials against real S3 (not the Worker)
 - Client `direct-upload.js` accepts header values as string or single-element array
 
+**Hybrid protocol (download URL in `signed_download_url`):**
+
+- Proxy on: `{proxy}/t/{alias}/{encoded-key}?exp=&disp=&ctype=&sig=` (HMAC; browser 302 cannot send Bearer)
+- Proxy off: S3 temporary URL from disk `temporaryUrl`
+- Cache reminted if host disagrees with current proxy mode (stale B2 URL after enabling proxy, or stale Worker URL after disabling)
+
 ### S3 provider CORS (browser-direct multipart)
 
 When proxy is **off**, browser uploads **directly** to the S3-compatible endpoint (presigned PUT / UploadPart). That is a cross-origin request from the app origin (Blade admin or SPA) to the bucket host. Without bucket CORS, the browser blocks the PUT and may hide `ETag` — multipart **complete** then cannot send part ETags.
 
-When proxy is **on**, browser talks to the **Worker** origin — Worker CORS must allow app origin(s) and **expose `ETag`**. Bucket CORS is still needed for downloads (and for direct mode).
+When proxy is **on**, browser upload PUTs talk to the **Worker** origin — Worker CORS must allow app origin(s) and **expose `ETag`**. Full-page download navigation does not need CORS (302 → Worker GET with HMAC). Bucket CORS is still needed for **direct** mode (upload + download) and any client that talks to B2 without the Worker.
 
 | Requirement | Why |
 |-------------|-----|
@@ -320,7 +330,7 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 |------------|------|---------|
 | `file-hosting.index` | yes | Browse + chunk upload; list/grid; Drive-like select/context/drag; bulk **Move**/share/unshare/delete; SPA soft-nav (no hard reload on mutations) |
 | `file-hosting.files.show` | yes | Detail, stats tiles, visibility, download CTA |
-| `file-hosting.files.download` | yes | Auth download -> **302** S3 |
+| `file-hosting.files.download` | yes | Auth download -> **302** storage (Worker or S3) |
 | `file-hosting.files.rename` | yes | Rename file (AJAX or form) |
 | `file-hosting.files.move` | yes | Move file to folder (AJAX) |
 | `file-hosting.files.visibility` | yes | Toggle private / anyone_with_link |
@@ -341,10 +351,10 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 | `file-hosting.workspaces.activity` | yes | JSON activity feed for team offcanvas soft-refetch |
 | `file-hosting.search` | yes | AJAX JSON search endpoint (`GET ?q=`) |
 | `file-hosting.public.files.show` | no | `/s/f/{uuid}` guest page |
-| `file-hosting.public.files.download` | no | **Temporary signed** hop -> **302** S3 (unsigned **403**) |
+| `file-hosting.public.files.download` | no | **Temporary signed** hop -> **302** storage (unsigned **403**) |
 | `file-hosting.public.folders.show` | no | `/s/d/{uuid}` guest folder list |
 
-Share link users copy = show URL (`/s/f/{uuid}` or `/s/d/{uuid}`). Download button on the show page is a short-lived Laravel signed URL (`public_download_signature_ttl_minutes`, default 5).
+| `public_download_signature_ttl_minutes` | Laravel signed hop for `/s/f/.../download` (Monolith hop only; storage URL has its own TTL) |
 
 ### UI architecture / SPA shell
 
@@ -377,7 +387,7 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 | `/file-hosting/files/{uuid}` | `show` | `GET file-hosting/files/{uuid}` Accept JSON (**dual response**) |
 | Workspace switcher links | browse + Echo rebind | same browse JSON; channel flips `user.*` ↔ `workspace.*` |
 
-**Always full navigation:** file download hops (`…/download` → signed S3), non-FH routes, plans/services links, cold load of show/trash when listing shell is missing.
+**Always full navigation:** file download hops (`…/download` → signed storage URL: Worker HMAC or S3), non-FH routes, plans/services links, cold load of show/trash when listing shell is missing.
 
 **Mutations:** all FH forms/buttons use `fetch` + `Accept: application/json`. `ConsumesApi::jsonFromApi` forwards API `data` entity so the shell can soft-update. Shell **ignores** `redirect` for same-shell actions. Success path for in-shell FH actions **never depends on** `window.location.reload` — soft-refetch listing/quota/trash/show or soft-nav instead. Post-mutation soft-refetch and [Realtime / live listing](#realtime--live-listing) Echo invalidation share the same paint helpers (`listing-ui` / `trash-ui` / `show-ui` / quota).
 
@@ -426,7 +436,7 @@ Listing mutations must stay **in lockstep** across surfaces. When shipping a new
 |-------|-------|-------|
 | `/s/f/{uuid}` | Yes | `PublicShareController::showFile` dual JSON |
 | `/s/d/{uuid}` | Yes | `PublicShareController::showFolder` dual JSON |
-| `/s/f/{uuid}/download` | No | signed hop → S3 |
+| `/s/f/{uuid}/download` | No | signed hop → storage (Worker or S3) |
 | Unpaid owner / private | 404 | paid gate stays server-side (`VisibilityService`) |
 
 #### Web BFF JSON contracts
@@ -540,12 +550,12 @@ Region UI (list column, detail badge, soft-refetch): `RegionResolver::shouldDisp
 | `disk_aliases` | Legacy disk name -> canonical disk (`s3Custom` -> `s3FileHostingCe`) for region reverse-lookup and historical multi-disk collapse |
 | `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
 | `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **10 MiB** each) |
-| `upload_proxy.*` | Optional CF Worker hybrid byte path (`base_url`, `token`, `disk_targets`) |
+| `upload_proxy.*` | Optional CF Worker hybrid byte path for **upload + download** (`base_url`, `token`, `disk_targets`) |
 | `default_quota_bytes` | Free-tier base always stacked (typically 5 GiB); also used when no `UserQuota` denorm row |
 | `max_concurrent_uploads` | Server-side cap on pending non-expired upload sessions per storage owner (default 2) |
-| `signed_download_ttl_minutes` | S3 GET temporary URL lifetime |
+| `signed_download_ttl_minutes` | Cached download URL lifetime (Worker HMAC `exp` or S3 temp URL) |
 | `signed_download_cache_margin_seconds` | Treat cache expired early |
-| `public_download_signature_ttl_minutes` | Laravel signed hop for `/s/f/.../download` |
+| `public_download_signature_ttl_minutes` | Laravel signed hop for `/s/f/.../download` (Monolith hop only; storage URL has its own TTL) |
 
 ## Quota
 

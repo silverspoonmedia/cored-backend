@@ -117,11 +117,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Optional Cloudflare Worker upload proxy (hybrid mode).
-    | Empty base_url → browser-direct S3 presign (legacy path).
-    | When base_url + token + disk alias are set, Monolith returns Worker
-    | URLs for PUT/UploadPart only; create/complete/abort stay on the server SDK.
+    | Optional Cloudflare Worker byte proxy (hybrid upload + download).
+    | Empty base_url → browser-direct S3 (legacy path for parts + downloads).
+    | When base_url + token + disk alias are set:
+    |   - Upload: Worker URLs for PUT/UploadPart; create/complete/abort stay SDK.
+    |   - Download: HMAC Worker GetObject URLs (Bandwidth Alliance for B2);
+    |     cached in signed_download_url instead of a direct S3 temporary URL.
     | Alias values must match Worker S3_TARGETS.targets keys.
+    | Token is upload Bearer + download HMAC secret (never put raw token in query).
     |
     | FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM is a legacy fallback for CE.
     |--------------------------------------------------------------------------
