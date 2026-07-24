@@ -174,7 +174,7 @@ return [
     ],
 
     'regions' => [
-        'sea' => 'Southeast Asia',
+        'ce' => 'Central European',
         'us' => 'United States',
         'eu' => 'Europe',
     ],

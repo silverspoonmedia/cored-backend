@@ -22,6 +22,7 @@ return [
     'download_unavailable' => 'Download URL is unavailable for this storage disk.',
     'visibility_updated' => 'Visibility updated.',
     'invalid_visibility' => 'Invalid visibility value.',
+    'public_share_requires_paid' => 'Public link sharing requires an active paid File Hosting plan.',
     'share_not_found' => 'This shared item is unavailable.',
     'search_success' => 'Search results loaded.',
     'trash_success' => 'Trash loaded.',

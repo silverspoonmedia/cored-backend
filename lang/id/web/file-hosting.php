@@ -174,7 +174,7 @@ return [
     ],
 
     'regions' => [
-        'sea' => 'Asia Tenggara',
+        'ce' => 'Eropa Tengah',
         'us' => 'Amerika Serikat',
         'eu' => 'Eropa',
     ],

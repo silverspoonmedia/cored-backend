@@ -6,6 +6,9 @@ use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\DirectUploadService;
 use App\Domain\FileHosting\Services\SignedDownloadService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Service\Enums\EntitlementStatus;
+use App\Domain\Service\Models\Service;
+use App\Domain\Service\Models\ServiceEntitlement;
 use Database\Seeders\FileHostingRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -91,6 +94,22 @@ class PublicDownloadSignedRouteTest extends TestCase
             'password' => Hash::make('password123'),
         ]);
         $user->assignRole('User');
+
+        $service = Service::query()->where('code', 'file-hosting.plan.1tb.monthly')->first()
+            ?? Service::factory()->fileHostingMain1Tb()->create();
+
+        ServiceEntitlement::query()->updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'service_id' => $service->id,
+            ],
+            [
+                'status' => EntitlementStatus::Active,
+                'quantity' => 1,
+                'starts_at' => now(),
+                'ends_at' => now()->addDays(30),
+            ],
+        );
 
         return HostedFile::query()->create([
             'user_id' => $user->id,

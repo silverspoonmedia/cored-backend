@@ -17,6 +17,8 @@
         fn ($disk, $key): bool => ! \App\Domain\FileHosting\Support\RegionResolver::isDisabled((string) $key),
         ARRAY_FILTER_USE_BOTH,
     );
+    $showRegion = \App\Domain\FileHosting\Support\RegionResolver::shouldDisplayRegion();
+    $tableColspan = $showRegion ? 8 : 7;
 
     $fhRealtime = app(\App\Domain\FileHosting\Support\FileHostingRealtime::class);
     $fhBroadcast = $fhRealtime->clientConfig();
@@ -46,6 +48,8 @@
         'workspaceId' => $workspaceId,
         'currentFolderId' => $currentFolderId,
         'visLink' => $visLink,
+        // Soft-refetch must match SSR column count (region column is conditional).
+        'showRegion' => $showRegion,
         // Soft-refetch row actions must mirror Blade @can gates (not server-enforced — UI only).
         'permissions' => [
             'editFile' => $authUser?->can('edit file hosting file') ?? false,
@@ -276,7 +280,9 @@
                             <th>{{ __('web/file-hosting.columns.name') }}</th>
                             <th>{{ __('web/file-hosting.columns.type') }}</th>
                             <th>{{ __('web/file-hosting.columns.size') }}</th>
-                            <th>{{ __('web/file-hosting.columns.region') }}</th>
+                            @if ($showRegion)
+                                <th>{{ __('web/file-hosting.columns.region') }}</th>
+                            @endif
                             <th>{{ __('web/file-hosting.columns.visibility') }}</th>
                             <th class="text-end">{{ __('web/file-hosting.columns.actions') }}</th>
                         </tr>
@@ -301,8 +307,9 @@
                         </td>
                         <td class="fh-table__type">{{ __('web/file-hosting.type_folder') }}</td>
                         <td class="fh-table__size">—</td>
-                        {{-- Keep 8 columns in lockstep with thead (select, icon, name, type, size, region, visibility, actions). --}}
-                        <td class="fh-table__region"><span class="text-muted">—</span></td>
+                        @if ($showRegion)
+                            <td class="fh-table__region"><span class="text-muted">—</span></td>
+                        @endif
                         <td data-fh-visibility-cell>@include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $folderVis])</td>
                         <td class="fh-table__actions">
                             @can('edit file hosting folder')
@@ -358,17 +365,19 @@
                         </td>
                         <td class="fh-table__type">{{ $file['mime'] ?? __('web/file-hosting.type_file') }}</td>
                         <td class="fh-table__size">{{ $file['size_human'] ?? '—' }}</td>
-                        <td class="fh-table__region">
-                            @php
-                                $regionKey = $file['region']
-                                    ?? \App\Domain\FileHosting\Support\RegionResolver::keyForDisk((string) ($file['disk'] ?? ''));
-                            @endphp
-                            @if ($regionKey)
-                                <span class="badge text-bg-secondary fh-region-badge">{{ __('web/file-hosting.regions.'.$regionKey) }}</span>
-                            @else
-                                <span class="text-muted">—</span>
-                            @endif
-                        </td>
+                        @if ($showRegion)
+                            <td class="fh-table__region">
+                                @php
+                                    $regionKey = $file['region']
+                                        ?? \App\Domain\FileHosting\Support\RegionResolver::keyForDisk((string) ($file['disk'] ?? ''));
+                                @endphp
+                                @if ($regionKey)
+                                    <span class="badge text-bg-secondary fh-region-badge">{{ __('web/file-hosting.regions.'.$regionKey) }}</span>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
+                        @endif
                         <td data-fh-visibility-cell>@include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $fileVis])</td>
                         <td class="fh-table__actions">
                             <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
@@ -410,7 +419,7 @@
 
                         @if ($folders->isEmpty() && $files->isEmpty())
                             <tr>
-                                <td colspan="8">
+                                <td colspan="{{ $tableColspan }}">
                                     <div class="fh-empty">
                                         <i class="bi bi-folder2-open fh-empty__icon"></i>
                                         <div class="fh-empty__text">{{ __('web/file-hosting.empty') }}</div>
@@ -488,12 +497,14 @@
                                 {{ $file['name'] ?? '' }}
                             </a>
                             <div class="fh-file-card__meta">
-                                @php
-                                    $gridRegionKey = $file['region']
-                                        ?? \App\Domain\FileHosting\Support\RegionResolver::keyForDisk((string) ($file['disk'] ?? ''));
-                                @endphp
                                 {{ $file['size_human'] ?? '—' }}
-                                @if ($gridRegionKey) · <span class="fh-file-card__region">{{ __('web/file-hosting.regions.'.$gridRegionKey) }}</span>@endif
+                                @if ($showRegion)
+                                    @php
+                                        $gridRegionKey = $file['region']
+                                            ?? \App\Domain\FileHosting\Support\RegionResolver::keyForDisk((string) ($file['disk'] ?? ''));
+                                    @endphp
+                                    @if ($gridRegionKey) · <span class="fh-file-card__region">{{ __('web/file-hosting.regions.'.$gridRegionKey) }}</span>@endif
+                                @endif
                             </div>
                             <div class="fh-file-card__actions">
                                 <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"

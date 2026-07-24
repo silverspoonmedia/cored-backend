@@ -306,6 +306,15 @@ function emptyStateHtml(config) {
 </div>`;
 }
 
+function showRegionColumn(config) {
+    return config.showRegion === true;
+}
+
+function tableColspan(config) {
+    // select | icon | name | type | size | [region] | visibility | actions
+    return showRegionColumn(config) ? 8 : 7;
+}
+
 function renderTableRows(folders, files, config) {
     const parts = [];
     folders.forEach((f) => {
@@ -316,7 +325,7 @@ function renderTableRows(folders, files, config) {
     });
     if (!parts.length) {
         const msg = escapeHtml(config.messages?.emptyFolder || 'Empty');
-        return `<tr data-fh-empty><td colspan="8">
+        return `<tr data-fh-empty><td colspan="${tableColspan(config)}">
   <div class="fh-empty">
     <i class="bi bi-folder2-open fh-empty__icon"></i>
     <div class="fh-empty__text">${msg}</div>
@@ -379,12 +388,22 @@ function visibilityBadgeHtml(visibility, config) {
 }
 
 function regionCellHtml(file, config) {
+    if (!showRegionColumn(config)) {
+        return '';
+    }
     const key = file.region || null;
     if (!key) {
-        return '<span class="text-muted">—</span>';
+        return '<td class="fh-table__region"><span class="text-muted">—</span></td>';
     }
     const label = config.messages?.regions?.[key] || key;
-    return `<span class="badge text-bg-secondary fh-region-badge">${escapeHtml(label)}</span>`;
+    return `<td class="fh-table__region"><span class="badge text-bg-secondary fh-region-badge">${escapeHtml(label)}</span></td>`;
+}
+
+function folderRegionCellHtml(config) {
+    if (!showRegionColumn(config)) {
+        return '';
+    }
+    return '<td class="fh-table__region"><span class="text-muted">—</span></td>';
 }
 
 function mimeIcon(mime, isFolder) {
@@ -605,7 +624,7 @@ function tableFolderRow(folder, config) {
 <td><a href="${href}" class="fh-table__name"><span class="fh-table__name-text" data-fh-name>${name}</span></a></td>
 <td class="fh-table__type">${escapeHtml(config.messages?.typeFolder || 'Folder')}</td>
 <td class="fh-table__size">—</td>
-<td class="fh-table__region"><span class="text-muted">—</span></td>
+${folderRegionCellHtml(config)}
 <td data-fh-visibility-cell>${visibilityBadgeHtml(vis, config)}</td>
 <td class="fh-table__actions">${folderActionsHtml(folder, config, { compact: false })}</td>
 </tr>`;
@@ -624,7 +643,7 @@ function tableFileRow(file, config) {
 <td><a href="${href}" class="fh-table__name" title="${name}"><span class="fh-table__name-text" data-fh-name>${name}</span></a></td>
 <td class="fh-table__type">${escapeHtml(mime)}</td>
 <td class="fh-table__size">${size}</td>
-<td class="fh-table__region">${regionCellHtml(file, config)}</td>
+${regionCellHtml(file, config)}
 <td data-fh-visibility-cell>${visibilityBadgeHtml(vis, config)}</td>
 <td class="fh-table__actions">${fileActionsHtml(file, config, { compact: false })}</td>
 </tr>`;
@@ -651,13 +670,16 @@ function gridFileCard(file, config) {
     const href = fileHref(file.id, config);
     const size = escapeHtml(file.size_human || formatBytes(file.size));
     const vis = file.visibility || 'private';
-    const regionKey = file.region || null;
-    const regionLabel = regionKey
-        ? (config.messages?.regions?.[regionKey] || regionKey)
-        : null;
-    const meta = regionLabel
-        ? `${size} · <span class="fh-file-card__region">${escapeHtml(regionLabel)}</span>`
-        : size;
+    let meta = size;
+    if (showRegionColumn(config)) {
+        const regionKey = file.region || null;
+        const regionLabel = regionKey
+            ? (config.messages?.regions?.[regionKey] || regionKey)
+            : null;
+        if (regionLabel) {
+            meta = `${size} · <span class="fh-file-card__region">${escapeHtml(regionLabel)}</span>`;
+        }
+    }
     return `<div class="fh-file-card" data-fh-row data-fh-entity="file" data-fh-id="${id}">
 <input type="checkbox" class="form-check-input fh-file-card__select" data-fh-select value="file:${id}">
 <div class="fh-file-card__badge">${visibilityBadgeHtml(vis, config)}</div>

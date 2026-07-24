@@ -88,6 +88,7 @@ class FileHostingQualificationHardTest extends TestCase
     public function test_FH_H04_public_unsigned_web_download_403(): void
     {
         $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
         $file = $this->seedFile($user, 'shared.pdf', 100, ['visibility' => 'anyone_with_link']);
 
         $this->get('/s/f/'.$file->id.'/download')
@@ -97,6 +98,7 @@ class FileHostingQualificationHardTest extends TestCase
     public function test_FH_H05_signed_hop_after_revoke_share(): void
     {
         $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
         $file = $this->seedFile($user, 'revoke.pdf', 100, ['visibility' => 'anyone_with_link']);
 
         $signed = URL::temporarySignedRoute(

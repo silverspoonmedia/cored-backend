@@ -138,6 +138,7 @@ class FileHostingQualificationMediumTest extends TestCase
     public function test_FH_M05_bulk_visibility_max_100(): void
     {
         $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
         $ids = [];
         for ($i = 0; $i < 101; $i++) {
             $ids[] = $this->seedFile($user, 'bulk-'.$i.'.txt', 10)->id;
@@ -181,7 +182,7 @@ class FileHostingQualificationMediumTest extends TestCase
     public function test_FH_M07_multi_region_init_disabled_block(): void
     {
         config([
-            'file-hosting.regions' => ['sea' => 'local', 'us' => 'local'],
+            'file-hosting.regions' => ['ce' => 'local', 'us' => 'local'],
             'file-hosting.disabled_regions' => ['us'],
         ]);
 
@@ -201,8 +202,8 @@ class FileHostingQualificationMediumTest extends TestCase
     public function test_FH_M08_disabled_region_still_downloads(): void
     {
         config([
-            'file-hosting.regions' => ['sea' => 'local'],
-            'file-hosting.disabled_regions' => ['sea'],
+            'file-hosting.regions' => ['ce' => 'local'],
+            'file-hosting.disabled_regions' => ['ce'],
         ]);
 
         $user = $this->userWithRole('User');

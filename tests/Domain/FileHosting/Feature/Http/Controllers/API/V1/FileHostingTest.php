@@ -8,6 +8,9 @@ use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\DirectUploadService;
 use App\Domain\FileHosting\Services\SignedDownloadService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Service\Enums\EntitlementStatus;
+use App\Domain\Service\Models\Service;
+use App\Domain\Service\Models\ServiceEntitlement;
 use Database\Seeders\FileHostingRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -670,6 +673,7 @@ class FileHostingTest extends TestCase
     public function test_anyone_with_link_file_is_publicly_readable_and_downloadable(): void
     {
         $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
         $file = HostedFile::query()->create([
             'user_id' => $user->id,
             'folder_id' => null,
@@ -703,9 +707,86 @@ class FileHostingTest extends TestCase
         $this->assertSame(1, $file->fresh()->download_count);
     }
 
+    public function test_free_owner_cannot_enable_anyone_with_link(): void
+    {
+        $user = $this->userWithRole('User');
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'free-share.pdf',
+            'disk' => 'local',
+            'path' => 'b27d56f8fe251b3a5587944f08e9b8fea2fc47e7',
+            'size' => 10,
+            'mime' => 'application/pdf',
+            'visibility' => 'private',
+        ]);
+
+        $this->actingAsJwt($user)
+            ->patchJson('/api/v1/file-hosting/files/'.$file->id.'/visibility', [
+                'visibility' => 'anyone_with_link',
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', __('api/file-hosting.public_share_requires_paid'));
+
+        $this->assertSame('private', $file->fresh()->visibility);
+    }
+
+    public function test_free_owner_link_file_is_not_publicly_readable(): void
+    {
+        $user = $this->userWithRole('User');
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'legacy-link.pdf',
+            'disk' => 'local',
+            'path' => 'c37d56f8fe251b3a5587944f08e9b8fea2fc47e7',
+            'size' => 10,
+            'mime' => 'application/pdf',
+            'visibility' => 'anyone_with_link',
+        ]);
+
+        $this->getJson('/api/v1/file-hosting/public/files/'.$file->id)
+            ->assertStatus(404);
+
+        $this->getJson('/api/v1/file-hosting/public/files/'.$file->id.'/download')
+            ->assertStatus(404);
+
+        $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/files/'.$file->id)
+            ->assertOk()
+            ->assertJsonPath('data.visibility', 'anyone_with_link')
+            ->assertJsonPath('data.share_url', null);
+    }
+
+    public function test_grace_owner_link_file_is_not_publicly_readable(): void
+    {
+        $user = $this->userWithRole('User');
+        $this->grantGraceMain($user);
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'grace-link.pdf',
+            'disk' => 'local',
+            'path' => 'd47d56f8fe251b3a5587944f08e9b8fea2fc47e7',
+            'size' => 10,
+            'mime' => 'application/pdf',
+            'visibility' => 'anyone_with_link',
+        ]);
+
+        $this->getJson('/api/v1/file-hosting/public/files/'.$file->id)
+            ->assertStatus(404);
+
+        $this->actingAsJwt($user)
+            ->patchJson('/api/v1/file-hosting/files/'.$file->id.'/visibility', [
+                'visibility' => 'anyone_with_link',
+            ])
+            ->assertStatus(422);
+    }
+
     public function test_folder_anyone_with_link_inherits_to_private_child_file(): void
     {
         $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
         $folder = Folder::query()->create([
             'user_id' => $user->id,
             'parent_id' => null,
@@ -745,6 +826,7 @@ class FileHostingTest extends TestCase
     public function test_owner_can_set_folder_visibility_private_again(): void
     {
         $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
         $folder = Folder::query()->create([
             'user_id' => $user->id,
             'parent_id' => null,
@@ -782,9 +864,47 @@ class FileHostingTest extends TestCase
         return $this->withHeader('Authorization', 'Bearer '.$token);
     }
 
+    private function grantPaidMain(User $user): void
+    {
+        $service = Service::query()->where('code', 'file-hosting.plan.1tb.monthly')->first()
+            ?? Service::factory()->fileHostingMain1Tb()->create();
+
+        ServiceEntitlement::query()->updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'service_id' => $service->id,
+            ],
+            [
+                'status' => EntitlementStatus::Active,
+                'quantity' => 1,
+                'starts_at' => now(),
+                'ends_at' => now()->addDays(30),
+            ],
+        );
+    }
+
+    private function grantGraceMain(User $user): void
+    {
+        $service = Service::query()->where('code', 'file-hosting.plan.1tb.monthly')->first()
+            ?? Service::factory()->fileHostingMain1Tb()->create();
+
+        ServiceEntitlement::query()->updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'service_id' => $service->id,
+            ],
+            [
+                'status' => EntitlementStatus::Grace,
+                'quantity' => 1,
+                'starts_at' => now()->subDays(40),
+                'ends_at' => now()->subDay(),
+            ],
+        );
+    }
+
     public function test_init_accepts_disk_param_and_persists_resolved_disk(): void
     {
-        config(['file-hosting.regions' => ['sea' => 'local', 'us' => 'local']]);
+        config(['file-hosting.regions' => ['ce' => 'local', 'us' => 'local']]);
 
         $user = $this->userWithRole('User');
 
@@ -793,7 +913,7 @@ class FileHostingTest extends TestCase
                 'name' => 'report.pdf',
                 'mime' => 'application/pdf',
                 'size' => 1024,
-                'disk' => 'sea',
+                'disk' => 'ce',
             ])
             ->assertCreated()
             ->json('data');
@@ -804,7 +924,7 @@ class FileHostingTest extends TestCase
 
     public function test_init_falls_back_to_default_disk_when_disk_missing(): void
     {
-        config(['file-hosting.regions' => ['sea' => 'local']]);
+        config(['file-hosting.regions' => ['ce' => 'local']]);
 
         $user = $this->userWithRole('User');
 
@@ -823,7 +943,7 @@ class FileHostingTest extends TestCase
 
     public function test_init_rejects_disk_not_in_regions(): void
     {
-        config(['file-hosting.regions' => ['sea' => 'local']]);
+        config(['file-hosting.regions' => ['ce' => 'local']]);
 
         $user = $this->userWithRole('User');
 
@@ -841,7 +961,7 @@ class FileHostingTest extends TestCase
     public function test_init_rejects_disabled_region_for_upload(): void
     {
         config([
-            'file-hosting.regions' => ['sea' => 'local', 'us' => 'local'],
+            'file-hosting.regions' => ['ce' => 'local', 'us' => 'local'],
             'file-hosting.disabled_regions' => ['us'],
         ]);
 
@@ -860,7 +980,7 @@ class FileHostingTest extends TestCase
 
     public function test_browse_response_includes_region_key_for_files(): void
     {
-        config(['file-hosting.regions' => ['sea' => 'local']]);
+        config(['file-hosting.regions' => ['ce' => 'local']]);
 
         $user = $this->userWithRole('User');
 
@@ -880,14 +1000,14 @@ class FileHostingTest extends TestCase
             ->json('data');
 
         $this->assertNotEmpty($browse['files']);
-        $this->assertSame('sea', $browse['files'][0]['region']);
+        $this->assertSame('ce', $browse['files'][0]['region']);
     }
 
     public function test_disabled_region_still_serves_download(): void
     {
         config([
-            'file-hosting.regions' => ['sea' => 'local'],
-            'file-hosting.disabled_regions' => ['sea'],
+            'file-hosting.regions' => ['ce' => 'local'],
+            'file-hosting.disabled_regions' => ['ce'],
         ]);
 
         $user = $this->userWithRole('User');
@@ -913,6 +1033,7 @@ class FileHostingTest extends TestCase
     public function test_bulk_set_file_visibility(): void
     {
         $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
         $ids = [];
 
         for ($i = 0; $i < 3; $i++) {
@@ -945,6 +1066,7 @@ class FileHostingTest extends TestCase
     {
         $alice = $this->userWithRole('User');
         $bob = $this->userWithRole('User');
+        $this->grantPaidMain($bob);
 
         $aliceFile = HostedFile::query()->create([
             'user_id' => $alice->id,
@@ -998,6 +1120,7 @@ class FileHostingTest extends TestCase
     public function test_bulk_set_folder_visibility(): void
     {
         $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
         $ids = [];
 
         for ($i = 0; $i < 2; $i++) {

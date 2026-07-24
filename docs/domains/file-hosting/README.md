@@ -21,19 +21,19 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Virtual root | `folder_id = null` = “My Files” (no auto DB folder row) |
 | Nested folders | `parent_id` tree per owner; breadcrumb via `FolderAncestorChain` |
 | Files | `file_hosting_files` — denormalized `user_id`, optional `folder_id` |
-| Upload sessions | `file_hosting_uploads` — init → browser PUT (direct S3 **or** CF Worker proxy) → complete promotes row. **Control plane** (init / sign-parts / complete / abort) always Monolith→S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. |
+| Upload sessions | `file_hosting_uploads` — init -> browser PUT (direct S3 **or** CF Worker proxy) -> complete promotes row. **Control plane** (init / sign-parts / complete / abort) always Monolith->S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. |
 | Part size | Default **10 MB** chunk + multipart threshold (`FILE_HOSTING_CHUNK_SIZE`) |
 | DB `path` | Object id only: 40 lowercase alnum chars (`Str::random(40)`). **Not** a full S3 key. |
 | S3 object key | `file-hosting/{user_id}/{objectId}` — resolved at runtime via `ObjectKeyResolver` from `user_id` + `path` + config `directory`. No `folder_id`, no extension, no upload session id in the key. |
-| Display name on upload | Preferred client name kept if free in that owner+folder (soft-deleted ignored). If taken → auto DB rename to `{stem} ({maxN+1}).{ext}` where `maxN` is highest active sibling index (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`). S3 object key stays random and is never renamed. Manual rename/move still rejects exact sibling collisions. Move/rename are **DB-only** (folder tree lives in `folder_id` / `name`). |
+| Display name on upload | Preferred client name kept if free in that owner+folder (soft-deleted ignored). If taken -> auto DB rename to `{stem} ({maxN+1}).{ext}` where `maxN` is highest active sibling index (`A.zip` = 1, `A (3).zip` = 3 -> next `A (4).zip`). S3 object key stays random and is never renamed. Manual rename/move still rejects exact sibling collisions. Move/rename are **DB-only** (folder tree lives in `folder_id` / `name`). |
 | Download bytes | Always **302 (or client follow)** to S3 temporary URL — **not** Monolith streaming |
 | S3 signed URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry. **Cleared on visibility change** (and rename/delete) so private revoke cannot reuse a still-valid temp link |
 | Download filename | `ResponseContentDisposition` from DB `name` (random key stays on object) |
 | Stats | `view_count` / `download_count` + last_* timestamps (no event log) |
 | Visibility | `private` \| `anyone_with_link` on folders and files |
 | Link secret | Resource UUID (Drive “anyone with the link”; not world-searchable) |
-| Inherit | Folder link-shared → guest may browse that folder and download files inside even if file is `private` |
-| Region | Per-file `disk` storage; region key derived via `RegionResolver::keyForDisk()`. `disabled_regions` blocks new uploads only — downloads still served. |
+| Inherit | Folder link-shared -> guest may browse that folder and download files inside even if file is `private` |
+| Region | Per-file `disk` storage (Laravel disk name in DB); product region key derived via `RegionResolver::keyForDisk()` (resolves `disk_aliases` first). `disabled_regions` blocks new uploads only — downloads still served. UI region column/badge appears only when configured regions > 1 **or** historical multi-disk usage exists (aliases collapsed so `s3Custom` -> `s3FileHostingCe`). |
 | Ownership | Own resources; cross-user via product “any” + core `RoleService` hierarchy |
 | Collaborative Works | Paid perk for **owners**; free users may **join** as members. Blade UX on File Hosting page (not a separate dynamic menu). |
 
@@ -48,11 +48,11 @@ Paid owners (active **main or storage addon** FH entitlement, not free-only) may
 | Editor | Upload/rename/move/delete; no member mgmt |
 | Viewer | Browse + download only |
 
-| Plan state | Can create / own team | Can join team | Personal files |
-|------------|----------------------|---------------|----------------|
-| Free | No | Yes (invite token) | Yes (free tier) |
-| Paid | Yes — up to **owned slot limit** | Yes (unlimited joins) | Yes |
-| Grace | No new create / collab mutations | Existing membership may still view if owner not grace-blocked | Read; upload blocked |
+| Plan state | Can create / own team | Can join team | Personal files | Public link share |
+|------------|----------------------|---------------|----------------|------------------|
+| Free | No | Yes (invite token) | Yes (free tier) | No (guest 404; enable blocked) |
+| Paid | Yes — up to **owned slot limit** | Yes (unlimited joins) | Yes | Yes (`anyone_with_link` + active paid owner) |
+| Grace | No new create / collab mutations | Existing membership may still view if owner not grace-blocked | Read; upload blocked | No (same as free; renew first) |
 
 ### Owned workspace slots
 
@@ -81,7 +81,7 @@ Workspace-slot SKU is **not** a storage plan: does not raise GiB quota, does not
 
 **Quota API flags:** `GET /api/v1/file-hosting/quota` includes `state` (`free`\|`paid`\|`grace`), `collaborative_works`, `can_create_workspace` (paid **and** under slot limit), `owned_workspace_used`, `owned_workspace_limit`, plus raw `used_bytes` / `pending_bytes` / `reserved_bytes` / `quota_bytes` / `remaining_bytes` and matching `*_human` companions (`BytePresenter`). `HostedFileResource` exposes `size` + `size_human` and dual-field timestamps. Blade uses companions only — no view-layer `$formatBytes`.
 
-**Blade UX:** Compact toolbar controls (not a full-width card). Free → upgrade CTA inside switcher dropdown + accept invite. Paid → create (while under limit), invite (token flash; no email delivery in MVP), members (owner **or** admin), activity in offcanvas. Web routes: `POST file-hosting/workspaces`, invites accept/store, member remove, archive.
+**Blade UX:** Compact toolbar controls (not a full-width card). Free -> upgrade CTA inside switcher dropdown + accept invite. Paid -> create (while under limit), invite (token flash; no email delivery in MVP), members (owner **or** admin), activity in offcanvas. Web routes: `POST file-hosting/workspaces`, invites accept/store, member remove, archive.
 
 **Activity:** Spatie `log_name = file_hosting.workspace`, properties include `workspace_id`. Explicit recorder (`WorkspaceActivityRecorder`) on membership + file/folder mutations. Download events off in v1. API: `GET /api/v1/file-hosting/workspaces/{id}/activity` (any active member).
 
@@ -92,17 +92,28 @@ Workspace-slot SKU is **not** a storage plan: does not raise GiB quota, does not
 ## Visibility
 
 ```
-folderAccessible(folder) =
+folderLinkShared(folder) =
   folder.visibility == anyone_with_link
   OR any ancestor.visibility == anyone_with_link
 
-fileAccessible(file) =
+fileLinkShared(file) =
   file.visibility == anyone_with_link
-  OR (file.folder_id && folderAccessible(file.folder))
+  OR (file.folder_id && folderLinkShared(file.folder))
+
+folderAccessible(folder) =
+  folderLinkShared(folder)
+  AND QuotaService::ownerCanPublicShare(folder.user_id)   // storage owner state === paid
+
+fileAccessible(file) =
+  fileLinkShared(file)
+  AND QuotaService::ownerCanPublicShare(file.user_id)
 ```
 
+- Guest public show/download (API + `/s/f` / `/s/d`) uses `fileAccessible` / `folderAccessible`. Free or grace storage owners get **404** `share_not_found` even if DB still says `anyone_with_link` (downgrade kills links without rewriting rows).
+- Enabling `anyone_with_link` (single + bulk file/folder) requires paid owner; free/grace → **422** `public_share_requires_paid`. Setting `private` always allowed.
 - Mutations never public.
-- `share_url` only when **this** item is `anyone_with_link`.
+- `share_url` only when **this** item is `anyone_with_link` **and** storage owner is paid.
+- Workspace files: paid check is on **storage `user_id`** (quota pool owner), not the guest member’s plan.
 
 ## Permissions (`domain_kind = product`)
 
@@ -123,7 +134,7 @@ manage any file hosting resource
 
 ### Authenticated — `/api/v1/file-hosting/*` (`auth:api`)
 
-Middleware stack: `auth:api` → `product.active:FileHosting` (runtime activation gate, see [Product Activations](../product-activations/README.md)) → `permission:<perm>` (Spatie RBAC). A user with a suspended File Hosting activation gets 403 before any permission check runs.
+Middleware stack: `auth:api` -> `product.active:FileHosting` (runtime activation gate, see [Product Activations](../product-activations/README.md)) -> `permission:<perm>` (Spatie RBAC). A user with a suspended File Hosting activation gets 403 before any permission check runs.
 
 **Sidebar menu:** the "My Files" entry (`file-hosting.index` route) is bound to FileHosting via `config/products.php` `menu_routes`. The dynamic menu auto-hides it when the viewer's activation is not `active` (suspended / expired / pending) — see [Navigation — Visibility](../navigation/README.md#visibility-navigation-tree). Guests and active users see it normally.
 
@@ -133,7 +144,7 @@ Middleware stack: `auth:api` → `product.active:FileHosting` (runtime activatio
 | Folders | create, rename, move, **visibility**, soft/force delete, restore (optional `workspace_id`) |
 | Files | show (view++), rename, move, **visibility**, soft/force delete, restore (optional `workspace_id`) |
 | Bulk | `POST files/bulk-visibility` + `POST folders/bulk-visibility` (`ids[]`, `visibility`); `DELETE files/bulk` + `DELETE folders/bulk` (`ids[]`) — owner/workspace-scoped, max 100 ids |
-| Download | `GET files/{id}/download` → `{ url, expires_at }` (download++; cache S3 URL) |
+| Download | `GET files/{id}/download` -> `{ url, expires_at }` (download++; cache S3 URL) |
 | Upload | init (optional `disk`, optional `workspace_id`), status, sign-parts, complete (auto-renames duplicate display name), abort |
 | Workspaces | `GET/POST workspaces`, show, archive, members, invite, accept invite, update/remove member, activity |
 | Search / trash / quota | as named (trash/search accept `workspace_id`) |
@@ -145,7 +156,7 @@ Control plane (init / sign-parts / complete / abort) always stays on Monolith. B
 | Mode | When | Browser PUT target |
 |------|------|--------------------|
 | **Direct S3** (default) | `FILE_HOSTING_UPLOAD_PROXY_URL` empty | Presigned S3 URL from `temporaryUploadUrl` / `UploadPart` |
-| **Hybrid proxy** | base URL + token + disk→alias set | CF Worker `/t/{alias}/{key}` (+ `partNumber`/`uploadId` for multipart); Worker re-signs + streams to S3 |
+| **Hybrid proxy** | base URL + token + disk->alias set | CF Worker `/t/{alias}/{key}` (+ `partNumber`/`uploadId` for multipart); Worker re-signs + streams to S3 |
 
 Shared kernel pieces (not duplicated per domain):
 
@@ -153,7 +164,7 @@ Shared kernel pieces (not duplicated per domain):
 |-------|------|
 | `App\Support\Storage\S3DirectUploadEngine` | Strategy, direct presign **or** Worker proxy URLs, merge/assert parts, create/complete/abort multipart, size/mime guards |
 | `App\Support\Storage\SerializesDirectUploadSession` | Shared JSON session shape for init/status (`upload_id`, `strategy`, `parts`, …) |
-| `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, **auto display-name allocation** on complete, promote → `HostedFile` |
+| `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, **auto display-name allocation** on complete, promote -> `HostedFile` |
 
 Config for thresholds/TTL/proxy: `config/file-hosting.php`.
 
@@ -176,18 +187,20 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 |-----|------|
 | `FILE_HOSTING_UPLOAD_PROXY_URL` | Worker origin (no trailing slash). Empty = direct S3. Example production custom domain: `https://s3.silverspoon.me` |
 | `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Same value as Worker `S3_TARGETS.uploadToken` (Bearer) |
-| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM` | Worker target **alias** for disk `s3Custom` (must match a key under Worker `S3_TARGETS.targets`, e.g. `sbs`) |
-| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOMEU` | Alias for disk `s3Customeu` (optional) |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_CE` | Worker target **alias** for disk `s3FileHostingCe` (must match a key under Worker `S3_TARGETS.targets`, e.g. `sbs`) |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_US` | Alias for disk `s3FileHostingUs` (optional) |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_EU` | Alias for disk `s3FileHostingEu` (optional) |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM` | Legacy fallback for CE / `s3Custom` disk rows (same alias as `TARGET_CE` when CE env empty) |
 
-**Where does `/t/{alias}/…` come from?** Monolith maps the upload session disk (e.g. `s3Custom`) → env alias via `upload_proxy.disk_targets`, then builds:
+**Where does `/t/{alias}/…` come from?** Monolith maps the upload session disk (e.g. `s3FileHostingCe` or legacy `s3Custom`) -> env alias via `upload_proxy.disk_targets`, then builds:
 
 `{FILE_HOSTING_UPLOAD_PROXY_URL}/t/{alias}/{object-key}?partNumber=&uploadId=`
 
 plus headers `Authorization: Bearer …`, `X-S3-Target: {alias}`, `Content-Type`. The alias is **not** the B2 bucket name and **not** part of the S3 key; it only selects credentials/endpoint inside the Worker.
 
-**Fail closed:** if base URL is set but token or disk alias is missing → init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3. Upstream S3 failures map to `upstream_failed` where applicable.
+**Fail closed:** if base URL is set but token or disk alias is missing -> init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3. Upstream S3 failures map to `upstream_failed` where applicable.
 
-**B2 / path-style:** Monolith disk `s3Custom` must use `CUSTOM_S3_USE_PATH_STYLE=true` (default in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
+**B2 / path-style:** Monolith FH disks (`s3FileHostingCe` and legacy alias `s3Custom`) must use path-style endpoints (`FILE_HOSTING_S3_CE_USE_PATH_STYLE` / `CUSTOM_S3_USE_PATH_STYLE`, default true in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
 
 **Worker project:** `c:\laragon\www\workers` — Wrangler name **`cf-workers-s3-proxy`**. Streaming SigV4 proxy; production custom domain example `https://s3.silverspoon.me`. See that repo’s README. Spec history: [chore-now.md](./chore-now.md).
 
@@ -196,7 +209,7 @@ plus headers `Authorization: Bearer …`, `X-S3-Target: {alias}`, `Content-Type`
 | Step | Note |
 |------|------|
 | Runtime secret | `S3_TARGETS` is a **Worker secret**, not git, not `.dev.vars` on CF. Set with `npx wrangler secret put S3_TARGETS --name cf-workers-s3-proxy` (name must match deployed Worker). |
-| Dashboard Variables | Must be on the **same** Worker that serves the public hostname. UI “Variables” on another Worker / build env only → `/health` returns config missing. |
+| Dashboard Variables | Must be on the **same** Worker that serves the public hostname. UI “Variables” on another Worker / build env only -> `/health` returns config missing. |
 | Alias rename | Change key + `defaultTarget` in `S3_TARGETS` **first**, then Monolith `FILE_HOSTING_UPLOAD_PROXY_TARGET_*`, then `php artisan config:clear`. In-flight sessions still using the old `/t/old-alias/…` may 400. |
 | Error bodies | Production Worker returns generic messages only (`Configuration invalid or missing`, `Internal server error`). Details stay in Workers Logs (`console.error`). |
 
@@ -288,7 +301,7 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 |------------|------|---------|
 | `file-hosting.index` | yes | Browse + chunk upload; list/grid view, search, Rename / Move / Share / Delete |
 | `file-hosting.files.show` | yes | Detail, stats tiles, visibility, download CTA |
-| `file-hosting.files.download` | yes | Auth download → **302** S3 |
+| `file-hosting.files.download` | yes | Auth download -> **302** S3 |
 | `file-hosting.files.rename` | yes | Rename file (AJAX or form) |
 | `file-hosting.files.move` | yes | Move file to folder (AJAX) |
 | `file-hosting.files.visibility` | yes | Toggle private / anyone_with_link |
@@ -309,7 +322,7 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 | `file-hosting.workspaces.activity` | yes | JSON activity feed for team offcanvas soft-refetch |
 | `file-hosting.search` | yes | AJAX JSON search endpoint (`GET ?q=`) |
 | `file-hosting.public.files.show` | no | `/s/f/{uuid}` guest page |
-| `file-hosting.public.files.download` | no | **Temporary signed** hop → **302** S3 (unsigned **403**) |
+| `file-hosting.public.files.download` | no | **Temporary signed** hop -> **302** S3 (unsigned **403**) |
 | `file-hosting.public.folders.show` | no | `/s/d/{uuid}` guest folder list |
 
 Share link users copy = show URL (`/s/f/{uuid}` or `/s/d/{uuid}`). Download button on the show page is a short-lived Laravel signed URL (`public_download_signature_ttl_minutes`, default 5).
@@ -321,7 +334,7 @@ Share link users copy = show URL (`/s/f/{uuid}` or `/s/d/{uuid}`). Download butt
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
 | `resources/js/file-hosting/file-manager.js` | Page controller: AJAX CRUD, live search, grid/list view toggle (localStorage), move modal tree, drag-drop, region selector, bulk select/action, toast, soft-refetch hooks for live listing |
 | `resources/js/file-hosting/realtime.js` | Dedicated FH Echo subscribe (user/workspace private channels), health + fallback poll, soft-refetch helpers |
-| `resources/js/file-hosting/listing-ui.js` | Browse JSON → table/grid re-render, light single-entity DOM patch, quota bar re-render, show-page stats |
+| `resources/js/file-hosting/listing-ui.js` | Browse JSON -> table/grid re-render, light single-entity DOM patch, quota bar re-render, show-page stats |
 | `resources/js/file-hosting/direct-upload.js` | Chunked upload: XHR PUT to server-provided part URLs (direct S3 or Worker proxy headers); **byte-level** progress via `xhr.upload.onprogress` + **session-average transfer rate** (shown next to bar); status **Finalizing…** while `POST …/complete` runs; on complete calls `window.fileHostingSoftRefresh` (no hard reload when manager present) |
 | `resources/js/file-hosting/upload-progress.js` | Pure helpers: `computeTransferRate`, `formatTransferRate` (B/s–GB/s, 1024 base), `computeByteProgressPercent` — no DOM |
 | `resources/js/file-hosting/upload-queue.js` | Concurrency limiter (unchanged) |
@@ -331,13 +344,13 @@ Share link users copy = show URL (`/s/f/{uuid}` or `/s/d/{uuid}`). Download butt
 
 All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `redirect`). Successful mutations **do not** hard-reload the page when the manager is bound — they soft-refetch browse/quota (and peers update via WebSocket).
 
-File type icons map MIME → Bootstrap Icons via `_file-icon.blade.php` partial: image, PDF, video, audio, archive, spreadsheet, document, code, fallback — each with a color modifier (`.fh-icon--*`).
+File type icons map MIME -> Bootstrap Icons via `_file-icon.blade.php` partial: image, PDF, video, audio, archive, spreadsheet, document, code, fallback — each with a color modifier (`.fh-icon--*`).
 
 Grid/list view toggle persists preference in `localStorage` key `fh-view-mode`. Default: list (table).
 
 Row identity for live patch: `data-fh-entity` (`file`|`folder`) + `data-fh-id` on table rows and grid cards. Quota mount: `[data-fh-quota]`. Show counters: `[data-fh-stat="views|downloads"]`. Team offcanvas: `[data-fh-members-body]`, `[data-fh-activity-list]`.
 
-Menu: **My Files** → `file-hosting.index`.
+Menu: **My Files** -> `file-hosting.index`.
 
 ## Realtime / live listing
 
@@ -347,7 +360,7 @@ File Hosting listing stays live via **dedicated private channels**. It does **no
 
 | Check | Behavior |
 |-------|----------|
-| `BroadcastConnection::isConfigured()` | Pusher/Reverb credentials present → events may broadcast |
+| `BroadcastConnection::isConfigured()` | Pusher/Reverb credentials present -> events may broadcast |
 | `APP_NOTIFICATION_TYPE` | **Independent.** FH listing can use websockets while the bell stays on HTTP polling |
 | Client config | `BroadcastConnection::socketClientConfig()` / `FileHostingRealtime::clientConfig()` — same public fields as the bell, without requiring notification realtime mode |
 
@@ -360,7 +373,7 @@ When unconfigured, services still complete business work; no broadcast is dispat
 | `private-file-hosting.user.{userId}` | `$user->id === $userId` | Personal drive listing + storage-owner **quota** pings |
 | `private-file-hosting.workspace.{workspaceId}` | `WorkspaceAccessService::canView` (active member/owner/staff view) | Team listing, members, activity, team file stats |
 
-Personal resources (`workspace_id` null) → user channel of storage owner. Team resources → workspace channel only (not every member's user channel).
+Personal resources (`workspace_id` null) -> user channel of storage owner. Team resources -> workspace channel only (not every member's user channel).
 
 ### Events (`app/Domain/FileHosting/Events/`, `ShouldBroadcastNow`)
 
@@ -380,10 +393,10 @@ Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + r
 
 | Service | When |
 |---------|------|
-| `FileService` | visibility, rename, move, soft/force delete, restore, bulks; view/download → `FileStatsChanged` only |
+| `FileService` | visibility, rename, move, soft/force delete, restore, bulks; view/download -> `FileStatsChanged` only |
 | `FolderService` | create, visibility, rename, move, soft/force delete, restore, bulks |
-| `DirectUploadService` | initiate/abort → quota; complete (after commit) → listing `create` + quota |
-| `WorkspaceService` | invite, accept, role change, remove, archive → members + activity |
+| `DirectUploadService` | initiate/abort -> quota; complete (after commit) -> listing `create` + quota |
+| `WorkspaceService` | invite, accept, role change, remove, archive -> members + activity |
 
 ### Client strategy
 
@@ -392,7 +405,7 @@ Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + r
 3. Subscribe to personal or workspace channel based on `workspaceId` / `ownerUserId`.
 4. **Apply:** soft-refetch browse JSON for current folder (correctness floor); light DOM patch for delete/rename when `resource` / row identity allow; quota bar via `GET file-hosting/quota`; team members/activity soft-refetch; show page listens for matching `file_id` stats.
 5. Replace hard `location.reload()` after mutations/upload complete with soft-refetch when the manager is bound.
-6. Health: WS primary → 30s grace → visible-tab poll ~60s; reconnect stops poll + one catch-up soft-refetch.
+6. Health: WS primary -> 30s grace -> visible-tab poll ~60s; reconnect stops poll + one catch-up soft-refetch.
 
 ### Not live
 
@@ -402,10 +415,24 @@ Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + r
 
 ## Config highlights
 
+### Multi-disk storage
+
+| Disk | Role |
+|------|------|
+| `s3FileHostingCe` | Primary CE region (`FILE_HOSTING_S3_CE_*`, fallback `CUSTOM_S3_*`) |
+| `s3FileHostingUs` | Optional US region (`FILE_HOSTING_S3_US_*`) |
+| `s3FileHostingEu` | Optional EU region (`FILE_HOSTING_S3_EU_*`) |
+| `s3Custom` | **Legacy alias** of CE credentials — existing `HostedFile.disk` / `FileUpload.disk` rows keep working |
+
+Region keys for new uploads: `ce` (Central European), `us`, `eu`. Client field name is still `disk` but the **value is the region key**; `DirectUploadService::resolveDiskName()` maps to the Laravel disk name stored in DB.
+
+Region UI (list column, detail badge, soft-refetch): `RegionResolver::shouldDisplayRegion()` — true when `count(configured regions) > 1` **or** historical distinct disks on `HostedFile` (with trashed) > 1 after alias collapse.
+
 | Key | Role |
 |-----|------|
-| `disk` / `directory` | S3-compatible disk + key prefix (`FILE_HOSTING_DIRECTORY`, default `file-hosting`). Prefix is **not** stored in DB `path`. |
-| `regions` | Region key → disk name map (e.g. `sea` → `s3Custom`); only regions with non-empty disk appear in upload dropdown |
+| `disk` / `directory` | Default Laravel disk for new uploads (`FILE_HOSTING_DISK`, default `s3FileHostingCe`) + key prefix (`FILE_HOSTING_DIRECTORY`, default `file-hosting`). Prefix is **not** stored in DB `path`. |
+| `regions` | Region key -> disk name map (`ce` -> `s3FileHostingCe`, optional `us` / `eu`); only regions with non-empty disk appear in upload dropdown. Labels: `lang/*/web/file-hosting.php` (`Central European`, etc.). |
+| `disk_aliases` | Legacy disk name -> canonical disk (`s3Custom` -> `s3FileHostingCe`) for region reverse-lookup and historical multi-disk collapse |
 | `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
 | `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **10 MiB** each) |
 | `upload_proxy.*` | Optional CF Worker hybrid byte path (`base_url`, `token`, `disk_targets`) |
@@ -442,7 +469,7 @@ Runtime `QuotaService::quotaBytesFor` reads denorm `UserQuota` (written on fulfi
 
 On paid [Service](../service/README.md) fulfill: main replace / addon quantity + recompute. On grace expire: recompute remaining lines + `EnforceFreeTierQuotaService::enforceToLimit(effective)` (oldest-first; soft-delete DB + hard-delete S3).
 
-**Purge rule (example):** files A 2 GiB (oldest), B 3 GiB, C 5 GiB with limit 5 GiB → keep A+B (exactly 5 GiB), soft-delete C in DB and hard-delete C object on S3. Under-limit users are no-op. Re-run is idempotent.
+**Purge rule (example):** files A 2 GiB (oldest), B 3 GiB, C 5 GiB with limit 5 GiB -> keep A+B (exactly 5 GiB), soft-delete C in DB and hard-delete C object on S3. Under-limit users are no-op. Re-run is idempotent.
 
 Scheduler entry point: `php artisan service:process-entitlements` (hourly).
 

@@ -544,11 +544,11 @@ class FileManagerControllerTest extends TestCase
             'name' => 'report.pdf',
             'mime' => 'application/pdf',
             'size' => 1024,
-            'disk' => 'sea',
+            'disk' => 'ce',
         ])->assertStatus(201);
 
         $this->assertNotNull($captured);
-        $this->assertSame('sea', $captured['disk'] ?? null);
+        $this->assertSame('ce', $captured['disk'] ?? null);
     }
 
     public function test_bulk_file_visibility_forwards_to_api(): void

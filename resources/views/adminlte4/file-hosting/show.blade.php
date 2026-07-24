@@ -96,15 +96,17 @@
                         <dt class="col-sm-3">{{ __('web/file-hosting.columns.size') }}</dt>
                         <dd class="col-sm-9">{{ $file['size_human'] ?? '0 B' }}</dd>
 
-                        @php
-                            $showRegionKey = $file['region']
-                                ?? \App\Domain\FileHosting\Support\RegionResolver::keyForDisk((string) ($file['disk'] ?? ''));
-                        @endphp
-                        @if ($showRegionKey)
-                            <dt class="col-sm-3">{{ __('web/file-hosting.columns.region') }}</dt>
-                            <dd class="col-sm-9">
-                                <span class="badge text-bg-secondary fh-region-badge">{{ __('web/file-hosting.regions.'.$showRegionKey) }}</span>
-                            </dd>
+                        @if (\App\Domain\FileHosting\Support\RegionResolver::shouldDisplayRegion())
+                            @php
+                                $showRegionKey = $file['region']
+                                    ?? \App\Domain\FileHosting\Support\RegionResolver::keyForDisk((string) ($file['disk'] ?? ''));
+                            @endphp
+                            @if ($showRegionKey)
+                                <dt class="col-sm-3">{{ __('web/file-hosting.columns.region') }}</dt>
+                                <dd class="col-sm-9">
+                                    <span class="badge text-bg-secondary fh-region-badge">{{ __('web/file-hosting.regions.'.$showRegionKey) }}</span>
+                                </dd>
+                            @endif
                         @endif
 
                         <dt class="col-sm-3">{{ __('web/file-hosting.columns.visibility') }}</dt>

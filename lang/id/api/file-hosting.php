@@ -22,6 +22,7 @@ return [
     'download_unavailable' => 'URL unduhan tidak tersedia untuk disk penyimpanan ini.',
     'visibility_updated' => 'Visibilitas diperbarui.',
     'invalid_visibility' => 'Nilai visibilitas tidak valid.',
+    'public_share_requires_paid' => 'Berbagi tautan publik membutuhkan paket File Hosting berbayar yang masih aktif.',
     'share_not_found' => 'Item berbagi ini tidak tersedia.',
     'search_success' => 'Hasil pencarian dimuat.',
     'trash_success' => 'Sampah dimuat.',

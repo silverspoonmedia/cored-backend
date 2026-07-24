@@ -10,10 +10,106 @@ use App\Domain\FileHosting\Models\HostedFile;
 /**
  * Drive-lite link sharing: private | anyone_with_link.
  * Folder share grants browse + download for descendants (inherit).
+ *
+ * Guest public access and enabling link share require the storage owner
+ * (user_id / quota pool) to have active paid File Hosting — free and grace deny.
  */
 class VisibilityService
 {
+    public function __construct(
+        private readonly QuotaService $quota,
+    ) {}
+
     public function folderAccessible(Folder $folder): bool
+    {
+        if (! $this->folderLinkSharedChain($folder)) {
+            return false;
+        }
+
+        return $this->quota->ownerCanPublicShare((string) $folder->user_id);
+    }
+
+    public function fileAccessible(HostedFile $file): bool
+    {
+        if (! $this->fileLinkSharedChain($file)) {
+            return false;
+        }
+
+        return $this->quota->ownerCanPublicShare((string) $file->user_id);
+    }
+
+    public function assertGuestCanReadFolder(Folder $folder): void
+    {
+        if (! $this->folderAccessible($folder)) {
+            throw new FileHostingException(__('api/file-hosting.share_not_found'), 404);
+        }
+    }
+
+    public function assertGuestCanReadFile(HostedFile $file): void
+    {
+        if (! $this->fileAccessible($file)) {
+            throw new FileHostingException(__('api/file-hosting.share_not_found'), 404);
+        }
+    }
+
+    /**
+     * Block free/grace owners from enabling anyone_with_link (private always allowed).
+     */
+    public function assertCanEnableLinkShare(string $ownerUserId): void
+    {
+        if (! $this->quota->ownerCanPublicShare($ownerUserId)) {
+            throw new FileHostingException(__('api/file-hosting.public_share_requires_paid'), 422);
+        }
+    }
+
+    public function assertVisibilityChangeAllowed(Visibility $visibility, string $ownerUserId): void
+    {
+        if ($visibility->isLinkShared()) {
+            $this->assertCanEnableLinkShare($ownerUserId);
+        }
+    }
+
+    public function normalize(string $visibility): Visibility
+    {
+        $value = Visibility::tryFrom($visibility);
+
+        if ($value === null) {
+            throw new FileHostingException(__('api/file-hosting.invalid_visibility'));
+        }
+
+        return $value;
+    }
+
+    public function fileShareUrl(HostedFile $file): ?string
+    {
+        if (! $this->isLinkShared($file->visibility)) {
+            return null;
+        }
+
+        if (! $this->quota->ownerCanPublicShare((string) $file->user_id)) {
+            return null;
+        }
+
+        return route('file-hosting.public.files.show', ['file' => $file->id]);
+    }
+
+    public function folderShareUrl(Folder $folder): ?string
+    {
+        if (! $this->isLinkShared($folder->visibility)) {
+            return null;
+        }
+
+        if (! $this->quota->ownerCanPublicShare((string) $folder->user_id)) {
+            return null;
+        }
+
+        return route('file-hosting.public.folders.show', ['folder' => $folder->id]);
+    }
+
+    /**
+     * Link/inherit chain only (ignores paid gate). Used for guest access composition.
+     */
+    private function folderLinkSharedChain(Folder $folder): bool
     {
         if ($this->isLinkShared($folder->visibility)) {
             return true;
@@ -43,7 +139,7 @@ class VisibilityService
         return false;
     }
 
-    public function fileAccessible(HostedFile $file): bool
+    private function fileLinkSharedChain(HostedFile $file): bool
     {
         if ($this->isLinkShared($file->visibility)) {
             return true;
@@ -61,50 +157,7 @@ class VisibilityService
             return false;
         }
 
-        return $this->folderAccessible($folder);
-    }
-
-    public function assertGuestCanReadFolder(Folder $folder): void
-    {
-        if (! $this->folderAccessible($folder)) {
-            throw new FileHostingException(__('api/file-hosting.share_not_found'), 404);
-        }
-    }
-
-    public function assertGuestCanReadFile(HostedFile $file): void
-    {
-        if (! $this->fileAccessible($file)) {
-            throw new FileHostingException(__('api/file-hosting.share_not_found'), 404);
-        }
-    }
-
-    public function normalize(string $visibility): Visibility
-    {
-        $value = Visibility::tryFrom($visibility);
-
-        if ($value === null) {
-            throw new FileHostingException(__('api/file-hosting.invalid_visibility'));
-        }
-
-        return $value;
-    }
-
-    public function fileShareUrl(HostedFile $file): ?string
-    {
-        if (! $this->isLinkShared($file->visibility)) {
-            return null;
-        }
-
-        return route('file-hosting.public.files.show', ['file' => $file->id]);
-    }
-
-    public function folderShareUrl(Folder $folder): ?string
-    {
-        if (! $this->isLinkShared($folder->visibility)) {
-            return null;
-        }
-
-        return route('file-hosting.public.folders.show', ['folder' => $folder->id]);
+        return $this->folderLinkSharedChain($folder);
     }
 
     private function isLinkShared(mixed $visibility): bool

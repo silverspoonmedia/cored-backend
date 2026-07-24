@@ -97,6 +97,7 @@ class FileHostingQualificationNormalTest extends TestCase
     public function test_FH_N04_visibility_anyone_with_link_public_show(): void
     {
         $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
         $file = $this->seedFile($user, 'share.pdf');
 
         $this->actingAsJwt($user)
@@ -118,6 +119,7 @@ class FileHostingQualificationNormalTest extends TestCase
     public function test_FH_N05_folder_link_inherit_private_child(): void
     {
         $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
 
         $folder = $this->actingAsJwt($user)
             ->postJson('/api/v1/file-hosting/folders', ['name' => 'SharedFolder'])
