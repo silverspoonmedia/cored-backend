@@ -34,6 +34,8 @@
             ? route('file-hosting.workspaces.activity', $workspaceId)
             : null,
         'fileShowBase' => url('file-hosting/files'),
+        'fileBase' => url('file-hosting/files'),
+        'folderBase' => url('file-hosting/folders'),
         'fileRenameBase' => url('file-hosting/files'),
         'folderRenameBase' => url('file-hosting/folders'),
         'bulkFileVisibilityUrl' => route('file-hosting.files.bulk-visibility'),
@@ -44,6 +46,13 @@
         'workspaceId' => $workspaceId,
         'currentFolderId' => $currentFolderId,
         'visLink' => $visLink,
+        // Soft-refetch row actions must mirror Blade @can gates (not server-enforced — UI only).
+        'permissions' => [
+            'editFile' => $authUser?->can('edit file hosting file') ?? false,
+            'deleteFile' => $authUser?->can('delete file hosting file') ?? false,
+            'editFolder' => $authUser?->can('edit file hosting folder') ?? false,
+            'deleteFolder' => $authUser?->can('delete file hosting folder') ?? false,
+        ],
         'realtime' => [
             'enabled' => $fhBroadcast !== null,
             'broadcast' => $fhBroadcast,
@@ -70,6 +79,23 @@
             'typeFolder' => __('web/file-hosting.type_folder'),
             'typeFile' => __('web/file-hosting.type_file'),
             'emptyFolder' => __('web/file-hosting.empty'),
+            // Soft-refetch row render needs the same labels Blade SSR uses.
+            'visibility' => [
+                'private' => __('web/file-hosting.visibility.private'),
+                'anyone_with_link' => __('web/file-hosting.visibility.anyone_with_link'),
+            ],
+            'regions' => collect(array_keys((array) config('file-hosting.regions')))
+                ->mapWithKeys(fn (string $key) => [$key => __('web/file-hosting.regions.'.$key)])
+                ->all(),
+            'actions' => [
+                'view' => __('web/file-hosting.view'),
+                'rename' => __('web/file-hosting.rename'),
+                'move' => __('web/file-hosting.move'),
+                'share' => __('web/file-hosting.share'),
+                'delete' => __('web/file-hosting.delete'),
+                'confirmDeleteFile' => __('web/file-hosting.confirm_delete_file'),
+                'confirmDeleteFolder' => __('web/file-hosting.confirm_delete_folder'),
+            ],
         ],
     ];
 @endphp
@@ -275,7 +301,9 @@
                         </td>
                         <td class="fh-table__type">{{ __('web/file-hosting.type_folder') }}</td>
                         <td class="fh-table__size">—</td>
-                        <td>@include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $folderVis])</td>
+                        {{-- Keep 8 columns in lockstep with thead (select, icon, name, type, size, region, visibility, actions). --}}
+                        <td class="fh-table__region"><span class="text-muted">—</span></td>
+                        <td data-fh-visibility-cell>@include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $folderVis])</td>
                         <td class="fh-table__actions">
                             @can('edit file hosting folder')
                                 <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.rename') }}"
@@ -341,7 +369,7 @@
                                 <span class="text-muted">—</span>
                             @endif
                         </td>
-                        <td>@include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $fileVis])</td>
+                        <td data-fh-visibility-cell>@include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $fileVis])</td>
                         <td class="fh-table__actions">
                             <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
                                class="fh-table__action-btn" title="{{ __('web/file-hosting.view') }}">

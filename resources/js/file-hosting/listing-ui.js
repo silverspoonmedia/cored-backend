@@ -1,5 +1,8 @@
 /**
  * File Hosting listing DOM helpers — soft-refetch floor + light single-entity patch.
+ *
+ * Table column order MUST stay in lockstep with Blade SSR thead:
+ * select | icon | name | type | size | region | visibility | actions
  */
 
 function escapeHtml(value) {
@@ -105,6 +108,10 @@ export function upsertFileRow(root, file, config) {
         if (empty) {
             empty.remove();
         }
+        // Drop SSR empty row (colspan row without data-fh-empty)
+        if (!tbody.querySelector('[data-fh-row]')) {
+            tbody.innerHTML = '';
+        }
         tbody.insertAdjacentHTML('beforeend', tableFileRow(file, config));
     }
 
@@ -159,8 +166,7 @@ export function tryPatchListing(payload, root, config) {
 
     // Soft-delete / force-delete: remove rows if present
     if (action === 'soft_delete' || action === 'force_delete') {
-        const removed = removeEntityRows(root, entityType, entityId);
-        return removed;
+        return removeEntityRows(root, entityType, entityId);
     }
 
     // Restore / create: only if parent matches current folder
@@ -174,9 +180,6 @@ export function tryPatchListing(payload, root, config) {
 
     // Rename / visibility: update in place if row exists
     if (action === 'rename' || action === 'visibility') {
-        if (!sameFolder(currentFolder, eventFolder) && action !== 'visibility') {
-            // visibility may still show in current folder
-        }
         const resource = payload.resource;
         if (!resource) {
             return false;
@@ -195,7 +198,7 @@ function sameFolder(a, b) {
 
 function removeEntityRows(root, entityType, entityId) {
     const rows = root.querySelectorAll(
-        `[data-fh-entity="${entityType}"][data-fh-id="${CSS.escape(entityId)}"]`,
+        `[data-fh-entity="${entityType}"][data-fh-id="${CSS.escape(String(entityId))}"]`,
     );
     if (!rows.length) {
         return false;
@@ -210,7 +213,7 @@ function removeEntityRows(root, entityType, entityId) {
 
 function updateEntityNameVisibility(root, entityType, entityId, resource, config) {
     const rows = root.querySelectorAll(
-        `[data-fh-entity="${entityType}"][data-fh-id="${CSS.escape(entityId)}"]`,
+        `[data-fh-entity="${entityType}"][data-fh-id="${CSS.escape(String(entityId))}"]`,
     );
     if (!rows.length) {
         return false;
@@ -218,22 +221,22 @@ function updateEntityNameVisibility(root, entityType, entityId, resource, config
 
     const name = resource.name || '';
     const visibility = resource.visibility || 'private';
-    const visLink = config.visLink || 'anyone_with_link';
 
     rows.forEach((row) => {
         const nameEl = row.querySelector('[data-fh-name], .fh-table__name-text, .fh-file-card__name');
         if (nameEl && name) {
             nameEl.textContent = name;
         }
-        const badge = row.querySelector('[data-fh-visibility], .fh-visibility-badge, .badge');
-        // Best-effort: toggle a data attribute for CSS; full badge HTML stays SSR quality on next refetch
-        if (badge) {
-            badge.dataset.visibility = visibility;
-            if (visibility === visLink) {
-                badge.classList.add('is-shared');
-            } else {
-                badge.classList.remove('is-shared');
-            }
+
+        const badgeHtml = visibilityBadgeHtml(visibility, config);
+        const tableBadgeCell = row.querySelector('[data-fh-visibility-cell]');
+        if (tableBadgeCell) {
+            tableBadgeCell.innerHTML = badgeHtml;
+            return;
+        }
+        const cardBadge = row.querySelector('.fh-file-card__badge');
+        if (cardBadge) {
+            cardBadge.innerHTML = badgeHtml;
         }
     });
 
@@ -297,7 +300,10 @@ export function applyFileStats(root, payload) {
 
 function emptyStateHtml(config) {
     const msg = config.messages?.emptyFolder || config.messages?.searchNoResults || 'Empty';
-    return `<div class="fh-empty text-muted py-4 text-center" data-fh-empty>${escapeHtml(msg)}</div>`;
+    return `<div class="fh-empty" data-fh-empty>
+  <i class="bi bi-folder2-open fh-empty__icon"></i>
+  <div class="fh-empty__text">${escapeHtml(msg)}</div>
+</div>`;
 }
 
 function renderTableRows(folders, files, config) {
@@ -309,7 +315,13 @@ function renderTableRows(folders, files, config) {
         parts.push(tableFileRow(f, config));
     });
     if (!parts.length) {
-        return `<tr data-fh-empty><td colspan="7" class="text-muted text-center py-4">${escapeHtml(config.messages?.emptyFolder || 'Empty')}</td></tr>`;
+        const msg = escapeHtml(config.messages?.emptyFolder || 'Empty');
+        return `<tr data-fh-empty><td colspan="8">
+  <div class="fh-empty">
+    <i class="bi bi-folder2-open fh-empty__icon"></i>
+    <div class="fh-empty__text">${msg}</div>
+  </div>
+</td></tr>`;
     }
     return parts.join('');
 }
@@ -339,62 +351,319 @@ function folderHref(id, config) {
 }
 
 function fileHref(id, config) {
-    return `${config.fileShowBase || '/file-hosting/files'}/${id}`;
+    const base = config.fileShowBase || '/file-hosting/files';
+    const u = new URL(`${base}/${id}`, window.location.origin);
+    if (config.workspaceId) {
+        u.searchParams.set('workspace_id', config.workspaceId);
+    }
+    if (config.ownerUserId) {
+        u.searchParams.set('user_id', config.ownerUserId);
+    }
+    return u.pathname + u.search;
+}
+
+function visibilityBadgeHtml(visibility, config) {
+    const visLink = config.visLink || 'anyone_with_link';
+    const isLink = visibility === visLink;
+    const labels = config.messages?.visibility || {};
+    if (isLink) {
+        const label = escapeHtml(labels.anyone_with_link || 'Anyone with the link');
+        return `<span class="fh-badge fh-badge--link" data-fh-visibility="${escapeHtml(visibility)}">
+  <i class="bi bi-globe"></i> ${label}
+</span>`;
+    }
+    const label = escapeHtml(labels.private || 'Restricted');
+    return `<span class="fh-badge fh-badge--private" data-fh-visibility="${escapeHtml(visibility || 'private')}">
+  <i class="bi bi-lock"></i> ${label}
+</span>`;
+}
+
+function regionCellHtml(file, config) {
+    const key = file.region || null;
+    if (!key) {
+        return '<span class="text-muted">—</span>';
+    }
+    const label = config.messages?.regions?.[key] || key;
+    return `<span class="badge text-bg-secondary fh-region-badge">${escapeHtml(label)}</span>`;
+}
+
+function mimeIcon(mime, isFolder) {
+    if (isFolder) {
+        return { icon: 'bi-folder-fill', color: 'fh-icon--folder' };
+    }
+    const m = String(mime || '').toLowerCase();
+    if (m.startsWith('image/')) {
+        return { icon: 'bi-file-earmark-image', color: 'fh-icon--image' };
+    }
+    if (m === 'application/pdf') {
+        return { icon: 'bi-file-earmark-pdf', color: 'fh-icon--pdf' };
+    }
+    if (m.startsWith('video/')) {
+        return { icon: 'bi-file-earmark-play', color: 'fh-icon--video' };
+    }
+    if (m.startsWith('audio/')) {
+        return { icon: 'bi-file-earmark-music', color: 'fh-icon--audio' };
+    }
+    if (['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed', 'application/x-tar', 'application/gzip'].includes(m)) {
+        return { icon: 'bi-file-earmark-zip', color: 'fh-icon--archive' };
+    }
+    if (['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(m)) {
+        return { icon: 'bi-file-earmark-spreadsheet', color: 'fh-icon--sheet' };
+    }
+    if (['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'].includes(m)) {
+        return { icon: 'bi-file-earmark-text', color: 'fh-icon--doc' };
+    }
+    if (['application/json', 'text/html', 'text/css', 'application/xml', 'text/xml', 'application/javascript', 'text/javascript', 'application/x-httpd-php'].includes(m)) {
+        return { icon: 'bi-file-earmark-code', color: 'fh-icon--code' };
+    }
+    return { icon: 'bi-file-earmark', color: 'fh-icon--file' };
+}
+
+function iconHtml(mime, isFolder) {
+    const { icon, color } = mimeIcon(mime, isFolder);
+    return `<i class="bi ${icon} ${color}"></i>`;
+}
+
+function actionLabel(config, key, fallback) {
+    return escapeHtml(config.messages?.actions?.[key] || fallback);
+}
+
+function entityBase(config, entityType) {
+    if (entityType === 'folder') {
+        return config.folderBase || config.folderRenameBase || '/file-hosting/folders';
+    }
+    return config.fileBase || config.fileRenameBase || config.fileShowBase || '/file-hosting/files';
+}
+
+function destroyUrl(entityType, id, config) {
+    return `${entityBase(config, entityType)}/${id}`;
+}
+
+function listingRedirectUrl(config) {
+    const base = config.browseUrl || window.location.pathname;
+    const u = new URL(base, window.location.origin);
+    if (config.currentFolderId) {
+        u.searchParams.set('folder_id', config.currentFolderId);
+    } else {
+        u.searchParams.delete('folder_id');
+    }
+    if (config.workspaceId) {
+        u.searchParams.set('workspace_id', config.workspaceId);
+    }
+    if (config.ownerUserId) {
+        u.searchParams.set('user_id', config.ownerUserId);
+    }
+    return u.pathname + u.search;
+}
+
+function actionBtn({ title, icon, classes = '', attrs = {} }) {
+    const attrStr = Object.entries(attrs)
+        .map(([k, v]) => `${k}="${escapeHtml(v)}"`)
+        .join(' ');
+    return `<button type="button" class="fh-table__action-btn${classes ? ` ${classes}` : ''}" title="${title}" ${attrStr}><i class="bi ${icon}"></i></button>`;
+}
+
+/**
+ * Table actions — mirrors Blade index row (view / rename / move / share / delete).
+ * Grid keeps the lighter set Blade uses (view + rename + delete).
+ */
+function folderActionsHtml(folder, config, { compact = false } = {}) {
+    const perms = config.permissions || {};
+    const id = String(folder.id);
+    const name = folder.name || '';
+    const vis = folder.visibility || 'private';
+    const shareUrl = folder.share_url || '';
+    const parts = [];
+
+    if (perms.editFolder) {
+        parts.push(actionBtn({
+            title: actionLabel(config, 'rename', 'Rename'),
+            icon: 'bi-pencil',
+            attrs: {
+                'data-bs-toggle': 'modal',
+                'data-bs-target': '#fhRenameFolderModal',
+                'data-id': id,
+                'data-name': name,
+            },
+        }));
+        if (!compact) {
+            parts.push(actionBtn({
+                title: actionLabel(config, 'move', 'Move'),
+                icon: 'bi-folder-symlink',
+                attrs: {
+                    'data-bs-toggle': 'modal',
+                    'data-bs-target': '#fhMoveFolderModal',
+                    'data-id': id,
+                },
+            }));
+            parts.push(actionBtn({
+                title: actionLabel(config, 'share', 'Share'),
+                icon: 'bi-share',
+                attrs: {
+                    'data-bs-toggle': 'modal',
+                    'data-bs-target': '#fhShareFolderModal',
+                    'data-id': id,
+                    'data-visibility': vis,
+                    'data-share-url': shareUrl,
+                },
+            }));
+        }
+    }
+
+    if (perms.deleteFolder) {
+        parts.push(actionBtn({
+            title: actionLabel(config, 'delete', 'Delete'),
+            icon: 'bi-trash',
+            classes: 'is-danger',
+            attrs: {
+                'data-fh-ajax-action': 'delete-folder',
+                'data-fh-action-url': destroyUrl('folder', id, config),
+                'data-fh-method': 'DELETE',
+                'data-fh-confirm': config.messages?.actions?.confirmDeleteFolder || 'Move this folder to trash?',
+                'data-fh-redirect': listingRedirectUrl(config),
+            },
+        }));
+    }
+
+    return parts.join('');
+}
+
+function fileActionsHtml(file, config, { compact = false } = {}) {
+    const perms = config.permissions || {};
+    const id = String(file.id);
+    const name = file.name || '';
+    const vis = file.visibility || 'private';
+    const shareUrl = file.share_url || '';
+    const href = fileHref(file.id, config);
+    const parts = [];
+
+    parts.push(
+        `<a href="${href}" class="fh-table__action-btn" title="${actionLabel(config, 'view', 'View')}"><i class="bi bi-eye"></i></a>`,
+    );
+
+    if (perms.editFile) {
+        parts.push(actionBtn({
+            title: actionLabel(config, 'rename', 'Rename'),
+            icon: 'bi-pencil',
+            attrs: {
+                'data-bs-toggle': 'modal',
+                'data-bs-target': '#fhRenameFileModal',
+                'data-id': id,
+                'data-name': name,
+            },
+        }));
+        if (!compact) {
+            parts.push(actionBtn({
+                title: actionLabel(config, 'move', 'Move'),
+                icon: 'bi-folder-symlink',
+                attrs: {
+                    'data-bs-toggle': 'modal',
+                    'data-bs-target': '#fhMoveFileModal',
+                    'data-id': id,
+                },
+            }));
+            parts.push(actionBtn({
+                title: actionLabel(config, 'share', 'Share'),
+                icon: 'bi-share',
+                attrs: {
+                    'data-bs-toggle': 'modal',
+                    'data-bs-target': '#fhShareFileModal',
+                    'data-id': id,
+                    'data-visibility': vis,
+                    'data-share-url': shareUrl,
+                },
+            }));
+        }
+    }
+
+    if (perms.deleteFile) {
+        parts.push(actionBtn({
+            title: actionLabel(config, 'delete', 'Delete'),
+            icon: 'bi-trash',
+            classes: 'is-danger',
+            attrs: {
+                'data-fh-ajax-action': 'delete-file',
+                'data-fh-action-url': destroyUrl('file', id, config),
+                'data-fh-method': 'DELETE',
+                'data-fh-confirm': config.messages?.actions?.confirmDeleteFile || 'Move this file to trash?',
+                'data-fh-redirect': listingRedirectUrl(config),
+            },
+        }));
+    }
+
+    return parts.join('');
 }
 
 function tableFolderRow(folder, config) {
-    const id = folder.id;
+    const id = escapeHtml(folder.id);
     const name = escapeHtml(folder.name || '');
-    const href = folderHref(id, config);
-    return `<tr data-fh-row data-fh-entity="folder" data-fh-id="${escapeHtml(id)}">
-<td class="fh-table__select-cell"><input type="checkbox" class="form-check-input" data-fh-select value="folder:${escapeHtml(id)}"></td>
-<td class="fh-table__icon-cell"><a href="${href}"><i class="bi bi-folder-fill text-warning"></i></a></td>
+    const href = folderHref(folder.id, config);
+    const vis = folder.visibility || 'private';
+    return `<tr data-fh-row data-fh-entity="folder" data-fh-id="${id}">
+<td class="fh-table__select-cell"><input type="checkbox" class="form-check-input" data-fh-select value="folder:${id}"></td>
+<td class="fh-table__icon-cell"><a href="${href}">${iconHtml(null, true)}</a></td>
 <td><a href="${href}" class="fh-table__name"><span class="fh-table__name-text" data-fh-name>${name}</span></a></td>
 <td class="fh-table__type">${escapeHtml(config.messages?.typeFolder || 'Folder')}</td>
 <td class="fh-table__size">—</td>
-<td data-fh-visibility="${escapeHtml(folder.visibility || 'private')}">${escapeHtml(folder.visibility || 'private')}</td>
-<td class="fh-table__actions"></td>
+<td class="fh-table__region"><span class="text-muted">—</span></td>
+<td data-fh-visibility-cell>${visibilityBadgeHtml(vis, config)}</td>
+<td class="fh-table__actions">${folderActionsHtml(folder, config, { compact: false })}</td>
 </tr>`;
 }
 
 function tableFileRow(file, config) {
-    const id = file.id;
+    const id = escapeHtml(file.id);
     const name = escapeHtml(file.name || '');
-    const href = fileHref(id, config);
+    const href = fileHref(file.id, config);
     const size = escapeHtml(file.size_human || formatBytes(file.size));
-    return `<tr data-fh-row data-fh-entity="file" data-fh-id="${escapeHtml(id)}">
-<td class="fh-table__select-cell"><input type="checkbox" class="form-check-input" data-fh-select value="file:${escapeHtml(id)}"></td>
-<td class="fh-table__icon-cell"><a href="${href}"><i class="bi bi-file-earmark"></i></a></td>
-<td><a href="${href}" class="fh-table__name"><span class="fh-table__name-text" data-fh-name>${name}</span></a></td>
-<td class="fh-table__type">${escapeHtml(file.mime || config.messages?.typeFile || 'File')}</td>
+    const mime = file.mime || config.messages?.typeFile || 'File';
+    const vis = file.visibility || 'private';
+    return `<tr data-fh-row data-fh-entity="file" data-fh-id="${id}">
+<td class="fh-table__select-cell"><input type="checkbox" class="form-check-input" data-fh-select value="file:${id}"></td>
+<td class="fh-table__icon-cell"><a href="${href}">${iconHtml(file.mime, false)}</a></td>
+<td><a href="${href}" class="fh-table__name" title="${name}"><span class="fh-table__name-text" data-fh-name>${name}</span></a></td>
+<td class="fh-table__type">${escapeHtml(mime)}</td>
 <td class="fh-table__size">${size}</td>
-<td data-fh-visibility="${escapeHtml(file.visibility || 'private')}">${escapeHtml(file.visibility || 'private')}</td>
-<td class="fh-table__actions"></td>
+<td class="fh-table__region">${regionCellHtml(file, config)}</td>
+<td data-fh-visibility-cell>${visibilityBadgeHtml(vis, config)}</td>
+<td class="fh-table__actions">${fileActionsHtml(file, config, { compact: false })}</td>
 </tr>`;
 }
 
 function gridFolderCard(folder, config) {
-    const id = folder.id;
+    const id = escapeHtml(folder.id);
     const name = escapeHtml(folder.name || '');
-    const href = folderHref(id, config);
-    return `<div class="fh-file-card" data-fh-row data-fh-entity="folder" data-fh-id="${escapeHtml(id)}">
-<input type="checkbox" class="form-check-input fh-file-card__select" data-fh-select value="folder:${escapeHtml(id)}">
-<a href="${href}" class="fh-file-card__link">
-  <div class="fh-file-card__icon"><i class="bi bi-folder-fill text-warning"></i></div>
-  <div class="fh-file-card__name" data-fh-name>${name}</div>
-</a>
+    const href = folderHref(folder.id, config);
+    const vis = folder.visibility || 'private';
+    return `<div class="fh-file-card" data-fh-row data-fh-entity="folder" data-fh-id="${id}">
+<input type="checkbox" class="form-check-input fh-file-card__select" data-fh-select value="folder:${id}">
+<div class="fh-file-card__badge">${visibilityBadgeHtml(vis, config)}</div>
+<div class="fh-file-card__icon"><a href="${href}">${iconHtml(null, true)}</a></div>
+<a href="${href}" class="fh-file-card__name" title="${name}" data-fh-name>${name}</a>
+<div class="fh-file-card__meta">${escapeHtml(config.messages?.typeFolder || 'Folder')}</div>
+<div class="fh-file-card__actions">${folderActionsHtml(folder, config, { compact: true })}</div>
 </div>`;
 }
 
 function gridFileCard(file, config) {
-    const id = file.id;
+    const id = escapeHtml(file.id);
     const name = escapeHtml(file.name || '');
-    const href = fileHref(id, config);
-    return `<div class="fh-file-card" data-fh-row data-fh-entity="file" data-fh-id="${escapeHtml(id)}">
-<input type="checkbox" class="form-check-input fh-file-card__select" data-fh-select value="file:${escapeHtml(id)}">
-<a href="${href}" class="fh-file-card__link">
-  <div class="fh-file-card__icon"><i class="bi bi-file-earmark"></i></div>
-  <div class="fh-file-card__name" data-fh-name>${name}</div>
-</a>
+    const href = fileHref(file.id, config);
+    const size = escapeHtml(file.size_human || formatBytes(file.size));
+    const vis = file.visibility || 'private';
+    const regionKey = file.region || null;
+    const regionLabel = regionKey
+        ? (config.messages?.regions?.[regionKey] || regionKey)
+        : null;
+    const meta = regionLabel
+        ? `${size} · <span class="fh-file-card__region">${escapeHtml(regionLabel)}</span>`
+        : size;
+    return `<div class="fh-file-card" data-fh-row data-fh-entity="file" data-fh-id="${id}">
+<input type="checkbox" class="form-check-input fh-file-card__select" data-fh-select value="file:${id}">
+<div class="fh-file-card__badge">${visibilityBadgeHtml(vis, config)}</div>
+<div class="fh-file-card__icon"><a href="${href}">${iconHtml(file.mime, false)}</a></div>
+<a href="${href}" class="fh-file-card__name" title="${name}" data-fh-name>${name}</a>
+<div class="fh-file-card__meta">${meta}</div>
+<div class="fh-file-card__actions">${fileActionsHtml(file, config, { compact: true })}</div>
 </div>`;
 }
