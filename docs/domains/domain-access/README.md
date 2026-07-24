@@ -51,6 +51,25 @@ Route::middleware('domain.access:FileHosting')->group(...);
 
 Denials: API → 403 JSON via `ApiResponder::error`; web → `abort(403)`. Unauthenticated on a private domain → 401.
 
+## Menu visibility
+
+Route middleware only blocks requests — it does not hide the sidebar link. A second enforcement point in the navigation menu makes a private domain's links disappear for viewers without access.
+
+`MenuRepository::nodeVisibleLeafRules` (`app/Domain/Navigation/Repositories/Eloquent/MenuRepository.php`) resolves a node's product via `ProductRegistry::productKeyByMenuRoute($node['route'])` (reverse lookup of `config/products.php` `menu_routes`), then calls `DomainAccessService::canAccess($user, $productKey)`. If it returns false the node is hidden; empty headers/parents are then pruned by `shouldPruneEmptyBranch`. This is **guest-aware** (runs even for guests, unlike the activation check) and stacks with the existing per-user activation gate:
+
+```php
+if ($productKey !== null) {
+    if (! $this->domainAccess->canAccess($user, $productKey)) {
+        return false; // Private + no access → hide link
+    }
+    if ($user && ! $this->productActivations->isActive($user->id, $productKey)) {
+        return false; // existing activation gate (auth only)
+    }
+}
+```
+
+The gate runs live per request; the `menus.navigation.snapshot` cache is product/user-agnostic so no invalidation is needed. New domains still need their routes listed in `config/products.php` `menu_routes` to be gated (same requirement as the activation gate).
+
 ## Admin config screen
 
 - Sidebar node **Product domain access** (Administration group), restricted to Root/Admin via `menu_roles`.
@@ -64,3 +83,5 @@ Denials: API → 403 JSON via `ApiResponder::error`; web → `abort(403)`. Unaut
 ## Tests
 
 `tests/Domain/DomainAccess/`: service matrix, gate middleware (web + API), admin API authorization, seeder assertions, and the `domain:make` seeder-generation pipeline.
+
+`tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php`: menu link hiding — Public shows for activated users; Private hides the link (and prunes the empty header) for plain users and guests, but keeps it for Root and `Beta tester {Domain}`.

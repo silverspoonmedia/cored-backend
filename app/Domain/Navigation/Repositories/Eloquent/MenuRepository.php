@@ -11,6 +11,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use App\Support\Localization\TranslationResolver;
 use App\Domain\Navigation\Support\MenuLayout;
+use App\Support\DomainAccess\DomainAccessService;
 use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,7 +36,10 @@ class MenuRepository implements MenuRepositoryInterface
      */
     private const ROOT = '__root__';
 
-    public function __construct(private readonly ProductActivationService $productActivations) {}
+    public function __construct(
+        private readonly ProductActivationService $productActivations,
+        private readonly DomainAccessService $domainAccess,
+    ) {}
 
     public function navigationTree(?User $user, string $layout): array
     {
@@ -565,11 +569,19 @@ class MenuRepository implements MenuRepositoryInterface
         // Product-activation gate: hide menu nodes bound to a product the
         // authenticated user is not Active on. Routes not in the map return
         // null and skip the check. Guests skip this (no auth gate).
-        if ($user && $node['route'] !== null) {
+        if ($node['route'] !== null) {
             $productKey = ProductRegistry::productKeyByMenuRoute($node['route']);
 
-            if ($productKey !== null && ! $this->productActivations->isActive($user->id, $productKey)) {
-                return false;
+            if ($productKey !== null) {
+                // Global Public/Private visibility gate (guest-aware).
+                if (! $this->domainAccess->canAccess($user, $productKey)) {
+                    return false;
+                }
+
+                // Per-user activation gate (auth only).
+                if ($user && ! $this->productActivations->isActive($user->id, $productKey)) {
+                    return false;
+                }
             }
         }
 
