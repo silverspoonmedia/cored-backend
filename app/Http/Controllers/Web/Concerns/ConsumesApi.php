@@ -89,6 +89,12 @@ trait ConsumesApi
                 'message' => $successMessage ?? __('ui.ajax.saved'),
             ];
 
+            // Forward API entity so SPA shells can soft-update without a second fetch.
+            $apiData = $response->json('data');
+            if ($apiData !== null) {
+                $payload['data'] = $apiData;
+            }
+
             if (! $stayOnPageOnSuccess) {
                 $payload['redirect'] = $redirect->getTargetUrl();
             }

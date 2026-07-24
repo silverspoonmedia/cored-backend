@@ -25,10 +25,12 @@
     $authUser = auth('api')->user();
 
     $fmConfig = [
+        'spaShell' => true,
         'searchUrl' => route('file-hosting.search'),
         'browseUrl' => route('file-hosting.index', $ownerQuery),
         'quotaUrl' => route('file-hosting.quota', $ownerQuery),
         'trashUrl' => route('file-hosting.trash', $ownerQuery),
+        'workspacesUrl' => route('file-hosting.workspaces.index'),
         'membersUrl' => $workspaceId
             ? route('file-hosting.workspaces.members.index', $workspaceId)
             : null,
@@ -47,6 +49,9 @@
         'ownerUserId' => $ownerUserId,
         'workspaceId' => $workspaceId,
         'currentFolderId' => $currentFolderId,
+        'planState' => $planState ?? 'free',
+        'canManageMembers' => isset($currentWorkspace) && is_array($currentWorkspace)
+            && in_array($currentWorkspace['my_role'] ?? null, ['owner', 'admin'], true),
         'visLink' => $visLink,
         // Soft-refetch must match SSR column count (region column is conditional).
         'showRegion' => $showRegion,
@@ -100,12 +105,36 @@
                 'confirmDeleteFile' => __('web/file-hosting.confirm_delete_file'),
                 'confirmDeleteFolder' => __('web/file-hosting.confirm_delete_folder'),
             ],
+            'restore' => __('web/file-hosting.restore'),
+            'forceDelete' => __('web/file-hosting.force_delete'),
+            'confirmRestore' => __('web/file-hosting.confirm_restore'),
+            'confirmForceDelete' => __('web/file-hosting.confirm_force_delete'),
+            'trashEmpty' => __('web/file-hosting.trash_empty'),
+            'collab' => [
+                'remove' => __('web/file-hosting.collab.remove'),
+                'confirmRemove' => __('web/file-hosting.collab.confirm_remove'),
+                'noMembers' => __('web/file-hosting.collab.no_members'),
+            ],
+        ],
+        'showLabels' => [
+            'name' => __('web/file-hosting.columns.name'),
+            'type' => __('web/file-hosting.columns.type'),
+            'size' => __('web/file-hosting.columns.size'),
+            'visibility' => __('web/file-hosting.columns.visibility'),
+            'views' => __('web/file-hosting.stats.views'),
+            'downloads' => __('web/file-hosting.stats.downloads'),
+            'stats' => __('web/file-hosting.stats.views'),
+            'back' => __('web/file-hosting.back'),
+            'download' => __('web/file-hosting.download'),
+            'save' => __('web/file-hosting.save'),
+            'private' => __('web/file-hosting.visibility.private'),
+            'anyone_with_link' => __('web/file-hosting.visibility.anyone_with_link'),
         ],
     ];
 @endphp
 
 <x-adminlte4::layouts.app :title="__('web/file-hosting.title')">
-    <div class="fh-manager" data-file-manager data-config="{{ json_encode($fmConfig) }}">
+    <div class="fh-manager" data-file-manager data-fh-spa data-fh-app data-config="{{ json_encode($fmConfig) }}">
 
         {{-- Toolbar --}}
         <div class="fh-toolbar">
@@ -157,7 +186,7 @@
         ])
 
         {{-- Breadcrumb --}}
-        <nav class="fh-breadcrumb" aria-label="breadcrumb">
+        <nav class="fh-breadcrumb" aria-label="breadcrumb" data-fh-breadcrumb data-fh-browse-chrome>
             <a href="{{ route('file-hosting.index', $ownerQuery) }}" class="fh-breadcrumb__item {{ empty($breadcrumb) ? 'is-active' : '' }}">
                 <i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>
                 @if($workspaceId)
@@ -267,6 +296,8 @@
             </div>
         </div>
 
+        {{-- SPA browse panel (table + grid) --}}
+        <div data-fh-panel="browse">
         {{-- Table view --}}
         <div data-fh-view="table">
             <div class="table-responsive">
@@ -337,7 +368,7 @@
                                         data-fh-action-url="{{ route('file-hosting.folders.destroy', $folder['id']) }}"
                                         data-fh-method="DELETE"
                                         data-fh-confirm="{{ __('web/file-hosting.confirm_delete_folder') }}"
-                                        data-fh-redirect="{{ route('file-hosting.index', array_filter(array_merge($ownerQuery, ['folder_id' => $currentFolderId]))) }}">
+                                        >
                                     <i class="bi bi-trash"></i>
                                 </button>
                             @endcan
@@ -409,7 +440,7 @@
                                         data-fh-action-url="{{ route('file-hosting.files.destroy', $file['id']) }}"
                                         data-fh-method="DELETE"
                                         data-fh-confirm="{{ __('web/file-hosting.confirm_delete_file') }}"
-                                        data-fh-redirect="{{ route('file-hosting.index', array_filter(array_merge($ownerQuery, ['folder_id' => $currentFolderId]))) }}">
+                                        >
                                     <i class="bi bi-trash"></i>
                                 </button>
                             @endcan
@@ -472,7 +503,7 @@
                                             data-fh-action-url="{{ route('file-hosting.folders.destroy', $folder['id']) }}"
                                             data-fh-method="DELETE"
                                             data-fh-confirm="{{ __('web/file-hosting.confirm_delete_folder') }}"
-                                            data-fh-redirect="{{ route('file-hosting.index', array_filter(array_merge($ownerQuery, ['folder_id' => $currentFolderId]))) }}">
+                                            >
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 @endcan
@@ -524,7 +555,7 @@
                                             data-fh-action-url="{{ route('file-hosting.files.destroy', $file['id']) }}"
                                             data-fh-method="DELETE"
                                             data-fh-confirm="{{ __('web/file-hosting.confirm_delete_file') }}"
-                                            data-fh-redirect="{{ route('file-hosting.index', array_filter(array_merge($ownerQuery, ['folder_id' => $currentFolderId]))) }}">
+                                            >
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 @endcan
@@ -534,13 +565,50 @@
                 </div>
             @endif
         </div>
+        </div>{{-- /data-fh-panel=browse --}}
+
+        {{-- SPA trash panel (soft-rendered; empty shell on cold load of index) --}}
+        <div data-fh-panel="trash" class="d-none" hidden>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">{{ __('web/file-hosting.trash_title') }}</h5>
+                <a href="{{ route('file-hosting.index', $ownerQuery) }}" class="btn btn-outline-secondary btn-sm" data-fh-soft-nav>
+                    <i class="bi bi-arrow-left me-1"></i> {{ __('web/file-hosting.back') }}
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table fh-table">
+                    <thead>
+                        <tr>
+                            <th class="fh-table__icon-cell"></th>
+                            <th>{{ __('web/file-hosting.columns.name') }}</th>
+                            <th>{{ __('web/file-hosting.columns.type') }}</th>
+                            <th>{{ __('web/file-hosting.columns.deleted_at') }}</th>
+                            <th class="text-end">{{ __('web/file-hosting.columns.actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody data-fh-trash-body>
+                        <tr>
+                            <td colspan="5">
+                                <div class="fh-empty">
+                                    <i class="bi bi-trash3 fh-empty__icon"></i>
+                                    <div class="fh-empty__text">{{ __('web/file-hosting.trash_empty') }}</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{-- SPA show panel (file detail soft-rendered) --}}
+        <div data-fh-panel="show" class="d-none" hidden></div>
     </div>
 
     {{-- New Folder Modal --}}
     @can('create file hosting folder')
         <div class="modal fade" id="fhNewFolderModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
-                <form method="POST" action="{{ route('file-hosting.folders.store') }}" class="modal-content">
+                <form method="POST" action="{{ route('file-hosting.folders.store') }}" class="modal-content" data-fh-ajax-form>
                     @csrf
                     @if ($currentFolderId)
                         <input type="hidden" name="parent_id" value="{{ $currentFolderId }}">

@@ -327,22 +327,66 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 
 Share link users copy = show URL (`/s/f/{uuid}` or `/s/d/{uuid}`). Download button on the show page is a short-lived Laravel signed URL (`public_download_signature_ttl_minutes`, default 5).
 
-### UI architecture
+### UI architecture / SPA shell
+
+File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **FH-only client router** (`history.pushState` / `popstate`) on top of Blade SSR first paint + vanilla ES modules + existing Echo.
 
 | Asset | Role |
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
-| `resources/js/file-hosting/file-manager.js` | Page controller: AJAX CRUD, live search, grid/list view toggle (localStorage), move modal tree, drag-drop, region selector, bulk select/action, toast, soft-refetch hooks for live listing |
-| `resources/js/file-hosting/realtime.js` | Dedicated FH Echo subscribe (user/workspace private channels), health + fallback poll, soft-refetch helpers |
-| `resources/js/file-hosting/listing-ui.js` | Browse JSON -> table/grid re-render, light single-entity DOM patch, quota bar re-render, show-page stats |
-| `resources/js/file-hosting/direct-upload.js` | Chunked upload: XHR PUT to server-provided part URLs (direct S3 or Worker proxy headers); **byte-level** progress via `xhr.upload.onprogress` + **session-average transfer rate** (shown next to bar); status **Finalizing…** while `POST …/complete` runs; on complete calls `window.fileHostingSoftRefresh` (no hard reload when manager present) |
-| `resources/js/file-hosting/upload-progress.js` | Pure helpers: `computeTransferRate`, `formatTransferRate` (B/s–GB/s, 1024 base), `computeByteProgressPercent` — no DOM |
-| `resources/js/file-hosting/upload-queue.js` | Concurrency limiter (unchanged) |
-| `resources/views/adminlte4/file-hosting/partials/` | Reusable Blade partials: `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal`, `_team-offcanvas` |
+| `resources/js/file-hosting/router.js` | Client router: parse `/file-hosting/*` + public `/s/*`, intercept in-app links, `navigate` + `popstate` |
+| `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk, toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch |
+| `resources/js/file-hosting/realtime.js` | Dedicated FH Echo subscribe (user/workspace private channels), health + fallback poll; `page`/`fileId`/`workspaceId` live-read from config |
+| `resources/js/file-hosting/listing-ui.js` | Browse JSON → table/grid, breadcrumb soft-update, light DOM patch, quota bar, show stats |
+| `resources/js/file-hosting/trash-ui.js` | Trash JSON → table rows (restore/force-delete actions); **no** `location.reload` |
+| `resources/js/file-hosting/show-ui.js` | Soft file detail panel from `GET file-hosting/files/{id}` JSON |
+| `resources/js/file-hosting/public-app.js` | Public soft SPA for `/s/f/{id}` + `/s/d/{id}` (no Echo) |
+| `resources/js/file-hosting/direct-upload.js` | Chunked upload; on complete calls `window.fileHostingSoftRefresh` / `fileHostingUpsertFile` (no hard reload) |
+| `resources/js/file-hosting/upload-progress.js` | Pure helpers: transfer rate + byte progress — no DOM |
+| `resources/js/file-hosting/upload-queue.js` | Concurrency limiter |
+| `resources/views/adminlte4/file-hosting/partials/` | `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal`, `_team-offcanvas`, `_workspace-switcher` |
+
+#### Soft-nav rules (auth)
+
+| Route | View panel | Data |
+|-------|------------|------|
+| `/file-hosting` (+ `folder_id`, `workspace_id`, `user_id`) | `browse` | `GET file-hosting` Accept JSON (existing browse payload) |
+| `/file-hosting/trash` | `trash` | `GET file-hosting/trash` Accept JSON |
+| `/file-hosting/files/{uuid}` | `show` | `GET file-hosting/files/{uuid}` Accept JSON (**dual response**) |
+| Workspace switcher links | browse + Echo rebind | same browse JSON; channel flips `user.*` ↔ `workspace.*` |
+
+**Always full navigation:** file download hops (`…/download` → signed S3), non-FH routes, plans/services links, cold load of show/trash when listing shell is missing.
+
+**Mutations:** all FH forms/buttons use `fetch` + `Accept: application/json`. `ConsumesApi::jsonFromApi` forwards API `data` entity so the shell can soft-update. Shell **ignores** `redirect` for same-shell actions (no hard reload). Success → soft-refetch listing/quota/trash/show or soft-nav.
+
+**Shell markers:** `[data-file-manager][data-fh-spa]`, panels `[data-fh-panel="browse|trash|show"]`, breadcrumb `[data-fh-breadcrumb]`, trash body `[data-fh-trash-body]`.
+
+#### Soft-nav rules (public)
+
+| Route | Soft? | Notes |
+|-------|-------|-------|
+| `/s/f/{uuid}` | Yes | `PublicShareController::showFile` dual JSON |
+| `/s/d/{uuid}` | Yes | `PublicShareController::showFolder` dual JSON |
+| `/s/f/{uuid}/download` | No | signed hop → S3 |
+| Unpaid owner / private | 404 | paid gate stays server-side (`VisibilityService`) |
+
+#### Web BFF JSON contracts
+
+| Endpoint | Accept JSON |
+|----------|-------------|
+| `GET file-hosting` | `{ data: browse }` |
+| `GET file-hosting/trash` | `{ data: trash }` |
+| `GET file-hosting/files/{id}` | `{ data: file resource }` |
+| `GET file-hosting/workspaces` | `{ data: workspace[] }` (switcher soft rebuild) |
+| `GET file-hosting/quota` | `{ data: quota }` |
+| Mutations (`POST`/`PATCH`/`DELETE` …) | `{ status, message, data?, redirect? }` — SPA ignores redirect when shell bound |
+| `GET /s/f/{id}`, `GET /s/d/{id}` | `{ data: … }` guest payload |
+
+SSR first paint remains correct on hard refresh. After first soft-nav, listing/trash/show prefer **one JS render path** (permissions/labels from Blade `data-config`).
 
 **Upload progress UI (client-only):** Monolith never sees PUT body bytes (direct S3 or Worker). Progress % = `uploadedBytes / file.size`; speed = `uploadedBytes / elapsed` from first byte PUT to now (not a rolling window). Parts still upload sequentially per file. After the last part PUT, the row shows **Finalizing…** (`upload.completing`) at 100% with speed cleared while the client calls `POST …/complete` (merge parts / promote `HostedFile`) — then **Done**. API session payloads do not include progress or speed fields.
 
-All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `redirect`). Successful mutations **do not** hard-reload the page when the manager is bound — they soft-refetch browse/quota (and peers update via WebSocket).
+All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `data?`, `redirect?`). Successful mutations **do not** hard-reload the page when the SPA shell is bound — they soft-refetch browse/quota/trash/show (and peers update via WebSocket or poll fallback).
 
 File type icons map MIME -> Bootstrap Icons via `_file-icon.blade.php` partial: image, PDF, video, audio, archive, spreadsheet, document, code, fallback — each with a color modifier (`.fh-icon--*`).
 
@@ -484,7 +528,7 @@ npm run test:js
 
 | Suite | What it covers |
 |-------|----------------|
-| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest`), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
+| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest` — HTML + SPA JSON contracts for index/trash/show/workspaces + mutation `data` forward), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302, public show JSON + paid gate 404). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
 | Vitest `npm run test:js` | Pure client helpers in `resources/js/file-hosting/upload-progress.test.js` (transfer rate, format, byte percent). Pattern: `resources/js/**/*.test.js`. |
 | Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Worker unit tests: `c:\laragon\www\workers` (`npm test`). |
 | Qualification | `composer test -- --filter=FileHostingQualification` — 50 IDs (Low/Normal/Medium/Hard/Anomaly) |

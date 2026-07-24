@@ -62,6 +62,8 @@ export function applyBrowsePayload(root, browseData, config) {
         }
     }
 
+    applyBreadcrumb(root, browseData.breadcrumb || [], config);
+
     // Clear bulk selection after full replace
     root.querySelectorAll('[data-fh-select]').forEach((cb) => {
         cb.checked = false;
@@ -76,6 +78,69 @@ export function applyBrowsePayload(root, browseData, config) {
     }
 
     return true;
+}
+
+/**
+ * Soft-update breadcrumb trail after folder soft-nav.
+ *
+ * @param {HTMLElement} root
+ * @param {Array<{id: string|null, name: string}>} crumbs
+ * @param {object} config
+ */
+export function applyBreadcrumb(root, crumbs, config) {
+    const nav = root.querySelector('[data-fh-breadcrumb]');
+    if (!nav) {
+        return;
+    }
+
+    const browseBase = config.browseUrl || '/file-hosting';
+    const params = new URLSearchParams();
+    if (config.ownerUserId) {
+        params.set('user_id', config.ownerUserId);
+    }
+    if (config.workspaceId) {
+        params.set('workspace_id', config.workspaceId);
+    }
+    const qs = (extra) => {
+        const p = new URLSearchParams(params);
+        if (extra?.folder_id) {
+            p.set('folder_id', extra.folder_id);
+        }
+        const s = p.toString();
+        return s ? `?${s}` : '';
+    };
+
+    const rootLabel = config.messages?.rootLabel || 'My Files';
+    const parts = [];
+    const list = Array.isArray(crumbs) ? crumbs : [];
+
+    // First crumb is often root (id null)
+    list.forEach((crumb, index) => {
+        const isLast = index === list.length - 1;
+        const id = crumb?.id ?? null;
+        const name = crumb?.name || (id ? '' : rootLabel);
+        if (index > 0) {
+            parts.push('<i class="bi bi-chevron-right fh-breadcrumb__sep"></i>');
+        }
+        if (isLast) {
+            parts.push(
+                `<span class="fh-breadcrumb__item is-active">${index === 0 ? '<i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>' : ''}${escapeHtml(name)}</span>`,
+            );
+        } else {
+            const href = browseBase + qs(id ? { folder_id: id } : {});
+            parts.push(
+                `<a href="${escapeHtml(href)}" class="fh-breadcrumb__item" data-fh-soft-nav>${index === 0 ? '<i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>' : ''}${escapeHtml(name)}</a>`,
+            );
+        }
+    });
+
+    if (parts.length === 0) {
+        parts.push(
+            `<span class="fh-breadcrumb__item is-active"><i class="bi bi-folder2-open fh-breadcrumb__root-icon me-1"></i>${escapeHtml(rootLabel)}</span>`,
+        );
+    }
+
+    nav.innerHTML = parts.join('');
 }
 
 /**

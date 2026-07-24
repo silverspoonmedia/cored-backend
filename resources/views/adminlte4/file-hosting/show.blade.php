@@ -13,8 +13,15 @@
         $fhRealtime = app(\App\Domain\FileHosting\Support\FileHostingRealtime::class);
         $fhBroadcast = $fhRealtime->clientConfig();
         $showFmConfig = [
+            'spaShell' => true,
             'ownerUserId' => $ownerUserId,
             'workspaceId' => $file['workspace_id'] ?? null,
+            'browseUrl' => route('file-hosting.index', $backQuery),
+            'fileBase' => url('file-hosting/files'),
+            'fileShowBase' => url('file-hosting/files'),
+            'folderBase' => url('file-hosting/folders'),
+            'trashUrl' => route('file-hosting.trash', $ownerQuery),
+            'planState' => 'paid',
             'realtime' => [
                 'enabled' => $fhBroadcast !== null,
                 'broadcast' => $fhBroadcast,
@@ -30,10 +37,30 @@
                 'success' => __('web/file-hosting.ajax_success'),
                 'error' => __('web/file-hosting.ajax_error'),
                 'networkError' => __('web/file-hosting.network_error'),
+                'actions' => [
+                    'delete' => __('web/file-hosting.delete'),
+                    'confirmDeleteFile' => __('web/file-hosting.confirm_delete_file'),
+                ],
+            ],
+            'showLabels' => [
+                'name' => __('web/file-hosting.columns.name'),
+                'type' => __('web/file-hosting.columns.type'),
+                'size' => __('web/file-hosting.columns.size'),
+                'visibility' => __('web/file-hosting.columns.visibility'),
+                'views' => __('web/file-hosting.stats.views'),
+                'downloads' => __('web/file-hosting.stats.downloads'),
+                'back' => __('web/file-hosting.back'),
+                'download' => __('web/file-hosting.download'),
+                'save' => __('web/file-hosting.save'),
+                'private' => __('web/file-hosting.visibility.private'),
+                'anyone_with_link' => __('web/file-hosting.visibility.anyone_with_link'),
             ],
         ];
     @endphp
-    <div class="fh-manager" data-file-manager data-config="{{ json_encode($showFmConfig) }}">
+    <div class="fh-manager" data-file-manager data-fh-spa data-config="{{ json_encode($showFmConfig) }}">
+        <div data-fh-panel="browse" class="d-none" hidden></div>
+        <div data-fh-panel="trash" class="d-none" hidden></div>
+        <div data-fh-panel="show">
         <div class="row g-3">
             {{-- Main column --}}
             <div class="col-lg-8">
@@ -153,7 +180,7 @@
                                     data-fh-action-url="{{ route('file-hosting.files.destroy', $file['id']) }}"
                                     data-fh-method="DELETE"
                                     data-fh-confirm="{{ __('web/file-hosting.confirm_delete_file') }}"
-                                    data-fh-redirect="{{ route('file-hosting.index', $backQuery) }}">
+                                    data-fh-soft-nav-after="{{ route('file-hosting.index', $backQuery) }}">
                                 <i class="bi bi-trash me-1"></i> {{ __('web/file-hosting.delete') }}
                             </button>
                         @endcan
@@ -162,7 +189,7 @@
 
                 @can('edit file hosting file')
                     <x-adminlte4::card :title="__('web/file-hosting.visibility.label')" class="mb-3">
-                        <form method="POST" action="{{ route('file-hosting.files.visibility', $file['id']) }}">
+                        <form method="POST" action="{{ route('file-hosting.files.visibility', $file['id']) }}" data-fh-ajax-form data-fh-success="soft-refresh-show">
                             @csrf
                             @method('PATCH')
                             @if ($ownerUserId)
@@ -260,6 +287,9 @@
             </div>
         </div>
     @endcan
+
+        </div>{{-- /data-fh-panel=show --}}
+    </div>{{-- /fh-manager --}}
 
     @vite(['resources/css/file-hosting/file-hosting.css', 'resources/js/file-hosting/file-manager.js'])
 </x-adminlte4::layouts.app>

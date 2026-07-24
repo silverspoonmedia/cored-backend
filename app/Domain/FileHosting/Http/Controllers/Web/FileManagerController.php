@@ -289,23 +289,49 @@ class FileManagerController extends Controller
         );
     }
 
-    public function show(Request $request, string $file): View|RedirectResponse
+    public function show(Request $request, string $file): View|RedirectResponse|JsonResponse
     {
         $query = array_filter([
             'user_id' => $request->query('user_id'),
+            'workspace_id' => $request->query('workspace_id'),
         ], fn ($v) => $v !== null && $v !== '');
 
         $response = $this->api()->get('file-hosting/files/'.$file, $query);
 
         if (! $response->successful()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $this->apiMessage($response)], $response->status());
+            }
+
             return redirect()
                 ->route('file-hosting.index', $query)
                 ->with('error', $this->apiMessage($response));
         }
 
+        $data = $response->json('data', []);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $data]);
+        }
+
         return $this->webView('file-hosting.show', [
-            'file' => $response->json('data', []),
+            'file' => $data,
             'ownerUserId' => $request->query('user_id'),
+        ]);
+    }
+
+    public function workspaces(Request $request): JsonResponse
+    {
+        $response = $this->api()->get('file-hosting/workspaces');
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        $list = $response->json('data') ?? [];
+
+        return response()->json([
+            'data' => is_array($list) ? $list : [],
         ]);
     }
 

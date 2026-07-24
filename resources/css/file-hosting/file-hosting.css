@@ -8,6 +8,7 @@
    ============================================================ */
 
 .fh-manager {
+    position: relative;
     --fh-radius: var(--monolith-radius);
     --fh-radius-sm: var(--monolith-radius-sm);
     --fh-radius-lg: var(--monolith-radius-lg);
@@ -58,6 +59,22 @@
     --fh-stat-icon-color: var(--monolith-accent);
 
     --fh-empty-icon: var(--monolith-text-muted);
+}
+
+/* SPA soft-nav loading veil (auth + public shells) */
+.fh-manager.is-fh-loading::after,
+.fh-public.is-fh-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--fh-surface, #fff) 55%, transparent);
+    backdrop-filter: blur(1px);
+}
+
+.fh-public {
+    position: relative;
 }
 
 [data-bs-theme="dark"] .fh-manager {

@@ -88,6 +88,31 @@ class PublicDownloadSignedRouteTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_public_file_show_returns_json_when_accepts_json(): void
+    {
+        $file = $this->sharedFile();
+
+        $this->getJson('/s/f/'.$file->id)
+            ->assertOk()
+            ->assertJsonPath('data.file.id', $file->id)
+            ->assertJsonPath('data.file.name', $file->name)
+            ->assertJsonStructure([
+                'data' => [
+                    'file' => ['id', 'name', 'mime', 'size'],
+                    'downloadUrl',
+                ],
+            ]);
+    }
+
+    public function test_public_file_show_json_404_for_private_file(): void
+    {
+        $file = $this->sharedFile();
+        $file->forceFill(['visibility' => 'private'])->save();
+
+        $this->getJson('/s/f/'.$file->id)
+            ->assertNotFound();
+    }
+
     private function sharedFile(): HostedFile
     {
         $user = User::factory()->create([

@@ -20,6 +20,9 @@ import {
     tryPatchListing,
     upsertFileRow,
 } from './listing-ui';
+import { createFhRouter, parseFhUrl } from './router';
+import { applyTrashPayload } from './trash-ui';
+import { applyShowPayload, patchShowFile } from './show-ui';
 
 const STORAGE_KEY = 'fh-view-mode';
 
@@ -39,8 +42,34 @@ function initFileManager(root) {
         const gridView = root.querySelector('[data-fh-view="grid"]');
         const dropzone = root.querySelector('[data-fh-dropzone]');
         const quotaMount = root.querySelector('[data-fh-quota]') || document.querySelector('[data-fh-quota]');
+        const spaShell = root.hasAttribute('data-fh-spa') || config.spaShell === true;
 
         let listingBusy = false;
+        let realtimeHandle = null;
+        let router = null;
+        let currentShowFileId = config.realtime?.fileId || null;
+        const selected = new Set();
+
+        function setLoading(on) {
+            root.classList.toggle('is-fh-loading', Boolean(on));
+        }
+
+        function showPanel(name) {
+            root.querySelectorAll('[data-fh-panel]').forEach((panel) => {
+                const match = panel.getAttribute('data-fh-panel') === name;
+                panel.hidden = !match;
+                panel.classList.toggle('d-none', !match);
+            });
+            // Toolbar chrome only for browse.
+            root.querySelectorAll('[data-fh-browse-chrome]').forEach((el) => {
+                const show = name === 'browse';
+                el.hidden = !show;
+                el.classList.toggle('d-none', !show);
+            });
+            if (config.realtime) {
+                config.realtime.page = name === 'show' ? 'show' : name;
+            }
+        }
 
         async function softRefetchListing() {
             if (!config.browseUrl) {
@@ -59,6 +88,9 @@ function initFileManager(root) {
                     const json = await fetchJson(url, csrfToken);
                     if (json?.data) {
                         applyBrowsePayload(root, json.data, config);
+                        if (json.data.folder?.id !== undefined) {
+                            config.currentFolderId = json.data.folder?.id || null;
+                        }
                     }
                 } while (softRefetchListing.pending);
             } finally {
@@ -73,6 +105,9 @@ function initFileManager(root) {
             const json = await fetchJson(config.quotaUrl, csrfToken);
             if (json?.data) {
                 applyQuotaPayload(quotaMount, json.data, config.quotaLabels || {});
+                if (json.data.state) {
+                    config.planState = json.data.state;
+                }
             }
         }
 
@@ -80,12 +115,29 @@ function initFileManager(root) {
             if (!config.trashUrl) {
                 return;
             }
-            // Trash rows lack a full client re-renderer; full soft navigation keeps parity.
-            const url = config.trashUrl;
-            const json = await fetchJson(url, csrfToken);
+            const json = await fetchJson(config.trashUrl, csrfToken);
             if (json?.data) {
-                // Minimal: remove rows not in trash payload / leave full reload fallback
-                window.location.reload();
+                applyTrashPayload(root, json.data, config);
+            }
+        }
+
+        async function softRefetchShow() {
+            if (!currentShowFileId || !config.fileShowBase) {
+                return;
+            }
+            const params = new URLSearchParams();
+            if (config.ownerUserId) {
+                params.set('user_id', config.ownerUserId);
+            }
+            if (config.workspaceId) {
+                params.set('workspace_id', config.workspaceId);
+            }
+            const url = `${config.fileShowBase}/${currentShowFileId}${params.toString() ? `?${params}` : ''}`;
+            const json = await fetchJson(url, csrfToken);
+            const mount = root.querySelector('[data-fh-panel="show"]') || root;
+            if (json?.data) {
+                applyShowPayload(mount, json.data, config);
+                patchShowFile(mount, json.data);
             }
         }
 
@@ -98,13 +150,26 @@ function initFileManager(root) {
             if (!mount || !json?.data) {
                 return;
             }
-            // Invalidate: simplest correct path for team table
             const rows = Array.isArray(json.data) ? json.data : [];
+            const canManage = config.canManageMembers === true;
+            const removeLabel = config.messages?.collab?.remove || 'Remove';
+            const confirmRemove = config.messages?.collab?.confirmRemove || '';
+            const wsId = config.workspaceId;
             mount.innerHTML = rows.map((m) => {
-                const name = m.user?.name || m.user?.email || m.user_id || '';
+                const name = m.user?.email || m.user?.name || m.user_id || '';
                 const role = m.role || '';
-                return `<tr data-fh-member-id="${m.user_id || ''}"><td>${escapeHtml(name)}</td><td>${escapeHtml(role)}</td></tr>`;
-            }).join('') || `<tr><td colspan="3" class="text-muted">${escapeHtml(config.messages?.empty || '')}</td></tr>`;
+                const uid = m.user_id || '';
+                const canRemove = canManage && role !== 'owner' && uid && wsId;
+                const removeBtn = canRemove
+                    ? `<form method="post" action="${escapeHtml(`/file-hosting/workspaces/${wsId}/members/${uid}`)}" class="d-inline" data-fh-ajax-form data-fh-success="members">
+                        <input type="hidden" name="_token" value="${escapeHtml(csrfToken)}">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="submit" class="btn btn-link btn-sm text-danger p-0"
+                          data-fh-confirm="${escapeHtml(confirmRemove)}">${escapeHtml(removeLabel)}</button>
+                      </form>`
+                    : '';
+                return `<tr data-fh-member-id="${escapeHtml(uid)}"><td class="text-break">${escapeHtml(name)}</td><td><span class="badge text-bg-light border">${escapeHtml(role)}</span></td><td class="text-end">${removeBtn}</td></tr>`;
+            }).join('') || `<tr><td colspan="3" class="text-muted">${escapeHtml(config.messages?.collab?.noMembers || '')}</td></tr>`;
         }
 
         async function softRefetchActivity() {
@@ -119,12 +184,16 @@ function initFileManager(root) {
             const rows = Array.isArray(json.data) ? json.data : [];
             mount.innerHTML = rows.map((a) => {
                 const desc = a.description || a.event || '';
-                const when = a.created_at || a.created_at_human || '';
+                const when = a.created_at_human || a.created_at || '';
                 return `<li class="list-group-item small"><div>${escapeHtml(desc)}</div><div class="text-muted">${escapeHtml(when)}</div></li>`;
             }).join('') || '';
         }
 
         function onListingPatch(payload) {
+            if (config.realtime?.page === 'show' && payload?.entity_id && payload.entity_id === currentShowFileId) {
+                softRefetchShow();
+                return true;
+            }
             return tryPatchListing(payload, root, config);
         }
 
@@ -136,25 +205,26 @@ function initFileManager(root) {
             if (payload?.action === 'archived' || payload?.action === 'removed') {
                 const selfId = config.realtime?.userId;
                 if (payload.action === 'archived' || (payload.action === 'removed' && payload.user_id === selfId)) {
-                    window.location.href = config.browseUrl || '/file-hosting';
+                    if (router) {
+                        router.go(config.browseUrl || '/file-hosting', { replace: true });
+                    } else {
+                        window.location.href = config.browseUrl || '/file-hosting';
+                    }
                 }
             }
         }
 
-        // Expose soft refresh BEFORE realtime init so upload complete never falls
-        // through to hard reload if Echo setup throws.
-        root.__fhSoftRefresh = function () {
-            softRefetchListing();
-            softRefetchQuota();
-        };
-        window.fileHostingSoftRefresh = root.__fhSoftRefresh;
-        window.fileHostingUpsertFile = function (file) {
-            return upsertFileRow(root, file, config);
-        };
-
-        if (config.realtime?.enabled) {
+        function rebindRealtime() {
+            if (realtimeHandle && typeof realtimeHandle.disconnect === 'function') {
+                realtimeHandle.disconnect();
+                realtimeHandle = null;
+            }
+            root.dataset.fhRealtimeBound = '0';
+            if (!config.realtime?.enabled) {
+                return;
+            }
             try {
-                initFileHostingRealtime({
+                realtimeHandle = initFileHostingRealtime({
                     root,
                     config,
                     csrf: csrfToken,
@@ -173,15 +243,43 @@ function initFileManager(root) {
             }
         }
 
+        // Expose soft refresh BEFORE realtime init so upload complete never falls
+        // through to hard reload if Echo setup throws.
+        root.__fhSoftRefresh = function () {
+            const page = config.realtime?.page || 'index';
+            if (page === 'trash') {
+                softRefetchTrash();
+            } else if (page === 'show') {
+                softRefetchShow();
+            } else {
+                softRefetchListing();
+            }
+            softRefetchQuota();
+        };
+        window.fileHostingSoftRefresh = root.__fhSoftRefresh;
+        window.fileHostingUpsertFile = function (file) {
+            return upsertFileRow(root, file, config);
+        };
+        window.fileHostingNavigate = function (href, opts) {
+            if (router) {
+                return router.go(href, opts);
+            }
+            window.location.href = href;
+        };
+
+        rebindRealtime();
+
         initViewToggle();
         initSearch();
         initDropzone();
         initModals();
         initAjaxActions();
+        initAjaxForms();
         initCopyButtons();
         initBulkActions();
-
-        const selected = new Set();
+        if (spaShell) {
+            initSpaRouter();
+        }
 
         // ---- View toggle ----
         function initViewToggle() {
@@ -576,7 +674,7 @@ function initFileManager(root) {
             const url = btn.dataset.fhActionUrl;
             const method = (btn.dataset.fhMethod || 'POST').toUpperCase();
             const confirmMsg = btn.dataset.fhConfirm;
-            const redirectAfter = btn.dataset.fhRedirect;
+            const softNavAfter = btn.dataset.fhSoftNavAfter;
             const userId = btn.dataset.fhUserId || config.ownerUserId || '';
 
             if (confirmMsg && !window.confirm(confirmMsg)) {
@@ -586,7 +684,10 @@ function initFileManager(root) {
             btn.disabled = true;
 
             try {
-                const body = userId ? JSON.stringify({ user_id: userId }) : undefined;
+                const body = JSON.stringify({
+                    user_id: userId || undefined,
+                    workspace_id: config.workspaceId || undefined,
+                });
 
                 const response = await fetch(url, {
                     method: method,
@@ -606,33 +707,26 @@ function initFileManager(root) {
 
                 if (response.ok) {
                     showToast(data.message || config.messages.success, 'success');
-                    if (redirectAfter) {
+                    if (softNavAfter && router) {
                         setTimeout(function () {
-                            window.location.href = redirectAfter;
-                        }, 600);
-                    } else if (data.redirect) {
-                        setTimeout(function () {
-                            window.location.href = data.redirect;
-                        }, 600);
-                    } else {
-                        // Remove row or reload
-                        const row = btn.closest('tr, [data-fh-row]');
-                        if (row) {
-                            row.style.transition = 'opacity 0.3s';
-                            row.style.opacity = '0';
-                            setTimeout(function () {
-                                row.remove();
-                            }, 300);
-                        } else {
-                            setTimeout(function () {
-                                if (typeof root.__fhSoftRefresh === 'function') {
-                                    root.__fhSoftRefresh();
-                                } else {
-                                    window.location.reload();
-                                }
-                            }, 400);
-                        }
+                            router.go(softNavAfter, { replace: true });
+                        }, 200);
+                        return;
                     }
+                    // Soft path: never hard-reload when shell bound.
+                    const row = btn.closest('tr, [data-fh-row]');
+                    if (row && (action || '').includes('delete')) {
+                        row.style.transition = 'opacity 0.3s';
+                        row.style.opacity = '0';
+                        setTimeout(function () {
+                            row.remove();
+                        }, 300);
+                    }
+                    setTimeout(function () {
+                        if (typeof root.__fhSoftRefresh === 'function') {
+                            root.__fhSoftRefresh();
+                        }
+                    }, 250);
                 } else {
                     showToast(data.message || config.messages.error, 'error');
                 }
@@ -640,6 +734,260 @@ function initFileManager(root) {
                 showToast(config.messages.networkError, 'error');
             } finally {
                 btn.disabled = false;
+            }
+        }
+
+        // ---- AJAX forms (create folder, rename, share, move, workspace, show visibility) ----
+        function initAjaxForms() {
+            document.addEventListener('submit', function (e) {
+                const form = e.target.closest('form');
+                if (!form || form.hasAttribute('data-fh-native')) {
+                    return;
+                }
+                const isFhForm = form.hasAttribute('data-fh-ajax-form')
+                    || form.id === 'fhRenameFileForm'
+                    || form.id === 'fhRenameFolderForm'
+                    || form.id === 'fhShareFileForm'
+                    || form.id === 'fhShareFolderForm'
+                    || form.id === 'fhMoveFileForm'
+                    || form.id === 'fhMoveFolderForm'
+                    || form.closest('#fhNewFolderModal')
+                    || form.closest('#fhCreateWorkspaceModal')
+                    || form.closest('#fhAcceptInviteInline')
+                    || form.closest('#fhTeamOffcanvas')
+                    || form.closest('[data-fh-panel="show"]');
+                if (!isFhForm) {
+                    return;
+                }
+                e.preventDefault();
+                submitFhForm(form);
+            });
+        }
+
+        async function submitFhForm(form) {
+            const confirmMsg = form.dataset.fhConfirm || form.querySelector('[data-fh-confirm]')?.dataset?.fhConfirm;
+            if (confirmMsg && !window.confirm(confirmMsg)) {
+                return;
+            }
+
+            const action = form.getAttribute('action') || window.location.href;
+            const methodInput = form.querySelector('input[name="_method"]');
+            const method = (methodInput?.value || form.method || 'POST').toUpperCase();
+            const fd = new FormData(form);
+            // Ensure workspace/user context on mutations.
+            if (config.ownerUserId && !fd.has('user_id')) {
+                fd.set('user_id', config.ownerUserId);
+            }
+            if (config.workspaceId && !fd.has('workspace_id')) {
+                fd.set('workspace_id', config.workspaceId);
+            }
+            if (form.closest('#fhNewFolderModal')) {
+                if (config.currentFolderId) {
+                    fd.set('parent_id', config.currentFolderId);
+                } else {
+                    fd.delete('parent_id');
+                }
+            }
+
+            const submitBtn = form.querySelector('[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+
+            try {
+                const response = await fetch(action, {
+                    method: method === 'GET' ? 'GET' : 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    credentials: 'same-origin',
+                    body: method === 'GET' ? undefined : fd,
+                });
+                const data = await response.json().catch(function () {
+                    return {};
+                });
+
+                if (response.ok) {
+                    showToast(data.message || config.messages.success, 'success');
+                    // Close bootstrap modal if any.
+                    const modalEl = form.closest('.modal');
+                    if (modalEl && window.bootstrap?.Modal) {
+                        window.bootstrap.Modal.getInstance(modalEl)?.hide();
+                    }
+                    form.reset?.();
+
+                    const successMode = form.dataset.fhSuccess || '';
+                    if (successMode === 'members') {
+                        softRefetchMembers();
+                        softRefetchActivity();
+                        return;
+                    }
+                    if (successMode === 'soft-refresh-show') {
+                        softRefetchShow();
+                        return;
+                    }
+
+                    // Workspace create / accept invite → soft-nav into new workspace.
+                    const newWs = data?.data?.id || data?.data?.workspace_id;
+                    if (newWs && (action.includes('/workspaces') && !action.includes('/invites') || action.includes('invites/accept'))) {
+                        const href = (config.browseUrl || '/file-hosting') + `?workspace_id=${encodeURIComponent(newWs)}`;
+                        if (router) {
+                            router.go(href, { replace: true });
+                        } else {
+                            window.location.href = href;
+                        }
+                        return;
+                    }
+                    if (action.includes('/archive')) {
+                        if (router) {
+                            router.go(config.browseUrl || '/file-hosting', { replace: true });
+                        } else {
+                            window.location.href = config.browseUrl || '/file-hosting';
+                        }
+                        return;
+                    }
+
+                    if (typeof root.__fhSoftRefresh === 'function') {
+                        root.__fhSoftRefresh();
+                    }
+                    softRefetchMembers();
+                    softRefetchActivity();
+                } else {
+                    const msg = data.message
+                        || (data.errors && Object.values(data.errors).flat()[0])
+                        || config.messages.error;
+                    showToast(msg, 'error');
+                }
+            } catch (err) {
+                showToast(config.messages.networkError, 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
+            }
+        }
+
+        // ---- SPA client router ----
+        function initSpaRouter() {
+            router = createFhRouter({
+                root: document,
+                onNavigate: handleSpaNavigate,
+            });
+            // Initial route from current URL (SSR already painted; just sync state).
+            const initial = parseFhUrl();
+            syncConfigFromRoute(initial);
+            if (initial.name === 'trash') {
+                showPanel('trash');
+            } else if (initial.name === 'show') {
+                showPanel('show');
+                currentShowFileId = initial.fileId;
+            } else {
+                showPanel('browse');
+            }
+        }
+
+        function syncConfigFromRoute(route) {
+            config.currentFolderId = route.folderId || null;
+            config.workspaceId = route.workspaceId || null;
+            if (route.userId) {
+                config.ownerUserId = route.userId;
+            }
+            config.membersUrl = config.workspaceId
+                ? `/file-hosting/workspaces/${config.workspaceId}/members`
+                : null;
+            config.activityUrl = config.workspaceId
+                ? `/file-hosting/workspaces/${config.workspaceId}/activity`
+                : null;
+            // Keep direct-upload context in sync.
+            root.querySelectorAll('[data-direct-upload]').forEach((el) => {
+                try {
+                    const cfg = JSON.parse(el.dataset.config || '{}');
+                    cfg.folderId = config.currentFolderId;
+                    cfg.workspaceId = config.workspaceId;
+                    cfg.userId = config.ownerUserId;
+                    el.dataset.config = JSON.stringify(cfg);
+                } catch {
+                    // ignore
+                }
+            });
+            const folderHidden = root.querySelector('#fhNewFolderModal input[name="parent_id"], #fhNewFolderModal [name="parent_id"]');
+            if (folderHidden) {
+                folderHidden.value = config.currentFolderId || '';
+            }
+            root.querySelectorAll('input[name="workspace_id"]').forEach((el) => {
+                if (el.closest('form')) {
+                    el.value = config.workspaceId || '';
+                }
+            });
+        }
+
+        async function handleSpaNavigate(route) {
+            setLoading(true);
+            try {
+                const prevWs = config.workspaceId;
+                syncConfigFromRoute(route);
+
+                if (route.name === 'browse') {
+                    // Cold load of show/trash may lack listing shell — hard nav once.
+                    if (!root.querySelector('[data-fh-view="table"] tbody')) {
+                        window.location.href = route.href;
+                        return;
+                    }
+                    showPanel('browse');
+                    if (config.realtime) {
+                        config.realtime.page = 'index';
+                        config.realtime.fileId = null;
+                    }
+                    currentShowFileId = null;
+                    await softRefetchListing();
+                    await softRefetchQuota();
+                    if (prevWs !== config.workspaceId) {
+                        rebindRealtime();
+                        if (config.workspaceId) {
+                            softRefetchMembers();
+                            softRefetchActivity();
+                        }
+                    }
+                    return;
+                }
+
+                if (route.name === 'trash') {
+                    if (!root.querySelector('[data-fh-trash-body]')) {
+                        window.location.href = route.href;
+                        return;
+                    }
+                    showPanel('trash');
+                    if (config.realtime) {
+                        config.realtime.page = 'trash';
+                        config.realtime.fileId = null;
+                    }
+                    currentShowFileId = null;
+                    await softRefetchTrash();
+                    if (prevWs !== config.workspaceId) {
+                        rebindRealtime();
+                    }
+                    return;
+                }
+
+                if (route.name === 'show' && route.fileId) {
+                    if (!root.querySelector('[data-fh-panel="show"]')) {
+                        window.location.href = route.href;
+                        return;
+                    }
+                    showPanel('show');
+                    currentShowFileId = route.fileId;
+                    if (config.realtime) {
+                        config.realtime.page = 'show';
+                        config.realtime.fileId = route.fileId;
+                    }
+                    await softRefetchShow();
+                    // Channel is workspace/user based; page/fileId are live-read — no rebind needed.
+                    return;
+                }
+            } finally {
+                setLoading(false);
             }
         }
 
