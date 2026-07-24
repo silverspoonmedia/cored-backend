@@ -8,6 +8,8 @@ Route::get('file-hosting/trash', [FileManagerController::class, 'trash'])->name(
 Route::get('file-hosting/quota', [FileManagerController::class, 'quota'])->name('file-hosting.quota');
 
 // Collaborative workspaces (Blade consumer of API)
+Route::get('file-hosting/workspaces', [FileManagerController::class, 'workspaces'])
+    ->name('file-hosting.workspaces.index');
 Route::post('file-hosting/workspaces', [FileManagerController::class, 'storeWorkspace'])->name('file-hosting.workspaces.store');
 Route::post('file-hosting/workspaces/invites/accept', [FileManagerController::class, 'acceptWorkspaceInvite'])
     ->name('file-hosting.workspaces.invites.accept');

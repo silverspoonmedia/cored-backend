@@ -10,6 +10,7 @@ use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
 use App\Domain\FileHosting\Support\FileHostingRealtime;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
+use App\Domain\FileHosting\Support\UniqueDisplayNameAllocator;
 use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
 use App\Support\Storage\S3DirectUploadEngine;
@@ -34,6 +35,7 @@ class DirectUploadService
         private readonly WorkspaceAccessService $workspaceAccess,
         private readonly WorkspaceActivityRecorder $activity,
         private readonly FileHostingRealtime $realtime,
+        private readonly UniqueDisplayNameAllocator $displayNames = new UniqueDisplayNameAllocator,
         private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
         private readonly S3DirectUploadEngine $engine = new S3DirectUploadEngine,
     ) {}
@@ -231,7 +233,7 @@ class DirectUploadService
 
             // Allocate DB display name before irreversible S3 complete so a later
             // rename failure cannot leave multipart finalized with no HostedFile row.
-            $displayName = $this->allocateUniqueDisplayName(
+            $displayName = $this->displayNames->allocateFile(
                 $upload->user_id,
                 $upload->folder_id,
                 $upload->original_name,
@@ -535,130 +537,6 @@ class DirectUploadService
         } catch (S3DirectUploadException $e) {
             throw $this->mapEngineException($e);
         }
-    }
-
-    /**
-     * Pick a free sibling display name for promote-to-file.
-     *
-     * Soft-deleted rows are ignored (default SoftDeletes scope). S3 keys are never renamed.
-     *
-     * Rules (preferred = client original name, e.g. "A.zip"):
-     * - If preferred free → use it.
-     * - Else → "{stem} ({maxN+1}).{ext}" where maxN is the highest active index among
-     *   preferred itself (counts as 1) and siblings matching "{stem} (N).{ext}".
-     *   Example: A.zip + A (3).zip active → next is A (4).zip even if (2) was deleted.
-     * - If A.zip and A (2).zip soft-deleted but A (3).zip remains → preferred free → A.zip again.
-     */
-    protected function allocateUniqueDisplayName(
-        string $ownerId,
-        ?string $folderId,
-        string $preferred,
-        ?string $workspaceId = null,
-    ): string {
-        $preferred = trim($preferred);
-
-        if ($preferred === '') {
-            throw new FileHostingException(__('api/file-hosting.upload.invalid_name'));
-        }
-
-        if (! $this->displayNameExists($ownerId, $folderId, $preferred, $workspaceId)) {
-            return $preferred;
-        }
-
-        [$stem, $ext] = $this->splitDisplayName($preferred);
-        $maxSequence = $this->maxDisplayNameSequence($ownerId, $folderId, $stem, $ext, $workspaceId);
-        $next = max(2, $maxSequence + 1);
-
-        for ($n = $next; $n < $next + 1000; $n++) {
-            $candidate = $this->formatNumberedDisplayName($stem, $ext, $n);
-
-            if (! $this->displayNameExists($ownerId, $folderId, $candidate, $workspaceId)) {
-                return $candidate;
-            }
-        }
-
-        throw new FileHostingException(__('api/file-hosting.file_name_taken'));
-    }
-
-    protected function displayNameExists(
-        string $ownerId,
-        ?string $folderId,
-        string $name,
-        ?string $workspaceId = null,
-    ): bool {
-        return HostedFile::query()
-            ->where('user_id', $ownerId)
-            ->where('workspace_id', $workspaceId)
-            ->where('folder_id', $folderId)
-            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
-            ->exists();
-    }
-
-    /**
-     * Highest sequence in the "{stem}" / "{stem} (N)" family (same extension).
-     * Base name counts as 1 when present. Soft-deleted ignored.
-     *
-     * @return int 0 when no family members exist
-     */
-    protected function maxDisplayNameSequence(
-        string $ownerId,
-        ?string $folderId,
-        string $stem,
-        string $ext,
-        ?string $workspaceId = null,
-    ): int {
-        $base = $this->formatNumberedDisplayName($stem, $ext, null);
-        $max = 0;
-
-        $names = HostedFile::query()
-            ->where('user_id', $ownerId)
-            ->where('workspace_id', $workspaceId)
-            ->where('folder_id', $folderId)
-            ->pluck('name');
-
-        $quotedStem = preg_quote($stem, '/');
-        $pattern = $ext === ''
-            ? '/^'.$quotedStem.' \((\d+)\)$/iu'
-            : '/^'.$quotedStem.' \((\d+)\)\.'.preg_quote($ext, '/').'$/iu';
-
-        foreach ($names as $name) {
-            if (! is_string($name) || $name === '') {
-                continue;
-            }
-
-            if (mb_strtolower($name) === mb_strtolower($base)) {
-                $max = max($max, 1);
-
-                continue;
-            }
-
-            if (preg_match($pattern, $name, $matches) === 1) {
-                $max = max($max, (int) $matches[1]);
-            }
-        }
-
-        return $max;
-    }
-
-    /**
-     * @return array{0: string, 1: string} stem, extension without leading dot (may be empty)
-     */
-    protected function splitDisplayName(string $name): array
-    {
-        $ext = (string) pathinfo($name, PATHINFO_EXTENSION);
-        $stem = (string) pathinfo($name, PATHINFO_FILENAME);
-
-        return [$stem, $ext];
-    }
-
-    /**
-     * @param  int|null  $n  null = base name without " (N)"
-     */
-    protected function formatNumberedDisplayName(string $stem, string $ext, ?int $n): string
-    {
-        $body = $n === null ? $stem : $stem.' ('.$n.')';
-
-        return $ext === '' ? $body : $body.'.'.$ext;
     }
 
     /**

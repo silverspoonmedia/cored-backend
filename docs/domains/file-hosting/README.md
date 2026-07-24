@@ -14,6 +14,22 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Menu auto-hide | `file-hosting.index` menu route bound via `config/products.php` `menu_routes`; hidden when user's FH activation is not `active` |
 | Analytics | `HostedFile` Eloquent events (`created`/`deleted`/`restored`) + `WorkspaceService::create` + `FolderRepository::restore` write to `product_analytics` via `ProductAnalyticsService` (see [Product Activations § Stored analytics](../product-activations/README.md#stored-analytics-v3)) |
 
+### Current product surface
+
+What FH is **today** (auth browse + guest share). Deep dives live in sections below.
+
+| Surface | Behavior |
+|---------|----------|
+| Auth UI | Blade SSR first paint + **FH-only client router** + vanilla ES modules — **not** React/Inertia and **not** a monorepo-wide SPA. See [UI architecture / SPA shell](#ui-architecture--spa-shell). |
+| Browse gestures | Drive-like select / context menu / drag-move; bulk bar **Move / share / unshare / delete**. Single and bulk stay in lockstep — [Drive-like listing](#drive-like-listing-interactions-browse-only), [Action surface parity](#action-surface-parity-single--bulk). |
+| Nested folders | Virtual first row/card **`...`** (parent) + breadcrumb chips as drop targets (`data-fh-drop-folder`). Root has no `...`. |
+| Live listing | Dedicated private Echo channels + soft-refetch (listing/quota/trash/show). **Not** the notification bell bus. See [Realtime / live listing](#realtime--live-listing). |
+| Display names | Upload complete + **file/folder move** auto-rename on sibling collision (`UniqueDisplayNameAllocator`). Manual rename still rejects exact collisions. |
+| Public share | Guest `/s/f` / `/s/d` only when storage owner is **paid** (`QuotaService::ownerCanPublicShare`). Free/grace → 404 even if DB says `anyone_with_link`. See [Visibility](#visibility). |
+| Storage regions | Multi-disk `s3FileHosting*` (+ legacy `s3Custom` alias). Region column/badge only when multi-region config **or** historical multi-disk usage. |
+| Hard navigation | **Download hops only** (auth + signed public → 302 S3). In-shell mutations and folder/file/trash/show soft-nav do **not** rely on `location.reload`. |
+| Busy / upload UX | Mutations toggle `.is-fh-busy` spinner overlay; upload queue shows human file size. |
+
 ## Concepts
 
 | Concept | Behavior |
@@ -21,19 +37,19 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Virtual root | `folder_id = null` = “My Files” (no auto DB folder row) |
 | Nested folders | `parent_id` tree per owner; breadcrumb via `FolderAncestorChain` |
 | Files | `file_hosting_files` — denormalized `user_id`, optional `folder_id` |
-| Upload sessions | `file_hosting_uploads` — init → browser PUT (direct S3 **or** CF Worker proxy) → complete promotes row. **Control plane** (init / sign-parts / complete / abort) always Monolith→S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. |
+| Upload sessions | `file_hosting_uploads` — init -> browser PUT (direct S3 **or** CF Worker proxy) -> complete promotes row. **Control plane** (init / sign-parts / complete / abort) always Monolith->S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. |
 | Part size | Default **10 MB** chunk + multipart threshold (`FILE_HOSTING_CHUNK_SIZE`) |
 | DB `path` | Object id only: 40 lowercase alnum chars (`Str::random(40)`). **Not** a full S3 key. |
 | S3 object key | `file-hosting/{user_id}/{objectId}` — resolved at runtime via `ObjectKeyResolver` from `user_id` + `path` + config `directory`. No `folder_id`, no extension, no upload session id in the key. |
-| Display name on upload | Preferred client name kept if free in that owner+folder (soft-deleted ignored). If taken → auto DB rename to `{stem} ({maxN+1}).{ext}` where `maxN` is highest active sibling index (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`). S3 object key stays random and is never renamed. Manual rename/move still rejects exact sibling collisions. Move/rename are **DB-only** (folder tree lives in `folder_id` / `name`). |
+| Display name | Preferred name kept if free in that owner+folder/parent (soft-deleted ignored). If taken on **upload complete** or **file/folder move** → auto DB rename to `{stem} ({maxN+1}).{ext}` (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`; folders without ext → `Docs (2)`). Shared allocator: `UniqueDisplayNameAllocator`. **Manual rename** still rejects exact sibling collisions (user chose the name). S3 object key stays random and is never renamed. Move/rename are **DB-only**. |
 | Download bytes | Always **302 (or client follow)** to S3 temporary URL — **not** Monolith streaming |
 | S3 signed URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry. **Cleared on visibility change** (and rename/delete) so private revoke cannot reuse a still-valid temp link |
 | Download filename | `ResponseContentDisposition` from DB `name` (random key stays on object) |
 | Stats | `view_count` / `download_count` + last_* timestamps (no event log) |
 | Visibility | `private` \| `anyone_with_link` on folders and files |
 | Link secret | Resource UUID (Drive “anyone with the link”; not world-searchable) |
-| Inherit | Folder link-shared → guest may browse that folder and download files inside even if file is `private` |
-| Region | Per-file `disk` storage; region key derived via `RegionResolver::keyForDisk()`. `disabled_regions` blocks new uploads only — downloads still served. |
+| Inherit | Folder link-shared -> guest may browse that folder and download files inside even if file is `private` |
+| Region | Per-file `disk` storage (Laravel disk name in DB); product region key derived via `RegionResolver::keyForDisk()` (resolves `disk_aliases` first). `disabled_regions` blocks new uploads only — downloads still served. UI region column/badge appears only when configured regions > 1 **or** historical multi-disk usage exists (aliases collapsed so `s3Custom` -> `s3FileHostingCe`). |
 | Ownership | Own resources; cross-user via product “any” + core `RoleService` hierarchy |
 | Collaborative Works | Paid perk for **owners**; free users may **join** as members. Blade UX on File Hosting page (not a separate dynamic menu). |
 
@@ -48,11 +64,11 @@ Paid owners (active **main or storage addon** FH entitlement, not free-only) may
 | Editor | Upload/rename/move/delete; no member mgmt |
 | Viewer | Browse + download only |
 
-| Plan state | Can create / own team | Can join team | Personal files |
-|------------|----------------------|---------------|----------------|
-| Free | No | Yes (invite token) | Yes (free tier) |
-| Paid | Yes — up to **owned slot limit** | Yes (unlimited joins) | Yes |
-| Grace | No new create / collab mutations | Existing membership may still view if owner not grace-blocked | Read; upload blocked |
+| Plan state | Can create / own team | Can join team | Personal files | Public link share |
+|------------|----------------------|---------------|----------------|------------------|
+| Free | No | Yes (invite token) | Yes (free tier) | No (guest 404; enable blocked) |
+| Paid | Yes — up to **owned slot limit** | Yes (unlimited joins) | Yes | Yes (`anyone_with_link` + active paid owner) |
+| Grace | No new create / collab mutations | Existing membership may still view if owner not grace-blocked | Read; upload blocked | No (same as free; renew first) |
 
 ### Owned workspace slots
 
@@ -81,7 +97,7 @@ Workspace-slot SKU is **not** a storage plan: does not raise GiB quota, does not
 
 **Quota API flags:** `GET /api/v1/file-hosting/quota` includes `state` (`free`\|`paid`\|`grace`), `collaborative_works`, `can_create_workspace` (paid **and** under slot limit), `owned_workspace_used`, `owned_workspace_limit`, plus raw `used_bytes` / `pending_bytes` / `reserved_bytes` / `quota_bytes` / `remaining_bytes` and matching `*_human` companions (`BytePresenter`). `HostedFileResource` exposes `size` + `size_human` and dual-field timestamps. Blade uses companions only — no view-layer `$formatBytes`.
 
-**Blade UX:** Compact toolbar controls (not a full-width card). Free → upgrade CTA inside switcher dropdown + accept invite. Paid → create (while under limit), invite (token flash; no email delivery in MVP), members (owner **or** admin), activity in offcanvas. Web routes: `POST file-hosting/workspaces`, invites accept/store, member remove, archive.
+**Blade UX:** Compact toolbar controls (not a full-width card). Free -> upgrade CTA inside switcher dropdown + accept invite. Paid -> create (while under limit), invite (token flash; no email delivery in MVP), members (owner **or** admin), activity in offcanvas. Web routes: `POST file-hosting/workspaces`, invites accept/store, member remove, archive.
 
 **Activity:** Spatie `log_name = file_hosting.workspace`, properties include `workspace_id`. Explicit recorder (`WorkspaceActivityRecorder`) on membership + file/folder mutations. Download events off in v1. API: `GET /api/v1/file-hosting/workspaces/{id}/activity` (any active member).
 
@@ -92,17 +108,28 @@ Workspace-slot SKU is **not** a storage plan: does not raise GiB quota, does not
 ## Visibility
 
 ```
-folderAccessible(folder) =
+folderLinkShared(folder) =
   folder.visibility == anyone_with_link
   OR any ancestor.visibility == anyone_with_link
 
-fileAccessible(file) =
+fileLinkShared(file) =
   file.visibility == anyone_with_link
-  OR (file.folder_id && folderAccessible(file.folder))
+  OR (file.folder_id && folderLinkShared(file.folder))
+
+folderAccessible(folder) =
+  folderLinkShared(folder)
+  AND QuotaService::ownerCanPublicShare(folder.user_id)   // storage owner state === paid
+
+fileAccessible(file) =
+  fileLinkShared(file)
+  AND QuotaService::ownerCanPublicShare(file.user_id)
 ```
 
+- Guest public show/download (API + `/s/f` / `/s/d`) uses `fileAccessible` / `folderAccessible`. Free or grace storage owners get **404** `share_not_found` even if DB still says `anyone_with_link` (downgrade kills links without rewriting rows).
+- Enabling `anyone_with_link` (single + bulk file/folder) requires paid owner; free/grace → **422** `public_share_requires_paid`. Setting `private` always allowed.
 - Mutations never public.
-- `share_url` only when **this** item is `anyone_with_link`.
+- `share_url` only when **this** item is `anyone_with_link` **and** storage owner is paid.
+- Workspace files: paid check is on **storage `user_id`** (quota pool owner), not the guest member’s plan.
 
 ## Permissions (`domain_kind = product`)
 
@@ -123,7 +150,7 @@ manage any file hosting resource
 
 ### Authenticated — `/api/v1/file-hosting/*` (`auth:api`)
 
-Middleware stack: `auth:api` → `product.active:FileHosting` (runtime activation gate, see [Product Activations](../product-activations/README.md)) → `permission:<perm>` (Spatie RBAC). A user with a suspended File Hosting activation gets 403 before any permission check runs.
+Middleware stack: `auth:api` -> `product.active:FileHosting` (runtime activation gate, see [Product Activations](../product-activations/README.md)) -> `permission:<perm>` (Spatie RBAC). A user with a suspended File Hosting activation gets 403 before any permission check runs.
 
 **Sidebar menu:** the "My Files" entry (`file-hosting.index` route) is bound to FileHosting via `config/products.php` `menu_routes`. The dynamic menu auto-hides it when the viewer's activation is not `active` (suspended / expired / pending) — see [Navigation — Visibility](../navigation/README.md#visibility-navigation-tree). Guests and active users see it normally.
 
@@ -133,7 +160,7 @@ Middleware stack: `auth:api` → `product.active:FileHosting` (runtime activatio
 | Folders | create, rename, move, **visibility**, soft/force delete, restore (optional `workspace_id`) |
 | Files | show (view++), rename, move, **visibility**, soft/force delete, restore (optional `workspace_id`) |
 | Bulk | `POST files/bulk-visibility` + `POST folders/bulk-visibility` (`ids[]`, `visibility`); `DELETE files/bulk` + `DELETE folders/bulk` (`ids[]`) — owner/workspace-scoped, max 100 ids |
-| Download | `GET files/{id}/download` → `{ url, expires_at }` (download++; cache S3 URL) |
+| Download | `GET files/{id}/download` -> `{ url, expires_at }` (download++; cache S3 URL) |
 | Upload | init (optional `disk`, optional `workspace_id`), status, sign-parts, complete (auto-renames duplicate display name), abort |
 | Workspaces | `GET/POST workspaces`, show, archive, members, invite, accept invite, update/remove member, activity |
 | Search / trash / quota | as named (trash/search accept `workspace_id`) |
@@ -145,7 +172,7 @@ Control plane (init / sign-parts / complete / abort) always stays on Monolith. B
 | Mode | When | Browser PUT target |
 |------|------|--------------------|
 | **Direct S3** (default) | `FILE_HOSTING_UPLOAD_PROXY_URL` empty | Presigned S3 URL from `temporaryUploadUrl` / `UploadPart` |
-| **Hybrid proxy** | base URL + token + disk→alias set | CF Worker `/t/{alias}/{key}` (+ `partNumber`/`uploadId` for multipart); Worker re-signs + streams to S3 |
+| **Hybrid proxy** | base URL + token + disk->alias set | CF Worker `/t/{alias}/{key}` (+ `partNumber`/`uploadId` for multipart); Worker re-signs + streams to S3 |
 
 Shared kernel pieces (not duplicated per domain):
 
@@ -153,22 +180,25 @@ Shared kernel pieces (not duplicated per domain):
 |-------|------|
 | `App\Support\Storage\S3DirectUploadEngine` | Strategy, direct presign **or** Worker proxy URLs, merge/assert parts, create/complete/abort multipart, size/mime guards |
 | `App\Support\Storage\SerializesDirectUploadSession` | Shared JSON session shape for init/status (`upload_id`, `strategy`, `parts`, …) |
-| `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, **auto display-name allocation** on complete, promote → `HostedFile` |
+| `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, **auto display-name allocation** on complete, promote -> `HostedFile` |
 
 Config for thresholds/TTL/proxy: `config/file-hosting.php`.
 
-#### Display name on complete (auto-rename)
+#### Display name uniqueness (auto-rename)
 
-Upload **init** no longer rejects a display name that already exists in the same owner+folder. On **complete**, `DirectUploadService::allocateUniqueDisplayName()` picks the DB `name`:
+Shared helper: `App\Domain\FileHosting\Support\UniqueDisplayNameAllocator` (used by upload complete, **file move**, **folder move**). Soft-deleted siblings are ignored.
 
-| Active siblings (soft-deleted ignored) | Client preferred | Stored `name` |
-|----------------------------------------|------------------|---------------|
+Upload **init** does not reject a display name that already exists in the same owner+folder. On **complete** / **move**, the allocator picks the DB `name`:
+
+| Active siblings (soft-deleted ignored) | Preferred | Result |
+|----------------------------------------|-----------|--------|
 | none | `A.zip` | `A.zip` |
-| `A.zip` | `A.zip` | `A (2).zip` |
+| `A.zip` | `A.zip` (upload or move into folder) | mover/upload becomes `A (2).zip` |
 | `A.zip` + `A (3).zip` | `A.zip` | `A (4).zip` (max index + 1; holes not reused) |
 | base soft-deleted, `A (3).zip` remains | `A.zip` | `A.zip` (base free again) |
+| folder sibling `Docs` | move folder `Docs` into same parent | mover becomes `Docs (2)` |
 
-S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never renamed or moved when the display name / folder changes. Manual rename/move still enforces exact sibling uniqueness. Clients must show **`file.name` from complete**, not the original client filename. API `path` is the object id only.
+S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never renamed or moved when the display name / folder changes. **Manual rename** still enforces exact sibling uniqueness (422). Clients must show **`file.name` from complete/move response**, not the original client filename. API `path` is the object id only.
 
 #### Hybrid proxy env
 
@@ -176,18 +206,20 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 |-----|------|
 | `FILE_HOSTING_UPLOAD_PROXY_URL` | Worker origin (no trailing slash). Empty = direct S3. Example production custom domain: `https://s3.silverspoon.me` |
 | `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Same value as Worker `S3_TARGETS.uploadToken` (Bearer) |
-| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM` | Worker target **alias** for disk `s3Custom` (must match a key under Worker `S3_TARGETS.targets`, e.g. `sbs`) |
-| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOMEU` | Alias for disk `s3Customeu` (optional) |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_CE` | Worker target **alias** for disk `s3FileHostingCe` (must match a key under Worker `S3_TARGETS.targets`, e.g. `sbs`) |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_US` | Alias for disk `s3FileHostingUs` (optional) |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_EU` | Alias for disk `s3FileHostingEu` (optional) |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM` | Legacy fallback for CE / `s3Custom` disk rows (same alias as `TARGET_CE` when CE env empty) |
 
-**Where does `/t/{alias}/…` come from?** Monolith maps the upload session disk (e.g. `s3Custom`) → env alias via `upload_proxy.disk_targets`, then builds:
+**Where does `/t/{alias}/…` come from?** Monolith maps the upload session disk (e.g. `s3FileHostingCe` or legacy `s3Custom`) -> env alias via `upload_proxy.disk_targets`, then builds:
 
 `{FILE_HOSTING_UPLOAD_PROXY_URL}/t/{alias}/{object-key}?partNumber=&uploadId=`
 
 plus headers `Authorization: Bearer …`, `X-S3-Target: {alias}`, `Content-Type`. The alias is **not** the B2 bucket name and **not** part of the S3 key; it only selects credentials/endpoint inside the Worker.
 
-**Fail closed:** if base URL is set but token or disk alias is missing → init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3. Upstream S3 failures map to `upstream_failed` where applicable.
+**Fail closed:** if base URL is set but token or disk alias is missing -> init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3. Upstream S3 failures map to `upstream_failed` where applicable.
 
-**B2 / path-style:** Monolith disk `s3Custom` must use `CUSTOM_S3_USE_PATH_STYLE=true` (default in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
+**B2 / path-style:** Monolith FH disks (`s3FileHostingCe` and legacy alias `s3Custom`) must use path-style endpoints (`FILE_HOSTING_S3_CE_USE_PATH_STYLE` / `CUSTOM_S3_USE_PATH_STYLE`, default true in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
 
 **Worker project:** `c:\laragon\www\workers` — Wrangler name **`cf-workers-s3-proxy`**. Streaming SigV4 proxy; production custom domain example `https://s3.silverspoon.me`. See that repo’s README. Spec history: [chore-now.md](./chore-now.md).
 
@@ -196,7 +228,7 @@ plus headers `Authorization: Bearer …`, `X-S3-Target: {alias}`, `Content-Type`
 | Step | Note |
 |------|------|
 | Runtime secret | `S3_TARGETS` is a **Worker secret**, not git, not `.dev.vars` on CF. Set with `npx wrangler secret put S3_TARGETS --name cf-workers-s3-proxy` (name must match deployed Worker). |
-| Dashboard Variables | Must be on the **same** Worker that serves the public hostname. UI “Variables” on another Worker / build env only → `/health` returns config missing. |
+| Dashboard Variables | Must be on the **same** Worker that serves the public hostname. UI “Variables” on another Worker / build env only -> `/health` returns config missing. |
 | Alias rename | Change key + `defaultTarget` in `S3_TARGETS` **first**, then Monolith `FILE_HOSTING_UPLOAD_PROXY_TARGET_*`, then `php artisan config:clear`. In-flight sessions still using the old `/t/old-alias/…` may 400. |
 | Error bodies | Production Worker returns generic messages only (`Configuration invalid or missing`, `Internal server error`). Details stay in Workers Logs (`console.error`). |
 
@@ -286,9 +318,9 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 
 | Route name | Auth | Purpose |
 |------------|------|---------|
-| `file-hosting.index` | yes | Browse + chunk upload; list/grid view, search, Rename / Move / Share / Delete |
+| `file-hosting.index` | yes | Browse + chunk upload; list/grid; Drive-like select/context/drag; bulk **Move**/share/unshare/delete; SPA soft-nav (no hard reload on mutations) |
 | `file-hosting.files.show` | yes | Detail, stats tiles, visibility, download CTA |
-| `file-hosting.files.download` | yes | Auth download → **302** S3 |
+| `file-hosting.files.download` | yes | Auth download -> **302** S3 |
 | `file-hosting.files.rename` | yes | Rename file (AJAX or form) |
 | `file-hosting.files.move` | yes | Move file to folder (AJAX) |
 | `file-hosting.files.visibility` | yes | Toggle private / anyone_with_link |
@@ -309,45 +341,131 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 | `file-hosting.workspaces.activity` | yes | JSON activity feed for team offcanvas soft-refetch |
 | `file-hosting.search` | yes | AJAX JSON search endpoint (`GET ?q=`) |
 | `file-hosting.public.files.show` | no | `/s/f/{uuid}` guest page |
-| `file-hosting.public.files.download` | no | **Temporary signed** hop → **302** S3 (unsigned **403**) |
+| `file-hosting.public.files.download` | no | **Temporary signed** hop -> **302** S3 (unsigned **403**) |
 | `file-hosting.public.folders.show` | no | `/s/d/{uuid}` guest folder list |
 
 Share link users copy = show URL (`/s/f/{uuid}` or `/s/d/{uuid}`). Download button on the show page is a short-lived Laravel signed URL (`public_download_signature_ttl_minutes`, default 5).
 
-### UI architecture
+### UI architecture / SPA shell
+
+File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **FH-only client router** (`history.pushState` / `popstate`) on top of Blade SSR first paint + vanilla ES modules + existing Echo.
 
 | Asset | Role |
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
-| `resources/js/file-hosting/file-manager.js` | Page controller: AJAX CRUD, live search, grid/list view toggle (localStorage), move modal tree, drag-drop, region selector, bulk select/action, toast, soft-refetch hooks for live listing |
-| `resources/js/file-hosting/realtime.js` | Dedicated FH Echo subscribe (user/workspace private channels), health + fallback poll, soft-refetch helpers |
-| `resources/js/file-hosting/listing-ui.js` | Browse JSON → table/grid re-render, light single-entity DOM patch, quota bar re-render, show-page stats |
-| `resources/js/file-hosting/direct-upload.js` | Chunked upload: XHR PUT to server-provided part URLs (direct S3 or Worker proxy headers); **byte-level** progress via `xhr.upload.onprogress` + **session-average transfer rate** (shown next to bar); status **Finalizing…** while `POST …/complete` runs; on complete calls `window.fileHostingSoftRefresh` (no hard reload when manager present) |
-| `resources/js/file-hosting/upload-progress.js` | Pure helpers: `computeTransferRate`, `formatTransferRate` (B/s–GB/s, 1024 base), `computeByteProgressPercent` — no DOM |
-| `resources/js/file-hosting/upload-queue.js` | Concurrency limiter (unchanged) |
-| `resources/views/adminlte4/file-hosting/partials/` | Reusable Blade partials: `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal`, `_team-offcanvas` |
+| `resources/js/file-hosting/router.js` | Client router: parse `/file-hosting/*` + public `/s/*`, intercept in-app links, `navigate` + `popstate` |
+| `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk (incl. **Move** → same multi-move modal as context), toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch; Drive-like select/menu/drag; `.is-fh-busy` mutation spinner |
+| `resources/js/file-hosting/selection.js` | Browse listing selection: click = select, Ctrl/Cmd toggle, Shift range, Escape clear; name/icon single-click selects (open on double-click); ignores virtual parent `...` for bulk keys |
+| `resources/js/file-hosting/context-menu.js` | Right-click: Open / Rename / Move / Share / Delete (modals + bulk endpoints); multi-move via move modal tree; parent `...` → Open only |
+| `resources/js/file-hosting/drag-move.js` | Drag selected onto folder **or** breadcrumb parent/root **or** listing `...` (`data-fh-drop-folder`) → sequential `PATCH …/move` (`application/x-fh-items` so OS file drops still hit upload dropzone); parent row not draggable |
+| `resources/js/file-hosting/realtime.js` | Dedicated FH Echo subscribe (user/workspace private channels), health + fallback poll; `page`/`fileId`/`workspaceId` live-read from config |
+| `resources/js/file-hosting/listing-ui.js` | Browse JSON → table/grid (incl. virtual parent `...` row/card when nested), breadcrumb soft-update (`data-fh-drop-folder`), light DOM patch, quota bar, show stats |
+| `resources/js/file-hosting/trash-ui.js` | Trash JSON → table rows (restore/force-delete actions); **no** `location.reload` |
+| `resources/js/file-hosting/show-ui.js` | Soft file detail panel from `GET file-hosting/files/{id}` JSON |
+| `resources/js/file-hosting/public-app.js` | Public soft SPA for `/s/f/{id}` + `/s/d/{id}` (no Echo) |
+| `resources/js/file-hosting/direct-upload.js` | Chunked upload; queue shows human file size; on complete calls `window.fileHostingSoftRefresh` / `fileHostingUpsertFile` (no hard reload) |
+| `resources/js/file-hosting/upload-progress.js` | Pure helpers: transfer rate + byte progress — no DOM |
+| `resources/js/file-hosting/upload-queue.js` | Concurrency limiter |
+| `resources/views/adminlte4/file-hosting/partials/` | `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal`, `_team-offcanvas`, `_workspace-switcher` |
+
+#### Soft-nav rules (auth)
+
+| Route | View panel | Data |
+|-------|------------|------|
+| `/file-hosting` (+ `folder_id`, `workspace_id`, `user_id`) | `browse` | `GET file-hosting` Accept JSON (existing browse payload) |
+| `/file-hosting/trash` | `trash` | `GET file-hosting/trash` Accept JSON |
+| `/file-hosting/files/{uuid}` | `show` | `GET file-hosting/files/{uuid}` Accept JSON (**dual response**) |
+| Workspace switcher links | browse + Echo rebind | same browse JSON; channel flips `user.*` ↔ `workspace.*` |
+
+**Always full navigation:** file download hops (`…/download` → signed S3), non-FH routes, plans/services links, cold load of show/trash when listing shell is missing.
+
+**Mutations:** all FH forms/buttons use `fetch` + `Accept: application/json`. `ConsumesApi::jsonFromApi` forwards API `data` entity so the shell can soft-update. Shell **ignores** `redirect` for same-shell actions. Success path for in-shell FH actions **never depends on** `window.location.reload` — soft-refetch listing/quota/trash/show or soft-nav instead. Post-mutation soft-refetch and [Realtime / live listing](#realtime--live-listing) Echo invalidation share the same paint helpers (`listing-ui` / `trash-ui` / `show-ui` / quota).
+
+
+#### Drive-like listing interactions (browse only)
+
+| Gesture | Behavior |
+|---------|----------|
+| Click row/card (not checkbox/actions) | Select only that item |
+| Ctrl/Cmd+click | Toggle multi-select |
+| Shift+click | Range select in visible list/grid order |
+| Click name/icon | Select (does **not** open) |
+| Double-click name/icon/row | Open (folder browse / file show via SPA router) |
+| Right-click item | Select if needed + context menu (Open, Rename, Move, Share, Delete) |
+| Drag selected onto a **folder** row/card | Move into that folder (server auto-renames display-name collisions) |
+| Drag selected onto **breadcrumb** parent / root chip | Move up (`data-fh-drop-folder`; root → `folder_id`/`parent_id` null) |
+| Nested listing first row/card **`...`** | Virtual parent folder (not a real model): open = go up; drag onto it = move up; no checkbox/bulk/rename/share/delete |
+| Escape | Clear selection + close context menu |
+
+Checkbox + bulk bar (**Move** / share / unshare / delete) and per-row toolbar remain. Trash/public pages are out of scope.
+
+#### Action surface parity (single ↔ bulk)
+
+Listing mutations must stay **in lockstep** across surfaces. When shipping a new mutating action, implement **both** per-row/context **and** bulk (bar + multi context) unless the action is inherently single-entity — then mark **N/A** here.
+
+| Action | Single row / context (1 item) | Bulk bar / multi context | Notes |
+|--------|-------------------------------|--------------------------|--------|
+| Open | yes | N/A | navigation only |
+| Rename | yes | N/A | needs one name |
+| Move | yes | yes (bar + multi context + drag) | sequential `PATCH …/move`; display-name auto-rename on collision |
+| Share / Make private | yes | yes | bulk visibility endpoints |
+| Delete | yes | yes | bulk destroy endpoints |
+
+**Agent/dev rule:** do not add a row-only mutator and leave the bulk bar lagging. Open/Rename stay N/A by design; everything else that changes storage state needs a multi-select path (or an explicit table update explaining why not).
+
+**Busy UI:** mutations (move/delete/forms/bulk/context share-delete) toggle `.is-fh-busy` + centered spinner overlay (distinct from soft-nav `.is-fh-loading`).
+
+**Upload queue:** staged rows show human file size next to the name (`File.size` at pick time).
+
+**Manual QA:** single select highlight; ctrl multi; shift range; dblclick open; context rename/move/share/delete; bulk bar Move multi-select; drag file→folder; drag onto parent/root breadcrumb or listing `...` parent row; nested empty still shows `...`; root has no `...`; drag multi; refuse drop on self; spinner on move/delete; upload row shows size; OS file drop still uploads.
+**Shell markers:** `[data-file-manager][data-fh-spa]`, panels `[data-fh-panel="browse|trash|show"]`, breadcrumb `[data-fh-breadcrumb]`, trash body `[data-fh-trash-body]`.
+
+#### Soft-nav rules (public)
+
+| Route | Soft? | Notes |
+|-------|-------|-------|
+| `/s/f/{uuid}` | Yes | `PublicShareController::showFile` dual JSON |
+| `/s/d/{uuid}` | Yes | `PublicShareController::showFolder` dual JSON |
+| `/s/f/{uuid}/download` | No | signed hop → S3 |
+| Unpaid owner / private | 404 | paid gate stays server-side (`VisibilityService`) |
+
+#### Web BFF JSON contracts
+
+| Endpoint | Accept JSON |
+|----------|-------------|
+| `GET file-hosting` | `{ data: browse }` |
+| `GET file-hosting/trash` | `{ data: trash }` |
+| `GET file-hosting/files/{id}` | `{ data: file resource }` |
+| `GET file-hosting/workspaces` | `{ data: workspace[] }` (switcher soft rebuild) |
+| `GET file-hosting/quota` | `{ data: quota }` |
+| Mutations (`POST`/`PATCH`/`DELETE` …) | `{ status, message, data?, redirect? }` — SPA ignores redirect when shell bound |
+| `GET /s/f/{id}`, `GET /s/d/{id}` | `{ data: … }` guest payload |
+
+SSR first paint remains correct on hard refresh. After first soft-nav, listing/trash/show prefer **one JS render path** (permissions/labels from Blade `data-config`).
 
 **Upload progress UI (client-only):** Monolith never sees PUT body bytes (direct S3 or Worker). Progress % = `uploadedBytes / file.size`; speed = `uploadedBytes / elapsed` from first byte PUT to now (not a rolling window). Parts still upload sequentially per file. After the last part PUT, the row shows **Finalizing…** (`upload.completing`) at 100% with speed cleared while the client calls `POST …/complete` (merge parts / promote `HostedFile`) — then **Done**. API session payloads do not include progress or speed fields.
 
-All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `redirect`). Successful mutations **do not** hard-reload the page when the manager is bound — they soft-refetch browse/quota (and peers update via WebSocket).
+All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `data?`, `redirect?`). Successful mutations **do not** hard-reload the page when the SPA shell is bound — they soft-refetch browse/quota/trash/show (and peers update via WebSocket or poll fallback).
 
-File type icons map MIME → Bootstrap Icons via `_file-icon.blade.php` partial: image, PDF, video, audio, archive, spreadsheet, document, code, fallback — each with a color modifier (`.fh-icon--*`).
+File type icons map MIME -> Bootstrap Icons via `_file-icon.blade.php` partial: image, PDF, video, audio, archive, spreadsheet, document, code, fallback — each with a color modifier (`.fh-icon--*`).
 
 Grid/list view toggle persists preference in `localStorage` key `fh-view-mode`. Default: list (table).
 
 Row identity for live patch: `data-fh-entity` (`file`|`folder`) + `data-fh-id` on table rows and grid cards. Quota mount: `[data-fh-quota]`. Show counters: `[data-fh-stat="views|downloads"]`. Team offcanvas: `[data-fh-members-body]`, `[data-fh-activity-list]`.
 
-Menu: **My Files** → `file-hosting.index`.
+Menu: **My Files** -> `file-hosting.index`.
 
 ## Realtime / live listing
 
 File Hosting listing stays live via **dedicated private channels**. It does **not** use the notification bell, `NotificationType`, or DataTable `table_id` (those remain for `/users` and similar admin lists — see [notification/README.md](../notification/README.md)).
 
+**With the SPA shell:** Echo events invalidate the current view; the client soft-refetches JSON and re-paints via the same helpers as post-mutation success ([UI architecture / SPA shell](#ui-architecture--spa-shell)). Router owns in-app navigation; download hops stay full page.
+
 ### Gate
 
 | Check | Behavior |
 |-------|----------|
-| `BroadcastConnection::isConfigured()` | Pusher/Reverb credentials present → events may broadcast |
+| `BroadcastConnection::isConfigured()` | Pusher/Reverb credentials present -> events may broadcast |
 | `APP_NOTIFICATION_TYPE` | **Independent.** FH listing can use websockets while the bell stays on HTTP polling |
 | Client config | `BroadcastConnection::socketClientConfig()` / `FileHostingRealtime::clientConfig()` — same public fields as the bell, without requiring notification realtime mode |
 
@@ -360,7 +478,7 @@ When unconfigured, services still complete business work; no broadcast is dispat
 | `private-file-hosting.user.{userId}` | `$user->id === $userId` | Personal drive listing + storage-owner **quota** pings |
 | `private-file-hosting.workspace.{workspaceId}` | `WorkspaceAccessService::canView` (active member/owner/staff view) | Team listing, members, activity, team file stats |
 
-Personal resources (`workspace_id` null) → user channel of storage owner. Team resources → workspace channel only (not every member's user channel).
+Personal resources (`workspace_id` null) -> user channel of storage owner. Team resources -> workspace channel only (not every member's user channel).
 
 ### Events (`app/Domain/FileHosting/Events/`, `ShouldBroadcastNow`)
 
@@ -380,10 +498,10 @@ Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + r
 
 | Service | When |
 |---------|------|
-| `FileService` | visibility, rename, move, soft/force delete, restore, bulks; view/download → `FileStatsChanged` only |
+| `FileService` | visibility, rename, move, soft/force delete, restore, bulks; view/download -> `FileStatsChanged` only |
 | `FolderService` | create, visibility, rename, move, soft/force delete, restore, bulks |
-| `DirectUploadService` | initiate/abort → quota; complete (after commit) → listing `create` + quota |
-| `WorkspaceService` | invite, accept, role change, remove, archive → members + activity |
+| `DirectUploadService` | initiate/abort -> quota; complete (after commit) -> listing `create` + quota |
+| `WorkspaceService` | invite, accept, role change, remove, archive -> members + activity |
 
 ### Client strategy
 
@@ -392,7 +510,7 @@ Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + r
 3. Subscribe to personal or workspace channel based on `workspaceId` / `ownerUserId`.
 4. **Apply:** soft-refetch browse JSON for current folder (correctness floor); light DOM patch for delete/rename when `resource` / row identity allow; quota bar via `GET file-hosting/quota`; team members/activity soft-refetch; show page listens for matching `file_id` stats.
 5. Replace hard `location.reload()` after mutations/upload complete with soft-refetch when the manager is bound.
-6. Health: WS primary → 30s grace → visible-tab poll ~60s; reconnect stops poll + one catch-up soft-refetch.
+6. Health: WS primary -> 30s grace -> visible-tab poll ~60s; reconnect stops poll + one catch-up soft-refetch.
 
 ### Not live
 
@@ -402,10 +520,24 @@ Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + r
 
 ## Config highlights
 
+### Multi-disk storage
+
+| Disk | Role |
+|------|------|
+| `s3FileHostingCe` | Primary CE region (`FILE_HOSTING_S3_CE_*`, fallback `CUSTOM_S3_*`) |
+| `s3FileHostingUs` | Optional US region (`FILE_HOSTING_S3_US_*`) |
+| `s3FileHostingEu` | Optional EU region (`FILE_HOSTING_S3_EU_*`) |
+| `s3Custom` | **Legacy alias** of CE credentials — existing `HostedFile.disk` / `FileUpload.disk` rows keep working |
+
+Region keys for new uploads: `ce` (Central European), `us`, `eu`. Client field name is still `disk` but the **value is the region key**; `DirectUploadService::resolveDiskName()` maps to the Laravel disk name stored in DB.
+
+Region UI (list column, detail badge, soft-refetch): `RegionResolver::shouldDisplayRegion()` — true when `count(configured regions) > 1` **or** historical distinct disks on `HostedFile` (with trashed) > 1 after alias collapse.
+
 | Key | Role |
 |-----|------|
-| `disk` / `directory` | S3-compatible disk + key prefix (`FILE_HOSTING_DIRECTORY`, default `file-hosting`). Prefix is **not** stored in DB `path`. |
-| `regions` | Region key → disk name map (e.g. `sea` → `s3Custom`); only regions with non-empty disk appear in upload dropdown |
+| `disk` / `directory` | Default Laravel disk for new uploads (`FILE_HOSTING_DISK`, default `s3FileHostingCe`) + key prefix (`FILE_HOSTING_DIRECTORY`, default `file-hosting`). Prefix is **not** stored in DB `path`. |
+| `regions` | Region key -> disk name map (`ce` -> `s3FileHostingCe`, optional `us` / `eu`); only regions with non-empty disk appear in upload dropdown. Labels: `lang/*/web/file-hosting.php` (`Central European`, etc.). |
+| `disk_aliases` | Legacy disk name -> canonical disk (`s3Custom` -> `s3FileHostingCe`) for region reverse-lookup and historical multi-disk collapse |
 | `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
 | `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **10 MiB** each) |
 | `upload_proxy.*` | Optional CF Worker hybrid byte path (`base_url`, `token`, `disk_targets`) |
@@ -442,7 +574,7 @@ Runtime `QuotaService::quotaBytesFor` reads denorm `UserQuota` (written on fulfi
 
 On paid [Service](../service/README.md) fulfill: main replace / addon quantity + recompute. On grace expire: recompute remaining lines + `EnforceFreeTierQuotaService::enforceToLimit(effective)` (oldest-first; soft-delete DB + hard-delete S3).
 
-**Purge rule (example):** files A 2 GiB (oldest), B 3 GiB, C 5 GiB with limit 5 GiB → keep A+B (exactly 5 GiB), soft-delete C in DB and hard-delete C object on S3. Under-limit users are no-op. Re-run is idempotent.
+**Purge rule (example):** files A 2 GiB (oldest), B 3 GiB, C 5 GiB with limit 5 GiB -> keep A+B (exactly 5 GiB), soft-delete C in DB and hard-delete C object on S3. Under-limit users are no-op. Re-run is idempotent.
 
 Scheduler entry point: `php artisan service:process-entitlements` (hourly).
 
@@ -457,7 +589,7 @@ npm run test:js
 
 | Suite | What it covers |
 |-------|----------------|
-| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest`), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
+| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest` — HTML + SPA JSON contracts for index/trash/show/workspaces + mutation `data` forward), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302, public show JSON + paid gate 404). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
 | Vitest `npm run test:js` | Pure client helpers in `resources/js/file-hosting/upload-progress.test.js` (transfer rate, format, byte percent). Pattern: `resources/js/**/*.test.js`. |
 | Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Worker unit tests: `c:\laragon\www\workers` (`npm test`). |
 | Qualification | `composer test -- --filter=FileHostingQualification` — 50 IDs (Low/Normal/Medium/Hard/Anomaly) |
@@ -467,4 +599,7 @@ npm run test:js
 - [service/README.md](../service/README.md) — main/addon catalog, quantity, grace, recompute
 - [identity/README.md](../identity/README.md) — H-RBAC / `domain_kind`
 - [notification/README.md](../notification/README.md) — bell + DataTable `table_id` (FH listing does **not** use this bus)
+- [web/ui-patterns.md](../../web/ui-patterns.md) — admin a11y / responsive patterns (FH dropzone, modals); full browse SPA is domain-local — see [UI architecture / SPA shell](#ui-architecture--spa-shell)
 - [platform/architecture.md](../../platform/architecture.md)
+
+FH SPA shell is **product-scoped** (this domain only). It is not a monorepo-wide AdminLTE SPA migration.

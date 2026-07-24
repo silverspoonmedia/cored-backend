@@ -41,15 +41,16 @@ export function initFileHostingRealtime(options) {
     const realtime = config.realtime || {};
     const broadcast = realtime.broadcast;
     const userId = realtime.userId;
-    const page = realtime.page || 'index';
-    const workspaceId = config.workspaceId || null;
-    const ownerUserId = config.ownerUserId || userId;
-    const fileId = realtime.fileId || null;
+    // page / workspace / fileId read live from config so SPA soft-nav rebinds without resubscribe when only page changes.
+    const workspaceId = () => config.workspaceId || null;
+    const ownerUserId = () => config.ownerUserId || userId;
+    const page = () => (config.realtime?.page || realtime.page || 'index');
+    const fileId = () => config.realtime?.fileId || realtime.fileId || null;
 
     if (!broadcast?.authEndpoint || !userId || !(broadcast.key || import.meta.env.VITE_PUSHER_APP_KEY)) {
         window.fileHostingRealtime = { enabled: false, connected: false, degraded: false };
         startFallbackPoll();
-        return { softRefresh: softRefreshAll, disconnect() {} };
+        return { softRefresh: softRefreshAll, disconnect() { stopPoll(); } };
     }
 
     let connected = false;
@@ -69,9 +70,10 @@ export function initFileHostingRealtime(options) {
     }
 
     function softRefreshAll() {
-        if (page === 'trash') {
+        const p = page();
+        if (p === 'trash') {
             onTrashRefresh?.();
-        } else if (page === 'show') {
+        } else if (p === 'show') {
             // stats only — no listing
         } else {
             onListingRefresh?.();
@@ -119,10 +121,11 @@ export function initFileHostingRealtime(options) {
     }
 
     function channelName() {
-        if (workspaceId) {
-            return `file-hosting.workspace.${workspaceId}`;
+        const ws = workspaceId();
+        if (ws) {
+            return `file-hosting.workspace.${ws}`;
         }
-        return `file-hosting.user.${ownerUserId || userId}`;
+        return `file-hosting.user.${ownerUserId() || userId}`;
     }
 
     function handleListing(payload) {
@@ -132,8 +135,10 @@ export function initFileHostingRealtime(options) {
                 return;
             }
         }
-        if (page === 'trash') {
+        if (page() === 'trash') {
             onTrashRefresh?.();
+        } else if (page() === 'show') {
+            // show listens via patch path
         } else {
             onListingRefresh?.();
         }
@@ -174,14 +179,17 @@ export function initFileHostingRealtime(options) {
         });
         ch.listen('.activity.appended', () => onActivityRefresh?.());
         ch.listen('.file.stats.changed', (e) => {
-            if (fileId && e?.file_id && e.file_id !== fileId) {
+            const fid = fileId();
+            if (fid && e?.file_id && e.file_id !== fid) {
                 return;
             }
             onFileStats?.(e || {});
         });
 
         // Storage-owner quota also lands on personal user channel when browsing a team.
-        if (workspaceId && ownerUserId && ownerUserId !== userId) {
+        const ws = workspaceId();
+        const owner = ownerUserId();
+        if (ws && owner && owner !== userId) {
             // team member viewing someone else's pool — quota bar is personal; still listen own channel
             echo.private(`file-hosting.user.${userId}`)
                 .listen('.quota.changed', () => onQuotaRefresh?.());
@@ -194,14 +202,24 @@ export function initFileHostingRealtime(options) {
     }
 
     root.dataset.fhRealtimeBound = '1';
+    const subscribedChannel = channelName();
 
     return {
         softRefresh: softRefreshAll,
+        channel: subscribedChannel,
         disconnect() {
             stopPoll();
             if (graceTimer) {
                 clearTimeout(graceTimer);
             }
+            try {
+                if (echo && subscribedChannel) {
+                    echo.leave(subscribedChannel);
+                }
+            } catch {
+                // ignore leave errors
+            }
+            root.dataset.fhRealtimeBound = '0';
             // Do not disconnect shared Echo — bell may still need it.
             if (ownsEcho && !document.getElementById('notification-bell')) {
                 echo?.disconnect();

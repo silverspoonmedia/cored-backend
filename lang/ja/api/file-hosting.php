@@ -22,6 +22,7 @@ return [
     'download_unavailable' => 'このストレージではダウンロードURLを発行できません。',
     'visibility_updated' => '公開設定を更新しました。',
     'invalid_visibility' => '公開設定の値が無効です。',
+    'public_share_requires_paid' => '公開リンク共有には有効な有料 File Hosting プランが必要です。',
     'share_not_found' => 'この共有アイテムは利用できません。',
     'search_success' => '検索結果を読み込みました。',
     'trash_success' => 'ゴミ箱を読み込みました。',

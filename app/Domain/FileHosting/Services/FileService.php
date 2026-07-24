@@ -9,6 +9,7 @@ use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
 use App\Domain\FileHosting\Support\FileHostingRealtime;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
+use App\Domain\FileHosting\Support\UniqueDisplayNameAllocator;
 use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,6 +27,7 @@ class FileService
         private readonly WorkspaceAccessService $workspaceAccess,
         private readonly WorkspaceActivityRecorder $activity,
         private readonly FileHostingRealtime $realtime,
+        private readonly UniqueDisplayNameAllocator $displayNames = new UniqueDisplayNameAllocator,
         private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
     ) {}
 
@@ -81,6 +83,7 @@ class FileService
         $file = $this->resolveFileForMutate($actor, $fileId, $userId, $workspaceId);
         $from = (string) $file->visibility;
         $value = $this->visibility->normalize($visibility);
+        $this->visibility->assertVisibilityChangeAllowed($value, (string) $file->user_id);
 
         // Always drop cached S3 URL so private revoke cannot reuse a still-valid temp link.
         $file->forceFill([
@@ -132,8 +135,24 @@ class FileService
             $this->folders->findOwnedOrFail($file->user_id, $folderId, $file->workspace_id);
         }
 
-        $this->assertUniqueName($file->user_id, $folderId, $file->name, $file->id, $file->workspace_id);
-        $file->forceFill(['folder_id' => $folderId])->save();
+        // Match upload: auto A (N).ext on sibling collision — never reject move.
+        $displayName = $this->displayNames->allocateFile(
+            $file->user_id,
+            $folderId,
+            $file->name,
+            $file->workspace_id,
+            $file->id,
+        );
+
+        $updates = ['folder_id' => $folderId];
+        if ($displayName !== $file->name) {
+            $updates['name'] = $displayName;
+            // Name change invalidates disposition-bound signed URL cache.
+            $updates['signed_download_url'] = null;
+            $updates['signed_download_expires_at'] = null;
+        }
+
+        $file->forceFill($updates)->save();
         $file = $file->refresh();
 
         if ($file->workspace_id !== null) {
@@ -329,6 +348,7 @@ class FileService
     {
         [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
         $value = $this->visibility->normalize($visibility);
+        $this->visibility->assertVisibilityChangeAllowed($value, $ownerId);
 
         $count = HostedFile::query()
             ->where('user_id', $ownerId)

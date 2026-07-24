@@ -517,6 +517,115 @@ class FileManagerControllerTest extends TestCase
             ->assertJsonPath('message', 'Unauthorized.');
     }
 
+    public function test_trash_returns_json_when_request_expects_json(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $folderId = fake()->uuid();
+
+        Http::fake([
+            '*/api/v1/file-hosting/trash*' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'folders' => [['id' => $folderId, 'name' => 'Gone', 'deleted_at' => '2026-07-15']],
+                    'files' => [],
+                ],
+            ], 200),
+        ]);
+
+        $user->getJson('/file-hosting/trash')
+            ->assertOk()
+            ->assertJsonPath('data.folders.0.id', $folderId)
+            ->assertJsonPath('data.folders.0.name', 'Gone');
+    }
+
+    public function test_show_returns_json_when_request_expects_json(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/files/{$fileId}*" => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => $fileId,
+                    'name' => 'spa.pdf',
+                    'mime' => 'application/pdf',
+                    'size' => 4096,
+                    'visibility' => 'private',
+                    'view_count' => 1,
+                    'download_count' => 0,
+                ],
+            ], 200),
+        ]);
+
+        $user->getJson("/file-hosting/files/{$fileId}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $fileId)
+            ->assertJsonPath('data.name', 'spa.pdf')
+            ->assertJsonPath('data.visibility', 'private');
+    }
+
+    public function test_show_returns_json_error_when_api_fails(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/file-hosting/files/{$fileId}*" => Http::response([
+                'status' => 'error',
+                'message' => 'File not found.',
+            ], 404),
+        ]);
+
+        $user->getJson("/file-hosting/files/{$fileId}")
+            ->assertNotFound()
+            ->assertJsonPath('message', 'File not found.');
+    }
+
+    public function test_workspaces_list_returns_json(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $wsId = fake()->uuid();
+
+        Http::fake([
+            '*/api/v1/file-hosting/workspaces' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    ['id' => $wsId, 'name' => 'Alpha', 'my_role' => 'owner', 'is_owner' => true],
+                ],
+            ], 200),
+        ]);
+
+        $user->getJson('/file-hosting/workspaces')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $wsId)
+            ->assertJsonPath('data.0.name', 'Alpha');
+    }
+
+    public function test_mutation_json_includes_api_data_entity(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $folderId = fake()->uuid();
+
+        Http::fake([
+            '*/api/v1/file-hosting/folders' => Http::response([
+                'status' => 'success',
+                'message' => 'Folder created.',
+                'data' => [
+                    'id' => $folderId,
+                    'name' => 'SPA Folder',
+                    'visibility' => 'private',
+                ],
+            ], 201),
+        ]);
+
+        $user->postJson('/file-hosting/folders', ['name' => 'SPA Folder'])
+            ->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.id', $folderId)
+            ->assertJsonPath('data.name', 'SPA Folder');
+    }
+
     public function test_init_upload_forwards_disk_param_to_api(): void
     {
         $user = $this->actingWithApiGuard(User::factory()->create());
@@ -544,11 +653,11 @@ class FileManagerControllerTest extends TestCase
             'name' => 'report.pdf',
             'mime' => 'application/pdf',
             'size' => 1024,
-            'disk' => 'sea',
+            'disk' => 'ce',
         ])->assertStatus(201);
 
         $this->assertNotNull($captured);
-        $this->assertSame('sea', $captured['disk'] ?? null);
+        $this->assertSame('ce', $captured['disk'] ?? null);
     }
 
     public function test_bulk_file_visibility_forwards_to_api(): void

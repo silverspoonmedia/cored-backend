@@ -164,6 +164,15 @@ class QuotaService
     }
 
     /**
+     * Guest public links and enabling anyone_with_link require active paid FH storage.
+     * Free and grace owners cannot expose files/folders publicly (grace = renew first).
+     */
+    public function ownerCanPublicShare(string $userId): bool
+    {
+        return $this->storageStateFor($userId) === 'paid';
+    }
+
+    /**
      * Enumerate user IDs currently on a given File Hosting tier.
      *
      * Paid / grace resolved from active entitlements. Free = FileHosting

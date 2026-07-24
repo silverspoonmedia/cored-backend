@@ -2,21 +2,37 @@
 
 return [
 
-    'disk' => env('FILE_HOSTING_DISK', 's3Custom'),
+    /*
+    |--------------------------------------------------------------------------
+    | Default storage disk for new uploads when no region key is supplied.
+    |--------------------------------------------------------------------------
+    */
+    'disk' => env('FILE_HOSTING_DISK', 's3FileHostingCe'),
 
     /*
     |--------------------------------------------------------------------------
-    | Upload regions — region key → disk name.
+    | Upload regions — region key → Laravel disk name.
     | Only regions with a non-empty disk appear in the upload dropdown.
-    | Add a region: set FILE_HOSTING_REGION_XX_DISK env + define the disk
-    | in config/filesystems.php. No code change required.
+    | Add a region: set FILE_HOSTING_REGION_XX_DISK + define the disk in
+    | config/filesystems.php (s3FileHostingCe / Us / Eu or a custom disk).
     |--------------------------------------------------------------------------
     */
     'regions' => array_filter([
-        'sea' => env('FILE_HOSTING_REGION_SEA_DISK', 's3Custom'),
-        'us'  => env('FILE_HOSTING_REGION_US_DISK'),
-        'eu'  => env('FILE_HOSTING_REGION_EU_DISK'),
+        'ce' => env('FILE_HOSTING_REGION_CE_DISK', 's3FileHostingCe'),
+        'us' => env('FILE_HOSTING_REGION_US_DISK'),
+        'eu' => env('FILE_HOSTING_REGION_EU_DISK'),
     ]),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Legacy disk name → canonical disk name.
+    | Used by RegionResolver so HostedFile rows stored as s3Custom still map
+    | to region "ce" and collapse into one historical storage target.
+    |--------------------------------------------------------------------------
+    */
+    'disk_aliases' => [
+        's3Custom' => 's3FileHostingCe',
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -106,14 +122,25 @@ return [
     | When base_url + token + disk alias are set, Monolith returns Worker
     | URLs for PUT/UploadPart only; create/complete/abort stay on the server SDK.
     | Alias values must match Worker S3_TARGETS.targets keys.
+    |
+    | FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM is a legacy fallback for CE.
     |--------------------------------------------------------------------------
     */
     'upload_proxy' => [
         'base_url' => rtrim((string) env('FILE_HOSTING_UPLOAD_PROXY_URL', ''), '/'),
         'token' => (string) env('FILE_HOSTING_UPLOAD_PROXY_TOKEN', ''),
         'disk_targets' => array_filter([
-            's3Custom' => env('FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM'),
-            's3Customeu' => env('FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOMEU'),
+            's3FileHostingCe' => env(
+                'FILE_HOSTING_UPLOAD_PROXY_TARGET_CE',
+                env('FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM'),
+            ),
+            's3FileHostingUs' => env('FILE_HOSTING_UPLOAD_PROXY_TARGET_US'),
+            's3FileHostingEu' => env('FILE_HOSTING_UPLOAD_PROXY_TARGET_EU'),
+            // Legacy HostedFile.disk / upload session values.
+            's3Custom' => env(
+                'FILE_HOSTING_UPLOAD_PROXY_TARGET_CE',
+                env('FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM'),
+            ),
         ]),
     ],
 

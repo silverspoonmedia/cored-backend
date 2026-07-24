@@ -6,6 +6,9 @@ use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\DirectUploadService;
 use App\Domain\FileHosting\Services\SignedDownloadService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Service\Enums\EntitlementStatus;
+use App\Domain\Service\Models\Service;
+use App\Domain\Service\Models\ServiceEntitlement;
 use Database\Seeders\FileHostingRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -85,12 +88,53 @@ class PublicDownloadSignedRouteTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_public_file_show_returns_json_when_accepts_json(): void
+    {
+        $file = $this->sharedFile();
+
+        $this->getJson('/s/f/'.$file->id)
+            ->assertOk()
+            ->assertJsonPath('data.file.id', $file->id)
+            ->assertJsonPath('data.file.name', $file->name)
+            ->assertJsonStructure([
+                'data' => [
+                    'file' => ['id', 'name', 'mime', 'size'],
+                    'downloadUrl',
+                ],
+            ]);
+    }
+
+    public function test_public_file_show_json_404_for_private_file(): void
+    {
+        $file = $this->sharedFile();
+        $file->forceFill(['visibility' => 'private'])->save();
+
+        $this->getJson('/s/f/'.$file->id)
+            ->assertNotFound();
+    }
+
     private function sharedFile(): HostedFile
     {
         $user = User::factory()->create([
             'password' => Hash::make('password123'),
         ]);
         $user->assignRole('User');
+
+        $service = Service::query()->where('code', 'file-hosting.plan.1tb.monthly')->first()
+            ?? Service::factory()->fileHostingMain1Tb()->create();
+
+        ServiceEntitlement::query()->updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'service_id' => $service->id,
+            ],
+            [
+                'status' => EntitlementStatus::Active,
+                'quantity' => 1,
+                'starts_at' => now(),
+                'ends_at' => now()->addDays(30),
+            ],
+        );
 
         return HostedFile::query()->create([
             'user_id' => $user->id,

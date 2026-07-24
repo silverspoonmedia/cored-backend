@@ -175,6 +175,7 @@ class FileHostingQualificationAnomalyTest extends TestCase
     public function test_FH_A06_visibility_private_clears_signed_cache(): void
     {
         $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
         $file = $this->seedFile($user, 'cache.pdf', 100, [
             'visibility' => 'anyone_with_link',
             'signed_download_url' => 'https://s3.example/old-signed',

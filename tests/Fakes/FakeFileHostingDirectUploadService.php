@@ -9,6 +9,7 @@ use App\Domain\FileHosting\Services\DirectUploadService;
 use App\Domain\FileHosting\Services\QuotaService;
 use App\Domain\FileHosting\Services\WorkspaceAccessService;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
+use App\Domain\FileHosting\Support\UniqueDisplayNameAllocator;
 use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
 use Illuminate\Support\Carbon;
@@ -130,7 +131,7 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             $objectKey = app(ObjectKeyResolver::class)->objectKey($upload->user_id, $upload->path);
             Storage::disk($upload->disk)->put($objectKey, 'fake-binary');
 
-            $displayName = $this->allocateUniqueDisplayName(
+            $displayName = app(UniqueDisplayNameAllocator::class)->allocateFile(
                 $upload->user_id,
                 $upload->folder_id,
                 $upload->original_name,
