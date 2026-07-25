@@ -17,21 +17,19 @@ trait SerializesDirectUploadSession
      *     strategy: string,
      *     chunk_size: int,
      *     part_count: int,
-     *     parts: list<array<string, mixed>>,
-     *     recorded_parts?: list<array<string, mixed>>
+     *     parts: list<array<string, mixed>>
      * }  $result
      * @param  array<string, mixed>  $extra
      * @return array<string, mixed>
      */
     protected function serializeUploadSession(
         array $result,
-        bool $includeRecorded = false,
         array $extra = [],
     ): array {
         $upload = $result['upload'];
         [$expiresIso, $expiresFormatted, $expiresHuman] = DatePresenter::pack($upload->expires_at ?? null);
 
-        $payload = array_merge([
+        return array_merge([
             'upload_id' => $upload->id,
             'strategy' => $result['strategy'],
             'path' => $upload->path,
@@ -42,12 +40,5 @@ trait SerializesDirectUploadSession
             'expires_at_formatted' => $expiresFormatted,
             'expires_at_human' => $expiresHuman,
         ], $extra);
-
-        if ($includeRecorded) {
-            $payload['recorded_parts'] = $result['recorded_parts']
-                ?? (method_exists($upload, 'recordedParts') ? $upload->recordedParts() : []);
-        }
-
-        return $payload;
     }
 }

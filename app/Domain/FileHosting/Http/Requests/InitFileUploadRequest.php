@@ -2,6 +2,7 @@
 
 namespace App\Domain\FileHosting\Http\Requests;
 
+use App\Domain\FileHosting\Support\RegionResolver;
 use Illuminate\Foundation\Http\FormRequest;
 
 class InitFileUploadRequest extends FormRequest
@@ -16,7 +17,7 @@ class InitFileUploadRequest extends FormRequest
      */
     public function rules(): array
     {
-        $uploadable = \App\Domain\FileHosting\Support\RegionResolver::uploadableKeys();
+        $uploadable = RegionResolver::uploadableKeys();
 
         return [
             'name' => ['required', 'string', 'max:255'],

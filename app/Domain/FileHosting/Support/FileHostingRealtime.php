@@ -14,6 +14,7 @@ use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\Identity\Models\User;
 use App\Support\Broadcasting\BroadcastConnection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Fire File Hosting realtime events after successful mutations.
@@ -192,6 +193,25 @@ class FileHostingRealtime
             viewCount: (int) $file->view_count,
             downloadCount: (int) $file->download_count,
         ));
+    }
+
+    /**
+     * Broadcast at most one stats event per file per throttle window. The counter
+     * itself is written synchronously by the caller; only the realtime push is
+     * rate-limited so a hot file does not flood subscribers on every download.
+     */
+    public function fileStatsThrottled(HostedFile $file, int $windowSeconds = 5): void
+    {
+        if (! $this->enabled()) {
+            return;
+        }
+
+        $cacheKey = 'filehosting:stats-broadcast:'.(string) $file->id;
+        if (! Cache::add($cacheKey, 1, $windowSeconds)) {
+            return;
+        }
+
+        $this->fileStats($file);
     }
 
     /**

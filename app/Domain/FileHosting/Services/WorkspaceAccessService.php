@@ -12,6 +12,7 @@ use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Models\WorkspaceMember;
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Services\ServiceEntitlementService;
+use App\Domain\Service\Support\FileHostingCatalog;
 
 /**
  * Workspace membership + paid collab gate (separate from platform H-RBAC).
@@ -56,7 +57,7 @@ class WorkspaceAccessService
         ) {
             $base = max(0, (int) config(
                 'file-hosting.base_owned_workspace_slots',
-                \App\Domain\Service\Support\FileHostingCatalog::BASE_OWNED_WORKSPACE_SLOTS,
+                FileHostingCatalog::BASE_OWNED_WORKSPACE_SLOTS,
             ));
         }
 

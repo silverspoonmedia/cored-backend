@@ -3,10 +3,73 @@
  */
 import { runWithConcurrency } from './upload-queue.js';
 import {
+    createPartProgressTracker,
+    uploadPartsParallel,
+} from './part-uploader.js';
+import {
     computeByteProgressPercent,
-    computeTransferRate,
+    createRateSampler,
     formatTransferRate,
 } from './upload-progress.js';
+
+/**
+ * Resolve mutable upload context (folder / user / workspace) from a live dataset.
+ *
+ * Read at each upload start — never frozen at init — so SPA soft-navigation into a
+ * folder targets that folder instead of root. The SPA router keeps the dropzone's
+ * flat `data-folder-id` / `data-user-id` / `data-workspace-id` attributes in sync.
+ *
+ * @param {DOMStringMap} dataset
+ * @returns {{ folder_id?: string, user_id?: string, workspace_id?: string }}
+ */
+export function buildInitContext(dataset) {
+    const context = {};
+    const folderId = dataset?.folderId || null;
+    const userId = dataset?.userId || null;
+    const workspaceId = dataset?.workspaceId || null;
+
+    if (folderId) {
+        context.folder_id = folderId;
+    }
+    if (workspaceId) {
+        context.workspace_id = workspaceId;
+    }
+    if (userId) {
+        context.user_id = userId;
+    }
+
+    return context;
+}
+
+/**
+ * Best-effort abort of a pending upload session so it cannot strand a
+ * concurrent-upload slot. Never rejects: a failed abort (network blip, already
+ * gone) must not mask the original upload error. The hourly prune scheduler is
+ * the backstop for sessions this cannot reach (e.g. tab closed mid-upload).
+ *
+ * @param {{ abortUrl: string, apiJson: (url: string, method: string) => Promise<unknown> }} deps
+ * @returns {Promise<void>}
+ */
+export async function abortUploadSession({ abortUrl, apiJson }) {
+    if (!abortUrl) {
+        return;
+    }
+
+    try {
+        await apiJson(abortUrl, 'DELETE');
+    } catch {
+        // Swallowed on purpose.
+    }
+}
+
+/**
+ * Detect a storage auth/expiry failure worth a re-sign retry (403 / SignatureDoesNotMatch / expired).
+ * putPart throws `Storage PUT failed with status <n>`.
+ */
+export function isAuthExpired(error) {
+    const message = error && error.message ? error.message : '';
+    return /status 403|SignatureDoesNotMatch|expired|Request has expired/i.test(message);
+}
 
 export function initDirectUpload(root) {
     if (!root || root.dataset.directUploadBound === '1') {
@@ -22,12 +85,11 @@ export function initDirectUpload(root) {
         completeUrl: root.dataset.completeUrl,
         abortUrl: root.dataset.abortUrl,
         signPartsUrl: root.dataset.signPartsUrl,
-        folderId: root.dataset.folderId || null,
-        userId: root.dataset.userId || null,
-        workspaceId: root.dataset.workspaceId || null,
+        // folder/user/workspace are read live per upload via buildInitContext(root.dataset).
         reloadOnComplete: root.dataset.reloadOnComplete === '1',
         maxFiles: parseInt(root.dataset.maxFiles || '20', 10),
         maxConcurrent: Math.max(1, parseInt(root.dataset.maxConcurrent || '2', 10)),
+        maxConcurrentParts: Math.max(1, parseInt(root.dataset.maxConcurrentParts || '3', 10)),
         messages: JSON.parse(root.dataset.messages || '{}'),
     };
 
@@ -203,18 +265,9 @@ export function initDirectUpload(root) {
             name: file.name,
             mime: file.type || 'application/octet-stream',
             size: file.size,
+            // Live context: SPA nav mutates the dropzone data-* attrs; never freeze at init.
+            ...buildInitContext(root.dataset),
         };
-
-        if (config.folderId) {
-            initBody.folder_id = config.folderId;
-        }
-        if (config.workspaceId) {
-            initBody.workspace_id = config.workspaceId;
-        }
-
-        if (config.userId) {
-            initBody.user_id = config.userId;
-        }
 
         if (regionSelect && regionSelect.value) {
             initBody.disk = regionSelect.value;
@@ -226,95 +279,140 @@ export function initDirectUpload(root) {
         const uploadId = data.upload_id;
         const parts = [];
         const totalBytes = file.size;
-        let baseBytes = 0;
-        const startedAt = performance.now();
+        // Aggregate progress across parallel parts: per-part loaded bytes keyed by part
+        // number, so re-PUTs / out-of-order completion never double-count.
+        const tracker = createPartProgressTracker();
+        const sampler = createRateSampler(5000);
 
-        function reportProgress(loadedInPart) {
-            const uploaded = baseBytes + loadedInPart;
-            const elapsedMs = performance.now() - startedAt;
+        function reportProgress() {
+            const uploaded = tracker.total();
             const percent = computeByteProgressPercent(uploaded, totalBytes);
-            const rate = computeTransferRate(uploaded, elapsedMs);
-            updateProgress(row, percent, rate);
+            sampler.add(uploaded);
+            updateProgress(row, percent, sampler.rate());
         }
 
-        if (data.strategy === 'single') {
-            const part = data.parts[0];
-            const etag = await putPart(
-                file,
-                part.url,
-                part.headers || {},
-                file.type || 'application/octet-stream',
-                function (event) {
-                    reportProgress(event.loaded);
-                },
-            );
-            parts.push({ part_number: 1, etag: etag, size: file.size });
-            baseBytes = file.size;
-            reportProgress(0);
-        } else {
-            const chunkSize = data.chunk_size;
-            const partCount = data.part_count;
-            let signedParts = data.parts || [];
-            const uploadedParts = new Map();
+        /**
+         * PUT one part, re-signing once on 403 (presigned URL expired mid-upload).
+         * Init presigns every part upfront with a fixed TTL, so a slow upload can outlive
+         * it — a stale URL must trigger a fresh sign + retry, not a silent hard-fail.
+         */
+        async function uploadOnePart(partNumber, chunkSize) {
+            const start = (partNumber - 1) * chunkSize;
+            const end = Math.min(start + chunkSize, file.size);
+            const chunk = file.slice(start, end);
 
-            for (let partNumber = 1; partNumber <= partCount; partNumber++) {
-                let signed = signedParts.find(function (p) {
+            async function sign() {
+                const refreshed = await apiJson(
+                    replaceToken(config.signPartsUrl, uploadId),
+                    'POST',
+                    { part_numbers: [partNumber] },
+                );
+                const signed = (refreshed.data.parts || []).find(function (p) {
                     return p.part_number === partNumber;
                 });
-
-                if (!signed) {
-                    const refreshed = await apiJson(
-                        replaceToken(config.signPartsUrl, uploadId),
-                        'POST',
-                        { part_numbers: [partNumber] },
-                    );
-                    signed = (refreshed.data.parts || [])[0];
-                }
-
                 if (!signed) {
                     throw new Error('Missing presigned URL for part ' + partNumber);
                 }
+                return signed;
+            }
 
-                const start = (partNumber - 1) * chunkSize;
-                const end = Math.min(start + chunkSize, file.size);
-                const chunk = file.slice(start, end);
+            // Use the init-provided URL when present; only hit sign-parts when missing/expired.
+            let signed = (data.parts || []).find(function (p) {
+                return p.part_number === partNumber;
+            }) || (await sign());
+
+            async function put() {
+                tracker.set(partNumber, 0);
                 const etag = await putPart(
                     chunk,
                     signed.url,
                     signed.headers || {},
                     undefined,
                     function (event) {
-                        reportProgress(event.loaded);
+                        tracker.set(partNumber, event.loaded);
+                        reportProgress();
                     },
                 );
-                uploadedParts.set(partNumber, { part_number: partNumber, etag: etag, size: chunk.size });
-                baseBytes += chunk.size;
-                reportProgress(0);
+                return etag;
             }
 
-            uploadedParts.forEach(function (value) {
-                parts.push(value);
-            });
+            let etag;
+            try {
+                etag = await put();
+            } catch (error) {
+                // 403 = presigned URL expired. Re-sign and retry this part once.
+                if (!isAuthExpired(error)) {
+                    throw error;
+                }
+                signed = await sign();
+                tracker.set(partNumber, 0);
+                etag = await put();
+            }
+
+            tracker.set(partNumber, chunk.size);
+            reportProgress();
+            return { part_number: partNumber, etag: etag, size: chunk.size };
         }
 
-        // Bytes are on storage; complete merges parts / promotes the file on Monolith.
-        setRowStatus(row, 'completing');
-        updateProgress(row, 100);
+        try {
+            if (data.strategy === 'single') {
+                const part = data.parts[0];
+                const etag = await putPart(
+                    file,
+                    part.url,
+                    part.headers || {},
+                    file.type || 'application/octet-stream',
+                    function (event) {
+                        tracker.set(1, event.loaded);
+                        reportProgress();
+                    },
+                );
+                parts.push({ part_number: 1, etag: etag, size: file.size });
+                tracker.set(1, file.size);
+                reportProgress();
+            } else {
+                const chunkSize = data.chunk_size;
+                const uploaded = await uploadPartsParallel({
+                    partCount: data.part_count,
+                    concurrency: config.maxConcurrentParts,
+                    uploadOne: async function (partNumber) {
+                        return uploadOnePart(partNumber, chunkSize);
+                    },
+                });
+                uploaded.forEach(function (p) {
+                    parts.push(p);
+                });
+            }
 
-        const completed = await apiJson(
-            replaceToken(config.completeUrl, uploadId),
-            'POST',
-            { parts: parts },
-        );
+            // Bytes are on storage; complete merges parts / promotes the file on Monolith.
+            setRowStatus(row, 'completing');
+            updateProgress(row, 100);
 
-        const label = completed.data?.file?.name || file.name;
-        markRowDone(row, label);
-        active.set(rowId, { file, state: 'done' });
+            const completed = await apiJson(
+                replaceToken(config.completeUrl, uploadId),
+                'POST',
+                { parts: parts },
+            );
 
-        // Per-file: optional optimistic row inject. Full soft-refresh runs once at batch end.
-        const hosted = completed.data?.file;
-        if (hosted && typeof window.fileHostingUpsertFile === 'function') {
-            window.fileHostingUpsertFile(hosted);
+            const label = completed.data?.file?.name || file.name;
+            markRowDone(row, label);
+            active.set(rowId, { file, state: 'done' });
+
+            // Per-file: optional optimistic row inject. Full soft-refresh runs once at batch end.
+            const hosted = completed.data?.file;
+            if (hosted && typeof window.fileHostingUpsertFile === 'function') {
+                window.fileHostingUpsertFile(hosted);
+            }
+        } catch (error) {
+            // Never strand a pending session: a leaked `pending` row holds a
+            // concurrent-upload slot until the 24h TTL / hourly prune, which blocks
+            // all future uploads once `max_concurrent_uploads` is reached. Abort now
+            // (best-effort; a failed abort must not mask the original error).
+            abortUploadSession({
+                abortUrl: replaceToken(config.abortUrl, uploadId),
+                apiJson: apiJson,
+            });
+            throw error;
         }
     }
 
@@ -615,6 +713,8 @@ export function initDirectUpload(root) {
     }
 }
 
-document.querySelectorAll('[data-direct-upload]').forEach(function (root) {
-    initDirectUpload(root);
-});
+if (typeof document !== 'undefined') {
+    document.querySelectorAll('[data-direct-upload]').forEach(function (root) {
+        initDirectUpload(root);
+    });
+}

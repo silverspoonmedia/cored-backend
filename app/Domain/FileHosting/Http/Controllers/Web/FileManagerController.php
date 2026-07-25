@@ -2,6 +2,10 @@
 
 namespace App\Domain\FileHosting\Http\Controllers\Web;
 
+use App\Domain\FileHosting\Exceptions\FileHostingException;
+use App\Domain\FileHosting\Models\FileHostingHashBlocklist;
+use App\Domain\FileHosting\Services\FileService;
+use App\Domain\FileHosting\Services\HashBlocklistService;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\JsonResponse;
@@ -335,31 +339,31 @@ class FileManagerController extends Controller
         ]);
     }
 
-    public function download(Request $request, string $file): RedirectResponse
+    public function download(Request $request, string $file, FileService $files): RedirectResponse
     {
-        $query = array_filter([
-            'user_id' => $request->query('user_id'),
-        ], fn ($v) => $v !== null && $v !== '');
-
-        $response = $this->api()->get('file-hosting/files/'.$file.'/download', $query);
-
-        if (! $response->successful()) {
+        try {
+            $payload = $files->download(
+                $request->user(),
+                $file,
+                $request->query('user_id'),
+                $request->query('workspace_id'),
+            );
+        } catch (FileHostingException $e) {
             return redirect()
                 ->route('file-hosting.files.show', array_filter([
                     'file' => $file,
                     'user_id' => $request->query('user_id'),
-                ]))
-                ->with('error', $this->apiMessage($response));
+                ], fn ($v) => $v !== null && $v !== ''))
+                ->with('error', $e->getMessage());
         }
 
-        $url = $response->json('data.url');
-
+        $url = $payload['url'] ?? '';
         if (! is_string($url) || $url === '') {
             return redirect()
                 ->route('file-hosting.files.show', array_filter([
                     'file' => $file,
                     'user_id' => $request->query('user_id'),
-                ]))
+                ], fn ($v) => $v !== null && $v !== ''))
                 ->with('error', __('api/file-hosting.download_unavailable'));
         }
 
@@ -589,5 +593,44 @@ class FileManagerController extends Controller
         $response = $this->api()->delete('file-hosting/uploads/'.$upload);
 
         return response()->json($response->json(), $response->status());
+    }
+
+    /**
+     * DMCA hash blocklist admin page (list + add + remove).
+     */
+    public function blocklist(): View
+    {
+        $entries = FileHostingHashBlocklist::query()
+            ->latest('created_at')
+            ->get();
+
+        return $this->webView('file-hosting.blocklist', [
+            'entries' => $entries,
+        ]);
+    }
+
+    public function storeBlocklistEntry(Request $request, HashBlocklistService $blocklist): RedirectResponse
+    {
+        $validated = $request->validate([
+            'sha256' => ['required', 'string', 'size:64', 'regex:/^[0-9a-f]{64}$/'],
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $blocklist->block($validated['sha256'], $validated['reason'] ?? null, $request->user()?->id);
+
+        return redirect()->route('file-hosting.blocklist.index')
+            ->with('success', __('api/file-hosting.blocklist_saved'));
+    }
+
+    public function destroyBlocklistEntry(string $entry, HashBlocklistService $blocklist): RedirectResponse
+    {
+        $record = FileHostingHashBlocklist::query()->find($entry);
+
+        if ($record !== null) {
+            $blocklist->unblock($record->sha256);
+        }
+
+        return redirect()->route('file-hosting.blocklist.index')
+            ->with('success', __('api/file-hosting.blocklist_removed'));
     }
 }

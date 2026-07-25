@@ -2,6 +2,7 @@
 
 namespace Tests\Fakes;
 
+use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\AccessService;
@@ -12,15 +13,16 @@ use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\UniqueDisplayNameAllocator;
 use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
+use App\Support\Storage\S3DirectUploadEngine;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
  * Test double for File Hosting direct uploads on a faked disk (no real S3).
  */
 class FakeFileHostingDirectUploadService extends DirectUploadService
-{
-    public function initiate(
+{    public function initiate(
         User $actor,
         string $name,
         string $mime,
@@ -73,6 +75,8 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             'original_name' => $name,
             'mime' => $mime,
             'size' => $size,
+            'chunk_size' => $strategy === FileUpload::STRATEGY_MULTIPART ? $chunkSize : $size,
+            'part_count' => $partCount,
             'status' => FileUpload::STATUS_PENDING,
             'parts' => [],
             'expires_at' => Carbon::now()->addDay(),
@@ -99,28 +103,28 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
 
     public function complete(User $actor, string $uploadUuid, ?array $parts = null): array
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($actor, $uploadUuid, $parts): array {
+        return DB::transaction(function () use ($actor, $uploadUuid, $parts): array {
             $upload = FileUpload::query()
                 ->whereKey($uploadUuid)
                 ->lockForUpdate()
                 ->firstOrFail();
 
             if ($upload->status === FileUpload::STATUS_COMPLETED) {
-                throw new \App\Domain\FileHosting\Exceptions\FileHostingException(
+                throw new FileHostingException(
                     __('api/file-hosting.upload.already_promoted'),
                     422,
                 );
             }
 
             if ($upload->status !== FileUpload::STATUS_PENDING) {
-                throw new \App\Domain\FileHosting\Exceptions\FileHostingException(
+                throw new FileHostingException(
                     __('api/file-hosting.upload.not_pending'),
                     422,
                 );
             }
 
             if ($upload->isExpired()) {
-                throw new \App\Domain\FileHosting\Exceptions\FileHostingException(
+                throw new FileHostingException(
                     __('api/file-hosting.upload.expired'),
                     422,
                 );
@@ -175,8 +179,13 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             return;
         }
 
-        $objectKey = app(ObjectKeyResolver::class)->objectKey($upload->user_id, $upload->path);
-        Storage::disk($upload->disk)->delete($objectKey);
+        // Mirror the real service: a single-PUT object is preserved on abort (no
+        // dangling multipart); only multipart sessions have S3 state to clean up.
+        if ($upload->strategy === FileUpload::STRATEGY_MULTIPART) {
+            $objectKey = app(ObjectKeyResolver::class)->objectKey($upload->user_id, $upload->path);
+            Storage::disk($upload->disk)->delete($objectKey);
+        }
+
         $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
     }
 
@@ -194,7 +203,6 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
                 ? (int) config('file-hosting.chunk_size_bytes')
                 : $upload->size,
             'part_count' => $partCount,
-            'recorded_parts' => $upload->recordedParts(),
             'parts' => [[
                 'part_number' => 1,
                 'url' => 'https://fake-storage.test/put/'.$upload->id.'/1',
@@ -223,8 +231,12 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             return;
         }
 
-        $objectKey = app(ObjectKeyResolver::class)->objectKey($upload->user_id, $upload->path);
-        Storage::disk($upload->disk)->delete($objectKey);
+        // Mirror the real service: preserve a single-PUT object on abort.
+        if ($upload->strategy === FileUpload::STRATEGY_MULTIPART) {
+            $objectKey = app(ObjectKeyResolver::class)->objectKey($upload->user_id, $upload->path);
+            Storage::disk($upload->disk)->delete($objectKey);
+        }
+
         $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
     }
 }

@@ -4,16 +4,9 @@ namespace Tests\Domain\FileHosting\Qualification;
 
 use App\Domain\FileHosting\Enums\WorkspaceRole;
 use App\Domain\FileHosting\Models\FileUpload;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Services\DirectUploadService;
-use App\Domain\FileHosting\Services\FileService;
-use App\Domain\FileHosting\Services\FolderService;
 use App\Domain\FileHosting\Services\QuotaService;
 use App\Domain\FileHosting\Services\WorkspaceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\Domain\FileHosting\Qualification\Concerns\QualificationHarness;
 use Tests\TestCase;
@@ -33,7 +26,7 @@ class FileHostingQualificationNormalTest extends TestCase
         ]);
     }
 
-    public function test_FH_N01_multipart_init_sign_complete(): void
+    public function test_f_h_n01_multipart_init_sign_complete(): void
     {
         $user = $this->userWithRole('User');
         $size = 250;
@@ -70,7 +63,7 @@ class FileHostingQualificationNormalTest extends TestCase
         $this->assertSame(FileUpload::STATUS_COMPLETED, FileUpload::query()->find($init['upload_id'])->status);
     }
 
-    public function test_FH_N02_display_name_auto_rename_on_complete(): void
+    public function test_f_h_n02_display_name_auto_rename_on_complete(): void
     {
         $user = $this->userWithRole('User');
         $this->seedFile($user, 'report.pdf');
@@ -80,7 +73,7 @@ class FileHostingQualificationNormalTest extends TestCase
         $this->assertMatchesRegularExpression('/^[a-z0-9]{40}$/', $result['file']['path']);
     }
 
-    public function test_FH_N03_manual_rename_collision_reject(): void
+    public function test_f_h_n03_manual_rename_collision_reject(): void
     {
         $user = $this->userWithRole('User');
         $a = $this->seedFile($user, 'A.pdf');
@@ -94,7 +87,7 @@ class FileHostingQualificationNormalTest extends TestCase
         $this->assertSame('A.pdf', $a->fresh()->name);
     }
 
-    public function test_FH_N04_visibility_anyone_with_link_public_show(): void
+    public function test_f_h_n04_visibility_anyone_with_link_public_show(): void
     {
         $user = $this->userWithRole('User');
         $this->grantPaidMain($user);
@@ -116,7 +109,7 @@ class FileHostingQualificationNormalTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_FH_N05_folder_link_inherit_private_child(): void
+    public function test_f_h_n05_folder_link_inherit_private_child(): void
     {
         $user = $this->userWithRole('User');
         $this->grantPaidMain($user);
@@ -141,7 +134,7 @@ class FileHostingQualificationNormalTest extends TestCase
             ->assertOk();
     }
 
-    public function test_FH_N06_paid_create_workspace_under_base_slots(): void
+    public function test_f_h_n06_paid_create_workspace_under_base_slots(): void
     {
         $owner = $this->userWithRole('User');
         $this->grantPaidMain($owner);
@@ -157,7 +150,7 @@ class FileHostingQualificationNormalTest extends TestCase
         $this->assertGreaterThanOrEqual(10, $usage['owned_workspace_limit']);
     }
 
-    public function test_FH_N07_invite_editor_and_accept(): void
+    public function test_f_h_n07_invite_editor_and_accept(): void
     {
         $owner = $this->userWithRole('User', 'owner-n07@example.com');
         $editor = $this->userWithRole('User', 'editor-n07@example.com');
@@ -178,7 +171,7 @@ class FileHostingQualificationNormalTest extends TestCase
         $this->assertContains($ws->id, $ids);
     }
 
-    public function test_FH_N08_viewer_cannot_mutate(): void
+    public function test_f_h_n08_viewer_cannot_mutate(): void
     {
         $owner = $this->userWithRole('User', 'owner-n08@example.com');
         $viewer = $this->userWithRole('User', 'viewer-n08@example.com');
@@ -196,7 +189,7 @@ class FileHostingQualificationNormalTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_FH_N09_admin_can_manage_members(): void
+    public function test_f_h_n09_admin_can_manage_members(): void
     {
         $owner = $this->userWithRole('User', 'owner-n09@example.com');
         $admin = $this->userWithRole('User', 'admin-n09@example.com');
@@ -224,7 +217,7 @@ class FileHostingQualificationNormalTest extends TestCase
             ->assertOk();
     }
 
-    public function test_FH_N10_archive_frees_slot_create_inserts_new_row(): void
+    public function test_f_h_n10_archive_frees_slot_create_inserts_new_row(): void
     {
         $owner = $this->userWithRole('User');
         $this->grantPaidMain($owner);

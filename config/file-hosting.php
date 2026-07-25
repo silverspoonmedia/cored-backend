@@ -1,5 +1,7 @@
 <?php
 
+use App\Domain\Service\Support\FileHostingCatalog;
+
 return [
 
     /*
@@ -64,9 +66,51 @@ return [
 
     'max_concurrent_uploads' => (int) env('FILE_HOSTING_MAX_CONCURRENT', 2),
 
-    'presign_ttl_minutes' => (int) env('FILE_HOSTING_PRESIGN_TTL', 15),
+    /*
+    |--------------------------------------------------------------------------
+    | Concurrent part uploads within a single file (parallel XHR streams).
+    | A strictly sequential single-stream upload collapses to per-connection
+    | throughput on long files (the 20→10→1 MB/s decay); 3 parallel parts is the
+    | sweet spot vs B2 + CF Worker Free limits. Lower to 2 if 520s increase.
+    |--------------------------------------------------------------------------
+    */
+    'max_concurrent_parts' => (int) env('FILE_HOSTING_MAX_CONCURRENT_PARTS', 3),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Presigned part-URL TTL (minutes). Init signs every part upfront, so a slow
+    | upload can outlive a short TTL and hard-fail late parts with 403. 60 min
+    | (SigV4 presign allows up to 7 days) + client re-sign-on-403 covers long
+    | uploads. Was 15 — too short for multi-GB files at degraded speeds.
+    |--------------------------------------------------------------------------
+    */
+    'presign_ttl_minutes' => (int) env('FILE_HOSTING_PRESIGN_TTL', 60),
 
     'session_ttl_hours' => (int) env('FILE_HOSTING_SESSION_TTL', 24),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Extra grace (hours) after a pending upload session expires before the
+    | scheduler (`file-hosting:prune-stale-uploads`) aborts it and reclaims the
+    | orphaned multipart storage. Providers like Backblaze offer no S3 lifecycle
+    | for incomplete multiparts, so this is the cleanup path. Keep >= a bit so a
+    | just-expired session with parts still landing is not yanked mid-transfer.
+    |--------------------------------------------------------------------------
+    */
+    'stale_upload_grace_hours' => (int) env('FILE_HOSTING_STALE_UPLOAD_GRACE', 6),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Orphan-by-inactivity window (minutes). A pending multipart session with no
+    | NEW part on S3 (ListParts LastModified) for this long is aborted even if its
+    | 24h TTL has not elapsed — catches cancel/tab-close-right-after-init that
+    | would otherwise hold a max_concurrent_uploads slot until expiry. Decision is
+    | made on S3 truth, not DB updated_at: even the slowest live connection keeps
+    | landing parts, so this window can be generous (default 3h). Resume is gone,
+    | so a mistakenly-pruned live upload simply restarts on the next attempt.
+    |--------------------------------------------------------------------------
+    */
+    'orphan_inactivity_minutes' => (int) env('FILE_HOSTING_ORPHAN_INACTIVITY_MINUTES', 180),
 
     'max_presigned_parts_per_response' => (int) env('FILE_HOSTING_MAX_PRESIGNED_PARTS', 100),
 
@@ -85,7 +129,7 @@ return [
     */
     'base_owned_workspace_slots' => (int) env(
         'FILE_HOSTING_BASE_OWNED_WORKSPACE_SLOTS',
-        \App\Domain\Service\Support\FileHostingCatalog::BASE_OWNED_WORKSPACE_SLOTS,
+        FileHostingCatalog::BASE_OWNED_WORKSPACE_SLOTS,
     ),
 
     /*
@@ -98,7 +142,16 @@ return [
         explode(',', (string) env('FILE_HOSTING_ALLOWED_MIME_PREFIXES', 'image/,application/,text/,audio/,video/')),
     ))),
 
-    'signed_download_ttl_minutes' => (int) env('FILE_HOSTING_SIGNED_DOWNLOAD_TTL', 15),
+    /*
+    |--------------------------------------------------------------------------
+    | Signed download URL TTL. Cached per file row; a repeat download within
+    | this window reuses the cached URL instead of reminting (HMAC or S3
+    | presign). 60 minutes aligns with the upload presign TTL and cuts remints
+    | for repeat downloads. Longer TTL = fewer mint writes, slightly longer
+    | link validity.
+    |--------------------------------------------------------------------------
+    */
+    'signed_download_ttl_minutes' => (int) env('FILE_HOSTING_SIGNED_DOWNLOAD_TTL', 60),
 
     /*
     |--------------------------------------------------------------------------
@@ -117,11 +170,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Optional Cloudflare Worker upload proxy (hybrid mode).
-    | Empty base_url → browser-direct S3 presign (legacy path).
-    | When base_url + token + disk alias are set, Monolith returns Worker
-    | URLs for PUT/UploadPart only; create/complete/abort stay on the server SDK.
+    | Optional Cloudflare Worker byte proxy (hybrid upload + download).
+    | Empty base_url → browser-direct S3 (legacy path for parts + downloads).
+    | When base_url + token + disk alias are set:
+    |   - Upload: Worker URLs for PUT/UploadPart; create/complete/abort stay SDK.
+    |   - Download: HMAC Worker GetObject URLs (Bandwidth Alliance for B2);
+    |     cached in signed_download_url instead of a direct S3 temporary URL.
     | Alias values must match Worker S3_TARGETS.targets keys.
+    | Token is upload Bearer + download HMAC secret (never put raw token in query).
     |
     | FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM is a legacy fallback for CE.
     |--------------------------------------------------------------------------

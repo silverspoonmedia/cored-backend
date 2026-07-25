@@ -111,6 +111,100 @@ class S3DirectUploadEngine
     }
 
     /**
+     * List the parts S3 has actually received for an in-flight multipart upload.
+     *
+     * S3 is the source of truth for which parts truly landed (etag + size +
+     * last_modified). The orphan prune scheduler uses `last_modified` to decide
+     * whether a session still receives multipart data.
+     *
+     * @return list<array{part_number: int, etag: string, size: int, last_modified: string|null}>
+     *
+     * @throws S3DirectUploadException
+     */
+    public function listParts(string $diskName, string $path, string $s3UploadId): array
+    {
+        try {
+            $client = $this->s3Client($diskName);
+            $bucket = $this->bucket($diskName);
+            $parts = [];
+            $marker = 0;
+
+            do {
+                $result = $client->listParts([
+                    'Bucket' => $bucket,
+                    'Key' => $path,
+                    'UploadId' => $s3UploadId,
+                    'PartNumberMarker' => $marker,
+                ]);
+
+                foreach ($result['Parts'] ?? [] as $part) {
+                    $partNumber = (int) ($part['PartNumber'] ?? 0);
+
+                    if ($partNumber < 1) {
+                        continue;
+                    }
+
+                    $parts[] = [
+                        'part_number' => $partNumber,
+                        'etag' => trim((string) ($part['ETag'] ?? ''), '"'),
+                        'size' => (int) ($part['Size'] ?? 0),
+                        'last_modified' => $this->isoDate($part['LastModified'] ?? null),
+                    ];
+                }
+
+                $marker = (int) ($result['NextPartNumberMarker'] ?? 0);
+            } while (($result['IsTruncated'] ?? false) === true && $marker > 0);
+
+            return $parts;
+        } catch (Throwable $e) {
+            throw $this->wrapUpstream($e);
+        }
+    }
+
+    /**
+     * Latest part LastModified for an upload, or null when no part has landed.
+     * Used by orphan cleanup: "no new multipart data in X hours" = latest < cutoff.
+     *
+     * @throws S3DirectUploadException
+     */
+    public function latestPartModifiedAt(string $diskName, string $path, string $s3UploadId): ?Carbon
+    {
+        $latest = null;
+
+        foreach ($this->listParts($diskName, $path, $s3UploadId) as $part) {
+            $ts = $part['last_modified'] ?? null;
+
+            if ($ts === null) {
+                continue;
+            }
+
+            $at = Carbon::parse($ts);
+
+            if ($latest === null || $at->greaterThan($latest)) {
+                $latest = $at;
+            }
+        }
+
+        return $latest;
+    }
+
+    /**
+     * Normalize an AWS DateTime-ish value to ISO-8601 (null when absent/unparseable).
+     */
+    private function isoDate(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->toIso8601String();
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * @param  list<array{part_number: int, etag: string, size?: int}>  $parts
      *
      * @throws S3DirectUploadException
@@ -334,24 +428,6 @@ class S3DirectUploadEngine
             static fn (string $segment): string => rawurlencode($segment),
             explode('/', $trimmed),
         ));
-    }
-
-    /**
-     * @param  list<array{part_number: int, etag?: string, size?: int}>  $recordedParts
-     * @return list<int>
-     */
-    public function missingPartNumbers(array $recordedParts, int $partCount, int $maxPartsPerResponse): array
-    {
-        $recorded = array_column($recordedParts, 'part_number');
-        $missing = [];
-
-        for ($part = 1; $part <= $partCount; $part++) {
-            if (! in_array($part, $recorded, true)) {
-                $missing[] = $part;
-            }
-        }
-
-        return array_slice($missing, 0, max(0, $maxPartsPerResponse));
     }
 
     /**

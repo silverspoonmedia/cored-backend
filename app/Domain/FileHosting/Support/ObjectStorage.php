@@ -12,6 +12,16 @@ class ObjectStorage
     }
 
     /**
+     * Read stream for an object (caller must close).
+     *
+     * @return resource
+     */
+    public function readStream(string $path, string $disk)
+    {
+        return Storage::disk($disk)->readStream($path);
+    }
+
+    /**
      * @param  iterable<array{path?: string|null, disk?: string|null}>  $objects
      */
     public function deleteMany(iterable $objects): void

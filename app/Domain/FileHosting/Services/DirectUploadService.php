@@ -3,6 +3,7 @@
 namespace App\Domain\FileHosting\Services;
 
 use App\Domain\FileHosting\Exceptions\FileHostingException;
+use App\Domain\FileHosting\Jobs\ComputeHostedFileChecksum;
 use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Models\Workspace;
@@ -67,7 +68,6 @@ class DirectUploadService
         }
 
         $this->assertUploadAllowed($name, $mime, $size);
-        // Cap concurrent pending sessions against storage owner (same row as quota).
         $this->assertUnderConcurrentUploadLimit($ownerId);
         // Display-name collisions are resolved at complete (auto "name (N).ext"), not rejected here.
         // S3 object keys stay unique via random object id regardless of display name.
@@ -105,6 +105,9 @@ class DirectUploadService
             'original_name' => $name,
             'mime' => $mime,
             'size' => $size,
+            // Freeze chunk layout so a later config change never breaks part math.
+            'chunk_size' => $strategy === S3DirectUploadEngine::STRATEGY_MULTIPART ? $chunkSize : $size,
+            'part_count' => $partCount,
             'status' => FileUpload::STATUS_PENDING,
             'parts' => [],
             'expires_at' => $expiresAt,
@@ -112,11 +115,7 @@ class DirectUploadService
 
         $initialParts = $this->presignParts(
             $upload,
-            $this->engine->missingPartNumbers(
-                $upload->recordedParts(),
-                $partCount,
-                (int) config('file-hosting.max_presigned_parts_per_response'),
-            ),
+            range(1, $partCount),
         );
 
         $this->realtime->quotaChanged($ownerId);
@@ -136,7 +135,6 @@ class DirectUploadService
      *     strategy: string,
      *     chunk_size: int,
      *     part_count: int,
-     *     recorded_parts: list<array{part_number: int, etag: string, size: int}>,
      *     parts: list<array{part_number: int, url: string, headers?: array<string, list<string>>}>
      * }
      */
@@ -148,18 +146,11 @@ class DirectUploadService
         return [
             'upload' => $upload,
             'strategy' => $upload->strategy,
-            'chunk_size' => $upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART
-                ? (int) config('file-hosting.chunk_size_bytes')
-                : $upload->size,
+            'chunk_size' => $this->resolveChunkSize($upload),
             'part_count' => $partCount,
-            'recorded_parts' => $upload->recordedParts(),
             'parts' => $this->presignParts(
                 $upload,
-                $this->engine->missingPartNumbers(
-                    $upload->recordedParts(),
-                    $partCount,
-                    (int) config('file-hosting.max_presigned_parts_per_response'),
-                ),
+                range(1, $partCount),
             ),
         ];
     }
@@ -299,6 +290,11 @@ class DirectUploadService
         $this->realtime->fileListing('create', $result['file'], $actor);
         $this->realtime->quotaChanged((string) $result['file']->user_id);
 
+        // Checksum (sha256) computed in the background, post-upload: keeps the
+        // request path light and never blocks complete. Drives dedup + DMCA
+        // hash blocklist. Idempotent — safe if re-dispatched.
+        ComputeHostedFileChecksum::dispatch((string) $result['file']->id);
+
         return $result;
     }
 
@@ -328,9 +324,10 @@ class DirectUploadService
             } catch (S3DirectUploadException $e) {
                 throw $this->mapEngineException($e);
             }
-        } elseif ($this->storage->pathExists($objectKey, $upload->disk)) {
-            $this->storage->deleteMany([['path' => $objectKey, 'disk' => $upload->disk]]);
         }
+        // Single-PUT: leave the object in place. A single upload has no dangling
+        // multipart on S3, and a late complete() may still promote it (the prune
+        // scheduler can abort a slow single PUT while the client is mid-flight).
 
         $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
         $this->realtime->quotaChanged((string) $upload->user_id);
@@ -418,9 +415,9 @@ class DirectUploadService
             } catch (S3DirectUploadException) {
                 // Best-effort: still mark aborted so complete cannot promote.
             }
-        } elseif ($this->storage->pathExists($objectKey, $upload->disk)) {
-            $this->storage->deleteMany([['path' => $objectKey, 'disk' => $upload->disk]]);
         }
+        // Single-PUT: preserve the object (no dangling multipart); the scheduler
+        // may abort a slow single PUT that is still legitimately in flight.
 
         $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
     }
@@ -511,11 +508,30 @@ class DirectUploadService
 
     private function expectedPartCount(FileUpload $upload): int
     {
+        // Prefer the count frozen at init; recompute only for legacy rows.
+        if ($upload->part_count !== null && $upload->part_count > 0) {
+            return (int) $upload->part_count;
+        }
+
         return $this->engine->expectedPartCount(
             $upload->strategy,
             $upload->size,
-            (int) config('file-hosting.chunk_size_bytes'),
+            $this->resolveChunkSize($upload),
         );
+    }
+
+    /**
+     * Chunk size frozen at init (survives config drift); config fallback for legacy rows.
+     */
+    private function resolveChunkSize(FileUpload $upload): int
+    {
+        if ($upload->chunk_size !== null && $upload->chunk_size > 0) {
+            return (int) $upload->chunk_size;
+        }
+
+        return $upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART
+            ? (int) config('file-hosting.chunk_size_bytes')
+            : $upload->size;
     }
 
     /**

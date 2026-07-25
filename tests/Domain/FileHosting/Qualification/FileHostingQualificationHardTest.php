@@ -31,7 +31,7 @@ class FileHostingQualificationHardTest extends TestCase
         ]);
     }
 
-    public function test_FH_H01_staff_view_any_hierarchy_allow_deny(): void
+    public function test_f_h_h01_staff_view_any_hierarchy_allow_deny(): void
     {
         $admin = $this->userWithRole('Admin', 'admin-h01@example.com');
         $user = $this->userWithRole('User', 'user-h01@example.com');
@@ -48,7 +48,7 @@ class FileHostingQualificationHardTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_FH_H02_staff_manage_any_mutate_gate(): void
+    public function test_f_h_h02_staff_manage_any_mutate_gate(): void
     {
         $admin = $this->userWithRole('Admin', 'admin-h02@example.com');
         $user = $this->userWithRole('User', 'user-h02@example.com');
@@ -74,7 +74,7 @@ class FileHostingQualificationHardTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_FH_H03_peer_isolation_personal_tree(): void
+    public function test_f_h_h03_peer_isolation_personal_tree(): void
     {
         $alice = $this->userWithRole('User', 'alice-h03@example.com');
         $bob = $this->userWithRole('User', 'bob-h03@example.com');
@@ -85,7 +85,7 @@ class FileHostingQualificationHardTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_FH_H04_public_unsigned_web_download_403(): void
+    public function test_f_h_h04_public_unsigned_web_download_403(): void
     {
         $user = $this->userWithRole('User');
         $this->grantPaidMain($user);
@@ -95,7 +95,7 @@ class FileHostingQualificationHardTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_FH_H05_signed_hop_after_revoke_share(): void
+    public function test_f_h_h05_signed_hop_after_revoke_share(): void
     {
         $user = $this->userWithRole('User');
         $this->grantPaidMain($user);
@@ -120,7 +120,7 @@ class FileHostingQualificationHardTest extends TestCase
         $this->assertContains($status, [403, 404]);
     }
 
-    public function test_FH_H06_grace_blocks_upload_and_collab_create(): void
+    public function test_f_h_h06_grace_blocks_upload_and_collab_create(): void
     {
         $user = $this->userWithRole('User');
         $this->grantGraceMain($user);
@@ -138,7 +138,7 @@ class FileHostingQualificationHardTest extends TestCase
             ->assertStatus(422);
     }
 
-    public function test_FH_H07_slot_limit_422_at_cap(): void
+    public function test_f_h_h07_slot_limit_422_at_cap(): void
     {
         $owner = $this->userWithRole('User');
         $this->grantPaidMain($owner);
@@ -154,7 +154,7 @@ class FileHostingQualificationHardTest extends TestCase
             ->assertSee('2', false);
     }
 
-    public function test_FH_H08_workspace_slot_addon_plus_one_without_storage(): void
+    public function test_f_h_h08_workspace_slot_addon_plus_one_without_storage(): void
     {
         $owner = $this->userWithRole('User');
         $this->grantPaidMain($owner);
@@ -168,7 +168,7 @@ class FileHostingQualificationHardTest extends TestCase
         $this->assertSame(3, $usage['owned_workspace_limit']);
     }
 
-    public function test_FH_H09_grace_expire_purge_oldest_first(): void
+    public function test_f_h_h09_grace_expire_purge_oldest_first(): void
     {
         $gib = 1024 * 1024 * 1024;
         config(['file-hosting.default_quota_bytes' => 5 * $gib]);
@@ -217,7 +217,7 @@ class FileHostingQualificationHardTest extends TestCase
         $this->assertNull(HostedFile::query()->find($c->id));
     }
 
-    public function test_FH_H10_owner_only_archive_admin_cannot(): void
+    public function test_f_h_h10_owner_only_archive_admin_cannot(): void
     {
         $owner = $this->userWithRole('User', 'owner-h10@example.com');
         $admin = $this->userWithRole('User', 'admin-h10@example.com');

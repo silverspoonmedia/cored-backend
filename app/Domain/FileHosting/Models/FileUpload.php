@@ -36,6 +36,8 @@ class FileUpload extends Model
         'original_name',
         'mime',
         'size',
+        'chunk_size',
+        'part_count',
         'status',
         'parts',
         'promoted_file_id',
@@ -50,6 +52,8 @@ class FileUpload extends Model
     {
         return [
             'size' => 'integer',
+            'chunk_size' => 'integer',
+            'part_count' => 'integer',
             'parts' => 'array',
             'expires_at' => 'datetime',
             'completed_at' => 'datetime',

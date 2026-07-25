@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     computeByteProgressPercent,
     computeTransferRate,
+    createRateSampler,
     formatTransferRate,
 } from './upload-progress.js';
 
@@ -61,5 +62,49 @@ describe('computeByteProgressPercent', () => {
     it('rounds mid-progress', () => {
         expect(computeByteProgressPercent(42, 100)).toBe(42);
         expect(computeByteProgressPercent(1, 3)).toBe(33);
+    });
+});
+
+describe('createRateSampler', () => {
+    it('returns 0 with fewer than 2 samples', () => {
+        const sampler = createRateSampler(5000);
+        expect(sampler.rate()).toBe(0);
+        sampler.add(1000, 1000);
+        expect(sampler.rate()).toBe(0);
+    });
+
+    it('computes instantaneous rate across the window', () => {
+        const sampler = createRateSampler(5000);
+        sampler.add(0, 0);
+        sampler.add(5_000_000, 1000);
+        // 5 MB in 1s.
+        expect(sampler.rate(1000)).toBe(5_000_000);
+    });
+
+    it('drops samples older than the window (recovers after a stall)', () => {
+        const sampler = createRateSampler(5000);
+        // Fast start.
+        sampler.add(0, 0);
+        sampler.add(10_000_000, 1000);
+        expect(sampler.rate(1000)).toBe(10_000_000);
+
+        // Long stall: no new bytes for >window. Old fast sample falls out.
+        sampler.add(10_000_000, 10_000);
+        // Only the stalled sample (and nothing before it) is in-window now,
+        // but we still have the boundary sample at t=10000 only -> 0 (need 2).
+        // Add a fresh sample 1s later with new bytes -> recovers to current rate.
+        sampler.add(11_000_000, 11_000);
+        expect(sampler.rate(11_000)).toBe(1_000_000);
+    });
+
+    it('is not dragged down by earlier slow history', () => {
+        const sampler = createRateSampler(5000);
+        sampler.add(0, 0);
+        sampler.add(1_000_000, 1000); // slow 1 MB/s start
+        // Speed jumps later; window only keeps recent samples.
+        sampler.add(21_000_000, 4000);
+        // Window covers t in (4000-5000..4000) -> all three still in window here.
+        // Rate = (21MB - 0) / 4s across whole window.
+        expect(sampler.rate(4000)).toBe(5_250_000);
     });
 });

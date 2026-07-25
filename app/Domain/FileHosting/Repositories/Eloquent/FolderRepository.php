@@ -10,6 +10,7 @@ use App\Domain\FileHosting\Support\FolderAncestorChain;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\ObjectStorage;
 use App\Domain\FileHosting\Support\UniqueDisplayNameAllocator;
+use App\Support\Product\Services\ProductAnalyticsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -173,7 +174,7 @@ class FolderRepository implements FolderRepositoryInterface
                 ->where('folder_id', $folder->id)
                 ->get();
 
-            $analytics = app(\App\Support\Product\Services\ProductAnalyticsService::class);
+            $analytics = app(ProductAnalyticsService::class);
             $analytics->increment('FileHosting', $folder->user_id, 'file_count', $restoredActive->count());
             $analytics->increment('FileHosting', $folder->user_id, 'storage_used_bytes', (int) $restoredActive->sum('size'));
 

@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Domain\FileHosting\Console\Commands;
+
+use App\Domain\FileHosting\Services\HashBlocklistService;
+use Illuminate\Console\Command;
+
+/**
+ * Add/remove a sha256 from the DMCA hash blocklist.
+ *
+ * Blocked files can never be publicly shared (enabling anyone_with_link is
+ * rejected and guest public access returns 404). Checksums are computed
+ * post-upload by the ComputeHostedFileChecksum job.
+ */
+class BlocklistHash extends Command
+{
+    protected $signature = 'file-hosting:blocklist-hash {sha256 : sha256 hex of the file} {--reason= : Why it is blocked (DMCA ref, etc.)} {--remove : Remove from the blocklist}';
+
+    protected $description = 'Add or remove a sha256 from the File Hosting DMCA hash blocklist';
+
+    public function handle(HashBlocklistService $blocklist): int
+    {
+        $sha256 = strtolower(trim((string) $this->argument('sha256')));
+
+        if (! preg_match('/^[0-9a-f]{64}$/', $sha256)) {
+            $this->error('Invalid sha256: expected 64 lowercase hex chars.');
+
+            return self::FAILURE;
+        }
+
+        if ($this->option('remove')) {
+            $removed = $blocklist->unblock($sha256);
+            $this->info($removed
+                ? "Removed {$sha256} from the hash blocklist."
+                : "No blocklist entry for {$sha256}.");
+
+            return self::SUCCESS;
+        }
+
+        $blocklist->block($sha256, $this->option('reason') ?: null);
+        $this->info("Blocked {$sha256}.");
+
+        return self::SUCCESS;
+    }
+}

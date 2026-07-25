@@ -87,7 +87,7 @@ class FileController extends Controller
 
     public function publicDownload(string $file): JsonResponse
     {
-        $payload = $this->files->publicDownload($file);
+        $payload = $this->files->publicDownload($file, request()->boolean('preview'));
 
         return $this->successResponse(
             $payload,
@@ -159,6 +159,7 @@ class FileController extends Controller
             $file,
             $request->query('user_id'),
             $request->query('workspace_id'),
+            $request->boolean('preview'),
         );
 
         return $this->successResponse(

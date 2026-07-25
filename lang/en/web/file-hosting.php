@@ -2,6 +2,18 @@
 
 return [
     'title' => 'File hosting',
+    'blocklist_title' => 'Hash blocklist (DMCA)',
+    'blocklist_add' => 'Block hash',
+    'blocklist_sha256' => 'sha256',
+    'blocklist_sha256_placeholder' => '64-char hex',
+    'blocklist_reason' => 'Reason',
+    'blocklist_reason_placeholder' => 'DMCA reference, etc.',
+    'blocklist_entries' => 'Blocked hashes',
+    'blocklist_added' => 'Added',
+    'blocklist_actions' => 'Actions',
+    'blocklist_remove' => 'Remove',
+    'blocklist_confirm_remove' => 'Remove this hash from the blocklist?',
+    'blocklist_empty' => 'No blocked hashes.',
     'list_title' => 'My files',
     'show_title' => 'File details',
     'trash' => 'Trash',

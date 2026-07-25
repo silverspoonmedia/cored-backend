@@ -4,10 +4,7 @@ namespace Tests\Domain\FileHosting\Unit\Services;
 
 use App\Domain\FileHosting\Enums\WorkspaceRole;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Services\DirectUploadService;
-use App\Domain\FileHosting\Services\FileService;
 use App\Domain\FileHosting\Services\FolderService;
 use App\Domain\FileHosting\Services\QuotaService;
 use App\Domain\FileHosting\Services\WorkspaceService;

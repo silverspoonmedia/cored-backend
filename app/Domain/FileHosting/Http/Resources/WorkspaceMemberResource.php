@@ -2,11 +2,12 @@
 
 namespace App\Domain\FileHosting\Http\Resources;
 
+use App\Domain\FileHosting\Models\WorkspaceMember;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\FileHosting\Models\WorkspaceMember */
+/** @mixin WorkspaceMember */
 class WorkspaceMemberResource extends JsonResource
 {
     use FormatsPresentation;

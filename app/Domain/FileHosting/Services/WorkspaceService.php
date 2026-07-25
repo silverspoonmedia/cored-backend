@@ -13,6 +13,7 @@ use App\Domain\FileHosting\Models\WorkspaceMember;
 use App\Domain\FileHosting\Support\FileHostingRealtime;
 use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
+use App\Support\Product\Services\ProductAnalyticsService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -82,7 +83,7 @@ class WorkspaceService
 
             $this->activity->workspaceCreated($workspace, $actor);
 
-            app(\App\Support\Product\Services\ProductAnalyticsService::class)
+            app(ProductAnalyticsService::class)
                 ->increment('FileHosting', $actor->id, 'workspace_count_owned', 1);
 
             return $workspace->load('owner');

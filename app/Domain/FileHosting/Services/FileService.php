@@ -27,6 +27,7 @@ class FileService
         private readonly WorkspaceAccessService $workspaceAccess,
         private readonly WorkspaceActivityRecorder $activity,
         private readonly FileHostingRealtime $realtime,
+        private readonly HashBlocklistService $hashBlocklist,
         private readonly UniqueDisplayNameAllocator $displayNames = new UniqueDisplayNameAllocator,
         private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
     ) {}
@@ -83,7 +84,7 @@ class FileService
         $file = $this->resolveFileForMutate($actor, $fileId, $userId, $workspaceId);
         $from = (string) $file->visibility;
         $value = $this->visibility->normalize($visibility);
-        $this->visibility->assertVisibilityChangeAllowed($value, (string) $file->user_id);
+        $this->visibility->assertVisibilityChangeAllowed($value, (string) $file->user_id, is_string($file->checksum) ? $file->checksum : null);
 
         // Always drop cached S3 URL so private revoke cannot reuse a still-valid temp link.
         $file->forceFill([
@@ -294,22 +295,22 @@ class FileService
     /**
      * @return array{url: string, expires_at: string}
      */
-    public function download(User $actor, string $fileId, ?string $userId = null, ?string $workspaceId = null): array
+    public function download(User $actor, string $fileId, ?string $userId = null, ?string $workspaceId = null, bool $preview = false): array
     {
         $file = $this->resolveFileForView($actor, $fileId, $userId, $workspaceId);
 
-        return $this->issueDownload($file);
+        return $this->issueDownload($file, $preview);
     }
 
     /**
      * @return array{url: string, expires_at: string}
      */
-    public function publicDownload(string $fileId): array
+    public function publicDownload(string $fileId, bool $preview = false): array
     {
         $file = $this->findOrFail($fileId);
         $this->visibility->assertGuestCanReadFile($file);
 
-        return $this->issueDownload($file);
+        return $this->issueDownload($file, $preview);
     }
 
     private function recordView(HostedFile $file): HostedFile
@@ -327,16 +328,22 @@ class FileService
     /**
      * @return array{url: string, expires_at: string}
      */
-    private function issueDownload(HostedFile $file): array
+    private function issueDownload(HostedFile $file, bool $preview = false): array
     {
-        $resolved = $this->signedDownloads->resolve($file);
+        $resolved = $this->signedDownloads->resolve($file, $preview);
 
-        $file->forceFill([
-            'download_count' => (int) $file->download_count + 1,
-            'last_downloaded_at' => Carbon::now(),
-        ])->save();
-        $file->refresh();
-        $this->realtime->fileStats($file);
+        // Atomic increment (not read-modify-write) so concurrent downloads of the
+        // same file never lose updates.
+        HostedFile::query()
+            ->whereKey($file->id)
+            ->update([
+                'download_count' => DB::raw('download_count + 1'),
+                'last_downloaded_at' => Carbon::now(),
+            ]);
+
+        $file->download_count = (int) $file->download_count + 1;
+        $file->last_downloaded_at = Carbon::now();
+        $this->realtime->fileStatsThrottled($file);
 
         return [
             'url' => $resolved['url'],
@@ -349,6 +356,22 @@ class FileService
         [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
         $value = $this->visibility->normalize($visibility);
         $this->visibility->assertVisibilityChangeAllowed($value, $ownerId);
+
+        // Enforce the hash blocklist across the whole selection: if any target file
+        // is checksum-blocked, reject the entire bulk share (no partial DMCA leak).
+        if ($value->isLinkShared()) {
+            $blocked = HostedFile::query()
+                ->where('user_id', $ownerId)
+                ->where('workspace_id', $workspace?->id)
+                ->whereKey($fileIds)
+                ->whereNotNull('checksum')
+                ->pluck('checksum')
+                ->first(fn ($checksum) => $this->hashBlocklist->isBlocked((string) $checksum));
+
+            if ($blocked !== null) {
+                throw new FileHostingException(__('api/file-hosting.public_share_blocked_hash'), 422);
+            }
+        }
 
         $count = HostedFile::query()
             ->where('user_id', $ownerId)

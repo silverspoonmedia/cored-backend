@@ -55,10 +55,10 @@ class PublicShareController extends Controller
         return $this->webView('file-hosting.public-file', $payload);
     }
 
-    public function downloadFile(string $file): RedirectResponse
+    public function downloadFile(Request $request, string $file): RedirectResponse
     {
         try {
-            $payload = $this->files->publicDownload($file);
+            $payload = $this->files->publicDownload($file, $request->boolean('preview'));
         } catch (FileHostingException $e) {
             abort($e->statusCode(), $e->getMessage());
         }

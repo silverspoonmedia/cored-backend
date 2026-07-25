@@ -56,7 +56,7 @@ class UploadController extends Controller
         $result = $this->uploads->status($request->user(), $upload);
 
         return $this->successResponse(
-            $this->serializeUploadSession($result, includeRecorded: true, extra: [
+            $this->serializeUploadSession($result, extra: [
                 'folder_id' => $result['upload']->folder_id,
             ]),
             __('api/file-hosting.upload.status'),

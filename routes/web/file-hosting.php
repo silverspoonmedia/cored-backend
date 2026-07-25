@@ -99,4 +99,13 @@ Route::post('file-hosting/uploads/{upload}/complete', [FileManagerController::cl
 Route::delete('file-hosting/uploads/{upload}', [FileManagerController::class, 'abortUpload'])
     ->whereUuid('upload')
     ->name('file-hosting.uploads.destroy');
+
+// DMCA hash blocklist (platform admin)
+Route::middleware('permission:manage any file hosting resource')->group(function (): void {
+    Route::get('file-hosting/blocklist', [FileManagerController::class, 'blocklist'])->name('file-hosting.blocklist.index');
+    Route::post('file-hosting/blocklist', [FileManagerController::class, 'storeBlocklistEntry'])->name('file-hosting.blocklist.store');
+    Route::delete('file-hosting/blocklist/{entry}', [FileManagerController::class, 'destroyBlocklistEntry'])
+        ->whereUuid('entry')
+        ->name('file-hosting.blocklist.destroy');
+});
 });

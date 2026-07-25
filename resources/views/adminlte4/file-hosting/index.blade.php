@@ -270,6 +270,7 @@
                 data-sign-parts-url="{{ url('file-hosting/uploads/__UPLOAD__/sign-parts') }}"
                 data-max-files="{{ (int) config('file-hosting.max_files_per_batch', 20) }}"
                 data-max-concurrent="{{ (int) config('file-hosting.max_concurrent_uploads', 2) }}"
+                data-max-concurrent-parts="{{ (int) config('file-hosting.max_concurrent_parts', 3) }}"
                 role="button"
                 tabindex="0"
                 aria-label="{{ __('web/file-hosting.upload_here') }}"

@@ -42,6 +42,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         __DIR__.'/../app/Console/Commands',
         __DIR__.'/../app/Domain/ErrorLog/Console/Commands',
+        __DIR__.'/../app/Domain/FileHosting/Console/Commands',
         __DIR__.'/../app/Domain/Navigation/Console/Commands',
         __DIR__.'/../app/Domain/PaymentGateway/Console/Commands',
         __DIR__.'/../app/Domain/Service/Console/Commands',

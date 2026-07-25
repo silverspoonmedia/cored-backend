@@ -6,7 +6,6 @@ use App\Domain\FileHosting\Models\UserQuota;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Models\ServiceEntitlement;
-use App\Domain\Service\Support\FileHostingCatalog;
 
 /**
  * Recompute denorm UserQuota from free tier + active/grace main + addon×quantity.
