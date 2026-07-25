@@ -144,27 +144,3 @@
         <i class="bi bi-gear me-1"></i>{{ __('web/file-hosting.collab.team_settings') }}
     </button>
 @endif
-
-@if ($canCreateWorkspace)
-    <div class="modal fade" id="fhCreateWorkspaceModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <form method="post" action="{{ route('file-hosting.workspaces.store') }}" class="modal-content">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ __('web/file-hosting.collab.create_workspace') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="small text-muted">{{ __('web/file-hosting.collab.create_hint') }}</p>
-                    <label class="form-label">{{ __('web/file-hosting.collab.workspace_name') }}</label>
-                    <input type="text" name="name" class="form-control" required maxlength="255"
-                           value="{{ old('name', __('web/file-hosting.collab.default_workspace_name')) }}">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('web/file-hosting.cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('web/file-hosting.create') }}</button>
-                </div>
-            </form>
-        </div>
-    </div>
-@endif
