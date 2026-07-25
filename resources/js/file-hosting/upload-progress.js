@@ -17,6 +17,65 @@ export function computeTransferRate(bytes, elapsedMs) {
 }
 
 /**
+ * Create a sliding-window transfer-rate sampler (instantaneous, not cumulative).
+ *
+ * Why not `totalBytes / totalElapsed`? A cumulative average drifts downward for the
+ * rest of the upload after any single stall, exaggerating the perceived slowdown.
+ * A windowed sampler reports the rate over the recent window only, so it recovers
+ * as soon as throughput recovers and tolerates an isolated stall.
+ *
+ * @param {number} [windowMs=5000]
+ * @returns {{ add: (bytesTotal: number, atMs?: number) => void, rate: (atMs?: number) => number }}
+ */
+export function createRateSampler(windowMs = 5000) {
+    /** @type {Array<{ t: number, bytes: number }>} */
+    const samples = [];
+
+    function prune(now) {
+        while (samples.length > 0 && now - samples[0].t > windowMs) {
+            samples.shift();
+        }
+    }
+
+    return {
+        /**
+         * Record the cumulative uploaded byte total at a point in time.
+         * @param {number} bytesTotal
+         * @param {number} [atMs]
+         */
+        add(bytesTotal, atMs) {
+            const now = typeof atMs === 'number' ? atMs : Date.now();
+            samples.push({ t: now, bytes: bytesTotal });
+            prune(now);
+        },
+
+        /**
+         * Bytes/sec across the recent window; 0 when not enough data.
+         * @param {number} [atMs]
+         * @returns {number}
+         */
+        rate(atMs) {
+            const now = typeof atMs === 'number' ? atMs : Date.now();
+            prune(now);
+
+            if (samples.length < 2) {
+                return 0;
+            }
+
+            const first = samples[0];
+            const last = samples[samples.length - 1];
+            const dt = (last.t - first.t) / 1000;
+
+            if (dt <= 0) {
+                return 0;
+            }
+
+            return (last.bytes - first.bytes) / dt;
+        },
+    };
+}
+
+/**
  * @param {number} bytesPerSecond
  * @returns {string}
  */

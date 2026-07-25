@@ -2,6 +2,18 @@
 
 return [
     'title' => 'ファイルホスティング',
+    'blocklist_title' => 'ハッシュブロックリスト (DMCA)',
+    'blocklist_add' => 'ハッシュをブロック',
+    'blocklist_sha256' => 'sha256',
+    'blocklist_sha256_placeholder' => '64文字のhex',
+    'blocklist_reason' => '理由',
+    'blocklist_reason_placeholder' => 'DMCA参照など',
+    'blocklist_entries' => 'ブロック済みハッシュ',
+    'blocklist_added' => '追加日時',
+    'blocklist_actions' => '操作',
+    'blocklist_remove' => '削除',
+    'blocklist_confirm_remove' => 'このハッシュをブロックリストから削除しますか？',
+    'blocklist_empty' => 'ブロック済みハッシュはありません。',
     'list_title' => 'マイファイル',
     'show_title' => 'ファイル詳細',
     'trash' => 'ゴミ箱',

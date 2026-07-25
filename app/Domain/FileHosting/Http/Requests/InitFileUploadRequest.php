@@ -23,8 +23,6 @@ class InitFileUploadRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'mime' => ['required', 'string', 'max:255'],
             'size' => ['required', 'integer', 'min:1'],
-            // sha256 hex fingerprint for resumable multipart uploads (optional).
-            'content_hash' => ['nullable', 'string', 'size:64', 'regex:/^[0-9a-f]{64}$/'],
             'folder_id' => ['nullable', 'uuid'],
             'user_id' => ['nullable', 'uuid'],
             'workspace_id' => ['nullable', 'uuid'],

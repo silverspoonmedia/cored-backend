@@ -2,6 +2,18 @@
 
 return [
     'title' => 'Hosting file',
+    'blocklist_title' => 'Daftar blokir hash (DMCA)',
+    'blocklist_add' => 'Blokir hash',
+    'blocklist_sha256' => 'sha256',
+    'blocklist_sha256_placeholder' => '64 karakter hex',
+    'blocklist_reason' => 'Alasan',
+    'blocklist_reason_placeholder' => 'Referensi DMCA, dll.',
+    'blocklist_entries' => 'Hash yang diblokir',
+    'blocklist_added' => 'Ditambahkan',
+    'blocklist_actions' => 'Aksi',
+    'blocklist_remove' => 'Hapus',
+    'blocklist_confirm_remove' => 'Hapus hash ini dari daftar blokir?',
+    'blocklist_empty' => 'Tidak ada hash yang diblokir.',
     'list_title' => 'File saya',
     'show_title' => 'Detail file',
     'trash' => 'Sampah',

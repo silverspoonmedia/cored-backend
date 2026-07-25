@@ -195,6 +195,58 @@ class FileHostingRealtimeEmitTest extends TestCase
         Event::assertNotDispatched(ListingChanged::class);
     }
 
+    public function test_file_stats_throttled_broadcasts_once_per_window(): void
+    {
+        Event::fake([FileStatsChanged::class]);
+
+        $file = HostedFile::query()->create([
+            'user_id' => $this->user->id,
+            'folder_id' => null,
+            'name' => 'hot.pdf',
+            'disk' => 'local',
+            'path' => str_repeat('d', 40),
+            'size' => 10,
+            'mime' => 'application/pdf',
+        ]);
+
+        $realtime = app(\App\Domain\FileHosting\Support\FileHostingRealtime::class);
+
+        // Three rapid downloads: only the first may broadcast within the window.
+        $realtime->fileStatsThrottled($file);
+        $file->download_count = 2;
+        $realtime->fileStatsThrottled($file);
+        $file->download_count = 3;
+        $realtime->fileStatsThrottled($file);
+
+        Event::assertDispatched(FileStatsChanged::class, 1);
+    }
+
+    public function test_file_stats_throttled_broadcasts_again_after_window(): void
+    {
+        Event::fake([FileStatsChanged::class]);
+
+        $file = HostedFile::query()->create([
+            'user_id' => $this->user->id,
+            'folder_id' => null,
+            'name' => 'hot2.pdf',
+            'disk' => 'local',
+            'path' => str_repeat('e', 40),
+            'size' => 10,
+            'mime' => 'application/pdf',
+        ]);
+
+        $realtime = app(\App\Domain\FileHosting\Support\FileHostingRealtime::class);
+
+        $realtime->fileStatsThrottled($file);
+
+        // Move past the throttle window and clear the cache key so the next
+        // download in a new window broadcasts again.
+        \Illuminate\Support\Facades\Cache::flush();
+        $realtime->fileStatsThrottled($file);
+
+        Event::assertDispatched(FileStatsChanged::class, 2);
+    }
+
     private function userWithRole(string $role, string $email): User
     {
         $user = User::factory()->create(['email' => $email]);

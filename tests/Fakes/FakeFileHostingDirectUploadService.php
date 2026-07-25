@@ -22,8 +22,7 @@ use Illuminate\Support\Facades\Storage;
  * Test double for File Hosting direct uploads on a faked disk (no real S3).
  */
 class FakeFileHostingDirectUploadService extends DirectUploadService
-{
-    public function initiate(
+{    public function initiate(
         User $actor,
         string $name,
         string $mime,
@@ -32,7 +31,6 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
         ?string $userId = null,
         ?string $disk = null,
         ?string $workspaceId = null,
-        ?string $contentHash = null,
     ): array {
         $access = app(AccessService::class);
         $workspaceAccess = app(WorkspaceAccessService::class);
@@ -77,7 +75,6 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             'original_name' => $name,
             'mime' => $mime,
             'size' => $size,
-            'content_hash' => $strategy === FileUpload::STRATEGY_MULTIPART ? $contentHash : null,
             'chunk_size' => $strategy === FileUpload::STRATEGY_MULTIPART ? $chunkSize : $size,
             'part_count' => $partCount,
             'status' => FileUpload::STATUS_PENDING,
@@ -101,8 +98,6 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             'chunk_size' => $strategy === FileUpload::STRATEGY_MULTIPART ? $chunkSize : $size,
             'part_count' => $partCount,
             'parts' => $parts,
-            'recorded_parts' => [],
-            'resumed' => false,
         ];
     }
 
@@ -184,8 +179,13 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             return;
         }
 
-        $objectKey = app(ObjectKeyResolver::class)->objectKey($upload->user_id, $upload->path);
-        Storage::disk($upload->disk)->delete($objectKey);
+        // Mirror the real service: a single-PUT object is preserved on abort (no
+        // dangling multipart); only multipart sessions have S3 state to clean up.
+        if ($upload->strategy === FileUpload::STRATEGY_MULTIPART) {
+            $objectKey = app(ObjectKeyResolver::class)->objectKey($upload->user_id, $upload->path);
+            Storage::disk($upload->disk)->delete($objectKey);
+        }
+
         $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
     }
 
@@ -203,31 +203,12 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
                 ? (int) config('file-hosting.chunk_size_bytes')
                 : $upload->size,
             'part_count' => $partCount,
-            'recorded_parts' => $upload->recordedParts(),
-            'resumed' => false,
             'parts' => [[
                 'part_number' => 1,
                 'url' => 'https://fake-storage.test/put/'.$upload->id.'/1',
                 'headers' => [],
             ]],
         ];
-    }
-
-    public function recordParts(User $actor, string $uploadUuid, array $parts): array
-    {
-        $upload = FileUpload::query()->findOrFail($uploadUuid);
-        $merged = $this->engineForTests()->mergeParts($upload->recordedParts(), $parts);
-        $upload->forceFill(['parts' => $merged])->save();
-
-        return [
-            'upload' => $upload,
-            'recorded_parts' => $upload->recordedParts(),
-        ];
-    }
-
-    private function engineForTests(): S3DirectUploadEngine
-    {
-        return app(S3DirectUploadEngine::class);
     }
 
     public function signParts(User $actor, string $uploadUuid, array $partNumbers): array
@@ -250,8 +231,12 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             return;
         }
 
-        $objectKey = app(ObjectKeyResolver::class)->objectKey($upload->user_id, $upload->path);
-        Storage::disk($upload->disk)->delete($objectKey);
+        // Mirror the real service: preserve a single-PUT object on abort.
+        if ($upload->strategy === FileUpload::STRATEGY_MULTIPART) {
+            $objectKey = app(ObjectKeyResolver::class)->objectKey($upload->user_id, $upload->path);
+            Storage::disk($upload->disk)->delete($objectKey);
+        }
+
         $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
     }
 }

@@ -25,8 +25,15 @@ class SignedDownloadService
     /**
      * @return array{url: string, expires_at: Carbon}
      */
-    public function resolve(HostedFile $file): array
+    public function resolve(HostedFile $file, bool $inline = false): array
     {
+        // Preview (inline) URLs are not cached: the cached row holds the default
+        // attachment URL, and mixing modes under one cache column would serve the
+        // wrong disposition. Inline is minted on demand.
+        if ($inline) {
+            return $this->mint($file, $inline);
+        }
+
         if ($file->hasUsableSignedDownloadUrl() && $this->cachedUrlMatchesMode($file)) {
             return [
                 'url' => (string) $file->signed_download_url,
@@ -40,16 +47,28 @@ class SignedDownloadService
     /**
      * @return array{url: string, expires_at: Carbon}
      */
-    public function mintAndCache(HostedFile $file): array
+    public function mintAndCache(HostedFile $file, bool $inline = false): array
     {
-        $ttlMinutes = (int) config('file-hosting.signed_download_ttl_minutes', 15);
-        $expiresAt = Carbon::now()->addMinutes($ttlMinutes);
-        $url = $this->mintUrl($file, $expiresAt);
+        $result = $this->mint($file, $inline);
 
-        $file->forceFill([
-            'signed_download_url' => $url,
-            'signed_download_expires_at' => $expiresAt,
-        ])->save();
+        if (! $inline) {
+            $file->forceFill([
+                'signed_download_url' => $result['url'],
+                'signed_download_expires_at' => $result['expires_at'],
+            ])->save();
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array{url: string, expires_at: Carbon}
+     */
+    private function mint(HostedFile $file, bool $inline): array
+    {
+        $ttlMinutes = (int) config('file-hosting.signed_download_ttl_minutes', 60);
+        $expiresAt = Carbon::now()->addMinutes($ttlMinutes);
+        $url = $this->mintUrl($file, $expiresAt, $inline);
 
         return [
             'url' => $url,
@@ -57,13 +76,13 @@ class SignedDownloadService
         ];
     }
 
-    private function mintUrl(HostedFile $file, Carbon $expiresAt): string
+    private function mintUrl(HostedFile $file, Carbon $expiresAt, bool $inline = false): string
     {
         if ($this->isDownloadProxyEnabledForDisk((string) $file->disk)) {
-            return $this->proxyDownloadUrl($file, $expiresAt);
+            return $this->proxyDownloadUrl($file, $expiresAt, $inline);
         }
 
-        return $this->temporaryUrl($file, $expiresAt);
+        return $this->temporaryUrl($file, $expiresAt, $inline);
     }
 
     /**
@@ -123,7 +142,7 @@ class SignedDownloadService
         return trim($alias);
     }
 
-    private function proxyDownloadUrl(HostedFile $file, Carbon $expiresAt): string
+    private function proxyDownloadUrl(HostedFile $file, Carbon $expiresAt, bool $inline = false): string
     {
         $baseUrl = $this->proxyBaseUrl();
         $token = (string) config('file-hosting.upload_proxy.token', '');
@@ -134,7 +153,7 @@ class SignedDownloadService
         }
 
         $objectKey = $this->objectKeys->objectKey($file->user_id, $file->path);
-        $disposition = $this->contentDisposition($file->name);
+        $disposition = $this->contentDisposition($file->name, $inline ? (is_string($file->mime) ? $file->mime : null) : null);
         $contentType = is_string($file->mime) ? $file->mime : '';
         $exp = (string) $expiresAt->getTimestamp();
 
@@ -201,7 +220,7 @@ class SignedDownloadService
             || str_starts_with($normalizedUrl, $normalizedBase.'?');
     }
 
-    private function temporaryUrl(HostedFile $file, Carbon $expiresAt): string
+    private function temporaryUrl(HostedFile $file, Carbon $expiresAt, bool $inline = false): string
     {
         $disk = Storage::disk($file->disk);
 
@@ -209,8 +228,9 @@ class SignedDownloadService
             throw new FileHostingException(__('api/file-hosting.download_unavailable'));
         }
 
+        $mime = is_string($file->mime) ? $file->mime : null;
         $options = [
-            'ResponseContentDisposition' => $this->contentDisposition($file->name),
+            'ResponseContentDisposition' => $this->contentDisposition($file->name, $inline ? $mime : null),
         ];
 
         if (is_string($file->mime) && $file->mime !== '') {
@@ -237,11 +257,35 @@ class SignedDownloadService
         return $url;
     }
 
-    private function contentDisposition(string $name): string
+    /**
+     * Build a Content-Disposition header value. When $mime is provided and is
+     * safe to render in-browser (image/pdf/audio/video/text), emit `inline` so
+     * the browser previews instead of downloading; otherwise `attachment`.
+     */
+    private function contentDisposition(string $name, ?string $mime = null): string
     {
         $safe = str_replace(['"', "\r", "\n"], '', $name);
         $ascii = preg_replace('/[^\x20-\x7E]/', '_', $safe) ?: 'download';
 
-        return 'attachment; filename="'.$ascii.'"; filename*=UTF-8\'\''.rawurlencode($safe);
+        $type = ($mime !== null && $this->isInlinePreviewableMime($mime)) ? 'inline' : 'attachment';
+
+        return $type.'; filename="'.$ascii.'"; filename*=UTF-8\'\''.rawurlencode($safe);
+    }
+
+    private function isInlinePreviewableMime(string $mime): bool
+    {
+        $mime = strtolower(trim($mime));
+
+        if ($mime === 'application/pdf') {
+            return true;
+        }
+
+        foreach (['image/', 'audio/', 'video/', 'text/'] as $prefix) {
+            if (str_starts_with($mime, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

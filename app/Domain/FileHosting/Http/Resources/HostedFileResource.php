@@ -38,6 +38,7 @@ class HostedFileResource extends JsonResource
             ...$this->byteFields('size', $this->size),
             'mime' => $this->mime,
             'checksum' => $this->checksum,
+            'is_hash_blocked' => app(\App\Domain\FileHosting\Services\HashBlocklistService::class)->isFileBlocked($this->resource),
             'visibility' => $visibility,
             'share_url' => $shareUrl,
             'download_count' => (int) $this->download_count,

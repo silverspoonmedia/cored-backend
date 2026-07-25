@@ -18,6 +18,7 @@ class VisibilityService
 {
     public function __construct(
         private readonly QuotaService $quota,
+        private readonly HashBlocklistService $hashBlocklist,
     ) {}
 
     public function folderAccessible(Folder $folder): bool
@@ -31,6 +32,12 @@ class VisibilityService
 
     public function fileAccessible(HostedFile $file): bool
     {
+        // A checksum-blocked file is never publicly accessible (DMCA): deny as
+        // 404 (share_not_found) regardless of paid gate or share link.
+        if ($this->hashBlocklist->isFileBlocked($file)) {
+            return false;
+        }
+
         if (! $this->fileLinkSharedChain($file)) {
             return false;
         }
@@ -55,17 +62,21 @@ class VisibilityService
     /**
      * Block free/grace owners from enabling anyone_with_link (private always allowed).
      */
-    public function assertCanEnableLinkShare(string $ownerUserId): void
+    public function assertCanEnableLinkShare(string $ownerUserId, ?string $checksum = null): void
     {
         if (! $this->quota->ownerCanPublicShare($ownerUserId)) {
             throw new FileHostingException(__('api/file-hosting.public_share_requires_paid'), 422);
         }
+
+        if ($this->hashBlocklist->isBlocked($checksum)) {
+            throw new FileHostingException(__('api/file-hosting.public_share_blocked_hash'), 422);
+        }
     }
 
-    public function assertVisibilityChangeAllowed(Visibility $visibility, string $ownerUserId): void
+    public function assertVisibilityChangeAllowed(Visibility $visibility, string $ownerUserId, ?string $checksum = null): void
     {
         if ($visibility->isLinkShared()) {
-            $this->assertCanEnableLinkShare($ownerUserId);
+            $this->assertCanEnableLinkShare($ownerUserId, $checksum);
         }
     }
 

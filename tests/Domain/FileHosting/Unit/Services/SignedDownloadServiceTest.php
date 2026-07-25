@@ -218,6 +218,93 @@ class SignedDownloadServiceTest extends TestCase
         $this->assertStringStartsWith('https://proxy.example.workers.dev/t/sbs/', $url);
     }
 
+    public function test_preview_mints_inline_disposition_for_safe_mime(): void
+    {
+        config([
+            'file-hosting.upload_proxy.base_url' => 'https://s3.silverspoon.me',
+            'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
+            'file-hosting.upload_proxy.disk_targets' => [
+                's3FileHostingCe' => 'sbs',
+            ],
+        ]);
+
+        $user = $this->userWithRole('User');
+        $file = $this->makeFile($user, [
+            'disk' => 's3FileHostingCe',
+            'name' => 'photo.jpg',
+            'mime' => 'image/jpeg',
+        ]);
+
+        $inline = $this->service->resolve($file, true);
+        parse_str(parse_url($inline['url'], PHP_URL_QUERY) ?? '', $query);
+        $this->assertStringStartsWith('inline;', (string) ($query['disp'] ?? ''));
+
+        $attachment = $this->service->resolve($file, false);
+        parse_str(parse_url($attachment['url'], PHP_URL_QUERY) ?? '', $query2);
+        $this->assertStringStartsWith('attachment;', (string) ($query2['disp'] ?? ''));
+    }
+
+    public function test_preview_stays_attachment_for_unsafe_mime(): void
+    {
+        config([
+            'file-hosting.upload_proxy.base_url' => 'https://s3.silverspoon.me',
+            'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
+            'file-hosting.upload_proxy.disk_targets' => [
+                's3FileHostingCe' => 'sbs',
+            ],
+        ]);
+
+        $user = $this->userWithRole('User');
+        $file = $this->makeFile($user, [
+            'disk' => 's3FileHostingCe',
+            'name' => 'archive.zip',
+            'mime' => 'application/zip',
+        ]);
+
+        $inline = $this->service->resolve($file, true);
+        parse_str(parse_url($inline['url'], PHP_URL_QUERY) ?? '', $query);
+        $this->assertStringStartsWith('attachment;', (string) ($query['disp'] ?? ''));
+    }
+
+    public function test_preview_url_is_not_cached_to_row(): void
+    {
+        config([
+            'file-hosting.upload_proxy.base_url' => 'https://s3.silverspoon.me',
+            'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
+            'file-hosting.upload_proxy.disk_targets' => [
+                's3FileHostingCe' => 'sbs',
+            ],
+        ]);
+
+        $user = $this->userWithRole('User');
+        $file = $this->makeFile($user, [
+            'disk' => 's3FileHostingCe',
+            'name' => 'photo.jpg',
+            'mime' => 'image/jpeg',
+        ]);
+
+        $this->service->resolve($file, true);
+
+        // Inline/preview mint must not overwrite the attachment cache columns.
+        $this->assertNull($file->fresh()->signed_download_url);
+    }
+
+    public function test_default_ttl_is_60_minutes(): void
+    {
+        config(['file-hosting.signed_download_ttl_minutes' => 60]);
+
+        $user = $this->userWithRole('User');
+        $file = $this->makeFile($user, ['disk' => 'local']);
+
+        Carbon::setTestNow(Carbon::parse('2026-07-25 12:00:00', 'UTC'));
+        try {
+            $ttl = (int) config('file-hosting.signed_download_ttl_minutes', 60);
+            $this->assertSame(60, $ttl);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      */

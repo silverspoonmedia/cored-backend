@@ -37,15 +37,15 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Virtual root | `folder_id = null` = “My Files” (no auto DB folder row) |
 | Nested folders | `parent_id` tree per owner; breadcrumb via `FolderAncestorChain` |
 | Files | `file_hosting_files` — denormalized `user_id`, optional `folder_id` |
-| Upload sessions | `file_hosting_uploads` — init -> browser PUT (direct S3 **or** CF Worker proxy) -> complete promotes row. **Control plane** (init / sign-parts / **record-parts** / complete / abort) always Monolith->S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. **Resumable multipart**: client `content_hash` (sha256) reuses a still-pending session on re-upload; chunk/part layout frozen at init (`chunk_size`/`part_count`) survives config drift. **Prune scheduler** aborts orphaned multiparts past grace (Backblaze has no S3 lifecycle for incomplete multiparts). |
+| Upload sessions | `file_hosting_uploads` — init -> browser PUT (direct S3 **or** CF Worker proxy) -> complete promotes row. **Control plane** (init / sign-parts / complete / abort) always Monolith->S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. **No resume**: a dead upload restarts from scratch. Chunk/part layout frozen at init (`chunk_size`/`part_count`). **Prune scheduler** aborts orphaned **multipart** sessions past grace or with no recent S3 part activity (Backblaze has no S3 lifecycle for incomplete multiparts). |
 | Part size | Default **10 MB** chunk + multipart threshold (`FILE_HOSTING_CHUNK_SIZE`) |
 | DB `path` | Object id only: 40 lowercase alnum chars (`Str::random(40)`). **Not** a full S3 key. |
 | S3 object key | `file-hosting/{user_id}/{objectId}` — resolved at runtime via `ObjectKeyResolver` from `user_id` + `path` + config `directory`. No `folder_id`, no extension, no upload session id in the key. |
 | Display name | Preferred name kept if free in that owner+folder/parent (soft-deleted ignored). If taken on **upload complete** or **file/folder move** → auto DB rename to `{stem} ({maxN+1}).{ext}` (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`; folders without ext → `Docs (2)`). Shared allocator: `UniqueDisplayNameAllocator`. **Manual rename** still rejects exact sibling collisions (user chose the name). S3 object key stays random and is never renamed. Move/rename are **DB-only**. |
-| Download bytes | Always **302 (or client follow)** to a storage URL — **not** Monolith streaming. Proxy on → CF Worker HMAC GetObject (B2 **Bandwidth Alliance** path). Proxy off → direct S3 temporary URL |
-| Signed download URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry **and** URL host matches current proxy mode (stale B2 URL reminted when proxy enabled; stale Worker URL reminted when proxy off). **Cleared on visibility change** (and rename/delete) so private revoke cannot reuse a still-valid link |
+| Download bytes | Always **302 (or client follow)** to a storage URL — **not** Monolith streaming. Proxy on → CF Worker HMAC GetObject (B2 **Bandwidth Alliance** path), with **edge caching** of immutable object bytes at Cloudflare (`X-Cache` HIT/MISS/SKIP). Proxy off → direct S3 temporary URL |
+| Signed download URL cache | Columns `signed_download_url`, `signed_download_expires_at`; reuse until near expiry **and** URL host matches current proxy mode (stale B2 URL reminted when proxy enabled; stale Worker URL reminted when proxy off). `expires_at` mirrors the `exp` embedded in the URL — final expiry is enforced by the Worker, the column is only the Monolith cache hint. **Cleared on visibility change** (and rename/delete) so private revoke cannot reuse a still-valid link |
 | Download filename | `response-content-disposition` (Worker) / `ResponseContentDisposition` (direct S3) from DB `name` (random key stays on object) |
-| Stats | `view_count` / `download_count` + last_* timestamps (no event log) |
+| Stats | `view_count` / `download_count` + last_* timestamps (no event log). `download_count` uses **atomic increment** (no lost-update under concurrent downloads); the realtime stats broadcast is **throttled** to ≤1 per file per 5s while the counter stays exact |
 | Visibility | `private` \| `anyone_with_link` on folders and files |
 | Link secret | Resource UUID (Drive “anyone with the link”; not world-searchable) |
 | Inherit | Folder link-shared -> guest may browse that folder and download files inside even if file is `private` |
@@ -128,6 +128,7 @@ fileAccessible(file) =
 - Guest public show/download (API + `/s/f` / `/s/d`) uses `fileAccessible` / `folderAccessible`. Free or grace storage owners get **404** `share_not_found` even if DB still says `anyone_with_link` (downgrade kills links without rewriting rows).
 - Enabling `anyone_with_link` (single + bulk file/folder) requires paid owner; free/grace → **422** `public_share_requires_paid`. Setting `private` always allowed.
 - Mutations never public.
+- **Hash blocklist (DMCA):** enabling `anyone_with_link` on a file whose `checksum` is on `file_hosting_hash_blocklist` → **422** `public_share_blocked_hash` (single + bulk; bulk rejected when **any** targeted file is blocked). Guest show/download returns **404** for a blocked checksum even if the file was already public. See [Content checksum (sha256) + hash blocklist (DMCA)](#content-checksum-sha256--hash-blocklist-dmca).
 - `share_url` only when **this** item is `anyone_with_link` **and** storage owner is paid.
 - Workspace files: paid check is on **storage `user_id`** (quota pool owner), not the guest member’s plan.
 
@@ -161,7 +162,7 @@ Middleware stack: `auth:api` -> `product.active:FileHosting` (runtime activation
 | Files | show (view++), rename, move, **visibility**, soft/force delete, restore (optional `workspace_id`) |
 | Bulk | `POST files/bulk-visibility` + `POST folders/bulk-visibility` (`ids[]`, `visibility`); `DELETE files/bulk` + `DELETE folders/bulk` (`ids[]`) — owner/workspace-scoped, max 100 ids |
 | Download | `GET files/{id}/download` -> `{ url, expires_at }` (download++; cache Worker HMAC URL or S3 temp URL) |
-| Upload | init (optional `disk`, `workspace_id`, `content_hash`), status, sign-parts, **record-parts** (`POST uploads/{id}/parts` — incremental ETag record for resume), complete (auto-renames duplicate display name), abort. Init returns `resumed: true` + `recorded_parts` when an existing session is reused. |
+| Upload | init (optional `disk`, `workspace_id`), status, sign-parts, complete (auto-renames duplicate display name; dispatches post-upload sha256 job), abort. No resume: a dead upload restarts from scratch. |
 | Workspaces | `GET/POST workspaces`, show, archive, members, invite, accept invite, update/remove member, activity |
 | Search / trash / quota | as named (trash/search accept `workspace_id`) |
 
@@ -178,12 +179,22 @@ Shared kernel pieces (not duplicated per domain):
 
 | Piece | Role |
 |-------|------|
-| `App\Support\Storage\S3DirectUploadEngine` | Strategy, direct presign **or** Worker proxy URLs, merge/assert parts, create/complete/abort multipart, `listParts` + `reconcileParts` (resume, best-effort), size/mime guards |
+| `App\Support\Storage\S3DirectUploadEngine` | Strategy, direct presign **or** Worker proxy URLs, merge/assert parts, create/complete/abort multipart, `listParts` (with `last_modified` - orphan-prune activity truth), size/mime guards |
 | `App\Support\Storage\SerializesDirectUploadSession` | Shared JSON session shape for init/status (`upload_id`, `strategy`, `parts`, …) |
 | `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, **auto display-name allocation** on complete, promote -> `HostedFile` |
 | `SignedDownloadService` | Caches download URL: Worker HMAC GetObject when proxy on (B2 **Bandwidth Alliance**), else S3 `temporaryUrl`; remints when cached host disagrees with proxy mode |
 
 **Bandwidth Alliance:** client-direct B2 temporary URLs bill B2 egress after free tier. With proxy on, the browser only hits the Worker origin; the Worker streams GetObject from B2 over Cloudflare. Monolith never streams file bytes.
+
+**Why `signed_download_url` stores a Worker URL, not a B2 URL (by design):** the older idea was for Monolith to presign a B2 temporary URL and have the Worker blindly proxy it. The current design wins for three reasons. (a) A presigned B2 URL embeds the B2 endpoint + bucket + `X-Amz-Signature`; if that reaches the browser it can bypass the Worker and hit B2 directly, billing B2 egress and defeating Bandwidth Alliance. Only the Worker URL ever reaches the browser. (b) The Worker needs the explicit object key to build its edge cache key — a B2 presigned URL changes on every mint, so it cannot key a cache. (c) The Worker verifies the HMAC on every request instead of trusting a bearer URL. The S3 `temporaryUrl` mode (proxy **off**) still uses the B2-URL pattern, so the old idea is not wrong — it is only the right shape when no Worker is involved.
+
+**Role of `signed_download_expires_at` (changed):** the column and the `exp` query in the Worker URL are two copies of the same timestamp, stamped together in `mint()`. Final expiry authority moved to the Worker — `requireDownloadSignature` rejects a request once `exp` (+60s grace) passes. The DB column is now only a **cache-validity hint** for Monolith's reuse-vs-remint decision in `resolve()` / `hasUsableSignedDownloadUrl()`. It stays a real column (rather than parsing `exp` back out of the URL) so it is queryable and a single source for cache logic.
+
+**Download edge caching (Worker):** object keys are random and immutable, so after the HMAC is verified the Worker caches object bytes at the Cloudflare edge keyed on bucket+object (never the signed query). Repeat downloads of a hot object in the same region are served from edge (`X-Cache: HIT`) instead of a fresh B2 stream. Auth is never bypassed — every request is HMAC-checked first. Range requests bypass the cache (no 206 poisoning); objects >512 MB stream from origin (`X-Cache: SKIP`).
+
+**Download hot path (Monolith):** `FileManagerController@download` calls `FileService::download` directly (no internal HTTP loopback). `issueDownload` increments `download_count` atomically and skips the redundant `refresh()`. Signed download URLs default to **60 min** TTL (`signed_download_ttl_minutes`) to cut remints on repeat downloads.
+
+**Preview (`?preview=1`):** download endpoints (auth API, guest `/s/f/{id}/download`) accept `preview=1`. For in-browser-safe MIME (`image/*`, `application/pdf`, `audio/*`, `video/*`, `text/*`) the Content-Disposition becomes `inline` so the browser previews instead of downloading; other types stay `attachment`. Preview URLs are minted on demand (not written to the cache columns). The HMAC payload already covers `disp`/`ctype`, so a tampered disposition fails signature verification.
 
 Config for thresholds/TTL/proxy: `config/file-hosting.php`.
 
@@ -249,47 +260,66 @@ The alias is **not** the B2 bucket name and **not** part of the S3 key; it only 
 - Proxy off: S3 temporary URL from disk `temporaryUrl`
 - Cache reminted if host disagrees with current proxy mode (stale B2 URL after enabling proxy, or stale Worker URL after disabling)
 
-### Resumable multipart + orphan cleanup
+### Orphan multipart cleanup + post-upload checksum
 
-Big uploads that die mid-flight (crowded network, tab close, cancel) leave an S3 multipart with parts already on disk. Backblaze B2 exposes **no** S3 lifecycle rule for incomplete multiparts, so those parts persist until we abort them. Two pieces solve it: **resume** (reuse the pending session instead of orphaning it) and a **prune scheduler** (reclaim what is truly abandoned).
+Big uploads that die mid-flight (crowded network, tab close, cancel) leave S3 multipart parts sitting on storage. Backblaze B2 exposes **no** S3 lifecycle rule for incomplete multiparts, so parts persist until we abort them. There is **no resume**: a dead upload restarts from scratch. Two mechanisms keep storage clean and files accountable: the **prune scheduler** (reclaim what is truly abandoned) and the **post-upload sha256 + hash blocklist** (dedup + DMCA).
 
-> **Status — resume upload is EXPERIMENTAL / UNDER REVIEW.** Observed degraded
-> upload performance since this feature shipped. Root cause, two resume-introduced
-> costs in `resources/js/file-hosting/direct-upload.js`:
-> 1. **Blocking whole-file sha256** — `computeContentHash(file)` reads the entire
->    file into RAM via `file.arrayBuffer()` and hashes it before the init POST
->    fires. O(filesize) memory + CPU pre-flight, serial with the upload. Large
->    files pay a measurable stall before the first byte leaves the browser.
-> 2. **Serialized per-part `recordParts` round-trip** — inside the multipart loop,
->    `await recordPart(uploadId, ...)` adds one POST to Monolith after every part
->    PUT and blocks the next part. That is N extra blocking HTTP round-trips per
->    file that did not exist pre-resume.
->
-> Both costs are absent from the pre-resume upload path. The abort-on-failure and
-> prune orphan-by-inactivity work (below) are independent of resume and remain
-> solid. Resume may be re-evaluated or reverted; the cleanup features stay.
+**Prune — `file-hosting:prune-stale-uploads` (multipart-only, error-swallowing):**
 
-**Identity — how a re-upload finds its old session:**
+1. **Expired + past grace** — `expires_at` in the past beyond `stale_upload_grace_hours` → abort directly (no S3 check needed; the session is contractually dead).
+2. **Orphan-by-inactivity (S3-truth)** — for each pending multipart candidate, call `S3DirectUploadEngine::listParts()`; abort only when **no part has `LastModified >= now - orphan_inactivity_minutes`** (or `ListParts` is empty). This is the source of truth for "no new multipart data received". A `ListParts` **error skips the candidate** — never abort blind. Providers without `ListParts` make arm 2 a no-op (arm 1 still runs).
 
-- Client computes a **sha256** of the file body via `crypto.subtle.digest` and sends it as `content_hash` at init. No Web Crypto / insecure context -> hash omitted -> resume silently disabled (upload still works). **Perf cost (see status callout):** the current implementation reads the *whole* file into RAM (`file.arrayBuffer()`) and hashes it before the init POST fires — a blocking O(filesize) memory + CPU pre-flight, not a stream. This is resume perf hit #1.
-- Client also keeps a **localStorage hint** `fh:resume:<hash> -> upload_id` as a fast shortcut; the server fingerprint match is the real source of truth.
-- `initiate()` looks up `FileUpload::scopeResumableFor(owner, hash, size)` scoped to the **same workspace + folder** (pending, not expired, not promoted, multipart). Match -> that session is returned with `resumed: true`; no new row, no new S3 multipart -> the old one is not orphaned.
+`listParts()` returns each part's `last_modified` (ISO) from S3 `Parts[].LastModified`; `latestPartModifiedAt()` collapses it to the newest timestamp. Default inactivity window is **180 minutes** (config `orphan_inactivity_minutes`, env-tunable).
 
-**Parts source of truth (two layers, S3 authoritative):**
+**Concurrent-slot fairness:** `max_concurrent_uploads` is enforced on the fresh-init path. With resume removed there is exactly one init path, so the cap is checked on every `initiate()`.
 
-1. **Incremental DB record** — after each part PUT succeeds the client POSTs `{part_number, etag, size}` to `uploads/{id}/parts` (`recordParts()`, merged under a row lock). This is the primary progress record and works even if the provider has no `ListParts`. **Perf cost (see status callout):** in the upload loop this call is `await`ed after every part PUT and blocks the next part — one extra blocking HTTP round-trip per part, no parallelism with the next PUT. Pre-resume there were zero such calls. This is resume perf hit #2.
-2. **S3 `ListParts` reconciliation** — `status()` and resume-time `initiate()` call `S3DirectUploadEngine::listParts()` and `reconcileParts()`: S3 truth wins (a client-claimed part that never fully landed is dropped and re-uploaded; a part on S3 but missing from the DB is adopted). **Best-effort**: engine errors are swallowed so a provider without `ListParts` never breaks init/status.
+**Abort preserves single-PUT bytes:** `abort()` / `forceAbortPending()` call S3 `AbortMultipartUpload` for multipart sessions, but for a `single` strategy session they only mark the row `aborted` and **leave the object on S3**. A single PUT has no dangling multipart to clean, and the prune scheduler can fire while the client is mid-flight — deleting the object would destroy bytes a late `complete()` could still promote.
 
-On resume the client seeds already-recorded parts as progress, skips them (`selectMissingPartNumbers`), and only re-PUTs the missing ones. Complete/success clears the localStorage hint.
+**Client abort-on-failure (slot hygiene):** a leaked `pending` row holds a `max_concurrent_uploads` slot until TTL/prune — after enough orphans, init is rejected with `too_many_concurrent` and no upload can start. `uploadFile()` wraps its post-init body in try/catch: on any error after `uploadId` is obtained it fires a best-effort `DELETE` abort (`abortUploadSession`, never rejects), then rethrows so the row is still marked failed. Tab-close orphans (no error path) are still reclaimed by the prune scheduler above.
 
-**Frozen chunk layout:** `chunk_size` + `part_count` persist on the row at init, so a later change to `FILE_HOSTING_CHUNK_SIZE` cannot desync part math on an in-flight resume. Legacy rows (null) fall back to live config.
+### Content checksum (sha256) + hash blocklist (DMCA)
 
-**Prune scheduler:** `file-hosting:prune-stale-uploads` (hourly, `withoutOverlapping`) aborts pending sessions via `forceAbortPending` (ACL-free, error-swallowing, marks `aborted` so a late complete cannot promote) under two conditions, unioned:
+Resume upload was removed — its client-side fingerprint was a major throughput regression — so the checksum is now computed **after the file is fully uploaded**, off the request path. Purpose: **dedup + DMCA hash blocklist**, not resume identity.
 
-1. **Expired + past grace** — `expires_at < now - stale_upload_grace_hours`. The cleanup path in lieu of provider lifecycle. Grace keeps a just-expired session a user is actively resuming from being yanked mid-retry.
-2. **Orphan-by-inactivity** — `updated_at < now - orphan_inactivity_minutes`, regardless of `expires_at`. Catches a session orphaned right after init (cancel / tab-close before any part landed) that would otherwise hold a `max_concurrent_uploads` slot for the full 24h TTL. `updated_at` is the activity proxy: `recordParts()` and `complete()` both call `save()`, so a live upload refreshes it on every landed part. A session with no part activity for N minutes is genuinely dead. A pruned-but-actually-live slow part resumes on the user's next attempt via `content_hash`.
+**Post-upload checksum (queued):**
 
-**Client abort-on-failure (slot hygiene):** a leaked `pending` row holds a `max_concurrent_uploads` slot until TTL/prune — after enough orphans, init is rejected with `too_many_concurrent` and no upload can start. `uploadFile()` wraps its post-init body in try/catch: on any error after `uploadId` is obtained it fires a best-effort `DELETE` abort (`abortUploadSession`, never rejects) and clears the `resumeHint`, then rethrows so the row is still marked failed. Tab-close orphans (no error path) are still reclaimed by the prune scheduler above.
+- `ComputeHostedFileChecksum` (queued job) is dispatched from `DirectUploadService::complete()` after commit, so a failure can never block or roll back the upload.
+- The job streams the object (`ObjectStorage::readStream`) through `hash_init('sha256')` + `hash_update_stream` and stores the hex on `HostedFile.checksum`.
+- **Idempotent**: skips a file that already has a checksum (safe to re-dispatch). `tries = 3`, `backoff = 30`; terminal failures are only `report()`ed — checksum is best-effort metadata, never worth alarming on the upload path.
+- `file_hosting_files.checksum` has an index for fast exact-match lookups.
+
+**Hash blocklist (DMCA):**
+
+- Table `file_hosting_hash_blocklist`: `id` uuid, `sha256` (64) unique-indexed, `reason` nullable, `created_by` uuid nullable, timestamps. Model `FileHostingHashBlocklist`; `HashBlocklistService` exposes `isBlocked` / `isFileBlocked` / `block` / `unblock` (queries the DB directly — Octane-safe).
+- **Enforcement:** `VisibilityService::assertCanEnableLinkShare` / `assertVisibilityChangeAllowed` (via `FileService::setVisibility` and `bulkSetVisibility`) reject enabling `anyone_with_link` for a blocked checksum with **422 `public_share_blocked_hash`**; bulk share is rejected when **any** targeted file is blocked. Guest show/download (`fileAccessible`) returns **404** for a blocked checksum even if the file was already public.
+- **Manage:** Artisan `file-hosting:blocklist-hash {sha256} {--reason=} {--remove}` and an admin page (`file-hosting.blocklist.*` routes, gated by `manage any file hosting resource`) to list/add/remove entries.
+- `HostedFileResource` exposes `is_hash_blocked` so the UI can badge blocked files.
+
+**Background processes (must be running):**
+
+This feature leans on two always-on Laravel processes. If either is down, the corresponding behavior silently stops.
+
+| Process | Command | Drives | If it stops |
+|---------|---------|--------|-------------|
+| Queue worker | `php artisan queue:work` | `ComputeHostedFileChecksum` (post-upload sha256) | `checksum` stays `null` → blocklist never matches new files |
+| Scheduler | `php artisan schedule:work` (dev) or cron/Task Scheduler `php artisan schedule:run` every minute (prod) | `file-hosting:prune-stale-uploads` (hourly, `withoutOverlapping`) | Orphaned multipart uploads are never aborted → parts pile up on storage |
+
+- Queue connection defaults to `database` (`QUEUE_CONNECTION` unset in `.env` → `config/queue.php` fallback). Set `QUEUE_CONNECTION=redis` in production if you run Redis.
+- Schedule entries live in `routes/console.php` (`file-hosting:prune-stale-uploads` hourly). Verify with `php artisan schedule:list`.
+- A quick liveness check for the checksum path: upload a file, then confirm `file_hosting_files.checksum` is populated shortly after and `jobs` is not backing up.
+
+### Throughput + 520 troubleshooting (large uploads)
+
+Why a large upload used to start ~20 MB/s then sag to 10 then ~1 MB/s, and why ~1 GB files sporadically failed (Cloudflare **520**):
+
+| Cause | Fix |
+|-------|-----|
+| **Sequential single-stream parts** — one XHR at a time, no pipelining, collapses to per-connection throughput | Parts upload **in parallel** (`max_concurrent_parts`, default 3) via `uploadPartsParallel` |
+| **Presigned URL expired mid-upload** — init signs every part upfront with `presign_ttl_minutes`; a slow upload outlived the TTL and late parts 403'd with no recovery | TTL raised to **60 min**; a **403** PUT is re-signed via `sign-parts` and retried once per part |
+| **Worker had no error-handling/timeout/retry on the streamed fetch** — a mid-transfer B2 reset / edge timeout tore the response into a Cloudflare **520** with no log | `signedFetchToS3` now retries transient 5xx/network errors on **bodyless** requests (GetObject/create/complete/abort) and returns a **graceful 502 + `upstream_error` log** instead of throwing; **UploadPart stream is not retried** (single-use body) — the client re-PUTs the part |
+| **Speed meter was a cumulative average** — one stall dragged the displayed rate down for the rest of the upload | Speed is now a **sliding-window (5s) instantaneous rate** (`createRateSampler`) |
+
+Worker changes go live only after pushing the Worker repo to GitHub (`s3.silverspoon.me`); Monolith changes only need `npm run build`.
 
 ### S3 provider CORS (browser-direct multipart)
 
@@ -372,7 +402,7 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 |------------|------|---------|
 | `file-hosting.index` | yes | Browse + chunk upload; list/grid; Drive-like select/context/drag; bulk **Move**/share/unshare/delete; SPA soft-nav (no hard reload on mutations) |
 | `file-hosting.files.show` | yes | Detail, stats tiles, visibility, download CTA |
-| `file-hosting.files.download` | yes | Auth download -> **302** storage (Worker or S3) |
+| `file-hosting.files.download` | yes | Auth download -> **302** storage (Worker or S3). Calls `FileService::download` directly (no HTTP loopback); `?preview=1` yields `inline` disposition for safe MIME |
 | `file-hosting.files.rename` | yes | Rename file (AJAX or form) |
 | `file-hosting.files.move` | yes | Move file to folder (AJAX) |
 | `file-hosting.files.visibility` | yes | Toggle private / anyone_with_link |
@@ -393,7 +423,7 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 | `file-hosting.workspaces.activity` | yes | JSON activity feed for team offcanvas soft-refetch |
 | `file-hosting.search` | yes | AJAX JSON search endpoint (`GET ?q=`) |
 | `file-hosting.public.files.show` | no | `/s/f/{uuid}` guest page |
-| `file-hosting.public.files.download` | no | **Temporary signed** hop -> **302** storage (unsigned **403**) |
+| `file-hosting.public.files.download` | no | **Temporary signed** hop -> **302** storage (unsigned **403**); `?preview=1` yields `inline` for safe MIME |
 | `file-hosting.public.folders.show` | no | `/s/d/{uuid}` guest folder list |
 
 | `public_download_signature_ttl_minutes` | Laravel signed hop for `/s/f/.../download` (Monolith hop only; storage URL has its own TTL) |
@@ -495,7 +525,7 @@ Listing mutations must stay **in lockstep** across surfaces. When shipping a new
 
 SSR first paint remains correct on hard refresh. After first soft-nav, listing/trash/show prefer **one JS render path** (permissions/labels from Blade `data-config`).
 
-**Upload progress UI (client-only):** Monolith never sees PUT body bytes (direct S3 or Worker). Progress % = `uploadedBytes / file.size`; speed = `uploadedBytes / elapsed` from first byte PUT to now (not a rolling window). Parts still upload sequentially per file. After the last part PUT, the row shows **Finalizing…** (`upload.completing`) at 100% with speed cleared while the client calls `POST …/complete` (merge parts / promote `HostedFile`) — then **Done**. API session payloads do not include progress or speed fields.
+**Upload progress UI (client-only):** Monolith never sees PUT body bytes (direct S3 or Worker). Progress % = `uploadedBytes / file.size` where `uploadedBytes` is the **sum of per-part loaded bytes** (a Map keyed by part number, so parallel re-PUTs and out-of-order completion never double-count). Speed = a **sliding-window (5s) instantaneous rate** via `createRateSampler` — not a cumulative average — so it recovers after a stall instead of drifting down for the rest of the upload. Multipart parts upload **in parallel** (`max_concurrent_parts`, default 3 XHR streams via `uploadPartsParallel` + `runWithConcurrency`) — a strictly sequential single stream collapses to per-connection throughput on long files (the 20→10→1 MB/s decay). Init presigns **every** part upfront (`presign_ttl_minutes`, default 60); a PUT that returns **403 (expired URL)** is re-signed and retried once per part. After the last part PUT, the row shows **Finalizing…** (`upload.completing`) at 100% with speed cleared while the client calls `POST …/complete` (merge parts / promote `HostedFile`) — then **Done**. API session payloads do not include progress or speed fields.
 
 All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `data?`, `redirect?`). Successful mutations **do not** hard-reload the page when the SPA shell is bound — they soft-refetch browse/quota/trash/show (and peers update via WebSocket or poll fallback).
 
@@ -595,9 +625,11 @@ Region UI (list column, detail badge, soft-refetch): `RegionResolver::shouldDisp
 | `upload_proxy.*` | Optional CF Worker hybrid byte path for **upload + download** (`base_url`, `token`, `disk_targets`) |
 | `default_quota_bytes` | Free-tier base always stacked (typically 5 GiB); also used when no `UserQuota` denorm row |
 | `max_concurrent_uploads` | Server-side cap on pending non-expired upload sessions per storage owner (default 2) |
-| `stale_upload_grace_hours` | Extra grace after a pending session expires before `file-hosting:prune-stale-uploads` aborts it and reclaims orphaned multipart storage (default 6, `FILE_HOSTING_STALE_UPLOAD_GRACE`) |
-| `orphan_inactivity_minutes` | Reclaim a not-yet-expired pending session with no part activity for this many minutes (cancel/tab-close right after init). `updated_at` is the activity proxy; a live upload refreshes it per landed part (default 60, `FILE_HOSTING_ORPHAN_INACTIVITY_MINUTES`) |
-| `signed_download_ttl_minutes` | Cached download URL lifetime (Worker HMAC `exp` or S3 temp URL) |
+| `stale_upload_grace_hours` | Extra grace after a pending multipart session expires before `file-hosting:prune-stale-uploads` aborts it and reclaims orphaned multipart storage (default 6, `FILE_HOSTING_STALE_UPLOAD_GRACE`) |
+| `max_concurrent_parts` | Concurrent part XHR streams within one file (default 3, `FILE_HOSTING_MAX_CONCURRENT_PARTS`). Parallel parts fix single-stream throughput collapse on long files; lower to 2 if 520s increase |
+| `presign_ttl_minutes` | Presigned part-URL lifetime (default 60, `FILE_HOSTING_PRESIGN_TTL`). Init signs every part upfront; 60 min + client re-sign-on-403 covers slow multi-GB uploads (was 15, too short) |
+| `orphan_inactivity_minutes` | Reclaim a not-yet-expired pending **multipart** session with no recent S3 part activity for this many minutes (cancel/tab-close right after init). `S3DirectUploadEngine::listParts()` `LastModified` is the activity truth; a `ListParts` error skips the candidate (default 180, `FILE_HOSTING_ORPHAN_INACTIVITY_MINUTES`). Single-PUT sessions are never pruned by this arm |
+| `signed_download_ttl_minutes` | Cached download URL lifetime (Worker HMAC `exp` or S3 temp URL). Default **60** (`FILE_HOSTING_SIGNED_DOWNLOAD_TTL`; was 15) — cuts remints on repeat downloads |
 | `signed_download_cache_margin_seconds` | Treat cache expired early |
 | `public_download_signature_ttl_minutes` | Laravel signed hop for `/s/f/.../download` (Monolith hop only; storage URL has its own TTL) |
 

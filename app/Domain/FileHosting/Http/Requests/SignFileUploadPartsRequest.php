@@ -17,7 +17,7 @@ class SignFileUploadPartsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'part_numbers' => ['required', 'array', 'min:1'],
+            'part_numbers' => ['required', 'array', 'min:1', 'max:100'],
             'part_numbers.*' => ['integer', 'min:1'],
         ];
     }

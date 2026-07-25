@@ -113,11 +113,11 @@ class S3DirectUploadEngine
     /**
      * List the parts S3 has actually received for an in-flight multipart upload.
      *
-     * S3 is the source of truth for which parts truly landed (etag + size). Used to
-     * reconcile the DB `parts` JSON on resume so we never re-upload a part the
-     * provider already has, nor trust a client-claimed part that never arrived.
+     * S3 is the source of truth for which parts truly landed (etag + size +
+     * last_modified). The orphan prune scheduler uses `last_modified` to decide
+     * whether a session still receives multipart data.
      *
-     * @return list<array{part_number: int, etag: string, size: int}>
+     * @return list<array{part_number: int, etag: string, size: int, last_modified: string|null}>
      *
      * @throws S3DirectUploadException
      */
@@ -148,6 +148,7 @@ class S3DirectUploadEngine
                         'part_number' => $partNumber,
                         'etag' => trim((string) ($part['ETag'] ?? ''), '"'),
                         'size' => (int) ($part['Size'] ?? 0),
+                        'last_modified' => $this->isoDate($part['LastModified'] ?? null),
                     ];
                 }
 
@@ -157,6 +158,49 @@ class S3DirectUploadEngine
             return $parts;
         } catch (Throwable $e) {
             throw $this->wrapUpstream($e);
+        }
+    }
+
+    /**
+     * Latest part LastModified for an upload, or null when no part has landed.
+     * Used by orphan cleanup: "no new multipart data in X hours" = latest < cutoff.
+     *
+     * @throws S3DirectUploadException
+     */
+    public function latestPartModifiedAt(string $diskName, string $path, string $s3UploadId): ?Carbon
+    {
+        $latest = null;
+
+        foreach ($this->listParts($diskName, $path, $s3UploadId) as $part) {
+            $ts = $part['last_modified'] ?? null;
+
+            if ($ts === null) {
+                continue;
+            }
+
+            $at = Carbon::parse($ts);
+
+            if ($latest === null || $at->greaterThan($latest)) {
+                $latest = $at;
+            }
+        }
+
+        return $latest;
+    }
+
+    /**
+     * Normalize an AWS DateTime-ish value to ISO-8601 (null when absent/unparseable).
+     */
+    private function isoDate(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->toIso8601String();
+        } catch (Throwable) {
+            return null;
         }
     }
 
@@ -387,24 +431,6 @@ class S3DirectUploadEngine
     }
 
     /**
-     * @param  list<array{part_number: int, etag?: string, size?: int}>  $recordedParts
-     * @return list<int>
-     */
-    public function missingPartNumbers(array $recordedParts, int $partCount, int $maxPartsPerResponse): array
-    {
-        $recorded = array_column($recordedParts, 'part_number');
-        $missing = [];
-
-        for ($part = 1; $part <= $partCount; $part++) {
-            if (! in_array($part, $recorded, true)) {
-                $missing[] = $part;
-            }
-        }
-
-        return array_slice($missing, 0, max(0, $maxPartsPerResponse));
-    }
-
-    /**
      * @param  list<array{part_number: int, etag: string, size?: int}>  $recorded
      * @param  list<array{part_number?: int, etag?: string, size?: int}>|null  $incoming
      * @return list<array{part_number: int, etag: string, size: int}>
@@ -439,61 +465,6 @@ class S3DirectUploadEngine
         ksort($byNumber);
 
         return array_values($byNumber);
-    }
-
-    /**
-     * Reconcile DB-recorded parts against what S3 actually holds.
-     *
-     * S3 is authoritative: only parts S3 reports as present survive, and their
-     * etag/size are taken from S3 (a client may have reported an etag for a PUT
-     * that never fully landed). Parts in the DB but absent from S3 are dropped so
-     * resume re-uploads them; parts on S3 but missing from the DB are adopted.
-     *
-     * @param  list<array{part_number: int, etag?: string, size?: int}>  $dbParts
-     * @param  list<array{part_number: int, etag?: string, size?: int}>  $s3Parts
-     * @return list<array{part_number: int, etag: string, size: int}>
-     */
-    public function reconcileParts(array $dbParts, array $s3Parts): array
-    {
-        $dbByNumber = [];
-
-        foreach ($dbParts as $part) {
-            $dbByNumber[(int) ($part['part_number'] ?? 0)] = [
-                'etag' => trim((string) ($part['etag'] ?? ''), '"'),
-                'size' => (int) ($part['size'] ?? 0),
-            ];
-        }
-
-        $reconciled = [];
-
-        foreach ($s3Parts as $part) {
-            $partNumber = (int) ($part['part_number'] ?? 0);
-
-            if ($partNumber < 1) {
-                continue;
-            }
-
-            $etag = trim((string) ($part['etag'] ?? ''), '"');
-            $size = (int) ($part['size'] ?? 0);
-
-            // Prefer S3 truth; fall back to DB record only for a missing field.
-            if ($etag === '' && isset($dbByNumber[$partNumber])) {
-                $etag = (string) $dbByNumber[$partNumber]['etag'];
-            }
-            if ($size === 0 && isset($dbByNumber[$partNumber])) {
-                $size = (int) $dbByNumber[$partNumber]['size'];
-            }
-
-            $reconciled[$partNumber] = [
-                'part_number' => $partNumber,
-                'etag' => $etag,
-                'size' => $size,
-            ];
-        }
-
-        ksort($reconciled);
-
-        return array_values($reconciled);
     }
 
     /**

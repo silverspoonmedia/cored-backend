@@ -444,15 +444,15 @@ class FileManagerControllerTest extends TestCase
         $user = $this->actingWithApiGuard(User::factory()->create());
         $fileId = fake()->uuid();
 
-        Http::fake([
-            "*/api/v1/file-hosting/files/{$fileId}/download*" => Http::response([
-                'status' => 'success',
-                'data' => [
-                    'url' => 'https://fake-storage.test/download/'.$fileId,
-                    'expires_at' => now()->addMinutes(15)->toISOString(),
-                ],
-            ], 200),
-        ]);
+        // Web hop no longer loops back over HTTP; it calls FileService directly.
+        $files = \Mockery::mock(\App\Domain\FileHosting\Services\FileService::class);
+        $files->shouldReceive('download')
+            ->once()
+            ->andReturn([
+                'url' => 'https://fake-storage.test/download/'.$fileId,
+                'expires_at' => now()->addMinutes(60)->toISOString(),
+            ]);
+        $this->app->instance(\App\Domain\FileHosting\Services\FileService::class, $files);
 
         $user->get("/file-hosting/files/{$fileId}/download")
             ->assertRedirect('https://fake-storage.test/download/'.$fileId);
