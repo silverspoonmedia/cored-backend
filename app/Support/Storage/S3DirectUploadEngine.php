@@ -111,6 +111,56 @@ class S3DirectUploadEngine
     }
 
     /**
+     * List the parts S3 has actually received for an in-flight multipart upload.
+     *
+     * S3 is the source of truth for which parts truly landed (etag + size). Used to
+     * reconcile the DB `parts` JSON on resume so we never re-upload a part the
+     * provider already has, nor trust a client-claimed part that never arrived.
+     *
+     * @return list<array{part_number: int, etag: string, size: int}>
+     *
+     * @throws S3DirectUploadException
+     */
+    public function listParts(string $diskName, string $path, string $s3UploadId): array
+    {
+        try {
+            $client = $this->s3Client($diskName);
+            $bucket = $this->bucket($diskName);
+            $parts = [];
+            $marker = 0;
+
+            do {
+                $result = $client->listParts([
+                    'Bucket' => $bucket,
+                    'Key' => $path,
+                    'UploadId' => $s3UploadId,
+                    'PartNumberMarker' => $marker,
+                ]);
+
+                foreach ($result['Parts'] ?? [] as $part) {
+                    $partNumber = (int) ($part['PartNumber'] ?? 0);
+
+                    if ($partNumber < 1) {
+                        continue;
+                    }
+
+                    $parts[] = [
+                        'part_number' => $partNumber,
+                        'etag' => trim((string) ($part['ETag'] ?? ''), '"'),
+                        'size' => (int) ($part['Size'] ?? 0),
+                    ];
+                }
+
+                $marker = (int) ($result['NextPartNumberMarker'] ?? 0);
+            } while (($result['IsTruncated'] ?? false) === true && $marker > 0);
+
+            return $parts;
+        } catch (Throwable $e) {
+            throw $this->wrapUpstream($e);
+        }
+    }
+
+    /**
      * @param  list<array{part_number: int, etag: string, size?: int}>  $parts
      *
      * @throws S3DirectUploadException
@@ -389,6 +439,61 @@ class S3DirectUploadEngine
         ksort($byNumber);
 
         return array_values($byNumber);
+    }
+
+    /**
+     * Reconcile DB-recorded parts against what S3 actually holds.
+     *
+     * S3 is authoritative: only parts S3 reports as present survive, and their
+     * etag/size are taken from S3 (a client may have reported an etag for a PUT
+     * that never fully landed). Parts in the DB but absent from S3 are dropped so
+     * resume re-uploads them; parts on S3 but missing from the DB are adopted.
+     *
+     * @param  list<array{part_number: int, etag?: string, size?: int}>  $dbParts
+     * @param  list<array{part_number: int, etag?: string, size?: int}>  $s3Parts
+     * @return list<array{part_number: int, etag: string, size: int}>
+     */
+    public function reconcileParts(array $dbParts, array $s3Parts): array
+    {
+        $dbByNumber = [];
+
+        foreach ($dbParts as $part) {
+            $dbByNumber[(int) ($part['part_number'] ?? 0)] = [
+                'etag' => trim((string) ($part['etag'] ?? ''), '"'),
+                'size' => (int) ($part['size'] ?? 0),
+            ];
+        }
+
+        $reconciled = [];
+
+        foreach ($s3Parts as $part) {
+            $partNumber = (int) ($part['part_number'] ?? 0);
+
+            if ($partNumber < 1) {
+                continue;
+            }
+
+            $etag = trim((string) ($part['etag'] ?? ''), '"');
+            $size = (int) ($part['size'] ?? 0);
+
+            // Prefer S3 truth; fall back to DB record only for a missing field.
+            if ($etag === '' && isset($dbByNumber[$partNumber])) {
+                $etag = (string) $dbByNumber[$partNumber]['etag'];
+            }
+            if ($size === 0 && isset($dbByNumber[$partNumber])) {
+                $size = (int) $dbByNumber[$partNumber]['size'];
+            }
+
+            $reconciled[$partNumber] = [
+                'part_number' => $partNumber,
+                'etag' => $etag,
+                'size' => $size,
+            ];
+        }
+
+        ksort($reconciled);
+
+        return array_values($reconciled);
     }
 
     /**

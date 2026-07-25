@@ -93,6 +93,9 @@ Route::get('file-hosting/uploads/{upload}', [FileManagerController::class, 'uplo
 Route::post('file-hosting/uploads/{upload}/sign-parts', [FileManagerController::class, 'signParts'])
     ->whereUuid('upload')
     ->name('file-hosting.uploads.sign-parts');
+Route::post('file-hosting/uploads/{upload}/parts', [FileManagerController::class, 'recordParts'])
+    ->whereUuid('upload')
+    ->name('file-hosting.uploads.parts');
 Route::post('file-hosting/uploads/{upload}/complete', [FileManagerController::class, 'completeUpload'])
     ->whereUuid('upload')
     ->name('file-hosting.uploads.complete');

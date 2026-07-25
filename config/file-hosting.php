@@ -1,5 +1,7 @@
 <?php
 
+use App\Domain\Service\Support\FileHostingCatalog;
+
 return [
 
     /*
@@ -68,6 +70,30 @@ return [
 
     'session_ttl_hours' => (int) env('FILE_HOSTING_SESSION_TTL', 24),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Extra grace (hours) after a pending upload session expires before the
+    | scheduler (`file-hosting:prune-stale-uploads`) aborts it and reclaims the
+    | orphaned multipart storage. Providers like Backblaze offer no S3 lifecycle
+    | for incomplete multiparts, so this is the cleanup path. Keep >= a bit so a
+    | just-expired session a user is actively resuming is not yanked mid-retry.
+    |--------------------------------------------------------------------------
+    */
+    'stale_upload_grace_hours' => (int) env('FILE_HOSTING_STALE_UPLOAD_GRACE', 6),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Orphan-by-inactivity window (minutes). A pending session with no part
+    | activity (no recordParts/complete) for this long is aborted even if its
+    | 24h TTL has not elapsed — catches cancel/tab-close-right-after-init that
+    | would otherwise hold a max_concurrent_uploads slot until expiry. A live
+    | upload refreshes updated_at on every landed part, so 60 min of true
+    | silence means it is genuinely dead. A pruned-but-actually-live slow part
+    | resumes on the user's next attempt via content_hash.
+    |--------------------------------------------------------------------------
+    */
+    'orphan_inactivity_minutes' => (int) env('FILE_HOSTING_ORPHAN_INACTIVITY_MINUTES', 60),
+
     'max_presigned_parts_per_response' => (int) env('FILE_HOSTING_MAX_PRESIGNED_PARTS', 100),
 
     /*
@@ -85,7 +111,7 @@ return [
     */
     'base_owned_workspace_slots' => (int) env(
         'FILE_HOSTING_BASE_OWNED_WORKSPACE_SLOTS',
-        \App\Domain\Service\Support\FileHostingCatalog::BASE_OWNED_WORKSPACE_SLOTS,
+        FileHostingCatalog::BASE_OWNED_WORKSPACE_SLOTS,
     ),
 
     /*

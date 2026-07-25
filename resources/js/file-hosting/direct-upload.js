@@ -37,6 +37,118 @@ export function buildInitContext(dataset) {
     return context;
 }
 
+/**
+ * sha256 hex fingerprint of a file body, used server-side to resume a pending
+ * multipart session on re-upload. Returns null when Web Crypto is unavailable
+ * (insecure context / old browser) — resume simply stays disabled in that case.
+ *
+ * @param {Blob|File} file
+ * @returns {Promise<string|null>}
+ */
+export async function computeContentHash(file) {
+    if (typeof crypto === 'undefined' || !crypto.subtle || typeof file.arrayBuffer !== 'function') {
+        return null;
+    }
+
+    try {
+        const buffer = await file.arrayBuffer();
+        const digest = await crypto.subtle.digest('SHA-256', buffer);
+
+        return Array.from(new Uint8Array(digest))
+            .map(function (b) {
+                return b.toString(16).padStart(2, '0');
+            })
+            .join('');
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Part numbers 1..partCount that are NOT already recorded (present on storage).
+ *
+ * @param {number} partCount
+ * @param {Array<{part_number: number}>} recordedParts
+ * @returns {number[]}
+ */
+export function selectMissingPartNumbers(partCount, recordedParts) {
+    const done = new Set(
+        (recordedParts || []).map(function (p) {
+            return Number(p.part_number);
+        }),
+    );
+    const missing = [];
+
+    for (let partNumber = 1; partNumber <= partCount; partNumber++) {
+        if (!done.has(partNumber)) {
+            missing.push(partNumber);
+        }
+    }
+
+    return missing;
+}
+
+/**
+ * localStorage hint mapping a content hash to its last upload_id. A fast client
+ * shortcut for resume; the server fingerprint match is the real source of truth.
+ */
+export const resumeHint = {
+    key(hash) {
+        return 'fh:resume:' + hash;
+    },
+    get(hash) {
+        if (!hash || typeof localStorage === 'undefined') {
+            return null;
+        }
+        try {
+            return localStorage.getItem(this.key(hash));
+        } catch {
+            return null;
+        }
+    },
+    set(hash, uploadId) {
+        if (!hash || !uploadId || typeof localStorage === 'undefined') {
+            return;
+        }
+        try {
+            localStorage.setItem(this.key(hash), uploadId);
+        } catch {
+            // Storage full / disabled — hint is optional.
+        }
+    },
+    clear(hash) {
+        if (!hash || typeof localStorage === 'undefined') {
+            return;
+        }
+        try {
+            localStorage.removeItem(this.key(hash));
+        } catch {
+            // Ignore.
+        }
+    },
+};
+
+/**
+ * Best-effort abort of a pending upload session so it cannot strand a
+ * concurrent-upload slot. Never rejects: a failed abort (network blip, already
+ * gone) must not mask the original upload error. The hourly prune scheduler is
+ * the backstop for sessions this cannot reach (e.g. tab closed mid-upload).
+ *
+ * @param {{ abortUrl: string, apiJson: (url: string, method: string) => Promise<unknown> }} deps
+ * @returns {Promise<void>}
+ */
+export async function abortUploadSession({ abortUrl, apiJson }) {
+    if (!abortUrl) {
+        return;
+    }
+
+    try {
+        await apiJson(abortUrl, 'DELETE');
+    } catch {
+        // Swallowed on purpose.
+    }
+}
+
 export function initDirectUpload(root) {
     if (!root || root.dataset.directUploadBound === '1') {
         return;
@@ -51,6 +163,7 @@ export function initDirectUpload(root) {
         completeUrl: root.dataset.completeUrl,
         abortUrl: root.dataset.abortUrl,
         signPartsUrl: root.dataset.signPartsUrl,
+        recordPartsUrl: root.dataset.recordPartsUrl,
         // folder/user/workspace are read live per upload via buildInitContext(root.dataset).
         reloadOnComplete: root.dataset.reloadOnComplete === '1',
         maxFiles: parseInt(root.dataset.maxFiles || '20', 10),
@@ -226,6 +339,9 @@ export function initDirectUpload(root) {
     }
 
     async function uploadFile(file, row, rowId) {
+        // Fingerprint enables server-side resume of a pending multipart session.
+        const contentHash = await computeContentHash(file);
+
         const initBody = {
             name: file.name,
             mime: file.type || 'application/octet-stream',
@@ -233,6 +349,10 @@ export function initDirectUpload(root) {
             // Live context: SPA nav mutates the dropzone data-* attrs; never freeze at init.
             ...buildInitContext(root.dataset),
         };
+
+        if (contentHash) {
+            initBody.content_hash = contentHash;
+        }
 
         if (regionSelect && regionSelect.value) {
             initBody.disk = regionSelect.value;
@@ -247,6 +367,9 @@ export function initDirectUpload(root) {
         let baseBytes = 0;
         const startedAt = performance.now();
 
+        // Remember this session for a fast client-side resume hint on a later retry.
+        resumeHint.set(contentHash, uploadId);
+
         function reportProgress(loadedInPart) {
             const uploaded = baseBytes + loadedInPart;
             const elapsedMs = performance.now() - startedAt;
@@ -255,84 +378,148 @@ export function initDirectUpload(root) {
             updateProgress(row, percent, rate);
         }
 
-        if (data.strategy === 'single') {
-            const part = data.parts[0];
-            const etag = await putPart(
-                file,
-                part.url,
-                part.headers || {},
-                file.type || 'application/octet-stream',
-                function (event) {
-                    reportProgress(event.loaded);
-                },
-            );
-            parts.push({ part_number: 1, etag: etag, size: file.size });
-            baseBytes = file.size;
-            reportProgress(0);
-        } else {
-            const chunkSize = data.chunk_size;
-            const partCount = data.part_count;
-            let signedParts = data.parts || [];
-            const uploadedParts = new Map();
-
-            for (let partNumber = 1; partNumber <= partCount; partNumber++) {
-                let signed = signedParts.find(function (p) {
-                    return p.part_number === partNumber;
-                });
-
-                if (!signed) {
-                    const refreshed = await apiJson(
-                        replaceToken(config.signPartsUrl, uploadId),
-                        'POST',
-                        { part_numbers: [partNumber] },
-                    );
-                    signed = (refreshed.data.parts || [])[0];
-                }
-
-                if (!signed) {
-                    throw new Error('Missing presigned URL for part ' + partNumber);
-                }
-
-                const start = (partNumber - 1) * chunkSize;
-                const end = Math.min(start + chunkSize, file.size);
-                const chunk = file.slice(start, end);
+        try {
+            if (data.strategy === 'single') {
+                const part = data.parts[0];
                 const etag = await putPart(
-                    chunk,
-                    signed.url,
-                    signed.headers || {},
-                    undefined,
+                    file,
+                    part.url,
+                    part.headers || {},
+                    file.type || 'application/octet-stream',
                     function (event) {
                         reportProgress(event.loaded);
                     },
                 );
-                uploadedParts.set(partNumber, { part_number: partNumber, etag: etag, size: chunk.size });
-                baseBytes += chunk.size;
+                parts.push({ part_number: 1, etag: etag, size: file.size });
+                baseBytes = file.size;
                 reportProgress(0);
+            } else {
+                const chunkSize = data.chunk_size;
+                const partCount = data.part_count;
+                let signedParts = data.parts || [];
+                const uploadedParts = new Map();
+
+                // Resume: parts the server already holds are skipped (their bytes count
+                // as progress immediately) and only missing parts are re-uploaded.
+                (data.recorded_parts || []).forEach(function (recorded) {
+                    const partNumber = Number(recorded.part_number);
+                    if (partNumber >= 1 && partNumber <= partCount) {
+                        const size = Number(recorded.size) || 0;
+                        uploadedParts.set(partNumber, {
+                            part_number: partNumber,
+                            etag: String(recorded.etag || ''),
+                            size: size,
+                        });
+                        baseBytes += size;
+                    }
+                });
+                reportProgress(0);
+
+                const missing = selectMissingPartNumbers(partCount, Array.from(uploadedParts.values()));
+
+                for (const partNumber of missing) {
+                    let signed = signedParts.find(function (p) {
+                        return p.part_number === partNumber;
+                    });
+
+                    if (!signed) {
+                        const refreshed = await apiJson(
+                            replaceToken(config.signPartsUrl, uploadId),
+                            'POST',
+                            { part_numbers: [partNumber] },
+                        );
+                        signed = (refreshed.data.parts || [])[0];
+                    }
+
+                    if (!signed) {
+                        throw new Error('Missing presigned URL for part ' + partNumber);
+                    }
+
+                    const start = (partNumber - 1) * chunkSize;
+                    const end = Math.min(start + chunkSize, file.size);
+                    const chunk = file.slice(start, end);
+                    const etag = await putPart(
+                        chunk,
+                        signed.url,
+                        signed.headers || {},
+                        undefined,
+                        function (event) {
+                            reportProgress(event.loaded);
+                        },
+                    );
+                    uploadedParts.set(partNumber, { part_number: partNumber, etag: etag, size: chunk.size });
+                    baseBytes += chunk.size;
+                    reportProgress(0);
+
+                    // Incrementally record the landed part so a future resume knows the
+                    // progress even if the provider does not support ListParts.
+                    await recordPart(uploadId, { part_number: partNumber, etag: etag, size: chunk.size });
+                }
+
+                // Send parts in ascending order for a deterministic complete payload.
+                Array.from(uploadedParts.keys())
+                    .sort(function (a, b) {
+                        return a - b;
+                    })
+                    .forEach(function (key) {
+                        parts.push(uploadedParts.get(key));
+                    });
             }
 
-            uploadedParts.forEach(function (value) {
-                parts.push(value);
+            // Bytes are on storage; complete merges parts / promotes the file on Monolith.
+            setRowStatus(row, 'completing');
+            updateProgress(row, 100);
+
+            const completed = await apiJson(
+                replaceToken(config.completeUrl, uploadId),
+                'POST',
+                { parts: parts },
+            );
+
+            // File promoted — the pending session is gone, so drop the resume hint.
+            resumeHint.clear(contentHash);
+
+            const label = completed.data?.file?.name || file.name;
+            markRowDone(row, label);
+            active.set(rowId, { file, state: 'done' });
+
+            // Per-file: optional optimistic row inject. Full soft-refresh runs once at batch end.
+            const hosted = completed.data?.file;
+            if (hosted && typeof window.fileHostingUpsertFile === 'function') {
+                window.fileHostingUpsertFile(hosted);
+            }
+        } catch (error) {
+            // Never strand a pending session: a leaked `pending` row holds a
+            // concurrent-upload slot until the 24h TTL / hourly prune, which blocks
+            // all future uploads once `max_concurrent_uploads` is reached. Abort now
+            // (best-effort; a failed abort must not mask the original error), then
+            // clear the resume hint so a retry starts a clean session.
+            abortUploadSession({
+                abortUrl: replaceToken(config.abortUrl, uploadId),
+                apiJson: apiJson,
             });
+            resumeHint.clear(contentHash);
+            throw error;
+        }
+    }
+
+    /**
+     * Best-effort incremental part record. Never blocks the upload: a failure here
+     * only means resume falls back to S3 ListParts reconciliation server-side.
+     */
+    async function recordPart(uploadId, part) {
+        if (!config.recordPartsUrl) {
+            return;
         }
 
-        // Bytes are on storage; complete merges parts / promotes the file on Monolith.
-        setRowStatus(row, 'completing');
-        updateProgress(row, 100);
-
-        const completed = await apiJson(
-            replaceToken(config.completeUrl, uploadId),
-            'POST',
-            { parts: parts },
-        );
-
-        const label = completed.data?.file?.name || file.name;
-        markRowDone(row, label);
-        active.set(rowId, { file, state: 'done' });
-
-        // Per-file: optional optimistic row inject. Full soft-refresh runs once at batch end.
-        const hosted = completed.data?.file;
-        if (hosted && typeof window.fileHostingUpsertFile === 'function') {
-            window.fileHostingUpsertFile(hosted);
+        try {
+            await apiJson(
+                replaceToken(config.recordPartsUrl, uploadId),
+                'POST',
+                { parts: [part] },
+            );
+        } catch {
+            // Ignore — server reconciles via ListParts on the next status/resume.
         }
     }
 

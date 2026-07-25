@@ -41,7 +41,7 @@ class FileHostingQualificationAnomalyTest extends TestCase
         ]);
     }
 
-    public function test_FH_A01_double_complete_race(): void
+    public function test_f_h_a01_double_complete_race(): void
     {
         $user = $this->userWithRole('User');
         $objectId = Str::lower(Str::random(ObjectKeyResolver::OBJECT_ID_LENGTH));
@@ -81,7 +81,7 @@ class FileHostingQualificationAnomalyTest extends TestCase
         $this->assertSame(1, HostedFile::query()->where('path', $objectId)->count());
     }
 
-    public function test_FH_A02_concurrent_create_at_slot_limit(): void
+    public function test_f_h_a02_concurrent_create_at_slot_limit(): void
     {
         $owner = $this->userWithRole('User');
         $this->grantPaidMain($owner);
@@ -100,7 +100,7 @@ class FileHostingQualificationAnomalyTest extends TestCase
         $this->assertSame(1, Workspace::query()->where('owner_user_id', $owner->id)->where('status', 'active')->count());
     }
 
-    public function test_FH_A03_quota_toctou_near_limit(): void
+    public function test_f_h_a03_quota_toctou_near_limit(): void
     {
         $user = $this->userWithRole('User');
         config(['file-hosting.default_quota_bytes' => 3000]);
@@ -119,7 +119,7 @@ class FileHostingQualificationAnomalyTest extends TestCase
         $this->assertSame(2000, app(QuotaService::class)->usage($user->id)['pending_bytes']);
     }
 
-    public function test_FH_A04_archive_mid_pending_upload(): void
+    public function test_f_h_a04_archive_mid_pending_upload(): void
     {
         $owner = $this->userWithRole('User', 'owner-a04@example.com');
         $this->grantPaidMain($owner);
@@ -150,7 +150,7 @@ class FileHostingQualificationAnomalyTest extends TestCase
         }
     }
 
-    public function test_FH_A05_invite_email_mismatch(): void
+    public function test_f_h_a05_invite_email_mismatch(): void
     {
         $owner = $this->userWithRole('User', 'owner-a05@example.com');
         $alice = $this->userWithRole('User', 'alice-a05@example.com');
@@ -172,7 +172,7 @@ class FileHostingQualificationAnomalyTest extends TestCase
         }
     }
 
-    public function test_FH_A06_visibility_private_clears_signed_cache(): void
+    public function test_f_h_a06_visibility_private_clears_signed_cache(): void
     {
         $user = $this->userWithRole('User');
         $this->grantPaidMain($user);
@@ -194,7 +194,7 @@ class FileHostingQualificationAnomalyTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_FH_A07_slot_over_cap_after_entitlement_drop(): void
+    public function test_f_h_a07_slot_over_cap_after_entitlement_drop(): void
     {
         $owner = $this->userWithRole('User');
         $this->grantPaidMain($owner);
@@ -230,7 +230,7 @@ class FileHostingQualificationAnomalyTest extends TestCase
         $this->assertSame(4, Workspace::query()->where('owner_user_id', $owner->id)->where('status', 'active')->count());
     }
 
-    public function test_FH_A08_proxy_misconfig_fail_closed(): void
+    public function test_f_h_a08_proxy_misconfig_fail_closed(): void
     {
         config([
             'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
@@ -254,7 +254,7 @@ class FileHostingQualificationAnomalyTest extends TestCase
         }
     }
 
-    public function test_FH_A09_mime_spoof_client_trusted(): void
+    public function test_f_h_a09_mime_spoof_client_trusted(): void
     {
         $user = $this->userWithRole('User');
 
@@ -271,7 +271,7 @@ class FileHostingQualificationAnomalyTest extends TestCase
         $this->assertSame('image/png', FileUpload::query()->find($init['upload_id'])->mime);
     }
 
-    public function test_FH_A10_concurrent_upload_limit_server_side(): void
+    public function test_f_h_a10_concurrent_upload_limit_server_side(): void
     {
         $user = $this->userWithRole('User');
         config(['file-hosting.max_concurrent_uploads' => 2]);

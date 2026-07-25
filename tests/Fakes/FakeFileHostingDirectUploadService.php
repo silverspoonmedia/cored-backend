@@ -2,6 +2,7 @@
 
 namespace Tests\Fakes;
 
+use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\AccessService;
@@ -12,7 +13,9 @@ use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\UniqueDisplayNameAllocator;
 use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
+use App\Support\Storage\S3DirectUploadEngine;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -29,6 +32,7 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
         ?string $userId = null,
         ?string $disk = null,
         ?string $workspaceId = null,
+        ?string $contentHash = null,
     ): array {
         $access = app(AccessService::class);
         $workspaceAccess = app(WorkspaceAccessService::class);
@@ -73,6 +77,9 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             'original_name' => $name,
             'mime' => $mime,
             'size' => $size,
+            'content_hash' => $strategy === FileUpload::STRATEGY_MULTIPART ? $contentHash : null,
+            'chunk_size' => $strategy === FileUpload::STRATEGY_MULTIPART ? $chunkSize : $size,
+            'part_count' => $partCount,
             'status' => FileUpload::STATUS_PENDING,
             'parts' => [],
             'expires_at' => Carbon::now()->addDay(),
@@ -94,33 +101,35 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             'chunk_size' => $strategy === FileUpload::STRATEGY_MULTIPART ? $chunkSize : $size,
             'part_count' => $partCount,
             'parts' => $parts,
+            'recorded_parts' => [],
+            'resumed' => false,
         ];
     }
 
     public function complete(User $actor, string $uploadUuid, ?array $parts = null): array
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($actor, $uploadUuid, $parts): array {
+        return DB::transaction(function () use ($actor, $uploadUuid, $parts): array {
             $upload = FileUpload::query()
                 ->whereKey($uploadUuid)
                 ->lockForUpdate()
                 ->firstOrFail();
 
             if ($upload->status === FileUpload::STATUS_COMPLETED) {
-                throw new \App\Domain\FileHosting\Exceptions\FileHostingException(
+                throw new FileHostingException(
                     __('api/file-hosting.upload.already_promoted'),
                     422,
                 );
             }
 
             if ($upload->status !== FileUpload::STATUS_PENDING) {
-                throw new \App\Domain\FileHosting\Exceptions\FileHostingException(
+                throw new FileHostingException(
                     __('api/file-hosting.upload.not_pending'),
                     422,
                 );
             }
 
             if ($upload->isExpired()) {
-                throw new \App\Domain\FileHosting\Exceptions\FileHostingException(
+                throw new FileHostingException(
                     __('api/file-hosting.upload.expired'),
                     422,
                 );
@@ -195,12 +204,30 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
                 : $upload->size,
             'part_count' => $partCount,
             'recorded_parts' => $upload->recordedParts(),
+            'resumed' => false,
             'parts' => [[
                 'part_number' => 1,
                 'url' => 'https://fake-storage.test/put/'.$upload->id.'/1',
                 'headers' => [],
             ]],
         ];
+    }
+
+    public function recordParts(User $actor, string $uploadUuid, array $parts): array
+    {
+        $upload = FileUpload::query()->findOrFail($uploadUuid);
+        $merged = $this->engineForTests()->mergeParts($upload->recordedParts(), $parts);
+        $upload->forceFill(['parts' => $merged])->save();
+
+        return [
+            'upload' => $upload,
+            'recorded_parts' => $upload->recordedParts(),
+        ];
+    }
+
+    private function engineForTests(): S3DirectUploadEngine
+    {
+        return app(S3DirectUploadEngine::class);
     }
 
     public function signParts(User $actor, string $uploadUuid, array $partNumbers): array

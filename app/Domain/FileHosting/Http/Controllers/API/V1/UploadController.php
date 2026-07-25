@@ -4,6 +4,7 @@ namespace App\Domain\FileHosting\Http\Controllers\API\V1;
 
 use App\Domain\FileHosting\Http\Requests\CompleteFileUploadRequest;
 use App\Domain\FileHosting\Http\Requests\InitFileUploadRequest;
+use App\Domain\FileHosting\Http\Requests\RecordFileUploadPartsRequest;
 use App\Domain\FileHosting\Http\Requests\SignFileUploadPartsRequest;
 use App\Domain\FileHosting\Http\Resources\HostedFileResource;
 use App\Domain\FileHosting\Models\HostedFile;
@@ -38,13 +39,17 @@ class UploadController extends Controller
             $request->validated('user_id'),
             $request->validated('disk'),
             $request->validated('workspace_id'),
+            $request->validated('content_hash'),
         );
 
         return $this->successResponse(
-            $this->serializeUploadSession($result, extra: [
+            $this->serializeUploadSession($result, includeRecorded: true, extra: [
                 'folder_id' => $result['upload']->folder_id,
+                'resumed' => $result['resumed'] ?? false,
             ]),
-            __('api/file-hosting.upload.initiated'),
+            ($result['resumed'] ?? false)
+                ? __('api/file-hosting.upload.resumed')
+                : __('api/file-hosting.upload.initiated'),
             201,
         );
     }
@@ -76,6 +81,22 @@ class UploadController extends Controller
         return $this->successResponse(
             ['parts' => $parts],
             __('api/file-hosting.upload.parts_signed'),
+        );
+    }
+
+    public function recordParts(RecordFileUploadPartsRequest $request, string $upload): JsonResponse
+    {
+        $this->authorize('create', HostedFile::class);
+
+        $result = $this->uploads->recordParts(
+            $request->user(),
+            $upload,
+            $request->validated('parts'),
+        );
+
+        return $this->successResponse(
+            ['recorded_parts' => $result['recorded_parts']],
+            __('api/file-hosting.upload.parts_recorded'),
         );
     }
 

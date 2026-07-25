@@ -523,7 +523,7 @@ class FileManagerController extends Controller
     public function initUpload(Request $request): JsonResponse
     {
         $response = $this->api()->post('file-hosting/uploads', $request->only([
-            'name', 'mime', 'size', 'folder_id', 'user_id', 'workspace_id', 'disk',
+            'name', 'mime', 'size', 'folder_id', 'user_id', 'workspace_id', 'disk', 'content_hash',
         ]));
 
         return response()->json($response->json(), $response->status());
@@ -569,6 +569,16 @@ class FileManagerController extends Controller
         $response = $this->api()->post(
             'file-hosting/uploads/'.$upload.'/sign-parts',
             $request->only(['part_numbers']),
+        );
+
+        return response()->json($response->json(), $response->status());
+    }
+
+    public function recordParts(Request $request, string $upload): JsonResponse
+    {
+        $response = $this->api()->post(
+            'file-hosting/uploads/'.$upload.'/parts',
+            $request->only(['parts']),
         );
 
         return response()->json($response->json(), $response->status());

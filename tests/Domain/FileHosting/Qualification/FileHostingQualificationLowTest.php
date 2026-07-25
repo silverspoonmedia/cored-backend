@@ -2,8 +2,6 @@
 
 namespace Tests\Domain\FileHosting\Qualification;
 
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +21,7 @@ class FileHostingQualificationLowTest extends TestCase
         $this->setUpQualification();
     }
 
-    public function test_FH_L01_personal_browse_empty_tree(): void
+    public function test_f_h_l01_personal_browse_empty_tree(): void
     {
         $user = $this->userWithRole('User');
 
@@ -38,7 +36,7 @@ class FileHostingQualificationLowTest extends TestCase
         $this->assertNull($data['breadcrumb'][0]['id'] ?? null);
     }
 
-    public function test_FH_L02_create_folder_and_rename(): void
+    public function test_f_h_l02_create_folder_and_rename(): void
     {
         $user = $this->userWithRole('User');
 
@@ -56,7 +54,7 @@ class FileHostingQualificationLowTest extends TestCase
         $this->assertSame('Documents', $renamed['name']);
     }
 
-    public function test_FH_L03_single_part_upload_complete(): void
+    public function test_f_h_l03_single_part_upload_complete(): void
     {
         $user = $this->userWithRole('User');
         $result = $this->uploadComplete($user, 'report.pdf', 1024);
@@ -66,7 +64,7 @@ class FileHostingQualificationLowTest extends TestCase
         Storage::disk('local')->assertExists('file-hosting/'.$user->id.'/'.$result['file']['path']);
     }
 
-    public function test_FH_L04_auth_download_returns_url(): void
+    public function test_f_h_l04_auth_download_returns_url(): void
     {
         $user = $this->userWithRole('User');
         $file = $this->seedFile($user, 'dl.pdf');
@@ -81,7 +79,7 @@ class FileHostingQualificationLowTest extends TestCase
         $this->assertSame(1, $file->fresh()->download_count);
     }
 
-    public function test_FH_L05_free_quota_under_limit(): void
+    public function test_f_h_l05_free_quota_under_limit(): void
     {
         $user = $this->userWithRole('User');
 
@@ -104,7 +102,7 @@ class FileHostingQualificationLowTest extends TestCase
         $this->assertLessThan($before['remaining_bytes'], $after['remaining_bytes']);
     }
 
-    public function test_FH_L06_search_own_files(): void
+    public function test_f_h_l06_search_own_files(): void
     {
         $alice = $this->userWithRole('User', 'alice-l06@example.com');
         $bob = $this->userWithRole('User', 'bob-l06@example.com');
@@ -121,7 +119,7 @@ class FileHostingQualificationLowTest extends TestCase
         $this->assertNotContains('unique-alpha-secret.pdf', $names);
     }
 
-    public function test_FH_L07_soft_delete_to_trash(): void
+    public function test_f_h_l07_soft_delete_to_trash(): void
     {
         $user = $this->userWithRole('User');
         $file = $this->seedFile($user, 'trash-me.pdf');
@@ -143,7 +141,7 @@ class FileHostingQualificationLowTest extends TestCase
         $this->assertContains($file->id, $ids);
     }
 
-    public function test_FH_L08_restore_from_trash(): void
+    public function test_f_h_l08_restore_from_trash(): void
     {
         $user = $this->userWithRole('User');
         $file = $this->seedFile($user, 'restore-me.pdf');
@@ -163,7 +161,7 @@ class FileHostingQualificationLowTest extends TestCase
             ->assertJsonFragment(['name' => 'restore-me.pdf']);
     }
 
-    public function test_FH_L09_blade_index_renders(): void
+    public function test_f_h_l09_blade_index_renders(): void
     {
         $user = $this->userWithRole('User');
 
@@ -200,7 +198,7 @@ class FileHostingQualificationLowTest extends TestCase
             ->assertViewIs('adminlte4.file-hosting.index');
     }
 
-    public function test_FH_L10_free_user_workspace_list_empty(): void
+    public function test_f_h_l10_free_user_workspace_list_empty(): void
     {
         $user = $this->userWithRole('User');
 

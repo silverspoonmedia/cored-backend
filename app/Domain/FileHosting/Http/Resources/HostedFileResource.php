@@ -3,13 +3,14 @@
 namespace App\Domain\FileHosting\Http\Resources;
 
 use App\Domain\FileHosting\Enums\Visibility;
+use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\VisibilityService;
 use App\Domain\FileHosting\Support\RegionResolver;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\FileHosting\Models\HostedFile */
+/** @mixin HostedFile */
 class HostedFileResource extends JsonResource
 {
     use FormatsPresentation;

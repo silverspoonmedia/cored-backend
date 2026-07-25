@@ -78,8 +78,10 @@ return [
     ],
     'upload' => [
         'initiated' => 'Sesi unggah dibuat.',
+        'resumed' => 'Melanjutkan sesi unggah yang tertunda.',
         'status' => 'Status unggah dimuat.',
         'parts_signed' => 'URL bagian ditandatangani.',
+        'parts_recorded' => 'Bagian unggahan dicatat.',
         'completed' => 'Unggah selesai dan file dibuat.',
         'aborted' => 'Unggah dibatalkan.',
         'not_found' => 'Sesi unggah tidak ditemukan.',

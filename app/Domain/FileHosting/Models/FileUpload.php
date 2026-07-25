@@ -36,6 +36,9 @@ class FileUpload extends Model
         'original_name',
         'mime',
         'size',
+        'content_hash',
+        'chunk_size',
+        'part_count',
         'status',
         'parts',
         'promoted_file_id',
@@ -50,6 +53,8 @@ class FileUpload extends Model
     {
         return [
             'size' => 'integer',
+            'chunk_size' => 'integer',
+            'part_count' => 'integer',
             'parts' => 'array',
             'expires_at' => 'datetime',
             'completed_at' => 'datetime',
@@ -132,5 +137,27 @@ class FileUpload extends Model
     public function scopeNotExpired(Builder $query): Builder
     {
         return $query->where('expires_at', '>', Carbon::now());
+    }
+
+    /**
+     * Pending, not-yet-expired, not-yet-promoted multipart sessions that match a
+     * client-supplied content fingerprint + size for the same storage owner.
+     *
+     * Used by resume: a re-upload of the same file reuses this session instead of
+     * creating a fresh one (and stranding the old multipart as an orphan).
+     *
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeResumableFor(Builder $query, string $userId, string $contentHash, int $size): Builder
+    {
+        return $query
+            ->where('user_id', $userId)
+            ->where('content_hash', $contentHash)
+            ->where('size', $size)
+            ->where('strategy', self::STRATEGY_MULTIPART)
+            ->where('status', self::STATUS_PENDING)
+            ->whereNull('promoted_file_id')
+            ->where('expires_at', '>', Carbon::now());
     }
 }

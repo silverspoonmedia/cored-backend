@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\FileHosting\Unit\Services;
 
+use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\SignedDownloadService;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
@@ -167,7 +168,7 @@ class SignedDownloadServiceTest extends TestCase
             $resolved = $this->service->resolve($file);
             $this->assertNotSame($stale, $resolved['url']);
             $this->assertStringNotContainsString('s3.silverspoon.me', $resolved['url']);
-        } catch (\App\Domain\FileHosting\Exceptions\FileHostingException $e) {
+        } catch (FileHostingException $e) {
             $this->assertNotEmpty($e->getMessage());
             $this->assertSame($stale, $file->fresh()->signed_download_url);
         }
@@ -191,7 +192,7 @@ class SignedDownloadServiceTest extends TestCase
             $url = $this->service->mintAndCache($file)['url'];
             $this->assertStringNotContainsString('/t/sbs/', $url);
             $this->assertStringNotContainsString('s3.silverspoon.me', $url);
-        } catch (\App\Domain\FileHosting\Exceptions\FileHostingException $e) {
+        } catch (FileHostingException $e) {
             // local/S3 temporaryUrl unavailable is fine — proxy path must not have run
             $this->assertNotEmpty($e->getMessage());
             $this->assertNull($file->fresh()->signed_download_url);

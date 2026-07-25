@@ -83,6 +83,7 @@ Route::middleware(['auth:api', 'domain.access:FileHosting', 'product.active:File
         Route::post('uploads', [UploadController::class, 'store'])->name('uploads.store');
         Route::get('uploads/{upload}', [UploadController::class, 'show'])->whereUuid('upload')->name('uploads.show');
         Route::post('uploads/{upload}/sign-parts', [UploadController::class, 'signParts'])->whereUuid('upload')->name('uploads.sign-parts');
+        Route::post('uploads/{upload}/parts', [UploadController::class, 'recordParts'])->whereUuid('upload')->name('uploads.parts');
         Route::post('uploads/{upload}/complete', [UploadController::class, 'complete'])->whereUuid('upload')->name('uploads.complete');
         Route::delete('uploads/{upload}', [UploadController::class, 'destroy'])->whereUuid('upload')->name('uploads.destroy');
     });

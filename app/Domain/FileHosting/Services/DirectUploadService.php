@@ -58,12 +58,20 @@ class DirectUploadService
         ?string $userId = null,
         ?string $disk = null,
         ?string $workspaceId = null,
+        ?string $contentHash = null,
     ): array {
         [$ownerId, $workspace] = $this->resolveUploadScope($actor, $userId, $workspaceId);
         $wsId = $workspace?->id;
 
         if ($folderId !== null) {
             $this->folders->findOwnedOrFail($ownerId, $folderId, $wsId);
+        }
+
+        // Resume: a still-pending multipart session for the same owner + fingerprint +
+        // size is reused instead of stranding it as an orphan and starting fresh.
+        $resumed = $this->tryResume($ownerId, $wsId, $folderId, $contentHash, $size);
+        if ($resumed !== null) {
+            return $resumed;
         }
 
         $this->assertUploadAllowed($name, $mime, $size);
@@ -105,6 +113,11 @@ class DirectUploadService
             'original_name' => $name,
             'mime' => $mime,
             'size' => $size,
+            // Fingerprint is only useful for resumable (multipart) sessions.
+            'content_hash' => $strategy === S3DirectUploadEngine::STRATEGY_MULTIPART ? $contentHash : null,
+            // Freeze chunk layout so a later config change never breaks resume math.
+            'chunk_size' => $strategy === S3DirectUploadEngine::STRATEGY_MULTIPART ? $chunkSize : $size,
+            'part_count' => $partCount,
             'status' => FileUpload::STATUS_PENDING,
             'parts' => [],
             'expires_at' => $expiresAt,
@@ -127,6 +140,78 @@ class DirectUploadService
             'chunk_size' => $strategy === S3DirectUploadEngine::STRATEGY_MULTIPART ? $chunkSize : $size,
             'part_count' => $partCount,
             'parts' => $initialParts,
+            'recorded_parts' => [],
+            'resumed' => false,
+        ];
+    }
+
+    /**
+     * Attempt to resume a still-pending multipart session for the same file.
+     *
+     * Scoped to owner + workspace + folder + size + content hash so a re-upload
+     * lands exactly where the original was headed. Returns a status-shaped payload
+     * (with reconciled recorded parts + presigned missing parts) or null when there
+     * is nothing to resume.
+     *
+     * @return array{
+     *     upload: FileUpload,
+     *     strategy: string,
+     *     chunk_size: int,
+     *     part_count: int,
+     *     parts: list<array<string, mixed>>,
+     *     recorded_parts: list<array{part_number: int, etag: string, size: int}>,
+     *     resumed: bool
+     * }|null
+     */
+    private function tryResume(
+        string $ownerId,
+        ?string $workspaceId,
+        ?string $folderId,
+        ?string $contentHash,
+        int $size,
+    ): ?array {
+        if ($contentHash === null || $contentHash === '') {
+            return null;
+        }
+
+        $upload = FileUpload::query()
+            ->resumableFor($ownerId, $contentHash, $size)
+            ->where(function ($q) use ($workspaceId): void {
+                $workspaceId === null
+                    ? $q->whereNull('workspace_id')
+                    : $q->where('workspace_id', $workspaceId);
+            })
+            ->where(function ($q) use ($folderId): void {
+                $folderId === null
+                    ? $q->whereNull('folder_id')
+                    : $q->where('folder_id', $folderId);
+            })
+            ->latest('created_at')
+            ->first();
+
+        if ($upload === null || $upload->s3_upload_id === null) {
+            return null;
+        }
+
+        $this->reconcileRecordedPartsFromS3($upload);
+
+        $partCount = $this->expectedPartCount($upload);
+
+        return [
+            'upload' => $upload,
+            'strategy' => $upload->strategy,
+            'chunk_size' => $this->resolveChunkSize($upload),
+            'part_count' => $partCount,
+            'parts' => $this->presignParts(
+                $upload,
+                $this->engine->missingPartNumbers(
+                    $upload->recordedParts(),
+                    $partCount,
+                    (int) config('file-hosting.max_presigned_parts_per_response'),
+                ),
+            ),
+            'recorded_parts' => $upload->recordedParts(),
+            'resumed' => true,
         ];
     }
 
@@ -143,16 +228,20 @@ class DirectUploadService
     public function status(User $actor, string $uploadUuid): array
     {
         $upload = $this->findUsableUpload($actor, $uploadUuid);
+
+        // Reconcile DB parts against S3 truth so a resumed session never re-uploads a
+        // part the provider already holds (best-effort; provider may not support it).
+        $this->reconcileRecordedPartsFromS3($upload);
+
         $partCount = $this->expectedPartCount($upload);
 
         return [
             'upload' => $upload,
             'strategy' => $upload->strategy,
-            'chunk_size' => $upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART
-                ? (int) config('file-hosting.chunk_size_bytes')
-                : $upload->size,
+            'chunk_size' => $this->resolveChunkSize($upload),
             'part_count' => $partCount,
             'recorded_parts' => $upload->recordedParts(),
+            'resumed' => false,
             'parts' => $this->presignParts(
                 $upload,
                 $this->engine->missingPartNumbers(
@@ -162,6 +251,48 @@ class DirectUploadService
                 ),
             ),
         ];
+    }
+
+    /**
+     * Incrementally record a part's ETag right after the client PUTs it.
+     *
+     * This is the DB source of truth for resume progress: even if the provider
+     * does not support ListParts, a later resume knows which parts already landed.
+     * Merged under a row lock so concurrent part reports never clobber each other.
+     *
+     * @param  list<array{part_number: int, etag: string, size?: int}>  $parts
+     * @return array{upload: FileUpload, recorded_parts: list<array{part_number: int, etag: string, size: int}>}
+     */
+    public function recordParts(User $actor, string $uploadUuid, array $parts): array
+    {
+        $this->findUsableUpload($actor, $uploadUuid);
+
+        return DB::transaction(function () use ($uploadUuid, $parts): array {
+            $upload = FileUpload::query()
+                ->whereKey($uploadUuid)
+                ->lockForUpdate()
+                ->first();
+
+            if ($upload === null) {
+                throw new FileHostingException(__('api/file-hosting.upload.not_found'), 404);
+            }
+
+            if ($upload->status !== FileUpload::STATUS_PENDING) {
+                throw new FileHostingException(__('api/file-hosting.upload.not_pending'));
+            }
+
+            if ($upload->strategy !== S3DirectUploadEngine::STRATEGY_MULTIPART) {
+                throw new FileHostingException(__('api/file-hosting.upload.multipart_only'));
+            }
+
+            $merged = $this->engine->mergeParts($upload->recordedParts(), $parts);
+            $upload->forceFill(['parts' => $merged])->save();
+
+            return [
+                'upload' => $upload,
+                'recorded_parts' => $upload->recordedParts(),
+            ];
+        });
     }
 
     /**
@@ -511,11 +642,61 @@ class DirectUploadService
 
     private function expectedPartCount(FileUpload $upload): int
     {
+        // Prefer the count frozen at init; recompute only for legacy rows.
+        if ($upload->part_count !== null && $upload->part_count > 0) {
+            return (int) $upload->part_count;
+        }
+
         return $this->engine->expectedPartCount(
             $upload->strategy,
             $upload->size,
-            (int) config('file-hosting.chunk_size_bytes'),
+            $this->resolveChunkSize($upload),
         );
+    }
+
+    /**
+     * Chunk size frozen at init (survives config drift); config fallback for legacy rows.
+     */
+    private function resolveChunkSize(FileUpload $upload): int
+    {
+        if ($upload->chunk_size !== null && $upload->chunk_size > 0) {
+            return (int) $upload->chunk_size;
+        }
+
+        return $upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART
+            ? (int) config('file-hosting.chunk_size_bytes')
+            : $upload->size;
+    }
+
+    /**
+     * Best-effort reconcile of the DB `parts` JSON against S3 ListParts.
+     *
+     * Multipart only. Swallows engine errors so a provider that does not support
+     * ListParts (or a transient failure) never breaks init/status/resume — the DB
+     * incremental record stays the primary source of truth in that case.
+     */
+    private function reconcileRecordedPartsFromS3(FileUpload $upload): void
+    {
+        if ($upload->strategy !== S3DirectUploadEngine::STRATEGY_MULTIPART || ! $upload->s3_upload_id) {
+            return;
+        }
+
+        try {
+            $objectKey = $this->objectKeys->objectKey($upload->user_id, $upload->path);
+            $s3Parts = $this->engine->listParts(
+                $upload->disk,
+                $objectKey,
+                (string) $upload->s3_upload_id,
+            );
+        } catch (S3DirectUploadException) {
+            return;
+        }
+
+        $reconciled = $this->engine->reconcileParts($upload->recordedParts(), $s3Parts);
+
+        if ($reconciled !== $upload->recordedParts()) {
+            $upload->forceFill(['parts' => $reconciled])->save();
+        }
     }
 
     /**

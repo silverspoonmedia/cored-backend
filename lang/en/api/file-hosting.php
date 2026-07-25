@@ -78,8 +78,10 @@ return [
     ],
     'upload' => [
         'initiated' => 'Upload session created.',
+        'resumed' => 'Resumed a pending upload session.',
         'status' => 'Upload status loaded.',
         'parts_signed' => 'Part URLs signed.',
+        'parts_recorded' => 'Upload parts recorded.',
         'completed' => 'Upload completed and file created.',
         'aborted' => 'Upload aborted.',
         'not_found' => 'Upload session not found.',

@@ -268,6 +268,7 @@
                 data-complete-url="{{ url('file-hosting/uploads/__UPLOAD__/complete') }}"
                 data-abort-url="{{ url('file-hosting/uploads/__UPLOAD__') }}"
                 data-sign-parts-url="{{ url('file-hosting/uploads/__UPLOAD__/sign-parts') }}"
+                data-record-parts-url="{{ url('file-hosting/uploads/__UPLOAD__/parts') }}"
                 data-max-files="{{ (int) config('file-hosting.max_files_per_batch', 20) }}"
                 data-max-concurrent="{{ (int) config('file-hosting.max_concurrent_uploads', 2) }}"
                 role="button"

@@ -37,7 +37,7 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Virtual root | `folder_id = null` = “My Files” (no auto DB folder row) |
 | Nested folders | `parent_id` tree per owner; breadcrumb via `FolderAncestorChain` |
 | Files | `file_hosting_files` — denormalized `user_id`, optional `folder_id` |
-| Upload sessions | `file_hosting_uploads` — init -> browser PUT (direct S3 **or** CF Worker proxy) -> complete promotes row. **Control plane** (init / sign-parts / complete / abort) always Monolith->S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. |
+| Upload sessions | `file_hosting_uploads` — init -> browser PUT (direct S3 **or** CF Worker proxy) -> complete promotes row. **Control plane** (init / sign-parts / **record-parts** / complete / abort) always Monolith->S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. **Resumable multipart**: client `content_hash` (sha256) reuses a still-pending session on re-upload; chunk/part layout frozen at init (`chunk_size`/`part_count`) survives config drift. **Prune scheduler** aborts orphaned multiparts past grace (Backblaze has no S3 lifecycle for incomplete multiparts). |
 | Part size | Default **10 MB** chunk + multipart threshold (`FILE_HOSTING_CHUNK_SIZE`) |
 | DB `path` | Object id only: 40 lowercase alnum chars (`Str::random(40)`). **Not** a full S3 key. |
 | S3 object key | `file-hosting/{user_id}/{objectId}` — resolved at runtime via `ObjectKeyResolver` from `user_id` + `path` + config `directory`. No `folder_id`, no extension, no upload session id in the key. |
@@ -161,7 +161,7 @@ Middleware stack: `auth:api` -> `product.active:FileHosting` (runtime activation
 | Files | show (view++), rename, move, **visibility**, soft/force delete, restore (optional `workspace_id`) |
 | Bulk | `POST files/bulk-visibility` + `POST folders/bulk-visibility` (`ids[]`, `visibility`); `DELETE files/bulk` + `DELETE folders/bulk` (`ids[]`) — owner/workspace-scoped, max 100 ids |
 | Download | `GET files/{id}/download` -> `{ url, expires_at }` (download++; cache Worker HMAC URL or S3 temp URL) |
-| Upload | init (optional `disk`, optional `workspace_id`), status, sign-parts, complete (auto-renames duplicate display name), abort |
+| Upload | init (optional `disk`, `workspace_id`, `content_hash`), status, sign-parts, **record-parts** (`POST uploads/{id}/parts` — incremental ETag record for resume), complete (auto-renames duplicate display name), abort. Init returns `resumed: true` + `recorded_parts` when an existing session is reused. |
 | Workspaces | `GET/POST workspaces`, show, archive, members, invite, accept invite, update/remove member, activity |
 | Search / trash / quota | as named (trash/search accept `workspace_id`) |
 
@@ -178,7 +178,7 @@ Shared kernel pieces (not duplicated per domain):
 
 | Piece | Role |
 |-------|------|
-| `App\Support\Storage\S3DirectUploadEngine` | Strategy, direct presign **or** Worker proxy URLs, merge/assert parts, create/complete/abort multipart, size/mime guards |
+| `App\Support\Storage\S3DirectUploadEngine` | Strategy, direct presign **or** Worker proxy URLs, merge/assert parts, create/complete/abort multipart, `listParts` + `reconcileParts` (resume, best-effort), size/mime guards |
 | `App\Support\Storage\SerializesDirectUploadSession` | Shared JSON session shape for init/status (`upload_id`, `strategy`, `parts`, …) |
 | `DirectUploadService` | Domain adapter: ownership, quota, folder, multi-region disk, **auto display-name allocation** on complete, promote -> `HostedFile` |
 | `SignedDownloadService` | Caches download URL: Worker HMAC GetObject when proxy on (B2 **Bandwidth Alliance**), else S3 `temporaryUrl`; remints when cached host disagrees with proxy mode |
@@ -248,6 +248,48 @@ The alias is **not** the B2 bucket name and **not** part of the S3 key; it only 
 - Proxy on: `{proxy}/t/{alias}/{encoded-key}?exp=&disp=&ctype=&sig=` (HMAC; browser 302 cannot send Bearer)
 - Proxy off: S3 temporary URL from disk `temporaryUrl`
 - Cache reminted if host disagrees with current proxy mode (stale B2 URL after enabling proxy, or stale Worker URL after disabling)
+
+### Resumable multipart + orphan cleanup
+
+Big uploads that die mid-flight (crowded network, tab close, cancel) leave an S3 multipart with parts already on disk. Backblaze B2 exposes **no** S3 lifecycle rule for incomplete multiparts, so those parts persist until we abort them. Two pieces solve it: **resume** (reuse the pending session instead of orphaning it) and a **prune scheduler** (reclaim what is truly abandoned).
+
+> **Status — resume upload is EXPERIMENTAL / UNDER REVIEW.** Observed degraded
+> upload performance since this feature shipped. Root cause, two resume-introduced
+> costs in `resources/js/file-hosting/direct-upload.js`:
+> 1. **Blocking whole-file sha256** — `computeContentHash(file)` reads the entire
+>    file into RAM via `file.arrayBuffer()` and hashes it before the init POST
+>    fires. O(filesize) memory + CPU pre-flight, serial with the upload. Large
+>    files pay a measurable stall before the first byte leaves the browser.
+> 2. **Serialized per-part `recordParts` round-trip** — inside the multipart loop,
+>    `await recordPart(uploadId, ...)` adds one POST to Monolith after every part
+>    PUT and blocks the next part. That is N extra blocking HTTP round-trips per
+>    file that did not exist pre-resume.
+>
+> Both costs are absent from the pre-resume upload path. The abort-on-failure and
+> prune orphan-by-inactivity work (below) are independent of resume and remain
+> solid. Resume may be re-evaluated or reverted; the cleanup features stay.
+
+**Identity — how a re-upload finds its old session:**
+
+- Client computes a **sha256** of the file body via `crypto.subtle.digest` and sends it as `content_hash` at init. No Web Crypto / insecure context -> hash omitted -> resume silently disabled (upload still works). **Perf cost (see status callout):** the current implementation reads the *whole* file into RAM (`file.arrayBuffer()`) and hashes it before the init POST fires — a blocking O(filesize) memory + CPU pre-flight, not a stream. This is resume perf hit #1.
+- Client also keeps a **localStorage hint** `fh:resume:<hash> -> upload_id` as a fast shortcut; the server fingerprint match is the real source of truth.
+- `initiate()` looks up `FileUpload::scopeResumableFor(owner, hash, size)` scoped to the **same workspace + folder** (pending, not expired, not promoted, multipart). Match -> that session is returned with `resumed: true`; no new row, no new S3 multipart -> the old one is not orphaned.
+
+**Parts source of truth (two layers, S3 authoritative):**
+
+1. **Incremental DB record** — after each part PUT succeeds the client POSTs `{part_number, etag, size}` to `uploads/{id}/parts` (`recordParts()`, merged under a row lock). This is the primary progress record and works even if the provider has no `ListParts`. **Perf cost (see status callout):** in the upload loop this call is `await`ed after every part PUT and blocks the next part — one extra blocking HTTP round-trip per part, no parallelism with the next PUT. Pre-resume there were zero such calls. This is resume perf hit #2.
+2. **S3 `ListParts` reconciliation** — `status()` and resume-time `initiate()` call `S3DirectUploadEngine::listParts()` and `reconcileParts()`: S3 truth wins (a client-claimed part that never fully landed is dropped and re-uploaded; a part on S3 but missing from the DB is adopted). **Best-effort**: engine errors are swallowed so a provider without `ListParts` never breaks init/status.
+
+On resume the client seeds already-recorded parts as progress, skips them (`selectMissingPartNumbers`), and only re-PUTs the missing ones. Complete/success clears the localStorage hint.
+
+**Frozen chunk layout:** `chunk_size` + `part_count` persist on the row at init, so a later change to `FILE_HOSTING_CHUNK_SIZE` cannot desync part math on an in-flight resume. Legacy rows (null) fall back to live config.
+
+**Prune scheduler:** `file-hosting:prune-stale-uploads` (hourly, `withoutOverlapping`) aborts pending sessions via `forceAbortPending` (ACL-free, error-swallowing, marks `aborted` so a late complete cannot promote) under two conditions, unioned:
+
+1. **Expired + past grace** — `expires_at < now - stale_upload_grace_hours`. The cleanup path in lieu of provider lifecycle. Grace keeps a just-expired session a user is actively resuming from being yanked mid-retry.
+2. **Orphan-by-inactivity** — `updated_at < now - orphan_inactivity_minutes`, regardless of `expires_at`. Catches a session orphaned right after init (cancel / tab-close before any part landed) that would otherwise hold a `max_concurrent_uploads` slot for the full 24h TTL. `updated_at` is the activity proxy: `recordParts()` and `complete()` both call `save()`, so a live upload refreshes it on every landed part. A session with no part activity for N minutes is genuinely dead. A pruned-but-actually-live slow part resumes on the user's next attempt via `content_hash`.
+
+**Client abort-on-failure (slot hygiene):** a leaked `pending` row holds a `max_concurrent_uploads` slot until TTL/prune — after enough orphans, init is rejected with `too_many_concurrent` and no upload can start. `uploadFile()` wraps its post-init body in try/catch: on any error after `uploadId` is obtained it fires a best-effort `DELETE` abort (`abortUploadSession`, never rejects) and clears the `resumeHint`, then rethrows so the row is still marked failed. Tab-close orphans (no error path) are still reclaimed by the prune scheduler above.
 
 ### S3 provider CORS (browser-direct multipart)
 
@@ -553,6 +595,8 @@ Region UI (list column, detail badge, soft-refetch): `RegionResolver::shouldDisp
 | `upload_proxy.*` | Optional CF Worker hybrid byte path for **upload + download** (`base_url`, `token`, `disk_targets`) |
 | `default_quota_bytes` | Free-tier base always stacked (typically 5 GiB); also used when no `UserQuota` denorm row |
 | `max_concurrent_uploads` | Server-side cap on pending non-expired upload sessions per storage owner (default 2) |
+| `stale_upload_grace_hours` | Extra grace after a pending session expires before `file-hosting:prune-stale-uploads` aborts it and reclaims orphaned multipart storage (default 6, `FILE_HOSTING_STALE_UPLOAD_GRACE`) |
+| `orphan_inactivity_minutes` | Reclaim a not-yet-expired pending session with no part activity for this many minutes (cancel/tab-close right after init). `updated_at` is the activity proxy; a live upload refreshes it per landed part (default 60, `FILE_HOSTING_ORPHAN_INACTIVITY_MINUTES`) |
 | `signed_download_ttl_minutes` | Cached download URL lifetime (Worker HMAC `exp` or S3 temp URL) |
 | `signed_download_cache_margin_seconds` | Treat cache expired early |
 | `public_download_signature_ttl_minutes` | Laravel signed hop for `/s/f/.../download` (Monolith hop only; storage URL has its own TTL) |

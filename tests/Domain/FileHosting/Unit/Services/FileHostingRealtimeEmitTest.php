@@ -8,7 +8,6 @@ use App\Domain\FileHosting\Events\QuotaChanged;
 use App\Domain\FileHosting\Events\WorkspaceActivityAppended;
 use App\Domain\FileHosting\Events\WorkspaceMembersChanged;
 use App\Domain\FileHosting\Models\FileUpload;
-use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\DirectUploadService;
 use App\Domain\FileHosting\Services\FileService;

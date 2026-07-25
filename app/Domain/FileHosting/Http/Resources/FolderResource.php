@@ -3,12 +3,13 @@
 namespace App\Domain\FileHosting\Http\Resources;
 
 use App\Domain\FileHosting\Enums\Visibility;
+use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Services\VisibilityService;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\FileHosting\Models\Folder */
+/** @mixin Folder */
 class FolderResource extends JsonResource
 {
     use FormatsPresentation;

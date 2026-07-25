@@ -28,7 +28,7 @@ class FileHostingQualificationMediumTest extends TestCase
         $this->setUpQualification();
     }
 
-    public function test_FH_M01_team_upload_bills_owner_quota(): void
+    public function test_f_h_m01_team_upload_bills_owner_quota(): void
     {
         $owner = $this->userWithRole('User', 'owner-m01@example.com');
         $editor = $this->userWithRole('User', 'editor-m01@example.com');
@@ -61,7 +61,7 @@ class FileHostingQualificationMediumTest extends TestCase
         $this->assertSame($editorBefore, app(QuotaService::class)->usage($editor->id)['used_bytes']);
     }
 
-    public function test_FH_M02_free_user_joins_paid_team(): void
+    public function test_f_h_m02_free_user_joins_paid_team(): void
     {
         $owner = $this->userWithRole('User', 'owner-m02@example.com');
         $free = $this->userWithRole('User', 'free-m02@example.com');
@@ -78,7 +78,7 @@ class FileHostingQualificationMediumTest extends TestCase
             ->assertStatus(422);
     }
 
-    public function test_FH_M03_own_a_join_b_role_isolation(): void
+    public function test_f_h_m03_own_a_join_b_role_isolation(): void
     {
         $a = $this->userWithRole('User', 'a-m03@example.com');
         $b = $this->userWithRole('User', 'b-m03@example.com');
@@ -109,7 +109,7 @@ class FileHostingQualificationMediumTest extends TestCase
         $this->assertNotContains('TeamA', $personalNames);
     }
 
-    public function test_FH_M04_search_scoped_to_workspace(): void
+    public function test_f_h_m04_search_scoped_to_workspace(): void
     {
         $owner = $this->userWithRole('User', 'owner-m04@example.com');
         $this->grantPaidMain($owner);
@@ -135,7 +135,7 @@ class FileHostingQualificationMediumTest extends TestCase
         $this->assertNotContains('scope-hit.pdf', $teamNames);
     }
 
-    public function test_FH_M05_bulk_visibility_max_100(): void
+    public function test_f_h_m05_bulk_visibility_max_100(): void
     {
         $user = $this->userWithRole('User');
         $this->grantPaidMain($user);
@@ -160,7 +160,7 @@ class FileHostingQualificationMediumTest extends TestCase
             ->assertOk();
     }
 
-    public function test_FH_M06_bulk_soft_delete(): void
+    public function test_f_h_m06_bulk_soft_delete(): void
     {
         $alice = $this->userWithRole('User', 'alice-m06@example.com');
         $bob = $this->userWithRole('User', 'bob-m06@example.com');
@@ -179,7 +179,7 @@ class FileHostingQualificationMediumTest extends TestCase
         $this->assertNull($b1->fresh()->deleted_at);
     }
 
-    public function test_FH_M07_multi_region_init_disabled_block(): void
+    public function test_f_h_m07_multi_region_init_disabled_block(): void
     {
         config([
             'file-hosting.regions' => ['ce' => 'local', 'us' => 'local'],
@@ -199,7 +199,7 @@ class FileHostingQualificationMediumTest extends TestCase
             ->assertJsonValidationErrors(['disk']);
     }
 
-    public function test_FH_M08_disabled_region_still_downloads(): void
+    public function test_f_h_m08_disabled_region_still_downloads(): void
     {
         config([
             'file-hosting.regions' => ['ce' => 'local'],
@@ -216,7 +216,7 @@ class FileHostingQualificationMediumTest extends TestCase
             ->assertJsonStructure(['data' => ['url', 'expires_at']]);
     }
 
-    public function test_FH_M09_force_delete_removes_s3_object(): void
+    public function test_f_h_m09_force_delete_removes_s3_object(): void
     {
         $user = $this->userWithRole('User');
         $file = $this->seedFile($user, 'force.pdf');
@@ -235,7 +235,7 @@ class FileHostingQualificationMediumTest extends TestCase
         Storage::disk('local')->assertMissing($key);
     }
 
-    public function test_FH_M10_workspace_activity_membership_and_file_ops(): void
+    public function test_f_h_m10_workspace_activity_membership_and_file_ops(): void
     {
         $owner = $this->userWithRole('User', 'owner-m10@example.com');
         $editor = $this->userWithRole('User', 'editor-m10@example.com');
