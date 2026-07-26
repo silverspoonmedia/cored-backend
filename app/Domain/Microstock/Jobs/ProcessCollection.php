@@ -12,14 +12,13 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Bus;
 use Throwable;
 
 /**
- * Orchestrates the AI pipeline for one Microstock collection (folder). Fans out
- * an AnalyzeAssetMetadata job per file directly inside the folder
- * (non-recursive), carrying the owner's collection hint, then flips the folder
- * to review once the batch settles (failed on error).
+ * Orchestrates the AI pipeline for one Microstock collection (folder). Seeds a
+ * pending metadata row per file directly inside the folder (non-recursive),
+ * then hands off to a single AnalyzeCollectionBatch job that fans the files
+ * out to the AI in as few multi-image requests as possible.
  */
 class ProcessCollection implements ShouldQueue
 {
@@ -29,6 +28,8 @@ class ProcessCollection implements ShouldQueue
     use SerializesModels;
 
     public int $tries = 1;
+
+    public int $timeout = 120;
 
     public function __construct(
         private readonly string $folderId,
@@ -44,38 +45,27 @@ class ProcessCollection implements ShouldQueue
 
         $hint = $folder->collection_hint;
 
-        $jobs = HostedFile::query()
+        $metadataIds = HostedFile::query()
             ->where('folder_id', $folder->id)
             ->orderBy('name')
             ->get()
-            ->map(function (HostedFile $file) use ($hint): AnalyzeAssetMetadata {
+            ->map(function (HostedFile $file): string {
                 $metadata = AssetMetadata::query()->firstOrNew(['file_id' => $file->id]);
                 $metadata->user_id = $file->user_id;
                 $metadata->status = MetadataStatus::Pending;
                 $metadata->save();
 
-                return new AnalyzeAssetMetadata((string) $metadata->id, $hint);
+                return (string) $metadata->id;
             })
             ->all();
 
-        if ($jobs === []) {
+        if ($metadataIds === []) {
             $folder->markCollectionStatus(CollectionStatus::Failed);
 
             return;
         }
 
-        $folderId = $this->folderId;
-
-        Bus::batch($jobs)
-            ->then(function () use ($folderId): void {
-                Folder::query()->find($folderId)
-                    ?->markCollectionStatus(CollectionStatus::Review);
-            })
-            ->catch(function () use ($folderId): void {
-                Folder::query()->find($folderId)
-                    ?->markCollectionStatus(CollectionStatus::Failed);
-            })
-            ->dispatch();
+        AnalyzeCollectionBatch::dispatch($this->folderId, $metadataIds, $hint);
     }
 
     public function failed(Throwable $e): void

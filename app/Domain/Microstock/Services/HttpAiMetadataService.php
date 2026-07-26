@@ -13,6 +13,22 @@ use Illuminate\Support\Facades\Http;
  */
 class HttpAiMetadataService implements AiMetadataService
 {
+    /**
+     * Normalize the configured timeout to seconds. Env historically used
+     * milliseconds (e.g. 360000); accept both by treating large values as ms.
+     * Clamp to a sane window so a hung gateway fails fast instead of holding
+     * the worker, while still allowing slow generations.
+     */
+    private function timeoutSeconds(mixed $raw): int
+    {
+        $v = (int) ($raw ?? 60);
+        if ($v > 1000) {
+            $v = (int) round($v / 1000);
+        }
+
+        return max(10, min(120, $v));
+    }
+
     public function generate(string $imageUrl, ?string $hint = null): array
     {
         $draft = $this->vision($imageUrl, $hint);
@@ -29,6 +45,46 @@ class HttpAiMetadataService implements AiMetadataService
     }
 
     /**
+     * @param  array<int, array{id: string, image: string}>  $items
+     * @return array<string, array{title: string, keywords: list<string>, raw: array<string, mixed>}>
+     */
+    public function generateBatch(array $items, ?string $hint = null): array
+    {
+        if ($items === []) {
+            return [];
+        }
+
+        $cfg = config('microstock.ai.vision');
+        $this->assertConfigured($cfg, 'vision');
+
+        $content = [];
+        foreach ($items as $item) {
+            $content[] = ['type' => 'text', 'text' => 'ASSET '.$item['id'].':'];
+            $content[] = ['type' => 'image_url', 'image_url' => ['url' => $item['image']]];
+        }
+        $content[] = ['type' => 'text', 'text' => Prompts::batchUser($hint)];
+
+        $response = Http::withToken($cfg['api_key'])
+            ->timeout($this->timeoutSeconds($cfg['timeout'] ?? 60))
+            ->connectTimeout(10)
+            ->retry(2, 1000, throw: false)
+            ->post($cfg['endpoint'], [
+                'model' => $cfg['model'],
+                'response_format' => ['type' => 'json_object'],
+                'messages' => [
+                    ['role' => 'system', 'content' => Prompts::batchSystem()],
+                    ['role' => 'user', 'content' => $content],
+                ],
+            ]);
+
+        if (! $response->successful()) {
+            throw new MicrostockException(__('api/microstock.ai_failed'), 502);
+        }
+
+        return $this->decodeBatch($response->json(), $items);
+    }
+
+    /**
      * @return array{title: string, keywords: list<string>, raw: mixed}
      */
     private function vision(string $imageUrl, ?string $hint = null): array
@@ -37,7 +93,9 @@ class HttpAiMetadataService implements AiMetadataService
         $this->assertConfigured($cfg, 'vision');
 
         $response = Http::withToken($cfg['api_key'])
-            ->timeout((int) ($cfg['timeout'] ?? 60))
+            ->timeout($this->timeoutSeconds($cfg['timeout'] ?? 60))
+            ->connectTimeout(10)
+            ->retry(2, 1000, throw: false)
             ->post($cfg['endpoint'], [
                 'model' => $cfg['model'],
                 'response_format' => ['type' => 'json_object'],
@@ -70,7 +128,9 @@ class HttpAiMetadataService implements AiMetadataService
         $this->assertConfigured($cfg, 'thinking');
 
         $response = Http::withToken($cfg['api_key'])
-            ->timeout((int) ($cfg['timeout'] ?? 60))
+            ->timeout($this->timeoutSeconds($cfg['timeout'] ?? 60))
+            ->connectTimeout(10)
+            ->retry(2, 1000, throw: false)
             ->post($cfg['endpoint'], [
                 'model' => $cfg['model'],
                 'response_format' => ['type' => 'json_object'],
@@ -125,5 +185,61 @@ class HttpAiMetadataService implements AiMetadataService
         }
 
         return ['title' => $title, 'keywords' => $keywords, 'raw' => $decoded];
+    }
+
+    /**
+     * Decode a batch response into a per-id map. The AI may return a bare JSON
+     * array or an object wrapping the array; tolerate both. Ids that are
+     * missing or malformed are omitted (caller falls back per-file).
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, array{id: string, image: string}>  $items
+     * @return array<string, array{title: string, keywords: list<string>, raw: array<string, mixed>}>
+     */
+    private function decodeBatch(array $payload, array $items): array
+    {
+        $content = $payload['choices'][0]['message']['content'] ?? null;
+        $decoded = is_string($content) ? json_decode($content, true) : null;
+
+        $rows = [];
+        if (is_array($decoded)) {
+            // Bare list of row objects, or an object with a single array value.
+            if (array_is_list($decoded)) {
+                $rows = $decoded;
+            } else {
+                foreach ($decoded as $value) {
+                    if (is_array($value) && array_is_list($value)) {
+                        $rows = $value;
+                        break;
+                    }
+                }
+            }
+        }
+
+        $validIds = array_fill_keys(array_column($items, 'id'), true);
+        $out = [];
+
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $id = is_string($row['id'] ?? null) ? $row['id'] : null;
+            if ($id === null || ! isset($validIds[$id])) {
+                continue;
+            }
+            $title = is_string($row['title'] ?? null) ? trim($row['title']) : '';
+            $keywords = is_array($row['keywords'] ?? null)
+                ? array_values(array_filter(array_map(
+                    static fn ($k): string => is_string($k) ? trim($k) : '',
+                    $row['keywords'],
+                ), static fn (string $k): bool => $k !== ''))
+                : [];
+            if ($title === '' || $keywords === []) {
+                continue;
+            }
+            $out[$id] = ['title' => $title, 'keywords' => $keywords, 'raw' => $row];
+        }
+
+        return $out;
     }
 }

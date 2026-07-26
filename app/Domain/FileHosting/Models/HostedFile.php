@@ -3,10 +3,12 @@
 namespace App\Domain\FileHosting\Models;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Microstock\Models\AssetMetadata;
 use App\Support\Product\Services\ProductAnalyticsService;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class HostedFile extends Model
@@ -134,6 +136,14 @@ class HostedFile extends Model
     public function folder(): BelongsTo
     {
         return $this->belongsTo(Folder::class, 'folder_id');
+    }
+
+    /**
+     * @return HasOne<AssetMetadata, $this>
+     */
+    public function microstockMetadata(): HasOne
+    {
+        return $this->hasOne(AssetMetadata::class, 'file_id');
     }
 
     public function isWorkspaceResource(): bool

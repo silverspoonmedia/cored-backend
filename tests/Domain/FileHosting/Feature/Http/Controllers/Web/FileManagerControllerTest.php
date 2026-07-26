@@ -2,8 +2,11 @@
 
 namespace Tests\Domain\FileHosting\Feature\Http\Controllers\Web;
 
+use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\FileService;
+use App\Domain\FileHosting\Services\SignedDownloadService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Microstock\Services\MicrostockService;
 use Database\Seeders\FileHostingRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as ClientRequest;
@@ -756,6 +759,91 @@ class FileManagerControllerTest extends TestCase
 
         $this->assertNotNull($captured);
         $this->assertCount(1, $captured['ids'] ?? []);
+    }
+
+    public function test_microstock_asset_preview_returns_signed_url(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        $asset = \Mockery::mock(HostedFile::class);
+        $microstock = \Mockery::mock(MicrostockService::class);
+        $microstock->shouldReceive('resolveAsset')->once()->andReturn($asset);
+        $this->app->instance(MicrostockService::class, $microstock);
+
+        $downloads = \Mockery::mock(SignedDownloadService::class);
+        $downloads->shouldReceive('resolve')->once()
+            ->with($asset, true)
+            ->andReturn(['url' => 'https://cdn.test/preview/'.$fileId, 'expires_at' => now()]);
+        $this->app->instance(SignedDownloadService::class, $downloads);
+
+        $user->getJson("/file-hosting/microstock/assets/{$fileId}/preview")
+            ->assertOk()
+            ->assertJsonPath('data.url', 'https://cdn.test/preview/'.$fileId);
+    }
+
+    public function test_microstock_asset_metadata_show_forwards(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/microstock/assets/{$fileId}/metadata*" => Http::response([
+                'status' => 'success',
+                'message' => 'ok',
+                'data' => ['title' => 'T', 'keywords' => ['a'], 'status' => 'generated'],
+            ], 200),
+        ]);
+
+        $user->getJson("/file-hosting/microstock/assets/{$fileId}/metadata")
+            ->assertOk()
+            ->assertJsonPath('data.title', 'T');
+    }
+
+    public function test_microstock_asset_metadata_update_forwards_title_keywords(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+        $captured = null;
+
+        Http::fake(function (ClientRequest $request) use (&$captured, $fileId) {
+            if (str_contains($request->url(), "/api/v1/microstock/assets/{$fileId}/metadata")) {
+                $captured = $request->data();
+
+                return Http::response([
+                    'status' => 'success',
+                    'message' => 'Saved.',
+                    'data' => ['status' => 'finalized'],
+                ], 200);
+            }
+
+            return Http::response([], 200);
+        });
+
+        $user->patchJson("/file-hosting/microstock/assets/{$fileId}/metadata", [
+            'title' => 'Final Title',
+            'keywords' => ['eco', 'kitchen'],
+        ])->assertOk();
+
+        $this->assertSame('Final Title', $captured['title'] ?? null);
+        $this->assertSame(['eco', 'kitchen'], $captured['keywords'] ?? null);
+    }
+
+    public function test_microstock_asset_analyze_forwards(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+        $fileId = fake()->uuid();
+
+        Http::fake([
+            "*/api/v1/microstock/assets/{$fileId}/analyze*" => Http::response([
+                'status' => 'success',
+                'message' => 'Queued.',
+                'data' => ['status' => 'pending'],
+            ], 202),
+        ]);
+
+        $user->postJson("/file-hosting/microstock/assets/{$fileId}/analyze")
+            ->assertStatus(202);
     }
 
     private function actingWithApiGuard(User $user): static

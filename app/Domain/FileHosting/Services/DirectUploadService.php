@@ -78,6 +78,7 @@ class DirectUploadService
             if ($collection->isCollectionLocked()) {
                 throw new FileHostingException(__('web/file-hosting.microstock.error_collection_locked'), 422);
             }
+            $this->assertMicrostockImage($mime);
         }
 
         $this->assertUploadAllowed($name, $mime, $size);
@@ -344,6 +345,24 @@ class DirectUploadService
 
         $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
         $this->realtime->quotaChanged((string) $upload->user_id);
+    }
+
+    /**
+     * Microstock collections only accept raster images the AI vision stage can
+     * read. Anything else is rejected up-front so it never reaches analysis.
+     */
+    protected function assertMicrostockImage(string $mime): void
+    {
+        $allowed = (array) config('microstock.allowed_image_mimes', [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+        ]);
+
+        if (! in_array(strtolower($mime), $allowed, true)) {
+            throw new FileHostingException(__('web/file-hosting.microstock.error_image_only'), 422);
+        }
     }
 
     protected function assertUploadAllowed(string $name, string $mime, int $size): void

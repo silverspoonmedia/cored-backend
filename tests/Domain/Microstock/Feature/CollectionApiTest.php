@@ -125,6 +125,36 @@ class CollectionApiTest extends TestCase
         $this->assertStringContainsString('Exportable', $response->getContent());
     }
 
+    public function test_browse_microstock_workspace_exposes_microstock_key(): void
+    {
+        $folder = $this->collection(withFile: true);
+        $file = HostedFile::query()->where('folder_id', $folder->id)->firstOrFail();
+
+        AssetMetadata::query()->create([
+            'file_id' => $file->id,
+            'user_id' => $this->owner->id,
+            'status' => MetadataStatus::Generated,
+            'title' => 'Meta title',
+            'keywords' => ['one'],
+        ]);
+
+        $ws = app(MicrostockService::class)->workspaceFor($this->owner);
+
+        $this->actingAsJwt($this->owner)
+            ->getJson("/api/v1/file-hosting/browse?workspace_id={$ws->id}&folder_id={$folder->id}")
+            ->assertOk()
+            ->assertJsonPath('data.files.0.microstock.title', 'Meta title')
+            ->assertJsonPath('data.files.0.microstock.status', MetadataStatus::Generated->value);
+    }
+
+    public function test_browse_personal_workspace_omits_microstock_key(): void
+    {
+        $this->actingAsJwt($this->owner)
+            ->getJson('/api/v1/file-hosting/browse')
+            ->assertOk()
+            ->assertJsonMissingPath('data.files.0.microstock');
+    }
+
     public function test_lock_endpoint_rejects_foreign_collection(): void
     {
         $other = $this->userWithRole('User', 'other@example.com');

@@ -11,8 +11,10 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Exceptions\MicrostockException;
+use App\Domain\Microstock\Jobs\AnalyzeAssetMetadata;
 use App\Domain\Microstock\Jobs\ProcessCollection;
 use App\Domain\Microstock\Models\AssetMetadata;
+use App\Domain\Microstock\Services\AssetResizeService;
 use App\Domain\Microstock\Services\CollectionService;
 use App\Domain\Microstock\Services\CsvExportService;
 use App\Domain\Microstock\Services\MicrostockService;
@@ -145,6 +147,71 @@ class CollectionLifecycleTest extends TestCase
 
         $this->assertSame($ws->id, $complete['file']->workspace_id);
         $this->assertSame($folder->id, $complete['file']->folder_id);
+    }
+
+    public function test_non_image_upload_rejected_in_microstock_workspace(): void
+    {
+        $ws = app(MicrostockService::class)->workspaceFor($this->owner);
+        $folder = $this->makeFolder($this->owner, $ws->id);
+
+        try {
+            app(DirectUploadService::class)->initiate(
+                $this->owner,
+                'doc.pdf',
+                'application/pdf',
+                1024,
+                $folder->id,
+                null,
+                null,
+                $ws->id,
+            );
+            $this->fail('Non-image upload into a microstock collection must be rejected');
+        } catch (FileHostingException $e) {
+            $this->assertSame(422, $e->statusCode());
+            $this->assertSame(__('web/file-hosting.microstock.error_image_only'), $e->getMessage());
+        }
+    }
+
+    public function test_analyze_collection_batch_generates_metadata_and_reviews(): void
+    {
+        $this->bindFakeAi();
+
+        $ws = app(MicrostockService::class)->workspaceFor($this->owner);
+        $folder = $this->makeFolder($this->owner, $ws->id);
+        $a = $this->makeFile($this->owner, $ws->id, $folder->id, 'a.jpg');
+        $b = $this->makeFile($this->owner, $ws->id, $folder->id, 'b.jpg');
+
+        app(CollectionService::class)->lock($this->owner, $folder->id, 'hint');
+        $folder->markCollectionStatus(CollectionStatus::Processing);
+
+        // Seed pending rows the way ProcessCollection does, then run the batch.
+        (new ProcessCollection((string) $folder->id))->handle();
+
+        $this->assertSame('Curated title', AssetMetadata::query()->where('file_id', $a->id)->value('title'));
+        $this->assertSame('Curated title', AssetMetadata::query()->where('file_id', $b->id)->value('title'));
+        $this->assertSame(MetadataStatus::Generated, AssetMetadata::query()->where('file_id', $a->id)->first()->status);
+        $this->assertSame(MetadataStatus::Generated, AssetMetadata::query()->where('file_id', $b->id)->first()->status);
+        $this->assertSame(CollectionStatus::Review, $folder->refresh()->collection_status);
+    }
+
+    public function test_analyze_asset_failed_persists_failed_status_and_error(): void
+    {
+        $ws = app(MicrostockService::class)->workspaceFor($this->owner);
+        $folder = $this->makeFolder($this->owner, $ws->id);
+        $file = $this->makeFile($this->owner, $ws->id, $folder->id, 'x.jpg');
+
+        $metadata = AssetMetadata::query()->create([
+            'file_id' => $file->id,
+            'user_id' => $this->owner->id,
+            'status' => MetadataStatus::Pending,
+        ]);
+
+        $job = new AnalyzeAssetMetadata((string) $metadata->id, 'hint');
+        $job->failed(new \RuntimeException('gateway blew up'));
+
+        $metadata->refresh();
+        $this->assertSame(MetadataStatus::Failed, $metadata->status);
+        $this->assertSame('gateway blew up', $metadata->error);
     }
 
     public function test_lock_requires_hint_and_transitions_status(): void
@@ -383,6 +450,33 @@ class CollectionLifecycleTest extends TestCase
                     'keywords' => ['a', 'b'],
                     'raw' => ['vision' => null, 'thinking' => null],
                 ];
+            }
+
+            public function generateBatch(array $items, ?string $hint = null): array
+            {
+                $out = [];
+                foreach ($items as $item) {
+                    $out[$item['id']] = [
+                        'title' => 'Curated title',
+                        'keywords' => ['a', 'b'],
+                        'raw' => ['batch' => true],
+                    ];
+                }
+
+                return $out;
+            }
+        });
+
+        $this->bindFakeResizer();
+    }
+
+    private function bindFakeResizer(): void
+    {
+        $this->app->instance(AssetResizeService::class, new class extends AssetResizeService
+        {
+            public function previewDataUri(HostedFile $file): string
+            {
+                return 'data:image/jpeg;base64,'.base64_encode('fake-preview');
             }
         });
     }

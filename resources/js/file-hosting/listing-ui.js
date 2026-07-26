@@ -799,6 +799,42 @@ ${folderRegionCellHtml(config)}
 </tr>`;
 }
 
+function isMicrostockCtx(config) {
+    return config.currentWorkspace?.kind === 'microstock';
+}
+
+function microstockBadgeHtml(file, config) {
+    if (!isMicrostockCtx(config)) {
+        return '';
+    }
+    const labels = config.microstockPanel || {};
+    const ms = file.microstock;
+    let label = labels.noMetadata || 'No metadata';
+    let cls = 'text-bg-secondary';
+    if (ms && ms.status) {
+        if (ms.status === 'finalized') {
+            label = labels.statusFinalized || 'Finalized';
+            cls = 'text-bg-success';
+        } else if (ms.status === 'generated') {
+            label = labels.statusGenerated || 'Generated';
+            cls = 'text-bg-info';
+        } else {
+            label = labels.statusPending || 'Pending';
+            cls = 'text-bg-warning';
+        }
+    }
+    return `<span class="badge ${cls} fh-ms-badge" data-fh-ms-status>${escapeHtml(label)}</span>`;
+}
+
+function microstockReviewBtnHtml(file, config) {
+    if (!isMicrostockCtx(config)) {
+        return '';
+    }
+    const id = escapeHtml(file.id);
+    const title = escapeHtml(config.microstockPanel?.review || 'Review');
+    return `<button type="button" class="fh-table__action-btn" title="${title}" data-fh-ms-review="${id}"><i class="bi bi-stars"></i></button>`;
+}
+
 function tableFileRow(file, config) {
     const id = escapeHtml(file.id);
     const name = escapeHtml(file.name || '');
@@ -809,12 +845,12 @@ function tableFileRow(file, config) {
     return `<tr data-fh-row data-fh-entity="file" data-fh-id="${id}">
 <td class="fh-table__select-cell"><input type="checkbox" class="form-check-input" data-fh-select value="file:${id}"></td>
 <td class="fh-table__icon-cell"><a href="${href}">${iconHtml(file.mime, false)}</a></td>
-<td><a href="${href}" class="fh-table__name" title="${name}"><span class="fh-table__name-text" data-fh-name>${name}</span></a></td>
+<td><a href="${href}" class="fh-table__name" title="${name}"><span class="fh-table__name-text" data-fh-name>${name}</span></a> ${microstockBadgeHtml(file, config)}</td>
 <td class="fh-table__type">${escapeHtml(mime)}</td>
 <td class="fh-table__size">${size}</td>
 ${regionCellHtml(file, config)}
 <td data-fh-visibility-cell>${visibilityBadgeHtml(vis, config)}</td>
-<td class="fh-table__actions">${fileActionsHtml(file, config, { compact: false })}</td>
+<td class="fh-table__actions">${microstockReviewBtnHtml(file, config)}${fileActionsHtml(file, config, { compact: false })}</td>
 </tr>`;
 }
 
@@ -851,10 +887,10 @@ function gridFileCard(file, config) {
     }
     return `<div class="fh-file-card" data-fh-row data-fh-entity="file" data-fh-id="${id}">
 <input type="checkbox" class="form-check-input fh-file-card__select" data-fh-select value="file:${id}">
-<div class="fh-file-card__badge">${visibilityBadgeHtml(vis, config)}</div>
+<div class="fh-file-card__badge">${visibilityBadgeHtml(vis, config)} ${microstockBadgeHtml(file, config)}</div>
 <div class="fh-file-card__icon"><a href="${href}">${iconHtml(file.mime, false)}</a></div>
 <a href="${href}" class="fh-file-card__name" title="${name}" data-fh-name>${name}</a>
 <div class="fh-file-card__meta">${meta}</div>
-<div class="fh-file-card__actions">${fileActionsHtml(file, config, { compact: true })}</div>
+<div class="fh-file-card__actions">${microstockReviewBtnHtml(file, config)}${fileActionsHtml(file, config, { compact: true })}</div>
 </div>`;
 }

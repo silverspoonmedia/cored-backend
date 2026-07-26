@@ -22,6 +22,7 @@ class AssetMetadata extends Model
         'keywords',
         'status',
         'ai_raw',
+        'error',
     ];
 
     /**

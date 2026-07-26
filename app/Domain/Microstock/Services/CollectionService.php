@@ -116,6 +116,7 @@ class CollectionService
 
         $processed = 0;
         $finalized = 0;
+        $failed = 0;
         if ($total > 0) {
             $processed = AssetMetadata::query()
                 ->whereIn('file_id', $fileIds)
@@ -124,6 +125,10 @@ class CollectionService
             $finalized = AssetMetadata::query()
                 ->whereIn('file_id', $fileIds)
                 ->where('status', MetadataStatus::Finalized)
+                ->count();
+            $failed = AssetMetadata::query()
+                ->whereIn('file_id', $fileIds)
+                ->where('status', MetadataStatus::Failed)
                 ->count();
         }
 
@@ -134,6 +139,7 @@ class CollectionService
             'total' => $total,
             'processed' => $processed,
             'finalized' => $finalized,
+            'failed' => $failed,
         ];
     }
 

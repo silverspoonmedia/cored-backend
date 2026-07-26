@@ -48,6 +48,16 @@ Route::middleware('domain.access:FileHosting')->group(function (): void {
     Route::get('file-hosting/microstock/collections/{folder}/download', [FileManagerController::class, 'downloadMicrostockCollectionCsv'])
         ->whereUuid('folder')->name('file-hosting.microstock.collections.download');
 
+    // Microstock asset review (Blade consumer of API + signed preview)
+    Route::get('file-hosting/microstock/assets/{file}/preview', [FileManagerController::class, 'previewMicrostockAsset'])
+        ->whereUuid('file')->name('file-hosting.microstock.assets.preview');
+    Route::get('file-hosting/microstock/assets/{file}/metadata', [FileManagerController::class, 'showMicrostockAssetMetadata'])
+        ->whereUuid('file')->name('file-hosting.microstock.assets.metadata.show');
+    Route::match(['put', 'patch'], 'file-hosting/microstock/assets/{file}/metadata', [FileManagerController::class, 'updateMicrostockAssetMetadata'])
+        ->whereUuid('file')->name('file-hosting.microstock.assets.metadata.update');
+    Route::post('file-hosting/microstock/assets/{file}/analyze', [FileManagerController::class, 'analyzeMicrostockAsset'])
+        ->whereUuid('file')->name('file-hosting.microstock.assets.analyze');
+
     Route::post('file-hosting/folders', [FileManagerController::class, 'storeFolder'])->name('file-hosting.folders.store');
     Route::match(['put', 'patch'], 'file-hosting/folders/{folder}/rename', [FileManagerController::class, 'renameFolder'])
         ->whereUuid('folder')

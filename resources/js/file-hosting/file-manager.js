@@ -26,6 +26,7 @@ import { applyShowPayload, patchShowFile } from './show-ui';
 import { createSelectionController } from './selection';
 import { createContextMenu } from './context-menu';
 import { createDragMove, moveItemsRequest } from './drag-move';
+import { createMicrostockPanel } from './microstock-panel';
 
 const STORAGE_KEY = 'fh-view-mode';
 
@@ -53,6 +54,7 @@ function initFileManager(root) {
         let currentShowFileId = config.realtime?.fileId || null;
         let lastWorkspaces = Array.isArray(config.workspaces) ? config.workspaces : [];
         let microstockMount = null;
+        let microstockPanel = null;
         const selected = new Set();
         let selection = null;
         let dragMove = null;
@@ -64,6 +66,7 @@ function initFileManager(root) {
 
         /** Mutation busy overlay (move/delete/forms) — distinct from soft-nav is-fh-loading. */
         let busyDepth = 0;
+        let collectionPollTimer = null;
         function setBusy(on) {
             if (on) {
                 busyDepth += 1;
@@ -321,19 +324,33 @@ function initFileManager(root) {
 
         rebindRealtime();
 
-        initViewToggle();
-        initSearch();
-        initDropzone();
-        initModals();
-        initAjaxActions();
-        initAjaxForms();
-        initCopyButtons();
-        initBulkActions();
-        initDriveLikeInteractions();
-        initMicrostockSlotSection();
-        initCollectionUi();
+        const initSteps = [
+            initViewToggle,
+            initSearch,
+            initDropzone,
+            initModals,
+            initAjaxActions,
+            initAjaxForms,
+            initCopyButtons,
+            initBulkActions,
+            initDriveLikeInteractions,
+            initMicrostockSlotSection,
+            initCollectionUi,
+        ];
+        initSteps.forEach(function (step) {
+            try {
+                step();
+            } catch (e) {
+                // A single failing init must not kill the rest of the UI.
+                console.error('[file-manager] init step failed', step.name, e);
+            }
+        });
         if (spaShell) {
-            initSpaRouter();
+            try {
+                initSpaRouter();
+            } catch (e) {
+                console.error('[file-manager] initSpaRouter failed', e);
+            }
         }
 
         // ---- View toggle ----
@@ -1423,6 +1440,7 @@ function initFileManager(root) {
                 primaryLabel: root.querySelector('[data-fh-collection-primary-label]'),
                 banner: root.querySelector('[data-fh-collection-banner]'),
                 bannerText: root.querySelector('[data-fh-collection-banner-text]'),
+                review: root.querySelector('[data-fh-collection-review]'),
             };
         }
 
@@ -1430,9 +1448,33 @@ function initFileManager(root) {
             return config.currentWorkspace?.kind === 'microstock';
         }
 
+        function stopCollectionPolling() {
+            if (collectionPollTimer !== null) {
+                clearInterval(collectionPollTimer);
+                collectionPollTimer = null;
+            }
+        }
+
+        function startCollectionPolling() {
+            if (collectionPollTimer !== null) {
+                return;
+            }
+            collectionPollTimer = setInterval(function () {
+                refreshCollectionStatus();
+            }, 3000);
+        }
+
+        function progressText(processed, total) {
+            const tmpl = config.microstockPanel?.progress || 'Analyzed :processed of :total';
+            return tmpl
+                .replace(':processed', String(processed ?? 0))
+                .replace(':total', String(total ?? 0));
+        }
+
         // Render the collection action button + status banner for the current
         // folder. `status` = browse.folder.collection_status (null => draft).
-        function updateCollectionUi(status) {
+        // `counts` = { processed, total } for the processing progress line.
+        function updateCollectionUi(status, counts) {
             const els = collectionEls();
             if (!els.action) {
                 return;
@@ -1442,6 +1484,7 @@ function initFileManager(root) {
 
             if (!inCollection) {
                 els.banner?.classList.add('d-none');
+                stopCollectionPolling();
                 return;
             }
 
@@ -1449,12 +1492,22 @@ function initFileManager(root) {
             const st = status || 'draft';
             config.collectionStatus = st;
 
+            if (st === 'processing') {
+                startCollectionPolling();
+            } else {
+                stopCollectionPolling();
+            }
+
             // Banner text per status.
             let bannerText = null;
             let primaryLabel = labels.lockDescribe;
             let primaryMode = 'lock';
             if (st === 'processing') {
-                bannerText = labels.processing;
+                const p = counts?.processed ?? null;
+                const t = counts?.total ?? null;
+                bannerText = (t !== null && t > 0)
+                    ? (labels.processing + ' — ' + progressText(p, t))
+                    : labels.processing;
                 primaryLabel = labels.processing;
                 primaryMode = 'none';
             } else if (st === 'review') {
@@ -1477,7 +1530,11 @@ function initFileManager(root) {
 
             if (els.banner && els.bannerText) {
                 if (bannerText) {
-                    els.bannerText.textContent = bannerText;
+                    const spinner = st === 'processing'
+                        ? '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>'
+                        : '';
+                    els.bannerText.innerHTML = spinner;
+                    els.bannerText.appendChild(document.createTextNode(bannerText));
                     els.banner.classList.remove('d-none');
                 } else {
                     els.banner.classList.add('d-none');
@@ -1488,6 +1545,19 @@ function initFileManager(root) {
                 els.primaryLabel.textContent = primaryLabel;
                 els.primary.dataset.mode = primaryMode;
                 els.primary.disabled = primaryMode === 'none';
+                // Data-API fallback opens the modal only in lock mode.
+                if (primaryMode === 'lock') {
+                    els.primary.setAttribute('data-bs-toggle', 'modal');
+                    els.primary.setAttribute('data-bs-target', '#fhCollectionDescribeModal');
+                } else {
+                    els.primary.removeAttribute('data-bs-toggle');
+                    els.primary.removeAttribute('data-bs-target');
+                }
+            }
+
+            // Secondary "Review files" button appears only in review state.
+            if (els.review) {
+                els.review.classList.toggle('d-none', st !== 'review');
             }
         }
 
@@ -1521,7 +1591,10 @@ function initFileManager(root) {
             fetchJson(collectionUrl('/status'), csrfToken)
                 .then(function (json) {
                     if (json?.data) {
-                        updateCollectionUi(json.data.status);
+                        updateCollectionUi(json.data.status, {
+                            processed: json.data.processed,
+                            total: json.data.total,
+                        });
                     }
                 })
                 .catch(function () { /* best-effort */ });
@@ -1530,18 +1603,53 @@ function initFileManager(root) {
         function initCollectionUi() {
             updateCollectionUi(config.collectionStatus || null);
 
+            microstockPanel = createMicrostockPanel(config, csrfToken, {
+                toast: showToast,
+                onSaved: function () { refreshCollectionStatus(); },
+            });
+
+            // Per-file "Review" button in listing rows opens the panel.
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('[data-fh-ms-review]');
+                if (btn) {
+                    e.preventDefault();
+                    microstockPanel.open(btn.dataset.fhMsReview);
+                    return;
+                }
+            });
+
+            // Secondary "Review files" (review state): open first listed file.
+            const reviewBtn = root.querySelector('[data-fh-collection-review]');
+            if (reviewBtn) {
+                reviewBtn.addEventListener('click', function () {
+                    const first = root.querySelector('[data-fh-ms-review]');
+                    if (first) {
+                        microstockPanel.open(first.dataset.fhMsReview);
+                    }
+                });
+            }
+
             const els = collectionEls();
             if (els.primary) {
                 els.primary.addEventListener('click', function () {
                     const mode = els.primary.dataset.mode || 'lock';
                     if (mode === 'lock') {
                         const modalEl = document.getElementById('fhCollectionDescribeModal');
-                        if (modalEl && window.bootstrap?.Modal) {
+                        if (modalEl) {
                             const input = modalEl.querySelector('#fhCollectionHint');
                             if (input) {
                                 input.value = '';
                             }
-                            window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                            if (window.bootstrap?.Modal) {
+                                window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                            } else if (window.bootstrap?.Modal === undefined && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                new bootstrap.Modal(modalEl).show();
+                            } else {
+                                // Last-resort: reveal via data-API fallback classes.
+                                modalEl.classList.add('show');
+                                modalEl.style.display = 'block';
+                                modalEl.removeAttribute('aria-hidden');
+                            }
                         }
                     } else if (mode === 'export') {
                         setBusy(true);

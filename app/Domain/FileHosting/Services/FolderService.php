@@ -2,6 +2,7 @@
 
 namespace App\Domain\FileHosting\Services;
 
+use App\Domain\FileHosting\Enums\WorkspaceKind;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
@@ -48,6 +49,10 @@ class FolderService
             ->where('user_id', $ownerId)
             ->where('workspace_id', $wsId)
             ->where('folder_id', $folderId)
+            ->when(
+                $workspace?->kind === WorkspaceKind::Microstock,
+                fn ($q) => $q->with('microstockMetadata')
+            )
             ->orderBy('name')
             ->get();
 

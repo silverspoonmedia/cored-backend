@@ -17,4 +17,16 @@ interface AiMetadataService
      * @return array{title: string, keywords: list<string>, raw: array<string, mixed>}
      */
     public function generate(string $imageUrl, ?string $hint = null): array;
+
+    /**
+     * Analyze many assets in a single AI request. The provider receives every
+     * image plus its id and must return a JSON array of per-file metadata.
+     *
+     * @param  array<int, array{id: string, image: string}>  $items  Each item carries
+     *                                                               the metadata id and a downscaled data-URI preview.
+     * @param  string|null  $hint  Optional owner description of the collection.
+     * @return array<string, array{title: string, keywords: list<string>, raw: array<string, mixed>}>
+     *                                                                                                Map of metadata id => metadata. May omit ids the AI skipped.
+     */
+    public function generateBatch(array $items, ?string $hint = null): array;
 }

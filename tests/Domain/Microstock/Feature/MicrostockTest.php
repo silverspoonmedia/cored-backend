@@ -8,7 +8,6 @@ use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\FileService;
 use App\Domain\FileHosting\Services\QuotaService;
-use App\Domain\FileHosting\Services\SignedDownloadService;
 use App\Domain\FileHosting\Services\WorkspaceService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Contracts\AiMetadataService;
@@ -17,6 +16,7 @@ use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Jobs\AnalyzeAssetMetadata;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Models\MarketplaceCredential;
+use App\Domain\Microstock\Services\AssetResizeService;
 use App\Domain\Microstock\Services\CredentialService;
 use App\Domain\Microstock\Services\CsvExportService;
 use App\Domain\Microstock\Services\MicrostockService;
@@ -178,7 +178,7 @@ class MicrostockTest extends TestCase
         (new AnalyzeAssetMetadata((string) $metadata->id))
             ->handle(
                 app(AiMetadataService::class),
-                app(SignedDownloadService::class),
+                app(AssetResizeService::class),
             );
 
         $metadata->refresh();
@@ -310,6 +310,28 @@ class MicrostockTest extends TestCase
                     'keywords' => ['a', 'b'],
                     'raw' => ['vision' => null, 'thinking' => null],
                 ];
+            }
+
+            public function generateBatch(array $items, ?string $hint = null): array
+            {
+                $out = [];
+                foreach ($items as $item) {
+                    $out[$item['id']] = [
+                        'title' => 'Curated title',
+                        'keywords' => ['a', 'b'],
+                        'raw' => ['batch' => true],
+                    ];
+                }
+
+                return $out;
+            }
+        });
+
+        $this->app->instance(AssetResizeService::class, new class extends AssetResizeService
+        {
+            public function previewDataUri(HostedFile $file): string
+            {
+                return 'data:image/jpeg;base64,'.base64_encode('fake-preview');
             }
         });
     }

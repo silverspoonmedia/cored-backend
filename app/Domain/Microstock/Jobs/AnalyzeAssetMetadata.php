@@ -2,10 +2,10 @@
 
 namespace App\Domain\Microstock\Jobs;
 
-use App\Domain\FileHosting\Services\SignedDownloadService;
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
+use App\Domain\Microstock\Services\AssetResizeService;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -31,12 +31,18 @@ class AnalyzeAssetMetadata implements ShouldQueue
 
     public int $backoff = 30;
 
+    /**
+     * Long-running AI generation; allow the full HTTP window plus retries.
+     * Must stay below queue retry_after (see config/queue.php).
+     */
+    public int $timeout = 120;
+
     public function __construct(
         private readonly string $metadataId,
         private readonly ?string $hint = null,
     ) {}
 
-    public function handle(AiMetadataService $ai, SignedDownloadService $downloads): void
+    public function handle(AiMetadataService $ai, AssetResizeService $resizer): void
     {
         $metadata = AssetMetadata::query()->with('file')->find($this->metadataId);
 
@@ -49,10 +55,11 @@ class AnalyzeAssetMetadata implements ShouldQueue
             return;
         }
 
-        // Inline (preview-safe) signed URL the vision provider can fetch.
-        $url = $downloads->resolve($metadata->file, inline: true)['url'];
+        // Send a downscaled preview (not the full-size original) so the vision
+        // gateway responds within its ~60s cutoff.
+        $image = $resizer->previewDataUri($metadata->file);
 
-        $result = $ai->generate($url, $this->hint);
+        $result = $ai->generate($image, $this->hint);
 
         $metadata->forceFill([
             'title' => $result['title'],
@@ -65,5 +72,11 @@ class AnalyzeAssetMetadata implements ShouldQueue
     public function failed(Throwable $e): void
     {
         report($e);
+
+        AssetMetadata::query()->find($this->metadataId)
+            ?->forceFill([
+                'status' => MetadataStatus::Failed,
+                'error' => mb_substr($e->getMessage(), 0, 1000),
+            ])->save();
     }
 }
