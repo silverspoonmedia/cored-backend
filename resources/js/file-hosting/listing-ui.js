@@ -40,6 +40,12 @@ export function applyBrowsePayload(root, browseData, config) {
         return false;
     }
 
+    // Keep workspace context fresh across SPA soft-nav so microstock gating
+    // (badges, review buttons, collection UI) reflects the folder being viewed.
+    if (browseData.workspace) {
+        config.currentWorkspace = browseData.workspace;
+    }
+
     const folders = browseData.folders || [];
     const files = browseData.files || [];
     const crumbs = browseData.breadcrumb || [];

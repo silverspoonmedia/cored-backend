@@ -2,9 +2,11 @@
 
 namespace Tests\Domain\FileHosting\Feature\Http\Controllers\API\V1;
 
+use App\Domain\FileHosting\Enums\WorkspaceKind;
 use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Services\DirectUploadService;
 use App\Domain\FileHosting\Services\SignedDownloadService;
 use App\Domain\Identity\Models\User;
@@ -1115,6 +1117,26 @@ class FileHostingTest extends TestCase
 
         $this->assertNotEmpty($browse['files']);
         $this->assertSame('ce', $browse['files'][0]['region']);
+    }
+
+    public function test_browse_response_includes_workspace_kind(): void
+    {
+        $user = $this->userWithRole('User');
+
+        $workspace = Workspace::query()->create([
+            'owner_user_id' => $user->id,
+            'name' => 'Microstock',
+            'kind' => WorkspaceKind::Microstock,
+            'status' => 'active',
+        ]);
+
+        $browse = $this->actingAsJwt($user)
+            ->getJson('/api/v1/file-hosting/browse?workspace_id='.$workspace->id)
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame($workspace->id, $browse['workspace']['id']);
+        $this->assertSame('microstock', $browse['workspace']['kind']);
     }
 
     public function test_disabled_region_still_serves_download(): void

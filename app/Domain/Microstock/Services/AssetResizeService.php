@@ -6,6 +6,7 @@ use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\Encoders\JpegEncoder;
 use Intervention\Image\ImageManager;
 
 /**
@@ -30,10 +31,10 @@ class AssetResizeService
         $bytes = $this->readOriginal($file);
 
         $manager = new ImageManager(new GdDriver);
-        $image = $manager->read($bytes);
+        $image = $manager->decode($bytes);
         $image->scaleDown($maxPx, $maxPx);
 
-        $encoded = $image->toJpeg(80);
+        $encoded = $image->encode(new JpegEncoder(quality: 80));
 
         return 'data:image/jpeg;base64,'.base64_encode((string) $encoded);
     }

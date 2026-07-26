@@ -35,6 +35,15 @@ class BrowseController extends Controller
         return $this->successResponse([
             'owner_id' => $result['owner_id'],
             'workspace_id' => $result['workspace_id'],
+            'workspace' => $result['workspace'] !== null
+                ? [
+                    'id' => $result['workspace']->id,
+                    'kind' => $result['workspace']->kind instanceof \BackedEnum
+                        ? $result['workspace']->kind->value
+                        : $result['workspace']->kind,
+                    'name' => $result['workspace']->name,
+                ]
+                : null,
             'folder' => $result['folder'] !== null
                 ? $this->resolveResource(new FolderResource($result['folder']))
                 : null,

@@ -128,6 +128,9 @@ function initFileManager(root) {
                     const url = browseUrlWithContext(config.browseUrl, config);
                     const json = await fetchJson(url, csrfToken);
                     if (json?.data) {
+                        if (json.data.workspace) {
+                            config.currentWorkspace = json.data.workspace;
+                        }
                         applyBrowsePayload(root, json.data, config);
                         if (json.data.folder?.id !== undefined) {
                             config.currentFolderId = json.data.folder?.id || null;

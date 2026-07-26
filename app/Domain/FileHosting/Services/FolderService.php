@@ -63,6 +63,7 @@ class FolderService
         return [
             'owner_id' => $ownerId,
             'workspace_id' => $wsId,
+            'workspace' => $workspace,
             'folder' => $folder,
             'breadcrumb' => FolderAncestorChain::breadcrumb($folder, $rootLabel),
             'folders' => $this->folders->children($ownerId, $folderId, $wsId),
