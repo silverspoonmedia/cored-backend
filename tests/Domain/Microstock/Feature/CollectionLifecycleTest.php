@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\Concerns\SeedsRolesAndPermissions;
+use Tests\Fakes\FakeFileHostingDirectUploadService;
 use Tests\TestCase;
 
 class CollectionLifecycleTest extends TestCase
@@ -54,7 +55,8 @@ class CollectionLifecycleTest extends TestCase
 
         $this->owner = $this->userWithRole('User', 'owner@example.com');
         $this->grantMicrostockFree($this->owner);
-        $this->grantPaidMain($this->owner); // collaborative upload gate requires a paid plan
+        // NOTE: no paid FH plan — free Microstock owners must still be able to
+        // upload into their collections (paid gate is only for sharing).
     }
 
     // ---- Upload gating (root blocked / locked blocked) ----
@@ -114,6 +116,36 @@ class CollectionLifecycleTest extends TestCase
     }
 
     // ---- Lock lifecycle ----
+
+    public function test_free_microstock_owner_can_upload_into_folder(): void
+    {
+        // Free owner (no paid FH plan) must be able to upload into a folder of
+        // their Microstock workspace. Only sharing is paid-gated, not upload.
+        Storage::fake('local');
+        $this->app->instance(
+            DirectUploadService::class,
+            $this->app->make(FakeFileHostingDirectUploadService::class),
+        );
+
+        $ws = app(MicrostockService::class)->workspaceFor($this->owner);
+        $folder = $this->makeFolder($this->owner, $ws->id);
+
+        $uploads = app(DirectUploadService::class);
+        $init = $uploads->initiate(
+            $this->owner,
+            'photo.jpg',
+            'image/jpeg',
+            1024,
+            $folder->id,
+            null,
+            null,
+            $ws->id,
+        );
+        $complete = $uploads->complete($this->owner, $init['upload']->id);
+
+        $this->assertSame($ws->id, $complete['file']->workspace_id);
+        $this->assertSame($folder->id, $complete['file']->folder_id);
+    }
 
     public function test_lock_requires_hint_and_transitions_status(): void
     {
@@ -393,22 +425,6 @@ class CollectionLifecycleTest extends TestCase
                 'quantity' => 1,
                 'starts_at' => now(),
                 'ends_at' => null,
-            ],
-        );
-    }
-
-    private function grantPaidMain(User $user): void
-    {
-        $service = Service::query()->where('code', 'file-hosting.plan.1tb.monthly')->first()
-            ?? Service::factory()->fileHostingMain1Tb()->create();
-
-        ServiceEntitlement::query()->updateOrCreate(
-            ['user_id' => $user->id, 'service_id' => $service->id],
-            [
-                'status' => EntitlementStatus::Active,
-                'quantity' => 1,
-                'starts_at' => now(),
-                'ends_at' => now()->addDays(30),
             ],
         );
     }

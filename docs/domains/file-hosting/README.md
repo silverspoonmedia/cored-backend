@@ -152,7 +152,7 @@ Workspace-slot SKU is **not** a storage plan: does not raise GiB quota, does not
 
 **Billing / quota:** Team files use **that workspace owner’s** storage pool (`user_id` = owner, `workspace_id` set). S3 key stays `file-hosting/{owner_user_id}/{objectId}`. `created_by` records uploader for audit. When browsing joined B, quota bar still reflects the logged-in user’s personal usage (owner pool for B is separate).
 
-**Paid gate:** `WorkspaceAccessService::assertOwnerEligibleForCollab` — requires `hasActivePaidFileHosting` on the **workspace owner** (create / invite / accept / team upload). Create also runs `assertCanCreateOwnedWorkspace` (slot limit). Joiner need not be paid.
+**Paid gate:** `WorkspaceAccessService::assertOwnerEligibleForCollab` — requires `hasActivePaidFileHosting` on the **workspace owner** for **create / invite / accept** only. Create also runs `assertCanCreateOwnedWorkspace` (slot limit). **Upload/content collaboration is not paid-gated** — `DirectUploadService::resolveUploadScope` only requires `assertCanMutate` (owner or active member), so invited free members and free Microstock owners can upload. Joiner need not be paid.
 
 **Quota API flags:** `GET /api/v1/file-hosting/quota` includes `state` (`free`\|`paid`\|`grace`), `collaborative_works`, `can_create_workspace` (paid **and** under slot limit), `owned_workspace_used`, `owned_workspace_limit`, plus raw `used_bytes` / `pending_bytes` / `reserved_bytes` / `quota_bytes` / `remaining_bytes` and matching `*_human` companions (`BytePresenter`). `HostedFileResource` exposes `size` + `size_human` and dual-field timestamps. Blade uses companions only — no view-layer `$formatBytes`.
 

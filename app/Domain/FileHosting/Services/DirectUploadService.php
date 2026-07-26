@@ -506,8 +506,10 @@ class DirectUploadService
     {
         if ($workspaceId !== null && $workspaceId !== '') {
             $workspace = $this->workspaceAccess->findOrFail($workspaceId);
+            // Upload/collaboration only needs mutate access (owner or active
+            // member). The paid gate (assertOwnerEligibleForCollab) is for
+            // sharing/creating workspaces, not for putting content into one.
             $this->workspaceAccess->assertCanMutate($workspace, $actor);
-            $this->workspaceAccess->assertOwnerEligibleForCollab($workspace->owner_user_id);
 
             return [$this->workspaceAccess->storageOwnerId($workspace), $workspace];
         }

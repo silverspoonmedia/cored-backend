@@ -52,7 +52,7 @@ Microstock assets live in `file_hosting_workspaces.kind = 'microstock'` rows —
 | Access | Requires an active Microstock slot entitlement (free registration or slot addon) |
 | Public share | **Blocked** — files/folders in a system workspace can never be `anyone_with_link`. `VisibilityService::assertSystemWorkspaceShareAllowed` rejects enable (422 `public_share_not_allowed`); guest `fileAccessible`/`folderAccessible` return false |
 | Invite | Only a **paid FH** owner may invite (`WorkspaceService::invite` → `assertOwnerEligibleForCollab`); invitees may be free or paid |
-| Upload/browse/download | Reuse File Hosting services as-is |
+| Upload/browse/download | Reuse File Hosting services as-is. **Content collaboration is NOT paid-gated:** a free Microstock owner can upload into their collections, and an invited member (free or paid) can upload into a shared workspace. Upload only requires mutate access (`assertCanMutate` — owner or active member). The paid gate (`assertOwnerEligibleForCollab`) applies to **sharing** (invite/accept) and **creating workspaces**, never to putting content into one |
 
 ## Collections (folder-as-collection lifecycle)
 

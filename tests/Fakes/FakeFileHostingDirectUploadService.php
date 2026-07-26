@@ -2,9 +2,11 @@
 
 namespace Tests\Fakes;
 
+use App\Domain\FileHosting\Enums\WorkspaceKind;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\FileHosting\Repositories\Contracts\FolderRepositoryInterface;
 use App\Domain\FileHosting\Services\AccessService;
 use App\Domain\FileHosting\Services\DirectUploadService;
 use App\Domain\FileHosting\Services\QuotaService;
@@ -13,7 +15,6 @@ use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use App\Domain\FileHosting\Support\UniqueDisplayNameAllocator;
 use App\Domain\FileHosting\Support\WorkspaceActivityRecorder;
 use App\Domain\Identity\Models\User;
-use App\Support\Storage\S3DirectUploadEngine;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +23,8 @@ use Illuminate\Support\Facades\Storage;
  * Test double for File Hosting direct uploads on a faked disk (no real S3).
  */
 class FakeFileHostingDirectUploadService extends DirectUploadService
-{    public function initiate(
+{
+    public function initiate(
         User $actor,
         string $name,
         string $mime,
@@ -38,7 +40,6 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
         if ($workspaceId !== null && $workspaceId !== '') {
             $workspace = $workspaceAccess->findOrFail($workspaceId);
             $workspaceAccess->assertCanMutate($workspace, $actor);
-            $workspaceAccess->assertOwnerEligibleForCollab($workspace->owner_user_id);
             $ownerId = $workspaceAccess->storageOwnerId($workspace);
             $wsId = $workspace->id;
         } else {
@@ -46,6 +47,19 @@ class FakeFileHostingDirectUploadService extends DirectUploadService
             $owner = User::query()->findOrFail($ownerId);
             $access->assertCanMutateOwner($actor, $owner);
             $wsId = null;
+        }
+
+        // Mirror the real service: Microstock collections gate (no root upload,
+        // no upload into a locked collection).
+        if (($workspace ?? null)?->kind === WorkspaceKind::Microstock) {
+            if ($folderId === null) {
+                throw new FileHostingException(__('web/file-hosting.microstock.error_requires_folder'), 422);
+            }
+            $collection = app(FolderRepositoryInterface::class)
+                ->findOwnedOrFail($ownerId, $folderId, $wsId);
+            if ($collection->isCollectionLocked()) {
+                throw new FileHostingException(__('web/file-hosting.microstock.error_collection_locked'), 422);
+            }
         }
 
         $this->assertUploadAllowed($name, $mime, $size);
