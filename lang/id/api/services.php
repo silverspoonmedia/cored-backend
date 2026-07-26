@@ -16,6 +16,7 @@ return [
     'fx_unavailable' => 'Kurs sementara tidak tersedia. Coba lagi nanti.',
     'addon_renewal_due' => 'Stack addon storage Anda sudah jatuh tempo. Bayar invoice stack sebelum membeli unit tambahan.',
     'addon_renewal_pending' => 'Anda masih memiliki invoice perpanjangan stack addon yang pending. Selesaikan pembayaran sebelum membeli unit tambahan.',
+    'already_activated' => 'Layanan ini sudah aktif di akun Anda.',
     'policy' => [
         'denied' => 'Anda tidak diizinkan melakukan aksi ini pada layanan.',
     ],

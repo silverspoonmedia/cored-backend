@@ -84,6 +84,15 @@ return [
     'workspace_team' => 'Workspace tim',
     'workspace_activity' => 'Aktivitas tim',
 
+    'microstock' => [
+        'activate_cta' => 'Aktifkan Microstock',
+        'create_workspace' => 'Workspace Microstock baru',
+        'slots_full' => 'Slot Microstock penuh',
+        'create_title' => 'Workspace Microstock baru',
+        'create_hint' => 'Beri nama workspace Microstock Anda. Kosongkan untuk memakai nama default.',
+        'name_label' => 'Nama workspace',
+        'name_placeholder' => 'Microstock',
+    ],
     'collab' => [
         'title' => 'Collaborative works',
         'subtitle' => 'Penyimpanan tim memakai kuota plan berbayar pemilik. Bukan menu terpisah — ganti mode di sini.',

@@ -6,6 +6,7 @@ use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
 use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\MicrostockCatalog;
 use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -134,17 +135,33 @@ class Service extends Model
         return $kind === PlanKind::Main || $kind === PlanKind::Addon;
     }
 
+    /**
+     * Any Microstock catalog SKU (free registration main or workspace-slot addon).
+     */
+    public function isMicrostockCatalogPlan(): bool
+    {
+        if ($this->fulfillment_target !== MicrostockCatalog::FULFILLMENT_TARGET) {
+            return false;
+        }
+
+        $kind = $this->plan_kind;
+
+        return $kind === PlanKind::Main || $kind === PlanKind::Addon;
+    }
+
     public function isPaidMainPlan(): bool
     {
         return $this->isFileHostingStoragePlan() && $this->plan_kind === PlanKind::Main;
     }
 
     /**
-     * Stackable FH addon (storage or workspace slots). Not mains.
+     * Stackable addon (FH storage/workspace slots or Microstock workspace slots).
+     * Not mains. Drives quantity compounding + shared addon anniversary.
      */
     public function isAddonPlan(): bool
     {
-        return $this->isFileHostingCatalogPlan() && $this->plan_kind === PlanKind::Addon;
+        return ($this->isFileHostingCatalogPlan() || $this->isMicrostockCatalogPlan())
+            && $this->plan_kind === PlanKind::Addon;
     }
 
     public function isWorkspaceSlotAddon(): bool
@@ -154,7 +171,9 @@ class Service extends Model
         }
 
         return FileHostingCatalog::isWorkspaceSlotCode($this->code)
-            || $this->entitlement === FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS;
+            || $this->entitlement === FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS
+            || MicrostockCatalog::isWorkspaceSlotCode($this->code)
+            || $this->entitlement === MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS;
     }
 
     public function priceFor(string $currency): ?ServicePrice

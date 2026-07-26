@@ -51,6 +51,8 @@ function initFileManager(root) {
         let realtimeHandle = null;
         let router = null;
         let currentShowFileId = config.realtime?.fileId || null;
+        let lastWorkspaces = Array.isArray(config.workspaces) ? config.workspaces : [];
+        let microstockMount = null;
         const selected = new Set();
         let selection = null;
         let dragMove = null;
@@ -326,6 +328,7 @@ function initFileManager(root) {
         initCopyButtons();
         initBulkActions();
         initDriveLikeInteractions();
+        initMicrostockSlotSection();
         if (spaShell) {
             initSpaRouter();
         }
@@ -997,6 +1000,7 @@ function initFileManager(root) {
             } else {
                 showPanel('browse');
             }
+            refreshWorkspaceSwitcher();
         }
 
         function syncConfigFromRoute(route) {
@@ -1040,6 +1044,158 @@ function initFileManager(root) {
             });
         }
 
+        // ---- Workspace switcher client re-render (SPA soft-nav) ----
+        function switcherBrowseUrl(wsId) {
+            const base = config.browseUrl || '/file-hosting';
+            const sep = base.indexOf('?') === -1 ? '?' : '&';
+            return base + sep + 'workspace_id=' + encodeURIComponent(wsId);
+        }
+
+        function roleLabelFor(role) {
+            if (!role) {
+                return '';
+            }
+            const map = config.roleLabels || {};
+            return map[role] || role;
+        }
+
+        // Rebuild dynamic workspace <a> items from lastWorkspaces (keeps personal
+        // item + collab/microstock sections). Called after every switcher refetch
+        // so newly created workspaces appear without a hard reload.
+        function renderWorkspaceMenuItems() {
+            const menu = document.querySelector('.fh-workspace-switcher .dropdown-menu');
+            if (!menu) {
+                return;
+            }
+
+            // Remove previously rendered dynamic items (keep personal "").
+            menu.querySelectorAll('.dropdown-item[data-fh-workspace-id]').forEach(function (el) {
+                if ((el.dataset.fhWorkspaceId || '') !== '') {
+                    el.remove();
+                }
+            });
+            menu.querySelectorAll('[data-fh-dynamic-workspaces-divider]').forEach(function (el) {
+                el.remove();
+            });
+
+            const list = Array.isArray(lastWorkspaces) ? lastWorkspaces : [];
+            if (list.length === 0) {
+                return;
+            }
+
+            // Group: Microstock first, Team (and other kinds) second. Inserted
+            // before the microstock slot mount; each group gets its own divider.
+            const anchor = menu.querySelector('[data-fh-microstock-slot]') || null;
+            const microstock = [];
+            const team = [];
+            list.forEach(function (w) {
+                if (!w || !w.id) {
+                    return;
+                }
+                ((w.kind || 'team') === 'microstock' ? microstock : team).push(w);
+            });
+
+            const groups = [microstock, team].filter(function (g) { return g.length > 0; });
+
+            groups.forEach(function (group, gi) {
+                const divider = document.createElement('div');
+                divider.className = 'dropdown-divider';
+                divider.setAttribute('data-fh-dynamic-workspaces-divider', '');
+                menu.insertBefore(divider, anchor);
+
+                group.forEach(function (w) {
+                    const kind = w.kind || 'team';
+                    const isOwner = w.is_owner === true;
+                    const wsId = w.id;
+
+                    const a = document.createElement('a');
+                    a.href = switcherBrowseUrl(wsId);
+                    a.className = 'dropdown-item d-flex align-items-center justify-content-between gap-2';
+                    a.dataset.fhWorkspaceId = wsId;
+                    a.dataset.fhWorkspaceName = w.name || 'Workspace';
+                    a.dataset.fhWorkspaceKind = kind;
+
+                    const left = document.createElement('span');
+                    left.className = 'text-truncate';
+                    const i = document.createElement('i');
+                    i.className = 'bi ' + (kind === 'microstock' ? 'bi-images' : 'bi-people') + ' me-2';
+                    left.appendChild(i);
+                    left.appendChild(document.createTextNode(w.name || 'Workspace'));
+                    a.appendChild(left);
+
+                    const right = document.createElement('span');
+                    right.className = 'd-flex gap-1 flex-shrink-0';
+                    if (w.my_role) {
+                        const roleBadge = document.createElement('span');
+                        roleBadge.className = 'badge text-bg-secondary';
+                        roleBadge.textContent = roleLabelFor(w.my_role);
+                        right.appendChild(roleBadge);
+                    }
+                    const ownBadge = document.createElement('span');
+                    ownBadge.className = 'badge ' + (isOwner ? 'text-bg-primary' : 'text-bg-info');
+                    ownBadge.textContent = isOwner ? (config.badgeYours || 'Yours') : (config.badgeJoined || 'Joined');
+                    right.appendChild(ownBadge);
+                    a.appendChild(right);
+
+                    menu.insertBefore(a, anchor);
+                });
+            });
+        }
+
+        function renderWorkspaceSwitcher() {
+            const root2 = document;
+            const label = root2.querySelector('.fh-workspace-switcher [data-fh-workspace-label]');
+            const icon = root2.querySelector('.fh-workspace-switcher [data-fh-workspace-icon]');
+            if (!label && !icon) {
+                return;
+            }
+            const wsId = config.workspaceId || null;
+            const personalLabel = config.personalLabel || 'Personal';
+
+            if (wsId) {
+                const entry = lastWorkspaces.find(function (w) { return w && w.id === wsId; }) || null;
+                const item = root2.querySelector('.fh-workspace-switcher .dropdown-item[data-fh-workspace-id="' + wsId + '"]');
+                const name = (entry && entry.name) || item?.dataset?.fhWorkspaceName || config.currentWorkspace?.name || null;
+                const kind = (entry && entry.kind) || item?.dataset?.fhWorkspaceKind || config.currentWorkspace?.kind || 'team';
+                if (label && name) {
+                    label.textContent = name;
+                }
+                if (icon) {
+                    icon.classList.remove('bi-person', 'bi-people', 'bi-images');
+                    icon.classList.add(kind === 'microstock' ? 'bi-images' : 'bi-people');
+                }
+            } else {
+                if (label) {
+                    label.textContent = personalLabel;
+                }
+                if (icon) {
+                    icon.classList.remove('bi-person', 'bi-people', 'bi-images');
+                    icon.classList.add('bi-person');
+                }
+            }
+
+            root2.querySelectorAll('.fh-workspace-switcher .dropdown-item[data-fh-workspace-id]').forEach(function (el) {
+                const itemId = el.dataset.fhWorkspaceId || null;
+                el.classList.toggle('active', (itemId || null) === (wsId || null));
+            });
+        }
+
+        async function refreshWorkspaceSwitcher() {
+            if (config.workspacesUrl) {
+                const json = await fetchJson(config.workspacesUrl, csrfToken);
+                const list = json?.data;
+                if (Array.isArray(list)) {
+                    lastWorkspaces = list;
+                    config.workspaces = list;
+                }
+            }
+            renderWorkspaceMenuItems();
+            renderWorkspaceSwitcher();
+            if (microstockMount) {
+                refreshMicrostockSlotSection(microstockMount);
+            }
+        }
+
         async function handleSpaNavigate(route) {
             setLoading(true);
             try {
@@ -1062,6 +1218,7 @@ function initFileManager(root) {
                     await softRefetchQuota();
                     if (prevWs !== config.workspaceId) {
                         rebindRealtime();
+                        refreshWorkspaceSwitcher();
                         if (config.workspaceId) {
                             softRefetchMembers();
                             softRefetchActivity();
@@ -1084,6 +1241,7 @@ function initFileManager(root) {
                     await softRefetchTrash();
                     if (prevWs !== config.workspaceId) {
                         rebindRealtime();
+                        refreshWorkspaceSwitcher();
                     }
                     return;
                 }
@@ -1106,6 +1264,136 @@ function initFileManager(root) {
             } finally {
                 setLoading(false);
             }
+        }
+
+        // ---- Microstock standalone slot section (switcher dropdown) ----
+        function initMicrostockSlotSection() {
+            const mount = document.querySelector('[data-fh-microstock-slot]');
+            if (!mount || !mount.dataset.slotsUrl) {
+                return;
+            }
+
+            microstockMount = mount;
+            refreshMicrostockSlotSection(mount);
+
+            mount.addEventListener('click', async function (e) {
+                const btn = e.target.closest('[data-fh-microstock-create]');
+                if (!btn) {
+                    return;
+                }
+                e.preventDefault();
+                openMicrostockCreateModal();
+            });
+
+            const modalSubmit = document.querySelector('[data-fh-microstock-modal-submit]');
+            if (modalSubmit) {
+                modalSubmit.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const name = document.getElementById('fhMicrostockName')?.value?.trim() || '';
+                    submitMicrostockCreate(mount, name);
+                });
+            }
+        }
+
+        async function refreshMicrostockSlotSection(mount) {
+            const json = await fetchJson(mount.dataset.slotsUrl, csrfToken);
+            const status = json?.data;
+            mount.innerHTML = '';
+            if (!status) {
+                return;
+            }
+
+            if (!status.activated) {
+                mount.innerHTML = '<a href="' + escapeHtml(mount.dataset.servicesUrl) + '" class="dropdown-item small">'
+                    + '<i class="bi bi-images me-2"></i>' + escapeHtml(mount.dataset.labelActivate) + '</a>';
+                return;
+            }
+
+            if (status.can_create) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'dropdown-item';
+                btn.setAttribute('data-fh-microstock-create', '');
+                btn.innerHTML = '<i class="bi bi-plus-lg me-2"></i>' + escapeHtml(mount.dataset.labelCreate);
+                mount.appendChild(btn);
+            } else {
+                mount.innerHTML = '<span class="dropdown-item disabled text-muted small">'
+                    + '<i class="bi bi-lock me-2"></i>' + escapeHtml(mount.dataset.labelFull) + '</span>';
+            }
+        }
+
+        // Open the name modal instead of posting immediately.
+        function openMicrostockCreateModal() {
+            const modalEl = document.getElementById('fhCreateMicrostockModal');
+            if (!modalEl) {
+                return false;
+            }
+            const input = modalEl.querySelector('#fhMicrostockName');
+            if (input) {
+                input.value = '';
+            }
+            if (window.bootstrap?.Modal) {
+                window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                if (input) {
+                    modalEl.addEventListener('shown.bs.modal', function onShown() {
+                        modalEl.removeEventListener('shown.bs.modal', onShown);
+                        input.focus();
+                    });
+                }
+            }
+            return true;
+        }
+
+        function submitMicrostockCreate(mount, name) {
+            const submitBtn = document.querySelector('[data-fh-microstock-modal-submit]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+            setBusy(true);
+            return fetch(mount.dataset.createUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ name: name || null }),
+            })
+                .then(function (res) {
+                    return res.json().catch(function () { return {}; }).then(function (json) {
+                        return { ok: res.ok, json: json };
+                    });
+                })
+                .then(function (out) {
+                    const json = out.json;
+                    if (out.ok && json?.data?.id) {
+                        const modalEl = document.getElementById('fhCreateMicrostockModal');
+                        if (modalEl && window.bootstrap?.Modal) {
+                            window.bootstrap.Modal.getInstance(modalEl)?.hide();
+                        }
+                        showToast(json.message || config.messages.success, 'success');
+                        const href = (config.browseUrl || '/file-hosting') + '?workspace_id=' + encodeURIComponent(json.data.id);
+                        if (router) {
+                            router.go(href, { replace: true });
+                        } else {
+                            window.location.href = href;
+                        }
+                    } else {
+                        showToast(json.message || config.messages.error, 'error');
+                        refreshMicrostockSlotSection(mount);
+                    }
+                })
+                .catch(function () {
+                    showToast(config.messages.networkError, 'error');
+                })
+                .finally(function () {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                    }
+                    setBusy(false);
+                });
         }
 
         // ---- Copy buttons ----

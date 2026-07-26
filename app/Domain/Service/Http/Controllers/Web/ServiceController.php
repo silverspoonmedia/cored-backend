@@ -2,6 +2,8 @@
 
 namespace App\Domain\Service\Http\Controllers\Web;
 
+use App\Domain\Service\Services\ServiceEntitlementService;
+use App\Domain\Service\Support\MicrostockCatalog;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +18,7 @@ class ServiceController extends Controller
 {
     use ConsumesApi;
 
-    public function index(): View|RedirectResponse
+    public function index(Request $request): View|RedirectResponse
     {
         $response = $this->api()->get('services');
 
@@ -24,8 +26,18 @@ class ServiceController extends Controller
             return redirect()->route('dashboard')->with('error', $this->apiMessage($response));
         }
 
+        $services = collect($response->json('data', []));
+
+        $microstockFree = $services->firstWhere('code', MicrostockCatalog::CODE_PLAN_FREE);
+        $microstockSlot = $services->firstWhere('code', MicrostockCatalog::CODE_ADDON_WORKSPACE_SLOT);
+        $microstockActive = $request->user() !== null
+            && app(ServiceEntitlementService::class)->hasActiveMicrostockWorkspaceSlot($request->user()->id);
+
         return $this->webView('services.index', [
-            'services' => collect($response->json('data', [])),
+            'services' => $services,
+            'microstockFree' => $microstockFree,
+            'microstockSlot' => $microstockSlot,
+            'microstockActive' => $microstockActive,
         ]);
     }
 
@@ -148,5 +160,4 @@ class ServiceController extends Controller
             __('api/services.checkout_success'),
         );
     }
-
 }

@@ -32,6 +32,7 @@ class WorkspaceResource extends JsonResource
             'id' => $this->id,
             'owner_user_id' => $this->owner_user_id,
             'name' => $this->name,
+            'kind' => $this->kind instanceof \BackedEnum ? $this->kind->value : $this->kind,
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,
             'is_owner' => $isOwner,
             'my_role' => $myRole,

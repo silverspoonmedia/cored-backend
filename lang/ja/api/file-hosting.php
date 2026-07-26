@@ -24,6 +24,7 @@ return [
     'invalid_visibility' => '公開設定の値が無効です。',
     'public_share_requires_paid' => '公開リンク共有には有効な有料 File Hosting プランが必要です。',
     'public_share_blocked_hash' => 'このファイルは公開共有できません（コンプライアンスによりブロックされています）。',
+    'public_share_not_allowed' => 'このワークスペース内のアイテムは公開共有できません。',
     'blocklist_saved' => 'ハッシュをブロックリストに追加しました。',
     'blocklist_removed' => 'ハッシュをブロックリストから削除しました。',
     'share_not_found' => 'この共有アイテムは利用できません。',

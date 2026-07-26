@@ -9,7 +9,7 @@ Do **not** collapse taxonomy and lifecycle into one label.
 | Term | Axis | Meaning |
 |------|------|---------|
 | **Core domain** | Taxonomy (`kind`) | Foundation. Without it the app does not run well (Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service). |
-| **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (FileHosting, Vtual). Extends core (Identity, H-RBAC, payments, …). |
+| **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (FileHosting, Vtual, Microstock). Extends core (Identity, H-RBAC, payments, …). |
 | **`locked`** | Lifecycle (product only) | `domain:remove` refuses until you set `'locked' => false` in [`config/domains.php`](../../config/domains.php). |
 | **Removable** | Derived | Product with `locked => false`. Not a config key. |
 | **`DomainManager::PLATFORM_CORE`** | Hard guard | Never-remove list. Config cannot override. |
@@ -70,6 +70,7 @@ app/
 │   ├── ErrorLog/       # Grouped persistent app errors (core)
 │   ├── FileHosting/    # Nested files, chunk S3 upload, Drive-lite share (product, locked)
 │   ├── Vtual/          # Creator aggregator foundation (product, locked)
+│   ├── Microstock/     # Microstock asset mgmt on FH system workspace (product, locked)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
 │   └── Service/        # Catalog, entitlements, DB FX→IDR, FH grace/purge (core)
 ├── Http/Middleware/    # Kernel

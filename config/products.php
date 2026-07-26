@@ -48,4 +48,15 @@ return [
             'vtual.admin.credentials.index',
         ],
     ],
+    'Microstock' => [
+        'activation_type' => 'implicit',
+        // Standalone paid SKUs (free registration + compounding slot addon)
+        // activate this product via Service fulfillment_target 'microstock'.
+        // Storage still meters into the shared FH quota pool, but Microstock
+        // workspace slots are accounted separately (MicrostockCatalog).
+        'fulfillment_target' => 'microstock',
+        // No dedicated sidebar menu (removed) — reached via /services and the
+        // File Hosting workspace switcher. Empty menu_routes: nothing to hide.
+        'menu_routes' => [],
+    ],
 ];

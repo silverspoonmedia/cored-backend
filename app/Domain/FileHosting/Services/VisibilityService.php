@@ -6,6 +6,7 @@ use App\Domain\FileHosting\Enums\Visibility;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\FileHosting\Models\Workspace;
 
 /**
  * Drive-lite link sharing: private | anyone_with_link.
@@ -23,6 +24,11 @@ class VisibilityService
 
     public function folderAccessible(Folder $folder): bool
     {
+        // System workspaces (microstock, …) are never publicly accessible.
+        if ($folder->workspace?->isSystem()) {
+            return false;
+        }
+
         if (! $this->folderLinkSharedChain($folder)) {
             return false;
         }
@@ -35,6 +41,11 @@ class VisibilityService
         // A checksum-blocked file is never publicly accessible (DMCA): deny as
         // 404 (share_not_found) regardless of paid gate or share link.
         if ($this->hashBlocklist->isFileBlocked($file)) {
+            return false;
+        }
+
+        // System workspaces (microstock, …) are never publicly accessible.
+        if ($file->workspace?->isSystem()) {
             return false;
         }
 
@@ -77,6 +88,18 @@ class VisibilityService
     {
         if ($visibility->isLinkShared()) {
             $this->assertCanEnableLinkShare($ownerUserId, $checksum);
+        }
+    }
+
+    /**
+     * Built-in system workspaces (microstock, …) never allow public link share —
+     * their files/folders stay private by product rule. Personal and team
+     * workspaces are unaffected.
+     */
+    public function assertSystemWorkspaceShareAllowed(?Workspace $workspace): void
+    {
+        if ($workspace !== null && $workspace->isSystem()) {
+            throw new FileHostingException(__('api/file-hosting.public_share_not_allowed'), 422);
         }
     }
 

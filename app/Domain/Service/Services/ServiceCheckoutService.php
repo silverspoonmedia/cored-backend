@@ -13,6 +13,7 @@ use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\MicrostockCatalog;
 use Illuminate\Support\Facades\DB;
 
 class ServiceCheckoutService
@@ -22,6 +23,7 @@ class ServiceCheckoutService
         private readonly InvoiceAttachableServiceInterface $invoices,
         private readonly MainPlanChangeCalculator $planChange,
         private readonly ServiceFulfillmentService $fulfillment,
+        private readonly ServiceEntitlementService $entitlements,
     ) {}
 
     /**
@@ -37,6 +39,12 @@ class ServiceCheckoutService
 
         if (FileHostingCatalog::isFreeCode($service->code)) {
             throw new ServiceException(__('api/services.not_available'), 422);
+        }
+
+        // Microstock free registration is one-time: block rebuy once active.
+        if (MicrostockCatalog::isFreeCode($service->code)
+            && $this->entitlements->hasActiveMicrostockWorkspaceSlot($user->id)) {
+            throw new ServiceException(__('api/services.already_activated'), 422);
         }
 
         if ($service->isAddonPlan()) {

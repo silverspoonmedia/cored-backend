@@ -80,4 +80,11 @@ return [
         'permanent' => 'Permanent',
         'grace_banner' => 'Subscription ended. Renew within the grace period or excess files will be removed to your effective storage limit.',
     ],
+    'microstock' => [
+        'title' => 'Microstock',
+        'slot_desc' => 'Activate the free Microstock workspace, then buy additional workspace slots. Slots are separate from File Hosting team workspaces.',
+        'activate_free' => 'Activate free',
+        'active_badge' => 'Active',
+        'buy_slot' => 'Buy slot ($1/mo)',
+    ],
 ];

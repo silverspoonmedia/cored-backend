@@ -24,6 +24,7 @@ return [
     'invalid_visibility' => 'Invalid visibility value.',
     'public_share_requires_paid' => 'Public link sharing requires an active paid File Hosting plan.',
     'public_share_blocked_hash' => 'This file cannot be shared publicly (blocked by compliance).',
+    'public_share_not_allowed' => 'Items in this workspace cannot be shared publicly.',
     'blocklist_saved' => 'Hash added to the blocklist.',
     'blocklist_removed' => 'Hash removed from the blocklist.',
     'share_not_found' => 'This shared item is unavailable.',

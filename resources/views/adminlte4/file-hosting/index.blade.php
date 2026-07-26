@@ -65,6 +65,17 @@
         'ownerUserId' => $ownerUserId,
         'workspaceId' => $workspaceId,
         'currentFolderId' => $currentFolderId,
+        'workspaces' => $workspaces,
+        'currentWorkspace' => $currentWorkspace ?? null,
+        'personalLabel' => __('web/file-hosting.workspace_personal'),
+        'badgeYours' => __('web/file-hosting.collab.badge_yours'),
+        'badgeJoined' => __('web/file-hosting.collab.badge_joined'),
+        'roleLabels' => [
+            'owner' => __('web/file-hosting.collab.role_owner_short'),
+            'admin' => __('web/file-hosting.collab.role_admin_short'),
+            'editor' => __('web/file-hosting.collab.role_editor_short'),
+            'viewer' => __('web/file-hosting.collab.role_viewer_short'),
+        ],
         'planState' => $planState ?? 'free',
         'canManageMembers' => isset($currentWorkspace) && is_array($currentWorkspace)
             && in_array($currentWorkspace['my_role'] ?? null, ['owner', 'admin'], true),
@@ -709,6 +720,28 @@
             </div>
         </div>
     @endif
+
+    {{-- Create Microstock Workspace Modal (name input; slot gate handled client-side) --}}
+    <div class="modal fade" id="fhCreateMicrostockModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-images me-1"></i>{{ __('web/file-hosting.microstock.create_title') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted">{{ __('web/file-hosting.microstock.create_hint') }}</p>
+                    <label class="form-label" for="fhMicrostockName">{{ __('web/file-hosting.microstock.name_label') }}</label>
+                    <input type="text" id="fhMicrostockName" class="form-control" maxlength="255"
+                           placeholder="{{ __('web/file-hosting.microstock.name_placeholder') }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('web/file-hosting.cancel') }}</button>
+                    <button type="button" class="btn btn-primary" data-fh-microstock-modal-submit>{{ __('web/file-hosting.create') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     {{-- New Folder Modal --}}
     @can('create file hosting folder')

@@ -8,6 +8,7 @@ use App\Domain\Service\Enums\ServiceStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePrice;
 use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\MicrostockCatalog;
 use Illuminate\Database\Seeder;
 
 /**
@@ -66,6 +67,29 @@ class ServiceCatalogSeeder extends Seeder
             amountUsd: 1.00,
             entitlement: FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
         );
+
+        $this->seedPlan(
+            code: MicrostockCatalog::CODE_PLAN_FREE,
+            name: 'Microstock Workspace (Free)',
+            description: 'Free one-time Microstock registration: grants 1 built-in Microstock workspace slot. Auto-activates without payment.',
+            planKind: PlanKind::Main,
+            storageBytes: 0,
+            amountUsd: 0.00,
+            entitlement: MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+            fulfillmentTarget: MicrostockCatalog::FULFILLMENT_TARGET,
+            interval: BillingInterval::Once,
+        );
+
+        $this->seedPlan(
+            code: MicrostockCatalog::CODE_ADDON_WORKSPACE_SLOT,
+            name: 'Microstock Workspace Slot',
+            description: 'Stackable +1 Microstock workspace slot per unit, billed monthly. Does not add storage. Slots are standalone from File Hosting team workspace slots.',
+            planKind: PlanKind::Addon,
+            storageBytes: 0,
+            amountUsd: 1.00,
+            entitlement: MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+            fulfillmentTarget: MicrostockCatalog::FULFILLMENT_TARGET,
+        );
     }
 
     private function removeFreeCatalogSku(): void
@@ -105,14 +129,16 @@ class ServiceCatalogSeeder extends Seeder
         int $storageBytes,
         float $amountUsd,
         string $entitlement = 'storage_quota',
+        string $fulfillmentTarget = FileHostingCatalog::FULFILLMENT_TARGET,
+        BillingInterval $interval = BillingInterval::Monthly,
     ): void {
         $service = Service::query()->updateOrCreate(
             ['code' => $code],
             [
                 'name' => $name,
                 'description' => $description,
-                'billing_interval' => BillingInterval::Monthly,
-                'fulfillment_target' => FileHostingCatalog::FULFILLMENT_TARGET,
+                'billing_interval' => $interval,
+                'fulfillment_target' => $fulfillmentTarget,
                 'entitlement' => $entitlement,
                 'plan_kind' => $planKind,
                 'storage_bytes' => $storageBytes,

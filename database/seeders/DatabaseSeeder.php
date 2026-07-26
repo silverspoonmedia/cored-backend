@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Domain\Identity\Models\User;
+use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -21,6 +22,7 @@ class DatabaseSeeder extends Seeder
         $this->call(FileHostingRoleSeeder::class);
         $this->call(VtualRoleSeeder::class);
         $this->call(ZzDemoRoleSeeder::class);
+        $this->call(MicrostockRoleSeeder::class);
         $this->call(DomainAccessSeeder::class);
         $this->call(NotificationTypeSettingSeeder::class);
 
@@ -71,19 +73,9 @@ class DatabaseSeeder extends Seeder
         $service = App::make(ProductActivationService::class);
 
         foreach ($users as $user) {
-            foreach (\App\Support\Product\ProductRegistry::implicitProductKeys() as $productKey) {
+            foreach (ProductRegistry::implicitProductKeys() as $productKey) {
                 $service->activateImplicit($user, $productKey, 'seeder');
             }
         }
     }
 }
-
-
-
-
-
-
-
-
-
-

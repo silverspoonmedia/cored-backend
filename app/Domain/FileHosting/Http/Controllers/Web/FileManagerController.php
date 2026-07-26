@@ -339,6 +339,33 @@ class FileManagerController extends Controller
         ]);
     }
 
+    public function microstockSlots(Request $request): JsonResponse
+    {
+        $response = $this->api()->get('microstock/slots');
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json([
+            'data' => $response->json('data') ?? [],
+        ]);
+    }
+
+    public function storeMicrostockWorkspace(Request $request): JsonResponse
+    {
+        $response = $this->api()->post('microstock/workspaces', $request->only(['name']));
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json([
+            'message' => $response->json('message'),
+            'data' => $response->json('data') ?? [],
+        ], $response->status());
+    }
+
     public function download(Request $request, string $file, FileService $files): RedirectResponse
     {
         try {

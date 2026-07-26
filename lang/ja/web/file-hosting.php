@@ -84,6 +84,15 @@ return [
     'workspace_team' => 'チームワークスペース',
     'workspace_activity' => 'チームアクティビティ',
 
+    'microstock' => [
+        'activate_cta' => 'Microstockを有効化',
+        'create_workspace' => '新しいMicrostockワークスペース',
+        'slots_full' => 'Microstockスロットが満杯',
+        'create_title' => '新しいMicrostockワークスペース',
+        'create_hint' => 'Microstockワークスペースに名前を付けます。空のままだとデフォルト名を使用します。',
+        'name_label' => 'ワークスペース名',
+        'name_placeholder' => 'Microstock',
+    ],
     'collab' => [
         'title' => 'コラボレーション',
         'subtitle' => 'チームストレージはオーナーの有料プラン枠を使います。別メニューではなく、ここでモード切替。',

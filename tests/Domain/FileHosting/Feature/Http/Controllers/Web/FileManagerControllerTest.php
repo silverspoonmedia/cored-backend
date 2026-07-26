@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\FileHosting\Feature\Http\Controllers\Web;
 
+use App\Domain\FileHosting\Services\FileService;
 use App\Domain\Identity\Models\User;
 use Database\Seeders\FileHostingRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -128,6 +129,50 @@ class FileManagerControllerTest extends TestCase
         $response->assertSee(__('web/file-hosting.collab.create_workspace'));
         $response->assertSee(__('web/file-hosting.collab.slots_counter', ['used' => 0, 'limit' => 10]));
         $response->assertDontSee(__('web/file-hosting.collab.free_cannot_create'));
+    }
+
+    public function test_index_does_not_auto_provision_microstock_system_workspace(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+
+        Http::fake([
+            '*/api/v1/file-hosting/browse*' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'owner_id' => fake()->uuid(),
+                    'folder' => null,
+                    'breadcrumb' => [],
+                    'folders' => [],
+                    'files' => [],
+                ],
+            ], 200),
+            '*/api/v1/file-hosting/quota*' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'used_bytes' => 0,
+                    'quota_bytes' => 1048576,
+                    'remaining_bytes' => 1048576,
+                    'state' => 'free',
+                    'collaborative_works' => false,
+                    'can_create_workspace' => false,
+                    'owned_workspace_used' => 0,
+                    'owned_workspace_limit' => 0,
+                ],
+            ], 200),
+            '*/api/v1/file-hosting/workspaces' => Http::response([
+                'status' => 'success',
+                'data' => [],
+            ], 200),
+        ]);
+
+        $user->get('/file-hosting')->assertOk();
+
+        // Microstock is now activated explicitly via /services, not lazily on
+        // the first File Hosting paint — no system workspace is created here.
+        $this->assertDatabaseMissing('file_hosting_workspaces', [
+            'kind' => 'microstock',
+            'status' => 'active',
+        ]);
     }
 
     public function test_store_workspace_redirects_into_team_context(): void
@@ -445,14 +490,14 @@ class FileManagerControllerTest extends TestCase
         $fileId = fake()->uuid();
 
         // Web hop no longer loops back over HTTP; it calls FileService directly.
-        $files = \Mockery::mock(\App\Domain\FileHosting\Services\FileService::class);
+        $files = \Mockery::mock(FileService::class);
         $files->shouldReceive('download')
             ->once()
             ->andReturn([
                 'url' => 'https://fake-storage.test/download/'.$fileId,
                 'expires_at' => now()->addMinutes(60)->toISOString(),
             ]);
-        $this->app->instance(\App\Domain\FileHosting\Services\FileService::class, $files);
+        $this->app->instance(FileService::class, $files);
 
         $user->get("/file-hosting/files/{$fileId}/download")
             ->assertRedirect('https://fake-storage.test/download/'.$fileId);

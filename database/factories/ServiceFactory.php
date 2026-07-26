@@ -7,6 +7,7 @@ use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\MicrostockCatalog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -104,6 +105,36 @@ class ServiceFactory extends Factory
             'billing_interval' => BillingInterval::Monthly,
             'fulfillment_target' => FileHostingCatalog::FULFILLMENT_TARGET,
             'entitlement' => FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+            'plan_kind' => PlanKind::Addon,
+            'storage_bytes' => 0,
+            'status' => ServiceStatus::Active,
+        ]);
+    }
+
+    public function microstockPlanFree(): static
+    {
+        return $this->state(fn (): array => [
+            'code' => MicrostockCatalog::CODE_PLAN_FREE,
+            'name' => 'Microstock Workspace (Free)',
+            'description' => 'Free one-time Microstock registration.',
+            'billing_interval' => BillingInterval::Once,
+            'fulfillment_target' => MicrostockCatalog::FULFILLMENT_TARGET,
+            'entitlement' => MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+            'plan_kind' => PlanKind::Main,
+            'storage_bytes' => 0,
+            'status' => ServiceStatus::Active,
+        ]);
+    }
+
+    public function microstockAddonWorkspaceSlot(): static
+    {
+        return $this->state(fn (): array => [
+            'code' => MicrostockCatalog::CODE_ADDON_WORKSPACE_SLOT,
+            'name' => 'Microstock Workspace Slot',
+            'description' => 'Stackable +1 Microstock workspace slot.',
+            'billing_interval' => BillingInterval::Monthly,
+            'fulfillment_target' => MicrostockCatalog::FULFILLMENT_TARGET,
+            'entitlement' => MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
             'plan_kind' => PlanKind::Addon,
             'storage_bytes' => 0,
             'status' => ServiceStatus::Active,

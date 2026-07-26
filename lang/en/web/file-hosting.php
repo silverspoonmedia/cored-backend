@@ -84,6 +84,15 @@ return [
     'workspace_team' => 'Team workspace',
     'workspace_activity' => 'Team activity',
 
+    'microstock' => [
+        'activate_cta' => 'Activate Microstock',
+        'create_workspace' => 'New Microstock workspace',
+        'slots_full' => 'Microstock slots full',
+        'create_title' => 'New Microstock workspace',
+        'create_hint' => 'Give your Microstock workspace a name. Leave empty to use the default.',
+        'name_label' => 'Workspace name',
+        'name_placeholder' => 'Microstock',
+    ],
     'collab' => [
         'title' => 'Collaborative works',
         'subtitle' => 'Team storage shared under the owner’s paid plan. Not a separate menu — switch mode here.',

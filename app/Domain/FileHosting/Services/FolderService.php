@@ -111,6 +111,7 @@ class FolderService
         $folder = $this->resolveFolderForMutate($actor, $folderId, $userId, $workspaceId);
         $from = (string) $folder->visibility;
         $value = $this->visibility->normalize($visibility);
+        $this->visibility->assertSystemWorkspaceShareAllowed($folder->workspace);
         $this->visibility->assertVisibilityChangeAllowed($value, (string) $folder->user_id);
 
         $folder->forceFill(['visibility' => $value->value])->save();
@@ -195,6 +196,7 @@ class FolderService
     {
         [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
         $value = $this->visibility->normalize($visibility);
+        $this->visibility->assertSystemWorkspaceShareAllowed($workspace);
         $this->visibility->assertVisibilityChangeAllowed($value, $ownerId);
 
         $count = Folder::query()

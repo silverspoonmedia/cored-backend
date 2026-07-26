@@ -53,6 +53,65 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Ownership | Own resources; cross-user via product “any” + core `RoleService` hierarchy |
 | Collaborative Works | Paid perk for **owners**; free users may **join** as members. Blade UX on File Hosting page (not a separate dynamic menu). |
 
+## Storage classification (core vs product)
+
+File Hosting (and its workspace model) is the **base storage layer** for anything
+in this project that consumes disk space. Every feature that stores bytes is
+classified into exactly one of two storage classes:
+
+| Class | Effect on free-tier base | Rationale | Examples |
+|-------|--------------------------|-----------|----------|
+| **Core storage** | Does **not** consume the free-tier base | Belongs to a core feature; if it hits a storage limit the core feature risks breaking | User avatar (future) |
+| **Product storage** | Consumes the free-tier base | Belongs to a product feature; unrelated to core operation | File Hosting personal/team files, Microstock Management (upcoming) |
+
+Free-tier base today: `config('file-hosting.default_quota_bytes')` (typically 5 GiB) —
+see [Quota](#quota). Core storage is exempt from this budget; product storage is
+metered against it.
+
+### System workspaces (built-in, standalone slots)
+
+Any consumer that stores bytes is treated as a **built-in system workspace** over
+the File Hosting workspace model. A system workspace:
+
+- is provisioned implicitly by the owning feature (not created via the team
+  workspace UI),
+- is **not counted** toward the paid included team workspace slots
+  (`owned_workspace_limit` / `base_owned_workspace_slots`) — it sits outside the
+  [owned workspace slots](#owned-workspace-slots) accounting,
+- has its **own standalone slot limit** per product (e.g. Microstock slots come
+  from `microstock.plan.free` + `microstock.addon.workspace-slot.monthly`
+  entitlements, entirely separate from FH team workspace slots),
+- is the billing/quota boundary for the feature's bytes: product-class consumers
+  meter into the free-tier base, core-class consumers do not.
+
+> Status: **implemented by Microstock** — the Microstock product uses system
+> workspaces (`file_hosting_workspaces.kind = 'microstock'`, standalone slots) as
+> the first product-class consumer of this model. Microstock activation is opt-in
+> via `/services` (free registration + compounding slot addon); its slots never
+> overlap with FH team workspace slots. See [Microstock](../microstock/README.md).
+
+**Provisioning trigger:** the Microstock system workspace is **not**
+auto-provisioned on File Hosting first paint. It is created on demand —
+`GET /microstock` (redirects to `/services` when the user has no Microstock
+entitlement) or via the switcher/API — and is gated by
+`WorkspaceAccessService::assertCanProvisionMicrostockWorkspace` (slot limit from
+the Microstock entitlements). Until activation it simply does not appear in the
+switcher.
+
+**Switcher UX (SPA):** `WorkspaceResource` exposes `kind`; workspace items are
+rendered **fully client-side** by `file-manager.js` (Blade only provides the
+skeleton). `refreshWorkspaceSwitcher()` re-fetches `GET file-hosting/workspaces`
+and `renderWorkspaceMenuItems()` rebuilds the items grouped by kind —
+**Microstock group first, Team group second, each preceded by its own dynamic
+divider** (no stacked/empty dividers) — then re-renders the label/icon
+(`bi-images` for `microstock`, `bi-people` for team, `bi-person` for personal),
+the `.active` item, and the Microstock slot section, on init and on soft-nav
+workspace changes (no hard reload). The **Microstock slot section** fetches
+`file-hosting.microstock.slots` and renders the right entry (activate CTA /
+"New Microstock workspace" / slots-full note). Creating a Microstock workspace
+opens `#fhCreateMicrostockModal` (name input) → POSTs, and the new workspace
+appears in its group immediately.
+
 ## Collaborative Works (team storage)
 
 Paid owners (active **main or storage addon** FH entitlement, not free-only) may own **multiple** team workspaces. Members invited by email; **free collaborators allowed** if owner is paid. **Multi-membership is first-class:** a user may own several workspaces and simultaneously join others as admin/editor/viewer. Owning does not block joining.
@@ -101,7 +160,7 @@ Workspace-slot SKU is **not** a storage plan: does not raise GiB quota, does not
 
 **Activity:** Spatie `log_name = file_hosting.workspace`, properties include `workspace_id`. Explicit recorder (`WorkspaceActivityRecorder`) on membership + file/folder mutations. Download events off in v1. API: `GET /api/v1/file-hosting/workspaces/{id}/activity` (any active member).
 
-**Tables:** `file_hosting_workspaces` (no unique on `owner_user_id`; index `(owner_user_id, status)`), `file_hosting_workspace_members`, `file_hosting_workspace_invites`; nullable `workspace_id` on folders/files/uploads; `created_by` on files.
+**Tables:** `file_hosting_workspaces` (no unique on `owner_user_id`; index `(owner_user_id, status)`; `kind` = `team` user-created team-slot-counted vs `microstock` built-in standalone-slotted), `file_hosting_workspace_members`, `file_hosting_workspace_invites`; nullable `workspace_id` on folders/files/uploads; `created_by` on files.
 
 **Browse:** `GET browse?workspace_id=` for team tree; omit for personal. Never leak personal through workspace.
 
@@ -683,6 +742,7 @@ npm run test:js
 ## Related
 
 - [service/README.md](../service/README.md) — main/addon catalog, quantity, grace, recompute
+- [microstock/README.md](../microstock/README.md) — first system-workspace consumer (`kind='microstock'`)
 - [identity/README.md](../identity/README.md) — H-RBAC / `domain_kind`
 - [notification/README.md](../notification/README.md) — bell + DataTable `table_id` (FH listing does **not** use this bus)
 - [web/ui-patterns.md](../../web/ui-patterns.md) — admin a11y / responsive patterns (FH dropzone, modals); full browse SPA is domain-local — see [UI architecture / SPA shell](#ui-architecture--spa-shell)

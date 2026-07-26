@@ -5,6 +5,7 @@ use App\Providers\Domain\ActivityLogServiceProvider;
 use App\Providers\Domain\ErrorLogServiceProvider;
 use App\Providers\Domain\FileHostingServiceProvider;
 use App\Providers\Domain\IdentityServiceProvider;
+use App\Providers\Domain\MicrostockServiceProvider;
 use App\Providers\Domain\NavigationServiceProvider;
 use App\Providers\Domain\NotificationServiceProvider;
 use App\Providers\Domain\PaymentGatewayServiceProvider;
@@ -33,4 +34,5 @@ return [
     // Product domains (kind=product). domain:make appends; keep product last.
     FileHostingServiceProvider::class,
     VtualServiceProvider::class,
+    MicrostockServiceProvider::class,
 ];

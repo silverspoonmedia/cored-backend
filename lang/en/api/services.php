@@ -16,6 +16,7 @@ return [
     'fx_unavailable' => 'Exchange rate is temporarily unavailable. Try again later.',
     'addon_renewal_due' => 'Your addon storage stack is due for renewal. Pay the stack invoice before buying more units.',
     'addon_renewal_pending' => 'You already have a pending addon stack renewal. Complete payment before buying more units.',
+    'already_activated' => 'This service is already active on your account.',
     'policy' => [
         'denied' => 'You are not allowed to perform this action on services.',
     ],
