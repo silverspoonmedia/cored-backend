@@ -6,6 +6,7 @@ use App\Domain\FileHosting\Services\SignedDownloadService;
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
+use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -20,6 +21,7 @@ use Throwable;
  */
 class AnalyzeAssetMetadata implements ShouldQueue
 {
+    use Batchable;
     use Dispatchable;
     use InteractsWithQueue;
     use Queueable;
@@ -31,6 +33,7 @@ class AnalyzeAssetMetadata implements ShouldQueue
 
     public function __construct(
         private readonly string $metadataId,
+        private readonly ?string $hint = null,
     ) {}
 
     public function handle(AiMetadataService $ai, SignedDownloadService $downloads): void
@@ -49,7 +52,7 @@ class AnalyzeAssetMetadata implements ShouldQueue
         // Inline (preview-safe) signed URL the vision provider can fetch.
         $url = $downloads->resolve($metadata->file, inline: true)['url'];
 
-        $result = $ai->generate($url);
+        $result = $ai->generate($url, $this->hint);
 
         $metadata->forceFill([
             'title' => $result['title'],

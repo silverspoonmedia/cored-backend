@@ -28,9 +28,16 @@ Respond ONLY with a JSON object: {"title": string, "keywords": string[]}.
 PROMPT;
     }
 
-    public static function visionUser(): string
+    public static function visionUser(?string $hint = null): string
     {
-        return 'Analyze this stock asset and return the JSON metadata.';
+        $prompt = 'Analyze this stock asset and return the JSON metadata.';
+
+        $hint = $hint !== null ? trim($hint) : '';
+        if ($hint !== '') {
+            $prompt .= "\n\nCollection context from the asset owner (use it to ground the title and keywords): {$hint}";
+        }
+
+        return $prompt;
     }
 
     public static function thinkingSystem(): string
@@ -50,10 +57,16 @@ Respond ONLY with a JSON object: {"title": string, "keywords": string[]}.
 PROMPT;
     }
 
-    public static function thinkingUser(string $title, array $keywords): string
+    public static function thinkingUser(string $title, array $keywords, ?string $hint = null): string
     {
-        return "Draft title: {$title}\nDraft keywords: "
-            .implode(', ', $keywords)
-            ."\n\nCurate and return the final JSON metadata.";
+        $prompt = "Draft title: {$title}\nDraft keywords: "
+            .implode(', ', $keywords);
+
+        $hint = $hint !== null ? trim($hint) : '';
+        if ($hint !== '') {
+            $prompt .= "\n\nCollection context from the asset owner: {$hint}";
+        }
+
+        return $prompt."\n\nCurate and return the final JSON metadata.";
     }
 }

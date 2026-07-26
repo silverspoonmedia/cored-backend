@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Microstock\Http\Controllers\API\V1\CollectionController;
 use App\Domain\Microstock\Http\Controllers\API\V1\CredentialController;
 use App\Domain\Microstock\Http\Controllers\API\V1\MetadataController;
 use App\Domain\Microstock\Http\Controllers\API\V1\WorkspaceController;
@@ -25,6 +26,17 @@ Route::middleware(['auth:api', 'domain.access:Microstock', 'product.active:Micro
             ->whereUuid('file')->name('assets.metadata.show');
         Route::patch('assets/{file}/metadata', [MetadataController::class, 'update'])
             ->whereUuid('file')->name('assets.metadata.update');
+
+        Route::post('collections/{folder}/lock', [CollectionController::class, 'lock'])
+            ->whereUuid('folder')->name('collections.lock');
+        Route::post('collections/{folder}/analyze', [CollectionController::class, 'analyze'])
+            ->whereUuid('folder')->name('collections.analyze');
+        Route::get('collections/{folder}/status', [CollectionController::class, 'status'])
+            ->whereUuid('folder')->name('collections.status');
+        Route::post('collections/{folder}/export', [CollectionController::class, 'export'])
+            ->whereUuid('folder')->name('collections.export');
+        Route::get('collections/{folder}/download', [CollectionController::class, 'download'])
+            ->whereUuid('folder')->name('collections.download');
 
         Route::get('credentials', [CredentialController::class, 'index'])->name('credentials.index');
         Route::post('credentials', [CredentialController::class, 'store'])->name('credentials.store');

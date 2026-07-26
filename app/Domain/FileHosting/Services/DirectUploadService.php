@@ -2,6 +2,7 @@
 
 namespace App\Domain\FileHosting\Services;
 
+use App\Domain\FileHosting\Enums\WorkspaceKind;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Jobs\ComputeHostedFileChecksum;
 use App\Domain\FileHosting\Models\FileUpload;
@@ -65,6 +66,18 @@ class DirectUploadService
 
         if ($folderId !== null) {
             $this->folders->findOwnedOrFail($ownerId, $folderId, $wsId);
+        }
+
+        // Microstock collections: uploads must live inside a folder (collection),
+        // never the workspace root, and a locked collection no longer accepts files.
+        if ($workspace?->kind === WorkspaceKind::Microstock) {
+            if ($folderId === null) {
+                throw new FileHostingException(__('web/file-hosting.microstock.error_requires_folder'), 422);
+            }
+            $collection = $this->folders->findOwnedOrFail($ownerId, $folderId, $wsId);
+            if ($collection->isCollectionLocked()) {
+                throw new FileHostingException(__('web/file-hosting.microstock.error_collection_locked'), 422);
+            }
         }
 
         $this->assertUploadAllowed($name, $mime, $size);

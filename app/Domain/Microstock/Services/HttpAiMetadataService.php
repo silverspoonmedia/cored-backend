@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\Http;
  */
 class HttpAiMetadataService implements AiMetadataService
 {
-    public function generate(string $imageUrl): array
+    public function generate(string $imageUrl, ?string $hint = null): array
     {
-        $draft = $this->vision($imageUrl);
-        $curated = $this->thinking($draft['title'], $draft['keywords']);
+        $draft = $this->vision($imageUrl, $hint);
+        $curated = $this->thinking($draft['title'], $draft['keywords'], $hint);
 
         return [
             'title' => $curated['title'],
@@ -31,7 +31,7 @@ class HttpAiMetadataService implements AiMetadataService
     /**
      * @return array{title: string, keywords: list<string>, raw: mixed}
      */
-    private function vision(string $imageUrl): array
+    private function vision(string $imageUrl, ?string $hint = null): array
     {
         $cfg = config('microstock.ai.vision');
         $this->assertConfigured($cfg, 'vision');
@@ -46,7 +46,7 @@ class HttpAiMetadataService implements AiMetadataService
                     [
                         'role' => 'user',
                         'content' => [
-                            ['type' => 'text', 'text' => Prompts::visionUser()],
+                            ['type' => 'text', 'text' => Prompts::visionUser($hint)],
                             ['type' => 'image_url', 'image_url' => ['url' => $imageUrl]],
                         ],
                     ],
@@ -64,7 +64,7 @@ class HttpAiMetadataService implements AiMetadataService
      * @param  list<string>  $keywords
      * @return array{title: string, keywords: list<string>, raw: mixed}
      */
-    private function thinking(string $title, array $keywords): array
+    private function thinking(string $title, array $keywords, ?string $hint = null): array
     {
         $cfg = config('microstock.ai.thinking');
         $this->assertConfigured($cfg, 'thinking');
@@ -76,7 +76,7 @@ class HttpAiMetadataService implements AiMetadataService
                 'response_format' => ['type' => 'json_object'],
                 'messages' => [
                     ['role' => 'system', 'content' => Prompts::thinkingSystem()],
-                    ['role' => 'user', 'content' => Prompts::thinkingUser($title, $keywords)],
+                    ['role' => 'user', 'content' => Prompts::thinkingUser($title, $keywords, $hint)],
                 ],
             ]);
 

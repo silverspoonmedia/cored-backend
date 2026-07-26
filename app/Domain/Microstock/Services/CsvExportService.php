@@ -2,6 +2,7 @@
 
 namespace App\Domain\Microstock\Services;
 
+use App\Domain\FileHosting\Models\Folder;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
@@ -28,6 +29,34 @@ class CsvExportService
             ->where('user_id', $owner->id)
             ->where('status', MetadataStatus::Finalized)
             ->whereHas('file', fn ($q) => $q->where('workspace_id', $workspace->id))
+            ->with('file:id,name')
+            ->orderBy('created_at')
+            ->get();
+
+        $columns = config('microstock.csv.columns', ['filename', 'title', 'keywords']);
+        $separator = (string) config('microstock.csv.keywords_separator', ',');
+
+        $out = [$columns];
+
+        foreach ($rows as $row) {
+            $out[] = $this->line($row, $columns, $separator);
+        }
+
+        return ['rows' => $out, 'count' => $rows->count()];
+    }
+
+    /**
+     * Build CSV lines for the finalized metadata of files directly inside one
+     * collection folder (non-recursive).
+     *
+     * @return array{rows: list<list<string>>, count: int}
+     */
+    public function buildForCollection(Folder $folder): array
+    {
+        /** @var Collection<int, AssetMetadata> $rows */
+        $rows = AssetMetadata::query()
+            ->where('status', MetadataStatus::Finalized)
+            ->whereHas('file', fn ($q) => $q->where('folder_id', $folder->id))
             ->with('file:id,name')
             ->orderBy('created_at')
             ->get();

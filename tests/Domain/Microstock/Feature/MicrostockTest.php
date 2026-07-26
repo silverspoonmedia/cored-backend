@@ -303,7 +303,7 @@ class MicrostockTest extends TestCase
     {
         $this->app->instance(AiMetadataService::class, new class implements AiMetadataService
         {
-            public function generate(string $imageUrl): array
+            public function generate(string $imageUrl, ?string $hint = null): array
             {
                 return [
                     'title' => 'Curated title',

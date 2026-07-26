@@ -29,4 +29,7 @@ return [
         'columns' => ['filename', 'title', 'keywords'],
         'keywords_separator' => ',',
     ],
+
+    // Filesystem disk that stores generated per-collection CSV exports.
+    'csv_disk' => env('MICROSTOCK_CSV_DISK', 'local'),
 ];

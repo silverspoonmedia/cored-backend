@@ -129,6 +129,8 @@ function initFileManager(root) {
                         if (json.data.folder?.id !== undefined) {
                             config.currentFolderId = json.data.folder?.id || null;
                         }
+                        syncCollectionUploadGate(root, config, json.data.folder);
+                        updateCollectionUi(json.data.folder ? json.data.folder.collection_status : null);
                         // Soft-refetch replaces rows — drop stale selection + re-enable DnD.
                         selected.clear();
                         if (selection) {
@@ -329,6 +331,7 @@ function initFileManager(root) {
         initBulkActions();
         initDriveLikeInteractions();
         initMicrostockSlotSection();
+        initCollectionUi();
         if (spaShell) {
             initSpaRouter();
         }
@@ -1044,6 +1047,22 @@ function initFileManager(root) {
             });
         }
 
+        // Keep the direct-upload root-upload/lock gate in sync with the browse
+        // payload (microstock collections: no root upload, no upload into a
+        // locked collection). Reads live data-* attrs the uploader checks.
+        function syncCollectionUploadGate(rootEl, cfg, folder) {
+            const kind = cfg?.currentWorkspace?.kind || '';
+            const locked = folder && folder.collection_locked === true ? '1' : '0';
+            rootEl.querySelectorAll('[data-direct-upload]').forEach((el) => {
+                if (kind) {
+                    el.dataset.workspaceKind = kind;
+                } else {
+                    delete el.dataset.workspaceKind;
+                }
+                el.dataset.collectionLocked = folder ? locked : '0';
+            });
+        }
+
         // ---- Workspace switcher client re-render (SPA soft-nav) ----
         function switcherBrowseUrl(wsId) {
             const base = config.browseUrl || '/file-hosting';
@@ -1394,6 +1413,193 @@ function initFileManager(root) {
                     }
                     setBusy(false);
                 });
+        }
+
+        // ---- Microstock collection UI (lock & describe / status / export) ----
+        function collectionEls() {
+            return {
+                action: root.querySelector('[data-fh-collection-action]'),
+                primary: root.querySelector('[data-fh-collection-primary]'),
+                primaryLabel: root.querySelector('[data-fh-collection-primary-label]'),
+                banner: root.querySelector('[data-fh-collection-banner]'),
+                bannerText: root.querySelector('[data-fh-collection-banner-text]'),
+            };
+        }
+
+        function isMicrostockContext() {
+            return config.currentWorkspace?.kind === 'microstock';
+        }
+
+        // Render the collection action button + status banner for the current
+        // folder. `status` = browse.folder.collection_status (null => draft).
+        function updateCollectionUi(status) {
+            const els = collectionEls();
+            if (!els.action) {
+                return;
+            }
+            const inCollection = isMicrostockContext() && !!config.currentFolderId;
+            els.action.classList.toggle('d-none', !inCollection);
+
+            if (!inCollection) {
+                els.banner?.classList.add('d-none');
+                return;
+            }
+
+            const labels = config.collectionLabels || {};
+            const st = status || 'draft';
+            config.collectionStatus = st;
+
+            // Banner text per status.
+            let bannerText = null;
+            let primaryLabel = labels.lockDescribe;
+            let primaryMode = 'lock';
+            if (st === 'processing') {
+                bannerText = labels.processing;
+                primaryLabel = labels.processing;
+                primaryMode = 'none';
+            } else if (st === 'review') {
+                bannerText = labels.review;
+                primaryLabel = labels.exportCsv;
+                primaryMode = 'export';
+            } else if (st === 'exported') {
+                bannerText = labels.exported;
+                primaryLabel = labels.downloadCsv;
+                primaryMode = 'download';
+            } else if (st === 'failed') {
+                bannerText = labels.failed;
+                primaryLabel = labels.lockDescribe;
+                primaryMode = 'lock';
+            } else if (st === 'locked') {
+                bannerText = labels.locked;
+                primaryLabel = labels.processing;
+                primaryMode = 'none';
+            }
+
+            if (els.banner && els.bannerText) {
+                if (bannerText) {
+                    els.bannerText.textContent = bannerText;
+                    els.banner.classList.remove('d-none');
+                } else {
+                    els.banner.classList.add('d-none');
+                }
+            }
+
+            if (els.primary && els.primaryLabel) {
+                els.primaryLabel.textContent = primaryLabel;
+                els.primary.dataset.mode = primaryMode;
+                els.primary.disabled = primaryMode === 'none';
+            }
+        }
+
+        function collectionUrl(suffix) {
+            return (config.collectionBase || '/file-hosting/microstock/collections')
+                + '/' + encodeURIComponent(config.currentFolderId) + suffix;
+        }
+
+        function collectionPost(suffix, body) {
+            return fetch(collectionUrl(suffix), {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                credentials: 'same-origin',
+                body: body ? JSON.stringify(body) : null,
+            }).then(function (res) {
+                return res.json().catch(function () { return {}; }).then(function (json) {
+                    return { ok: res.ok, json: json };
+                });
+            });
+        }
+
+        function refreshCollectionStatus() {
+            if (!config.currentFolderId) {
+                return;
+            }
+            fetchJson(collectionUrl('/status'), csrfToken)
+                .then(function (json) {
+                    if (json?.data) {
+                        updateCollectionUi(json.data.status);
+                    }
+                })
+                .catch(function () { /* best-effort */ });
+        }
+
+        function initCollectionUi() {
+            updateCollectionUi(config.collectionStatus || null);
+
+            const els = collectionEls();
+            if (els.primary) {
+                els.primary.addEventListener('click', function () {
+                    const mode = els.primary.dataset.mode || 'lock';
+                    if (mode === 'lock') {
+                        const modalEl = document.getElementById('fhCollectionDescribeModal');
+                        if (modalEl && window.bootstrap?.Modal) {
+                            const input = modalEl.querySelector('#fhCollectionHint');
+                            if (input) {
+                                input.value = '';
+                            }
+                            window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                        }
+                    } else if (mode === 'export') {
+                        setBusy(true);
+                        collectionPost('/export')
+                            .then(function (out) {
+                                if (out.ok) {
+                                    showToast(out.json.message || config.messages.success, 'success');
+                                    refreshCollectionStatus();
+                                } else {
+                                    showToast(out.json.message || config.messages.error, 'error');
+                                }
+                            })
+                            .catch(function () { showToast(config.messages.networkError, 'error'); })
+                            .finally(function () { setBusy(false); });
+                    } else if (mode === 'download') {
+                        window.location.href = collectionUrl('/download');
+                    }
+                });
+            }
+
+            const describeSubmit = document.querySelector('[data-fh-collection-describe-submit]');
+            if (describeSubmit) {
+                describeSubmit.addEventListener('click', function () {
+                    const hint = document.getElementById('fhCollectionHint')?.value?.trim() || '';
+                    if (hint === '') {
+                        showToast(config.messages.error, 'error');
+                        return;
+                    }
+                    describeSubmit.disabled = true;
+                    setBusy(true);
+                    // Lock (with hint) then kick off the AI pipeline.
+                    collectionPost('/lock', { hint: hint })
+                        .then(function (out) {
+                            if (!out.ok) {
+                                showToast(out.json.message || config.messages.error, 'error');
+                                return;
+                            }
+                            return collectionPost('/analyze').then(function (a) {
+                                const modalEl = document.getElementById('fhCollectionDescribeModal');
+                                if (modalEl && window.bootstrap?.Modal) {
+                                    window.bootstrap.Modal.getInstance(modalEl)?.hide();
+                                }
+                                if (a.ok) {
+                                    showToast(a.json.message || config.messages.success, 'success');
+                                } else {
+                                    showToast(a.json.message || config.messages.error, 'error');
+                                }
+                                refreshCollectionStatus();
+                                syncCollectionUploadGate(root, config, { collection_locked: true });
+                            });
+                        })
+                        .catch(function () { showToast(config.messages.networkError, 'error'); })
+                        .finally(function () {
+                            describeSubmit.disabled = false;
+                            setBusy(false);
+                        });
+                });
+            }
         }
 
         // ---- Copy buttons ----

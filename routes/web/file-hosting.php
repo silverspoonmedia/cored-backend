@@ -36,6 +36,18 @@ Route::middleware('domain.access:FileHosting')->group(function (): void {
     Route::post('file-hosting/microstock/workspaces', [FileManagerController::class, 'storeMicrostockWorkspace'])
         ->name('file-hosting.microstock.workspaces.store');
 
+    // Microstock collection lifecycle (Blade consumer of API)
+    Route::post('file-hosting/microstock/collections/{folder}/lock', [FileManagerController::class, 'lockMicrostockCollection'])
+        ->whereUuid('folder')->name('file-hosting.microstock.collections.lock');
+    Route::post('file-hosting/microstock/collections/{folder}/analyze', [FileManagerController::class, 'analyzeMicrostockCollection'])
+        ->whereUuid('folder')->name('file-hosting.microstock.collections.analyze');
+    Route::get('file-hosting/microstock/collections/{folder}/status', [FileManagerController::class, 'microstockCollectionStatus'])
+        ->whereUuid('folder')->name('file-hosting.microstock.collections.status');
+    Route::post('file-hosting/microstock/collections/{folder}/export', [FileManagerController::class, 'exportMicrostockCollection'])
+        ->whereUuid('folder')->name('file-hosting.microstock.collections.export');
+    Route::get('file-hosting/microstock/collections/{folder}/download', [FileManagerController::class, 'downloadMicrostockCollectionCsv'])
+        ->whereUuid('folder')->name('file-hosting.microstock.collections.download');
+
     Route::post('file-hosting/folders', [FileManagerController::class, 'storeFolder'])->name('file-hosting.folders.store');
     Route::match(['put', 'patch'], 'file-hosting/folders/{folder}/rename', [FileManagerController::class, 'renameFolder'])
         ->whereUuid('folder')

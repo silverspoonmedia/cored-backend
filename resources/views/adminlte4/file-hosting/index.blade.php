@@ -67,6 +67,18 @@
         'currentFolderId' => $currentFolderId,
         'workspaces' => $workspaces,
         'currentWorkspace' => $currentWorkspace ?? null,
+        'collectionBase' => url('file-hosting/microstock/collections'),
+        'collectionStatus' => $browse['folder']['collection_status'] ?? null,
+        'collectionLabels' => [
+            'lockDescribe' => __('web/file-hosting.microstock.lock_describe'),
+            'exportCsv' => __('web/file-hosting.microstock.export_csv'),
+            'downloadCsv' => __('web/file-hosting.microstock.download_csv'),
+            'processing' => __('web/file-hosting.microstock.status_processing'),
+            'review' => __('web/file-hosting.microstock.status_review'),
+            'exported' => __('web/file-hosting.microstock.status_exported'),
+            'failed' => __('web/file-hosting.microstock.status_failed'),
+            'locked' => __('web/file-hosting.microstock.status_locked'),
+        ],
         'personalLabel' => __('web/file-hosting.workspace_personal'),
         'badgeYours' => __('web/file-hosting.collab.badge_yours'),
         'badgeJoined' => __('web/file-hosting.collab.badge_joined'),
@@ -201,6 +213,13 @@
                 </button>
             @endcan
 
+            {{-- Microstock collection action (visible only inside a microstock collection; JS-driven) --}}
+            <div class="d-none" data-fh-collection-action>
+                <button type="button" class="btn btn-outline-primary btn-sm" data-fh-collection-primary>
+                    <i class="bi bi-lock me-1"></i><span data-fh-collection-primary-label>{{ __('web/file-hosting.microstock.lock_describe') }}</span>
+                </button>
+            </div>
+
             @include('adminlte4.file-hosting.partials._workspace-switcher', [
                 'planState' => $planState ?? 'free',
                 'canCreateWorkspace' => $canCreateWorkspace ?? false,
@@ -274,6 +293,8 @@
                 data-folder-id="{{ $currentFolderId }}"
                 data-user-id="{{ $ownerUserId }}"
                 data-workspace-id="{{ $workspaceId }}"
+                data-workspace-kind="{{ $currentWorkspace['kind'] ?? '' }}"
+                data-collection-locked="{{ ! empty($browse['folder']['collection_locked'] ?? null) ? '1' : '0' }}"
                 data-init-url="{{ route('file-hosting.uploads.store') }}"
                 data-status-url="{{ url('file-hosting/uploads/__UPLOAD__') }}"
                 data-complete-url="{{ url('file-hosting/uploads/__UPLOAD__/complete') }}"
@@ -295,6 +316,8 @@
                     'completing' => __('web/file-hosting.upload.completing'),
                     'done' => __('web/file-hosting.upload.done'),
                     'remove' => __('web/file-hosting.upload.remove'),
+                    'requiresFolder' => __('web/file-hosting.microstock.error_requires_folder'),
+                    'collectionLocked' => __('web/file-hosting.microstock.error_collection_locked'),
                 ]) }}"
             >
                 <div class="fh-dropzone__icon">
@@ -355,6 +378,12 @@
 
         {{-- SPA browse panel (table + grid) --}}
         <div data-fh-panel="browse">
+        {{-- Microstock collection status banner (JS-driven, hidden by default) --}}
+        <div class="alert alert-secondary d-none d-flex align-items-center gap-2 py-2 px-3 mb-3"
+             data-fh-collection-banner role="status">
+            <i class="bi bi-images"></i>
+            <span data-fh-collection-banner-text></span>
+        </div>
         {{-- Table view --}}
         <div data-fh-view="table">
             <div class="table-responsive">
@@ -738,6 +767,28 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('web/file-hosting.cancel') }}</button>
                     <button type="button" class="btn btn-primary" data-fh-microstock-modal-submit>{{ __('web/file-hosting.create') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Microstock Collection: Lock & Describe Modal --}}
+    <div class="modal fade" id="fhCollectionDescribeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-lock me-1"></i>{{ __('web/file-hosting.microstock.describe_title') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted">{{ __('web/file-hosting.microstock.describe_hint') }}</p>
+                    <label class="form-label" for="fhCollectionHint">{{ __('web/file-hosting.microstock.describe_label') }}</label>
+                    <textarea id="fhCollectionHint" class="form-control" rows="4" maxlength="2000"
+                              placeholder="{{ __('web/file-hosting.microstock.describe_placeholder') }}"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('web/file-hosting.cancel') }}</button>
+                    <button type="button" class="btn btn-primary" data-fh-collection-describe-submit>{{ __('web/file-hosting.microstock.describe_submit') }}</button>
                 </div>
             </div>
         </div>

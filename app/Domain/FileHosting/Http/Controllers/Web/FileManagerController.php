@@ -6,12 +6,14 @@ use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\FileHostingHashBlocklist;
 use App\Domain\FileHosting\Services\FileService;
 use App\Domain\FileHosting\Services\HashBlocklistService;
+use App\Domain\Microstock\Services\CollectionService;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * File manager — pure consumer of `/api/v1/file-hosting/*`.
@@ -356,6 +358,56 @@ class FileManagerController extends Controller
     {
         $response = $this->api()->post('microstock/workspaces', $request->only(['name']));
 
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json([
+            'message' => $response->json('message'),
+            'data' => $response->json('data') ?? [],
+        ], $response->status());
+    }
+
+    public function lockMicrostockCollection(Request $request, string $folder): JsonResponse
+    {
+        $response = $this->api()->post('microstock/collections/'.$folder.'/lock', $request->only(['hint']));
+
+        return $this->microstockProxy($response);
+    }
+
+    public function analyzeMicrostockCollection(Request $request, string $folder): JsonResponse
+    {
+        $response = $this->api()->post('microstock/collections/'.$folder.'/analyze');
+
+        return $this->microstockProxy($response);
+    }
+
+    public function microstockCollectionStatus(Request $request, string $folder): JsonResponse
+    {
+        $response = $this->api()->get('microstock/collections/'.$folder.'/status');
+
+        return $this->microstockProxy($response);
+    }
+
+    public function exportMicrostockCollection(Request $request, string $folder): JsonResponse
+    {
+        $response = $this->api()->post('microstock/collections/'.$folder.'/export');
+
+        return $this->microstockProxy($response);
+    }
+
+    public function downloadMicrostockCollectionCsv(Request $request, string $folder, CollectionService $collections): Response
+    {
+        $csv = $collections->downloadCsv($request->user(), $folder);
+
+        return response($csv['contents'], 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$csv['name'].'"',
+        ]);
+    }
+
+    private function microstockProxy(\Illuminate\Http\Client\Response $response): JsonResponse
+    {
         if (! $response->successful()) {
             return response()->json(['message' => $this->apiMessage($response)], $response->status());
         }

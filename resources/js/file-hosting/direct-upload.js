@@ -115,6 +115,21 @@ export function initDirectUpload(root) {
             return;
         }
 
+        // Microstock collection gate: uploads must target a folder (collection)
+        // and never a locked collection. Read live so soft-nav stays accurate.
+        if (root.dataset.workspaceKind === 'microstock') {
+            if (!root.dataset.folderId) {
+                window.alert(config.messages.requiresFolder || 'Create a folder (collection) first, then upload inside it.');
+                fileInput.value = '';
+                return;
+            }
+            if (root.dataset.collectionLocked === '1') {
+                window.alert(config.messages.collectionLocked || 'This collection is locked and no longer accepts uploads.');
+                fileInput.value = '';
+                return;
+            }
+        }
+
         const stagedCount = stagedContainer?.querySelectorAll('[data-staged-id]').length ?? 0;
         const queuedCount = pendingQueue.length;
         const uploadingCount = countUploading();

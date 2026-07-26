@@ -54,13 +54,37 @@ Microstock assets live in `file_hosting_workspaces.kind = 'microstock'` rows —
 | Invite | Only a **paid FH** owner may invite (`WorkspaceService::invite` → `assertOwnerEligibleForCollab`); invitees may be free or paid |
 | Upload/browse/download | Reuse File Hosting services as-is |
 
+## Collections (folder-as-collection lifecycle)
+
+A **folder** inside a Microstock workspace is a **collection** — the unit the AI processes. Uploads must live inside a collection, never the workspace root. Collection state lives directly on `file_hosting_folders` (migration `2026_07_26_100001`), driven by `App\Domain\FileHosting\Enums\CollectionStatus` and `App\Domain\Microstock\Services\CollectionService`.
+
+```mermaid
+flowchart LR
+  draft[draft upload] -->|"lock + describe"| locked[locked]
+  locked -->|"analyze"| processing[processing]
+  processing -->|"batch settled"| review[review curate]
+  review -->|"export"| exported[exported]
+  processing -->|"error"| failed[failed]
+```
+
+| Step | Behavior |
+|----|----------|
+| Upload gate | `DirectUploadService::initiate` rejects (422) a Microstock workspace upload with no `folder_id` (`microstock.error_requires_folder`) or into a locked collection (`microstock.error_collection_locked`). Client mirrors this via dropzone `data-workspace-kind` / `data-collection-locked` |
+| Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here |
+| Analyze | `POST collections/{folder}/analyze` (requires `locked`, non-empty) sets `processing` and dispatches `ProcessCollection` |
+| Pipeline | `ProcessCollection` fans out one `AnalyzeAssetMetadata` per file **directly in the folder (non-recursive)** via `Bus::batch`, carrying `collection_hint`; `->then()` flips to `review`, `->catch()`/`failed()` to `failed`. Sub-folders are separate collections and are NOT processed |
+| Curate | Per-file manual edit via `PATCH assets/{file}/metadata` (existing finalize) while in `review` |
+| Export | `POST collections/{folder}/export` (requires `review`) renders a CSV of the folder's finalized metadata, persists it to `microstock.csv_disk`, saves `collection_csv_path`, sets `exported`. `GET collections/{folder}/download` streams it |
+
+`collection_status` is NULL for ordinary File Hosting folders — only Microstock collections use these columns. `Folder::isCollectionLocked()` is true for locked/processing/review/exported.
+
 ## Metadata (AI: vision → thinking → manual)
 
-Microstock's value is metadata. After uploading an asset the user triggers **Analyze**:
+Microstock's value is metadata. The owner **hint** (collection description) grounds every file's metadata:
 
-1. `POST assets/{file}/analyze` → `MicrostockService::requestAnalysis` creates/resets a `microstock_asset_metadata` row (`status = pending`) and dispatches `AnalyzeAssetMetadata` (queued, `tries = 3`, `backoff = 30`).
-2. The job mints an inline signed URL (`SignedDownloadService::resolve($file, inline: true)`) and calls `AiMetadataService::generate($url)`.
-3. **Vision** stage drafts title + keywords from the image; **thinking** stage curates them (dedupe repetitive keywords, relevance, SEO). Prompts are hardcoded in `App\Domain\Microstock\Support\Prompts` (English, SEO-focused).
+1. Per collection: `ProcessCollection` (above) creates/resets a `microstock_asset_metadata` row per file (`status = pending`) and batches `AnalyzeAssetMetadata` jobs with the hint. (Single-asset `POST assets/{file}/analyze` → `MicrostockService::requestAnalysis` still works for ad-hoc runs, hint optional.)
+2. The job mints an inline signed URL (`SignedDownloadService::resolve($file, inline: true)`) and calls `AiMetadataService::generate($url, $hint)`.
+3. **Vision** stage drafts title + keywords from the image (with the collection hint woven into `Prompts::visionUser`); **thinking** stage curates them (`Prompts::thinkingUser` also receives the hint). Prompts are hardcoded in `App\Domain\Microstock\Support\Prompts` (English, SEO-focused).
 4. Result stored with `status = generated`.
 5. Final curation is **manual**: user edits title/keywords → `PATCH assets/{file}/metadata` → `status = finalized`.
 
@@ -72,7 +96,10 @@ Microstock's value is metadata. After uploading an asset the user triggers **Ana
 
 ## CSV export
 
-`GET /microstock/export/csv` streams a CSV of the owner's **finalized** metadata within the Microstock workspace. Columns are config-driven (`microstock.csv.columns`, default `filename,title,keywords`; `microstock.csv.keywords_separator`). Per-marketplace field mapping is a later iteration.
+Two scopes, both finalized-only. Columns are config-driven (`microstock.csv.columns`, default `filename,title,keywords`; `microstock.csv.keywords_separator`). Per-marketplace field mapping is a later iteration.
+
+- **Per collection** (primary): `CsvExportService::buildForCollection($folder)` — finalized metadata of files directly in the folder. Persisted to `microstock.csv_disk` (default `local`) at `microstock/collections/{folder}.csv` on export.
+- **Whole workspace**: `CsvExportService::build($owner)` — all finalized metadata in the Microstock workspace (legacy/ad-hoc).
 
 ## Marketplace credentials
 
@@ -93,6 +120,11 @@ Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Micros
 | GET | `credentials` | List marketplace credentials |
 | POST | `credentials` | Store credential (`marketplace`, `label`, `secret{}`) |
 | DELETE | `credentials/{id}` | Delete credential |
+| POST | `collections/{folder}/lock` | Lock collection + store hint (`hint`) |
+| POST | `collections/{folder}/analyze` | Start the per-file AI pipeline (202) |
+| GET | `collections/{folder}/status` | Status + progress snapshot |
+| POST | `collections/{folder}/export` | Render + persist collection CSV |
+| GET | `collections/{folder}/download` | Stream the exported collection CSV |
 
 ## Web
 
@@ -102,6 +134,12 @@ Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Micros
 | `microstock.export.csv` | Stream-download the finalized metadata CSV |
 | `file-hosting.microstock.slots` | Thin web hop → `GET /api/v1/microstock/slots` (for the switcher UI) |
 | `file-hosting.microstock.workspaces.store` | Thin web hop → `POST /api/v1/microstock/workspaces` (switcher "New Microstock workspace") |
+| `file-hosting.microstock.collections.lock` / `.analyze` / `.status` / `.export` | Thin web hops → the matching collection API endpoints (SPA collection toolbar) |
+| `file-hosting.microstock.collections.download` | Direct service download of the exported collection CSV |
+
+### Collection UI (SPA)
+
+Inside a Microstock collection folder the SPA toolbar shows a **Lock & Describe** button (`#fhCollectionDescribeModal` → lock + analyze) and a persistent status banner (`collection_status`: locked/processing/review/exported/failed). The button morphs per status — Lock & Describe (draft/failed) → Export CSV (review) → Download CSV (exported) — driven by `updateCollectionUi()` fed from the browse payload (`folder.collection_status`) and the status endpoint. Upload into a locked collection / workspace root is blocked client-side (dropzone gate) and server-side (`DirectUploadService`).
 
 ### Switcher multi-workspace UI
 
@@ -115,7 +153,10 @@ After a successful create (and after every switcher refetch) the SPA rebuilds th
 
 ## Tests
 
-`composer test -- --filter=MicrostockTest` — provisioning gated by entitlement (403 without), slot-limit multi-workspace create (free=1, +addon compounding), public-share block, analyze → generate (stub AI), finalize curation, CSV export finalized-only, credential encrypt/decrypt roundtrip, invite paid-gate. Checkout coverage lives in `ServiceCheckoutZeroChargeTest` (free $0 auto-fulfill + activate, rebuy 422, addon quantity compounding).
+`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest"` —
+- `MicrostockTest`: provisioning gated by entitlement (403 without), slot-limit multi-workspace create, public-share block, analyze → generate (stub AI), finalize curation, CSV export finalized-only, credential encrypt/decrypt roundtrip, invite paid-gate. Checkout coverage in `ServiceCheckoutZeroChargeTest`.
+- `CollectionLifecycleTest`: root-upload blocked (422), locked-collection upload blocked, lock requires hint + transitions + rejects re-lock + rejects non-microstock folder, analyze requires lock/files + dispatches `ProcessCollection`, non-recursive batching (sub-folder untouched), empty→failed, prompt hint threading (`Prompts::visionUser`/`thinkingUser`), status progress counts, per-collection CSV filter, export persists CSV + marks exported.
+- `CollectionApiTest`: HTTP lock/analyze/status/export/download endpoints (auth, validation, transitions, foreign-collection 403).
 
 ## Explicitly out of scope (MVP)
 
