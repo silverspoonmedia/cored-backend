@@ -191,6 +191,10 @@ class CollectionLifecycleTest extends TestCase
         $this->assertSame('Curated title', AssetMetadata::query()->where('file_id', $b->id)->value('title'));
         $this->assertSame(MetadataStatus::Generated, AssetMetadata::query()->where('file_id', $a->id)->first()->status);
         $this->assertSame(MetadataStatus::Generated, AssetMetadata::query()->where('file_id', $b->id)->first()->status);
+        $raw = AssetMetadata::query()->where('file_id', $a->id)->value('ai_raw');
+        $this->assertIsArray($raw);
+        $this->assertArrayHasKey('vision', $raw);
+        $this->assertArrayHasKey('thinking', $raw);
         $this->assertSame(CollectionStatus::Review, $folder->refresh()->collection_status);
     }
 
@@ -501,6 +505,23 @@ class CollectionLifecycleTest extends TestCase
                 }
 
                 return $out;
+            }
+
+            public function curateDraft(
+                string $title,
+                array $keywords,
+                ?string $hint = null,
+                string $description = '',
+                string $category = '',
+                ?string $imageUrl = null,
+            ): array {
+                return [
+                    'title' => 'Curated title',
+                    'keywords' => ['a', 'b'],
+                    'description' => 'Curated description',
+                    'category' => 'Illustration',
+                    'raw' => ['thinking' => true],
+                ];
             }
         });
 

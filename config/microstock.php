@@ -32,6 +32,10 @@ return [
         // whole collection. Larger chunks = fewer requests but bigger payloads.
         'batch_chunk' => (int) env('MICROSTOCK_AI_BATCH_CHUNK', 10),
 
+        // Multi-image batch requests can mis-assign metadata across assets. Below
+        // this file count per chunk, run per-file vision+thinking instead.
+        'batch_min_files' => (int) env('MICROSTOCK_AI_BATCH_MIN_FILES', 4),
+
         // Adaptive failure deadline per asset, measured from when analysis was
         // queued (metadata.created_at) — NOT a per-request HTTP timeout. The AI
         // stages run multi-step reasoning with no predictable duration, so the

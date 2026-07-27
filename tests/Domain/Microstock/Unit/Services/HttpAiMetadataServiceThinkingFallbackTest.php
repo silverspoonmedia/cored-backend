@@ -84,8 +84,7 @@ class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
 
     public function test_thinking_retries_with_fused_user_when_system_prompt_hangs(): void
     {
-        // Vision OK; first thinking attempt (system+user) times out, second
-        // (fused user, no system) succeeds.
+        // Vision OK; first visual thinking attempt times out, second (fused) succeeds.
         Http::fake([
             self::ENDPOINT => Http::sequence()
                 ->push($this->visionResponse(), 200)
@@ -100,14 +99,16 @@ class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
         $this->assertSame(['fused'], $result['keywords']);
     }
 
-    public function test_thinking_falls_back_to_vision_draft_when_both_attempts_fail(): void
+    public function test_thinking_falls_back_to_vision_draft_when_all_attempts_fail(): void
     {
-        // Vision OK; both thinking attempts time out -> keep vision draft.
+        // Vision OK; all thinking attempts time out -> keep vision draft.
         Http::fake([
             self::ENDPOINT => Http::sequence()
                 ->push($this->visionResponse(), 200)
                 ->push(fn () => throw new ConnectionException('timeout A'))
-                ->push(fn () => throw new ConnectionException('timeout B')),
+                ->push(fn () => throw new ConnectionException('timeout B'))
+                ->push(fn () => throw new ConnectionException('timeout C'))
+                ->push(fn () => throw new ConnectionException('timeout D')),
         ]);
 
         $service = new HttpAiMetadataService;

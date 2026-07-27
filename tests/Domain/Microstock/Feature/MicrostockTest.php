@@ -335,6 +335,23 @@ class MicrostockTest extends TestCase
 
                 return $out;
             }
+
+            public function curateDraft(
+                string $title,
+                array $keywords,
+                ?string $hint = null,
+                string $description = '',
+                string $category = '',
+                ?string $imageUrl = null,
+            ): array {
+                return [
+                    'title' => 'Curated title',
+                    'keywords' => ['a', 'b'],
+                    'description' => 'Curated description',
+                    'category' => 'Illustration',
+                    'raw' => ['thinking' => true],
+                ];
+            }
         });
 
         $this->app->instance(AssetResizeService::class, new class extends AssetResizeService

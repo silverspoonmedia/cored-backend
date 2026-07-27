@@ -115,6 +115,8 @@ return [
         'status_pending' => 'Pending',
         'status_generated' => 'Generated',
         'status_finalized' => 'Finalized',
+        'status_failed_item' => 'Analysis failed',
+        'panel_error_label' => 'Analysis error',
         'panel_title' => 'Review asset',
         'panel_title_label' => 'Title',
         'panel_keywords_label' => 'Keywords',

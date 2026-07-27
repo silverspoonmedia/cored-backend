@@ -89,6 +89,7 @@
             'statusPending' => __('web/file-hosting.microstock.status_pending'),
             'statusGenerated' => __('web/file-hosting.microstock.status_generated'),
             'statusFinalized' => __('web/file-hosting.microstock.status_finalized'),
+            'statusFailed' => __('web/file-hosting.microstock.status_failed_item'),
             'saved' => __('web/file-hosting.microstock.panel_saved'),
             'queued' => __('web/file-hosting.microstock.panel_queued'),
         ],
@@ -835,6 +836,7 @@
                 <img data-fh-ms-thumb alt="" class="img-fluid rounded border" style="max-height:240px; object-fit:contain;">
             </div>
             <div class="mb-2"><span class="badge text-bg-secondary" data-fh-ms-status></span></div>
+            <div class="alert alert-danger d-none mb-3 py-2 small" data-fh-ms-error role="alert"></div>
             <div class="mb-3">
                 <label class="form-label" for="fhMsTitle">{{ __('web/file-hosting.microstock.panel_title_label') }}</label>
                 <input type="text" class="form-control" id="fhMsTitle" maxlength="255">

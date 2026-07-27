@@ -17,7 +17,10 @@ class AssetMetadataResource extends JsonResource
             'filename' => $this->whenLoaded('file', fn () => $this->file?->name),
             'title' => $this->title,
             'keywords' => $this->keywords ?? [],
+            'description' => $this->description,
+            'category' => $this->category,
             'status' => $this->status?->value,
+            'error' => $this->error,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

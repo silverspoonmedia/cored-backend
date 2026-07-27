@@ -29,4 +29,20 @@ interface AiMetadataService
      *                                                                                                                  Map of metadata id => metadata. May omit ids the AI skipped.
      */
     public function generateBatch(array $items, ?string $hint = null): array;
+
+    /**
+     * Curate a vision draft (stage 2). When a preview data-URI is provided the
+     * thinking model verifies the draft against the image before curating.
+     *
+     * @param  list<string>  $keywords
+     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: mixed}
+     */
+    public function curateDraft(
+        string $title,
+        array $keywords,
+        ?string $hint = null,
+        string $description = '',
+        string $category = '',
+        ?string $imageUrl = null,
+    ): array;
 }

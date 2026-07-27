@@ -115,6 +115,8 @@ return [
         'status_pending' => '保留中',
         'status_generated' => '生成済み',
         'status_finalized' => '確定済み',
+        'status_failed_item' => '分析に失敗',
+        'panel_error_label' => '分析エラー',
         'panel_title' => 'アセットをレビュー',
         'panel_title_label' => 'タイトル',
         'panel_keywords_label' => 'キーワード',

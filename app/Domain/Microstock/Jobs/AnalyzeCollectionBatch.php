@@ -82,30 +82,44 @@ class AnalyzeCollectionBatch implements ShouldQueue
             }
 
             if ($items !== []) {
-                $results = [];
-                try {
-                    $results = $ai->generateBatch($items, $this->hint);
-                } catch (Throwable $e) {
-                    report($e);
-                }
+                $minBatch = max(1, (int) config('microstock.ai.batch_min_files', 4));
 
-                foreach ($items as $item) {
-                    $m = $byId[$item['id']];
-                    $row = $results[$item['id']] ?? null;
-
-                    if ($row === null) {
-                        // Batch skipped/failed this asset: fall back to single-file run.
+                if (count($items) < $minBatch) {
+                    foreach ($items as $item) {
+                        $m = $byId[$item['id']];
                         try {
                             $single = $ai->generate($item['image'], $this->hint);
                             $this->markGenerated($m, $single);
                         } catch (Throwable $e) {
                             $this->markFailed($m, $e);
                         }
-
-                        continue;
+                    }
+                } else {
+                    $results = [];
+                    try {
+                        $results = $ai->generateBatch($items, $this->hint);
+                    } catch (Throwable $e) {
+                        report($e);
                     }
 
-                    $this->markGenerated($m, $row);
+                    foreach ($items as $item) {
+                        $m = $byId[$item['id']];
+                        $row = $results[$item['id']] ?? null;
+
+                        if ($row === null) {
+                            // Batch skipped/failed this asset: fall back to single-file run.
+                            try {
+                                $single = $ai->generate($item['image'], $this->hint);
+                                $this->markGenerated($m, $single);
+                            } catch (Throwable $e) {
+                                $this->markFailed($m, $e);
+                            }
+
+                            continue;
+                        }
+
+                        $this->curateAndMark($ai, $m, $row, $item['image']);
+                    }
                 }
             }
         }
@@ -118,6 +132,38 @@ class AnalyzeCollectionBatch implements ShouldQueue
         }
 
         $folder->markCollectionStatus(CollectionStatus::Review);
+    }
+
+    /**
+     * Run the thinking stage on a batch vision draft, then persist curated metadata.
+     *
+     * @param  array{title: string, keywords: list<string>, description?: string, category?: string, raw: mixed}  $row
+     */
+    private function curateAndMark(AiMetadataService $ai, AssetMetadata $m, array $row, string $imageUrl): void
+    {
+        try {
+            $curated = $ai->curateDraft(
+                $row['title'],
+                $row['keywords'],
+                $this->hint,
+                $row['description'] ?? '',
+                $row['category'] ?? '',
+                $imageUrl,
+            );
+
+            $this->markGenerated($m, [
+                'title' => $curated['title'],
+                'keywords' => $curated['keywords'],
+                'description' => $curated['description'] ?? '',
+                'category' => $curated['category'] ?? '',
+                'raw' => [
+                    'vision' => $row['raw'] ?? null,
+                    'thinking' => $curated['raw'] ?? null,
+                ],
+            ]);
+        } catch (Throwable $e) {
+            $this->markFailed($m, $e);
+        }
     }
 
     /**

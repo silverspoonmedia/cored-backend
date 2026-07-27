@@ -115,6 +115,8 @@ return [
         'status_pending' => 'Menunggu',
         'status_generated' => 'Terbuat',
         'status_finalized' => 'Final',
+        'status_failed_item' => 'Analisis gagal',
+        'panel_error_label' => 'Kesalahan analisis',
         'panel_title' => 'Tinjau aset',
         'panel_title_label' => 'Judul',
         'panel_keywords_label' => 'Keyword',

@@ -43,6 +43,7 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
     const els = {
         thumb: panel.querySelector('[data-fh-ms-thumb]'),
         status: panel.querySelector('[data-fh-ms-status]'),
+        error: panel.querySelector('[data-fh-ms-error]'),
         title: panel.querySelector('#fhMsTitle'),
         chips: panel.querySelector('[data-fh-ms-chips]'),
         keywordInput: panel.querySelector('#fhMsKeywordInput'),
@@ -88,12 +89,22 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
         if (status === 'generated') {
             return labels.statusGenerated || 'Generated';
         }
+        if (status === 'failed') {
+            return labels.statusFailed || 'Failed';
+        }
         return labels.statusPending || 'Pending';
     }
 
-    function setStatus(status) {
+    function setStatus(status, errorMessage) {
         if (els.status) {
             els.status.textContent = statusLabel(status);
+            els.status.classList.toggle('text-bg-danger', status === 'failed');
+            els.status.classList.toggle('text-bg-secondary', status !== 'failed');
+        }
+        if (els.error) {
+            const show = status === 'failed' && Boolean(errorMessage);
+            els.error.classList.toggle('d-none', !show);
+            els.error.textContent = show ? String(errorMessage) : '';
         }
     }
 
@@ -212,7 +223,7 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
             }
             state.keywords = normalizeKeywords(data.keywords || []);
             renderChips();
-            setStatus(data.status || null);
+            setStatus(data.status || null, data.error || null);
         }).catch(function () { /* best-effort */ });
 
         if (window.bootstrap?.Offcanvas) {

@@ -72,7 +72,7 @@ flowchart LR
 | Upload gate | `DirectUploadService::initiate` rejects (422) a Microstock workspace upload with no `folder_id` (`microstock.error_requires_folder`) or into a locked collection (`microstock.error_collection_locked`). Client mirrors this via dropzone `data-workspace-kind` / `data-collection-locked` |
 | Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here |
 | Analyze | `POST collections/{folder}/analyze` (requires `locked`, non-empty) sets `processing` and dispatches `ProcessCollection` |
-| Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)**, then dispatches a single `AnalyzeCollectionBatch` carrying `collection_hint`. The batch processes **one chunk per invocation** and **dispatches itself** with the remaining ids (chained) so the whole collection stays long-running without ever exceeding `retry_after`; the final invocation flips the folder to `review`. Sub-folders are separate collections and are NOT processed |
+| Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)**, then dispatches a single `AnalyzeCollectionBatch` carrying `collection_hint`. The batch processes **one chunk per invocation** and **dispatches itself** with the remaining ids (chained) so the whole collection stays long-running without ever exceeding `retry_after`; the final invocation flips the folder to `review`. Chunks with **fewer than `microstock.ai.batch_min_files`** (default **4**) skip multi-image batching and run **per-file** `generate()` (vision + thinking each) to avoid cross-assignment on small illustration sets. Larger chunks call `generateBatch()` (vision only) then **`curateDraft()` per asset** (thinking). Sub-folders are separate collections and are NOT processed |
 | Curate | Per-file manual edit via `PATCH assets/{file}/metadata` (existing finalize) while in `review` |
 | Export | `POST collections/{folder}/export` (requires `review`) renders a CSV of the folder's finalized metadata, persists it to `microstock.csv_disk`, saves `collection_csv_path`, sets `exported`. `GET collections/{folder}/download` streams it |
 
@@ -82,20 +82,22 @@ flowchart LR
 
 Microstock's value is metadata. The owner **hint** (collection description) grounds every file's metadata. Both AI stages follow **Adobe Stock / Shutterstock 2026 contributor standards** — natural-sentence titles, a 4-tier keyword framework, and a fixed marketplace category set.
 
-1. Per collection: `ProcessCollection` (above) creates/resets a `microstock_asset_metadata` row per file (`status = pending`) and dispatches the chained `AnalyzeCollectionBatch` with the hint. Each batch invocation sends one multi-image request per chunk (`microstock.ai.batch_chunk`); assets the batch omits fall back to a per-file `generate`. (Single-asset `POST assets/{file}/analyze` → `MicrostockService::requestAnalysis` still runs a standalone `AnalyzeAssetMetadata`, hint optional.)
-2. The job mints an inline signed URL (`SignedDownloadService::resolve($file, inline: true)`) and calls `AiMetadataService::generate($url, $hint)`.
-3. **Vision** stage drafts `title` + `description` + `category` + `keywords` from the image (with the hint structured as a `## COLLECTION CONTEXT (commercial ground truth)` block in `Prompts::visionUser`); **thinking** stage curates them against an explicit checklist (`Prompts::thinkingSystem`) — dedupe, drop generic/spam, enforce top-10 ordering, inject missing concepts, validate the category, enforce the marketplace bans. Prompts are hardcoded in `App\Domain\Microstock\Support\Prompts` (English).
-4. Result stored with `status = generated`.
+1. Per collection: `ProcessCollection` (above) creates/resets a `microstock_asset_metadata` row per file (`status = pending`) and dispatches the chained `AnalyzeCollectionBatch` with the hint. Each batch invocation handles one chunk (`microstock.ai.batch_chunk`, default 10). **Small chunks** (`count < microstock.ai.batch_min_files`, default 4) call `AiMetadataService::generate()` per file (vision + thinking). **Larger chunks** call `generateBatch()` (multi-image vision) then `curateDraft()` per returned row (thinking curation). Assets the batch omits fall back to per-file `generate()`. (Single-asset `POST assets/{file}/analyze` → `MicrostockService::requestAnalysis` still runs a standalone `AnalyzeAssetMetadata`, hint optional.)
+2. The job mints a downscaled base64 preview (`AssetResizeService::previewDataUri`, default **1024px** longest side via `MICROSTOCK_AI_IMAGE_MAX_PX`) and sends it to both AI stages.
+3. **Vision** drafts `title` + `description` + `category` + `keywords` from the image (with the hint structured as a `## COLLECTION CONTEXT (commercial ground truth)` block in `Prompts::visionUser`). **Thinking** (`curateDraft()` / `Prompts::thinkingSystem`) receives the **same preview** plus the text draft — step 0 **VERIFY** compares draft vs image and fixes wrong subject, gender, action, or equipment before dedupe/BAN/ordering. Falls back to text-only thinking, then to the vision draft, on gateway errors. Prompts are hardcoded in `App\Domain\Microstock\Support\Prompts` (English).
+4. Result stored with `status = generated` and `ai_raw = {"vision": <vision payload>, "thinking": <thinking payload>}` (thinking may be `null` when the thinking stage falls back to the vision draft).
 5. Final curation is **manual**: user edits title/keywords → `PATCH assets/{file}/metadata` → `status = finalized`.
 
 ### Prompt strategy (marketplace-aligned)
 
 `Prompts::marketplaceRules()` is the single source injected into **both** stages so they never drift:
 
-- **Title** — natural descriptive sentence (not a keyword list), 40–70 chars, no commas, no trademark/real-people/camera-spec, no subjective quality adjectives ("cute", "beautiful", "best" — Adobe rejects these).
+- **Title** — natural descriptive sentence (not a keyword list), 40–70 chars, no commas, no trademark/real-people/camera-spec, no subjective quality adjectives. Cartoon/vector assets → category `Illustration`; title must name **subject + action**, not a clothing inventory.
 - **Description** — one factual sentence (who/what/where/action).
 - **Category** — exactly one of: People, Lifestyle, Education, Business, Food, Nature, Technology, Health, Holidays, Abstract, Objects, Illustration.
-- **Keywords** — 15–35 terms, **ordered by relevance** (the first 10 carry the most search-ranking weight), built across 4 tiers: **literal** (subject/action/setting) → **contextual** (demographics/season) → **conceptual** (ideas/emotions buyers search: childhood, togetherness, fitness, security) → **stylistic** (art direction/palette). Singular nouns + infinitive verbs, one concept per keyword, no same-word-stem repeats.
+- **Keywords** — **15–30** terms, **ordered by relevance** (the first 10 carry the most search-ranking weight), built across 4 tiers in strict order: **literal** (subject/action/setting) → **contextual** (demographics/season) → **conceptual** (ideas/emotions buyers search: childhood, fitness, teamwork) → **stylistic** (art direction/palette, **max 2**). Top 10 = literal + contextual only. Singular nouns + infinitive verbs, one concept per keyword, no same-word-stem repeats. Ground in **visible content only** — do not invent sports equipment, venues, or activities from the collection hint alone.
+- **BAN list** (dropped in both stages): compositional (`front view`, `full length`), background (`white background`, `isolated`), redundant format (`clip art` when `illustration` is already present), subjective (`cute`, `beautiful`, `best`), palette spam unless core to the subject.
+- **Hint grounding** — when collection context is set, top-5 keywords should reflect the hint theme **only when the image supports it**.
 
 ### Deterministic requests
 
@@ -103,9 +105,43 @@ All three request builders (`vision()`, `thinkingRequest()`, `generateBatch()`) 
 
 ### Prompt-length constraint (verified)
 
-The combo `vision` gateway model **chokes on long system prompts when an image is attached** — verified 2026-07-27: a ~1700-char system prompt returns **HTTP 524** (Cloudflare origin timeout) at ~125 s, while ~1050 chars returns **200** in ~107 s. `Prompts::marketplaceRules()` is therefore intentionally dense — keep the system prompts compact. If a future gateway model never responds acceptably, point `ai.vision.model` to a sturdier model (e.g. `cx/gpt-5.5`, which handled the full verbose prompt in ~97 s) via `MICROSTOCK_AI_VISION_MODEL`.
+The combo `vision` / `thinking` gateway models **choke on long system prompts when an image is attached** — verified 2026-07-27: a ~1700-char system prompt returns **HTTP 524** (Cloudflare origin timeout) at ~125 s, while ~1050 chars returns **200** in ~107 s. `Prompts::marketplaceRules()` is therefore intentionally dense — keep `Prompts::visionSystem()` and `Prompts::thinkingSystem()` under ~1200 chars (unit-tested in `PromptsTest`). If a future gateway model never responds acceptably, point `ai.vision.model` to a sturdier model (e.g. `cx/gpt-5.5`, which handled the full verbose prompt in ~97 s) via `MICROSTOCK_AI_VISION_MODEL`.
 
 `AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage is independently configurable in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: endpoint/model/api_key/timeout, env-driven). Tests bind a stub.
+
+### Gateway response parsing (9Router / OpenAI-compatible)
+
+Production uses a 9Router-backed gateway (`MICROSTOCK_AI_*_ENDPOINT`, e.g. `https://ai-gateway.spnd.uk/v1/chat/completions`). Model names in `.env` may be **combo aliases** (`vision`, `thinking`) that resolve to concrete models on the gateway (e.g. `anthropic/claude-opus-4-7`) — or explicit slugs (`cx/gpt-5.5`, `cc/claude-opus-4-6`) if you skip combos.
+
+`HttpAiMetadataService` normalizes gateway quirks before decoding:
+
+| Quirk | Handling |
+|-------|----------|
+| SSE trailer on non-streaming responses | Some gateways append `data: [DONE]` after the JSON body, which breaks Laravel's `json()` helper. `parseResponsePayload()` strips the trailer and parses the leading JSON object. |
+| Markdown-fenced JSON | `parseMetadataJson()` strips `` ```json ... ``` `` fences before decoding. |
+| Anthropic-style content blocks | `extractContent()` concatenates `{type: text, text: "..."}` blocks when `message.content` is an array. |
+| Batch `response_format: json_object` | `Prompts::batchSystem()` asks for `{"assets": [{id, title, ...}, ...]}` (not a bare array) so the OpenAI JSON-object mode and the prompt agree. `decodeBatch()` also tolerates bare arrays and legacy wrapper shapes. |
+
+Images are sent as **base64 data-URIs** via `AssetResizeService::previewDataUri()` (downscaled to `MICROSTOCK_AI_IMAGE_MAX_PX`, default **1024** — use 1024 for cartoon/illustration detail; lower only if gateway latency is a problem), not signed URLs — keeps the vision payload self-contained. The thinking stage receives the same preview when available (multimodal `curateDraft`).
+
+**Troubleshooting — all metadata `failed`:**
+
+1. Check `microstock_asset_metadata.error` — `AI metadata generation failed.` = HTTP non-2xx; `AI returned an invalid metadata response.` = HTTP 200 but body could not be parsed into title + keywords.
+2. Check `storage/logs/laravel.log` for `Microstock AI decode failed` context (stage, truncated content).
+3. Verify the gateway combo resolves: `GET {endpoint}/../models` with the API key; confirm `vision` / `thinking` exist.
+4. Probe a single asset synchronously: `AnalyzeAssetMetadata::dispatchSync($metadataId, $hint)` in Tinker after confirming `AssetResizeService` can read the file bytes.
+5. On Windows/Laragon, keep the worker alive with `php artisan queue:listen --tries=1` (see Operations below).
+
+**Troubleshooting — keywords off / wrong scene / wrong subject:**
+
+1. Inspect `ai_raw.vision` vs `ai_raw.thinking` — if vision is wrong but thinking corrected it, visual VERIFY worked. If **both** are wrong (e.g. girl asset titled "boy soccer"), the model still misread the image — manual curation in `review` or per-file re-analyze (`POST assets/{file}/analyze`).
+2. Pre-fix rows may have a **flat** `ai_raw` (batch vision only, no `thinking` key) — re-run analysis after deploying the batch+thinking pipeline.
+3. Multi-image batch cross-assignment (metadata from asset A applied to asset B) — use `MICROSTOCK_AI_BATCH_MIN_FILES=4` (default) so collections with &lt; 4 files never batch; for debugging set `MICROSTOCK_AI_BATCH_CHUNK=1`.
+4. Cartoon/illustration detail loss — set `MICROSTOCK_AI_IMAGE_MAX_PX=1024` (recommended for illustrations).
+5. Collection hint overfitting (invented soccer/swim gear) — both stages forbid equipment not visible; thinking VERIFY should drop invented terms when the model cooperates.
+6. Thinking multimodal fallback — if the gateway rejects images on the `thinking` combo, `HttpAiMetadataService` retries text-only then keeps the vision draft (`raw.thinking = null`).
+
+The review panel surfaces per-file `error` when status is `failed` (`AssetMetadataResource` + `#fhMicrostockPanel`).
 
 ### Adaptive timeout & watchdog
 
@@ -129,15 +165,17 @@ Instead, each asset moves through three derived phases, measured from when its m
 
 As a safety net, `HttpAiMetadataService::thinking()` still degrades gracefully if a request genuinely fails:
 
-1. Attempt A: normal `system` + `user` messages.
-2. Attempt B: instructions fused into a single `user` message (no `system` role) when A throws/times out.
-3. Fallback: if both fail, the **vision draft is kept** (`raw.thinking = null`) so the asset still reaches `status = generated`. Each failure is `report()`ed.
+1. Attempt A: system + multimodal user (image + draft) when preview available.
+2. Attempt B: instructions fused into multimodal user (no `system` role).
+3. Attempt C: text-only system + user.
+4. Attempt D: fused text-only user.
+5. Fallback: if all fail, the **vision draft is kept** (`raw.thinking = null`) so the asset still reaches `status = generated`. Each failure is `report()`ed.
 
 `Prompts::thinkingSystem()` is intentionally short (a single dense paragraph). If a gateway model never responds acceptably, point `ai.thinking.model` to a different model via `MICROSTOCK_AI_THINKING_MODEL`.
 
 | Column | Notes |
 |----|-------|
-| `microstock_asset_metadata` | `file_id` (unique FK to `file_hosting_files`), `user_id`, `title`, `keywords` json, `category`, `description`, `status` (`pending`/`generated`/`finalized`), `ai_raw` json, `error` |
+| `microstock_asset_metadata` | `file_id` (unique FK to `file_hosting_files`), `user_id`, `title`, `keywords` json, `category`, `description`, `status` (`pending`/`generated`/`finalized`/`failed`), `ai_raw` json (`{vision, thinking}` — see above), `error` |
 
 ## CSV export
 
@@ -209,12 +247,16 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 
 ## Tests
 
-`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest|AnalysisWatchdogTest|HttpAiMetadataServiceThinkingFallbackTest"` —
+`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest|AnalysisWatchdogTest|HttpAiMetadataServiceThinkingFallbackTest|HttpAiMetadataServiceResponseParsingTest|HttpAiMetadataServiceCurateDraftTest|HttpAiMetadataServiceVisualThinkingTest|PromptsTest"` —
 - `MicrostockTest`: provisioning gated by entitlement (403 without), slot-limit multi-workspace create, public-share block, analyze → generate (stub AI, asserts `title`/`description`/`category`/`keywords`), finalize curation, CSV export finalized-only, credential encrypt/decrypt roundtrip, invite paid-gate. Checkout coverage in `ServiceCheckoutZeroChargeTest`.
 - `CollectionLifecycleTest`: root-upload blocked (422), locked-collection upload blocked, lock requires hint + transitions + rejects re-lock + rejects non-microstock folder, analyze requires lock/files + dispatches `ProcessCollection`, non-recursive batching (sub-folder untouched), empty→failed, **chained batch** (chunk → self-dispatch → `review` only after the last chunk), prompt hint threading (`Prompts::visionUser`/`thinkingUser` + the `COLLECTION CONTEXT` block), status progress counts, per-collection CSV filter (incl. `description`/`category` columns), export persists CSV + marks exported.
 - `CollectionApiTest`: HTTP lock/analyze/status/export/download endpoints (auth, validation, transitions, foreign-collection 403), browse exposes `microstock` key per file in a Microstock workspace (omitted in personal), per-file metadata show/finalize/re-analyze + signed preview web hops (`FileManagerControllerTest`).
 - `AnalysisWatchdogTest`: pending metadata past grace → `failed`; recent pending untouched; `processing` folder with all-failed metadata → `failed`; folder with some `generated` → `review`; zombie pending reaped; watchdog self-dispatches only while a collection is `processing`; `status()` returns derived `phase` (`analyzing`/`degraded`/echo).
 - `HttpAiMetadataServiceThinkingFallbackTest`: thinking happy path uses curated result; system-prompt hang retries with fused user message; both attempts failing falls back to the vision draft (`raw.thinking = null`) — all asserting `description`/`category` are carried through.
+- `HttpAiMetadataServiceResponseParsingTest`: SSE `data: [DONE]` trailer stripping, markdown-fenced JSON, Anthropic content blocks, batch `assets` wrapper, unparseable body → `ai_invalid_response`.
+- `HttpAiMetadataServiceCurateDraftTest`: `curateDraft()` delegates to thinking stage; curated keywords returned; multimodal request when image provided.
+- `HttpAiMetadataServiceVisualThinkingTest`: `generate()` sends image on thinking call; multimodal failure falls back to text-only.
+- `PromptsTest`: `visionSystem()` and `thinkingSystem()` char count under gateway limit (~1200).
 
 ## Operations: queue worker
 
