@@ -39,7 +39,7 @@ return [
 
     'csv' => [
         // Columns emitted by the metadata CSV export, in order.
-        'columns' => ['filename', 'title', 'keywords'],
+        'columns' => ['filename', 'title', 'description', 'category', 'keywords'],
         'keywords_separator' => ',',
     ],
 

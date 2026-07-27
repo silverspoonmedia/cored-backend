@@ -83,6 +83,8 @@ class CsvExportService
             return match ($col) {
                 'filename' => (string) ($row->file?->name ?? ''),
                 'title' => (string) ($row->title ?? ''),
+                'description' => (string) ($row->description ?? ''),
+                'category' => (string) ($row->category ?? ''),
                 'keywords' => implode($separator.' ', $row->keywords ?? []),
                 default => '',
             };

@@ -80,13 +80,30 @@ flowchart LR
 
 ## Metadata (AI: vision → thinking → manual)
 
-Microstock's value is metadata. The owner **hint** (collection description) grounds every file's metadata:
+Microstock's value is metadata. The owner **hint** (collection description) grounds every file's metadata. Both AI stages follow **Adobe Stock / Shutterstock 2026 contributor standards** — natural-sentence titles, a 4-tier keyword framework, and a fixed marketplace category set.
 
 1. Per collection: `ProcessCollection` (above) creates/resets a `microstock_asset_metadata` row per file (`status = pending`) and dispatches the chained `AnalyzeCollectionBatch` with the hint. Each batch invocation sends one multi-image request per chunk (`microstock.ai.batch_chunk`); assets the batch omits fall back to a per-file `generate`. (Single-asset `POST assets/{file}/analyze` → `MicrostockService::requestAnalysis` still runs a standalone `AnalyzeAssetMetadata`, hint optional.)
 2. The job mints an inline signed URL (`SignedDownloadService::resolve($file, inline: true)`) and calls `AiMetadataService::generate($url, $hint)`.
-3. **Vision** stage drafts title + keywords from the image (with the collection hint woven into `Prompts::visionUser`); **thinking** stage curates them (`Prompts::thinkingUser` also receives the hint). Prompts are hardcoded in `App\Domain\Microstock\Support\Prompts` (English, SEO-focused).
+3. **Vision** stage drafts `title` + `description` + `category` + `keywords` from the image (with the hint structured as a `## COLLECTION CONTEXT (commercial ground truth)` block in `Prompts::visionUser`); **thinking** stage curates them against an explicit checklist (`Prompts::thinkingSystem`) — dedupe, drop generic/spam, enforce top-10 ordering, inject missing concepts, validate the category, enforce the marketplace bans. Prompts are hardcoded in `App\Domain\Microstock\Support\Prompts` (English).
 4. Result stored with `status = generated`.
 5. Final curation is **manual**: user edits title/keywords → `PATCH assets/{file}/metadata` → `status = finalized`.
+
+### Prompt strategy (marketplace-aligned)
+
+`Prompts::marketplaceRules()` is the single source injected into **both** stages so they never drift:
+
+- **Title** — natural descriptive sentence (not a keyword list), 40–70 chars, no commas, no trademark/real-people/camera-spec, no subjective quality adjectives ("cute", "beautiful", "best" — Adobe rejects these).
+- **Description** — one factual sentence (who/what/where/action).
+- **Category** — exactly one of: People, Lifestyle, Education, Business, Food, Nature, Technology, Health, Holidays, Abstract, Objects, Illustration.
+- **Keywords** — 15–35 terms, **ordered by relevance** (the first 10 carry the most search-ranking weight), built across 4 tiers: **literal** (subject/action/setting) → **contextual** (demographics/season) → **conceptual** (ideas/emotions buyers search: childhood, togetherness, fitness, security) → **stylistic** (art direction/palette). Singular nouns + infinitive verbs, one concept per keyword, no same-word-stem repeats.
+
+### Deterministic requests
+
+All three request builders (`vision()`, `thinkingRequest()`, `generateBatch()`) send `temperature = 0.2` + `max_tokens` (2000 single / 4000 batch) so the JSON output is deterministic and never truncated mid-array.
+
+### Prompt-length constraint (verified)
+
+The combo `vision` gateway model **chokes on long system prompts when an image is attached** — verified 2026-07-27: a ~1700-char system prompt returns **HTTP 524** (Cloudflare origin timeout) at ~125 s, while ~1050 chars returns **200** in ~107 s. `Prompts::marketplaceRules()` is therefore intentionally dense — keep the system prompts compact. If a future gateway model never responds acceptably, point `ai.vision.model` to a sturdier model (e.g. `cx/gpt-5.5`, which handled the full verbose prompt in ~97 s) via `MICROSTOCK_AI_VISION_MODEL`.
 
 `AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage is independently configurable in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: endpoint/model/api_key/timeout, env-driven). Tests bind a stub.
 
@@ -104,11 +121,11 @@ As a safety net, `HttpAiMetadataService::thinking()` still degrades gracefully i
 
 | Column | Notes |
 |----|-------|
-| `microstock_asset_metadata` | `file_id` (unique FK to `file_hosting_files`), `user_id`, `title`, `keywords` json, `status` (`pending`/`generated`/`finalized`), `ai_raw` json |
+| `microstock_asset_metadata` | `file_id` (unique FK to `file_hosting_files`), `user_id`, `title`, `keywords` json, `category`, `description`, `status` (`pending`/`generated`/`finalized`), `ai_raw` json, `error` |
 
 ## CSV export
 
-Two scopes, both finalized-only. Columns are config-driven (`microstock.csv.columns`, default `filename,title,keywords`; `microstock.csv.keywords_separator`). Per-marketplace field mapping is a later iteration.
+Two scopes, both finalized-only. Columns are config-driven (`microstock.csv.columns`, default `filename,title,description,category,keywords`; `microstock.csv.keywords_separator`). Per-marketplace field mapping is a later iteration.
 
 - **Per collection** (primary): `CsvExportService::buildForCollection($folder)` — finalized metadata of files directly in the folder. Persisted to `microstock.csv_disk` (default `local`) at `microstock/collections/{folder}.csv` on export.
 - **Whole workspace**: `CsvExportService::build($owner)` — all finalized metadata in the Microstock workspace (legacy/ad-hoc).

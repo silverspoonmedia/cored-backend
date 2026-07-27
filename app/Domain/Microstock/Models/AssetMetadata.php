@@ -20,6 +20,8 @@ class AssetMetadata extends Model
         'user_id',
         'title',
         'keywords',
+        'category',
+        'description',
         'status',
         'ai_raw',
         'error',

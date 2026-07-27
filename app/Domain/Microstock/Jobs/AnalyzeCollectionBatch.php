@@ -121,13 +121,15 @@ class AnalyzeCollectionBatch implements ShouldQueue
     }
 
     /**
-     * @param  array{title: string, keywords: list<string>, raw: mixed}  $row
+     * @param  array{title: string, keywords: list<string>, description?: string, category?: string, raw: mixed}  $row
      */
     private function markGenerated(AssetMetadata $m, array $row): void
     {
         $m->forceFill([
             'title' => $row['title'],
             'keywords' => $row['keywords'],
+            'description' => $row['description'] ?? null,
+            'category' => $row['category'] ?? null,
             'ai_raw' => $row['raw'] ?? null,
             'status' => MetadataStatus::Generated,
             'error' => null,

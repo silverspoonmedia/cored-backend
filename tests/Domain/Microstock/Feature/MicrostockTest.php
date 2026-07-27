@@ -185,6 +185,8 @@ class MicrostockTest extends TestCase
         $this->assertSame(MetadataStatus::Generated, $metadata->status);
         $this->assertSame('Curated title', $metadata->title);
         $this->assertSame(['a', 'b'], $metadata->keywords);
+        $this->assertSame('Curated description', $metadata->description);
+        $this->assertSame('Illustration', $metadata->category);
     }
 
     public function test_finalize_persists_manual_curation(): void
@@ -228,6 +230,8 @@ class MicrostockTest extends TestCase
             'status' => MetadataStatus::Finalized,
             'title' => 'Title A',
             'keywords' => ['one', 'two'],
+            'description' => 'Description A',
+            'category' => 'Illustration',
         ]);
         AssetMetadata::query()->create([
             'file_id' => $fileB->id,
@@ -240,10 +244,12 @@ class MicrostockTest extends TestCase
         $result = app(CsvExportService::class)->build($this->owner);
 
         $this->assertSame(1, $result['count']);
-        $this->assertSame(['filename', 'title', 'keywords'], $result['rows'][0]);
+        $this->assertSame(['filename', 'title', 'description', 'category', 'keywords'], $result['rows'][0]);
         $this->assertSame('a.jpg', $result['rows'][1][0]);
         $this->assertSame('Title A', $result['rows'][1][1]);
-        $this->assertSame('one, two', $result['rows'][1][2]);
+        $this->assertSame('Description A', $result['rows'][1][2]);
+        $this->assertSame('Illustration', $result['rows'][1][3]);
+        $this->assertSame('one, two', $result['rows'][1][4]);
     }
 
     public function test_credentials_encrypt_and_decrypt_roundtrip(): void
@@ -308,6 +314,8 @@ class MicrostockTest extends TestCase
                 return [
                     'title' => 'Curated title',
                     'keywords' => ['a', 'b'],
+                    'description' => 'Curated description',
+                    'category' => 'Illustration',
                     'raw' => ['vision' => null, 'thinking' => null],
                 ];
             }
@@ -319,6 +327,8 @@ class MicrostockTest extends TestCase
                     $out[$item['id']] = [
                         'title' => 'Curated title',
                         'keywords' => ['a', 'b'],
+                        'description' => 'Curated description',
+                        'category' => 'Illustration',
                         'raw' => ['batch' => true],
                     ];
                 }

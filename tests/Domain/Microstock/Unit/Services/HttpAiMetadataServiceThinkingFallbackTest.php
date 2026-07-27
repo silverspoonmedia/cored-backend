@@ -43,6 +43,8 @@ class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
                 'message' => ['content' => json_encode([
                     'title' => 'Draft vision title',
                     'keywords' => ['cat', 'lab', 'goggles'],
+                    'description' => 'A cat in a lab wearing goggles',
+                    'category' => 'Illustration',
                 ])],
             ]],
         ];
@@ -52,7 +54,12 @@ class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
     {
         return [
             'choices' => [[
-                'message' => ['content' => json_encode(['title' => $title, 'keywords' => $keywords])],
+                'message' => ['content' => json_encode([
+                    'title' => $title,
+                    'keywords' => $keywords,
+                    'description' => 'Curated description',
+                    'category' => 'Illustration',
+                ])],
             ]],
         ];
     }
@@ -71,6 +78,8 @@ class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
 
         $this->assertSame('Curated title', $result['title']);
         $this->assertSame(['curated', 'keywords'], $result['keywords']);
+        $this->assertSame('Curated description', $result['description']);
+        $this->assertSame('Illustration', $result['category']);
     }
 
     public function test_thinking_retries_with_fused_user_when_system_prompt_hangs(): void
@@ -106,6 +115,8 @@ class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
 
         $this->assertSame('Draft vision title', $result['title']);
         $this->assertSame(['cat', 'lab', 'goggles'], $result['keywords']);
+        $this->assertSame('A cat in a lab wearing goggles', $result['description']);
+        $this->assertSame('Illustration', $result['category']);
         $this->assertNull($result['raw']['thinking']);
     }
 }

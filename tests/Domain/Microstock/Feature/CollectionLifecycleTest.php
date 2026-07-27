@@ -366,9 +366,13 @@ class CollectionLifecycleTest extends TestCase
         $this->assertStringContainsString($hint, Prompts::visionUser($hint));
         $this->assertStringContainsString($hint, Prompts::thinkingUser('T', ['a'], $hint));
 
+        // Structured commercial-context block present when a hint is given.
+        $this->assertStringContainsString('COLLECTION CONTEXT', Prompts::visionUser($hint));
+        $this->assertStringContainsString('COLLECTION CONTEXT', Prompts::thinkingUser('T', ['a'], $hint));
+
         // No hint -> unchanged base prompts.
-        $this->assertStringNotContainsString('Collection context', Prompts::visionUser());
-        $this->assertStringNotContainsString('Collection context', Prompts::thinkingUser('T', ['a']));
+        $this->assertStringNotContainsString('COLLECTION CONTEXT', Prompts::visionUser());
+        $this->assertStringNotContainsString('COLLECTION CONTEXT', Prompts::thinkingUser('T', ['a']));
     }
 
     // ---- Status snapshot ----
@@ -410,6 +414,7 @@ class CollectionLifecycleTest extends TestCase
         AssetMetadata::query()->create([
             'file_id' => $inFolder->id, 'user_id' => $this->owner->id,
             'status' => MetadataStatus::Finalized, 'title' => 'In', 'keywords' => ['one', 'two'],
+            'description' => 'In description', 'category' => 'Illustration',
         ]);
         AssetMetadata::query()->create([
             'file_id' => $inOther->id, 'user_id' => $this->owner->id,
@@ -426,7 +431,9 @@ class CollectionLifecycleTest extends TestCase
         $this->assertSame(1, $built['count']);
         $this->assertSame('in.jpg', $built['rows'][1][0]);
         $this->assertSame('In', $built['rows'][1][1]);
-        $this->assertSame('one, two', $built['rows'][1][2]);
+        $this->assertSame('In description', $built['rows'][1][2]);
+        $this->assertSame('Illustration', $built['rows'][1][3]);
+        $this->assertSame('one, two', $built['rows'][1][4]);
     }
 
     public function test_export_persists_csv_and_marks_exported(): void
@@ -474,6 +481,8 @@ class CollectionLifecycleTest extends TestCase
                 return [
                     'title' => 'Curated title',
                     'keywords' => ['a', 'b'],
+                    'description' => 'Curated description',
+                    'category' => 'Illustration',
                     'raw' => ['vision' => null, 'thinking' => null],
                 ];
             }
@@ -485,6 +494,8 @@ class CollectionLifecycleTest extends TestCase
                     $out[$item['id']] = [
                         'title' => 'Curated title',
                         'keywords' => ['a', 'b'],
+                        'description' => 'Curated description',
+                        'category' => 'Illustration',
                         'raw' => ['batch' => true],
                     ];
                 }

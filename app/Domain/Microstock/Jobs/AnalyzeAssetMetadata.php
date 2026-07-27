@@ -64,6 +64,8 @@ class AnalyzeAssetMetadata implements ShouldQueue
         $metadata->forceFill([
             'title' => $result['title'],
             'keywords' => $result['keywords'],
+            'description' => $result['description'] ?? null,
+            'category' => $result['category'] ?? null,
             'ai_raw' => $result['raw'],
             'status' => MetadataStatus::Generated,
         ])->save();

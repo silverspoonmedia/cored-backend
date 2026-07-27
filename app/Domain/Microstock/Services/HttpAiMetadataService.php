@@ -33,11 +33,19 @@ class HttpAiMetadataService implements AiMetadataService
     public function generate(string $imageUrl, ?string $hint = null): array
     {
         $draft = $this->vision($imageUrl, $hint);
-        $curated = $this->thinking($draft['title'], $draft['keywords'], $hint);
+        $curated = $this->thinking(
+            $draft['title'],
+            $draft['keywords'],
+            $hint,
+            $draft['description'] ?? '',
+            $draft['category'] ?? '',
+        );
 
         return [
             'title' => $curated['title'],
             'keywords' => $curated['keywords'],
+            'description' => $curated['description'] ?? '',
+            'category' => $curated['category'] ?? '',
             'raw' => [
                 'vision' => $draft['raw'] ?? null,
                 'thinking' => $curated['raw'] ?? null,
@@ -47,7 +55,7 @@ class HttpAiMetadataService implements AiMetadataService
 
     /**
      * @param  array<int, array{id: string, image: string}>  $items
-     * @return array<string, array{title: string, keywords: list<string>, raw: array<string, mixed>}>
+     * @return array<string, array{title: string, keywords: list<string>, description: string, category: string, raw: array<string, mixed>}>
      */
     public function generateBatch(array $items, ?string $hint = null): array
     {
@@ -72,6 +80,8 @@ class HttpAiMetadataService implements AiMetadataService
             ->post($cfg['endpoint'], [
                 'model' => $cfg['model'],
                 'response_format' => ['type' => 'json_object'],
+                'temperature' => 0.2,
+                'max_tokens' => 4000,
                 'messages' => [
                     ['role' => 'system', 'content' => Prompts::batchSystem()],
                     ['role' => 'user', 'content' => $content],
@@ -86,7 +96,7 @@ class HttpAiMetadataService implements AiMetadataService
     }
 
     /**
-     * @return array{title: string, keywords: list<string>, raw: mixed}
+     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: mixed}
      */
     private function vision(string $imageUrl, ?string $hint = null): array
     {
@@ -100,6 +110,8 @@ class HttpAiMetadataService implements AiMetadataService
             ->post($cfg['endpoint'], [
                 'model' => $cfg['model'],
                 'response_format' => ['type' => 'json_object'],
+                'temperature' => 0.2,
+                'max_tokens' => 2000,
                 'messages' => [
                     ['role' => 'system', 'content' => Prompts::visionSystem()],
                     [
@@ -128,14 +140,14 @@ class HttpAiMetadataService implements AiMetadataService
      *      failing the whole asset.
      *
      * @param  list<string>  $keywords
-     * @return array{title: string, keywords: list<string>, raw: mixed}
+     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: mixed}
      */
-    private function thinking(string $title, array $keywords, ?string $hint = null): array
+    private function thinking(string $title, array $keywords, ?string $hint = null, string $description = '', string $category = ''): array
     {
         $cfg = config('microstock.ai.thinking');
         $this->assertConfigured($cfg, 'thinking');
 
-        $user = Prompts::thinkingUser($title, $keywords, $hint);
+        $user = Prompts::thinkingUser($title, $keywords, $hint, $description, $category);
         $attempts = [
             [
                 ['role' => 'system', 'content' => Prompts::thinkingSystem()],
@@ -155,13 +167,19 @@ class HttpAiMetadataService implements AiMetadataService
         }
 
         // Both attempts failed: keep the vision draft so the asset still completes.
-        return ['title' => $title, 'keywords' => $keywords, 'raw' => null];
+        return [
+            'title' => $title,
+            'keywords' => $keywords,
+            'description' => $description,
+            'category' => $category,
+            'raw' => null,
+        ];
     }
 
     /**
      * @param  array<string, mixed>  $cfg
      * @param  list<array{role: string, content: string}>  $messages
-     * @return array{title: string, keywords: list<string>, raw: mixed}
+     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: mixed}
      */
     private function thinkingRequest(array $cfg, array $messages): array
     {
@@ -172,6 +190,8 @@ class HttpAiMetadataService implements AiMetadataService
             ->post($cfg['endpoint'], [
                 'model' => $cfg['model'],
                 'response_format' => ['type' => 'json_object'],
+                'temperature' => 0.2,
+                'max_tokens' => 2000,
                 'messages' => $messages,
             ]);
 
@@ -198,7 +218,7 @@ class HttpAiMetadataService implements AiMetadataService
 
     /**
      * @param  array<string, mixed>  $payload
-     * @return array{title: string, keywords: list<string>, raw: mixed}
+     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: mixed}
      */
     private function decode(array $payload): array
     {
@@ -219,7 +239,21 @@ class HttpAiMetadataService implements AiMetadataService
             throw new MicrostockException(__('api/microstock.ai_invalid_response'), 502);
         }
 
-        return ['title' => $title, 'keywords' => $keywords, 'raw' => $decoded];
+        // Optional new fields: absent on old providers / partial responses.
+        $description = is_array($decoded) && is_string($decoded['description'] ?? null)
+            ? trim($decoded['description'])
+            : '';
+        $category = is_array($decoded) && is_string($decoded['category'] ?? null)
+            ? trim($decoded['category'])
+            : '';
+
+        return [
+            'title' => $title,
+            'keywords' => $keywords,
+            'description' => $description,
+            'category' => $category,
+            'raw' => $decoded,
+        ];
     }
 
     /**
@@ -229,7 +263,7 @@ class HttpAiMetadataService implements AiMetadataService
      *
      * @param  array<string, mixed>  $payload
      * @param  array<int, array{id: string, image: string}>  $items
-     * @return array<string, array{title: string, keywords: list<string>, raw: array<string, mixed>}>
+     * @return array<string, array{title: string, keywords: list<string>, description: string, category: string, raw: array<string, mixed>}>
      */
     private function decodeBatch(array $payload, array $items): array
     {
@@ -272,7 +306,13 @@ class HttpAiMetadataService implements AiMetadataService
             if ($title === '' || $keywords === []) {
                 continue;
             }
-            $out[$id] = ['title' => $title, 'keywords' => $keywords, 'raw' => $row];
+            $out[$id] = [
+                'title' => $title,
+                'keywords' => $keywords,
+                'description' => is_string($row['description'] ?? null) ? trim($row['description']) : '',
+                'category' => is_string($row['category'] ?? null) ? trim($row['category']) : '',
+                'raw' => $row,
+            ];
         }
 
         return $out;
