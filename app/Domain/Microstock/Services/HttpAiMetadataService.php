@@ -16,9 +16,11 @@ class HttpAiMetadataService implements AiMetadataService
     /**
      * Normalize the configured timeout to seconds. Env historically used
      * milliseconds (e.g. 360000); accept both by treating large values as ms.
-     * The upper clamp is generous because vision/thinking models perform
-     * multi-step reasoning that can run for minutes; cutting the connection
-     * early (cURL error 28) aborts an otherwise-valid generation.
+     * The upper clamp follows the adaptive grace budget (microstock.ai.phase
+     * .grace_after) because vision/thinking models perform multi-step reasoning
+     * that can run for many minutes; cutting the connection early (cURL error
+     * 28) aborts an otherwise-valid generation. The watchdog — not this timeout
+     * — is the authority that declares a hung analysis failed.
      */
     private function timeoutSeconds(mixed $raw): int
     {
@@ -27,7 +29,9 @@ class HttpAiMetadataService implements AiMetadataService
             $v = (int) round($v / 1000);
         }
 
-        return max(10, min(600, $v));
+        $max = (int) config('microstock.ai.phase.grace_after', 1500);
+
+        return max(10, min($max, $v));
     }
 
     public function generate(string $imageUrl, ?string $hint = null): array

@@ -107,9 +107,25 @@ The combo `vision` gateway model **chokes on long system prompts when an image i
 
 `AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage is independently configurable in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: endpoint/model/api_key/timeout, env-driven). Tests bind a stub.
 
-### Thinking-stage resilience
+### Adaptive timeout & watchdog
 
-`thinking`/reasoning models perform **multi-step reasoning that can run for minutes**. A short client timeout aborts an otherwise-valid generation — `cURL error 28: Operation timed out ... 0 bytes received` is the **HTTP client cutting the connection**, not a dead model. Timeouts are therefore generous: `MICROSTOCK_AI_VISION_TIMEOUT` / `MICROSTOCK_AI_THINKING_TIMEOUT` default to `600` (clamped to 600s max in `HttpAiMetadataService::timeoutSeconds`), and the queue `DB_QUEUE_RETRY_AFTER` is raised to `1800` so a legitimately long job is never re-dispatched mid-run.
+The vision/thinking stages run **multi-step reasoning with no predictable duration**, so failure is **not a per-request hard HTTP timeout** — it is a **phase deadline measured from elapsed activity**. A short client timeout aborts an otherwise-valid generation (`cURL error 28: Operation timed out ... 0 bytes received` is the client cutting the connection, not a dead model), and a fixed cap cannot tell "AI is thinking" from "AI is hung".
+
+Instead, each asset moves through three derived phases, measured from when its metadata row was queued (`microstock_asset_metadata.created_at`):
+
+| Phase | Elapsed | Meaning | UI |
+|----|----|----|----|
+| `analyzing` | `< normal_after` (default 600s) | AI is processing | normal progress |
+| `degraded` | `normal_after .. grace_after` (600–1500s) | still waiting, slow | show **degraded performance** warning |
+| `failed` | `> grace_after` (1500s) | hung / worker died | marked failed |
+
+`phase` is **presentational/derived** — never persisted. `metadata.status` stays `pending/generated/finalized/failed`; `degraded` only appears in the `phase` field of the collection `status()` payload and the per-file `microstock` resource payload. Budgets are tunable via `MICROSTOCK_AI_PHASE_NORMAL` / `MICROSTOCK_AI_PHASE_GRACE`.
+
+**Watchdog as single failure authority.** `ProcessCollection` dispatches `App\Domain\Microstock\Jobs\AnalysisWatchdog` alongside the first batch. The watchdog re-dispatches itself every 60s while any collection is `processing` and:
+1. flips any `pending` metadata older than `grace_after` to `failed` (`error = 'Analysis exceeded the grace period'`) — this covers both a hung AI call and a **zombie** row whose worker died (e.g. Windows `queue:work` exit);
+2. a `processing` folder whose metadata are all terminal → `review` (if some succeeded) or `failed` (if none).
+
+**Constraint:** `grace_after` must stay **below** the queue `DB_QUEUE_RETRY_AFTER` (1800s) so the watchdog declares failure *before* the queue re-dispatches the still-running batch job. `HttpAiMetadataService::timeoutSeconds` clamps the per-request client timeout to the same `grace_after` ceiling, so a long-but-valid analysis is never cut before the watchdog decides. `AnalyzeCollectionBatch::$tries` stays `2` so one Laravel retry tolerates a transient failure before the watchdog declares terminal failure.
 
 As a safety net, `HttpAiMetadataService::thinking()` still degrades gracefully if a request genuinely fails:
 
@@ -151,7 +167,7 @@ Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Micros
 | DELETE | `credentials/{id}` | Delete credential |
 | POST | `collections/{folder}/lock` | Lock collection + store hint (`hint`) |
 | POST | `collections/{folder}/analyze` | Start the per-file AI pipeline (202) |
-| GET | `collections/{folder}/status` | Status + progress snapshot |
+| GET | `collections/{folder}/status` | Status + progress snapshot (incl. derived `phase`) |
 | POST | `collections/{folder}/export` | Render + persist collection CSV |
 | GET | `collections/{folder}/download` | Stream the exported collection CSV |
 
@@ -200,7 +216,7 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 
 ## Operations: queue worker
 
-All Microstock AI jobs (`ProcessCollection`, `AnalyzeCollectionBatch`, `AnalyzeAssetMetadata`) run on the `default` queue, so a worker must be running for analysis to progress: `php artisan queue:work` (or `queue:listen`). Single-asset runs can be dispatched synchronously in Tinker for a quick check.
+All Microstock AI jobs (`ProcessCollection`, `AnalyzeCollectionBatch`, `AnalyzeAssetMetadata`, `AnalysisWatchdog`) run on the `default` queue, so a worker must be running for analysis to progress: `php artisan queue:work` (or `queue:listen`). Single-asset runs can be dispatched synchronously in Tinker for a quick check. The `AnalysisWatchdog` is dispatched automatically by `ProcessCollection` and re-arms itself while any collection is `processing` — it is what flips hung/zombie analyses to `failed` past the grace period.
 
 ### Finding: `queue:work` exits on Windows/Laragon (environment, not a code bug)
 

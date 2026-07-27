@@ -132,8 +132,11 @@ class CollectionService
                 ->count();
         }
 
+        $collectionStatus = $folder->collection_status ?? CollectionStatus::Draft;
+
         return [
-            'status' => ($folder->collection_status ?? CollectionStatus::Draft)->value,
+            'status' => $collectionStatus->value,
+            'phase' => $this->collectionPhase($folder, $collectionStatus),
             'hint' => $folder->collection_hint,
             'csv_path' => $folder->collection_csv_path,
             'total' => $total,
@@ -141,6 +144,37 @@ class CollectionService
             'finalized' => $finalized,
             'failed' => $failed,
         ];
+    }
+
+    /**
+     * Derived analysis phase for a collection in flight. Presentational only —
+     * never persisted. `processing` maps to analyzing/degraded by how long the
+     * collection has been locked; every other status maps to itself.
+     */
+    private function collectionPhase(Folder $folder, CollectionStatus $status): string
+    {
+        if ($status !== CollectionStatus::Processing) {
+            return $status->value;
+        }
+
+        $startedAt = $folder->collection_locked_at ?? $folder->updated_at;
+
+        return $startedAt !== null ? self::phaseFor($startedAt) : 'analyzing';
+    }
+
+    /**
+     * Map an analysis start timestamp to its adaptive phase by elapsed time.
+     *   elapsed < normal_after  -> analyzing (AI is processing)
+     *   normal..grace           -> degraded (still waiting; UI shows a warning)
+     * Past grace the watchdog flips the row to failed, so this method only ever
+     * returns analyzing|degraded.
+     */
+    public static function phaseFor(\DateTimeInterface $startedAt): string
+    {
+        $normal = (int) config('microstock.ai.phase.normal_after', 600);
+        $elapsed = now()->getTimestamp() - $startedAt->getTimestamp();
+
+        return $elapsed < $normal ? 'analyzing' : 'degraded';
     }
 
     /**

@@ -46,6 +46,9 @@ class HostedFileResource extends JsonResource
                 'title' => $this->microstockMetadata->title,
                 'keywords' => $this->microstockMetadata->keywords ?? [],
                 'status' => $this->microstockMetadata->status?->value,
+                'phase' => $this->microstockMetadata->status === \App\Domain\Microstock\Enums\MetadataStatus::Pending && $this->microstockMetadata->created_at !== null
+                    ? \App\Domain\Microstock\Services\CollectionService::phaseFor($this->microstockMetadata->created_at)
+                    : $this->microstockMetadata->status?->value,
             ]),
             'download_count' => (int) $this->download_count,
             'view_count' => (int) $this->view_count,

@@ -31,6 +31,21 @@ return [
         // How many images are packed into one batch AI request when analyzing a
         // whole collection. Larger chunks = fewer requests but bigger payloads.
         'batch_chunk' => (int) env('MICROSTOCK_AI_BATCH_CHUNK', 10),
+
+        // Adaptive failure deadline per asset, measured from when analysis was
+        // queued (metadata.created_at) — NOT a per-request HTTP timeout. The AI
+        // stages run multi-step reasoning with no predictable duration, so the
+        // deadline is phase-based instead of a fixed hard cut.
+        //   normal_after: below this the asset is "analyzing".
+        //   grace_after : normal..grace the asset is "degraded" (still waiting);
+        //                 past grace the watchdog marks it failed.
+        // grace_after MUST stay below the queue retry_after (DB_QUEUE_RETRY_AFTER
+        // = 1800) so the watchdog declares failure before the queue re-dispatches
+        // the still-running job.
+        'phase' => [
+            'normal_after' => (int) env('MICROSTOCK_AI_PHASE_NORMAL', 600),
+            'grace_after' => (int) env('MICROSTOCK_AI_PHASE_GRACE', 1500),
+        ],
     ],
 
     // Microstock collections accept only these raster image mime types; the AI

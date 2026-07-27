@@ -66,6 +66,7 @@ class ProcessCollection implements ShouldQueue
         }
 
         AnalyzeCollectionBatch::dispatch($this->folderId, $metadataIds, $hint);
+        AnalysisWatchdog::dispatch();
     }
 
     public function failed(Throwable $e): void
