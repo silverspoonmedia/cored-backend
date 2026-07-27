@@ -1,6 +1,6 @@
 # Microstock — product domain
 
-Product domain (`kind => product`, `locked => true`) for microstock asset management on top of the File Hosting base storage layer. Assets live in built-in **system workspaces** (`file_hosting_workspaces.kind = 'microstock'`, standalone slots) and reuse the entire FH upload/browse/quota/download pipeline. Microstock adds AI metadata (title/keywords), CSV metadata export, and envelope-encrypted marketplace credentials.
+Product domain (`kind => product`, `locked => true`) for microstock asset management on top of the File Hosting base storage layer. Assets live in built-in **system workspaces** (`file_hosting_workspaces.kind = 'microstock'`, standalone slots) and reuse the entire FH upload/browse/quota/download pipeline. Microstock adds AI metadata (title/description/category/keywords), CSV metadata export, and envelope-encrypted marketplace credentials.
 
 | | |
 |--|--|
@@ -202,17 +202,19 @@ After a successful create (and after every switcher refetch) the SPA rebuilds th
 
 The curate step of the collection lifecycle lives directly in the file-manager listing:
 
-- **Per-file metadata status** — `FolderService::browse` eager-loads `HostedFile::microstockMetadata` when the workspace `kind` is `microstock`, and `HostedFileResource` exposes a `microstock` key (`{title, keywords, status}`, `null` = no row yet) via `whenLoaded`. The listing renders a status badge (pending/generating/finalized/no-metadata) next to the file name and a **Review** action button (`bi-stars`, `data-fh-ms-review`) — in both the JS re-render (`listing-ui.js`) and the Blade SSR (`_microstock-badge` partial).
+- **Per-file metadata status** — `FolderService::browse` eager-loads `HostedFile::microstockMetadata` when the workspace `kind` is `microstock`, and `HostedFileResource` exposes a `microstock` key (`{title, keywords, status, phase}`, `null` = no row yet) via `whenLoaded`. `phase` is the derived adaptive-timeout phase (`analyzing`/`degraded` for a pending row, else echoes `status`). The listing renders a status badge (pending/generating/finalized/no-metadata) next to the file name and a **Review** action button (`bi-stars`, `data-fh-ms-review`) — in both the JS re-render (`listing-ui.js`) and the Blade SSR (`_microstock-badge` partial).
 - **Side panel** — clicking Review opens a Bootstrap offcanvas (`#fhMicrostockPanel`) driven by `microstock-panel.js`. It fetches the signed inline preview (`assets/{file}/preview`) into an `<img>`, loads current metadata, renders keywords as removable chips (Enter/comma/blur adds), and saves via `PATCH assets/{file}/metadata` → marks the row finalized and refreshes collection status. **Re-analyze** POSTs `assets/{file}/analyze`. Chip add/remove pure helpers (`normalizeKeywords`, `parseKeywordInput`) are unit-tested in `microstock-panel.test.js`.
 - **Progress polling** — while `collection_status === 'processing'` the SPA polls `collections/{folder}/status` every 3 s and the banner shows a spinner + `Analyzed :processed of :total` from the status payload. Polling stops on any other status or when leaving the collection.
 - **Review shortcut** — in `review` state a secondary **Review files** toolbar button opens the panel for the first listed file.
 
 ## Tests
 
-`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest"` —
-- `MicrostockTest`: provisioning gated by entitlement (403 without), slot-limit multi-workspace create, public-share block, analyze → generate (stub AI), finalize curation, CSV export finalized-only, credential encrypt/decrypt roundtrip, invite paid-gate. Checkout coverage in `ServiceCheckoutZeroChargeTest`.
-- `CollectionLifecycleTest`: root-upload blocked (422), locked-collection upload blocked, lock requires hint + transitions + rejects re-lock + rejects non-microstock folder, analyze requires lock/files + dispatches `ProcessCollection`, non-recursive batching (sub-folder untouched), empty→failed, **chained batch** (chunk → self-dispatch → `review` only after the last chunk), prompt hint threading (`Prompts::visionUser`/`thinkingUser`), status progress counts, per-collection CSV filter, export persists CSV + marks exported.
+`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest|AnalysisWatchdogTest|HttpAiMetadataServiceThinkingFallbackTest"` —
+- `MicrostockTest`: provisioning gated by entitlement (403 without), slot-limit multi-workspace create, public-share block, analyze → generate (stub AI, asserts `title`/`description`/`category`/`keywords`), finalize curation, CSV export finalized-only, credential encrypt/decrypt roundtrip, invite paid-gate. Checkout coverage in `ServiceCheckoutZeroChargeTest`.
+- `CollectionLifecycleTest`: root-upload blocked (422), locked-collection upload blocked, lock requires hint + transitions + rejects re-lock + rejects non-microstock folder, analyze requires lock/files + dispatches `ProcessCollection`, non-recursive batching (sub-folder untouched), empty→failed, **chained batch** (chunk → self-dispatch → `review` only after the last chunk), prompt hint threading (`Prompts::visionUser`/`thinkingUser` + the `COLLECTION CONTEXT` block), status progress counts, per-collection CSV filter (incl. `description`/`category` columns), export persists CSV + marks exported.
 - `CollectionApiTest`: HTTP lock/analyze/status/export/download endpoints (auth, validation, transitions, foreign-collection 403), browse exposes `microstock` key per file in a Microstock workspace (omitted in personal), per-file metadata show/finalize/re-analyze + signed preview web hops (`FileManagerControllerTest`).
+- `AnalysisWatchdogTest`: pending metadata past grace → `failed`; recent pending untouched; `processing` folder with all-failed metadata → `failed`; folder with some `generated` → `review`; zombie pending reaped; watchdog self-dispatches only while a collection is `processing`; `status()` returns derived `phase` (`analyzing`/`degraded`/echo).
+- `HttpAiMetadataServiceThinkingFallbackTest`: thinking happy path uses curated result; system-prompt hang retries with fused user message; both attempts failing falls back to the vision draft (`raw.thinking = null`) — all asserting `description`/`category` are carried through.
 
 ## Operations: queue worker
 
