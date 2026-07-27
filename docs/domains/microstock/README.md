@@ -72,7 +72,7 @@ flowchart LR
 | Upload gate | `DirectUploadService::initiate` rejects (422) a Microstock workspace upload with no `folder_id` (`microstock.error_requires_folder`) or into a locked collection (`microstock.error_collection_locked`). Client mirrors this via dropzone `data-workspace-kind` / `data-collection-locked` |
 | Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here |
 | Analyze | `POST collections/{folder}/analyze` (requires `locked`, non-empty) sets `processing` and dispatches `ProcessCollection` |
-| Pipeline | `ProcessCollection` fans out one `AnalyzeAssetMetadata` per file **directly in the folder (non-recursive)** via `Bus::batch`, carrying `collection_hint`; `->then()` flips to `review`, `->catch()`/`failed()` to `failed`. Sub-folders are separate collections and are NOT processed |
+| Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)**, then dispatches a single `AnalyzeCollectionBatch` carrying `collection_hint`. The batch processes **one chunk per invocation** and **dispatches itself** with the remaining ids (chained) so the whole collection stays long-running without ever exceeding `retry_after`; the final invocation flips the folder to `review`. Sub-folders are separate collections and are NOT processed |
 | Curate | Per-file manual edit via `PATCH assets/{file}/metadata` (existing finalize) while in `review` |
 | Export | `POST collections/{folder}/export` (requires `review`) renders a CSV of the folder's finalized metadata, persists it to `microstock.csv_disk`, saves `collection_csv_path`, sets `exported`. `GET collections/{folder}/download` streams it |
 
@@ -82,7 +82,7 @@ flowchart LR
 
 Microstock's value is metadata. The owner **hint** (collection description) grounds every file's metadata:
 
-1. Per collection: `ProcessCollection` (above) creates/resets a `microstock_asset_metadata` row per file (`status = pending`) and batches `AnalyzeAssetMetadata` jobs with the hint. (Single-asset `POST assets/{file}/analyze` → `MicrostockService::requestAnalysis` still works for ad-hoc runs, hint optional.)
+1. Per collection: `ProcessCollection` (above) creates/resets a `microstock_asset_metadata` row per file (`status = pending`) and dispatches the chained `AnalyzeCollectionBatch` with the hint. Each batch invocation sends one multi-image request per chunk (`microstock.ai.batch_chunk`); assets the batch omits fall back to a per-file `generate`. (Single-asset `POST assets/{file}/analyze` → `MicrostockService::requestAnalysis` still runs a standalone `AnalyzeAssetMetadata`, hint optional.)
 2. The job mints an inline signed URL (`SignedDownloadService::resolve($file, inline: true)`) and calls `AiMetadataService::generate($url, $hint)`.
 3. **Vision** stage drafts title + keywords from the image (with the collection hint woven into `Prompts::visionUser`); **thinking** stage curates them (`Prompts::thinkingUser` also receives the hint). Prompts are hardcoded in `App\Domain\Microstock\Support\Prompts` (English, SEO-focused).
 4. Result stored with `status = generated`.
@@ -92,13 +92,15 @@ Microstock's value is metadata. The owner **hint** (collection description) grou
 
 ### Thinking-stage resilience
 
-Some `thinking`/reasoning models **hang (0 bytes, cURL error 28)** when sent a verbose `system` prompt — observed on gateway `ai-gateway.spnd.uk` while the same endpoint serves `vision` and short-prompt `thinking` fine. `HttpAiMetadataService::thinking()` therefore degrades gracefully instead of failing the whole asset:
+`thinking`/reasoning models perform **multi-step reasoning that can run for minutes**. A short client timeout aborts an otherwise-valid generation — `cURL error 28: Operation timed out ... 0 bytes received` is the **HTTP client cutting the connection**, not a dead model. Timeouts are therefore generous: `MICROSTOCK_AI_VISION_TIMEOUT` / `MICROSTOCK_AI_THINKING_TIMEOUT` default to `600` (clamped to 600s max in `HttpAiMetadataService::timeoutSeconds`), and the queue `DB_QUEUE_RETRY_AFTER` is raised to `1800` so a legitimately long job is never re-dispatched mid-run.
+
+As a safety net, `HttpAiMetadataService::thinking()` still degrades gracefully if a request genuinely fails:
 
 1. Attempt A: normal `system` + `user` messages.
 2. Attempt B: instructions fused into a single `user` message (no `system` role) when A throws/times out.
 3. Fallback: if both fail, the **vision draft is kept** (`raw.thinking = null`) so the asset still reaches `status = generated`. Each failure is `report()`ed.
 
-To reduce the hang risk, `Prompts::thinkingSystem()` is intentionally short (a single dense paragraph). If a gateway model never responds acceptably, point `ai.thinking.model` to a different model via `MICROSTOCK_AI_THINKING_MODEL`.
+`Prompts::thinkingSystem()` is intentionally short (a single dense paragraph). If a gateway model never responds acceptably, point `ai.thinking.model` to a different model via `MICROSTOCK_AI_THINKING_MODEL`.
 
 | Column | Notes |
 |----|-------|
@@ -176,8 +178,20 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 
 `php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest"` —
 - `MicrostockTest`: provisioning gated by entitlement (403 without), slot-limit multi-workspace create, public-share block, analyze → generate (stub AI), finalize curation, CSV export finalized-only, credential encrypt/decrypt roundtrip, invite paid-gate. Checkout coverage in `ServiceCheckoutZeroChargeTest`.
-- `CollectionLifecycleTest`: root-upload blocked (422), locked-collection upload blocked, lock requires hint + transitions + rejects re-lock + rejects non-microstock folder, analyze requires lock/files + dispatches `ProcessCollection`, non-recursive batching (sub-folder untouched), empty→failed, prompt hint threading (`Prompts::visionUser`/`thinkingUser`), status progress counts, per-collection CSV filter, export persists CSV + marks exported.
+- `CollectionLifecycleTest`: root-upload blocked (422), locked-collection upload blocked, lock requires hint + transitions + rejects re-lock + rejects non-microstock folder, analyze requires lock/files + dispatches `ProcessCollection`, non-recursive batching (sub-folder untouched), empty→failed, **chained batch** (chunk → self-dispatch → `review` only after the last chunk), prompt hint threading (`Prompts::visionUser`/`thinkingUser`), status progress counts, per-collection CSV filter, export persists CSV + marks exported.
 - `CollectionApiTest`: HTTP lock/analyze/status/export/download endpoints (auth, validation, transitions, foreign-collection 403), browse exposes `microstock` key per file in a Microstock workspace (omitted in personal), per-file metadata show/finalize/re-analyze + signed preview web hops (`FileManagerControllerTest`).
+
+## Operations: queue worker
+
+All Microstock AI jobs (`ProcessCollection`, `AnalyzeCollectionBatch`, `AnalyzeAssetMetadata`) run on the `default` queue, so a worker must be running for analysis to progress: `php artisan queue:work` (or `queue:listen`). Single-asset runs can be dispatched synchronously in Tinker for a quick check.
+
+### Finding: `queue:work` exits on Windows/Laragon (environment, not a code bug)
+
+On Laragon/Windows, `php artisan queue:work` **exits back to the shell prompt right after a job finishes (`DONE`)** instead of staying alive as a daemon. Consequence: the next queued job is never picked up until you re-run the command manually.
+
+- Cause: the Windows PHP CLI build (ZTS) ships **without `pcntl`/`posix`** (verified `pcntl: False`, `posix: False`), so the daemon's signal-based loop is not stable as a long-running process on Windows. `max_execution_time=0` (no PHP timeout), and no `--once`/`--stop-when-empty` was used.
+- Not the app: there is no `shouldQuit` / `stopWhenEmpty` / `queue:restart` / `exit` in `app/`, `bootstrap/`, or `routes/console.php` that would stop the worker. The same `queue:work` stays alive on Linux (which has `pcntl`).
+- Production: run the worker on Linux, or keep it alive under Windows with a watchdog — e.g. a restart-loop (`.bat` that re-launches `queue:work` when it exits), Windows Task Scheduler / a service with auto-restart, or for local dev `php artisan queue:listen --tries=1` (respawns per job) / `composer run dev`.
 
 ## Explicitly out of scope (MVP)
 

@@ -194,6 +194,32 @@ class CollectionLifecycleTest extends TestCase
         $this->assertSame(CollectionStatus::Review, $folder->refresh()->collection_status);
     }
 
+    public function test_analyze_collection_batch_chains_chunks_and_reviews_at_end(): void
+    {
+        $this->bindFakeAi();
+        config(['microstock.ai.batch_chunk' => 2]);
+
+        $ws = app(MicrostockService::class)->workspaceFor($this->owner);
+        $folder = $this->makeFolder($this->owner, $ws->id);
+        $files = collect(['a.jpg', 'b.jpg', 'c.jpg', 'd.jpg', 'e.jpg'])
+            ->map(fn (string $n) => $this->makeFile($this->owner, $ws->id, $folder->id, $n));
+
+        app(CollectionService::class)->lock($this->owner, $folder->id, 'hint');
+        $folder->markCollectionStatus(CollectionStatus::Processing);
+
+        // 5 files / chunk 2 -> 3 chained invocations; Review only after the last.
+        (new ProcessCollection((string) $folder->id))->handle();
+
+        foreach ($files as $f) {
+            $this->assertSame(
+                MetadataStatus::Generated,
+                AssetMetadata::query()->where('file_id', $f->id)->value('status'),
+                "file {$f->name} should be generated",
+            );
+        }
+        $this->assertSame(CollectionStatus::Review, $folder->refresh()->collection_status);
+    }
+
     public function test_analyze_asset_failed_persists_failed_status_and_error(): void
     {
         $ws = app(MicrostockService::class)->workspaceFor($this->owner);

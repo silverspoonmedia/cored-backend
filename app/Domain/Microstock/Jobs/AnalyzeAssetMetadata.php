@@ -32,10 +32,10 @@ class AnalyzeAssetMetadata implements ShouldQueue
     public int $backoff = 30;
 
     /**
-     * Long-running AI generation; allow the full HTTP window plus retries.
-     * Must stay below queue retry_after (see config/queue.php).
+     * Long-running AI generation; vision + thinking can each run multi-step
+     * reasoning for minutes. Must stay below queue retry_after (config/queue.php).
      */
-    public int $timeout = 120;
+    public int $timeout = 900;
 
     public function __construct(
         private readonly string $metadataId,

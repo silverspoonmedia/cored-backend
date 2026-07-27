@@ -362,10 +362,11 @@ This feature leans on two always-on Laravel processes. If either is down, the co
 
 | Process | Command | Drives | If it stops |
 |---------|---------|--------|-------------|
-| Queue worker | `php artisan queue:work` | `ComputeHostedFileChecksum` (post-upload sha256) | `checksum` stays `null` → blocklist never matches new files |
+| Queue worker | `php artisan queue:work` | `ComputeHostedFileChecksum` (post-upload sha256); also Microstock AI jobs (`ProcessCollection`, `AnalyzeCollectionBatch`, `AnalyzeAssetMetadata`) on the same `default` queue | `checksum` stays `null` → blocklist never matches new files; Microstock analysis stalls until a worker runs |
 | Scheduler | `php artisan schedule:work` (dev) or cron/Task Scheduler `php artisan schedule:run` every minute (prod) | `file-hosting:prune-stale-uploads` (hourly, `withoutOverlapping`) | Orphaned multipart uploads are never aborted → parts pile up on storage |
 
 - Queue connection defaults to `database` (`QUEUE_CONNECTION` unset in `.env` → `config/queue.php` fallback). Set `QUEUE_CONNECTION=redis` in production if you run Redis.
+- Windows/Laragon note: `php artisan queue:work` exits after a job instead of staying alive (Windows PHP lacks `pcntl`/`posix`) — keep it alive with a watchdog/Task Scheduler, or use `php artisan queue:listen` for local dev. See [microstock/README.md](../microstock/README.md#operations-queue-worker).
 - Schedule entries live in `routes/console.php` (`file-hosting:prune-stale-uploads` hourly). Verify with `php artisan schedule:list`.
 - A quick liveness check for the checksum path: upload a file, then confirm `file_hosting_files.checksum` is populated shortly after and `jobs` is not backing up.
 

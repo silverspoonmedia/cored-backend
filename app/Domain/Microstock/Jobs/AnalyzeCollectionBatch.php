@@ -32,13 +32,15 @@ class AnalyzeCollectionBatch implements ShouldQueue
     public int $backoff = 30;
 
     /**
-     * Whole-collection generation can take a while for many images. Keep below
-     * queue retry_after (config/queue.php) so a slow run is not duplicated.
+     * One chunk per invocation; each chunk triggers one (potentially slow)
+     * multi-image AI request plus per-asset single-file fallbacks. Chained
+     * dispatch keeps the whole collection long-running without ever exceeding
+     * retry_after, so the job is never duplicated mid-run.
      */
-    public int $timeout = 300;
+    public int $timeout = 600;
 
     /**
-     * @param  list<string>  $metadataIds
+     * @param  list<string>  $metadataIds  Remaining metadata ids to process.
      */
     public function __construct(
         private readonly string $folderId,
@@ -53,26 +55,24 @@ class AnalyzeCollectionBatch implements ShouldQueue
             return;
         }
 
+        $chunkSize = max(1, (int) config('microstock.ai.batch_chunk', 10));
+
+        // This invocation handles only the first chunk; the rest is chained.
+        $currentIds = array_slice($this->metadataIds, 0, $chunkSize);
+        $remainingIds = array_slice($this->metadataIds, $chunkSize);
+
         $metadata = AssetMetadata::query()
             ->with('file')
-            ->whereIn('id', $this->metadataIds)
+            ->whereIn('id', $currentIds)
             ->where('status', '!=', MetadataStatus::Finalized->value)
             ->get()
             ->filter(fn (AssetMetadata $m): bool => $m->file !== null)
             ->values();
 
-        if ($metadata->isEmpty()) {
-            $folder->markCollectionStatus(CollectionStatus::Review);
-
-            return;
-        }
-
-        $chunkSize = max(1, (int) config('microstock.ai.batch_chunk', 10));
-
-        foreach ($metadata->chunk($chunkSize) as $chunk) {
+        if ($metadata->isNotEmpty()) {
             $items = [];
             $byId = [];
-            foreach ($chunk as $m) {
+            foreach ($metadata as $m) {
                 try {
                     $items[] = ['id' => (string) $m->id, 'image' => $resizer->previewDataUri($m->file)];
                     $byId[(string) $m->id] = $m;
@@ -81,35 +81,40 @@ class AnalyzeCollectionBatch implements ShouldQueue
                 }
             }
 
-            if ($items === []) {
-                continue;
-            }
-
-            $results = [];
-            try {
-                $results = $ai->generateBatch($items, $this->hint);
-            } catch (Throwable $e) {
-                report($e);
-            }
-
-            foreach ($items as $item) {
-                $m = $byId[$item['id']];
-                $row = $results[$item['id']] ?? null;
-
-                if ($row === null) {
-                    // Batch skipped/failed this asset: fall back to a single-file run.
-                    try {
-                        $single = $ai->generate($item['image'], $this->hint);
-                        $this->markGenerated($m, $single);
-                    } catch (Throwable $e) {
-                        $this->markFailed($m, $e);
-                    }
-
-                    continue;
+            if ($items !== []) {
+                $results = [];
+                try {
+                    $results = $ai->generateBatch($items, $this->hint);
+                } catch (Throwable $e) {
+                    report($e);
                 }
 
-                $this->markGenerated($m, $row);
+                foreach ($items as $item) {
+                    $m = $byId[$item['id']];
+                    $row = $results[$item['id']] ?? null;
+
+                    if ($row === null) {
+                        // Batch skipped/failed this asset: fall back to single-file run.
+                        try {
+                            $single = $ai->generate($item['image'], $this->hint);
+                            $this->markGenerated($m, $single);
+                        } catch (Throwable $e) {
+                            $this->markFailed($m, $e);
+                        }
+
+                        continue;
+                    }
+
+                    $this->markGenerated($m, $row);
+                }
             }
+        }
+
+        if ($remainingIds !== []) {
+            // Chain the next chunk; Review is marked by the final invocation.
+            static::dispatch($this->folderId, array_values($remainingIds), $this->hint);
+
+            return;
         }
 
         $folder->markCollectionStatus(CollectionStatus::Review);

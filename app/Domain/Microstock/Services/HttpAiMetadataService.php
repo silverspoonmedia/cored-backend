@@ -16,8 +16,9 @@ class HttpAiMetadataService implements AiMetadataService
     /**
      * Normalize the configured timeout to seconds. Env historically used
      * milliseconds (e.g. 360000); accept both by treating large values as ms.
-     * Clamp to a sane window so a hung gateway fails fast instead of holding
-     * the worker, while still allowing slow generations.
+     * The upper clamp is generous because vision/thinking models perform
+     * multi-step reasoning that can run for minutes; cutting the connection
+     * early (cURL error 28) aborts an otherwise-valid generation.
      */
     private function timeoutSeconds(mixed $raw): int
     {
@@ -26,7 +27,7 @@ class HttpAiMetadataService implements AiMetadataService
             $v = (int) round($v / 1000);
         }
 
-        return max(10, min(120, $v));
+        return max(10, min(600, $v));
     }
 
     public function generate(string $imageUrl, ?string $hint = null): array
