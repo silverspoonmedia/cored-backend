@@ -119,6 +119,13 @@ class HttpAiMetadataService implements AiMetadataService
     }
 
     /**
+     * Curate the vision draft. The `thinking` model on some gateways hangs
+     * (0 bytes) on long system prompts, so degrade gracefully:
+     *   A. system + user (normal)
+     *   B. instructions fused into user (no system role) when A fails
+     *   C. fall back to the raw vision draft when both fail — better than
+     *      failing the whole asset.
+     *
      * @param  list<string>  $keywords
      * @return array{title: string, keywords: list<string>, raw: mixed}
      */
@@ -127,6 +134,36 @@ class HttpAiMetadataService implements AiMetadataService
         $cfg = config('microstock.ai.thinking');
         $this->assertConfigured($cfg, 'thinking');
 
+        $user = Prompts::thinkingUser($title, $keywords, $hint);
+        $attempts = [
+            [
+                ['role' => 'system', 'content' => Prompts::thinkingSystem()],
+                ['role' => 'user', 'content' => $user],
+            ],
+            [
+                ['role' => 'user', 'content' => Prompts::thinkingSystem()."\n\n".$user],
+            ],
+        ];
+
+        foreach ($attempts as $messages) {
+            try {
+                return $this->thinkingRequest($cfg, $messages);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        // Both attempts failed: keep the vision draft so the asset still completes.
+        return ['title' => $title, 'keywords' => $keywords, 'raw' => null];
+    }
+
+    /**
+     * @param  array<string, mixed>  $cfg
+     * @param  list<array{role: string, content: string}>  $messages
+     * @return array{title: string, keywords: list<string>, raw: mixed}
+     */
+    private function thinkingRequest(array $cfg, array $messages): array
+    {
         $response = Http::withToken($cfg['api_key'])
             ->timeout($this->timeoutSeconds($cfg['timeout'] ?? 60))
             ->connectTimeout(10)
@@ -134,10 +171,7 @@ class HttpAiMetadataService implements AiMetadataService
             ->post($cfg['endpoint'], [
                 'model' => $cfg['model'],
                 'response_format' => ['type' => 'json_object'],
-                'messages' => [
-                    ['role' => 'system', 'content' => Prompts::thinkingSystem()],
-                    ['role' => 'user', 'content' => Prompts::thinkingUser($title, $keywords, $hint)],
-                ],
+                'messages' => $messages,
             ]);
 
         if (! $response->successful()) {

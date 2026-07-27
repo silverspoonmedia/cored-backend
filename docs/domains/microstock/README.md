@@ -90,6 +90,16 @@ Microstock's value is metadata. The owner **hint** (collection description) grou
 
 `AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage is independently configurable in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: endpoint/model/api_key/timeout, env-driven). Tests bind a stub.
 
+### Thinking-stage resilience
+
+Some `thinking`/reasoning models **hang (0 bytes, cURL error 28)** when sent a verbose `system` prompt — observed on gateway `ai-gateway.spnd.uk` while the same endpoint serves `vision` and short-prompt `thinking` fine. `HttpAiMetadataService::thinking()` therefore degrades gracefully instead of failing the whole asset:
+
+1. Attempt A: normal `system` + `user` messages.
+2. Attempt B: instructions fused into a single `user` message (no `system` role) when A throws/times out.
+3. Fallback: if both fail, the **vision draft is kept** (`raw.thinking = null`) so the asset still reaches `status = generated`. Each failure is `report()`ed.
+
+To reduce the hang risk, `Prompts::thinkingSystem()` is intentionally short (a single dense paragraph). If a gateway model never responds acceptably, point `ai.thinking.model` to a different model via `MICROSTOCK_AI_THINKING_MODEL`.
+
 | Column | Notes |
 |----|-------|
 | `microstock_asset_metadata` | `file_id` (unique FK to `file_hosting_files`), `user_id`, `title`, `keywords` json, `status` (`pending`/`generated`/`finalized`), `ai_raw` json |

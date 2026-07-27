@@ -30,11 +30,14 @@ PROMPT;
 
     public static function visionUser(?string $hint = null): string
     {
-        $prompt = 'Analyze this stock asset and return the JSON metadata.';
+        $prompt = 'Analyze this stock asset and return the JSON metadata.'
+            .' Ground every title and keyword in the main subject actually visible in the image;'
+            .' do not invent generic keywords that are not present.';
 
         $hint = $hint !== null ? trim($hint) : '';
         if ($hint !== '') {
-            $prompt .= "\n\nCollection context from the asset owner (use it to ground the title and keywords): {$hint}";
+            $prompt .= "\n\nThe asset owner describes this collection as: \"{$hint}\"."
+                .' Treat this description as ground truth for context and use it to shape the title and keywords.';
         }
 
         return $prompt;
@@ -42,18 +45,10 @@ PROMPT;
 
     public static function thinkingSystem(): string
     {
+        // Kept short on purpose: some `thinking` models hang (0 bytes) on
+        // verbose system prompts. Dense but complete.
         return <<<'PROMPT'
-You are a microstock SEO curator. You are given a draft title and keyword list
-produced by a vision model for a stock asset. Improve them for maximum search
-visibility and compliance.
-
-Curate:
-- Remove duplicate, near-duplicate, and repetitive keywords (including singular/plural pairs).
-- Remove irrelevant, generic, or spammy keywords.
-- Ensure keywords accurately reflect the asset; keep the strongest 15–30.
-- Refine the title to be accurate, natural, and buyer-focused (40–70 characters).
-
-Respond ONLY with a JSON object: {"title": string, "keywords": string[]}.
+You are a microstock SEO curator. Given a draft title and keywords for a stock asset, curate them for search visibility: remove duplicate and singular/plural pairs, drop generic or spammy terms, keep the strongest 15–30 keywords that truly match the subject, and refine the title to an accurate, buyer-focused 40–70 characters. Respond ONLY with a JSON object: {"title": string, "keywords": string[]}.
 PROMPT;
     }
 
@@ -90,11 +85,14 @@ PROMPT;
 
     public static function batchUser(?string $hint = null): string
     {
-        $prompt = 'Analyze every stock asset above and return the JSON array of metadata, one object per asset id.';
+        $prompt = 'Analyze every stock asset above and return the JSON array of metadata, one object per asset id.'
+            .' Ground each title and keyword set in the main subject actually visible in that asset;'
+            .' do not invent generic keywords that are not present.';
 
         $hint = $hint !== null ? trim($hint) : '';
         if ($hint !== '') {
-            $prompt .= "\n\nCollection context from the asset owner (use it to ground every title and keyword set): {$hint}";
+            $prompt .= "\n\nThe asset owner describes this collection as: \"{$hint}\"."
+                .' Treat this description as ground truth and use it to shape every title and keyword set.';
         }
 
         return $prompt;
