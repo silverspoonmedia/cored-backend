@@ -27,6 +27,7 @@ import { createSelectionController } from './selection';
 import { createContextMenu } from './context-menu';
 import { createDragMove, moveItemsRequest } from './drag-move';
 import { createMicrostockPanel } from './microstock-panel';
+import { formatCollectionProgress } from './microstock-ui';
 
 const STORAGE_KEY = 'fh-view-mode';
 
@@ -1467,16 +1468,16 @@ function initFileManager(root) {
             }, 3000);
         }
 
-        function progressText(processed, total) {
-            const tmpl = config.microstockPanel?.progress || 'Analyzed :processed of :total';
-            return tmpl
-                .replace(':processed', String(processed ?? 0))
-                .replace(':total', String(total ?? 0));
+        function progressText(processed, total, failed) {
+            return formatCollectionProgress(processed, total, failed, {
+                progress: config.microstockPanel?.progress,
+                progressFailed: config.collectionLabels?.progressFailed,
+            });
         }
 
         // Render the collection action button + status banner for the current
         // folder. `status` = browse.folder.collection_status (null => draft).
-        // `counts` = { processed, total } for the processing progress line.
+        // `counts` = { processed, total, failed, phase } for the processing progress line.
         function updateCollectionUi(status, counts) {
             const els = collectionEls();
             if (!els.action) {
@@ -1508,9 +1509,13 @@ function initFileManager(root) {
             if (st === 'processing') {
                 const p = counts?.processed ?? null;
                 const t = counts?.total ?? null;
+                const f = counts?.failed ?? 0;
                 bannerText = (t !== null && t > 0)
-                    ? (labels.processing + ' — ' + progressText(p, t))
+                    ? (labels.processing + ' — ' + progressText(p, t, f))
                     : labels.processing;
+                if (counts?.phase === 'degraded') {
+                    bannerText += ' ' + (labels.processingDegraded || '');
+                }
                 primaryLabel = labels.processing;
                 primaryMode = 'none';
             } else if (st === 'review') {
@@ -1527,8 +1532,8 @@ function initFileManager(root) {
                 primaryMode = 'lock';
             } else if (st === 'locked') {
                 bannerText = labels.locked;
-                primaryLabel = labels.processing;
-                primaryMode = 'none';
+                primaryLabel = labels.analyze || labels.processing;
+                primaryMode = 'analyze';
             }
 
             if (els.banner && els.bannerText) {
@@ -1539,6 +1544,8 @@ function initFileManager(root) {
                     els.bannerText.innerHTML = spinner;
                     els.bannerText.appendChild(document.createTextNode(bannerText));
                     els.banner.classList.remove('d-none');
+                    els.banner.classList.toggle('alert-warning', st === 'processing' && counts?.phase === 'degraded');
+                    els.banner.classList.toggle('alert-secondary', !(st === 'processing' && counts?.phase === 'degraded'));
                 } else {
                     els.banner.classList.add('d-none');
                 }
@@ -1597,10 +1604,43 @@ function initFileManager(root) {
                         updateCollectionUi(json.data.status, {
                             processed: json.data.processed,
                             total: json.data.total,
+                            failed: json.data.failed,
+                            phase: json.data.phase,
                         });
+                        if (json.data.status === 'processing') {
+                            softRefetchListing();
+                        }
                     }
                 })
                 .catch(function () { /* best-effort */ });
+        }
+
+        function countFilesInListing() {
+            return root.querySelectorAll('[data-fh-row][data-fh-entity="file"]').length;
+        }
+
+        function fetchMicrostockBilling() {
+            const url = config.billingUrl || '/file-hosting/microstock/billing';
+            return fetchJson(url, csrfToken).then(function (json) {
+                return json?.data || null;
+            }).catch(function () {
+                return null;
+            });
+        }
+
+        function renderCollectionBillingLine(billing, fileCount) {
+            const el = document.querySelector('[data-fh-collection-billing]');
+            if (!el || !billing) {
+                return;
+            }
+            const tmpl = config.collectionLabels?.billingLine
+                || 'Balance :balance · est. :estimate per file';
+            const estimateTotal = (billing.estimated_per_analysis_usd || 0) * Math.max(1, fileCount);
+            el.textContent = tmpl
+                .replace(':balance', String(billing.balance_usd ?? '0'))
+                .replace(':estimate', String(billing.estimated_per_analysis_usd ?? '0'))
+                .replace(':total', estimateTotal.toFixed(2));
+            el.classList.remove('d-none');
         }
 
         function initCollectionUi() {
@@ -1669,7 +1709,31 @@ function initFileManager(root) {
                             .finally(function () { setBusy(false); });
                     } else if (mode === 'download') {
                         window.location.href = collectionUrl('/download');
+                    } else if (mode === 'analyze') {
+                        setBusy(true);
+                        collectionPost('/analyze')
+                            .then(function (out) {
+                                if (out.ok) {
+                                    showToast(out.json.message || config.messages.success, 'success');
+                                    refreshCollectionStatus();
+                                    softRefetchListing();
+                                } else {
+                                    showToast(out.json.message || config.messages.error, 'error');
+                                }
+                            })
+                            .catch(function () { showToast(config.messages.networkError, 'error'); })
+                            .finally(function () { setBusy(false); });
                     }
+                });
+            }
+
+            const describeModal = document.getElementById('fhCollectionDescribeModal');
+            if (describeModal) {
+                describeModal.addEventListener('show.bs.modal', function () {
+                    const fileCount = countFilesInListing();
+                    fetchMicrostockBilling().then(function (billing) {
+                        renderCollectionBillingLine(billing, fileCount);
+                    });
                 });
             }
 
@@ -1681,11 +1745,28 @@ function initFileManager(root) {
                         showToast(config.messages.error, 'error');
                         return;
                     }
+                    const fileCount = Math.max(1, countFilesInListing());
                     describeSubmit.disabled = true;
                     setBusy(true);
-                    // Lock (with hint) then kick off the AI pipeline.
-                    collectionPost('/lock', { hint: hint })
+                    fetchMicrostockBilling()
+                        .then(function (billing) {
+                            if (billing) {
+                                const requiredMicro = (billing.estimated_per_analysis_micro_usd || 0) * fileCount;
+                                if ((billing.balance_micro_usd || 0) < requiredMicro) {
+                                    const msg = config.collectionLabels?.insufficientCredits
+                                        || 'Insufficient AI credits.';
+                                    showToast(msg, 'error');
+                                    describeSubmit.disabled = false;
+                                    setBusy(false);
+                                    return null;
+                                }
+                            }
+                            return collectionPost('/lock', { hint: hint });
+                        })
                         .then(function (out) {
+                            if (out === null) {
+                                return;
+                            }
                             if (!out.ok) {
                                 showToast(out.json.message || config.messages.error, 'error');
                                 return;
@@ -1701,6 +1782,7 @@ function initFileManager(root) {
                                     showToast(a.json.message || config.messages.error, 'error');
                                 }
                                 refreshCollectionStatus();
+                                softRefetchListing();
                                 syncCollectionUploadGate(root, config, { collection_locked: true });
                             });
                         })

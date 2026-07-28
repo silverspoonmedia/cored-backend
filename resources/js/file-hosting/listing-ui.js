@@ -5,6 +5,8 @@
  * select | icon | name | type | size | region | visibility | actions
  */
 
+import { isMicrostockReviewActionable, resolveMicrostockBadge } from './microstock-ui.js';
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -813,27 +815,15 @@ function microstockBadgeHtml(file, config) {
     if (!isMicrostockCtx(config)) {
         return '';
     }
-    const labels = config.microstockPanel || {};
-    const ms = file.microstock;
-    let label = labels.noMetadata || 'No metadata';
-    let cls = 'text-bg-secondary';
-    if (ms && ms.status) {
-        if (ms.status === 'finalized') {
-            label = labels.statusFinalized || 'Finalized';
-            cls = 'text-bg-success';
-        } else if (ms.status === 'generated') {
-            label = labels.statusGenerated || 'Generated';
-            cls = 'text-bg-info';
-        } else {
-            label = labels.statusPending || 'Pending';
-            cls = 'text-bg-warning';
-        }
-    }
-    return `<span class="badge ${cls} fh-ms-badge" data-fh-ms-status>${escapeHtml(label)}</span>`;
+    const badge = resolveMicrostockBadge(file.microstock, config.microstockPanel || {});
+    return `<span class="badge ${badge.cls} fh-ms-badge" data-fh-ms-status>${escapeHtml(badge.label)}</span>`;
 }
 
 function microstockReviewBtnHtml(file, config) {
     if (!isMicrostockCtx(config)) {
+        return '';
+    }
+    if (!isMicrostockReviewActionable(file.microstock)) {
         return '';
     }
     const id = escapeHtml(file.id);

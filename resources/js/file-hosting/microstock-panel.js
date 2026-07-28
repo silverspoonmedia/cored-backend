@@ -6,6 +6,8 @@
  * POST. Pure chip helpers are exported for unit tests.
  */
 
+import { isTerminalMetadataStatus, resolveMicrostockBadge, stageStripItems } from './microstock-ui.js';
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -43,15 +45,18 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
     const els = {
         thumb: panel.querySelector('[data-fh-ms-thumb]'),
         status: panel.querySelector('[data-fh-ms-status]'),
+        stages: panel.querySelector('[data-fh-ms-stages]'),
         error: panel.querySelector('[data-fh-ms-error]'),
         title: panel.querySelector('#fhMsTitle'),
+        description: panel.querySelector('[data-fh-ms-description]'),
+        category: panel.querySelector('[data-fh-ms-category]'),
         chips: panel.querySelector('[data-fh-ms-chips]'),
         keywordInput: panel.querySelector('#fhMsKeywordInput'),
         save: panel.querySelector('[data-fh-ms-save]'),
         reanalyze: panel.querySelector('[data-fh-ms-reanalyze]'),
     };
     const labels = config.microstockPanel || {};
-    const state = { fileId: null, keywords: [] };
+    const state = { fileId: null, keywords: [], pollTimer: null };
 
     function assetUrl(suffix) {
         return (config.assetsBase || '/file-hosting/microstock/assets')
@@ -71,7 +76,7 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
             body: body ? JSON.stringify(body) : null,
         }).then(function (res) {
             return res.json().catch(function () { return {}; }).then(function (json) {
-                return { ok: res.ok, json: json };
+                return { ok: res.ok, status: res.status, json: json };
             });
         });
     }
@@ -82,30 +87,92 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
         }
     }
 
-    function statusLabel(status) {
-        if (status === 'finalized') {
-            return labels.statusFinalized || 'Finalized';
+    function stopMetadataPoll() {
+        if (state.pollTimer !== null) {
+            clearInterval(state.pollTimer);
+            state.pollTimer = null;
         }
-        if (status === 'generated') {
-            return labels.statusGenerated || 'Generated';
-        }
-        if (status === 'failed') {
-            return labels.statusFailed || 'Failed';
-        }
-        return labels.statusPending || 'Pending';
     }
 
-    function setStatus(status, errorMessage) {
+    function startMetadataPoll() {
+        stopMetadataPoll();
+        state.pollTimer = setInterval(function () {
+            loadMetadata(false);
+        }, 3000);
+    }
+
+    function setStatus(status, errorMessage, stages) {
+        const badge = resolveMicrostockBadge(
+            { status: status, stages: stages || {} },
+            labels,
+        );
         if (els.status) {
-            els.status.textContent = statusLabel(status);
-            els.status.classList.toggle('text-bg-danger', status === 'failed');
-            els.status.classList.toggle('text-bg-secondary', status !== 'failed');
+            els.status.textContent = badge.label;
+            els.status.className = 'badge ' + badge.cls;
         }
         if (els.error) {
             const show = status === 'failed' && Boolean(errorMessage);
             els.error.classList.toggle('d-none', !show);
             els.error.textContent = show ? String(errorMessage) : '';
         }
+        renderStageStrip(stages);
+    }
+
+    function renderStageStrip(stages) {
+        if (!els.stages) {
+            return;
+        }
+        const items = stageStripItems(stages, labels);
+        els.stages.innerHTML = items.map(function (item, index) {
+            const sep = index > 0 ? '<span class="text-muted mx-1">→</span>' : '';
+            const stateCls = item.state === 'ok'
+                ? 'text-success'
+                : (item.state === 'failed' ? 'text-danger' : (item.state === 'running' ? 'text-warning' : 'text-muted'));
+            return sep
+                + '<span class="' + stateCls + '">'
+                + escapeHtml(item.label) + ' ' + escapeHtml(item.icon)
+                + '</span>';
+        }).join('');
+    }
+
+    function applyMetadata(data) {
+        if (els.title) {
+            els.title.value = data.title || '';
+            els.title.disabled = data.status === 'pending' || data.status === 'failed';
+        }
+        if (els.description) {
+            els.description.textContent = data.description || '—';
+        }
+        if (els.category) {
+            els.category.textContent = data.category || '—';
+        }
+        state.keywords = normalizeKeywords(data.keywords || []);
+        renderChips();
+        setStatus(data.status || null, data.error || null, data.stages || {});
+        const terminal = isTerminalMetadataStatus(data.status);
+        if (els.save) {
+            els.save.disabled = data.status !== 'generated';
+        }
+        if (terminal) {
+            stopMetadataPoll();
+        }
+    }
+
+    function loadMetadata(startPollIfPending) {
+        if (!state.fileId) {
+            return Promise.resolve();
+        }
+        return request('GET', '/metadata').then(function (out) {
+            if (!out.ok) {
+                setStatus(null);
+                return;
+            }
+            const data = out.json?.data || {};
+            applyMetadata(data);
+            if (startPollIfPending && data.status === 'pending') {
+                startMetadataPoll();
+            }
+        }).catch(function () { /* best-effort */ });
     }
 
     function renderChips() {
@@ -183,11 +250,16 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
             .then(function (out) {
                 toast(out.json.message || labels.queued || 'Queued', out.ok ? 'success' : 'error');
                 if (out.ok) {
-                    setStatus('pending');
+                    setStatus('pending', null, { vision: 'pending', thinking: 'pending', result: 'pending' });
+                    startMetadataPoll();
                 }
             })
             .catch(function () { toast('Network error', 'error'); })
             .finally(function () { els.reanalyze.disabled = false; });
+    });
+
+    panel.addEventListener('hidden.bs.offcanvas', function () {
+        stopMetadataPoll();
     });
 
     function open(fileId) {
@@ -196,6 +268,7 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
         }
         state.fileId = fileId;
         state.keywords = [];
+        stopMetadataPoll();
         renderChips();
         if (els.title) {
             els.title.value = '';
@@ -204,27 +277,13 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
             els.thumb.src = '';
         }
 
-        // Signed inline preview for the <img>.
         request('GET', '/preview').then(function (out) {
             if (out.ok && out.json?.data?.url && els.thumb) {
                 els.thumb.src = out.json.data.url;
             }
         }).catch(function () { /* best-effort */ });
 
-        // Existing metadata (title + keywords + status).
-        request('GET', '/metadata').then(function (out) {
-            if (!out.ok) {
-                setStatus(null);
-                return;
-            }
-            const data = out.json?.data || {};
-            if (els.title) {
-                els.title.value = data.title || '';
-            }
-            state.keywords = normalizeKeywords(data.keywords || []);
-            renderChips();
-            setStatus(data.status || null, data.error || null);
-        }).catch(function () { /* best-effort */ });
+        loadMetadata(true);
 
         if (window.bootstrap?.Offcanvas) {
             window.bootstrap.Offcanvas.getOrCreateInstance(panel).show();

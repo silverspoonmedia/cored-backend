@@ -1,7 +1,15 @@
 <x-adminlte4::layouts.app :title="__('web/services.title')">
-    @if ($microstockFree || $microstockSlot)
+    @if ($microstockFree || $microstockSlot || $microstockAiCredits)
         <x-adminlte4::card :title="__('web/services.microstock.title')" class="mb-3">
             <p class="text-muted mb-3">{{ __('web/services.microstock.slot_desc') }}</p>
+            @if ($microstockActive && is_array($microstockBilling))
+                <p class="small mb-3">
+                    {{ __('web/services.microstock.ai_balance', [
+                        'balance' => number_format((float) ($microstockBilling['balance_usd'] ?? 0), 2),
+                        'estimate' => number_format((float) ($microstockBilling['estimated_per_analysis_usd'] ?? 0), 2),
+                    ]) }}
+                </p>
+            @endif
             <div class="d-flex flex-wrap gap-2">
                 @if ($microstockFree)
                     @if ($microstockActive)
@@ -24,6 +32,15 @@
                         <input type="hidden" name="currency" value="USD">
                         <button type="submit" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-plus-lg me-1"></i> {{ __('web/services.microstock.buy_slot') }}
+                        </button>
+                    </form>
+                @endif
+                @if ($microstockAiCredits && $microstockActive)
+                    <form action="{{ route('services.checkout', $microstockAiCredits['id']) }}" method="POST" class="d-inline">
+                        @csrf
+                        <input type="hidden" name="currency" value="USD">
+                        <button type="submit" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-coin me-1"></i> {{ __('web/services.microstock.buy_ai_credits') }}
                         </button>
                     </form>
                 @endif

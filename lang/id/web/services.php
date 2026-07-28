@@ -86,5 +86,7 @@ return [
         'activate_free' => 'Aktifkan gratis',
         'active_badge' => 'Aktif',
         'buy_slot' => 'Beli slot ($1/bln)',
+        'buy_ai_credits' => 'Beli kredit AI ($5)',
+        'ai_balance' => 'Saldo analisis AI: $:balance · ~$:estimate per aset',
     ],
 ];

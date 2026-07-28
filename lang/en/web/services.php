@@ -86,5 +86,7 @@ return [
         'activate_free' => 'Activate free',
         'active_badge' => 'Active',
         'buy_slot' => 'Buy slot ($1/mo)',
+        'buy_ai_credits' => 'Buy AI credits ($5)',
+        'ai_balance' => 'AI analysis balance: $:balance · ~$:estimate per asset',
     ],
 ];

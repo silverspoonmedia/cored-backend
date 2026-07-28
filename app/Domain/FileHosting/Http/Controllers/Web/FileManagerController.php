@@ -356,6 +356,19 @@ class FileManagerController extends Controller
         ]);
     }
 
+    public function microstockBilling(Request $request): JsonResponse
+    {
+        $response = $this->api()->get('microstock/billing');
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json([
+            'data' => $response->json('data') ?? [],
+        ]);
+    }
+
     public function storeMicrostockWorkspace(Request $request): JsonResponse
     {
         $response = $this->api()->post('microstock/workspaces', $request->only(['name']));

@@ -70,16 +70,22 @@
         'currentWorkspace' => $currentWorkspace ?? null,
         'collectionBase' => url('file-hosting/microstock/collections'),
         'assetsBase' => url('file-hosting/microstock/assets'),
+        'billingUrl' => route('file-hosting.microstock.billing'),
         'collectionStatus' => $browse['folder']['collection_status'] ?? null,
         'collectionLabels' => [
             'lockDescribe' => __('web/file-hosting.microstock.lock_describe'),
+            'analyze' => __('web/file-hosting.microstock.analyze'),
             'exportCsv' => __('web/file-hosting.microstock.export_csv'),
             'downloadCsv' => __('web/file-hosting.microstock.download_csv'),
             'processing' => __('web/file-hosting.microstock.status_processing'),
+            'processingDegraded' => __('web/file-hosting.microstock.status_processing_degraded'),
             'review' => __('web/file-hosting.microstock.status_review'),
             'exported' => __('web/file-hosting.microstock.status_exported'),
             'failed' => __('web/file-hosting.microstock.status_failed'),
             'locked' => __('web/file-hosting.microstock.status_locked'),
+            'progressFailed' => __('web/file-hosting.microstock.progress_failed'),
+            'billingLine' => __('web/file-hosting.microstock.billing_line'),
+            'insufficientCredits' => __('web/file-hosting.microstock.insufficient_credits'),
         ],
         'microstockPanel' => [
             'progress' => __('web/file-hosting.microstock.progress'),
@@ -90,6 +96,13 @@
             'statusGenerated' => __('web/file-hosting.microstock.status_generated'),
             'statusFinalized' => __('web/file-hosting.microstock.status_finalized'),
             'statusFailed' => __('web/file-hosting.microstock.status_failed_item'),
+            'stageVision' => __('web/file-hosting.microstock.stage_vision'),
+            'stageThinking' => __('web/file-hosting.microstock.stage_thinking'),
+            'stageQueuedThinking' => __('web/file-hosting.microstock.stage_queued_thinking'),
+            'stageDegraded' => __('web/file-hosting.microstock.stage_degraded'),
+            'stageVisionLabel' => __('web/file-hosting.microstock.stage_vision_label'),
+            'stageThinkingLabel' => __('web/file-hosting.microstock.stage_thinking_label'),
+            'stageResultLabel' => __('web/file-hosting.microstock.stage_result_label'),
             'saved' => __('web/file-hosting.microstock.panel_saved'),
             'queued' => __('web/file-hosting.microstock.panel_queued'),
         ],
@@ -813,6 +826,7 @@
                 </div>
                 <div class="modal-body">
                     <p class="small text-muted">{{ __('web/file-hosting.microstock.describe_hint') }}</p>
+                    <div class="small text-muted mb-2 d-none" data-fh-collection-billing></div>
                     <label class="form-label" for="fhCollectionHint">{{ __('web/file-hosting.microstock.describe_label') }}</label>
                     <textarea id="fhCollectionHint" class="form-control" rows="4" maxlength="2000"
                               placeholder="{{ __('web/file-hosting.microstock.describe_placeholder') }}"></textarea>
@@ -836,10 +850,19 @@
                 <img data-fh-ms-thumb alt="" class="img-fluid rounded border" style="max-height:240px; object-fit:contain;">
             </div>
             <div class="mb-2"><span class="badge text-bg-secondary" data-fh-ms-status></span></div>
+            <div class="small text-muted mb-3" data-fh-ms-stages aria-label="{{ __('web/file-hosting.microstock.stage_strip_label') }}"></div>
             <div class="alert alert-danger d-none mb-3 py-2 small" data-fh-ms-error role="alert"></div>
             <div class="mb-3">
                 <label class="form-label" for="fhMsTitle">{{ __('web/file-hosting.microstock.panel_title_label') }}</label>
                 <input type="text" class="form-control" id="fhMsTitle" maxlength="255">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ __('web/file-hosting.microstock.panel_description_label') }}</label>
+                <div class="form-control-plaintext small border rounded px-2 py-1 bg-light" data-fh-ms-description>—</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ __('web/file-hosting.microstock.panel_category_label') }}</label>
+                <div class="form-control-plaintext small border rounded px-2 py-1 bg-light" data-fh-ms-category>—</div>
             </div>
             <div class="mb-3">
                 <label class="form-label">{{ __('web/file-hosting.microstock.panel_keywords_label') }}</label>
