@@ -2,6 +2,7 @@
 
 namespace App\Domain\FileHosting\Models;
 
+use App\Domain\FileHosting\Enums\CollectionStatus;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +23,10 @@ class Folder extends Model
         'name',
         'order',
         'visibility',
+        'collection_status',
+        'collection_hint',
+        'collection_locked_at',
+        'collection_csv_path',
     ];
 
     /**
@@ -31,6 +36,8 @@ class Folder extends Model
     {
         return [
             'order' => 'integer',
+            'collection_status' => CollectionStatus::class,
+            'collection_locked_at' => 'datetime',
         ];
     }
 
@@ -61,6 +68,20 @@ class Folder extends Model
     public function isWorkspaceResource(): bool
     {
         return $this->workspace_id !== null;
+    }
+
+    /**
+     * A locked collection no longer accepts uploads (status ∈ locked,
+     * processing, review, exported). NULL/draft/failed stay open.
+     */
+    public function isCollectionLocked(): bool
+    {
+        return $this->collection_status?->isLockedForUpload() ?? false;
+    }
+
+    public function markCollectionStatus(CollectionStatus $status): void
+    {
+        $this->forceFill(['collection_status' => $status])->save();
     }
 
     /**

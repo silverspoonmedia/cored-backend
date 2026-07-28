@@ -26,6 +26,7 @@ import { applyShowPayload, patchShowFile } from './show-ui';
 import { createSelectionController } from './selection';
 import { createContextMenu } from './context-menu';
 import { createDragMove, moveItemsRequest } from './drag-move';
+import { createMicrostockPanel } from './microstock-panel';
 
 const STORAGE_KEY = 'fh-view-mode';
 
@@ -51,6 +52,9 @@ function initFileManager(root) {
         let realtimeHandle = null;
         let router = null;
         let currentShowFileId = config.realtime?.fileId || null;
+        let lastWorkspaces = Array.isArray(config.workspaces) ? config.workspaces : [];
+        let microstockMount = null;
+        let microstockPanel = null;
         const selected = new Set();
         let selection = null;
         let dragMove = null;
@@ -62,6 +66,7 @@ function initFileManager(root) {
 
         /** Mutation busy overlay (move/delete/forms) — distinct from soft-nav is-fh-loading. */
         let busyDepth = 0;
+        let collectionPollTimer = null;
         function setBusy(on) {
             if (on) {
                 busyDepth += 1;
@@ -123,10 +128,15 @@ function initFileManager(root) {
                     const url = browseUrlWithContext(config.browseUrl, config);
                     const json = await fetchJson(url, csrfToken);
                     if (json?.data) {
+                        if (json.data.workspace) {
+                            config.currentWorkspace = json.data.workspace;
+                        }
                         applyBrowsePayload(root, json.data, config);
                         if (json.data.folder?.id !== undefined) {
                             config.currentFolderId = json.data.folder?.id || null;
                         }
+                        syncCollectionUploadGate(root, config, json.data.folder);
+                        updateCollectionUi(json.data.folder ? json.data.folder.collection_status : null);
                         // Soft-refetch replaces rows — drop stale selection + re-enable DnD.
                         selected.clear();
                         if (selection) {
@@ -317,17 +327,33 @@ function initFileManager(root) {
 
         rebindRealtime();
 
-        initViewToggle();
-        initSearch();
-        initDropzone();
-        initModals();
-        initAjaxActions();
-        initAjaxForms();
-        initCopyButtons();
-        initBulkActions();
-        initDriveLikeInteractions();
+        const initSteps = [
+            initViewToggle,
+            initSearch,
+            initDropzone,
+            initModals,
+            initAjaxActions,
+            initAjaxForms,
+            initCopyButtons,
+            initBulkActions,
+            initDriveLikeInteractions,
+            initMicrostockSlotSection,
+            initCollectionUi,
+        ];
+        initSteps.forEach(function (step) {
+            try {
+                step();
+            } catch (e) {
+                // A single failing init must not kill the rest of the UI.
+                console.error('[file-manager] init step failed', step.name, e);
+            }
+        });
         if (spaShell) {
-            initSpaRouter();
+            try {
+                initSpaRouter();
+            } catch (e) {
+                console.error('[file-manager] initSpaRouter failed', e);
+            }
         }
 
         // ---- View toggle ----
@@ -997,6 +1023,7 @@ function initFileManager(root) {
             } else {
                 showPanel('browse');
             }
+            refreshWorkspaceSwitcher();
         }
 
         function syncConfigFromRoute(route) {
@@ -1040,6 +1067,174 @@ function initFileManager(root) {
             });
         }
 
+        // Keep the direct-upload root-upload/lock gate in sync with the browse
+        // payload (microstock collections: no root upload, no upload into a
+        // locked collection). Reads live data-* attrs the uploader checks.
+        function syncCollectionUploadGate(rootEl, cfg, folder) {
+            const kind = cfg?.currentWorkspace?.kind || '';
+            const locked = folder && folder.collection_locked === true ? '1' : '0';
+            rootEl.querySelectorAll('[data-direct-upload]').forEach((el) => {
+                if (kind) {
+                    el.dataset.workspaceKind = kind;
+                } else {
+                    delete el.dataset.workspaceKind;
+                }
+                el.dataset.collectionLocked = folder ? locked : '0';
+            });
+        }
+
+        // ---- Workspace switcher client re-render (SPA soft-nav) ----
+        function switcherBrowseUrl(wsId) {
+            const base = config.browseUrl || '/file-hosting';
+            const sep = base.indexOf('?') === -1 ? '?' : '&';
+            return base + sep + 'workspace_id=' + encodeURIComponent(wsId);
+        }
+
+        function roleLabelFor(role) {
+            if (!role) {
+                return '';
+            }
+            const map = config.roleLabels || {};
+            return map[role] || role;
+        }
+
+        // Rebuild dynamic workspace <a> items from lastWorkspaces (keeps personal
+        // item + collab/microstock sections). Called after every switcher refetch
+        // so newly created workspaces appear without a hard reload.
+        function renderWorkspaceMenuItems() {
+            const menu = document.querySelector('.fh-workspace-switcher .dropdown-menu');
+            if (!menu) {
+                return;
+            }
+
+            // Remove previously rendered dynamic items (keep personal "").
+            menu.querySelectorAll('.dropdown-item[data-fh-workspace-id]').forEach(function (el) {
+                if ((el.dataset.fhWorkspaceId || '') !== '') {
+                    el.remove();
+                }
+            });
+            menu.querySelectorAll('[data-fh-dynamic-workspaces-divider]').forEach(function (el) {
+                el.remove();
+            });
+
+            const list = Array.isArray(lastWorkspaces) ? lastWorkspaces : [];
+            if (list.length === 0) {
+                return;
+            }
+
+            // Group: Microstock first, Team (and other kinds) second. Inserted
+            // before the microstock slot mount; each group gets its own divider.
+            const anchor = menu.querySelector('[data-fh-microstock-slot]') || null;
+            const microstock = [];
+            const team = [];
+            list.forEach(function (w) {
+                if (!w || !w.id) {
+                    return;
+                }
+                ((w.kind || 'team') === 'microstock' ? microstock : team).push(w);
+            });
+
+            const groups = [microstock, team].filter(function (g) { return g.length > 0; });
+
+            groups.forEach(function (group, gi) {
+                const divider = document.createElement('div');
+                divider.className = 'dropdown-divider';
+                divider.setAttribute('data-fh-dynamic-workspaces-divider', '');
+                menu.insertBefore(divider, anchor);
+
+                group.forEach(function (w) {
+                    const kind = w.kind || 'team';
+                    const isOwner = w.is_owner === true;
+                    const wsId = w.id;
+
+                    const a = document.createElement('a');
+                    a.href = switcherBrowseUrl(wsId);
+                    a.className = 'dropdown-item d-flex align-items-center justify-content-between gap-2';
+                    a.dataset.fhWorkspaceId = wsId;
+                    a.dataset.fhWorkspaceName = w.name || 'Workspace';
+                    a.dataset.fhWorkspaceKind = kind;
+
+                    const left = document.createElement('span');
+                    left.className = 'text-truncate';
+                    const i = document.createElement('i');
+                    i.className = 'bi ' + (kind === 'microstock' ? 'bi-images' : 'bi-people') + ' me-2';
+                    left.appendChild(i);
+                    left.appendChild(document.createTextNode(w.name || 'Workspace'));
+                    a.appendChild(left);
+
+                    const right = document.createElement('span');
+                    right.className = 'd-flex gap-1 flex-shrink-0';
+                    if (w.my_role) {
+                        const roleBadge = document.createElement('span');
+                        roleBadge.className = 'badge text-bg-secondary';
+                        roleBadge.textContent = roleLabelFor(w.my_role);
+                        right.appendChild(roleBadge);
+                    }
+                    const ownBadge = document.createElement('span');
+                    ownBadge.className = 'badge ' + (isOwner ? 'text-bg-primary' : 'text-bg-info');
+                    ownBadge.textContent = isOwner ? (config.badgeYours || 'Yours') : (config.badgeJoined || 'Joined');
+                    right.appendChild(ownBadge);
+                    a.appendChild(right);
+
+                    menu.insertBefore(a, anchor);
+                });
+            });
+        }
+
+        function renderWorkspaceSwitcher() {
+            const root2 = document;
+            const label = root2.querySelector('.fh-workspace-switcher [data-fh-workspace-label]');
+            const icon = root2.querySelector('.fh-workspace-switcher [data-fh-workspace-icon]');
+            if (!label && !icon) {
+                return;
+            }
+            const wsId = config.workspaceId || null;
+            const personalLabel = config.personalLabel || 'Personal';
+
+            if (wsId) {
+                const entry = lastWorkspaces.find(function (w) { return w && w.id === wsId; }) || null;
+                const item = root2.querySelector('.fh-workspace-switcher .dropdown-item[data-fh-workspace-id="' + wsId + '"]');
+                const name = (entry && entry.name) || item?.dataset?.fhWorkspaceName || config.currentWorkspace?.name || null;
+                const kind = (entry && entry.kind) || item?.dataset?.fhWorkspaceKind || config.currentWorkspace?.kind || 'team';
+                if (label && name) {
+                    label.textContent = name;
+                }
+                if (icon) {
+                    icon.classList.remove('bi-person', 'bi-people', 'bi-images');
+                    icon.classList.add(kind === 'microstock' ? 'bi-images' : 'bi-people');
+                }
+            } else {
+                if (label) {
+                    label.textContent = personalLabel;
+                }
+                if (icon) {
+                    icon.classList.remove('bi-person', 'bi-people', 'bi-images');
+                    icon.classList.add('bi-person');
+                }
+            }
+
+            root2.querySelectorAll('.fh-workspace-switcher .dropdown-item[data-fh-workspace-id]').forEach(function (el) {
+                const itemId = el.dataset.fhWorkspaceId || null;
+                el.classList.toggle('active', (itemId || null) === (wsId || null));
+            });
+        }
+
+        async function refreshWorkspaceSwitcher() {
+            if (config.workspacesUrl) {
+                const json = await fetchJson(config.workspacesUrl, csrfToken);
+                const list = json?.data;
+                if (Array.isArray(list)) {
+                    lastWorkspaces = list;
+                    config.workspaces = list;
+                }
+            }
+            renderWorkspaceMenuItems();
+            renderWorkspaceSwitcher();
+            if (microstockMount) {
+                refreshMicrostockSlotSection(microstockMount);
+            }
+        }
+
         async function handleSpaNavigate(route) {
             setLoading(true);
             try {
@@ -1062,6 +1257,7 @@ function initFileManager(root) {
                     await softRefetchQuota();
                     if (prevWs !== config.workspaceId) {
                         rebindRealtime();
+                        refreshWorkspaceSwitcher();
                         if (config.workspaceId) {
                             softRefetchMembers();
                             softRefetchActivity();
@@ -1084,6 +1280,7 @@ function initFileManager(root) {
                     await softRefetchTrash();
                     if (prevWs !== config.workspaceId) {
                         rebindRealtime();
+                        refreshWorkspaceSwitcher();
                     }
                     return;
                 }
@@ -1105,6 +1302,414 @@ function initFileManager(root) {
                 }
             } finally {
                 setLoading(false);
+            }
+        }
+
+        // ---- Microstock standalone slot section (switcher dropdown) ----
+        function initMicrostockSlotSection() {
+            const mount = document.querySelector('[data-fh-microstock-slot]');
+            if (!mount || !mount.dataset.slotsUrl) {
+                return;
+            }
+
+            microstockMount = mount;
+            refreshMicrostockSlotSection(mount);
+
+            mount.addEventListener('click', async function (e) {
+                const btn = e.target.closest('[data-fh-microstock-create]');
+                if (!btn) {
+                    return;
+                }
+                e.preventDefault();
+                openMicrostockCreateModal();
+            });
+
+            const modalSubmit = document.querySelector('[data-fh-microstock-modal-submit]');
+            if (modalSubmit) {
+                modalSubmit.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const name = document.getElementById('fhMicrostockName')?.value?.trim() || '';
+                    submitMicrostockCreate(mount, name);
+                });
+            }
+        }
+
+        async function refreshMicrostockSlotSection(mount) {
+            const json = await fetchJson(mount.dataset.slotsUrl, csrfToken);
+            const status = json?.data;
+            mount.innerHTML = '';
+            if (!status) {
+                return;
+            }
+
+            if (!status.activated) {
+                mount.innerHTML = '<a href="' + escapeHtml(mount.dataset.servicesUrl) + '" class="dropdown-item small">'
+                    + '<i class="bi bi-images me-2"></i>' + escapeHtml(mount.dataset.labelActivate) + '</a>';
+                return;
+            }
+
+            if (status.can_create) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'dropdown-item';
+                btn.setAttribute('data-fh-microstock-create', '');
+                btn.innerHTML = '<i class="bi bi-plus-lg me-2"></i>' + escapeHtml(mount.dataset.labelCreate);
+                mount.appendChild(btn);
+            } else {
+                mount.innerHTML = '<span class="dropdown-item disabled text-muted small">'
+                    + '<i class="bi bi-lock me-2"></i>' + escapeHtml(mount.dataset.labelFull) + '</span>';
+            }
+        }
+
+        // Open the name modal instead of posting immediately.
+        function openMicrostockCreateModal() {
+            const modalEl = document.getElementById('fhCreateMicrostockModal');
+            if (!modalEl) {
+                return false;
+            }
+            const input = modalEl.querySelector('#fhMicrostockName');
+            if (input) {
+                input.value = '';
+            }
+            if (window.bootstrap?.Modal) {
+                window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                if (input) {
+                    modalEl.addEventListener('shown.bs.modal', function onShown() {
+                        modalEl.removeEventListener('shown.bs.modal', onShown);
+                        input.focus();
+                    });
+                }
+            }
+            return true;
+        }
+
+        function submitMicrostockCreate(mount, name) {
+            const submitBtn = document.querySelector('[data-fh-microstock-modal-submit]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+            setBusy(true);
+            return fetch(mount.dataset.createUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ name: name || null }),
+            })
+                .then(function (res) {
+                    return res.json().catch(function () { return {}; }).then(function (json) {
+                        return { ok: res.ok, json: json };
+                    });
+                })
+                .then(function (out) {
+                    const json = out.json;
+                    if (out.ok && json?.data?.id) {
+                        const modalEl = document.getElementById('fhCreateMicrostockModal');
+                        if (modalEl && window.bootstrap?.Modal) {
+                            window.bootstrap.Modal.getInstance(modalEl)?.hide();
+                        }
+                        showToast(json.message || config.messages.success, 'success');
+                        const href = (config.browseUrl || '/file-hosting') + '?workspace_id=' + encodeURIComponent(json.data.id);
+                        if (router) {
+                            router.go(href, { replace: true });
+                        } else {
+                            window.location.href = href;
+                        }
+                    } else {
+                        showToast(json.message || config.messages.error, 'error');
+                        refreshMicrostockSlotSection(mount);
+                    }
+                })
+                .catch(function () {
+                    showToast(config.messages.networkError, 'error');
+                })
+                .finally(function () {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                    }
+                    setBusy(false);
+                });
+        }
+
+        // ---- Microstock collection UI (lock & describe / status / export) ----
+        function collectionEls() {
+            return {
+                action: root.querySelector('[data-fh-collection-action]'),
+                primary: root.querySelector('[data-fh-collection-primary]'),
+                primaryLabel: root.querySelector('[data-fh-collection-primary-label]'),
+                banner: root.querySelector('[data-fh-collection-banner]'),
+                bannerText: root.querySelector('[data-fh-collection-banner-text]'),
+                review: root.querySelector('[data-fh-collection-review]'),
+            };
+        }
+
+        function isMicrostockContext() {
+            return config.currentWorkspace?.kind === 'microstock';
+        }
+
+        function stopCollectionPolling() {
+            if (collectionPollTimer !== null) {
+                clearInterval(collectionPollTimer);
+                collectionPollTimer = null;
+            }
+        }
+
+        function startCollectionPolling() {
+            if (collectionPollTimer !== null) {
+                return;
+            }
+            collectionPollTimer = setInterval(function () {
+                refreshCollectionStatus();
+            }, 3000);
+        }
+
+        function progressText(processed, total) {
+            const tmpl = config.microstockPanel?.progress || 'Analyzed :processed of :total';
+            return tmpl
+                .replace(':processed', String(processed ?? 0))
+                .replace(':total', String(total ?? 0));
+        }
+
+        // Render the collection action button + status banner for the current
+        // folder. `status` = browse.folder.collection_status (null => draft).
+        // `counts` = { processed, total } for the processing progress line.
+        function updateCollectionUi(status, counts) {
+            const els = collectionEls();
+            if (!els.action) {
+                return;
+            }
+            const inCollection = isMicrostockContext() && !!config.currentFolderId;
+            els.action.classList.toggle('d-none', !inCollection);
+
+            if (!inCollection) {
+                els.banner?.classList.add('d-none');
+                stopCollectionPolling();
+                return;
+            }
+
+            const labels = config.collectionLabels || {};
+            const st = status || 'draft';
+            config.collectionStatus = st;
+
+            if (st === 'processing') {
+                startCollectionPolling();
+            } else {
+                stopCollectionPolling();
+            }
+
+            // Banner text per status.
+            let bannerText = null;
+            let primaryLabel = labels.lockDescribe;
+            let primaryMode = 'lock';
+            if (st === 'processing') {
+                const p = counts?.processed ?? null;
+                const t = counts?.total ?? null;
+                bannerText = (t !== null && t > 0)
+                    ? (labels.processing + ' — ' + progressText(p, t))
+                    : labels.processing;
+                primaryLabel = labels.processing;
+                primaryMode = 'none';
+            } else if (st === 'review') {
+                bannerText = labels.review;
+                primaryLabel = labels.exportCsv;
+                primaryMode = 'export';
+            } else if (st === 'exported') {
+                bannerText = labels.exported;
+                primaryLabel = labels.downloadCsv;
+                primaryMode = 'download';
+            } else if (st === 'failed') {
+                bannerText = labels.failed;
+                primaryLabel = labels.lockDescribe;
+                primaryMode = 'lock';
+            } else if (st === 'locked') {
+                bannerText = labels.locked;
+                primaryLabel = labels.processing;
+                primaryMode = 'none';
+            }
+
+            if (els.banner && els.bannerText) {
+                if (bannerText) {
+                    const spinner = st === 'processing'
+                        ? '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>'
+                        : '';
+                    els.bannerText.innerHTML = spinner;
+                    els.bannerText.appendChild(document.createTextNode(bannerText));
+                    els.banner.classList.remove('d-none');
+                } else {
+                    els.banner.classList.add('d-none');
+                }
+            }
+
+            if (els.primary && els.primaryLabel) {
+                els.primaryLabel.textContent = primaryLabel;
+                els.primary.dataset.mode = primaryMode;
+                els.primary.disabled = primaryMode === 'none';
+                // Data-API fallback opens the modal only in lock mode.
+                if (primaryMode === 'lock') {
+                    els.primary.setAttribute('data-bs-toggle', 'modal');
+                    els.primary.setAttribute('data-bs-target', '#fhCollectionDescribeModal');
+                } else {
+                    els.primary.removeAttribute('data-bs-toggle');
+                    els.primary.removeAttribute('data-bs-target');
+                }
+            }
+
+            // Secondary "Review files" button appears only in review state.
+            if (els.review) {
+                els.review.classList.toggle('d-none', st !== 'review');
+            }
+        }
+
+        function collectionUrl(suffix) {
+            return (config.collectionBase || '/file-hosting/microstock/collections')
+                + '/' + encodeURIComponent(config.currentFolderId) + suffix;
+        }
+
+        function collectionPost(suffix, body) {
+            return fetch(collectionUrl(suffix), {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                credentials: 'same-origin',
+                body: body ? JSON.stringify(body) : null,
+            }).then(function (res) {
+                return res.json().catch(function () { return {}; }).then(function (json) {
+                    return { ok: res.ok, json: json };
+                });
+            });
+        }
+
+        function refreshCollectionStatus() {
+            if (!config.currentFolderId) {
+                return;
+            }
+            fetchJson(collectionUrl('/status'), csrfToken)
+                .then(function (json) {
+                    if (json?.data) {
+                        updateCollectionUi(json.data.status, {
+                            processed: json.data.processed,
+                            total: json.data.total,
+                        });
+                    }
+                })
+                .catch(function () { /* best-effort */ });
+        }
+
+        function initCollectionUi() {
+            updateCollectionUi(config.collectionStatus || null);
+
+            microstockPanel = createMicrostockPanel(config, csrfToken, {
+                toast: showToast,
+                onSaved: function () { refreshCollectionStatus(); },
+            });
+
+            // Per-file "Review" button in listing rows opens the panel.
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('[data-fh-ms-review]');
+                if (btn) {
+                    e.preventDefault();
+                    microstockPanel.open(btn.dataset.fhMsReview);
+                    return;
+                }
+            });
+
+            // Secondary "Review files" (review state): open first listed file.
+            const reviewBtn = root.querySelector('[data-fh-collection-review]');
+            if (reviewBtn) {
+                reviewBtn.addEventListener('click', function () {
+                    const first = root.querySelector('[data-fh-ms-review]');
+                    if (first) {
+                        microstockPanel.open(first.dataset.fhMsReview);
+                    }
+                });
+            }
+
+            const els = collectionEls();
+            if (els.primary) {
+                els.primary.addEventListener('click', function () {
+                    const mode = els.primary.dataset.mode || 'lock';
+                    if (mode === 'lock') {
+                        const modalEl = document.getElementById('fhCollectionDescribeModal');
+                        if (modalEl) {
+                            const input = modalEl.querySelector('#fhCollectionHint');
+                            if (input) {
+                                input.value = '';
+                            }
+                            if (window.bootstrap?.Modal) {
+                                window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                            } else if (window.bootstrap?.Modal === undefined && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                new bootstrap.Modal(modalEl).show();
+                            } else {
+                                // Last-resort: reveal via data-API fallback classes.
+                                modalEl.classList.add('show');
+                                modalEl.style.display = 'block';
+                                modalEl.removeAttribute('aria-hidden');
+                            }
+                        }
+                    } else if (mode === 'export') {
+                        setBusy(true);
+                        collectionPost('/export')
+                            .then(function (out) {
+                                if (out.ok) {
+                                    showToast(out.json.message || config.messages.success, 'success');
+                                    refreshCollectionStatus();
+                                } else {
+                                    showToast(out.json.message || config.messages.error, 'error');
+                                }
+                            })
+                            .catch(function () { showToast(config.messages.networkError, 'error'); })
+                            .finally(function () { setBusy(false); });
+                    } else if (mode === 'download') {
+                        window.location.href = collectionUrl('/download');
+                    }
+                });
+            }
+
+            const describeSubmit = document.querySelector('[data-fh-collection-describe-submit]');
+            if (describeSubmit) {
+                describeSubmit.addEventListener('click', function () {
+                    const hint = document.getElementById('fhCollectionHint')?.value?.trim() || '';
+                    if (hint === '') {
+                        showToast(config.messages.error, 'error');
+                        return;
+                    }
+                    describeSubmit.disabled = true;
+                    setBusy(true);
+                    // Lock (with hint) then kick off the AI pipeline.
+                    collectionPost('/lock', { hint: hint })
+                        .then(function (out) {
+                            if (!out.ok) {
+                                showToast(out.json.message || config.messages.error, 'error');
+                                return;
+                            }
+                            return collectionPost('/analyze').then(function (a) {
+                                const modalEl = document.getElementById('fhCollectionDescribeModal');
+                                if (modalEl && window.bootstrap?.Modal) {
+                                    window.bootstrap.Modal.getInstance(modalEl)?.hide();
+                                }
+                                if (a.ok) {
+                                    showToast(a.json.message || config.messages.success, 'success');
+                                } else {
+                                    showToast(a.json.message || config.messages.error, 'error');
+                                }
+                                refreshCollectionStatus();
+                                syncCollectionUploadGate(root, config, { collection_locked: true });
+                            });
+                        })
+                        .catch(function () { showToast(config.messages.networkError, 'error'); })
+                        .finally(function () {
+                            describeSubmit.disabled = false;
+                            setBusy(false);
+                        });
+                });
             }
         }
 

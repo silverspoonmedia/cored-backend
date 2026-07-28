@@ -1,0 +1,398 @@
+# Microstock — product domain
+
+Product domain (`kind => product`, `locked => true`) for microstock asset management on top of the File Hosting base storage layer. Assets live in built-in **system workspaces** (`file_hosting_workspaces.kind = 'microstock'`, standalone slots) and reuse the entire FH upload/browse/quota/download pipeline. Microstock adds AI metadata (title/description/category/keywords), CSV metadata export, and envelope-encrypted marketplace credentials.
+
+| | |
+|--|--|
+| Code | `app/Domain/Microstock/` |
+| Config | [`config/microstock.php`](../../../config/microstock.php) |
+| API | `routes/api/v1/microstock.php` |
+| Web | `routes/web/microstock.php` |
+| Seeder | `MicrostockRoleSeeder` (Beta tester role + Public visibility) |
+| Product gate | `product.active:Microstock` middleware |
+| Menu | **No dynamic sidebar menu** (removed) — reached via `/services` and the File Hosting workspace switcher |
+| Storage class | **Product storage** — consumes the free-tier base (see [File Hosting — Storage classification](../file-hosting/README.md#storage-classification-core-vs-product)) |
+| Quota pool | Shared with File Hosting (one `UserQuota` byte pool) |
+| Fulfillment target | **`microstock`** (standalone — NOT `file_hosting`; see activation below) |
+
+## Activation model (via `/services`)
+
+Microstock is **opt-in**, activated by purchasing a service catalog SKU from `/services` — it is never auto-provisioned. Two SKUs (seeded by `ServiceCatalogSeeder`, codes in `App\Domain\Service\Support\MicrostockCatalog`):
+
+| code | name | interval | plan_kind | entitlement | storage_bytes | price |
+|-----|------|----------|-----------|-------------|---------------|-------|
+| `microstock.plan.free` | Microstock Workspace (Free) | `once` | `main` | `microstock_workspace_slots` | 0 | $0 |
+| `microstock.addon.workspace-slot.monthly` | Microstock Workspace Slot | `monthly` | `addon` | `microstock_workspace_slots` | 0 | $1 |
+
+- **Free registration** (`microstock.plan.free`, $0 one-time): the activation gate. Purchasable **once** (`ServiceCheckoutService` throws 422 `api/services.already_activated` on rebuy; unique `(user_id, service_id)` entitlement key is the backstop). Being $0 it is **zero-charge**: `isZeroCharge()` skips the payment gateway, the purchase is immediately `Paid` (`fx_provider = zero_charge`), and fulfillment runs inline. Grants `quantity = 1`, `ends_at = null` (permanent). With `fulfillment_target = 'microstock'`, `ProductRegistry::productKeyByFulfillmentTarget` maps it to the `Microstock` product and `ServiceFulfillmentService::ensureProductActive` activates it **implicitly** (no quota recompute — that only happens for `file_hosting` targets).
+- **Slot addon** (`microstock.addon.workspace-slot.monthly`, $1 monthly): repeatable and **compounding** — each paid unit increments `quantity` on the active entitlement via `activateAddon`. Buying 10 units grants 10 extra Microstock workspace slots. Shares the addon anniversary stack with FH addons (`MainPlanChangeCalculator` / `extendAllAddons` cover both `file_hosting` and `microstock` addon targets).
+- **AI credits** (`microstock.addon.ai-credits.5`, $5 once): prepaid analysis balance (`entitlement = microstock_ai_credits`). Fulfillment calls `AiCreditService::creditFromPurchase` — debited only on successful AI analysis (see [Microstock — AI billing](../microstock/README.md#ai-billing-prepaid-credits)).
+- **UX**: `/services` shows a dedicated Microstock card with an **Activate free** button (disabled + "Active" badge once active) and a **Buy slot** button (visible once active) posting to the normal `services.checkout` flow.
+
+## System workspaces (base storage)
+
+Microstock assets live in `file_hosting_workspaces.kind = 'microstock'` rows — real workspaces, so all FH services (browse, upload, folders, members, activity, realtime) work unchanged. Unlike team workspaces, Microstock slots are **standalone**: they do NOT overlap or interchange with the FH team workspace slots (`file-hosting.addon.workspace-slot.monthly`). Owners may have **multiple** Microstock workspaces when their slot limit allows.
+
+| Rule | Behavior |
+|----|----------|
+| Slot limit | `WorkspaceAccessService::microstockSlotLimit($ownerId)` = `BASE_WORKSPACE_SLOTS (1)` when `ServiceEntitlementService::hasActiveMicrostockWorkspaceSlot` is true, `+ microstockWorkspaceSlotExtraQuantity` (sum of active/grace slot-addon quantities). **0** when never activated |
+| Provisioning gate | `WorkspaceService::systemWorkspaceFor` and `createSystemWorkspace` call `assertCanProvisionMicrostockWorkspace` before creating (`kind->isSystem()` only; team path unchanged). `422 api/microstock.workspace_not_activated` when limit is 0, `422 api/microstock.slot_limit` when full. Resolving an **existing** workspace is never gated |
+| Activation gate | `MicrostockService::workspaceFor`/`createWorkspace` additionally throw `MicrostockException` 403 `workspace_not_activated` without an active slot entitlement |
+| Slot accounting | `countActiveOwned` counts only `kind = 'team'`; `countActiveOwnedMicrostock` counts `kind = 'microstock'`. Neither pool sees the other, so Microstock never raises `owned_workspace_used` |
+| Multi-workspace | Spare slots allow extra workspaces via `POST /api/v1/microstock/workspaces` or the switcher |
+| Free users | The Microstock slot is independent of the FH paid/free plan; inviting still requires a paid FH main plan |
+
+### No auto-provision on File Hosting
+
+`FileManagerController@index` does **not** create the Microstock workspace. It appears in the FH switcher only after activation (and provisioning) via `/services`. `GET /microstock` (`microstock.index`) redirects to `/services` with an error flash when not yet activated.
+
+## Usage & limits
+
+| Rule | Behavior |
+|----|----------|
+| Access | Requires an active Microstock slot entitlement (free registration or slot addon) |
+| Public share | **Blocked** — files/folders in a system workspace can never be `anyone_with_link`. `VisibilityService::assertSystemWorkspaceShareAllowed` rejects enable (422 `public_share_not_allowed`); guest `fileAccessible`/`folderAccessible` return false |
+| Invite | Only a **paid FH** owner may invite (`WorkspaceService::invite` → `assertOwnerEligibleForCollab`); invitees may be free or paid |
+| Upload/browse/download | Reuse File Hosting services as-is. **Content collaboration is NOT paid-gated:** a free Microstock owner can upload into their collections, and an invited member (free or paid) can upload into a shared workspace. Upload only requires mutate access (`assertCanMutate` — owner or active member). The paid gate (`assertOwnerEligibleForCollab`) applies to **sharing** (invite/accept) and **creating workspaces**, never to putting content into one |
+
+## AI billing (prepaid credits)
+
+Upload/storage stays on the shared File Hosting quota. **AI analysis** (vision + thinking metadata) is prepaid and metered per HTTP call.
+
+| Phase | Billable? | Mechanism |
+|-------|-----------|-----------|
+| Upload into collection | No | FH `UserQuota` bytes |
+| `POST …/analyze` / `POST assets/{file}/analyze` | Yes | Prepaid `microstock_ai_balances` |
+
+**Flow:** purchase an AI credit pack via `/services` → `ServiceFulfillmentService` credits `balance_micro_usd` → `AiBillingService::assertCanAnalyze` gates dispatch → each OpenAI-compatible HTTP call records a `microstock_ai_usage_events` row (tokens + provider/billable cost) → on successful `MetadataStatus::Generated`, `settleSuccessfulAnalysis` debits the balance and snapshots `asset_metadata.ai_billing`.
+
+**Credit pack SKU** (seeded by `ServiceCatalogSeeder`):
+
+| code | price | entitlement |
+|------|-------|-------------|
+| `microstock.addon.ai-credits.5` | $5 once | `microstock_ai_credits` |
+
+**Rate card** (`config/microstock.php` → `ai_billing`):
+
+| Model | Input / 1M tokens | Output / 1M tokens |
+|-------|-------------------|---------------------|
+| `grok-grok-4.5-high` | $3.00 | $15.00 |
+| `gpt-5.4` | $2.50 | $15.00 |
+| `kimi-k3` | $3.00 | $15.00 |
+| `gpt-5.6` / `gpt-5.6-sol` | $5.00 | $30.00 |
+| `gpt-5.6-terra` | $2.50 | $15.00 |
+| `gpt-5.6-luna` | $1.00 | $6.00 |
+| `claude-opus-5` / `anthropic/claude-opus-5` | $5.00 | $25.00 |
+| `claude-sonnet-5` / `anthropic/claude-sonnet-5` | $2.00 | $10.00 |
+| `default` (unknown slug) | $5.00 | $20.00 |
+
+Sonnet 5 rates above are Anthropic **introductory** pricing through Aug 31, 2026; standard from Sep 1 is $3 / $15 per 1M.
+
+- `markup_multiplier` — env `MICROSTOCK_AI_BILLING_MARKUP` (default **1.35**)
+- `estimated_billable_micro_usd_per_asset` — env `MICROSTOCK_AI_BILLING_ESTIMATE_PER_ASSET` (default **150000** = $0.15 buffer for analyze gate)
+- Per-model input/output rates under `ai_billing.models` (resolved model from API response; alias from config stored separately)
+
+Amounts are stored as **micro-USD** (1 USD = 1_000_000) end-to-end.
+
+## Collections (folder-as-collection lifecycle)
+
+A **folder** inside a Microstock workspace is a **collection** — the unit the AI processes. Uploads must live inside a collection, never the workspace root. Collection state lives directly on `file_hosting_folders` (migration `2026_07_26_100001`), driven by `App\Domain\FileHosting\Enums\CollectionStatus` and `App\Domain\Microstock\Services\CollectionService`.
+
+```mermaid
+flowchart LR
+  draft[draft upload] -->|"lock + describe"| locked[locked]
+  locked -->|"analyze"| processing[processing]
+  processing -->|"batch settled"| review[review curate]
+  review -->|"export"| exported[exported]
+  processing -->|"error"| failed[failed]
+```
+
+| Step | Behavior |
+|----|----------|
+| Upload gate | `DirectUploadService::initiate` rejects (422) a Microstock workspace upload with no `folder_id` (`microstock.error_requires_folder`) or into a locked collection (`microstock.error_collection_locked`). Client mirrors this via dropzone `data-workspace-kind` / `data-collection-locked` |
+| Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here |
+| Analyze | `POST collections/{folder}/analyze` (requires `locked`, non-empty) sets `processing` and dispatches `ProcessCollection` |
+| Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)**, then dispatches a single `AnalyzeCollectionBatch` carrying `collection_hint`. The batch processes **one chunk per invocation** and **dispatches itself** with the remaining ids (chained) so the whole collection stays long-running without ever exceeding `retry_after`; the final invocation flips the folder to `review`. Chunks with **fewer than `microstock.ai.batch_min_files`** (default **4**) skip multi-image batching and run **per-file** `generate()` (vision + thinking each) to avoid cross-assignment on small illustration sets. Larger chunks call `generateBatch()` (vision only) then **`curateDraft()` per asset** (thinking). Sub-folders are separate collections and are NOT processed |
+| Curate | Per-file manual edit via `PATCH assets/{file}/metadata` (existing finalize) while in `review` |
+| Export | `POST collections/{folder}/export` (requires `review`) renders a CSV of the folder's finalized metadata, persists it to `microstock.csv_disk`, saves `collection_csv_path`, sets `exported`. `GET collections/{folder}/download` streams it |
+
+`collection_status` is NULL for ordinary File Hosting folders — only Microstock collections use these columns. `Folder::isCollectionLocked()` is true for locked/processing/review/exported.
+
+## Metadata (AI: vision → thinking → manual)
+
+Microstock's value is metadata. The owner **hint** (collection description) grounds every file's metadata. Both AI stages follow **Adobe Stock / Shutterstock 2026 contributor standards** — natural-sentence titles, a 4-tier keyword framework, and a fixed marketplace category set.
+
+1. Per collection: `ProcessCollection` (above) creates/resets a `microstock_asset_metadata` row per file (`status = pending`) and dispatches the chained `AnalyzeCollectionBatch` with the hint. Each batch invocation handles one chunk (`microstock.ai.batch_chunk`, default 10). **Small chunks** (`count < microstock.ai.batch_min_files`, default 4) call `AiMetadataService::generate()` per file (vision + thinking). **Larger chunks** call `generateBatch()` (multi-image vision) then `curateDraft()` per returned row (thinking curation). Assets the batch omits fall back to per-file `generate()`. (Single-asset `POST assets/{file}/analyze` → `MicrostockService::requestAnalysis` still runs a standalone `AnalyzeAssetMetadata`, hint optional.)
+2. `VisionImageResolver` picks a persisted JPEG variant (`ai_512` / `ai_1024`) or falls back to ephemeral resize from the original. Delivery mode is `base64` (data-URI) or `url` (signed HTTPS to the variant object).
+3. **Vision** drafts `title` + `description` + `category` + `keywords` from the image (with the hint structured as a `## COLLECTION CONTEXT (commercial ground truth)` block in `Prompts::visionUser`). **Thinking** (`curateDraft()` / `Prompts::thinkingSystem`) receives the **same image reference** plus the text draft — step 0 **VERIFY** compares draft vs image and fixes wrong subject, gender, action, or equipment before dedupe/BAN/ordering. Falls back to text-only thinking, then to the vision draft, on gateway errors. Prompts are hardcoded in `App\Domain\Microstock\Support\Prompts` (English).
+4. Result stored with `status = generated` and `ai_raw = {"vision": <vision payload>, "thinking": <thinking payload>, "stage_metrics": [<per-stage telemetry>]}` (thinking may be `null` when the thinking stage falls back to the vision draft; `stage_metrics` lists successful HTTP calls with `stage`, `duration_ms`, `resolved_model`, `multimodal`, `tokens_per_second`).
+5. Final curation is **manual**: user edits title/keywords → `PATCH assets/{file}/metadata` → `status = finalized`.
+
+### Image variants (persisted derivatives)
+
+Microstock raster uploads in a `kind = microstock` workspace trigger `GenerateFileVariants` after `DirectUploadService::complete`. JPEG sidecars are stored on the same FH disk (`file_hosting_file_variants`):
+
+| Kind | Longest side | Typical use |
+|------|--------------|-------------|
+| `ai_512` | 512px | Faster vision / lower payload (probe matrix) |
+| `ai_1024` | 1024px | Default vision quality |
+
+**Quota:** ready variant `size` bytes count toward the owner's File Hosting `used_bytes` (byte sum with the original `HostedFile.size`). See [File Hosting — Quota](../file-hosting/README.md#quota).
+
+**Vision delivery** (`config/microstock.php` → `ai.vision_image`):
+
+| Env | Default | Purpose |
+|-----|---------|---------|
+| `MICROSTOCK_AI_VISION_IMAGE_DELIVERY` | `url` | `base64` = data-URI in JSON; `url` = signed HTTPS to variant |
+| `MICROSTOCK_AI_VISION_VARIANT` | `ai_1024` | Which persisted kind to prefer |
+| `MICROSTOCK_AI_VISION_URL_TTL` | `30` | Signed URL minutes when `delivery=url` |
+
+When the configured variant is not `ready`, analyze logs `microstock.variants.not_ready` and falls back to ephemeral resize (`MICROSTOCK_AI_IMAGE_MAX_PX` / byte cap).
+
+### Production stack (locked 2026-07-28)
+
+Default config + `.env.example` use Open WebUI aliases; **9Router** maps them to resolved models (verify in Open WebUI admin):
+
+| Config alias | 9Router resolves to | Role |
+|--------------|---------------------|------|
+| `internal.vision` | `anthropic/claude-sonnet-5` | Image → draft metadata (conservative gender; strong scene read) |
+| `internal.thinking` | `gpt-5.6-luna` | Multimodal VERIFY + SEO curation (`thinking_visual_attempts=2`) |
+
+| Setting | Default | Notes |
+|---------|---------|-------|
+| Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` | Both stages |
+| `delivery` | `url` | Signed HTTPS to `ai_1024` variant (~341 B payload) |
+| `thinking_visual_attempts` | `2` | First 2 thinking attempts include image + draft |
+| `batch_min_files` | `4` | Collections &lt;4 files → per-file `generate()` (full pipeline) |
+
+Canonical probe write-up: [`probes/sonnet5_gpt56_combo_summary.md`](probes/sonnet5_gpt56_combo_summary.md) — **3/3** gender accuracy on hint `"Children doing sports"` vs sonnet-only (neutral), luna-both (758girl mis-gender), opus (all boy).
+
+**Probe finding (2026-07-28, sonnet vision + gpt-5.6 thinking combo, folder `019fa66d-…`):** 9Router `internal.vision` → **`anthropic/claude-sonnet-5`**, `internal.thinking` → **`gpt-5.6-luna`**. T0 + **T0t** preflight ok. Full 3-file batch: T3 **3/3** @ **6.3–7.6s** (~469–550 tok/s), T6 **3/3** @ **15.6–18.5s** with per-stage **`stage_metrics`** (vision ~6.1–6.9s, thinking ~9.1–12.4s @ ~540–705 tok/s). **Thinking multimodal on all 3 files** (`thinking_visual_attempts=2` default). Hint `"Children doing sports"` → **3/3 explicit correct gender** (girl/boy) — best balance vs sonnet-only (neutral child), gpt-5.6-luna both (758girl mis-gender), opus (all boy). Details: [`probes/sonnet5_gpt56_combo_summary.md`](probes/sonnet5_gpt56_combo_summary.md).
+
+**Probe finding (2026-07-28, `anthropic/claude-sonnet-5`, folder `019fa66d-…`):** vision resolves to **`anthropic/claude-sonnet-5`**. Full 3-file batch: T3 **3/3** @ **6.0–7.9s** (~454–577 tok/s), T6 **3/3** @ **13–20s**. No CF 524. Hint `"Children doing sports"` → gender-neutral **child** labels (no mis-gender vs opus; no explicit girl/boy for SEO). Category sometimes `People` instead of `Illustration`. Rate card intro $2/$10 per 1M (standard $3/$15 from Sep 1). Details: [`probes/claude_sonnet5_collection_summary.md`](probes/claude_sonnet5_collection_summary.md).
+
+**Probe finding (2026-07-28, `anthropic/claude-opus-5`, folder `019fa66d-…`):** vision resolves to **`anthropic/claude-opus-5`**. Full 3-file batch: T3 **3/3** @ **7.0–7.9s** (~448–508 tok/s), T6 **3/3** @ **15–17s**. No CF 524. Speed similar to gpt-5.6-luna but lower TPS. Quality: collection hint `"Children doing sports"` caused **boy** labels on all 3 files (758girl + 2808 wrong; only 2119boy correct). Rate card: `claude-opus-5` + `anthropic/claude-opus-5` @ $5/$25 per 1M. Details: [`probes/claude_opus5_collection_summary.md`](probes/claude_opus5_collection_summary.md).
+
+**Probe finding (2026-07-28, `gpt-5.6-luna`, folder `019fa66d-…`):** vision resolves to **`gpt-5.6-luna`** via 9Router. Full 3-file batch with `delivery=url`: T3 **3/3** @ **6.6–9.2s** (~683–928 tok/s), T6 **3/3** @ **17–20s**. No CF 524. ~5–16× faster vision than grok (~46s). One quality issue: 758girl T6 title mis-gendered to boy after thinking (vision T3 had correct girl). Details: [`probes/gpt56_collection_summary.md`](probes/gpt56_collection_summary.md).
+
+**Probe finding (2026-07-28, `kimi-k3`, folder `019fa66d-…`):** vision routed to `dahono/kimi-k3` but upstream returned HTTP **400** — `Model tidak tersedia` on all 3 files (T3/T6 0/3). Rate card `kimi-k3` added ($3/$15 per 1M). Fix 9Router provider availability before comparing TPS/title/keywords. Details: [`probes/kimi_k3_collection_summary.md`](probes/kimi_k3_collection_summary.md).
+
+**Probe finding (2026-07-28, `gpt-5.4`, folder `019fa66d-…`):** persisted `ai_1024` + **`delivery=url`** is required for GPT-5.4 vision on this stack (base64 reliably HTTP **524** @ ~125s). Signed URL payload is ~341 bytes vs ~62KB base64. URL T3 is **intermittent** (~109s when pass, 524 when fail) — run-to-run CF variance, not delivery-mode regression. Full 3-file collection re-probe with config default `url`: T3 0/3, T6 1/3 batch (+ 2119boy T6 ok on spot-check while T3 524'd). Production default is **`url`** (`config/microstock.php`); grok remains faster/more reliable with base64 (~46s). Details: [`probes/gpt54_url_vs_base64_summary.md`](probes/gpt54_url_vs_base64_summary.md), [`probes/collection_url_default_summary.md`](probes/collection_url_default_summary.md).
+
+**Probe scripts:** `php scripts/microstock/probe_ai.php --timeout=300 [--file={uuid}|--folder={uuid}] [--only=T0,T0t,T3,T6] [--label=sonnet5-gpt56]` — **T0** = vision preflight, **T0t** = thinking preflight; **T6** surfaces `stage_metrics` (per-stage `duration_ms`, `resolved_model`, `multimodal`, `tokens_per_second`). Full folder batch: `php scripts/microstock/probe_collection.php {folder_id} [--timeout=300] [--label=sonnet5-gpt56]`. Matrix: `--matrix`. Requires ready variants (`php scripts/microstock/generate_variants.php {folder_id}` if upload predates worker). JSON artifacts land in `storage/app/probe_results/` (runtime, not committed). Summaries: [`probes/`](probes/).
+
+### Prompt strategy (marketplace-aligned)
+
+`Prompts::marketplaceRules()` is the single source injected into **both** stages so they never drift:
+
+- **Title** — natural descriptive sentence (not a keyword list), 40–70 chars, no commas, no trademark/real-people/camera-spec, no subjective quality adjectives. Cartoon/vector assets → category `Illustration`; title must name **subject + action**, not a clothing inventory.
+- **Description** — one factual sentence (who/what/where/action).
+- **Category** — exactly one of: People, Lifestyle, Education, Business, Food, Nature, Technology, Health, Holidays, Abstract, Objects, Illustration.
+- **Keywords** — **15–30** terms, **ordered by relevance** (the first 10 carry the most search-ranking weight), built across 4 tiers in strict order: **literal** (subject/action/setting) → **contextual** (demographics/season) → **conceptual** (ideas/emotions buyers search: childhood, fitness, teamwork) → **stylistic** (art direction/palette, **max 2**). Top 10 = literal + contextual only. Singular nouns + infinitive verbs, one concept per keyword, no same-word-stem repeats. Ground in **visible content only** — do not invent sports equipment, venues, or activities from the collection hint alone.
+- **BAN list** (dropped in both stages): compositional (`front view`, `full length`), background (`white background`, `isolated`), redundant format (`clip art` when `illustration` is already present), subjective (`cute`, `beautiful`, `best`), palette spam unless core to the subject.
+- **Hint grounding** — when collection context is set, top-5 keywords should reflect the hint theme **only when the image supports it**.
+
+### Deterministic requests
+
+All three request builders (`vision()`, `thinkingRequest()`, `generateBatch()`) send `temperature = 0.2` + `max_tokens` (2000 single / 4000 batch) so the JSON output is deterministic and never truncated mid-array.
+
+### Prompt-length constraint (verified)
+
+Models behind `internal.vision` / `internal.thinking` **choke on long system prompts when an image is attached** — verified 2026-07-27: a ~1700-char system prompt returns **HTTP 524** (Cloudflare origin timeout) at ~125 s, while ~1050 chars returns **200** in ~107 s. `Prompts::marketplaceRules()` is therefore intentionally dense — keep `Prompts::visionSystem()` and `Prompts::thinkingSystem()` under ~1200 chars (unit-tested in `PromptsTest`). If the upstream model behind an alias never responds acceptably, change the model mapping in Open WebUI admin or override `MICROSTOCK_AI_VISION_MODEL` / `MICROSTOCK_AI_THINKING_MODEL`.
+
+`AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage is independently configurable in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: endpoint/model/api_key/timeout, env-driven). Tests bind a stub.
+
+### Open WebUI response parsing
+
+Production uses **Open WebUI** as the only supported AI surface:
+
+| Setting | Value |
+|---------|-------|
+| Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` |
+| Vision model | `internal.vision` |
+| Thinking model | `internal.thinking` |
+| Auth | JWT Bearer (`MICROSTOCK_AI_*_API_KEY`) |
+
+`HttpAiMetadataService` normalizes upstream quirks before decoding:
+
+| Quirk | Handling |
+|-------|----------|
+| Streaming default on some upstream models | Every request sends **`stream: false`** explicitly via `chatCompletionPayload()`. |
+| Full SSE response body | When the body starts with `data:`, `aggregateSseStream()` assembles `delta.content` chunks into one message before decode. |
+| SSE trailer on non-streaming responses | Some upstream paths append `data: [DONE]` after the JSON body, which breaks Laravel's `json()` helper. `parseResponsePayload()` strips the trailer and parses the leading JSON object. |
+| Markdown-fenced JSON | `parseMetadataJson()` strips `` ```json ... ``` `` fences before decoding. |
+| Anthropic-style content blocks | `extractContent()` concatenates `{type: text, text: "..."}` blocks when `message.content` is an array. |
+| Reasoning models | `extractContent()` also checks `message.reasoning`, `reasoning_content`, and root `output`. |
+| Batch `response_format: json_object` | `Prompts::batchSystem()` asks for `{"assets": [{id, title, ...}, ...]}` (not a bare array) so the OpenAI JSON-object mode and the prompt agree. `decodeBatch()` also tolerates bare arrays and legacy wrapper shapes. |
+
+Images reach the vision stage via `VisionImageResolver` — **signed HTTPS URL** to a persisted variant (default `delivery=url`) or **base64 data-URI** when overridden (`MICROSTOCK_AI_VISION_IMAGE_DELIVERY`). Variants are JPEG sidecars (`ai_512` / `ai_1024`); ephemeral resize from the original remains the fallback when variants are not ready. The thinking stage receives the same image reference on the first `MICROSTOCK_AI_THINKING_VISUAL_ATTEMPTS` attempts (default **2**) for multimodal VERIFY against the vision draft; probe T6 reports `thinking_multimodal` and per-call `stage_metrics`.
+
+**Stage logging:** each HTTP call logs `microstock.ai.stage` (`start` / `end`, `duration_ms`, `body_prefix`, `finish_reason`) to `storage/logs/laravel.log` — use this to confirm vision completes before thinking starts.
+
+**Troubleshooting — slow vision / thinking not started yet:**
+
+1. Pipeline is **sequential** — `generate()` blocks on `vision()` HTTP until it returns or times out; **thinking only starts after vision completes**. A queue worker showing `AnalyzeAssetMetadata` **RUNNING** during vision is normal, not evidence the model is dead.
+2. Check `microstock.ai.stage` logs in `storage/logs/laravel.log` — compare `vision` `start`/`end` `duration_ms` vs `thinking` `start`/`end`. Multimodal vision at 1024px via Open WebUI commonly takes **40–120s** per call depending on the resolved backend model (grok ~46s verified 2026-07-27; `gpt-5.4` hit HTTP **524** at ~125s on 2026-07-28 probe — see [`probes/gpt54_vs_grok_summary.md`](probes/gpt54_vs_grok_summary.md)).
+3. **`cURL error 28: 0 bytes received` = client timeout**, not proof Open WebUI is hung. A probe with timeout **&lt; production** (`MICROSTOCK_AI_VISION_TIMEOUT`, default 300s) can fail while the same request would succeed at 300s.
+4. High token usage with a stuck worker usually means **slow inference + retries + repeated re-analyze**, not a dead upstream. Expect ~**5 HTTP calls per asset** (1 vision + up to 4 thinking attempts) × `MICROSTOCK_AI_HTTP_RETRIES`.
+5. Run structured diagnosis: `php scripts/microstock/probe_ai.php --timeout=300 [--label=sonnet5-gpt56] [--folder=uuid] [--delivery=base64|url] [--variant=ai_512|ai_1024] [--matrix]` — JSON results in `storage/app/probe_results/` (falls back to first available asset if the default folder is empty). E2E single asset: `php storage/app/verify_e2e_asset.php`. Do **not** conclude "model hang" unless text-only T0 also fails at ≥300s **and** Open WebUI shows no completed request.
+6. Tunables if too slow: lower `MICROSTOCK_AI_IMAGE_MAX_PX`, raise `MICROSTOCK_AI_VISION_TIMEOUT`, or set `MICROSTOCK_AI_THINKING_VISUAL_ATTEMPTS=1` (default 2 multimodal thinking attempts).
+
+**Troubleshooting — all metadata `failed`:**
+
+1. Check `microstock_asset_metadata.error` — `AI metadata generation failed.` = HTTP non-2xx; `AI returned an invalid metadata response.` = HTTP 200 but body could not be parsed into title + keywords.
+2. Check `storage/logs/laravel.log` for `Microstock AI decode failed` context (stage, truncated content).
+3. Verify `internal.vision` and `internal.thinking` exist in Open WebUI (Admin → Models) and the JWT in `.env` is valid (not expired).
+4. Probe a single asset synchronously: `AnalyzeAssetMetadata::dispatchSync($metadataId, $hint)` in Tinker after confirming `AssetResizeService` can read the file bytes.
+5. On Windows/Laragon, keep the worker alive with `php artisan queue:listen --tries=1` (see Operations below).
+
+**Troubleshooting — keywords off / wrong scene / wrong subject:**
+
+1. Inspect `ai_raw.vision` vs `ai_raw.thinking` — if vision is wrong but thinking corrected it, visual VERIFY worked. If **both** are wrong (e.g. girl asset titled "boy soccer"), the model still misread the image — manual curation in `review` or per-file re-analyze (`POST assets/{file}/analyze`).
+2. Pre-fix rows may have a **flat** `ai_raw` (batch vision only, no `thinking` key) — re-run analysis after deploying the batch+thinking pipeline.
+3. Multi-image batch cross-assignment (metadata from asset A applied to asset B) — use `MICROSTOCK_AI_BATCH_MIN_FILES=4` (default) so collections with &lt; 4 files never batch; for debugging set `MICROSTOCK_AI_BATCH_CHUNK=1`.
+4. Cartoon/illustration detail loss — set `MICROSTOCK_AI_IMAGE_MAX_PX=1024` (recommended for illustrations).
+5. Collection hint overfitting (invented soccer/swim gear) — both stages forbid equipment not visible; thinking VERIFY should drop invented terms when the model cooperates.
+6. Thinking multimodal fallback — if the gateway rejects images on the `thinking` combo, `HttpAiMetadataService` retries text-only then keeps the vision draft (`raw.thinking = null`).
+
+The review panel surfaces per-file `error` when status is `failed` (`AssetMetadataResource` + `#fhMicrostockPanel`).
+
+### Adaptive timeout & watchdog
+
+The vision/thinking stages run **multi-step reasoning with no predictable duration**, so failure is **not a per-request hard HTTP timeout** — it is a **phase deadline measured from elapsed activity**. A short client timeout aborts an otherwise-valid generation (`cURL error 28: Operation timed out ... 0 bytes received` is the client cutting the connection, not a dead model), and a fixed cap cannot tell "AI is thinking" from "AI is hung".
+
+Instead, each asset moves through three derived phases, measured from when its metadata row was queued (`microstock_asset_metadata.created_at`):
+
+| Phase | Elapsed | Meaning | UI |
+|----|----|----|----|
+| `analyzing` | `< normal_after` (default 600s) | AI is processing | normal progress |
+| `degraded` | `normal_after .. grace_after` (600–1500s) | still waiting, slow | show **degraded performance** warning |
+| `failed` | `> grace_after` (1500s) | hung / worker died | marked failed |
+
+`phase` is **presentational/derived** — never persisted. `metadata.status` stays `pending/generated/finalized/failed`; `degraded` only appears in the `phase` field of the collection `status()` payload and the per-file `microstock` resource payload. Budgets are tunable via `MICROSTOCK_AI_PHASE_NORMAL` / `MICROSTOCK_AI_PHASE_GRACE`.
+
+**Watchdog as single failure authority.** `ProcessCollection` dispatches `App\Domain\Microstock\Jobs\AnalysisWatchdog` alongside the first batch. The watchdog re-dispatches itself every 60s while any collection is `processing` and:
+1. flips any `pending` metadata older than `grace_after` to `failed` (`error = 'Analysis exceeded the grace period'`) — this covers both a hung AI call and a **zombie** row whose worker died (e.g. Windows `queue:work` exit);
+2. a `processing` folder whose metadata are all terminal → `review` (if some succeeded) or `failed` (if none).
+
+**Constraint:** `grace_after` must stay **below** the queue `DB_QUEUE_RETRY_AFTER` (1800s) so the watchdog declares failure *before* the queue re-dispatches the still-running batch job. `HttpAiMetadataService::timeoutSeconds` clamps the per-request client timeout to the same `grace_after` ceiling, so a long-but-valid analysis is never cut before the watchdog decides. `AnalyzeCollectionBatch::$tries` stays `2` so one Laravel retry tolerates a transient failure before the watchdog declares terminal failure.
+
+As a safety net, `HttpAiMetadataService::thinking()` still degrades gracefully if a request genuinely fails:
+
+1. Attempt A: system + multimodal user (image + draft) when preview available.
+2. Attempt B: instructions fused into multimodal user (no `system` role).
+3. Attempt C: text-only system + user.
+4. Attempt D: fused text-only user.
+5. Fallback: if all fail, the **vision draft is kept** (`raw.thinking = null`) so the asset still reaches `status = generated`. Each failure is `report()`ed.
+
+`Prompts::thinkingSystem()` is intentionally short (a single dense paragraph). If a gateway model never responds acceptably, point `ai.thinking.model` to a different model via `MICROSTOCK_AI_THINKING_MODEL`.
+
+| Column | Notes |
+|----|-------|
+| `microstock_asset_metadata` | `file_id` (unique FK to `file_hosting_files`), `user_id`, `title`, `keywords` json, `category`, `description`, `status` (`pending`/`generated`/`finalized`/`failed`), `ai_raw` json (`{vision, thinking, stage_metrics?}` — see above), `error` |
+
+## CSV export
+
+Two scopes, both finalized-only. Columns are config-driven (`microstock.csv.columns`, default `filename,title,description,category,keywords`; `microstock.csv.keywords_separator`). Per-marketplace field mapping is a later iteration.
+
+- **Per collection** (primary): `CsvExportService::buildForCollection($folder)` — finalized metadata of files directly in the folder. Persisted to `microstock.csv_disk` (default `local`) at `microstock/collections/{folder}.csv` on export.
+- **Whole workspace**: `CsvExportService::build($owner)` — all finalized metadata in the Microstock workspace (legacy/ad-hoc).
+
+## Marketplace credentials
+
+`microstock_marketplace_credentials` stores per-user marketplace connection secrets (host/username/password/port/…) for the future FTP/API auto-upload. `secret_payload` uses the shared **envelope encryption** cast (`EnvelopeEncryptedArray`, resource type `microstock_marketplace_credentials`) — the same KEK/DEK infra as payment/vTual credentials; plaintext never reaches the DB. MVP only stores/lists/deletes credentials; no auto-upload yet.
+
+## API (`/api/v1/microstock/*`, `auth:api`)
+
+Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Microstock`.
+
+| Method | Path | Purpose |
+|------|---------|---------|
+| GET | `workspace` | Resolve (lazy-create, gated) the owner's system workspace |
+| GET | `slots` | Slot status snapshot (`activated`, `used`, `limit`, `can_create`) |
+| GET | `billing` | Prepaid AI credit balance + per-analysis estimate |
+| POST | `workspaces` | Create an additional Microstock workspace (slot-gated) |
+| POST | `assets/{file}/analyze` | Queue AI metadata analysis (202) |
+| GET | `assets/{file}/metadata` | Read current metadata row |
+| PATCH | `assets/{file}/metadata` | Finalize manual curation (`title`, `keywords[]`) |
+| GET | `credentials` | List marketplace credentials |
+| POST | `credentials` | Store credential (`marketplace`, `label`, `secret{}`) |
+| DELETE | `credentials/{id}` | Delete credential |
+| POST | `collections/{folder}/lock` | Lock collection + store hint (`hint`) |
+| POST | `collections/{folder}/analyze` | Start the per-file AI pipeline (202) |
+| GET | `collections/{folder}/status` | Status + progress snapshot (incl. derived `phase`) |
+| POST | `collections/{folder}/export` | Render + persist collection CSV |
+| GET | `collections/{folder}/download` | Stream the exported collection CSV |
+
+## Web
+
+| Route name | Purpose |
+|----------|---------|
+| `microstock.index` | Redirects into the File Hosting SPA pinned to the Microstock system workspace (`/file-hosting?workspace_id=…`); redirects to `/services` when not activated |
+| `microstock.export.csv` | Stream-download the finalized metadata CSV |
+| `file-hosting.microstock.slots` | Thin web hop → `GET /api/v1/microstock/slots` (for the switcher UI) |
+| `file-hosting.microstock.workspaces.store` | Thin web hop → `POST /api/v1/microstock/workspaces` (switcher "New Microstock workspace") |
+| `file-hosting.microstock.collections.lock` / `.analyze` / `.status` / `.export` | Thin web hops → the matching collection API endpoints (SPA collection toolbar) |
+| `file-hosting.microstock.collections.download` | Direct service download of the exported collection CSV |
+| `file-hosting.microstock.assets.preview` | Signed inline preview URL `{url}` for the review panel (`SignedDownloadService::resolve($file, inline: true)` after `MicrostockService::resolveAsset`) |
+| `file-hosting.microstock.assets.metadata.show` / `.update` / `.analyze` | Thin web hops → `GET`/`PATCH` `assets/{file}/metadata` + `POST assets/{file}/analyze` (review panel) |
+
+### Collection UI (SPA)
+
+Inside a Microstock collection folder the SPA toolbar shows a **Lock & Describe** button (`#fhCollectionDescribeModal` → lock + analyze) and a persistent status banner (`collection_status`: locked/processing/review/exported/failed). The button morphs per status — Lock & Describe (draft/failed) → Export CSV (review) → Download CSV (exported) — driven by `updateCollectionUi()` fed from the browse payload (`folder.collection_status`) and the status endpoint. Upload into a locked collection / workspace root is blocked client-side (dropzone gate) and server-side (`DirectUploadService`).
+
+### Switcher multi-workspace UI
+
+The File Hosting workspace switcher fetches `file-hosting.microstock.slots` at runtime and renders one entry:
+
+- not activated → "Activate Microstock" link to `/services`
+- `can_create` → "New Microstock workspace" button → POSTs, then soft-navigates into the new workspace
+- full → disabled "Microstock slots full" note
+
+After a successful create (and after every switcher refetch) the SPA rebuilds the whole workspace item list from `lastWorkspaces` (`renderWorkspaceMenuItems`) and re-runs `refreshMicrostockSlotSection`, so the new workspace appears and the button state updates immediately — no hard reload.
+
+### Review UI (curate metadata)
+
+The curate step of the collection lifecycle lives directly in the file-manager listing:
+
+- **Per-file metadata status** — `FolderService::browse` eager-loads `HostedFile::microstockMetadata` when the workspace `kind` is `microstock`, and `HostedFileResource` exposes a `microstock` key (`{title, keywords, status, phase}`, `null` = no row yet) via `whenLoaded`. `phase` is the derived adaptive-timeout phase (`analyzing`/`degraded` for a pending row, else echoes `status`). The listing renders a status badge (pending/generating/finalized/no-metadata) next to the file name and a **Review** action button (`bi-stars`, `data-fh-ms-review`) — in both the JS re-render (`listing-ui.js`) and the Blade SSR (`_microstock-badge` partial).
+- **Side panel** — clicking Review opens a Bootstrap offcanvas (`#fhMicrostockPanel`) driven by `microstock-panel.js`. It fetches the signed inline preview (`assets/{file}/preview`) into an `<img>`, loads current metadata, renders keywords as removable chips (Enter/comma/blur adds), and saves via `PATCH assets/{file}/metadata` → marks the row finalized and refreshes collection status. **Re-analyze** POSTs `assets/{file}/analyze`. Chip add/remove pure helpers (`normalizeKeywords`, `parseKeywordInput`) are unit-tested in `microstock-panel.test.js`.
+- **Progress polling** — while `collection_status === 'processing'` the SPA polls `collections/{folder}/status` every 3 s and the banner shows a spinner + `Analyzed :processed of :total` from the status payload. Polling stops on any other status or when leaving the collection.
+- **Review shortcut** — in `review` state a secondary **Review files** toolbar button opens the panel for the first listed file.
+
+## Tests
+
+`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest|AnalysisWatchdogTest|AiBillingServiceTest|AiCreditServiceTest|HttpAiMetadataServiceThinkingFallbackTest|HttpAiMetadataServiceResponseParsingTest|HttpAiMetadataServiceCurateDraftTest|HttpAiMetadataServiceVisualThinkingTest|PromptsTest"` —
+- `MicrostockTest`: provisioning gated by entitlement (403 without), slot-limit multi-workspace create, public-share block, analyze → generate (stub AI, asserts `title`/`description`/`category`/`keywords`), finalize curation, CSV export finalized-only, credential encrypt/decrypt roundtrip, invite paid-gate. Checkout coverage in `ServiceCheckoutZeroChargeTest`.
+- `CollectionLifecycleTest`: root-upload blocked (422), locked-collection upload blocked, lock requires hint + transitions + rejects re-lock + rejects non-microstock folder, analyze requires lock/files + dispatches `ProcessCollection`, non-recursive batching (sub-folder untouched), empty→failed, **chained batch** (chunk → self-dispatch → `review` only after the last chunk), prompt hint threading (`Prompts::visionUser`/`thinkingUser` + the `COLLECTION CONTEXT` block), status progress counts, per-collection CSV filter (incl. `description`/`category` columns), export persists CSV + marks exported.
+- `CollectionApiTest`: HTTP lock/analyze/status/export/download endpoints (auth, validation, transitions, foreign-collection 403), browse exposes `microstock` key per file in a Microstock workspace (omitted in personal), per-file metadata show/finalize/re-analyze + signed preview web hops (`FileManagerControllerTest`).
+- `AnalysisWatchdogTest`: pending metadata past grace → `failed`; recent pending untouched; `processing` folder with all-failed metadata → `failed`; folder with some `generated` → `review`; zombie pending reaped; watchdog self-dispatches only while a collection is `processing`; `status()` returns derived `phase` (`analyzing`/`degraded`/echo).
+- `HttpAiMetadataServiceThinkingFallbackTest`: thinking happy path uses curated result; system-prompt hang retries with fused user message; both attempts failing falls back to the vision draft (`raw.thinking = null`) — all asserting `description`/`category` are carried through.
+- `HttpAiMetadataServiceResponseParsingTest`: SSE `data: [DONE]` trailer stripping, full SSE delta stream aggregation, `stream: false` on requests, markdown-fenced JSON, Anthropic content blocks, batch `assets` wrapper, unparseable body → `ai_invalid_response`.
+- `HttpAiMetadataServiceCurateDraftTest`: `curateDraft()` delegates to thinking stage; curated keywords returned; multimodal request when image provided.
+- `HttpAiMetadataServiceVisualThinkingTest`: `generate()` sends image on thinking call; multimodal failure falls back to text-only.
+- `PromptsTest`: `visionSystem()` and `thinkingSystem()` char count under gateway limit (~1200).
+
+## Operations: queue worker
+
+All Microstock AI jobs (`ProcessCollection`, `AnalyzeCollectionBatch`, `AnalyzeAssetMetadata`, `AnalysisWatchdog`) run on the `default` queue, so a worker must be running for analysis to progress: `php artisan queue:work` (or `queue:listen`). Single-asset runs can be dispatched synchronously in Tinker for a quick check. The `AnalysisWatchdog` is dispatched automatically by `ProcessCollection` and re-arms itself while any collection is `processing` — it is what flips hung/zombie analyses to `failed` past the grace period.
+
+### Finding: `queue:work` exits on Windows/Laragon (environment, not a code bug)
+
+On Laragon/Windows, `php artisan queue:work` **exits back to the shell prompt right after a job finishes (`DONE`)** instead of staying alive as a daemon. Consequence: the next queued job is never picked up until you re-run the command manually.
+
+- Cause: the Windows PHP CLI build (ZTS) ships **without `pcntl`/`posix`** (verified `pcntl: False`, `posix: False`), so the daemon's signal-based loop is not stable as a long-running process on Windows. `max_execution_time=0` (no PHP timeout), and no `--once`/`--stop-when-empty` was used.
+- Not the app: there is no `shouldQuit` / `stopWhenEmpty` / `queue:restart` / `exit` in `app/`, `bootstrap/`, or `routes/console.php` that would stop the worker. The same `queue:work` stays alive on Linux (which has `pcntl`).
+- Production: run the worker on Linux, or keep it alive under Windows with a watchdog — e.g. a restart-loop (`.bat` that re-launches `queue:work` when it exits), Windows Task Scheduler / a service with auto-restart, or for local dev `php artisan queue:listen --tries=1` (respawns per job) / `composer run dev`.
+
+## Explicitly out of scope (MVP)
+
+- FTP/API auto-upload to marketplaces (CSV-only for now; phpseclib next iteration).
+- Concrete AI provider lock-in — interface + HTTP client is enough; tests stub it.
+- Per-marketplace metadata field mapping (generic CSV).
+
+## Related
+
+- [file-hosting/README.md](../file-hosting/README.md) — base storage layer, system workspaces, storage classification
+- [payment-gateway/encryption.md](../payment-gateway/encryption.md) — envelope encryption infra
+- [service/README.md](../service/README.md) — entitlements / quota fulfillment

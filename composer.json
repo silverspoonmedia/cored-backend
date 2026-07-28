@@ -15,6 +15,7 @@
         "php": "^8.3",
         "chillerlan/php-qrcode": "^4.4",
         "diglactic/laravel-breadcrumbs": "^10.1",
+        "intervention/image": "^4.2",
         "ipaymu/ipaymu-php-api": "^3.0",
         "laravel-lang/common": "^6.8",
         "laravel/framework": "^13.8",

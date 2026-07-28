@@ -2,6 +2,7 @@
 
 namespace App\Domain\FileHosting\Models;
 
+use App\Domain\FileHosting\Enums\WorkspaceKind;
 use App\Domain\FileHosting\Enums\WorkspaceMemberStatus;
 use App\Domain\FileHosting\Enums\WorkspaceStatus;
 use App\Domain\Identity\Models\User;
@@ -20,6 +21,7 @@ class Workspace extends Model
         'owner_user_id',
         'name',
         'status',
+        'kind',
     ];
 
     /**
@@ -29,6 +31,7 @@ class Workspace extends Model
     {
         return [
             'status' => WorkspaceStatus::class,
+            'kind' => WorkspaceKind::class,
         ];
     }
 
@@ -88,5 +91,10 @@ class Workspace extends Model
     public function isArchived(): bool
     {
         return $this->status === WorkspaceStatus::Archived;
+    }
+
+    public function isSystem(): bool
+    {
+        return $this->kind->isSystem();
     }
 }

@@ -5,6 +5,7 @@ namespace App\Domain\FileHosting\Services;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\FileHosting\Models\FileVariant;
 use App\Domain\FileHosting\Models\UserQuota;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PlanKind;
@@ -81,9 +82,16 @@ class QuotaService
      */
     public function committedBytes(string $userId): int
     {
-        return (int) HostedFile::query()
+        $fileBytes = (int) HostedFile::query()
             ->where('user_id', $userId)
             ->sum('size');
+
+        $variantBytes = (int) FileVariant::query()
+            ->ready()
+            ->whereHas('file', fn ($q) => $q->where('user_id', $userId))
+            ->sum('size');
+
+        return $fileBytes + $variantBytes;
     }
 
     /**

@@ -53,6 +53,65 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Ownership | Own resources; cross-user via product “any” + core `RoleService` hierarchy |
 | Collaborative Works | Paid perk for **owners**; free users may **join** as members. Blade UX on File Hosting page (not a separate dynamic menu). |
 
+## Storage classification (core vs product)
+
+File Hosting (and its workspace model) is the **base storage layer** for anything
+in this project that consumes disk space. Every feature that stores bytes is
+classified into exactly one of two storage classes:
+
+| Class | Effect on free-tier base | Rationale | Examples |
+|-------|--------------------------|-----------|----------|
+| **Core storage** | Does **not** consume the free-tier base | Belongs to a core feature; if it hits a storage limit the core feature risks breaking | User avatar (future) |
+| **Product storage** | Consumes the free-tier base | Belongs to a product feature; unrelated to core operation | File Hosting personal/team files, Microstock Management (upcoming) |
+
+Free-tier base today: `config('file-hosting.default_quota_bytes')` (typically 5 GiB) —
+see [Quota](#quota). Core storage is exempt from this budget; product storage is
+metered against it.
+
+### System workspaces (built-in, standalone slots)
+
+Any consumer that stores bytes is treated as a **built-in system workspace** over
+the File Hosting workspace model. A system workspace:
+
+- is provisioned implicitly by the owning feature (not created via the team
+  workspace UI),
+- is **not counted** toward the paid included team workspace slots
+  (`owned_workspace_limit` / `base_owned_workspace_slots`) — it sits outside the
+  [owned workspace slots](#owned-workspace-slots) accounting,
+- has its **own standalone slot limit** per product (e.g. Microstock slots come
+  from `microstock.plan.free` + `microstock.addon.workspace-slot.monthly`
+  entitlements, entirely separate from FH team workspace slots),
+- is the billing/quota boundary for the feature's bytes: product-class consumers
+  meter into the free-tier base, core-class consumers do not.
+
+> Status: **implemented by Microstock** — the Microstock product uses system
+> workspaces (`file_hosting_workspaces.kind = 'microstock'`, standalone slots) as
+> the first product-class consumer of this model. Microstock activation is opt-in
+> via `/services` (free registration + compounding slot addon); its slots never
+> overlap with FH team workspace slots. See [Microstock](../microstock/README.md).
+
+**Provisioning trigger:** the Microstock system workspace is **not**
+auto-provisioned on File Hosting first paint. It is created on demand —
+`GET /microstock` (redirects to `/services` when the user has no Microstock
+entitlement) or via the switcher/API — and is gated by
+`WorkspaceAccessService::assertCanProvisionMicrostockWorkspace` (slot limit from
+the Microstock entitlements). Until activation it simply does not appear in the
+switcher.
+
+**Switcher UX (SPA):** `WorkspaceResource` exposes `kind`; workspace items are
+rendered **fully client-side** by `file-manager.js` (Blade only provides the
+skeleton). `refreshWorkspaceSwitcher()` re-fetches `GET file-hosting/workspaces`
+and `renderWorkspaceMenuItems()` rebuilds the items grouped by kind —
+**Microstock group first, Team group second, each preceded by its own dynamic
+divider** (no stacked/empty dividers) — then re-renders the label/icon
+(`bi-images` for `microstock`, `bi-people` for team, `bi-person` for personal),
+the `.active` item, and the Microstock slot section, on init and on soft-nav
+workspace changes (no hard reload). The **Microstock slot section** fetches
+`file-hosting.microstock.slots` and renders the right entry (activate CTA /
+"New Microstock workspace" / slots-full note). Creating a Microstock workspace
+opens `#fhCreateMicrostockModal` (name input) → POSTs, and the new workspace
+appears in its group immediately.
+
 ## Collaborative Works (team storage)
 
 Paid owners (active **main or storage addon** FH entitlement, not free-only) may own **multiple** team workspaces. Members invited by email; **free collaborators allowed** if owner is paid. **Multi-membership is first-class:** a user may own several workspaces and simultaneously join others as admin/editor/viewer. Owning does not block joining.
@@ -93,7 +152,7 @@ Workspace-slot SKU is **not** a storage plan: does not raise GiB quota, does not
 
 **Billing / quota:** Team files use **that workspace owner’s** storage pool (`user_id` = owner, `workspace_id` set). S3 key stays `file-hosting/{owner_user_id}/{objectId}`. `created_by` records uploader for audit. When browsing joined B, quota bar still reflects the logged-in user’s personal usage (owner pool for B is separate).
 
-**Paid gate:** `WorkspaceAccessService::assertOwnerEligibleForCollab` — requires `hasActivePaidFileHosting` on the **workspace owner** (create / invite / accept / team upload). Create also runs `assertCanCreateOwnedWorkspace` (slot limit). Joiner need not be paid.
+**Paid gate:** `WorkspaceAccessService::assertOwnerEligibleForCollab` — requires `hasActivePaidFileHosting` on the **workspace owner** for **create / invite / accept** only. Create also runs `assertCanCreateOwnedWorkspace` (slot limit). **Upload/content collaboration is not paid-gated** — `DirectUploadService::resolveUploadScope` only requires `assertCanMutate` (owner or active member), so invited free members and free Microstock owners can upload. Joiner need not be paid.
 
 **Quota API flags:** `GET /api/v1/file-hosting/quota` includes `state` (`free`\|`paid`\|`grace`), `collaborative_works`, `can_create_workspace` (paid **and** under slot limit), `owned_workspace_used`, `owned_workspace_limit`, plus raw `used_bytes` / `pending_bytes` / `reserved_bytes` / `quota_bytes` / `remaining_bytes` and matching `*_human` companions (`BytePresenter`). `HostedFileResource` exposes `size` + `size_human` and dual-field timestamps. Blade uses companions only — no view-layer `$formatBytes`.
 
@@ -101,7 +160,7 @@ Workspace-slot SKU is **not** a storage plan: does not raise GiB quota, does not
 
 **Activity:** Spatie `log_name = file_hosting.workspace`, properties include `workspace_id`. Explicit recorder (`WorkspaceActivityRecorder`) on membership + file/folder mutations. Download events off in v1. API: `GET /api/v1/file-hosting/workspaces/{id}/activity` (any active member).
 
-**Tables:** `file_hosting_workspaces` (no unique on `owner_user_id`; index `(owner_user_id, status)`), `file_hosting_workspace_members`, `file_hosting_workspace_invites`; nullable `workspace_id` on folders/files/uploads; `created_by` on files.
+**Tables:** `file_hosting_workspaces` (no unique on `owner_user_id`; index `(owner_user_id, status)`; `kind` = `team` user-created team-slot-counted vs `microstock` built-in standalone-slotted), `file_hosting_workspace_members`, `file_hosting_workspace_invites`; nullable `workspace_id` on folders/files/uploads; `created_by` on files.
 
 **Browse:** `GET browse?workspace_id=` for team tree; omit for personal. Never leak personal through workspace.
 
@@ -273,6 +332,8 @@ Big uploads that die mid-flight (crowded network, tab close, cancel) leave S3 mu
 
 **Concurrent-slot fairness:** `max_concurrent_uploads` is enforced on the fresh-init path. With resume removed there is exactly one init path, so the cap is checked on every `initiate()`.
 
+**Microstock collection gate:** in a `WorkspaceKind::Microstock` workspace, `initiate()` rejects (422) an upload with no `folder_id` (`web/file-hosting.microstock.error_requires_folder`) or into a folder whose `collection_status` is locked-for-upload (`web/file-hosting.microstock.error_collection_locked`). Microstock assets must live inside a folder (collection), and a locked collection no longer accepts files — see [Microstock — Collections](../microstock/README.md#collections-folder-as-collection-lifecycle). The dropzone mirrors this client-side via `data-workspace-kind` / `data-collection-locked`.
+
 **Abort preserves single-PUT bytes:** `abort()` / `forceAbortPending()` call S3 `AbortMultipartUpload` for multipart sessions, but for a `single` strategy session they only mark the row `aborted` and **leave the object on S3**. A single PUT has no dangling multipart to clean, and the prune scheduler can fire while the client is mid-flight — deleting the object would destroy bytes a late `complete()` could still promote.
 
 **Client abort-on-failure (slot hygiene):** a leaked `pending` row holds a `max_concurrent_uploads` slot until TTL/prune — after enough orphans, init is rejected with `too_many_concurrent` and no upload can start. `uploadFile()` wraps its post-init body in try/catch: on any error after `uploadId` is obtained it fires a best-effort `DELETE` abort (`abortUploadSession`, never rejects), then rethrows so the row is still marked failed. Tab-close orphans (no error path) are still reclaimed by the prune scheduler above.
@@ -301,10 +362,11 @@ This feature leans on two always-on Laravel processes. If either is down, the co
 
 | Process | Command | Drives | If it stops |
 |---------|---------|--------|-------------|
-| Queue worker | `php artisan queue:work` | `ComputeHostedFileChecksum` (post-upload sha256) | `checksum` stays `null` → blocklist never matches new files |
+| Queue worker | `php artisan queue:work` | `ComputeHostedFileChecksum` (post-upload sha256); also Microstock AI jobs (`ProcessCollection`, `AnalyzeCollectionBatch`, `AnalyzeAssetMetadata`) on the same `default` queue | `checksum` stays `null` → blocklist never matches new files; Microstock analysis stalls until a worker runs |
 | Scheduler | `php artisan schedule:work` (dev) or cron/Task Scheduler `php artisan schedule:run` every minute (prod) | `file-hosting:prune-stale-uploads` (hourly, `withoutOverlapping`) | Orphaned multipart uploads are never aborted → parts pile up on storage |
 
 - Queue connection defaults to `database` (`QUEUE_CONNECTION` unset in `.env` → `config/queue.php` fallback). Set `QUEUE_CONNECTION=redis` in production if you run Redis.
+- Windows/Laragon note: `php artisan queue:work` exits after a job instead of staying alive (Windows PHP lacks `pcntl`/`posix`) — keep it alive with a watchdog/Task Scheduler, or use `php artisan queue:listen` for local dev. See [microstock/README.md](../microstock/README.md#operations-queue-worker).
 - Schedule entries live in `routes/console.php` (`file-hosting:prune-stale-uploads` hourly). Verify with `php artisan schedule:list`.
 - A quick liveness check for the checksum path: upload a file, then confirm `file_hosting_files.checksum` is populated shortly after and `jobs` is not backing up.
 
@@ -658,6 +720,8 @@ effective_bytes =
 
 Runtime `QuotaService::quotaBytesFor` reads denorm `UserQuota` (written on fulfill/expire). No unlimited short-circuit (`quota_bytes === 0` reserved only if true unlimited is reintroduced later).
 
+**Committed bytes** = `SUM(file_hosting_files.size)` + `SUM(file_hosting_file_variants.size)` where variant `status = ready` (Microstock AI JPEG sidecars `ai_512` / `ai_1024`). Pending/failed variants do not reserve quota until promoted to `ready`.
+
 On paid [Service](../service/README.md) fulfill: main replace / addon quantity + recompute. On grace expire: recompute remaining lines + `EnforceFreeTierQuotaService::enforceToLimit(effective)` (oldest-first; soft-delete DB + hard-delete S3).
 
 **Purge rule (example):** files A 2 GiB (oldest), B 3 GiB, C 5 GiB with limit 5 GiB -> keep A+B (exactly 5 GiB), soft-delete C in DB and hard-delete C object on S3. Under-limit users are no-op. Re-run is idempotent.
@@ -683,6 +747,7 @@ npm run test:js
 ## Related
 
 - [service/README.md](../service/README.md) — main/addon catalog, quantity, grace, recompute
+- [microstock/README.md](../microstock/README.md) — first system-workspace consumer (`kind='microstock'`)
 - [identity/README.md](../identity/README.md) — H-RBAC / `domain_kind`
 - [notification/README.md](../notification/README.md) — bell + DataTable `table_id` (FH listing does **not** use this bus)
 - [web/ui-patterns.md](../../web/ui-patterns.md) — admin a11y / responsive patterns (FH dropzone, modals); full browse SPA is domain-local — see [UI architecture / SPA shell](#ui-architecture--spa-shell)

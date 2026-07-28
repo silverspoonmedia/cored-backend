@@ -3,6 +3,7 @@
 namespace App\Domain\FileHosting\Services;
 
 use App\Domain\FileHosting\Enums\WorkspaceInviteStatus;
+use App\Domain\FileHosting\Enums\WorkspaceKind;
 use App\Domain\FileHosting\Enums\WorkspaceMemberStatus;
 use App\Domain\FileHosting\Enums\WorkspaceRole;
 use App\Domain\FileHosting\Enums\WorkspaceStatus;
@@ -90,12 +91,105 @@ class WorkspaceService
         });
     }
 
+    /**
+     * Create an additional built-in system workspace (e.g. a second Microstock
+     * workspace) when the owner's standalone slot limit allows it. Unlike
+     * systemWorkspaceFor this always inserts a new row (multi-workspace).
+     */
+    public function createSystemWorkspace(User $owner, WorkspaceKind $kind, ?string $name = null): Workspace
+    {
+        $name = trim((string) ($name ?? ''));
+        if ($name === '') {
+            $name = $kind->name;
+        }
+
+        return DB::transaction(function () use ($owner, $kind, $name): Workspace {
+            // Serialize slot checks per owner (concurrent create at cap).
+            User::query()->whereKey($owner->id)->lockForUpdate()->firstOrFail();
+            $this->workspaceAccess->assertCanProvisionMicrostockWorkspace($owner->id);
+
+            $workspace = Workspace::query()->create([
+                'owner_user_id' => $owner->id,
+                'name' => $name,
+                'kind' => $kind->value,
+                'status' => WorkspaceStatus::Active->value,
+            ]);
+
+            WorkspaceMember::query()->create([
+                'workspace_id' => $workspace->id,
+                'user_id' => $owner->id,
+                'role' => WorkspaceRole::Owner,
+                'status' => WorkspaceMemberStatus::Active,
+                'invited_by' => null,
+                'joined_at' => now(),
+            ]);
+
+            return $workspace->load('owner');
+        });
+    }
+
     public function show(User $actor, string $workspaceId): Workspace
     {
         $workspace = $this->workspaceAccess->findOrFail($workspaceId);
         $this->workspaceAccess->assertCanView($workspace, $actor);
 
         return $workspace->load(['owner', 'activeMembers.user']);
+    }
+
+    /**
+     * Resolve (lazy-creating) the built-in system workspace for a product
+     * consumer (e.g. Microstock). Provisioning is gated by the consumer's
+     * standalone slot limit (Microstock slots are accounted separately from
+     * team workspace slots). One row per (owner, kind); the owner is also its
+     * sole Owner member. Resolving an existing workspace is never gated.
+     */
+    public function systemWorkspaceFor(User $owner, WorkspaceKind $kind): Workspace
+    {
+        $existing = Workspace::query()
+            ->where('owner_user_id', $owner->id)
+            ->where('kind', $kind)
+            ->where('status', WorkspaceStatus::Active)
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return DB::transaction(function () use ($owner, $kind): Workspace {
+            // Serialize concurrent first-use creation per owner.
+            User::query()->whereKey($owner->id)->lockForUpdate()->firstOrFail();
+
+            // Gate provisioning of built-in system workspaces by slot limit.
+            if ($kind->isSystem()) {
+                $this->workspaceAccess->assertCanProvisionMicrostockWorkspace($owner->id);
+            }
+
+            $workspace = Workspace::query()->firstOrCreate(
+                [
+                    'owner_user_id' => $owner->id,
+                    'kind' => $kind->value,
+                    'status' => WorkspaceStatus::Active->value,
+                ],
+                [
+                    'name' => $kind->name,
+                ],
+            );
+
+            WorkspaceMember::query()->firstOrCreate(
+                [
+                    'workspace_id' => $workspace->id,
+                    'user_id' => $owner->id,
+                ],
+                [
+                    'role' => WorkspaceRole::Owner,
+                    'status' => WorkspaceMemberStatus::Active,
+                    'invited_by' => null,
+                    'joined_at' => now(),
+                ],
+            );
+
+            return $workspace->load('owner');
+        });
     }
 
     public function archive(User $actor, string $workspaceId): Workspace

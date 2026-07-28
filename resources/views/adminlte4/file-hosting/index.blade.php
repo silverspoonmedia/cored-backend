@@ -39,6 +39,7 @@
     $fhRealtime = app(\App\Domain\FileHosting\Support\FileHostingRealtime::class);
     $fhBroadcast = $fhRealtime->clientConfig();
     $authUser = auth('api')->user();
+    $isMicrostock = (($currentWorkspace['kind'] ?? null) === \App\Domain\FileHosting\Enums\WorkspaceKind::Microstock->value);
 
     $fmConfig = [
         'spaShell' => true,
@@ -65,6 +66,42 @@
         'ownerUserId' => $ownerUserId,
         'workspaceId' => $workspaceId,
         'currentFolderId' => $currentFolderId,
+        'workspaces' => $workspaces,
+        'currentWorkspace' => $currentWorkspace ?? null,
+        'collectionBase' => url('file-hosting/microstock/collections'),
+        'assetsBase' => url('file-hosting/microstock/assets'),
+        'collectionStatus' => $browse['folder']['collection_status'] ?? null,
+        'collectionLabels' => [
+            'lockDescribe' => __('web/file-hosting.microstock.lock_describe'),
+            'exportCsv' => __('web/file-hosting.microstock.export_csv'),
+            'downloadCsv' => __('web/file-hosting.microstock.download_csv'),
+            'processing' => __('web/file-hosting.microstock.status_processing'),
+            'review' => __('web/file-hosting.microstock.status_review'),
+            'exported' => __('web/file-hosting.microstock.status_exported'),
+            'failed' => __('web/file-hosting.microstock.status_failed'),
+            'locked' => __('web/file-hosting.microstock.status_locked'),
+        ],
+        'microstockPanel' => [
+            'progress' => __('web/file-hosting.microstock.progress'),
+            'reviewFiles' => __('web/file-hosting.microstock.review_files'),
+            'review' => __('web/file-hosting.microstock.review'),
+            'noMetadata' => __('web/file-hosting.microstock.no_metadata'),
+            'statusPending' => __('web/file-hosting.microstock.status_pending'),
+            'statusGenerated' => __('web/file-hosting.microstock.status_generated'),
+            'statusFinalized' => __('web/file-hosting.microstock.status_finalized'),
+            'statusFailed' => __('web/file-hosting.microstock.status_failed_item'),
+            'saved' => __('web/file-hosting.microstock.panel_saved'),
+            'queued' => __('web/file-hosting.microstock.panel_queued'),
+        ],
+        'personalLabel' => __('web/file-hosting.workspace_personal'),
+        'badgeYours' => __('web/file-hosting.collab.badge_yours'),
+        'badgeJoined' => __('web/file-hosting.collab.badge_joined'),
+        'roleLabels' => [
+            'owner' => __('web/file-hosting.collab.role_owner_short'),
+            'admin' => __('web/file-hosting.collab.role_admin_short'),
+            'editor' => __('web/file-hosting.collab.role_editor_short'),
+            'viewer' => __('web/file-hosting.collab.role_viewer_short'),
+        ],
         'planState' => $planState ?? 'free',
         'canManageMembers' => isset($currentWorkspace) && is_array($currentWorkspace)
             && in_array($currentWorkspace['my_role'] ?? null, ['owner', 'admin'], true),
@@ -190,6 +227,16 @@
                 </button>
             @endcan
 
+            {{-- Microstock collection action (visible only inside a microstock collection; JS-driven) --}}
+            <div class="d-none" data-fh-collection-action>
+                <button type="button" class="btn btn-outline-primary btn-sm" data-fh-collection-primary data-bs-toggle="modal" data-bs-target="#fhCollectionDescribeModal">
+                    <i class="bi bi-lock me-1"></i><span data-fh-collection-primary-label>{{ __('web/file-hosting.microstock.lock_describe') }}</span>
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm d-none" data-fh-collection-review>
+                    <i class="bi bi-stars me-1"></i>{{ __('web/file-hosting.microstock.review_files') }}
+                </button>
+            </div>
+
             @include('adminlte4.file-hosting.partials._workspace-switcher', [
                 'planState' => $planState ?? 'free',
                 'canCreateWorkspace' => $canCreateWorkspace ?? false,
@@ -263,6 +310,8 @@
                 data-folder-id="{{ $currentFolderId }}"
                 data-user-id="{{ $ownerUserId }}"
                 data-workspace-id="{{ $workspaceId }}"
+                data-workspace-kind="{{ $currentWorkspace['kind'] ?? '' }}"
+                data-collection-locked="{{ ! empty($browse['folder']['collection_locked'] ?? null) ? '1' : '0' }}"
                 data-init-url="{{ route('file-hosting.uploads.store') }}"
                 data-status-url="{{ url('file-hosting/uploads/__UPLOAD__') }}"
                 data-complete-url="{{ url('file-hosting/uploads/__UPLOAD__/complete') }}"
@@ -284,6 +333,8 @@
                     'completing' => __('web/file-hosting.upload.completing'),
                     'done' => __('web/file-hosting.upload.done'),
                     'remove' => __('web/file-hosting.upload.remove'),
+                    'requiresFolder' => __('web/file-hosting.microstock.error_requires_folder'),
+                    'collectionLocked' => __('web/file-hosting.microstock.error_collection_locked'),
                 ]) }}"
             >
                 <div class="fh-dropzone__icon">
@@ -344,6 +395,12 @@
 
         {{-- SPA browse panel (table + grid) --}}
         <div data-fh-panel="browse">
+        {{-- Microstock collection status banner (JS-driven, hidden by default) --}}
+        <div class="alert alert-secondary d-none d-flex align-items-center gap-2 py-2 px-3 mb-3"
+             data-fh-collection-banner role="status">
+            <i class="bi bi-images"></i>
+            <span data-fh-collection-banner-text></span>
+        </div>
         {{-- Table view --}}
         <div data-fh-view="table">
             <div class="table-responsive">
@@ -461,6 +518,7 @@
                                class="fh-table__name" title="{{ $file['name'] ?? '' }}">
                                 <span class="fh-table__name-text" data-fh-name>{{ $file['name'] ?? '' }}</span>
                             </a>
+                            @include('adminlte4.file-hosting.partials._microstock-badge', ['microstock' => $file['microstock'] ?? null, 'show' => $isMicrostock])
                         </td>
                         <td class="fh-table__type">{{ $file['mime'] ?? __('web/file-hosting.type_file') }}</td>
                         <td class="fh-table__size">{{ $file['size_human'] ?? '—' }}</td>
@@ -479,6 +537,12 @@
                         @endif
                         <td data-fh-visibility-cell>@include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $fileVis])</td>
                         <td class="fh-table__actions">
+                            @if ($isMicrostock)
+                                <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.microstock.review') }}"
+                                        data-fh-ms-review="{{ $file['id'] }}">
+                                    <i class="bi bi-stars"></i>
+                                </button>
+                            @endif
                             <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
                                class="fh-table__action-btn" title="{{ __('web/file-hosting.view') }}">
                                 <i class="bi bi-eye"></i>
@@ -598,6 +662,7 @@
                             <input type="checkbox" class="form-check-input fh-file-card__select" data-fh-select value="file:{{ $file['id'] }}" aria-label="{{ __('web/file-hosting.bulk.select_item') }}">
                             <div class="fh-file-card__badge">
                                 @include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $fileVis])
+                                @include('adminlte4.file-hosting.partials._microstock-badge', ['microstock' => $file['microstock'] ?? null, 'show' => $isMicrostock])
                             </div>
                             <div class="fh-file-card__icon">
                                 <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}">
@@ -619,6 +684,12 @@
                                 @endif
                             </div>
                             <div class="fh-file-card__actions">
+                                @if ($isMicrostock)
+                                    <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.microstock.review') }}"
+                                            data-fh-ms-review="{{ $file['id'] }}">
+                                        <i class="bi bi-stars"></i>
+                                    </button>
+                                @endif
                                 <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
                                    class="fh-table__action-btn" title="{{ __('web/file-hosting.view') }}">
                                     <i class="bi bi-eye"></i>
@@ -683,6 +754,103 @@
 
         {{-- SPA show panel (file detail soft-rendered) --}}
         <div data-fh-panel="show" class="d-none" hidden></div>
+    </div>
+
+    {{-- Create Team Workspace Modal (top-level: avoid sticky toolbar stacking context) --}}
+    @if ($canCreateWorkspace)
+        <div class="modal fade" id="fhCreateWorkspaceModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <form method="post" action="{{ route('file-hosting.workspaces.store') }}" class="modal-content">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ __('web/file-hosting.collab.create_workspace') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted">{{ __('web/file-hosting.collab.create_hint') }}</p>
+                        <label class="form-label">{{ __('web/file-hosting.collab.workspace_name') }}</label>
+                        <input type="text" name="name" class="form-control" required maxlength="255"
+                               value="{{ old('name', __('web/file-hosting.collab.default_workspace_name')) }}">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('web/file-hosting.cancel') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ __('web/file-hosting.create') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+
+    {{-- Create Microstock Workspace Modal (name input; slot gate handled client-side) --}}
+    <div class="modal fade" id="fhCreateMicrostockModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-images me-1"></i>{{ __('web/file-hosting.microstock.create_title') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted">{{ __('web/file-hosting.microstock.create_hint') }}</p>
+                    <label class="form-label" for="fhMicrostockName">{{ __('web/file-hosting.microstock.name_label') }}</label>
+                    <input type="text" id="fhMicrostockName" class="form-control" maxlength="255"
+                           placeholder="{{ __('web/file-hosting.microstock.name_placeholder') }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('web/file-hosting.cancel') }}</button>
+                    <button type="button" class="btn btn-primary" data-fh-microstock-modal-submit>{{ __('web/file-hosting.create') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Microstock Collection: Lock & Describe Modal --}}
+    <div class="modal fade" id="fhCollectionDescribeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-lock me-1"></i>{{ __('web/file-hosting.microstock.describe_title') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted">{{ __('web/file-hosting.microstock.describe_hint') }}</p>
+                    <label class="form-label" for="fhCollectionHint">{{ __('web/file-hosting.microstock.describe_label') }}</label>
+                    <textarea id="fhCollectionHint" class="form-control" rows="4" maxlength="2000"
+                              placeholder="{{ __('web/file-hosting.microstock.describe_placeholder') }}"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('web/file-hosting.cancel') }}</button>
+                    <button type="button" class="btn btn-primary" data-fh-collection-describe-submit>{{ __('web/file-hosting.microstock.describe_submit') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Microstock asset review side panel (offcanvas) --}}
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="fhMicrostockPanel" aria-labelledby="fhMicrostockPanelLabel" data-fh-microstock-panel>
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="fhMicrostockPanelLabel"><i class="bi bi-stars me-1"></i>{{ __('web/file-hosting.microstock.panel_title') }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="text-center mb-3">
+                <img data-fh-ms-thumb alt="" class="img-fluid rounded border" style="max-height:240px; object-fit:contain;">
+            </div>
+            <div class="mb-2"><span class="badge text-bg-secondary" data-fh-ms-status></span></div>
+            <div class="alert alert-danger d-none mb-3 py-2 small" data-fh-ms-error role="alert"></div>
+            <div class="mb-3">
+                <label class="form-label" for="fhMsTitle">{{ __('web/file-hosting.microstock.panel_title_label') }}</label>
+                <input type="text" class="form-control" id="fhMsTitle" maxlength="255">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ __('web/file-hosting.microstock.panel_keywords_label') }}</label>
+                <div class="d-flex flex-wrap gap-1 mb-2" data-fh-ms-chips></div>
+                <input type="text" class="form-control form-control-sm" id="fhMsKeywordInput" placeholder="{{ __('web/file-hosting.microstock.panel_keyword_placeholder') }}">
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary" data-fh-ms-save>{{ __('web/file-hosting.microstock.panel_save') }}</button>
+                <button type="button" class="btn btn-outline-secondary" data-fh-ms-reanalyze>{{ __('web/file-hosting.microstock.panel_reanalyze') }}</button>
+            </div>
+        </div>
     </div>
 
     {{-- New Folder Modal --}}

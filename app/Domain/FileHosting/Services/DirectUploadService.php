@@ -2,8 +2,10 @@
 
 namespace App\Domain\FileHosting\Services;
 
+use App\Domain\FileHosting\Enums\WorkspaceKind;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Jobs\ComputeHostedFileChecksum;
+use App\Domain\FileHosting\Jobs\GenerateFileVariants;
 use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Models\Workspace;
@@ -65,6 +67,19 @@ class DirectUploadService
 
         if ($folderId !== null) {
             $this->folders->findOwnedOrFail($ownerId, $folderId, $wsId);
+        }
+
+        // Microstock collections: uploads must live inside a folder (collection),
+        // never the workspace root, and a locked collection no longer accepts files.
+        if ($workspace?->kind === WorkspaceKind::Microstock) {
+            if ($folderId === null) {
+                throw new FileHostingException(__('web/file-hosting.microstock.error_requires_folder'), 422);
+            }
+            $collection = $this->folders->findOwnedOrFail($ownerId, $folderId, $wsId);
+            if ($collection->isCollectionLocked()) {
+                throw new FileHostingException(__('web/file-hosting.microstock.error_collection_locked'), 422);
+            }
+            $this->assertMicrostockImage($mime);
         }
 
         $this->assertUploadAllowed($name, $mime, $size);
@@ -295,6 +310,10 @@ class DirectUploadService
         // hash blocklist. Idempotent — safe if re-dispatched.
         ComputeHostedFileChecksum::dispatch((string) $result['file']->id);
 
+        if ($this->shouldGenerateVariants($result['upload'], $result['file'])) {
+            GenerateFileVariants::dispatch((string) $result['file']->id);
+        }
+
         return $result;
     }
 
@@ -331,6 +350,40 @@ class DirectUploadService
 
         $upload->forceFill(['status' => FileUpload::STATUS_ABORTED])->save();
         $this->realtime->quotaChanged((string) $upload->user_id);
+    }
+
+    /**
+     * Microstock collections only accept raster images the AI vision stage can
+     * read. Anything else is rejected up-front so it never reaches analysis.
+     */
+    protected function shouldGenerateVariants(FileUpload $upload, HostedFile $file): bool
+    {
+        if ($upload->workspace_id === null) {
+            return false;
+        }
+
+        $workspace = Workspace::query()->find($upload->workspace_id);
+        if ($workspace?->kind !== WorkspaceKind::Microstock) {
+            return false;
+        }
+
+        $allowed = (array) config('microstock.allowed_image_mimes', []);
+
+        return in_array(strtolower((string) $file->mime), $allowed, true);
+    }
+
+    protected function assertMicrostockImage(string $mime): void
+    {
+        $allowed = (array) config('microstock.allowed_image_mimes', [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+        ]);
+
+        if (! in_array(strtolower($mime), $allowed, true)) {
+            throw new FileHostingException(__('web/file-hosting.microstock.error_image_only'), 422);
+        }
     }
 
     protected function assertUploadAllowed(string $name, string $mime, int $size): void
@@ -493,8 +546,10 @@ class DirectUploadService
     {
         if ($workspaceId !== null && $workspaceId !== '') {
             $workspace = $this->workspaceAccess->findOrFail($workspaceId);
+            // Upload/collaboration only needs mutate access (owner or active
+            // member). The paid gate (assertOwnerEligibleForCollab) is for
+            // sharing/creating workspaces, not for putting content into one.
             $this->workspaceAccess->assertCanMutate($workspace, $actor);
-            $this->workspaceAccess->assertOwnerEligibleForCollab($workspace->owner_user_id);
 
             return [$this->workspaceAccess->storageOwnerId($workspace), $workspace];
         }

@@ -4,10 +4,12 @@ namespace App\Domain\Service\Services;
 
 use App\Domain\FileHosting\Services\FileHostingQuotaRecomputeService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\MicrostockCatalog;
 use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +20,7 @@ class ServiceFulfillmentService
         private readonly ServiceEntitlementService $entitlements,
         private readonly FileHostingQuotaRecomputeService $quotaRecompute,
         private readonly ProductActivationService $productActivations,
+        private readonly AiCreditService $aiCredits,
     ) {}
 
     public function fulfill(ServicePurchase $purchase): void
@@ -42,6 +45,10 @@ class ServiceFulfillmentService
         }
 
         $result = $this->entitlements->activateFromPurchase($purchase);
+
+        if ($service?->entitlement === MicrostockCatalog::ENTITLEMENT_AI_CREDITS) {
+            $this->aiCredits->creditFromPurchase($purchase);
+        }
 
         $purchase->status = PurchaseStatus::Paid;
         $purchase->period_start = $result['period_start'];

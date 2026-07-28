@@ -19,19 +19,8 @@
     $ownerUserId = $ownerUserId ?? null;
     $ownedWorkspaceUsed = (int) ($ownedWorkspaceUsed ?? 0);
     $ownedWorkspaceLimit = (int) ($ownedWorkspaceLimit ?? 0);
-    $authId = auth()->id();
     $isTeamContext = $workspaceId !== null && $workspaceId !== '';
     $plansUrl = Route::has('services.index') ? route('services.index') : url('/services');
-
-    $roleLabel = static function (?string $role): string {
-        return match ($role) {
-            'owner' => __('web/file-hosting.collab.role_owner_short'),
-            'admin' => __('web/file-hosting.collab.role_admin_short'),
-            'editor' => __('web/file-hosting.collab.role_editor_short'),
-            'viewer' => __('web/file-hosting.collab.role_viewer_short'),
-            default => $role ?? '',
-        };
-    };
 
     $switcherLabel = ! $isTeamContext
         ? __('web/file-hosting.workspace_personal')
@@ -41,8 +30,8 @@
 <div class="dropdown fh-workspace-switcher">
     <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
             data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-        <i class="bi {{ $isTeamContext ? 'bi-people' : 'bi-person' }} me-1"></i>
-        <span class="fh-workspace-switcher__label">{{ $switcherLabel }}</span>
+        <i class="bi {{ $isTeamContext ? 'bi-people' : 'bi-person' }} me-1" data-fh-workspace-icon></i>
+        <span class="fh-workspace-switcher__label" data-fh-workspace-label>{{ $switcherLabel }}</span>
         @if ($planState === 'paid' && $ownedWorkspaceLimit > 0)
             <span class="badge text-bg-light border ms-1">{{ $ownedWorkspaceUsed }}/{{ $ownedWorkspaceLimit }}</span>
         @elseif ($planState === 'grace')
@@ -55,42 +44,22 @@
         <h6 class="dropdown-header">{{ __('web/file-hosting.collab.switch_label') }}</h6>
 
         <a href="{{ route('file-hosting.index', array_filter(['user_id' => $ownerUserId])) }}"
-           class="dropdown-item {{ ! $isTeamContext ? 'active' : '' }}">
+           class="dropdown-item {{ ! $isTeamContext ? 'active' : '' }}" data-fh-workspace-id="">
             <i class="bi bi-person me-2"></i>{{ __('web/file-hosting.workspace_personal') }}
         </a>
 
-        @if ($workspaces->isNotEmpty())
-            <div class="dropdown-divider"></div>
-            @foreach ($workspaces as $ws)
-                @php
-                    $wsId = $ws['id'] ?? null;
-                    $wsRole = $ws['my_role'] ?? null;
-                    $wsIsOwner = ($ws['is_owner'] ?? false) === true
-                        || (($ws['owner_user_id'] ?? null) === $authId);
-                    $wsActive = $workspaceId === $wsId;
-                @endphp
-                @if ($wsId)
-                    <a href="{{ route('file-hosting.index', array_filter(['user_id' => $ownerUserId, 'workspace_id' => $wsId])) }}"
-                       class="dropdown-item d-flex align-items-center justify-content-between gap-2 {{ $wsActive ? 'active' : '' }}">
-                        <span class="text-truncate">
-                            <i class="bi bi-people me-2"></i>{{ $ws['name'] ?? 'Workspace' }}
-                        </span>
-                        <span class="d-flex gap-1 flex-shrink-0">
-                            @if ($wsRole)
-                                <span class="badge {{ $wsActive ? 'text-bg-light' : 'text-bg-secondary' }}">{{ $roleLabel($wsRole) }}</span>
-                            @endif
-                            @if ($wsIsOwner)
-                                <span class="badge text-bg-primary">{{ __('web/file-hosting.collab.badge_yours') }}</span>
-                            @else
-                                <span class="badge text-bg-info">{{ __('web/file-hosting.collab.badge_joined') }}</span>
-                            @endif
-                        </span>
-                    </a>
-                @endif
-            @endforeach
-        @endif
+        {{-- Dynamic workspace items are rendered client-side by
+             file-manager.js renderWorkspaceMenuItems() (grouped: microstock
+             first, team second, each preceded by its own divider). Blade only
+             provides the skeleton below. --}}
 
-        <div class="dropdown-divider"></div>
+        <div data-fh-microstock-slot
+             data-slots-url="{{ route('file-hosting.microstock.slots') }}"
+             data-create-url="{{ route('file-hosting.microstock.workspaces.store') }}"
+             data-services-url="{{ route('services.index') }}"
+             data-label-activate="{{ __('web/file-hosting.microstock.activate_cta') }}"
+             data-label-create="{{ __('web/file-hosting.microstock.create_workspace') }}"
+             data-label-full="{{ __('web/file-hosting.microstock.slots_full') }}"></div>
 
         @if ($planState === 'paid')
             <div class="px-3 py-1 small text-muted">
@@ -143,28 +112,4 @@
             data-bs-toggle="offcanvas" data-bs-target="#fhTeamOffcanvas" aria-controls="fhTeamOffcanvas">
         <i class="bi bi-gear me-1"></i>{{ __('web/file-hosting.collab.team_settings') }}
     </button>
-@endif
-
-@if ($canCreateWorkspace)
-    <div class="modal fade" id="fhCreateWorkspaceModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <form method="post" action="{{ route('file-hosting.workspaces.store') }}" class="modal-content">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ __('web/file-hosting.collab.create_workspace') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="small text-muted">{{ __('web/file-hosting.collab.create_hint') }}</p>
-                    <label class="form-label">{{ __('web/file-hosting.collab.workspace_name') }}</label>
-                    <input type="text" name="name" class="form-control" required maxlength="255"
-                           value="{{ old('name', __('web/file-hosting.collab.default_workspace_name')) }}">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('web/file-hosting.cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('web/file-hosting.create') }}</button>
-                </div>
-            </form>
-        </div>
-    </div>
 @endif

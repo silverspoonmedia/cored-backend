@@ -80,4 +80,11 @@ return [
         'permanent' => '永久',
         'grace_banner' => 'サブスクリプションが終了しました。猶予期間内に更新しないと、有効容量を超えるファイルが削除されます。',
     ],
+    'microstock' => [
+        'title' => 'Microstock',
+        'slot_desc' => '無料のMicrostockワークスペースを有効化し、追加のワークスペーススロットを購入できます。スロットはFile Hostingのチームワークスペースとは別枠です。',
+        'activate_free' => '無料で有効化',
+        'active_badge' => '有効',
+        'buy_slot' => 'スロット購入（$1/月）',
+    ],
 ];

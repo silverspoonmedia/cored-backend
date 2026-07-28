@@ -2,6 +2,7 @@
 
 namespace App\Domain\FileHosting\Services;
 
+use App\Domain\FileHosting\Enums\WorkspaceKind;
 use App\Domain\FileHosting\Enums\WorkspaceMemberStatus;
 use App\Domain\FileHosting\Enums\WorkspaceRole;
 use App\Domain\FileHosting\Enums\WorkspaceStatus;
@@ -13,6 +14,7 @@ use App\Domain\FileHosting\Models\WorkspaceMember;
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Services\ServiceEntitlementService;
 use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\MicrostockCatalog;
 
 /**
  * Workspace membership + paid collab gate (separate from platform H-RBAC).
@@ -38,10 +40,65 @@ class WorkspaceAccessService
 
     public function countActiveOwned(string $ownerUserId): int
     {
+        // Slot accounting counts only user-created team workspaces; built-in
+        // system workspaces (microstock, …) are slot-exempt by design.
         return Workspace::query()
             ->where('owner_user_id', $ownerUserId)
+            ->where('kind', WorkspaceKind::Team)
             ->where('status', WorkspaceStatus::Active)
             ->count();
+    }
+
+    /**
+     * Count the owner's active Microstock system workspaces (standalone slots).
+     */
+    public function countActiveOwnedMicrostock(string $ownerUserId): int
+    {
+        return Workspace::query()
+            ->where('owner_user_id', $ownerUserId)
+            ->where('kind', WorkspaceKind::Microstock)
+            ->where('status', WorkspaceStatus::Active)
+            ->count();
+    }
+
+    /**
+     * Standalone Microstock workspace slot limit: base (1) once the free
+     * registration is active, plus compounding slot-addon quantity. 0 when the
+     * user never activated Microstock. Does NOT overlap with FH team slots.
+     */
+    public function microstockSlotLimit(string $ownerUserId): int
+    {
+        $base = $this->entitlements->hasActiveMicrostockWorkspaceSlot($ownerUserId)
+            ? max(0, (int) MicrostockCatalog::BASE_WORKSPACE_SLOTS)
+            : 0;
+
+        return $base + $this->entitlements->microstockWorkspaceSlotExtraQuantity($ownerUserId);
+    }
+
+    public function canProvisionMicrostockWorkspace(string $ownerUserId): bool
+    {
+        return $this->countActiveOwnedMicrostock($ownerUserId) < $this->microstockSlotLimit($ownerUserId);
+    }
+
+    /**
+     * Gate Microstock system-workspace provisioning by standalone slot limit.
+     */
+    public function assertCanProvisionMicrostockWorkspace(string $ownerUserId): void
+    {
+        $limit = $this->microstockSlotLimit($ownerUserId);
+
+        if ($limit <= 0) {
+            throw new FileHostingException(__('api/microstock.workspace_not_activated'), 422);
+        }
+
+        $used = $this->countActiveOwnedMicrostock($ownerUserId);
+
+        if ($used >= $limit) {
+            throw new FileHostingException(
+                __('api/microstock.slot_limit', ['used' => $used, 'limit' => $limit]),
+                422,
+            );
+        }
     }
 
     /**

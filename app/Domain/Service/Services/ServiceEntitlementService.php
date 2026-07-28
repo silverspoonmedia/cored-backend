@@ -11,6 +11,7 @@ use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Support\FileHostingBillingPeriod;
 use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\MicrostockCatalog;
 use App\Support\Product\Services\ProductAnalyticsService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -209,9 +210,12 @@ class ServiceEntitlementService
             ->where('user_id', $userId)
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
             ->whereHas('service', function ($q): void {
-                // Storage + workspace-slot addons share the stack anniversary.
-                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
-                    ->where('plan_kind', PlanKind::Addon);
+                // Storage + workspace-slot addons (FH and Microstock) share the
+                // stack anniversary.
+                $q->whereIn('fulfillment_target', [
+                    FileHostingCatalog::FULFILLMENT_TARGET,
+                    MicrostockCatalog::FULFILLMENT_TARGET,
+                ])->where('plan_kind', PlanKind::Addon);
             })
             ->with('service')
             ->get();
@@ -349,6 +353,49 @@ class ServiceEntitlementService
         }
 
         return $total;
+    }
+
+    /**
+     * Active/grace Microstock workspace-slot addon quantity sum (extra slots).
+     * Standalone from FH team workspace slots (MicrostockCatalog).
+     */
+    public function microstockWorkspaceSlotExtraQuantity(string $userId): int
+    {
+        $rows = ServiceEntitlement::query()
+            ->where('user_id', $userId)
+            ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
+            ->whereHas('service', function ($q): void {
+                $q->where('fulfillment_target', MicrostockCatalog::FULFILLMENT_TARGET)
+                    ->where('plan_kind', PlanKind::Addon)
+                    ->where(function ($inner): void {
+                        $inner->where('code', MicrostockCatalog::CODE_ADDON_WORKSPACE_SLOT)
+                            ->orWhere('entitlement', MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS);
+                    });
+            })
+            ->get();
+
+        $total = 0;
+        foreach ($rows as $row) {
+            $total += max(0, (int) $row->quantity);
+        }
+
+        return $total;
+    }
+
+    /**
+     * True when the user holds any active/grace Microstock slot entitlement
+     * (free registration main OR slot addon). Gates Microstock activation.
+     */
+    public function hasActiveMicrostockWorkspaceSlot(string $userId): bool
+    {
+        return ServiceEntitlement::query()
+            ->where('user_id', $userId)
+            ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
+            ->whereHas('service', function ($q): void {
+                $q->where('fulfillment_target', MicrostockCatalog::FULFILLMENT_TARGET)
+                    ->where('entitlement', MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS);
+            })
+            ->exists();
     }
 
     public function hasActivePaidFileHosting(string $userId): bool

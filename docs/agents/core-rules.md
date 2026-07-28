@@ -50,7 +50,7 @@ An API-only or Blade-only change without its counterpart layers is **incomplete*
 
 ## 2. Living documentation (mandatory)
 
-- Update the matching domain/platform/web guide in the **same task/PR** whenever behavior changes — there is no separate close-out ritual or changelog.
+- Update the matching domain/platform/web guide in the **same task/PR** whenever behavior changes. Exception: the exact keyword `wrap up the docs` (defined in [AGENTS.md](../../AGENTS.md)) triggers a session-wide code↔docs consolidation on top of this per-task rule.
 - Prefer editing an existing guide over adding a new file. **Never** add a new flat subject file at `docs/*.md` root — placement rules (domains/platform/web/integration/agents/archive) and the full decision checklist: [docs/README.md — Rules for new documentation](../README.md#rules-for-new-documentation-mandatory).
 - English only, in every guide.
 

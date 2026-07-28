@@ -24,6 +24,7 @@ return [
     'invalid_visibility' => 'Nilai visibilitas tidak valid.',
     'public_share_requires_paid' => 'Berbagi tautan publik membutuhkan paket File Hosting berbayar yang masih aktif.',
     'public_share_blocked_hash' => 'File ini tidak dapat dibagikan secara publik (diblokir oleh kepatuhan).',
+    'public_share_not_allowed' => 'Item di dalam workspace ini tidak dapat dibagikan secara publik.',
     'blocklist_saved' => 'Hash ditambahkan ke daftar blokir.',
     'blocklist_removed' => 'Hash dihapus dari daftar blokir.',
     'share_not_found' => 'Item berbagi ini tidak tersedia.',

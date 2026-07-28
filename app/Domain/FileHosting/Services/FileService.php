@@ -84,6 +84,7 @@ class FileService
         $file = $this->resolveFileForMutate($actor, $fileId, $userId, $workspaceId);
         $from = (string) $file->visibility;
         $value = $this->visibility->normalize($visibility);
+        $this->visibility->assertSystemWorkspaceShareAllowed($file->workspace);
         $this->visibility->assertVisibilityChangeAllowed($value, (string) $file->user_id, is_string($file->checksum) ? $file->checksum : null);
 
         // Always drop cached S3 URL so private revoke cannot reuse a still-valid temp link.
@@ -355,6 +356,7 @@ class FileService
     {
         [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
         $value = $this->visibility->normalize($visibility);
+        $this->visibility->assertSystemWorkspaceShareAllowed($workspace);
         $this->visibility->assertVisibilityChangeAllowed($value, $ownerId);
 
         // Enforce the hash blocklist across the whole selection: if any target file

@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Domain\Navigation\Models\Menu;
 use App\Domain\Identity\Models\Role;
+use App\Domain\Navigation\Models\Menu;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use App\Domain\Navigation\Support\MenuLayout;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;

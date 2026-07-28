@@ -1,4 +1,36 @@
 <x-adminlte4::layouts.app :title="__('web/services.title')">
+    @if ($microstockFree || $microstockSlot)
+        <x-adminlte4::card :title="__('web/services.microstock.title')" class="mb-3">
+            <p class="text-muted mb-3">{{ __('web/services.microstock.slot_desc') }}</p>
+            <div class="d-flex flex-wrap gap-2">
+                @if ($microstockFree)
+                    @if ($microstockActive)
+                        <span class="badge text-bg-success align-self-center px-3 py-2">
+                            <i class="bi bi-check-circle me-1"></i> {{ __('web/services.microstock.active_badge') }}
+                        </span>
+                    @else
+                        <form action="{{ route('services.checkout', $microstockFree['id']) }}" method="POST" class="d-inline">
+                            @csrf
+                            <input type="hidden" name="currency" value="USD">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-lightning-charge me-1"></i> {{ __('web/services.microstock.activate_free') }}
+                            </button>
+                        </form>
+                    @endif
+                @endif
+                @if ($microstockSlot && $microstockActive)
+                    <form action="{{ route('services.checkout', $microstockSlot['id']) }}" method="POST" class="d-inline">
+                        @csrf
+                        <input type="hidden" name="currency" value="USD">
+                        <button type="submit" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-plus-lg me-1"></i> {{ __('web/services.microstock.buy_slot') }}
+                        </button>
+                    </form>
+                @endif
+            </div>
+        </x-adminlte4::card>
+    @endif
+
     <x-adminlte4::card :title="__('web/services.list_title')">
         @can('manage service')
             <x-slot:actions>

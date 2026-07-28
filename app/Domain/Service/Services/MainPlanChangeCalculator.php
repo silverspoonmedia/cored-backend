@@ -11,6 +11,7 @@ use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Support\FileHostingBillingPeriod;
 use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\MicrostockCatalog;
 use App\Domain\Service\Support\PlanChangeQuote;
 use Illuminate\Support\Carbon;
 
@@ -97,9 +98,12 @@ class MainPlanChangeCalculator
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
             ->whereNotNull('ends_at')
             ->whereHas('service', function ($q): void {
-                // Storage + workspace-slot addons share one anniversary clock.
-                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
-                    ->where('plan_kind', PlanKind::Addon);
+                // Storage + workspace-slot addons (FH and Microstock) share one
+                // anniversary clock.
+                $q->whereIn('fulfillment_target', [
+                    FileHostingCatalog::FULFILLMENT_TARGET,
+                    MicrostockCatalog::FULFILLMENT_TARGET,
+                ])->where('plan_kind', PlanKind::Addon);
             })
             ->orderBy('ends_at')
             ->value('ends_at');
@@ -118,8 +122,10 @@ class MainPlanChangeCalculator
             ->whereNotNull('ends_at')
             ->where('ends_at', '<=', now())
             ->whereHas('service', function ($q): void {
-                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
-                    ->where('plan_kind', PlanKind::Addon);
+                $q->whereIn('fulfillment_target', [
+                    FileHostingCatalog::FULFILLMENT_TARGET,
+                    MicrostockCatalog::FULFILLMENT_TARGET,
+                ])->where('plan_kind', PlanKind::Addon);
             })
             ->exists();
     }

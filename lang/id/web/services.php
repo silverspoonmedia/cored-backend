@@ -80,4 +80,11 @@ return [
         'permanent' => 'Permanen',
         'grace_banner' => 'Langganan berakhir. Perpanjang dalam masa grace atau file berlebih dihapus ke batas storage efektif.',
     ],
+    'microstock' => [
+        'title' => 'Microstock',
+        'slot_desc' => 'Aktifkan workspace Microstock gratis, lalu beli slot workspace tambahan. Slot terpisah dari team workspace File Hosting.',
+        'activate_free' => 'Aktifkan gratis',
+        'active_badge' => 'Aktif',
+        'buy_slot' => 'Beli slot ($1/bln)',
+    ],
 ];

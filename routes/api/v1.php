@@ -18,4 +18,4 @@ require __DIR__.'/v1/domain-access.php';
 // Product domains (kind=product). domain:make appends here; keep product requires last.
 require __DIR__.'/v1/file-hosting.php';
 require __DIR__.'/v1/vtual.php';
-
+require __DIR__.'/v1/microstock.php';

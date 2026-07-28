@@ -516,6 +516,41 @@ class WorkspaceCollaborativeWorksTest extends TestCase
             ->assertJsonStructure(['data' => [['event', 'properties']]]);
     }
 
+    public function test_invited_free_member_can_upload_to_team_workspace(): void
+    {
+        // Paid owner shares a team workspace; the invited member is FREE.
+        // Content collaboration (upload) only needs mutate access — no paid gate.
+        $this->grantPaidMain($this->owner);
+        $ws = app(WorkspaceService::class)->create($this->owner, 'Collab');
+
+        $invite = app(WorkspaceService::class)->invite(
+            $this->owner,
+            $ws->id,
+            $this->editor->email,
+            WorkspaceRole::Editor->value,
+        );
+        // editor has NO paid entitlement
+        app(WorkspaceService::class)->acceptInvite($this->editor, $invite->token);
+
+        $folder = app(FolderService::class)->create($this->editor, 'Docs', null, null, $ws->id);
+
+        $uploads = app(DirectUploadService::class);
+        $init = $uploads->initiate(
+            $this->editor,
+            'member-doc.pdf',
+            'application/pdf',
+            1024,
+            $folder->id,
+            null,
+            null,
+            $ws->id,
+        );
+        $complete = $uploads->complete($this->editor, $init['upload']->id);
+
+        $this->assertSame($this->editor->id, $complete['file']->created_by);
+        $this->assertSame($this->owner->id, $complete['file']->user_id);
+    }
+
     private function grantPaidMain(User $user): void
     {
         $service = Service::query()->where('code', 'file-hosting.plan.1tb.monthly')->first()

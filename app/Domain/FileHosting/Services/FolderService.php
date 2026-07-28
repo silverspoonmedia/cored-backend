@@ -2,6 +2,7 @@
 
 namespace App\Domain\FileHosting\Services;
 
+use App\Domain\FileHosting\Enums\WorkspaceKind;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
@@ -48,6 +49,10 @@ class FolderService
             ->where('user_id', $ownerId)
             ->where('workspace_id', $wsId)
             ->where('folder_id', $folderId)
+            ->when(
+                $workspace?->kind === WorkspaceKind::Microstock,
+                fn ($q) => $q->with('microstockMetadata')
+            )
             ->orderBy('name')
             ->get();
 
@@ -58,6 +63,7 @@ class FolderService
         return [
             'owner_id' => $ownerId,
             'workspace_id' => $wsId,
+            'workspace' => $workspace,
             'folder' => $folder,
             'breadcrumb' => FolderAncestorChain::breadcrumb($folder, $rootLabel),
             'folders' => $this->folders->children($ownerId, $folderId, $wsId),
@@ -111,6 +117,7 @@ class FolderService
         $folder = $this->resolveFolderForMutate($actor, $folderId, $userId, $workspaceId);
         $from = (string) $folder->visibility;
         $value = $this->visibility->normalize($visibility);
+        $this->visibility->assertSystemWorkspaceShareAllowed($folder->workspace);
         $this->visibility->assertVisibilityChangeAllowed($value, (string) $folder->user_id);
 
         $folder->forceFill(['visibility' => $value->value])->save();
@@ -195,6 +202,7 @@ class FolderService
     {
         [$ownerId, $workspace] = $this->resolveScope($actor, $userId, $workspaceId, mutate: true);
         $value = $this->visibility->normalize($visibility);
+        $this->visibility->assertSystemWorkspaceShareAllowed($workspace);
         $this->visibility->assertVisibilityChangeAllowed($value, $ownerId);
 
         $count = Folder::query()
