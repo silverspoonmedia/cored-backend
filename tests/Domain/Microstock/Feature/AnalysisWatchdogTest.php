@@ -20,11 +20,13 @@ use Database\Seeders\MicrostockRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Str;
+use Tests\Concerns\GrantsMicrostockAiCredits;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
 class AnalysisWatchdogTest extends TestCase
 {
+    use GrantsMicrostockAiCredits;
     use RefreshDatabase;
     use SeedsRolesAndPermissions;
 
@@ -254,6 +256,8 @@ class AnalysisWatchdogTest extends TestCase
                 'ends_at' => null,
             ],
         );
+
+        $this->grantMicrostockAiCredits($user);
     }
 
     private function userWithRole(string $role, string $email): User

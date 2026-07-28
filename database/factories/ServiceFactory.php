@@ -141,6 +141,21 @@ class ServiceFactory extends Factory
         ]);
     }
 
+    public function microstockAddonAiCredits5(): static
+    {
+        return $this->state(fn (): array => [
+            'code' => MicrostockCatalog::CODE_ADDON_AI_CREDITS_5,
+            'name' => 'Microstock AI Credits ($5)',
+            'description' => 'One-time $5 prepaid AI analysis credits.',
+            'billing_interval' => BillingInterval::Once,
+            'fulfillment_target' => MicrostockCatalog::FULFILLMENT_TARGET,
+            'entitlement' => MicrostockCatalog::ENTITLEMENT_AI_CREDITS,
+            'plan_kind' => PlanKind::Addon,
+            'storage_bytes' => 0,
+            'status' => ServiceStatus::Active,
+        ]);
+    }
+
     /** @deprecated Use fileHostingMain1Tb() — kept name for temporary test greps. */
     public function fileHostingMonthly(): static
     {

@@ -5,6 +5,7 @@ namespace App\Domain\FileHosting\Services;
 use App\Domain\FileHosting\Enums\WorkspaceKind;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Jobs\ComputeHostedFileChecksum;
+use App\Domain\FileHosting\Jobs\GenerateFileVariants;
 use App\Domain\FileHosting\Models\FileUpload;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Models\Workspace;
@@ -309,6 +310,10 @@ class DirectUploadService
         // hash blocklist. Idempotent — safe if re-dispatched.
         ComputeHostedFileChecksum::dispatch((string) $result['file']->id);
 
+        if ($this->shouldGenerateVariants($result['upload'], $result['file'])) {
+            GenerateFileVariants::dispatch((string) $result['file']->id);
+        }
+
         return $result;
     }
 
@@ -351,6 +356,22 @@ class DirectUploadService
      * Microstock collections only accept raster images the AI vision stage can
      * read. Anything else is rejected up-front so it never reaches analysis.
      */
+    protected function shouldGenerateVariants(FileUpload $upload, HostedFile $file): bool
+    {
+        if ($upload->workspace_id === null) {
+            return false;
+        }
+
+        $workspace = Workspace::query()->find($upload->workspace_id);
+        if ($workspace?->kind !== WorkspaceKind::Microstock) {
+            return false;
+        }
+
+        $allowed = (array) config('microstock.allowed_image_mimes', []);
+
+        return in_array(strtolower((string) $file->mime), $allowed, true);
+    }
+
     protected function assertMicrostockImage(string $mime): void
     {
         $allowed = (array) config('microstock.allowed_image_mimes', [

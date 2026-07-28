@@ -33,4 +33,6 @@ return [
     'collection_processing' => 'Analisis collection dimulai.',
     'collection_status' => 'Status collection dimuat.',
     'collection_exported' => 'Collection diekspor.',
+    'insufficient_ai_credits' => 'Kredit AI tidak cukup. Beli paket kredit AI dari Layanan sebelum menjalankan analisis.',
+    'billing_loaded' => 'Status penagihan AI dimuat.',
 ];

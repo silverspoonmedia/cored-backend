@@ -24,6 +24,7 @@ class AssetMetadata extends Model
         'description',
         'status',
         'ai_raw',
+        'ai_billing',
         'error',
     ];
 
@@ -35,6 +36,7 @@ class AssetMetadata extends Model
         return [
             'keywords' => 'array',
             'ai_raw' => 'array',
+            'ai_billing' => 'array',
             'status' => MetadataStatus::class,
         ];
     }

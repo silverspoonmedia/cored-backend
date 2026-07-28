@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
- * Response parsing for OpenAI-compatible gateways (incl. 9Router SSE trailers,
+ * Response parsing for OpenAI-compatible gateways (incl. SSE trailers,
  * markdown-fenced JSON, and Anthropic-style content blocks).
  */
 class HttpAiMetadataServiceResponseParsingTest extends TestCase
@@ -20,6 +20,7 @@ class HttpAiMetadataServiceResponseParsingTest extends TestCase
         parent::setUp();
 
         config([
+            'microstock.ai.http_retries' => 0,
             'microstock.ai.vision' => [
                 'endpoint' => self::ENDPOINT,
                 'model' => 'vision',
@@ -176,5 +177,39 @@ class HttpAiMetadataServiceResponseParsingTest extends TestCase
         $this->expectException(MicrostockException::class);
 
         (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+    }
+
+    public function test_parses_full_sse_stream_chunks(): void
+    {
+        $meta = $this->metadataJson('SSE stream title', ['stream', 'ok']);
+        $half = (int) ceil(strlen($meta) / 2);
+        $chunk1 = json_encode(['choices' => [['delta' => ['content' => substr($meta, 0, $half)]]]]);
+        $chunk2 = json_encode(['choices' => [['delta' => ['content' => substr($meta, $half)], 'finish_reason' => 'stop']]]);
+        $body = "data: {$chunk1}\n\ndata: {$chunk2}\n\ndata: [DONE]";
+
+        Http::fake([
+            self::ENDPOINT => Http::sequence()
+                ->push($body, 200)
+                ->push($this->openAiPayload($this->metadataJson('Curated', ['ok'])), 200),
+        ]);
+
+        $result = (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+
+        $this->assertSame('Curated', $result['title']);
+    }
+
+    public function test_request_includes_stream_false(): void
+    {
+        Http::fake([
+            self::ENDPOINT => Http::sequence()
+                ->push($this->openAiPayload($this->metadataJson('Vision', ['v'])), 200)
+                ->push($this->openAiPayload($this->metadataJson('Curated', ['c'])), 200),
+        ]);
+
+        (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+
+        Http::assertSent(function ($request) {
+            return ($request->data()['stream'] ?? null) === false;
+        });
     }
 }

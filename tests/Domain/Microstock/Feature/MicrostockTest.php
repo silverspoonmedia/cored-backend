@@ -16,7 +16,8 @@ use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Jobs\AnalyzeAssetMetadata;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Models\MarketplaceCredential;
-use App\Domain\Microstock\Services\AssetResizeService;
+use App\Domain\Microstock\Services\AiBillingService;
+use App\Domain\Microstock\Services\VisionImageResolver;
 use App\Domain\Microstock\Services\CredentialService;
 use App\Domain\Microstock\Services\CsvExportService;
 use App\Domain\Microstock\Services\MicrostockService;
@@ -28,11 +29,13 @@ use Database\Seeders\FileHostingRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Tests\Concerns\GrantsMicrostockAiCredits;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
 class MicrostockTest extends TestCase
 {
+    use GrantsMicrostockAiCredits;
     use RefreshDatabase;
     use SeedsRolesAndPermissions;
 
@@ -178,7 +181,8 @@ class MicrostockTest extends TestCase
         (new AnalyzeAssetMetadata((string) $metadata->id))
             ->handle(
                 app(AiMetadataService::class),
-                app(AssetResizeService::class),
+                app(VisionImageResolver::class),
+                app(AiBillingService::class),
             );
 
         $metadata->refresh();
@@ -317,6 +321,7 @@ class MicrostockTest extends TestCase
                     'description' => 'Curated description',
                     'category' => 'Illustration',
                     'raw' => ['vision' => null, 'thinking' => null],
+                    'stage_metrics' => [],
                 ];
             }
 
@@ -350,17 +355,15 @@ class MicrostockTest extends TestCase
                     'description' => 'Curated description',
                     'category' => 'Illustration',
                     'raw' => ['thinking' => true],
+                    'stage_metrics' => [],
                 ];
             }
         });
 
-        $this->app->instance(AssetResizeService::class, new class extends AssetResizeService
-        {
-            public function previewDataUri(HostedFile $file): string
-            {
-                return 'data:image/jpeg;base64,'.base64_encode('fake-preview');
-            }
-        });
+        $mock = \Mockery::mock(VisionImageResolver::class);
+        $mock->shouldReceive('resolve')->andReturn('data:image/jpeg;base64,'.base64_encode('fake-preview'));
+        $mock->shouldReceive('payloadByteLength')->andReturnUsing(fn (string $ref): int => strlen($ref));
+        $this->app->instance(VisionImageResolver::class, $mock);
     }
 
     private function makeFile(User $owner, string $workspaceId, string $name = 'asset.jpg'): HostedFile
@@ -414,6 +417,8 @@ class MicrostockTest extends TestCase
                 'ends_at' => null, // one-time permanent
             ],
         );
+
+        $this->grantMicrostockAiCredits($user);
     }
 
     private function grantMicrostockSlots(User $user, int $quantity): void

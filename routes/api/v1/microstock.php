@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Microstock\Http\Controllers\API\V1\BillingController;
 use App\Domain\Microstock\Http\Controllers\API\V1\CollectionController;
 use App\Domain\Microstock\Http\Controllers\API\V1\CredentialController;
 use App\Domain\Microstock\Http\Controllers\API\V1\MetadataController;
@@ -18,6 +19,7 @@ Route::middleware(['auth:api', 'domain.access:Microstock', 'product.active:Micro
     ->group(function (): void {
         Route::get('workspace', [WorkspaceController::class, 'show'])->name('workspace.show');
         Route::get('slots', [WorkspaceController::class, 'slots'])->name('slots.show');
+        Route::get('billing', [BillingController::class, 'show'])->name('billing.show');
         Route::post('workspaces', [WorkspaceController::class, 'store'])->name('workspaces.store');
 
         Route::post('assets/{file}/analyze', [MetadataController::class, 'analyze'])

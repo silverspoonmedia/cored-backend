@@ -2,52 +2,76 @@
 
 namespace App\Domain\Microstock\Services;
 
+use App\Domain\FileHosting\Enums\FileVariantKind;
 use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Support\ObjectKeyResolver;
-use Illuminate\Support\Facades\Storage;
-use Intervention\Image\Drivers\Gd\Driver as GdDriver;
-use Intervention\Image\Encoders\JpegEncoder;
-use Intervention\Image\ImageManager;
+use App\Domain\FileHosting\Services\FileVariantGenerator;
+use App\Domain\FileHosting\Services\FileVariantService;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Builds a small derivative of a microstock asset for the AI vision stage.
- * The original file stays untouched for the marketplace; the AI only needs a
- * compact preview so the gateway responds fast (avoids the 60s cURL cutoff
- * seen when full-size originals were sent).
+ * Prefers persisted file variants; falls back to ephemeral resize from original.
  */
 class AssetResizeService
 {
     public function __construct(
-        private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
+        private readonly FileVariantService $variants,
+        private readonly FileVariantGenerator $generator,
     ) {}
 
     /**
-     * Return a data-URI (base64) JPEG preview of the asset, downscaled so the
-     * longest side is at most config('microstock.ai.image_max_px').
+     * Return a data-URI (base64) JPEG preview of the asset.
      */
-    public function previewDataUri(HostedFile $file): string
+    public function previewDataUri(HostedFile $file, ?FileVariantKind $kind = null): string
     {
-        $maxPx = (int) config('microstock.ai.image_max_px', 1024);
-        $bytes = $this->readOriginal($file);
+        $kind ??= $this->defaultKind();
 
-        $manager = new ImageManager(new GdDriver);
-        $image = $manager->decode($bytes);
-        $image->scaleDown($maxPx, $maxPx);
+        $variant = $this->variants->findReady($file, $kind);
+        if ($variant !== null) {
+            try {
+                $bytes = $this->variants->readVariantBytes($variant);
 
-        $encoded = $image->encode(new JpegEncoder(quality: 80));
-
-        return 'data:image/jpeg;base64,'.base64_encode((string) $encoded);
-    }
-
-    private function readOriginal(HostedFile $file): string
-    {
-        $key = $this->objectKeys->objectKey((string) $file->user_id, (string) $file->path);
-        $bytes = Storage::disk($file->disk)->get($key);
-
-        if (! is_string($bytes) || $bytes === '') {
-            throw new \RuntimeException('Unable to read asset bytes for resize.');
+                return 'data:image/jpeg;base64,'.base64_encode($bytes);
+            } catch (\Throwable $e) {
+                Log::info('microstock.variants.read_failed', [
+                    'file_id' => $file->id,
+                    'kind' => $kind->value,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        } else {
+            Log::info('microstock.variants.not_ready', [
+                'file_id' => $file->id,
+                'kind' => $kind->value,
+                'delivery' => 'base64',
+                'fallback' => 'ephemeral_resize',
+            ]);
         }
 
-        return $bytes;
+        return $this->ephemeralDataUri($file, $kind->maxPx());
+    }
+
+    private function ephemeralDataUri(HostedFile $file, int $maxPx): string
+    {
+        $source = $this->generator->readOriginalBytes($file);
+        $encoded = $this->generator->encodeJpeg($source, $maxPx);
+
+        if (strlen($encoded['bytes']) > (int) config('microstock.ai.max_request_image_bytes', 200_000)) {
+            Log::warning('microstock.ai.preview_oversize', [
+                'file_id' => $file->id,
+                'bytes' => strlen($encoded['bytes']),
+                'max_px' => $encoded['max_px'],
+                'quality' => $encoded['quality'],
+            ]);
+        }
+
+        return 'data:image/jpeg;base64,'.base64_encode($encoded['bytes']);
+    }
+
+    private function defaultKind(): FileVariantKind
+    {
+        $configured = (string) config('microstock.ai.vision_image.variant_kind', FileVariantKind::Ai1024->value);
+
+        return FileVariantKind::tryFrom($configured) ?? FileVariantKind::Ai1024;
     }
 }

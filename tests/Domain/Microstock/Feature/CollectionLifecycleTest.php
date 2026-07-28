@@ -14,7 +14,7 @@ use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Jobs\AnalyzeAssetMetadata;
 use App\Domain\Microstock\Jobs\ProcessCollection;
 use App\Domain\Microstock\Models\AssetMetadata;
-use App\Domain\Microstock\Services\AssetResizeService;
+use App\Domain\Microstock\Services\VisionImageResolver;
 use App\Domain\Microstock\Services\CollectionService;
 use App\Domain\Microstock\Services\CsvExportService;
 use App\Domain\Microstock\Services\MicrostockService;
@@ -29,12 +29,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Tests\Concerns\GrantsMicrostockAiCredits;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\Fakes\FakeFileHostingDirectUploadService;
 use Tests\TestCase;
 
 class CollectionLifecycleTest extends TestCase
 {
+    use GrantsMicrostockAiCredits;
     use RefreshDatabase;
     use SeedsRolesAndPermissions;
 
@@ -195,6 +197,8 @@ class CollectionLifecycleTest extends TestCase
         $this->assertIsArray($raw);
         $this->assertArrayHasKey('vision', $raw);
         $this->assertArrayHasKey('thinking', $raw);
+        $this->assertArrayHasKey('stage_metrics', $raw);
+        $this->assertCount(2, $raw['stage_metrics']);
         $this->assertSame(CollectionStatus::Review, $folder->refresh()->collection_status);
     }
 
@@ -488,6 +492,10 @@ class CollectionLifecycleTest extends TestCase
                     'description' => 'Curated description',
                     'category' => 'Illustration',
                     'raw' => ['vision' => null, 'thinking' => null],
+                    'stage_metrics' => [
+                        ['stage' => 'vision', 'multimodal' => true],
+                        ['stage' => 'thinking', 'multimodal' => true],
+                    ],
                 ];
             }
 
@@ -521,6 +529,9 @@ class CollectionLifecycleTest extends TestCase
                     'description' => 'Curated description',
                     'category' => 'Illustration',
                     'raw' => ['thinking' => true],
+                    'stage_metrics' => [
+                        ['stage' => 'thinking', 'multimodal' => true],
+                    ],
                 ];
             }
         });
@@ -530,13 +541,10 @@ class CollectionLifecycleTest extends TestCase
 
     private function bindFakeResizer(): void
     {
-        $this->app->instance(AssetResizeService::class, new class extends AssetResizeService
-        {
-            public function previewDataUri(HostedFile $file): string
-            {
-                return 'data:image/jpeg;base64,'.base64_encode('fake-preview');
-            }
-        });
+        $mock = \Mockery::mock(VisionImageResolver::class);
+        $mock->shouldReceive('resolve')->andReturn('data:image/jpeg;base64,'.base64_encode('fake-preview'));
+        $mock->shouldReceive('payloadByteLength')->andReturnUsing(fn (string $ref): int => strlen($ref));
+        $this->app->instance(VisionImageResolver::class, $mock);
     }
 
     private function makeFolder(User $owner, string $workspaceId, string $name = 'Collection', ?string $parentId = null): Folder
@@ -579,6 +587,8 @@ class CollectionLifecycleTest extends TestCase
                 'ends_at' => null,
             ],
         );
+
+        $this->grantMicrostockAiCredits($user);
     }
 
     private function userWithRole(string $role, string $email): User

@@ -153,6 +153,7 @@ Checkout → MainPlanChangeCalculator quote
          addon unit: qty++; ends_at frozen / shared
        FileHostingQuotaRecomputeService
        ensureProductActive (fulfillment_target → product_activations row kept Active)
+       microstock_ai_credits → AiCreditService::creditFromPurchase (prepaid analysis balance)
 ```
 
 Fulfillment hook: `ServiceFulfillmentService::ensureProductActive` maps the Service catalog `fulfillment_target` (e.g. `file_hosting`) to a product key via `ProductRegistry::productKeyByFulfillmentTarget` and keeps the implicit product activation Active when an entitlement activates. Explicit products are **not** auto-activated here — admin approval remains the gate. See [Product Activations](../product-activations/README.md).

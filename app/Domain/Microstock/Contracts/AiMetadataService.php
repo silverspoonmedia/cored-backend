@@ -14,7 +14,7 @@ interface AiMetadataService
      * @param  string  $imageUrl  Publicly reachable (signed) URL of the asset.
      * @param  string|null  $hint  Optional owner description of the whole
      *                             collection, used to ground the metadata.
-     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: array<string, mixed>}
+     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: array<string, mixed>, stage_metrics: list<array<string, mixed>>}
      */
     public function generate(string $imageUrl, ?string $hint = null): array;
 
@@ -35,7 +35,7 @@ interface AiMetadataService
      * thinking model verifies the draft against the image before curating.
      *
      * @param  list<string>  $keywords
-     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: mixed}
+     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: mixed, stage_metrics: list<array<string, mixed>>}
      */
     public function curateDraft(
         string $title,

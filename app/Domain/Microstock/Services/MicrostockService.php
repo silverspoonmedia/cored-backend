@@ -25,6 +25,7 @@ class MicrostockService
         private readonly WorkspaceService $workspaces,
         private readonly WorkspaceAccessService $workspaceAccess,
         private readonly ServiceEntitlementService $entitlements,
+        private readonly AiBillingService $billing,
     ) {}
 
     /**
@@ -104,6 +105,8 @@ class MicrostockService
     public function requestAnalysis(User $actor, string $fileId): AssetMetadata
     {
         $file = $this->resolveAsset($actor, $fileId);
+
+        $this->billing->assertCanAnalyze($actor, 1);
 
         $metadata = AssetMetadata::query()->firstOrNew(['file_id' => $file->id]);
         $metadata->user_id = $file->user_id;

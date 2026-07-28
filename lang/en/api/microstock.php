@@ -33,4 +33,6 @@ return [
     'collection_processing' => 'Collection analysis started.',
     'collection_status' => 'Collection status loaded.',
     'collection_exported' => 'Collection exported.',
+    'insufficient_ai_credits' => 'Insufficient AI credits. Purchase an AI credit pack from Services before running analysis.',
+    'billing_loaded' => 'AI billing status loaded.',
 ];

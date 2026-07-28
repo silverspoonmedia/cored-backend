@@ -27,6 +27,7 @@ class CollectionService
     public function __construct(
         private readonly WorkspaceAccessService $workspaceAccess,
         private readonly CsvExportService $csv,
+        private readonly AiBillingService $billing,
     ) {}
 
     /**
@@ -94,6 +95,8 @@ class CollectionService
         if ($this->filesIn($folder)->isEmpty()) {
             throw new MicrostockException(__('api/microstock.collection_empty'), 422);
         }
+
+        $this->billing->assertCanAnalyze($actor, $this->filesIn($folder)->count());
 
         $folder->markCollectionStatus(CollectionStatus::Processing);
 

@@ -15,6 +15,7 @@ class HttpAiMetadataServiceCurateDraftTest extends TestCase
         parent::setUp();
 
         config([
+            'microstock.ai.http_retries' => 0,
             'microstock.ai.thinking' => [
                 'endpoint' => self::ENDPOINT,
                 'model' => 'thinking',

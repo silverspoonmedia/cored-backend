@@ -3,6 +3,7 @@
 namespace App\Domain\FileHosting\Services;
 
 use App\Domain\FileHosting\Exceptions\FileHostingException;
+use App\Domain\FileHosting\Models\FileVariant;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Support\ObjectKeyResolver;
 use Illuminate\Support\Carbon;
@@ -45,6 +46,40 @@ class SignedDownloadService
     }
 
     /**
+     * Mint a short-lived inline URL for a persisted file variant (AI vision).
+     *
+     * @return array{url: string, expires_at: Carbon}
+     */
+    public function resolveVariant(FileVariant $variant, bool $inline = true): array
+    {
+        $variant->loadMissing('file');
+        $file = $variant->file;
+
+        if ($file === null) {
+            throw new FileHostingException(__('api/file-hosting.download_unavailable'));
+        }
+
+        $ttlMinutes = (int) config('microstock.ai.vision_image.signed_url_ttl_minutes', 30);
+        $expiresAt = Carbon::now()->addMinutes(max(1, $ttlMinutes));
+        $name = $this->variantDownloadName($file->name, $variant);
+
+        $url = $this->mintObjectUrl(
+            userId: (string) $file->user_id,
+            disk: (string) $variant->disk,
+            objectPath: (string) $variant->path,
+            expiresAt: $expiresAt,
+            downloadName: $name,
+            mime: is_string($variant->mime) ? $variant->mime : 'image/jpeg',
+            inline: $inline,
+        );
+
+        return [
+            'url' => $url,
+            'expires_at' => $expiresAt,
+        ];
+    }
+
+    /**
      * @return array{url: string, expires_at: Carbon}
      */
     public function mintAndCache(HostedFile $file, bool $inline = false): array
@@ -78,11 +113,41 @@ class SignedDownloadService
 
     private function mintUrl(HostedFile $file, Carbon $expiresAt, bool $inline = false): string
     {
-        if ($this->isDownloadProxyEnabledForDisk((string) $file->disk)) {
-            return $this->proxyDownloadUrl($file, $expiresAt, $inline);
+        return $this->mintObjectUrl(
+            userId: (string) $file->user_id,
+            disk: (string) $file->disk,
+            objectPath: (string) $file->path,
+            expiresAt: $expiresAt,
+            downloadName: $file->name,
+            mime: is_string($file->mime) ? $file->mime : '',
+            inline: $inline,
+        );
+    }
+
+    private function mintObjectUrl(
+        string $userId,
+        string $disk,
+        string $objectPath,
+        Carbon $expiresAt,
+        string $downloadName,
+        string $mime,
+        bool $inline,
+    ): string {
+        if ($this->isDownloadProxyEnabledForDisk($disk)) {
+            return $this->proxyObjectDownloadUrl($userId, $disk, $objectPath, $expiresAt, $downloadName, $mime, $inline);
         }
 
-        return $this->temporaryUrl($file, $expiresAt, $inline);
+        return $this->temporaryObjectUrl($userId, $disk, $objectPath, $expiresAt, $downloadName, $mime, $inline);
+    }
+
+    private function variantDownloadName(string $parentName, FileVariant $variant): string
+    {
+        $kind = $variant->kind instanceof \App\Domain\FileHosting\Enums\FileVariantKind
+            ? $variant->kind->value
+            : (string) $variant->kind;
+        $base = pathinfo($parentName, PATHINFO_FILENAME) ?: 'asset';
+
+        return $base.'-'.$kind.'.jpg';
     }
 
     /**
@@ -144,17 +209,37 @@ class SignedDownloadService
 
     private function proxyDownloadUrl(HostedFile $file, Carbon $expiresAt, bool $inline = false): string
     {
+        return $this->proxyObjectDownloadUrl(
+            (string) $file->user_id,
+            (string) $file->disk,
+            (string) $file->path,
+            $expiresAt,
+            $file->name,
+            is_string($file->mime) ? $file->mime : '',
+            $inline,
+        );
+    }
+
+    private function proxyObjectDownloadUrl(
+        string $userId,
+        string $disk,
+        string $objectPath,
+        Carbon $expiresAt,
+        string $downloadName,
+        string $mime,
+        bool $inline,
+    ): string {
         $baseUrl = $this->proxyBaseUrl();
         $token = (string) config('file-hosting.upload_proxy.token', '');
-        $alias = $this->targetAliasForDisk((string) $file->disk);
+        $alias = $this->targetAliasForDisk($disk);
 
         if ($baseUrl === '' || $token === '' || $alias === null) {
             throw new FileHostingException(__('api/file-hosting.download_unavailable'));
         }
 
-        $objectKey = $this->objectKeys->objectKey($file->user_id, $file->path);
-        $disposition = $this->contentDisposition($file->name, $inline ? (is_string($file->mime) ? $file->mime : null) : null);
-        $contentType = is_string($file->mime) ? $file->mime : '';
+        $objectKey = $this->objectKeys->objectKey($userId, $objectPath);
+        $disposition = $this->contentDisposition($downloadName, $inline ? ($mime !== '' ? $mime : null) : null);
+        $contentType = $mime;
         $exp = (string) $expiresAt->getTimestamp();
 
         $payload = $this->downloadSignaturePayload(
@@ -222,29 +307,47 @@ class SignedDownloadService
 
     private function temporaryUrl(HostedFile $file, Carbon $expiresAt, bool $inline = false): string
     {
-        $disk = Storage::disk($file->disk);
+        return $this->temporaryObjectUrl(
+            (string) $file->user_id,
+            (string) $file->disk,
+            (string) $file->path,
+            $expiresAt,
+            $file->name,
+            is_string($file->mime) ? $file->mime : '',
+            $inline,
+        );
+    }
 
-        if (! method_exists($disk, 'temporaryUrl')) {
+    private function temporaryObjectUrl(
+        string $userId,
+        string $disk,
+        string $objectPath,
+        Carbon $expiresAt,
+        string $downloadName,
+        string $mime,
+        bool $inline,
+    ): string {
+        $diskDriver = Storage::disk($disk);
+
+        if (! method_exists($diskDriver, 'temporaryUrl')) {
             throw new FileHostingException(__('api/file-hosting.download_unavailable'));
         }
 
-        $mime = is_string($file->mime) ? $file->mime : null;
         $options = [
-            'ResponseContentDisposition' => $this->contentDisposition($file->name, $inline ? $mime : null),
+            'ResponseContentDisposition' => $this->contentDisposition($downloadName, $inline && $mime !== '' ? $mime : null),
         ];
 
-        if (is_string($file->mime) && $file->mime !== '') {
-            $options['ResponseContentType'] = $file->mime;
+        if ($mime !== '') {
+            $options['ResponseContentType'] = $mime;
         }
 
-        $objectKey = $this->objectKeys->objectKey($file->user_id, $file->path);
+        $objectKey = $this->objectKeys->objectKey($userId, $objectPath);
 
         try {
-            $url = $disk->temporaryUrl($objectKey, $expiresAt, $options);
+            $url = $diskDriver->temporaryUrl($objectKey, $expiresAt, $options);
         } catch (\Throwable) {
-            // Some adapters reject options; retry bare temporaryUrl.
             try {
-                $url = $disk->temporaryUrl($objectKey, $expiresAt);
+                $url = $diskDriver->temporaryUrl($objectKey, $expiresAt);
             } catch (\Throwable) {
                 throw new FileHostingException(__('api/file-hosting.download_unavailable'));
             }

@@ -90,6 +90,18 @@ class ServiceCatalogSeeder extends Seeder
             entitlement: MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
             fulfillmentTarget: MicrostockCatalog::FULFILLMENT_TARGET,
         );
+
+        $this->seedPlan(
+            code: MicrostockCatalog::CODE_ADDON_AI_CREDITS_5,
+            name: 'Microstock AI Credits ($5)',
+            description: 'One-time prepaid AI analysis credits for Microstock metadata generation. $5 credit balance — debited only on successful analysis.',
+            planKind: PlanKind::Addon,
+            storageBytes: 0,
+            amountUsd: 5.00,
+            entitlement: MicrostockCatalog::ENTITLEMENT_AI_CREDITS,
+            fulfillmentTarget: MicrostockCatalog::FULFILLMENT_TARGET,
+            interval: BillingInterval::Once,
+        );
     }
 
     private function removeFreeCatalogSku(): void

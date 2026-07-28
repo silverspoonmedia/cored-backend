@@ -21,6 +21,7 @@ class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
         parent::setUp();
 
         config([
+            'microstock.ai.http_retries' => 0,
             'microstock.ai.vision' => [
                 'endpoint' => self::ENDPOINT,
                 'model' => 'vision',
@@ -101,7 +102,7 @@ class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
 
     public function test_thinking_falls_back_to_vision_draft_when_all_attempts_fail(): void
     {
-        // Vision OK; all thinking attempts time out -> keep vision draft.
+        // Vision OK; all four thinking attempts fail -> keep vision draft.
         Http::fake([
             self::ENDPOINT => Http::sequence()
                 ->push($this->visionResponse(), 200)

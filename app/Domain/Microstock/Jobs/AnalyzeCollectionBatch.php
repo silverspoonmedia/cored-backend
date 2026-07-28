@@ -7,7 +7,9 @@ use App\Domain\FileHosting\Models\Folder;
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
-use App\Domain\Microstock\Services\AssetResizeService;
+use App\Domain\Microstock\Services\AiBillingService;
+use App\Domain\Microstock\Services\VisionImageResolver;
+use App\Domain\Microstock\Support\AnalysisBillingContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -48,8 +50,11 @@ class AnalyzeCollectionBatch implements ShouldQueue
         private readonly ?string $hint = null,
     ) {}
 
-    public function handle(AiMetadataService $ai, AssetResizeService $resizer): void
-    {
+    public function handle(
+        AiMetadataService $ai,
+        VisionImageResolver $images,
+        AiBillingService $billing,
+    ): void {
         $folder = Folder::query()->find($this->folderId);
         if ($folder === null) {
             return;
@@ -74,7 +79,7 @@ class AnalyzeCollectionBatch implements ShouldQueue
             $byId = [];
             foreach ($metadata as $m) {
                 try {
-                    $items[] = ['id' => (string) $m->id, 'image' => $resizer->previewDataUri($m->file)];
+                    $items[] = ['id' => (string) $m->id, 'image' => $images->resolve($m->file)];
                     $byId[(string) $m->id] = $m;
                 } catch (Throwable $e) {
                     $this->markFailed($m, $e);
@@ -88,8 +93,8 @@ class AnalyzeCollectionBatch implements ShouldQueue
                     foreach ($items as $item) {
                         $m = $byId[$item['id']];
                         try {
-                            $single = $ai->generate($item['image'], $this->hint);
-                            $this->markGenerated($m, $single);
+                            $single = $this->runSingleAnalysis($ai, $m, $item['image']);
+                            $this->markGenerated($m, $this->normalizeGenerateResult($single), $billing);
                         } catch (Throwable $e) {
                             $this->markFailed($m, $e);
                         }
@@ -97,7 +102,7 @@ class AnalyzeCollectionBatch implements ShouldQueue
                 } else {
                     $results = [];
                     try {
-                        $results = $ai->generateBatch($items, $this->hint);
+                        $results = $this->runBatchAnalysis($ai, $folder, $items, $byId);
                     } catch (Throwable $e) {
                         report($e);
                     }
@@ -109,8 +114,8 @@ class AnalyzeCollectionBatch implements ShouldQueue
                         if ($row === null) {
                             // Batch skipped/failed this asset: fall back to single-file run.
                             try {
-                                $single = $ai->generate($item['image'], $this->hint);
-                                $this->markGenerated($m, $single);
+                                $single = $this->runSingleAnalysis($ai, $m, $item['image']);
+                                $this->markGenerated($m, $this->normalizeGenerateResult($single), $billing);
                             } catch (Throwable $e) {
                                 $this->markFailed($m, $e);
                             }
@@ -118,7 +123,7 @@ class AnalyzeCollectionBatch implements ShouldQueue
                             continue;
                         }
 
-                        $this->curateAndMark($ai, $m, $row, $item['image']);
+                        $this->curateAndMark($ai, $m, $row, $item['image'], $billing);
                     }
                 }
             }
@@ -135,20 +140,76 @@ class AnalyzeCollectionBatch implements ShouldQueue
     }
 
     /**
+     * @param  array<int, array{id: string, image: string}>  $items
+     * @param  array<string, AssetMetadata>  $byId
+     * @return array<string, array{title: string, keywords: list<string>, description: string, category: string, raw: mixed}>
+     */
+    private function runBatchAnalysis(AiMetadataService $ai, Folder $folder, array $items, array $byId): array
+    {
+        $first = reset($byId);
+        $batchTargets = [];
+        foreach ($items as $item) {
+            $m = $byId[$item['id']];
+            $batchTargets[] = [
+                'metadata_id' => (string) $m->id,
+                'file_id' => (string) $m->file_id,
+            ];
+        }
+
+        $context = new AnalysisBillingContext(
+            userId: (string) $first->user_id,
+            folderId: (string) $folder->id,
+            batchTargets: $batchTargets,
+        );
+
+        return AnalysisBillingContext::run($context, fn (): array => $ai->generateBatch($items, $this->hint));
+    }
+
+    /**
+     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: mixed}
+     */
+    private function runSingleAnalysis(AiMetadataService $ai, AssetMetadata $m, string $image): array
+    {
+        $context = new AnalysisBillingContext(
+            userId: (string) $m->user_id,
+            metadataId: (string) $m->id,
+            fileId: (string) $m->file_id,
+            folderId: $this->folderId,
+        );
+
+        return AnalysisBillingContext::run($context, fn (): array => $ai->generate($image, $this->hint));
+    }
+
+    /**
      * Run the thinking stage on a batch vision draft, then persist curated metadata.
      *
      * @param  array{title: string, keywords: list<string>, description?: string, category?: string, raw: mixed}  $row
      */
-    private function curateAndMark(AiMetadataService $ai, AssetMetadata $m, array $row, string $imageUrl): void
-    {
+    private function curateAndMark(
+        AiMetadataService $ai,
+        AssetMetadata $m,
+        array $row,
+        string $imageUrl,
+        AiBillingService $billing,
+    ): void {
         try {
-            $curated = $ai->curateDraft(
-                $row['title'],
-                $row['keywords'],
-                $this->hint,
-                $row['description'] ?? '',
-                $row['category'] ?? '',
-                $imageUrl,
+            $context = new AnalysisBillingContext(
+                userId: (string) $m->user_id,
+                metadataId: (string) $m->id,
+                fileId: (string) $m->file_id,
+                folderId: $this->folderId,
+            );
+
+            $curated = AnalysisBillingContext::run(
+                $context,
+                fn (): array => $ai->curateDraft(
+                    $row['title'],
+                    $row['keywords'],
+                    $this->hint,
+                    $row['description'] ?? '',
+                    $row['category'] ?? '',
+                    $imageUrl,
+                ),
             );
 
             $this->markGenerated($m, [
@@ -159,17 +220,37 @@ class AnalyzeCollectionBatch implements ShouldQueue
                 'raw' => [
                     'vision' => $row['raw'] ?? null,
                     'thinking' => $curated['raw'] ?? null,
+                    'stage_metrics' => $curated['stage_metrics'] ?? [],
                 ],
-            ]);
+            ], $billing);
         } catch (Throwable $e) {
             $this->markFailed($m, $e);
         }
     }
 
     /**
+     * @param  array{title: string, keywords: list<string>, description?: string, category?: string, raw: array<string, mixed>, stage_metrics?: list<array<string, mixed>>}  $result
+     * @return array{title: string, keywords: list<string>, description?: string, category?: string, raw: array{vision: mixed, thinking: mixed, stage_metrics: list<array<string, mixed>>}}
+     */
+    private function normalizeGenerateResult(array $result): array
+    {
+        return [
+            'title' => $result['title'],
+            'keywords' => $result['keywords'],
+            'description' => $result['description'] ?? '',
+            'category' => $result['category'] ?? '',
+            'raw' => [
+                'vision' => $result['raw']['vision'] ?? null,
+                'thinking' => $result['raw']['thinking'] ?? null,
+                'stage_metrics' => $result['stage_metrics'] ?? [],
+            ],
+        ];
+    }
+
+    /**
      * @param  array{title: string, keywords: list<string>, description?: string, category?: string, raw: mixed}  $row
      */
-    private function markGenerated(AssetMetadata $m, array $row): void
+    private function markGenerated(AssetMetadata $m, array $row, AiBillingService $billing): void
     {
         $m->forceFill([
             'title' => $row['title'],
@@ -180,6 +261,8 @@ class AnalyzeCollectionBatch implements ShouldQueue
             'status' => MetadataStatus::Generated,
             'error' => null,
         ])->save();
+
+        $billing->settleSuccessfulAnalysis($m->refresh());
     }
 
     private function markFailed(AssetMetadata $m, Throwable $e): void

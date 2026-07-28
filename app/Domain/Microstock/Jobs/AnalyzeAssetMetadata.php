@@ -5,7 +5,9 @@ namespace App\Domain\Microstock\Jobs;
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
-use App\Domain\Microstock\Services\AssetResizeService;
+use App\Domain\Microstock\Services\AiBillingService;
+use App\Domain\Microstock\Services\VisionImageResolver;
+use App\Domain\Microstock\Support\AnalysisBillingContext;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -42,8 +44,11 @@ class AnalyzeAssetMetadata implements ShouldQueue
         private readonly ?string $hint = null,
     ) {}
 
-    public function handle(AiMetadataService $ai, AssetResizeService $resizer): void
-    {
+    public function handle(
+        AiMetadataService $ai,
+        VisionImageResolver $images,
+        AiBillingService $billing,
+    ): void {
         $metadata = AssetMetadata::query()->with('file')->find($this->metadataId);
 
         if ($metadata === null || $metadata->file === null) {
@@ -57,18 +62,31 @@ class AnalyzeAssetMetadata implements ShouldQueue
 
         // Send a downscaled preview (not the full-size original) so the vision
         // gateway responds within its ~60s cutoff.
-        $image = $resizer->previewDataUri($metadata->file);
+        $image = $images->resolve($metadata->file);
 
-        $result = $ai->generate($image, $this->hint);
+        $context = new AnalysisBillingContext(
+            userId: (string) $metadata->user_id,
+            metadataId: (string) $metadata->id,
+            fileId: (string) $metadata->file_id,
+            folderId: $metadata->file->folder_id !== null ? (string) $metadata->file->folder_id : null,
+        );
+
+        $result = AnalysisBillingContext::run($context, fn (): array => $ai->generate($image, $this->hint));
 
         $metadata->forceFill([
             'title' => $result['title'],
             'keywords' => $result['keywords'],
             'description' => $result['description'] ?? null,
             'category' => $result['category'] ?? null,
-            'ai_raw' => $result['raw'],
+            'ai_raw' => [
+                'vision' => $result['raw']['vision'] ?? null,
+                'thinking' => $result['raw']['thinking'] ?? null,
+                'stage_metrics' => $result['stage_metrics'] ?? [],
+            ],
             'status' => MetadataStatus::Generated,
         ])->save();
+
+        $billing->settleSuccessfulAnalysis($metadata->refresh());
     }
 
     public function failed(Throwable $e): void
