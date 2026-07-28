@@ -17,7 +17,7 @@ use Throwable;
 /**
  * Orchestrates the AI pipeline for one Microstock collection (folder). Seeds a
  * pending metadata row per file directly inside the folder (non-recursive),
- * then hands off to chained vision-batch jobs that dispatch per-asset thinking.
+ * then dispatches per-asset vision jobs on the collection vision lane.
  */
 class ProcessCollection implements ShouldQueue
 {
@@ -32,6 +32,8 @@ class ProcessCollection implements ShouldQueue
 
     public function __construct(
         private readonly string $folderId,
+        private readonly string $billingUserId,
+        private readonly string $analysisRunId,
     ) {}
 
     public function handle(AnalysisStageService $stages): void
@@ -51,7 +53,7 @@ class ProcessCollection implements ShouldQueue
             ->map(function (HostedFile $file) use ($stages): string {
                 $metadata = AssetMetadata::query()->firstOrNew(['file_id' => $file->id]);
                 $metadata->user_id = $file->user_id;
-                $stages->initializeStages($metadata);
+                $stages->initializeStages($metadata, $this->billingUserId, $this->analysisRunId);
 
                 return (string) $metadata->id;
             })
@@ -63,7 +65,10 @@ class ProcessCollection implements ShouldQueue
             return;
         }
 
-        AnalyzeCollectionVisionBatch::dispatch($this->folderId, $metadataIds, $hint);
+        foreach ($metadataIds as $metadataId) {
+            AnalyzeAssetVision::dispatchForCollection($metadataId, $hint, $this->folderId);
+        }
+
         AnalysisWatchdog::dispatch();
     }
 

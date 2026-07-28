@@ -39,20 +39,13 @@ class AnalysisStageServiceTest extends TestCase
         $this->app->instance(AiBillingService::class, $billing);
 
         $service = app(AnalysisStageService::class);
-        $service->markThinkingOk($metadata->refresh(), [
-            'title' => 'Final',
-            'keywords' => ['one'],
-            'description' => 'Desc',
-            'category' => 'Illustration',
-            'raw' => ['thinking' => true],
-            'stage_metrics' => [['stage' => 'thinking']],
-        ]);
         $service->composeResultFromThinking($metadata->refresh(), [
             'title' => 'Final',
             'keywords' => ['one'],
             'description' => 'Desc',
             'category' => 'Illustration',
             'raw' => ['thinking' => true],
+            'stage_metrics' => [['stage' => 'thinking']],
         ]);
 
         $metadata->refresh();

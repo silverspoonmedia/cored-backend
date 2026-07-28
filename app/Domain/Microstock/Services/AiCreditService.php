@@ -96,15 +96,6 @@ class AiCreditService
             return;
         }
 
-        if (AiCreditTransaction::query()
-            ->where('reference_type', $referenceType)
-            ->where('reference_id', $referenceId)
-            ->where('type', AiCreditTransactionType::AnalysisDebit)
-            ->exists()
-        ) {
-            return;
-        }
-
         DB::transaction(function () use ($userId, $amountMicroUsd, $referenceType, $referenceId): void {
             $balance = AiBalance::query()->lockForUpdate()->firstOrCreate(
                 ['user_id' => $userId],

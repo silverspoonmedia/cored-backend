@@ -3,6 +3,7 @@
 namespace App\Domain\Microstock\Jobs;
 
 use App\Domain\Microstock\Contracts\AiMetadataService;
+use App\Domain\Microstock\Enums\AnalysisPipeline;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
@@ -13,6 +14,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Queue\SerializesModels;
 use Throwable;
 
@@ -36,7 +38,33 @@ class AnalyzeAssetThinking implements ShouldQueue
         private readonly string $metadataId,
         private readonly ?string $hint = null,
         private readonly ?string $folderId = null,
+        private readonly AnalysisPipeline $pipeline = AnalysisPipeline::Collection,
     ) {}
+
+    /**
+     * @return list<object>
+     */
+    public function middleware(): array
+    {
+        return [
+            (new WithoutOverlapping($this->pipeline->thinkingOverlapKey($this->folderId)))
+                ->releaseAfter(30)
+                ->expireAfter($this->timeout + 60),
+            (new WithoutOverlapping($this->pipeline->thinkingMetadataOverlapKey($this->metadataId)))
+                ->releaseAfter(30)
+                ->expireAfter($this->timeout + 60),
+        ];
+    }
+
+    public static function dispatchForPipeline(
+        string $metadataId,
+        ?string $hint,
+        ?string $folderId,
+        AnalysisPipeline $pipeline,
+    ): void {
+        static::dispatch($metadataId, $hint, $folderId, $pipeline)
+            ->onQueue($pipeline->thinkingQueue());
+    }
 
     public function handle(
         AiMetadataService $ai,
@@ -53,6 +81,10 @@ class AnalyzeAssetThinking implements ShouldQueue
             return;
         }
 
+        if ($metadata->status === MetadataStatus::Generated) {
+            return;
+        }
+
         $visionStatus = $metadata->ai_vision['status'] ?? AnalysisStageStatus::Pending->value;
         if ($visionStatus !== AnalysisStageStatus::Ok->value) {
             return;
@@ -66,16 +98,21 @@ class AnalyzeAssetThinking implements ShouldQueue
             return;
         }
 
-        $stages->markThinkingRunning($metadata->refresh());
+        if (! $stages->tryClaimThinkingRunning($metadata->refresh())) {
+            return;
+        }
 
         try {
             $image = $images->resolve($metadata->file);
 
+            $folderId = $this->folderId ?? ($metadata->file->folder_id !== null ? (string) $metadata->file->folder_id : null);
+
             $context = new AnalysisBillingContext(
-                userId: (string) $metadata->user_id,
+                billingUserId: (string) ($metadata->billing_user_id ?? $metadata->user_id),
                 metadataId: (string) $metadata->id,
                 fileId: (string) $metadata->file_id,
-                folderId: $this->folderId ?? ($metadata->file->folder_id !== null ? (string) $metadata->file->folder_id : null),
+                folderId: $folderId,
+                analysisRunId: $metadata->analysis_run_id,
             );
 
             $curated = AnalysisBillingContext::run(
@@ -97,7 +134,6 @@ class AnalyzeAssetThinking implements ShouldQueue
                 return;
             }
 
-            $stages->markThinkingOk($metadata->refresh(), $curated);
             $stages->composeResultFromThinking($metadata->refresh(), $curated);
             $this->completeFolder($stages);
         } catch (Throwable $e) {

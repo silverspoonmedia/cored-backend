@@ -14,6 +14,7 @@ use App\Domain\Microstock\Jobs\AnalyzeAssetVision;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Domain\Service\Services\ServiceEntitlementService;
+use Illuminate\Support\Str;
 
 /**
  * Microstock core: system workspace resolution + asset metadata lifecycle.
@@ -109,11 +110,17 @@ class MicrostockService
 
         $this->billing->assertCanAnalyze($actor, 1);
 
+        $analysisRunId = (string) Str::uuid();
+
         $metadata = AssetMetadata::query()->firstOrNew(['file_id' => $file->id]);
         $metadata->user_id = $file->user_id;
-        app(AnalysisStageService::class)->initializeStages($metadata);
+        app(AnalysisStageService::class)->initializeStages($metadata, (string) $actor->id, $analysisRunId);
 
-        AnalyzeAssetVision::dispatch((string) $metadata->id);
+        $file->loadMissing('folder');
+        $hint = $file->folder?->collection_hint;
+        $folderId = $file->folder_id !== null ? (string) $file->folder_id : null;
+
+        AnalyzeAssetVision::dispatchForSolo((string) $metadata->id, $hint, $folderId);
 
         return $metadata;
     }

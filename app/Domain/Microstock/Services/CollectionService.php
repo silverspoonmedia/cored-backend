@@ -100,7 +100,11 @@ class CollectionService
 
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
-        ProcessCollection::dispatch((string) $folder->id);
+        ProcessCollection::dispatch(
+            (string) $folder->id,
+            (string) $actor->id,
+            (string) Str::uuid(),
+        );
 
         return $folder->refresh();
     }

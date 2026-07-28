@@ -18,6 +18,8 @@ class AssetMetadata extends Model
     protected $fillable = [
         'file_id',
         'user_id',
+        'billing_user_id',
+        'analysis_run_id',
         'title',
         'keywords',
         'category',

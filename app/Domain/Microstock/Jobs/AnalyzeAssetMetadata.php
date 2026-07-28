@@ -45,7 +45,7 @@ class AnalyzeAssetMetadata implements ShouldQueue
 
         $stages->initializeStages($metadata);
 
-        AnalyzeAssetVision::dispatch($this->metadataId, $this->hint);
+        AnalyzeAssetVision::dispatchForSolo($this->metadataId, $this->hint, null);
     }
 
     public function failed(Throwable $e): void

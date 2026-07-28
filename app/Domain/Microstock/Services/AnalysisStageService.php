@@ -8,6 +8,7 @@ use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class AnalysisStageService
@@ -16,14 +17,19 @@ class AnalysisStageService
         private readonly AiBillingService $billing,
     ) {}
 
-    public function initializeStages(AssetMetadata $metadata): void
-    {
+    public function initializeStages(
+        AssetMetadata $metadata,
+        ?string $billingUserId = null,
+        ?string $analysisRunId = null,
+    ): void {
         $metadata->forceFill([
             'ai_vision' => $this->pendingWorkStage(),
             'ai_thinking' => $this->pendingWorkStage(),
             'ai_result' => $this->pendingResultStage(),
             'ai_raw' => null,
             'ai_billing' => null,
+            'billing_user_id' => $billingUserId,
+            'analysis_run_id' => $analysisRunId,
             'title' => null,
             'keywords' => null,
             'description' => null,
@@ -125,6 +131,33 @@ class AnalysisStageService
         ])->save();
     }
 
+    public function tryClaimThinkingRunning(AssetMetadata $metadata): bool
+    {
+        return DB::transaction(function () use ($metadata): bool {
+            $locked = AssetMetadata::query()->lockForUpdate()->find($metadata->id);
+            if ($locked === null) {
+                return false;
+            }
+
+            $status = $locked->ai_thinking['status'] ?? AnalysisStageStatus::Pending->value;
+            if (in_array($status, [AnalysisStageStatus::Ok->value, AnalysisStageStatus::Running->value], true)) {
+                return false;
+            }
+
+            $stage = $locked->ai_thinking ?? $this->pendingWorkStage();
+            $stage['status'] = AnalysisStageStatus::Running->value;
+            $stage['started_at'] = now()->toIso8601String();
+            $stage['error'] = null;
+
+            $locked->forceFill([
+                'ai_thinking' => $stage,
+                'status' => MetadataStatus::Pending,
+            ])->save();
+
+            return true;
+        });
+    }
+
     /**
      * @param  array{title: string, keywords: list<string>, description?: string, category?: string, raw: mixed, stage_metrics?: list<array<string, mixed>>}  $curated
      */
@@ -182,30 +215,46 @@ class AnalysisStageService
         $metadata->forceFill([
             'ai_raw' => $this->aggregateAiRaw($metadata->refresh()),
         ])->save();
+
+        $this->billing->settlePartialVisionUsage($metadata->refresh());
     }
 
     /**
-     * @param  array{title: string, keywords: list<string>, description?: string, category?: string, raw: mixed}  $curated
+     * @param  array{title: string, keywords: list<string>, description?: string, category?: string, raw: mixed, stage_metrics?: list<array<string, mixed>>}  $curated
      */
     public function composeResultFromThinking(AssetMetadata $metadata, array $curated): void
     {
-        $metadata->forceFill([
-            'title' => $curated['title'],
-            'keywords' => $curated['keywords'],
-            'description' => $curated['description'] ?? null,
-            'category' => $curated['category'] ?? null,
-            'ai_result' => [
-                'status' => AnalysisStageStatus::Ok->value,
-                'source' => 'thinking',
-                'completed_at' => now()->toIso8601String(),
-                'error' => null,
-            ],
-            'status' => MetadataStatus::Generated,
-            'error' => null,
-            'ai_raw' => $this->aggregateAiRaw($metadata->refresh()),
-        ])->save();
+        DB::transaction(function () use ($metadata, $curated): void {
+            $locked = AssetMetadata::query()->lockForUpdate()->find($metadata->id);
+            if ($locked === null) {
+                return;
+            }
 
-        $this->billing->settleSuccessfulAnalysis($metadata->refresh());
+            $billing = $locked->ai_billing;
+            $needsSettle = $billing === null || (is_array($billing) && ($billing['partial'] ?? false));
+
+            if ($needsSettle) {
+                $this->applyThinkingOk($locked, $curated);
+                $this->billing->settleSuccessfulAnalysis($locked->refresh());
+                $locked->refresh();
+            }
+
+            $locked->forceFill([
+                'title' => $curated['title'],
+                'keywords' => $curated['keywords'],
+                'description' => $curated['description'] ?? null,
+                'category' => $curated['category'] ?? null,
+                'ai_result' => [
+                    'status' => AnalysisStageStatus::Ok->value,
+                    'source' => 'thinking',
+                    'completed_at' => now()->toIso8601String(),
+                    'error' => null,
+                ],
+                'status' => MetadataStatus::Generated,
+                'error' => null,
+                'ai_raw' => $this->aggregateAiRaw($locked->refresh()),
+            ])->save();
+        });
     }
 
     public function markResultFailed(AssetMetadata $metadata, Throwable|string $error): void
@@ -297,6 +346,31 @@ class AnalysisStageService
         $folder->markCollectionStatus(
             $hasSuccess ? CollectionStatus::Review : CollectionStatus::Failed,
         );
+    }
+
+    /**
+     * @param  array{title: string, keywords: list<string>, description?: string, category?: string, raw: mixed, stage_metrics?: list<array<string, mixed>>}  $curated
+     */
+    private function applyThinkingOk(AssetMetadata $metadata, array $curated): void
+    {
+        $metrics = $curated['stage_metrics'] ?? [];
+
+        $metadata->forceFill([
+            'ai_thinking' => [
+                'status' => AnalysisStageStatus::Ok->value,
+                'started_at' => ($metadata->ai_thinking['started_at'] ?? null) ?: now()->toIso8601String(),
+                'completed_at' => now()->toIso8601String(),
+                'error' => null,
+                'output' => [
+                    'title' => $curated['title'],
+                    'keywords' => $curated['keywords'],
+                    'description' => $curated['description'] ?? '',
+                    'category' => $curated['category'] ?? '',
+                    'raw' => $curated['raw'] ?? null,
+                ],
+                'stage_metrics' => $metrics,
+            ],
+        ])->save();
     }
 
     /**

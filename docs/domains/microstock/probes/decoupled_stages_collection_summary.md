@@ -61,7 +61,7 @@ Vision draft titles (in `ai_vision.output.title`) differ from final thinking tit
 
 \*2808 legacy thinking from aggregate `stage_metrics` (68159 ms T6 wall, thinking portion in file report).
 
-Per-stage durations are in the same ballpark — E2E adds job orchestration overhead but no separate HTTP path; both hit the same `analyzeVision()` / thinking endpoints. E2E additionally persists stage JSON, runs billing settlement on thinking success, and transitions folder to `review` when all assets terminal.
+Per-stage durations are in the same ballpark — E2E adds job orchestration overhead but no separate HTTP path; both hit the same `analyzeVision()` / thinking endpoints. As of the dual-lane pipeline refactor, collection analyze dispatches per-file vision jobs on `microstock-collection-vision` with thinking on `microstock-collection-thinking` (pipeline overlap: max 1 vision + 1 thinking per folder).
 
 ## Takeaways
 

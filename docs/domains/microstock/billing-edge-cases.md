@@ -1,0 +1,111 @@
+# Microstock AI billing — edge cases and hardening
+
+Companion to [README § AI billing](README.md#ai-billing-prepaid-credits). Documents usage/billing behavior for the vision → thinking pipeline so successful provider work is recorded, settled, and auditable.
+
+## Flow (post-hardening)
+
+```mermaid
+sequenceDiagram
+    participant API as CollectionService / MicrostockService
+    participant Gate as assertCanAnalyze
+    participant Job as AnalyzeAssetVision / Thinking
+    participant Ctx as AnalysisBillingContext
+    participant HTTP as HttpAiMetadataService
+    participant Events as microstock_ai_usage_events
+    participant Settle as AiBillingService
+
+    API->>Gate: balance check billing_user_id actor
+    API->>API: analysis_run_id UUID per run
+    API->>Job: dispatch pipeline
+    Job->>Ctx: billingUserId metadataId analysisRunId
+    Job->>HTTP: vision / thinking HTTP
+    HTTP->>Events: recordUsage billed_at null
+    Job->>Settle: composeResultFromThinking
+    Settle->>Settle: lock settle debit snapshot
+    Settle->>Job: status generated only after settle OK
+```
+
+## Identity columns
+
+| Column | Table | Purpose |
+|--------|-------|---------|
+| `billing_user_id` | `microstock_asset_metadata` | User debited and gated at analyze time (actor who triggered analyze) |
+| `analysis_run_id` | `microstock_asset_metadata`, `microstock_ai_usage_events` | Segments usage per analyze/re-analyze attempt |
+| `attempt_index` | `microstock_ai_usage_events` | Thinking retry sequence within one run |
+| `provider_request_id` | `microstock_ai_usage_events` | OpenAI-compatible response `id` for 9Router reconciliation |
+| `voided_at` | `microstock_ai_usage_events` | Reserved for future void policy (unused in production path) |
+
+## Settlement policies
+
+| Outcome | Settle behavior |
+|---------|-----------------|
+| Thinking succeeds | `composeResultFromThinking`: DB transaction → thinking snapshot → `settleSuccessfulAnalysis` (all unbilled events for current `analysis_run_id`) → `status = generated` |
+| Thinking fails, vision OK | `markThinkingFailed` → `settlePartialVisionUsage` (vision-stage events only, `ai_billing.partial = true`) |
+| Vision fails | No settle (no successful deliverable stage) |
+| Insufficient balance at settle | Transaction rolls back; metadata stays non-`generated`; usage events remain `billed_at = null` |
+
+Partial then full success (retry after vision-only charge): `settleSuccessfulAnalysis` runs when `ai_billing.partial = true`, debiting only remaining unbilled events (typically thinking), and merges totals into a non-partial `ai_billing` snapshot.
+
+## Idempotency and race guards
+
+| Risk | Mitigation |
+|------|------------|
+| Vision job retry after `ai_vision = ok` | `AnalyzeAssetVision` skips HTTP; re-dispatches thinking only |
+| Watchdog + vision both dispatch thinking | `tryClaimThinkingRunning` (row lock) + `WithoutOverlapping` per `metadata_id` on thinking job |
+| Double settle on same asset | `ai_billing` snapshot guard; events marked `billed_at` |
+| Re-analyze mixing runs | New `analysis_run_id`; settle filters events by current run |
+
+## Config knobs
+
+| Key | Env | Default | Notes |
+|-----|-----|---------|-------|
+| `ai_billing.estimated_billable_micro_usd_per_asset` | `MICROSTOCK_AI_BILLING_ESTIMATE_PER_ASSET` | `150000` | Per-asset gate buffer (~$0.15) |
+| `ai_billing.estimate_thinking_attempt_factor` | `MICROSTOCK_AI_BILLING_ESTIMATE_FACTOR` | `1.5` | Gate multiplier for multi-attempt thinking |
+| `ai.http_retries` | `MICROSTOCK_AI_HTTP_RETRIES` | `0` | Keep at 0 for billed calls (retries may charge provider without a matching usage row) |
+| `ai.thinking_visual_attempts` | `MICROSTOCK_AI_THINKING_VISUAL_ATTEMPTS` | `2` | Each attempt with HTTP `usage` creates a separate event |
+
+## Monitoring SQL
+
+```sql
+-- Per asset in a collection: HTTP calls vs billed
+SELECT asset_metadata_id, stage,
+       COUNT(*) AS http_calls,
+       SUM(billable_micro_usd) AS billable,
+       SUM(CASE WHEN billed_at IS NULL THEN 1 ELSE 0 END) AS unbilled_rows
+FROM microstock_ai_usage_events
+WHERE folder_id = :folder_id
+GROUP BY asset_metadata_id, stage;
+
+-- Generated without billing snapshot (should be empty)
+SELECT id, file_id, status, ai_billing
+FROM microstock_asset_metadata
+WHERE status = 'generated'
+  AND (ai_billing IS NULL OR ai_billing = 'null');
+
+-- Failed assets with unbilled vision (partial settle should have run)
+SELECT e.asset_metadata_id, e.stage, SUM(e.billable_micro_usd) AS unbilled
+FROM microstock_ai_usage_events e
+JOIN microstock_asset_metadata m ON m.id = e.asset_metadata_id
+WHERE e.billed_at IS NULL
+  AND m.status = 'failed'
+  AND m.ai_vision->>'$.status' = 'ok'
+GROUP BY e.asset_metadata_id, e.stage;
+
+-- Reconcile by analysis run
+SELECT analysis_run_id, stage, COUNT(*), SUM(billable_micro_usd)
+FROM microstock_ai_usage_events
+WHERE asset_metadata_id = :metadata_id
+GROUP BY analysis_run_id, stage;
+```
+
+## Probes and `generate()`
+
+`HttpAiMetadataService::generate()` and `generateBatch()` do not set `AnalysisBillingContext` — usage is intentionally not recorded unless a probe wraps `AnalysisBillingContext::run`. Production paths always set context in `AnalyzeAssetVision` / `AnalyzeAssetThinking`.
+
+## Provider dashboard vs app events
+
+Production records **one vision HTTP per asset** (`analyzeVision`). A 9Router log showing two `claude-sonnet-5` lines adjacent to one `gpt-5.6-luna` line often reflects dual-lane overlap (two files) or provider-internal logging, not duplicate vision per file in app code. Use `provider_request_id` on usage events to reconcile.
+
+## Tests
+
+`tests/Domain/Microstock/Unit/Services/MicrostockBillingHardeningTest.php` covers settle-before-generated, partial vision settle, run-id filtering, vision idempotency, and thinking claim races.

@@ -4,6 +4,7 @@ namespace App\Domain\Microstock\Jobs;
 
 use App\Domain\FileHosting\Enums\CollectionStatus;
 use App\Domain\FileHosting\Models\Folder;
+use App\Domain\Microstock\Enums\AnalysisPipeline;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
@@ -17,7 +18,8 @@ use Illuminate\Queue\SerializesModels;
 /**
  * Single authority that declares stalled AI analysis failed. With decoupled
  * stages, grace deadlines are measured per stage from started_at (vision or
- * thinking) with a legacy fallback on metadata.created_at.
+ * thinking) with a legacy fallback on metadata.created_at. Also re-dispatches
+ * thinking jobs when vision completed but thinking was never queued.
  */
 class AnalysisWatchdog implements ShouldQueue
 {
@@ -35,6 +37,7 @@ class AnalysisWatchdog implements ShouldQueue
     public function handle(AnalysisStageService $stages): void
     {
         $this->failExpiredStages($stages);
+        $this->dispatchThinkingBacklog();
         $this->completeProcessingFolders($stages);
 
         if ($this->hasProcessingCollections()) {
@@ -82,6 +85,59 @@ class AnalysisWatchdog implements ShouldQueue
                     && $metadata->created_at->lt(now()->subSeconds($legacyGrace))) {
                     $stages->markVisionFailed($metadata, 'Analysis exceeded the grace period');
                 }
+            });
+    }
+
+    private function dispatchThinkingBacklog(): void
+    {
+        $backlogAfter = (int) config('microstock.ai.stage.thinking_backlog_after', 120);
+        $cutoff = now()->subSeconds($backlogAfter);
+
+        AssetMetadata::query()
+            ->with('file.folder')
+            ->where('status', MetadataStatus::Pending->value)
+            ->lazyById()
+            ->each(function (AssetMetadata $metadata) use ($cutoff): void {
+                $vision = is_array($metadata->ai_vision) ? $metadata->ai_vision : [];
+                $thinking = is_array($metadata->ai_thinking) ? $metadata->ai_thinking : [];
+
+                if (($vision['status'] ?? '') !== AnalysisStageStatus::Ok->value) {
+                    return;
+                }
+
+                if (($thinking['status'] ?? AnalysisStageStatus::Pending->value) !== AnalysisStageStatus::Pending->value) {
+                    return;
+                }
+
+                $completedAt = $vision['completed_at'] ?? null;
+                if ($completedAt === null) {
+                    return;
+                }
+
+                if (\Illuminate\Support\Carbon::parse($completedAt)->isAfter($cutoff)) {
+                    return;
+                }
+
+                $file = $metadata->file;
+                if ($file === null) {
+                    return;
+                }
+
+                $folderId = $file->folder_id !== null ? (string) $file->folder_id : null;
+                $folder = $file->folder;
+                $hint = $folder?->collection_hint;
+
+                $pipeline = $folder !== null
+                    && $folder->collection_status === CollectionStatus::Processing
+                    ? AnalysisPipeline::Collection
+                    : AnalysisPipeline::Solo;
+
+                AnalyzeAssetThinking::dispatchForPipeline(
+                    (string) $metadata->id,
+                    $hint,
+                    $folderId,
+                    $pipeline,
+                );
             });
     }
 

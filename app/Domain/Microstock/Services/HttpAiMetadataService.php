@@ -4,6 +4,7 @@ namespace App\Domain\Microstock\Services;
 
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Exceptions\MicrostockException;
+use App\Domain\Microstock\Support\AnalysisBillingContext;
 use App\Domain\Microstock\Support\Prompts;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -347,11 +348,18 @@ class HttpAiMetadataService implements AiMetadataService
         if (is_array($parsed)) {
             $usage = is_array($parsed['usage'] ?? null) ? $parsed['usage'] : null;
             $resolvedModel = is_string($parsed['model'] ?? null) ? $parsed['model'] : null;
+            $providerRequestId = is_string($parsed['id'] ?? null) ? $parsed['id'] : null;
+            $context = AnalysisBillingContext::current();
+            $attemptIndex = $stage === 'thinking' && $context !== null
+                ? $context->nextAttemptIndex()
+                : null;
             app(AiBillingService::class)->recordUsage(
                 $stage,
                 (string) $cfg['model'],
                 $usage,
                 $resolvedModel,
+                $attemptIndex,
+                $providerRequestId,
             );
         }
 
