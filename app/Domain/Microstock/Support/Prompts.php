@@ -49,9 +49,15 @@ PROMPT;
 
         $hint = $hint !== null ? trim($hint) : '';
         if ($hint !== '') {
-            $prompt .= "\n\n## COLLECTION CONTEXT (commercial ground truth)\n\"{$hint}\""
-                .' — bias the conceptual keywords, category, and title framing toward this intent,'
-                .' without overriding what is visible.';
+            if (str_contains($hint, "\n") || str_starts_with($hint, 'PRIMARY CONCEPT:')) {
+                $prompt .= "\n\n## COLLECTION CONTEXT (commercial ground truth)\n".$hint
+                    ."\n— bias the conceptual keywords, category, and title framing toward this intent,"
+                    .' without overriding what is visible.';
+            } else {
+                $prompt .= "\n\n## COLLECTION CONTEXT (commercial ground truth)\n\"{$hint}\""
+                    .' — bias the conceptual keywords, category, and title framing toward this intent,'
+                    .' without overriding what is visible.';
+            }
         }
 
         return $prompt;

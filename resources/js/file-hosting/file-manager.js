@@ -28,6 +28,16 @@ import { createContextMenu } from './context-menu';
 import { createDragMove, moveItemsRequest } from './drag-move';
 import { createMicrostockPanel } from './microstock-panel';
 import { formatCollectionProgress } from './microstock-ui';
+import {
+    HINT_MAX_LENGTH,
+    composeCollectionHint,
+    markDescribeValidation,
+    parseCollectionHint,
+    populateDescribeForm,
+    readDescribeForm,
+    updateDescribePreview,
+    validateCollectionDescribe,
+} from './collection-describe';
 
 const STORAGE_KEY = 'fh-view-mode';
 
@@ -136,6 +146,7 @@ function initFileManager(root) {
                         if (json.data.folder?.id !== undefined) {
                             config.currentFolderId = json.data.folder?.id || null;
                         }
+                        config.currentFolderHint = json.data.folder?.collection_hint ?? null;
                         syncCollectionUploadGate(root, config, json.data.folder);
                         updateCollectionUi(json.data.folder ? json.data.folder.collection_status : null);
                         // Soft-refetch replaces rows — drop stale selection + re-enable DnD.
@@ -1643,7 +1654,53 @@ function initFileManager(root) {
             el.classList.remove('d-none');
         }
 
+        function describeLabelMaps() {
+            const describe = config.collectionDescribe || {};
+            return {
+                visible: describe.visibleOptions || {},
+                intent: describe.intentOptions || {},
+                style: describe.styleOptions || {},
+            };
+        }
+
+        function describePreviewOptions() {
+            const describe = config.collectionDescribe || {};
+            return {
+                charCountTemplate: describe.charCount || ':count / :max',
+            };
+        }
+
+        function populateCollectionDescribeModal() {
+            const modalEl = document.getElementById('fhCollectionDescribeModal');
+            const form = modalEl?.querySelector('[data-fh-collection-describe-form]');
+            if (!form) {
+                return;
+            }
+            const maps = describeLabelMaps();
+            const sections = parseCollectionHint(config.currentFolderHint || '', maps);
+            populateDescribeForm(form, sections);
+            markDescribeValidation(form, []);
+            updateDescribePreview(form, maps, describePreviewOptions());
+        }
+
+        function bindCollectionDescribeForm() {
+            const modalEl = document.getElementById('fhCollectionDescribeModal');
+            const form = modalEl?.querySelector('[data-fh-collection-describe-form]');
+            if (!form || form.dataset.fhDescribeBound === '1') {
+                return;
+            }
+            form.dataset.fhDescribeBound = '1';
+            const maps = describeLabelMaps();
+            const previewOpts = describePreviewOptions();
+            const refreshPreview = function () {
+                updateDescribePreview(form, maps, previewOpts);
+            };
+            form.addEventListener('input', refreshPreview);
+            form.addEventListener('change', refreshPreview);
+        }
+
         function initCollectionUi() {
+            bindCollectionDescribeForm();
             updateCollectionUi(config.collectionStatus || null);
 
             microstockPanel = createMicrostockPanel(config, csrfToken, {
@@ -1679,10 +1736,7 @@ function initFileManager(root) {
                     if (mode === 'lock') {
                         const modalEl = document.getElementById('fhCollectionDescribeModal');
                         if (modalEl) {
-                            const input = modalEl.querySelector('#fhCollectionHint');
-                            if (input) {
-                                input.value = '';
-                            }
+                            populateCollectionDescribeModal();
                             if (window.bootstrap?.Modal) {
                                 window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
                             } else if (window.bootstrap?.Modal === undefined && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
@@ -1730,6 +1784,7 @@ function initFileManager(root) {
             const describeModal = document.getElementById('fhCollectionDescribeModal');
             if (describeModal) {
                 describeModal.addEventListener('show.bs.modal', function () {
+                    populateCollectionDescribeModal();
                     const fileCount = countFilesInListing();
                     fetchMicrostockBilling().then(function (billing) {
                         renderCollectionBillingLine(billing, fileCount);
@@ -1740,9 +1795,29 @@ function initFileManager(root) {
             const describeSubmit = document.querySelector('[data-fh-collection-describe-submit]');
             if (describeSubmit) {
                 describeSubmit.addEventListener('click', function () {
-                    const hint = document.getElementById('fhCollectionHint')?.value?.trim() || '';
-                    if (hint === '') {
-                        showToast(config.messages.error, 'error');
+                    const modalEl = document.getElementById('fhCollectionDescribeModal');
+                    const form = modalEl?.querySelector('[data-fh-collection-describe-form]');
+                    const maps = describeLabelMaps();
+                    const sections = readDescribeForm(form);
+                    const validation = validateCollectionDescribe(sections);
+                    markDescribeValidation(form, validation.errors);
+                    if (!validation.valid) {
+                        const describe = config.collectionDescribe || {};
+                        const messages = describe.validation || {};
+                        const messageKeys = {
+                            primaryConcept: 'primary',
+                            visible: 'visible',
+                            intent: 'intent',
+                            style: 'style',
+                        };
+                        const first = validation.errors[0];
+                        const msg = messages[messageKeys[first]] || config.messages.error;
+                        showToast(msg, 'error');
+                        return;
+                    }
+                    const hint = composeCollectionHint(sections, maps);
+                    if (hint.length > HINT_MAX_LENGTH) {
+                        showToast((config.collectionDescribe?.validation?.tooLong) || config.messages.error, 'error');
                         return;
                     }
                     const fileCount = Math.max(1, countFilesInListing());
@@ -1771,6 +1846,7 @@ function initFileManager(root) {
                                 showToast(out.json.message || config.messages.error, 'error');
                                 return;
                             }
+                            config.currentFolderHint = hint;
                             return collectionPost('/analyze').then(function (a) {
                                 const modalEl = document.getElementById('fhCollectionDescribeModal');
                                 if (modalEl && window.bootstrap?.Modal) {

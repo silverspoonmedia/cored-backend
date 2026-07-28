@@ -381,6 +381,11 @@ class CollectionLifecycleTest extends TestCase
         // No hint -> unchanged base prompts.
         $this->assertStringNotContainsString('COLLECTION CONTEXT', Prompts::visionUser());
         $this->assertStringNotContainsString('COLLECTION CONTEXT', Prompts::thinkingUser('T', ['a']));
+
+        $structured = "PRIMARY CONCEPT: Eco kitchen set.\n\nVISIBLE SUBJECTS: Object, Food";
+        $visionStructured = Prompts::visionUser($structured);
+        $this->assertStringContainsString('PRIMARY CONCEPT: Eco kitchen set.', $visionStructured);
+        $this->assertStringNotContainsString('"PRIMARY CONCEPT:', $visionStructured);
     }
 
     // ---- Status snapshot ----

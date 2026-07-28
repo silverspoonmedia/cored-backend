@@ -72,6 +72,30 @@
         'assetsBase' => url('file-hosting/microstock/assets'),
         'billingUrl' => route('file-hosting.microstock.billing'),
         'collectionStatus' => $browse['folder']['collection_status'] ?? null,
+        'currentFolderHint' => $browse['folder']['collection_hint'] ?? null,
+        'collectionDescribe' => [
+            'sectionsIntro' => __('web/file-hosting.microstock.describe_sections_intro'),
+            'primaryConcept' => __('web/file-hosting.microstock.describe_primary_concept'),
+            'primaryPlaceholder' => __('web/file-hosting.microstock.describe_primary_placeholder'),
+            'visibleFacts' => __('web/file-hosting.microstock.describe_visible_facts'),
+            'buyerIntent' => __('web/file-hosting.microstock.describe_buyer_intent'),
+            'styleMood' => __('web/file-hosting.microstock.describe_style_mood'),
+            'additionalNotes' => __('web/file-hosting.microstock.describe_additional_notes'),
+            'additionalPlaceholder' => __('web/file-hosting.microstock.describe_additional_placeholder'),
+            'otherPlaceholder' => __('web/file-hosting.microstock.describe_other_placeholder'),
+            'preview' => __('web/file-hosting.microstock.describe_preview'),
+            'charCount' => __('web/file-hosting.microstock.describe_char_count'),
+            'validation' => [
+                'primary' => __('web/file-hosting.microstock.describe_validation_primary', ['min' => 10]),
+                'visible' => __('web/file-hosting.microstock.describe_validation_visible'),
+                'intent' => __('web/file-hosting.microstock.describe_validation_intent'),
+                'style' => __('web/file-hosting.microstock.describe_validation_style'),
+                'tooLong' => __('web/file-hosting.microstock.describe_validation_too_long'),
+            ],
+            'visibleOptions' => __('web/file-hosting.microstock.describe_visible_options'),
+            'intentOptions' => __('web/file-hosting.microstock.describe_intent_options'),
+            'styleOptions' => __('web/file-hosting.microstock.describe_style_options'),
+        ],
         'collectionLabels' => [
             'lockDescribe' => __('web/file-hosting.microstock.lock_describe'),
             'analyze' => __('web/file-hosting.microstock.analyze'),
@@ -818,18 +842,79 @@
 
     {{-- Microstock Collection: Lock & Describe Modal --}}
     <div class="modal fade" id="fhCollectionDescribeModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-lock me-1"></i>{{ __('web/file-hosting.microstock.describe_title') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="small text-muted">{{ __('web/file-hosting.microstock.describe_hint') }}</p>
-                    <div class="small text-muted mb-2 d-none" data-fh-collection-billing></div>
-                    <label class="form-label" for="fhCollectionHint">{{ __('web/file-hosting.microstock.describe_label') }}</label>
-                    <textarea id="fhCollectionHint" class="form-control" rows="4" maxlength="2000"
-                              placeholder="{{ __('web/file-hosting.microstock.describe_placeholder') }}"></textarea>
+                    <p class="small text-muted mb-1">{{ __('web/file-hosting.microstock.describe_hint') }}</p>
+                    <p class="small text-muted mb-3">{{ __('web/file-hosting.microstock.describe_sections_intro') }}</p>
+                    <div class="small text-muted mb-3 d-none" data-fh-collection-billing></div>
+                    <form data-fh-collection-describe-form novalidate>
+                        <div class="mb-3" data-fh-describe-group="primary">
+                            <label class="form-label" for="fhDescribePrimary">{{ __('web/file-hosting.microstock.describe_primary_concept') }}</label>
+                            <textarea id="fhDescribePrimary" class="form-control" rows="3" data-fh-describe-primary
+                                      placeholder="{{ __('web/file-hosting.microstock.describe_primary_placeholder') }}"></textarea>
+                            <div class="invalid-feedback">{{ __('web/file-hosting.microstock.describe_validation_primary', ['min' => 10]) }}</div>
+                        </div>
+                        <div class="mb-3" data-fh-describe-group="visible">
+                            <label class="form-label d-block">{{ __('web/file-hosting.microstock.describe_visible_facts') }}</label>
+                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                @foreach (__('web/file-hosting.microstock.describe_visible_options') as $key => $label)
+                                    <input type="checkbox" class="btn-check" id="fhDescribeVisible{{ $key }}"
+                                           value="{{ $key }}" data-fh-describe-visible autocomplete="off">
+                                    <label class="btn btn-outline-secondary btn-sm" for="fhDescribeVisible{{ $key }}">{{ $label }}</label>
+                                @endforeach
+                            </div>
+                            <input type="text" class="form-control form-control-sm" data-fh-describe-visible-other
+                                   placeholder="{{ __('web/file-hosting.microstock.describe_other_placeholder') }}">
+                            <div class="invalid-feedback">{{ __('web/file-hosting.microstock.describe_validation_visible') }}</div>
+                        </div>
+                        <div class="mb-3" data-fh-describe-group="intent">
+                            <label class="form-label d-block">{{ __('web/file-hosting.microstock.describe_buyer_intent') }}</label>
+                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                @foreach (__('web/file-hosting.microstock.describe_intent_options') as $key => $label)
+                                    <input type="checkbox" class="btn-check" id="fhDescribeIntent{{ $key }}"
+                                           value="{{ $key }}" data-fh-describe-intent autocomplete="off">
+                                    <label class="btn btn-outline-secondary btn-sm" for="fhDescribeIntent{{ $key }}">{{ $label }}</label>
+                                @endforeach
+                            </div>
+                            <input type="text" class="form-control form-control-sm" data-fh-describe-intent-other
+                                   placeholder="{{ __('web/file-hosting.microstock.describe_other_placeholder') }}">
+                            <div class="invalid-feedback">{{ __('web/file-hosting.microstock.describe_validation_intent') }}</div>
+                        </div>
+                        <div class="mb-3" data-fh-describe-group="style">
+                            <label class="form-label d-block">{{ __('web/file-hosting.microstock.describe_style_mood') }}</label>
+                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                @foreach (__('web/file-hosting.microstock.describe_style_options') as $key => $label)
+                                    <input type="checkbox" class="btn-check" id="fhDescribeStyle{{ $key }}"
+                                           value="{{ $key }}" data-fh-describe-style autocomplete="off">
+                                    <label class="btn btn-outline-secondary btn-sm" for="fhDescribeStyle{{ $key }}">{{ $label }}</label>
+                                @endforeach
+                            </div>
+                            <input type="text" class="form-control form-control-sm" data-fh-describe-style-other
+                                   placeholder="{{ __('web/file-hosting.microstock.describe_other_placeholder') }}">
+                            <div class="invalid-feedback">{{ __('web/file-hosting.microstock.describe_validation_style') }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="fhDescribeNotes">{{ __('web/file-hosting.microstock.describe_additional_notes') }}</label>
+                            <textarea id="fhDescribeNotes" class="form-control" rows="2" data-fh-describe-notes
+                                      placeholder="{{ __('web/file-hosting.microstock.describe_additional_placeholder') }}"></textarea>
+                        </div>
+                        <div class="border rounded p-2 bg-light">
+                            <button class="btn btn-link btn-sm p-0 text-decoration-none" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#fhDescribePreviewCollapse"
+                                    aria-expanded="false" aria-controls="fhDescribePreviewCollapse">
+                                {{ __('web/file-hosting.microstock.describe_preview') }}
+                            </button>
+                            <div class="collapse" id="fhDescribePreviewCollapse">
+                                <pre class="small mb-1 mt-2 text-wrap" style="white-space: pre-wrap;" data-fh-describe-preview-text>—</pre>
+                            </div>
+                            <div class="small text-muted" data-fh-describe-char-count>0 / 2000</div>
+                        </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('web/file-hosting.cancel') }}</button>
