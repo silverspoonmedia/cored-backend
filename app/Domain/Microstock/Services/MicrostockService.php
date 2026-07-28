@@ -10,8 +10,9 @@ use App\Domain\FileHosting\Services\WorkspaceService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Exceptions\MicrostockException;
-use App\Domain\Microstock\Jobs\AnalyzeAssetMetadata;
+use App\Domain\Microstock\Jobs\AnalyzeAssetVision;
 use App\Domain\Microstock\Models\AssetMetadata;
+use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Domain\Service\Services\ServiceEntitlementService;
 
 /**
@@ -110,10 +111,9 @@ class MicrostockService
 
         $metadata = AssetMetadata::query()->firstOrNew(['file_id' => $file->id]);
         $metadata->user_id = $file->user_id;
-        $metadata->status = MetadataStatus::Pending;
-        $metadata->save();
+        app(AnalysisStageService::class)->initializeStages($metadata);
 
-        AnalyzeAssetMetadata::dispatch((string) $metadata->id);
+        AnalyzeAssetVision::dispatch((string) $metadata->id);
 
         return $metadata;
     }

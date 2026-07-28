@@ -7,6 +7,7 @@ use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\HashBlocklistService;
 use App\Domain\FileHosting\Services\VisibilityService;
 use App\Domain\FileHosting\Support\RegionResolver;
+use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -42,14 +43,23 @@ class HostedFileResource extends JsonResource
             'is_hash_blocked' => app(HashBlocklistService::class)->isFileBlocked($this->resource),
             'visibility' => $visibility,
             'share_url' => $shareUrl,
-            'microstock' => $this->whenLoaded('microstockMetadata', fn () => $this->microstockMetadata === null ? null : [
-                'title' => $this->microstockMetadata->title,
-                'keywords' => $this->microstockMetadata->keywords ?? [],
-                'status' => $this->microstockMetadata->status?->value,
-                'phase' => $this->microstockMetadata->status === \App\Domain\Microstock\Enums\MetadataStatus::Pending && $this->microstockMetadata->created_at !== null
-                    ? \App\Domain\Microstock\Services\CollectionService::phaseFor($this->microstockMetadata->created_at)
-                    : $this->microstockMetadata->status?->value,
-            ]),
+            'microstock' => $this->whenLoaded('microstockMetadata', function () {
+                if ($this->microstockMetadata === null) {
+                    return null;
+                }
+
+                $stages = app(AnalysisStageService::class)->stageSummary($this->microstockMetadata);
+
+                return [
+                    'title' => $this->microstockMetadata->title,
+                    'keywords' => $this->microstockMetadata->keywords ?? [],
+                    'status' => $this->microstockMetadata->status?->value,
+                    'stages' => $stages,
+                    'phase' => $this->microstockMetadata->status === \App\Domain\Microstock\Enums\MetadataStatus::Pending && $this->microstockMetadata->created_at !== null
+                        ? \App\Domain\Microstock\Services\CollectionService::phaseFor($this->microstockMetadata->created_at)
+                        : $this->microstockMetadata->status?->value,
+                ];
+            }),
             'download_count' => (int) $this->download_count,
             'view_count' => (int) $this->view_count,
             ...$this->dateFields('last_downloaded_at', $this->last_downloaded_at),

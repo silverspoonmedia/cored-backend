@@ -5,8 +5,8 @@ namespace App\Domain\Microstock\Jobs;
 use App\Domain\FileHosting\Enums\CollectionStatus;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
+use App\Domain\Microstock\Services\AnalysisStageService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -17,8 +17,7 @@ use Throwable;
 /**
  * Orchestrates the AI pipeline for one Microstock collection (folder). Seeds a
  * pending metadata row per file directly inside the folder (non-recursive),
- * then hands off to a single AnalyzeCollectionBatch job that fans the files
- * out to the AI in as few multi-image requests as possible.
+ * then hands off to chained vision-batch jobs that dispatch per-asset thinking.
  */
 class ProcessCollection implements ShouldQueue
 {
@@ -35,7 +34,7 @@ class ProcessCollection implements ShouldQueue
         private readonly string $folderId,
     ) {}
 
-    public function handle(): void
+    public function handle(AnalysisStageService $stages): void
     {
         $folder = Folder::query()->find($this->folderId);
 
@@ -49,11 +48,10 @@ class ProcessCollection implements ShouldQueue
             ->where('folder_id', $folder->id)
             ->orderBy('name')
             ->get()
-            ->map(function (HostedFile $file): string {
+            ->map(function (HostedFile $file) use ($stages): string {
                 $metadata = AssetMetadata::query()->firstOrNew(['file_id' => $file->id]);
                 $metadata->user_id = $file->user_id;
-                $metadata->status = MetadataStatus::Pending;
-                $metadata->save();
+                $stages->initializeStages($metadata);
 
                 return (string) $metadata->id;
             })
@@ -65,7 +63,7 @@ class ProcessCollection implements ShouldQueue
             return;
         }
 
-        AnalyzeCollectionBatch::dispatch($this->folderId, $metadataIds, $hint);
+        AnalyzeCollectionVisionBatch::dispatch($this->folderId, $metadataIds, $hint);
         AnalysisWatchdog::dispatch();
     }
 

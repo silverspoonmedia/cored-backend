@@ -83,7 +83,7 @@ class HttpAiMetadataService implements AiMetadataService
     {
         $this->stageMetrics = [];
 
-        $draft = $this->vision($imageUrl, $hint);
+        $draft = $this->analyzeVision($imageUrl, $hint);
         $curated = $this->thinking(
             $draft['title'],
             $draft['keywords'],
@@ -158,6 +158,25 @@ class HttpAiMetadataService implements AiMetadataService
         $result['stage_metrics'] = $this->stageMetrics;
 
         return $result;
+    }
+
+    /**
+     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: mixed, stage_metrics: list<array<string, mixed>>}
+     */
+    public function analyzeVision(string $imageUrl, ?string $hint = null): array
+    {
+        $this->stageMetrics = [];
+
+        $draft = $this->vision($imageUrl, $hint);
+
+        return [
+            'title' => $draft['title'],
+            'keywords' => $draft['keywords'],
+            'description' => $draft['description'] ?? '',
+            'category' => $draft['category'] ?? '',
+            'raw' => $draft['raw'] ?? null,
+            'stage_metrics' => $this->stageMetrics,
+        ];
     }
 
     /**

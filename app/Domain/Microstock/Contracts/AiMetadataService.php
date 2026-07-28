@@ -19,6 +19,13 @@ interface AiMetadataService
     public function generate(string $imageUrl, ?string $hint = null): array;
 
     /**
+     * Vision-only stage: draft title/keywords from the asset image.
+     *
+     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: mixed, stage_metrics: list<array<string, mixed>>}
+     */
+    public function analyzeVision(string $imageUrl, ?string $hint = null): array;
+
+    /**
      * Analyze many assets in a single AI request. The provider receives every
      * image plus its id and must return a JSON array of per-file metadata.
      *

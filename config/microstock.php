@@ -70,6 +70,12 @@ return [
             'grace_after' => (int) env('MICROSTOCK_AI_PHASE_GRACE', 1500),
         ],
 
+        // Per-stage grace deadlines for decoupled vision/thinking jobs (seconds).
+        'stage' => [
+            'vision_grace_after' => (int) env('MICROSTOCK_AI_VISION_GRACE_AFTER', 600),
+            'thinking_grace_after' => (int) env('MICROSTOCK_AI_THINKING_GRACE_AFTER', 1800),
+        ],
+
         // How vision receives the image: base64 data-URI or signed HTTPS URL.
         'vision_image' => [
             'delivery' => env('MICROSTOCK_AI_VISION_IMAGE_DELIVERY', 'url'),

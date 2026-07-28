@@ -112,7 +112,7 @@ flowchart LR
 | Upload gate | `DirectUploadService::initiate` rejects (422) a Microstock workspace upload with no `folder_id` (`microstock.error_requires_folder`) or into a locked collection (`microstock.error_collection_locked`). Client mirrors this via dropzone `data-workspace-kind` / `data-collection-locked` |
 | Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here |
 | Analyze | `POST collections/{folder}/analyze` (requires `locked`, non-empty) sets `processing` and dispatches `ProcessCollection` |
-| Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)**, then dispatches a single `AnalyzeCollectionBatch` carrying `collection_hint`. The batch processes **one chunk per invocation** and **dispatches itself** with the remaining ids (chained) so the whole collection stays long-running without ever exceeding `retry_after`; the final invocation flips the folder to `review`. Chunks with **fewer than `microstock.ai.batch_min_files`** (default **4**) skip multi-image batching and run **per-file** `generate()` (vision + thinking each) to avoid cross-assignment on small illustration sets. Larger chunks call `generateBatch()` (vision only) then **`curateDraft()` per asset** (thinking). Sub-folders are separate collections and are NOT processed |
+| Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)** with decoupled stage columns (`ai_vision`, `ai_thinking`, `ai_result`), then dispatches chained `AnalyzeCollectionVisionBatch` jobs. Each chunk runs vision only (`analyzeVision()` / `generateBatch()`), persists `ai_vision`, and dispatches one `AnalyzeAssetThinking` job per asset. Collection `review` is set only when **all** assets are terminal (watchdog / thinking completion). Chunks with **fewer than `microstock.ai.batch_min_files`** (default **4**) use per-file vision; larger chunks use multi-image batch vision. Sub-folders are separate collections and are NOT processed |
 | Curate | Per-file manual edit via `PATCH assets/{file}/metadata` (existing finalize) while in `review` |
 | Export | `POST collections/{folder}/export` (requires `review`) renders a CSV of the folder's finalized metadata, persists it to `microstock.csv_disk`, saves `collection_csv_path`, sets `exported`. `GET collections/{folder}/download` streams it |
 
@@ -122,11 +122,30 @@ flowchart LR
 
 Microstock's value is metadata. The owner **hint** (collection description) grounds every file's metadata. Both AI stages follow **Adobe Stock / Shutterstock 2026 contributor standards** — natural-sentence titles, a 4-tier keyword framework, and a fixed marketplace category set.
 
-1. Per collection: `ProcessCollection` (above) creates/resets a `microstock_asset_metadata` row per file (`status = pending`) and dispatches the chained `AnalyzeCollectionBatch` with the hint. Each batch invocation handles one chunk (`microstock.ai.batch_chunk`, default 10). **Small chunks** (`count < microstock.ai.batch_min_files`, default 4) call `AiMetadataService::generate()` per file (vision + thinking). **Larger chunks** call `generateBatch()` (multi-image vision) then `curateDraft()` per returned row (thinking curation). Assets the batch omits fall back to per-file `generate()`. (Single-asset `POST assets/{file}/analyze` → `MicrostockService::requestAnalysis` still runs a standalone `AnalyzeAssetMetadata`, hint optional.)
+1. Per collection: `ProcessCollection` resets each `microstock_asset_metadata` row (`status = pending`, stage columns cleared) and dispatches `AnalyzeCollectionVisionBatch` (chained by `batch_chunk`). **Small chunks** run per-file `analyzeVision()`; **larger chunks** run `generateBatch()` then per-asset `AnalyzeAssetThinking` (`curateDraft()`). Single-asset `POST assets/{file}/analyze` → `AnalyzeAssetVision` → `AnalyzeAssetThinking`.
 2. `VisionImageResolver` picks a persisted JPEG variant (`ai_512` / `ai_1024`) or falls back to ephemeral resize from the original. Delivery mode is `base64` (data-URI) or `url` (signed HTTPS to the variant object).
-3. **Vision** drafts `title` + `description` + `category` + `keywords` from the image (with the hint structured as a `## COLLECTION CONTEXT (commercial ground truth)` block in `Prompts::visionUser`). **Thinking** (`curateDraft()` / `Prompts::thinkingSystem`) receives the **same image reference** plus the text draft — step 0 **VERIFY** compares draft vs image and fixes wrong subject, gender, action, or equipment before dedupe/BAN/ordering. Falls back to text-only thinking, then to the vision draft, on gateway errors. Prompts are hardcoded in `App\Domain\Microstock\Support\Prompts` (English).
-4. Result stored with `status = generated` and `ai_raw = {"vision": <vision payload>, "thinking": <thinking payload>, "stage_metrics": [<per-stage telemetry>]}` (thinking may be `null` when the thinking stage falls back to the vision draft; `stage_metrics` lists successful HTTP calls with `stage`, `duration_ms`, `resolved_model`, `multimodal`, `tokens_per_second`).
+3. **Vision** drafts metadata into `ai_vision.output`. **Thinking** runs in a separate job, reads the vision draft, and on success fills `title`/`keywords`/`description`/`category` with `status = generated`. Thinking failure leaves `title`/`keywords` empty (`status = failed`) but preserves `ai_vision` for inspection/retry. Strict mode: `curateDraft()` returning `raw = null` counts as thinking failure (no vision-draft promotion). `generate()` (probes) still supports monolithic vision→thinking with legacy fallback.
+4. Stage snapshots: `ai_vision`, `ai_thinking`, `ai_result` (each with `status`, timestamps, `error`, `output`/`stage_metrics`). Legacy `ai_raw` is aggregated on result composition for API compat. Billing settles only when thinking succeeds (`composeResultFromThinking`).
 5. Final curation is **manual**: user edits title/keywords → `PATCH assets/{file}/metadata` → `status = finalized`.
+
+### Stage decoupling (MVP)
+
+```mermaid
+flowchart LR
+  process[ProcessCollection] --> visionBatch[AnalyzeCollectionVisionBatch]
+  visionBatch --> visionOk[ai_vision ok]
+  visionOk --> thinkingJob[AnalyzeAssetThinking]
+  thinkingJob -->|ok| generated[status generated]
+  thinkingJob -->|fail| failed[status failed title empty]
+```
+
+| Stage column | Job | On failure |
+|--------------|-----|------------|
+| `ai_vision` | `AnalyzeCollectionVisionBatch` / `AnalyzeAssetVision` | `ai_thinking` skipped; `ai_result` failed; row `failed` |
+| `ai_thinking` | `AnalyzeAssetThinking` | `ai_result` failed; vision draft kept; row `failed` |
+| `ai_result` | composed after thinking ok | — |
+
+Per-stage watchdog grace: `microstock.ai.stage.vision_grace_after` (default 600s), `thinking_grace_after` (default 1800s). API exposes `stages: {vision, thinking, result}` on `HostedFileResource` / `AssetMetadataResource`.
 
 ### Image variants (persisted derivatives)
 
@@ -167,7 +186,11 @@ Default config + `.env.example` use Open WebUI aliases; **9Router** maps them to
 
 Canonical probe write-up: [`probes/sonnet5_gpt56_combo_summary.md`](probes/sonnet5_gpt56_combo_summary.md) — **3/3** gender accuracy on hint `"Children doing sports"` vs sonnet-only (neutral), luna-both (758girl mis-gender), opus (all boy).
 
+**Probe finding (2026-07-28, decoupled stage E2E, folder `019fa752-…`):** `probe_collection_stages.php` with `--force` after zombie `processing` — **3/3** assets `vision ok` → `thinking ok` → `result ok`, folder → `review`, **~176 s** wall-clock (sync, 3 files). Thinking TPS **~78–110** (Codex path). Default wait timeout **900 s**; use `--force` when `processing` has no metadata rows. Legacy `probe_collection` T6 timings match within ~10–20%. Details: [`probes/decoupled_stages_collection_summary.md`](probes/decoupled_stages_collection_summary.md).
+
 **Probe finding (2026-07-28, sonnet vision + gpt-5.6 thinking combo, folder `019fa66d-…`):** 9Router `internal.vision` → **`anthropic/claude-sonnet-5`**, `internal.thinking` → **`gpt-5.6-luna`**. T0 + **T0t** preflight ok. Full 3-file batch: T3 **3/3** @ **6.3–7.6s** (~469–550 tok/s), T6 **3/3** @ **15.6–18.5s** with per-stage **`stage_metrics`** (vision ~6.1–6.9s, thinking ~9.1–12.4s @ ~540–705 tok/s). **Thinking multimodal on all 3 files** (`thinking_visual_attempts=2` default). Hint `"Children doing sports"` → **3/3 explicit correct gender** (girl/boy) — best balance vs sonnet-only (neutral child), gpt-5.6-luna both (758girl mis-gender), opus (all boy). Details: [`probes/sonnet5_gpt56_combo_summary.md`](probes/sonnet5_gpt56_combo_summary.md).
+
+**Probe finding (2026-07-28, sonnet vision + gpt-5.6 thinking via Codex upstream, folder `019fa66d-…`):** Same resolved models (`anthropic/claude-sonnet-5` + `gpt-5.6-luna`); only `internal.thinking` upstream switched from API to **Codex**. T3 **3/3**, T6 **3/3**, gender **3/3** — quality matches API baseline. Thinking TPS **~89–92** (vs API **~540–705**); T6 wall **~51–58s** (vs **~15.6–18.5s**). Not recommended for production at current Codex TPS. Details: [`probes/sonnet5_gpt56_codex_thinking_summary.md`](probes/sonnet5_gpt56_codex_thinking_summary.md).
 
 **Probe finding (2026-07-28, `anthropic/claude-sonnet-5`, folder `019fa66d-…`):** vision resolves to **`anthropic/claude-sonnet-5`**. Full 3-file batch: T3 **3/3** @ **6.0–7.9s** (~454–577 tok/s), T6 **3/3** @ **13–20s**. No CF 524. Hint `"Children doing sports"` → gender-neutral **child** labels (no mis-gender vs opus; no explicit girl/boy for SEO). Category sometimes `People` instead of `Illustration`. Rate card intro $2/$10 per 1M (standard $3/$15 from Sep 1). Details: [`probes/claude_sonnet5_collection_summary.md`](probes/claude_sonnet5_collection_summary.md).
 
@@ -179,7 +202,7 @@ Canonical probe write-up: [`probes/sonnet5_gpt56_combo_summary.md`](probes/sonne
 
 **Probe finding (2026-07-28, `gpt-5.4`, folder `019fa66d-…`):** persisted `ai_1024` + **`delivery=url`** is required for GPT-5.4 vision on this stack (base64 reliably HTTP **524** @ ~125s). Signed URL payload is ~341 bytes vs ~62KB base64. URL T3 is **intermittent** (~109s when pass, 524 when fail) — run-to-run CF variance, not delivery-mode regression. Full 3-file collection re-probe with config default `url`: T3 0/3, T6 1/3 batch (+ 2119boy T6 ok on spot-check while T3 524'd). Production default is **`url`** (`config/microstock.php`); grok remains faster/more reliable with base64 (~46s). Details: [`probes/gpt54_url_vs_base64_summary.md`](probes/gpt54_url_vs_base64_summary.md), [`probes/collection_url_default_summary.md`](probes/collection_url_default_summary.md).
 
-**Probe scripts:** `php scripts/microstock/probe_ai.php --timeout=300 [--file={uuid}|--folder={uuid}] [--only=T0,T0t,T3,T6] [--label=sonnet5-gpt56]` — **T0** = vision preflight, **T0t** = thinking preflight; **T6** surfaces `stage_metrics` (per-stage `duration_ms`, `resolved_model`, `multimodal`, `tokens_per_second`). Full folder batch: `php scripts/microstock/probe_collection.php {folder_id} [--timeout=300] [--label=sonnet5-gpt56]`. Matrix: `--matrix`. Requires ready variants (`php scripts/microstock/generate_variants.php {folder_id}` if upload predates worker). JSON artifacts land in `storage/app/probe_results/` (runtime, not committed). Summaries: [`probes/`](probes/).
+**Probe scripts:** `php scripts/microstock/probe_ai.php --timeout=300 [--file={uuid}|--folder={uuid}] [--only=T0,T0t,T3,T6] [--label=sonnet5-gpt56]` — **T0** = vision preflight, **T0t** = thinking preflight; **T6** surfaces `stage_metrics` (per-stage `duration_ms`, `resolved_model`, `multimodal`, `tokens_per_second`). Full folder batch: `php scripts/microstock/probe_collection.php {folder_id} [--timeout=300] [--label=sonnet5-gpt56]`. **E2E decoupled pipeline** (persists `ai_vision` / `ai_thinking` / `ai_result`, sync queue): `php scripts/microstock/probe_collection_stages.php {folder_id} [--label=decoupled-probe-e2e] [--wait-timeout=900] [--force]` — use `--force` after zombie `processing` (no metadata rows). Details: [`probes/decoupled_stages_collection_summary.md`](probes/decoupled_stages_collection_summary.md). Matrix: `--matrix`. Requires ready variants (`php scripts/microstock/generate_variants.php {folder_id}` if upload predates worker). JSON artifacts land in `storage/app/probe_results/` (runtime, not committed). Summaries: [`probes/`](probes/).
 
 ### Prompt strategy (marketplace-aligned)
 
@@ -275,7 +298,7 @@ Instead, each asset moves through three derived phases, measured from when its m
 1. flips any `pending` metadata older than `grace_after` to `failed` (`error = 'Analysis exceeded the grace period'`) — this covers both a hung AI call and a **zombie** row whose worker died (e.g. Windows `queue:work` exit);
 2. a `processing` folder whose metadata are all terminal → `review` (if some succeeded) or `failed` (if none).
 
-**Constraint:** `grace_after` must stay **below** the queue `DB_QUEUE_RETRY_AFTER` (1800s) so the watchdog declares failure *before* the queue re-dispatches the still-running batch job. `HttpAiMetadataService::timeoutSeconds` clamps the per-request client timeout to the same `grace_after` ceiling, so a long-but-valid analysis is never cut before the watchdog decides. `AnalyzeCollectionBatch::$tries` stays `2` so one Laravel retry tolerates a transient failure before the watchdog declares terminal failure.
+**Constraint:** `grace_after` and `thinking_grace_after` must stay **below** the queue `DB_QUEUE_RETRY_AFTER` (1800s) so the watchdog declares failure *before* the queue re-dispatches still-running jobs. `AnalyzeCollectionVisionBatch::$tries` stays `2` for transient vision-batch failures.
 
 As a safety net, `HttpAiMetadataService::thinking()` still degrades gracefully if a request genuinely fails:
 
@@ -375,7 +398,7 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 
 ## Operations: queue worker
 
-All Microstock AI jobs (`ProcessCollection`, `AnalyzeCollectionBatch`, `AnalyzeAssetMetadata`, `AnalysisWatchdog`) run on the `default` queue, so a worker must be running for analysis to progress: `php artisan queue:work` (or `queue:listen`). Single-asset runs can be dispatched synchronously in Tinker for a quick check. The `AnalysisWatchdog` is dispatched automatically by `ProcessCollection` and re-arms itself while any collection is `processing` — it is what flips hung/zombie analyses to `failed` past the grace period.
+All Microstock AI jobs (`ProcessCollection`, `AnalyzeCollectionVisionBatch`, `AnalyzeAssetVision`, `AnalyzeAssetThinking`, `AnalysisWatchdog`) run on the `default` queue, so a worker must be running for analysis to progress: `php artisan queue:work` (or `queue:listen`). Single-asset runs can be dispatched synchronously in Tinker for a quick check. The `AnalysisWatchdog` is dispatched automatically by `ProcessCollection` and re-arms itself while any collection is `processing` — it enforces per-stage grace deadlines and flips folders to `review` when every asset is terminal.
 
 ### Finding: `queue:work` exits on Windows/Laragon (environment, not a code bug)
 

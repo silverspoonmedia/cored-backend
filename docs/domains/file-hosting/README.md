@@ -362,7 +362,7 @@ This feature leans on two always-on Laravel processes. If either is down, the co
 
 | Process | Command | Drives | If it stops |
 |---------|---------|--------|-------------|
-| Queue worker | `php artisan queue:work` | `ComputeHostedFileChecksum` (post-upload sha256); also Microstock AI jobs (`ProcessCollection`, `AnalyzeCollectionBatch`, `AnalyzeAssetMetadata`) on the same `default` queue | `checksum` stays `null` → blocklist never matches new files; Microstock analysis stalls until a worker runs |
+| Queue worker | `php artisan queue:work` | `ComputeHostedFileChecksum` (post-upload sha256); also Microstock AI jobs (`ProcessCollection`, `AnalyzeCollectionVisionBatch`, `AnalyzeAssetThinking`, `AnalysisWatchdog`) on the same `default` queue | `checksum` stays `null` → blocklist never matches new files; Microstock analysis stalls until a worker runs |
 | Scheduler | `php artisan schedule:work` (dev) or cron/Task Scheduler `php artisan schedule:run` every minute (prod) | `file-hosting:prune-stale-uploads` (hourly, `withoutOverlapping`) | Orphaned multipart uploads are never aborted → parts pile up on storage |
 
 - Queue connection defaults to `database` (`QUEUE_CONNECTION` unset in `.env` → `config/queue.php` fallback). Set `QUEUE_CONNECTION=redis` in production if you run Redis.
