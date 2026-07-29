@@ -561,7 +561,7 @@ Listing mutations must stay **in lockstep** across surfaces. When shipping a new
 
 **Busy UI:** mutations (move/delete/forms/bulk/context share-delete) toggle `.is-fh-busy` + centered spinner overlay (distinct from soft-nav `.is-fh-loading`).
 
-**Upload queue:** staged rows show human file size next to the name (`File.size` at pick time).
+**Upload queue:** staged rows show human file size next to the name (`File.size` at pick time). Successful (**Done**) rows leave the queue after ~5s (`scheduleDoneRowDismiss` + `.is-dismissing` fade); **failed** rows stay so the user can see what went wrong.
 
 **Manual QA:** single select highlight; ctrl multi; shift range; dblclick open; context rename/move/share/delete; bulk bar Move multi-select; drag file→folder; drag onto parent/root breadcrumb or listing `...` parent row; nested empty still shows `...`; root has no `...`; drag multi; refuse drop on self; spinner on move/delete; upload row shows size; OS file drop still uploads.
 **Shell markers:** `[data-file-manager][data-fh-spa]`, panels `[data-fh-panel="browse|trash|show"]`, breadcrumb `[data-fh-breadcrumb]`, trash body `[data-fh-trash-body]`.
@@ -744,7 +744,7 @@ npm run test:js
 | Suite | What it covers |
 |-------|----------------|
 | PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest` — HTML + SPA JSON contracts for index/trash/show/workspaces + mutation `data` forward), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302, public show JSON + paid gate 404). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
-| Vitest `npm run test:js` | Pure client helpers in `resources/js/file-hosting/upload-progress.test.js` (transfer rate, format, byte percent). Pattern: `resources/js/**/*.test.js`. |
+| Vitest `npm run test:js` | Pure client helpers in `resources/js/file-hosting/upload-progress.test.js` (transfer rate, format, byte percent) and `direct-upload-dismiss.test.js` (Done-row auto-dismiss timer/fade/`active` cleanup). Pattern: `resources/js/**/*.test.js`. |
 | Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Worker unit tests: `c:\laragon\www\workers` (`npm test`). |
 | Qualification | `composer test -- --filter=FileHostingQualification` — 50 IDs (Low/Normal/Medium/Hard/Anomaly) |
 

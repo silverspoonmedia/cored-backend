@@ -471,7 +471,7 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 - `KeywordNormalizerTest`: dedupe + cap at 60 keywords.
 - `FileManagerControllerTest::test_microstock_usage_page_renders`: usage page Blade smoke.
 
-Upload client unit tests (Vitest): `direct-upload-mime.test.js`, `direct-upload-context.test.js` — see [File Hosting — UI architecture / SPA shell](../file-hosting/README.md#ui-architecture--spa-shell).
+Upload client unit tests (Vitest): `direct-upload-mime.test.js`, `direct-upload-context.test.js`, `direct-upload-dismiss.test.js` — see [File Hosting — UI architecture / SPA shell](../file-hosting/README.md#ui-architecture--spa-shell).
 
 ## Operations: queue worker
 
