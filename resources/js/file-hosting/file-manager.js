@@ -17,6 +17,7 @@ import {
     applyBrowsePayload,
     applyFileStats,
     applyQuotaPayload,
+    patchMicrostockRow,
     tryPatchListing,
     upsertFileRow,
 } from './listing-ui';
@@ -27,8 +28,21 @@ import { createSelectionController } from './selection';
 import { createContextMenu } from './context-menu';
 import { createDragMove, moveItemsRequest } from './drag-move';
 import { createMicrostockPanel } from './microstock-panel';
+import { createMicrostockUsagePanel } from './microstock-usage';
+import { formatCollectionProgress } from './microstock-ui';
+import {
+    HINT_MAX_LENGTH,
+    composeCollectionHint,
+    markDescribeValidation,
+    parseCollectionHint,
+    populateDescribeForm,
+    readDescribeForm,
+    updateDescribePreview,
+    validateCollectionDescribe,
+} from './collection-describe';
 
 const STORAGE_KEY = 'fh-view-mode';
+const COLLECTION_POLL_FALLBACK_MS = 60000;
 
 function initFileManager(root) {
         if (!root || root.dataset.fhBound === '1') {
@@ -55,6 +69,7 @@ function initFileManager(root) {
         let lastWorkspaces = Array.isArray(config.workspaces) ? config.workspaces : [];
         let microstockMount = null;
         let microstockPanel = null;
+        let usagePanel = null;
         const selected = new Set();
         let selection = null;
         let dragMove = null;
@@ -67,6 +82,11 @@ function initFileManager(root) {
         /** Mutation busy overlay (move/delete/forms) — distinct from soft-nav is-fh-loading. */
         let busyDepth = 0;
         let collectionPollTimer = null;
+        let lastCollectionCounts = null;
+
+        function isRealtimeConnected() {
+            return window.fileHostingRealtime?.connected === true;
+        }
         function setBusy(on) {
             if (on) {
                 busyDepth += 1;
@@ -112,6 +132,8 @@ function initFileManager(root) {
             }
         }
 
+        let listingStale = false;
+
         async function softRefetchListing() {
             if (!config.browseUrl) {
                 return;
@@ -128,6 +150,7 @@ function initFileManager(root) {
                     const url = browseUrlWithContext(config.browseUrl, config);
                     const json = await fetchJson(url, csrfToken);
                     if (json?.data) {
+                        listingStale = false;
                         if (json.data.workspace) {
                             config.currentWorkspace = json.data.workspace;
                         }
@@ -135,6 +158,7 @@ function initFileManager(root) {
                         if (json.data.folder?.id !== undefined) {
                             config.currentFolderId = json.data.folder?.id || null;
                         }
+                        config.currentFolderHint = json.data.folder?.collection_hint ?? null;
                         syncCollectionUploadGate(root, config, json.data.folder);
                         updateCollectionUi(json.data.folder ? json.data.folder.collection_status : null);
                         // Soft-refetch replaces rows — drop stale selection + re-enable DnD.
@@ -144,6 +168,15 @@ function initFileManager(root) {
                         }
                         if (dragMove) {
                             dragMove.makeRowsDraggable();
+                        }
+                    } else {
+                        // Both attempts failed — mark stale and reload if not already stale.
+                        if (!listingStale) {
+                            listingStale = true;
+                        } else {
+                            // Consecutive failure — DOM is critically stale; hard reload.
+                            window.location.reload();
+                            return;
                         }
                     }
                 } while (softRefetchListing.pending);
@@ -268,6 +301,58 @@ function initFileManager(root) {
             }
         }
 
+        function applyCollectionProgressPayload(payload) {
+            if (!payload || String(payload.folder_id) !== String(config.currentFolderId || '')) {
+                return;
+            }
+            const counts = {
+                processed: payload.processed,
+                total: payload.total,
+                failed: payload.failed,
+                phase: payload.phase,
+                billingTier: payload.billing_tier,
+            };
+            const countsChanged = lastCollectionCounts === null
+                || lastCollectionCounts.processed !== counts.processed
+                || lastCollectionCounts.failed !== counts.failed
+                || lastCollectionCounts.total !== counts.total;
+            lastCollectionCounts = counts;
+            updateCollectionUi(payload.status, counts);
+            if (payload.status === 'review' || payload.status === 'failed') {
+                softRefetchListing();
+            } else if (!isRealtimeConnected() && countsChanged) {
+                softRefetchListing();
+            }
+        }
+
+        function onAssetMetadataProgress(payload) {
+            if (!payload?.file_id || !payload.microstock) {
+                return;
+            }
+            patchMicrostockRow(root, payload.file_id, payload.microstock, config);
+            if (typeof microstockPanel?.handleAssetProgress === 'function') {
+                microstockPanel.handleAssetProgress(payload);
+            }
+        }
+
+        function onRealtimeConnected() {
+            if (config.collectionStatus === 'processing') {
+                stopCollectionPolling();
+            }
+            if (typeof microstockPanel?.onRealtimeConnected === 'function') {
+                microstockPanel.onRealtimeConnected();
+            }
+        }
+
+        function onRealtimeDegraded() {
+            if (config.collectionStatus === 'processing') {
+                startCollectionPolling();
+            }
+            if (typeof microstockPanel?.onRealtimeDegraded === 'function') {
+                microstockPanel.onRealtimeDegraded();
+            }
+        }
+
         function rebindRealtime() {
             if (realtimeHandle && typeof realtimeHandle.disconnect === 'function') {
                 realtimeHandle.disconnect();
@@ -290,6 +375,8 @@ function initFileManager(root) {
                     onListingPatch,
                     onFileStats,
                     onMembersChanged,
+                    onCollectionProgress: applyCollectionProgressPayload,
+                    onAssetMetadataProgress,
                 });
             } catch (err) {
                 console.warn('File Hosting realtime init failed; soft-refetch still available.', err);
@@ -326,6 +413,8 @@ function initFileManager(root) {
         };
 
         rebindRealtime();
+        window.addEventListener('file-hosting-realtime:connected', onRealtimeConnected);
+        window.addEventListener('file-hosting-realtime:degraded', onRealtimeDegraded);
 
         const initSteps = [
             initViewToggle,
@@ -348,6 +437,7 @@ function initFileManager(root) {
                 console.error('[file-manager] init step failed', step.name, e);
             }
         });
+        updateMicrostockToolbarChrome();
         if (spaShell) {
             try {
                 initSpaRouter();
@@ -1024,6 +1114,7 @@ function initFileManager(root) {
                 showPanel('browse');
             }
             refreshWorkspaceSwitcher();
+            updateMicrostockToolbarChrome();
         }
 
         function syncConfigFromRoute(route) {
@@ -1081,6 +1172,26 @@ function initFileManager(root) {
                 }
                 el.dataset.collectionLocked = folder ? locked : '0';
             });
+            updateMicrostockToolbarChrome();
+        }
+
+        function updateMicrostockToolbarChrome() {
+            const link = document.querySelector('[data-fh-toolbar-balance]');
+            if (!link) {
+                return;
+            }
+            const isMs = config.currentWorkspace?.kind === 'microstock';
+            link.classList.toggle('d-none', !isMs);
+            if (!isMs) {
+                return;
+            }
+            const base = config.usageUrlBase || config.usageUrl || '/file-hosting/microstock/usage';
+            const qs = config.workspaceId
+                ? '?workspace_id=' + encodeURIComponent(config.workspaceId)
+                : '';
+            const href = base.split('?')[0] + qs;
+            link.href = href;
+            config.usageUrl = href;
         }
 
         // ---- Workspace switcher client re-render (SPA soft-nav) ----
@@ -1230,6 +1341,7 @@ function initFileManager(root) {
             }
             renderWorkspaceMenuItems();
             renderWorkspaceSwitcher();
+            updateMicrostockToolbarChrome();
             if (microstockMount) {
                 refreshMicrostockSlotSection(microstockMount);
             }
@@ -1444,6 +1556,9 @@ function initFileManager(root) {
                 banner: root.querySelector('[data-fh-collection-banner]'),
                 bannerText: root.querySelector('[data-fh-collection-banner-text]'),
                 review: root.querySelector('[data-fh-collection-review]'),
+                stepper: root.querySelector('[data-fh-collection-stepper]'),
+                stepHint: root.querySelector('[data-fh-step-hint]'),
+                stepProgress: root.querySelector('[data-fh-step-progress]'),
             };
         }
 
@@ -1459,24 +1574,24 @@ function initFileManager(root) {
         }
 
         function startCollectionPolling() {
-            if (collectionPollTimer !== null) {
+            if (collectionPollTimer !== null || isRealtimeConnected()) {
                 return;
             }
             collectionPollTimer = setInterval(function () {
-                refreshCollectionStatus();
-            }, 3000);
+                refreshCollectionStatus(false);
+            }, COLLECTION_POLL_FALLBACK_MS);
         }
 
-        function progressText(processed, total) {
-            const tmpl = config.microstockPanel?.progress || 'Analyzed :processed of :total';
-            return tmpl
-                .replace(':processed', String(processed ?? 0))
-                .replace(':total', String(total ?? 0));
+        function progressText(processed, total, failed) {
+            return formatCollectionProgress(processed, total, failed, {
+                progress: config.microstockPanel?.progress,
+                progressFailed: config.collectionLabels?.progressFailed,
+            });
         }
 
-        // Render the collection action button + status banner for the current
+        // Render the collection stepper + action button for the current
         // folder. `status` = browse.folder.collection_status (null => draft).
-        // `counts` = { processed, total } for the processing progress line.
+        // `counts` = { processed, total, failed, phase } for the processing progress line.
         function updateCollectionUi(status, counts) {
             const els = collectionEls();
             if (!els.action) {
@@ -1487,6 +1602,7 @@ function initFileManager(root) {
 
             if (!inCollection) {
                 els.banner?.classList.add('d-none');
+                els.stepper?.classList.add('d-none');
                 stopCollectionPolling();
                 return;
             }
@@ -1496,52 +1612,115 @@ function initFileManager(root) {
             config.collectionStatus = st;
 
             if (st === 'processing') {
-                startCollectionPolling();
+                if (isRealtimeConnected()) {
+                    stopCollectionPolling();
+                } else {
+                    startCollectionPolling();
+                }
             } else {
                 stopCollectionPolling();
+                lastCollectionCounts = null;
             }
 
-            // Banner text per status.
-            let bannerText = null;
+            // Map collection status to active step (1=upload, 2=lock, 3=analyze, 4=review, 5=export)
+            let activeStep = 1;
+            let stepFailed = false;
+            if (st === 'draft') {
+                activeStep = 1;
+            } else if (st === 'locked') {
+                activeStep = 3; // locked = ready to analyze, so analyze is next
+            } else if (st === 'processing') {
+                activeStep = 3;
+            } else if (st === 'review') {
+                activeStep = 4;
+            } else if (st === 'exported') {
+                activeStep = 5;
+            } else if (st === 'failed') {
+                activeStep = 3;
+                stepFailed = true;
+            }
+
+            // Update stepper DOM
+            if (els.stepper) {
+                els.stepper.classList.remove('d-none');
+                const steps = els.stepper.querySelectorAll('[data-fh-step]');
+                steps.forEach(function (stepEl) {
+                    const stepNum = parseInt(stepEl.dataset.fhStep, 10);
+                    stepEl.classList.remove('is-pending', 'is-active', 'is-done', 'is-failed');
+                    if (stepFailed && stepNum === activeStep) {
+                        stepEl.classList.add('is-failed');
+                    } else if (stepNum < activeStep) {
+                        stepEl.classList.add('is-done');
+                    } else if (stepNum === activeStep) {
+                        stepEl.classList.add('is-active');
+                    } else {
+                        stepEl.classList.add('is-pending');
+                    }
+                });
+            }
+
+            // Hint text per step
+            let hintText = '';
             let primaryLabel = labels.lockDescribe;
             let primaryMode = 'lock';
             if (st === 'processing') {
                 const p = counts?.processed ?? null;
                 const t = counts?.total ?? null;
-                bannerText = (t !== null && t > 0)
-                    ? (labels.processing + ' — ' + progressText(p, t))
+                const f = counts?.failed ?? 0;
+                hintText = labels.stepAnalyzeHint || labels.processing || '';
+                let progressLine = (t !== null && t > 0)
+                    ? (labels.processing + ' — ' + progressText(p, t, f))
                     : labels.processing;
+                if (counts?.phase === 'degraded') {
+                    progressLine += ' ' + (labels.processingDegraded || '');
+                }
+                if (counts?.billingTier === 'free' || counts?.billingTier === 'mixed') {
+                    progressLine += ' ' + (labels.processingFreeTier || '');
+                }
+                if (els.stepProgress) {
+                    els.stepProgress.classList.remove('d-none');
+                    els.stepProgress.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>' + escapeHtml(progressLine);
+                }
                 primaryLabel = labels.processing;
                 primaryMode = 'none';
-            } else if (st === 'review') {
-                bannerText = labels.review;
-                primaryLabel = labels.exportCsv;
-                primaryMode = 'export';
-            } else if (st === 'exported') {
-                bannerText = labels.exported;
-                primaryLabel = labels.downloadCsv;
-                primaryMode = 'download';
-            } else if (st === 'failed') {
-                bannerText = labels.failed;
-                primaryLabel = labels.lockDescribe;
-                primaryMode = 'lock';
-            } else if (st === 'locked') {
-                bannerText = labels.locked;
-                primaryLabel = labels.processing;
-                primaryMode = 'none';
+            } else {
+                if (els.stepProgress) {
+                    els.stepProgress.classList.add('d-none');
+                    els.stepProgress.innerHTML = '';
+                }
+                if (st === 'draft') {
+                    hintText = labels.stepUploadHint || labels.stepUploadEmpty || '';
+                    primaryLabel = labels.lockDescribe;
+                    primaryMode = 'lock';
+                } else if (st === 'review') {
+                    hintText = labels.stepReviewHint || labels.review || '';
+                    primaryLabel = labels.exportCsv;
+                    primaryMode = 'export';
+                } else if (st === 'exported') {
+                    hintText = labels.stepExportHint || labels.exported || '';
+                    primaryLabel = labels.downloadCsv;
+                    primaryMode = 'download';
+                } else if (st === 'failed') {
+                    hintText = labels.failed || '';
+                    primaryLabel = labels.lockDescribe;
+                    primaryMode = 'lock';
+                } else if (st === 'locked') {
+                    hintText = labels.stepAnalyzeHint || labels.locked || '';
+                    primaryLabel = labels.analyze || labels.processing;
+                    primaryMode = 'analyze';
+                }
             }
 
-            if (els.banner && els.bannerText) {
-                if (bannerText) {
-                    const spinner = st === 'processing'
-                        ? '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>'
-                        : '';
-                    els.bannerText.innerHTML = spinner;
-                    els.bannerText.appendChild(document.createTextNode(bannerText));
-                    els.banner.classList.remove('d-none');
-                } else {
-                    els.banner.classList.add('d-none');
-                }
+            if (els.stepHint) {
+                els.stepHint.textContent = hintText;
+            }
+
+            // Legacy banner hidden — stepper replaces it
+            if (els.banner) {
+                els.banner.classList.add('d-none');
+            }
+            if (els.bannerText) {
+                els.bannerText.textContent = '';
             }
 
             if (els.primary && els.primaryLabel) {
@@ -1587,29 +1766,196 @@ function initFileManager(root) {
             });
         }
 
-        function refreshCollectionStatus() {
+        function refreshCollectionStatus(forceListingRefetch) {
             if (!config.currentFolderId) {
                 return;
             }
             fetchJson(collectionUrl('/status'), csrfToken)
                 .then(function (json) {
                     if (json?.data) {
-                        updateCollectionUi(json.data.status, {
+                        const counts = {
                             processed: json.data.processed,
                             total: json.data.total,
-                        });
+                            failed: json.data.failed,
+                            phase: json.data.phase,
+                            billingTier: json.data.billing_tier,
+                        };
+                        const countsChanged = lastCollectionCounts === null
+                            || lastCollectionCounts.processed !== counts.processed
+                            || lastCollectionCounts.failed !== counts.failed
+                            || lastCollectionCounts.total !== counts.total;
+                        lastCollectionCounts = counts;
+                        updateCollectionUi(json.data.status, counts);
+                        const terminal = json.data.status === 'review'
+                            || json.data.status === 'failed'
+                            || json.data.status === 'exported';
+                        if (forceListingRefetch || terminal || (!isRealtimeConnected() && countsChanged)) {
+                            softRefetchListing();
+                        }
                     }
                 })
                 .catch(function () { /* best-effort */ });
         }
 
+        function countFilesInListing() {
+            return root.querySelectorAll('[data-fh-row][data-fh-entity="file"]').length;
+        }
+
+        function fetchMicrostockBilling() {
+            const url = config.billingUrl || '/file-hosting/microstock/billing';
+            return fetchJson(url, csrfToken).then(function (json) {
+                return json?.data || null;
+            }).catch(function () {
+                return null;
+            });
+        }
+
+        function analysisAffordability(billing, fileCount) {
+            const count = Math.max(1, fileCount);
+            const dailyRemaining = billing?.daily_free?.remaining ?? 0;
+            const balanceMicro = billing?.balance_micro_usd ?? 0;
+            const estimatePer = billing?.estimated_per_analysis_micro_usd ?? 0;
+            const dailyUsed = Math.min(dailyRemaining, count);
+            const prepaidNeeded = Math.max(0, count - dailyUsed);
+            const requiredPrepaidMicro = estimatePer * prepaidNeeded;
+            const affordable = prepaidNeeded === 0 || balanceMicro >= requiredPrepaidMicro;
+
+            return {
+                affordable,
+                dailyUsed,
+                prepaidNeeded,
+                requiredPrepaidMicro,
+            };
+        }
+
+        function renderCollectionBillingLine(billing, fileCount) {
+            const wrap = document.querySelector('[data-fh-collection-billing]');
+            const el = wrap?.querySelector('[data-fh-collection-billing-text]');
+            if (!wrap || !el || !billing) {
+                return;
+            }
+            const count = Math.max(1, fileCount);
+            const afford = analysisAffordability(billing, count);
+            const parts = [];
+
+            if (billing.daily_free?.enabled) {
+                const dailyTmpl = config.collectionLabels?.dailyFreeLine
+                    || 'Free today: :remaining/:limit';
+                parts.push(dailyTmpl
+                    .replace(':remaining', String(billing.daily_free.remaining ?? 0))
+                    .replace(':limit', String(billing.daily_free.limit ?? 0))
+                    .replace(':used', String(billing.daily_free.used ?? 0)));
+            }
+
+            if (afford.prepaidNeeded > 0) {
+                const tmpl = config.collectionLabels?.billingLine
+                    || 'Balance :balance · est. :estimate per file';
+                const estimateTotal = (billing.estimated_per_analysis_usd || 0) * afford.prepaidNeeded;
+                parts.push(tmpl
+                    .replace(':balance', String(billing.balance_usd ?? '0'))
+                    .replace(':estimate', String(billing.estimated_per_analysis_usd ?? '0'))
+                    .replace(':total', estimateTotal.toFixed(2)));
+            } else if (!billing.daily_free?.enabled) {
+                const tmpl = config.collectionLabels?.billingLine
+                    || 'Balance :balance · est. :estimate per file';
+                const estimateTotal = (billing.estimated_per_analysis_usd || 0) * count;
+                parts.push(tmpl
+                    .replace(':balance', String(billing.balance_usd ?? '0'))
+                    .replace(':estimate', String(billing.estimated_per_analysis_usd ?? '0'))
+                    .replace(':total', estimateTotal.toFixed(2)));
+            }
+
+            if (afford.dailyUsed > 0 && afford.prepaidNeeded > 0) {
+                const mixedTmpl = config.collectionLabels?.billingMixedLine
+                    || ':daily free + :paid paid analyses';
+                parts.push(mixedTmpl
+                    .replace(':daily', String(afford.dailyUsed))
+                    .replace(':paid', String(afford.prepaidNeeded)));
+            }
+
+            el.textContent = parts.join(' · ');
+            wrap.classList.toggle('d-none', parts.length === 0);
+
+            const link = wrap.querySelector('[data-fh-collection-billing-link]');
+            if (link && config.usageUrl) {
+                link.href = config.usageUrl;
+                link.classList.toggle('d-none', parts.length === 0);
+            }
+        }
+
+        function describeLabelMaps() {
+            const describe = config.collectionDescribe || {};
+            return {
+                visible: describe.visibleOptions || {},
+                intent: describe.intentOptions || {},
+                style: describe.styleOptions || {},
+            };
+        }
+
+        function describePreviewOptions() {
+            const describe = config.collectionDescribe || {};
+            return {
+                charCountTemplate: describe.charCount || ':count / :max',
+            };
+        }
+
+        function populateCollectionDescribeModal() {
+            const modalEl = document.getElementById('fhCollectionDescribeModal');
+            const form = modalEl?.querySelector('[data-fh-collection-describe-form]');
+            if (!form) {
+                return;
+            }
+            const maps = describeLabelMaps();
+            const sections = parseCollectionHint(config.currentFolderHint || '', maps);
+            populateDescribeForm(form, sections);
+            markDescribeValidation(form, []);
+            updateDescribePreview(form, maps, describePreviewOptions());
+        }
+
+        function bindCollectionDescribeForm() {
+            const modalEl = document.getElementById('fhCollectionDescribeModal');
+            const form = modalEl?.querySelector('[data-fh-collection-describe-form]');
+            if (!form || form.dataset.fhDescribeBound === '1') {
+                return;
+            }
+            form.dataset.fhDescribeBound = '1';
+            const maps = describeLabelMaps();
+            const previewOpts = describePreviewOptions();
+            const refreshPreview = function () {
+                updateDescribePreview(form, maps, previewOpts);
+            };
+            form.addEventListener('input', refreshPreview);
+            form.addEventListener('change', refreshPreview);
+        }
+
         function initCollectionUi() {
+            bindCollectionDescribeForm();
             updateCollectionUi(config.collectionStatus || null);
+            if (config.collectionStatus === 'processing') {
+                refreshCollectionStatus(false);
+            }
 
             microstockPanel = createMicrostockPanel(config, csrfToken, {
                 toast: showToast,
-                onSaved: function () { refreshCollectionStatus(); },
+                isRealtimeConnected: isRealtimeConnected,
+                onSaved: function () { refreshCollectionStatus(false); },
             });
+
+            // Usage & balance offcanvas panel (SPA-integrated).
+            if (config.usagePanel) {
+                usagePanel = createMicrostockUsagePanel(config.usagePanel, csrfToken);
+            }
+
+            // Toolbar "AI Balance" button opens the usage offcanvas instead of navigating away.
+            const balanceBtn = root.querySelector('[data-fh-toolbar-balance]');
+            if (balanceBtn) {
+                balanceBtn.addEventListener('click', function (e) {
+                    if (usagePanel) {
+                        e.preventDefault();
+                        usagePanel.open();
+                    }
+                });
+            }
 
             // Per-file "Review" button in listing rows opens the panel.
             document.addEventListener('click', function (e) {
@@ -1639,10 +1985,7 @@ function initFileManager(root) {
                     if (mode === 'lock') {
                         const modalEl = document.getElementById('fhCollectionDescribeModal');
                         if (modalEl) {
-                            const input = modalEl.querySelector('#fhCollectionHint');
-                            if (input) {
-                                input.value = '';
-                            }
+                            populateCollectionDescribeModal();
                             if (window.bootstrap?.Modal) {
                                 window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
                             } else if (window.bootstrap?.Modal === undefined && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
@@ -1660,7 +2003,7 @@ function initFileManager(root) {
                             .then(function (out) {
                                 if (out.ok) {
                                     showToast(out.json.message || config.messages.success, 'success');
-                                    refreshCollectionStatus();
+                                    refreshCollectionStatus(true);
                                 } else {
                                     showToast(out.json.message || config.messages.error, 'error');
                                 }
@@ -1669,27 +2012,90 @@ function initFileManager(root) {
                             .finally(function () { setBusy(false); });
                     } else if (mode === 'download') {
                         window.location.href = collectionUrl('/download');
+                    } else if (mode === 'analyze') {
+                        setBusy(true);
+                        collectionPost('/analyze')
+                            .then(function (out) {
+                                if (out.ok) {
+                                    showToast(out.json.message || config.messages.success, 'success');
+                                    refreshCollectionStatus(true);
+                                    softRefetchListing();
+                                } else {
+                                    showToast(out.json.message || config.messages.error, 'error');
+                                }
+                            })
+                            .catch(function () { showToast(config.messages.networkError, 'error'); })
+                            .finally(function () { setBusy(false); });
                     }
+                });
+            }
+
+            const describeModal = document.getElementById('fhCollectionDescribeModal');
+            if (describeModal) {
+                describeModal.addEventListener('show.bs.modal', function () {
+                    populateCollectionDescribeModal();
+                    const fileCount = countFilesInListing();
+                    fetchMicrostockBilling().then(function (billing) {
+                        renderCollectionBillingLine(billing, fileCount);
+                    });
                 });
             }
 
             const describeSubmit = document.querySelector('[data-fh-collection-describe-submit]');
             if (describeSubmit) {
                 describeSubmit.addEventListener('click', function () {
-                    const hint = document.getElementById('fhCollectionHint')?.value?.trim() || '';
-                    if (hint === '') {
-                        showToast(config.messages.error, 'error');
+                    const modalEl = document.getElementById('fhCollectionDescribeModal');
+                    const form = modalEl?.querySelector('[data-fh-collection-describe-form]');
+                    const maps = describeLabelMaps();
+                    const sections = readDescribeForm(form);
+                    const validation = validateCollectionDescribe(sections);
+                    markDescribeValidation(form, validation.errors);
+                    if (!validation.valid) {
+                        const describe = config.collectionDescribe || {};
+                        const messages = describe.validation || {};
+                        const messageKeys = {
+                            primaryConcept: 'primary',
+                            visible: 'visible',
+                            intent: 'intent',
+                            style: 'style',
+                        };
+                        const first = validation.errors[0];
+                        const msg = messages[messageKeys[first]] || config.messages.error;
+                        showToast(msg, 'error');
                         return;
                     }
+                    const hint = composeCollectionHint(sections, maps);
+                    if (hint.length > HINT_MAX_LENGTH) {
+                        showToast((config.collectionDescribe?.validation?.tooLong) || config.messages.error, 'error');
+                        return;
+                    }
+                    const fileCount = Math.max(1, countFilesInListing());
                     describeSubmit.disabled = true;
                     setBusy(true);
-                    // Lock (with hint) then kick off the AI pipeline.
-                    collectionPost('/lock', { hint: hint })
+                    fetchMicrostockBilling()
+                        .then(function (billing) {
+                            if (billing) {
+                                const afford = analysisAffordability(billing, fileCount);
+                                if (!afford.affordable) {
+                                    const msg = config.collectionLabels?.insufficientCredits
+                                        || 'Insufficient AI credits.';
+                                    showToast(msg, 'error');
+                                    describeSubmit.disabled = false;
+                                    setBusy(false);
+                                    return null;
+                                }
+                            }
+                            return collectionPost('/lock', { hint: hint });
+                        })
                         .then(function (out) {
+                            if (out === null) {
+                                return;
+                            }
                             if (!out.ok) {
                                 showToast(out.json.message || config.messages.error, 'error');
                                 return;
                             }
+                            config.currentFolderHint = hint;
                             return collectionPost('/analyze').then(function (a) {
                                 const modalEl = document.getElementById('fhCollectionDescribeModal');
                                 if (modalEl && window.bootstrap?.Modal) {
@@ -1700,7 +2106,8 @@ function initFileManager(root) {
                                 } else {
                                     showToast(a.json.message || config.messages.error, 'error');
                                 }
-                                refreshCollectionStatus();
+                                refreshCollectionStatus(true);
+                                softRefetchListing();
                                 syncCollectionUploadGate(root, config, { collection_locked: true });
                             });
                         })

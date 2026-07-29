@@ -34,6 +34,16 @@ describe('buildInitContext', () => {
         expect(buildInitContext(dataset)).toEqual({});
     });
 
+    it('batch snapshot ignores later dataset mutations', async () => {
+        const { snapshotBatchContext } = await import('./direct-upload.js');
+        const dataset = { folderId: 'frozen-folder', workspaceId: 'ws-1' };
+        const snapshot = snapshotBatchContext(dataset);
+        dataset.folderId = 'changed';
+
+        expect(snapshot.init).toEqual({ folder_id: 'frozen-folder', workspace_id: 'ws-1' });
+        expect(buildInitContext(dataset)).toEqual({ folder_id: 'changed', workspace_id: 'ws-1' });
+    });
+
     it('tolerates a null/undefined dataset', () => {
         expect(buildInitContext(null)).toEqual({});
         expect(buildInitContext(undefined)).toEqual({});

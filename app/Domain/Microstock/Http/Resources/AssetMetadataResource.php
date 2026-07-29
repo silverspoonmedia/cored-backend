@@ -2,6 +2,7 @@
 
 namespace App\Domain\Microstock\Http\Resources;
 
+use App\Domain\Microstock\Services\AnalysisStageService;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AssetMetadataResource extends JsonResource
@@ -20,6 +21,7 @@ class AssetMetadataResource extends JsonResource
             'description' => $this->description,
             'category' => $this->category,
             'status' => $this->status?->value,
+            'stages' => app(AnalysisStageService::class)->stageSummary($this->resource),
             'error' => $this->error,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

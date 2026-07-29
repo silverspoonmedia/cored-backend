@@ -17,6 +17,7 @@ use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\VisionImageResolver;
 use App\Domain\Microstock\Services\CollectionService;
 use App\Domain\Microstock\Services\CsvExportService;
+use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Domain\Microstock\Services\MicrostockService;
 use App\Domain\Microstock\Support\Prompts;
 use App\Domain\Service\Enums\EntitlementStatus;
@@ -187,7 +188,7 @@ class CollectionLifecycleTest extends TestCase
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
         // Seed pending rows the way ProcessCollection does, then run the batch.
-        (new ProcessCollection((string) $folder->id))->handle();
+        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) \Illuminate\Support\Str::uuid()))->handle(app(AnalysisStageService::class));
 
         $this->assertSame('Curated title', AssetMetadata::query()->where('file_id', $a->id)->value('title'));
         $this->assertSame('Curated title', AssetMetadata::query()->where('file_id', $b->id)->value('title'));
@@ -202,10 +203,9 @@ class CollectionLifecycleTest extends TestCase
         $this->assertSame(CollectionStatus::Review, $folder->refresh()->collection_status);
     }
 
-    public function test_analyze_collection_batch_chains_chunks_and_reviews_at_end(): void
+    public function test_analyze_collection_multiple_files_all_review(): void
     {
         $this->bindFakeAi();
-        config(['microstock.ai.batch_chunk' => 2]);
 
         $ws = app(MicrostockService::class)->workspaceFor($this->owner);
         $folder = $this->makeFolder($this->owner, $ws->id);
@@ -215,8 +215,7 @@ class CollectionLifecycleTest extends TestCase
         app(CollectionService::class)->lock($this->owner, $folder->id, 'hint');
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
-        // 5 files / chunk 2 -> 3 chained invocations; Review only after the last.
-        (new ProcessCollection((string) $folder->id))->handle();
+        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) \Illuminate\Support\Str::uuid()))->handle(app(AnalysisStageService::class));
 
         foreach ($files as $f) {
             $this->assertSame(
@@ -246,6 +245,7 @@ class CollectionLifecycleTest extends TestCase
         $metadata->refresh();
         $this->assertSame(MetadataStatus::Failed, $metadata->status);
         $this->assertSame('gateway blew up', $metadata->error);
+        $this->assertSame('failed', $metadata->ai_vision['status'] ?? null);
     }
 
     public function test_lock_requires_hint_and_transitions_status(): void
@@ -347,7 +347,7 @@ class CollectionLifecycleTest extends TestCase
         app(CollectionService::class)->lock($this->owner, $folder->id, 'kitchen hint');
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
-        (new ProcessCollection((string) $folder->id))->handle();
+        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) \Illuminate\Support\Str::uuid()))->handle(app(AnalysisStageService::class));
 
         // A batch was created for the root file only; sub-folder file untouched.
         $this->assertDatabaseHas('microstock_asset_metadata', ['file_id' => $inRoot->id]);
@@ -360,7 +360,7 @@ class CollectionLifecycleTest extends TestCase
         $folder = $this->makeFolder($this->owner, $ws->id);
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
-        (new ProcessCollection((string) $folder->id))->handle();
+        (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) \Illuminate\Support\Str::uuid()))->handle(app(AnalysisStageService::class));
 
         $this->assertSame(CollectionStatus::Failed, $folder->refresh()->collection_status);
     }
@@ -381,6 +381,11 @@ class CollectionLifecycleTest extends TestCase
         // No hint -> unchanged base prompts.
         $this->assertStringNotContainsString('COLLECTION CONTEXT', Prompts::visionUser());
         $this->assertStringNotContainsString('COLLECTION CONTEXT', Prompts::thinkingUser('T', ['a']));
+
+        $structured = "PRIMARY CONCEPT: Eco kitchen set.\n\nVISIBLE SUBJECTS: Object, Food";
+        $visionStructured = Prompts::visionUser($structured);
+        $this->assertStringContainsString('PRIMARY CONCEPT: Eco kitchen set.', $visionStructured);
+        $this->assertStringNotContainsString('"PRIMARY CONCEPT:', $visionStructured);
     }
 
     // ---- Status snapshot ----
@@ -484,6 +489,18 @@ class CollectionLifecycleTest extends TestCase
     {
         $this->app->instance(AiMetadataService::class, new class implements AiMetadataService
         {
+            public function analyzeVision(string $imageUrl, ?string $hint = null): array
+            {
+                return [
+                    'title' => 'Draft title',
+                    'keywords' => ['a'],
+                    'description' => 'Draft description',
+                    'category' => 'Illustration',
+                    'raw' => ['vision' => true],
+                    'stage_metrics' => [['stage' => 'vision', 'multimodal' => true]],
+                ];
+            }
+
             public function generate(string $imageUrl, ?string $hint = null): array
             {
                 return [

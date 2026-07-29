@@ -35,4 +35,17 @@ return [
     'collection_exported' => 'Collection diekspor.',
     'insufficient_ai_credits' => 'Kredit AI tidak cukup. Beli paket kredit AI dari Layanan sebelum menjalankan analisis.',
     'billing_loaded' => 'Status penagihan AI dimuat.',
+    'ledger_loaded' => 'Buku besar penagihan dimuat.',
+    'usage_events_loaded' => 'Peristiwa penggunaan AI dimuat.',
+    'ledger' => [
+        'purchase' => 'Pembelian kredit AI — :service',
+        'purchase_fallback' => 'Kredit AI',
+        'analysis_debit' => 'Analisis AI — :file',
+        'analysis_debit_with_folder' => 'Analisis AI — :file (:folder)',
+        'analysis_debit_fallback' => 'Analisis AI',
+        'adjustment' => 'Penyesuaian saldo',
+    ],
+    'admin_billing_overview_loaded' => 'Ringkasan penagihan platform dimuat.',
+    'admin_usage_events_loaded' => 'Peristiwa penggunaan platform dimuat.',
+    'admin_billing_forbidden' => 'Anda tidak diizinkan melihat penagihan platform.',
 ];

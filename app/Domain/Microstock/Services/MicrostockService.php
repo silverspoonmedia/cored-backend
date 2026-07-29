@@ -8,11 +8,14 @@ use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Services\WorkspaceAccessService;
 use App\Domain\FileHosting\Services\WorkspaceService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Exceptions\MicrostockException;
-use App\Domain\Microstock\Jobs\AnalyzeAssetMetadata;
+use App\Domain\Microstock\Jobs\AnalyzeAssetVision;
 use App\Domain\Microstock\Models\AssetMetadata;
+use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Domain\Service\Services\ServiceEntitlementService;
+use Illuminate\Support\Str;
 
 /**
  * Microstock core: system workspace resolution + asset metadata lifecycle.
@@ -106,14 +109,25 @@ class MicrostockService
     {
         $file = $this->resolveAsset($actor, $fileId);
 
-        $this->billing->assertCanAnalyze($actor, 1);
+        $plan = $this->billing->planAnalyze($actor, 1);
+
+        $analysisRunId = (string) Str::uuid();
 
         $metadata = AssetMetadata::query()->firstOrNew(['file_id' => $file->id]);
         $metadata->user_id = $file->user_id;
-        $metadata->status = MetadataStatus::Pending;
-        $metadata->save();
+        $source = $plan->dailySlots > 0 ? BillingSource::DailyFree : BillingSource::Prepaid;
+        app(AnalysisStageService::class)->initializeStages(
+            $metadata,
+            (string) $actor->id,
+            $analysisRunId,
+            $source,
+        );
 
-        AnalyzeAssetMetadata::dispatch((string) $metadata->id);
+        $file->loadMissing('folder');
+        $hint = $file->folder?->collection_hint;
+        $folderId = $file->folder_id !== null ? (string) $file->folder_id : null;
+
+        AnalyzeAssetVision::dispatchForSolo((string) $metadata->id, $hint, $folderId);
 
         return $metadata;
     }

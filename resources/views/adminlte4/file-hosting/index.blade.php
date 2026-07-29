@@ -70,16 +70,107 @@
         'currentWorkspace' => $currentWorkspace ?? null,
         'collectionBase' => url('file-hosting/microstock/collections'),
         'assetsBase' => url('file-hosting/microstock/assets'),
+        'billingUrl' => route('file-hosting.microstock.billing'),
+        'usageUrl' => route('file-hosting.microstock.usage', array_filter(['workspace_id' => $workspaceId])),
+        'usageUrlBase' => route('file-hosting.microstock.usage'),
+        'toolbarBalanceLabel' => __('web/microstock.usage.toolbar_balance'),
+        'usagePanel' => [
+            'summaryUrl' => route('file-hosting.microstock.billing'),
+            'ledgerUrl' => route('file-hosting.microstock.billing.ledger'),
+            'usageEventsUrl' => route('file-hosting.microstock.billing.usage-events'),
+            'servicesUrl' => route('services.index'),
+            'canViewPlatformBilling' => $canViewPlatformBilling ?? false,
+            'adminOverviewUrl' => ($canViewPlatformBilling ?? false)
+                ? route('file-hosting.microstock.billing.admin.overview')
+                : null,
+            'adminUsageEventsUrl' => ($canViewPlatformBilling ?? false)
+                ? route('file-hosting.microstock.billing.admin.usage-events')
+                : null,
+            'labels' => [
+                'title' => __('web/microstock.usage.title'),
+                'subtitle' => __('web/microstock.usage.subtitle'),
+                'balance' => __('web/microstock.usage.balance'),
+                'estimate' => __('web/microstock.usage.estimate'),
+                'dailyFree' => __('web/microstock.usage.daily_free'),
+                'tabLedger' => __('web/microstock.usage.tab_ledger'),
+                'tabUsage' => __('web/microstock.usage.tab_usage'),
+                'tabPlatform' => __('web/microstock.usage.tab_platform'),
+                'colDate' => __('web/microstock.usage.col_date'),
+                'colDescription' => __('web/microstock.usage.col_description'),
+                'colAmount' => __('web/microstock.usage.col_amount'),
+                'colBalance' => __('web/microstock.usage.col_balance'),
+                'colFile' => __('web/microstock.usage.col_file'),
+                'colStage' => __('web/microstock.usage.col_stage'),
+                'colModel' => __('web/microstock.usage.col_model'),
+                'colTokens' => __('web/microstock.usage.col_tokens'),
+                'colCost' => __('web/microstock.usage.col_cost'),
+                'colSource' => __('web/microstock.usage.col_source'),
+                'colUser' => __('web/microstock.usage.col_user'),
+                'colProviderCost' => __('web/microstock.usage.col_provider_cost'),
+                'sourceDailyFree' => __('web/microstock.usage.source_daily_free'),
+                'sourcePrepaid' => __('web/microstock.usage.source_prepaid'),
+                'emptyLedger' => __('web/microstock.usage.empty_ledger'),
+                'emptyUsage' => __('web/microstock.usage.empty_usage'),
+                'emptyPlatform' => __('web/microstock.usage.empty_platform'),
+                'loadMore' => __('web/microstock.usage.load_more'),
+                'loading' => __('web/microstock.usage.loading'),
+                'buyCredits' => __('web/microstock.usage.buy_credits'),
+                'dailyFreeLine' => __('web/microstock.usage.daily_free_line'),
+                'platformProviderCost' => __('web/microstock.usage.platform_provider_cost'),
+                'platformBillable' => __('web/microstock.usage.platform_billable'),
+                'platformMargin' => __('web/microstock.usage.platform_margin'),
+                'platformEvents' => __('web/microstock.usage.platform_events'),
+                'platformUsers' => __('web/microstock.usage.platform_users'),
+                'platformDailyFreeCost' => __('web/microstock.usage.platform_daily_free_cost'),
+                'platformBySource' => __('web/microstock.usage.platform_by_source'),
+                'platformByStage' => __('web/microstock.usage.platform_by_stage'),
+                'platformByModel' => __('web/microstock.usage.platform_by_model'),
+                'platformAllUsage' => __('web/microstock.usage.platform_all_usage'),
+            ],
+        ],
         'collectionStatus' => $browse['folder']['collection_status'] ?? null,
+        'currentFolderHint' => $browse['folder']['collection_hint'] ?? null,
+        'collectionDescribe' => [
+            'sectionsIntro' => __('web/file-hosting.microstock.describe_sections_intro'),
+            'primaryConcept' => __('web/file-hosting.microstock.describe_primary_concept'),
+            'primaryPlaceholder' => __('web/file-hosting.microstock.describe_primary_placeholder'),
+            'visibleFacts' => __('web/file-hosting.microstock.describe_visible_facts'),
+            'buyerIntent' => __('web/file-hosting.microstock.describe_buyer_intent'),
+            'styleMood' => __('web/file-hosting.microstock.describe_style_mood'),
+            'additionalNotes' => __('web/file-hosting.microstock.describe_additional_notes'),
+            'additionalPlaceholder' => __('web/file-hosting.microstock.describe_additional_placeholder'),
+            'otherPlaceholder' => __('web/file-hosting.microstock.describe_other_placeholder'),
+            'preview' => __('web/file-hosting.microstock.describe_preview'),
+            'charCount' => __('web/file-hosting.microstock.describe_char_count'),
+            'validation' => [
+                'primary' => __('web/file-hosting.microstock.describe_validation_primary', ['min' => 10]),
+                'visible' => __('web/file-hosting.microstock.describe_validation_visible'),
+                'intent' => __('web/file-hosting.microstock.describe_validation_intent'),
+                'style' => __('web/file-hosting.microstock.describe_validation_style'),
+                'tooLong' => __('web/file-hosting.microstock.describe_validation_too_long'),
+            ],
+            'visibleOptions' => __('web/file-hosting.microstock.describe_visible_options'),
+            'intentOptions' => __('web/file-hosting.microstock.describe_intent_options'),
+            'styleOptions' => __('web/file-hosting.microstock.describe_style_options'),
+        ],
         'collectionLabels' => [
             'lockDescribe' => __('web/file-hosting.microstock.lock_describe'),
+            'analyze' => __('web/file-hosting.microstock.analyze'),
             'exportCsv' => __('web/file-hosting.microstock.export_csv'),
             'downloadCsv' => __('web/file-hosting.microstock.download_csv'),
             'processing' => __('web/file-hosting.microstock.status_processing'),
+            'processingDegraded' => __('web/file-hosting.microstock.status_processing_degraded'),
             'review' => __('web/file-hosting.microstock.status_review'),
             'exported' => __('web/file-hosting.microstock.status_exported'),
             'failed' => __('web/file-hosting.microstock.status_failed'),
             'locked' => __('web/file-hosting.microstock.status_locked'),
+            'progressFailed' => __('web/file-hosting.microstock.progress_failed'),
+            'billingLine' => __('web/file-hosting.microstock.billing_line'),
+            'dailyFreeLine' => __('web/file-hosting.microstock.daily_free_line'),
+            'billingMixedLine' => __('web/file-hosting.microstock.billing_mixed_line'),
+            'processingFreeTier' => __('web/file-hosting.microstock.status_processing_free_tier'),
+            'insufficientCredits' => __('web/file-hosting.microstock.insufficient_credits'),
+            'billingHistoryLink' => __('web/microstock.usage.billing_history_link'),
         ],
         'microstockPanel' => [
             'progress' => __('web/file-hosting.microstock.progress'),
@@ -90,8 +181,26 @@
             'statusGenerated' => __('web/file-hosting.microstock.status_generated'),
             'statusFinalized' => __('web/file-hosting.microstock.status_finalized'),
             'statusFailed' => __('web/file-hosting.microstock.status_failed_item'),
+            'stageVision' => __('web/file-hosting.microstock.stage_vision'),
+            'stageThinking' => __('web/file-hosting.microstock.stage_thinking'),
+            'stageQueuedThinking' => __('web/file-hosting.microstock.stage_queued_thinking'),
+            'stageDegraded' => __('web/file-hosting.microstock.stage_degraded'),
+            'stageVisionLabel' => __('web/file-hosting.microstock.stage_vision_label'),
+            'stageThinkingLabel' => __('web/file-hosting.microstock.stage_thinking_label'),
+            'stageResultLabel' => __('web/file-hosting.microstock.stage_result_label'),
             'saved' => __('web/file-hosting.microstock.panel_saved'),
             'queued' => __('web/file-hosting.microstock.panel_queued'),
+            'stepUpload' => __('web/file-hosting.microstock.step_upload'),
+            'stepLockDescribe' => __('web/file-hosting.microstock.step_lock_describe'),
+            'stepAnalyze' => __('web/file-hosting.microstock.step_analyze'),
+            'stepReview' => __('web/file-hosting.microstock.step_review'),
+            'stepExport' => __('web/file-hosting.microstock.step_export'),
+            'stepUploadHint' => __('web/file-hosting.microstock.step_upload_hint'),
+            'stepLockHint' => __('web/file-hosting.microstock.step_lock_hint'),
+            'stepAnalyzeHint' => __('web/file-hosting.microstock.step_analyze_hint'),
+            'stepReviewHint' => __('web/file-hosting.microstock.step_review_hint'),
+            'stepExportHint' => __('web/file-hosting.microstock.step_export_hint'),
+            'stepUploadEmpty' => __('web/file-hosting.microstock.step_upload_empty'),
         ],
         'personalLabel' => __('web/file-hosting.workspace_personal'),
         'badgeYours' => __('web/file-hosting.collab.badge_yours'),
@@ -220,6 +329,11 @@
 
             <a href="{{ route('file-hosting.trash', $ownerQuery) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-trash3 me-1"></i> {{ __('web/file-hosting.trash') }}
+            </a>
+            <a href="{{ route('file-hosting.microstock.usage', array_filter(['workspace_id' => $workspaceId])) }}"
+               class="btn btn-outline-secondary btn-sm {{ $isMicrostock ? '' : 'd-none' }}"
+               data-fh-toolbar-balance>
+                <i class="bi bi-wallet2 me-1"></i> {{ __('web/microstock.usage.toolbar_balance') }}
             </a>
             @can('create file hosting folder')
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#fhNewFolderModal">
@@ -395,11 +509,44 @@
 
         {{-- SPA browse panel (table + grid) --}}
         <div data-fh-panel="browse">
-        {{-- Microstock collection status banner (JS-driven, hidden by default) --}}
-        <div class="alert alert-secondary d-none d-flex align-items-center gap-2 py-2 px-3 mb-3"
-             data-fh-collection-banner role="status">
+        {{-- Microstock collection stepper (JS-driven, hidden by default) --}}
+        <div class="fh-collection-stepper d-none" data-fh-collection-stepper role="status">
+            <div class="fh-collection-stepper__steps">
+                <div class="fh-collection-stepper__step is-pending" data-fh-step="1">
+                    <span class="fh-collection-stepper__circle">1</span>
+                    <span class="fh-collection-stepper__label" data-fh-step-label>{{ __('web/file-hosting.microstock.step_upload') }}</span>
+                </div>
+                <div class="fh-collection-stepper__line"></div>
+                <div class="fh-collection-stepper__step is-pending" data-fh-step="2">
+                    <span class="fh-collection-stepper__circle">2</span>
+                    <span class="fh-collection-stepper__label" data-fh-step-label>{{ __('web/file-hosting.microstock.step_lock_describe') }}</span>
+                </div>
+                <div class="fh-collection-stepper__line"></div>
+                <div class="fh-collection-stepper__step is-pending" data-fh-step="3">
+                    <span class="fh-collection-stepper__circle">3</span>
+                    <span class="fh-collection-stepper__label" data-fh-step-label>{{ __('web/file-hosting.microstock.step_analyze') }}</span>
+                </div>
+                <div class="fh-collection-stepper__line"></div>
+                <div class="fh-collection-stepper__step is-pending" data-fh-step="4">
+                    <span class="fh-collection-stepper__circle">4</span>
+                    <span class="fh-collection-stepper__label" data-fh-step-label>{{ __('web/file-hosting.microstock.step_review') }}</span>
+                </div>
+                <div class="fh-collection-stepper__line"></div>
+                <div class="fh-collection-stepper__step is-pending" data-fh-step="5">
+                    <span class="fh-collection-stepper__circle">5</span>
+                    <span class="fh-collection-stepper__label" data-fh-step-label>{{ __('web/file-hosting.microstock.step_export') }}</span>
+                </div>
+            </div>
+            <div class="fh-collection-stepper__footer">
+                <div class="fh-collection-stepper__hint" data-fh-step-hint></div>
+                <div class="fh-collection-stepper__progress d-none" data-fh-step-progress></div>
+            </div>
+            {{-- Legacy banner text container for progress/degraded messages --}}
+            <div class="d-none" data-fh-collection-banner-text></div>
+        </div>
+        {{-- Legacy banner container (kept for compatibility, hidden by JS) --}}
+        <div class="alert alert-secondary d-none" data-fh-collection-banner role="status" aria-hidden="true">
             <i class="bi bi-images"></i>
-            <span data-fh-collection-banner-text></span>
         </div>
         {{-- Table view --}}
         <div data-fh-view="table">
@@ -805,21 +952,93 @@
 
     {{-- Microstock Collection: Lock & Describe Modal --}}
     <div class="modal fade" id="fhCollectionDescribeModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-lock me-1"></i>{{ __('web/file-hosting.microstock.describe_title') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="small text-muted">{{ __('web/file-hosting.microstock.describe_hint') }}</p>
-                    <label class="form-label" for="fhCollectionHint">{{ __('web/file-hosting.microstock.describe_label') }}</label>
-                    <textarea id="fhCollectionHint" class="form-control" rows="4" maxlength="2000"
-                              placeholder="{{ __('web/file-hosting.microstock.describe_placeholder') }}"></textarea>
+                    <p class="small text-muted mb-1">{{ __('web/file-hosting.microstock.describe_hint') }}</p>
+                    <p class="small text-muted mb-3">{{ __('web/file-hosting.microstock.describe_sections_intro') }}</p>
+                    <form data-fh-collection-describe-form novalidate>
+                        <div class="mb-3" data-fh-describe-group="primary">
+                            <label class="form-label" for="fhDescribePrimary">{{ __('web/file-hosting.microstock.describe_primary_concept') }}</label>
+                            <textarea id="fhDescribePrimary" class="form-control" rows="3" data-fh-describe-primary
+                                      placeholder="{{ __('web/file-hosting.microstock.describe_primary_placeholder') }}"></textarea>
+                            <div class="invalid-feedback">{{ __('web/file-hosting.microstock.describe_validation_primary', ['min' => 10]) }}</div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6" data-fh-describe-group="visible">
+                                <label class="form-label d-block small">{{ __('web/file-hosting.microstock.describe_visible_facts') }}</label>
+                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                    @foreach (__('web/file-hosting.microstock.describe_visible_options') as $key => $label)
+                                        <input type="checkbox" class="btn-check" id="fhDescribeVisible{{ $key }}"
+                                               value="{{ $key }}" data-fh-describe-visible autocomplete="off">
+                                        <label class="btn btn-outline-secondary btn-sm" for="fhDescribeVisible{{ $key }}">{{ $label }}</label>
+                                    @endforeach
+                                </div>
+                                <input type="text" class="form-control form-control-sm" data-fh-describe-visible-other
+                                       placeholder="{{ __('web/file-hosting.microstock.describe_other_placeholder') }}">
+                                <div class="invalid-feedback">{{ __('web/file-hosting.microstock.describe_validation_visible') }}</div>
+                            </div>
+                            <div class="col-md-6" data-fh-describe-group="intent">
+                                <label class="form-label d-block small">{{ __('web/file-hosting.microstock.describe_buyer_intent') }}</label>
+                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                    @foreach (__('web/file-hosting.microstock.describe_intent_options') as $key => $label)
+                                        <input type="checkbox" class="btn-check" id="fhDescribeIntent{{ $key }}"
+                                               value="{{ $key }}" data-fh-describe-intent autocomplete="off">
+                                        <label class="btn btn-outline-secondary btn-sm" for="fhDescribeIntent{{ $key }}">{{ $label }}</label>
+                                    @endforeach
+                                </div>
+                                <input type="text" class="form-control form-control-sm" data-fh-describe-intent-other
+                                       placeholder="{{ __('web/file-hosting.microstock.describe_other_placeholder') }}">
+                                <div class="invalid-feedback">{{ __('web/file-hosting.microstock.describe_validation_intent') }}</div>
+                            </div>
+                        </div>
+                        <div class="mt-3" data-fh-describe-group="style">
+                            <label class="form-label d-block small">{{ __('web/file-hosting.microstock.describe_style_mood') }}</label>
+                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                @foreach (__('web/file-hosting.microstock.describe_style_options') as $key => $label)
+                                    <input type="checkbox" class="btn-check" id="fhDescribeStyle{{ $key }}"
+                                           value="{{ $key }}" data-fh-describe-style autocomplete="off">
+                                    <label class="btn btn-outline-secondary btn-sm" for="fhDescribeStyle{{ $key }}">{{ $label }}</label>
+                                @endforeach
+                            </div>
+                            <input type="text" class="form-control form-control-sm" data-fh-describe-style-other
+                                   placeholder="{{ __('web/file-hosting.microstock.describe_other_placeholder') }}">
+                            <div class="invalid-feedback">{{ __('web/file-hosting.microstock.describe_validation_style') }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="fhDescribeNotes">{{ __('web/file-hosting.microstock.describe_additional_notes') }}</label>
+                            <textarea id="fhDescribeNotes" class="form-control" rows="2" data-fh-describe-notes
+                                      placeholder="{{ __('web/file-hosting.microstock.describe_additional_placeholder') }}"></textarea>
+                        </div>
+                        <div class="border rounded p-2 bg-light">
+                            <button class="btn btn-link btn-sm p-0 text-decoration-none" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#fhDescribePreviewCollapse"
+                                    aria-expanded="false" aria-controls="fhDescribePreviewCollapse">
+                                {{ __('web/file-hosting.microstock.describe_preview') }}
+                            </button>
+                            <div class="collapse" id="fhDescribePreviewCollapse">
+                                <pre class="small mb-1 mt-2 text-wrap" style="white-space: pre-wrap;" data-fh-describe-preview-text>—</pre>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('web/file-hosting.cancel') }}</button>
-                    <button type="button" class="btn btn-primary" data-fh-collection-describe-submit>{{ __('web/file-hosting.microstock.describe_submit') }}</button>
+                <div class="modal-footer d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="small text-muted" data-fh-describe-char-count>0 / 2000</span>
+                        <div class="small text-muted d-none" data-fh-collection-billing>
+                            <span data-fh-collection-billing-text></span>
+                            <a href="{{ route('file-hosting.microstock.usage', array_filter(['workspace_id' => $workspaceId])) }}"
+                               class="ms-1" data-fh-collection-billing-link>{{ __('web/microstock.usage.billing_history_link') }}</a>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('web/file-hosting.cancel') }}</button>
+                        <button type="button" class="btn btn-primary" data-fh-collection-describe-submit>{{ __('web/file-hosting.microstock.describe_submit') }}</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -832,19 +1051,47 @@
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
-            <div class="text-center mb-3">
-                <img data-fh-ms-thumb alt="" class="img-fluid rounded border" style="max-height:240px; object-fit:contain;">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                <span class="badge text-bg-secondary" data-fh-ms-status></span>
+                <div class="d-flex align-items-center gap-1 small text-muted" data-fh-ms-stages aria-label="{{ __('web/file-hosting.microstock.stage_strip_label') }}"></div>
             </div>
-            <div class="mb-2"><span class="badge text-bg-secondary" data-fh-ms-status></span></div>
+            <div class="text-center mb-3">
+                <img data-fh-ms-thumb alt="" class="img-fluid rounded border" style="max-height:200px; object-fit:contain;">
+            </div>
             <div class="alert alert-danger d-none mb-3 py-2 small" data-fh-ms-error role="alert"></div>
             <div class="mb-3">
                 <label class="form-label" for="fhMsTitle">{{ __('web/file-hosting.microstock.panel_title_label') }}</label>
                 <input type="text" class="form-control" id="fhMsTitle" maxlength="255">
             </div>
             <div class="mb-3">
-                <label class="form-label">{{ __('web/file-hosting.microstock.panel_keywords_label') }}</label>
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <label class="form-label mb-0">{{ __('web/file-hosting.microstock.panel_keywords_label') }}</label>
+                    <span class="badge text-bg-light border small" data-fh-ms-keyword-count>0</span>
+                </div>
                 <div class="d-flex flex-wrap gap-1 mb-2" data-fh-ms-chips></div>
-                <input type="text" class="form-control form-control-sm" id="fhMsKeywordInput" placeholder="{{ __('web/file-hosting.microstock.panel_keyword_placeholder') }}">
+                <div class="d-flex gap-1 mb-1">
+                    <input type="text" class="form-control form-control-sm" id="fhMsKeywordInput" placeholder="{{ __('web/file-hosting.microstock.panel_keyword_placeholder') }}">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-fh-ms-keyword-clear title="{{ __('web/file-hosting.microstock.panel_keyword_clear') }}">
+                        <i class="bi bi-eraser"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="mb-3">
+                <button class="btn btn-link btn-sm p-0 text-decoration-none text-muted d-flex align-items-center gap-1" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#fhMsAiDetails" aria-expanded="false" aria-controls="fhMsAiDetails">
+                    <i class="bi bi-chevron-right small" data-fh-ms-details-chevron></i>
+                    {{ __('web/file-hosting.microstock.panel_ai_details') }}
+                </button>
+                <div class="collapse mt-2" id="fhMsAiDetails">
+                    <div class="mb-2">
+                        <label class="form-label small text-muted mb-0">{{ __('web/file-hosting.microstock.panel_description_label') }}</label>
+                        <div class="form-control-plaintext small border rounded px-2 py-1 bg-light" data-fh-ms-description>—</div>
+                    </div>
+                    <div>
+                        <label class="form-label small text-muted mb-0">{{ __('web/file-hosting.microstock.panel_category_label') }}</label>
+                        <div class="form-control-plaintext small border rounded px-2 py-1 bg-light" data-fh-ms-category>—</div>
+                    </div>
+                </div>
             </div>
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-primary" data-fh-ms-save>{{ __('web/file-hosting.microstock.panel_save') }}</button>
@@ -853,7 +1100,232 @@
         </div>
     </div>
 
-    {{-- New Folder Modal --}}
+    {{-- Microstock Usage & Balance Offcanvas (SPA-integrated) --}}
+    <div class="offcanvas offcanvas-end fh-ms-usage-offcanvas" tabindex="-1"
+         id="fhMicrostockUsagePanel" aria-labelledby="fhMicrostockUsagePanelLabel"
+         data-fh-ms-usage-panel>
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="fhMicrostockUsagePanelLabel">
+                <i class="bi bi-wallet2 me-1"></i>{{ __('web/microstock.usage.title') }}
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <p class="text-muted small mb-3">{{ __('web/microstock.usage.subtitle') }}</p>
+
+            {{-- Summary cards --}}
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="card h-100"><div class="card-body py-2 px-3">
+                        <div class="text-muted small">{{ __('web/microstock.usage.balance') }}</div>
+                        <div class="fs-5 fw-semibold" data-fh-msu-balance>—</div>
+                    </div></div>
+                </div>
+                <div class="col-6">
+                    <div class="card h-100"><div class="card-body py-2 px-3">
+                        <div class="text-muted small">{{ __('web/microstock.usage.estimate') }}</div>
+                        <div class="fs-6 fw-semibold" data-fh-msu-estimate>—</div>
+                    </div></div>
+                </div>
+            </div>
+            <div class="row g-2 mb-3 d-none" data-fh-msu-daily-card>
+                <div class="col-12">
+                    <div class="card"><div class="card-body py-2 px-3">
+                        <div class="text-muted small">{{ __('web/microstock.usage.daily_free') }}</div>
+                        <div class="fs-6 fw-semibold" data-fh-msu-daily>—</div>
+                    </div></div>
+                </div>
+            </div>
+
+            {{-- Buy credits link --}}
+            <div class="mb-3">
+                <a href="{{ route('services.index') }}" class="btn btn-outline-primary btn-sm w-100" data-fh-msu-buy-credits>
+                    <i class="bi bi-coin me-1"></i>{{ __('web/microstock.usage.buy_credits') }}
+                </a>
+            </div>
+
+            {{-- Tabs --}}
+            <ul class="nav nav-tabs mb-2" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="fh-msu-ledger-tab" data-bs-toggle="tab"
+                            data-bs-target="#fh-msu-ledger-pane" type="button" role="tab">
+                        {{ __('web/microstock.usage.tab_ledger') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="fh-msu-usage-tab" data-bs-toggle="tab"
+                            data-bs-target="#fh-msu-usage-pane" type="button" role="tab">
+                        {{ __('web/microstock.usage.tab_usage') }}
+                    </button>
+                </li>
+                @if ($canViewPlatformBilling ?? false)
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="fh-msu-platform-tab" data-bs-toggle="tab"
+                                data-bs-target="#fh-msu-platform-pane" type="button" role="tab">
+                            {{ __('web/microstock.usage.tab_platform') }}
+                        </button>
+                    </li>
+                @endif
+            </ul>
+
+            {{-- Tab panes --}}
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="fh-msu-ledger-pane" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead><tr>
+                                <th>{{ __('web/microstock.usage.col_date') }}</th>
+                                <th>{{ __('web/microstock.usage.col_description') }}</th>
+                                <th class="text-end">{{ __('web/microstock.usage.col_amount') }}</th>
+                                <th class="text-end">{{ __('web/microstock.usage.col_balance') }}</th>
+                            </tr></thead>
+                            <tbody data-fh-msu-ledger-body>
+                                <tr><td colspan="4" class="text-muted">{{ __('web/microstock.usage.loading') }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-2 d-none" data-fh-msu-ledger-more-wrap>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-fh-msu-ledger-more>
+                            {{ __('web/microstock.usage.load_more') }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="fh-msu-usage-pane" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead><tr>
+                                <th>{{ __('web/microstock.usage.col_date') }}</th>
+                                <th>{{ __('web/microstock.usage.col_file') }}</th>
+                                <th>{{ __('web/microstock.usage.col_stage') }}</th>
+                                <th class="d-none d-md-table-cell">{{ __('web/microstock.usage.col_model') }}</th>
+                                <th class="text-end">{{ __('web/microstock.usage.col_tokens') }}</th>
+                                <th class="text-end">{{ __('web/microstock.usage.col_cost') }}</th>
+                                <th>{{ __('web/microstock.usage.col_source') }}</th>
+                            </tr></thead>
+                            <tbody data-fh-msu-usage-body>
+                                <tr><td colspan="7" class="text-muted">{{ __('web/microstock.usage.loading') }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-2 d-none" data-fh-msu-usage-more-wrap>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-fh-msu-usage-more>
+                            {{ __('web/microstock.usage.load_more') }}
+                        </button>
+                    </div>
+                </div>
+
+                @if ($canViewPlatformBilling ?? false)
+                    <div class="tab-pane fade" id="fh-msu-platform-pane" role="tabpanel">
+                        <div class="row g-2 mb-3">
+                            <div class="col-6 col-md-4">
+                                <div class="card h-100"><div class="card-body py-2 px-3">
+                                    <div class="text-muted small">{{ __('web/microstock.usage.platform_provider_cost') }}</div>
+                                    <div class="fw-semibold" data-fh-msu-platform-provider>—</div>
+                                </div></div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="card h-100"><div class="card-body py-2 px-3">
+                                    <div class="text-muted small">{{ __('web/microstock.usage.platform_billable') }}</div>
+                                    <div class="fw-semibold" data-fh-msu-platform-billable>—</div>
+                                </div></div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="card h-100"><div class="card-body py-2 px-3">
+                                    <div class="text-muted small">{{ __('web/microstock.usage.platform_margin') }}</div>
+                                    <div class="fw-semibold" data-fh-msu-platform-margin>—</div>
+                                </div></div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="card h-100"><div class="card-body py-2 px-3">
+                                    <div class="text-muted small">{{ __('web/microstock.usage.platform_events') }}</div>
+                                    <div class="fw-semibold" data-fh-msu-platform-events>—</div>
+                                </div></div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="card h-100"><div class="card-body py-2 px-3">
+                                    <div class="text-muted small">{{ __('web/microstock.usage.platform_users') }}</div>
+                                    <div class="fw-semibold" data-fh-msu-platform-users>—</div>
+                                </div></div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="card h-100"><div class="card-body py-2 px-3">
+                                    <div class="text-muted small">{{ __('web/microstock.usage.platform_daily_free_cost') }}</div>
+                                    <div class="fw-semibold" data-fh-msu-platform-daily-free>—</div>
+                                </div></div>
+                            </div>
+                        </div>
+
+                        <h2 class="h6 mb-1">{{ __('web/microstock.usage.platform_by_source') }}</h2>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead><tr>
+                                    <th>{{ __('web/microstock.usage.col_source') }}</th>
+                                    <th class="text-end">{{ __('web/microstock.usage.platform_events') }}</th>
+                                    <th class="text-end">{{ __('web/microstock.usage.col_provider_cost') }}</th>
+                                    <th class="text-end">{{ __('web/microstock.usage.col_cost') }}</th>
+                                </tr></thead>
+                                <tbody data-fh-msu-platform-source-body>
+                                    <tr><td colspan="4" class="text-muted">{{ __('web/microstock.usage.loading') }}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h2 class="h6 mb-1">{{ __('web/microstock.usage.platform_by_stage') }}</h2>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead><tr>
+                                    <th>{{ __('web/microstock.usage.col_stage') }}</th>
+                                    <th class="text-end">{{ __('web/microstock.usage.platform_events') }}</th>
+                                    <th class="text-end">{{ __('web/microstock.usage.col_provider_cost') }}</th>
+                                </tr></thead>
+                                <tbody data-fh-msu-platform-stage-body>
+                                    <tr><td colspan="3" class="text-muted">{{ __('web/microstock.usage.loading') }}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h2 class="h6 mb-1">{{ __('web/microstock.usage.platform_by_model') }}</h2>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead><tr>
+                                    <th>{{ __('web/microstock.usage.col_model') }}</th>
+                                    <th class="text-end">{{ __('web/microstock.usage.platform_events') }}</th>
+                                    <th class="text-end">{{ __('web/microstock.usage.col_tokens') }}</th>
+                                </tr></thead>
+                                <tbody data-fh-msu-platform-model-body>
+                                    <tr><td colspan="3" class="text-muted">{{ __('web/microstock.usage.loading') }}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h2 class="h6 mb-1">{{ __('web/microstock.usage.platform_all_usage') }}</h2>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead><tr>
+                                    <th>{{ __('web/microstock.usage.col_date') }}</th>
+                                    <th class="d-none d-md-table-cell">{{ __('web/microstock.usage.col_user') }}</th>
+                                    <th>{{ __('web/microstock.usage.col_file') }}</th>
+                                    <th>{{ __('web/microstock.usage.col_stage') }}</th>
+                                    <th class="text-end">{{ __('web/microstock.usage.col_provider_cost') }}</th>
+                                    <th class="text-end">{{ __('web/microstock.usage.col_cost') }}</th>
+                                    <th>{{ __('web/microstock.usage.col_source') }}</th>
+                                </tr></thead>
+                                <tbody data-fh-msu-platform-usage-body>
+                                    <tr><td colspan="7" class="text-muted">{{ __('web/microstock.usage.loading') }}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-2 d-none" data-fh-msu-platform-usage-more-wrap>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-fh-msu-platform-usage-more>
+                                {{ __('web/microstock.usage.load_more') }}
+                            </button>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
     @can('create file hosting folder')
         <div class="modal fade" id="fhNewFolderModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">

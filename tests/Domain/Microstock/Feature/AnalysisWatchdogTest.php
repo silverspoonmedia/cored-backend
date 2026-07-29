@@ -9,6 +9,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Jobs\AnalysisWatchdog;
 use App\Domain\Microstock\Models\AssetMetadata;
+use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Domain\Microstock\Services\CollectionService;
 use App\Domain\Microstock\Services\MicrostockService;
 use App\Domain\Service\Enums\EntitlementStatus;
@@ -67,7 +68,7 @@ class AnalysisWatchdogTest extends TestCase
             'created_at' => now()->subSeconds(2000), // past grace (1500)
         ]);
 
-        (new AnalysisWatchdog)->handle();
+        (new AnalysisWatchdog)->handle(app(AnalysisStageService::class));
 
         $this->assertSame(MetadataStatus::Failed, $expired->refresh()->status);
         $this->assertStringContainsString('grace period', $expired->error);
@@ -85,7 +86,7 @@ class AnalysisWatchdogTest extends TestCase
             'created_at' => now()->subSeconds(100), // well under grace
         ]);
 
-        (new AnalysisWatchdog)->handle();
+        (new AnalysisWatchdog)->handle(app(AnalysisStageService::class));
 
         $this->assertSame(MetadataStatus::Pending, $fresh->refresh()->status);
     }
@@ -103,7 +104,7 @@ class AnalysisWatchdogTest extends TestCase
             'created_at' => now()->subSeconds(2000),
         ]);
 
-        (new AnalysisWatchdog)->handle();
+        (new AnalysisWatchdog)->handle(app(AnalysisStageService::class));
 
         $this->assertSame(CollectionStatus::Failed, $folder->refresh()->collection_status);
     }
@@ -128,7 +129,7 @@ class AnalysisWatchdogTest extends TestCase
             'created_at' => now()->subSeconds(100),
         ]);
 
-        (new AnalysisWatchdog)->handle();
+        (new AnalysisWatchdog)->handle(app(AnalysisStageService::class));
 
         $this->assertSame(CollectionStatus::Review, $folder->refresh()->collection_status);
     }
@@ -148,7 +149,7 @@ class AnalysisWatchdogTest extends TestCase
             'created_at' => now()->subSeconds(2000),
         ]);
 
-        (new AnalysisWatchdog)->handle();
+        (new AnalysisWatchdog)->handle(app(AnalysisStageService::class));
 
         $this->assertSame(MetadataStatus::Failed, $zombie->refresh()->status);
     }
@@ -158,7 +159,7 @@ class AnalysisWatchdogTest extends TestCase
         Bus::fake();
 
         // No processing folder -> no self dispatch.
-        (new AnalysisWatchdog)->handle();
+        (new AnalysisWatchdog)->handle(app(AnalysisStageService::class));
         Bus::assertNotDispatched(AnalysisWatchdog::class);
 
         // With a processing folder -> self dispatches.
@@ -173,7 +174,7 @@ class AnalysisWatchdogTest extends TestCase
             'created_at' => now()->subSeconds(100),
         ]);
 
-        (new AnalysisWatchdog)->handle();
+        (new AnalysisWatchdog)->handle(app(AnalysisStageService::class));
         Bus::assertDispatched(AnalysisWatchdog::class);
     }
 

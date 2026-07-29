@@ -22,6 +22,8 @@ const POLL_MS = 60000;
  * @param {(payload: object) => void} [options.onListingPatch]
  * @param {(payload: object) => void} [options.onFileStats]
  * @param {(payload: object) => void} [options.onMembersChanged]
+ * @param {(payload: object) => void} [options.onCollectionProgress]
+ * @param {(payload: object) => void} [options.onAssetMetadataProgress]
  */
 export function initFileHostingRealtime(options) {
     const {
@@ -36,6 +38,8 @@ export function initFileHostingRealtime(options) {
         onListingPatch,
         onFileStats,
         onMembersChanged,
+        onCollectionProgress,
+        onAssetMetadataProgress,
     } = options;
 
     const realtime = config.realtime || {};
@@ -185,6 +189,8 @@ export function initFileHostingRealtime(options) {
             }
             onFileStats?.(e || {});
         });
+        ch.listen('.collection.analysis.progress', (e) => onCollectionProgress?.(e || {}));
+        ch.listen('.asset.metadata.progress', (e) => onAssetMetadataProgress?.(e || {}));
 
         // Storage-owner quota also lands on personal user channel when browsing a team.
         const ws = workspaceId();
@@ -231,24 +237,28 @@ export function initFileHostingRealtime(options) {
 
 /**
  * Fetch JSON from a same-origin web route.
+ * Retries once after 500ms on failure so transient errors don't leave the DOM stale.
  * @param {string} url
  * @param {string} csrf
  * @returns {Promise<object|null>}
  */
 export async function fetchJson(url, csrf) {
+    const attempt = () => fetch(url, {
+        headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrf,
+        },
+        credentials: 'same-origin',
+    }).then((res) => (res.ok ? res.json() : null));
+
     try {
-        const res = await fetch(url, {
-            headers: {
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrf,
-            },
-            credentials: 'same-origin',
-        });
-        if (!res.ok) {
-            return null;
+        let json = await attempt();
+        if (json) {
+            return json;
         }
-        return await res.json();
+        await new Promise((r) => setTimeout(r, 500));
+        return await attempt();
     } catch {
         return null;
     }

@@ -41,7 +41,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, FH grace/purge (core domain) |
 | File Hosting | [domains/file-hosting/README.md](domains/file-hosting/README.md) — nested folders, multi-disk S3, paid link share, collab workspaces, Blade SPA shell + live listing (product, locked) |
 | vTual | [domains/vtual/README.md](domains/vtual/README.md) — creator aggregator (product, locked); progress [implementation-status.md](domains/vtual/implementation-status.md); legacy audit [archive/vtual-legacy-audit.md](archive/vtual-legacy-audit.md) |
-| Microstock | [domains/microstock/README.md](domains/microstock/README.md) — microstock asset mgmt on FH system workspace: AI metadata, CSV export, encrypted marketplace creds (product, locked) |
+| Microstock | [domains/microstock/README.md](domains/microstock/README.md) — microstock asset mgmt on FH system workspace: AI metadata, prepaid AI billing + usage/balance UI (ledger, usage detail, admin platform tab), CSV export, encrypted marketplace creds (product, locked) |
 | Product Activations | [domains/product-activations/README.md](domains/product-activations/README.md) — kernel runtime-access registry for product domains |
 | Domain Access | [domains/domain-access/README.md](domains/domain-access/README.md) — kernel Public/Private visibility gate + Beta tester roles for product domains |
 

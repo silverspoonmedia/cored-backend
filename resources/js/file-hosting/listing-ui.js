@@ -5,6 +5,8 @@
  * select | icon | name | type | size | region | visibility | actions
  */
 
+import { isMicrostockReviewActionable, resolveMicrostockBadge } from './microstock-ui.js';
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -256,7 +258,14 @@ export function tryPatchListing(payload, root, config) {
         if (!sameFolder(currentFolder, eventFolder)) {
             return true; // ignore
         }
-        // Prefer refetch so actions/permissions match Blade
+        // Optimistic insert for file creates — avoids stale DOM when soft-refetch fails.
+        if (action === 'create' && entityType === 'file' && payload.resource) {
+            const inserted = upsertFileRow(root, payload.resource, config);
+            if (inserted) {
+                return true;
+            }
+        }
+        // Folders or missing resource — prefer refetch so actions/permissions match Blade.
         return false;
     }
 
@@ -319,6 +328,85 @@ function updateEntityNameVisibility(root, entityType, entityId, resource, config
         const cardBadge = row.querySelector('.fh-file-card__badge');
         if (cardBadge) {
             cardBadge.innerHTML = badgeHtml;
+        }
+    });
+
+    return true;
+}
+
+/**
+ * Patch Microstock badge and review affordance on existing file rows.
+ *
+ * @param {HTMLElement} root
+ * @param {string} fileId
+ * @param {object|null} microstock
+ * @param {object} config
+ * @returns {boolean}
+ */
+export function patchMicrostockRow(root, fileId, microstock, config) {
+    if (!root || !fileId || !microstock || config.currentWorkspace?.kind !== 'microstock') {
+        return false;
+    }
+
+    const id = String(fileId);
+    const rows = root.querySelectorAll(
+        `[data-fh-entity="file"][data-fh-id="${CSS.escape(id)}"]`,
+    );
+    if (!rows.length) {
+        return false;
+    }
+
+    const badge = resolveMicrostockBadge(microstock, config.microstockPanel || {});
+    const reviewable = isMicrostockReviewActionable(microstock);
+
+    rows.forEach((row) => {
+        let msBadge = row.querySelector('[data-fh-ms-status]');
+        if (!msBadge) {
+            const nameCell = row.querySelector('.fh-table__name')?.parentElement;
+            if (nameCell) {
+                const span = document.createElement('span');
+                span.className = 'badge fh-ms-badge';
+                span.setAttribute('data-fh-ms-status', '');
+                nameCell.appendChild(document.createTextNode(' '));
+                nameCell.appendChild(span);
+                msBadge = span;
+            }
+        }
+        if (msBadge) {
+            msBadge.textContent = badge.label;
+            msBadge.className = `badge ${badge.cls} fh-ms-badge`;
+        }
+
+        const gridBadgeWrap = row.querySelector('.fh-file-card__badge');
+        if (gridBadgeWrap) {
+            let gridMs = gridBadgeWrap.querySelector('[data-fh-ms-status]');
+            if (!gridMs) {
+                gridMs = document.createElement('span');
+                gridMs.setAttribute('data-fh-ms-status', '');
+                gridBadgeWrap.appendChild(document.createTextNode(' '));
+                gridBadgeWrap.appendChild(gridMs);
+            }
+            gridMs.textContent = badge.label;
+            gridMs.className = `badge ${badge.cls} fh-ms-badge`;
+        }
+
+        const actions = row.querySelector('.fh-table__actions')
+            || row.querySelector('.fh-file-card__actions');
+        if (!actions) {
+            return;
+        }
+
+        let reviewBtn = actions.querySelector('[data-fh-ms-review]');
+        if (reviewable && !reviewBtn) {
+            reviewBtn = document.createElement('button');
+            reviewBtn.type = 'button';
+            reviewBtn.className = 'fh-table__action-btn';
+            reviewBtn.title = config.microstockPanel?.review || 'Review';
+            reviewBtn.setAttribute('data-fh-ms-review', id);
+            reviewBtn.innerHTML = '<i class="bi bi-stars"></i>';
+            actions.prepend(reviewBtn);
+        } else if (!reviewable && reviewBtn) {
+            reviewBtn.remove();
         }
     });
 
@@ -813,27 +901,15 @@ function microstockBadgeHtml(file, config) {
     if (!isMicrostockCtx(config)) {
         return '';
     }
-    const labels = config.microstockPanel || {};
-    const ms = file.microstock;
-    let label = labels.noMetadata || 'No metadata';
-    let cls = 'text-bg-secondary';
-    if (ms && ms.status) {
-        if (ms.status === 'finalized') {
-            label = labels.statusFinalized || 'Finalized';
-            cls = 'text-bg-success';
-        } else if (ms.status === 'generated') {
-            label = labels.statusGenerated || 'Generated';
-            cls = 'text-bg-info';
-        } else {
-            label = labels.statusPending || 'Pending';
-            cls = 'text-bg-warning';
-        }
-    }
-    return `<span class="badge ${cls} fh-ms-badge" data-fh-ms-status>${escapeHtml(label)}</span>`;
+    const badge = resolveMicrostockBadge(file.microstock, config.microstockPanel || {});
+    return `<span class="badge ${badge.cls} fh-ms-badge" data-fh-ms-status>${escapeHtml(badge.label)}</span>`;
 }
 
 function microstockReviewBtnHtml(file, config) {
     if (!isMicrostockCtx(config)) {
+        return '';
+    }
+    if (!isMicrostockReviewActionable(file.microstock)) {
         return '';
     }
     const id = escapeHtml(file.id);

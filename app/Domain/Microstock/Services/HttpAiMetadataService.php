@@ -4,6 +4,8 @@ namespace App\Domain\Microstock\Services;
 
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Exceptions\MicrostockException;
+use App\Domain\Microstock\Support\AnalysisBillingContext;
+use App\Domain\Microstock\Support\KeywordNormalizer;
 use App\Domain\Microstock\Support\Prompts;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -83,7 +85,7 @@ class HttpAiMetadataService implements AiMetadataService
     {
         $this->stageMetrics = [];
 
-        $draft = $this->vision($imageUrl, $hint);
+        $draft = $this->analyzeVision($imageUrl, $hint);
         $curated = $this->thinking(
             $draft['title'],
             $draft['keywords'],
@@ -158,6 +160,25 @@ class HttpAiMetadataService implements AiMetadataService
         $result['stage_metrics'] = $this->stageMetrics;
 
         return $result;
+    }
+
+    /**
+     * @return array{title: string, keywords: list<string>, description: string, category: string, raw: mixed, stage_metrics: list<array<string, mixed>>}
+     */
+    public function analyzeVision(string $imageUrl, ?string $hint = null): array
+    {
+        $this->stageMetrics = [];
+
+        $draft = $this->vision($imageUrl, $hint);
+
+        return [
+            'title' => $draft['title'],
+            'keywords' => $draft['keywords'],
+            'description' => $draft['description'] ?? '',
+            'category' => $draft['category'] ?? '',
+            'raw' => $draft['raw'] ?? null,
+            'stage_metrics' => $this->stageMetrics,
+        ];
     }
 
     /**
@@ -328,11 +349,18 @@ class HttpAiMetadataService implements AiMetadataService
         if (is_array($parsed)) {
             $usage = is_array($parsed['usage'] ?? null) ? $parsed['usage'] : null;
             $resolvedModel = is_string($parsed['model'] ?? null) ? $parsed['model'] : null;
+            $providerRequestId = is_string($parsed['id'] ?? null) ? $parsed['id'] : null;
+            $context = AnalysisBillingContext::current();
+            $attemptIndex = $stage === 'thinking' && $context !== null
+                ? $context->nextAttemptIndex()
+                : null;
             app(AiBillingService::class)->recordUsage(
                 $stage,
                 (string) $cfg['model'],
                 $usage,
                 $resolvedModel,
+                $attemptIndex,
+                $providerRequestId,
             );
         }
 
@@ -617,10 +645,10 @@ class HttpAiMetadataService implements AiMetadataService
             ? trim($decoded['title'])
             : '';
         $keywords = is_array($decoded) && is_array($decoded['keywords'] ?? null)
-            ? array_values(array_filter(array_map(
+            ? KeywordNormalizer::normalize(array_map(
                 static fn ($k): string => is_string($k) ? trim($k) : '',
                 $decoded['keywords'],
-            ), static fn (string $k): bool => $k !== ''))
+            ))
             : [];
 
         if ($title === '' || $keywords === []) {
@@ -684,10 +712,10 @@ class HttpAiMetadataService implements AiMetadataService
             }
             $title = is_string($row['title'] ?? null) ? trim($row['title']) : '';
             $keywords = is_array($row['keywords'] ?? null)
-                ? array_values(array_filter(array_map(
+                ? KeywordNormalizer::normalize(array_map(
                     static fn ($k): string => is_string($k) ? trim($k) : '',
                     $row['keywords'],
-                ), static fn (string $k): bool => $k !== ''))
+                ))
                 : [];
             if ($title === '' || $keywords === []) {
                 continue;

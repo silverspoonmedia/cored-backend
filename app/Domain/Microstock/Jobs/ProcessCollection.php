@@ -5,8 +5,9 @@ namespace App\Domain\Microstock\Jobs;
 use App\Domain\FileHosting\Enums\CollectionStatus;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\Microstock\Enums\MetadataStatus;
+use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Models\AssetMetadata;
+use App\Domain\Microstock\Services\AnalysisStageService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -17,8 +18,7 @@ use Throwable;
 /**
  * Orchestrates the AI pipeline for one Microstock collection (folder). Seeds a
  * pending metadata row per file directly inside the folder (non-recursive),
- * then hands off to a single AnalyzeCollectionBatch job that fans the files
- * out to the AI in as few multi-image requests as possible.
+ * then dispatches per-asset vision jobs on the collection vision lane.
  */
 class ProcessCollection implements ShouldQueue
 {
@@ -33,9 +33,12 @@ class ProcessCollection implements ShouldQueue
 
     public function __construct(
         private readonly string $folderId,
+        private readonly string $billingUserId,
+        private readonly string $analysisRunId,
+        private readonly int $dailySlots = 0,
     ) {}
 
-    public function handle(): void
+    public function handle(AnalysisStageService $stages): void
     {
         $folder = Folder::query()->find($this->folderId);
 
@@ -49,11 +52,19 @@ class ProcessCollection implements ShouldQueue
             ->where('folder_id', $folder->id)
             ->orderBy('name')
             ->get()
-            ->map(function (HostedFile $file): string {
+            ->values()
+            ->map(function (HostedFile $file, int $index) use ($stages): string {
                 $metadata = AssetMetadata::query()->firstOrNew(['file_id' => $file->id]);
                 $metadata->user_id = $file->user_id;
-                $metadata->status = MetadataStatus::Pending;
-                $metadata->save();
+                $source = $index < $this->dailySlots
+                    ? BillingSource::DailyFree
+                    : BillingSource::Prepaid;
+                $stages->initializeStages(
+                    $metadata,
+                    $this->billingUserId,
+                    $this->analysisRunId,
+                    $source,
+                );
 
                 return (string) $metadata->id;
             })
@@ -65,7 +76,10 @@ class ProcessCollection implements ShouldQueue
             return;
         }
 
-        AnalyzeCollectionBatch::dispatch($this->folderId, $metadataIds, $hint);
+        foreach ($metadataIds as $metadataId) {
+            AnalyzeAssetVision::dispatchForCollection($metadataId, $hint, $this->folderId);
+        }
+
         AnalysisWatchdog::dispatch();
     }
 

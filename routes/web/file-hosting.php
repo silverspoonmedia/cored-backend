@@ -33,6 +33,18 @@ Route::middleware('domain.access:FileHosting')->group(function (): void {
     // Microstock standalone workspace slots (Blade consumer of API)
     Route::get('file-hosting/microstock/slots', [FileManagerController::class, 'microstockSlots'])
         ->name('file-hosting.microstock.slots');
+    Route::get('file-hosting/microstock/billing', [FileManagerController::class, 'microstockBilling'])
+        ->name('file-hosting.microstock.billing');
+    Route::get('file-hosting/microstock/billing/ledger', [FileManagerController::class, 'microstockBillingLedger'])
+        ->name('file-hosting.microstock.billing.ledger');
+    Route::get('file-hosting/microstock/billing/usage-events', [FileManagerController::class, 'microstockBillingUsageEvents'])
+        ->name('file-hosting.microstock.billing.usage-events');
+    Route::get('file-hosting/microstock/billing/admin/overview', [FileManagerController::class, 'microstockBillingAdminOverview'])
+        ->name('file-hosting.microstock.billing.admin.overview');
+    Route::get('file-hosting/microstock/billing/admin/usage-events', [FileManagerController::class, 'microstockBillingAdminUsageEvents'])
+        ->name('file-hosting.microstock.billing.admin.usage-events');
+    Route::get('file-hosting/microstock/usage', [FileManagerController::class, 'microstockUsage'])
+        ->name('file-hosting.microstock.usage');
     Route::post('file-hosting/microstock/workspaces', [FileManagerController::class, 'storeMicrostockWorkspace'])
         ->name('file-hosting.microstock.workspaces.store');
 

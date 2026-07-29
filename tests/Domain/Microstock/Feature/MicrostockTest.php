@@ -20,6 +20,7 @@ use App\Domain\Microstock\Services\AiBillingService;
 use App\Domain\Microstock\Services\VisionImageResolver;
 use App\Domain\Microstock\Services\CredentialService;
 use App\Domain\Microstock\Services\CsvExportService;
+use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Domain\Microstock\Services\MicrostockService;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
@@ -177,13 +178,9 @@ class MicrostockTest extends TestCase
         $metadata = app(MicrostockService::class)->requestAnalysis($this->owner, $file->id);
         $this->assertSame(MetadataStatus::Pending, $metadata->status);
 
-        // Run the queued job synchronously
+        // Run the queued vision + thinking jobs synchronously
         (new AnalyzeAssetMetadata((string) $metadata->id))
-            ->handle(
-                app(AiMetadataService::class),
-                app(VisionImageResolver::class),
-                app(AiBillingService::class),
-            );
+            ->handle(app(AnalysisStageService::class));
 
         $metadata->refresh();
         $this->assertSame(MetadataStatus::Generated, $metadata->status);
@@ -313,6 +310,18 @@ class MicrostockTest extends TestCase
     {
         $this->app->instance(AiMetadataService::class, new class implements AiMetadataService
         {
+            public function analyzeVision(string $imageUrl, ?string $hint = null): array
+            {
+                return [
+                    'title' => 'Draft title',
+                    'keywords' => ['a'],
+                    'description' => 'Draft description',
+                    'category' => 'Illustration',
+                    'raw' => ['vision' => true],
+                    'stage_metrics' => [['stage' => 'vision', 'multimodal' => true]],
+                ];
+            }
+
             public function generate(string $imageUrl, ?string $hint = null): array
             {
                 return [

@@ -18,12 +18,18 @@ class AssetMetadata extends Model
     protected $fillable = [
         'file_id',
         'user_id',
+        'billing_user_id',
+        'analysis_run_id',
+        'billing_source',
         'title',
         'keywords',
         'category',
         'description',
         'status',
         'ai_raw',
+        'ai_vision',
+        'ai_thinking',
+        'ai_result',
         'ai_billing',
         'error',
     ];
@@ -36,6 +42,9 @@ class AssetMetadata extends Model
         return [
             'keywords' => 'array',
             'ai_raw' => 'array',
+            'ai_vision' => 'array',
+            'ai_thinking' => 'array',
+            'ai_result' => 'array',
             'ai_billing' => 'array',
             'status' => MetadataStatus::class,
         ];

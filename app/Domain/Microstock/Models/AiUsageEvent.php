@@ -22,9 +22,13 @@ class AiUsageEvent extends Model
         'asset_metadata_id',
         'file_id',
         'folder_id',
+        'analysis_run_id',
+        'billing_source',
         'stage',
+        'attempt_index',
         'alias_model',
         'resolved_model',
+        'provider_request_id',
         'prompt_tokens',
         'completion_tokens',
         'total_tokens',
@@ -45,7 +49,9 @@ class AiUsageEvent extends Model
             'total_tokens' => 'integer',
             'provider_cost_micro_usd' => 'integer',
             'billable_micro_usd' => 'integer',
+            'attempt_index' => 'integer',
             'billed_at' => 'datetime',
+            'voided_at' => 'datetime',
             'created_at' => 'datetime',
         ];
     }

@@ -20,6 +20,8 @@ Route::middleware(['auth:api', 'domain.access:Microstock', 'product.active:Micro
         Route::get('workspace', [WorkspaceController::class, 'show'])->name('workspace.show');
         Route::get('slots', [WorkspaceController::class, 'slots'])->name('slots.show');
         Route::get('billing', [BillingController::class, 'show'])->name('billing.show');
+        Route::get('billing/ledger', [BillingController::class, 'ledger'])->name('billing.ledger');
+        Route::get('billing/usage-events', [BillingController::class, 'usageEvents'])->name('billing.usage-events');
         Route::post('workspaces', [WorkspaceController::class, 'store'])->name('workspaces.store');
 
         Route::post('assets/{file}/analyze', [MetadataController::class, 'analyze'])

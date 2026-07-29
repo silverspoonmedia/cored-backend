@@ -45,7 +45,7 @@ class AiCreditServiceTest extends TestCase
         $this->assertSame(1, AiCreditTransaction::query()->where('type', AiCreditTransactionType::Purchase)->count());
     }
 
-    public function test_debit_is_idempotent_per_reference(): void
+    public function test_debit_allows_multiple_settlement_debits(): void
     {
         $user = $this->userWithRole('User', 'debit@example.com');
         app(AiCreditService::class)->addCredit(
@@ -56,10 +56,10 @@ class AiCreditServiceTest extends TestCase
 
         $credits = app(AiCreditService::class);
         $credits->debit((string) $user->id, 200_000, 'asset_metadata', 'meta-1');
-        $credits->debit((string) $user->id, 200_000, 'asset_metadata', 'meta-1');
+        $credits->debit((string) $user->id, 100_000, 'asset_metadata', 'meta-1');
 
-        $this->assertSame(800_000, $credits->balance((string) $user->id));
-        $this->assertSame(1, AiCreditTransaction::query()->where('type', AiCreditTransactionType::AnalysisDebit)->count());
+        $this->assertSame(700_000, $credits->balance((string) $user->id));
+        $this->assertSame(2, AiCreditTransaction::query()->where('type', AiCreditTransactionType::AnalysisDebit)->count());
     }
 
     public function test_debit_throws_when_balance_insufficient(): void

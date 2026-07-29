@@ -30,14 +30,25 @@ class ServiceController extends Controller
 
         $microstockFree = $services->firstWhere('code', MicrostockCatalog::CODE_PLAN_FREE);
         $microstockSlot = $services->firstWhere('code', MicrostockCatalog::CODE_ADDON_WORKSPACE_SLOT);
+        $microstockAiCredits = $services->firstWhere('code', MicrostockCatalog::CODE_ADDON_AI_CREDITS_5);
         $microstockActive = $request->user() !== null
             && app(ServiceEntitlementService::class)->hasActiveMicrostockWorkspaceSlot($request->user()->id);
+
+        $microstockBilling = null;
+        if ($microstockActive && $request->user() !== null) {
+            $billingResponse = $this->api()->get('microstock/billing');
+            if ($billingResponse->successful()) {
+                $microstockBilling = $billingResponse->json('data');
+            }
+        }
 
         return $this->webView('services.index', [
             'services' => $services,
             'microstockFree' => $microstockFree,
             'microstockSlot' => $microstockSlot,
+            'microstockAiCredits' => $microstockAiCredits,
             'microstockActive' => $microstockActive,
+            'microstockBilling' => $microstockBilling,
         ]);
     }
 

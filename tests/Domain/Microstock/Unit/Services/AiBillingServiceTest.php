@@ -140,9 +140,22 @@ class AiBillingServiceTest extends TestCase
 
     public function test_estimate_for_assets_uses_config_per_asset(): void
     {
-        config(['microstock.ai_billing.estimated_billable_micro_usd_per_asset' => 150_000]);
+        config([
+            'microstock.ai_billing.estimated_billable_micro_usd_per_asset' => 150_000,
+            'microstock.ai_billing.estimate_thinking_attempt_factor' => 1.0,
+        ]);
 
         $this->assertSame(450_000, app(AiBillingService::class)->estimateForAssets(3));
+    }
+
+    public function test_estimate_for_assets_applies_thinking_factor(): void
+    {
+        config([
+            'microstock.ai_billing.estimated_billable_micro_usd_per_asset' => 100_000,
+            'microstock.ai_billing.estimate_thinking_attempt_factor' => 2.0,
+        ]);
+
+        $this->assertSame(600_000, app(AiBillingService::class)->estimateForAssets(3));
     }
 
     public function test_record_usage_splits_batch_tokens_evenly(): void
@@ -154,7 +167,7 @@ class AiBillingServiceTest extends TestCase
 
         AnalysisBillingContext::run(
             new AnalysisBillingContext(
-                userId: (string) $user->id,
+                billingUserId: (string) $user->id,
                 folderId: null,
                 batchTargets: [
                     ['metadata_id' => (string) $metaA->id, 'file_id' => (string) $fileA->id],

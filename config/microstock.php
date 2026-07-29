@@ -14,6 +14,23 @@
  * Details: docs/domains/microstock/probes/sonnet5_gpt56_combo_summary.md
  */
 return [
+    // Dual-lane pipeline queues (see docs/domains/microstock/README.md#operations-queue-worker).
+    'queues' => [
+        'collection_vision' => env('MICROSTOCK_AI_COLLECTION_VISION_QUEUE', 'microstock-collection-vision'),
+        'collection_thinking' => env('MICROSTOCK_AI_COLLECTION_THINKING_QUEUE', 'microstock-collection-thinking'),
+        'solo' => env('MICROSTOCK_AI_SOLO_QUEUE', 'microstock-solo'),
+        'collection_vision_free' => env('MICROSTOCK_AI_COLLECTION_VISION_QUEUE_FREE', 'microstock-collection-vision-free'),
+        'collection_thinking_free' => env('MICROSTOCK_AI_COLLECTION_THINKING_QUEUE_FREE', 'microstock-collection-thinking-free'),
+        'solo_free' => env('MICROSTOCK_AI_SOLO_QUEUE_FREE', 'microstock-solo-free'),
+    ],
+
+    // Per-user daily free analyses (lazy calendar reset; no prepaid balance credit).
+    'daily_free' => [
+        'enabled' => filter_var(env('MICROSTOCK_DAILY_FREE_ENABLED', false), FILTER_VALIDATE_BOOL),
+        'limit_per_user' => (int) env('MICROSTOCK_DAILY_FREE_LIMIT', 5),
+        'timezone' => env('MICROSTOCK_DAILY_FREE_TIMEZONE', 'UTC'),
+    ],
+
     'ai' => [
         'vision' => [
             'endpoint' => env('MICROSTOCK_AI_VISION_ENDPOINT', 'https://ai-chat.spnd.uk/api/chat/completions'),
@@ -40,9 +57,9 @@ return [
         // under this limit to avoid token bombs on reasoning models.
         'max_request_image_bytes' => (int) env('MICROSTOCK_AI_MAX_REQUEST_IMAGE_BYTES', 200_000),
 
-        // HTTP retries per AI stage (0 = no retry). Keep low — each retry can
-        // repeat a multi-minute vision call.
-        'http_retries' => (int) env('MICROSTOCK_AI_HTTP_RETRIES', 1),
+        // HTTP retries per AI stage (0 = no retry). Billed calls should stay at 0
+        // so each provider charge maps to one usage event.
+        'http_retries' => (int) env('MICROSTOCK_AI_HTTP_RETRIES', 0),
 
         // Multimodal thinking attempts when a preview is available (0 = text-only).
         'thinking_visual_attempts' => (int) env('MICROSTOCK_AI_THINKING_VISUAL_ATTEMPTS', 2),
@@ -68,6 +85,14 @@ return [
         'phase' => [
             'normal_after' => (int) env('MICROSTOCK_AI_PHASE_NORMAL', 600),
             'grace_after' => (int) env('MICROSTOCK_AI_PHASE_GRACE', 1500),
+        ],
+
+        // Per-stage grace deadlines for decoupled vision/thinking jobs (seconds).
+        'stage' => [
+            'vision_grace_after' => (int) env('MICROSTOCK_AI_VISION_GRACE_AFTER', 600),
+            'thinking_grace_after' => (int) env('MICROSTOCK_AI_THINKING_GRACE_AFTER', 1800),
+            // Re-dispatch thinking when vision ok but thinking job never started (worker crash).
+            'thinking_backlog_after' => (int) env('MICROSTOCK_AI_THINKING_BACKLOG_AFTER', 120),
         ],
 
         // How vision receives the image: base64 data-URI or signed HTTPS URL.
@@ -102,6 +127,8 @@ return [
         'markup_multiplier' => (float) env('MICROSTOCK_AI_BILLING_MARKUP', 1.35),
         // Buffer above typical ~$0.11/asset; used by assertCanAnalyze before dispatch.
         'estimated_billable_micro_usd_per_asset' => (int) env('MICROSTOCK_AI_BILLING_ESTIMATE_PER_ASSET', 150_000),
+        // Multiplier for gate estimate to cover multi-attempt thinking (default 1.5×).
+        'estimate_thinking_attempt_factor' => (float) env('MICROSTOCK_AI_BILLING_ESTIMATE_FACTOR', 1.5),
         'models' => [
             'grok-grok-4.5-high' => [
                 'input_per_million_usd' => 3.0,

@@ -74,6 +74,9 @@ class FileManagerController extends Controller
             $currentWorkspace = $show->successful() ? $show->json('data') : null;
         }
 
+        $canViewPlatformBilling = $request->user() !== null
+            && $request->user()->hasAnyRole(['Root', 'Admin', 'Moderator']);
+
         return $this->webView('file-hosting.index', [
             'browse' => $data,
             'quota' => $quotaData,
@@ -89,6 +92,7 @@ class FileManagerController extends Controller
             'collaborativeWorks' => is_array($quotaData) && ($quotaData['collaborative_works'] ?? false) === true,
             'ownedWorkspaceUsed' => is_array($quotaData) ? (int) ($quotaData['owned_workspace_used'] ?? 0) : 0,
             'ownedWorkspaceLimit' => is_array($quotaData) ? (int) ($quotaData['owned_workspace_limit'] ?? 0) : 0,
+            'canViewPlatformBilling' => $canViewPlatformBilling,
         ]);
     }
 
@@ -353,6 +357,79 @@ class FileManagerController extends Controller
 
         return response()->json([
             'data' => $response->json('data') ?? [],
+        ]);
+    }
+
+    public function microstockBilling(Request $request): JsonResponse
+    {
+        $response = $this->api()->get('microstock/billing');
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json([
+            'data' => $response->json('data') ?? [],
+        ]);
+    }
+
+    public function microstockBillingLedger(Request $request): JsonResponse
+    {
+        $response = $this->api()->get('microstock/billing/ledger', $request->only(['page', 'per_page', 'from', 'to']));
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function microstockBillingUsageEvents(Request $request): JsonResponse
+    {
+        $response = $this->api()->get('microstock/billing/usage-events', $request->only(['page', 'per_page', 'from', 'to']));
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function microstockBillingAdminOverview(Request $request): JsonResponse
+    {
+        $response = $this->api()->get('admin/microstock/billing/overview', $request->only(['from', 'to']));
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function microstockBillingAdminUsageEvents(Request $request): JsonResponse
+    {
+        $response = $this->api()->get('admin/microstock/billing/usage-events', $request->only(['page', 'per_page', 'from', 'to', 'user_id']));
+
+        if (! $response->successful()) {
+            return response()->json(['message' => $this->apiMessage($response)], $response->status());
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function microstockUsage(Request $request): View
+    {
+        $workspaceId = $request->query('workspace_id');
+        $user = auth('api')->user();
+        $canViewPlatformBilling = $user !== null && $user->hasAnyRole(['Root', 'Admin', 'Moderator']);
+
+        return view('adminlte4.file-hosting.microstock-usage', [
+            'workspaceId' => is_string($workspaceId) && $workspaceId !== '' ? $workspaceId : null,
+            'backUrl' => route('file-hosting.index', array_filter([
+                'workspace_id' => $workspaceId,
+            ])),
+            'servicesUrl' => route('services.index'),
+            'canViewPlatformBilling' => $canViewPlatformBilling,
         ]);
     }
 
