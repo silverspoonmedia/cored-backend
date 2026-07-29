@@ -404,7 +404,13 @@
     border: 1px solid var(--fh-border);
     border-radius: var(--fh-radius-sm);
     margin-bottom: 0.5rem;
-    transition: border-color var(--fh-transition);
+    transition: border-color var(--fh-transition), opacity 0.3s ease;
+}
+
+/* Successful rows fade out before leaving the queue (~5s total via JS). */
+.fh-upload-row.is-dismissing {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .fh-upload-row__header {

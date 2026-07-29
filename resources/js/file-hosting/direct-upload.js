@@ -112,6 +112,15 @@ export function isRetriablePutError(error) {
 }
 
 /**
+ * How long a successful (Done) upload row stays in the queue before removal.
+ * Failed rows are never auto-dismissed.
+ */
+export const DONE_ROW_DISMISS_MS = 5000;
+
+/** Fade-out duration at the end of {@link DONE_ROW_DISMISS_MS} (part of the total, not extra). */
+export const DONE_ROW_FADE_MS = 300;
+
+/**
  * @param {number} ms
  * @returns {Promise<void>}
  */
@@ -119,6 +128,93 @@ export function sleep(ms) {
     return new Promise(function (resolve) {
         setTimeout(resolve, ms);
     });
+}
+
+/**
+ * After a successful upload, keep the Done row visible briefly, then remove it
+ * so the queue only shows ongoing + failed items.
+ *
+ * Total visible time ≈ `delayMs` (default 5s). Fade class is applied in the
+ * last `fadeMs` ms before DOM removal.
+ *
+ * @param {HTMLElement|null|undefined} row
+ * @param {{
+ *   active?: Map<string, unknown>,
+ *   rowId?: string,
+ *   delayMs?: number,
+ *   fadeMs?: number,
+ *   onBeforeRemove?: (row: HTMLElement) => void,
+ * }} [options]
+ * @returns {{ cancel: () => void } | null}
+ */
+export function scheduleDoneRowDismiss(row, options = {}) {
+    if (!row) {
+        return null;
+    }
+
+    const active = options.active;
+    const rowId = options.rowId;
+    const delayMs = typeof options.delayMs === 'number' ? options.delayMs : DONE_ROW_DISMISS_MS;
+    const fadeMs = typeof options.fadeMs === 'number' ? options.fadeMs : DONE_ROW_FADE_MS;
+    const safeDelay = Math.max(0, delayMs);
+    const safeFade = Math.max(0, Math.min(fadeMs, safeDelay));
+    const waitBeforeFade = safeDelay - safeFade;
+
+    let cancelled = false;
+    let fadeTimer = null;
+    let removeTimer = null;
+
+    const clearTimers = function () {
+        if (fadeTimer != null) {
+            clearTimeout(fadeTimer);
+            fadeTimer = null;
+        }
+        if (removeTimer != null) {
+            clearTimeout(removeTimer);
+            removeTimer = null;
+        }
+    };
+
+    const remove = function () {
+        if (cancelled) {
+            return;
+        }
+        if (typeof options.onBeforeRemove === 'function') {
+            options.onBeforeRemove(row);
+        }
+        if (typeof row.remove === 'function') {
+            row.remove();
+        } else if (row.parentNode) {
+            row.parentNode.removeChild(row);
+        }
+        if (active && rowId != null) {
+            active.delete(rowId);
+        }
+    };
+
+    const startFade = function () {
+        if (cancelled) {
+            return;
+        }
+        if (safeFade > 0 && row.classList) {
+            row.classList.add('is-dismissing');
+            removeTimer = setTimeout(remove, safeFade);
+            return;
+        }
+        remove();
+    };
+
+    fadeTimer = setTimeout(startFade, waitBeforeFade);
+
+    return {
+        cancel: function () {
+            cancelled = true;
+            clearTimers();
+            if (row.classList) {
+                row.classList.remove('is-dismissing');
+            }
+        },
+    };
 }
 
 /**
@@ -534,6 +630,7 @@ export function initDirectUpload(root) {
             const label = completed.data?.file?.name || file.name;
             markRowDone(row, label);
             active.set(rowId, { file, state: 'done' });
+            scheduleDoneRowDismiss(row, { active: active, rowId: rowId });
 
             // Per-file: optional optimistic row inject. Full soft-refresh runs once at batch end.
             const hosted = completed.data?.file;
