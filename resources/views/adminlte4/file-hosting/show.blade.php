@@ -12,14 +12,16 @@
     @php
         $fhRealtime = app(\App\Domain\FileHosting\Support\FileHostingRealtime::class);
         $fhBroadcast = $fhRealtime->clientConfig();
+        $fhBase = rtrim(route('file-hosting.index'), '/');
         $showFmConfig = [
             'spaShell' => true,
+            'fhBase' => $fhBase,
             'ownerUserId' => $ownerUserId,
             'workspaceId' => $file['workspace_id'] ?? null,
             'browseUrl' => route('file-hosting.index', $backQuery),
-            'fileBase' => url('file-hosting/files'),
-            'fileShowBase' => url('file-hosting/files'),
-            'folderBase' => url('file-hosting/folders'),
+            'fileBase' => $fhBase.'/files',
+            'fileShowBase' => $fhBase.'/files',
+            'folderBase' => $fhBase.'/folders',
             'trashUrl' => route('file-hosting.trash', $ownerQuery),
             'planState' => 'paid',
             'realtime' => [

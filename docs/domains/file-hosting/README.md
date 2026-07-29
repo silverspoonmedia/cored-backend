@@ -6,9 +6,10 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 |--|--|
 | Code | `app/Domain/FileHosting/` |
 | Config | [`config/file-hosting.php`](../../../config/file-hosting.php) |
-| API | `routes/api/v1/file-hosting.php` |
-| Web (auth) | `routes/web/file-hosting.php` |
-| Web (guest) | `routes/web/file-hosting-public.php` |
+| API | `routes/api/v1/file-hosting.php` (`/api/v1/file-hosting/*` — unchanged) |
+| Web (auth) | `routes/web/file-hosting.php` under `/apps/*` → **`/apps/file-hosting`** (route names `file-hosting.*`) |
+| Web (guest) | `routes/web/file-hosting-public.php` → **`/s/f/{uuid}`**, **`/s/d/{uuid}`** (site root, not under `/apps`) |
+| Public landing | Root **`/file-hosting`** reserved for future promo landing (not the logged-in app) |
 | Seeder | `FileHostingRoleSeeder` (after core `RoleSeeder`) |
 | Product gate | `product.active:FileHosting` middleware (see [Product Activations](../product-activations/README.md)) |
 | Menu auto-hide | `file-hosting.index` menu route bound via `config/products.php` `menu_routes`; hidden when user's FH activation is not `active` |
@@ -87,12 +88,12 @@ the File Hosting workspace model. A system workspace:
 > Status: **implemented by Microstock** — the Microstock product uses system
 > workspaces (`file_hosting_workspaces.kind = 'microstock'`, standalone slots) as
 > the first product-class consumer of this model. Microstock activation is opt-in
-> via `/services` (free registration + compounding slot addon); its slots never
+> via `/apps/services` (free registration + compounding slot addon); its slots never
 > overlap with FH team workspace slots. See [Microstock](../microstock/README.md).
 
 **Provisioning trigger:** the Microstock system workspace is **not**
 auto-provisioned on File Hosting first paint. It is created on demand —
-`GET /microstock` (redirects to `/services` when the user has no Microstock
+`GET /apps/microstock` (redirects to `/apps/services` when the user has no Microstock
 entitlement) or via the switcher/API — and is gated by
 `WorkspaceAccessService::assertCanProvisionMicrostockWorkspace` (slot limit from
 the Microstock entitlements). Until activation it simply does not appear in the
@@ -497,7 +498,7 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 | Asset | Role |
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
-| `resources/js/file-hosting/router.js` | Client router: parse `/file-hosting/*` + public `/s/*`, intercept in-app links, `navigate` + `popstate` |
+| `resources/js/file-hosting/router.js` | Client router: parse auth FH paths via `/file-hosting` segment (prefix-agnostic, works under `/apps/…`) + public `/s/*`; `resolveFhBase()` (Blade `fhBase` → `browseUrl` → location → `''`); `joinFhPath()` fail-closed joins (no hard-coded `/apps` base); intercept in-app links, `navigate` + `popstate` |
 | `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk (incl. **Move** → same multi-move modal as context), toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch; Drive-like select/menu/drag; `.is-fh-busy` mutation spinner. On soft-nav, `syncConfigFromRoute` mirrors the current folder/workspace/user onto the dropzone's flat `data-folder-id` / `data-workspace-id` / `data-user-id` (empty → attribute removed = root) so uploads target the folder you soft-navigated into. `updateMicrostockToolbarChrome()` toggles `[data-fh-toolbar-balance]` (always rendered in Blade) on init and workspace switch; `usageUrlBase` from `index.blade.php` preserves `workspace_id` without hard reload |
 | `resources/js/file-hosting/selection.js` | Browse listing selection: click = select, Ctrl/Cmd toggle, Shift range, Escape clear; name/icon single-click selects (open on double-click); ignores virtual parent `...` for bulk keys |
 | `resources/js/file-hosting/context-menu.js` | Right-click: Open / Rename / Move / Share / Delete (modals + bulk endpoints); multi-move via move modal tree; parent `...` → Open only |
@@ -508,7 +509,7 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 | `resources/js/file-hosting/show-ui.js` | Soft file detail panel from `GET file-hosting/files/{id}` JSON |
 | `resources/js/file-hosting/public-app.js` | Public soft SPA for `/s/f/{id}` + `/s/d/{id}` (no Echo) |
 | `resources/js/file-hosting/direct-upload.js` | Chunked upload; queue shows human file size; batch uploads freeze folder/workspace/lock/kind at `startBatch` (`snapshotBatchContext`); per-file Microstock gate + MIME sniff; awaits abort on failure, init retry on `too_many_concurrent`, PUT retry + 403 re-sign; on complete calls `window.fileHostingSoftRefresh` / `fileHostingUpsertFile` (no hard reload). Unit tests: `direct-upload-mime.test.js`, `direct-upload-context.test.js` |
-| `resources/js/file-hosting/microstock-usage.js` | Standalone usage/balance page (`/file-hosting/microstock/usage`): summary cards + ledger / AI usage / platform-overview tabs |
+| `resources/js/file-hosting/microstock-usage.js` | Standalone usage/balance page (`/apps/file-hosting/microstock/usage`): summary cards + ledger / AI usage / platform-overview tabs |
 | `resources/js/file-hosting/upload-progress.js` | Pure helpers: transfer rate + byte progress — no DOM |
 | `resources/js/file-hosting/upload-queue.js` | Concurrency limiter |
 | `resources/views/adminlte4/file-hosting/partials/` | `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal`, `_team-offcanvas`, `_workspace-switcher` |
@@ -517,9 +518,9 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 
 | Route | View panel | Data |
 |-------|------------|------|
-| `/file-hosting` (+ `folder_id`, `workspace_id`, `user_id`) | `browse` | `GET file-hosting` Accept JSON (existing browse payload) |
-| `/file-hosting/trash` | `trash` | `GET file-hosting/trash` Accept JSON |
-| `/file-hosting/files/{uuid}` | `show` | `GET file-hosting/files/{uuid}` Accept JSON (**dual response**) |
+| `/apps/file-hosting` (+ `folder_id`, `workspace_id`, `user_id`) | `browse` | `GET file-hosting` Accept JSON (existing browse payload) |
+| `/apps/file-hosting/trash` | `trash` | `GET file-hosting/trash` Accept JSON |
+| `/apps/file-hosting/files/{uuid}` | `show` | `GET file-hosting/files/{uuid}` Accept JSON (**dual response**) |
 | Workspace switcher links | browse + Echo rebind | same browse JSON; channel flips `user.*` ↔ `workspace.*` |
 
 **Always full navigation:** file download hops (`…/download` → signed storage URL: Worker HMAC or S3), non-FH routes, plans/services links, cold load of show/trash when listing shell is missing.
@@ -602,7 +603,7 @@ Menu: **My Files** -> `file-hosting.index`.
 
 ## Realtime / live listing
 
-File Hosting listing stays live via **dedicated private channels**. It does **not** use the notification bell, `NotificationType`, or DataTable `table_id` (those remain for `/users` and similar admin lists — see [notification/README.md](../notification/README.md)).
+File Hosting listing stays live via **dedicated private channels**. It does **not** use the notification bell, `NotificationType`, or DataTable `table_id` (those remain for `/apps/users` and similar admin lists — see [notification/README.md](../notification/README.md)).
 
 **With the SPA shell:** Echo events invalidate the current view; the client soft-refetches JSON and re-paints via the same helpers as post-mutation success ([UI architecture / SPA shell](#ui-architecture--spa-shell)). Router owns in-app navigation; download hops stay full page.
 

@@ -15,7 +15,7 @@ Searchable Select2 (Bootstrap 5 theme). Large sets via paginated lookups, not bu
 Response `data`: `{ results: [{id,text}], pagination: { more } }`.  
 `ids[]` without `q` hydrates edit labels. Empty `q` → first page only (`config/lookup.php`).
 
-Implementation: Identity `LookupService` / `LookupController`. Blade proxies: `GET /lookups/{users,menus,roles}`.
+Implementation: Identity `LookupService` / `LookupController`. Blade proxies (auth shell): `GET /apps/lookups/{users,menus,roles}` (route names `lookups.*`).
 
 Components: `form.select` / `multiselect` (`ajaxUrl`, `select2`). Assets: `select2-init.js` (Vite). Attribute: `data-monolith-select2` (**not** `data-select2` — jQuery collision).
 
@@ -40,7 +40,7 @@ Each action: `key`, `label`, `method`, `url`, `style`, `icon`, optional `confirm
 
 ### Web datatable routes
 
-e.g. `GET /users/datatable` → API `?display_mode=datatable` + Bearer from cookie. No list logic in web layer.
+e.g. `GET /apps/users/datatable` (route `users.datatable`) → API `?display_mode=datatable` + Bearer from cookie. No list logic in web layer. Authenticated Blade lives under `/apps/*` — see [blade-admin — Routes](blade-admin.md#routes).
 
 Implementation helpers under `App\Support\DataTable\*`; domain row action resolvers per list.
 

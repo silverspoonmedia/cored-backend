@@ -84,4 +84,4 @@ Insufficient prepaid credits (422) may include `daily_free` snapshot in the erro
 
 ## UI
 
-Daily free allowance appears on the **Usage & balance** page summary (`GET /file-hosting/microstock/usage`) and in the collection billing line. Free-tier usage rows show `billing_source = daily_free` on the **AI usage detail** tab; they do not appear in the prepaid ledger tab. Root / Admin / Moderator users see daily-free subsidized cost in the **Platform overview** tab. See [Usage & balance UI](README.md#usage--balance-ui).
+Daily free allowance appears on the **Usage & balance** page summary (`GET /apps/file-hosting/microstock/usage`) and in the collection billing line. Free-tier usage rows show `billing_source = daily_free` on the **AI usage detail** tab; they do not appear in the prepaid ledger tab. Root / Admin / Moderator users see daily-free subsidized cost in the **Platform overview** tab. See [Usage & balance UI](README.md#usage--balance-ui).

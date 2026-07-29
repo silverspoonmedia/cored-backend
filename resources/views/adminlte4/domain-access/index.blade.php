@@ -6,7 +6,7 @@
             <div
                 class="row g-3"
                 data-domain-access
-                data-update-url-template="{{ url('domain-access') }}/__KEY__"
+                data-update-url-template="{{ route('domain-access.update', ['productKey' => '__KEY__']) }}"
                 data-messages="{{ json_encode([
                     'updated' => __('domain-access.toggle_updated'),
                     'failed' => __('domain-access.toggle_failed'),

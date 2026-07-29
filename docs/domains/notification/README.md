@@ -22,7 +22,7 @@ One row + pivots; per-user read state in `activity_notification_reads`. Viewer s
 | `user_deleted` | Broadcast | Root+Admin | `users-table` | delete |
 | `account_updated` | Personal | Subject user only | `null` | update (subject ≠ actor) |
 
-Update fires **two** notifications: personal `account_updated` (the edited user learns their account changed) **and** broadcast `user_updated` (drives the live list reload for admins watching `/users`). They are separate on purpose — the personal note must not reach admin bells.
+Update fires **two** notifications: personal `account_updated` (the edited user learns their account changed) **and** broadcast `user_updated` (drives the live list reload for admins watching `/apps/users`). They are separate on purpose — the personal note must not reach admin bells.
 
 ```
 Service → ActivityNotificationEvent → SendActivityNotification
@@ -64,7 +64,7 @@ After persistence, `NotificationService` resolves every recipient and broadcasts
 
 **Not this bus:** File Hosting live listing uses dedicated private channels (`file-hosting.user.*` / `file-hosting.workspace.*`) and domain events under `App\Domain\FileHosting\Events\` — no `NotificationType`, no `table_id`. See [file-hosting/README.md — Realtime / live listing](../file-hosting/README.md#realtime--live-listing).
 
-Initial unread count is server-rendered by `NotificationBellComposer` as `initialUnreadCount`. Recent-list copy still refetches `/notifications/recent` when the dropdown is open so localization and deep links remain server-owned.
+Initial unread count is server-rendered by `NotificationBellComposer` as `initialUnreadCount`. Recent-list copy still refetches `/apps/notifications/recent` when the dropdown is open so localization and deep links remain server-owned. Web proxies live under `prefix('apps')` (route names unprefixed: `notifications.*`); composer builds URLs via `route()`.
 
 ### Browser health state machine (`bell.js`)
 
@@ -89,13 +89,13 @@ It also emits window events consumed by list pages:
 
 ### Expected Network behavior
 
-| Situation | `/notifications/unread-count` | `/users/datatable` |
+| Situation | `/apps/notifications/unread-count` | `/apps/users/datatable` |
 |-----------|---------------------------------|--------------------|
 | Initial page with healthy WS | No request; count came from rendered config | Initial load; one connection catch-up reload is possible depending on init order |
 | Notification arrives over healthy WS | No request; use payload `unread_count` | One reload only when payload `table_id` is `users-table` |
 | Browser focus while WS healthy | No request | No request |
 | WS down for less than 30 seconds | No request | No request |
-| WS degraded for at least 30 seconds | Poll every 60 seconds | Poll every 60 seconds while `/users` is visible |
+| WS degraded for at least 30 seconds | Poll every 60 seconds | Poll every 60 seconds while `/apps/users` is visible |
 | WS reconnect | One count reconciliation | One catch-up reload; polling then stops |
 | Single-read action | One count reconciliation | None |
 | Mark-all action | No count refetch; response already says `unread: 0` | None |
@@ -108,7 +108,7 @@ For Pusher-hosted WebSockets, `BroadcastConnection::clientConfig()` exposes `clu
 
 ### Read-state UI and tab synchronization
 
-`Mark all as read` is an in-place AJAX mutation in both the navbar and `/notifications`. The web response carries `{ marked, unread: 0 }` without a redirect. Shared AJAX infrastructure emits `ajax-form:success`; notification UI then updates the badge, dropdown font weight, page rows/status badges, and button state immediately.
+`Mark all as read` is an in-place AJAX mutation in both the navbar and `/apps/notifications`. The web response carries `{ marked, unread: 0 }` without a redirect. Shared AJAX infrastructure emits `ajax-form:success`; notification UI then updates the badge, dropdown font weight, page rows/status badges, and button state immediately.
 
 The bell opens a per-user, same-origin `BroadcastChannel` named `activity-notifications.{userId}`:
 
@@ -138,7 +138,7 @@ Viewer API endpoints:
 | `POST /api/v1/notifications/{id}/read` | Idempotent single-read |
 | `POST /api/v1/notifications/read-all` | Returns `{ marked, unread: 0 }` |
 
-Web routes proxy the API through `ConsumesApi`. `NotificationBellComposer` injects URLs, labels, delivery config, safe Pusher client config, viewer ID, and `initialUnreadCount` into `data-notification-config`. The `/notifications` page renders up to 100 visible items and mutates read-state markup in place after mark-all.
+Web routes proxy the API through `ConsumesApi` under `/apps/*`. `NotificationBellComposer` injects URLs, labels, delivery config, safe Pusher client config, viewer ID, and `initialUnreadCount` into `data-notification-config`. The `/apps/notifications` page renders up to 100 visible items and mutates read-state markup in place after mark-all.
 
 ## Implementation map
 
@@ -182,7 +182,7 @@ Dispatch only from service.
 
 Map `tableId()` to the key used by `window.dataTables`; `bell.js` calls `ajax.reload(null, false)` to preserve paging. The WS event is **per-recipient** (`recipientUserIds`), so reload only fires for users in that notification's audience. To reload a shared admin list on any row change, the reload signal must be a **role-broadcast** to the watchers (Root+Admin), not a personal note — see `user_created`/`user_updated`/`user_deleted`.
 
-List pages that require resilience subscribe to `notification-realtime:connected` / `notification-realtime:degraded`. `/users` stops its fallback timer while connected, starts a visible-tab-only 60-second `ajax.reload` after degradation, and performs one catch-up reload on reconnect. Create/delete flash reload remains a same-tab redirect baseline.
+List pages that require resilience subscribe to `notification-realtime:connected` / `notification-realtime:degraded`. `/apps/users` stops its fallback timer while connected, starts a visible-tab-only 60-second `ajax.reload` after degradation, and performs one catch-up reload on reconnect. Create/delete flash reload remains a same-tab redirect baseline.
 
 ## Types used by Service (personal)
 
@@ -223,7 +223,7 @@ Minimum manual browser verification:
 3. Create/update/delete a user in another tab. Confirm WS payload, direct badge count update, and one `users-table` reload.
 4. Disable network/WS. Before 30 seconds, confirm no polling; after 30 seconds, confirm 60-second fallback polling.
 5. Restore connection. Confirm one reconciliation/catch-up and no later periodic HTTP.
-6. Trigger mark-all from navbar and `/notifications`; confirm both current and sibling tabs update without redirect/reload.
+6. Trigger mark-all from navbar and `/apps/notifications`; confirm both current and sibling tabs update without redirect/reload.
 
 ## Bell not showing — debug checklist
 
@@ -237,7 +237,7 @@ Icon renders from Blade even when the JS never runs, so an empty/stale badge can
 6. **WebSocket request** — Network should show a live `wss://...pusher.com/...` connection. For hosted Pusher, rendered config must have `cluster` and `host:null`; `api-{cluster}.pusher.com` is REST, never `wsHost`.
 7. **Private-channel auth** — `POST /broadcasting/auth` must return 2xx after socket connect. A 401/403 means channel subscription failed even if the socket itself is open.
 8. **Payload** — inspect `.activity-notification.received`: expected `type`, `table_id`, and numeric `unread_count`. Missing count causes stale badge; wrong/null table ID prevents list reload.
-9. **HTTP fallback** — `/notifications/unread-count` may appear for degraded polling, single-read reconciliation, or reconnect catch-up. `/notifications/recent` is expected when dropdown opens. On API failure the web proxies return `0` / `[]`, which can mask the source error.
+9. **HTTP fallback** — `/apps/notifications/unread-count` may appear for degraded polling, single-read reconciliation, or reconnect catch-up. `/apps/notifications/recent` is expected when dropdown opens. On API failure the web proxies return `0` / `[]`, which can mask the source error.
 10. **Delivery mode** — compare `APP_NOTIFICATION_TYPE` with `BroadcastConnection::usesRealtimeNotifications()`. Cached config can preserve old env values; clear application config cache after env changes.
 11. **Built asset** — manifest must point to the current `bell-*.js`, and that file must exist. Run `npm run build`, then hard-refresh once after the hash changes.
 12. **Personal types** — `subject_user_id` (or explicit `users`) set at emit time? Missing target = nobody sees it.

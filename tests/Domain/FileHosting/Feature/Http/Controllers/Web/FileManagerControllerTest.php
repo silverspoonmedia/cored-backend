@@ -76,7 +76,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $response = $user->get('/file-hosting');
+        $response = $user->get(route('file-hosting.index'));
 
         $response->assertOk();
         $response->assertViewIs('adminlte4.file-hosting.index');
@@ -123,7 +123,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $response = $user->get('/file-hosting');
+        $response = $user->get(route('file-hosting.index'));
 
         $response->assertOk();
         $response->assertViewHas('planState', 'paid');
@@ -168,7 +168,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->get('/file-hosting')->assertOk();
+        $user->get(route('file-hosting.index'))->assertOk();
 
         // Microstock is now activated explicitly via /services, not lazily on
         // the first File Hosting paint — no system workspace is created here.
@@ -195,7 +195,7 @@ class FileManagerControllerTest extends TestCase
             ], 201),
         ]);
 
-        $user->post('/file-hosting/workspaces', ['name' => 'Team workspace'])
+        $user->post(route('file-hosting.workspaces.store'), ['name' => 'Team workspace'])
             ->assertRedirect(route('file-hosting.index', ['workspace_id' => $workspaceId]));
     }
 
@@ -213,7 +213,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $response = $user->get('/file-hosting/trash');
+        $response = $user->get(route('file-hosting.trash'));
 
         $response->assertOk();
         $response->assertViewIs('adminlte4.file-hosting.trash');
@@ -241,7 +241,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $response = $user->get("/file-hosting/files/{$fileId}");
+        $response = $user->get(route('file-hosting.files.show', $fileId));
 
         $response->assertOk();
         $response->assertViewIs('adminlte4.file-hosting.show');
@@ -260,7 +260,7 @@ class FileManagerControllerTest extends TestCase
             ], 201),
         ]);
 
-        $user->post('/file-hosting/folders', ['name' => 'New Folder'])
+        $user->post(route('file-hosting.folders.store'), ['name' => 'New Folder'])
             ->assertRedirect(route('file-hosting.index'));
     }
 
@@ -276,7 +276,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->delete("/file-hosting/folders/{$folderId}")
+        $user->delete(route('file-hosting.folders.destroy', $folderId))
             ->assertRedirect(route('file-hosting.index'));
     }
 
@@ -292,7 +292,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->delete("/file-hosting/files/{$fileId}")
+        $user->delete(route('file-hosting.files.destroy', $fileId))
             ->assertRedirect(route('file-hosting.index'));
     }
 
@@ -309,7 +309,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->patch("/file-hosting/files/{$fileId}/rename", ['name' => 'renamed.pdf'])
+        $user->patch(route('file-hosting.files.rename', $fileId), ['name' => 'renamed.pdf'])
             ->assertRedirect(route('file-hosting.index'));
     }
 
@@ -326,7 +326,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->patch("/file-hosting/folders/{$folderId}/rename", ['name' => 'renamed'])
+        $user->patch(route('file-hosting.folders.rename', $folderId), ['name' => 'renamed'])
             ->assertRedirect(route('file-hosting.index'));
     }
 
@@ -343,7 +343,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->patch("/file-hosting/files/{$fileId}/visibility", ['visibility' => 'anyone_with_link'])
+        $user->patch(route('file-hosting.files.visibility', $fileId), ['visibility' => 'anyone_with_link'])
             ->assertRedirect();
     }
 
@@ -360,7 +360,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->patch("/file-hosting/folders/{$folderId}/visibility", ['visibility' => 'anyone_with_link'])
+        $user->patch(route('file-hosting.folders.visibility', $folderId), ['visibility' => 'anyone_with_link'])
             ->assertRedirect();
     }
 
@@ -378,7 +378,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->patch("/file-hosting/files/{$fileId}/move", ['folder_id' => $targetFolderId])
+        $user->patch(route('file-hosting.files.move', $fileId), ['folder_id' => $targetFolderId])
             ->assertRedirect(route('file-hosting.index', ['folder_id' => $targetFolderId]));
     }
 
@@ -396,7 +396,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->patch("/file-hosting/folders/{$folderId}/move", ['parent_id' => $targetParentId])
+        $user->patch(route('file-hosting.folders.move', $folderId), ['parent_id' => $targetParentId])
             ->assertRedirect(route('file-hosting.index', ['folder_id' => $targetParentId]));
     }
 
@@ -413,7 +413,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->post("/file-hosting/files/{$fileId}/restore")
+        $user->post(route('file-hosting.files.restore', $fileId))
             ->assertRedirect(route('file-hosting.trash'));
     }
 
@@ -430,7 +430,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->post("/file-hosting/folders/{$folderId}/restore")
+        $user->post(route('file-hosting.folders.restore', $folderId))
             ->assertRedirect(route('file-hosting.trash'));
     }
 
@@ -446,7 +446,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->delete("/file-hosting/files/{$fileId}/force")
+        $user->delete(route('file-hosting.files.force-destroy', $fileId))
             ->assertRedirect(route('file-hosting.trash'));
     }
 
@@ -462,7 +462,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->delete("/file-hosting/folders/{$folderId}/force")
+        $user->delete(route('file-hosting.folders.force-destroy', $folderId))
             ->assertRedirect(route('file-hosting.trash'));
     }
 
@@ -479,7 +479,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->getJson('/file-hosting/search?q=report')
+        $user->getJson(route('file-hosting.search', ['q' => 'report']))
             ->assertOk()
             ->assertJsonStructure([
                 'status',
@@ -502,7 +502,7 @@ class FileManagerControllerTest extends TestCase
             ]);
         $this->app->instance(FileService::class, $files);
 
-        $user->get("/file-hosting/files/{$fileId}/download")
+        $user->get(route('file-hosting.files.download', $fileId))
             ->assertRedirect('https://fake-storage.test/download/'.$fileId);
     }
 
@@ -521,7 +521,7 @@ class FileManagerControllerTest extends TestCase
             ], 403),
         ]);
 
-        $user->get('/file-hosting')
+        $user->get(route('file-hosting.index'))
             ->assertRedirect(route('dashboard'));
     }
 
@@ -544,7 +544,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->getJson('/file-hosting')
+        $user->getJson(route('file-hosting.index'))
             ->assertOk()
             ->assertJsonPath('data.folders.0.name', 'Docs');
     }
@@ -560,7 +560,7 @@ class FileManagerControllerTest extends TestCase
             ], 403),
         ]);
 
-        $user->getJson('/file-hosting')
+        $user->getJson(route('file-hosting.index'))
             ->assertForbidden()
             ->assertJsonPath('message', 'Unauthorized.');
     }
@@ -580,7 +580,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->getJson('/file-hosting/trash')
+        $user->getJson(route('file-hosting.trash'))
             ->assertOk()
             ->assertJsonPath('data.folders.0.id', $folderId)
             ->assertJsonPath('data.folders.0.name', 'Gone');
@@ -606,7 +606,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->getJson("/file-hosting/files/{$fileId}")
+        $user->getJson(route('file-hosting.files.show', $fileId))
             ->assertOk()
             ->assertJsonPath('data.id', $fileId)
             ->assertJsonPath('data.name', 'spa.pdf')
@@ -625,7 +625,7 @@ class FileManagerControllerTest extends TestCase
             ], 404),
         ]);
 
-        $user->getJson("/file-hosting/files/{$fileId}")
+        $user->getJson(route('file-hosting.files.show', $fileId))
             ->assertNotFound()
             ->assertJsonPath('message', 'File not found.');
     }
@@ -644,7 +644,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->getJson('/file-hosting/workspaces')
+        $user->getJson(route('file-hosting.workspaces.index'))
             ->assertOk()
             ->assertJsonPath('data.0.id', $wsId)
             ->assertJsonPath('data.0.name', 'Alpha');
@@ -667,7 +667,7 @@ class FileManagerControllerTest extends TestCase
             ], 201),
         ]);
 
-        $user->postJson('/file-hosting/folders', ['name' => 'SPA Folder'])
+        $user->postJson(route('file-hosting.folders.store'), ['name' => 'SPA Folder'])
             ->assertOk()
             ->assertJsonPath('status', 'success')
             ->assertJsonPath('data.id', $folderId)
@@ -697,7 +697,7 @@ class FileManagerControllerTest extends TestCase
             return Http::response([], 200);
         });
 
-        $user->post('/file-hosting/uploads', [
+        $user->post(route('file-hosting.uploads.store'), [
             'name' => 'report.pdf',
             'mime' => 'application/pdf',
             'size' => 1024,
@@ -726,7 +726,7 @@ class FileManagerControllerTest extends TestCase
             return Http::response([], 200);
         });
 
-        $user->post('/file-hosting/files/bulk-visibility', [
+        $user->post(route('file-hosting.files.bulk-visibility'), [
             'ids' => [fake()->uuid(), fake()->uuid()],
             'visibility' => 'anyone_with_link',
         ])->assertOk();
@@ -754,7 +754,7 @@ class FileManagerControllerTest extends TestCase
             return Http::response([], 200);
         });
 
-        $user->delete('/file-hosting/files/bulk', ['ids' => [fake()->uuid()]])
+        $user->delete(route('file-hosting.files.bulk-destroy'), ['ids' => [fake()->uuid()]])
             ->assertOk();
 
         $this->assertNotNull($captured);
@@ -777,7 +777,7 @@ class FileManagerControllerTest extends TestCase
             ->andReturn(['url' => 'https://cdn.test/preview/'.$fileId, 'expires_at' => now()]);
         $this->app->instance(SignedDownloadService::class, $downloads);
 
-        $user->getJson("/file-hosting/microstock/assets/{$fileId}/preview")
+        $user->getJson(route('file-hosting.microstock.assets.preview', $fileId))
             ->assertOk()
             ->assertJsonPath('data.url', 'https://cdn.test/preview/'.$fileId);
     }
@@ -795,7 +795,7 @@ class FileManagerControllerTest extends TestCase
             ], 200),
         ]);
 
-        $user->getJson("/file-hosting/microstock/assets/{$fileId}/metadata")
+        $user->getJson(route('file-hosting.microstock.assets.metadata.show', $fileId))
             ->assertOk()
             ->assertJsonPath('data.title', 'T');
     }
@@ -820,7 +820,7 @@ class FileManagerControllerTest extends TestCase
             return Http::response([], 200);
         });
 
-        $user->patchJson("/file-hosting/microstock/assets/{$fileId}/metadata", [
+        $user->patchJson(route('file-hosting.microstock.assets.metadata.update', $fileId), [
             'title' => 'Final Title',
             'keywords' => ['eco', 'kitchen'],
         ])->assertOk();
@@ -842,7 +842,7 @@ class FileManagerControllerTest extends TestCase
             ], 202),
         ]);
 
-        $user->postJson("/file-hosting/microstock/assets/{$fileId}/analyze")
+        $user->postJson(route('file-hosting.microstock.assets.analyze', $fileId))
             ->assertStatus(202);
     }
 
@@ -850,7 +850,7 @@ class FileManagerControllerTest extends TestCase
     {
         $user = $this->actingWithApiGuard(User::factory()->create());
 
-        $response = $user->get('/file-hosting/microstock/usage');
+        $response = $user->get(route('file-hosting.microstock.usage'));
 
         $response->assertOk();
         $response->assertViewIs('adminlte4.file-hosting.microstock-usage');

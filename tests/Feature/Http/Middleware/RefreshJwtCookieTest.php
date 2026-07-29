@@ -46,7 +46,7 @@ class RefreshJwtCookieTest extends TestCase
         ]);
 
         $response = $this->withCookie(AuthCookie::NAME, $token)
-            ->get('/dashboard');
+            ->get(route('dashboard'));
 
         $response->assertOk();
         $this->assertAuthTokenCookieRewritten($response, $token);
@@ -76,7 +76,7 @@ class RefreshJwtCookieTest extends TestCase
         ]);
 
         $response = $this->withCookie(AuthCookie::NAME, $token)
-            ->get('/dashboard');
+            ->get(route('dashboard'));
 
         $response->assertOk();
         $this->assertAuthTokenCookieRewritten($response, $token);
@@ -98,7 +98,7 @@ class RefreshJwtCookieTest extends TestCase
         $this->travel(5)->minutes();
 
         $response = $this->withCookie(AuthCookie::NAME, $token)
-            ->get('/dashboard');
+            ->get(route('dashboard'));
 
         $response->assertRedirect(route('login'));
     }
@@ -124,7 +124,7 @@ class RefreshJwtCookieTest extends TestCase
         ]);
 
         $response = $this->withCookie(AuthCookie::NAME, $token)
-            ->get('/dashboard');
+            ->get(route('dashboard'));
 
         $response->assertOk();
 
@@ -196,7 +196,7 @@ class RefreshJwtCookieTest extends TestCase
         ]);
 
         $response = $this->withCookie(AuthCookie::NAME, $token)
-            ->get('/dashboard');
+            ->get(route('dashboard'));
 
         $response->assertOk();
         $response->assertSessionHas('error', 'Upstream blew up');
@@ -222,7 +222,7 @@ class RefreshJwtCookieTest extends TestCase
         ]);
 
         $response = $this->withCookie(AuthCookie::NAME, $token)
-            ->get('/dashboard');
+            ->get(route('dashboard'));
 
         $response->assertRedirect(route('login'));
         $response->assertSessionHas('error', __('web/session.expired'));

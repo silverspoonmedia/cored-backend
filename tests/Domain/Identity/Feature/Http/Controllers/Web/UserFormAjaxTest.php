@@ -36,7 +36,7 @@ class UserFormAjaxTest extends TestCase
         ]);
 
         $response = $this->actingWithJwtCookie($admin)
-            ->postJson('/users', [
+            ->postJson(route('users.store'), [
                 'name' => '',
                 'email' => 'not-an-email',
                 'password' => 'short',
@@ -65,7 +65,7 @@ class UserFormAjaxTest extends TestCase
         ]);
 
         $response = $this->actingWithJwtCookie($admin)
-            ->putJson('/users/'.$target->id, [
+            ->putJson(route('users.update', $target), [
                 'name' => 'Updated Name',
                 'email' => 'edit-me@example.com',
                 'role' => 'User',
@@ -91,7 +91,7 @@ class UserFormAjaxTest extends TestCase
         ]);
 
         $response = $this->actingWithJwtCookie($admin)
-            ->postJson('/users', [
+            ->postJson(route('users.store'), [
                 'name' => 'Baru',
                 'email' => 'baru@example.com',
                 'password' => 'password123',
@@ -117,7 +117,7 @@ class UserFormAjaxTest extends TestCase
         ]);
 
         $response = $this->actingWithJwtCookie($admin)
-            ->postJson('/users', [
+            ->postJson(route('users.store'), [
                 'name' => 'Baru',
                 'email' => 'baru@example.com',
                 'password' => 'password123',
@@ -145,7 +145,7 @@ class UserFormAjaxTest extends TestCase
         ]);
 
         $response = $this->actingWithJwtCookie($admin)
-            ->postJson('/users', [
+            ->postJson(route('users.store'), [
                 'name' => 'Baru',
                 'email' => 'baru@example.com',
                 'password' => 'password123',
@@ -169,7 +169,7 @@ class UserFormAjaxTest extends TestCase
         ]);
 
         $response = $this->actingWithJwtCookie($admin)
-            ->postJson('/users', [
+            ->postJson(route('users.store'), [
                 'name' => 'Baru',
                 'email' => 'baru@example.com',
                 'password' => 'password123',

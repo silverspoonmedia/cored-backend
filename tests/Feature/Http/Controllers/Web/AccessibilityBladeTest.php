@@ -325,12 +325,53 @@ class AccessibilityBladeTest extends TestCase
         $this->assertStringContainsString('priority_autosave_hint', $blade);
     }
 
+    public function test_payment_channels_and_domain_access_url_templates_use_named_routes(): void
+    {
+        $channels = (string) file_get_contents(resource_path('views/adminlte4/payment-channels/index.blade.php'));
+        $domainAccess = (string) file_get_contents(resource_path('views/adminlte4/domain-access/index.blade.php'));
+
+        $this->assertStringContainsString(
+            "route('payment-channels.update'",
+            $channels,
+            'payment-channels AJAX template must use named route (not url()).',
+        );
+        $this->assertStringContainsString(
+            "route('payment-channel-routes.update'",
+            $channels,
+            'payment-channel-routes AJAX template must use named route (not url()).',
+        );
+        $this->assertStringNotContainsString(
+            "url('payment-channels')",
+            $channels,
+            'payment-channels must not hard-code url() for auth shell paths.',
+        );
+        $this->assertStringContainsString(
+            "route('domain-access.update'",
+            $domainAccess,
+            'domain-access AJAX template must use named route (not url()).',
+        );
+        $this->assertStringNotContainsString(
+            "url('domain-access')",
+            $domainAccess,
+            'domain-access must not hard-code url() for auth shell paths.',
+        );
+    }
+
     public function test_instruction_media_js_does_not_call_third_party_qr_service(): void
     {
         $js = (string) file_get_contents(resource_path('js/payments/instructionMedia.js'));
+        $panel = (string) file_get_contents(resource_path('views/adminlte4/components/payments/checkout-panel.blade.php'));
 
         $this->assertStringNotContainsString('api.qrserver.com', $js, 'instructionMedia.js must not leak payload to third-party QR service.');
-        $this->assertStringContainsString('/qr', $js, 'instructionMedia.js must route to local QR endpoint.');
+        $this->assertStringContainsString('monolithQrBaseUrl', $js, 'instructionMedia.js must read QR base from window.monolithQrBaseUrl.');
+        $this->assertStringNotContainsString("'/apps/qr'", $js, 'instructionMedia.js must not hard-code /apps/qr path.');
+        $this->assertStringNotContainsString('"/apps/qr"', $js, 'instructionMedia.js must not hard-code /apps/qr path.');
+        $this->assertStringContainsString(
+            "route('qr.show')",
+            $panel,
+            'checkout panel must inject QR base via route(qr.show).',
+        );
+        $this->assertStringContainsString('monolithQrBaseUrl', $panel);
     }
 
     public function test_activity_log_breadcrumb_parent_is_clickable(): void
@@ -370,7 +411,9 @@ class AccessibilityBladeTest extends TestCase
     {
         $blade = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/index.blade.php'));
 
-        $this->assertStringContainsString('colspan="8"', $blade, 'file-hosting empty row must span all 8 columns.');
+        // Empty row colspan follows $tableColspan (7 without region column, 8 with).
+        $this->assertStringContainsString('colspan="{{ $tableColspan }}"', $blade, 'file-hosting empty row must use dynamic $tableColspan.');
+        $this->assertStringContainsString('$tableColspan = $showRegion ? 8 : 7', $blade, 'file-hosting must derive colspan from region visibility.');
         $this->assertStringNotContainsString('colspan="6"', $blade, 'file-hosting must not carry a stale colspan="6" empty row.');
     }
 
@@ -452,5 +495,80 @@ class AccessibilityBladeTest extends TestCase
 
         $this->assertStringContainsString('data-secret-fields', $js);
         $this->assertStringContainsString("classList.toggle('d-none'", $js);
+    }
+
+    /**
+     * Auth shell is prefix('apps'). url('segment') resolves from site root and 404s
+     * AJAX/forms. Ban known auth segments; use route() / route(... placeholder).
+     */
+    public function test_adminlte4_blades_do_not_url_auth_shell_segments(): void
+    {
+        // First path segment under Route::prefix('apps') — public root segments
+        // (login, s, broadcasting) stay out so legitimate root url() is not banned.
+        $segments = [
+            'activity-logs',
+            'dashboard',
+            'domain-access',
+            'error-logs',
+            'file-hosting',
+            'invoices',
+            'lookups',
+            'menus',
+            'microstock',
+            'navigation',
+            'notifications',
+            'payment-channel-routes',
+            'payment-channels',
+            'payment-gateways',
+            'product-activations',
+            'profile',
+            'qr',
+            'service-purchases',
+            'services',
+            'subscriptions',
+            'users',
+            'vtual',
+        ];
+
+        $pattern = "/url\\(\\s*['\"]\\/?(".implode('|', array_map('preg_quote', $segments)).")['\"]/";
+        $root = resource_path('views/adminlte4');
+        $violations = [];
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if (! $file->isFile() || ! str_ends_with($file->getFilename(), '.blade.php')) {
+                continue;
+            }
+
+            $contents = (string) file_get_contents($file->getPathname());
+            if (! preg_match_all($pattern, $contents, $matches)) {
+                continue;
+            }
+
+            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
+            foreach (array_unique($matches[0]) as $hit) {
+                $violations[] = "{$relative}: {$hit}";
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $violations,
+            "Auth shell Blade must use route(), not url() for known segments:\n".implode("\n", $violations)
+        );
+    }
+
+    public function test_file_hosting_router_js_fail_closed_without_hardcoded_apps_base(): void
+    {
+        $js = (string) file_get_contents(resource_path('js/file-hosting/router.js'));
+
+        $this->assertStringContainsString('export function joinFhPath', $js, 'router.js must export joinFhPath for empty-base-safe joins.');
+        $this->assertStringContainsString('export function resolveFhBase', $js);
+        $this->assertStringNotContainsString('FH_AUTH_BASE_FALLBACK', $js, 'router.js must not hard-code FH auth base fallback.');
+        $this->assertStringNotContainsString("'/apps/file-hosting'", $js, 'router.js must not hard-code /apps/file-hosting.');
+        $this->assertStringNotContainsString('"/apps/file-hosting"', $js, 'router.js must not hard-code /apps/file-hosting.');
     }
 }

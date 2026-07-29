@@ -25,7 +25,7 @@ class Select2ScriptsTest extends TestCase
         $admin->assignRole('Admin');
 
         $response = $this->actingAs($admin, 'api')
-            ->get('/menus/create');
+            ->get(route('menus.create'));
 
         $response->assertOk();
         $response->assertSee('data-monolith-select2="1"', false);

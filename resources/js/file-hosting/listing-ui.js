@@ -6,7 +6,7 @@
  */
 
 import { isMicrostockReviewActionable, resolveMicrostockBadge } from './microstock-ui.js';
-
+import { joinFhPath, resolveFhBase } from './router.js';
 function escapeHtml(value) {
     return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -108,7 +108,7 @@ export function applyBreadcrumb(root, crumbs, config) {
         return;
     }
 
-    const browseBase = config.browseUrl || '/file-hosting';
+    const browseBase = config.browseUrl || resolveFhBase(config);
     const params = new URLSearchParams();
     if (config.ownerUserId) {
         params.set('user_id', config.ownerUserId);
@@ -623,7 +623,7 @@ function folderHref(id, config) {
 }
 
 function fileHref(id, config) {
-    const base = config.fileShowBase || '/file-hosting/files';
+    const base = config.fileShowBase || joinFhPath(resolveFhBase(config), 'files');
     const u = new URL(`${base}/${id}`, window.location.origin);
     if (config.workspaceId) {
         u.searchParams.set('workspace_id', config.workspaceId);
@@ -712,13 +712,13 @@ function actionLabel(config, key, fallback) {
 
 function entityBase(config, entityType) {
     if (entityType === 'folder') {
-        return config.folderBase || config.folderRenameBase || '/file-hosting/folders';
+        return config.folderBase || config.folderRenameBase || joinFhPath(resolveFhBase(config), 'folders');
     }
-    return config.fileBase || config.fileRenameBase || config.fileShowBase || '/file-hosting/files';
+    return config.fileBase || config.fileRenameBase || config.fileShowBase || joinFhPath(resolveFhBase(config), 'files');
 }
 
 function destroyUrl(entityType, id, config) {
-    return `${entityBase(config, entityType)}/${id}`;
+    return joinFhPath(entityBase(config, entityType), id);
 }
 
 function listingRedirectUrl(config) {

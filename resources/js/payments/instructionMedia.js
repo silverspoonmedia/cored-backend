@@ -23,7 +23,15 @@ export function resolveQrImageSrc(qrUrl, qrString) {
     }
 
     // Local endpoint (chillerlan/php-qrcode) — no third-party leak.
-    return `${window.monolithQrBaseUrl ?? '/qr'}?data=${encodeURIComponent(payload)}`;
+    // Blade checkout panel must set window.monolithQrBaseUrl via route('qr.show').
+    // Empty base is intentional fail-closed (no QR img) — never hard-code /apps/qr.
+    // checkout.js already skips empty qrSrc; only mount with checkout-panel.
+    const base = typeof window.monolithQrBaseUrl === 'string' ? window.monolithQrBaseUrl.trim() : '';
+    if (base === '') {
+        return '';
+    }
+
+    return `${base}?data=${encodeURIComponent(payload)}`;
 }
 
 /**

@@ -17,8 +17,10 @@ Registry: **`kind => core`** in [`config/domains.php`](../../../config/domains.p
 
 ## API surface (`/api/v1/*`)
 
-| Area | Prefix | Auth |
-|------|--------|------|
+Relative prefixes below mount under **`/api/v1`** (not the Blade `/apps` shell).
+
+| Area | API prefix | Auth |
+|------|------------|------|
 | Gateways | `/payment-gateways` | manage/view permissions |
 | Invoices | `/invoices`, channel-checkout | view invoice / initiate payment |
 | Channels | `/payment-channels`, routes | view / manage |
@@ -83,6 +85,8 @@ iPaymu **requires** name + email + phone (`setBuyer`). Midtrans `customer_detail
 Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation guards, active-checkout cancellation when switching channels.
 
 ## Blade / assets
+
+Authenticated admin/checkout UI under `/apps/*` (route names unprefixed): e.g. `/apps/payment-channels`, `/apps/payment-gateways`, invoice/service-purchase show with checkout panel. QR image base is injected via `route('qr.show')` (`window.monolithQrBaseUrl`) — no hard-coded `/apps/qr` in JS. See [blade-admin — URL helpers](../../web/blade-admin.md#url-helpers-auth-shell).
 
 Payment-first order/invoice show: hero, steps, `checkout-panel`, `checkout.js`. Web proxies: channel-checkout, sync-status, snap-token (API).
 

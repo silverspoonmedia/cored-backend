@@ -34,7 +34,18 @@ Route::middleware('web.guest')->group(function (): void {
     require __DIR__.'/web/identity-guest.php';
 });
 
+// Authenticated auth-surface at site root (not under /apps).
 Route::middleware('web.auth')->group(function (): void {
+    require __DIR__.'/web/identity-logout.php';
+});
+
+/*
+| Authenticated app shell under /apps/* so product root paths
+| (/file-hosting, /vtual, …) stay free for public landings.
+| Route names stay unprefixed (dashboard, file-hosting.index, …).
+| domain:make injects product requires into this group (product last).
+*/
+Route::middleware('web.auth')->prefix('apps')->group(function (): void {
     // Core domains
     require __DIR__.'/web/identity.php';
     require __DIR__.'/web/navigation.php';

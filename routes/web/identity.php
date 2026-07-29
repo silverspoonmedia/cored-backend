@@ -1,7 +1,6 @@
 <?php
 
 use App\Domain\Identity\Http\Controllers\Web\Auth\EmailVerificationController;
-use App\Domain\Identity\Http\Controllers\Web\Auth\LoginController;
 use App\Domain\Identity\Http\Controllers\Web\Auth\PasswordController;
 use App\Domain\Identity\Http\Controllers\Web\Auth\ProfileTwoFactorController;
 use App\Domain\Identity\Http\Controllers\Web\DashboardController;
@@ -9,10 +8,9 @@ use App\Domain\Identity\Http\Controllers\Web\LookupController;
 use App\Domain\Identity\Http\Controllers\Web\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
+// Logout lives at site root: routes/web/identity-logout.php (not under /apps).
 
 Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
 Route::get('profile/password', [PasswordController::class, 'edit'])->name('profile.password.edit');
 Route::put('profile/password', [PasswordController::class, 'update'])->name('profile.password.update');
 Route::get('profile/two-factor', [ProfileTwoFactorController::class, 'edit'])->name('profile.two-factor.edit');

@@ -2,6 +2,8 @@
  * Soft file detail view renderer for SPA shell.
  */
 
+import { joinFhPath, resolveFhBase } from './router.js';
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -67,8 +69,13 @@ export function applyShowPayload(mount, file, config) {
     if (file.folder_id) {
         backQuery.set('folder_id', file.folder_id);
     }
-    const backHref = (config.browseUrl || '/file-hosting') + (backQuery.toString() ? `?${backQuery}` : '');
-    const downloadHref = `${config.fileBase || '/file-hosting/files'}/${id}/download`;
+    const base = resolveFhBase(config);
+    const fileBase = config.fileBase || joinFhPath(base, 'files');
+    const browseRoot = config.browseUrl || base;
+    const backHref = browseRoot
+        ? (browseRoot + (backQuery.toString() ? `?${backQuery}` : ''))
+        : '';
+    const downloadHref = fileBase ? joinFhPath(fileBase, id, 'download') : '';
     const visPrivate = labels.private || 'Private';
     const visLink = labels.anyone_with_link || 'Anyone with the link';
     const canPublicShare = config.planState === 'paid';
@@ -123,7 +130,7 @@ export function applyShowPayload(mount, file, config) {
         <a href="${escapeHtml(downloadHref)}" class="btn btn-primary btn-sm">
           <i class="bi bi-download me-1"></i>${escapeHtml(labels.download || 'Download')}
         </a>
-        <form method="POST" action="${escapeHtml((config.fileBase || '/file-hosting/files') + '/' + id + '/visibility')}"
+        <form method="POST" action="${escapeHtml(fileBase + '/' + id + '/visibility')}"
               class="border rounded p-2" data-fh-ajax-form data-fh-success="soft-refresh-show">
           <input type="hidden" name="_token" value="">
           <input type="hidden" name="_method" value="PATCH">
@@ -139,7 +146,7 @@ export function applyShowPayload(mount, file, config) {
         </form>
         <button type="button" class="btn btn-outline-danger btn-sm"
                 data-fh-ajax-action="delete-file"
-                data-fh-action-url="${escapeHtml((config.fileBase || '/file-hosting/files') + '/' + id)}"
+                data-fh-action-url="${escapeHtml(fileBase + '/' + id)}"
                 data-fh-method="DELETE"
                 data-fh-confirm="${escapeHtml(msgs.actions?.confirmDeleteFile || '')}"
                 data-fh-soft-nav-after="${escapeHtml(backHref)}">

@@ -58,8 +58,8 @@
 
                 <div
                     data-payment-channels-admin
-                    data-update-url-template="{{ url('payment-channels') }}/__CODE__"
-                    data-route-update-url-template="{{ url('payment-channel-routes') }}/__ROUTE__"
+                    data-update-url-template="{{ route('payment-channels.update', ['code' => '__CODE__']) }}"
+                    data-route-update-url-template="{{ route('payment-channel-routes.update', ['route' => '__ROUTE__']) }}"
                     data-messages="{{ json_encode([
                         'updated' => __('web/payments.channels.updated'),
                         'routeUpdated' => __('web/payments.channels.route_updated'),
