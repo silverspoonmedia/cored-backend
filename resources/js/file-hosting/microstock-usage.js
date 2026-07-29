@@ -1,5 +1,9 @@
 /**
- * Microstock AI usage & balance page — summary, ledger mutations, usage detail.
+ * Microstock AI usage & balance — summary, ledger mutations, usage detail.
+ *
+ * Two entry points:
+ * 1. createMicrostockUsagePanel(config, csrfToken) — SPA offcanvas factory (used by file-manager.js)
+ * 2. initMicrostockUsage(root) — standalone page bootstrap (used by microstock-usage.blade.php)
  */
 
 function escapeHtml(value) {
@@ -34,39 +38,47 @@ function amountClass(amountMicro) {
     return 'text-muted';
 }
 
-function initMicrostockUsage(root) {
+/**
+ * Build a usage panel controller bound to a given root element.
+ * Works for both the SPA offcanvas and the standalone page.
+ * @param {HTMLElement} root
+ * @param {object} config
+ * @param {string} csrfToken
+ */
+function bindUsagePanel(root, config, csrfToken) {
     if (!root || root.dataset.fhMsUsageBound === '1') {
-        return;
+        return null;
     }
     root.dataset.fhMsUsageBound = '1';
 
-    const config = JSON.parse(root.dataset.config || '{}');
     const labels = config.labels || {};
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
     const els = {
-        balance: root.querySelector('[data-fh-ms-balance]'),
-        estimate: root.querySelector('[data-fh-ms-estimate]'),
-        dailyCard: root.querySelector('[data-fh-ms-daily-card]'),
-        daily: root.querySelector('[data-fh-ms-daily]'),
-        ledgerBody: root.querySelector('[data-fh-ms-ledger-body]'),
-        ledgerMoreWrap: root.querySelector('[data-fh-ms-ledger-more-wrap]'),
-        ledgerMore: root.querySelector('[data-fh-ms-ledger-more]'),
-        usageBody: root.querySelector('[data-fh-ms-usage-body]'),
-        usageMoreWrap: root.querySelector('[data-fh-ms-usage-more-wrap]'),
-        usageMore: root.querySelector('[data-fh-ms-usage-more]'),
-        platformProvider: root.querySelector('[data-fh-ms-platform-provider]'),
-        platformBillable: root.querySelector('[data-fh-ms-platform-billable]'),
-        platformMargin: root.querySelector('[data-fh-ms-platform-margin]'),
-        platformEvents: root.querySelector('[data-fh-ms-platform-events]'),
-        platformUsers: root.querySelector('[data-fh-ms-platform-users]'),
-        platformDailyFree: root.querySelector('[data-fh-ms-platform-daily-free]'),
-        platformSourceBody: root.querySelector('[data-fh-ms-platform-source-body]'),
-        platformStageBody: root.querySelector('[data-fh-ms-platform-stage-body]'),
-        platformModelBody: root.querySelector('[data-fh-ms-platform-model-body]'),
-        platformUsageBody: root.querySelector('[data-fh-ms-platform-usage-body]'),
-        platformUsageMoreWrap: root.querySelector('[data-fh-ms-platform-usage-more-wrap]'),
-        platformUsageMore: root.querySelector('[data-fh-ms-platform-usage-more]'),
+        balance: root.querySelector('[data-fh-msu-balance], [data-fh-ms-balance]'),
+        estimate: root.querySelector('[data-fh-msu-estimate], [data-fh-ms-estimate]'),
+        dailyCard: root.querySelector('[data-fh-msu-daily-card], [data-fh-ms-daily-card]'),
+        daily: root.querySelector('[data-fh-msu-daily], [data-fh-ms-daily]'),
+        ledgerBody: root.querySelector('[data-fh-msu-ledger-body], [data-fh-ms-ledger-body]'),
+        ledgerMoreWrap: root.querySelector('[data-fh-msu-ledger-more-wrap], [data-fh-ms-ledger-more-wrap]'),
+        ledgerMore: root.querySelector('[data-fh-msu-ledger-more], [data-fh-ms-ledger-more]'),
+        usageBody: root.querySelector('[data-fh-msu-usage-body], [data-fh-ms-usage-body]'),
+        usageMoreWrap: root.querySelector('[data-fh-msu-usage-more-wrap], [data-fh-ms-usage-more-wrap]'),
+        usageMore: root.querySelector('[data-fh-msu-usage-more], [data-fh-ms-usage-more]'),
+        platformProvider: root.querySelector('[data-fh-msu-platform-provider], [data-fh-ms-platform-provider]'),
+        platformBillable: root.querySelector('[data-fh-msu-platform-billable], [data-fh-ms-platform-billable]'),
+        platformMargin: root.querySelector('[data-fh-msu-platform-margin], [data-fh-ms-platform-margin]'),
+        platformEvents: root.querySelector('[data-fh-msu-platform-events], [data-fh-ms-platform-events]'),
+        platformUsers: root.querySelector('[data-fh-msu-platform-users], [data-fh-ms-platform-users]'),
+        platformDailyFree: root.querySelector('[data-fh-msu-platform-daily-free], [data-fh-ms-platform-daily-free]'),
+        platformSourceBody: root.querySelector('[data-fh-msu-platform-source-body], [data-fh-ms-platform-source-body]'),
+        platformStageBody: root.querySelector('[data-fh-msu-platform-stage-body], [data-fh-ms-platform-stage-body]'),
+        platformModelBody: root.querySelector('[data-fh-msu-platform-model-body], [data-fh-ms-platform-model-body]'),
+        platformUsageBody: root.querySelector('[data-fh-msu-platform-usage-body], [data-fh-ms-platform-usage-body]'),
+        platformUsageMoreWrap: root.querySelector('[data-fh-msu-platform-usage-more-wrap], [data-fh-ms-platform-usage-more-wrap]'),
+        platformUsageMore: root.querySelector('[data-fh-msu-platform-usage-more], [data-fh-ms-platform-usage-more]'),
+        ledgerTab: root.querySelector('#fh-msu-ledger-tab, #fh-ms-ledger-tab'),
+        usageTab: root.querySelector('#fh-msu-usage-tab, #fh-ms-usage-tab'),
+        platformTab: root.querySelector('#fh-msu-platform-tab, #fh-ms-platform-tab'),
     };
 
     const state = {
@@ -81,6 +93,7 @@ function initMicrostockUsage(root) {
         platformUsagePage: 0,
         platformUsageHasMore: false,
         platformUsageLoading: false,
+        summaryLoaded: false,
     };
 
     function fetchJson(url, params) {
@@ -94,7 +107,7 @@ function initMicrostockUsage(root) {
             headers: {
                 Accept: 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrf,
+                'X-CSRF-TOKEN': csrfToken,
             },
             credentials: 'same-origin',
         }).then(function (res) {
@@ -154,9 +167,9 @@ function initMicrostockUsage(root) {
         return '<span class="badge text-bg-secondary">' + escapeHtml(labels.sourcePrepaid || 'Prepaid') + '</span>';
     }
 
-    function renderUsageRows(items, append, targetBody, colSpan) {
-        const body = targetBody || els.usageBody;
-        const cols = colSpan || 7;
+    function renderUsageRows(items, append) {
+        const body = els.usageBody;
+        const cols = 7;
         if (!body) {
             return;
         }
@@ -175,7 +188,7 @@ function initMicrostockUsage(root) {
                 + '<td class="text-nowrap small">' + escapeHtml(formatDate(row.created_at)) + '</td>'
                 + '<td>' + escapeHtml(row.file_name || '—') + '</td>'
                 + '<td><span class="badge text-bg-light border">' + escapeHtml(row.stage || '') + '</span></td>'
-                + '<td class="small text-muted">' + escapeHtml(model) + '</td>'
+                + '<td class="small text-muted d-none d-md-table-cell">' + escapeHtml(model) + '</td>'
                 + '<td class="text-end">' + escapeHtml(String(row.total_tokens ?? 0)) + '</td>'
                 + '<td class="text-end">' + escapeHtml(row.billable_usd || '$0.00') + '</td>'
                 + '<td>' + sourceBadge(row.billing_source) + '</td>'
@@ -264,7 +277,7 @@ function initMicrostockUsage(root) {
             const userLabel = row.user?.email || row.user?.name || row.user_id || '—';
             return '<tr>'
                 + '<td class="text-nowrap small">' + escapeHtml(formatDate(row.created_at)) + '</td>'
-                + '<td class="small">' + escapeHtml(userLabel) + '</td>'
+                + '<td class="small d-none d-md-table-cell">' + escapeHtml(userLabel) + '</td>'
                 + '<td>' + escapeHtml(row.file_name || '—') + '</td>'
                 + '<td><span class="badge text-bg-light border">' + escapeHtml(row.stage || '') + '</span></td>'
                 + '<td class="text-end">' + escapeHtml(row.provider_cost_usd || '$0.00') + '</td>'
@@ -317,6 +330,7 @@ function initMicrostockUsage(root) {
         return fetchJson(config.summaryUrl).then(function (out) {
             if (out.ok && out.json?.data) {
                 renderSummary(out.json.data);
+                state.summaryLoaded = true;
             }
         });
     }
@@ -346,7 +360,7 @@ function initMicrostockUsage(root) {
         }
         state.usageLoading = true;
         const page = append ? state.usagePage + 1 : 1;
-        return fetchJson(config.usageUrl, { page: page, per_page: 20 }).then(function (out) {
+        return fetchJson(config.usageEventsUrl || config.usageUrl, { page: page, per_page: 20 }).then(function (out) {
             const payload = out.json?.data || {};
             const items = Array.isArray(payload.items) ? payload.items : [];
             const pagination = payload.pagination || {};
@@ -360,6 +374,7 @@ function initMicrostockUsage(root) {
         });
     }
 
+    // Event bindings
     els.ledgerMore?.addEventListener('click', function () {
         if (state.ledgerHasMore) {
             loadLedger(true);
@@ -372,13 +387,13 @@ function initMicrostockUsage(root) {
         }
     });
 
-    document.getElementById('fh-ms-usage-tab')?.addEventListener('shown.bs.tab', function () {
+    els.usageTab?.addEventListener('shown.bs.tab', function () {
         if (!state.usageLoaded) {
             loadUsage(false);
         }
     });
 
-    document.getElementById('fh-ms-platform-tab')?.addEventListener('shown.bs.tab', function () {
+    els.platformTab?.addEventListener('shown.bs.tab', function () {
         if (!state.platformLoaded) {
             loadPlatform(false);
         }
@@ -390,8 +405,63 @@ function initMicrostockUsage(root) {
         }
     });
 
-    loadSummary();
-    loadLedger(false);
+    function open() {
+        if (window.bootstrap?.Offcanvas) {
+            window.bootstrap.Offcanvas.getOrCreateInstance(root).show();
+        }
+        if (!state.summaryLoaded) {
+            loadSummary();
+            loadLedger(false);
+        }
+    }
+
+    function close() {
+        if (window.bootstrap?.Offcanvas) {
+            window.bootstrap.Offcanvas.getInstance(root)?.hide();
+        }
+    }
+
+    return {
+        open: open,
+        close: close,
+        loadSummary: loadSummary,
+        loadLedger: loadLedger,
+        loadUsage: loadUsage,
+        loadPlatform: loadPlatform,
+    };
+}
+
+/**
+ * SPA offcanvas factory — called by file-manager.js.
+ * @param {object} config  config.usagePanel from data-config
+ * @param {string} csrfToken
+ */
+export function createMicrostockUsagePanel(config, csrfToken) {
+    const root = document.querySelector('[data-fh-ms-usage-panel]');
+    if (!root) {
+        return { open() {}, close() {} };
+    }
+    const panel = bindUsagePanel(root, config, csrfToken);
+    if (!panel) {
+        return { open() {}, close() {} };
+    }
+    return panel;
+}
+
+/**
+ * Standalone page bootstrap — auto-runs on the usage page.
+ */
+function initMicrostockUsage(root) {
+    if (!root || root.dataset.fhMsUsageBound === '1') {
+        return;
+    }
+    const config = JSON.parse(root.dataset.config || '{}');
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+    const panel = bindUsagePanel(root, config, csrf);
+    if (panel) {
+        panel.loadSummary();
+        panel.loadLedger(false);
+    }
 }
 
 document.querySelectorAll('[data-fh-ms-usage]').forEach(initMicrostockUsage);

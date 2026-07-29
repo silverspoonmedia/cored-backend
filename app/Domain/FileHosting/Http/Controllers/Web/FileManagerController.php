@@ -74,6 +74,9 @@ class FileManagerController extends Controller
             $currentWorkspace = $show->successful() ? $show->json('data') : null;
         }
 
+        $canViewPlatformBilling = $request->user() !== null
+            && $request->user()->hasAnyRole(['Root', 'Admin', 'Moderator']);
+
         return $this->webView('file-hosting.index', [
             'browse' => $data,
             'quota' => $quotaData,
@@ -89,6 +92,7 @@ class FileManagerController extends Controller
             'collaborativeWorks' => is_array($quotaData) && ($quotaData['collaborative_works'] ?? false) === true,
             'ownedWorkspaceUsed' => is_array($quotaData) ? (int) ($quotaData['owned_workspace_used'] ?? 0) : 0,
             'ownedWorkspaceLimit' => is_array($quotaData) ? (int) ($quotaData['owned_workspace_limit'] ?? 0) : 0,
+            'canViewPlatformBilling' => $canViewPlatformBilling,
         ]);
     }
 

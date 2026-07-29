@@ -54,6 +54,9 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
         category: panel.querySelector('[data-fh-ms-category]'),
         chips: panel.querySelector('[data-fh-ms-chips]'),
         keywordInput: panel.querySelector('#fhMsKeywordInput'),
+        keywordCount: panel.querySelector('[data-fh-ms-keyword-count]'),
+        keywordClear: panel.querySelector('[data-fh-ms-keyword-clear]'),
+        detailsChevron: panel.querySelector('[data-fh-ms-details-chevron]'),
         save: panel.querySelector('[data-fh-ms-save]'),
         reanalyze: panel.querySelector('[data-fh-ms-reanalyze]'),
     };
@@ -136,13 +139,17 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
         }
         const items = stageStripItems(stages, labels);
         els.stages.innerHTML = items.map(function (item, index) {
-            const sep = index > 0 ? '<span class="text-muted mx-1">→</span>' : '';
-            const stateCls = item.state === 'ok'
+            const dotCls = item.state === 'ok'
                 ? 'text-success'
                 : (item.state === 'failed' ? 'text-danger' : (item.state === 'running' ? 'text-warning' : 'text-muted'));
+            const icon = item.state === 'ok'
+                ? '\u2713'
+                : (item.state === 'failed' ? '\u2717' : (item.state === 'running' ? '\u25CF' : '\u25CB'));
+            const sep = index > 0 ? '<span class="text-muted mx-1">\u2192</span>' : '';
             return sep
-                + '<span class="' + stateCls + '">'
-                + escapeHtml(item.label) + ' ' + escapeHtml(item.icon)
+                + '<span class="' + dotCls + '" title="' + escapeHtml(item.label) + ': ' + escapeHtml(item.state) + '">'
+                + '<span class="fh-ms-stage-dot">' + icon + '</span>'
+                + '<span class="visually-hidden">' + escapeHtml(item.label) + ' ' + escapeHtml(item.icon) + '</span>'
                 + '</span>';
         }).join('');
     }
@@ -218,6 +225,9 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
                 + '<button type="button" class="btn-close btn-close-sm" aria-label="Remove" data-fh-ms-chip-remove="' + i + '"></button>'
                 + '</span>';
         }).join('');
+        if (els.keywordCount) {
+            els.keywordCount.textContent = String(state.keywords.length);
+        }
     }
 
     function addKeywords(raw) {
@@ -251,6 +261,23 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
             els.keywordInput.value = '';
         }
     });
+
+    els.keywordClear?.addEventListener('click', function () {
+        state.keywords = [];
+        renderChips();
+    });
+
+    const aiDetailsCollapse = document.getElementById('fhMsAiDetails');
+    if (aiDetailsCollapse && els.detailsChevron) {
+        aiDetailsCollapse.addEventListener('show.bs.collapse', function () {
+            els.detailsChevron.classList.add('bi-chevron-down');
+            els.detailsChevron.classList.remove('bi-chevron-right');
+        });
+        aiDetailsCollapse.addEventListener('hide.bs.collapse', function () {
+            els.detailsChevron.classList.add('bi-chevron-right');
+            els.detailsChevron.classList.remove('bi-chevron-down');
+        });
+    }
 
     els.save?.addEventListener('click', function () {
         if (!state.fileId) {

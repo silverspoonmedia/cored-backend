@@ -258,7 +258,14 @@ export function tryPatchListing(payload, root, config) {
         if (!sameFolder(currentFolder, eventFolder)) {
             return true; // ignore
         }
-        // Prefer refetch so actions/permissions match Blade
+        // Optimistic insert for file creates — avoids stale DOM when soft-refetch fails.
+        if (action === 'create' && entityType === 'file' && payload.resource) {
+            const inserted = upsertFileRow(root, payload.resource, config);
+            if (inserted) {
+                return true;
+            }
+        }
+        // Folders or missing resource — prefer refetch so actions/permissions match Blade.
         return false;
     }
 

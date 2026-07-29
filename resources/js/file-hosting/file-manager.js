@@ -28,6 +28,7 @@ import { createSelectionController } from './selection';
 import { createContextMenu } from './context-menu';
 import { createDragMove, moveItemsRequest } from './drag-move';
 import { createMicrostockPanel } from './microstock-panel';
+import { createMicrostockUsagePanel } from './microstock-usage';
 import { formatCollectionProgress } from './microstock-ui';
 import {
     HINT_MAX_LENGTH,
@@ -68,6 +69,7 @@ function initFileManager(root) {
         let lastWorkspaces = Array.isArray(config.workspaces) ? config.workspaces : [];
         let microstockMount = null;
         let microstockPanel = null;
+        let usagePanel = null;
         const selected = new Set();
         let selection = null;
         let dragMove = null;
@@ -130,6 +132,8 @@ function initFileManager(root) {
             }
         }
 
+        let listingStale = false;
+
         async function softRefetchListing() {
             if (!config.browseUrl) {
                 return;
@@ -146,6 +150,7 @@ function initFileManager(root) {
                     const url = browseUrlWithContext(config.browseUrl, config);
                     const json = await fetchJson(url, csrfToken);
                     if (json?.data) {
+                        listingStale = false;
                         if (json.data.workspace) {
                             config.currentWorkspace = json.data.workspace;
                         }
@@ -163,6 +168,15 @@ function initFileManager(root) {
                         }
                         if (dragMove) {
                             dragMove.makeRowsDraggable();
+                        }
+                    } else {
+                        // Both attempts failed — mark stale and reload if not already stale.
+                        if (!listingStale) {
+                            listingStale = true;
+                        } else {
+                            // Consecutive failure — DOM is critically stale; hard reload.
+                            window.location.reload();
+                            return;
                         }
                     }
                 } while (softRefetchListing.pending);
@@ -1542,6 +1556,9 @@ function initFileManager(root) {
                 banner: root.querySelector('[data-fh-collection-banner]'),
                 bannerText: root.querySelector('[data-fh-collection-banner-text]'),
                 review: root.querySelector('[data-fh-collection-review]'),
+                stepper: root.querySelector('[data-fh-collection-stepper]'),
+                stepHint: root.querySelector('[data-fh-step-hint]'),
+                stepProgress: root.querySelector('[data-fh-step-progress]'),
             };
         }
 
@@ -1572,7 +1589,7 @@ function initFileManager(root) {
             });
         }
 
-        // Render the collection action button + status banner for the current
+        // Render the collection stepper + action button for the current
         // folder. `status` = browse.folder.collection_status (null => draft).
         // `counts` = { processed, total, failed, phase } for the processing progress line.
         function updateCollectionUi(status, counts) {
@@ -1585,6 +1602,7 @@ function initFileManager(root) {
 
             if (!inCollection) {
                 els.banner?.classList.add('d-none');
+                els.stepper?.classList.add('d-none');
                 stopCollectionPolling();
                 return;
             }
@@ -1604,56 +1622,105 @@ function initFileManager(root) {
                 lastCollectionCounts = null;
             }
 
-            // Banner text per status.
-            let bannerText = null;
+            // Map collection status to active step (1=upload, 2=lock, 3=analyze, 4=review, 5=export)
+            let activeStep = 1;
+            let stepFailed = false;
+            if (st === 'draft') {
+                activeStep = 1;
+            } else if (st === 'locked') {
+                activeStep = 3; // locked = ready to analyze, so analyze is next
+            } else if (st === 'processing') {
+                activeStep = 3;
+            } else if (st === 'review') {
+                activeStep = 4;
+            } else if (st === 'exported') {
+                activeStep = 5;
+            } else if (st === 'failed') {
+                activeStep = 3;
+                stepFailed = true;
+            }
+
+            // Update stepper DOM
+            if (els.stepper) {
+                els.stepper.classList.remove('d-none');
+                const steps = els.stepper.querySelectorAll('[data-fh-step]');
+                steps.forEach(function (stepEl) {
+                    const stepNum = parseInt(stepEl.dataset.fhStep, 10);
+                    stepEl.classList.remove('is-pending', 'is-active', 'is-done', 'is-failed');
+                    if (stepFailed && stepNum === activeStep) {
+                        stepEl.classList.add('is-failed');
+                    } else if (stepNum < activeStep) {
+                        stepEl.classList.add('is-done');
+                    } else if (stepNum === activeStep) {
+                        stepEl.classList.add('is-active');
+                    } else {
+                        stepEl.classList.add('is-pending');
+                    }
+                });
+            }
+
+            // Hint text per step
+            let hintText = '';
             let primaryLabel = labels.lockDescribe;
             let primaryMode = 'lock';
             if (st === 'processing') {
                 const p = counts?.processed ?? null;
                 const t = counts?.total ?? null;
                 const f = counts?.failed ?? 0;
-                bannerText = (t !== null && t > 0)
+                hintText = labels.stepAnalyzeHint || labels.processing || '';
+                let progressLine = (t !== null && t > 0)
                     ? (labels.processing + ' — ' + progressText(p, t, f))
                     : labels.processing;
                 if (counts?.phase === 'degraded') {
-                    bannerText += ' ' + (labels.processingDegraded || '');
+                    progressLine += ' ' + (labels.processingDegraded || '');
                 }
                 if (counts?.billingTier === 'free' || counts?.billingTier === 'mixed') {
-                    bannerText += ' ' + (labels.processingFreeTier || '');
+                    progressLine += ' ' + (labels.processingFreeTier || '');
+                }
+                if (els.stepProgress) {
+                    els.stepProgress.classList.remove('d-none');
+                    els.stepProgress.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>' + escapeHtml(progressLine);
                 }
                 primaryLabel = labels.processing;
                 primaryMode = 'none';
-            } else if (st === 'review') {
-                bannerText = labels.review;
-                primaryLabel = labels.exportCsv;
-                primaryMode = 'export';
-            } else if (st === 'exported') {
-                bannerText = labels.exported;
-                primaryLabel = labels.downloadCsv;
-                primaryMode = 'download';
-            } else if (st === 'failed') {
-                bannerText = labels.failed;
-                primaryLabel = labels.lockDescribe;
-                primaryMode = 'lock';
-            } else if (st === 'locked') {
-                bannerText = labels.locked;
-                primaryLabel = labels.analyze || labels.processing;
-                primaryMode = 'analyze';
+            } else {
+                if (els.stepProgress) {
+                    els.stepProgress.classList.add('d-none');
+                    els.stepProgress.innerHTML = '';
+                }
+                if (st === 'draft') {
+                    hintText = labels.stepUploadHint || labels.stepUploadEmpty || '';
+                    primaryLabel = labels.lockDescribe;
+                    primaryMode = 'lock';
+                } else if (st === 'review') {
+                    hintText = labels.stepReviewHint || labels.review || '';
+                    primaryLabel = labels.exportCsv;
+                    primaryMode = 'export';
+                } else if (st === 'exported') {
+                    hintText = labels.stepExportHint || labels.exported || '';
+                    primaryLabel = labels.downloadCsv;
+                    primaryMode = 'download';
+                } else if (st === 'failed') {
+                    hintText = labels.failed || '';
+                    primaryLabel = labels.lockDescribe;
+                    primaryMode = 'lock';
+                } else if (st === 'locked') {
+                    hintText = labels.stepAnalyzeHint || labels.locked || '';
+                    primaryLabel = labels.analyze || labels.processing;
+                    primaryMode = 'analyze';
+                }
             }
 
-            if (els.banner && els.bannerText) {
-                if (bannerText) {
-                    const spinner = st === 'processing'
-                        ? '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>'
-                        : '';
-                    els.bannerText.innerHTML = spinner;
-                    els.bannerText.appendChild(document.createTextNode(bannerText));
-                    els.banner.classList.remove('d-none');
-                    els.banner.classList.toggle('alert-warning', st === 'processing' && counts?.phase === 'degraded');
-                    els.banner.classList.toggle('alert-secondary', !(st === 'processing' && counts?.phase === 'degraded'));
-                } else {
-                    els.banner.classList.add('d-none');
-                }
+            if (els.stepHint) {
+                els.stepHint.textContent = hintText;
+            }
+
+            // Legacy banner hidden — stepper replaces it
+            if (els.banner) {
+                els.banner.classList.add('d-none');
+            }
+            if (els.bannerText) {
+                els.bannerText.textContent = '';
             }
 
             if (els.primary && els.primaryLabel) {
@@ -1873,6 +1940,22 @@ function initFileManager(root) {
                 isRealtimeConnected: isRealtimeConnected,
                 onSaved: function () { refreshCollectionStatus(false); },
             });
+
+            // Usage & balance offcanvas panel (SPA-integrated).
+            if (config.usagePanel) {
+                usagePanel = createMicrostockUsagePanel(config.usagePanel, csrfToken);
+            }
+
+            // Toolbar "AI Balance" button opens the usage offcanvas instead of navigating away.
+            const balanceBtn = root.querySelector('[data-fh-toolbar-balance]');
+            if (balanceBtn) {
+                balanceBtn.addEventListener('click', function (e) {
+                    if (usagePanel) {
+                        e.preventDefault();
+                        usagePanel.open();
+                    }
+                });
+            }
 
             // Per-file "Review" button in listing rows opens the panel.
             document.addEventListener('click', function (e) {

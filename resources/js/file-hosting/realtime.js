@@ -237,24 +237,28 @@ export function initFileHostingRealtime(options) {
 
 /**
  * Fetch JSON from a same-origin web route.
+ * Retries once after 500ms on failure so transient errors don't leave the DOM stale.
  * @param {string} url
  * @param {string} csrf
  * @returns {Promise<object|null>}
  */
 export async function fetchJson(url, csrf) {
+    const attempt = () => fetch(url, {
+        headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrf,
+        },
+        credentials: 'same-origin',
+    }).then((res) => (res.ok ? res.json() : null));
+
     try {
-        const res = await fetch(url, {
-            headers: {
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrf,
-            },
-            credentials: 'same-origin',
-        });
-        if (!res.ok) {
-            return null;
+        let json = await attempt();
+        if (json) {
+            return json;
         }
-        return await res.json();
+        await new Promise((r) => setTimeout(r, 500));
+        return await attempt();
     } catch {
         return null;
     }
