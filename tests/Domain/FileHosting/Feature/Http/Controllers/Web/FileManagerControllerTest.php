@@ -846,6 +846,17 @@ class FileManagerControllerTest extends TestCase
             ->assertStatus(202);
     }
 
+    public function test_microstock_usage_page_renders(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+
+        $response = $user->get('/file-hosting/microstock/usage');
+
+        $response->assertOk();
+        $response->assertViewIs('adminlte4.file-hosting.microstock-usage');
+        $response->assertSee(__('web/microstock.usage.title'));
+    }
+
     private function actingWithApiGuard(User $user): static
     {
         return $this->actingAs($user, 'api');

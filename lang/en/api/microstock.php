@@ -35,4 +35,17 @@ return [
     'collection_exported' => 'Collection exported.',
     'insufficient_ai_credits' => 'Insufficient AI credits. Purchase an AI credit pack from Services before running analysis.',
     'billing_loaded' => 'AI billing status loaded.',
+    'ledger_loaded' => 'Billing ledger loaded.',
+    'usage_events_loaded' => 'AI usage events loaded.',
+    'ledger' => [
+        'purchase' => 'AI credit purchase — :service',
+        'purchase_fallback' => 'AI credits',
+        'analysis_debit' => 'AI analysis — :file',
+        'analysis_debit_with_folder' => 'AI analysis — :file (:folder)',
+        'analysis_debit_fallback' => 'AI analysis',
+        'adjustment' => 'Balance adjustment',
+    ],
+    'admin_billing_overview_loaded' => 'Platform billing overview loaded.',
+    'admin_usage_events_loaded' => 'Platform usage events loaded.',
+    'admin_billing_forbidden' => 'You are not allowed to view platform billing.',
 ];

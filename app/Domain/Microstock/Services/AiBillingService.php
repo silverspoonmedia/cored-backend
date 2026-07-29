@@ -4,10 +4,12 @@ namespace App\Domain\Microstock\Services;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
+use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
+use App\Domain\Microstock\Support\AnalysisBillingPlan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -15,6 +17,7 @@ class AiBillingService
 {
     public function __construct(
         private readonly AiCreditService $credits,
+        private readonly AiDailyFreeService $dailyFree,
     ) {}
 
     public function estimateForAssets(int $count): int
@@ -27,10 +30,28 @@ class AiBillingService
 
     public function assertCanAnalyze(User $user, int $assetCount): void
     {
-        $required = $this->estimateForAssets($assetCount);
-        if ($this->credits->balance((string) $user->id) < $required) {
-            throw new MicrostockException(__('api/microstock.insufficient_ai_credits'), 422);
-        }
+        $this->planAnalyze($user, $assetCount);
+    }
+
+    public function planAnalyze(User $user, int $assetCount): AnalysisBillingPlan
+    {
+        return DB::transaction(function () use ($user, $assetCount): AnalysisBillingPlan {
+            $userId = (string) $user->id;
+            $split = $this->dailyFree->allocateInTransaction($userId, $assetCount);
+
+            if ($split['prepaid'] > 0) {
+                $required = $this->estimateForAssets($split['prepaid']);
+                if ($this->credits->balance($userId) < $required) {
+                    throw new MicrostockException(
+                        __('api/microstock.insufficient_ai_credits'),
+                        422,
+                        ['daily_free' => $this->dailyFree->snapshot($userId)],
+                    );
+                }
+            }
+
+            return new AnalysisBillingPlan($split['daily'], $split['prepaid']);
+        });
     }
 
     /**
@@ -87,6 +108,7 @@ class AiBillingService
             'file_id' => $context->fileId,
             'folder_id' => $context->folderId,
             'analysis_run_id' => $context->analysisRunId,
+            'billing_source' => $context->billingSource->value,
             'stage' => $stage,
             'attempt_index' => $attemptIndex,
             'alias_model' => $aliasModel,
@@ -130,6 +152,7 @@ class AiBillingService
                 'file_id' => $target['file_id'],
                 'folder_id' => $context->folderId,
                 'analysis_run_id' => $context->analysisRunId,
+                'billing_source' => $context->billingSource->value,
                 'stage' => $stage,
                 'attempt_index' => $attemptIndex,
                 'alias_model' => $aliasModel,
@@ -215,11 +238,14 @@ class AiBillingService
             $tokens = (int) $events->sum('total_tokens');
             $models = $events->pluck('resolved_model')->unique()->values()->all();
             $billingUserId = (string) ($locked->billing_user_id ?? $locked->user_id);
+            $billingSource = BillingSource::tryFrom((string) ($locked->billing_source ?? ''))
+                ?? BillingSource::Prepaid;
+            $userBillable = $billingSource === BillingSource::Prepaid ? $billable : 0;
 
-            if ($billable > 0) {
+            if ($userBillable > 0) {
                 $this->credits->debit(
                     $billingUserId,
-                    $billable,
+                    $userBillable,
                     'asset_metadata',
                     (string) $locked->id,
                 );
@@ -235,6 +261,7 @@ class AiBillingService
                 $locked->forceFill([
                     'ai_billing' => [
                         'partial' => true,
+                        'source' => $billingSource->value,
                         'stages' => $stages ?? [],
                         'resolved_models' => array_values(array_unique(array_merge(
                             $existing['resolved_models'] ?? [],
@@ -242,7 +269,7 @@ class AiBillingService
                         ))),
                         'total_tokens' => (int) ($existing['total_tokens'] ?? 0) + $tokens,
                         'provider_cost_micro_usd' => (int) ($existing['provider_cost_micro_usd'] ?? 0) + $provider,
-                        'billable_micro_usd' => (int) ($existing['billable_micro_usd'] ?? 0) + $billable,
+                        'billable_micro_usd' => (int) ($existing['billable_micro_usd'] ?? 0) + $userBillable,
                         'billed_at' => $billedAt->toIso8601String(),
                     ],
                 ])->save();
@@ -257,13 +284,14 @@ class AiBillingService
             $locked->forceFill([
                 'ai_billing' => [
                     'partial' => false,
+                    'source' => $billingSource->value,
                     'resolved_models' => array_values(array_unique(array_merge(
                         $existing['resolved_models'] ?? [],
                         $models,
                     ))),
                     'total_tokens' => (int) ($existing['total_tokens'] ?? 0) + $tokens,
                     'provider_cost_micro_usd' => (int) ($existing['provider_cost_micro_usd'] ?? 0) + $provider,
-                    'billable_micro_usd' => (int) ($existing['billable_micro_usd'] ?? 0) + $billable,
+                    'billable_micro_usd' => (int) ($existing['billable_micro_usd'] ?? 0) + $userBillable,
                     'billed_at' => $billedAt->toIso8601String(),
                 ],
             ])->save();

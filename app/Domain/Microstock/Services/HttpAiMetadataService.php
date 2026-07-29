@@ -5,6 +5,7 @@ namespace App\Domain\Microstock\Services;
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
+use App\Domain\Microstock\Support\KeywordNormalizer;
 use App\Domain\Microstock\Support\Prompts;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -644,10 +645,10 @@ class HttpAiMetadataService implements AiMetadataService
             ? trim($decoded['title'])
             : '';
         $keywords = is_array($decoded) && is_array($decoded['keywords'] ?? null)
-            ? array_values(array_filter(array_map(
+            ? KeywordNormalizer::normalize(array_map(
                 static fn ($k): string => is_string($k) ? trim($k) : '',
                 $decoded['keywords'],
-            ), static fn (string $k): bool => $k !== ''))
+            ))
             : [];
 
         if ($title === '' || $keywords === []) {
@@ -711,10 +712,10 @@ class HttpAiMetadataService implements AiMetadataService
             }
             $title = is_string($row['title'] ?? null) ? trim($row['title']) : '';
             $keywords = is_array($row['keywords'] ?? null)
-                ? array_values(array_filter(array_map(
+                ? KeywordNormalizer::normalize(array_map(
                     static fn ($k): string => is_string($k) ? trim($k) : '',
                     $row['keywords'],
-                ), static fn (string $k): bool => $k !== ''))
+                ))
                 : [];
             if ($title === '' || $keywords === []) {
                 continue;

@@ -2,6 +2,8 @@
 
 namespace App\Domain\Microstock\Support;
 
+use App\Domain\Microstock\Enums\BillingSource;
+
 /**
  * @phpstan-type BatchTarget array{metadata_id: string, file_id: string}
  */
@@ -19,6 +21,7 @@ final class AnalysisBillingContext
         public readonly ?string $folderId = null,
         public readonly ?string $analysisRunId = null,
         public readonly array $batchTargets = [],
+        public readonly BillingSource $billingSource = BillingSource::Prepaid,
     ) {}
 
     public static function current(): ?self

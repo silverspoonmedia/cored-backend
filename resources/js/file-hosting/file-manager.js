@@ -17,6 +17,7 @@ import {
     applyBrowsePayload,
     applyFileStats,
     applyQuotaPayload,
+    patchMicrostockRow,
     tryPatchListing,
     upsertFileRow,
 } from './listing-ui';
@@ -40,6 +41,7 @@ import {
 } from './collection-describe';
 
 const STORAGE_KEY = 'fh-view-mode';
+const COLLECTION_POLL_FALLBACK_MS = 60000;
 
 function initFileManager(root) {
         if (!root || root.dataset.fhBound === '1') {
@@ -78,6 +80,11 @@ function initFileManager(root) {
         /** Mutation busy overlay (move/delete/forms) — distinct from soft-nav is-fh-loading. */
         let busyDepth = 0;
         let collectionPollTimer = null;
+        let lastCollectionCounts = null;
+
+        function isRealtimeConnected() {
+            return window.fileHostingRealtime?.connected === true;
+        }
         function setBusy(on) {
             if (on) {
                 busyDepth += 1;
@@ -280,6 +287,58 @@ function initFileManager(root) {
             }
         }
 
+        function applyCollectionProgressPayload(payload) {
+            if (!payload || String(payload.folder_id) !== String(config.currentFolderId || '')) {
+                return;
+            }
+            const counts = {
+                processed: payload.processed,
+                total: payload.total,
+                failed: payload.failed,
+                phase: payload.phase,
+                billingTier: payload.billing_tier,
+            };
+            const countsChanged = lastCollectionCounts === null
+                || lastCollectionCounts.processed !== counts.processed
+                || lastCollectionCounts.failed !== counts.failed
+                || lastCollectionCounts.total !== counts.total;
+            lastCollectionCounts = counts;
+            updateCollectionUi(payload.status, counts);
+            if (payload.status === 'review' || payload.status === 'failed') {
+                softRefetchListing();
+            } else if (!isRealtimeConnected() && countsChanged) {
+                softRefetchListing();
+            }
+        }
+
+        function onAssetMetadataProgress(payload) {
+            if (!payload?.file_id || !payload.microstock) {
+                return;
+            }
+            patchMicrostockRow(root, payload.file_id, payload.microstock, config);
+            if (typeof microstockPanel?.handleAssetProgress === 'function') {
+                microstockPanel.handleAssetProgress(payload);
+            }
+        }
+
+        function onRealtimeConnected() {
+            if (config.collectionStatus === 'processing') {
+                stopCollectionPolling();
+            }
+            if (typeof microstockPanel?.onRealtimeConnected === 'function') {
+                microstockPanel.onRealtimeConnected();
+            }
+        }
+
+        function onRealtimeDegraded() {
+            if (config.collectionStatus === 'processing') {
+                startCollectionPolling();
+            }
+            if (typeof microstockPanel?.onRealtimeDegraded === 'function') {
+                microstockPanel.onRealtimeDegraded();
+            }
+        }
+
         function rebindRealtime() {
             if (realtimeHandle && typeof realtimeHandle.disconnect === 'function') {
                 realtimeHandle.disconnect();
@@ -302,6 +361,8 @@ function initFileManager(root) {
                     onListingPatch,
                     onFileStats,
                     onMembersChanged,
+                    onCollectionProgress: applyCollectionProgressPayload,
+                    onAssetMetadataProgress,
                 });
             } catch (err) {
                 console.warn('File Hosting realtime init failed; soft-refetch still available.', err);
@@ -338,6 +399,8 @@ function initFileManager(root) {
         };
 
         rebindRealtime();
+        window.addEventListener('file-hosting-realtime:connected', onRealtimeConnected);
+        window.addEventListener('file-hosting-realtime:degraded', onRealtimeDegraded);
 
         const initSteps = [
             initViewToggle,
@@ -360,6 +423,7 @@ function initFileManager(root) {
                 console.error('[file-manager] init step failed', step.name, e);
             }
         });
+        updateMicrostockToolbarChrome();
         if (spaShell) {
             try {
                 initSpaRouter();
@@ -1036,6 +1100,7 @@ function initFileManager(root) {
                 showPanel('browse');
             }
             refreshWorkspaceSwitcher();
+            updateMicrostockToolbarChrome();
         }
 
         function syncConfigFromRoute(route) {
@@ -1093,6 +1158,26 @@ function initFileManager(root) {
                 }
                 el.dataset.collectionLocked = folder ? locked : '0';
             });
+            updateMicrostockToolbarChrome();
+        }
+
+        function updateMicrostockToolbarChrome() {
+            const link = document.querySelector('[data-fh-toolbar-balance]');
+            if (!link) {
+                return;
+            }
+            const isMs = config.currentWorkspace?.kind === 'microstock';
+            link.classList.toggle('d-none', !isMs);
+            if (!isMs) {
+                return;
+            }
+            const base = config.usageUrlBase || config.usageUrl || '/file-hosting/microstock/usage';
+            const qs = config.workspaceId
+                ? '?workspace_id=' + encodeURIComponent(config.workspaceId)
+                : '';
+            const href = base.split('?')[0] + qs;
+            link.href = href;
+            config.usageUrl = href;
         }
 
         // ---- Workspace switcher client re-render (SPA soft-nav) ----
@@ -1242,6 +1327,7 @@ function initFileManager(root) {
             }
             renderWorkspaceMenuItems();
             renderWorkspaceSwitcher();
+            updateMicrostockToolbarChrome();
             if (microstockMount) {
                 refreshMicrostockSlotSection(microstockMount);
             }
@@ -1471,12 +1557,12 @@ function initFileManager(root) {
         }
 
         function startCollectionPolling() {
-            if (collectionPollTimer !== null) {
+            if (collectionPollTimer !== null || isRealtimeConnected()) {
                 return;
             }
             collectionPollTimer = setInterval(function () {
-                refreshCollectionStatus();
-            }, 3000);
+                refreshCollectionStatus(false);
+            }, COLLECTION_POLL_FALLBACK_MS);
         }
 
         function progressText(processed, total, failed) {
@@ -1508,9 +1594,14 @@ function initFileManager(root) {
             config.collectionStatus = st;
 
             if (st === 'processing') {
-                startCollectionPolling();
+                if (isRealtimeConnected()) {
+                    stopCollectionPolling();
+                } else {
+                    startCollectionPolling();
+                }
             } else {
                 stopCollectionPolling();
+                lastCollectionCounts = null;
             }
 
             // Banner text per status.
@@ -1526,6 +1617,9 @@ function initFileManager(root) {
                     : labels.processing;
                 if (counts?.phase === 'degraded') {
                     bannerText += ' ' + (labels.processingDegraded || '');
+                }
+                if (counts?.billingTier === 'free' || counts?.billingTier === 'mixed') {
+                    bannerText += ' ' + (labels.processingFreeTier || '');
                 }
                 primaryLabel = labels.processing;
                 primaryMode = 'none';
@@ -1605,20 +1699,30 @@ function initFileManager(root) {
             });
         }
 
-        function refreshCollectionStatus() {
+        function refreshCollectionStatus(forceListingRefetch) {
             if (!config.currentFolderId) {
                 return;
             }
             fetchJson(collectionUrl('/status'), csrfToken)
                 .then(function (json) {
                     if (json?.data) {
-                        updateCollectionUi(json.data.status, {
+                        const counts = {
                             processed: json.data.processed,
                             total: json.data.total,
                             failed: json.data.failed,
                             phase: json.data.phase,
-                        });
-                        if (json.data.status === 'processing') {
+                            billingTier: json.data.billing_tier,
+                        };
+                        const countsChanged = lastCollectionCounts === null
+                            || lastCollectionCounts.processed !== counts.processed
+                            || lastCollectionCounts.failed !== counts.failed
+                            || lastCollectionCounts.total !== counts.total;
+                        lastCollectionCounts = counts;
+                        updateCollectionUi(json.data.status, counts);
+                        const terminal = json.data.status === 'review'
+                            || json.data.status === 'failed'
+                            || json.data.status === 'exported';
+                        if (forceListingRefetch || terminal || (!isRealtimeConnected() && countsChanged)) {
                             softRefetchListing();
                         }
                     }
@@ -1639,19 +1743,77 @@ function initFileManager(root) {
             });
         }
 
+        function analysisAffordability(billing, fileCount) {
+            const count = Math.max(1, fileCount);
+            const dailyRemaining = billing?.daily_free?.remaining ?? 0;
+            const balanceMicro = billing?.balance_micro_usd ?? 0;
+            const estimatePer = billing?.estimated_per_analysis_micro_usd ?? 0;
+            const dailyUsed = Math.min(dailyRemaining, count);
+            const prepaidNeeded = Math.max(0, count - dailyUsed);
+            const requiredPrepaidMicro = estimatePer * prepaidNeeded;
+            const affordable = prepaidNeeded === 0 || balanceMicro >= requiredPrepaidMicro;
+
+            return {
+                affordable,
+                dailyUsed,
+                prepaidNeeded,
+                requiredPrepaidMicro,
+            };
+        }
+
         function renderCollectionBillingLine(billing, fileCount) {
-            const el = document.querySelector('[data-fh-collection-billing]');
-            if (!el || !billing) {
+            const wrap = document.querySelector('[data-fh-collection-billing]');
+            const el = wrap?.querySelector('[data-fh-collection-billing-text]');
+            if (!wrap || !el || !billing) {
                 return;
             }
-            const tmpl = config.collectionLabels?.billingLine
-                || 'Balance :balance · est. :estimate per file';
-            const estimateTotal = (billing.estimated_per_analysis_usd || 0) * Math.max(1, fileCount);
-            el.textContent = tmpl
-                .replace(':balance', String(billing.balance_usd ?? '0'))
-                .replace(':estimate', String(billing.estimated_per_analysis_usd ?? '0'))
-                .replace(':total', estimateTotal.toFixed(2));
-            el.classList.remove('d-none');
+            const count = Math.max(1, fileCount);
+            const afford = analysisAffordability(billing, count);
+            const parts = [];
+
+            if (billing.daily_free?.enabled) {
+                const dailyTmpl = config.collectionLabels?.dailyFreeLine
+                    || 'Free today: :remaining/:limit';
+                parts.push(dailyTmpl
+                    .replace(':remaining', String(billing.daily_free.remaining ?? 0))
+                    .replace(':limit', String(billing.daily_free.limit ?? 0))
+                    .replace(':used', String(billing.daily_free.used ?? 0)));
+            }
+
+            if (afford.prepaidNeeded > 0) {
+                const tmpl = config.collectionLabels?.billingLine
+                    || 'Balance :balance · est. :estimate per file';
+                const estimateTotal = (billing.estimated_per_analysis_usd || 0) * afford.prepaidNeeded;
+                parts.push(tmpl
+                    .replace(':balance', String(billing.balance_usd ?? '0'))
+                    .replace(':estimate', String(billing.estimated_per_analysis_usd ?? '0'))
+                    .replace(':total', estimateTotal.toFixed(2)));
+            } else if (!billing.daily_free?.enabled) {
+                const tmpl = config.collectionLabels?.billingLine
+                    || 'Balance :balance · est. :estimate per file';
+                const estimateTotal = (billing.estimated_per_analysis_usd || 0) * count;
+                parts.push(tmpl
+                    .replace(':balance', String(billing.balance_usd ?? '0'))
+                    .replace(':estimate', String(billing.estimated_per_analysis_usd ?? '0'))
+                    .replace(':total', estimateTotal.toFixed(2)));
+            }
+
+            if (afford.dailyUsed > 0 && afford.prepaidNeeded > 0) {
+                const mixedTmpl = config.collectionLabels?.billingMixedLine
+                    || ':daily free + :paid paid analyses';
+                parts.push(mixedTmpl
+                    .replace(':daily', String(afford.dailyUsed))
+                    .replace(':paid', String(afford.prepaidNeeded)));
+            }
+
+            el.textContent = parts.join(' · ');
+            wrap.classList.toggle('d-none', parts.length === 0);
+
+            const link = wrap.querySelector('[data-fh-collection-billing-link]');
+            if (link && config.usageUrl) {
+                link.href = config.usageUrl;
+                link.classList.toggle('d-none', parts.length === 0);
+            }
         }
 
         function describeLabelMaps() {
@@ -1702,10 +1864,14 @@ function initFileManager(root) {
         function initCollectionUi() {
             bindCollectionDescribeForm();
             updateCollectionUi(config.collectionStatus || null);
+            if (config.collectionStatus === 'processing') {
+                refreshCollectionStatus(false);
+            }
 
             microstockPanel = createMicrostockPanel(config, csrfToken, {
                 toast: showToast,
-                onSaved: function () { refreshCollectionStatus(); },
+                isRealtimeConnected: isRealtimeConnected,
+                onSaved: function () { refreshCollectionStatus(false); },
             });
 
             // Per-file "Review" button in listing rows opens the panel.
@@ -1754,7 +1920,7 @@ function initFileManager(root) {
                             .then(function (out) {
                                 if (out.ok) {
                                     showToast(out.json.message || config.messages.success, 'success');
-                                    refreshCollectionStatus();
+                                    refreshCollectionStatus(true);
                                 } else {
                                     showToast(out.json.message || config.messages.error, 'error');
                                 }
@@ -1769,7 +1935,7 @@ function initFileManager(root) {
                             .then(function (out) {
                                 if (out.ok) {
                                     showToast(out.json.message || config.messages.success, 'success');
-                                    refreshCollectionStatus();
+                                    refreshCollectionStatus(true);
                                     softRefetchListing();
                                 } else {
                                     showToast(out.json.message || config.messages.error, 'error');
@@ -1826,8 +1992,8 @@ function initFileManager(root) {
                     fetchMicrostockBilling()
                         .then(function (billing) {
                             if (billing) {
-                                const requiredMicro = (billing.estimated_per_analysis_micro_usd || 0) * fileCount;
-                                if ((billing.balance_micro_usd || 0) < requiredMicro) {
+                                const afford = analysisAffordability(billing, fileCount);
+                                if (!afford.affordable) {
                                     const msg = config.collectionLabels?.insufficientCredits
                                         || 'Insufficient AI credits.';
                                     showToast(msg, 'error');
@@ -1857,7 +2023,7 @@ function initFileManager(root) {
                                 } else {
                                     showToast(a.json.message || config.messages.error, 'error');
                                 }
-                                refreshCollectionStatus();
+                                refreshCollectionStatus(true);
                                 softRefetchListing();
                                 syncCollectionUploadGate(root, config, { collection_locked: true });
                             });

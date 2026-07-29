@@ -49,6 +49,7 @@ class CollectionPipelineTest extends TestCase
         config([
             'file-hosting.disk' => 'local',
             'activitylog.enabled' => false,
+            'microstock.daily_free.enabled' => false,
             'microstock.queues.collection_vision' => 'microstock-collection-vision',
             'microstock.queues.collection_thinking' => 'microstock-collection-thinking',
             'microstock.queues.solo' => 'microstock-solo',

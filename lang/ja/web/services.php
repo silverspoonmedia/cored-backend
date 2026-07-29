@@ -88,5 +88,6 @@ return [
         'buy_slot' => 'スロット購入（$1/月）',
         'buy_ai_credits' => 'AIクレジットを購入（$5）',
         'ai_balance' => 'AI分析残高: $:balance · 1アセットあたり約 $:estimate',
+        'usage_balance' => '利用状況と残高',
     ],
 ];

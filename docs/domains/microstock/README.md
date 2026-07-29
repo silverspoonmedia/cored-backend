@@ -64,7 +64,11 @@ Upload/storage stays on the shared File Hosting quota. **AI analysis** (vision +
 | Upload into collection | No | FH `UserQuota` bytes |
 | `POST …/analyze` / `POST assets/{file}/analyze` | Yes | Prepaid `microstock_ai_balances` |
 
-**Flow:** purchase an AI credit pack via `/services` → `ServiceFulfillmentService` credits `balance_micro_usd` → `AiBillingService::assertCanAnalyze` gates dispatch (checks **billing user** = actor who triggered analyze) → each OpenAI-compatible HTTP call records a `microstock_ai_usage_events` row scoped to `analysis_run_id` → `composeResultFromThinking` settles (debit + `ai_billing` snapshot) **before** promoting `status = generated`. Thinking failure after successful vision triggers **partial vision settle**. Full edge-case inventory: [billing-edge-cases.md](billing-edge-cases.md).
+**Flow:** purchase an AI credit pack via `/services` → `ServiceFulfillmentService` credits `balance_micro_usd` → `AiBillingService::planAnalyze` gates dispatch (daily-free slots first, then prepaid balance for remainder; checks **billing user** = actor who triggered analyze) → each OpenAI-compatible HTTP call records a `microstock_ai_usage_events` row scoped to `analysis_run_id` → `composeResultFromThinking` settles (debit + `ai_billing` snapshot) **before** promoting `status = generated`. Thinking failure after successful vision triggers **partial vision settle**. Full edge-case inventory: [billing-edge-cases.md](billing-edge-cases.md).
+
+### Daily free trial (optional)
+
+Env-gated per-user daily analyses (`MICROSTOCK_DAILY_FREE_ENABLED`). No activation SKU — slots reset lazily by calendar day in `microstock_daily_free_usage`. Daily-first mixed billing: first N files in a collection use `billing_source = daily_free` (no prepaid debit; provider cost still on usage events); remainder use prepaid. Free-tier jobs route to `*-free` queues — workers should process paid queues first. Details: [daily-free-trial.md](daily-free-trial.md).
 
 **Billing subject:** `microstock_asset_metadata.billing_user_id` is set to the user who called `POST …/analyze` or `POST assets/{file}/analyze` (not the file uploader). Gate, usage events, and debit all use this ID.
 
@@ -99,6 +103,43 @@ Sonnet 5 rates above are Anthropic **introductory** pricing through Aug 31, 2026
 - Per-model input/output rates under `ai_billing.models` (resolved model from API response; alias from config stored separately)
 
 Amounts are stored as **micro-USD** (1 USD = 1_000_000) end-to-end.
+
+### Usage & balance UI
+
+Transparent prepaid balance and AI usage history for the billing subject (the user who triggered analyze).
+
+| Surface | Route / endpoint |
+|---------|------------------|
+| **Usage page** (web) | `GET /file-hosting/microstock/usage` (`file-hosting.microstock.usage`) — summary cards + tabs |
+| Summary (JSON hop) | `GET /file-hosting/microstock/billing` → `GET /api/v1/microstock/billing` |
+| Ledger mutations | `GET /file-hosting/microstock/billing/ledger` → `GET /api/v1/microstock/billing/ledger` |
+| Usage detail | `GET /file-hosting/microstock/billing/usage-events` → `GET /api/v1/microstock/billing/usage-events` |
+
+**Page layout**
+
+1. **Summary** — prepaid `balance_usd`, `estimated_per_analysis_usd`, daily free (`remaining/limit` when enabled).
+2. **Tab: Balance mutations** — bank-style ledger from `microstock_ai_credit_transactions` (`purchase`, `analysis_debit`, `adjustment`); signed amounts, running `balance_after`.
+3. **Tab: AI usage detail** — per HTTP call from `microstock_ai_usage_events` (stage, model, tokens, cost, `billing_source` badge: Free / Prepaid). Daily-free rows appear here only; they do not create ledger debits.
+4. **Tab: Platform overview** (Root / Admin / Moderator only) — platform-wide aggregates: provider cost, billable, margin, events, active users, daily-free subsidized cost; breakdown by billing source, stage, and model; cross-user usage event list.
+
+**Admin API**
+
+| Method | Route |
+|--------|-------|
+| `GET` | `/api/v1/admin/microstock/billing/overview` |
+| `GET` | `/api/v1/admin/microstock/billing/usage-events` |
+
+Web hops: `GET /file-hosting/microstock/billing/admin/overview`, `…/admin/usage-events`. Gated by `hasAnyRole(['Root', 'Admin', 'Moderator'])` — Management excluded.
+
+**Navigation**
+
+| Location | Link |
+|----------|------|
+| File Hosting toolbar (Microstock workspace) | **AI Balance** → usage page (preserves `workspace_id`; visible on SPA workspace switch without hard reload) |
+| Collection describe modal | Billing line + **View balance & history** |
+| `/services` Microstock card | **Usage & balance** next to balance line |
+
+Implementation: `BillingLedgerService`, `AdminBillingAnalyticsService`, `AdminBillingController`, `BillingLedgerEntryResource`, `BillingUsageEventResource`, `AdminBillingUsageEventResource`, `resources/views/adminlte4/file-hosting/microstock-usage.blade.php`, `resources/js/file-hosting/microstock-usage.js`. Daily-free behaviour: [daily-free-trial.md](daily-free-trial.md).
 
 ## Collections (folder-as-collection lifecycle)
 
@@ -226,7 +267,7 @@ Canonical probe write-up: [`probes/sonnet5_gpt56_combo_summary.md`](probes/sonne
 - **Title** — natural descriptive sentence (not a keyword list), 40–70 chars, no commas, no trademark/real-people/camera-spec, no subjective quality adjectives. Cartoon/vector assets → category `Illustration`; title must name **subject + action**, not a clothing inventory.
 - **Description** — one factual sentence (who/what/where/action).
 - **Category** — exactly one of: People, Lifestyle, Education, Business, Food, Nature, Technology, Health, Holidays, Abstract, Objects, Illustration.
-- **Keywords** — **15–30** terms, **ordered by relevance** (the first 10 carry the most search-ranking weight), built across 4 tiers in strict order: **literal** (subject/action/setting) → **contextual** (demographics/season) → **conceptual** (ideas/emotions buyers search: childhood, fitness, teamwork) → **stylistic** (art direction/palette, **max 2**). Top 10 = literal + contextual only. Singular nouns + infinitive verbs, one concept per keyword, no same-word-stem repeats. Ground in **visible content only** — do not invent sports equipment, venues, or activities from the collection hint alone.
+- **Keywords** — **50–60** terms (user curates down to ~50 for Adobe Stock minimum), **ordered by relevance** (the first 10 carry the most search-ranking weight), built across 4 tiers in strict order: **literal** (subject/action/setting) → **contextual** (demographics/season) → **conceptual** (ideas/emotions buyers search: childhood, fitness, teamwork) → **stylistic** (art direction/palette, **max 2**). Top 10 = literal + contextual only. Singular nouns + infinitive verbs, one concept per keyword, no same-word-stem repeats. Ground in **visible content only** — do not invent sports equipment, venues, or activities from the collection hint alone. `KeywordNormalizer` caps AI output at 60 (dedupe + trim); manual finalize is not capped.
 - **BAN list** (dropped in both stages): compositional (`front view`, `full length`), background (`white background`, `isolated`), redundant format (`clip art` when `illustration` is already present), subjective (`cute`, `beautiful`, `best`), palette spam unless core to the subject.
 - **Hint grounding** — when collection context is set, top-5 keywords should reflect the hint theme **only when the image supports it**.
 
@@ -350,6 +391,8 @@ Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Micros
 | GET | `workspace` | Resolve (lazy-create, gated) the owner's system workspace |
 | GET | `slots` | Slot status snapshot (`activated`, `used`, `limit`, `can_create`) |
 | GET | `billing` | Prepaid AI credit balance + per-analysis estimate |
+| GET | `billing/ledger` | Paginated prepaid ledger (`BillingLedgerService`) |
+| GET | `billing/usage-events` | Paginated per-HTTP-call usage detail |
 | POST | `workspaces` | Create an additional Microstock workspace (slot-gated) |
 | POST | `assets/{file}/analyze` | Queue AI metadata analysis (202) |
 | GET | `assets/{file}/metadata` | Read current metadata row |
@@ -363,6 +406,8 @@ Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Micros
 | POST | `collections/{folder}/export` | Render + persist collection CSV |
 | GET | `collections/{folder}/download` | Stream the exported collection CSV |
 
+**Admin API** (`routes/api/v1/admin-microstock.php`): `auth:api` + in-controller `authorizePlatformBilling()` (Root / Admin / Moderator; Management excluded). Endpoints: `GET admin/microstock/billing/overview`, `GET admin/microstock/billing/usage-events`. See [Usage & balance UI](#usage--balance-ui).
+
 ## Web
 
 | Route name | Purpose |
@@ -371,6 +416,10 @@ Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Micros
 | `microstock.export.csv` | Stream-download the finalized metadata CSV |
 | `file-hosting.microstock.slots` | Thin web hop → `GET /api/v1/microstock/slots` (for the switcher UI) |
 | `file-hosting.microstock.billing` | Thin web hop → `GET /api/v1/microstock/billing` (collection modal + credit pre-flight) |
+| `file-hosting.microstock.billing.ledger` | Thin web hop → `GET /api/v1/microstock/billing/ledger` |
+| `file-hosting.microstock.billing.usage-events` | Thin web hop → `GET /api/v1/microstock/billing/usage-events` |
+| `file-hosting.microstock.billing.admin.overview` / `.admin.usage-events` | Thin web hops → admin billing API (Root / Admin / Moderator) |
+| `file-hosting.microstock.usage` | Usage & balance page (`microstock-usage.blade.php` + `microstock-usage.js`) |
 | `file-hosting.microstock.workspaces.store` | Thin web hop → `POST /api/v1/microstock/workspaces` (switcher "New Microstock workspace") |
 | `file-hosting.microstock.collections.lock` / `.analyze` / `.status` / `.export` | Thin web hops → the matching collection API endpoints (SPA collection toolbar) |
 | `file-hosting.microstock.collections.download` | Direct service download of the exported collection CSV |
@@ -396,14 +445,14 @@ After a successful create (and after every switcher refetch) the SPA rebuilds th
 The curate step of the collection lifecycle lives directly in the file-manager listing:
 
 - **Per-file metadata status** — `FolderService::browse` eager-loads `HostedFile::microstockMetadata` when the workspace `kind` is `microstock`, and `HostedFileResource` exposes a `microstock` key (`{title, keywords, status, phase, stages}`, `null` = no row yet). `stages` mirrors decoupled vision/thinking/result (`pending`/`running`/`ok`/`failed`/`skipped`). The listing renders a stage-aware badge (e.g. Vision…, Thinking…, Failed) next to the file name and a **Review** action (`bi-stars`, `data-fh-ms-review`) only when `status` is `generated`, `finalized`, or `failed` — in both JS re-render (`listing-ui.js` + `microstock-ui.js`) and Blade SSR (`_microstock-badge` partial).
-- **Side panel** — clicking Review opens a Bootstrap offcanvas (`#fhMicrostockPanel`) driven by `microstock-panel.js`. Signed preview, title/keywords edit, read-only description/category, stage strip (`Vision → Thinking → Result`), and metadata poll (3 s) while re-analyze or pending. Saves via `PATCH assets/{file}/metadata`; **Re-analyze** POSTs `assets/{file}/analyze` on the solo queue.
-- **Progress polling** — while `collection_status === 'processing'` the SPA polls `collections/{folder}/status` every 3 s; the banner shows `Analyzed :processed of :total` plus optional `(:failed failed)` and a degraded-phase warning. Each poll also soft-refetches the file listing so per-file stage badges update.
-- **Collection billing** — `GET file-hosting/microstock/billing` (web hop → `GET /api/v1/microstock/billing`) shows balance + per-file estimate in the Lock & Describe modal; submit blocks when balance &lt; `fileCount × estimate`. Locked collections expose an enabled **Start analysis** button (`POST …/analyze` without re-lock).
+- **Side panel** — clicking Review opens a Bootstrap offcanvas (`#fhMicrostockPanel`) driven by `microstock-panel.js`. Signed preview, title/keywords edit, read-only description/category, stage strip (`Vision → Thinking → Result`). WebSocket-first metadata updates; fallback HTTP poll every 30 s when broadcast is off or degraded. Saves via `PATCH assets/{file}/metadata`; **Re-analyze** POSTs `assets/{file}/analyze` on the solo queue.
+- **Progress realtime** — while `collection_status === 'processing'`, the SPA listens on the File Hosting websocket channel for `collection.analysis.progress` (banner counts + phase) and `asset.metadata.progress` (per-file badge/stage patch). Requires broadcast credentials (`BROADCAST_CONNECTION=pusher` or `reverb` + `PUSHER_*`). When broadcast is off or the socket is degraded, fallback HTTP poll runs every 60 s (collection) / 30 s (review panel) instead of the former 3 s burst (`status` + full listing refetch).
+- **Collection billing** — `GET file-hosting/microstock/billing` (web hop → `GET /api/v1/microstock/billing`) shows balance + per-file estimate in the Lock & Describe modal; submit blocks when balance &lt; `fileCount × estimate`. **View balance & history** links to `GET /file-hosting/microstock/usage`. Locked collections expose an enabled **Start analysis** button (`POST …/analyze` without re-lock).
 - **Review shortcut** — in `review` state a secondary **Review files** toolbar button opens the panel for the first listed file.
 
 ## Tests
 
-`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest|AnalysisWatchdogTest|AiBillingServiceTest|AiCreditServiceTest|HttpAiMetadataServiceThinkingFallbackTest|HttpAiMetadataServiceResponseParsingTest|HttpAiMetadataServiceCurateDraftTest|HttpAiMetadataServiceVisualThinkingTest|PromptsTest"` —
+`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest|AnalysisWatchdogTest|AiBillingServiceTest|AiCreditServiceTest|BillingLedgerServiceTest|BillingLedgerApiTest|BillingAdminApiTest|KeywordNormalizerTest|HttpAiMetadataServiceThinkingFallbackTest|HttpAiMetadataServiceResponseParsingTest|HttpAiMetadataServiceCurateDraftTest|HttpAiMetadataServiceVisualThinkingTest|PromptsTest"` —
 - `MicrostockTest`: provisioning gated by entitlement (403 without), slot-limit multi-workspace create, public-share block, analyze → generate (stub AI, asserts `title`/`description`/`category`/`keywords`), finalize curation, CSV export finalized-only, credential encrypt/decrypt roundtrip, invite paid-gate. Checkout coverage in `ServiceCheckoutZeroChargeTest`.
 - `CollectionLifecycleTest`: root-upload blocked (422), locked-collection upload blocked, lock requires hint + transitions + rejects re-lock + rejects non-microstock folder, analyze requires lock/files + dispatches `ProcessCollection`, non-recursive batching (sub-folder untouched), empty→failed, **multi-file dual-lane pipeline** (all files → `review`), prompt hint threading (`Prompts::visionUser`/`thinkingUser` + the `COLLECTION CONTEXT` block), status progress counts, per-collection CSV filter (incl. `description`/`category` columns), export persists CSV + marks exported.
 - `CollectionPipelineTest`: per-file vision dispatch count, solo vs collection queue routing, thinking idempotency, watchdog thinking backlog recovery.
@@ -413,26 +462,54 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 - `HttpAiMetadataServiceResponseParsingTest`: SSE `data: [DONE]` trailer stripping, full SSE delta stream aggregation, `stream: false` on requests, markdown-fenced JSON, Anthropic content blocks, batch `assets` wrapper, unparseable body → `ai_invalid_response`.
 - `HttpAiMetadataServiceCurateDraftTest`: `curateDraft()` delegates to thinking stage; curated keywords returned; multimodal request when image provided.
 - `HttpAiMetadataServiceVisualThinkingTest`: `generate()` sends image on thinking call; multimodal failure falls back to text-only.
-- `PromptsTest`: `visionSystem()` and `thinkingSystem()` char count under gateway limit (~1200).
+- `PromptsTest`: `visionSystem()` and `thinkingSystem()` char count under gateway limit (~1200); keyword target 50–60 in thinking prompt.
+- `BillingLedgerServiceTest`: ledger pagination, running `balance_after`, signed amounts per transaction type.
+- `BillingLedgerApiTest`: user `GET billing/ledger` + `GET billing/usage-events` (auth, pagination, daily-free vs prepaid rows).
+- `BillingAdminApiTest`: platform overview aggregates, cross-user usage events, role gate (Root/Admin/Moderator vs Management).
+- `KeywordNormalizerTest`: dedupe + cap at 60 keywords.
+- `FileManagerControllerTest::test_microstock_usage_page_renders`: usage page Blade smoke.
+
+Upload client unit tests (Vitest): `direct-upload-mime.test.js`, `direct-upload-context.test.js` — see [File Hosting — UI architecture / SPA shell](../file-hosting/README.md#ui-architecture--spa-shell).
 
 ## Operations: queue worker
 
-Microstock uses **dual-lane pipeline queues** plus a solo lane (see `config/microstock.php` → `queues`):
+Microstock uses **dual-lane pipeline queues** plus a solo lane and daily-free lanes (see `config/microstock.php` → `queues`). Orchestration jobs (`ProcessCollection`, `AnalysisWatchdog`) run on `default`.
 
 | Queue (default name) | Jobs | Workers needed |
 |----------------------|------|----------------|
 | `microstock-collection-vision` | `AnalyzeAssetVision` (collection) | ≥1 (overlap with thinking lane) |
 | `microstock-collection-thinking` | `AnalyzeAssetThinking` (collection) | ≥1 |
 | `microstock-solo` | Solo re-analyze vision + thinking | ≥1 |
+| `microstock-collection-vision-free` | Daily-free collection vision | ≥1 (same worker process is fine) |
+| `microstock-collection-thinking-free` | Daily-free collection thinking | ≥1 |
+| `microstock-solo-free` | Daily-free solo re-analyze | ≥1 |
 | `default` | `ProcessCollection`, `AnalysisWatchdog`, checksum, etc. | ≥1 |
+
+**Single command (recommended):** runs all Microstock queues in priority order (paid → free → `default`):
+
+```bash
+php artisan microstock:queue-work
+```
+
+Windows / Laragon (respawn per job):
+
+```bash
+php artisan microstock:queue-work --listen
+```
+
+Debug one job:
+
+```bash
+php artisan microstock:queue-work --once
+```
+
+**Split workers (production scale):** run at least two processes (vision + thinking) so vision file N+1 can overlap thinking file N within a collection. `WithoutOverlapping` per folder caps each lane to one concurrent job per collection. Use a **shared cache** (Redis/database) for overlap locks in multi-server deploys.
 
 ```bash
 php artisan queue:work --queue=microstock-collection-vision,microstock-solo --tries=3
 php artisan queue:work --queue=microstock-collection-thinking,microstock-solo --tries=3
 php artisan queue:work --queue=default --tries=3
 ```
-
-Run **at least two worker processes** (vision + thinking) so vision file N+1 can overlap thinking file N within a collection. `WithoutOverlapping` per folder caps each lane to one concurrent job per collection. Use a **shared cache** (Redis/database) for overlap locks in multi-server deploys.
 
 Single-asset runs can be dispatched synchronously in Tinker with `QUEUE_CONNECTION=sync` for a quick check. `AnalysisWatchdog` is dispatched by `ProcessCollection` and re-arms while any collection is `processing`.
 
@@ -442,7 +519,7 @@ On Laragon/Windows, `php artisan queue:work` **exits back to the shell prompt ri
 
 - Cause: the Windows PHP CLI build (ZTS) ships **without `pcntl`/`posix`** (verified `pcntl: False`, `posix: False`), so the daemon's signal-based loop is not stable as a long-running process on Windows. `max_execution_time=0` (no PHP timeout), and no `--once`/`--stop-when-empty` was used.
 - Not the app: there is no `shouldQuit` / `stopWhenEmpty` / `queue:restart` / `exit` in `app/`, `bootstrap/`, or `routes/console.php` that would stop the worker. The same `queue:work` stays alive on Linux (which has `pcntl`).
-- Production: run the worker on Linux, or keep it alive under Windows with a watchdog — e.g. a restart-loop (`.bat` that re-launches `queue:work` when it exits), Windows Task Scheduler / a service with auto-restart, or for local dev `php artisan queue:listen --tries=1` (respawns per job) / `composer run dev`.
+- Production: run the worker on Linux, or keep it alive under Windows with a watchdog — e.g. a restart-loop (`.bat` that re-launches `queue:work` when it exits), Windows Task Scheduler / a service with auto-restart, or for local dev `php artisan microstock:queue-work --listen` (respawns per job) / `composer run dev`.
 
 ## Explicitly out of scope (MVP)
 

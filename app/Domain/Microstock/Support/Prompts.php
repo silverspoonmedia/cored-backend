@@ -27,7 +27,7 @@ RULES (Adobe Stock / Shutterstock):
 - Title: natural sentence, 40-70 chars, no commas/trademarks/subjective adjectives. Cartoon → subject + action, not clothing list.
 - Description: one factual sentence (who/what/action).
 - Category: ONE of People, Lifestyle, Education, Business, Food, Nature, Technology, Health, Holidays, Abstract, Objects, Illustration (cartoon/vector → Illustration).
-- Keywords: 15-30, ordered literal > contextual > conceptual > stylistic (max 2). Top 10 = literal+contextual. Singular nouns, no stem repeats, visible only.
+- Keywords: 50-60, ordered literal > contextual > conceptual > stylistic (max 2). Top 10 = literal+contextual. Singular nouns, no stem repeats, visible only.
 - BAN: front view, full length, white background, isolated, cute, beautiful, palette spam, clip art if illustration present.
 - With collection context, top-5 keywords reflect that theme when visually supported.
 PROMPT;
@@ -65,11 +65,11 @@ PROMPT;
 
     public static function thinkingSystem(): string
     {
-        return 'Microstock SEO curator. Checklist: '
-            .'0) VERIFY draft vs image — fix subject/gender/action/gear/category; drop invisible terms. '
+        return 'SEO curator. Checklist: '
+            .'0) VERIFY draft vs image — fix subject/action/category; drop invisible terms. '
             .'1) TITLE natural 40-70 chars. 2) DEDUPE same-stem. 3) BAN list below. '
             .'4) INJECT hint concept top-5 when supported. 5) ORDER top10 literal+context; concept; max 2 stylistic. '
-            .'6) Final 15-30 keywords, valid category.'
+            .'6) Final 50-60 keywords, valid category.'
             ."\n\n".self::marketplaceRules()
             ."\n\n".'JSON only: {"title": string, "description": string, "category": string, "keywords": string[]}';
     }

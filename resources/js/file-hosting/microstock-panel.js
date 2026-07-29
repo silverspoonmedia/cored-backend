@@ -8,6 +8,8 @@
 
 import { isTerminalMetadataStatus, resolveMicrostockBadge, stageStripItems } from './microstock-ui.js';
 
+const PANEL_POLL_FALLBACK_MS = 30000;
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -58,6 +60,13 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
     const labels = config.microstockPanel || {};
     const state = { fileId: null, keywords: [], pollTimer: null };
 
+    function isRealtimeConnected() {
+        if (typeof hooks.isRealtimeConnected === 'function') {
+            return hooks.isRealtimeConnected();
+        }
+        return window.fileHostingRealtime?.connected === true;
+    }
+
     function assetUrl(suffix) {
         return (config.assetsBase || '/file-hosting/microstock/assets')
             + '/' + encodeURIComponent(state.fileId) + suffix;
@@ -96,9 +105,12 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
 
     function startMetadataPoll() {
         stopMetadataPoll();
+        if (isRealtimeConnected()) {
+            return;
+        }
         state.pollTimer = setInterval(function () {
             loadMetadata(false);
-        }, 3000);
+        }, PANEL_POLL_FALLBACK_MS);
     }
 
     function setStatus(status, errorMessage, stages) {
@@ -146,8 +158,10 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
         if (els.category) {
             els.category.textContent = data.category || '—';
         }
-        state.keywords = normalizeKeywords(data.keywords || []);
-        renderChips();
+        if (Array.isArray(data.keywords)) {
+            state.keywords = normalizeKeywords(data.keywords);
+            renderChips();
+        }
         setStatus(data.status || null, data.error || null, data.stages || {});
         const terminal = isTerminalMetadataStatus(data.status);
         if (els.save) {
@@ -169,10 +183,29 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
             }
             const data = out.json?.data || {};
             applyMetadata(data);
-            if (startPollIfPending && data.status === 'pending') {
+            if (startPollIfPending && data.status === 'pending' && !isRealtimeConnected()) {
                 startMetadataPoll();
             }
         }).catch(function () { /* best-effort */ });
+    }
+
+    function handleAssetProgress(payload) {
+        if (!state.fileId || String(payload?.file_id) !== String(state.fileId)) {
+            return;
+        }
+        const ms = payload.microstock || {};
+        applyMetadata({
+            title: ms.title,
+            keywords: ms.keywords,
+            description: els.description?.textContent === '—' ? '' : els.description?.textContent,
+            category: els.category?.textContent === '—' ? '' : els.category?.textContent,
+            status: ms.status,
+            stages: ms.stages,
+            error: ms.error,
+        });
+        if (ms.status === 'pending' && !isRealtimeConnected()) {
+            startMetadataPoll();
+        }
     }
 
     function renderChips() {
@@ -251,7 +284,9 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
                 toast(out.json.message || labels.queued || 'Queued', out.ok ? 'success' : 'error');
                 if (out.ok) {
                     setStatus('pending', null, { vision: 'pending', thinking: 'pending', result: 'pending' });
-                    startMetadataPoll();
+                    if (!isRealtimeConnected()) {
+                        startMetadataPoll();
+                    }
                 }
             })
             .catch(function () { toast('Network error', 'error'); })
@@ -292,5 +327,14 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
         }
     }
 
-    return { open: open };
+    return {
+        open: open,
+        handleAssetProgress: handleAssetProgress,
+        onRealtimeConnected: stopMetadataPoll,
+        onRealtimeDegraded: function () {
+            if (state.fileId && panel.classList.contains('show')) {
+                loadMetadata(true);
+            }
+        },
+    };
 }

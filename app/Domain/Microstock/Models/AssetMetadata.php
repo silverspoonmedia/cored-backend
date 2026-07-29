@@ -20,6 +20,7 @@ class AssetMetadata extends Model
         'user_id',
         'billing_user_id',
         'analysis_run_id',
+        'billing_source',
         'title',
         'keywords',
         'category',

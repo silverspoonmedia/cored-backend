@@ -4,6 +4,7 @@ namespace App\Domain\Microstock\Jobs;
 
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\AnalysisPipeline;
+use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
@@ -55,14 +56,20 @@ class AnalyzeAssetVision implements ShouldQueue
 
     public static function dispatchForCollection(string $metadataId, ?string $hint, string $folderId): void
     {
+        $metadata = AssetMetadata::query()->find($metadataId);
+        $freeTier = BillingSource::tryFrom((string) ($metadata?->billing_source ?? '')) === BillingSource::DailyFree;
+
         static::dispatch($metadataId, $hint, $folderId, AnalysisPipeline::Collection)
-            ->onQueue(AnalysisPipeline::Collection->visionQueue());
+            ->onQueue(AnalysisPipeline::Collection->visionQueue($freeTier));
     }
 
     public static function dispatchForSolo(string $metadataId, ?string $hint, ?string $folderId = null): void
     {
+        $metadata = AssetMetadata::query()->find($metadataId);
+        $freeTier = BillingSource::tryFrom((string) ($metadata?->billing_source ?? '')) === BillingSource::DailyFree;
+
         static::dispatch($metadataId, $hint, $folderId, AnalysisPipeline::Solo)
-            ->onQueue(AnalysisPipeline::Solo->visionQueue());
+            ->onQueue(AnalysisPipeline::Solo->visionQueue($freeTier));
     }
 
     public function handle(
@@ -152,12 +159,16 @@ class AnalyzeAssetVision implements ShouldQueue
 
     private function billingContext(AssetMetadata $metadata, ?string $folderId): AnalysisBillingContext
     {
+        $source = BillingSource::tryFrom((string) ($metadata->billing_source ?? ''))
+            ?? BillingSource::Prepaid;
+
         return new AnalysisBillingContext(
             billingUserId: (string) ($metadata->billing_user_id ?? $metadata->user_id),
             metadataId: (string) $metadata->id,
             fileId: (string) $metadata->file_id,
             folderId: $folderId,
             analysisRunId: $metadata->analysis_run_id,
+            billingSource: $source,
         );
     }
 }

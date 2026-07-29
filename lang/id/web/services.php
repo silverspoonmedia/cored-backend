@@ -88,5 +88,6 @@ return [
         'buy_slot' => 'Beli slot ($1/bln)',
         'buy_ai_credits' => 'Beli kredit AI ($5)',
         'ai_balance' => 'Saldo analisis AI: $:balance · ~$:estimate per aset',
+        'usage_balance' => 'Penggunaan & saldo',
     ],
 ];

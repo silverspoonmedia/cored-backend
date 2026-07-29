@@ -8,6 +8,9 @@
                         'balance' => number_format((float) ($microstockBilling['balance_usd'] ?? 0), 2),
                         'estimate' => number_format((float) ($microstockBilling['estimated_per_analysis_usd'] ?? 0), 2),
                     ]) }}
+                    <a href="{{ route('file-hosting.microstock.usage') }}" class="ms-2">
+                        {{ __('web/services.microstock.usage_balance') }}
+                    </a>
                 </p>
             @endif
             <div class="d-flex flex-wrap gap-2">

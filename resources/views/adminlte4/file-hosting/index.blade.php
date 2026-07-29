@@ -71,6 +71,9 @@
         'collectionBase' => url('file-hosting/microstock/collections'),
         'assetsBase' => url('file-hosting/microstock/assets'),
         'billingUrl' => route('file-hosting.microstock.billing'),
+        'usageUrl' => route('file-hosting.microstock.usage', array_filter(['workspace_id' => $workspaceId])),
+        'usageUrlBase' => route('file-hosting.microstock.usage'),
+        'toolbarBalanceLabel' => __('web/microstock.usage.toolbar_balance'),
         'collectionStatus' => $browse['folder']['collection_status'] ?? null,
         'currentFolderHint' => $browse['folder']['collection_hint'] ?? null,
         'collectionDescribe' => [
@@ -109,7 +112,11 @@
             'locked' => __('web/file-hosting.microstock.status_locked'),
             'progressFailed' => __('web/file-hosting.microstock.progress_failed'),
             'billingLine' => __('web/file-hosting.microstock.billing_line'),
+            'dailyFreeLine' => __('web/file-hosting.microstock.daily_free_line'),
+            'billingMixedLine' => __('web/file-hosting.microstock.billing_mixed_line'),
+            'processingFreeTier' => __('web/file-hosting.microstock.status_processing_free_tier'),
             'insufficientCredits' => __('web/file-hosting.microstock.insufficient_credits'),
+            'billingHistoryLink' => __('web/microstock.usage.billing_history_link'),
         ],
         'microstockPanel' => [
             'progress' => __('web/file-hosting.microstock.progress'),
@@ -257,6 +264,11 @@
 
             <a href="{{ route('file-hosting.trash', $ownerQuery) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-trash3 me-1"></i> {{ __('web/file-hosting.trash') }}
+            </a>
+            <a href="{{ route('file-hosting.microstock.usage', array_filter(['workspace_id' => $workspaceId])) }}"
+               class="btn btn-outline-secondary btn-sm {{ $isMicrostock ? '' : 'd-none' }}"
+               data-fh-toolbar-balance>
+                <i class="bi bi-wallet2 me-1"></i> {{ __('web/microstock.usage.toolbar_balance') }}
             </a>
             @can('create file hosting folder')
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#fhNewFolderModal">
@@ -851,7 +863,11 @@
                 <div class="modal-body">
                     <p class="small text-muted mb-1">{{ __('web/file-hosting.microstock.describe_hint') }}</p>
                     <p class="small text-muted mb-3">{{ __('web/file-hosting.microstock.describe_sections_intro') }}</p>
-                    <div class="small text-muted mb-3 d-none" data-fh-collection-billing></div>
+                    <div class="small text-muted mb-3 d-none" data-fh-collection-billing>
+                        <span data-fh-collection-billing-text></span>
+                        <a href="{{ route('file-hosting.microstock.usage', array_filter(['workspace_id' => $workspaceId])) }}"
+                           class="ms-1" data-fh-collection-billing-link>{{ __('web/microstock.usage.billing_history_link') }}</a>
+                    </div>
                     <form data-fh-collection-describe-form novalidate>
                         <div class="mb-3" data-fh-describe-group="primary">
                             <label class="form-label" for="fhDescribePrimary">{{ __('web/file-hosting.microstock.describe_primary_concept') }}</label>

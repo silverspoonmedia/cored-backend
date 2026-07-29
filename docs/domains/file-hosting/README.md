@@ -332,11 +332,11 @@ Big uploads that die mid-flight (crowded network, tab close, cancel) leave S3 mu
 
 **Concurrent-slot fairness:** `max_concurrent_uploads` is enforced on the fresh-init path. With resume removed there is exactly one init path, so the cap is checked on every `initiate()`.
 
-**Microstock collection gate:** in a `WorkspaceKind::Microstock` workspace, `initiate()` rejects (422) an upload with no `folder_id` (`web/file-hosting.microstock.error_requires_folder`) or into a folder whose `collection_status` is locked-for-upload (`web/file-hosting.microstock.error_collection_locked`). Microstock assets must live inside a folder (collection), and a locked collection no longer accepts files — see [Microstock — Collections](../microstock/README.md#collections-folder-as-collection-lifecycle). The dropzone mirrors this client-side via `data-workspace-kind` / `data-collection-locked`.
+**Microstock collection gate:** in a `WorkspaceKind::Microstock` workspace, `initiate()` rejects (422) an upload with no `folder_id` (`web/file-hosting.microstock.error_requires_folder`) or into a folder whose `collection_status` is locked-for-upload (`web/file-hosting.microstock.error_collection_locked`). Microstock assets must live inside a folder (collection), and a locked collection no longer accepts files — see [Microstock — Collections](../microstock/README.md#collections-folder-as-collection-lifecycle). The dropzone mirrors this client-side via `data-workspace-kind` / `data-collection-locked`. During batch uploads the client re-checks the gate per queued file (`assertMicrostockUploadAllowed`) and infers MIME from extension when `file.type` is empty (`resolveMimeType`).
 
 **Abort preserves single-PUT bytes:** `abort()` / `forceAbortPending()` call S3 `AbortMultipartUpload` for multipart sessions, but for a `single` strategy session they only mark the row `aborted` and **leave the object on S3**. A single PUT has no dangling multipart to clean, and the prune scheduler can fire while the client is mid-flight — deleting the object would destroy bytes a late `complete()` could still promote.
 
-**Client abort-on-failure (slot hygiene):** a leaked `pending` row holds a `max_concurrent_uploads` slot until TTL/prune — after enough orphans, init is rejected with `too_many_concurrent` and no upload can start. `uploadFile()` wraps its post-init body in try/catch: on any error after `uploadId` is obtained it fires a best-effort `DELETE` abort (`abortUploadSession`, never rejects), then rethrows so the row is still marked failed. Tab-close orphans (no error path) are still reclaimed by the prune scheduler above.
+**Client abort-on-failure (slot hygiene):** a leaked `pending` row holds a `max_concurrent_uploads` slot until TTL/prune — after enough orphans, init is rejected with `too_many_concurrent` and no upload can start. `uploadFile()` **awaits** a best-effort `DELETE` abort (`abortUploadSession`) before rethrowing so the slot is released before the queue starts the next file. Init retries up to 3× with backoff when the server returns `too_many_concurrent`. Batch uploads snapshot folder/workspace context at `startBatch` so SPA navigation mid-batch cannot retarget files. Storage PUT retries transient network/5xx errors (and re-signs on 403). Tab-close orphans (no error path) are still reclaimed by the prune scheduler above.
 
 ### Content checksum (sha256) + hash blocklist (DMCA)
 
@@ -362,11 +362,11 @@ This feature leans on two always-on Laravel processes. If either is down, the co
 
 | Process | Command | Drives | If it stops |
 |---------|---------|--------|-------------|
-| Queue worker | `php artisan queue:work` (see [microstock README — Operations](../microstock/README.md#operations-queue-worker) for dual-lane queues) | `ComputeHostedFileChecksum` (post-upload sha256); Microstock AI jobs (`ProcessCollection`, `AnalyzeAssetVision`, `AnalyzeAssetThinking`, `AnalysisWatchdog`) | `checksum` stays `null` → blocklist never matches new files; Microstock analysis stalls until workers run on the correct queues |
+| Queue worker | `php artisan microstock:queue-work` (see [microstock README — Operations](../microstock/README.md#operations-queue-worker)) | `ComputeHostedFileChecksum` (post-upload sha256); Microstock AI jobs (`ProcessCollection`, `AnalyzeAssetVision`, `AnalyzeAssetThinking`, `AnalysisWatchdog`) | `checksum` stays `null` → blocklist never matches new files; Microstock analysis stalls until workers run on the correct queues |
 | Scheduler | `php artisan schedule:work` (dev) or cron/Task Scheduler `php artisan schedule:run` every minute (prod) | `file-hosting:prune-stale-uploads` (hourly, `withoutOverlapping`) | Orphaned multipart uploads are never aborted → parts pile up on storage |
 
 - Queue connection defaults to `database` (`QUEUE_CONNECTION` unset in `.env` → `config/queue.php` fallback). Set `QUEUE_CONNECTION=redis` in production if you run Redis.
-- Windows/Laragon note: `php artisan queue:work` exits after a job instead of staying alive (Windows PHP lacks `pcntl`/`posix`) — keep it alive with a watchdog/Task Scheduler, or use `php artisan queue:listen` for local dev. See [microstock/README.md](../microstock/README.md#operations-queue-worker).
+- Windows/Laragon note: `php artisan queue:work` exits after a job instead of staying alive (Windows PHP lacks `pcntl`/`posix`) — use `php artisan microstock:queue-work --listen` for local dev. See [microstock/README.md](../microstock/README.md#operations-queue-worker).
 - Schedule entries live in `routes/console.php` (`file-hosting:prune-stale-uploads` hourly). Verify with `php artisan schedule:list`.
 - A quick liveness check for the checksum path: upload a file, then confirm `file_hosting_files.checksum` is populated shortly after and `jobs` is not backing up.
 
@@ -498,7 +498,7 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
 | `resources/js/file-hosting/router.js` | Client router: parse `/file-hosting/*` + public `/s/*`, intercept in-app links, `navigate` + `popstate` |
-| `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk (incl. **Move** → same multi-move modal as context), toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch; Drive-like select/menu/drag; `.is-fh-busy` mutation spinner. On soft-nav, `syncConfigFromRoute` mirrors the current folder/workspace/user onto the dropzone's flat `data-folder-id` / `data-workspace-id` / `data-user-id` (empty → attribute removed = root) so uploads target the folder you soft-navigated into |
+| `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk (incl. **Move** → same multi-move modal as context), toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch; Drive-like select/menu/drag; `.is-fh-busy` mutation spinner. On soft-nav, `syncConfigFromRoute` mirrors the current folder/workspace/user onto the dropzone's flat `data-folder-id` / `data-workspace-id` / `data-user-id` (empty → attribute removed = root) so uploads target the folder you soft-navigated into. `updateMicrostockToolbarChrome()` toggles `[data-fh-toolbar-balance]` (always rendered in Blade) on init and workspace switch; `usageUrlBase` from `index.blade.php` preserves `workspace_id` without hard reload |
 | `resources/js/file-hosting/selection.js` | Browse listing selection: click = select, Ctrl/Cmd toggle, Shift range, Escape clear; name/icon single-click selects (open on double-click); ignores virtual parent `...` for bulk keys |
 | `resources/js/file-hosting/context-menu.js` | Right-click: Open / Rename / Move / Share / Delete (modals + bulk endpoints); multi-move via move modal tree; parent `...` → Open only |
 | `resources/js/file-hosting/drag-move.js` | Drag selected onto folder **or** breadcrumb parent/root **or** listing `...` (`data-fh-drop-folder`) → sequential `PATCH …/move` (`application/x-fh-items` so OS file drops still hit upload dropzone); parent row not draggable |
@@ -507,7 +507,8 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 | `resources/js/file-hosting/trash-ui.js` | Trash JSON → table rows (restore/force-delete actions); **no** `location.reload` |
 | `resources/js/file-hosting/show-ui.js` | Soft file detail panel from `GET file-hosting/files/{id}` JSON |
 | `resources/js/file-hosting/public-app.js` | Public soft SPA for `/s/f/{id}` + `/s/d/{id}` (no Echo) |
-| `resources/js/file-hosting/direct-upload.js` | Chunked upload; queue shows human file size; **folder/user/workspace context resolved live per upload** via `buildInitContext(root.dataset)` (never frozen at init); on complete calls `window.fileHostingSoftRefresh` / `fileHostingUpsertFile` (no hard reload) |
+| `resources/js/file-hosting/direct-upload.js` | Chunked upload; queue shows human file size; batch uploads freeze folder/workspace/lock/kind at `startBatch` (`snapshotBatchContext`); per-file Microstock gate + MIME sniff; awaits abort on failure, init retry on `too_many_concurrent`, PUT retry + 403 re-sign; on complete calls `window.fileHostingSoftRefresh` / `fileHostingUpsertFile` (no hard reload). Unit tests: `direct-upload-mime.test.js`, `direct-upload-context.test.js` |
+| `resources/js/file-hosting/microstock-usage.js` | Standalone usage/balance page (`/file-hosting/microstock/usage`): summary cards + ledger / AI usage / platform-overview tabs |
 | `resources/js/file-hosting/upload-progress.js` | Pure helpers: transfer rate + byte progress — no DOM |
 | `resources/js/file-hosting/upload-queue.js` | Concurrency limiter |
 | `resources/views/adminlte4/file-hosting/partials/` | `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal`, `_team-offcanvas`, `_workspace-switcher` |
@@ -633,10 +634,12 @@ Personal resources (`workspace_id` null) -> user channel of storage owner. Team 
 | `WorkspaceMembersChanged` | `members.changed` | `workspace_id`, `action` (`invited`\|`joined`\|`removed`\|`role_changed`\|`archived`), `user_id`, `actor_id` |
 | `WorkspaceActivityAppended` | `activity.appended` | `workspace_id`, `actor_id` (invalidation; client refetches activity) |
 | `FileStatsChanged` | `file.stats.changed` | `file_id`, `view_count`, `download_count` (show page only) |
+| `CollectionAnalysisProgress` (Microstock) | `collection.analysis.progress` | `folder_id`, `workspace_id`, `owner_user_id`, `status`, `phase`, `billing_tier`, `total`, `processed`, `failed`, … |
+| `AssetMetadataProgress` (Microstock) | `asset.metadata.progress` | `file_id`, `folder_id`, `microstock` snapshot (`status`, `stages`, `phase`, …) |
 
 **Bulk ops:** one `listing.changed` with `action: bulk_*` + `entity_ids[]` (invalidation / soft-refetch), not N broadcasts.
 
-Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + resource snapshot + activity fan. Services emit **after successful persist only** (no Eloquent observers for business mutations).
+Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + resource snapshot + activity fan. Microstock AI progress uses `App\Domain\Microstock\Support\MicrostockRealtime` on the same channels (throttled ~1 s per folder/asset). Services emit **after successful persist only** (no Eloquent observers for business mutations).
 
 ### Emit points (side-effect only; business rules unchanged)
 

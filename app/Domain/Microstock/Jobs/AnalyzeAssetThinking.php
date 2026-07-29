@@ -4,6 +4,7 @@ namespace App\Domain\Microstock\Jobs;
 
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\AnalysisPipeline;
+use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
@@ -62,8 +63,11 @@ class AnalyzeAssetThinking implements ShouldQueue
         ?string $folderId,
         AnalysisPipeline $pipeline,
     ): void {
+        $metadata = AssetMetadata::query()->find($metadataId);
+        $freeTier = BillingSource::tryFrom((string) ($metadata?->billing_source ?? '')) === BillingSource::DailyFree;
+
         static::dispatch($metadataId, $hint, $folderId, $pipeline)
-            ->onQueue($pipeline->thinkingQueue());
+            ->onQueue($pipeline->thinkingQueue($freeTier));
     }
 
     public function handle(
@@ -107,12 +111,16 @@ class AnalyzeAssetThinking implements ShouldQueue
 
             $folderId = $this->folderId ?? ($metadata->file->folder_id !== null ? (string) $metadata->file->folder_id : null);
 
+            $source = BillingSource::tryFrom((string) ($metadata->billing_source ?? ''))
+                ?? BillingSource::Prepaid;
+
             $context = new AnalysisBillingContext(
                 billingUserId: (string) ($metadata->billing_user_id ?? $metadata->user_id),
                 metadataId: (string) $metadata->id,
                 fileId: (string) $metadata->file_id,
                 folderId: $folderId,
                 analysisRunId: $metadata->analysis_run_id,
+                billingSource: $source,
             );
 
             $curated = AnalysisBillingContext::run(

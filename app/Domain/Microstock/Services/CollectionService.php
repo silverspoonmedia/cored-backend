@@ -8,10 +8,12 @@ use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\WorkspaceAccessService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Jobs\ProcessCollection;
 use App\Domain\Microstock\Models\AssetMetadata;
+use App\Domain\Microstock\Support\MicrostockRealtime;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -96,7 +98,9 @@ class CollectionService
             throw new MicrostockException(__('api/microstock.collection_empty'), 422);
         }
 
-        $this->billing->assertCanAnalyze($actor, $this->filesIn($folder)->count());
+        $fileCount = $this->filesIn($folder)->count();
+
+        $plan = $this->billing->planAnalyze($actor, $fileCount);
 
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
@@ -104,9 +108,15 @@ class CollectionService
             (string) $folder->id,
             (string) $actor->id,
             (string) Str::uuid(),
+            $plan->dailySlots,
         );
 
-        return $folder->refresh();
+        $folder = $folder->refresh();
+
+        app(MicrostockRealtime::class)
+            ->collectionProgress($folder, force: true);
+
+        return $folder;
     }
 
     /**
@@ -118,6 +128,16 @@ class CollectionService
     {
         $folder = $this->resolveCollection($actor, $folderId);
 
+        return $this->statusSnapshot($folder);
+    }
+
+    /**
+     * Progress snapshot without auth — for websocket broadcasts from queue workers.
+     *
+     * @return array{status: string, phase: string, billing_tier: string|null, hint: string|null, csv_path: string|null, total: int, processed: int, finalized: int, failed: int}
+     */
+    public function statusSnapshot(Folder $folder): array
+    {
         $fileIds = $this->filesIn($folder)->pluck('id');
         $total = $fileIds->count();
 
@@ -144,6 +164,7 @@ class CollectionService
         return [
             'status' => $collectionStatus->value,
             'phase' => $this->collectionPhase($folder, $collectionStatus),
+            'billing_tier' => $this->billingTierForCollection($fileIds, $collectionStatus),
             'hint' => $folder->collection_hint,
             'csv_path' => $folder->collection_csv_path,
             'total' => $total,
@@ -151,6 +172,38 @@ class CollectionService
             'finalized' => $finalized,
             'failed' => $failed,
         ];
+    }
+
+    private function billingTierForCollection(\Illuminate\Support\Collection $fileIds, CollectionStatus $status): ?string
+    {
+        if ($status !== CollectionStatus::Processing || $fileIds->isEmpty()) {
+            return null;
+        }
+
+        $sources = AssetMetadata::query()
+            ->whereIn('file_id', $fileIds)
+            ->where('status', MetadataStatus::Pending)
+            ->pluck('billing_source')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($sources->isEmpty()) {
+            return null;
+        }
+
+        $hasDaily = $sources->contains(BillingSource::DailyFree->value);
+        $hasPrepaid = $sources->contains(BillingSource::Prepaid->value);
+
+        if ($hasDaily && $hasPrepaid) {
+            return 'mixed';
+        }
+
+        if ($hasDaily) {
+            return 'free';
+        }
+
+        return 'paid';
     }
 
     /**

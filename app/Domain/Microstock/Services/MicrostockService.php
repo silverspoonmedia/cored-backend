@@ -8,6 +8,7 @@ use App\Domain\FileHosting\Models\Workspace;
 use App\Domain\FileHosting\Services\WorkspaceAccessService;
 use App\Domain\FileHosting\Services\WorkspaceService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Jobs\AnalyzeAssetVision;
@@ -108,13 +109,19 @@ class MicrostockService
     {
         $file = $this->resolveAsset($actor, $fileId);
 
-        $this->billing->assertCanAnalyze($actor, 1);
+        $plan = $this->billing->planAnalyze($actor, 1);
 
         $analysisRunId = (string) Str::uuid();
 
         $metadata = AssetMetadata::query()->firstOrNew(['file_id' => $file->id]);
         $metadata->user_id = $file->user_id;
-        app(AnalysisStageService::class)->initializeStages($metadata, (string) $actor->id, $analysisRunId);
+        $source = $plan->dailySlots > 0 ? BillingSource::DailyFree : BillingSource::Prepaid;
+        app(AnalysisStageService::class)->initializeStages(
+            $metadata,
+            (string) $actor->id,
+            $analysisRunId,
+            $source,
+        );
 
         $file->loadMissing('folder');
         $hint = $file->folder?->collection_hint;

@@ -15,9 +15,8 @@ import {
 /**
  * Resolve mutable upload context (folder / user / workspace) from a live dataset.
  *
- * Read at each upload start — never frozen at init — so SPA soft-navigation into a
- * folder targets that folder instead of root. The SPA router keeps the dropzone's
- * flat `data-folder-id` / `data-user-id` / `data-workspace-id` attributes in sync.
+ * For batch uploads, prefer {@link snapshotBatchContext} so SPA navigation mid-batch
+ * cannot retarget files to a different folder.
  *
  * @param {DOMStringMap} dataset
  * @returns {{ folder_id?: string, user_id?: string, workspace_id?: string }}
@@ -39,6 +38,107 @@ export function buildInitContext(dataset) {
     }
 
     return context;
+}
+
+/**
+ * Freeze upload context at batch start so mid-batch SPA navigation cannot retarget files.
+ *
+ * @param {DOMStringMap} dataset
+ * @returns {{
+ *   init: { folder_id?: string, user_id?: string, workspace_id?: string },
+ *   workspaceKind: string | null,
+ *   collectionLocked: boolean,
+ * }}
+ */
+export function snapshotBatchContext(dataset) {
+    return {
+        init: buildInitContext(dataset),
+        workspaceKind: dataset?.workspaceKind || null,
+        collectionLocked: dataset?.collectionLocked === '1',
+    };
+}
+
+const EXTENSION_MIME = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.webp': 'image/webp',
+    '.gif': 'image/gif',
+};
+
+/**
+ * Resolve MIME for upload init. Browsers sometimes leave `file.type` empty for valid images.
+ *
+ * @param {File} file
+ * @returns {string}
+ */
+export function resolveMimeType(file) {
+    const declared = file?.type ? String(file.type).trim() : '';
+    if (declared && declared !== 'application/octet-stream') {
+        return declared;
+    }
+
+    const name = file?.name ? String(file.name).toLowerCase() : '';
+    const dot = name.lastIndexOf('.');
+    if (dot >= 0) {
+        const ext = name.slice(dot);
+        if (EXTENSION_MIME[ext]) {
+            return EXTENSION_MIME[ext];
+        }
+    }
+
+    return declared || 'application/octet-stream';
+}
+
+/**
+ * @param {unknown} error
+ * @returns {boolean}
+ */
+export function isTooManyConcurrent(error) {
+    const message = error && error.message ? String(error.message) : '';
+    return /too many concurrent uploads/i.test(message);
+}
+
+/**
+ * @param {unknown} error
+ * @returns {boolean}
+ */
+export function isRetriablePutError(error) {
+    if (isAuthExpired(error)) {
+        return true;
+    }
+    const message = error && error.message ? String(error.message) : '';
+    return /network error|status 5\d\d|status 520/i.test(message);
+}
+
+/**
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+export function sleep(ms) {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, ms);
+    });
+}
+
+/**
+ * @param {{
+ *   workspaceKind: string | null,
+ *   collectionLocked: boolean,
+ *   init: { folder_id?: string },
+ * }} batchContext
+ * @param {{ requiresFolder?: string, collectionLocked?: string }} messages
+ */
+export function assertMicrostockUploadAllowed(batchContext, messages) {
+    if (batchContext.workspaceKind !== 'microstock') {
+        return;
+    }
+    if (!batchContext.init.folder_id) {
+        throw new Error(messages.requiresFolder || 'Create a folder (collection) first, then upload inside it.');
+    }
+    if (batchContext.collectionLocked) {
+        throw new Error(messages.collectionLocked || 'This collection is locked and no longer accepts uploads.');
+    }
 }
 
 /**
@@ -200,6 +300,7 @@ export function initDirectUpload(root) {
 
     async function startBatch() {
         const items = pendingQueue.splice(0);
+        const batchContext = snapshotBatchContext(root.dataset);
         batchRunning = true;
         updateStartButton();
 
@@ -217,7 +318,7 @@ export function initDirectUpload(root) {
                 active.set(item.rowId, { file: item.file, state: 'uploading' });
 
                 try {
-                    await uploadFile(item.file, item.row, item.rowId);
+                    await uploadFile(item.file, item.row, item.rowId, batchContext);
                     anySucceeded = true;
                 } catch (error) {
                     console.error('Direct upload failed', error);
@@ -275,20 +376,22 @@ export function initDirectUpload(root) {
         window.location.reload();
     }
 
-    async function uploadFile(file, row, rowId) {
+    async function uploadFile(file, row, rowId, batchContext) {
+        assertMicrostockUploadAllowed(batchContext, config.messages);
+
+        const mime = resolveMimeType(file);
         const initBody = {
             name: file.name,
-            mime: file.type || 'application/octet-stream',
+            mime: mime,
             size: file.size,
-            // Live context: SPA nav mutates the dropzone data-* attrs; never freeze at init.
-            ...buildInitContext(root.dataset),
+            ...batchContext.init,
         };
 
         if (regionSelect && regionSelect.value) {
             initBody.disk = regionSelect.value;
         }
 
-        const session = await apiJson(config.initUrl, 'POST', initBody);
+        const session = await initUploadWithRetry(initBody);
 
         const data = session.data;
         const uploadId = data.upload_id;
@@ -338,7 +441,7 @@ export function initDirectUpload(root) {
 
             async function put() {
                 tracker.set(partNumber, 0);
-                const etag = await putPart(
+                const etag = await putPartWithRetry(
                     chunk,
                     signed.url,
                     signed.headers || {},
@@ -346,6 +449,10 @@ export function initDirectUpload(root) {
                     function (event) {
                         tracker.set(partNumber, event.loaded);
                         reportProgress();
+                    },
+                    async function () {
+                        signed = await sign();
+                        return { url: signed.url, headers: signed.headers || {} };
                     },
                 );
                 return etag;
@@ -355,7 +462,6 @@ export function initDirectUpload(root) {
             try {
                 etag = await put();
             } catch (error) {
-                // 403 = presigned URL expired. Re-sign and retry this part once.
                 if (!isAuthExpired(error)) {
                     throw error;
                 }
@@ -372,14 +478,30 @@ export function initDirectUpload(root) {
         try {
             if (data.strategy === 'single') {
                 const part = data.parts[0];
-                const etag = await putPart(
+                const etag = await putPartWithRetry(
                     file,
                     part.url,
                     part.headers || {},
-                    file.type || 'application/octet-stream',
+                    mime,
                     function (event) {
                         tracker.set(1, event.loaded);
                         reportProgress();
+                    },
+                    async function () {
+                        const refreshed = await apiJson(
+                            replaceToken(config.signPartsUrl, uploadId),
+                            'POST',
+                            { part_numbers: [1] },
+                        );
+                        const signed = (refreshed.data.parts || []).find(function (p) {
+                            return p.part_number === 1;
+                        });
+                        if (!signed) {
+                            throw new Error('Missing presigned URL for part 1');
+                        }
+                        part.url = signed.url;
+                        part.headers = signed.headers || {};
+                        return { url: signed.url, headers: signed.headers || {} };
                     },
                 );
                 parts.push({ part_number: 1, etag: etag, size: file.size });
@@ -419,16 +541,72 @@ export function initDirectUpload(root) {
                 window.fileHostingUpsertFile(hosted);
             }
         } catch (error) {
-            // Never strand a pending session: a leaked `pending` row holds a
-            // concurrent-upload slot until the 24h TTL / hourly prune, which blocks
-            // all future uploads once `max_concurrent_uploads` is reached. Abort now
-            // (best-effort; a failed abort must not mask the original error).
-            abortUploadSession({
+            await abortUploadSession({
                 abortUrl: replaceToken(config.abortUrl, uploadId),
                 apiJson: apiJson,
             });
             throw error;
         }
+    }
+
+    /**
+     * @param {Record<string, unknown>} initBody
+     * @returns {Promise<{ data: Record<string, unknown> }>}
+     */
+    async function initUploadWithRetry(initBody) {
+        const maxAttempts = 3;
+        let lastError;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+                return await apiJson(config.initUrl, 'POST', initBody);
+            } catch (error) {
+                lastError = error;
+                if (!isTooManyConcurrent(error) || attempt >= maxAttempts) {
+                    throw error;
+                }
+                await sleep(500 * Math.pow(2, attempt - 1));
+            }
+        }
+
+        throw lastError;
+    }
+
+    /**
+     * @param {Blob|File} body
+     * @param {string} url
+     * @param {Record<string, string|string[]>} headers
+     * @param {string} [contentType]
+     * @param {(event: { loaded: number, total: number }) => void} [onProgress]
+     * @param {() => Promise<{ url?: string, headers?: Record<string, string|string[]> } | void>} [onResign]
+     * @returns {Promise<string>}
+     */
+    async function putPartWithRetry(body, url, headers, contentType, onProgress, onResign) {
+        const maxAttempts = 3;
+        let currentUrl = url;
+        let currentHeaders = headers;
+        let lastError;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+                return await putPart(body, currentUrl, currentHeaders, contentType, onProgress);
+            } catch (error) {
+                lastError = error;
+                if (!isRetriablePutError(error) || attempt >= maxAttempts) {
+                    throw error;
+                }
+                if (typeof onResign === 'function') {
+                    const refreshed = await onResign();
+                    if (refreshed?.url) {
+                        currentUrl = refreshed.url;
+                        currentHeaders = refreshed.headers || {};
+                    }
+                }
+                await sleep(400 * attempt);
+            }
+        }
+
+        throw lastError;
     }
 
     /**

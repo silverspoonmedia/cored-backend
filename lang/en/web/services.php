@@ -88,5 +88,6 @@ return [
         'buy_slot' => 'Buy slot ($1/mo)',
         'buy_ai_credits' => 'Buy AI credits ($5)',
         'ai_balance' => 'AI analysis balance: $:balance · ~$:estimate per asset',
+        'usage_balance' => 'Usage & balance',
     ],
 ];

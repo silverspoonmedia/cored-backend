@@ -22,6 +22,8 @@ const POLL_MS = 60000;
  * @param {(payload: object) => void} [options.onListingPatch]
  * @param {(payload: object) => void} [options.onFileStats]
  * @param {(payload: object) => void} [options.onMembersChanged]
+ * @param {(payload: object) => void} [options.onCollectionProgress]
+ * @param {(payload: object) => void} [options.onAssetMetadataProgress]
  */
 export function initFileHostingRealtime(options) {
     const {
@@ -36,6 +38,8 @@ export function initFileHostingRealtime(options) {
         onListingPatch,
         onFileStats,
         onMembersChanged,
+        onCollectionProgress,
+        onAssetMetadataProgress,
     } = options;
 
     const realtime = config.realtime || {};
@@ -185,6 +189,8 @@ export function initFileHostingRealtime(options) {
             }
             onFileStats?.(e || {});
         });
+        ch.listen('.collection.analysis.progress', (e) => onCollectionProgress?.(e || {}));
+        ch.listen('.asset.metadata.progress', (e) => onAssetMetadataProgress?.(e || {}));
 
         // Storage-owner quota also lands on personal user channel when browsing a team.
         const ws = workspaceId();

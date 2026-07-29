@@ -5,9 +5,11 @@ namespace App\Domain\Microstock\Services;
 use App\Domain\FileHosting\Enums\CollectionStatus;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
+use App\Domain\Microstock\Support\MicrostockRealtime;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -15,12 +17,14 @@ class AnalysisStageService
 {
     public function __construct(
         private readonly AiBillingService $billing,
+        private readonly MicrostockRealtime $realtime,
     ) {}
 
     public function initializeStages(
         AssetMetadata $metadata,
         ?string $billingUserId = null,
         ?string $analysisRunId = null,
+        BillingSource $billingSource = BillingSource::Prepaid,
     ): void {
         $metadata->forceFill([
             'ai_vision' => $this->pendingWorkStage(),
@@ -30,6 +34,7 @@ class AnalysisStageService
             'ai_billing' => null,
             'billing_user_id' => $billingUserId,
             'analysis_run_id' => $analysisRunId,
+            'billing_source' => $billingSource->value,
             'title' => null,
             'keywords' => null,
             'description' => null,
@@ -37,6 +42,8 @@ class AnalysisStageService
             'error' => null,
             'status' => MetadataStatus::Pending,
         ])->save();
+
+        $this->realtime->notifyAssetAndCollection($metadata->refresh());
     }
 
     public function markVisionRunning(AssetMetadata $metadata): void
@@ -50,6 +57,8 @@ class AnalysisStageService
             'ai_vision' => $stage,
             'status' => MetadataStatus::Pending,
         ])->save();
+
+        $this->realtime->notifyAssetAndCollection($metadata->refresh());
     }
 
     /**
@@ -76,6 +85,8 @@ class AnalysisStageService
             ],
             'status' => MetadataStatus::Pending,
         ])->save();
+
+        $this->realtime->notifyAssetAndCollection($metadata->refresh());
     }
 
     public function markVisionFailed(AssetMetadata $metadata, Throwable|string $error): void
@@ -116,6 +127,8 @@ class AnalysisStageService
         $metadata->forceFill([
             'ai_raw' => $this->aggregateAiRaw($metadata->refresh()),
         ])->save();
+
+        $this->realtime->notifyAssetAndCollection($metadata->refresh());
     }
 
     public function markThinkingRunning(AssetMetadata $metadata): void
@@ -129,6 +142,8 @@ class AnalysisStageService
             'ai_thinking' => $stage,
             'status' => MetadataStatus::Pending,
         ])->save();
+
+        $this->realtime->notifyAssetAndCollection($metadata->refresh());
     }
 
     public function tryClaimThinkingRunning(AssetMetadata $metadata): bool
@@ -153,6 +168,8 @@ class AnalysisStageService
                 'ai_thinking' => $stage,
                 'status' => MetadataStatus::Pending,
             ])->save();
+
+            $this->realtime->notifyAssetAndCollection($locked->refresh());
 
             return true;
         });
@@ -181,6 +198,8 @@ class AnalysisStageService
                 'stage_metrics' => $metrics,
             ],
         ])->save();
+
+        $this->realtime->notifyAssetAndCollection($metadata->refresh());
     }
 
     public function markThinkingFailed(AssetMetadata $metadata, Throwable|string $error): void
@@ -217,6 +236,8 @@ class AnalysisStageService
         ])->save();
 
         $this->billing->settlePartialVisionUsage($metadata->refresh());
+
+        $this->realtime->notifyAssetAndCollection($metadata->refresh());
     }
 
     /**
@@ -255,6 +276,8 @@ class AnalysisStageService
                 'ai_raw' => $this->aggregateAiRaw($locked->refresh()),
             ])->save();
         });
+
+        $this->realtime->notifyAssetAndCollection($metadata->refresh(), forceCollection: true);
     }
 
     public function markResultFailed(AssetMetadata $metadata, Throwable|string $error): void
@@ -346,6 +369,8 @@ class AnalysisStageService
         $folder->markCollectionStatus(
             $hasSuccess ? CollectionStatus::Review : CollectionStatus::Failed,
         );
+
+        $this->realtime->collectionProgress($folder->refresh(), force: true);
     }
 
     /**

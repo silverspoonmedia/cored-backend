@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/js/notifications/bell.js',
                 'resources/js/file-hosting/direct-upload.js',
                 'resources/js/file-hosting/file-manager.js',
+                'resources/js/file-hosting/microstock-usage.js',
                 'resources/js/file-hosting/public-app.js',
                 'resources/js/payments/checkout.js',
                 'resources/js/payments/channels-admin.js',

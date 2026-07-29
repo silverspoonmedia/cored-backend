@@ -19,6 +19,16 @@ return [
         'collection_vision' => env('MICROSTOCK_AI_COLLECTION_VISION_QUEUE', 'microstock-collection-vision'),
         'collection_thinking' => env('MICROSTOCK_AI_COLLECTION_THINKING_QUEUE', 'microstock-collection-thinking'),
         'solo' => env('MICROSTOCK_AI_SOLO_QUEUE', 'microstock-solo'),
+        'collection_vision_free' => env('MICROSTOCK_AI_COLLECTION_VISION_QUEUE_FREE', 'microstock-collection-vision-free'),
+        'collection_thinking_free' => env('MICROSTOCK_AI_COLLECTION_THINKING_QUEUE_FREE', 'microstock-collection-thinking-free'),
+        'solo_free' => env('MICROSTOCK_AI_SOLO_QUEUE_FREE', 'microstock-solo-free'),
+    ],
+
+    // Per-user daily free analyses (lazy calendar reset; no prepaid balance credit).
+    'daily_free' => [
+        'enabled' => filter_var(env('MICROSTOCK_DAILY_FREE_ENABLED', false), FILTER_VALIDATE_BOOL),
+        'limit_per_user' => (int) env('MICROSTOCK_DAILY_FREE_LIMIT', 5),
+        'timezone' => env('MICROSTOCK_DAILY_FREE_TIMEZONE', 'UTC'),
     ],
 
     'ai' => [

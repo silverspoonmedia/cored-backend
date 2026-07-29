@@ -5,6 +5,7 @@ namespace App\Domain\Microstock\Jobs;
 use App\Domain\FileHosting\Enums\CollectionStatus;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AnalysisStageService;
 use Illuminate\Bus\Queueable;
@@ -34,6 +35,7 @@ class ProcessCollection implements ShouldQueue
         private readonly string $folderId,
         private readonly string $billingUserId,
         private readonly string $analysisRunId,
+        private readonly int $dailySlots = 0,
     ) {}
 
     public function handle(AnalysisStageService $stages): void
@@ -50,10 +52,19 @@ class ProcessCollection implements ShouldQueue
             ->where('folder_id', $folder->id)
             ->orderBy('name')
             ->get()
-            ->map(function (HostedFile $file) use ($stages): string {
+            ->values()
+            ->map(function (HostedFile $file, int $index) use ($stages): string {
                 $metadata = AssetMetadata::query()->firstOrNew(['file_id' => $file->id]);
                 $metadata->user_id = $file->user_id;
-                $stages->initializeStages($metadata, $this->billingUserId, $this->analysisRunId);
+                $source = $index < $this->dailySlots
+                    ? BillingSource::DailyFree
+                    : BillingSource::Prepaid;
+                $stages->initializeStages(
+                    $metadata,
+                    $this->billingUserId,
+                    $this->analysisRunId,
+                    $source,
+                );
 
                 return (string) $metadata->id;
             })

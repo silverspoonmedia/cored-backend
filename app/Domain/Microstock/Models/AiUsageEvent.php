@@ -23,6 +23,7 @@ class AiUsageEvent extends Model
         'file_id',
         'folder_id',
         'analysis_run_id',
+        'billing_source',
         'stage',
         'attempt_index',
         'alias_model',

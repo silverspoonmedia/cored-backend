@@ -10,19 +10,27 @@ enum AnalysisPipeline: string
     case Collection = 'collection';
     case Solo = 'solo';
 
-    public function visionQueue(): string
+    public function visionQueue(bool $freeTier = false): string
     {
         return match ($this) {
-            self::Collection => (string) config('microstock.queues.collection_vision', 'microstock-collection-vision'),
-            self::Solo => (string) config('microstock.queues.solo', 'microstock-solo'),
+            self::Collection => $freeTier
+                ? (string) config('microstock.queues.collection_vision_free', 'microstock-collection-vision-free')
+                : (string) config('microstock.queues.collection_vision', 'microstock-collection-vision'),
+            self::Solo => $freeTier
+                ? (string) config('microstock.queues.solo_free', 'microstock-solo-free')
+                : (string) config('microstock.queues.solo', 'microstock-solo'),
         };
     }
 
-    public function thinkingQueue(): string
+    public function thinkingQueue(bool $freeTier = false): string
     {
         return match ($this) {
-            self::Collection => (string) config('microstock.queues.collection_thinking', 'microstock-collection-thinking'),
-            self::Solo => (string) config('microstock.queues.solo', 'microstock-solo'),
+            self::Collection => $freeTier
+                ? (string) config('microstock.queues.collection_thinking_free', 'microstock-collection-thinking-free')
+                : (string) config('microstock.queues.collection_thinking', 'microstock-collection-thinking'),
+            self::Solo => $freeTier
+                ? (string) config('microstock.queues.solo_free', 'microstock-solo-free')
+                : (string) config('microstock.queues.solo', 'microstock-solo'),
         };
     }
 

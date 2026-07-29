@@ -33,6 +33,6 @@ class PromptsTest extends TestCase
 
         $this->assertStringContainsString('BAN:', $rules);
         $this->assertStringContainsString('white background', $rules);
-        $this->assertStringContainsString('15-30', $rules);
+        $this->assertStringContainsString('50-60', $rules);
     }
 }

@@ -2,6 +2,8 @@
 
 Companion to [README § AI billing](README.md#ai-billing-prepaid-credits). Documents usage/billing behavior for the vision → thinking pipeline so successful provider work is recorded, settled, and auditable.
 
+**Operator UI:** reconcile `microstock_ai_usage_events` and `microstock_ai_credit_transactions` against the **Usage & balance** page (`GET /file-hosting/microstock/usage`) — prepaid ledger tab, AI usage detail tab, and (Root / Admin / Moderator) **Platform overview** tab. See [Usage & balance UI](README.md#usage--balance-ui).
+
 ## Flow (post-hardening)
 
 ```mermaid
@@ -42,6 +44,7 @@ sequenceDiagram
 | Thinking succeeds | `composeResultFromThinking`: DB transaction → thinking snapshot → `settleSuccessfulAnalysis` (all unbilled events for current `analysis_run_id`) → `status = generated` |
 | Thinking fails, vision OK | `markThinkingFailed` → `settlePartialVisionUsage` (vision-stage events only, `ai_billing.partial = true`) |
 | Vision fails | No settle (no successful deliverable stage) |
+| `billing_source = daily_free` | Settle records provider cost; **skip** prepaid debit; `ai_billing.source = daily_free`, `billable_micro_usd = 0` |
 | Insufficient balance at settle | Transaction rolls back; metadata stays non-`generated`; usage events remain `billed_at = null` |
 
 Partial then full success (retry after vision-only charge): `settleSuccessfulAnalysis` runs when `ai_billing.partial = true`, debiting only remaining unbilled events (typically thinking), and merges totals into a non-partial `ai_billing` snapshot.
