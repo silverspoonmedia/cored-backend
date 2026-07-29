@@ -62,7 +62,12 @@ After persistence, `NotificationService` resolves every recipient and broadcasts
 - `table_id` tells a matching list page which registered DataTable to reload; it is `null` for types without a list screen.
 - `unread_count` is the recipient's **absolute** unread count after the new notification is persisted. The bell applies it directly; it does not increment locally and does not call HTTP on each WS event.
 
-**Not this bus:** File Hosting live listing uses dedicated private channels (`file-hosting.user.*` / `file-hosting.workspace.*`) and domain events under `App\Domain\FileHosting\Events\` — no `NotificationType`, no `table_id`. See [file-hosting/README.md — Realtime / live listing](../file-hosting/README.md#realtime--live-listing).
+**Not this bus:**
+
+- File Hosting live listing uses dedicated private channels (`file-hosting.user.*` / `file-hosting.workspace.*`) and domain events under `App\Domain\FileHosting\Events\` — no `NotificationType`, no `table_id`. See [file-hosting/README.md — Realtime / live listing](../file-hosting/README.md#realtime--live-listing).
+- Payment Gateway invoice checkout uses private `payments.invoice.{invoiceId}` + `InvoiceStatusChanged` / `PaymentRealtime` — no `NotificationType`, independent of `APP_NOTIFICATION_TYPE`. See [payment-gateway/README.md — Realtime invoice status](../payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
+
+Both still may share the browser Echo instance (`window.__monolithEcho` / `createNotificationEcho`) when credentials are configured; they do not ride the activity-notification event.
 
 Initial unread count is server-rendered by `NotificationBellComposer` as `initialUnreadCount`. Recent-list copy still refetches `/apps/notifications/recent` when the dropdown is open so localization and deep links remain server-owned. Web proxies live under `prefix('apps')` (route names unprefixed: `notifications.*`); composer builds URLs via `route()`.
 

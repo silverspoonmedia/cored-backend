@@ -4,6 +4,7 @@ namespace Tests\Domain\PaymentGateway\Unit;
 
 use App\Domain\PaymentGateway\Services\Billing\InvoiceFundsLedgerService;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuInvoiceSynchronizer;
+use App\Domain\PaymentGateway\Support\PaymentRealtime;
 use App\Domain\Service\Services\ServiceFulfillmentService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -19,6 +20,7 @@ class IpaymuInvoiceSynchronizerStatusTest extends TestCase
         $this->synchronizer = new IpaymuInvoiceSynchronizer(
             app(InvoiceFundsLedgerService::class),
             app(ServiceFulfillmentService::class),
+            app(PaymentRealtime::class),
         );
     }
 

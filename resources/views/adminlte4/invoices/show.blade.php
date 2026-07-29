@@ -23,7 +23,11 @@
         }
 
         $heroBadges = [
-            ['label' => $paymentUi['label'], 'variant' => $paymentUi['variant']],
+            [
+                'key' => 'payment',
+                'label' => $paymentUi['label'],
+                'variant' => $paymentUi['variant'],
+            ],
         ];
 
         if ($hasGateway) {
@@ -79,6 +83,8 @@
             <div class="ois-sidebar-card">
                 <div class="ois-sidebar-card__title">{{ __('web/payments.invoices.fields.status') }}</div>
                 <dl class="row mb-0 small">
+                    <dt class="col-5">{{ __('web/payments.invoices.fields.status') }}</dt>
+                    <dd class="col-7" data-payment-sidebar-status>{{ $paymentUi['label'] }}</dd>
                     <dt class="col-5">{{ __('web/payments.invoices.fields.payment_method') }}</dt>
                     <dd class="col-7">
                         @if ($hasCheckoutSession || $invoiceStatus === 'paid')
@@ -88,9 +94,9 @@
                         @endif
                     </dd>
                     <dt class="col-5">{{ __('web/payments.invoices.fields.paid_at') }}</dt>
-                    <dd class="col-7">{{ $invoice['paid_at_formatted'] ?? $invoice['paid_at'] ?? '—' }}</dd>
+                    <dd class="col-7" data-payment-paid-at>{{ $invoice['paid_at_formatted'] ?? $invoice['paid_at'] ?? '—' }}</dd>
                     <dt class="col-5">{{ __('web/payments.invoices.fields.expired_at') }}</dt>
-                    <dd class="col-7">{{ $invoice['expired_at_formatted'] ?? $invoice['expired_at'] ?? '—' }}</dd>
+                    <dd class="col-7" data-payment-expired-at>{{ $invoice['expired_at_formatted'] ?? $invoice['expired_at'] ?? '—' }}</dd>
                     <dt class="col-5">{{ __('web/payments.invoices.fields.created_at') }}</dt>
                     <dd class="col-7">{{ $invoice['created_at_formatted'] ?? $invoice['created_at'] ?? '—' }}</dd>
                 </dl>

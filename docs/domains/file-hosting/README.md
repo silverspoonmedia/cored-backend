@@ -654,7 +654,7 @@ Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + r
 ### Client strategy
 
 1. Inject `realtime.broadcast` + `userId` on index / trash / show via Blade `data-config` when socket config exists.
-2. Prefer **one** browser Echo (`window.__monolithEcho`) shared with the notification bell when both are active.
+2. Prefer **one** browser Echo (`window.__monolithEcho`) shared with the notification bell and payment checkout (`checkout.js` / `PaymentRealtime`) when those surfaces are active.
 3. Subscribe to personal or workspace channel based on `workspaceId` / `ownerUserId`.
 4. **Apply:** soft-refetch browse JSON for current folder (correctness floor); light DOM patch for delete/rename when `resource` / row identity allow; quota bar via `GET file-hosting/quota`; team members/activity soft-refetch; show page listens for matching `file_id` stats.
 5. Replace hard `location.reload()` after mutations/upload complete with soft-refetch when the manager is bound.

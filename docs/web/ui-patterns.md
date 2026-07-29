@@ -113,7 +113,7 @@ Adopted in: `notifications/index`, `services/index`, `error-logs/index`, `activi
 
 ## Toasts (replacing window.alert)
 
-Checkout errors/confirmations use `showCheckoutToast(message, type)` (`checkout.js`) with `.ois-toast` styles in `order-invoice-show.css`. The toast container exposes `role="status"` + `aria-live="polite"`. `window.alert` is forbidden in checkout.
+Checkout errors/confirmations use `showCheckoutToast(message, type)` (`checkout.js`) with `.ois-toast` styles in `order-invoice-show.css`. The toast container exposes `role="status"` + `aria-live="polite"`. `window.alert` is forbidden in checkout. Status transitions (paid / expired / cancelled / failed) soft-patch the same page chrome without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
 
 ## Theme-color meta
 
