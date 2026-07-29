@@ -193,7 +193,7 @@ class FileHostingQualificationLowTest extends TestCase
         ]);
 
         $this->actingAs($user, 'api')
-            ->get('/file-hosting')
+            ->get(route('file-hosting.index'))
             ->assertOk()
             ->assertViewIs('adminlte4.file-hosting.index');
     }

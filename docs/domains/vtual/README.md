@@ -8,7 +8,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Config | [`config/products.php`](../../../config/products.php) key `Vtual` · [`config/vtual.php`](../../../config/vtual.php) |
 | Registry | [`config/domains.php`](../../../config/domains.php) `Vtual` product locked |
 | API | `routes/api/v1/vtual.php` |
-| Web | `routes/web/vtual.php` |
+| Web | `routes/web/vtual.php` under `/apps/*` → **`/apps/vtual`** (route names `vtual.*`) |
 | Seeder | `VtualRoleSeeder` (after core `RoleSeeder`; also seeds platforms) |
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
 | Menu auto-hide | `vtual.index`, `vtual.profiles.index`, `vtual.claims.*`, credentials routes via `menu_routes`; hidden when activation not `active` |
@@ -64,10 +64,10 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 
 | Path | Who | Behavior |
 |------|-----|----------|
-| Internal seed | Root / Admin / Moderator (`manage any vtual resource`) | `POST /api/v1/vtual/creators/orphan` creates creator **without** owner membership; then register channels as usual. Staff UI: `/vtual/admin/registry` (orphan form only — do not self-bind staff as owner; use a separate account if staff is also a vtuber) |
+| Internal seed | Root / Admin / Moderator (`manage any vtual resource`) | `POST /api/v1/vtual/creators/orphan` creates creator **without** owner membership; then register channels as usual. Staff UI: `/apps/vtual/admin/registry` (orphan form only — do not self-bind staff as owner; use a separate account if staff is also a vtuber) |
 | External claim Existing | User with `claim vtual creator` | Pick claimable creator + proof channel, receive token `vtual-claim-...`, put token in YouTube About / Twitch bio, then `POST .../claims/{id}/verify` re-fetches description via production `ChannelProfileResolver` |
 | Accept Anyway | Staff + `VTUAL_CLAIM_ACCEPT_ANYWAY` | Skip bio check (QA / local default **ON**) |
-| Staff pending queue | `manage any` | `GET /api/v1/vtual/claims/pending` + web `/vtual/admin/registry` |
+| Staff pending queue | `manage any` | `GET /api/v1/vtual/claims/pending` + web `/apps/vtual/admin/registry` |
 
 **On verify success:** insert `vtual_creator_members` role `owner` for claimant; assign product role **`Vtual vTuber`** (level 2250, own perms similar to Editor); **close all other pending claims** for that creator (`status=cancelled`, `closed_reason=superseded`). Rows are **kept as audit log** (no hard-delete this phase).
 
@@ -81,13 +81,13 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 
 | Surface | Route | Audience |
 |---------|-------|----------|
-| Overview hub | `/vtual` | All product users — creators list + "Where to go" cards |
-| My vTuber profiles | `/vtual/profiles` | Membership list (staff with view/manage any: all active); Manage CTA |
-| Manage profile | `/vtual/profiles/{id}` | Edit profile meta, external links CRUD, channel add / verify-refresh / archive. Content section stub only. Legacy `/vtual/creators/{id}` uses same controller. |
-| Claim as vTuber | `/vtual/claims` | Users — claimable list + my pending; **no** orphan create, **no** management |
-| Registry + pending | `/vtual/admin/registry` | Staff — orphan seed + pending claims table (platform + handle on proof channel; **Claim expires** = request TTL) + Accept Anyway |
-| Claim detail | `/vtual/claims/{id}` | Claimant or staff — shows **Claimant name/email** before Accept Anyway bypass |
-| Platform credentials | `/vtual/admin/platform-credentials` | Root/Admin |
+| Overview hub | `/apps/vtual` | All product users — creators list + "Where to go" cards |
+| My vTuber profiles | `/apps/vtual/profiles` | Membership list (staff with view/manage any: all active); Manage CTA |
+| Manage profile | `/apps/vtual/profiles/{id}` | Edit profile meta, external links CRUD, channel add / verify-refresh / archive. Content section stub only. Legacy `/apps/vtual/creators/{id}` uses same controller. |
+| Claim as vTuber | `/apps/vtual/claims` | Users — claimable list + my pending; **no** orphan create, **no** management |
+| Registry + pending | `/apps/vtual/admin/registry` | Staff — orphan seed + pending claims table (platform + handle on proof channel; **Claim expires** = request TTL) + Accept Anyway |
+| Claim detail | `/apps/vtual/claims/{id}` | Claimant or staff — shows **Claimant name/email** before Accept Anyway bypass |
+| Platform credentials | `/apps/vtual/admin/platform-credentials` | Root/Admin |
 
 **Privacy:** Manage UI never shows "same User owns these profiles" to third parties. List scope is actor-accessible only.
 
@@ -511,7 +511,7 @@ Permanent debug surface for **production** `PlatformApiGateway` — **not** temp
 
 | Surface | Method | Path |
 |---------|--------|------|
-| Web form | GET/POST | `/vtual/admin/platform-api-probe` |
+| Web form | GET/POST | `/apps/vtual/admin/platform-api-probe` |
 | API | POST | `/api/v1/vtual/admin/platform-api/probe` |
 
 **Methods:** `fetch_videos`, `fetch_videos_chunked`, `fetch_channels`, `resolve_channel`, `fetch_streams` (Twitch only).

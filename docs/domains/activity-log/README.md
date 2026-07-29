@@ -53,6 +53,10 @@ Requires `auth:api` + `permission:view activity log` (Root/Admin).
 
 Resource: event, labels, causer, attribute_changes, properties. Web list/show proxy API; user edit shows recent activity card.
 
+## Web (Blade)
+
+Authenticated UI under `/apps/*` (route names unprefixed): `/apps/activity-logs` (`activity-logs.index`), `/apps/activity-logs/{activity}` (`activity-logs.show`). See [blade-admin — Routes](../../web/blade-admin.md#routes).
+
 ## Maintenance
 
 ```bash

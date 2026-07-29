@@ -20,14 +20,20 @@
     ];
 @endphp
 
-<div class="ois-steps" aria-label="{{ __('web/payments.show.payment_steps.aria') }}">
+<div
+    class="ois-steps"
+    aria-label="{{ __('web/payments.show.payment_steps.aria') }}"
+    data-payment-steps
+    data-current-step="{{ (int) $currentStep }}"
+    data-completed="{{ $completed ? '1' : '0' }}"
+>
     @foreach ($steps as $number => $step)
         @php
             $stateClass = $number < $currentStep
                 ? 'is-done'
                 : ($number === $currentStep ? ($completed ? 'is-done' : 'is-active') : '');
         @endphp
-        <div class="ois-step {{ $stateClass }}">
+        <div class="ois-step {{ $stateClass }}" data-payment-step="{{ $number }}">
             <span class="ois-step__num">{{ $number }}</span>
             <div>
                 <p class="ois-step__title">{{ $step['title'] }}</p>

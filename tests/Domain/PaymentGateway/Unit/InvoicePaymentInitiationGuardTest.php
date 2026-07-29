@@ -9,6 +9,7 @@ use App\Domain\PaymentGateway\Services\Billing\InvoiceFundsLedgerService;
 use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuInvoiceSynchronizer;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransInvoiceSynchronizer;
+use App\Domain\PaymentGateway\Support\PaymentRealtime;
 use App\Domain\Service\Services\ServiceFulfillmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -219,10 +220,12 @@ class InvoicePaymentInitiationGuardTest extends TestCase
             new MidtransInvoiceSynchronizer(
                 app(InvoiceFundsLedgerService::class),
                 app(ServiceFulfillmentService::class),
+                app(PaymentRealtime::class),
             ),
             new IpaymuInvoiceSynchronizer(
                 app(InvoiceFundsLedgerService::class),
                 app(ServiceFulfillmentService::class),
+                app(PaymentRealtime::class),
             ),
         ])->shouldAllowMockingProtectedMethods()->makePartial();
     }

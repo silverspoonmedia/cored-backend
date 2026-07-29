@@ -90,10 +90,12 @@ Tests: `tests/Domain/{Domain}/` (PHPUnit suite `Domain`).
 
 API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/web.php` → `routes/web/{domain}.php`.
 
-**Loader convention (presentation only):** list **core** requires first, **product** last, with short `// Core` / `// Product` comment sections. Same order in `bootstrap/providers.php` and `config/domains.php`. Does **not** change URL paths or route names. `domain:make` still appends; re-order once if a new product lands mid-file. Guest/public web specials (`identity-guest`, `file-hosting-public`, provider returns) stay outside kind sections — those groups are auth surface, not taxonomy.
+**Web URI layout (auth shell):** authenticated domain requires load inside `Route::middleware('web.auth')->prefix('apps')` so Blade app URLs are `/apps/dashboard`, `/apps/file-hosting`, … **Route names are not prefixed** (`dashboard`, `file-hosting.index`). Dual `web.auth` groups by design: `identity-logout.php` at site root (`POST /logout`); all other authenticated domain requires inside the `/apps` group. Guest/public specials stay at site root: `identity-guest`, `file-hosting-public` (`/s/*`), provider returns, `locale/{locale}`. API paths (`/api/v1/*`) are unchanged. Root product paths (`/file-hosting`, `/vtual`, …) are reserved for future public landings — not the logged-in app. Conventions (ban `url('auth-segment')`, FH `joinFhPath`, residual out-of-scope): [blade-admin — Routes / URL helpers](../web/blade-admin.md#routes).
 
-| API file | Domain | Kind |
-|----------|--------|------|
+**Loader convention (presentation only):** list **core** requires first, **product** last, with short `// Core` / `// Product` comment sections. Same order in `bootstrap/providers.php` and `config/domains.php`. Does **not** change API URL paths or route names. `domain:make` still appends into the `/apps` auth group; re-order once if a new product lands mid-file. Guest/public web specials stay outside kind sections — those groups are auth surface, not taxonomy.
+
+| API / web file | Domain | Kind |
+|----------------|--------|------|
 | `identity.php` | Auth, users, lookups, admin | core |
 | `navigation.php` | Menus | core |
 | `notification.php` | Notifications | core |
@@ -103,6 +105,7 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `service.php` | Service catalog, checkout, service purchases | core |
 | `file-hosting.php` | File hosting (auth + public share) folders/files/uploads | product |
 | `vtual.php` | vTual creators, managements, channels (foundation) | product |
+| `microstock.php` | Microstock (API + thin web entry; FH mounts most UI) | product |
 
 Kernel product registry (`app/Support/Product`): `product-activations.php` is **not** a domain route file — it mounts the cross-domain Product Activation API (self-service + admin). Loaded from `routes/api/v1.php` between core and product domain requires.
 

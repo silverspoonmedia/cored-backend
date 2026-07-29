@@ -21,7 +21,7 @@ import {
     tryPatchListing,
     upsertFileRow,
 } from './listing-ui';
-import { createFhRouter, parseFhUrl } from './router';
+import { createFhRouter, joinFhPath, parseFhUrl, resolveFhBase } from './router';
 import { applyTrashPayload } from './trash-ui';
 import { applyShowPayload, patchShowFile } from './show-ui';
 import { createSelectionController } from './selection';
@@ -51,8 +51,8 @@ function initFileManager(root) {
         root.dataset.fhBound = '1';
 
         const config = JSON.parse(root.dataset.config || '{}');
+        const fhBase = () => resolveFhBase(config);
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-
         const searchInput = root.querySelector('[data-fh-search-input]');
         const searchResults = root.querySelector('[data-fh-search-results]');
         const viewToggleBtns = root.querySelectorAll('[data-fh-view-btn]');
@@ -247,8 +247,11 @@ function initFileManager(root) {
                 const role = m.role || '';
                 const uid = m.user_id || '';
                 const canRemove = canManage && role !== 'owner' && uid && wsId;
-                const removeBtn = canRemove
-                    ? `<form method="post" action="${escapeHtml(`/file-hosting/workspaces/${wsId}/members/${uid}`)}" class="d-inline" data-fh-ajax-form data-fh-success="members">
+                const removeAction = canRemove
+                    ? joinFhPath(fhBase(), 'workspaces', wsId, 'members', uid)
+                    : '';
+                const removeBtn = removeAction
+                    ? `<form method="post" action="${escapeHtml(removeAction)}" class="d-inline" data-fh-ajax-form data-fh-success="members">
                         <input type="hidden" name="_token" value="${escapeHtml(csrfToken)}">
                         <input type="hidden" name="_method" value="DELETE">
                         <button type="submit" class="btn btn-link btn-sm text-danger p-0"
@@ -292,10 +295,14 @@ function initFileManager(root) {
             if (payload?.action === 'archived' || payload?.action === 'removed') {
                 const selfId = config.realtime?.userId;
                 if (payload.action === 'archived' || (payload.action === 'removed' && payload.user_id === selfId)) {
+                    const home = config.browseUrl || fhBase();
+                    if (!home) {
+                        return;
+                    }
                     if (router) {
-                        router.go(config.browseUrl || '/file-hosting', { replace: true });
+                        router.go(home, { replace: true });
                     } else {
-                        window.location.href = config.browseUrl || '/file-hosting';
+                        window.location.href = home;
                     }
                 }
             }
@@ -1058,7 +1065,11 @@ function initFileManager(root) {
                     // Workspace create / accept invite → soft-nav into new workspace.
                     const newWs = data?.data?.id || data?.data?.workspace_id;
                     if (newWs && (action.includes('/workspaces') && !action.includes('/invites') || action.includes('invites/accept'))) {
-                        const href = (config.browseUrl || '/file-hosting') + `?workspace_id=${encodeURIComponent(newWs)}`;
+                        const home = config.browseUrl || fhBase();
+                        if (!home) {
+                            return;
+                        }
+                        const href = home + `?workspace_id=${encodeURIComponent(newWs)}`;
                         if (router) {
                             router.go(href, { replace: true });
                         } else {
@@ -1067,10 +1078,14 @@ function initFileManager(root) {
                         return;
                     }
                     if (action.includes('/archive')) {
+                        const home = config.browseUrl || fhBase();
+                        if (!home) {
+                            return;
+                        }
                         if (router) {
-                            router.go(config.browseUrl || '/file-hosting', { replace: true });
+                            router.go(home, { replace: true });
                         } else {
-                            window.location.href = config.browseUrl || '/file-hosting';
+                            window.location.href = home;
                         }
                         return;
                     }
@@ -1123,11 +1138,12 @@ function initFileManager(root) {
             if (route.userId) {
                 config.ownerUserId = route.userId;
             }
-            config.membersUrl = config.workspaceId
-                ? `/file-hosting/workspaces/${config.workspaceId}/members`
+            const workspacesBase = config.workspacesBase || joinFhPath(fhBase(), 'workspaces');
+            config.membersUrl = (config.workspaceId && workspacesBase)
+                ? joinFhPath(workspacesBase, config.workspaceId, 'members')
                 : null;
-            config.activityUrl = config.workspaceId
-                ? `/file-hosting/workspaces/${config.workspaceId}/activity`
+            config.activityUrl = (config.workspaceId && workspacesBase)
+                ? joinFhPath(workspacesBase, config.workspaceId, 'activity')
                 : null;
             // Keep direct-upload context in sync via the flat data-* attrs the
             // uploader reads live per upload (buildInitContext). Empty -> remove attr
@@ -1185,7 +1201,10 @@ function initFileManager(root) {
             if (!isMs) {
                 return;
             }
-            const base = config.usageUrlBase || config.usageUrl || '/file-hosting/microstock/usage';
+            const base = config.usageUrlBase || config.usageUrl || joinFhPath(fhBase(), 'microstock', 'usage');
+            if (!base) {
+                return;
+            }
             const qs = config.workspaceId
                 ? '?workspace_id=' + encodeURIComponent(config.workspaceId)
                 : '';
@@ -1196,7 +1215,10 @@ function initFileManager(root) {
 
         // ---- Workspace switcher client re-render (SPA soft-nav) ----
         function switcherBrowseUrl(wsId) {
-            const base = config.browseUrl || '/file-hosting';
+            const base = config.browseUrl || fhBase();
+            if (!base) {
+                return '';
+            }
             const sep = base.indexOf('?') === -1 ? '?' : '&';
             return base + sep + 'workspace_id=' + encodeURIComponent(wsId);
         }
@@ -1525,7 +1547,11 @@ function initFileManager(root) {
                             window.bootstrap.Modal.getInstance(modalEl)?.hide();
                         }
                         showToast(json.message || config.messages.success, 'success');
-                        const href = (config.browseUrl || '/file-hosting') + '?workspace_id=' + encodeURIComponent(json.data.id);
+                        const home = config.browseUrl || fhBase();
+                        if (!home) {
+                            return;
+                        }
+                        const href = home + '?workspace_id=' + encodeURIComponent(json.data.id);
                         if (router) {
                             router.go(href, { replace: true });
                         } else {
@@ -1744,12 +1770,21 @@ function initFileManager(root) {
         }
 
         function collectionUrl(suffix) {
-            return (config.collectionBase || '/file-hosting/microstock/collections')
+            const collectionsRoot = config.collectionBase
+                || joinFhPath(fhBase(), 'microstock', 'collections');
+            if (!collectionsRoot || !config.currentFolderId) {
+                return '';
+            }
+            return collectionsRoot
                 + '/' + encodeURIComponent(config.currentFolderId) + suffix;
         }
 
         function collectionPost(suffix, body) {
-            return fetch(collectionUrl(suffix), {
+            const url = collectionUrl(suffix);
+            if (!url) {
+                return Promise.resolve({ ok: false, json: {} });
+            }
+            return fetch(url, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -1770,7 +1805,11 @@ function initFileManager(root) {
             if (!config.currentFolderId) {
                 return;
             }
-            fetchJson(collectionUrl('/status'), csrfToken)
+            const statusUrl = collectionUrl('/status');
+            if (!statusUrl) {
+                return;
+            }
+            fetchJson(statusUrl, csrfToken)
                 .then(function (json) {
                     if (json?.data) {
                         const counts = {
@@ -1802,7 +1841,10 @@ function initFileManager(root) {
         }
 
         function fetchMicrostockBilling() {
-            const url = config.billingUrl || '/file-hosting/microstock/billing';
+            const url = config.billingUrl || joinFhPath(fhBase(), 'microstock', 'billing');
+            if (!url) {
+                return Promise.resolve(null);
+            }
             return fetchJson(url, csrfToken).then(function (json) {
                 return json?.data || null;
             }).catch(function () {

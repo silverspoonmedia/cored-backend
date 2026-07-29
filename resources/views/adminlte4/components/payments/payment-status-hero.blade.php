@@ -6,7 +6,7 @@
     'badges' => [],
 ])
 
-<div class="ois-hero" role="status" aria-live="polite" aria-atomic="true">
+<div class="ois-hero" role="status" aria-live="polite" aria-atomic="true" data-payment-hero>
     @if ($eyebrow !== '')
         <div class="ois-hero__eyebrow">{{ $eyebrow }}</div>
     @endif
@@ -15,7 +15,7 @@
 
     @if ($amount !== null && $amount !== '')
         {{-- Prefer Resource *_formatted (currency included). Raw numeric + currency is legacy only. --}}
-        <p class="ois-hero__amount">
+        <p class="ois-hero__amount" data-payment-hero-amount>
             @if (is_numeric($amount))
                 {{ trim($currency.' '.$amount) }}
             @else
@@ -30,6 +30,7 @@
                 @php
                     $label = data_get($badge, 'label', '');
                     $variant = data_get($badge, 'variant', 'secondary');
+                    $key = data_get($badge, 'key', '');
                     $class = match ($variant) {
                         'warning' => 'ois-status-warning',
                         'success' => 'ois-status-success',
@@ -38,7 +39,10 @@
                     };
                 @endphp
                 @if ($label !== '')
-                    <span class="badge {{ $class }}">{{ $label }}</span>
+                    <span
+                        class="badge {{ $class }}"
+                        @if ($key !== '') data-payment-badge="{{ $key }}" @endif
+                    >{{ $label }}</span>
                 @endif
             @endforeach
         </div>

@@ -1,12 +1,97 @@
 /**
  * File Hosting client router — pushState soft-nav inside FH shell only.
  * Download hops and external URLs stay full document navigations.
+ *
+ * Auth FH shell lives under /apps/file-hosting (route names unprefixed).
+ * Path matchers use the /file-hosting segment so both prefix shapes work;
+ * mutation/fallback bases prefer config.fhBase / browseUrl over hard-coded roots.
  */
 
 /**
  * @typedef {'browse'|'trash'|'show'|'unknown'} FhRouteName
  * @typedef {{ name: FhRouteName, fileId?: string|null, folderId?: string|null, workspaceId?: string|null, userId?: string|null, path: string, search: string, href: string }} FhRoute
  */
+
+/**
+ * Extract auth FH base path from a pathname (prefix-agnostic).
+ * Matches /file-hosting and /apps/file-hosting (and any future shell prefix).
+ *
+ * @param {string} pathname
+ * @returns {string|null}
+ */
+function fhBaseFromPathname(pathname) {
+    const path = String(pathname || '').replace(/\/+$/, '') || '/';
+    const match = path.match(/^(.*\/file-hosting)(?:\/|$)/);
+    return match ? match[1] : null;
+}
+
+/**
+ * Resolve auth FH base path from injected config or current location.
+ * Prefer Blade `fhBase` / `browseUrl` — never hard-code a shell prefix.
+ * Returns '' when unknown so callers avoid hitting a stale root path.
+ *
+ * @param {{ fhBase?: string, browseUrl?: string }|null|undefined} config
+ * @returns {string}
+ */
+export function resolveFhBase(config) {
+    if (config?.fhBase) {
+        return String(config.fhBase).replace(/\/+$/, '');
+    }
+    if (config?.browseUrl) {
+        try {
+            const path = new URL(config.browseUrl, window.location.origin).pathname;
+            const fromBrowse = fhBaseFromPathname(path);
+            if (fromBrowse) {
+                return fromBrowse;
+            }
+        } catch {
+            /* fall through */
+        }
+    }
+    if (typeof window !== 'undefined' && window.location?.pathname) {
+        const fromLocation = fhBaseFromPathname(window.location.pathname);
+        if (fromLocation) {
+            return fromLocation;
+        }
+    }
+    return '';
+}
+
+/**
+ * True when auth FH base can be resolved (Blade inject or location).
+ *
+ * @param {{ fhBase?: string, browseUrl?: string }|null|undefined} config
+ * @returns {boolean}
+ */
+export function hasFhBase(config) {
+    return resolveFhBase(config) !== '';
+}
+
+/**
+ * Join auth FH base with path segments. Empty base → '' (fail-closed).
+ * Never produces root-relative junk like `/files/...` when base is unknown.
+ *
+ * @param {string} base
+ * @param {...(string|number|null|undefined)} segments
+ * @returns {string}
+ */
+export function joinFhPath(base, ...segments) {
+    const root = String(base ?? '').trim().replace(/\/+$/, '');
+    if (root === '') {
+        return '';
+    }
+
+    const parts = segments
+        .filter((s) => s !== null && s !== undefined && String(s).trim() !== '')
+        .map((s) => String(s).replace(/^\/+|\/+$/g, ''))
+        .filter(Boolean);
+
+    if (parts.length === 0) {
+        return root;
+    }
+
+    return `${root}/${parts.join('/')}`;
+}
 
 /**
  * @param {string} [href]
@@ -27,22 +112,22 @@ export function parseFhUrl(href) {
         href: url.pathname + url.search,
     };
 
+    // Segment match — works for /file-hosting and /apps/file-hosting.
     const fileMatch = path.match(/\/file-hosting\/files\/([0-9a-fA-F-]{36})$/);
     if (fileMatch) {
         return { name: 'show', fileId: fileMatch[1], ...base };
     }
 
-    if (path.endsWith('/file-hosting/trash') || path === '/file-hosting/trash') {
+    if (path.endsWith('/file-hosting/trash')) {
         return { name: 'trash', fileId: null, ...base };
     }
 
-    if (path.endsWith('/file-hosting') || path === '/file-hosting') {
+    if (path.endsWith('/file-hosting')) {
         return { name: 'browse', fileId: null, ...base };
     }
 
     return { name: 'unknown', fileId: null, ...base };
 }
-
 /**
  * @param {string} [href]
  * @returns {boolean}

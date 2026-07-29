@@ -9,6 +9,7 @@ use App\Domain\PaymentGateway\Models\Invoice;
 // Model
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\Billing\InvoiceFundsLedgerService;
+use App\Domain\PaymentGateway\Support\PaymentRealtime;
 use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceFulfillmentService;
@@ -29,6 +30,7 @@ class IpaymuInvoiceSynchronizer
     public function __construct(
         private InvoiceFundsLedgerService $fundsLedger,
         private ServiceFulfillmentService $serviceFulfillment,
+        private PaymentRealtime $paymentRealtime,
     ) {}
 
     private const STATUS_EXPIRED = -2;
@@ -97,7 +99,9 @@ class IpaymuInvoiceSynchronizer
             ? $paymentMethod
             : $invoice->payment_method;
 
-        return DB::transaction(function () use ($invoice, $checkResponse, $data, $invoiceStatus, $transactionId, $paymentMethod, $paidAt, $expiredAt) {
+        $previousStatus = (string) $invoice->status;
+
+        $fresh = DB::transaction(function () use ($invoice, $checkResponse, $data, $invoiceStatus, $transactionId, $paymentMethod, $paidAt, $expiredAt) {
             $invoice->status = $invoiceStatus;
             $invoice->payment_method = $paymentMethod;
 
@@ -129,6 +133,10 @@ class IpaymuInvoiceSynchronizer
 
             return $invoice->fresh();
         });
+
+        $this->paymentRealtime->invoiceStatusChanged($fresh, $previousStatus);
+
+        return $fresh;
     }
 
     /**

@@ -41,24 +41,29 @@
     $authUser = auth('api')->user();
     $isMicrostock = (($currentWorkspace['kind'] ?? null) === \App\Domain\FileHosting\Enums\WorkspaceKind::Microstock->value);
 
+    // Auth FH lives under /apps/file-hosting — derive mutation bases from the named index route.
+    $fhBase = rtrim(route('file-hosting.index'), '/');
+
     $fmConfig = [
         'spaShell' => true,
+        'fhBase' => $fhBase,
         'searchUrl' => route('file-hosting.search'),
         'browseUrl' => route('file-hosting.index', $ownerQuery),
         'quotaUrl' => route('file-hosting.quota', $ownerQuery),
         'trashUrl' => route('file-hosting.trash', $ownerQuery),
         'workspacesUrl' => route('file-hosting.workspaces.index'),
+        'workspacesBase' => $fhBase.'/workspaces',
         'membersUrl' => $workspaceId
             ? route('file-hosting.workspaces.members.index', $workspaceId)
             : null,
         'activityUrl' => $workspaceId
             ? route('file-hosting.workspaces.activity', $workspaceId)
             : null,
-        'fileShowBase' => url('file-hosting/files'),
-        'fileBase' => url('file-hosting/files'),
-        'folderBase' => url('file-hosting/folders'),
-        'fileRenameBase' => url('file-hosting/files'),
-        'folderRenameBase' => url('file-hosting/folders'),
+        'fileShowBase' => $fhBase.'/files',
+        'fileBase' => $fhBase.'/files',
+        'folderBase' => $fhBase.'/folders',
+        'fileRenameBase' => $fhBase.'/files',
+        'folderRenameBase' => $fhBase.'/folders',
         'bulkFileVisibilityUrl' => route('file-hosting.files.bulk-visibility'),
         'bulkFolderVisibilityUrl' => route('file-hosting.folders.bulk-visibility'),
         'bulkFileDeleteUrl' => route('file-hosting.files.bulk-destroy'),
@@ -68,8 +73,8 @@
         'currentFolderId' => $currentFolderId,
         'workspaces' => $workspaces,
         'currentWorkspace' => $currentWorkspace ?? null,
-        'collectionBase' => url('file-hosting/microstock/collections'),
-        'assetsBase' => url('file-hosting/microstock/assets'),
+        'collectionBase' => $fhBase.'/microstock/collections',
+        'assetsBase' => $fhBase.'/microstock/assets',
         'billingUrl' => route('file-hosting.microstock.billing'),
         'usageUrl' => route('file-hosting.microstock.usage', array_filter(['workspace_id' => $workspaceId])),
         'usageUrlBase' => route('file-hosting.microstock.usage'),
@@ -427,10 +432,10 @@
                 data-workspace-kind="{{ $currentWorkspace['kind'] ?? '' }}"
                 data-collection-locked="{{ ! empty($browse['folder']['collection_locked'] ?? null) ? '1' : '0' }}"
                 data-init-url="{{ route('file-hosting.uploads.store') }}"
-                data-status-url="{{ url('file-hosting/uploads/__UPLOAD__') }}"
-                data-complete-url="{{ url('file-hosting/uploads/__UPLOAD__/complete') }}"
-                data-abort-url="{{ url('file-hosting/uploads/__UPLOAD__') }}"
-                data-sign-parts-url="{{ url('file-hosting/uploads/__UPLOAD__/sign-parts') }}"
+                data-status-url="{{ route('file-hosting.uploads.show', ['upload' => '__UPLOAD__']) }}"
+                data-complete-url="{{ route('file-hosting.uploads.complete', ['upload' => '__UPLOAD__']) }}"
+                data-abort-url="{{ route('file-hosting.uploads.destroy', ['upload' => '__UPLOAD__']) }}"
+                data-sign-parts-url="{{ route('file-hosting.uploads.sign-parts', ['upload' => '__UPLOAD__']) }}"
                 data-max-files="{{ (int) config('file-hosting.max_files_per_batch', 20) }}"
                 data-max-concurrent="{{ (int) config('file-hosting.max_concurrent_uploads', 2) }}"
                 data-max-concurrent-parts="{{ (int) config('file-hosting.max_concurrent_parts', 3) }}"

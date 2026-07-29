@@ -99,8 +99,11 @@ i18n: `lang/{en,id,ja}/api/error-log.php`.
 
 ## Web (Blade)
 
+Authenticated UI under `/apps/*` (route names unprefixed). See [blade-admin — Routes](../../web/blade-admin.md#routes).
+
 | Piece | Detail |
 |-------|--------|
+| URI | `/apps/error-logs`, `/apps/error-logs/{errorLog}`, `PATCH …/status` |
 | Routes | `error-logs.index`, `error-logs.show`, `error-logs.status` |
 | Controller | `Http/Controllers/Web/ErrorLogController` — pure `ConsumesApi` |
 | Views | `resources/views/adminlte4/error-logs/{index,show}.blade.php` |

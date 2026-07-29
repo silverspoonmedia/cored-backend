@@ -56,5 +56,10 @@
         </x-adminlte4::card>
     @endif
 
+    @once
+        <script>
+            window.monolithQrBaseUrl = @json(route('qr.show'));
+        </script>
+    @endonce
     @vite('resources/js/payments/checkout.js')
 @endif

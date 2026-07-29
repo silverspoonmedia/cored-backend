@@ -42,7 +42,7 @@ class MenuVisibilityTest extends TestCase
         $user->assignRole('User');
         $this->activations->activateImplicit($user, 'FileHosting');
 
-        $response = $this->actingWithJwtCookie($user)->get('/users');
+        $response = $this->actingWithJwtCookie($user)->get(route('users.index'));
 
         $response->assertOk();
         $response->assertSee(route('file-hosting.index'), false);
@@ -55,7 +55,7 @@ class MenuVisibilityTest extends TestCase
         $activation = $this->activations->activateImplicit($user, 'FileHosting');
         $this->activations->suspend($activation);
 
-        $response = $this->actingWithJwtCookie($user)->get('/users');
+        $response = $this->actingWithJwtCookie($user)->get(route('users.index'));
 
         $response->assertOk();
         $response->assertDontSee(route('file-hosting.index'), false);
@@ -68,7 +68,7 @@ class MenuVisibilityTest extends TestCase
         $activation = $this->activations->activateImplicit($user, 'FileHosting');
         $this->activations->markExpired($activation);
 
-        $response = $this->actingWithJwtCookie($user)->get('/users');
+        $response = $this->actingWithJwtCookie($user)->get(route('users.index'));
 
         $response->assertOk();
         $response->assertDontSee(route('file-hosting.index'), false);
@@ -81,7 +81,7 @@ class MenuVisibilityTest extends TestCase
         $activation = $this->activations->activateImplicit($user, 'FileHosting');
         $this->activations->suspend($activation);
 
-        $response = $this->actingWithJwtCookie($user)->get('/users');
+        $response = $this->actingWithJwtCookie($user)->get(route('users.index'));
 
         // Users menu is not bound to any product — must remain visible.
         $response->assertSee(route('users.index'), false);

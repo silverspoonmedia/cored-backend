@@ -7,6 +7,7 @@
  */
 
 import { isTerminalMetadataStatus, resolveMicrostockBadge, stageStripItems } from './microstock-ui.js';
+import { joinFhPath, resolveFhBase } from './router.js';
 
 const PANEL_POLL_FALLBACK_MS = 30000;
 
@@ -71,12 +72,19 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
     }
 
     function assetUrl(suffix) {
-        return (config.assetsBase || '/file-hosting/microstock/assets')
-            + '/' + encodeURIComponent(state.fileId) + suffix;
+        const assetsRoot = config.assetsBase || joinFhPath(resolveFhBase(config), 'microstock', 'assets');
+        if (!assetsRoot || !state.fileId) {
+            return '';
+        }
+        return assetsRoot + '/' + encodeURIComponent(state.fileId) + suffix;
     }
 
     function request(method, suffix, body) {
-        return fetch(assetUrl(suffix), {
+        const url = assetUrl(suffix);
+        if (!url) {
+            return Promise.resolve({ ok: false, status: 0, json: {} });
+        }
+        return fetch(url, {
             method: method,
             headers: {
                 'Accept': 'application/json',

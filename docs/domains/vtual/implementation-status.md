@@ -61,10 +61,10 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Channel profile normalize** | UC… / `@handle` / URL → canonical `external_id` + handle | `ChannelProfileResolver`, `ChannelProfileResolverTest` |
 | **Channel snapshot columns** | `description`, `avatar_url`, `banner_url`, `platform_created_at` on create/refresh apply | migration `…_add_profile_columns_to_vtual_channels`, `ChannelService` |
 | **Creator claim Existing** | Orphan claim via bio token; Accept Anyway; race → `superseded`; audit rows kept | `CreatorClaimService`, `vtual_creator_claims`, `CreatorClaimServiceTest` |
-| **Staff registry UX** | Orphan seed + pending claims; claimant on detail; platform on proof channel | `/vtual/admin/registry`, `CreatorClaimController` (web) |
-| **User claim UX** | Claimable list + my claims | `/vtual/claims` |
+| **Staff registry UX** | Orphan seed + pending claims; claimant on detail; platform on proof channel | `/apps/vtual/admin/registry`, `CreatorClaimController` (web) |
+| **User claim UX** | Claimable list + my claims | `/apps/vtual/claims` |
 | **Channel dual path** | Staff: instant `seedForStaff` active. Owner: `ChannelClaim` + bio / Accept Anyway → `activateFromDto` | `ChannelClaimService`, `ChannelService`, `ChannelClaimServiceTest`, `ChannelServiceTest` |
-| **My profiles manage** | List bound profiles; edit meta; external links CRUD; channel claims + active/archived channels | `/vtual/profiles`, `CreatorProfileController`, `ExternalLinkService` |
+| **My profiles manage** | List bound profiles; edit meta; external links CRUD; channel claims + active/archived channels | `/apps/vtual/profiles`, `CreatorProfileController`, `ExternalLinkService` |
 | **Profile merge (absorb)** | Same-owner or manage-any; move channels/links/contents/appearances; cancel pendings `merged`; archive source + slug mangle | `CreatorMergeService`, `POST creators/{id}/merge`, `CreatorMergeServiceTest` |
 | **Channel archive / restore** | Soft hide `archived`; list archived; restore → `active` | `ChannelService::archive` / `restore`, `ChannelServiceTest` |
 | **Channel fetch pool** | Non-interactive refresh + scheduled resync; flush at **50** ids **or** **15 min** age; single lock/claim flusher | `ChannelFetchPoolService`, `vtual:flush-channel-pool`, schedule in `routes/console.php`, `ChannelFetchPoolServiceTest` |
@@ -141,10 +141,10 @@ Not a commitment — default backlog for the next sessions:
 | Enqueue stale actives then flush | `php artisan vtual:flush-channel-pool --resync` / `--resync --force` |
 | Platform filter | `--platform=youtube` or `twitch` |
 | Schedule | `routes/console.php`: every minute `vtual:flush-channel-pool`; hourly `--resync` (needs `schedule:work` / cron) |
-| Admin probe | `/vtual/admin/platform-api-probe` (Root/Admin) |
-| Credentials UI | `/vtual/admin/platform-credentials` |
-| Registry / pending claims | `/vtual/admin/registry` |
-| My profiles | `/vtual/profiles` |
+| Admin probe | `/apps/vtual/admin/platform-api-probe` (Root/Admin) |
+| Credentials UI | `/apps/vtual/admin/platform-credentials` |
+| Registry / pending claims | `/apps/vtual/admin/registry` |
+| My profiles | `/apps/vtual/profiles` |
 | Build Vite assets (after JS/CSS change) | `npm run build` |
 
 ### Config knobs (`config/vtual.php`)

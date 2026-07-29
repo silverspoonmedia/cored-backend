@@ -14,16 +14,16 @@ class IntendedUrlTest extends TestCase
     {
         $this->get(route('login'));
 
-        session()->put(IntendedUrl::SESSION_KEY, url('/users'));
+        session()->put(IntendedUrl::SESSION_KEY, route('users.index'));
 
-        $this->assertSame(url('/users'), IntendedUrl::resolve($this->app['request'], route('dashboard')));
+        $this->assertSame(route('users.index'), IntendedUrl::resolve($this->app['request'], route('dashboard')));
     }
 
     public function test_resolve_rejects_notification_poll_url(): void
     {
         $this->get(route('login'));
 
-        session()->put(IntendedUrl::SESSION_KEY, url('/notifications/unread-count'));
+        session()->put(IntendedUrl::SESSION_KEY, route('notifications.unread-count'));
 
         $this->assertSame(route('dashboard'), IntendedUrl::resolve($this->app['request'], route('dashboard')));
     }
@@ -31,9 +31,9 @@ class IntendedUrlTest extends TestCase
     public function test_resolve_reads_intended_url_from_with_session(): void
     {
         $this->withSession([
-            IntendedUrl::SESSION_KEY => url('/users'),
+            IntendedUrl::SESSION_KEY => route('users.index'),
         ])->get(route('login'));
 
-        $this->assertSame(url('/users'), IntendedUrl::resolve($this->app['request'], route('dashboard')));
+        $this->assertSame(route('users.index'), IntendedUrl::resolve($this->app['request'], route('dashboard')));
     }
 }

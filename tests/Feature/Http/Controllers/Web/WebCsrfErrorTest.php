@@ -16,7 +16,7 @@ class WebCsrfErrorTest extends TestCase
     {
         $this->withSession([]);
 
-        $request = Request::create('/users', 'POST');
+        $request = Request::create(route('users.store'), 'POST');
         $request->headers->set('Accept', 'application/json');
         $request->headers->set('X-Requested-With', 'XMLHttpRequest');
         $request->setLaravelSession($this->app['session']->driver());

@@ -20,7 +20,7 @@
     $ownedWorkspaceUsed = (int) ($ownedWorkspaceUsed ?? 0);
     $ownedWorkspaceLimit = (int) ($ownedWorkspaceLimit ?? 0);
     $isTeamContext = $workspaceId !== null && $workspaceId !== '';
-    $plansUrl = Route::has('services.index') ? route('services.index') : url('/services');
+    $plansUrl = Route::has('services.index') ? route('services.index') : '#';
 
     $switcherLabel = ! $isTeamContext
         ? __('web/file-hosting.workspace_personal')

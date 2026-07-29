@@ -23,14 +23,22 @@
 
         $serviceName = data_get($purchase, 'service.name', __('web/services.purchase_title'));
         $heroBadges = [
-            ['label' => data_get($purchase, 'status', 'pending'), 'variant' => match (data_get($purchase, 'status')) {
-                'paid' => 'success',
-                'cancelled', 'failed' => 'danger',
-                default => 'secondary',
-            }],
+            [
+                'key' => 'purchase',
+                'label' => data_get($purchase, 'status', 'pending'),
+                'variant' => match (data_get($purchase, 'status')) {
+                    'paid' => 'success',
+                    'cancelled', 'failed' => 'danger',
+                    default => 'secondary',
+                },
+            ],
         ];
         if ($invoice) {
-            $heroBadges[] = ['label' => $paymentUi['label'], 'variant' => $paymentUi['variant']];
+            $heroBadges[] = [
+                'key' => 'payment',
+                'label' => $paymentUi['label'],
+                'variant' => $paymentUi['variant'],
+            ];
         }
     @endphp
 
@@ -111,7 +119,7 @@
                     <dt class="col-5">{{ __('web/services.show.fx_rate') }}</dt>
                     <dd class="col-7">{{ data_get($purchase, 'fx_rate') ?: '—' }}</dd>
                     <dt class="col-5">{{ __('web/services.show.status') }}</dt>
-                    <dd class="col-7">{{ data_get($purchase, 'status') }}</dd>
+                    <dd class="col-7" data-purchase-status>{{ data_get($purchase, 'status') }}</dd>
                     @if (data_get($purchase, 'period_start') || data_get($purchase, 'period_end'))
                         <dt class="col-5">{{ __('web/services.show.period') }}</dt>
                         <dd class="col-7">
@@ -152,7 +160,7 @@
                             </a>
                         </dd>
                         <dt class="col-5">{{ __('web/payments.invoices.fields.status') }}</dt>
-                        <dd class="col-7">{{ $paymentUi['label'] }}</dd>
+                        <dd class="col-7" data-payment-sidebar-status>{{ $paymentUi['label'] }}</dd>
                     </dl>
                 </div>
             @endif

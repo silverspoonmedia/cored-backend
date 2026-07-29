@@ -38,7 +38,7 @@ class PaymentCheckoutWebTest extends TestCase
 
         $admin = $this->actingWithJwtCookie(User::factory()->create());
 
-        $response = $admin->postJson("/invoices/{$invoiceId}/checkout/snap-token");
+        $response = $admin->postJson(route('invoices.checkout.snap-token', $invoiceId));
 
         $response->assertCreated()
             ->assertJsonPath('status', 'success')
@@ -76,7 +76,7 @@ class PaymentCheckoutWebTest extends TestCase
 
         $admin = $this->actingWithJwtCookie(User::factory()->create());
 
-        $admin->postJson("/invoices/{$invoiceId}/checkout/snap-token", [
+        $admin->postJson(route('invoices.checkout.snap-token', $invoiceId), [
             'return_url' => $returnUrl,
             'cancel_url' => $cancelUrl,
         ])
@@ -109,7 +109,7 @@ class PaymentCheckoutWebTest extends TestCase
 
         $admin = $this->actingWithJwtCookie(User::factory()->create());
 
-        $admin->postJson("/invoices/{$invoiceId}/checkout/snap-token")
+        $admin->postJson(route('invoices.checkout.snap-token', $invoiceId))
             ->assertUnprocessable()
             ->assertJsonPath('status', 'error');
     }
@@ -130,7 +130,7 @@ class PaymentCheckoutWebTest extends TestCase
 
         $admin = $this->actingWithJwtCookie(User::factory()->create());
 
-        $admin->postJson("/invoices/{$invoiceId}/checkout/channel", ['channel_code' => 'qris'])
+        $admin->postJson(route('invoices.checkout.channel', $invoiceId), ['channel_code' => 'qris'])
             ->assertCreated()
             ->assertJsonPath('status', 'success')
             ->assertJsonPath('data.instructions.qr_string', 'abc');
@@ -181,7 +181,7 @@ class PaymentCheckoutWebTest extends TestCase
 
         $admin = $this->actingWithJwtCookie(User::factory()->create());
 
-        $admin->get("/service-purchases/{$purchaseId}")
+        $admin->get(route('service-purchases.show', $purchaseId))
             ->assertOk()
             ->assertViewHas('checkoutMode', 'channel')
             ->assertViewHas('paymentChannels', fn (array $channels): bool => ($channels[0]['code'] ?? null) === 'qris');
@@ -213,7 +213,7 @@ class PaymentCheckoutWebTest extends TestCase
 
         $admin = $this->actingWithJwtCookie(User::factory()->create());
 
-        $admin->postJson("/invoices/{$invoiceId}/checkout/sync-status")
+        $admin->postJson(route('invoices.checkout.sync-status', $invoiceId))
             ->assertOk()
             ->assertJsonPath('status', 'success');
 

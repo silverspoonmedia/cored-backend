@@ -52,7 +52,7 @@ class SidebarNavigationWebTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('Admin');
 
-        $response = $this->actingWithJwtCookie($admin)->get('/users');
+        $response = $this->actingWithJwtCookie($admin)->get(route('users.index'));
 
         $response->assertOk();
         $response->assertSee('id="sidebar-menu-root"', false);
@@ -66,7 +66,7 @@ class SidebarNavigationWebTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('Admin');
 
-        $response = $this->actingWithJwtCookie($admin)->get('/users');
+        $response = $this->actingWithJwtCookie($admin)->get(route('users.index'));
 
         $response->assertOk();
         $response->assertSee(route('dashboard'), false);

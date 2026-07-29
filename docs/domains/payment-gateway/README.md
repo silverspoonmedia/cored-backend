@@ -9,6 +9,8 @@ Core domain `App\Domain\PaymentGateway\`. Secrets in env/config, not DB. Polymor
 ```
 Models/     PaymentGateway, Invoice, Subscription, PaymentChannel
 Services/   Payment/* (channel checkout, Midtrans, iPaymu), Billing/*
+Events/     InvoiceStatusChanged (ShouldBroadcastNow)
+Support/    PaymentRealtime, InvoiceChannelAuthorizer, DataTable/*
 Http/       API V1 + Web proxies
 Console/    payments:*
 ```
@@ -17,8 +19,10 @@ Registry: **`kind => core`** in [`config/domains.php`](../../../config/domains.p
 
 ## API surface (`/api/v1/*`)
 
-| Area | Prefix | Auth |
-|------|--------|------|
+Relative prefixes below mount under **`/api/v1`** (not the Blade `/apps` shell).
+
+| Area | API prefix | Auth |
+|------|------------|------|
 | Gateways | `/payment-gateways` | manage/view permissions |
 | Invoices | `/invoices`, channel-checkout | view invoice / initiate payment |
 | Channels | `/payment-channels`, routes | view / manage |
@@ -84,11 +88,30 @@ Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation 
 
 ## Blade / assets
 
+Authenticated admin/checkout UI under `/apps/*` (route names unprefixed): e.g. `/apps/payment-channels`, `/apps/payment-gateways`, invoice/service-purchase show with checkout panel. QR image base is injected via `route('qr.show')` (`window.monolithQrBaseUrl`) — no hard-coded `/apps/qr` in JS. See [blade-admin — URL helpers](../../web/blade-admin.md#url-helpers-auth-shell).
+
 Payment-first order/invoice show: hero, steps, `checkout-panel`, `checkout.js`. Web proxies: channel-checkout, sync-status, snap-token (API).
+
+### Realtime invoice status (no hard reload)
+
+Checkout pages soft-update hero / steps / panel / sidebar when invoice status changes. **No visual redesign** — same Blade chrome, client patches `data-payment-*` hooks (hero badges, steps, panel body, sidebar status). Entitlement/period sidebar fields are **not** live-refetched (known non-goal; payment progress is the target).
+
+| Layer | Behavior |
+|-------|----------|
+| Broadcast gate | `BroadcastConnection::isConfigured()` only — **not** `APP_NOTIFICATION_TYPE` (same independence as File Hosting) |
+| Helper | `PaymentRealtime` → `InvoiceStatusChanged` (`ShouldBroadcastNow`) |
+| Channel | Private `payments.invoice.{invoiceId}` — auth via `InvoiceChannelAuthorizer`: `view invoice` **or** invoiceable owner (`ServicePurchase` / `ServiceAddonRenewal` `user_id`; Subscription matches `subscriber_email`) |
+| Event name | `invoice.status.changed` (client: `.invoice.status.changed`) |
+| Emit | Both Midtrans + iPaymu synchronizers after save + fulfillment, **only when status string actually changed** (webhook, sync-status, Midtrans reconcile cron all converge here) |
+| Client | `checkout.js` reuses `createNotificationEcho` + `window.__monolithEcho`; injects `data-broadcast` from `PaymentRealtime::clientConfig()` |
+| Soft updates | Channel checkout success → `showInstructions()` (no reload); terminal `paid` / `expired` / `cancelled` / `failed` → badge/steps/panel/sidebar patch, stop poll |
+| Fallback | 15s `sync-status` poll while instructions active (and when broadcast unconfigured). Confirm-paid button kept |
+
+Payload (slim): `invoice_id`, `status`, `previous_status`, `paid_at`, `expired_at`, `invoiceable_type`, `invoiceable_id`, `invoiceable_status`.
 
 ## Permissions & morph map
 
-Permissions in RoleSeeder (`view invoice`, `initiate payment`, `manage payment gateway`, …). Morph map registers invoiceables (`service_purchase`, `subscription`).
+Permissions in RoleSeeder (`view invoice`, `initiate payment`, `manage payment gateway`, …). Morph map registers invoiceables (`service_purchase`, `service_addon_renewal`, `subscription`).
 
 ## Scheduler / commands
 
@@ -104,10 +127,11 @@ Sensitive invoice payloads, 2FA, etc.: [encryption.md](encryption.md).
 
 ## Tests
 
-`composer test -- --filter=Payment` (and related Invoice/Channel filters).
+`composer test -- --filter=Payment` (and related Invoice/Channel filters). Realtime-specific: `PaymentRealtime`, `InvoiceChannelAuthorizer`, `InvoiceStatusChanged`, `MidtransInvoiceSynchronizerRealtime`.
 
 ## Related
 
 - [service](../service/README.md) — catalog + FX + service_purchase invoiceable
-- [file-hosting](../file-hosting/README.md) — primary product domain fulfilled from Service
+- [file-hosting](../file-hosting/README.md) — primary product domain fulfilled from Service; [realtime / live listing](../file-hosting/README.md#realtime--live-listing) shares `BroadcastConnection` / `window.__monolithEcho` pattern
+- [notification](../notification/README.md) — shared Echo factory; payment invoice channel is **not** the bell bus
 - [platform/environment.md](../../platform/environment.md)

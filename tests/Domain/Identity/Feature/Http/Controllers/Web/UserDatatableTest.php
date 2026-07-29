@@ -56,7 +56,7 @@ class UserDatatableTest extends TestCase
         ]);
 
         $response = $this->actingWithJwtCookie($admin)
-            ->getJson('/users/datatable?draw=1&start=0&length=50');
+            ->getJson(route('users.datatable', ['draw' => 1, 'start' => 0, 'length' => 50]));
 
         $response->assertOk()->assertJsonPath('recordsTotal', 1);
 
@@ -65,7 +65,7 @@ class UserDatatableTest extends TestCase
 
         // 'show' is dropped (no web detail page); edit/delete map onto web routes.
         $this->assertSame(['edit', 'delete'], collect($row['actions'])->pluck('key')->all());
-        $this->assertStringEndsWith('/users/'.$moderator->id.'/edit', $row['actions'][0]['url']);
+        $this->assertStringEndsWith(parse_url(route('users.edit', $moderator), PHP_URL_PATH), $row['actions'][0]['url']);
         $this->assertSame('DELETE', $row['actions'][1]['method']);
 
         // The list request was forwarded to the API in datatable mode. (Bearer
@@ -79,7 +79,7 @@ class UserDatatableTest extends TestCase
 
     public function test_datatable_requires_authentication(): void
     {
-        $this->get('/users/datatable?draw=1')
+        $this->get(route('users.datatable', ['draw' => 1]))
             ->assertRedirect(route('login'));
     }
 
@@ -95,7 +95,7 @@ class UserDatatableTest extends TestCase
         ]);
 
         $response = $this->actingWithJwtCookie($admin)
-            ->getJson('/users/datatable?draw=1&start=0&length=50');
+            ->getJson(route('users.datatable', ['draw' => 1, 'start' => 0, 'length' => 50]));
 
         $response->assertStatus(500)
             ->assertJsonPath('error', 'Upstream failure')

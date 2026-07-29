@@ -77,9 +77,51 @@ Client: `window.MonolithApi.handleResponse()` / `datatableAjaxError()`.
 
 ## Routes
 
-Domain files under `routes/web/*.php` loaded from `routes/web.php` with `web.guest` / `web.auth`. API still authorizes every forwarded call.
+Domain files under `routes/web/*.php` loaded from `routes/web.php`. API still authorizes every forwarded call. **Route names stay unprefixed** (`dashboard`, `file-hosting.index`, …); only URI paths carry the shell prefix.
 
-Major groups: auth guest, dashboard/profile, users (+ datatable proxy), menus, notifications, activity-logs, error-logs, payments/invoices, services, file-hosting.
+| Surface | Middleware | URI shape | Examples |
+|---------|------------|-----------|----------|
+| Public / provider | none | site root | `/`, `locale/{locale}`, `/s/f/{uuid}`, `/s/d/{uuid}`, `/payment/ipaymu/*` |
+| Guest auth | `web.guest` | site root | `/login`, `/register`, password reset, 2FA challenge |
+| Logout | `web.auth` | site root | `POST /logout` (`routes/web/identity-logout.php`) — **not** under `/apps` |
+| Authenticated app shell | `web.auth` + `prefix('apps')` | **`/apps/*`** | `/apps/dashboard`, `/apps/users`, `/apps/file-hosting`, `/apps/vtual`, … |
+
+**Why `/apps`:** free product root paths (`/file-hosting`, `/vtual`, …) for future public landings. Authenticated product UI lives at `/apps/{product}`. No legacy redirects from old bare paths (bookmarks to `/dashboard` 404).
+
+Menus store **route names** only (`MenuSeeder`); sidebar resolves via `route()`. Prefer `route()` over hard-coded paths in Blade/JS.
+
+### URL helpers (auth shell)
+
+Authenticated app paths live under `prefix('apps')`. **`url('segment')` / `url('/segment')` join from the site root** and will miss `/apps` — do not use them for auth UI.
+
+| Do | Don't |
+|----|--------|
+| `route('users.index')`, `route('file-hosting.index')` | `url('users')`, `url('/file-hosting')` |
+| `route('domain-access.update', ['productKey' => '__KEY__'])` for JS AJAX templates | `url('domain-access').'/__KEY__'` |
+| Inject bases into JS from Blade (`@json(route(...))`, `data-*-url`, `window.monolithQrBaseUrl`) | Hard-code `/apps/…` in JS fallbacks |
+| `url('/api/v1/…')` when the intentional target is the versioned API | Guess auth shell paths in client code |
+| Named routes for public/guest surfaces (`login`, `logout`, `/s/*`) | Path literals that duplicate the router |
+
+Placeholder tokens (`__KEY__`, `__CODE__`, `__ROUTE__`, `__UPLOAD__`) are fine inside `route()` params — JS replaces them before the request. Guard: `AccessibilityBladeTest` scans adminlte4 blades for `url('…')` on known auth segments under `prefix('apps')`.
+
+**File Hosting SPA:** Blade sets `fhBase` from `route('file-hosting.index')` (and related bases). Client `resolveFhBase()` order: config `fhBase` → derive from `browseUrl` → pathname segment match → `''`. Path joins go through `joinFhPath()` — empty base returns `''` (fail-closed). Do **not** hard-code `/apps/file-hosting` in JS.
+
+**QR checkout:** `window.monolithQrBaseUrl` from `route('qr.show')` in the checkout panel only. Missing inject → empty QR src (no path guess).
+
+### Residual / out of scope (auth URL layout)
+
+| Intentionally not done | Why |
+|------------------------|-----|
+| Full FH per-action `route()` URL map in JS | SPA size; name-derived base + segment is accepted; segment rename still needs care |
+| Product landings on `/file-hosting`, `/vtual`, … | Product work; roots reserved empty |
+| Legacy 301/302 bare → `/apps/*` | 301 caches lock product roots; bare product paths reserved for landings |
+| Move `POST /logout` under `/apps` | Dual `web.auth` group by design (logout stays at site root) |
+| Hard-coded `/apps/…` JS fallbacks | Dual source of truth; regresses path harden |
+| Change `/api/v1/*` paths | API contract; web shell prefix only |
+
+Future policy only (not implemented): optional temporary 302 for **non-product** bare paths such as `/dashboard` → `/apps/dashboard` — never permanent 301 onto product roots.
+
+Deploy note: after JS changes under `resources/js/`, run `npm run build` (or Vite dev) so production bundles pick up fail-closed helpers.
 
 Layout namespace: `WEB_LAYOUT` / `config/web.php` (default `adminlte4`).
 
@@ -117,7 +159,7 @@ Soft override CSS layer (light/dark) under layout assets — keep tokenized vari
 - **Filter reset**: `error-logs/index` exposes a reset icon next to Apply that drops the query string.
 - **Restore confirm**: `menus/trashed` no longer prompts `confirm()` on restore — restore is non-destructive, so the prompt was backwards severity.
 - **Submit spinners**: every AJAX submit button (navbar logout, mark-all-read, `menus/index` delete forms) carries a `[data-form-submit-spinner]` span toggled by the ajax-form handler.
-- **Checkout toasts**: `checkout.js` uses `showCheckoutToast(message, type)` (`.ois-toast` container, `role="status"` + `aria-live`). `window.alert` is forbidden.
+- **Checkout toasts**: `checkout.js` uses `showCheckoutToast(message, type)` (`.ois-toast` container, `role="status"` + `aria-live`). `window.alert` is forbidden. Invoice/purchase show also soft-updates payment status (hero/steps/panel/sidebar) without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
 - **Confirm paid**: the manual confirm button ships a `title` + sibling help text (`web/payments.checkout.confirm_paid_help`) explaining why manual sync exists.
 - **Service checkout dedup**: `services/show` renders a single checkout form. `@can('purchase service')` short-circuits; otherwise `Gate::allows('initiate payment')` gates the same form.
 - **Payment-channel priority autosave**: priority inputs fire AJAX on `change` and the label carries an italic "saved automatically" hint so users are not surprised by the absence of a Save button.

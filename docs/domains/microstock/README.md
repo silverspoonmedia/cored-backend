@@ -7,17 +7,17 @@ Product domain (`kind => product`, `locked => true`) for microstock asset manage
 | Code | `app/Domain/Microstock/` |
 | Config | [`config/microstock.php`](../../../config/microstock.php) |
 | API | `routes/api/v1/microstock.php` |
-| Web | `routes/web/microstock.php` |
+| Web | `routes/web/microstock.php` under `/apps/*` → **`/apps/microstock`** (`microstock.index`, export); FH-mounted UI under **`/apps/file-hosting/microstock/*`** |
 | Seeder | `MicrostockRoleSeeder` (Beta tester role + Public visibility) |
 | Product gate | `product.active:Microstock` middleware |
-| Menu | **No dynamic sidebar menu** (removed) — reached via `/services` and the File Hosting workspace switcher |
+| Menu | **No dynamic sidebar menu** (removed) — reached via `/apps/services` and the File Hosting workspace switcher |
 | Storage class | **Product storage** — consumes the free-tier base (see [File Hosting — Storage classification](../file-hosting/README.md#storage-classification-core-vs-product)) |
 | Quota pool | Shared with File Hosting (one `UserQuota` byte pool) |
 | Fulfillment target | **`microstock`** (standalone — NOT `file_hosting`; see activation below) |
 
-## Activation model (via `/services`)
+## Activation model (via `/apps/services`)
 
-Microstock is **opt-in**, activated by purchasing a service catalog SKU from `/services` — it is never auto-provisioned. Two SKUs (seeded by `ServiceCatalogSeeder`, codes in `App\Domain\Service\Support\MicrostockCatalog`):
+Microstock is **opt-in**, activated by purchasing a service catalog SKU from `/apps/services` — it is never auto-provisioned. Two SKUs (seeded by `ServiceCatalogSeeder`, codes in `App\Domain\Service\Support\MicrostockCatalog`):
 
 | code | name | interval | plan_kind | entitlement | storage_bytes | price |
 |-----|------|----------|-----------|-------------|---------------|-------|
@@ -27,7 +27,7 @@ Microstock is **opt-in**, activated by purchasing a service catalog SKU from `/s
 - **Free registration** (`microstock.plan.free`, $0 one-time): the activation gate. Purchasable **once** (`ServiceCheckoutService` throws 422 `api/services.already_activated` on rebuy; unique `(user_id, service_id)` entitlement key is the backstop). Being $0 it is **zero-charge**: `isZeroCharge()` skips the payment gateway, the purchase is immediately `Paid` (`fx_provider = zero_charge`), and fulfillment runs inline. Grants `quantity = 1`, `ends_at = null` (permanent). With `fulfillment_target = 'microstock'`, `ProductRegistry::productKeyByFulfillmentTarget` maps it to the `Microstock` product and `ServiceFulfillmentService::ensureProductActive` activates it **implicitly** (no quota recompute — that only happens for `file_hosting` targets).
 - **Slot addon** (`microstock.addon.workspace-slot.monthly`, $1 monthly): repeatable and **compounding** — each paid unit increments `quantity` on the active entitlement via `activateAddon`. Buying 10 units grants 10 extra Microstock workspace slots. Shares the addon anniversary stack with FH addons (`MainPlanChangeCalculator` / `extendAllAddons` cover both `file_hosting` and `microstock` addon targets).
 - **AI credits** (`microstock.addon.ai-credits.5`, $5 once): prepaid analysis balance (`entitlement = microstock_ai_credits`). Fulfillment calls `AiCreditService::creditFromPurchase` — debited only on successful AI analysis (see [Microstock — AI billing](../microstock/README.md#ai-billing-prepaid-credits)).
-- **UX**: `/services` shows a dedicated Microstock card with an **Activate free** button (disabled + "Active" badge once active) and a **Buy slot** button (visible once active) posting to the normal `services.checkout` flow.
+- **UX**: `/apps/services` shows a dedicated Microstock card with an **Activate free** button (disabled + "Active" badge once active) and a **Buy slot** button (visible once active) posting to the normal `services.checkout` flow.
 
 ## System workspaces (base storage)
 
@@ -44,7 +44,7 @@ Microstock assets live in `file_hosting_workspaces.kind = 'microstock'` rows —
 
 ### No auto-provision on File Hosting
 
-`FileManagerController@index` does **not** create the Microstock workspace. It appears in the FH switcher only after activation (and provisioning) via `/services`. `GET /microstock` (`microstock.index`) redirects to `/services` with an error flash when not yet activated.
+`FileManagerController@index` does **not** create the Microstock workspace. It appears in the FH switcher only after activation (and provisioning) via `/apps/services`. `GET /apps/microstock` (`microstock.index`) redirects to `/apps/services` with an error flash when not yet activated.
 
 ## Usage & limits
 
@@ -64,7 +64,7 @@ Upload/storage stays on the shared File Hosting quota. **AI analysis** (vision +
 | Upload into collection | No | FH `UserQuota` bytes |
 | `POST …/analyze` / `POST assets/{file}/analyze` | Yes | Prepaid `microstock_ai_balances` |
 
-**Flow:** purchase an AI credit pack via `/services` → `ServiceFulfillmentService` credits `balance_micro_usd` → `AiBillingService::planAnalyze` gates dispatch (daily-free slots first, then prepaid balance for remainder; checks **billing user** = actor who triggered analyze) → each OpenAI-compatible HTTP call records a `microstock_ai_usage_events` row scoped to `analysis_run_id` → `composeResultFromThinking` settles (debit + `ai_billing` snapshot) **before** promoting `status = generated`. Thinking failure after successful vision triggers **partial vision settle**. Full edge-case inventory: [billing-edge-cases.md](billing-edge-cases.md).
+**Flow:** purchase an AI credit pack via `/apps/services` → `ServiceFulfillmentService` credits `balance_micro_usd` → `AiBillingService::planAnalyze` gates dispatch (daily-free slots first, then prepaid balance for remainder; checks **billing user** = actor who triggered analyze) → each OpenAI-compatible HTTP call records a `microstock_ai_usage_events` row scoped to `analysis_run_id` → `composeResultFromThinking` settles (debit + `ai_billing` snapshot) **before** promoting `status = generated`. Thinking failure after successful vision triggers **partial vision settle**. Full edge-case inventory: [billing-edge-cases.md](billing-edge-cases.md).
 
 ### Daily free trial (optional)
 
@@ -110,10 +110,10 @@ Transparent prepaid balance and AI usage history for the billing subject (the us
 
 | Surface | Route / endpoint |
 |---------|------------------|
-| **Usage page** (web) | `GET /file-hosting/microstock/usage` (`file-hosting.microstock.usage`) — summary cards + tabs |
-| Summary (JSON hop) | `GET /file-hosting/microstock/billing` → `GET /api/v1/microstock/billing` |
-| Ledger mutations | `GET /file-hosting/microstock/billing/ledger` → `GET /api/v1/microstock/billing/ledger` |
-| Usage detail | `GET /file-hosting/microstock/billing/usage-events` → `GET /api/v1/microstock/billing/usage-events` |
+| **Usage page** (web) | `GET /apps/file-hosting/microstock/usage` (`file-hosting.microstock.usage`) — summary cards + tabs |
+| Summary (JSON hop) | `GET /apps/file-hosting/microstock/billing` → `GET /api/v1/microstock/billing` |
+| Ledger mutations | `GET /apps/file-hosting/microstock/billing/ledger` → `GET /api/v1/microstock/billing/ledger` |
+| Usage detail | `GET /apps/file-hosting/microstock/billing/usage-events` → `GET /api/v1/microstock/billing/usage-events` |
 
 **Page layout**
 
@@ -129,7 +129,7 @@ Transparent prepaid balance and AI usage history for the billing subject (the us
 | `GET` | `/api/v1/admin/microstock/billing/overview` |
 | `GET` | `/api/v1/admin/microstock/billing/usage-events` |
 
-Web hops: `GET /file-hosting/microstock/billing/admin/overview`, `…/admin/usage-events`. Gated by `hasAnyRole(['Root', 'Admin', 'Moderator'])` — Management excluded.
+Web hops: `GET /apps/file-hosting/microstock/billing/admin/overview`, `…/admin/usage-events`. Gated by `hasAnyRole(['Root', 'Admin', 'Moderator'])` — Management excluded.
 
 **Navigation**
 
@@ -137,7 +137,7 @@ Web hops: `GET /file-hosting/microstock/billing/admin/overview`, `…/admin/usag
 |----------|------|
 | File Hosting toolbar (Microstock workspace) | **AI Balance** → usage offcanvas panel (SPA-integrated, no page reload; preserves `workspace_id`; visible on SPA workspace switch without hard reload) |
 | Collection describe modal footer | Billing line + **View balance & history** |
-| `/services` Microstock card | **Usage & balance** next to balance line |
+| `/apps/services` Microstock card | **Usage & balance** next to balance line |
 
 Implementation: `BillingLedgerService`, `AdminBillingAnalyticsService`, `AdminBillingController`, `BillingLedgerEntryResource`, `BillingUsageEventResource`, `AdminBillingUsageEventResource`, `resources/views/adminlte4/file-hosting/microstock-usage.blade.php` (standalone fallback page), `resources/js/file-hosting/microstock-usage.js` (exports `createMicrostockUsagePanel` factory for SPA offcanvas + standalone page bootstrap). The SPA offcanvas (`#fhMicrostockUsagePanel`) is injected into `index.blade.php` and wired via `file-manager.js`; the standalone page remains for direct access/bookmarks. Daily-free behaviour: [daily-free-trial.md](daily-free-trial.md).
 
@@ -412,7 +412,7 @@ Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Micros
 
 | Route name | Purpose |
 |----------|---------|
-| `microstock.index` | Redirects into the File Hosting SPA pinned to the Microstock system workspace (`/file-hosting?workspace_id=…`); redirects to `/services` when not activated |
+| `microstock.index` | Redirects into the File Hosting SPA pinned to the Microstock system workspace (`/apps/file-hosting?workspace_id=…`); redirects to `/apps/services` when not activated |
 | `microstock.export.csv` | Stream-download the finalized metadata CSV |
 | `file-hosting.microstock.slots` | Thin web hop → `GET /api/v1/microstock/slots` (for the switcher UI) |
 | `file-hosting.microstock.billing` | Thin web hop → `GET /api/v1/microstock/billing` (collection modal + credit pre-flight) |
@@ -436,7 +436,7 @@ The Lock & Describe modal (`#fhCollectionDescribeModal`) uses a compact 2-column
 
 The File Hosting workspace switcher fetches `file-hosting.microstock.slots` at runtime and renders one entry:
 
-- not activated → "Activate Microstock" link to `/services`
+- not activated → "Activate Microstock" link to `/apps/services`
 - `can_create` → "New Microstock workspace" button → POSTs, then soft-navigates into the new workspace
 - full → disabled "Microstock slots full" note
 
@@ -471,7 +471,7 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 - `KeywordNormalizerTest`: dedupe + cap at 60 keywords.
 - `FileManagerControllerTest::test_microstock_usage_page_renders`: usage page Blade smoke.
 
-Upload client unit tests (Vitest): `direct-upload-mime.test.js`, `direct-upload-context.test.js` — see [File Hosting — UI architecture / SPA shell](../file-hosting/README.md#ui-architecture--spa-shell).
+Upload client unit tests (Vitest): `direct-upload-mime.test.js`, `direct-upload-context.test.js`, `direct-upload-dismiss.test.js` — see [File Hosting — UI architecture / SPA shell](../file-hosting/README.md#ui-architecture--spa-shell).
 
 ## Operations: queue worker
 

@@ -1,7 +1,20 @@
 /**
  * Channel checkout for pending invoices (QRIS / VA / e-wallet).
+ *
+ * Soft-updates hero / steps / panel / sidebar on status change.
+ * Prefer Echo private-payments.invoice.{id}; keep 15s sync-status as fallback.
  */
+import { createNotificationEcho } from '../notifications/echo.js';
 import { copyToClipboard, resolveQrImageSrc } from './instructionMedia.js';
+
+const TERMINAL_SUCCESS = new Set(['paid']);
+const TERMINAL_FAILURE = new Set(['expired', 'cancelled', 'failed']);
+const VARIANT_CLASS = {
+    warning: 'ois-status-warning',
+    success: 'ois-status-success',
+    danger: 'ois-status-danger',
+    secondary: 'ois-status-secondary',
+};
 
 export function initPaymentCheckout(root) {
     if (!root || root.dataset.paymentCheckoutBound === '1') {
@@ -13,13 +26,26 @@ export function initPaymentCheckout(root) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
     const messages = JSON.parse(root.dataset.messages || '{}');
     const checkoutMode = root.dataset.checkoutMode || 'snap_fallback';
+    const invoiceId = root.dataset.invoiceId || '';
+    const broadcast = parseJson(root.dataset.broadcast);
+
+    const ui = createPaymentUiController(root, messages);
+
+    if (TERMINAL_SUCCESS.has(root.dataset.invoiceStatus) || TERMINAL_FAILURE.has(root.dataset.invoiceStatus)) {
+        return;
+    }
 
     if (checkoutMode === 'channel') {
-        initChannelCheckout(root, csrfToken, messages);
+        initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast);
+    } else if (invoiceId) {
+        // Non-channel pages still listen for status push when payable.
+        subscribeInvoiceChannel(invoiceId, broadcast, csrfToken, (payload) => {
+            ui.applyStatus(payload?.status ?? '', payload);
+        });
     }
 }
 
-function initChannelCheckout(root, csrfToken, messages) {
+function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast) {
     const channelCheckoutUrl = root.dataset.channelCheckoutUrl;
     const syncStatusUrl = root.dataset.syncStatusUrl;
     const channels = JSON.parse(root.dataset.channels || '[]');
@@ -34,35 +60,7 @@ function initChannelCheckout(root, csrfToken, messages) {
     let selectedChannel = initialCheckout?.channel_code ?? channels[0]?.code ?? '';
     let pickerCollapsed = false;
     let hasActiveInstructions = false;
-
-    function ensureToastContainer() {
-        let container = root.querySelector('[data-payment-toast-container]');
-        if (!container) {
-            container = document.createElement('div');
-            container.className = 'ois-toast-container';
-            container.setAttribute('data-payment-toast-container', '');
-            container.setAttribute('role', 'status');
-            container.setAttribute('aria-live', 'polite');
-            container.setAttribute('aria-atomic', 'false');
-            root.appendChild(container);
-        }
-
-        return container;
-    }
-
-    function showCheckoutToast(message, type) {
-        const container = ensureToastContainer();
-        const toast = document.createElement('div');
-        toast.className = 'ois-toast is-' + (type || 'info');
-        toast.setAttribute('role', 'status');
-        toast.textContent = message;
-        container.appendChild(toast);
-
-        window.setTimeout(() => {
-            toast.classList.add('is-leaving');
-            window.setTimeout(() => toast.remove(), 300);
-        }, 4000);
-    }
+    let terminal = false;
 
     function stopPolling() {
         if (window.__paymentCheckoutPollTimer) {
@@ -85,16 +83,42 @@ function initChannelCheckout(root, csrfToken, messages) {
     }
 
     function showInstructions(data) {
-        renderInstructions(instructionsEl, data, messages);
+        if (terminal) {
+            return;
+        }
+
+        renderInstructions(instructionsEl, data, messages, showCheckoutToast);
         instructionsEl?.classList.remove('d-none');
         syncButton?.classList.remove('d-none');
         checkoutButton?.classList.add('d-none');
         hasActiveInstructions = true;
         collapsePicker();
-        startPolling(syncStatusUrl, csrfToken, messages);
+        startPolling(syncStatusUrl, csrfToken, messages, handleStatus);
+        ui.applyPendingWithSession();
+        updateAmountCallout(root, data);
+    }
+
+    function handleStatus(status, meta = {}) {
+        if (terminal) {
+            return;
+        }
+
+        if (TERMINAL_SUCCESS.has(status) || TERMINAL_FAILURE.has(status)) {
+            terminal = true;
+            stopPolling();
+            ui.applyStatus(status, meta);
+
+            return true;
+        }
+
+        return false;
     }
 
     function setSelected(code, { collapse = false } = {}) {
+        if (terminal) {
+            return;
+        }
+
         if (code !== selectedChannel) {
             stopPolling();
             clearInstructions();
@@ -138,6 +162,20 @@ function initChannelCheckout(root, csrfToken, messages) {
         channelLabel?.classList.remove('d-none');
     }
 
+    function showCheckoutToast(message, type) {
+        const container = ensureToastContainer(root);
+        const toast = document.createElement('div');
+        toast.className = 'ois-toast is-' + (type || 'info');
+        toast.setAttribute('role', 'status');
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        window.setTimeout(() => {
+            toast.classList.add('is-leaving');
+            window.setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
     if (selectedChannel !== '') {
         setSelected(selectedChannel);
     }
@@ -146,6 +184,10 @@ function initChannelCheckout(root, csrfToken, messages) {
         showInstructions(initialCheckout);
     }
 
+    subscribeInvoiceChannel(invoiceId, broadcast, csrfToken, (payload) => {
+        handleStatus(payload?.status ?? '', payload);
+    });
+
     picker?.querySelectorAll('[data-payment-channel-option]').forEach((button) => {
         button.addEventListener('click', () => {
             setSelected(button.getAttribute('data-payment-channel-option') ?? '', { collapse: true });
@@ -153,6 +195,10 @@ function initChannelCheckout(root, csrfToken, messages) {
     });
 
     changeChannelButton?.addEventListener('click', () => {
+        if (terminal) {
+            return;
+        }
+
         expandPicker();
 
         if (hasActiveInstructions) {
@@ -162,7 +208,7 @@ function initChannelCheckout(root, csrfToken, messages) {
     });
 
     checkoutButton?.addEventListener('click', async () => {
-        if (!channelCheckoutUrl || !selectedChannel || checkoutButton.disabled) {
+        if (terminal || !channelCheckoutUrl || !selectedChannel || checkoutButton.disabled) {
             return;
         }
 
@@ -184,23 +230,193 @@ function initChannelCheckout(root, csrfToken, messages) {
                 throw new Error(payload.message || messages.channelFailed || 'Channel checkout failed.');
             }
 
-            window.location.reload();
+            const data = payload.data ?? {};
+            showInstructions(data);
+            showCheckoutToast(messages.channelReady ?? 'Payment instructions ready.', 'success');
         } catch (error) {
             const message = error instanceof Error ? error.message : (messages.channelFailed ?? 'Channel checkout failed.');
             showCheckoutToast(message, 'error');
         } finally {
-            checkoutButton.disabled = false;
-            checkoutButton.textContent = originalLabel;
+            if (!terminal) {
+                checkoutButton.disabled = false;
+                checkoutButton.textContent = originalLabel;
+            }
         }
     });
 
     syncButton?.addEventListener('click', () => {
-        void syncStatus(syncStatusUrl, csrfToken, messages, false);
+        void syncStatus(syncStatusUrl, csrfToken, messages, false, handleStatus, showCheckoutToast);
     });
 }
 
+/**
+ * Soft-patch page chrome (hero, steps, sidebar, panel body).
+ */
+function createPaymentUiController(root, messages) {
+    return {
+        applyPendingWithSession() {
+            setPaymentBadge(messages.paymentPending ?? 'Awaiting payment', 'warning');
+            setSteps(2, false);
+            setSidebarStatus(messages.paymentPending ?? 'Awaiting payment');
+            root.dataset.invoiceStatus = 'pending';
+        },
+
+        applyStatus(status, meta = {}) {
+            root.dataset.invoiceStatus = status;
+
+            if (TERMINAL_SUCCESS.has(status)) {
+                const label = messages.statusPaid ?? 'Paid';
+                setPaymentBadge(label, 'success');
+                setSteps(3, true);
+                setSidebarStatus(label);
+                setPurchaseStatus(meta.invoiceable_status ?? 'paid', 'success');
+                setPaidAt(meta.paid_at);
+                replaceCheckoutBody(root, messages.paid ?? 'This invoice is already paid.', 'success');
+
+                return;
+            }
+
+            if (TERMINAL_FAILURE.has(status)) {
+                const label = statusLabel(status, messages);
+                setPaymentBadge(label, 'danger');
+                setSteps(1, false);
+                setSidebarStatus(label);
+                if (meta.invoiceable_status) {
+                    setPurchaseStatus(meta.invoiceable_status, 'danger');
+                }
+                setExpiredAt(meta.expired_at);
+                replaceCheckoutBody(root, messages.notPayable ?? 'This invoice cannot be paid.', 'muted');
+            }
+        },
+    };
+}
+
+function statusLabel(status, messages) {
+    if (status === 'expired') {
+        return messages.statusExpired ?? 'Expired';
+    }
+    if (status === 'cancelled') {
+        return messages.statusCancelled ?? 'Cancelled';
+    }
+    if (status === 'failed') {
+        return messages.statusFailed ?? 'Failed';
+    }
+
+    return status;
+}
+
+function setPaymentBadge(label, variant) {
+    const badge = document.querySelector('[data-payment-badge="payment"]');
+    if (!badge) {
+        return;
+    }
+
+    badge.textContent = label;
+    badge.className = 'badge ' + (VARIANT_CLASS[variant] ?? VARIANT_CLASS.secondary);
+}
+
+function setPurchaseStatus(status, variant) {
+    const badge = document.querySelector('[data-payment-badge="purchase"]');
+    if (badge) {
+        badge.textContent = status;
+        badge.className = 'badge ' + (VARIANT_CLASS[variant] ?? VARIANT_CLASS.secondary);
+    }
+
+    const sidebar = document.querySelector('[data-purchase-status]');
+    if (sidebar) {
+        sidebar.textContent = status;
+    }
+}
+
+function setSidebarStatus(label) {
+    document.querySelectorAll('[data-payment-sidebar-status]').forEach((el) => {
+        el.textContent = label;
+    });
+
+    const inline = document.querySelector('[data-payment-inline-status]');
+    if (inline) {
+        inline.textContent = label;
+    }
+}
+
+function setPaidAt(value) {
+    const el = document.querySelector('[data-payment-paid-at]');
+    if (el && value) {
+        el.textContent = formatDate(value);
+    }
+}
+
+function setExpiredAt(value) {
+    const el = document.querySelector('[data-payment-expired-at]');
+    if (el && value) {
+        el.textContent = formatDate(value);
+    }
+}
+
+function setSteps(currentStep, completed) {
+    const stepsRoot = document.querySelector('[data-payment-steps]');
+    if (!stepsRoot) {
+        return;
+    }
+
+    stepsRoot.dataset.currentStep = String(currentStep);
+    stepsRoot.dataset.completed = completed ? '1' : '0';
+
+    stepsRoot.querySelectorAll('[data-payment-step]').forEach((stepEl) => {
+        const number = Number(stepEl.getAttribute('data-payment-step'));
+        stepEl.classList.remove('is-done', 'is-active');
+
+        if (number < currentStep) {
+            stepEl.classList.add('is-done');
+        } else if (number === currentStep) {
+            stepEl.classList.add(completed ? 'is-done' : 'is-active');
+        }
+    });
+}
+
+function replaceCheckoutBody(root, message, tone) {
+    const body = root.querySelector('[data-payment-checkout-body]');
+    if (!body) {
+        return;
+    }
+
+    const className = tone === 'success' ? 'text-success mb-0' : 'text-muted mb-0';
+    body.innerHTML = `<p class="${className}" data-payment-terminal-message>${escapeHtml(message)}</p>`;
+}
+
+function updateAmountCallout(root, data) {
+    const amountEl = root.querySelector('[data-payment-amount-value]');
+    if (!amountEl || data == null) {
+        return;
+    }
+
+    if (typeof data.amount === 'number' || typeof data.amount === 'string') {
+        const currency = data.currency ? String(data.currency) + ' ' : '';
+        amountEl.textContent = currency + data.amount;
+    }
+}
+
+function ensureToastContainer(root) {
+    let container = root.querySelector('[data-payment-toast-container]');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'ois-toast-container';
+        container.setAttribute('data-payment-toast-container', '');
+        container.setAttribute('role', 'status');
+        container.setAttribute('aria-live', 'polite');
+        container.setAttribute('aria-atomic', 'false');
+        root.appendChild(container);
+    }
+
+    return container;
+}
+
 function parseInitialCheckout(raw) {
-    if (!raw || raw === 'null') {
+    return parseJson(raw);
+}
+
+function parseJson(raw) {
+    if (!raw || raw === 'null' || raw === 'undefined') {
         return null;
     }
 
@@ -213,13 +429,15 @@ function parseInitialCheckout(raw) {
     }
 }
 
-function renderInstructions(container, data, messages) {
+function renderInstructions(container, data, messages, showCheckoutToast) {
     if (!container) {
         return;
     }
 
     const instructions = data.instructions ?? {};
-    const expiresAt = data.expires_at ? `<p class="text-muted small">${escapeHtml((messages.expiresAt ?? 'Pay before {time}').replace('{time}', formatDate(data.expires_at)))}</p>` : '';
+    const expiresAt = data.expires_at
+        ? `<p class="text-muted small">${escapeHtml((messages.expiresAt ?? 'Pay before {time}').replace('{time}', formatDate(data.expires_at)))}</p>`
+        : '';
     let body = '';
 
     if (instructions.type === 'qris') {
@@ -261,12 +479,15 @@ function renderInstructions(container, data, messages) {
             const value = button.getAttribute('data-copy-value') ?? '';
             const copied = await copyToClipboard(value);
 
-            showCheckoutToast(copied ? (messages.copied ?? 'Copied') : (messages.copyFailed ?? 'Could not copy'), copied ? 'success' : 'error');
+            showCheckoutToast(
+                copied ? (messages.copied ?? 'Copied') : (messages.copyFailed ?? 'Could not copy'),
+                copied ? 'success' : 'error',
+            );
         });
     });
 }
 
-function startPolling(syncStatusUrl, csrfToken, messages) {
+function startPolling(syncStatusUrl, csrfToken, messages, onStatus) {
     if (!syncStatusUrl) {
         return;
     }
@@ -276,11 +497,11 @@ function startPolling(syncStatusUrl, csrfToken, messages) {
     }
 
     window.__paymentCheckoutPollTimer = setInterval(() => {
-        void syncStatus(syncStatusUrl, csrfToken, messages, true);
+        void syncStatus(syncStatusUrl, csrfToken, messages, true, onStatus, null);
     }, 15000);
 }
 
-async function syncStatus(syncStatusUrl, csrfToken, messages, silent) {
+async function syncStatus(syncStatusUrl, csrfToken, messages, silent, onStatus, showToast) {
     if (!syncStatusUrl) {
         return;
     }
@@ -299,21 +520,74 @@ async function syncStatus(syncStatusUrl, csrfToken, messages, silent) {
             throw new Error(payload.message || messages.syncFailed || 'Sync failed.');
         }
 
-        const invoiceStatus = payload.data?.invoice?.status ?? '';
+        const invoice = payload.data?.invoice ?? {};
+        const invoiceStatus = invoice.status ?? '';
+        const handled = onStatus?.(invoiceStatus, {
+            paid_at: invoice.paid_at ?? null,
+            expired_at: invoice.expired_at ?? null,
+            invoiceable_status: null,
+        });
 
-        if (invoiceStatus === 'paid') {
-            window.location.reload();
+        if (handled) {
             return;
         }
 
-        if (!silent) {
-            showCheckoutToast(messages.syncPending ?? 'Payment is still pending.', 'info');
+        if (!silent && showToast) {
+            showToast(messages.syncPending ?? 'Payment is still pending.', 'info');
         }
     } catch (error) {
-        if (!silent) {
+        if (!silent && showToast) {
             const message = error instanceof Error ? error.message : (messages.syncFailed ?? 'Sync failed.');
-            showCheckoutToast(message, 'error');
+            showToast(message, 'error');
         }
+    }
+}
+
+/**
+ * Subscribe to private-payments.invoice.{id} when broadcast config present.
+ * Reuses window.__monolithEcho with the notification bell / FH.
+ */
+function subscribeInvoiceChannel(invoiceId, broadcast, csrfToken, onPayload) {
+    if (!invoiceId || !broadcast || typeof onPayload !== 'function') {
+        return;
+    }
+
+    try {
+        let echo = window.__monolithEcho;
+        if (!echo) {
+            echo = createNotificationEcho(broadcast, csrfToken);
+            window.__monolithEcho = echo;
+        }
+
+        if (window.__paymentCheckoutEchoChannel === invoiceId) {
+            return;
+        }
+
+        // Leave previous invoice channel if any (SPA soft-nav future-proofing).
+        if (window.__paymentCheckoutEchoLeave) {
+            try {
+                window.__paymentCheckoutEchoLeave();
+            } catch {
+                // ignore
+            }
+            window.__paymentCheckoutEchoLeave = null;
+        }
+
+        const channelName = 'payments.invoice.' + invoiceId;
+        const channel = echo.private(channelName);
+        channel.listen('.invoice.status.changed', (payload) => {
+            onPayload(payload ?? {});
+        });
+
+        window.__paymentCheckoutEchoChannel = invoiceId;
+        window.__paymentCheckoutEchoLeave = () => {
+            echo.leave(channelName);
+            if (window.__paymentCheckoutEchoChannel === invoiceId) {
+                window.__paymentCheckoutEchoChannel = null;
+            }
+        };
+    } catch {
+        // Polling remains the safety net.
     }
 }
 

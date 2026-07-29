@@ -32,7 +32,8 @@ class NotificationBellComposer
                 'urls' => [
                     'unread' => route('notifications.unread-count'),
                     'recent' => route('notifications.recent'),
-                    'read' => url('notifications').'/',
+                    // bell.js appends `{id}/read` — base must include trailing slash under /apps.
+                    'read' => rtrim(route('notifications.index'), '/').'/',
                 ],
                 'labels' => [
                     'empty' => __('web/notifications.empty'),

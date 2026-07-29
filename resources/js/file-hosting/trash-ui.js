@@ -2,6 +2,8 @@
  * Trash listing soft renderer — kills hard reload on WS / restore / force-delete.
  */
 
+import { joinFhPath, resolveFhBase } from './router.js';
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -29,32 +31,41 @@ function iconHtml(isFolder, mime) {
 }
 
 function actionButtons(entity, id, config) {
-    const base = entity === 'folder' ? (config.folderBase || '/file-hosting/folders') : (config.fileBase || '/file-hosting/files');
+    const fh = resolveFhBase(config);
+    const base = entity === 'folder'
+        ? (config.folderBase || joinFhPath(fh, 'folders'))
+        : (config.fileBase || joinFhPath(fh, 'files'));
     const perms = config.permissions || {};
     const canEdit = entity === 'folder' ? perms.editFolder : perms.editFile;
     const canDelete = entity === 'folder' ? perms.deleteFolder : perms.deleteFile;
     const msgs = config.messages || {};
     const parts = [];
 
-    if (canEdit) {
-        parts.push(
-            `<button type="button" class="fh-table__action-btn" title="${escapeHtml(msgs.restore || 'Restore')}"`
-            + ` data-fh-ajax-action="restore-${entity}"`
-            + ` data-fh-action-url="${escapeHtml(base + '/' + id + '/restore')}"`
-            + ` data-fh-method="POST"`
-            + ` data-fh-confirm="${escapeHtml(msgs.confirmRestore || '')}">`
-            + '<i class="bi bi-arrow-counterclockwise"></i></button>',
-        );
+    if (canEdit && base) {
+        const restoreUrl = joinFhPath(base, id, 'restore');
+        if (restoreUrl) {
+            parts.push(
+                `<button type="button" class="fh-table__action-btn" title="${escapeHtml(msgs.restore || 'Restore')}"`
+                + ` data-fh-ajax-action="restore-${entity}"`
+                + ` data-fh-action-url="${escapeHtml(restoreUrl)}"`
+                + ` data-fh-method="POST"`
+                + ` data-fh-confirm="${escapeHtml(msgs.confirmRestore || '')}">`
+                + '<i class="bi bi-arrow-counterclockwise"></i></button>',
+            );
+        }
     }
-    if (canDelete) {
-        parts.push(
-            `<button type="button" class="fh-table__action-btn is-danger" title="${escapeHtml(msgs.forceDelete || 'Delete forever')}"`
-            + ` data-fh-ajax-action="force-delete-${entity}"`
-            + ` data-fh-action-url="${escapeHtml(base + '/' + id + '/force')}"`
-            + ` data-fh-method="DELETE"`
-            + ` data-fh-confirm="${escapeHtml(msgs.confirmForceDelete || '')}">`
-            + '<i class="bi bi-x-octagon"></i></button>',
-        );
+    if (canDelete && base) {
+        const forceUrl = joinFhPath(base, id, 'force');
+        if (forceUrl) {
+            parts.push(
+                `<button type="button" class="fh-table__action-btn is-danger" title="${escapeHtml(msgs.forceDelete || 'Delete forever')}"`
+                + ` data-fh-ajax-action="force-delete-${entity}"`
+                + ` data-fh-action-url="${escapeHtml(forceUrl)}"`
+                + ` data-fh-method="DELETE"`
+                + ` data-fh-confirm="${escapeHtml(msgs.confirmForceDelete || '')}">`
+                + '<i class="bi bi-x-octagon"></i></button>',
+            );
+        }
     }
     return parts.join('');
 }

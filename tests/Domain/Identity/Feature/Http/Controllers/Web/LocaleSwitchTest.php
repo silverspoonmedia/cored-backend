@@ -28,10 +28,10 @@ class LocaleSwitchTest extends TestCase
         $user = User::factory()->create(['locale' => 'en']);
 
         $response = $this->actingWithJwtCookie($user)
-            ->from('/dashboard')
+            ->from(route('dashboard'))
             ->get('/locale/id');
 
-        $response->assertRedirect('/dashboard')
+        $response->assertRedirect(route('dashboard'))
             ->assertCookie(LocaleCookie::name(), 'id');
 
         $this->assertDatabaseHas('users', [
@@ -48,9 +48,9 @@ class LocaleSwitchTest extends TestCase
         $this->travel(5)->seconds();
 
         $this->actingWithJwtCookie($user)
-            ->from('/dashboard')
+            ->from(route('dashboard'))
             ->get('/locale/id')
-            ->assertRedirect('/dashboard');
+            ->assertRedirect(route('dashboard'));
 
         $this->assertTrue($user->fresh()->updated_at->equalTo($originalUpdatedAt));
     }

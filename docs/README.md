@@ -12,6 +12,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
 | Env profiles, secrets | [platform/environment.md](platform/environment.md) |
 | Blade admin (API consumer) | [web/blade-admin.md](web/blade-admin.md) |
+| Auth web URI layout | Authenticated Blade under **`/apps/*`** (route names unprefixed); guest/public + `POST /logout` at site root; product roots (`/file-hosting`, …) reserved empty; API `/api/v1/*` unchanged — [blade-admin — Routes](web/blade-admin.md#routes) · [architecture — Routes](platform/architecture.md#routes) |
 
 ## Platform (kernel / cross-cutting)
 
@@ -49,7 +50,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 | Document | Topic |
 |----------|-------|
-| [blade-admin.md](web/blade-admin.md) | JWT cookie, ApiClient, routes, theming |
+| [blade-admin.md](web/blade-admin.md) | JWT cookie, ApiClient, auth shell `/apps`, URL helpers, theming |
 | [ui-patterns.md](web/ui-patterns.md) | Select2 lookups, list/DataTable modes |
 
 ## Integration

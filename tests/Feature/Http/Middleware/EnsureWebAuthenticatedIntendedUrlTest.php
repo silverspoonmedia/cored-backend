@@ -25,15 +25,15 @@ class EnsureWebAuthenticatedIntendedUrlTest extends TestCase
 
     public function test_guest_full_page_navigation_stores_intended_url(): void
     {
-        $response = $this->get('/users');
+        $response = $this->get(route('users.index'));
 
         $response->assertRedirect(route('login'));
-        $response->assertSessionHas(IntendedUrl::SESSION_KEY, url('/users'));
+        $response->assertSessionHas(IntendedUrl::SESSION_KEY, route('users.index'));
     }
 
     public function test_guest_notification_poll_does_not_store_intended_url(): void
     {
-        $response = $this->getJson('/notifications/unread-count');
+        $response = $this->getJson(route('notifications.unread-count'));
 
         $response->assertRedirect(route('login'));
         $response->assertSessionMissing(IntendedUrl::SESSION_KEY);
@@ -41,11 +41,11 @@ class EnsureWebAuthenticatedIntendedUrlTest extends TestCase
 
     public function test_notification_poll_does_not_overwrite_existing_intended_url(): void
     {
-        $this->get('/users')->assertRedirect(route('login'));
+        $this->get(route('users.index'))->assertRedirect(route('login'));
 
-        $this->getJson('/notifications/unread-count')->assertRedirect(route('login'));
+        $this->getJson(route('notifications.unread-count'))->assertRedirect(route('login'));
 
-        $this->assertSame(url('/users'), session(IntendedUrl::SESSION_KEY));
+        $this->assertSame(route('users.index'), session(IntendedUrl::SESSION_KEY));
     }
 
     public function test_login_redirects_to_stored_intended_page(): void
@@ -70,7 +70,7 @@ class EnsureWebAuthenticatedIntendedUrlTest extends TestCase
             ], 200),
         ]);
 
-        $this->get('/users')->assertRedirect(route('login'));
+        $this->get(route('users.index'))->assertRedirect(route('login'));
 
         $response = $this->from(route('login'))->post('/login', [
             'email' => 'redirect@example.com',
@@ -104,7 +104,7 @@ class EnsureWebAuthenticatedIntendedUrlTest extends TestCase
         ]);
 
         $response = $this->withSession([
-            IntendedUrl::SESSION_KEY => url('/notifications/unread-count'),
+            IntendedUrl::SESSION_KEY => route('notifications.unread-count'),
         ])->post('/login', [
             'email' => 'sanitize@example.com',
             'password' => 'password123',
@@ -126,7 +126,7 @@ class EnsureWebAuthenticatedIntendedUrlTest extends TestCase
         ]);
 
         $response = $this->actingWithJwtCookie($user)
-            ->withSession([IntendedUrl::SESSION_KEY => url('/users')])
+            ->withSession([IntendedUrl::SESSION_KEY => route('users.index')])
             ->post('/logout');
 
         $response->assertRedirect(route('login'));

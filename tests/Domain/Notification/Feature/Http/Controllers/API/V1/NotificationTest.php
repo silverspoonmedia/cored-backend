@@ -247,7 +247,7 @@ class NotificationTest extends TestCase
 
         $this->actingWithJwtCookie($admin)
             ->withHeader('X-Requested-With', 'XMLHttpRequest')
-            ->postJson('/notifications/read-all')
+            ->postJson(route('notifications.read-all'))
             ->assertOk()
             ->assertJsonMissingPath('redirect')
             ->assertJsonPath('status', 'success')
