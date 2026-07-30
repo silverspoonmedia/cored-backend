@@ -290,7 +290,29 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 - Upload: `{PROXY}/uploader/{alias}/{object-key}?partNumber=&uploadId=` + headers `Authorization: Bearer …`, `X-S3-Target: {alias}`, `Content-Type`
 - Download: `{PROXY}/uploader/{alias}/{object-key}?exp={unix}&disp=…&ctype=…&sig={hmacHex}` (HMAC over LF-separated `GET`, alias, objectKey, exp, disposition, contentType; secret = proxy token)
 
-The alias is **not** the B2 bucket name and **not** part of the S3 key; it only selects credentials/endpoint inside the Worker. The browser never receives B2 application keys or the raw upload token on download links.
+**Proxy URL path = S3 object key (keep `file-hosting` prefix)**
+
+The `file-hosting` segment you see in browser Network (e.g. `…/uploader/sbs/file-hosting/{userId}/{objectId}`) is **not** a Gateway folder or route — it is the first segment of the **S3 object key** in the bucket.
+
+| Point | Detail |
+|-------|--------|
+| What `file-hosting` is | Key prefix from `FILE_HOSTING_DIRECTORY` (default `file-hosting`). Config only — not stored in DB `path`. |
+| Full key shape | `{directory}/{user_id}/{objectId}` via `ObjectKeyResolver` (e.g. `file-hosting/019fa89c-…/l8hft9wi…`) |
+| Hybrid proxy URL | `{PROXY}/uploader/{alias}/` + **entire** object key, each path segment URL-encoded |
+| Control vs data plane | Monolith SDK (create / complete / abort) and Gateway (PUT parts / GET bytes) must target the **same** key |
+| Do not shorten the URL | `/uploader/sbs/{userId}/{objectId}` without Gateway key remapping writes parts to the wrong object vs `CreateMultipartUpload` on `file-hosting/…` — upload breaks |
+| Download HMAC | Signed with the **full** `objectKey`; path after `{alias}` must match the payload |
+
+Example (local):
+
+```text
+http://127.0.0.1:8787/uploader/sbs/file-hosting/{userId}/{objectId}?partNumber=1&uploadId=…
+                                      └─ S3 key prefix (FILE_HOSTING_DIRECTORY), not a Gateway module
+```
+
+Shorter public URLs are possible only with an explicit Gateway `keyPrefix` remap plus matching HMAC changes — not supported today; keep the full key in proxy URLs.
+
+The alias is not the B2 bucket name and **not** part of the S3 key; it only selects credentials/endpoint inside the Worker. The browser never receives B2 application keys or the raw upload token on download links.
 
 **Fail closed:** if base URL is set but token or disk alias is missing -> init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3. Upstream S3 failures map to `upstream_failed` where applicable.
 
