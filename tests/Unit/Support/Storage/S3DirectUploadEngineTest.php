@@ -178,11 +178,11 @@ class S3DirectUploadEngineTest extends TestCase
         $this->assertCount(2, $parts);
         $this->assertSame(1, $parts[0]['part_number']);
         $this->assertSame(
-            'https://proxy.example.workers.dev/t/b2-main/file-hosting/user-id/upload-id/abc123.bin?partNumber=1&uploadId=s3-upload-id-xyz',
+            'https://proxy.example.workers.dev/uploader/b2-main/file-hosting/user-id/upload-id/abc123.bin?partNumber=1&uploadId=s3-upload-id-xyz',
             $parts[0]['url'],
         );
         $this->assertSame(
-            'https://proxy.example.workers.dev/t/b2-main/file-hosting/user-id/upload-id/abc123.bin?partNumber=2&uploadId=s3-upload-id-xyz',
+            'https://proxy.example.workers.dev/uploader/b2-main/file-hosting/user-id/upload-id/abc123.bin?partNumber=2&uploadId=s3-upload-id-xyz',
             $parts[1]['url'],
         );
         $this->assertSame(['Bearer strong-upload-token-16'], $parts[0]['headers']['Authorization']);
@@ -212,7 +212,7 @@ class S3DirectUploadEngineTest extends TestCase
 
         $this->assertCount(1, $parts);
         $this->assertSame(
-            'https://proxy.example.workers.dev/t/b2-main/file-hosting/u/up/obj.bin',
+            'https://proxy.example.workers.dev/uploader/b2-main/file-hosting/u/up/obj.bin',
             $parts[0]['url'],
         );
     }
@@ -285,7 +285,7 @@ class S3DirectUploadEngineTest extends TestCase
         );
 
         $this->assertSame(
-            'https://proxy.example.workers.dev/t/b2-main/file-hosting/x.bin?partNumber=3&uploadId=uid-1',
+            'https://proxy.example.workers.dev/uploader/b2-main/file-hosting/x.bin?partNumber=3&uploadId=uid-1',
             $parts[0]['url'],
         );
     }

@@ -70,8 +70,8 @@ class SignedDownloadServiceTest extends TestCase
         $exp = (string) $expiresAt->getTimestamp();
         $disposition = 'attachment; filename="report.pdf"; filename*=UTF-8\'\'report.pdf';
 
-        $this->assertStringStartsWith('https://s3.silverspoon.me/t/sbs/', $url);
-        $this->assertStringContainsString('/t/sbs/file-hosting/'.$user->id.'/'.$file->path.'?', $url);
+        $this->assertStringStartsWith('https://s3.silverspoon.me/uploader/sbs/', $url);
+        $this->assertStringContainsString('/uploader/sbs/file-hosting/'.$user->id.'/'.$file->path.'?', $url);
         $this->assertStringNotContainsString('strong-upload-token-16', $url);
 
         $parts = parse_url($url);
@@ -138,7 +138,7 @@ class SignedDownloadServiceTest extends TestCase
 
         $resolved = $this->service->resolve($file);
 
-        $this->assertStringStartsWith('https://s3.silverspoon.me/t/sbs/', $resolved['url']);
+        $this->assertStringStartsWith('https://s3.silverspoon.me/uploader/sbs/', $resolved['url']);
         $this->assertStringNotContainsString('backblazeb2.com', $resolved['url']);
         $this->assertSame($resolved['url'], $file->fresh()->signed_download_url);
     }
@@ -155,7 +155,7 @@ class SignedDownloadServiceTest extends TestCase
         ]);
 
         $user = $this->userWithRole('User');
-        $stale = 'https://s3.silverspoon.me/t/sbs/file-hosting/x/y?exp=1&sig=ab';
+        $stale = 'https://s3.silverspoon.me/uploader/sbs/file-hosting/x/y?exp=1&sig=ab';
         $file = $this->makeFile($user, [
             'disk' => 's3FileHostingCe',
             'signed_download_url' => $stale,
@@ -185,12 +185,12 @@ class SignedDownloadServiceTest extends TestCase
         ]);
 
         $user = $this->userWithRole('User');
-        // disk has no alias → must not build /t/{alias}/ Worker URL
+        // disk has no alias → must not build /uploader/{alias}/ Worker URL
         $file = $this->makeFile($user, ['disk' => 'local']);
 
         try {
             $url = $this->service->mintAndCache($file)['url'];
-            $this->assertStringNotContainsString('/t/sbs/', $url);
+            $this->assertStringNotContainsString('/uploader/sbs/', $url);
             $this->assertStringNotContainsString('s3.silverspoon.me', $url);
         } catch (FileHostingException $e) {
             // local/S3 temporaryUrl unavailable is fine — proxy path must not have run
@@ -215,7 +215,7 @@ class SignedDownloadServiceTest extends TestCase
 
         $url = $this->service->mintAndCache($file)['url'];
 
-        $this->assertStringStartsWith('https://proxy.example.workers.dev/t/sbs/', $url);
+        $this->assertStringStartsWith('https://proxy.example.workers.dev/uploader/sbs/', $url);
     }
 
     public function test_preview_mints_inline_disposition_for_safe_mime(): void

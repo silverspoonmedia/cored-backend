@@ -260,7 +260,7 @@ class SignedDownloadService
 
         $encodedKey = $this->encodeObjectKeyPath($objectKey);
 
-        return $baseUrl.'/t/'.$alias.'/'.$encodedKey.'?'.$query;
+        return $baseUrl.'/uploader/'.$alias.'/'.$encodedKey.'?'.$query;
     }
 
     /**
