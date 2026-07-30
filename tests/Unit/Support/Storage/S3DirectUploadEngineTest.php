@@ -132,10 +132,10 @@ class S3DirectUploadEngineTest extends TestCase
     }
 
     #[Test]
-    public function default_config_chunk_and_threshold_are_ten_mib(): void
+    public function default_config_chunk_and_threshold_are_twenty_five_mib(): void
     {
-        $this->assertSame(10 * 1024 * 1024, (int) config('file-hosting.chunk_size_bytes'));
-        $this->assertSame(10 * 1024 * 1024, (int) config('file-hosting.multipart_threshold_bytes'));
+        $this->assertSame(25 * 1024 * 1024, (int) config('file-hosting.chunk_size_bytes'));
+        $this->assertSame(25 * 1024 * 1024, (int) config('file-hosting.multipart_threshold_bytes'));
     }
 
     #[Test]
