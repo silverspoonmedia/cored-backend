@@ -207,6 +207,23 @@ class SignedDownloadService
         return trim($alias);
     }
 
+    private function downloadVaultEnabled(): bool
+    {
+        return (bool) config('file-hosting.download_vault.enabled', false);
+    }
+
+    private function vaultUrlPath(string $objectKey): string
+    {
+        $directory = trim((string) config('file-hosting.directory'), '/');
+        $prefix = $directory !== '' ? $directory.'/' : '';
+
+        if ($prefix !== '' && str_starts_with($objectKey, $prefix)) {
+            return substr($objectKey, strlen($prefix));
+        }
+
+        return $objectKey;
+    }
+
     private function proxyDownloadUrl(HostedFile $file, Carbon $expiresAt, bool $inline = false): string
     {
         return $this->proxyObjectDownloadUrl(
@@ -260,7 +277,13 @@ class SignedDownloadService
 
         $encodedKey = $this->encodeObjectKeyPath($objectKey);
 
-        return $baseUrl.'/t/'.$alias.'/'.$encodedKey.'?'.$query;
+        if ($this->downloadVaultEnabled()) {
+            $vaultPath = $this->encodeObjectKeyPath($this->vaultUrlPath($objectKey));
+
+            return $baseUrl.'/vault/'.$alias.'/'.$vaultPath.'?'.$query;
+        }
+
+        return $baseUrl.'/uploader/'.$alias.'/'.$encodedKey.'?'.$query;
     }
 
     /**

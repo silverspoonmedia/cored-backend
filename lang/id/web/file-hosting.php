@@ -316,7 +316,6 @@ return [
     'regions' => [
         'ce' => 'Eropa Tengah',
         'us' => 'Amerika Serikat',
-        'eu' => 'Eropa',
     ],
 
     'bulk' => [

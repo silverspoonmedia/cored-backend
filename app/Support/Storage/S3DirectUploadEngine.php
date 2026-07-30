@@ -382,7 +382,7 @@ class S3DirectUploadEngine
         ];
 
         $keyPath = $this->encodeProxyObjectKey($path);
-        $objectUrl = $baseUrl.'/t/'.rawurlencode($alias).'/'.$keyPath;
+        $objectUrl = $baseUrl.'/uploader/'.rawurlencode($alias).'/'.$keyPath;
         $parts = [];
 
         foreach ($partNumbers as $partNumber) {
@@ -414,7 +414,7 @@ class S3DirectUploadEngine
     }
 
     /**
-     * URL-encode each path segment for Worker /t/{alias}/{key...} routes.
+     * URL-encode each path segment for Worker /uploader/{alias}/{key...} routes.
      */
     public function encodeProxyObjectKey(string $path): string
     {

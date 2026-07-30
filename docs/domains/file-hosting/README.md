@@ -27,7 +27,7 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Live listing | Dedicated private Echo channels + soft-refetch (listing/quota/trash/show). **Not** the notification bell bus. See [Realtime / live listing](#realtime--live-listing). |
 | Display names | Upload complete + **file/folder move** auto-rename on sibling collision (`UniqueDisplayNameAllocator`). Manual rename still rejects exact collisions. |
 | Public share | Guest `/s/f` / `/s/d` only when storage owner is **paid** (`QuotaService::ownerCanPublicShare`). Free/grace → 404 even if DB says `anyone_with_link`. See [Visibility](#visibility). |
-| Storage regions | Multi-disk `s3FileHosting*` (+ legacy `s3Custom` alias). Region column/badge only when multi-region config **or** historical multi-disk usage. |
+| Storage regions | Multi-disk `s3FileHosting*`. Region column/badge only when multi-region config **or** historical multi-disk usage. |
 | Hard navigation | **Download hops only** (auth + signed public → 302 storage URL: CF Worker when proxy on, else S3). In-shell mutations and folder/file/trash/show soft-nav do **not** rely on `location.reload`. |
 | Busy / upload UX | Mutations toggle `.is-fh-busy` spinner overlay; upload queue shows human file size. Successful (**Done**) rows auto-dismiss after ~5s; failed rows stay. |
 
@@ -50,7 +50,7 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Visibility | `private` \| `anyone_with_link` on folders and files |
 | Link secret | Resource UUID (Drive “anyone with the link”; not world-searchable) |
 | Inherit | Folder link-shared -> guest may browse that folder and download files inside even if file is `private` |
-| Region | Per-file `disk` storage (Laravel disk name in DB); product region key derived via `RegionResolver::keyForDisk()` (resolves `disk_aliases` first). `disabled_regions` blocks new uploads only — downloads still served. UI region column/badge appears only when configured regions > 1 **or** historical multi-disk usage exists (aliases collapsed so `s3Custom` -> `s3FileHostingCe`). |
+| Region | Per-file `disk` storage (Laravel disk name in DB); product region key derived via `RegionResolver::keyForDisk()` (resolves `disk_aliases` first). `disabled_regions` blocks new uploads only — downloads still served. UI region column/badge appears only when configured regions > 1 **or** historical multi-disk usage exists. |
 | Ownership | Own resources; cross-user via product “any” + core `RoleService` hierarchy |
 | Collaborative Works | Paid perk for **owners**; free users may **join** as members. Blade UX on File Hosting page (not a separate dynamic menu). |
 
@@ -233,7 +233,7 @@ Control plane (init / sign-parts / complete / abort / mint download URL) always 
 | Mode | When | Browser data plane |
 |------|------|--------------------|
 | **Direct S3** (default) | `FILE_HOSTING_UPLOAD_PROXY_URL` empty | Presigned S3 PUT/UploadPart + S3 temporary GET URL |
-| **Hybrid proxy** | base URL + token + disk->alias set | Upload: CF Worker `/t/{alias}/{key}` (+ multipart query) + Bearer. Download: same path + HMAC query (`exp`, `sig`, optional `disp`/`ctype`) — no raw token |
+| **Hybrid proxy** | base URL + token + disk->alias set | Upload: Gateway Uploader `/uploader/{alias}/{key}` (+ multipart query) + Bearer. Download: same path + HMAC query (`exp`, `sig`, optional `disp`/`ctype`) — no raw token |
 
 Shared kernel pieces (not duplicated per domain):
 
@@ -278,47 +278,129 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 
 | Env | Role |
 |-----|------|
-| `FILE_HOSTING_UPLOAD_PROXY_URL` | Worker origin (no trailing slash). Empty = direct S3 for **upload + download**. Example production custom domain: `https://s3.silverspoon.me` |
-| `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Same value as Worker `S3_TARGETS.uploadToken` — upload **Bearer** + download **HMAC secret** (never put raw token in download URLs) |
-| `FILE_HOSTING_UPLOAD_PROXY_TARGET_CE` | Worker target **alias** for disk `s3FileHostingCe` (must match a key under Worker `S3_TARGETS.targets`, e.g. `sbs`) |
+| `FILE_HOSTING_UPLOAD_PROXY_URL` | Gateway Uploader origin (no trailing slash). Empty = direct S3 for **upload + download**. Example: `https://gateway.sspn.workers.dev` |
+| `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Same value as Gateway `S3_TARGETS.uploadToken` — upload **Bearer** + download **HMAC secret** (never put raw token in download URLs) |
+| `FILE_HOSTING_UPLOAD_PROXY_TARGET_CE` | Uploader target **alias** for disk `s3FileHostingCe` (must match a key under Gateway `S3_TARGETS.targets`, e.g. `sbs`) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_US` | Alias for disk `s3FileHostingUs` (optional) |
-| `FILE_HOSTING_UPLOAD_PROXY_TARGET_EU` | Alias for disk `s3FileHostingEu` (optional) |
-| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM` | Legacy fallback for CE / `s3Custom` disk rows (same alias as `TARGET_CE` when CE env empty) |
+| `FILE_HOSTING_DOWNLOAD_VAULT_ENABLED` | When `true`, download URLs use `/vault/{alias}/{userId}/{objectId}` (vault code = upload alias; `file-hosting/` prefix stripped from path). Gateway must have matching `vaultOrigins.{alias}` with `keyPrefix`. |
 
-**Where does `/t/{alias}/…` come from?** Monolith maps the file/upload disk (e.g. `s3FileHostingCe` or legacy `s3Custom`) -> env alias via `upload_proxy.disk_targets`, then builds:
+**Upload vs download paths (hybrid proxy on):**
 
-- Upload: `{PROXY}/t/{alias}/{object-key}?partNumber=&uploadId=` + headers `Authorization: Bearer …`, `X-S3-Target: {alias}`, `Content-Type`
-- Download: `{PROXY}/t/{alias}/{object-key}?exp={unix}&disp=…&ctype=…&sig={hmacHex}` (HMAC over LF-separated `GET`, alias, objectKey, exp, disposition, contentType; secret = proxy token)
+- Upload: `{PROXY}/uploader/{alias}/file-hosting/{userId}/{objectId}?partNumber=&uploadId=` + Bearer / `X-S3-Target`
+- Download (vault enabled): `{PROXY}/vault/{alias}/{userId}/{objectId}?exp=&disp=&ctype=&sig=`
+- Download (vault disabled — legacy): `{PROXY}/uploader/{alias}/file-hosting/{userId}/{objectId}?exp=&disp=&ctype=&sig=`
 
-The alias is **not** the B2 bucket name and **not** part of the S3 key; it only selects credentials/endpoint inside the Worker. The browser never receives B2 application keys or the raw upload token on download links.
+HMAC always signs the **full** object key (`file-hosting/{userId}/{objectId}`) and upload **alias** (`sbs`). Gateway reassembles the key from `keyPrefix` + short vault path.
+
+**Where does `/uploader/{alias}/…` come from?** Monolith maps disk → alias via `upload_proxy.disk_targets`. Upload always uses the full object key in the path. Download uses Vault when `FILE_HOSTING_DOWNLOAD_VAULT_ENABLED=true`.
+
+**Proxy URL path = S3 object key (keep `file-hosting` prefix)**
+
+The `file-hosting` segment you see in browser Network (e.g. `…/uploader/sbs/file-hosting/{userId}/{objectId}`) is **not** a Gateway folder or route — it is the first segment of the **S3 object key** in the bucket.
+
+| Point | Detail |
+|-------|--------|
+| What `file-hosting` is | Key prefix from `FILE_HOSTING_DIRECTORY` (default `file-hosting`). Config only — not stored in DB `path`. |
+| Full key shape | `{directory}/{user_id}/{objectId}` via `ObjectKeyResolver` (e.g. `file-hosting/019fa89c-…/l8hft9wi…`) |
+| Hybrid proxy URL | `{PROXY}/uploader/{alias}/` + **entire** object key, each path segment URL-encoded |
+| Control vs data plane | Monolith SDK (create / complete / abort) and Gateway (PUT parts / GET bytes) must target the **same** key |
+| Do not shorten the URL | `/uploader/sbs/{userId}/{objectId}` without Gateway key remapping writes parts to the wrong object vs `CreateMultipartUpload` on `file-hosting/…` — upload breaks |
+| Download HMAC | Signed with the **full** `objectKey`; path after `{alias}` must match the payload |
+
+Example (local):
+
+```text
+http://127.0.0.1:8787/uploader/sbs/file-hosting/{userId}/{objectId}?partNumber=1&uploadId=…
+                                      └─ S3 key prefix (FILE_HOSTING_DIRECTORY), not a Gateway module
+```
+
+Shorter **download** URLs are supported via Vault `keyPrefix` remapping (`/vault/sbs/{userId}/{objectId}`). **Upload** URLs must still carry the full object key — do not shorten upload paths without coordinated Gateway remapping.
+
+The alias is not the B2 bucket name and **not** part of the S3 key; it only selects credentials/endpoint inside the Worker. The browser never receives B2 application keys or the raw upload token on download links.
 
 **Fail closed:** if base URL is set but token or disk alias is missing -> init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3. Upstream S3 failures map to `upstream_failed` where applicable.
 
-**B2 / path-style:** Monolith FH disks (`s3FileHostingCe` and legacy alias `s3Custom`) must use path-style endpoints (`FILE_HOSTING_S3_CE_USE_PATH_STYLE` / `CUSTOM_S3_USE_PATH_STYLE`, default true in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
+**B2 / path-style:** Monolith FH disk `s3FileHostingCe` must use path-style endpoints (`FILE_HOSTING_S3_CE_USE_PATH_STYLE`, default true in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
 
-**Worker project:** `c:\laragon\www\workers` — Wrangler name **`cf-workers-s3-proxy`**. Streaming SigV4 proxy for **upload + download** (GetObject HMAC); production custom domain example `https://s3.silverspoon.me`. See that repo’s README. Spec history: [chore-now.md](./chore-now.md).
+**Gateway project:** `c:\laragon\www\gateway` — Wrangler name **`gateway`**, Uploader at `/uploader/<alias>/…`. Supersedes standalone `cf-workers-s3-proxy` (`workers` repo). See [gateway/docs/projects/uploader.md](../../../gateway/docs/projects/uploader.md). Spec history: [chore-now.md](./chore-now.md).
 
 **Deploy / secrets (ops):**
 
 | Step | Note |
 |------|------|
-| Runtime secret | `S3_TARGETS` is a **Worker secret**, not git, not `.dev.vars` on CF. Set with `npx wrangler secret put S3_TARGETS --name cf-workers-s3-proxy` (name must match deployed Worker). |
-| Dashboard Variables | Must be on the **same** Worker that serves the public hostname. UI “Variables” on another Worker / build env only -> `/health` returns config missing. |
-| Alias rename | Change key + `defaultTarget` in `S3_TARGETS` **first**, then Monolith `FILE_HOSTING_UPLOAD_PROXY_TARGET_*`, then `php artisan config:clear`. In-flight sessions still using the old `/t/old-alias/…` may 400. |
+| Runtime secret | `S3_TARGETS` is a **Gateway Worker secret**, not git, not `.dev.vars` on CF. Set with `npx wrangler secret put S3_TARGETS --name gateway` (name must match deployed Worker). |
+| Dashboard Variables | Must be on the **same** Worker that serves the public hostname (`gateway`). UI “Variables” on another Worker / build env only → `/uploader/health` returns config missing. |
+| Alias rename | Change key + `defaultTarget` in Gateway `S3_TARGETS` **first**, then Monolith `FILE_HOSTING_UPLOAD_PROXY_TARGET_*`, then `php artisan config:clear`. In-flight sessions still using an old path may 400. |
 | Error bodies | Production Worker returns generic messages only (`Configuration invalid or missing`, `Internal server error`). Details stay in Workers Logs (`console.error`). |
 
 **Hybrid protocol (parts[] response):**
 
-- `url` = `{proxy}/t/{alias}/{encoded-key}` or with `?partNumber=&uploadId=` for multipart
+- `url` = `{proxy}/uploader/{alias}/{encoded-key}` or with `?partNumber=&uploadId=` for multipart
 - `headers` = multi-value map: `Authorization: Bearer …`, `X-S3-Target`, `Content-Type`
 - Create/complete/abort still use Monolith disk credentials against real S3 (not the Worker)
 - Client `direct-upload.js` accepts header values as string or single-element array
 
 **Hybrid protocol (download URL in `signed_download_url`):**
 
-- Proxy on: `{proxy}/t/{alias}/{encoded-key}?exp=&disp=&ctype=&sig=` (HMAC; browser 302 cannot send Bearer)
+- Proxy on + vault enabled: `{proxy}/vault/{alias}/{userId}/{objectId}?exp=&disp=&ctype=&sig=`
+- Proxy on, no vault code (legacy): `{proxy}/uploader/{alias}/{encoded-key}?exp=&disp=&ctype=&sig=`
 - Proxy off: S3 temporary URL from disk `temporaryUrl`
 - Cache reminted if host disagrees with current proxy mode (stale B2 URL after enabling proxy, or stale Worker URL after disabling)
+
+**Download retrieve flow (HMAC)**
+
+When `FILE_HOSTING_UPLOAD_PROXY_URL` is set, Monolith never streams file bytes. It mints a time-limited Gateway URL; the browser follows a **302** (web) or uses `{ url, expires_at }` (API), then Gateway verifies HMAC and streams from B2.
+
+```mermaid
+sequenceDiagram
+  participant Browser
+  participant Monolith
+  participant Vault
+  participant B2
+  Browser->>Monolith: GET /apps/file-hosting/files/{id}/download
+  Monolith->>Monolith: SignedDownloadService mint/cache HMAC URL, download_count++
+  Monolith-->>Browser: 302 Location Gateway URL
+  Browser->>Vault: GET /vault/sbs/{userId}/{objectId}?exp&sig&disp&ctype
+  Vault->>Vault: code → target alias, requireDownloadSignature, optional edge cache
+  Vault->>B2: SigV4 GetObject
+  B2-->>Vault: object bytes
+  Vault-->>Browser: attachment or inline
+```
+
+When `FILE_HOSTING_DOWNLOAD_VAULT_ENABLED` is false, the Gateway hop is **Uploader** (`GET /uploader/{alias}/…`) with the same HMAC — backward compatible.
+
+| Query param | Role |
+|-------------|------|
+| `exp` | Unix expiry (seconds). **Enforced by Gateway** (`exp` + 60s grace). `signed_download_expires_at` in DB is only Monolith's cache hint for reuse vs remint. |
+| `sig` | Hex HMAC-SHA256 over LF-separated payload below. Secret = `uploadToken` / `FILE_HOSTING_UPLOAD_PROXY_TOKEN`. Raw token never appears in the URL. |
+| `disp` | `Content-Disposition` passed to S3 as `response-content-disposition` (human filename from DB `name`). |
+| `ctype` | `Content-Type` passed to S3 as `response-content-type`. |
+
+HMAC payload (must match Gateway `buildDownloadSignaturePayload`):
+
+```text
+GET
+{alias}
+{objectKey}
+{exp}
+{disposition}
+{contentType}
+```
+
+Entry points (all end at the same storage URL shape when proxy is on):
+
+| Route | Hop |
+|-------|-----|
+| `GET /apps/file-hosting/files/{id}/download` | Auth web → `FileService::issueDownload` → 302 |
+| `GET /api/v1/file-hosting/files/{id}/download` | Auth API → JSON `{ url, expires_at }` |
+| `GET /s/f/{id}/download` | Laravel signed hop (short TTL) → then same HMAC storage URL |
+| `GET /api/v1/file-hosting/public/files/{id}/download` | Guest API → same mint path |
+
+**Not used for download:** Bearer / `X-Upload-Token` (browser navigation cannot set headers on a 302 follow). Upload ops still use Bearer.
+
+**Preview (`?preview=1`):** safe MIME types get `inline` disposition → different `disp` in payload → different `sig`. Preview URLs are minted on demand and not cached in `signed_download_url`.
+
+**Parity verification (workers → gateway port):** automated — Gateway `test/uploader.spec.ts` (40 tests: HMAC accept/reject/expiry, GetObject cache HIT/MISS/Range/SKIP); Monolith `SignedDownloadServiceTest` (10 tests: mint, sig match, cache remint). Manual smoke: tampered `sig` → Gateway **401**; repeat download → `X-Cache: HIT` on small objects.
 
 ### Orphan multipart cleanup + post-upload checksum
 
@@ -382,7 +464,7 @@ Why a large upload used to start ~20 MB/s then sag to 10 then ~1 MB/s, and why ~
 | **Worker had no error-handling/timeout/retry on the streamed fetch** — a mid-transfer B2 reset / edge timeout tore the response into a Cloudflare **520** with no log | `signedFetchToS3` now retries transient 5xx/network errors on **bodyless** requests (GetObject/create/complete/abort) and returns a **graceful 502 + `upstream_error` log** instead of throwing; **UploadPart stream is not retried** (single-use body) — the client re-PUTs the part |
 | **Speed meter was a cumulative average** — one stall dragged the displayed rate down for the rest of the upload | Speed is now a **sliding-window (5s) instantaneous rate** (`createRateSampler`) |
 
-Worker changes go live only after pushing the Worker repo to GitHub (`s3.silverspoon.me`); Monolith changes only need `npm run build`.
+Gateway Uploader changes go live after `wrangler deploy` on the `gateway` Worker; Monolith changes only need `php artisan config:clear` (and `npm run build` if Blade/JS touched).
 
 ### S3 provider CORS (browser-direct multipart)
 
@@ -672,20 +754,18 @@ Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + r
 
 | Disk | Role |
 |------|------|
-| `s3FileHostingCe` | Primary CE region (`FILE_HOSTING_S3_CE_*`, fallback `CUSTOM_S3_*`) |
+| `s3FileHostingCe` | Primary CE region (`FILE_HOSTING_S3_CE_*`) |
 | `s3FileHostingUs` | Optional US region (`FILE_HOSTING_S3_US_*`) |
-| `s3FileHostingEu` | Optional EU region (`FILE_HOSTING_S3_EU_*`) |
-| `s3Custom` | **Legacy alias** of CE credentials — existing `HostedFile.disk` / `FileUpload.disk` rows keep working |
 
-Region keys for new uploads: `ce` (Central European), `us`, `eu`. Client field name is still `disk` but the **value is the region key**; `DirectUploadService::resolveDiskName()` maps to the Laravel disk name stored in DB.
+Region keys for new uploads: `ce` (Central European), `us`. Client field name is still `disk` but the **value is the region key**; `DirectUploadService::resolveDiskName()` maps to the Laravel disk name stored in DB.
 
 Region UI (list column, detail badge, soft-refetch): `RegionResolver::shouldDisplayRegion()` — true when `count(configured regions) > 1` **or** historical distinct disks on `HostedFile` (with trashed) > 1 after alias collapse.
 
 | Key | Role |
 |-----|------|
 | `disk` / `directory` | Default Laravel disk for new uploads (`FILE_HOSTING_DISK`, default `s3FileHostingCe`) + key prefix (`FILE_HOSTING_DIRECTORY`, default `file-hosting`). Prefix is **not** stored in DB `path`. |
-| `regions` | Region key -> disk name map (`ce` -> `s3FileHostingCe`, optional `us` / `eu`); only regions with non-empty disk appear in upload dropdown. Labels: `lang/*/web/file-hosting.php` (`Central European`, etc.). |
-| `disk_aliases` | Legacy disk name -> canonical disk (`s3Custom` -> `s3FileHostingCe`) for region reverse-lookup and historical multi-disk collapse |
+| `regions` | Region key -> disk name map (`ce` -> `s3FileHostingCe`, optional `us`); only regions with non-empty disk appear in upload dropdown. Labels: `lang/*/web/file-hosting.php` (`Central European`, etc.). |
+| `disk_aliases` | Optional disk name -> canonical disk map for region reverse-lookup and historical multi-disk collapse |
 | `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
 | `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **10 MiB** each) |
 | `upload_proxy.*` | Optional CF Worker hybrid byte path for **upload + download** (`base_url`, `token`, `disk_targets`) |

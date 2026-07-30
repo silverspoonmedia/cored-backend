@@ -25,6 +25,7 @@ class EnvironmentProfileManager
 
     public function __construct(
         private readonly EnvironmentKeyWriter $keyWriter,
+        private readonly EnvironmentMutationGuard $guard,
         private readonly ?string $basePath = null,
     ) {}
 
@@ -130,25 +131,19 @@ class EnvironmentProfileManager
     /**
      * @return array<int, string> Non-fatal warnings (e.g. APP_KEY generation failed).
      */
-    public function installFromTemplate(string $profile): array
+    public function installFromTemplate(string $profile, bool $forcePastBackup = false): array
     {
         $this->assertValidProfile($profile);
 
-        $templatePath = $this->templatePath($profile);
-
-        if (! File::exists($templatePath)) {
-            throw new RuntimeException('Profile template not found: '.self::TEMPLATES[$profile]);
-        }
-
-        File::copy($templatePath, $this->envPath());
-        $warnings = $this->generateSecrets($this->envPath());
-        $this->saveSnapshot($profile);
-        $this->setActiveProfile($profile);
-
-        return $warnings;
+        return $this->guard->run(
+            'env:install',
+            fn (): array => $this->performInstallFromTemplate($profile),
+            $this->installBackupPaths($profile),
+            $forcePastBackup,
+        );
     }
 
-    public function activateProfile(string $profile): EnvironmentSwitchResult
+    public function activateProfile(string $profile, bool $forcePastBackup = false): EnvironmentSwitchResult
     {
         $this->assertValidProfile($profile);
 
@@ -163,6 +158,82 @@ class EnvironmentProfileManager
             );
         }
 
+        return $this->guard->run(
+            'env:switch',
+            fn (): EnvironmentSwitchResult => $this->performActivateProfile($profile, $current),
+            $this->switchBackupPaths(),
+            $forcePastBackup,
+        );
+    }
+
+    /**
+     * @return array<int, array{profile: string, active: bool, snapshot: bool}>
+     */
+    public function profileStatuses(): array
+    {
+        $active = $this->activeProfile();
+
+        return array_map(
+            fn (string $profile): array => [
+                'profile' => $profile,
+                'active' => $active === $profile,
+                'snapshot' => $this->snapshotExists($profile),
+            ],
+            self::PROFILES,
+        );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function installBackupPaths(string $profile): array
+    {
+        $paths = [];
+
+        if (File::exists($this->envPath())) {
+            $paths[$this->envPath()] = '.env';
+        }
+
+        if ($this->snapshotExists($profile)) {
+            $paths[$this->profilePath($profile)] = '.env.'.$profile;
+        }
+
+        return $paths;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function switchBackupPaths(): array
+    {
+        if (! File::exists($this->envPath())) {
+            return [];
+        }
+
+        return [$this->envPath() => '.env'];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function performInstallFromTemplate(string $profile): array
+    {
+        $templatePath = $this->templatePath($profile);
+
+        if (! File::exists($templatePath)) {
+            throw new RuntimeException('Profile template not found: '.self::TEMPLATES[$profile]);
+        }
+
+        File::copy($templatePath, $this->envPath());
+        $warnings = $this->generateSecrets($this->envPath());
+        $this->saveSnapshot($profile);
+        $this->setActiveProfile($profile);
+
+        return $warnings;
+    }
+
+    private function performActivateProfile(string $profile, ?string $current): EnvironmentSwitchResult
+    {
         $savedProfile = null;
 
         if (File::exists($this->envPath())) {
@@ -188,23 +259,6 @@ class EnvironmentProfileManager
             activatedProfile: $profile,
             bootstrapped: $bootstrapped,
             skipped: false,
-        );
-    }
-
-    /**
-     * @return array<int, array{profile: string, active: bool, snapshot: bool}>
-     */
-    public function profileStatuses(): array
-    {
-        $active = $this->activeProfile();
-
-        return array_map(
-            fn (string $profile): array => [
-                'profile' => $profile,
-                'active' => $active === $profile,
-                'snapshot' => $this->snapshotExists($profile),
-            ],
-            self::PROFILES,
         );
     }
 

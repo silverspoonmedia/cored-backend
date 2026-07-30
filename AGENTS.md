@@ -9,6 +9,7 @@ Three instructions below are canonical here — no other document may re-define 
 1. **Assess before changing.** Before any change, check, validate, and assess the task: read the relevant code and docs until the work context is fully understood. No blind edits.
 2. **Update docs with every task.** After finishing a task, always update the relevant related documentation so code and docs never drift (details: rule 2 in [docs/agents/core-rules.md](docs/agents/core-rules.md)).
 3. **`wrap up the docs` keyword.** The exact phrase `wrap up the docs` triggers a session-wide consolidation: reconcile ALL implementations from the session against the documentation as a whole. Per-task doc updates (point 2) cover only that task; the final state may differ — this keyword closes that gap.
+4. **`curate the env` keyword.** The exact phrase `curate the env` triggers env layout curation: run `php artisan env:curate --dry-run` first, show the summary, then `php artisan env:curate` (add `--sync-snapshot` when snapshot sync is needed). Never rewrite `.env` layout with editor tools directly — guarded artisan commands handle transactional backup. For other env mutations, use guarded artisan commands (`env:install`, `env:switch`, `key:generate`) or `php artisan env:backup:create` before manual edits. Details: [docs/platform/environment.md](docs/platform/environment.md).
 
 ## Read first
 

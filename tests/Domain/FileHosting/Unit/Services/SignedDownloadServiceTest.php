@@ -38,6 +38,7 @@ class SignedDownloadServiceTest extends TestCase
             'file-hosting.upload_proxy.base_url' => '',
             'file-hosting.upload_proxy.token' => '',
             'file-hosting.upload_proxy.disk_targets' => [],
+            'file-hosting.download_vault.enabled' => false,
         ]);
 
         $this->service = app(SignedDownloadService::class);
@@ -70,8 +71,8 @@ class SignedDownloadServiceTest extends TestCase
         $exp = (string) $expiresAt->getTimestamp();
         $disposition = 'attachment; filename="report.pdf"; filename*=UTF-8\'\'report.pdf';
 
-        $this->assertStringStartsWith('https://s3.silverspoon.me/t/sbs/', $url);
-        $this->assertStringContainsString('/t/sbs/file-hosting/'.$user->id.'/'.$file->path.'?', $url);
+        $this->assertStringStartsWith('https://s3.silverspoon.me/uploader/sbs/', $url);
+        $this->assertStringContainsString('/uploader/sbs/file-hosting/'.$user->id.'/'.$file->path.'?', $url);
         $this->assertStringNotContainsString('strong-upload-token-16', $url);
 
         $parts = parse_url($url);
@@ -96,6 +97,51 @@ class SignedDownloadServiceTest extends TestCase
         $file->refresh();
         $this->assertSame($url, $file->signed_download_url);
         $this->assertTrue($expiresAt->equalTo($file->signed_download_expires_at));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_proxy_mints_short_vault_url_when_download_vault_enabled(): void
+    {
+        config([
+            'file-hosting.upload_proxy.base_url' => 'https://s3.silverspoon.me/',
+            'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
+            'file-hosting.upload_proxy.disk_targets' => [
+                's3FileHostingCe' => 'sbs',
+            ],
+            'file-hosting.download_vault.enabled' => true,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-07-24 10:00:00', 'UTC'));
+
+        $user = $this->userWithRole('User');
+        $file = $this->makeFile($user, [
+            'disk' => 's3FileHostingCe',
+            'name' => 'report.pdf',
+            'mime' => 'application/pdf',
+        ]);
+
+        $resolved = $this->service->mintAndCache($file);
+        $url = $resolved['url'];
+
+        $this->assertStringStartsWith('https://s3.silverspoon.me/vault/sbs/', $url);
+        $this->assertStringContainsString('/vault/sbs/'.$user->id.'/'.$file->path.'?', $url);
+        $this->assertStringNotContainsString('/vault/sbs/file-hosting/', $url);
+        $this->assertStringNotContainsString('/uploader/', $url);
+
+        $parts = parse_url($url);
+        $this->assertIsArray($parts);
+        parse_str($parts['query'] ?? '', $query);
+
+        $objectKey = app(ObjectKeyResolver::class)->objectKey($user->id, $file->path);
+        $payload = $this->service->downloadSignaturePayload(
+            'sbs',
+            $objectKey,
+            (string) ($query['exp'] ?? ''),
+            (string) ($query['disp'] ?? ''),
+            'application/pdf',
+        );
+        $this->assertSame(hash_hmac('sha256', $payload, 'strong-upload-token-16'), $query['sig']);
 
         Carbon::setTestNow();
     }
@@ -138,7 +184,7 @@ class SignedDownloadServiceTest extends TestCase
 
         $resolved = $this->service->resolve($file);
 
-        $this->assertStringStartsWith('https://s3.silverspoon.me/t/sbs/', $resolved['url']);
+        $this->assertStringStartsWith('https://s3.silverspoon.me/uploader/sbs/', $resolved['url']);
         $this->assertStringNotContainsString('backblazeb2.com', $resolved['url']);
         $this->assertSame($resolved['url'], $file->fresh()->signed_download_url);
     }
@@ -155,7 +201,7 @@ class SignedDownloadServiceTest extends TestCase
         ]);
 
         $user = $this->userWithRole('User');
-        $stale = 'https://s3.silverspoon.me/t/sbs/file-hosting/x/y?exp=1&sig=ab';
+        $stale = 'https://s3.silverspoon.me/uploader/sbs/file-hosting/x/y?exp=1&sig=ab';
         $file = $this->makeFile($user, [
             'disk' => 's3FileHostingCe',
             'signed_download_url' => $stale,
@@ -185,12 +231,12 @@ class SignedDownloadServiceTest extends TestCase
         ]);
 
         $user = $this->userWithRole('User');
-        // disk has no alias → must not build /t/{alias}/ Worker URL
+        // disk has no alias → must not build /uploader/{alias}/ Worker URL
         $file = $this->makeFile($user, ['disk' => 'local']);
 
         try {
             $url = $this->service->mintAndCache($file)['url'];
-            $this->assertStringNotContainsString('/t/sbs/', $url);
+            $this->assertStringNotContainsString('/uploader/sbs/', $url);
             $this->assertStringNotContainsString('s3.silverspoon.me', $url);
         } catch (FileHostingException $e) {
             // local/S3 temporaryUrl unavailable is fine — proxy path must not have run
@@ -199,23 +245,22 @@ class SignedDownloadServiceTest extends TestCase
         }
     }
 
-    public function test_legacy_s3custom_disk_maps_to_proxy_alias(): void
+    public function test_ce_disk_maps_to_proxy_alias(): void
     {
         config([
             'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
             'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
             'file-hosting.upload_proxy.disk_targets' => [
-                's3Custom' => 'sbs',
                 's3FileHostingCe' => 'sbs',
             ],
         ]);
 
         $user = $this->userWithRole('User');
-        $file = $this->makeFile($user, ['disk' => 's3Custom']);
+        $file = $this->makeFile($user, ['disk' => 's3FileHostingCe']);
 
         $url = $this->service->mintAndCache($file)['url'];
 
-        $this->assertStringStartsWith('https://proxy.example.workers.dev/t/sbs/', $url);
+        $this->assertStringStartsWith('https://proxy.example.workers.dev/uploader/sbs/', $url);
     }
 
     public function test_preview_mints_inline_disposition_for_safe_mime(): void

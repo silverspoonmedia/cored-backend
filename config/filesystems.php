@@ -49,28 +49,17 @@ $s3CompatibleDisk = static function (array $primary, array $fallback = []) use (
     ];
 };
 
-// File Hosting CE credentials: prefer FILE_HOSTING_S3_CE_*, fall back to CUSTOM_S3_* for existing deploys.
-$fhCeDisk = $s3CompatibleDisk(
-    [
-        'bucket' => 'FILE_HOSTING_S3_CE_BUCKET',
-        'region' => 'FILE_HOSTING_S3_CE_REGION',
-        'key' => 'FILE_HOSTING_S3_CE_KEY',
-        'secret' => 'FILE_HOSTING_S3_CE_SECRET',
-        'endpoint' => 'FILE_HOSTING_S3_CE_ENDPOINT',
-        'domain' => 'FILE_HOSTING_S3_CE_DOMAIN',
-        'path_style' => 'FILE_HOSTING_S3_CE_USE_PATH_STYLE',
-        'path_style_default' => true,
-    ],
-    [
-        'bucket' => 'CUSTOM_S3_BUCKET',
-        'region' => 'CUSTOM_S3_REGION',
-        'key' => 'CUSTOM_S3_KEY',
-        'secret' => 'CUSTOM_S3_SECRET',
-        'endpoint' => 'CUSTOM_S3_ENDPOINT',
-        'domain' => 'CUSTOM_S3_BUCKET_DOMAIN',
-        'path_style' => 'CUSTOM_S3_USE_PATH_STYLE',
-    ],
-);
+// File Hosting CE credentials (disk s3FileHostingCe).
+$fhCeDisk = $s3CompatibleDisk([
+    'bucket' => 'FILE_HOSTING_S3_CE_BUCKET',
+    'region' => 'FILE_HOSTING_S3_CE_REGION',
+    'key' => 'FILE_HOSTING_S3_CE_KEY',
+    'secret' => 'FILE_HOSTING_S3_CE_SECRET',
+    'endpoint' => 'FILE_HOSTING_S3_CE_ENDPOINT',
+    'domain' => 'FILE_HOSTING_S3_CE_DOMAIN',
+    'path_style' => 'FILE_HOSTING_S3_CE_USE_PATH_STYLE',
+    'path_style_default' => true,
+]);
 
 return [
 
@@ -133,8 +122,7 @@ return [
         ],
 
         /*
-        | File Hosting — Central European (primary).
-        | Env: FILE_HOSTING_S3_CE_* with fallback to CUSTOM_S3_* for existing installs.
+        | File Hosting — Central European (primary). Env: FILE_HOSTING_S3_CE_*.
         */
         's3FileHostingCe' => $fhCeDisk,
 
@@ -151,27 +139,6 @@ return [
             'path_style' => 'FILE_HOSTING_S3_US_USE_PATH_STYLE',
             'path_style_default' => true,
         ]),
-
-        /*
-        | File Hosting — Europe (optional; leave env empty until provisioned).
-        */
-        's3FileHostingEu' => $s3CompatibleDisk([
-            'bucket' => 'FILE_HOSTING_S3_EU_BUCKET',
-            'region' => 'FILE_HOSTING_S3_EU_REGION',
-            'key' => 'FILE_HOSTING_S3_EU_KEY',
-            'secret' => 'FILE_HOSTING_S3_EU_SECRET',
-            'endpoint' => 'FILE_HOSTING_S3_EU_ENDPOINT',
-            'domain' => 'FILE_HOSTING_S3_EU_DOMAIN',
-            'path_style' => 'FILE_HOSTING_S3_EU_USE_PATH_STYLE',
-            'path_style_default' => true,
-        ]),
-
-        /*
-        | Legacy alias of s3FileHostingCe — HostedFile.disk / FileUpload.disk rows
-        | written before the rename still resolve here. Prefer s3FileHostingCe for
-        | new uploads (FILE_HOSTING_DISK / FILE_HOSTING_REGION_CE_DISK).
-        */
-        's3Custom' => $fhCeDisk,
 
     ],
 

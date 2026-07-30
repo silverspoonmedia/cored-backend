@@ -17,7 +17,8 @@ class EnvSwitchCommand extends Command
 {
     protected $signature = 'env:switch
         {profile? : Profile to activate: local, staging, or production}
-        {--list : List profiles and snapshot status}';
+        {--list : List profiles and snapshot status}
+        {--force-past-backup : Proceed even if a pending backup exists}';
 
     protected $description = 'Switch active .env between profiles without losing per-profile config';
 
@@ -42,8 +43,11 @@ class EnvSwitchCommand extends Command
         $profile = strtolower(trim((string) $profile));
 
         try {
-            $result = $this->profiles->activateProfile($profile);
-        } catch (InvalidArgumentException $exception) {
+            $result = $this->profiles->activateProfile(
+                $profile,
+                (bool) $this->option('force-past-backup'),
+            );
+        } catch (InvalidArgumentException|\RuntimeException $exception) {
             $this->error($exception->getMessage());
 
             return self::FAILURE;

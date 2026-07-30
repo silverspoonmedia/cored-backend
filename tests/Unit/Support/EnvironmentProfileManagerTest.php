@@ -2,7 +2,9 @@
 
 namespace Tests\Unit\Support;
 
+use App\Support\EnvironmentBackupManager;
 use App\Support\EnvironmentKeyWriter;
+use App\Support\EnvironmentMutationGuard;
 use App\Support\EnvironmentProfileManager;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
@@ -20,8 +22,12 @@ class EnvironmentProfileManagerTest extends TestCase
         $this->sandbox = storage_path('framework/testing-env-manager-'.uniqid());
         File::makeDirectory($this->sandbox, recursive: true);
 
+        $storage = $this->sandbox.DIRECTORY_SEPARATOR.'storage';
+        File::makeDirectory($storage, recursive: true);
+
         $this->manager = new EnvironmentProfileManager(
             new EnvironmentKeyWriter,
+            new EnvironmentMutationGuard(new EnvironmentBackupManager($storage, $this->sandbox)),
             $this->sandbox,
         );
 
