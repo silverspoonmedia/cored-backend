@@ -224,19 +224,6 @@ class SignedDownloadService
         return $objectKey;
     }
 
-    private function proxyDownloadUrl(HostedFile $file, Carbon $expiresAt, bool $inline = false): string
-    {
-        return $this->proxyObjectDownloadUrl(
-            (string) $file->user_id,
-            (string) $file->disk,
-            (string) $file->path,
-            $expiresAt,
-            $file->name,
-            is_string($file->mime) ? $file->mime : '',
-            $inline,
-        );
-    }
-
     private function proxyObjectDownloadUrl(
         string $userId,
         string $disk,
@@ -326,19 +313,6 @@ class SignedDownloadService
         return str_starts_with($normalizedUrl, $normalizedBase.'/')
             || $normalizedUrl === $normalizedBase
             || str_starts_with($normalizedUrl, $normalizedBase.'?');
-    }
-
-    private function temporaryUrl(HostedFile $file, Carbon $expiresAt, bool $inline = false): string
-    {
-        return $this->temporaryObjectUrl(
-            (string) $file->user_id,
-            (string) $file->disk,
-            (string) $file->path,
-            $expiresAt,
-            $file->name,
-            is_string($file->mime) ? $file->mime : '',
-            $inline,
-        );
     }
 
     private function temporaryObjectUrl(

@@ -51,9 +51,9 @@ return [
     | multipart_threshold_bytes: size < threshold → single PUT; else multipart.
     |--------------------------------------------------------------------------
     */
-    'chunk_size_bytes' => (int) env('FILE_HOSTING_CHUNK_SIZE', 10 * 1024 * 1024),
+    'chunk_size_bytes' => (int) env('FILE_HOSTING_CHUNK_SIZE', 25 * 1024 * 1024),
 
-    'multipart_threshold_bytes' => (int) env('FILE_HOSTING_MULTIPART_THRESHOLD', 10 * 1024 * 1024),
+    'multipart_threshold_bytes' => (int) env('FILE_HOSTING_MULTIPART_THRESHOLD', 25 * 1024 * 1024),
 
     'max_file_size_bytes' => (int) env('FILE_HOSTING_MAX_FILE_SIZE', 5 * 1024 * 1024 * 1024),
 

@@ -278,7 +278,7 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 
 | Env | Role |
 |-----|------|
-| `FILE_HOSTING_UPLOAD_PROXY_URL` | Gateway Uploader origin (no trailing slash). Empty = direct S3 for **upload + download**. Example: `https://gateway.sspn.workers.dev` |
+| `FILE_HOSTING_UPLOAD_PROXY_URL` | Gateway Uploader origin (no trailing slash). Empty = direct S3 for **upload + download**. Example: `https://gateway.silverspoon.me` |
 | `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Same value as Gateway `S3_TARGETS.uploadToken` — upload **Bearer** + download **HMAC secret** (never put raw token in download URLs) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_CE` | Uploader target **alias** for disk `s3FileHostingCe` (must match a key under Gateway `S3_TARGETS.targets`, e.g. `sbs`) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_US` | Alias for disk `s3FileHostingUs` (optional) |
@@ -289,6 +289,16 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 - Upload: `{PROXY}/uploader/{alias}/file-hosting/{userId}/{objectId}?partNumber=&uploadId=` + Bearer / `X-S3-Target`
 - Download (vault enabled): `{PROXY}/vault/{alias}/{userId}/{objectId}?exp=&disp=&ctype=&sig=`
 - Download (vault disabled — legacy): `{PROXY}/uploader/{alias}/file-hosting/{userId}/{objectId}?exp=&disp=&ctype=&sig=`
+
+#### Upload proxy — production (2026-07-30)
+
+| Item | Value |
+|------|-------|
+| Production URL | `https://gateway.silverspoon.me` — upload **and** vault download on one domain |
+| Part size / concurrency | 25 MB (`FILE_HOSTING_CHUNK_SIZE=26214400`), 3 parallel parts (`FILE_HOSTING_MAX_CONCURRENT_PARTS=3`) |
+| Gateway Smart Placement | **Must stay off** — enabling `placement.mode: smart` roughly doubles upload latency per part |
+| Dual-host workaround | **Not needed** — pointing upload at `s3.silverspoon.me` while Gateway handles vault was a fallback only; automated benchmark passed with Smart Placement disabled |
+| Benchmark / tuning | [gateway/docs/upload-performance.md](../../../gateway/docs/upload-performance.md) |
 
 HMAC always signs the **full** object key (`file-hosting/{userId}/{objectId}`) and upload **alias** (`sbs`). Gateway reassembles the key from `keyPrefix` + short vault path.
 
@@ -322,7 +332,7 @@ The alias is not the B2 bucket name and **not** part of the S3 key; it only sele
 
 **B2 / path-style:** Monolith FH disk `s3FileHostingCe` must use path-style endpoints (`FILE_HOSTING_S3_CE_USE_PATH_STYLE`, default true in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
 
-**Gateway project:** `c:\laragon\www\gateway` — Wrangler name **`gateway`**, Uploader at `/uploader/<alias>/…`. Supersedes standalone `cf-workers-s3-proxy` (`workers` repo). See [gateway/docs/projects/uploader.md](../../../gateway/docs/projects/uploader.md). Spec history: [chore-now.md](./chore-now.md).
+**Gateway project:** `c:\laragon\www\gateway` — Wrangler name **`gateway`**, Uploader at `/uploader/<alias>/…`. Supersedes standalone `cf-workers-s3-proxy` (`workers` repo). See [gateway/docs/projects/uploader.md](../../../gateway/docs/projects/uploader.md).
 
 **Deploy / secrets (ops):**
 
@@ -400,7 +410,7 @@ Entry points (all end at the same storage URL shape when proxy is on):
 
 **Preview (`?preview=1`):** safe MIME types get `inline` disposition → different `disp` in payload → different `sig`. Preview URLs are minted on demand and not cached in `signed_download_url`.
 
-**Parity verification (workers → gateway port):** automated — Gateway `test/uploader.spec.ts` (40 tests: HMAC accept/reject/expiry, GetObject cache HIT/MISS/Range/SKIP); Monolith `SignedDownloadServiceTest` (10 tests: mint, sig match, cache remint). Manual smoke: tampered `sig` → Gateway **401**; repeat download → `X-Cache: HIT` on small objects.
+**Parity verification (workers → gateway port):** automated — Gateway `test/uploader.spec.ts` (40 tests: HMAC accept/reject/expiry, GetObject cache HIT/MISS/Range/SKIP); Monolith `SignedDownloadServiceTest` (11 tests: mint, sig match, cache remint). Manual smoke: tampered `sig` → Gateway **401**; repeat download → `X-Cache: HIT` on small objects.
 
 ### Orphan multipart cleanup + post-upload checksum
 
@@ -767,7 +777,7 @@ Region UI (list column, detail badge, soft-refetch): `RegionResolver::shouldDisp
 | `regions` | Region key -> disk name map (`ce` -> `s3FileHostingCe`, optional `us`); only regions with non-empty disk appear in upload dropdown. Labels: `lang/*/web/file-hosting.php` (`Central European`, etc.). |
 | `disk_aliases` | Optional disk name -> canonical disk map for region reverse-lookup and historical multi-disk collapse |
 | `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
-| `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **10 MiB** each) |
+| `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **25 MiB** each) |
 | `upload_proxy.*` | Optional CF Worker hybrid byte path for **upload + download** (`base_url`, `token`, `disk_targets`) |
 | `default_quota_bytes` | Free-tier base always stacked (typically 5 GiB); also used when no `UserQuota` denorm row |
 | `max_concurrent_uploads` | Server-side cap on pending non-expired upload sessions per storage owner (default 2) |
@@ -823,9 +833,9 @@ npm run test:js
 
 | Suite | What it covers |
 |-------|----------------|
-| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 10 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest` — HTML + SPA JSON contracts for index/trash/show/workspaces + mutation `data` forward), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302, public show JSON + paid gate 404). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
+| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 25 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest` — HTML + SPA JSON contracts for index/trash/show/workspaces + mutation `data` forward), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302, public show JSON + paid gate 404). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
 | Vitest `npm run test:js` | Pure client helpers in `resources/js/file-hosting/upload-progress.test.js` (transfer rate, format, byte percent) and `direct-upload-dismiss.test.js` (Done-row auto-dismiss timer/fade/`active` cleanup). Pattern: `resources/js/**/*.test.js`. |
-| Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Worker unit tests: `c:\laragon\www\workers` (`npm test`). |
+| Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Gateway uploader tests: `c:\laragon\www\gateway` (`npm test`). |
 | Qualification | `composer test -- --filter=FileHostingQualification` — 50 IDs (Low/Normal/Medium/Hard/Anomaly) |
 
 ## Related
