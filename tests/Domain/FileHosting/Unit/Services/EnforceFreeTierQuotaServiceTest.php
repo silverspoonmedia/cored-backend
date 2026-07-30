@@ -78,7 +78,7 @@ class EnforceFreeTierQuotaServiceTest extends TestCase
             'user_id' => $userId,
             'folder_id' => null,
             'name' => $name,
-            'disk' => 's3Custom',
+            'disk' => 's3FileHostingCe',
             'path' => substr(hash('sha256', $userId.'|'.$name), 0, 40),
             'size' => $size,
             'mime' => 'application/octet-stream',

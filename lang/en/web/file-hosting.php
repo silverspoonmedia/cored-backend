@@ -316,7 +316,6 @@ return [
     'regions' => [
         'ce' => 'Central European',
         'us' => 'United States',
-        'eu' => 'Europe',
     ],
 
     'bulk' => [

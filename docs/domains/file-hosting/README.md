@@ -27,7 +27,7 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Live listing | Dedicated private Echo channels + soft-refetch (listing/quota/trash/show). **Not** the notification bell bus. See [Realtime / live listing](#realtime--live-listing). |
 | Display names | Upload complete + **file/folder move** auto-rename on sibling collision (`UniqueDisplayNameAllocator`). Manual rename still rejects exact collisions. |
 | Public share | Guest `/s/f` / `/s/d` only when storage owner is **paid** (`QuotaService::ownerCanPublicShare`). Free/grace → 404 even if DB says `anyone_with_link`. See [Visibility](#visibility). |
-| Storage regions | Multi-disk `s3FileHosting*` (+ legacy `s3Custom` alias). Region column/badge only when multi-region config **or** historical multi-disk usage. |
+| Storage regions | Multi-disk `s3FileHosting*`. Region column/badge only when multi-region config **or** historical multi-disk usage. |
 | Hard navigation | **Download hops only** (auth + signed public → 302 storage URL: CF Worker when proxy on, else S3). In-shell mutations and folder/file/trash/show soft-nav do **not** rely on `location.reload`. |
 | Busy / upload UX | Mutations toggle `.is-fh-busy` spinner overlay; upload queue shows human file size. Successful (**Done**) rows auto-dismiss after ~5s; failed rows stay. |
 
@@ -50,7 +50,7 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Visibility | `private` \| `anyone_with_link` on folders and files |
 | Link secret | Resource UUID (Drive “anyone with the link”; not world-searchable) |
 | Inherit | Folder link-shared -> guest may browse that folder and download files inside even if file is `private` |
-| Region | Per-file `disk` storage (Laravel disk name in DB); product region key derived via `RegionResolver::keyForDisk()` (resolves `disk_aliases` first). `disabled_regions` blocks new uploads only — downloads still served. UI region column/badge appears only when configured regions > 1 **or** historical multi-disk usage exists (aliases collapsed so `s3Custom` -> `s3FileHostingCe`). |
+| Region | Per-file `disk` storage (Laravel disk name in DB); product region key derived via `RegionResolver::keyForDisk()` (resolves `disk_aliases` first). `disabled_regions` blocks new uploads only — downloads still served. UI region column/badge appears only when configured regions > 1 **or** historical multi-disk usage exists. |
 | Ownership | Own resources; cross-user via product “any” + core `RoleService` hierarchy |
 | Collaborative Works | Paid perk for **owners**; free users may **join** as members. Blade UX on File Hosting page (not a separate dynamic menu). |
 
@@ -282,8 +282,6 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 | `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Same value as Gateway `S3_TARGETS.uploadToken` — upload **Bearer** + download **HMAC secret** (never put raw token in download URLs) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_CE` | Uploader target **alias** for disk `s3FileHostingCe` (must match a key under Gateway `S3_TARGETS.targets`, e.g. `sbs`) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_US` | Alias for disk `s3FileHostingUs` (optional) |
-| `FILE_HOSTING_UPLOAD_PROXY_TARGET_EU` | Alias for disk `s3FileHostingEu` (optional) |
-| `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM` | Legacy fallback for CE / `s3Custom` disk rows (same alias as `TARGET_CE` when CE env empty) |
 | `FILE_HOSTING_DOWNLOAD_VAULT_ENABLED` | When `true`, download URLs use `/vault/{alias}/{userId}/{objectId}` (vault code = upload alias; `file-hosting/` prefix stripped from path). Gateway must have matching `vaultOrigins.{alias}` with `keyPrefix`. |
 
 **Upload vs download paths (hybrid proxy on):**
@@ -322,7 +320,7 @@ The alias is not the B2 bucket name and **not** part of the S3 key; it only sele
 
 **Fail closed:** if base URL is set but token or disk alias is missing -> init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3. Upstream S3 failures map to `upstream_failed` where applicable.
 
-**B2 / path-style:** Monolith FH disks (`s3FileHostingCe` and legacy alias `s3Custom`) must use path-style endpoints (`FILE_HOSTING_S3_CE_USE_PATH_STYLE` / `CUSTOM_S3_USE_PATH_STYLE`, default true in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
+**B2 / path-style:** Monolith FH disk `s3FileHostingCe` must use path-style endpoints (`FILE_HOSTING_S3_CE_USE_PATH_STYLE`, default true in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
 
 **Gateway project:** `c:\laragon\www\gateway` — Wrangler name **`gateway`**, Uploader at `/uploader/<alias>/…`. Supersedes standalone `cf-workers-s3-proxy` (`workers` repo). See [gateway/docs/projects/uploader.md](../../../gateway/docs/projects/uploader.md). Spec history: [chore-now.md](./chore-now.md).
 
@@ -756,20 +754,18 @@ Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + r
 
 | Disk | Role |
 |------|------|
-| `s3FileHostingCe` | Primary CE region (`FILE_HOSTING_S3_CE_*`, fallback `CUSTOM_S3_*`) |
+| `s3FileHostingCe` | Primary CE region (`FILE_HOSTING_S3_CE_*`) |
 | `s3FileHostingUs` | Optional US region (`FILE_HOSTING_S3_US_*`) |
-| `s3FileHostingEu` | Optional EU region (`FILE_HOSTING_S3_EU_*`) |
-| `s3Custom` | **Legacy alias** of CE credentials — existing `HostedFile.disk` / `FileUpload.disk` rows keep working |
 
-Region keys for new uploads: `ce` (Central European), `us`, `eu`. Client field name is still `disk` but the **value is the region key**; `DirectUploadService::resolveDiskName()` maps to the Laravel disk name stored in DB.
+Region keys for new uploads: `ce` (Central European), `us`. Client field name is still `disk` but the **value is the region key**; `DirectUploadService::resolveDiskName()` maps to the Laravel disk name stored in DB.
 
 Region UI (list column, detail badge, soft-refetch): `RegionResolver::shouldDisplayRegion()` — true when `count(configured regions) > 1` **or** historical distinct disks on `HostedFile` (with trashed) > 1 after alias collapse.
 
 | Key | Role |
 |-----|------|
 | `disk` / `directory` | Default Laravel disk for new uploads (`FILE_HOSTING_DISK`, default `s3FileHostingCe`) + key prefix (`FILE_HOSTING_DIRECTORY`, default `file-hosting`). Prefix is **not** stored in DB `path`. |
-| `regions` | Region key -> disk name map (`ce` -> `s3FileHostingCe`, optional `us` / `eu`); only regions with non-empty disk appear in upload dropdown. Labels: `lang/*/web/file-hosting.php` (`Central European`, etc.). |
-| `disk_aliases` | Legacy disk name -> canonical disk (`s3Custom` -> `s3FileHostingCe`) for region reverse-lookup and historical multi-disk collapse |
+| `regions` | Region key -> disk name map (`ce` -> `s3FileHostingCe`, optional `us`); only regions with non-empty disk appear in upload dropdown. Labels: `lang/*/web/file-hosting.php` (`Central European`, etc.). |
+| `disk_aliases` | Optional disk name -> canonical disk map for region reverse-lookup and historical multi-disk collapse |
 | `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
 | `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **10 MiB** each) |
 | `upload_proxy.*` | Optional CF Worker hybrid byte path for **upload + download** (`base_url`, `token`, `disk_targets`) |

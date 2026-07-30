@@ -146,7 +146,7 @@ class S3DirectUploadEngineTest extends TestCase
             'file-hosting.upload_proxy.token' => 'token-long-enough',
             'file-hosting.upload_proxy.disk_targets' => [
                 's3FileHostingCe' => 'b2-main',
-                's3Custom' => 'b2-main',
+                's3FileHostingCe' => 'b2-main',
             ],
         ]);
 
@@ -160,14 +160,14 @@ class S3DirectUploadEngineTest extends TestCase
             'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
             'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
             'file-hosting.upload_proxy.disk_targets' => [
-                's3Custom' => 'b2-main',
+                's3FileHostingCe' => 'b2-main',
             ],
         ]);
 
         $this->assertTrue($this->engine->isUploadProxyEnabled());
 
         $parts = $this->engine->proxyUploadParts(
-            's3Custom',
+            's3FileHostingCe',
             'file-hosting/user-id/upload-id/abc123.bin',
             S3DirectUploadEngine::STRATEGY_MULTIPART,
             'application/pdf',
@@ -197,12 +197,12 @@ class S3DirectUploadEngineTest extends TestCase
             'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev/',
             'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
             'file-hosting.upload_proxy.disk_targets' => [
-                's3Custom' => 'b2-main',
+                's3FileHostingCe' => 'b2-main',
             ],
         ]);
 
         $parts = $this->engine->proxyUploadParts(
-            's3Custom',
+            's3FileHostingCe',
             'file-hosting/u/up/obj.bin',
             S3DirectUploadEngine::STRATEGY_SINGLE,
             'image/png',
@@ -224,7 +224,7 @@ class S3DirectUploadEngineTest extends TestCase
             'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
             'file-hosting.upload_proxy.token' => '',
             'file-hosting.upload_proxy.disk_targets' => [
-                's3Custom' => 'b2-main',
+                's3FileHostingCe' => 'b2-main',
             ],
         ]);
 
@@ -232,7 +232,7 @@ class S3DirectUploadEngineTest extends TestCase
         $this->expectExceptionMessage(S3DirectUploadException::PROXY_MISCONFIGURED);
 
         $this->engine->proxyUploadParts(
-            's3Custom',
+            's3FileHostingCe',
             'file-hosting/a.bin',
             S3DirectUploadEngine::STRATEGY_SINGLE,
             'text/plain',
@@ -254,7 +254,7 @@ class S3DirectUploadEngineTest extends TestCase
         $this->expectExceptionMessage(S3DirectUploadException::PROXY_MISCONFIGURED);
 
         $this->engine->proxyUploadParts(
-            's3Custom',
+            's3FileHostingCe',
             'file-hosting/a.bin',
             S3DirectUploadEngine::STRATEGY_SINGLE,
             'text/plain',
@@ -270,12 +270,12 @@ class S3DirectUploadEngineTest extends TestCase
             'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
             'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
             'file-hosting.upload_proxy.disk_targets' => [
-                's3Custom' => 'b2-main',
+                's3FileHostingCe' => 'b2-main',
             ],
         ]);
 
         $parts = $this->engine->presignParts(
-            's3Custom',
+            's3FileHostingCe',
             'file-hosting/x.bin',
             S3DirectUploadEngine::STRATEGY_MULTIPART,
             'application/octet-stream',

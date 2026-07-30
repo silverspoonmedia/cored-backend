@@ -16,25 +16,20 @@ return [
     | Upload regions — region key → Laravel disk name.
     | Only regions with a non-empty disk appear in the upload dropdown.
     | Add a region: set FILE_HOSTING_REGION_XX_DISK + define the disk in
-    | config/filesystems.php (s3FileHostingCe / Us / Eu or a custom disk).
+    | config/filesystems.php (s3FileHostingCe / Us or a custom disk).
     |--------------------------------------------------------------------------
     */
     'regions' => array_filter([
         'ce' => env('FILE_HOSTING_REGION_CE_DISK', 's3FileHostingCe'),
         'us' => env('FILE_HOSTING_REGION_US_DISK'),
-        'eu' => env('FILE_HOSTING_REGION_EU_DISK'),
     ]),
 
     /*
     |--------------------------------------------------------------------------
-    | Legacy disk name → canonical disk name.
-    | Used by RegionResolver so HostedFile rows stored as s3Custom still map
-    | to region "ce" and collapse into one historical storage target.
+    | Optional disk name → canonical disk name (RegionResolver alias collapse).
     |--------------------------------------------------------------------------
     */
-    'disk_aliases' => [
-        's3Custom' => 's3FileHostingCe',
-    ],
+    'disk_aliases' => [],
 
     /*
     |--------------------------------------------------------------------------
@@ -178,25 +173,14 @@ return [
     |     cached in signed_download_url instead of a direct S3 temporary URL.
     | Alias values must match Worker S3_TARGETS.targets keys.
     | Token is upload Bearer + download HMAC secret (never put raw token in query).
-    |
-    | FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM is a legacy fallback for CE.
     |--------------------------------------------------------------------------
     */
     'upload_proxy' => [
         'base_url' => rtrim((string) env('FILE_HOSTING_UPLOAD_PROXY_URL', ''), '/'),
         'token' => (string) env('FILE_HOSTING_UPLOAD_PROXY_TOKEN', ''),
         'disk_targets' => array_filter([
-            's3FileHostingCe' => env(
-                'FILE_HOSTING_UPLOAD_PROXY_TARGET_CE',
-                env('FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM'),
-            ),
+            's3FileHostingCe' => env('FILE_HOSTING_UPLOAD_PROXY_TARGET_CE'),
             's3FileHostingUs' => env('FILE_HOSTING_UPLOAD_PROXY_TARGET_US'),
-            's3FileHostingEu' => env('FILE_HOSTING_UPLOAD_PROXY_TARGET_EU'),
-            // Legacy HostedFile.disk / upload session values.
-            's3Custom' => env(
-                'FILE_HOSTING_UPLOAD_PROXY_TARGET_CE',
-                env('FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM'),
-            ),
         ]),
     ],
 

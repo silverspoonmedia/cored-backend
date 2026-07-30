@@ -12,6 +12,10 @@ Laravel loads **one** `.env` at boot. Monolith adds profile snapshots for local 
 | `.env.profile` | Active profile name |
 | `.env.{local,staging,production}` | Machine snapshots (gitignored) |
 
+All four committed templates share the **same section layout** (Application → locale → auth → encryption → logging → database → infrastructure → mail → File Hosting → hCaptcha → notifications/Vite → payments → Microstock). Subsections use `# · …` markers. See [`.env.example`](../../.env.example) for the canonical order and comments.
+
+**Storage env:** cloud uploads use `FILE_HOSTING_S3_*` (disk `s3FileHostingCe`). The Laravel default `s3` disk remains in `config/filesystems.php` but `AWS_*` keys are **not** listed in env templates — set them manually only if `FILESYSTEM_DISK=s3`.
+
 ## Quick start
 
 ```bash
@@ -50,11 +54,48 @@ Empty secrets: `KEY=""`. When adding keys: update `.env.example`, all three prof
 
 | Command | Purpose |
 |---------|---------|
-| `env:install {profile}` | Fresh from template |
+| `env:install {profile}` | Fresh from template (backs up existing `.env` / snapshot first) |
 | `env:switch {profile}` | Save current → load target snapshot; clears config cache |
 | `env:switch` / `--list` | Show active / list snapshots |
+| `env:curate` | Reformat `.env` using active profile template layout; preserves values |
+| `env:restore` | Restore from a pending transactional backup |
+| `env:backup:create` | Manual pending backup before hand-editing `.env` |
 
 **Always edit active `.env`.** Bootstrap uses `LoadMonolithEnvironmentVariables` so Laravel does **not** silently load snapshot `.env.local` when `APP_ENV` is preset (Laragon trap).
+
+### Transactional backup
+
+`env:install`, `env:switch`, `env:curate`, and `key:generate` back up `.env` (and snapshots when they would be overwritten) under `storage/framework/env-backups/pending/` before mutating files. On success the backup is deleted; on failure files are rolled back and the backup is kept for `php artisan env:restore`.
+
+If a pending backup exists, further env mutations are blocked until you run `env:restore` (restore files) or `env:restore --discard` (drop backup without restoring).
+
+`env:install --force` prompts for confirmation (unless `--no-interaction`) and always creates a backup when `.env` already exists.
+
+### Curate layout
+
+```bash
+php artisan env:curate --dry-run      # preview keys added / orphans
+php artisan env:curate                # apply layout from .env.{profile}.example
+php artisan env:curate --sync-snapshot
+```
+
+Layout source: **active profile template** (`.env.profile` → `.env.{profile}.example`). Existing values are kept; missing template keys get template defaults; keys only in `.env` are appended under `Extra keys (not in template)`.
+
+AI agents: the exact phrase **`curate the env`** must use `env:curate` (dry-run first) — never hand-edit `.env` for layout. See [AGENTS.md](../../AGENTS.md).
+
+### Known behaviors (QA-verified)
+
+| Behavior | Detail |
+|----------|--------|
+| Pending backup after failure | `env:restore` rolls back files but **keeps** the pending folder until `env:restore --discard` |
+| Blocked operations | Any pending backup blocks `env:install`, `env:switch`, `env:curate`, `key:generate` until discard |
+| `force-past-backup` | Bypasses the block but can leave **stale** pending dirs; only the latest is restored by `env:restore` without an id |
+| Snapshot staleness | Editing `.env` does not update `.env.{profile}` until you switch away (save-on-switch) or `env:curate --sync-snapshot` |
+| Duplicate keys in `.env` | Curator uses **last assignment wins** when parsing; duplicate keys in the template emit **duplicate lines** |
+| Orphan keys | Keys in `.env` but not in the profile template are appended under `Extra keys (not in template)` |
+| First switch to a profile | If no snapshot exists, bootstraps from `.env.{profile}.example` (fresh secrets, not a copy of current `.env`) |
+| `jwt:secret` standalone | Not wrapped by the mutation guard; use `key:generate` / guarded commands or `env:backup:create` first |
+| `env:backup:create` | Creates a pending backup **without** mutating files; blocks other env commands until `--discard` |
 
 ## Config caching
 

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Support\EnvironmentKeyWriter;
+use App\Support\EnvironmentMutationGuard;
 use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Console\Prohibitable;
 use Illuminate\Console\Command;
@@ -21,12 +22,14 @@ class KeyGenerateCommand extends Command
 
     protected $signature = 'key:generate
                     {--show : Display the key instead of modifying files}
-                    {--force : Force the operation to run when in production}';
+                    {--force : Force the operation to run when in production}
+                    {--force-past-backup : Proceed even if a pending backup exists}';
 
     protected $description = 'Set the application key';
 
     public function __construct(
         private readonly EnvironmentKeyWriter $keyWriter,
+        private readonly EnvironmentMutationGuard $guard,
     ) {
         parent::__construct();
     }
@@ -58,7 +61,12 @@ class KeyGenerateCommand extends Command
             : null;
 
         try {
-            $key = $this->keyWriter->writeAppKey($envPath, $rotateFrom, $cipher);
+            $key = $this->guard->run(
+                'key:generate',
+                fn (): string => $this->keyWriter->writeAppKey($envPath, $rotateFrom, $cipher),
+                file_exists($envPath) ? [$envPath => '.env'] : [],
+                (bool) $this->option('force-past-backup'),
+            );
         } catch (\RuntimeException $exception) {
             $this->components->error($exception->getMessage());
 

@@ -20,7 +20,8 @@ class EnvInstallCommand extends Command
 {
     protected $signature = 'env:install
         {profile : Profile to install: local, staging, or production}
-        {--force : Overwrite an existing .env file}';
+        {--force : Overwrite an existing .env file}
+        {--force-past-backup : Proceed even if a pending backup exists}';
 
     protected $description = 'Create .env from a profile template (local, staging, or production) and generate secrets';
 
@@ -52,9 +53,20 @@ class EnvInstallCommand extends Command
             return self::FAILURE;
         }
 
+        if ($this->option('force') && File::exists($this->profiles->envPath()) && ! $this->option('no-interaction')) {
+            if (! $this->confirm('This will overwrite .env and the profile snapshot (a backup is created first). Continue?')) {
+                $this->warn('Install cancelled.');
+
+                return self::FAILURE;
+            }
+        }
+
         try {
-            $warnings = $this->profiles->installFromTemplate($profile);
-        } catch (InvalidArgumentException $exception) {
+            $warnings = $this->profiles->installFromTemplate(
+                $profile,
+                (bool) $this->option('force-past-backup'),
+            );
+        } catch (InvalidArgumentException|\RuntimeException $exception) {
             $this->error($exception->getMessage());
 
             return self::FAILURE;
@@ -68,10 +80,13 @@ class EnvInstallCommand extends Command
         $this->info('Seeded snapshot → .env.'.$profile);
         $this->info('Active profile → '.$profile);
 
+        $this->callSilent('config:clear');
+        $this->line('Configuration cache cleared.');
+
         $this->newLine();
         $this->line('Next steps:');
         $this->line('  • Set APP_URL, DB_* credentials, and any integration secrets.');
-        $this->line('  • For staging/production: configure MAIL_*, PUSHER_*, CUSTOM_S3_*, HCAPTCHA_*.');
+        $this->line('  • For staging/production: configure MAIL_*, PUSHER_*, FILE_HOSTING_S3_CE_*, HCAPTCHA_*.');
         $this->line('  • Run: php artisan migrate');
         $this->line('  • See docs/platform/environment.md for the full checklist.');
 

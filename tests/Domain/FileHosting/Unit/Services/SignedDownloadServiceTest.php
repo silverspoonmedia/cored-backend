@@ -245,19 +245,18 @@ class SignedDownloadServiceTest extends TestCase
         }
     }
 
-    public function test_legacy_s3custom_disk_maps_to_proxy_alias(): void
+    public function test_ce_disk_maps_to_proxy_alias(): void
     {
         config([
             'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
             'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
             'file-hosting.upload_proxy.disk_targets' => [
-                's3Custom' => 'sbs',
                 's3FileHostingCe' => 'sbs',
             ],
         ]);
 
         $user = $this->userWithRole('User');
-        $file = $this->makeFile($user, ['disk' => 's3Custom']);
+        $file = $this->makeFile($user, ['disk' => 's3FileHostingCe']);
 
         $url = $this->service->mintAndCache($file)['url'];
 

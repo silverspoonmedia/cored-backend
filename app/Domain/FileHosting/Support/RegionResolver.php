@@ -79,7 +79,7 @@ class RegionResolver
      * Show region column/badge when multi-region is configured or history
      * proves more than one effective storage target was used.
      *
-     * History collapses disk_aliases so s3Custom + s3FileHostingCe count as one.
+     * History collapses disk_aliases when configured.
      */
     public static function shouldDisplayRegion(): bool
     {

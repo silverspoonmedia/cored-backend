@@ -92,6 +92,7 @@ class EnvInstallCommandTest extends TestCase
         $this->artisan('env:install', [
             'profile' => 'staging',
             '--force' => true,
+            '--no-interaction' => true,
         ])->assertSuccessful();
 
         $env = File::get(base_path('.env'));
