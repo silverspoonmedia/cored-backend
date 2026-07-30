@@ -324,8 +324,8 @@ The alias is not the B2 bucket name and **not** part of the S3 key; it only sele
 
 | Step | Note |
 |------|------|
-| Runtime secret | `S3_TARGETS` is a **Worker secret**, not git, not `.dev.vars` on CF. Set with `npx wrangler secret put S3_TARGETS --name cf-workers-s3-proxy` (name must match deployed Worker). |
-| Dashboard Variables | Must be on the **same** Worker that serves the public hostname. UI “Variables” on another Worker / build env only -> `/health` returns config missing. |
+| Runtime secret | `S3_TARGETS` is a **Gateway Worker secret**, not git, not `.dev.vars` on CF. Set with `npx wrangler secret put S3_TARGETS --name gateway` (name must match deployed Worker). |
+| Dashboard Variables | Must be on the **same** Worker that serves the public hostname (`gateway`). UI “Variables” on another Worker / build env only → `/uploader/health` returns config missing. |
 | Alias rename | Change key + `defaultTarget` in Gateway `S3_TARGETS` **first**, then Monolith `FILE_HOSTING_UPLOAD_PROXY_TARGET_*`, then `php artisan config:clear`. In-flight sessions still using an old path may 400. |
 | Error bodies | Production Worker returns generic messages only (`Configuration invalid or missing`, `Internal server error`). Details stay in Workers Logs (`console.error`). |
 
@@ -341,6 +341,59 @@ The alias is not the B2 bucket name and **not** part of the S3 key; it only sele
 - Proxy on: `{proxy}/uploader/{alias}/{encoded-key}?exp=&disp=&ctype=&sig=` (HMAC; browser 302 cannot send Bearer)
 - Proxy off: S3 temporary URL from disk `temporaryUrl`
 - Cache reminted if host disagrees with current proxy mode (stale B2 URL after enabling proxy, or stale Worker URL after disabling)
+
+**Download retrieve flow (HMAC)**
+
+When `FILE_HOSTING_UPLOAD_PROXY_URL` is set, Monolith never streams file bytes. It mints a time-limited Gateway URL; the browser follows a **302** (web) or uses `{ url, expires_at }` (API), then Gateway verifies HMAC and streams from B2.
+
+```mermaid
+sequenceDiagram
+  participant Browser
+  participant Monolith
+  participant Gateway
+  participant B2
+  Browser->>Monolith: GET /apps/file-hosting/files/{id}/download
+  Monolith->>Monolith: SignedDownloadService mint/cache HMAC URL, download_count++
+  Monolith-->>Browser: 302 Location Gateway URL
+  Browser->>Gateway: GET /uploader/{alias}/file-hosting/...?exp&sig&disp&ctype
+  Gateway->>Gateway: requireDownloadSignature, optional edge cache
+  Gateway->>B2: SigV4 GetObject
+  B2-->>Gateway: object bytes
+  Gateway-->>Browser: attachment or inline
+```
+
+| Query param | Role |
+|-------------|------|
+| `exp` | Unix expiry (seconds). **Enforced by Gateway** (`exp` + 60s grace). `signed_download_expires_at` in DB is only Monolith's cache hint for reuse vs remint. |
+| `sig` | Hex HMAC-SHA256 over LF-separated payload below. Secret = `uploadToken` / `FILE_HOSTING_UPLOAD_PROXY_TOKEN`. Raw token never appears in the URL. |
+| `disp` | `Content-Disposition` passed to S3 as `response-content-disposition` (human filename from DB `name`). |
+| `ctype` | `Content-Type` passed to S3 as `response-content-type`. |
+
+HMAC payload (must match Gateway `buildDownloadSignaturePayload`):
+
+```text
+GET
+{alias}
+{objectKey}
+{exp}
+{disposition}
+{contentType}
+```
+
+Entry points (all end at the same storage URL shape when proxy is on):
+
+| Route | Hop |
+|-------|-----|
+| `GET /apps/file-hosting/files/{id}/download` | Auth web → `FileService::issueDownload` → 302 |
+| `GET /api/v1/file-hosting/files/{id}/download` | Auth API → JSON `{ url, expires_at }` |
+| `GET /s/f/{id}/download` | Laravel signed hop (short TTL) → then same HMAC storage URL |
+| `GET /api/v1/file-hosting/public/files/{id}/download` | Guest API → same mint path |
+
+**Not used for download:** Bearer / `X-Upload-Token` (browser navigation cannot set headers on a 302 follow). Upload ops still use Bearer.
+
+**Preview (`?preview=1`):** safe MIME types get `inline` disposition → different `disp` in payload → different `sig`. Preview URLs are minted on demand and not cached in `signed_download_url`.
+
+**Parity verification (workers → gateway port):** automated — Gateway `test/uploader.spec.ts` (40 tests: HMAC accept/reject/expiry, GetObject cache HIT/MISS/Range/SKIP); Monolith `SignedDownloadServiceTest` (10 tests: mint, sig match, cache remint). Manual smoke: tampered `sig` → Gateway **401**; repeat download → `X-Cache: HIT` on small objects.
 
 ### Orphan multipart cleanup + post-upload checksum
 
