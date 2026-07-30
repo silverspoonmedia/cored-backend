@@ -38,6 +38,7 @@ class SignedDownloadServiceTest extends TestCase
             'file-hosting.upload_proxy.base_url' => '',
             'file-hosting.upload_proxy.token' => '',
             'file-hosting.upload_proxy.disk_targets' => [],
+            'file-hosting.download_vault.enabled' => false,
         ]);
 
         $this->service = app(SignedDownloadService::class);
@@ -96,6 +97,51 @@ class SignedDownloadServiceTest extends TestCase
         $file->refresh();
         $this->assertSame($url, $file->signed_download_url);
         $this->assertTrue($expiresAt->equalTo($file->signed_download_expires_at));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_proxy_mints_short_vault_url_when_download_vault_enabled(): void
+    {
+        config([
+            'file-hosting.upload_proxy.base_url' => 'https://s3.silverspoon.me/',
+            'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
+            'file-hosting.upload_proxy.disk_targets' => [
+                's3FileHostingCe' => 'sbs',
+            ],
+            'file-hosting.download_vault.enabled' => true,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-07-24 10:00:00', 'UTC'));
+
+        $user = $this->userWithRole('User');
+        $file = $this->makeFile($user, [
+            'disk' => 's3FileHostingCe',
+            'name' => 'report.pdf',
+            'mime' => 'application/pdf',
+        ]);
+
+        $resolved = $this->service->mintAndCache($file);
+        $url = $resolved['url'];
+
+        $this->assertStringStartsWith('https://s3.silverspoon.me/vault/sbs/', $url);
+        $this->assertStringContainsString('/vault/sbs/'.$user->id.'/'.$file->path.'?', $url);
+        $this->assertStringNotContainsString('/vault/sbs/file-hosting/', $url);
+        $this->assertStringNotContainsString('/uploader/', $url);
+
+        $parts = parse_url($url);
+        $this->assertIsArray($parts);
+        parse_str($parts['query'] ?? '', $query);
+
+        $objectKey = app(ObjectKeyResolver::class)->objectKey($user->id, $file->path);
+        $payload = $this->service->downloadSignaturePayload(
+            'sbs',
+            $objectKey,
+            (string) ($query['exp'] ?? ''),
+            (string) ($query['disp'] ?? ''),
+            'application/pdf',
+        );
+        $this->assertSame(hash_hmac('sha256', $payload, 'strong-upload-token-16'), $query['sig']);
 
         Carbon::setTestNow();
     }

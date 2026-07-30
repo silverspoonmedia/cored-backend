@@ -149,6 +149,7 @@ final class EnvironmentVariableCatalog
             'FILE_HOSTING_UPLOAD_PROXY_TARGET_US' => self::TYPE_STRING,
             'FILE_HOSTING_UPLOAD_PROXY_TARGET_EU' => self::TYPE_STRING,
             'FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM' => self::TYPE_STRING,
+            'FILE_HOSTING_DOWNLOAD_VAULT_ENABLED' => self::TYPE_BOOL,
             'HCAPTCHA_ENABLED' => self::TYPE_BOOL,
             'HCAPTCHA_SECRET' => self::TYPE_STRING,
             'HCAPTCHA_SITEKEY' => self::TYPE_STRING,

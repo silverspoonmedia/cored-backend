@@ -284,11 +284,17 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_US` | Alias for disk `s3FileHostingUs` (optional) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_EU` | Alias for disk `s3FileHostingEu` (optional) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_S3CUSTOM` | Legacy fallback for CE / `s3Custom` disk rows (same alias as `TARGET_CE` when CE env empty) |
+| `FILE_HOSTING_DOWNLOAD_VAULT_ENABLED` | When `true`, download URLs use `/vault/{alias}/{userId}/{objectId}` (vault code = upload alias; `file-hosting/` prefix stripped from path). Gateway must have matching `vaultOrigins.{alias}` with `keyPrefix`. |
 
-**Where does `/uploader/{alias}/…` come from?** Monolith maps the file/upload disk (e.g. `s3FileHostingCe` or legacy `s3Custom`) -> env alias via `upload_proxy.disk_targets`, then builds:
+**Upload vs download paths (hybrid proxy on):**
 
-- Upload: `{PROXY}/uploader/{alias}/{object-key}?partNumber=&uploadId=` + headers `Authorization: Bearer …`, `X-S3-Target: {alias}`, `Content-Type`
-- Download: `{PROXY}/uploader/{alias}/{object-key}?exp={unix}&disp=…&ctype=…&sig={hmacHex}` (HMAC over LF-separated `GET`, alias, objectKey, exp, disposition, contentType; secret = proxy token)
+- Upload: `{PROXY}/uploader/{alias}/file-hosting/{userId}/{objectId}?partNumber=&uploadId=` + Bearer / `X-S3-Target`
+- Download (vault enabled): `{PROXY}/vault/{alias}/{userId}/{objectId}?exp=&disp=&ctype=&sig=`
+- Download (vault disabled — legacy): `{PROXY}/uploader/{alias}/file-hosting/{userId}/{objectId}?exp=&disp=&ctype=&sig=`
+
+HMAC always signs the **full** object key (`file-hosting/{userId}/{objectId}`) and upload **alias** (`sbs`). Gateway reassembles the key from `keyPrefix` + short vault path.
+
+**Where does `/uploader/{alias}/…` come from?** Monolith maps disk → alias via `upload_proxy.disk_targets`. Upload always uses the full object key in the path. Download uses Vault when `FILE_HOSTING_DOWNLOAD_VAULT_ENABLED=true`.
 
 **Proxy URL path = S3 object key (keep `file-hosting` prefix)**
 
@@ -310,7 +316,7 @@ http://127.0.0.1:8787/uploader/sbs/file-hosting/{userId}/{objectId}?partNumber=1
                                       └─ S3 key prefix (FILE_HOSTING_DIRECTORY), not a Gateway module
 ```
 
-Shorter public URLs are possible only with an explicit Gateway `keyPrefix` remap plus matching HMAC changes — not supported today; keep the full key in proxy URLs.
+Shorter **download** URLs are supported via Vault `keyPrefix` remapping (`/vault/sbs/{userId}/{objectId}`). **Upload** URLs must still carry the full object key — do not shorten upload paths without coordinated Gateway remapping.
 
 The alias is not the B2 bucket name and **not** part of the S3 key; it only selects credentials/endpoint inside the Worker. The browser never receives B2 application keys or the raw upload token on download links.
 
@@ -338,7 +344,8 @@ The alias is not the B2 bucket name and **not** part of the S3 key; it only sele
 
 **Hybrid protocol (download URL in `signed_download_url`):**
 
-- Proxy on: `{proxy}/uploader/{alias}/{encoded-key}?exp=&disp=&ctype=&sig=` (HMAC; browser 302 cannot send Bearer)
+- Proxy on + vault enabled: `{proxy}/vault/{alias}/{userId}/{objectId}?exp=&disp=&ctype=&sig=`
+- Proxy on, no vault code (legacy): `{proxy}/uploader/{alias}/{encoded-key}?exp=&disp=&ctype=&sig=`
 - Proxy off: S3 temporary URL from disk `temporaryUrl`
 - Cache reminted if host disagrees with current proxy mode (stale B2 URL after enabling proxy, or stale Worker URL after disabling)
 
@@ -350,17 +357,19 @@ When `FILE_HOSTING_UPLOAD_PROXY_URL` is set, Monolith never streams file bytes. 
 sequenceDiagram
   participant Browser
   participant Monolith
-  participant Gateway
+  participant Vault
   participant B2
   Browser->>Monolith: GET /apps/file-hosting/files/{id}/download
   Monolith->>Monolith: SignedDownloadService mint/cache HMAC URL, download_count++
   Monolith-->>Browser: 302 Location Gateway URL
-  Browser->>Gateway: GET /uploader/{alias}/file-hosting/...?exp&sig&disp&ctype
-  Gateway->>Gateway: requireDownloadSignature, optional edge cache
-  Gateway->>B2: SigV4 GetObject
-  B2-->>Gateway: object bytes
-  Gateway-->>Browser: attachment or inline
+  Browser->>Vault: GET /vault/sbs/{userId}/{objectId}?exp&sig&disp&ctype
+  Vault->>Vault: code → target alias, requireDownloadSignature, optional edge cache
+  Vault->>B2: SigV4 GetObject
+  B2-->>Vault: object bytes
+  Vault-->>Browser: attachment or inline
 ```
+
+When `FILE_HOSTING_DOWNLOAD_VAULT_ENABLED` is false, the Gateway hop is **Uploader** (`GET /uploader/{alias}/…`) with the same HMAC — backward compatible.
 
 | Query param | Role |
 |-------------|------|

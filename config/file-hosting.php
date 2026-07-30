@@ -200,4 +200,8 @@ return [
         ]),
     ],
 
+    'download_vault' => [
+        'enabled' => (bool) env('FILE_HOSTING_DOWNLOAD_VAULT_ENABLED', false),
+    ],
+
 ];
