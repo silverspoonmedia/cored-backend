@@ -449,7 +449,7 @@ class FileManagerController extends Controller
 
     public function lockMicrostockCollection(Request $request, string $folder): JsonResponse
     {
-        $response = $this->api()->post('microstock/collections/'.$folder.'/lock', $request->only(['hint']));
+        $response = $this->api()->post('microstock/collections/'.$folder.'/lock', $request->only(['hint', 'billing_mode']));
 
         return $this->microstockProxy($response);
     }

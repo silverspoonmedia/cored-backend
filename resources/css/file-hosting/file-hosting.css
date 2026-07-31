@@ -1338,12 +1338,29 @@
 }
 
 /* ---- Microstock review panel — compact stage dots ---- */
+.fh-ms-stage-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
 .fh-ms-stage-dot {
     font-size: 0.875rem;
     line-height: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+}
+
+.fh-ms-stage-label {
+    font-size: 0.75rem;
+    line-height: 1;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.fh-ms-stage-sep {
+    font-size: 0.75rem;
 }
 
 /* ---- Reduced motion: respect user preference (WCAG 2.3.3) ---- */

@@ -124,6 +124,12 @@ return [
         'describe_validation_intent' => 'Select at least one buyer intent or enter Other.',
         'describe_validation_style' => 'Select at least one style or enter Other.',
         'describe_validation_too_long' => 'Hint is too long. Shorten additional notes or selections.',
+        'describe_warning_blind' => 'You are about to lock this collection without any description. The AI will generate metadata with no context, which usually produces poor, inconsistent results. Continue?',
+        'describe_billing_mode_label' => 'Billing mode',
+        'describe_billing_mode_hint' => 'Choose how this collection will be analyzed.',
+        'describe_billing_mode_free' => 'Free',
+        'describe_billing_mode_paid' => 'Paid',
+        'describe_validation_billing_mode' => 'Select Free or Paid billing mode.',
         'describe_placeholder' => 'e.g. A set of flat-lay photos of eco-friendly kitchen products on a wooden table, bright natural light.',
         'describe_submit' => 'Lock & Analyze',
         'describe_visible_options' => [

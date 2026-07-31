@@ -36,6 +36,7 @@ export function emptyDescribeSections() {
         styleSelected: [],
         styleOther: '',
         additionalNotes: '',
+        billingMode: '',
     };
 }
 
@@ -193,29 +194,53 @@ export function parseCollectionHint(text, labelMaps = {}) {
 /**
  * @param {ReturnType<typeof emptyDescribeSections>} sections
  */
-export function validateCollectionDescribe(sections) {
+export function isBlindDescribe(sections) {
+    const concept = (sections.primaryConcept || '').trim();
+    const hasVisible = (sections.visibleSelected?.length || 0) > 0
+        || (sections.visibleOther || '').trim() !== '';
+    const hasIntent = (sections.intentSelected?.length || 0) > 0
+        || (sections.intentOther || '').trim() !== '';
+    const hasStyle = (sections.styleSelected?.length || 0) > 0
+        || (sections.styleOther || '').trim() !== '';
+    const notes = (sections.additionalNotes || '').trim();
+
+    return concept === '' && !hasVisible && !hasIntent && !hasStyle && notes === '';
+}
+
+/**
+ * @param {ReturnType<typeof emptyDescribeSections>} sections
+ */
+export function validateCollectionDescribe(sections, options = {}) {
     const errors = [];
     const concept = (sections.primaryConcept || '').trim();
-    if (concept.length < PRIMARY_CONCEPT_MIN) {
+    if (concept.length > 0 && concept.length < PRIMARY_CONCEPT_MIN) {
         errors.push('primaryConcept');
     }
 
-    const hasVisible = (sections.visibleSelected?.length || 0) > 0
-        || (sections.visibleOther || '').trim() !== '';
-    if (!hasVisible) {
-        errors.push('visible');
+    // Fields are optional, but if a primary concept is provided we still
+    // surface guidance about the other sections as soft hints.
+    if (concept.length > 0) {
+        const hasVisible = (sections.visibleSelected?.length || 0) > 0
+            || (sections.visibleOther || '').trim() !== '';
+        if (!hasVisible) {
+            errors.push('visible');
+        }
+
+        const hasIntent = (sections.intentSelected?.length || 0) > 0
+            || (sections.intentOther || '').trim() !== '';
+        if (!hasIntent) {
+            errors.push('intent');
+        }
+
+        const hasStyle = (sections.styleSelected?.length || 0) > 0
+            || (sections.styleOther || '').trim() !== '';
+        if (!hasStyle) {
+            errors.push('style');
+        }
     }
 
-    const hasIntent = (sections.intentSelected?.length || 0) > 0
-        || (sections.intentOther || '').trim() !== '';
-    if (!hasIntent) {
-        errors.push('intent');
-    }
-
-    const hasStyle = (sections.styleSelected?.length || 0) > 0
-        || (sections.styleOther || '').trim() !== '';
-    if (!hasStyle) {
-        errors.push('style');
+    if (options.dailyFreeEnabled && !['free', 'paid'].includes(sections.billingMode || '')) {
+        errors.push('billingMode');
     }
 
     return {
@@ -238,6 +263,7 @@ export function readDescribeForm(form) {
     sections.visibleOther = form.querySelector('[data-fh-describe-visible-other]')?.value || '';
     sections.intentOther = form.querySelector('[data-fh-describe-intent-other]')?.value || '';
     sections.styleOther = form.querySelector('[data-fh-describe-style-other]')?.value || '';
+    sections.billingMode = form.querySelector('[data-fh-describe-billing]:checked')?.value || '';
 
     form.querySelectorAll('[data-fh-describe-visible]:checked').forEach(function (el) {
         sections.visibleSelected.push(el.value);
@@ -333,6 +359,9 @@ export function markDescribeValidation(form, errors) {
     form.querySelectorAll('.is-invalid').forEach(function (el) {
         el.classList.remove('is-invalid');
     });
+    form.querySelectorAll('[data-fh-describe-billing-group].is-invalid').forEach(function (el) {
+        el.classList.remove('is-invalid');
+    });
     (errors || []).forEach(function (key) {
         switch (key) {
             case 'primaryConcept':
@@ -346,6 +375,9 @@ export function markDescribeValidation(form, errors) {
                 break;
             case 'style':
                 form.querySelector('[data-fh-describe-style-other]')?.classList.add('is-invalid');
+                break;
+            case 'billingMode':
+                form.querySelector('[data-fh-describe-billing-group]')?.classList.add('is-invalid');
                 break;
             default:
                 break;

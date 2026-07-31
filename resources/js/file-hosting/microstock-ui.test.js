@@ -63,6 +63,17 @@ describe('stageStripItems', () => {
         expect(items[0].icon).toBe('✓');
         expect(items[1].icon).toBe('…');
     });
+
+    it('uses localized labels when provided', () => {
+        const items = stageStripItems({}, {
+            stageVisionLabel: 'Penglihatan',
+            stageThinkingLabel: 'Berpikir',
+            stageResultLabel: 'Hasil',
+        });
+        expect(items[0].label).toBe('Penglihatan');
+        expect(items[1].label).toBe('Berpikir');
+        expect(items[2].label).toBe('Hasil');
+    });
 });
 
 describe('isTerminalMetadataStatus', () => {

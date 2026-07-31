@@ -19,6 +19,23 @@ function escapeHtml(value) {
         .replaceAll('"', '&quot;');
 }
 
+export function renderStageStripHtml(items) {
+    return items.map(function (item, index) {
+        const dotCls = item.state === 'ok'
+            ? 'text-success'
+            : (item.state === 'failed' ? 'text-danger' : (item.state === 'running' ? 'text-warning' : 'text-muted'));
+        const icon = item.state === 'ok'
+            ? '\u2713'
+            : (item.state === 'failed' ? '\u2717' : (item.state === 'running' ? '\u25CF' : '\u25CB'));
+        const sep = index > 0 ? '<span class="text-muted mx-1 fh-ms-stage-sep">\u2192</span>' : '';
+        return sep
+            + '<span class="fh-ms-stage-item ' + dotCls + '" title="' + escapeHtml(item.label) + ': ' + escapeHtml(item.state) + '" aria-label="' + escapeHtml(item.label) + ' ' + escapeHtml(item.state) + '">'
+            + '<span class="fh-ms-stage-dot">' + icon + '</span>'
+            + '<span class="fh-ms-stage-label">' + escapeHtml(item.label) + '</span>'
+            + '</span>';
+    }).join('');
+}
+
 /** Normalize + dedupe keywords (trim, drop empties, case-insensitive unique). */
 export function normalizeKeywords(list) {
     const seen = new Set();
@@ -145,21 +162,7 @@ export function createMicrostockPanel(config, csrfToken, hooks = {}) {
         if (!els.stages) {
             return;
         }
-        const items = stageStripItems(stages, labels);
-        els.stages.innerHTML = items.map(function (item, index) {
-            const dotCls = item.state === 'ok'
-                ? 'text-success'
-                : (item.state === 'failed' ? 'text-danger' : (item.state === 'running' ? 'text-warning' : 'text-muted'));
-            const icon = item.state === 'ok'
-                ? '\u2713'
-                : (item.state === 'failed' ? '\u2717' : (item.state === 'running' ? '\u25CF' : '\u25CB'));
-            const sep = index > 0 ? '<span class="text-muted mx-1">\u2192</span>' : '';
-            return sep
-                + '<span class="' + dotCls + '" title="' + escapeHtml(item.label) + ': ' + escapeHtml(item.state) + '">'
-                + '<span class="fh-ms-stage-dot">' + icon + '</span>'
-                + '<span class="visually-hidden">' + escapeHtml(item.label) + ' ' + escapeHtml(item.icon) + '</span>'
-                + '</span>';
-        }).join('');
+        els.stages.innerHTML = renderStageStripHtml(stageStripItems(stages, labels));
     }
 
     function applyMetadata(data) {

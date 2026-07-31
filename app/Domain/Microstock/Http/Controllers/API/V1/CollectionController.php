@@ -21,10 +21,16 @@ class CollectionController extends Controller
     public function lock(Request $request, string $folder): JsonResponse
     {
         $data = $request->validate([
-            'hint' => ['required', 'string', 'max:2000'],
+            'hint' => ['nullable', 'string', 'max:2000'],
+            'billing_mode' => ['nullable', 'string', 'in:free,paid'],
         ]);
 
-        $collection = $this->collections->lock($request->user(), $folder, $data['hint']);
+        $collection = $this->collections->lock(
+            $request->user(),
+            $folder,
+            $data['hint'] ?? null,
+            $data['billing_mode'] ?? null,
+        );
 
         return $this->successResponse(
             $this->payload($collection),
@@ -80,6 +86,7 @@ class CollectionController extends Controller
             'id' => $collection->id,
             'collection_status' => $collection->collection_status?->value,
             'collection_hint' => $collection->collection_hint,
+            'collection_billing_mode' => $collection->collection_billing_mode,
             'collection_locked' => $collection->isCollectionLocked(),
         ];
     }

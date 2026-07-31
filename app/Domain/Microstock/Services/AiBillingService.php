@@ -33,10 +33,24 @@ class AiBillingService
         $this->planAnalyze($user, $assetCount);
     }
 
-    public function planAnalyze(User $user, int $assetCount): AnalysisBillingPlan
+    public function planAnalyze(User $user, int $assetCount, ?string $forcedMode = null): AnalysisBillingPlan
     {
-        return DB::transaction(function () use ($user, $assetCount): AnalysisBillingPlan {
+        return DB::transaction(function () use ($user, $assetCount, $forcedMode): AnalysisBillingPlan {
             $userId = (string) $user->id;
+
+            if ($forcedMode === 'paid') {
+                $required = $this->estimateForAssets($assetCount);
+                if ($this->credits->balance($userId) < $required) {
+                    throw new MicrostockException(
+                        __('api/microstock.insufficient_ai_credits'),
+                        422,
+                        ['daily_free' => $this->dailyFree->snapshot($userId)],
+                    );
+                }
+
+                return new AnalysisBillingPlan(0, $assetCount);
+            }
+
             $split = $this->dailyFree->allocateInTransaction($userId, $assetCount);
 
             if ($split['prepaid'] > 0) {

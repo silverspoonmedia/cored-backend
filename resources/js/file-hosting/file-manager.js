@@ -33,6 +33,7 @@ import { formatCollectionProgress } from './microstock-ui';
 import {
     HINT_MAX_LENGTH,
     composeCollectionHint,
+    isBlindDescribe,
     markDescribeValidation,
     parseCollectionHint,
     populateDescribeForm,
@@ -1852,12 +1853,13 @@ function initFileManager(root) {
             });
         }
 
-        function analysisAffordability(billing, fileCount) {
+        function analysisAffordability(billing, fileCount, mode) {
             const count = Math.max(1, fileCount);
             const dailyRemaining = billing?.daily_free?.remaining ?? 0;
             const balanceMicro = billing?.balance_micro_usd ?? 0;
             const estimatePer = billing?.estimated_per_analysis_micro_usd ?? 0;
-            const dailyUsed = Math.min(dailyRemaining, count);
+            const forcePaid = mode === 'paid';
+            const dailyUsed = forcePaid ? 0 : Math.min(dailyRemaining, count);
             const prepaidNeeded = Math.max(0, count - dailyUsed);
             const requiredPrepaidMicro = estimatePer * prepaidNeeded;
             const affordable = prepaidNeeded === 0 || balanceMicro >= requiredPrepaidMicro;
@@ -1870,17 +1872,17 @@ function initFileManager(root) {
             };
         }
 
-        function renderCollectionBillingLine(billing, fileCount) {
+        function renderCollectionBillingLine(billing, fileCount, mode) {
             const wrap = document.querySelector('[data-fh-collection-billing]');
             const el = wrap?.querySelector('[data-fh-collection-billing-text]');
             if (!wrap || !el || !billing) {
                 return;
             }
             const count = Math.max(1, fileCount);
-            const afford = analysisAffordability(billing, count);
+            const afford = analysisAffordability(billing, count, mode);
             const parts = [];
 
-            if (billing.daily_free?.enabled) {
+            if (billing.daily_free?.enabled && mode !== 'paid') {
                 const dailyTmpl = config.collectionLabels?.dailyFreeLine
                     || 'Free today: :remaining/:limit';
                 parts.push(dailyTmpl
@@ -1897,7 +1899,7 @@ function initFileManager(root) {
                     .replace(':balance', String(billing.balance_usd ?? '0'))
                     .replace(':estimate', String(billing.estimated_per_analysis_usd ?? '0'))
                     .replace(':total', estimateTotal.toFixed(2)));
-            } else if (!billing.daily_free?.enabled) {
+            } else if (!billing.daily_free?.enabled || mode === 'paid') {
                 const tmpl = config.collectionLabels?.billingLine
                     || 'Balance :balance · est. :estimate per file';
                 const estimateTotal = (billing.estimated_per_analysis_usd || 0) * count;
@@ -2076,9 +2078,25 @@ function initFileManager(root) {
             if (describeModal) {
                 describeModal.addEventListener('show.bs.modal', function () {
                     populateCollectionDescribeModal();
+                    const form = describeModal.querySelector('[data-fh-collection-describe-form]');
+                    form?.querySelectorAll('[data-fh-describe-billing]').forEach(function (el) {
+                        el.checked = false;
+                    });
                     const fileCount = countFilesInListing();
                     fetchMicrostockBilling().then(function (billing) {
                         renderCollectionBillingLine(billing, fileCount);
+                    });
+                });
+
+                describeModal.addEventListener('change', function (e) {
+                    if (!e.target.matches('[data-fh-describe-billing]')) {
+                        return;
+                    }
+                    const form = describeModal.querySelector('[data-fh-collection-describe-form]');
+                    const sections = readDescribeForm(form);
+                    const fileCount = countFilesInListing();
+                    fetchMicrostockBilling().then(function (billing) {
+                        renderCollectionBillingLine(billing, fileCount, sections.billingMode);
                     });
                 });
             }
@@ -2090,7 +2108,8 @@ function initFileManager(root) {
                     const form = modalEl?.querySelector('[data-fh-collection-describe-form]');
                     const maps = describeLabelMaps();
                     const sections = readDescribeForm(form);
-                    const validation = validateCollectionDescribe(sections);
+                    const dailyFreeEnabled = config.billing?.daily_free?.enabled === true;
+                    const validation = validateCollectionDescribe(sections, { dailyFreeEnabled });
                     markDescribeValidation(form, validation.errors);
                     if (!validation.valid) {
                         const describe = config.collectionDescribe || {};
@@ -2100,6 +2119,7 @@ function initFileManager(root) {
                             visible: 'visible',
                             intent: 'intent',
                             style: 'style',
+                            billingMode: 'billingMode',
                         };
                         const first = validation.errors[0];
                         const msg = messages[messageKeys[first]] || config.messages.error;
@@ -2111,13 +2131,22 @@ function initFileManager(root) {
                         showToast((config.collectionDescribe?.validation?.tooLong) || config.messages.error, 'error');
                         return;
                     }
+                    if (isBlindDescribe(sections)) {
+                        const describe = config.collectionDescribe || {};
+                        const warning = describe.validation?.blindWarning
+                            || 'You are about to lock this collection without any description. The AI will generate metadata with no context, which usually produces poor, inconsistent results. Continue?';
+                        if (!window.confirm(warning)) {
+                            return;
+                        }
+                    }
                     const fileCount = Math.max(1, countFilesInListing());
+                    const billingMode = dailyFreeEnabled ? sections.billingMode : 'paid';
                     describeSubmit.disabled = true;
                     setBusy(true);
                     fetchMicrostockBilling()
                         .then(function (billing) {
                             if (billing) {
-                                const afford = analysisAffordability(billing, fileCount);
+                                const afford = analysisAffordability(billing, fileCount, billingMode);
                                 if (!afford.affordable) {
                                     const msg = config.collectionLabels?.insufficientCredits
                                         || 'Insufficient AI credits.';
@@ -2127,7 +2156,7 @@ function initFileManager(root) {
                                     return null;
                                 }
                             }
-                            return collectionPost('/lock', { hint: hint });
+                            return collectionPost('/lock', { hint: hint, billing_mode: billingMode });
                         })
                         .then(function (out) {
                             if (out === null) {

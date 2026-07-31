@@ -35,12 +35,14 @@ return [
         'vision' => [
             'endpoint' => env('MICROSTOCK_AI_VISION_ENDPOINT', 'https://ai-chat.spnd.uk/api/chat/completions'),
             'model' => env('MICROSTOCK_AI_VISION_MODEL', 'internal.vision'),
+            'free_model' => env('MICROSTOCK_AI_VISION_MODEL_FREE'),
             'api_key' => env('MICROSTOCK_AI_VISION_API_KEY'),
             'timeout' => (int) env('MICROSTOCK_AI_VISION_TIMEOUT', 1500),
         ],
         'thinking' => [
             'endpoint' => env('MICROSTOCK_AI_THINKING_ENDPOINT', 'https://ai-chat.spnd.uk/api/chat/completions'),
             'model' => env('MICROSTOCK_AI_THINKING_MODEL', 'internal.thinking'),
+            'free_model' => env('MICROSTOCK_AI_THINKING_MODEL_FREE'),
             'api_key' => env('MICROSTOCK_AI_THINKING_API_KEY'),
             'timeout' => (int) env('MICROSTOCK_AI_THINKING_TIMEOUT', 1500),
         ],

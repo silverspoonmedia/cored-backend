@@ -68,7 +68,7 @@ Upload/storage stays on the shared File Hosting quota. **AI analysis** (vision +
 
 ### Daily free trial (optional)
 
-Env-gated per-user daily analyses (`MICROSTOCK_DAILY_FREE_ENABLED`). No activation SKU — slots reset lazily by calendar day in `microstock_daily_free_usage`. Daily-first mixed billing: first N files in a collection use `billing_source = daily_free` (no prepaid debit; provider cost still on usage events); remainder use prepaid. Free-tier jobs route to `*-free` queues — workers should process paid queues first. Details: [daily-free-trial.md](daily-free-trial.md).
+Env-gated per-user daily analyses (`MICROSTOCK_DAILY_FREE_ENABLED`). No activation SKU — slots reset lazily by calendar day in `microstock_daily_free_usage`. Daily-first mixed billing: first N files in a collection use `billing_source = daily_free` (no prepaid debit; provider cost still on usage events); remainder use prepaid. Free-tier jobs route to `*-free` queues and may use separate vision/thinking models through `MICROSTOCK_AI_VISION_MODEL_FREE` / `MICROSTOCK_AI_THINKING_MODEL_FREE`; an empty free override inherits the paid/default stage model. Workers should process paid queues first. Details: [daily-free-trial.md](daily-free-trial.md).
 
 **Billing subject:** `microstock_asset_metadata.billing_user_id` is set to the user who called `POST …/analyze` or `POST assets/{file}/analyze` (not the file uploader). Gate, usage events, and debit all use this ID.
 
@@ -157,7 +157,7 @@ flowchart LR
 | Step | Behavior |
 |----|----------|
 | Upload gate | `DirectUploadService::initiate` rejects (422) a Microstock workspace upload with no `folder_id` (`microstock.error_requires_folder`) or into a locked collection (`microstock.error_collection_locked`). Client mirrors this via dropzone `data-workspace-kind` / `data-collection-locked` |
-| Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` (single text field, max 2000) + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here. **Web UI:** the Lock & Describe modal collects structured sections (Primary concept, Visible subjects, Buyer intent, Style & mood, Additional notes) and composes them into a multi-line hint before lock — plain-text hints from older runs still parse back into the form (primary concept only) |
+| Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` (single text field, max 2000, nullable) + `collection_billing_mode` (`free`/`paid`) + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here. **Web UI:** the Lock & Describe modal collects structured sections (Primary concept, Visible subjects, Buyer intent, Style & mood, Additional notes). All sections are optional; they compose into a multi-line hint before lock. A mandatory **Free / Paid** billing-mode selector appears when `MICROSTOCK_DAILY_FREE_ENABLED=true`; when Free is disabled the selector is hidden and every analysis is forced to `paid`. Submitting with no content triggers a client-side `window.confirm` warning that blind locking usually produces poor, inconsistent AI metadata. |
 | Analyze | `POST collections/{folder}/analyze` (requires `locked`, non-empty) sets `processing` and dispatches `ProcessCollection` |
 | Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)** with decoupled stage columns (`ai_vision`, `ai_thinking`, `ai_result`), then dispatches one `AnalyzeAssetVision` job per file on the **collection vision** queue (FIFO by file name). Each vision persists `ai_vision` and dispatches `AnalyzeAssetThinking` on the **collection thinking** queue. **Dual-lane pipeline:** at most one vision + one thinking HTTP call per collection at a time (`WithoutOverlapping` per folder); vision file N+1 may run while thinking file N runs. Collection `review` when **all** assets are terminal (watchdog / thinking completion). Sub-folders are separate collections and are NOT processed |
 | Curate | Per-file manual edit via `PATCH assets/{file}/metadata` (existing finalize) while in `review` |
@@ -225,7 +225,7 @@ When the configured variant is not `ready`, analyze logs `microstock.variants.no
 
 ### Production stack (locked 2026-07-28)
 
-Default config + `.env.example` use Open WebUI aliases; **9Router** maps them to resolved models (verify in Open WebUI admin):
+Default config + `.env.example` use Open WebUI aliases for paid/prepaid analyses; **9Router** maps them to resolved models (verify in Open WebUI admin):
 
 | Config alias | 9Router resolves to | Role |
 |--------------|---------------------|------|
@@ -234,9 +234,15 @@ Default config + `.env.example` use Open WebUI aliases; **9Router** maps them to
 
 | Setting | Default | Notes |
 |---------|---------|-------|
-| Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` | Both stages |
+| Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` | Both stages and tiers |
+| Paid vision model | `MICROSTOCK_AI_VISION_MODEL=internal.vision` | Used for `billing_source=prepaid` and calls without billing context |
+| Free vision model | `MICROSTOCK_AI_VISION_MODEL_FREE=""` | Empty inherits paid vision; set an Open WebUI alias to differentiate daily-free calls |
+| Paid thinking model | `MICROSTOCK_AI_THINKING_MODEL=internal.thinking` | Used for `billing_source=prepaid` and calls without billing context |
+| Free thinking model | `MICROSTOCK_AI_THINKING_MODEL_FREE=""` | Empty inherits paid thinking; set an Open WebUI alias to differentiate daily-free calls |
 | `delivery` | `url` | Signed HTTPS to `ai_1024` variant (~341 B payload) |
 | `thinking_visual_attempts` | `2` | First 2 thinking attempts include image + draft |
+
+Model selection follows each asset's persisted `billing_source`, not the queue name. Mixed collections therefore use free models for daily slots and paid models for prepaid remainder; solo re-analysis follows its daily-first billing allocation. Alias selection is recorded on `microstock_ai_usage_events.alias_model`, while billing rates continue to use the provider response's `resolved_model`. After changing model env values, rebuild Laravel config and restart queue workers so long-lived processes load the new aliases.
 
 `batch_chunk` / `batch_min_files` remain in config for `HttpAiMetadataService::generateBatch()` (probes only); the collection pipeline always uses per-file `analyzeVision()`.
 
@@ -279,7 +285,7 @@ All three request builders (`vision()`, `thinkingRequest()`, `generateBatch()`) 
 
 Models behind `internal.vision` / `internal.thinking` **choke on long system prompts when an image is attached** — verified 2026-07-27: a ~1700-char system prompt returns **HTTP 524** (Cloudflare origin timeout) at ~125 s, while ~1050 chars returns **200** in ~107 s. `Prompts::marketplaceRules()` is therefore intentionally dense — keep `Prompts::visionSystem()` and `Prompts::thinkingSystem()` under ~1200 chars (unit-tested in `PromptsTest`). If the upstream model behind an alias never responds acceptably, change the model mapping in Open WebUI admin or override `MICROSTOCK_AI_VISION_MODEL` / `MICROSTOCK_AI_THINKING_MODEL`.
 
-`AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage is independently configurable in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: endpoint/model/api_key/timeout, env-driven). Tests bind a stub.
+`AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage is independently configurable in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: endpoint, paid/default model, optional free model, API key, timeout; all env-driven). Tests bind a stub.
 
 ### Open WebUI response parsing
 
@@ -288,8 +294,10 @@ Production uses **Open WebUI** as the only supported AI surface:
 | Setting | Value |
 |---------|-------|
 | Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` |
-| Vision model | `internal.vision` |
-| Thinking model | `internal.thinking` |
+| Paid/default vision model | `internal.vision` |
+| Free vision model | inherits paid when `MICROSTOCK_AI_VISION_MODEL_FREE` is empty |
+| Paid/default thinking model | `internal.thinking` |
+| Free thinking model | inherits paid when `MICROSTOCK_AI_THINKING_MODEL_FREE` is empty |
 | Auth | JWT Bearer (`MICROSTOCK_AI_*_API_KEY`) |
 
 `HttpAiMetadataService` normalizes upstream quirks before decoding:
@@ -430,7 +438,7 @@ Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Micros
 
 Inside a Microstock collection folder the SPA shows a **visual stepper** (`data-fh-collection-stepper`) above the file listing, replacing the former morphing button + status banner. The stepper displays the 5-step collection lifecycle — Upload → Lock & Describe → Analyze → Review → Export — with each step showing `is-pending`/`is-active`/`is-done`/`is-failed` state (CSS-driven circles + connecting lines). The active step is derived from `collection_status` (draft→step 1, locked→step 3, processing→step 3, review→step 4, exported→step 5, failed→step 3 with error). A contextual hint text and progress line (during processing) appear below the stepper. The action button remains in the toolbar but is now anchored by the stepper context — Lock & Describe (draft/failed) → Start analysis (locked) → Export CSV (review) → Download CSV (exported) — driven by `updateCollectionUi()` fed from the browse payload (`folder.collection_status`) and the status endpoint.
 
-The Lock & Describe modal (`#fhCollectionDescribeModal`) uses a compact 2-column grid for the visible-subjects and buyer-intent sections (reducing vertical clutter), with the char count and billing line moved to the modal footer. The structured describe form (`collection-describe.js`) requires primary concept plus at least one visible subject, buyer intent, and style selection (chip presets or Other); composes a sectioned hint for `collection_hint`. Re-lock from `failed` pre-fills from `folder.collection_hint`. Upload into a locked collection / workspace root is blocked client-side (dropzone gate) and server-side (`DirectUploadService`).
+The Lock & Describe modal (`#fhCollectionDescribeModal`) uses a compact 2-column grid for the visible-subjects and buyer-intent sections (reducing vertical clutter), with the char count and billing line moved to the modal footer. The structured describe form (`collection-describe.js`) makes all describe sections optional; only a too-short primary concept or hint length over 2000 chars is a hard validation error. A mandatory **Free / Paid** billing-mode radio group is shown when daily free is enabled; the modal resets the selection to empty on open so the user must explicitly choose. Paid mode bypasses the daily-free quota entirely (all slots prepaid), while Free mode uses the daily quota first and falls back to prepaid for any remainder. The billing line in the footer updates live as the user toggles the mode. Re-lock from `failed` pre-fills from `folder.collection_hint`. Upload into a locked collection / workspace root is blocked client-side (dropzone gate) and server-side (`DirectUploadService`).
 
 ### Switcher multi-workspace UI
 
@@ -447,14 +455,14 @@ After a successful create (and after every switcher refetch) the SPA rebuilds th
 The curate step of the collection lifecycle lives directly in the file-manager listing:
 
 - **Per-file metadata status** — `FolderService::browse` eager-loads `HostedFile::microstockMetadata` when the workspace `kind` is `microstock`, and `HostedFileResource` exposes a `microstock` key (`{title, keywords, status, phase, stages}`, `null` = no row yet). `stages` mirrors decoupled vision/thinking/result (`pending`/`running`/`ok`/`failed`/`skipped`). The listing renders a stage-aware badge (e.g. Vision…, Thinking…, Failed) next to the file name and a **Review** action (`bi-stars`, `data-fh-ms-review`) only when `status` is `generated`, `finalized`, or `failed` — in both JS re-render (`listing-ui.js` + `microstock-ui.js`) and Blade SSR (`_microstock-badge` partial).
-- **Side panel** — clicking Review opens a Bootstrap offcanvas (`#fhMicrostockPanel`) driven by `microstock-panel.js`. Compact layout: status badge + stage dots (Vision → Thinking → Result as icon dots with tooltips, not text strip) in the header row; signed preview image; editable title; keyword chips with a count badge and a **Clear all** button; description/category collapsed under an **AI details** toggle (Bootstrap collapse with chevron rotation). WebSocket-first metadata updates; fallback HTTP poll every 30 s when broadcast is off or degraded. Saves via `PATCH assets/{file}/metadata`; **Re-analyze** POSTs `assets/{file}/analyze` on the solo queue.
+- **Side panel** — clicking Review opens a Bootstrap offcanvas (`#fhMicrostockPanel`) driven by `microstock-panel.js`. Compact layout: status badge + stage strip (Vision → Thinking → Result) in the header row, rendered with an icon dot plus a visible text label for each stage; tooltips and `aria-label` remain for accessibility. signed preview image; editable title; keyword chips with a count badge and a **Clear all** button; description/category collapsed under an **AI details** toggle (Bootstrap collapse with chevron rotation). WebSocket-first metadata updates; fallback HTTP poll every 30 s when broadcast is off or degraded. Saves via `PATCH assets/{file}/metadata`; **Re-analyze** POSTs `assets/{file}/analyze` on the solo queue.
 - **Progress realtime** — while `collection_status === 'processing'`, the SPA listens on the File Hosting websocket channel for `collection.analysis.progress` (banner counts + phase) and `asset.metadata.progress` (per-file badge/stage patch). Requires broadcast credentials (`BROADCAST_CONNECTION=pusher` or `reverb` + `PUSHER_*`). When broadcast is off or the socket is degraded, fallback HTTP poll runs every 60 s (collection) / 30 s (review panel) instead of the former 3 s burst (`status` + full listing refetch).
 - **Collection billing** — `GET file-hosting/microstock/billing` (web hop → `GET /api/v1/microstock/billing`) shows balance + per-file estimate in the Lock & Describe modal footer; submit blocks when balance &lt; `fileCount × estimate`. **View balance & history** opens the SPA usage offcanvas (`#fhMicrostockUsagePanel`). Locked collections expose an enabled **Start analysis** button (`POST …/analyze` without re-lock).
 - **Review shortcut** — in `review` state a secondary **Review files** toolbar button opens the panel for the first listed file.
 
 ## Tests
 
-`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest|AnalysisWatchdogTest|AiBillingServiceTest|AiCreditServiceTest|BillingLedgerServiceTest|BillingLedgerApiTest|BillingAdminApiTest|KeywordNormalizerTest|HttpAiMetadataServiceThinkingFallbackTest|HttpAiMetadataServiceResponseParsingTest|HttpAiMetadataServiceCurateDraftTest|HttpAiMetadataServiceVisualThinkingTest|PromptsTest"` —
+`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest|AnalysisWatchdogTest|AiBillingServiceTest|AiCreditServiceTest|BillingLedgerServiceTest|BillingLedgerApiTest|BillingAdminApiTest|KeywordNormalizerTest|HttpAiMetadataServiceThinkingFallbackTest|HttpAiMetadataServiceResponseParsingTest|HttpAiMetadataServiceCurateDraftTest|HttpAiMetadataServiceVisualThinkingTest|HttpAiMetadataServiceTierModelTest|MicrostockAiConfigTest|PromptsTest"` —
 - `MicrostockTest`: provisioning gated by entitlement (403 without), slot-limit multi-workspace create, public-share block, analyze → generate (stub AI, asserts `title`/`description`/`category`/`keywords`), finalize curation, CSV export finalized-only, credential encrypt/decrypt roundtrip, invite paid-gate. Checkout coverage in `ServiceCheckoutZeroChargeTest`.
 - `CollectionLifecycleTest`: root-upload blocked (422), locked-collection upload blocked, lock requires hint + transitions + rejects re-lock + rejects non-microstock folder, analyze requires lock/files + dispatches `ProcessCollection`, non-recursive batching (sub-folder untouched), empty→failed, **multi-file dual-lane pipeline** (all files → `review`), prompt hint threading (`Prompts::visionUser`/`thinkingUser` + the `COLLECTION CONTEXT` block), status progress counts, per-collection CSV filter (incl. `description`/`category` columns), export persists CSV + marks exported.
 - `CollectionPipelineTest`: per-file vision dispatch count, solo vs collection queue routing, thinking idempotency, watchdog thinking backlog recovery.
@@ -464,6 +472,8 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 - `HttpAiMetadataServiceResponseParsingTest`: SSE `data: [DONE]` trailer stripping, full SSE delta stream aggregation, `stream: false` on requests, markdown-fenced JSON, Anthropic content blocks, batch `assets` wrapper, unparseable body → `ai_invalid_response`.
 - `HttpAiMetadataServiceCurateDraftTest`: `curateDraft()` delegates to thinking stage; curated keywords returned; multimodal request when image provided.
 - `HttpAiMetadataServiceVisualThinkingTest`: `generate()` sends image on thinking call; multimodal failure falls back to text-only.
+- `HttpAiMetadataServiceTierModelTest`: prepaid/no-context uses paid aliases, daily-free uses free aliases for both stages, empty free overrides inherit paid, and usage events keep the selected alias/source.
+- `MicrostockAiConfigTest`: locks paid/default model aliases and nullable free-tier overrides in config.
 - `PromptsTest`: `visionSystem()` and `thinkingSystem()` char count under gateway limit (~1200); keyword target 50–60 in thinking prompt.
 - `BillingLedgerServiceTest`: ledger pagination, running `balance_after`, signed amounts per transaction type.
 - `BillingLedgerApiTest`: user `GET billing/ledger` + `GET billing/usage-events` (auth, pagination, daily-free vs prepaid rows).
