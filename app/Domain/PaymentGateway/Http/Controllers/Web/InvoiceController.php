@@ -5,6 +5,7 @@ namespace App\Domain\PaymentGateway\Http\Controllers\Web;
 use App\Domain\PaymentGateway\Http\Controllers\API\V1\InvoiceController as ApiInvoiceController;
 use App\Domain\PaymentGateway\Http\Requests\ExportInvoiceRequest;
 use App\Domain\PaymentGateway\Services\InvoiceCsvExportService;
+use App\Domain\PaymentGateway\Support\InvoiceWebDestination;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Concerns\ResolvesPaymentCheckoutContext;
 use App\Http\Controllers\Web\Controller;
@@ -69,11 +70,17 @@ class InvoiceController extends Controller
             return redirect()->route('invoices.index')->with('error', $this->apiMessage($response));
         }
 
+        $data = $response->json('data', []);
+
+        if ($purchaseUrl = InvoiceWebDestination::purchaseHubUrl($data)) {
+            return redirect()->to($purchaseUrl);
+        }
+
         return $this->webView('invoices.show', array_merge([
-            'invoice' => $response->json('data', []),
+            'invoice' => $data,
         ], $this->paymentCheckoutContext(
-            is_numeric(data_get($response->json('data'), 'subtotal'))
-                ? (float) data_get($response->json('data'), 'subtotal')
+            is_numeric(data_get($data, 'subtotal'))
+                ? (float) data_get($data, 'subtotal')
                 : null,
         )));
     }
@@ -93,7 +100,7 @@ class InvoiceController extends Controller
                 'key' => 'show',
                 'label' => __('ui.datatable.view'),
                 'method' => 'GET',
-                'url' => route('invoices.show', $id),
+                'url' => InvoiceWebDestination::showUrl($row),
                 'style' => 'info',
                 'icon' => 'bi bi-eye',
             ];

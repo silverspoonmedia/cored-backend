@@ -6,6 +6,7 @@
  */
 import { createNotificationEcho } from '../notifications/echo.js';
 import { copyToClipboard, resolveQrImageSrc } from './instructionMedia.js';
+import { quoteChannelForSubtotal, readHubQuantity, formatMoney } from '../services/purchase-pricing-preview.js';
 
 const TERMINAL_SUCCESS = new Set(['paid']);
 const TERMINAL_FAILURE = new Set(['expired', 'cancelled', 'failed']);
@@ -67,10 +68,29 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
     const instructionsEl = root.querySelector('[data-payment-instructions]');
     const cheapAltHintEl = root.querySelector('[data-payment-cheap-alt-hint]');
 
-    let selectedChannel = initialCheckout?.channel_code ?? channels[0]?.code ?? '';
+    let selectedChannel = initialCheckout?.channel_code ?? '';
     let pickerCollapsed = false;
     let hasActiveInstructions = false;
     let terminal = false;
+
+    function updateUnselectedFeeBreakdown() {
+        const currency = root.dataset.invoiceCurrency ?? 'IDR';
+        const locale = root.dataset.appLocale ?? 'en';
+        const subtotal = Number.parseFloat(root.dataset.invoiceSubtotal ?? '0');
+        const subtotalFormatted = root.dataset.invoiceSubtotalFormatted
+            || formatMoney(subtotal, currency, locale);
+
+        updateFeeBreakdown(root, {
+            subtotal,
+            subtotal_formatted: subtotalFormatted,
+            payment_channel_fee: 0,
+            payment_channel_fee_formatted: formatMoney(0, currency, locale),
+            payment_channel_fee_basis: null,
+            customer_gross_total: subtotal,
+            customer_gross_total_formatted: subtotalFormatted,
+            currency,
+        }, { confirmed: false, messages });
+    }
 
     function stopPolling() {
         if (window.__paymentCheckoutPollTimer) {
@@ -216,6 +236,17 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
         });
     }
 
+    function formatPickerChannelFee(channel) {
+        if (typeof channel?.estimated_channel_fee_formatted === 'string' && channel.estimated_channel_fee_formatted !== '') {
+            return channel.estimated_channel_fee_formatted;
+        }
+
+        const currency = root.dataset.invoiceCurrency ?? 'IDR';
+        const locale = root.dataset.appLocale ?? 'en';
+
+        return formatMoney(channel?.estimated_channel_fee ?? 0, currency, locale);
+    }
+
     function renderChannelPickerList(nextChannels, selectedCode) {
         if (!channelListEl) {
             return;
@@ -230,7 +261,7 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
             const cheapAltLabel = cheapAlt !== ''
                 ? (nextChannels.find((item) => item?.code === cheapAlt)?.display_name || cheapAlt)
                 : '';
-            const feeFormatted = channel?.estimated_channel_fee_formatted;
+            const feeFormatted = formatPickerChannelFee(channel);
             const feeSuffix = channel?.fee_type === 'percent' && channel?.fee_label
                 ? ` (${channel.fee_label})`
                 : '';
@@ -259,8 +290,7 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
     }
 
     function formatChannelFee(channel) {
-        return channel?.estimated_channel_fee_formatted
-            ?? `${root.dataset.invoiceCurrency ?? 'IDR'} ${channel?.estimated_channel_fee ?? 0}`;
+        return formatPickerChannelFee(channel);
     }
 
     async function refreshCheckoutChannels({ silent = false } = {}) {
@@ -325,7 +355,7 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
                     messages.selectedChannelUnavailable ?? 'Selected payment method is no longer available.',
                     'warning',
                 );
-                selectedChannel = nextChannels[0]?.code ?? '';
+                selectedChannel = '';
             } else if (nextChannels.length === 0 && selectedChannel !== '') {
                 stopPolling();
                 clearInstructions();
@@ -333,8 +363,6 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
             }
 
             channels = nextChannels;
-            root.dataset.channels = JSON.stringify(channels);
-            renderChannelPickerList(channels, selectedChannel);
 
             if (checkoutButton) {
                 checkoutButton.disabled = selectedChannel === '';
@@ -342,13 +370,6 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
 
             if (channels.length === 0) {
                 picker?.classList.add('d-none');
-            } else {
-                picker?.classList.remove('d-none');
-            }
-
-            if (selectedChannel !== '') {
-                setSelected(selectedChannel);
-            } else {
                 updateFeeBreakdown(root, {
                     subtotal: Number.parseFloat(root.dataset.invoiceSubtotal ?? '0'),
                     payment_channel_fee: 0,
@@ -356,6 +377,15 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
                     customer_gross_total: Number.parseFloat(root.dataset.invoiceGross ?? '0'),
                     currency: root.dataset.invoiceCurrency ?? 'IDR',
                 }, { confirmed: false, messages });
+            } else {
+                picker?.classList.remove('d-none');
+                recalculateChannelQuotesForSubtotal(Number.parseFloat(root.dataset.invoiceSubtotal ?? '0'));
+
+                if (selectedChannel !== '') {
+                    updateCheapAltHint(selectedChannel);
+                } else {
+                    updateUnselectedFeeBreakdown();
+                }
             }
         } catch {
             // Ignore transient network errors; poll or next WS event will retry.
@@ -383,6 +413,8 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
 
     if (selectedChannel !== '') {
         setSelected(selectedChannel);
+    } else if (!initialCheckout?.instructions) {
+        updateUnselectedFeeBreakdown();
     }
 
     if (initialCheckout?.instructions) {
@@ -404,6 +436,52 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
     if (!routingSubscribed) {
         startRoutingPoll();
     }
+
+    function recalculateChannelQuotesForSubtotal(subtotal) {
+        const currency = root.dataset.invoiceCurrency ?? 'IDR';
+        const locale = root.dataset.appLocale ?? 'en';
+        channels = channels.map((channel) => quoteChannelForSubtotal(channel, subtotal, currency, locale));
+        root.dataset.channels = JSON.stringify(channels);
+        renderChannelPickerList(channels, selectedChannel);
+
+        if (selectedChannel !== '') {
+            updateFeeBreakdownFromChannel(root, channels, selectedChannel, messages);
+        }
+    }
+
+    root.addEventListener('payment-checkout:preview-amount', (event) => {
+        if (terminal) {
+            return;
+        }
+
+        const detail = event.detail ?? {};
+
+        if (detail.subtotal !== undefined) {
+            root.dataset.invoiceSubtotal = String(detail.subtotal);
+        }
+
+        if (detail.subtotal_formatted) {
+            root.dataset.invoiceSubtotalFormatted = detail.subtotal_formatted;
+        }
+
+        if (detail.customer_gross_total !== undefined) {
+            root.dataset.invoiceGross = String(detail.customer_gross_total);
+        }
+
+        if (detail.currency) {
+            root.dataset.invoiceCurrency = detail.currency;
+        }
+
+        stopPolling();
+        clearInstructions();
+
+        const subtotal = Number.parseFloat(root.dataset.invoiceSubtotal ?? '0');
+        recalculateChannelQuotesForSubtotal(subtotal);
+
+        if (selectedChannel === '' && detail.subtotal !== undefined) {
+            updateUnselectedFeeBreakdown();
+        }
+    });
 
     bindChannelPickerClicks();
 
@@ -430,20 +508,31 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
         checkoutButton.textContent = messages.channelLoading ?? 'Creating payment…';
 
         try {
+            const hubQuantity = readHubQuantity();
+            const payload = { channel_code: selectedChannel };
+
+            if (hubQuantity !== null) {
+                payload.quantity = hubQuantity;
+            }
+
             const response = await fetch(channelCheckoutUrl, {
                 method: 'POST',
                 headers: buildHeaders(csrfToken),
                 credentials: 'same-origin',
-                body: JSON.stringify({ channel_code: selectedChannel }),
+                body: JSON.stringify(payload),
             });
 
-            const payload = await response.json();
+            const payloadJson = await response.json();
 
-            if (!response.ok || payload.status !== 'success') {
-                throw new Error(payload.message || messages.channelFailed || 'Channel checkout failed.');
+            if (!response.ok || payloadJson.status !== 'success') {
+                throw new Error(payloadJson.message || messages.channelFailed || 'Channel checkout failed.');
             }
 
-            const data = payload.data ?? {};
+            const data = payloadJson.data ?? {};
+            updateAmountCallout(root, data);
+            root.dataset.invoiceSubtotal = String(data.subtotal ?? root.dataset.invoiceSubtotal);
+            root.dataset.invoiceGross = String(data.customer_gross_total ?? data.amount ?? root.dataset.invoiceGross);
+            applyHubAmountsFromCheckout(data);
             showInstructions(data);
             showCheckoutToast(messages.channelReady ?? 'Payment instructions ready.', 'success');
         } catch (error) {
@@ -485,11 +574,7 @@ function createPaymentUiController(root, messages) {
                 setPurchaseStatus(meta.invoiceable_status ?? 'paid', 'success');
                 setPaidAt(meta.paid_at);
                 replaceCheckoutBody(root, messages.paid ?? 'This invoice is already paid.', 'success');
-
-                return;
-            }
-
-            if (TERMINAL_FAILURE.has(status)) {
+            } else if (TERMINAL_FAILURE.has(status)) {
                 const label = statusLabel(status, messages);
                 setPaymentBadge(label, 'danger');
                 setSteps(1, false);
@@ -500,6 +585,14 @@ function createPaymentUiController(root, messages) {
                 setExpiredAt(meta.expired_at);
                 replaceCheckoutBody(root, messages.notPayable ?? 'This invoice cannot be paid.', 'muted');
             }
+
+            document.dispatchEvent(new CustomEvent('payment-checkout:status-changed', {
+                detail: {
+                    status,
+                    meta,
+                    terminal: TERMINAL_SUCCESS.has(status) || TERMINAL_FAILURE.has(status),
+                },
+            }));
         },
     };
 }
@@ -597,6 +690,19 @@ function replaceCheckoutBody(root, message, tone) {
     body.innerHTML = `<p class="${className}" data-payment-terminal-message>${escapeHtml(message)}</p>`;
 }
 
+function applyHubAmountsFromCheckout(data) {
+    const settlement = data.subtotal_formatted ?? null;
+    const gross = data.customer_gross_total_formatted ?? null;
+
+    if (settlement) {
+        document.querySelector('[data-purchase-settlement]')?.replaceChildren(document.createTextNode(settlement));
+    }
+
+    if (gross) {
+        document.querySelector('[data-payment-hero-amount]')?.replaceChildren(document.createTextNode(gross));
+    }
+}
+
 function updateAmountCallout(root, data) {
     updateFeeBreakdown(root, {
         subtotal: data.subtotal,
@@ -610,6 +716,24 @@ function updateAmountCallout(root, data) {
     }, { confirmed: true });
 }
 
+function resolveCheckoutLocale(root) {
+    return root.dataset.appLocale ?? document.documentElement.lang?.split('-')[0] ?? 'en';
+}
+
+function formatDisplayMoney(root, raw, formatted, currency) {
+    if (typeof formatted === 'string' && formatted !== '') {
+        return formatted;
+    }
+
+    if (raw === null || raw === undefined || raw === '') {
+        return '—';
+    }
+
+    const code = currency ?? root.dataset.invoiceCurrency ?? 'IDR';
+
+    return formatMoney(raw, code, resolveCheckoutLocale(root));
+}
+
 function updateFeeBreakdownFromChannel(root, channels, code, messages) {
     const channel = channels.find((item) => item?.code === code);
 
@@ -617,19 +741,23 @@ function updateFeeBreakdownFromChannel(root, channels, code, messages) {
         return;
     }
 
+    const currency = root.dataset.invoiceCurrency ?? 'IDR';
+    const locale = resolveCheckoutLocale(root);
     const subtotal = Number.parseFloat(root.dataset.invoiceSubtotal ?? '0');
     const fee = Number(channel.estimated_channel_fee ?? 0);
     const total = Number(channel.estimated_customer_total ?? subtotal + fee);
+    const subtotalFormatted = root.dataset.invoiceSubtotalFormatted
+        || formatMoney(subtotal, currency, locale);
 
     updateFeeBreakdown(root, {
         subtotal,
-        subtotal_formatted: null,
+        subtotal_formatted: subtotalFormatted,
         payment_channel_fee: fee,
         payment_channel_fee_formatted: channel.estimated_channel_fee_formatted ?? null,
         payment_channel_fee_basis: channel.fee_basis ?? null,
         customer_gross_total: total,
         customer_gross_total_formatted: channel.estimated_customer_total_formatted ?? null,
-        currency: root.dataset.invoiceCurrency ?? 'IDR',
+        currency,
     }, { confirmed: false, messages });
 }
 
@@ -646,17 +774,7 @@ function updateFeeBasisElement(element, basis) {
 
 function updateFeeBreakdown(root, data, { confirmed = false, messages = {} } = {}) {
     const currency = data.currency ?? root.dataset.invoiceCurrency ?? 'IDR';
-    const formatMoney = (raw, formatted) => {
-        if (typeof formatted === 'string' && formatted !== '') {
-            return formatted;
-        }
-
-        if (raw === null || raw === undefined || raw === '') {
-            return '—';
-        }
-
-        return `${currency} ${raw}`;
-    };
+    const formatDisplay = (raw, formatted) => formatDisplayMoney(root, raw, formatted, currency);
 
     const subtotalEl = root.querySelector('[data-payment-fee-subtotal]');
     const feeEl = root.querySelector('[data-payment-fee-surcharge]');
@@ -665,20 +783,20 @@ function updateFeeBreakdown(root, data, { confirmed = false, messages = {} } = {
     const hintEl = root.querySelector('[data-payment-fee-estimate-hint]');
 
     if (subtotalEl) {
-        subtotalEl.textContent = formatMoney(
+        subtotalEl.textContent = formatDisplay(
             data.subtotal ?? root.dataset.invoiceSubtotal,
             data.subtotal_formatted,
         );
     }
 
     if (feeEl) {
-        feeEl.textContent = formatMoney(data.payment_channel_fee, data.payment_channel_fee_formatted);
+        feeEl.textContent = formatDisplay(data.payment_channel_fee, data.payment_channel_fee_formatted);
     }
 
     updateFeeBasisElement(feeBasisEl, data.payment_channel_fee_basis);
 
     if (totalEl) {
-        totalEl.textContent = formatMoney(
+        totalEl.textContent = formatDisplay(
             data.customer_gross_total ?? data.amount,
             data.customer_gross_total_formatted,
         );
@@ -687,18 +805,18 @@ function updateFeeBreakdown(root, data, { confirmed = false, messages = {} } = {
     hintEl?.classList.toggle('d-none', confirmed);
 
     document.querySelector('[data-payment-sidebar-subtotal]')?.replaceChildren(
-        document.createTextNode(formatMoney(data.subtotal ?? root.dataset.invoiceSubtotal, data.subtotal_formatted)),
+        document.createTextNode(formatDisplay(data.subtotal ?? root.dataset.invoiceSubtotal, data.subtotal_formatted)),
     );
 
     const sidebarFeeAmount = document.querySelector('[data-payment-sidebar-fee-amount]');
     if (sidebarFeeAmount) {
-        sidebarFeeAmount.textContent = formatMoney(data.payment_channel_fee, data.payment_channel_fee_formatted);
+        sidebarFeeAmount.textContent = formatDisplay(data.payment_channel_fee, data.payment_channel_fee_formatted);
     }
 
     updateFeeBasisElement(document.querySelector('[data-payment-sidebar-fee-basis]'), data.payment_channel_fee_basis);
 
     document.querySelector('[data-payment-sidebar-total]')?.replaceChildren(
-        document.createTextNode(formatMoney(data.customer_gross_total ?? data.amount, data.customer_gross_total_formatted)),
+        document.createTextNode(formatDisplay(data.customer_gross_total ?? data.amount, data.customer_gross_total_formatted)),
     );
 }
 

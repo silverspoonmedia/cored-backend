@@ -64,7 +64,7 @@ class ServiceEntitlementService
                 : null);
 
         $isAddon = $service->isAddonPlan();
-        $quantity = $this->nextQuantity($entitlement, $isAddon);
+        $quantity = $this->nextQuantity($entitlement, $isAddon, $purchase);
 
         if ($interval->isOneTime()) {
             $entitlement->fill([
@@ -523,14 +523,16 @@ class ServiceEntitlementService
         $this->analytics->moveUserTier('FileHosting', $entitlement->user_id, $oldTier, 'free');
     }
 
-    private function nextQuantity(ServiceEntitlement $entitlement, bool $isAddon): int
+    private function nextQuantity(ServiceEntitlement $entitlement, bool $isAddon, ServicePurchase $purchase): int
     {
         if (! $isAddon) {
             return 1;
         }
 
+        $purchaseQty = max(1, (int) $purchase->quantity);
+
         if (! $entitlement->exists) {
-            return 1;
+            return $purchaseQty;
         }
 
         $wasContributing = in_array(
@@ -542,10 +544,10 @@ class ServiceEntitlementService
             && $entitlement->ends_at->greaterThan(now());
 
         if ($wasContributing) {
-            return max(1, (int) $entitlement->quantity) + 1;
+            return max(1, (int) $entitlement->quantity) + $purchaseQty;
         }
 
-        return 1;
+        return $purchaseQty;
     }
 
     /**

@@ -22,29 +22,22 @@
     $invoiceGross = data_get($invoice, 'customer_gross_total', 0);
     $invoiceCurrency = data_get($invoice, 'currency', 'IDR');
     $useChannelCheckout = $checkoutMode === 'channel' && is_array($paymentChannels) && $paymentChannels !== [];
-    $invoiceFeeBasis = data_get($invoice, 'payment_channel_fee_basis');
-    if ($invoiceFeeBasis === null && $useChannelCheckout && $paymentChannels !== []) {
-        $firstChannel = $paymentChannels[0];
-        if (data_get($firstChannel, 'fee_type') === 'percent' && data_get($firstChannel, 'fee_label')) {
-            $invoiceFeeBasis = __('web/payments.checkout.fee_percent_basis', [
-                'percent' => data_get($firstChannel, 'fee_label'),
-            ]);
-        }
+    $initialCheckout = data_get($invoice, 'checkout_session');
+    if (is_array($initialCheckout) && $initialCheckout === []) {
+        $initialCheckout = null;
     }
+    $hasActiveCheckout = is_array($initialCheckout) && $initialCheckout !== null;
+    $invoiceFeeBasis = data_get($invoice, 'payment_channel_fee_basis');
 
     $channelKindIcons = [
         'qris' => 'bi-qr-code',
         'va' => 'bi-bank',
         'ewallet' => 'bi-wallet2',
     ];
-    $defaultChannelCode = $useChannelCheckout
-        ? (string) data_get($paymentChannels[0] ?? null, 'code', '')
+    $defaultChannelCode = $useChannelCheckout && $hasActiveCheckout
+        ? (string) data_get($initialCheckout, 'channel_code', '')
         : '';
     $canInitiatePayment = auth()->check() && auth()->user()->can('initiate payment');
-    $initialCheckout = data_get($invoice, 'checkout_session');
-    if (is_array($initialCheckout) && $initialCheckout === []) {
-        $initialCheckout = null;
-    }
 @endphp
 
 @if (! empty($invoice))

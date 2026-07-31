@@ -67,6 +67,43 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
         ]);
     }
 
+    public function test_addon_checkout_endpoint_accepts_quantity(): void
+    {
+        Http::fake([
+            'api.frankfurter.app/*' => Http::response([
+                'rates' => ['IDR' => 18000],
+            ], 200),
+        ]);
+
+        $user = $this->userWithRole('User');
+        $service = Service::factory()->fileHostingAddon100Gb()->create();
+        ServicePrice::factory()->usd(5)->create(['service_id' => $service->id]);
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/services/'.$service->id.'/checkout', [
+                'currency' => 'USD',
+                'quantity' => 3,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.quantity', 3)
+            ->assertJsonPath('data.display_amount', 15)
+            ->assertJsonPath('data.settlement_amount', 270000);
+    }
+
+    public function test_main_plan_checkout_rejects_quantity_greater_than_one(): void
+    {
+        $user = $this->userWithRole('User');
+        $service = Service::factory()->fileHostingMain1Tb()->create();
+        ServicePrice::factory()->usd(24.95)->create(['service_id' => $service->id]);
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/services/'.$service->id.'/checkout', [
+                'currency' => 'USD',
+                'quantity' => 2,
+            ])
+            ->assertUnprocessable();
+    }
+
     public function test_paid_sync_fulfills_main_plan_quota(): void
     {
         $user = $this->userWithRole('User');

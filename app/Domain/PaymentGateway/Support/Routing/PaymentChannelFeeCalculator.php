@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Support\Routing;
 
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
+use App\Domain\PaymentGateway\Models\PaymentChannelRouteSnapshot;
 
 class PaymentChannelFeeCalculator
 {
@@ -36,14 +37,39 @@ class PaymentChannelFeeCalculator
         return 0.0;
     }
 
-    public function formatFeeLabel(PaymentChannelRoute $route): string
+    public function estimateFromSnapshot(PaymentChannelRouteSnapshot $snapshot, float $subtotal, string $currency = 'IDR'): float
     {
-        if ($route->fee_flat !== null) {
-            return 'Rp '.number_format((int) $route->fee_flat, 0, ',', '.');
+        if ($snapshot->fee_flat !== null) {
+            return $this->roundMoney((float) $snapshot->fee_flat, $currency);
         }
 
-        if ($route->fee_percent !== null) {
-            $value = rtrim(rtrim(number_format((float) $route->fee_percent, 3, '.', ''), '0'), '.');
+        if ($snapshot->fee_percent !== null) {
+            $rate = (float) $snapshot->fee_percent / 100;
+
+            return $this->roundMoney($subtotal * $rate, $currency);
+        }
+
+        return 0.0;
+    }
+
+    public function formatFeeLabel(PaymentChannelRoute $route): string
+    {
+        return $this->formatFeeLabelFromValues($route->fee_flat, $route->fee_percent);
+    }
+
+    public function formatFeeLabelFromSnapshot(PaymentChannelRouteSnapshot $snapshot): string
+    {
+        return $this->formatFeeLabelFromValues($snapshot->fee_flat, $snapshot->fee_percent);
+    }
+
+    private function formatFeeLabelFromValues(?int $feeFlat, mixed $feePercent): string
+    {
+        if ($feeFlat !== null) {
+            return 'Rp '.number_format($feeFlat, 0, ',', '.');
+        }
+
+        if ($feePercent !== null) {
+            $value = rtrim(rtrim(number_format((float) $feePercent, 3, '.', ''), '0'), '.');
 
             return $value.'%';
         }

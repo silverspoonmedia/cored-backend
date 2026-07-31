@@ -7,10 +7,10 @@ Core domain `App\Domain\PaymentGateway\`. Secrets in env/config, not DB. Polymor
 ## Layout
 
 ```
-Models/     PaymentGateway, Invoice, Subscription, PaymentChannel
+Models/     PaymentGateway, Invoice, PaymentChannelRouteSnapshot, Subscription, PaymentChannel
 Services/   Payment/* (channel checkout, Midtrans, iPaymu), Billing/*
 Events/     InvoiceStatusChanged (ShouldBroadcastNow)
-Support/    PaymentRealtime, InvoiceChannelAuthorizer, Routing/* (policy loader, materializer), DataTable/*
+Support/    PaymentRealtime, InvoiceChannelAuthorizer, InvoiceWebDestination, Routing/* (policy loader, materializer), DataTable/*
 Http/       API V1 + Web proxies
 Console/    payments:*
 ```
@@ -40,6 +40,8 @@ Primary sell path: [Service](../service/README.md) checkout → `ServicePurchase
 **IDR amounts:** Service FX settlement rounds to **whole rupiah** (`ExchangeRateService`). Invoice `subtotal` / initial `customer_gross_total` are whole IDR before channel fee.
 
 **API display companions:** `InvoiceResource` / `SubscriptionResource` keep raw money + ISO timestamps and add `*_formatted` (money with currency code) and `*_formatted` / `*_human` (dates). Blade and DataTables bind companions only — see [platform/crud presentation](../../platform/crud.md#api-resource-presentation-dual-fields).
+
+**InvoiceResource (post-checkout policy):** `payment_channel_route_snapshot_id`, nested `payment_channel_route_snapshot` (and `payment_channel_route` alias with the same snapshot shape), plus fee basis companions (`payment_channel_fee_type`, `payment_channel_fee_label`, `payment_channel_fee_basis`) — all from the immutable snapshot, **not** live `payment_channel_routes` rows.
 
 ### iPaymu monetary reconcile
 
@@ -74,6 +76,8 @@ Checkout UI shows subtotal / payment fee / total due. `GET /api/v1/payment-chann
 
 **Reconciliation:** invoice list shows subtotal + fee + gross; `GET /api/v1/invoices/export` (and `/apps/invoices/export`) streams CSV for bookkeeping.
 
+**Blade payment surface:** For `invoiceable_type = service_purchase`, `/apps/invoices` datatable **View** links and `GET /apps/invoices/{id}` redirect to the [Service purchase hub](../service/README.md) (`/apps/service-purchases/{id}`) — one combined payment + purchase page. Subscription and other morph types still use `/apps/invoices/{id}`. Helper: `InvoiceWebDestination::showUrl()`.
+
 | Surface | Channel mode | Snap/redirect fallback |
 |---------|--------------|------------------------|
 | **API** | Channel picker + instructions | Yes (`snap_fallback` when no active channels) |
@@ -94,7 +98,20 @@ Logical channels (`qris`, `va_*`, e-wallets) are **materialized from** [Routing_
 | E-wallets (`gopay`, `ovo`, `dana`, `shopeepay`) | Midtrans direct only; `cheap_alt_code=qris` is a **checkout UX hint** only |
 | `linkaja` | QRIS proxy (`routing_type=qris_proxy`) — charges via QRIS routes |
 
-`PaymentChannelResolver` orders viable routes by `route_role` (primary/only before fallback) then `priority`, skips `avoid` tags, and checks gateway credentials. Successful checkout stores `payment_channel_route_id` on the invoice.
+`PaymentChannelResolver` orders viable routes by `route_role` (primary/only before fallback) then `priority`, skips `avoid` tags, and checks gateway credentials. Successful checkout stores `payment_channel_route_id` and an immutable **`payment_channel_route_snapshot_id`** on the invoice (policy captured at checkout — see below).
+
+### Route policy snapshot
+
+Parallels [Service FX snapshots](../service/README.md) (`exchange_rate_snapshots` + `fx_rate_snapshot_id`). YAML sync and admin edits mutate `payment_channel_routes`; without a snapshot, invoice fee **amounts** stay locked but fee **basis** (flat/percent, settlement tier, labels) could drift on display.
+
+| When | What is captured |
+|------|------------------|
+| Channel checkout (`InvoiceChannelCheckoutService`) | Insert row in `payment_channel_route_snapshots`; FK on invoice |
+| Midtrans pre-charge (`InvoiceChannelFeeService::applyBeforeCharge`) | Same snapshot reused for fee estimate + gross before charge |
+
+`InvoiceResource`, the [Service purchase hub](../service/README.md) (invoice nested in purchase API), CSV export (`InvoiceCsvExportService`), and any Blade consuming invoice API data read **`payment_channel_route_snapshot`** only — not live route rows. Standalone `/apps/invoices/{id}` Blade applies only to non-`service_purchase` morphs (service purchases redirect per **Blade payment surface** above). Abandoning checkout clears `payment_channel_route_snapshot_id` with the route FK. Pre-production: no backfill for invoices created before this feature.
+
+**Snapshot columns:** `payment_channel_code`, `payment_gateway_id`, `route_role`, `settlement_days`, `fee_flat`, `fee_percent`, `fee_vat_inclusive`, `policy_tag`, `provider_payment_*`, `captured_at`.
 
 ### Route schema (`payment_channel_routes`)
 
@@ -149,7 +166,7 @@ Read-only dashboard for payment gateway revenue (permission: `view invoice`). Me
 
 **Date range timezone:** `from` / `to` filters use calendar days in `PAYMENT_REPORTING_TIMEZONE` (default `Asia/Jakarta`), not app UTC. This keeps early-morning WIB payments visible on the default “last 30 days” view when the server clock is still on the previous UTC date.
 
-Also shows **funds pipeline** buckets (awaiting settlement, ready to disburse, in payout, disbursed, failed), breakdowns by gateway/channel/product type, daily trend table, and paginated paid-invoice drill-down with links to invoice detail.
+Also shows **funds pipeline** buckets (awaiting settlement, ready to disburse, in payout, disbursed, failed), breakdowns by gateway/channel/product type, daily trend table, and paginated paid-invoice drill-down. Drill-down `show_url` uses `InvoiceWebDestination::showUrl()` → purchase hub for `service_purchase`, else `/apps/invoices/{id}`.
 
 API: `GET /api/v1/payments/income`, `GET /api/v1/payments/income/invoices`. Export: **Export CSV** on the page (same date filters via `paid_from` / `paid_to`).
 
@@ -177,9 +194,9 @@ Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation 
 
 ## Blade / assets
 
-Authenticated admin/checkout UI under `/apps/*` (route names unprefixed): e.g. `/apps/payment-channels`, `/apps/payment-gateways`, invoice/service-purchase show with checkout panel. QR image base is injected via `route('qr.show')` (`window.monolithQrBaseUrl`) — no hard-coded `/apps/qr` in JS. See [blade-admin — URL helpers](../../web/blade-admin.md#url-helpers-auth-shell).
+Authenticated admin/checkout UI under `/apps/*` (route names unprefixed): e.g. `/apps/payment-channels`, `/apps/payment-gateways`, `/apps/service-purchases/{id}` (primary payment surface for service sales), `/apps/invoices` (list **View** uses `InvoiceWebDestination`). QR image base is injected via `route('qr.show')` (`window.monolithQrBaseUrl`) — no hard-coded `/apps/qr` in JS. See [blade-admin — URL helpers](../../web/blade-admin.md#url-helpers-auth-shell).
 
-Payment-first order/invoice show: hero, steps, `checkout-panel`, `checkout.js`. Web proxies: channel-checkout, sync-status, snap-token (API).
+Payment-first purchase hub / subscription invoice show: hero, steps, `checkout-panel`, `checkout.js`. Fee breakdown shows **0** until the buyer selects a payment method (restored from active `checkout_session` when instructions exist). Web proxies: channel-checkout, sync-status, snap-token (API).
 
 ### Realtime invoice status (no hard reload)
 
@@ -208,7 +225,7 @@ When admins toggle payment channels/routes or run `payments:sync-routing-policy`
 | Channel | Private `payments.routing` — auth: `initiate payment` or `view invoice` |
 | Emit | `PaymentChannelService` (channel/route update), `PaymentRouteMaterializer::sync` (non-dry-run) |
 | Refresh API | `GET /api/v1/invoices/{invoice}/checkout-channels` (invoice subtotal quotes); web proxy `GET /apps/invoices/{invoice}/checkout/channels` |
-| Client | `checkout.js` listens on routing channel, refetches channels, re-renders picker, toasts fee/removal changes; **60s poll** fallback when broadcast unconfigured |
+| Client | `checkout.js` listens on routing channel, refetches channels, re-quotes fees via `quoteChannelForSubtotal` (current invoice/preview subtotal + `formatMoney`), re-renders picker, toasts fee/removal changes; **60s poll** fallback when broadcast unconfigured |
 
 Payload: `revision`, `reason` (`channel_updated` | `route_updated` | `policy_synced`), optional `channel_code`.
 
@@ -230,7 +247,7 @@ Sensitive invoice payloads, 2FA, etc.: [encryption.md](encryption.md).
 
 ## Tests
 
-`composer test -- --filter=Payment` (and related Invoice/Channel filters). Realtime-specific: `PaymentRealtime`, `InvoiceChannelAuthorizer`, `InvoiceStatusChanged`, `MidtransInvoiceSynchronizerRealtime`.
+`composer test -- --filter=Payment` (and related Invoice/Channel filters). Realtime-specific: `PaymentRealtime`, `InvoiceChannelAuthorizer`, `InvoiceStatusChanged`, `MidtransInvoiceSynchronizerRealtime`. Route snapshot: `InvoiceChannelCheckoutTest` (snapshot FK + immutable fee basis). Web navigation: `InvoiceWebDestinationTest`, `InvoiceWebNavigationTest` (datatable + show redirect to purchase hub).
 
 ## Related
 

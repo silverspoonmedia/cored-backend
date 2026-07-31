@@ -26,7 +26,7 @@ class InvoiceService
     public function get(string $id): Invoice
     {
         return Invoice::query()
-            ->with(['paymentGateway', 'paymentChannelRoute.paymentGateway', 'invoiceable'])
+            ->with(['paymentGateway', 'paymentChannelRouteSnapshot.paymentGateway', 'invoiceable'])
             ->findOrFail($id);
     }
 }

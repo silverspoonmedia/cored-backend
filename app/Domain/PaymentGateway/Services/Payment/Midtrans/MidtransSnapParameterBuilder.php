@@ -19,7 +19,12 @@ class MidtransSnapParameterBuilder
      */
     public function build(Invoice $invoice, array $options = []): array
     {
+        $currency = strtoupper((string) ($invoice->currency ?: 'IDR'));
         $gross = (float) $invoice->customer_gross_total;
+
+        if ($currency === 'IDR') {
+            $gross = (int) round($gross, 0);
+        }
 
         $params = [
             'transaction_details' => [

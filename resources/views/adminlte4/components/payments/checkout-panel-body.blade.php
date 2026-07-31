@@ -4,6 +4,7 @@
 @endphp
 <div
     data-payment-checkout
+    data-app-locale="{{ app()->getLocale() }}"
     data-checkout-mode="{{ $useChannelCheckout ? 'channel' : 'snap_fallback' }}"
     data-invoice-id="{{ data_get($invoice, 'id') }}"
     data-invoice-status="{{ $status }}"

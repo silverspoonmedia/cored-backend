@@ -38,6 +38,7 @@ class Invoice extends Model
         'payment_method',
         'payment_channel_code',
         'payment_channel_route_id',
+        'payment_channel_route_snapshot_id',
         'subtotal',
         'payment_channel_fee',
         'customer_gross_total',
@@ -86,6 +87,11 @@ class Invoice extends Model
     public function paymentChannelRoute(): BelongsTo
     {
         return $this->belongsTo(PaymentChannelRoute::class);
+    }
+
+    public function paymentChannelRouteSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(PaymentChannelRouteSnapshot::class);
     }
 
     public function isPaid(): bool

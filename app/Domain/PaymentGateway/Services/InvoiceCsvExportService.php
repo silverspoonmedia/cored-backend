@@ -50,7 +50,7 @@ class InvoiceCsvExportService
     private function query(array $filters): Builder
     {
         return Invoice::query()
-            ->with(['paymentGateway', 'paymentChannelRoute.paymentGateway'])
+            ->with(['paymentGateway', 'paymentChannelRouteSnapshot.paymentGateway'])
             ->when(
                 filled($filters['status'] ?? null),
                 fn (Builder $query): Builder => $query->where('status', $filters['status']),
@@ -94,7 +94,7 @@ class InvoiceCsvExportService
      */
     private function row(Invoice $invoice): array
     {
-        $route = $invoice->paymentChannelRoute;
+        $route = $invoice->paymentChannelRouteSnapshot;
 
         return [
             $invoice->invoice_number,
@@ -109,7 +109,7 @@ class InvoiceCsvExportService
             $invoice->paymentGateway?->name ?? $route?->paymentGateway?->name,
             $route?->route_role?->value ?? $route?->route_role,
             $route?->settlement_days,
-            $route ? $this->feeCalculator->formatFeeLabel($route) : null,
+            $route ? $this->feeCalculator->formatFeeLabelFromSnapshot($route) : null,
             $invoice->external_transaction_id,
             $invoice->invoiceable_type,
         ];

@@ -72,7 +72,7 @@ class PaymentCheckoutController extends Controller
     {
         $response = $this->api()->post(
             "invoices/{$invoice}/channel-checkout",
-            $this->apiPayload($request, ['channel_code']),
+            $this->apiPayload($request, ['channel_code', 'quantity']),
         );
 
         if (! $response->successful()) {

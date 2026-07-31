@@ -87,6 +87,29 @@ class FileHostingPlanQuotaMatrixTest extends TestCase
         $this->assertSame($expected, app(QuotaService::class)->quotaBytesFor($user->id));
     }
 
+    public function test_addon_100gb_single_purchase_quantity_three_matches_three_checkouts(): void
+    {
+        $user = User::factory()->create();
+        $addon = Service::factory()->fileHostingAddon100Gb()->create();
+
+        $purchase = ServicePurchase::factory()->pending()->create([
+            'user_id' => $user->id,
+            'service_id' => $addon->id,
+            'quantity' => 3,
+        ]);
+        app(ServiceFulfillmentService::class)->fulfill($purchase);
+
+        $this->assertDatabaseHas('service_entitlements', [
+            'user_id' => $user->id,
+            'service_id' => $addon->id,
+            'quantity' => 3,
+            'status' => EntitlementStatus::Active->value,
+        ]);
+
+        $expected = $this->free + (3 * FileHostingCatalog::addon100GbBytes());
+        $this->assertSame($expected, app(QuotaService::class)->quotaBytesFor($user->id));
+    }
+
     public function test_two_addon_500gb_without_main(): void
     {
         $user = User::factory()->create();

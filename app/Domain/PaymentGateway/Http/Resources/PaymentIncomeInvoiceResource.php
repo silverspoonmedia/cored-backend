@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Http\Resources;
 
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Support\InvoiceWebDestination;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -35,7 +36,7 @@ class PaymentIncomeInvoiceResource extends JsonResource
             ...$this->dateFields('paid_at', $this->paid_at),
             ...$this->dateFields('withdrawable_at', $this->withdrawable_at),
             'disbursement_status' => $this->disbursement_status?->value ?? $this->disbursement_status,
-            'show_url' => route('invoices.show', $this->id),
+            'show_url' => InvoiceWebDestination::showUrl($this->resource),
         ];
     }
 }

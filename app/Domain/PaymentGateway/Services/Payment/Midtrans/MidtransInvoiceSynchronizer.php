@@ -154,7 +154,11 @@ class MidtransInvoiceSynchronizer
         }
 
         $gross = (string) $row['gross_amount'];
-        $expected = number_format((float) $invoice->customer_gross_total, 2, '.', '');
+        $currency = strtoupper((string) ($invoice->currency ?: 'IDR'));
+        $expectedAmount = (float) $invoice->customer_gross_total;
+        $expected = $currency === 'IDR'
+            ? (string) (int) round($expectedAmount, 0)
+            : number_format($expectedAmount, 2, '.', '');
 
         if (round((float) $gross, 2) !== round((float) $expected, 2)) {
             throw new \RuntimeException('Midtrans gross_amount does not match invoice amount.');

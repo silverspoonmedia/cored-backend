@@ -29,9 +29,18 @@ class ServiceCheckoutService
     /**
      * @return array{purchase: ServicePurchase, invoice: ?Invoice, quote: array<string, mixed>}
      */
-    public function checkout(Service $service, User $user, string $currency): array
+    public function checkout(Service $service, User $user, string $currency, int $quantity = 1): array
     {
         $currency = strtoupper(trim($currency));
+        $maxQuantity = max(1, (int) config('service.purchase.max_quantity', 99));
+
+        if ($quantity < 1 || $quantity > $maxQuantity) {
+            throw new ServiceException(__('api/services.quantity_out_of_range', ['max' => $maxQuantity]), 422);
+        }
+
+        if (! $service->isAddonPlan() && $quantity !== 1) {
+            throw new ServiceException(__('api/services.quantity_main_plan_fixed'), 422);
+        }
 
         if (! $service->isActive()) {
             throw new ServiceException(__('api/services.not_available'), 422);
@@ -62,9 +71,17 @@ class ServiceCheckoutService
             throw new ServiceException(__('api/services.price_not_found', ['currency' => $currency]), 422);
         }
 
-        $listAmount = (float) $price->amount;
-        $quote = $this->planChange->quote($service, $user->id, $listAmount);
-        $chargeAmount = $quote->chargeAmount;
+        $unitList = (float) $price->amount;
+        $quote = $this->planChange->quote($service, $user->id, $unitList);
+        $unitCharge = $quote->chargeAmount;
+        $listAmount = $service->isAddonPlan()
+            ? round($unitList * $quantity, 2)
+            : $unitList;
+        $chargeAmount = $service->isAddonPlan()
+            ? round($unitCharge * $quantity, 2)
+            : $unitCharge;
+        $creditAmount = $service->isAddonPlan() && $quantity > 1 ? 0.0 : $quote->creditAmount;
+        $surplusDays = $service->isAddonPlan() && $quantity > 1 ? 0 : $quote->surplusDays;
         $settlement = (string) config('service.settlement_currency', ExchangeRateService::SETTLEMENT_CURRENCY);
 
         if ($quote->isZeroCharge()) {
@@ -80,16 +97,17 @@ class ServiceCheckoutService
             $fx = $this->exchangeRates->convert($chargeAmount, $currency, $settlement);
         }
 
-        return DB::transaction(function () use ($service, $user, $currency, $listAmount, $quote, $chargeAmount, $fx): array {
+        return DB::transaction(function () use ($service, $user, $currency, $quantity, $listAmount, $quote, $chargeAmount, $creditAmount, $surplusDays, $fx): array {
             $purchase = ServicePurchase::query()->create([
                 'user_id' => $user->id,
                 'service_id' => $service->id,
+                'quantity' => $quantity,
                 'display_currency' => $currency,
                 'display_amount' => $chargeAmount,
                 'list_amount' => $listAmount,
-                'credit_amount' => $quote->creditAmount,
+                'credit_amount' => $creditAmount,
                 'charge_amount' => $chargeAmount,
-                'surplus_days' => $quote->surplusDays,
+                'surplus_days' => $surplusDays,
                 'previous_entitlement_id' => $quote->previousEntitlementId,
                 'change_type' => $quote->changeType,
                 'settlement_currency' => $fx['to'],
@@ -112,7 +130,7 @@ class ServiceCheckoutService
             }
 
             return [
-                'purchase' => $purchase->load(['service.prices', 'invoice.paymentGateway', 'invoice.paymentChannelRoute', 'user']),
+                'purchase' => $purchase->load(['service.prices', 'invoice.paymentGateway', 'invoice.paymentChannelRouteSnapshot', 'user']),
                 'invoice' => $invoice ?? $purchase->invoice,
                 'quote' => $quote->toArray(),
             ];
@@ -122,7 +140,7 @@ class ServiceCheckoutService
     public function getPurchase(string $id): ServicePurchase
     {
         $purchase = ServicePurchase::query()
-            ->with(['service.prices', 'invoice.paymentGateway', 'invoice.paymentChannelRoute', 'user'])
+            ->with(['service.prices', 'invoice.paymentGateway', 'invoice.paymentChannelRouteSnapshot', 'user'])
             ->findOrFail($id);
 
         $entitlement = ServiceEntitlement::query()
@@ -133,6 +151,14 @@ class ServiceCheckoutService
         $purchase->setRelation('entitlement', $entitlement);
 
         return $purchase;
+    }
+
+    /**
+     * Addon unit buys blocked when stack anniversary is due or a renewal invoice is pending.
+     */
+    public function assertAddonUnitPurchaseAllowed(string $userId): void
+    {
+        $this->assertCanBuyAddonUnit($userId);
     }
 
     /**

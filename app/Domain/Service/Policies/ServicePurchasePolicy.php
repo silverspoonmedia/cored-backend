@@ -23,4 +23,9 @@ class ServicePurchasePolicy
 
         return $this->deny(__('api/services.policy.denied'));
     }
+
+    public function updateQuantity(User $actor, ServicePurchase $purchase): Response
+    {
+        return $this->view($actor, $purchase);
+    }
 }

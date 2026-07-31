@@ -42,7 +42,7 @@
         }
     @endphp
 
-    @vite('resources/css/payments/order-invoice-show.css')
+    @vite(['resources/css/payments/order-invoice-show.css', 'resources/js/services/purchase-quantity.js'])
 
     <x-adminlte4::payments.payment-status-hero
         :eyebrow="__('web/services.breadcrumb')"
@@ -59,6 +59,31 @@
     @php
         $entitlement = data_get($purchase, 'entitlement');
         $entitlementStatus = data_get($entitlement, 'status');
+        $service = data_get($purchase, 'service', []);
+        $purchaseStatus = (string) data_get($purchase, 'status', '');
+        $canEditQuantity = $purchaseStatus === 'pending'
+            && in_array($invoiceStatus, ['pending', 'challenge'], true)
+            && data_get($service, 'plan_kind') === 'addon';
+        $purchaseQuantity = max(1, (int) data_get($purchase, 'quantity', 1));
+        $maxPurchaseQuantity = max(1, (int) config('service.purchase.max_quantity', 99));
+        $currentStackQuantity = max(0, (int) data_get($entitlement, 'quantity', 0));
+        $projectedStackQuantity = $currentStackQuantity > 0
+            ? $currentStackQuantity + $purchaseQuantity
+            : null;
+        $pricingSnapshot = [
+            'locale' => app()->getLocale(),
+            'unit_list_amount' => data_get($purchase, 'unit_list_amount'),
+            'unit_charge_amount' => data_get($purchase, 'unit_charge_amount', data_get($purchase, 'unit_list_amount')),
+            'fx_rate' => data_get($purchase, 'fx_rate'),
+            'display_currency' => data_get($purchase, 'display_currency'),
+            'settlement_currency' => data_get($purchase, 'settlement_currency', 'IDR'),
+            'settlement_decimals' => strtoupper((string) data_get($purchase, 'settlement_currency', 'IDR')) === 'IDR' ? 0 : 2,
+            'storage_bytes_per_unit' => (int) data_get($service, 'storage_bytes', 0),
+            'committed_quantity' => $purchaseQuantity,
+            'current_stack_quantity' => $currentStackQuantity,
+            'stack_equation_template' => __('web/services.show.stack_quantity_equation'),
+            'storage_gain_template' => __('web/services.show.storage_gain_preview'),
+        ];
     @endphp
 
     @if ($entitlementStatus === 'grace')
@@ -66,7 +91,7 @@
             {{ __('web/services.entitlement.grace_banner') }}
             @if (data_get($entitlement, 'grace_ends_at'))
                 <strong>{{ __('web/services.show.entitlement_grace') }}:</strong>
-                {{ data_get($entitlement, 'grace_ends_at') }}
+                {{ data_get($entitlement, 'grace_ends_at_formatted') ?: data_get($entitlement, 'grace_ends_at') }}
             @endif
         </div>
     @endif
@@ -96,20 +121,56 @@
             <div class="ois-sidebar-card">
                 <div class="ois-sidebar-card__title">{{ __('web/services.purchase_title') }}</div>
                 <dl class="row mb-0 small">
+                    @if ($canEditQuantity)
+                        <dt class="col-5">{{ __('web/services.show.purchase_quantity') }}</dt>
+                        <dd class="col-7">
+                            <div
+                                class="d-flex flex-wrap align-items-center gap-2"
+                                data-purchase-quantity
+                                data-pricing='@json($pricingSnapshot)'
+                                data-max-quantity="{{ $maxPurchaseQuantity }}"
+                                data-messages="{{ json_encode([
+                                    'storageGain' => __('web/services.show.storage_gain_preview'),
+                                ]) }}"
+                            >
+                                <div class="input-group input-group-sm" style="max-width: 9rem;">
+                                    <button type="button" class="btn btn-outline-secondary" data-purchase-qty-minus aria-label="-">−</button>
+                                    <input
+                                        type="number"
+                                        class="form-control text-center"
+                                        data-purchase-qty-input
+                                        min="1"
+                                        max="{{ $maxPurchaseQuantity }}"
+                                        value="{{ $purchaseQuantity }}"
+                                    >
+                                    <button type="button" class="btn btn-outline-secondary" data-purchase-qty-plus aria-label="+">+</button>
+                                </div>
+                                @if (data_get($purchase, 'storage_gain_human'))
+                                    <span class="text-muted" data-purchase-storage-gain>
+                                        {{ __('web/services.show.storage_gain_preview', ['amount' => data_get($purchase, 'storage_gain_human')]) }}
+                                    </span>
+                                @endif
+                            </div>
+                            <p class="text-muted small mb-0 mt-1">{{ __('web/services.show.quantity_estimate_hint') }}</p>
+                        </dd>
+                    @elseif ($purchaseQuantity > 1)
+                        <dt class="col-5">{{ __('web/services.show.purchase_quantity') }}</dt>
+                        <dd class="col-7" data-purchase-qty-display>{{ $purchaseQuantity }}</dd>
+                    @endif
                     @if (data_get($purchase, 'change_type'))
                         <dt class="col-5">{{ __('web/services.show.change_type') }}</dt>
                         <dd class="col-7">{{ __('web/services.change_type.'.data_get($purchase, 'change_type')) }}</dd>
                     @endif
                     @if (data_get($purchase, 'list_amount') !== null)
                         <dt class="col-5">{{ __('web/services.show.list_amount') }}</dt>
-                        <dd class="col-7">{{ data_get($purchase, 'list_amount_formatted') ?: '—' }}</dd>
+                        <dd class="col-7" data-purchase-list-amount>{{ data_get($purchase, 'list_amount_formatted') ?: '—' }}</dd>
                     @endif
                     @if ((float) data_get($purchase, 'credit_amount', 0) > 0)
                         <dt class="col-5">{{ __('web/services.show.credit_amount') }}</dt>
                         <dd class="col-7">{{ data_get($purchase, 'credit_amount_formatted') ?: '—' }}</dd>
                     @endif
                     <dt class="col-5">{{ __('web/services.show.display_amount') }}</dt>
-                    <dd class="col-7">
+                    <dd class="col-7" data-purchase-display-amount>
                         {{ data_get($purchase, 'charge_amount_formatted')
                             ?: data_get($purchase, 'display_amount_formatted')
                             ?: '—' }}
@@ -119,9 +180,9 @@
                         <dd class="col-7">{{ data_get($purchase, 'surplus_days') }}</dd>
                     @endif
                     <dt class="col-5">{{ __('web/services.show.settlement_amount') }}</dt>
-                    <dd class="col-7">{{ data_get($purchase, 'settlement_amount_formatted') ?: '—' }}</dd>
+                    <dd class="col-7" data-purchase-settlement>{{ data_get($purchase, 'settlement_amount_formatted') ?: '—' }}</dd>
                     <dt class="col-5">{{ __('web/services.show.fx_rate') }}</dt>
-                    <dd class="col-7">{{ data_get($purchase, 'fx_rate') ?: '—' }}</dd>
+                    <dd class="col-7" data-purchase-fx-rate>{{ data_get($purchase, 'fx_rate_label') ?: data_get($purchase, 'fx_rate_formatted') ?: data_get($purchase, 'fx_rate') ?: '—' }}</dd>
                     <dt class="col-5">{{ __('web/services.show.status') }}</dt>
                     <dd class="col-7" data-purchase-status>{{ data_get($purchase, 'status') }}</dd>
                     @if (data_get($purchase, 'period_start') || data_get($purchase, 'period_end'))
@@ -141,13 +202,19 @@
                                 {{ __('web/services.entitlement.'.$entitlementStatus) }}
                             @endif
                         </dd>
-                        @if (data_get($entitlement, 'quantity'))
-                            <dt class="col-5">{{ __('web/services.show.entitlement_quantity') }}</dt>
-                            <dd class="col-7">{{ data_get($entitlement, 'quantity') }}</dd>
+                        @if (data_get($service, 'plan_kind') === 'addon' && $currentStackQuantity > 0 && $projectedStackQuantity !== null)
+                            <dt class="col-5">{{ __('web/services.show.stack_quantity') }}</dt>
+                            <dd class="col-7" data-stack-quantity-equation>
+                                {{ __('web/services.show.stack_quantity_equation', [
+                                    'current' => $currentStackQuantity,
+                                    'purchase' => $purchaseQuantity,
+                                    'total' => $projectedStackQuantity,
+                                ]) }}
+                            </dd>
                         @endif
                         @if (data_get($entitlement, 'ends_at'))
                             <dt class="col-5">{{ __('web/services.show.entitlement_ends') }}</dt>
-                            <dd class="col-7">{{ data_get($entitlement, 'ends_at') }}</dd>
+                            <dd class="col-7">{{ data_get($entitlement, 'ends_at_formatted') ?: data_get($entitlement, 'ends_at') }}</dd>
                         @endif
                     @endif
                 </dl>
@@ -159,9 +226,7 @@
                     <dl class="row mb-0 small">
                         <dt class="col-5">{{ __('web/payments.invoices.fields.invoice_number') }}</dt>
                         <dd class="col-7">
-                            <a href="{{ route('invoices.show', data_get($invoice, 'id')) }}">
-                                {{ data_get($invoice, 'invoice_number') }}
-                            </a>
+                            {{ data_get($invoice, 'invoice_number') }}
                         </dd>
                         <dt class="col-5">{{ __('web/payments.invoices.fields.status') }}</dt>
                         <dd class="col-7" data-payment-sidebar-status>{{ $paymentUi['label'] }}</dd>

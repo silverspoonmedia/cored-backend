@@ -5,6 +5,7 @@ namespace Tests\Domain\PaymentGateway\Feature\Http\Controllers\API\V1;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
+use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransPaymentService;
@@ -66,6 +67,7 @@ class InvoiceChannelCheckoutTest extends TestCase
             $invoice->payment_gateway_id,
         );
         $this->assertNotNull($invoice->payment_channel_route_id);
+        $this->assertNotNull($invoice->payment_channel_route_snapshot_id);
     }
 
     public function test_channel_checkout_routes_qris_to_midtrans_and_returns_instructions(): void
@@ -112,6 +114,47 @@ class InvoiceChannelCheckoutTest extends TestCase
             PaymentGateway::query()->where('name', 'midtrans')->value('id'),
             $invoice->payment_gateway_id,
         );
+    }
+
+    public function test_channel_checkout_snapshot_fee_basis_unchanged_after_route_policy_mutates(): void
+    {
+        $invoice = $this->createPayableInvoice('midtrans');
+        $admin = $this->userWithRole('Admin');
+
+        $this->mock(MidtransPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn([
+                    'ok' => true,
+                    'data' => [
+                        'qr_string' => 'midtrans-qris',
+                    ],
+                    'message_key' => 'api/payments.midtrans.charge_created',
+                    'http' => 201,
+                ]);
+        });
+
+        $this->partialMock(IpaymuPaymentService::class);
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'qris'])
+            ->assertCreated();
+
+        $invoice->refresh();
+        $snapshotId = $invoice->payment_channel_route_snapshot_id;
+        $this->assertNotNull($snapshotId);
+
+        $route = PaymentChannelRoute::query()->findOrFail($invoice->payment_channel_route_id);
+        $route->update(['fee_percent' => 2.5]);
+
+        $response = $this->actingAsJwt($admin)
+            ->getJson('/api/v1/invoices/'.$invoice->id)
+            ->assertOk();
+
+        $this->assertSame($snapshotId, $response->json('data.payment_channel_route_snapshot_id'));
+        $this->assertSame('0.7%', $response->json('data.payment_channel_fee_label'));
+        $this->assertStringContainsString('0.7%', (string) $response->json('data.payment_channel_fee_basis'));
+        $this->assertSame(0.7, (float) $response->json('data.payment_channel_route.fee_percent'));
     }
 
     public function test_channel_checkout_fails_over_to_second_gateway_route(): void

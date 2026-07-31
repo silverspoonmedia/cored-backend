@@ -137,7 +137,7 @@ class MidtransPaymentService
             return ['ok' => false, 'message' => $e->getMessage(), 'http' => 503];
         }
 
-        $gross = (float) $invoice->customer_gross_total;
+        $gross = $this->midtransGrossAmount($invoice);
         $base = [
             'transaction_details' => [
                 'order_id' => $invoice->invoice_number,
@@ -388,5 +388,17 @@ class MidtransPaymentService
         if ($invoice->status !== 'pending' && $invoice->status !== 'challenge') {
             abort(422, __('api/payments.midtrans.invoice_not_payable'));
         }
+    }
+
+    private function midtransGrossAmount(Invoice $invoice): int|float
+    {
+        $currency = strtoupper((string) ($invoice->currency ?: 'IDR'));
+        $gross = (float) $invoice->customer_gross_total;
+
+        if ($currency === 'IDR') {
+            return (int) round($gross, 0);
+        }
+
+        return round($gross, 2);
     }
 }

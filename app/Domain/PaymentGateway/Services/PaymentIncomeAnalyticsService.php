@@ -65,7 +65,7 @@ class PaymentIncomeAnalyticsService
     public function invoicesPaginated(array $filters, int $perPage = 20): LengthAwarePaginator
     {
         return $this->paidInvoicesQuery($filters)
-            ->with(['paymentGateway', 'paymentChannelRoute.paymentGateway'])
+            ->with(['paymentGateway', 'paymentChannelRouteSnapshot.paymentGateway'])
             ->orderByDesc($this->resolveBasis($filters) === 'withdrawable_at' ? 'withdrawable_at' : 'paid_at')
             ->orderByDesc('created_at')
             ->paginate($perPage);

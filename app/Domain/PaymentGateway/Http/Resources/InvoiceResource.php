@@ -20,8 +20,9 @@ class InvoiceResource extends JsonResource
     public function toArray(Request $request): array
     {
         $currency = $this->currency;
-        $this->loadMissing('paymentChannelRoute');
-        $feeBasis = app(InvoiceChannelFeeService::class)->feeBasisFields($this->paymentChannelRoute);
+        $this->loadMissing('paymentChannelRouteSnapshot.paymentGateway');
+        $feeBasis = app(InvoiceChannelFeeService::class)->feeBasisFields($this->paymentChannelRouteSnapshot);
+        $routeSnapshot = $this->paymentChannelRouteSnapshot;
 
         return [
             'id' => $this->id,
@@ -38,8 +39,12 @@ class InvoiceResource extends JsonResource
             'payment_method' => $this->payment_method,
             'payment_channel_code' => $this->payment_channel_code,
             'payment_channel_route_id' => $this->payment_channel_route_id,
-            'payment_channel_route' => $this->whenLoaded('paymentChannelRoute', fn () => $this->paymentChannelRoute
-                ? (new PaymentChannelRouteResource($this->paymentChannelRoute))->resolve()
+            'payment_channel_route_snapshot_id' => $this->payment_channel_route_snapshot_id,
+            'payment_channel_route_snapshot' => $this->whenLoaded('paymentChannelRouteSnapshot', fn () => $routeSnapshot
+                ? (new PaymentChannelRouteSnapshotResource($routeSnapshot))->resolve()
+                : null),
+            'payment_channel_route' => $this->whenLoaded('paymentChannelRouteSnapshot', fn () => $routeSnapshot
+                ? (new PaymentChannelRouteSnapshotResource($routeSnapshot))->resolve()
                 : null),
             ...$this->moneyFields('subtotal', $this->subtotal, $currency),
             ...$this->moneyFields('payment_channel_fee', $this->payment_channel_fee, $currency),

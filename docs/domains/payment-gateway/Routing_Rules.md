@@ -83,7 +83,7 @@ Konvensi penting agar Agent tidak salah:
 - **Number tanpa `%`** → selalu flat IDR.  
 - **String dengan `%`** → selalu fraction of total.  
 - Fee dihitung hanya pada **transaksi sukses** (bukan pending/expire/cancel), sesuai model Midtrans/iPaymu.
-- `fee` di config adalah **biaya channel yang dibebankan ke pembeli** pada checkout. Nilai ini dimaterialisasi ke `payment_channel_routes.fee_*`, diestimasi di UI/API (`?subtotal=`), dan dicatat pada invoice sebagai `payment_channel_fee`. Midtrans memakai estimasi policy saat charge; iPaymu memakai angka aktual dari provider setelah charge.
+- `fee` di config adalah **biaya channel yang dibebankan ke pembeli** pada checkout. Nilai ini dimaterialisasi ke `payment_channel_routes.fee_*`, diestimasi di UI/API (`?subtotal=`), dan dicatat pada invoice sebagai `payment_channel_fee`. Midtrans memakai estimasi policy saat charge; iPaymu memakai angka aktual dari provider setelah charge. Saat channel checkout berhasil, policy yang berlaku **disalin immutable** ke `payment_channel_route_snapshots` (baris `payment_channel_routes` tetap mutable setelah YAML sync) — lihat [Route policy snapshot](README.md#route-policy-snapshot) di payment-gateway README.
 - **PPN** (mis. 11% atas fee Midtrans pada banyak channel) **belum** digabung ke angka `fee` kecuali channel yang sudah VAT-inclusive di list price (contoh QRIS Midtrans 0,7%). Agent yang butuh net cost harus punya flag terpisah `vat_inclusive: true/false` atau layer kalkulasi pajak di atas config ini.
 - Settlement (`H+2`, `H+4`) **bukan fee**, tapi menentukan **tier harga** mana yang sah; mengganti settlement bisa mengganti `fee` (contoh iPaymu QRIS H+0 jauh lebih mahal dari H+2). Itu sebabnya `settlement` dan `fee` selalu dipasangkan di `primary` / `fallback`.
 

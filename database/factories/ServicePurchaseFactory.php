@@ -23,6 +23,7 @@ class ServicePurchaseFactory extends Factory
         return [
             'user_id' => User::factory(),
             'service_id' => Service::factory(),
+            'quantity' => 1,
             'display_currency' => 'USD',
             'display_amount' => 10.00,
             'settlement_currency' => 'IDR',

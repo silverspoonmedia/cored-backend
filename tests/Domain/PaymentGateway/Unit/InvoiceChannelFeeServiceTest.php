@@ -5,6 +5,7 @@ namespace Tests\Domain\PaymentGateway\Unit;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
+use App\Domain\PaymentGateway\Models\PaymentChannelRouteSnapshot;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceChannelFeeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -54,13 +55,17 @@ class InvoiceChannelFeeServiceTest extends TestCase
 
     public function test_reset_for_fresh_checkout_clears_fee_and_route(): void
     {
-        $routeId = PaymentChannelRoute::query()->value('id');
+        $route = PaymentChannelRoute::query()
+            ->with('paymentChannel')
+            ->firstOrFail();
+        $snapshot = PaymentChannelRouteSnapshot::fromRoute($route, (string) $route->paymentChannel->code);
 
         $invoice = $this->createInvoice([
             'subtotal' => 100_000,
             'payment_channel_fee' => 3500,
             'customer_gross_total' => 103_500,
-            'payment_channel_route_id' => $routeId,
+            'payment_channel_route_id' => $route->id,
+            'payment_channel_route_snapshot_id' => $snapshot->id,
         ]);
 
         app(InvoiceChannelFeeService::class)->resetForFreshCheckout($invoice);
@@ -70,6 +75,7 @@ class InvoiceChannelFeeServiceTest extends TestCase
         $this->assertSame(0.0, (float) $invoice->payment_channel_fee);
         $this->assertSame(100_000.0, (float) $invoice->customer_gross_total);
         $this->assertNull($invoice->payment_channel_route_id);
+        $this->assertNull($invoice->payment_channel_route_snapshot_id);
     }
 
     public function test_quote_for_channel_uses_resolver_primary_route(): void
@@ -103,8 +109,11 @@ class InvoiceChannelFeeServiceTest extends TestCase
             ->whereHas('paymentGateway', fn ($q) => $q->where('name', 'midtrans'))
             ->firstOrFail();
 
+        $snapshot = PaymentChannelRouteSnapshot::fromRoute($route, 'qris');
+
         $invoice = $this->createInvoice([
             'payment_channel_route_id' => $route->id,
+            'payment_channel_route_snapshot_id' => $snapshot->id,
             'payment_channel_fee' => 700,
             'customer_gross_total' => 100_700,
         ]);
@@ -114,6 +123,22 @@ class InvoiceChannelFeeServiceTest extends TestCase
         $this->assertSame('percent', $breakdown['payment_channel_fee_type']);
         $this->assertSame('0.7%', $breakdown['payment_channel_fee_label']);
         $this->assertStringContainsString('0.7%', (string) $breakdown['payment_channel_fee_basis']);
+    }
+
+    public function test_fee_basis_fields_use_snapshot_not_live_route(): void
+    {
+        $route = PaymentChannelRoute::query()
+            ->whereHas('paymentChannel', fn ($q) => $q->where('code', 'qris'))
+            ->whereHas('paymentGateway', fn ($q) => $q->where('name', 'midtrans'))
+            ->firstOrFail();
+
+        $snapshot = PaymentChannelRouteSnapshot::fromRoute($route, 'qris');
+        $route->update(['fee_percent' => 9.9]);
+
+        $basis = app(InvoiceChannelFeeService::class)->feeBasisFields($snapshot);
+
+        $this->assertSame('percent', $basis['payment_channel_fee_type']);
+        $this->assertSame('0.7%', $basis['payment_channel_fee_label']);
     }
 
     /**
