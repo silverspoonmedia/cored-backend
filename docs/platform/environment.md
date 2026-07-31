@@ -39,7 +39,7 @@ Defined in `EnvironmentVariableCatalog`:
 | int | Digits unquoted |
 | null | `null` unquoted |
 
-Empty secrets: `KEY=""`. When adding keys: update `.env.example`, all three profile templates, and `EnvironmentVariableCatalog::types()`.
+Empty secrets or optional string overrides use `KEY=""`. When adding keys: update `.env.example`, all three profile templates, and `EnvironmentVariableCatalog::types()`. Microstock's optional free-tier model overrides inherit their paid/default model when empty.
 
 ## Application keys
 

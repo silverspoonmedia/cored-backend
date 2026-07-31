@@ -48,6 +48,26 @@ class HttpAiMetadataService implements AiMetadataService
     }
 
     /**
+     * Daily-free calls may use a cheaper model alias. Empty free overrides inherit
+     * the paid/default model so existing deployments remain compatible.
+     *
+     * @param  array<string, mixed>  $cfg
+     * @return array<string, mixed>
+     */
+    private function configForBillingTier(array $cfg): array
+    {
+        $context = AnalysisBillingContext::current();
+        if ($context?->billingSource->isFreeTier()) {
+            $freeModel = trim((string) ($cfg['free_model'] ?? ''));
+            if ($freeModel !== '') {
+                $cfg['model'] = $freeModel;
+            }
+        }
+
+        return $cfg;
+    }
+
+    /**
      * @param  list<array{role: string, content: string|array<int, array<string, mixed>>}>  $messages
      * @return array<string, mixed>
      */
@@ -118,7 +138,7 @@ class HttpAiMetadataService implements AiMetadataService
             return [];
         }
 
-        $cfg = config('microstock.ai.vision');
+        $cfg = $this->configForBillingTier(config('microstock.ai.vision'));
         $this->assertConfigured($cfg, 'vision');
 
         $content = [];
@@ -186,7 +206,7 @@ class HttpAiMetadataService implements AiMetadataService
      */
     private function vision(string $imageUrl, ?string $hint = null): array
     {
-        $cfg = config('microstock.ai.vision');
+        $cfg = $this->configForBillingTier(config('microstock.ai.vision'));
         $this->assertConfigured($cfg, 'vision');
 
         $messages = [
@@ -230,7 +250,7 @@ class HttpAiMetadataService implements AiMetadataService
         string $category = '',
         ?string $imageUrl = null,
     ): array {
-        $cfg = config('microstock.ai.thinking');
+        $cfg = $this->configForBillingTier(config('microstock.ai.thinking'));
         $this->assertConfigured($cfg, 'thinking');
 
         $userText = Prompts::thinkingUser($title, $keywords, $hint, $description, $category, $imageUrl !== null);

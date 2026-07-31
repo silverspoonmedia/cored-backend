@@ -68,7 +68,7 @@ Upload/storage stays on the shared File Hosting quota. **AI analysis** (vision +
 
 ### Daily free trial (optional)
 
-Env-gated per-user daily analyses (`MICROSTOCK_DAILY_FREE_ENABLED`). No activation SKU — slots reset lazily by calendar day in `microstock_daily_free_usage`. Daily-first mixed billing: first N files in a collection use `billing_source = daily_free` (no prepaid debit; provider cost still on usage events); remainder use prepaid. Free-tier jobs route to `*-free` queues — workers should process paid queues first. Details: [daily-free-trial.md](daily-free-trial.md).
+Env-gated per-user daily analyses (`MICROSTOCK_DAILY_FREE_ENABLED`). No activation SKU — slots reset lazily by calendar day in `microstock_daily_free_usage`. Daily-first mixed billing: first N files in a collection use `billing_source = daily_free` (no prepaid debit; provider cost still on usage events); remainder use prepaid. Free-tier jobs route to `*-free` queues and may use separate vision/thinking models through `MICROSTOCK_AI_VISION_MODEL_FREE` / `MICROSTOCK_AI_THINKING_MODEL_FREE`; an empty free override inherits the paid/default stage model. Workers should process paid queues first. Details: [daily-free-trial.md](daily-free-trial.md).
 
 **Billing subject:** `microstock_asset_metadata.billing_user_id` is set to the user who called `POST …/analyze` or `POST assets/{file}/analyze` (not the file uploader). Gate, usage events, and debit all use this ID.
 
@@ -225,7 +225,7 @@ When the configured variant is not `ready`, analyze logs `microstock.variants.no
 
 ### Production stack (locked 2026-07-28)
 
-Default config + `.env.example` use Open WebUI aliases; **9Router** maps them to resolved models (verify in Open WebUI admin):
+Default config + `.env.example` use Open WebUI aliases for paid/prepaid analyses; **9Router** maps them to resolved models (verify in Open WebUI admin):
 
 | Config alias | 9Router resolves to | Role |
 |--------------|---------------------|------|
@@ -234,9 +234,15 @@ Default config + `.env.example` use Open WebUI aliases; **9Router** maps them to
 
 | Setting | Default | Notes |
 |---------|---------|-------|
-| Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` | Both stages |
+| Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` | Both stages and tiers |
+| Paid vision model | `MICROSTOCK_AI_VISION_MODEL=internal.vision` | Used for `billing_source=prepaid` and calls without billing context |
+| Free vision model | `MICROSTOCK_AI_VISION_MODEL_FREE=""` | Empty inherits paid vision; set an Open WebUI alias to differentiate daily-free calls |
+| Paid thinking model | `MICROSTOCK_AI_THINKING_MODEL=internal.thinking` | Used for `billing_source=prepaid` and calls without billing context |
+| Free thinking model | `MICROSTOCK_AI_THINKING_MODEL_FREE=""` | Empty inherits paid thinking; set an Open WebUI alias to differentiate daily-free calls |
 | `delivery` | `url` | Signed HTTPS to `ai_1024` variant (~341 B payload) |
 | `thinking_visual_attempts` | `2` | First 2 thinking attempts include image + draft |
+
+Model selection follows each asset's persisted `billing_source`, not the queue name. Mixed collections therefore use free models for daily slots and paid models for prepaid remainder; solo re-analysis follows its daily-first billing allocation. Alias selection is recorded on `microstock_ai_usage_events.alias_model`, while billing rates continue to use the provider response's `resolved_model`. After changing model env values, rebuild Laravel config and restart queue workers so long-lived processes load the new aliases.
 
 `batch_chunk` / `batch_min_files` remain in config for `HttpAiMetadataService::generateBatch()` (probes only); the collection pipeline always uses per-file `analyzeVision()`.
 
@@ -279,7 +285,7 @@ All three request builders (`vision()`, `thinkingRequest()`, `generateBatch()`) 
 
 Models behind `internal.vision` / `internal.thinking` **choke on long system prompts when an image is attached** — verified 2026-07-27: a ~1700-char system prompt returns **HTTP 524** (Cloudflare origin timeout) at ~125 s, while ~1050 chars returns **200** in ~107 s. `Prompts::marketplaceRules()` is therefore intentionally dense — keep `Prompts::visionSystem()` and `Prompts::thinkingSystem()` under ~1200 chars (unit-tested in `PromptsTest`). If the upstream model behind an alias never responds acceptably, change the model mapping in Open WebUI admin or override `MICROSTOCK_AI_VISION_MODEL` / `MICROSTOCK_AI_THINKING_MODEL`.
 
-`AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage is independently configurable in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: endpoint/model/api_key/timeout, env-driven). Tests bind a stub.
+`AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage is independently configurable in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: endpoint, paid/default model, optional free model, API key, timeout; all env-driven). Tests bind a stub.
 
 ### Open WebUI response parsing
 
@@ -288,8 +294,10 @@ Production uses **Open WebUI** as the only supported AI surface:
 | Setting | Value |
 |---------|-------|
 | Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` |
-| Vision model | `internal.vision` |
-| Thinking model | `internal.thinking` |
+| Paid/default vision model | `internal.vision` |
+| Free vision model | inherits paid when `MICROSTOCK_AI_VISION_MODEL_FREE` is empty |
+| Paid/default thinking model | `internal.thinking` |
+| Free thinking model | inherits paid when `MICROSTOCK_AI_THINKING_MODEL_FREE` is empty |
 | Auth | JWT Bearer (`MICROSTOCK_AI_*_API_KEY`) |
 
 `HttpAiMetadataService` normalizes upstream quirks before decoding:
@@ -454,7 +462,7 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 
 ## Tests
 
-`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest|AnalysisWatchdogTest|AiBillingServiceTest|AiCreditServiceTest|BillingLedgerServiceTest|BillingLedgerApiTest|BillingAdminApiTest|KeywordNormalizerTest|HttpAiMetadataServiceThinkingFallbackTest|HttpAiMetadataServiceResponseParsingTest|HttpAiMetadataServiceCurateDraftTest|HttpAiMetadataServiceVisualThinkingTest|PromptsTest"` —
+`php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest|AnalysisWatchdogTest|AiBillingServiceTest|AiCreditServiceTest|BillingLedgerServiceTest|BillingLedgerApiTest|BillingAdminApiTest|KeywordNormalizerTest|HttpAiMetadataServiceThinkingFallbackTest|HttpAiMetadataServiceResponseParsingTest|HttpAiMetadataServiceCurateDraftTest|HttpAiMetadataServiceVisualThinkingTest|HttpAiMetadataServiceTierModelTest|MicrostockAiConfigTest|PromptsTest"` —
 - `MicrostockTest`: provisioning gated by entitlement (403 without), slot-limit multi-workspace create, public-share block, analyze → generate (stub AI, asserts `title`/`description`/`category`/`keywords`), finalize curation, CSV export finalized-only, credential encrypt/decrypt roundtrip, invite paid-gate. Checkout coverage in `ServiceCheckoutZeroChargeTest`.
 - `CollectionLifecycleTest`: root-upload blocked (422), locked-collection upload blocked, lock requires hint + transitions + rejects re-lock + rejects non-microstock folder, analyze requires lock/files + dispatches `ProcessCollection`, non-recursive batching (sub-folder untouched), empty→failed, **multi-file dual-lane pipeline** (all files → `review`), prompt hint threading (`Prompts::visionUser`/`thinkingUser` + the `COLLECTION CONTEXT` block), status progress counts, per-collection CSV filter (incl. `description`/`category` columns), export persists CSV + marks exported.
 - `CollectionPipelineTest`: per-file vision dispatch count, solo vs collection queue routing, thinking idempotency, watchdog thinking backlog recovery.
@@ -464,6 +472,8 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 - `HttpAiMetadataServiceResponseParsingTest`: SSE `data: [DONE]` trailer stripping, full SSE delta stream aggregation, `stream: false` on requests, markdown-fenced JSON, Anthropic content blocks, batch `assets` wrapper, unparseable body → `ai_invalid_response`.
 - `HttpAiMetadataServiceCurateDraftTest`: `curateDraft()` delegates to thinking stage; curated keywords returned; multimodal request when image provided.
 - `HttpAiMetadataServiceVisualThinkingTest`: `generate()` sends image on thinking call; multimodal failure falls back to text-only.
+- `HttpAiMetadataServiceTierModelTest`: prepaid/no-context uses paid aliases, daily-free uses free aliases for both stages, empty free overrides inherit paid, and usage events keep the selected alias/source.
+- `MicrostockAiConfigTest`: locks paid/default model aliases and nullable free-tier overrides in config.
 - `PromptsTest`: `visionSystem()` and `thinkingSystem()` char count under gateway limit (~1200); keyword target 50–60 in thinking prompt.
 - `BillingLedgerServiceTest`: ledger pagination, running `balance_after`, signed amounts per transaction type.
 - `BillingLedgerApiTest`: user `GET billing/ledger` + `GET billing/usage-events` (auth, pagination, daily-free vs prepaid rows).
