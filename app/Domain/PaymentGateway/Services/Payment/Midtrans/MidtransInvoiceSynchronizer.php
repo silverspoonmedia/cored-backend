@@ -54,6 +54,7 @@ class MidtransInvoiceSynchronizer
 
         $invoice->loadMissing('invoiceable');
 
+        $this->backfillBuyerChannelFeeIfNeeded($invoice, $row);
         $this->assertAmountMatchesInvoice($invoice, $row);
 
         $transactionStatus = $row['transaction_status'] ?? null;
@@ -123,6 +124,24 @@ class MidtransInvoiceSynchronizer
         $this->paymentRealtime->invoiceStatusChanged($fresh, $previousStatus);
 
         return $fresh;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    protected function backfillBuyerChannelFeeIfNeeded(Invoice $invoice, array $row): void
+    {
+        if ((float) $invoice->payment_channel_fee > 0) {
+            return;
+        }
+
+        $gross = isset($row['gross_amount']) ? (float) $row['gross_amount'] : 0.0;
+        $subtotal = round((float) $invoice->subtotal, 2);
+
+        if ($gross > $subtotal + 0.01) {
+            $invoice->payment_channel_fee = round($gross - $subtotal, 2);
+            $invoice->customer_gross_total = round($gross, 2);
+        }
     }
 
     /**

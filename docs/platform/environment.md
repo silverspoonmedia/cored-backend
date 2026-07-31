@@ -146,7 +146,7 @@ See [identity](../domains/identity/README.md#configuration) and [blade-admin sil
 
 PHPUnit: `APP_ENV=testing`, sqlite, CSRF bypass for web proxy tests. Prefer `composer test`. See [database-safety.md](database-safety.md).
 
-Payment: `checkout_mode` derived from active channels at runtime — see [payment-gateway](../domains/payment-gateway/README.md). Encryption env: [encryption](../domains/payment-gateway/encryption.md).
+Payment: `checkout_mode` derived from active channels at runtime — see [payment-gateway](../domains/payment-gateway/README.md). After editing `Routing_Price.yaml`, run `php artisan payments:sync-routing-policy` (or use the admin **Sync routing policy** button). Channel fees default to buyer-borne (`PAYMENT_CHANNEL_FEE_BEARER=buyer`). Encryption env: [encryption](../domains/payment-gateway/encryption.md).
 
 ## Persistent error log
 

@@ -72,11 +72,18 @@
                 <div class="ois-sidebar-card__title">{{ __('web/payments.invoices.fields.total') }}</div>
                 <dl class="row mb-0 small">
                     <dt class="col-5">{{ __('web/payments.invoices.fields.subtotal') }}</dt>
-                    <dd class="col-7">{{ $invoice['subtotal_formatted'] ?? '—' }}</dd>
+                    <dd class="col-7" data-payment-sidebar-subtotal>{{ $invoice['subtotal_formatted'] ?? '—' }}</dd>
                     <dt class="col-5">{{ __('web/payments.invoices.fields.fee') }}</dt>
-                    <dd class="col-7">{{ $invoice['payment_channel_fee_formatted'] ?? '—' }}</dd>
+                    <dd class="col-7" data-payment-sidebar-fee>
+                        <span data-payment-sidebar-fee-amount>{{ $invoice['payment_channel_fee_formatted'] ?? '—' }}</span>
+                        @if (! empty($invoice['payment_channel_fee_basis']))
+                            <span class="d-block small text-muted" data-payment-sidebar-fee-basis>{{ $invoice['payment_channel_fee_basis'] }}</span>
+                        @else
+                            <span class="d-block small text-muted d-none" data-payment-sidebar-fee-basis></span>
+                        @endif
+                    </dd>
                     <dt class="col-5 fw-bold">{{ __('web/payments.invoices.fields.total') }}</dt>
-                    <dd class="col-7 fw-bold">{{ $invoice['customer_gross_total_formatted'] ?? '—' }}</dd>
+                    <dd class="col-7 fw-bold" data-payment-sidebar-total>{{ $invoice['customer_gross_total_formatted'] ?? '—' }}</dd>
                 </dl>
             </div>
 
@@ -93,6 +100,17 @@
                             {{ __('web/payments.show.payment_not_started') }}
                         @endif
                     </dd>
+                    @if (data_get($invoice, 'payment_channel_route'))
+                        <dt class="col-5">{{ __('web/payments.invoices.fields.payment_route') }}</dt>
+                        <dd class="col-7">
+                            {{ data_get($invoice, 'payment_channel_route.gateway.display_name', data_get($invoice, 'payment_channel_route.gateway.name', '—')) }}
+                            <span class="text-muted">
+                                ({{ data_get($invoice, 'payment_channel_route.route_role', '—') }},
+                                {{ data_get($invoice, 'payment_channel_route.settlement_label', '—') }},
+                                {{ data_get($invoice, 'payment_channel_route.fee_label', '—') }})
+                            </span>
+                        </dd>
+                    @endif
                     <dt class="col-5">{{ __('web/payments.invoices.fields.paid_at') }}</dt>
                     <dd class="col-7" data-payment-paid-at>{{ $invoice['paid_at_formatted'] ?? $invoice['paid_at'] ?? '—' }}</dd>
                     <dt class="col-5">{{ __('web/payments.invoices.fields.expired_at') }}</dt>

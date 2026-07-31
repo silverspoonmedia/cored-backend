@@ -3,6 +3,8 @@
 namespace App\Domain\PaymentGateway\Http\Controllers\Web;
 
 use App\Domain\PaymentGateway\Http\Controllers\API\V1\InvoiceController as ApiInvoiceController;
+use App\Domain\PaymentGateway\Http\Requests\ExportInvoiceRequest;
+use App\Domain\PaymentGateway\Services\InvoiceCsvExportService;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Concerns\ResolvesPaymentCheckoutContext;
 use App\Http\Controllers\Web\Controller;
@@ -10,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Web invoice management — a pure consumer of the versioned API.
@@ -53,6 +56,11 @@ class InvoiceController extends Controller
         return response()->json($payload);
     }
 
+    public function export(ExportInvoiceRequest $request, InvoiceCsvExportService $csvExport): StreamedResponse
+    {
+        return $csvExport->stream($request->validated());
+    }
+
     public function show(string $invoice): View|RedirectResponse
     {
         $response = $this->api()->get("invoices/{$invoice}");
@@ -63,7 +71,11 @@ class InvoiceController extends Controller
 
         return $this->webView('invoices.show', array_merge([
             'invoice' => $response->json('data', []),
-        ], $this->paymentCheckoutContext()));
+        ], $this->paymentCheckoutContext(
+            is_numeric(data_get($response->json('data'), 'subtotal'))
+                ? (float) data_get($response->json('data'), 'subtotal')
+                : null,
+        )));
     }
 
     /**

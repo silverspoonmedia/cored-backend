@@ -43,6 +43,7 @@ return [
         'not_found' => 'Channel pembayaran tidak ditemukan.',
         'not_available' => 'Channel pembayaran yang dipilih tidak tersedia.',
         'unsupported_gateway' => 'Tidak ada payment gateway yang dikonfigurasi untuk channel ini.',
+        'policy_managed_route' => 'Rute ini dikelola oleh kebijakan routing. Hanya status aktif yang dapat diubah.',
     ],
 
     'midtrans' => [

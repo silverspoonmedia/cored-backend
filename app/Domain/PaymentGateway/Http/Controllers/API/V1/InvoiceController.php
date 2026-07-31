@@ -2,9 +2,11 @@
 
 namespace App\Domain\PaymentGateway\Http\Controllers\API\V1;
 
+use App\Domain\PaymentGateway\Http\Requests\ExportInvoiceRequest;
 use App\Domain\PaymentGateway\Http\Requests\IndexInvoiceRequest;
 use App\Domain\PaymentGateway\Http\Resources\InvoiceResource;
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Services\InvoiceCsvExportService;
 use App\Domain\PaymentGateway\Services\InvoiceService;
 use App\Domain\PaymentGateway\Support\DataTable\InvoiceRowActionResolver;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
@@ -13,6 +15,7 @@ use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\DataTable\DataTableResponseFactory;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InvoiceController extends Controller
 {
@@ -22,6 +25,7 @@ class InvoiceController extends Controller
 
     public function __construct(
         private readonly InvoiceService $service,
+        private readonly InvoiceCsvExportService $csvExport,
         private readonly DataTableResponseFactory $dataTables,
         private readonly InvoiceRowActionResolver $rowActions,
     ) {}
@@ -42,6 +46,11 @@ class InvoiceController extends Controller
                 $this->rowActions,
             ),
         );
+    }
+
+    public function export(ExportInvoiceRequest $request): StreamedResponse
+    {
+        return $this->csvExport->stream($request->validated());
     }
 
     public function show(Invoice $invoice): JsonResponse

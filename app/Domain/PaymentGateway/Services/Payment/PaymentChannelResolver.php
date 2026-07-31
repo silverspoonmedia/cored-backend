@@ -4,17 +4,23 @@ namespace App\Domain\PaymentGateway\Services\Payment;
 
 use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
-use App\Domain\PaymentGateway\Models\PaymentGateway;
+use App\Domain\PaymentGateway\Support\Routing\ChannelPolicyDefinition;
+use App\Domain\PaymentGateway\Support\Routing\PaymentRouteSort;
+use App\Domain\PaymentGateway\Support\Routing\RoutingPolicy;
+use App\Domain\PaymentGateway\Support\Routing\RoutingPolicyLoader;
 use Illuminate\Database\Eloquent\Collection;
 
 class PaymentChannelResolver
 {
+    private ?RoutingPolicy $policy = null;
+
     public function __construct(
         private PaymentGatewayCredentialChecker $credentialChecker,
+        private RoutingPolicyLoader $policyLoader,
     ) {}
 
     /**
-     * @return array{channel: PaymentChannel, route: PaymentChannelRoute, gateway: PaymentGateway}|null
+     * @return array{channel: PaymentChannel, route: PaymentChannelRoute, gateway: \App\Domain\PaymentGateway\Models\PaymentGateway}|null
      */
     public function resolve(string $channelCode): ?array
     {
@@ -61,18 +67,27 @@ class PaymentChannelResolver
      */
     public function listViableRoutes(PaymentChannel $channel): Collection
     {
+        $policy = $this->channelPolicy($channel);
         $viable = new Collection;
 
         $routes = $channel->routes()
             ->where('is_active', true)
             ->with('paymentGateway')
-            ->orderBy('priority')
-            ->get();
+            ->get()
+            ->sortBy(fn (PaymentChannelRoute $route): array => [
+                PaymentRouteSort::roleWeight($route->route_role),
+                $route->priority,
+            ])
+            ->values();
 
         foreach ($routes as $route) {
             $gateway = $route->paymentGateway;
 
             if ($gateway === null || ! $gateway->is_active) {
+                continue;
+            }
+
+            if ($policy !== null && $policy->isAvoidedTag($route->policy_tag)) {
                 continue;
             }
 
@@ -89,5 +104,21 @@ class PaymentChannelResolver
     public function resolveRouteForChannel(PaymentChannel $channel): ?PaymentChannelRoute
     {
         return $this->listViableRoutes($channel)->first();
+    }
+
+    private function channelPolicy(PaymentChannel $channel): ?ChannelPolicyDefinition
+    {
+        $key = $channel->policy_key ?? $channel->code;
+
+        if (str_starts_with($channel->code, 'va_')) {
+            $key = 'va';
+        }
+
+        return $this->routingPolicy()->channel($key);
+    }
+
+    private function routingPolicy(): RoutingPolicy
+    {
+        return $this->policy ??= $this->policyLoader->load();
     }
 }

@@ -20,9 +20,12 @@ class PaymentChannelController extends Controller
 
     public function index(IndexPaymentChannelRequest $request): JsonResponse
     {
+        $subtotal = $request->input('subtotal');
+        $subtotalValue = is_numeric($subtotal) ? (float) $subtotal : null;
+
         $channels = $request->input('scope') === 'admin'
             ? $this->service->listAll()
-            : $this->service->listAvailable();
+            : $this->service->listAvailable($subtotalValue);
 
         return $this->successResponse(
             PaymentChannelResource::collection($channels)->resolve($request),

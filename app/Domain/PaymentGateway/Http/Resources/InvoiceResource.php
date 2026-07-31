@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Http\Resources;
 
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceChannelFeeService;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutInstructionResolver;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
@@ -19,6 +20,8 @@ class InvoiceResource extends JsonResource
     public function toArray(Request $request): array
     {
         $currency = $this->currency;
+        $this->loadMissing('paymentChannelRoute');
+        $feeBasis = app(InvoiceChannelFeeService::class)->feeBasisFields($this->paymentChannelRoute);
 
         return [
             'id' => $this->id,
@@ -34,8 +37,13 @@ class InvoiceResource extends JsonResource
             'external_transaction_id' => $this->external_transaction_id,
             'payment_method' => $this->payment_method,
             'payment_channel_code' => $this->payment_channel_code,
+            'payment_channel_route_id' => $this->payment_channel_route_id,
+            'payment_channel_route' => $this->whenLoaded('paymentChannelRoute', fn () => $this->paymentChannelRoute
+                ? (new PaymentChannelRouteResource($this->paymentChannelRoute))->resolve()
+                : null),
             ...$this->moneyFields('subtotal', $this->subtotal, $currency),
             ...$this->moneyFields('payment_channel_fee', $this->payment_channel_fee, $currency),
+            ...$feeBasis,
             ...$this->moneyFields('customer_gross_total', $this->customer_gross_total, $currency),
             'currency' => $currency,
             'status' => $this->status,

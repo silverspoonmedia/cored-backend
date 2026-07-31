@@ -52,6 +52,10 @@
         :badges="$heroBadges"
     />
 
+    @if ($invoice && in_array($invoiceStatus, ['pending', 'challenge'], true) && (float) data_get($invoice, 'payment_channel_fee', 0) <= 0)
+        <p class="text-muted small mb-3">{{ __('web/payments.checkout.fee_at_checkout_hint') }}</p>
+    @endif
+
     @php
         $entitlement = data_get($purchase, 'entitlement');
         $entitlementStatus = data_get($entitlement, 'status');

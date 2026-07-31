@@ -24,8 +24,12 @@ class ServicePurchaseController extends Controller
             return redirect()->route('services.index')->with('error', $this->apiMessage($response));
         }
 
+        $purchase = $response->json('data', []);
+        $invoice = data_get($purchase, 'invoice', []);
+        $subtotal = is_numeric(data_get($invoice, 'subtotal')) ? (float) data_get($invoice, 'subtotal') : null;
+
         return $this->webView('service-purchases.show', array_merge([
-            'purchase' => $response->json('data', []),
-        ], $this->paymentCheckoutContext()));
+            'purchase' => $purchase,
+        ], $this->paymentCheckoutContext($subtotal)));
     }
 }

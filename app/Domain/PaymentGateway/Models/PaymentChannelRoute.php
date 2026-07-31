@@ -2,6 +2,7 @@
 
 namespace App\Domain\PaymentGateway\Models;
 
+use App\Domain\PaymentGateway\Enums\PaymentRouteRole;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +23,13 @@ class PaymentChannelRoute extends Model
         'provider_payment_type',
         'provider_payment_channel',
         'priority',
+        'route_role',
+        'settlement_days',
+        'fee_flat',
+        'fee_percent',
+        'fee_vat_inclusive',
+        'policy_tag',
+        'is_policy_managed',
         'is_active',
     ];
 
@@ -29,6 +37,12 @@ class PaymentChannelRoute extends Model
     {
         return [
             'priority' => 'integer',
+            'route_role' => PaymentRouteRole::class,
+            'settlement_days' => 'integer',
+            'fee_flat' => 'integer',
+            'fee_percent' => 'decimal:3',
+            'fee_vat_inclusive' => 'boolean',
+            'is_policy_managed' => 'boolean',
             'is_active' => 'boolean',
         ];
     }

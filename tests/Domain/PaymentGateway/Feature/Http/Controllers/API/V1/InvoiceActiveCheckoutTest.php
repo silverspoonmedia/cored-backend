@@ -47,11 +47,7 @@ class InvoiceActiveCheckoutTest extends TestCase
             app(InvoiceActiveCheckoutCancellationService::class)->hasCheckoutSession($invoice->fresh()),
         );
 
-        $this->mock(IpaymuPaymentService::class, function ($mock): void {
-            $mock->shouldReceive('charge')
-                ->once()
-                ->andReturn(['ok' => false, 'message' => 'iPaymu down', 'http' => 502]);
-        });
+        $this->partialMock(IpaymuPaymentService::class);
 
         $this->mock(MidtransPaymentService::class, function ($mock): void {
             $mock->shouldReceive('cancelTransaction')
@@ -143,11 +139,7 @@ class InvoiceActiveCheckoutTest extends TestCase
                 ]);
         });
 
-        $this->mock(MidtransPaymentService::class, function ($mock): void {
-            $mock->shouldReceive('charge')
-                ->once()
-                ->andReturn(['ok' => false, 'message' => 'Midtrans down', 'http' => 502]);
-        });
+        $this->partialMock(MidtransPaymentService::class);
 
         $this->actingAsJwt($admin)
             ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'va_mandiri'])

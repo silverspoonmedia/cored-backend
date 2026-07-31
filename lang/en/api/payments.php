@@ -18,6 +18,13 @@ return [
     'invoices' => [
         'list' => 'Invoices retrieved successfully.',
         'show' => 'Invoice retrieved successfully.',
+        'checkout_channels' => 'Checkout payment channels loaded.',
+        'checkout_channels_not_payable' => 'Invoice is not open for payment.',
+    ],
+
+    'income' => [
+        'overview' => 'Payment income overview loaded.',
+        'invoices' => 'Payment income invoices loaded.',
     ],
 
     'subscriptions' => [
@@ -68,6 +75,7 @@ return [
         'not_found' => 'Payment channel not found.',
         'not_available' => 'The selected payment channel is not available.',
         'unsupported_gateway' => 'No supported payment gateway is configured for this channel.',
+        'policy_managed_route' => 'This route is managed by the routing policy. Only activation can be changed.',
     ],
 
     'ipaymu' => [

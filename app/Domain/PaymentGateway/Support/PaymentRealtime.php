@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Support;
 
 use App\Domain\PaymentGateway\Events\InvoiceStatusChanged;
+use App\Domain\PaymentGateway\Events\PaymentRoutingCatalogChanged;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\Service\Models\ServiceAddonRenewal;
@@ -71,6 +72,30 @@ class PaymentRealtime
             Log::warning('PaymentRealtime broadcast failed', [
                 'invoice_id' => $invoice->id,
                 'status' => $current,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Broadcast when payment channel/route catalog changes (admin toggle or policy sync).
+     */
+    public function routingCatalogChanged(string $reason, ?string $channelCode = null): void
+    {
+        if (! $this->enabled()) {
+            return;
+        }
+
+        try {
+            event(new PaymentRoutingCatalogChanged(
+                revision: time(),
+                reason: $reason,
+                channelCode: $channelCode,
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('PaymentRealtime routing catalog broadcast failed', [
+                'reason' => $reason,
+                'channel_code' => $channelCode,
                 'error' => $e->getMessage(),
             ]);
         }

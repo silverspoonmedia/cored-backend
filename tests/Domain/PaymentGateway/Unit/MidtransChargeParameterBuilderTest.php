@@ -58,6 +58,17 @@ class MidtransChargeParameterBuilderTest extends TestCase
         $this->assertTrue($charge['gopay']['enable_callback']);
     }
 
+    public function test_builds_dana_charge(): void
+    {
+        $route = $this->midtransRoute('dana', 'dana', null);
+        $invoice = $this->createPayableInvoice();
+
+        $charge = $this->builder->buildFromRoute($route, $invoice);
+
+        $this->assertSame('dana', $charge['payment_type']);
+        $this->assertArrayHasKey('dana', $charge);
+    }
+
     private function midtransRoute(string $channelCode, string $type, ?string $channel): PaymentChannelRoute
     {
         return PaymentChannelRoute::query()

@@ -12,6 +12,20 @@ return [
     */
     'default_buyer_phone' => env('PAYMENT_DEFAULT_BUYER_PHONE', '081000000000'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Channel fee bearer (buyer | merchant)
+    |--------------------------------------------------------------------------
+    */
+    'channel_fee_bearer' => env('PAYMENT_CHANNEL_FEE_BEARER', 'buyer'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reporting timezone (admin income page date filters)
+    |--------------------------------------------------------------------------
+    */
+    'reporting_timezone' => env('PAYMENT_REPORTING_TIMEZONE', 'Asia/Jakarta'),
+
     'gateways' => [
         'midtrans' => [
             'server_key' => env('MIDTRANS_SERVER_KEY'),

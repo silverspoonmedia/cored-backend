@@ -112,7 +112,7 @@ class ServiceCheckoutService
             }
 
             return [
-                'purchase' => $purchase->load(['service.prices', 'invoice.paymentGateway', 'user']),
+                'purchase' => $purchase->load(['service.prices', 'invoice.paymentGateway', 'invoice.paymentChannelRoute', 'user']),
                 'invoice' => $invoice ?? $purchase->invoice,
                 'quote' => $quote->toArray(),
             ];
@@ -122,7 +122,7 @@ class ServiceCheckoutService
     public function getPurchase(string $id): ServicePurchase
     {
         $purchase = ServicePurchase::query()
-            ->with(['service.prices', 'invoice.paymentGateway', 'user'])
+            ->with(['service.prices', 'invoice.paymentGateway', 'invoice.paymentChannelRoute', 'user'])
             ->findOrFail($id);
 
         $entitlement = ServiceEntitlement::query()

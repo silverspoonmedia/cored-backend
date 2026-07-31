@@ -14,16 +14,23 @@
     $isPayable = in_array($status, ['pending', 'challenge'], true);
     $gatewayName = data_get($invoice, 'payment_gateway.display_name', data_get($invoice, 'payment_gateway.name'));
     $showGateway = data_get($invoice, 'payment_gateway.id') || data_get($invoice, 'payment_channel_code');
-    // Prefer Resource companion (includes currency). Raw fallback keeps code + number.
+    $formattedSubtotal = data_get($invoice, 'subtotal_formatted');
+    $formattedFee = data_get($invoice, 'payment_channel_fee_formatted');
     $formattedTotal = data_get($invoice, 'customer_gross_total_formatted');
-    if (is_string($formattedTotal) && $formattedTotal !== '') {
-        $currency = '';
-        $amount = $formattedTotal;
-    } else {
-        $currency = data_get($invoice, 'currency', 'IDR');
-        $amount = data_get($invoice, 'customer_gross_total', '0');
-    }
+    $invoiceSubtotal = data_get($invoice, 'subtotal', 0);
+    $invoiceFee = data_get($invoice, 'payment_channel_fee', 0);
+    $invoiceGross = data_get($invoice, 'customer_gross_total', 0);
+    $invoiceCurrency = data_get($invoice, 'currency', 'IDR');
     $useChannelCheckout = $checkoutMode === 'channel' && is_array($paymentChannels) && $paymentChannels !== [];
+    $invoiceFeeBasis = data_get($invoice, 'payment_channel_fee_basis');
+    if ($invoiceFeeBasis === null && $useChannelCheckout && $paymentChannels !== []) {
+        $firstChannel = $paymentChannels[0];
+        if (data_get($firstChannel, 'fee_type') === 'percent' && data_get($firstChannel, 'fee_label')) {
+            $invoiceFeeBasis = __('web/payments.checkout.fee_percent_basis', [
+                'percent' => data_get($firstChannel, 'fee_label'),
+            ]);
+        }
+    }
 
     $channelKindIcons = [
         'qris' => 'bi-qr-code',

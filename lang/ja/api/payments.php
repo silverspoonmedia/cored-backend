@@ -43,6 +43,7 @@ return [
         'not_found' => '決済チャネルが見つかりません。',
         'not_available' => '選択した決済チャネルは利用できません。',
         'unsupported_gateway' => 'このチャネル用の決済ゲートウェイが設定されていません。',
+        'policy_managed_route' => 'このルートはルーティングポリシーで管理されています。有効/無効のみ変更できます。',
     ],
 
     'midtrans' => [

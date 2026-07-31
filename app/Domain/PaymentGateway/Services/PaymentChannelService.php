@@ -4,13 +4,18 @@ namespace App\Domain\PaymentGateway\Services;
 
 use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceChannelFeeService;
 use App\Domain\PaymentGateway\Services\Payment\PaymentChannelResolver;
+use App\Domain\PaymentGateway\Support\PaymentRealtime;
+use App\Domain\PaymentGateway\Support\Routing\PaymentRouteSort;
 use Illuminate\Database\Eloquent\Collection;
 
 class PaymentChannelService
 {
     public function __construct(
         private PaymentChannelResolver $resolver,
+        private InvoiceChannelFeeService $channelFees,
+        private PaymentRealtime $paymentRealtime,
     ) {}
 
     /**
@@ -22,15 +27,33 @@ class PaymentChannelService
             ->with(['routes.paymentGateway'])
             ->orderBy('sort_order')
             ->orderBy('display_name')
-            ->get();
+            ->get()
+            ->each(function (PaymentChannel $channel): void {
+                $channel->setRelation(
+                    'routes',
+                    PaymentRouteSort::sortRoutes($channel->routes),
+                );
+            });
     }
 
     /**
      * @return Collection<int, PaymentChannel>
      */
-    public function listAvailable(): Collection
+    public function listAvailable(?float $subtotal = null): Collection
     {
-        return $this->resolver->listAvailable();
+        $channels = $this->resolver->listAvailable();
+
+        if ($subtotal === null) {
+            return $channels;
+        }
+
+        return $channels->each(function (PaymentChannel $channel) use ($subtotal): void {
+            $quote = $this->channelFees->quoteForChannel($channel, $subtotal);
+
+            if ($quote !== null) {
+                $channel->setAttribute('checkout_quote', $quote);
+            }
+        });
     }
 
     public function getByCode(string $code): ?PaymentChannel
@@ -61,6 +84,8 @@ class PaymentChannelService
 
         $channel->save();
 
+        $this->paymentRealtime->routingCatalogChanged('channel_updated', $channel->code);
+
         return $channel;
     }
 
@@ -77,11 +102,17 @@ class PaymentChannelService
             $route->is_active = (bool) $data['is_active'];
         }
 
-        if (array_key_exists('priority', $data)) {
+        if (array_key_exists('priority', $data) && ! $route->is_policy_managed) {
             $route->priority = (int) $data['priority'];
         }
 
         $route->save();
+
+        $route->loadMissing('paymentChannel');
+        $this->paymentRealtime->routingCatalogChanged(
+            'route_updated',
+            $route->paymentChannel?->code,
+        );
 
         return $route->fresh(['paymentGateway']);
     }

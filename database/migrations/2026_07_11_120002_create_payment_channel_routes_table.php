@@ -15,6 +15,13 @@ return new class extends Migration
             $table->string('provider_payment_type', 64);
             $table->string('provider_payment_channel', 64)->nullable();
             $table->unsignedInteger('priority')->default(0);
+            $table->string('route_role', 16)->default('primary');
+            $table->unsignedTinyInteger('settlement_days')->default(2);
+            $table->unsignedInteger('fee_flat')->nullable();
+            $table->decimal('fee_percent', 5, 3)->nullable();
+            $table->boolean('fee_vat_inclusive')->default(false);
+            $table->string('policy_tag', 64)->nullable();
+            $table->boolean('is_policy_managed')->default(true);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 

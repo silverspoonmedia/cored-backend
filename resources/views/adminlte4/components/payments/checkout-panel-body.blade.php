@@ -8,9 +8,16 @@
     data-invoice-id="{{ data_get($invoice, 'id') }}"
     data-invoice-status="{{ $status }}"
     data-channel-checkout-url="{{ route('invoices.checkout.channel', data_get($invoice, 'id')) }}"
+    data-channels-url="{{ route('invoices.checkout.channels', data_get($invoice, 'id')) }}"
     data-sync-status-url="{{ route('invoices.checkout.sync-status', data_get($invoice, 'id')) }}"
-    data-channels="{{ json_encode(array_values($paymentChannels)) }}"
+    data-invoice-subtotal="{{ $invoiceSubtotal }}"
+    data-invoice-fee="{{ $invoiceFee }}"
+    data-invoice-gross="{{ $invoiceGross }}"
+    data-invoice-currency="{{ $invoiceCurrency }}"
     data-initial-checkout='@json($initialCheckout)'
+    @if ($useChannelCheckout)
+        data-channels='@json($paymentChannels)'
+    @endif
     @if ($broadcastConfig !== null)
         data-broadcast='@json($broadcastConfig)'
     @endif
@@ -44,6 +51,16 @@
         'statusFailed' => __('web/payments.show.status.failed'),
         'paymentPending' => __('web/payments.show.payment_pending'),
         'paymentNotStarted' => __('web/payments.show.payment_not_started'),
+        'cheapAltHint' => __('web/payments.checkout.cheap_alt_hint'),
+        'subtotal' => __('web/payments.checkout.subtotal'),
+        'paymentFee' => __('web/payments.checkout.payment_fee'),
+        'paymentFeeNote' => __('web/payments.checkout.payment_fee_note'),
+        'totalDue' => __('web/payments.checkout.total_due'),
+        'feeEstimateHint' => __('web/payments.checkout.fee_estimate_hint'),
+        'routingUpdated' => __('web/payments.checkout.routing_updated'),
+        'channelUnavailable' => __('web/payments.checkout.channel_unavailable'),
+        'feeUpdated' => __('web/payments.checkout.fee_updated'),
+        'selectedChannelUnavailable' => __('web/payments.checkout.selected_channel_unavailable'),
     ]) }}"
 >
     @unless ($hubMode)
@@ -55,9 +72,32 @@
         </div>
     @endunless
 
-    <div class="ois-amount-callout">
-        <p class="ois-amount-callout__label mb-0">{{ __('web/payments.checkout.amount') }}</p>
-        <p class="ois-amount-callout__value mb-0" data-payment-amount-value>{{ $currency }} {{ $amount }}</p>
+    <div class="ois-fee-breakdown mb-3" data-payment-fee-breakdown>
+        <div class="ois-fee-breakdown__row">
+            <span class="text-muted">{{ __('web/payments.checkout.subtotal') }}</span>
+            <span data-payment-fee-subtotal>{{ $formattedSubtotal ?: ($invoiceCurrency.' '.$invoiceSubtotal) }}</span>
+        </div>
+        <div class="ois-fee-breakdown__row">
+            <span class="text-muted">
+                {{ __('web/payments.checkout.payment_fee') }}
+                <span class="d-block small">{{ __('web/payments.checkout.payment_fee_note') }}</span>
+            </span>
+            <span class="text-end">
+                <span data-payment-fee-surcharge>{{ $formattedFee ?: ($invoiceCurrency.' '.$invoiceFee) }}</span>
+                @if (! empty($invoiceFeeBasis))
+                    <span class="d-block small text-muted" data-payment-fee-basis>{{ $invoiceFeeBasis }}</span>
+                @else
+                    <span class="d-block small text-muted d-none" data-payment-fee-basis></span>
+                @endif
+            </span>
+        </div>
+        <div class="ois-fee-breakdown__row ois-fee-breakdown__row--total">
+            <span class="fw-semibold">{{ __('web/payments.checkout.total_due') }}</span>
+            <span class="fw-semibold ois-amount-callout__value" data-payment-fee-total data-payment-amount-value>
+                {{ $formattedTotal ?: ($invoiceCurrency.' '.$invoiceGross) }}
+            </span>
+        </div>
+        <p class="text-muted small mb-0 mt-2 d-none" data-payment-fee-estimate-hint>{{ __('web/payments.checkout.fee_estimate_hint') }}</p>
     </div>
 
     @if ($showGateway && $gatewayName && ! $hubMode)
@@ -82,17 +122,32 @@
                             $icon = $channelKindIcons[$kind] ?? 'bi-credit-card';
                             $code = (string) data_get($channel, 'code', '');
                             $isDefaultChannel = $code !== '' && $code === $defaultChannelCode;
+                            $cheapAlt = (string) data_get($channel, 'cheap_alt_code', '');
+                            $cheapAltLabel = $cheapAlt !== ''
+                                ? collect($paymentChannels)->firstWhere('code', $cheapAlt)['display_name'] ?? $cheapAlt
+                                : '';
                         @endphp
                         <button
                             type="button"
                             class="pc-checkout-channel pc-kind-{{ $kind }}{{ $isDefaultChannel ? ' is-selected' : '' }}"
                             data-payment-channel-option="{{ $code }}"
+                            @if ($cheapAlt !== '')
+                                data-cheap-alt-code="{{ $cheapAlt }}"
+                                data-cheap-alt-label="{{ $cheapAltLabel }}"
+                            @endif
                         >
                             <span class="pc-checkout-channel__icon"><i class="bi {{ $icon }}"></i></span>
                             <span class="pc-checkout-channel__label">{{ data_get($channel, 'display_name', data_get($channel, 'code')) }}</span>
+                            @if (data_get($channel, 'estimated_channel_fee_formatted'))
+                                <span class="pc-checkout-channel__fee text-muted small">
+                                    + {{ data_get($channel, 'estimated_channel_fee_formatted') }}@if (data_get($channel, 'fee_type') === 'percent' && data_get($channel, 'fee_label')) ({{ data_get($channel, 'fee_label') }})@endif
+                                </span>
+                            @endif
                         </button>
                     @endforeach
                 </div>
+
+                <p class="text-muted small mb-2 d-none" data-payment-cheap-alt-hint></p>
 
                 <button
                     type="button"

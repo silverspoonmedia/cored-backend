@@ -40,95 +40,38 @@ class InvoiceChannelCheckoutTest extends TestCase
         $invoice = $this->createPayableInvoice(null);
         $admin = $this->userWithRole('Admin');
 
-        $this->mock(IpaymuPaymentService::class, function ($mock): void {
+        $this->mock(MidtransPaymentService::class, function ($mock): void {
             $mock->shouldReceive('charge')
                 ->once()
                 ->andReturn([
                     'ok' => true,
                     'data' => [
-                        'Status' => 200,
-                        'Data' => [
-                            'TransactionId' => 12345,
-                            'QrString' => 'qris-string',
-                        ],
+                        'qr_string' => 'midtrans-qris',
                     ],
-                    'message_key' => 'api/payments.ipaymu.charge_created',
+                    'message_key' => 'api/payments.midtrans.charge_created',
                     'http' => 201,
                 ]);
         });
 
-        $this->partialMock(MidtransPaymentService::class);
+        $this->partialMock(IpaymuPaymentService::class);
 
         $this->actingAsJwt($admin)
             ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'qris'])
             ->assertCreated()
-            ->assertJsonPath('data.gateway', 'ipaymu');
+            ->assertJsonPath('data.gateway', 'midtrans');
 
         $invoice->refresh();
         $this->assertSame(
-            PaymentGateway::query()->where('name', 'ipaymu')->value('id'),
+            PaymentGateway::query()->where('name', 'midtrans')->value('id'),
             $invoice->payment_gateway_id,
         );
+        $this->assertNotNull($invoice->payment_channel_route_id);
     }
 
-    public function test_channel_checkout_routes_qris_to_ipaymu_and_returns_instructions(): void
+    public function test_channel_checkout_routes_qris_to_midtrans_and_returns_instructions(): void
     {
         $invoice = $this->createPayableInvoice('midtrans');
         $admin = $this->userWithRole('Admin');
-
-        $this->mock(IpaymuPaymentService::class, function ($mock): void {
-            $mock->shouldReceive('charge')
-                ->once()
-                ->andReturn([
-                    'ok' => true,
-                    'data' => [
-                        'Status' => 200,
-                        'Data' => [
-                            'TransactionId' => 12345,
-                            'QrString' => 'qris-string',
-                            'QrImage' => 'https://example.test/qr.png',
-                        ],
-                    ],
-                    'message_key' => 'api/payments.ipaymu.charge_created',
-                    'http' => 201,
-                ]);
-        });
-
-        $this->partialMock(MidtransPaymentService::class);
-
-        $response = $this->actingAsJwt($admin)->postJson(
-            '/api/v1/invoices/'.$invoice->id.'/channel-checkout',
-            ['channel_code' => 'qris'],
-        );
-
-        $response->assertCreated()
-            ->assertJsonPath('status', 'success')
-            ->assertJsonPath('data.channel_code', 'qris')
-            ->assertJsonPath('data.gateway', 'ipaymu')
-            ->assertJsonPath('data.instructions.qr_string', 'qris-string');
-
-        $invoice->refresh();
-        $this->assertSame('qris', $invoice->payment_channel_code);
-        $this->assertSame(
-            PaymentGateway::query()->where('name', 'ipaymu')->value('id'),
-            $invoice->payment_gateway_id,
-        );
-    }
-
-    public function test_channel_checkout_fails_over_to_second_gateway_route(): void
-    {
-        $invoice = $this->createPayableInvoice('midtrans');
-        $admin = $this->userWithRole('Admin');
-
-        $this->mock(IpaymuPaymentService::class, function ($mock): void {
-            $mock->shouldReceive('charge')
-                ->once()
-                ->andReturn([
-                    'ok' => false,
-                    'message' => 'iPaymu down',
-                    'http' => 502,
-                ]);
-        });
 
         $this->mock(MidtransPaymentService::class, function ($mock): void {
             $mock->shouldReceive('charge')
@@ -146,11 +89,68 @@ class InvoiceChannelCheckoutTest extends TestCase
                 ]);
         });
 
+        $this->partialMock(IpaymuPaymentService::class);
+
+        $response = $this->actingAsJwt($admin)->postJson(
+            '/api/v1/invoices/'.$invoice->id.'/channel-checkout',
+            ['channel_code' => 'qris'],
+        );
+
+        $response->assertCreated()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.channel_code', 'qris')
+            ->assertJsonPath('data.gateway', 'midtrans')
+            ->assertJsonPath('data.instructions.qr_string', 'midtrans-qris')
+            ->assertJsonPath('data.payment_channel_fee', 700)
+            ->assertJsonPath('data.customer_gross_total', 100700);
+
+        $invoice->refresh();
+        $this->assertSame(700.0, (float) $invoice->payment_channel_fee);
+        $this->assertSame(100700.0, (float) $invoice->customer_gross_total);
+        $this->assertSame('qris', $invoice->payment_channel_code);
+        $this->assertSame(
+            PaymentGateway::query()->where('name', 'midtrans')->value('id'),
+            $invoice->payment_gateway_id,
+        );
+    }
+
+    public function test_channel_checkout_fails_over_to_second_gateway_route(): void
+    {
+        $invoice = $this->createPayableInvoice('midtrans');
+        $admin = $this->userWithRole('Admin');
+
+        $this->mock(MidtransPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn([
+                    'ok' => false,
+                    'message' => 'Midtrans down',
+                    'http' => 502,
+                ]);
+        });
+
+        $this->mock(IpaymuPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn([
+                    'ok' => true,
+                    'data' => [
+                        'Status' => 200,
+                        'Data' => [
+                            'TransactionId' => 12345,
+                            'QrString' => 'ipaymu-qris',
+                        ],
+                    ],
+                    'message_key' => 'api/payments.ipaymu.charge_created',
+                    'http' => 201,
+                ]);
+        });
+
         $this->actingAsJwt($admin)
             ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'qris'])
             ->assertCreated()
-            ->assertJsonPath('data.gateway', 'midtrans')
-            ->assertJsonPath('data.instructions.qr_string', 'midtrans-qris');
+            ->assertJsonPath('data.gateway', 'ipaymu')
+            ->assertJsonPath('data.instructions.qr_string', 'ipaymu-qris');
     }
 
     public function test_channel_checkout_returns_snap_fallback_when_all_routes_fail(): void
@@ -158,16 +158,16 @@ class InvoiceChannelCheckoutTest extends TestCase
         $invoice = $this->createPayableInvoice('midtrans');
         $admin = $this->userWithRole('Admin');
 
-        $this->mock(IpaymuPaymentService::class, function ($mock): void {
-            $mock->shouldReceive('charge')
-                ->once()
-                ->andReturn(['ok' => false, 'message' => 'iPaymu down', 'http' => 502]);
-        });
-
         $this->mock(MidtransPaymentService::class, function ($mock): void {
             $mock->shouldReceive('charge')
                 ->once()
                 ->andReturn(['ok' => false, 'message' => 'Midtrans down', 'http' => 502]);
+        });
+
+        $this->mock(IpaymuPaymentService::class, function ($mock): void {
+            $mock->shouldReceive('charge')
+                ->once()
+                ->andReturn(['ok' => false, 'message' => 'iPaymu down', 'http' => 502]);
         });
 
         $this->actingAsJwt($admin)
@@ -216,28 +216,23 @@ class InvoiceChannelCheckoutTest extends TestCase
         ]);
         $admin = $this->userWithRole('Admin');
 
-        $this->mock(IpaymuPaymentService::class, function ($mock) use ($invoice): void {
+        $this->mock(MidtransPaymentService::class, function ($mock) use ($invoice): void {
             $mock->shouldReceive('charge')
                 ->once()
                 ->withArgs(function (array $input) use ($invoice): bool {
-                    return ($input['invoice_id'] ?? null) === $invoice->id
-                        && ! array_key_exists('buyer', $input);
+                    return ($input['invoice_id'] ?? null) === $invoice->id;
                 })
                 ->andReturn([
                     'ok' => true,
                     'data' => [
-                        'Status' => 200,
-                        'Data' => [
-                            'TransactionId' => 99901,
-                            'QrString' => 'qris-no-buyer',
-                        ],
+                        'qr_string' => 'qris-no-buyer',
                     ],
-                    'message_key' => 'api/payments.ipaymu.charge_created',
+                    'message_key' => 'api/payments.midtrans.charge_created',
                     'http' => 201,
                 ]);
         });
 
-        $this->partialMock(MidtransPaymentService::class);
+        $this->partialMock(IpaymuPaymentService::class);
 
         $this->actingAsJwt($admin)
             ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'qris'])

@@ -17,6 +17,7 @@ class InvoiceChannelCheckoutService
     public function __construct(
         private PaymentChannelResolver $channelResolver,
         private InvoiceRepositoryInterface $invoices,
+        private InvoiceChannelFeeService $channelFees,
         private MidtransPaymentService $midtransPayments,
         private IpaymuPaymentService $ipaymuPayments,
         private MidtransChargeParameterBuilder $midtransChargeBuilder,
@@ -76,6 +77,11 @@ class InvoiceChannelCheckoutService
 
             $this->assignGatewayForRoute($invoice, $gateway);
 
+            if ($gateway->name === 'midtrans') {
+                $this->channelFees->applyBeforeCharge($invoice, $route, 'midtrans');
+                $invoice->refresh();
+            }
+
             $chargeResult = match ($gateway->name) {
                 'midtrans' => $this->chargeMidtrans($invoice, $route),
                 'ipaymu' => $this->chargeIpaymu($invoice, $route, $input['buyer'] ?? null),
@@ -93,7 +99,7 @@ class InvoiceChannelCheckoutService
                 continue;
             }
 
-            $this->persistSuccessfulCheckout($invoice, $gateway, $channel);
+            $this->persistSuccessfulCheckout($invoice, $gateway, $channel, $route);
 
             $invoice->refresh();
 
@@ -135,12 +141,17 @@ class InvoiceChannelCheckoutService
         $invoice->refresh();
     }
 
-    private function persistSuccessfulCheckout(Invoice $invoice, PaymentGateway $gateway, PaymentChannel $channel): void
-    {
-        DB::transaction(function () use ($invoice, $gateway, $channel): void {
+    private function persistSuccessfulCheckout(
+        Invoice $invoice,
+        PaymentGateway $gateway,
+        PaymentChannel $channel,
+        PaymentChannelRoute $route,
+    ): void {
+        DB::transaction(function () use ($invoice, $gateway, $channel, $route): void {
             $locked = $this->invoices->findOrFailByIdForUpdate($invoice->id);
             $locked->payment_gateway_id = $gateway->id;
             $locked->payment_channel_code = $channel->code;
+            $locked->payment_channel_route_id = $route->id;
             $this->invoices->save($locked);
         });
     }

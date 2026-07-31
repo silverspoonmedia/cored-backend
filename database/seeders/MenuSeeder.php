@@ -257,6 +257,18 @@ class MenuSeeder extends Seeder
         ]);
         $invoicesItem->roles()->sync($paymentViewerRoleIds);
 
+        $paymentIncomeItem = Menu::query()->create([
+            'parent_id' => $payments->id,
+            'layout' => MenuLayout::SIDEBAR,
+            'name' => ['en' => 'Payment income', 'id' => 'Pendapatan pembayaran', 'ja' => '決済収入'],
+            'icon' => 'bi bi-circle',
+            'route' => 'payments.income.index',
+            'type' => 'c',
+            'order' => 5,
+            'is_authenticate' => true,
+        ]);
+        $paymentIncomeItem->roles()->sync($paymentViewerRoleIds);
+
         $subscriptionsItem = Menu::query()->create([
             'parent_id' => $payments->id,
             'layout' => MenuLayout::SIDEBAR,

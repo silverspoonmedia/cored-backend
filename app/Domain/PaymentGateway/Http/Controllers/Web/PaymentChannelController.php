@@ -2,6 +2,7 @@
 
 namespace App\Domain\PaymentGateway\Http\Controllers\Web;
 
+use App\Domain\PaymentGateway\Support\Routing\PaymentRouteMaterializer;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\JsonResponse;
@@ -64,6 +65,22 @@ class PaymentChannelController extends Controller
             'status' => 'success',
             'message' => $this->apiMessage($response, __('web/payments.channels.route_updated')),
             'data' => $response->json('data', []),
+        ]);
+    }
+
+    public function syncRoutingPolicy(PaymentRouteMaterializer $materializer): JsonResponse
+    {
+        $this->authorize('manage payment gateway');
+
+        $stats = $materializer->sync(dryRun: false);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => __('web/payments.channels.sync_policy_done', [
+                'channels' => $stats['channels'],
+                'routes' => $stats['routes'],
+            ]),
+            'data' => $stats,
         ]);
     }
 }
