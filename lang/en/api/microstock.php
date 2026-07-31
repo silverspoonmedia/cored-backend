@@ -22,7 +22,6 @@ return [
     'workspace_created' => 'Microstock workspace created.',
     'slots_loaded' => 'Microstock slot status loaded.',
     'collection_not_found' => 'Collection not found.',
-    'collection_hint_required' => 'Please describe the collection before locking it.',
     'collection_already_locked' => 'This collection is already locked.',
     'collection_not_locked' => 'Lock the collection before running analysis.',
     'collection_empty' => 'This collection has no files to analyze.',

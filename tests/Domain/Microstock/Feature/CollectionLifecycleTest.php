@@ -248,27 +248,25 @@ class CollectionLifecycleTest extends TestCase
         $this->assertSame('failed', $metadata->ai_vision['status'] ?? null);
     }
 
-    public function test_lock_requires_hint_and_transitions_status(): void
+    public function test_lock_allows_empty_hint_and_transitions_status(): void
     {
         $ws = app(MicrostockService::class)->workspaceFor($this->owner);
-        $folder = $this->makeFolder($this->owner, $ws->id);
+        $emptyFolder = $this->makeFolder($this->owner, $ws->id);
 
-        try {
-            app(CollectionService::class)->lock($this->owner, $folder->id, '   ');
-            $this->fail('Empty hint must be rejected');
-        } catch (MicrostockException $e) {
-            $this->assertSame(422, $e->statusCode());
-        }
-
-        $locked = app(CollectionService::class)->lock($this->owner, $folder->id, 'eco kitchen flat-lays');
+        $locked = app(CollectionService::class)->lock($this->owner, $emptyFolder->id, '   ');
         $this->assertSame(CollectionStatus::Locked, $locked->collection_status);
-        $this->assertSame('eco kitchen flat-lays', $locked->collection_hint);
+        $this->assertNull($locked->collection_hint);
         $this->assertNotNull($locked->collection_locked_at);
         $this->assertTrue($locked->isCollectionLocked());
 
+        $hintFolder = $this->makeFolder($this->owner, $ws->id, 'Hinted');
+        $lockedWithHint = app(CollectionService::class)->lock($this->owner, $hintFolder->id, 'eco kitchen flat-lays');
+        $this->assertSame(CollectionStatus::Locked, $lockedWithHint->collection_status);
+        $this->assertSame('eco kitchen flat-lays', $lockedWithHint->collection_hint);
+
         // Re-lock while locked is rejected.
         try {
-            app(CollectionService::class)->lock($this->owner, $folder->id, 'again');
+            app(CollectionService::class)->lock($this->owner, $hintFolder->id, 'again');
             $this->fail('Re-locking a locked collection must be rejected');
         } catch (MicrostockException $e) {
             $this->assertSame(422, $e->statusCode());

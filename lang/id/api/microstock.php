@@ -22,7 +22,6 @@ return [
     'workspace_created' => 'Workspace Microstock dibuat.',
     'slots_loaded' => 'Status slot Microstock dimuat.',
     'collection_not_found' => 'Collection tidak ditemukan.',
-    'collection_hint_required' => 'Deskripsikan collection sebelum menguncinya.',
     'collection_already_locked' => 'Collection ini sudah terkunci.',
     'collection_not_locked' => 'Kunci collection sebelum menjalankan analisis.',
     'collection_empty' => 'Collection ini tidak punya file untuk dianalisis.',

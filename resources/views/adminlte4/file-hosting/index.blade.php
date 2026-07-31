@@ -153,6 +153,7 @@
                 'intent' => __('web/file-hosting.microstock.describe_validation_intent'),
                 'style' => __('web/file-hosting.microstock.describe_validation_style'),
                 'tooLong' => __('web/file-hosting.microstock.describe_validation_too_long'),
+                'blindWarning' => __('web/file-hosting.microstock.describe_warning_blind'),
             ],
             'visibleOptions' => __('web/file-hosting.microstock.describe_visible_options'),
             'intentOptions' => __('web/file-hosting.microstock.describe_intent_options'),

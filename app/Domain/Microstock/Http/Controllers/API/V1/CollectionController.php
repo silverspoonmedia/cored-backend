@@ -21,10 +21,10 @@ class CollectionController extends Controller
     public function lock(Request $request, string $folder): JsonResponse
     {
         $data = $request->validate([
-            'hint' => ['required', 'string', 'max:2000'],
+            'hint' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $collection = $this->collections->lock($request->user(), $folder, $data['hint']);
+        $collection = $this->collections->lock($request->user(), $folder, $data['hint'] ?? null);
 
         return $this->successResponse(
             $this->payload($collection),

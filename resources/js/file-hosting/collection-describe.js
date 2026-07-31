@@ -193,29 +193,49 @@ export function parseCollectionHint(text, labelMaps = {}) {
 /**
  * @param {ReturnType<typeof emptyDescribeSections>} sections
  */
+export function isBlindDescribe(sections) {
+    const concept = (sections.primaryConcept || '').trim();
+    const hasVisible = (sections.visibleSelected?.length || 0) > 0
+        || (sections.visibleOther || '').trim() !== '';
+    const hasIntent = (sections.intentSelected?.length || 0) > 0
+        || (sections.intentOther || '').trim() !== '';
+    const hasStyle = (sections.styleSelected?.length || 0) > 0
+        || (sections.styleOther || '').trim() !== '';
+    const notes = (sections.additionalNotes || '').trim();
+
+    return concept === '' && !hasVisible && !hasIntent && !hasStyle && notes === '';
+}
+
+/**
+ * @param {ReturnType<typeof emptyDescribeSections>} sections
+ */
 export function validateCollectionDescribe(sections) {
     const errors = [];
     const concept = (sections.primaryConcept || '').trim();
-    if (concept.length < PRIMARY_CONCEPT_MIN) {
+    if (concept.length > 0 && concept.length < PRIMARY_CONCEPT_MIN) {
         errors.push('primaryConcept');
     }
 
-    const hasVisible = (sections.visibleSelected?.length || 0) > 0
-        || (sections.visibleOther || '').trim() !== '';
-    if (!hasVisible) {
-        errors.push('visible');
-    }
+    // Fields are optional, but if a primary concept is provided we still
+    // surface guidance about the other sections as soft hints.
+    if (concept.length > 0) {
+        const hasVisible = (sections.visibleSelected?.length || 0) > 0
+            || (sections.visibleOther || '').trim() !== '';
+        if (!hasVisible) {
+            errors.push('visible');
+        }
 
-    const hasIntent = (sections.intentSelected?.length || 0) > 0
-        || (sections.intentOther || '').trim() !== '';
-    if (!hasIntent) {
-        errors.push('intent');
-    }
+        const hasIntent = (sections.intentSelected?.length || 0) > 0
+            || (sections.intentOther || '').trim() !== '';
+        if (!hasIntent) {
+            errors.push('intent');
+        }
 
-    const hasStyle = (sections.styleSelected?.length || 0) > 0
-        || (sections.styleOther || '').trim() !== '';
-    if (!hasStyle) {
-        errors.push('style');
+        const hasStyle = (sections.styleSelected?.length || 0) > 0
+            || (sections.styleOther || '').trim() !== '';
+        if (!hasStyle) {
+            errors.push('style');
+        }
     }
 
     return {

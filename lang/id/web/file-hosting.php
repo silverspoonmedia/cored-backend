@@ -124,6 +124,7 @@ return [
         'describe_validation_intent' => 'Pilih minimal satu niat pembeli atau isi Lainnya.',
         'describe_validation_style' => 'Pilih minimal satu gaya atau isi Lainnya.',
         'describe_validation_too_long' => 'Hint terlalu panjang. Ringkas catatan atau pilihan.',
+        'describe_warning_blind' => 'Anda akan mengunci collection ini tanpa deskripsi apa pun. AI akan membuat metadata tanpa konteks, yang biasanya menghasilkan hasil buruk dan tidak konsisten. Lanjutkan?',
         'describe_placeholder' => 'mis. Kumpulan foto flat-lay produk dapur ramah lingkungan di meja kayu, cahaya alami terang.',
         'describe_submit' => 'Kunci & Analisis',
         'describe_visible_options' => [

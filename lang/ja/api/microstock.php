@@ -22,7 +22,6 @@ return [
     'workspace_created' => 'Microstockワークスペースを作成しました。',
     'slots_loaded' => 'Microstockスロットの状態を読み込みました。',
     'collection_not_found' => 'コレクションが見つかりません。',
-    'collection_hint_required' => 'ロックする前にコレクションを説明してください。',
     'collection_already_locked' => 'このコレクションはすでにロックされています。',
     'collection_not_locked' => '分析を実行する前にコレクションをロックしてください。',
     'collection_empty' => 'このコレクションには分析するファイルがありません。',

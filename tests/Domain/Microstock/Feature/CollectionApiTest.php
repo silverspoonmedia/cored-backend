@@ -49,16 +49,18 @@ class CollectionApiTest extends TestCase
         $this->grantMicrostockFree($this->owner);
     }
 
-    public function test_lock_endpoint_requires_hint_and_locks(): void
+    public function test_lock_endpoint_allows_empty_hint_and_locks(): void
     {
-        $folder = $this->collection();
-
+        $emptyFolder = $this->collection();
         $this->actingAsJwt($this->owner)
-            ->postJson("/api/v1/microstock/collections/{$folder->id}/lock", [])
-            ->assertStatus(422);
+            ->postJson("/api/v1/microstock/collections/{$emptyFolder->id}/lock", [])
+            ->assertOk()
+            ->assertJsonPath('data.collection_status', CollectionStatus::Locked->value)
+            ->assertJsonPath('data.collection_hint', null);
 
+        $hintFolder = $this->collection();
         $this->actingAsJwt($this->owner)
-            ->postJson("/api/v1/microstock/collections/{$folder->id}/lock", ['hint' => 'eco kitchen set'])
+            ->postJson("/api/v1/microstock/collections/{$hintFolder->id}/lock", ['hint' => 'eco kitchen set'])
             ->assertOk()
             ->assertJsonPath('data.collection_status', CollectionStatus::Locked->value)
             ->assertJsonPath('data.collection_hint', 'eco kitchen set');

@@ -59,14 +59,11 @@ class CollectionService
      * Lock the collection and store the owner's description (AI hint). Allowed
      * from the open states (draft/failed); re-locking re-runs the flow.
      */
-    public function lock(User $actor, string $folderId, string $hint): Folder
+    public function lock(User $actor, string $folderId, ?string $hint): Folder
     {
         $folder = $this->resolveCollection($actor, $folderId);
 
-        $hint = trim($hint);
-        if ($hint === '') {
-            throw new MicrostockException(__('api/microstock.collection_hint_required'), 422);
-        }
+        $hint = $hint !== null ? trim($hint) : '';
 
         $status = $folder->collection_status ?? CollectionStatus::Draft;
         if (! $status->canBeLocked()) {
@@ -75,7 +72,7 @@ class CollectionService
 
         $folder->forceFill([
             'collection_status' => CollectionStatus::Locked,
-            'collection_hint' => $hint,
+            'collection_hint' => $hint === '' ? null : $hint,
             'collection_locked_at' => now(),
         ])->save();
 

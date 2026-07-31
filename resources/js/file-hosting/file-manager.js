@@ -33,6 +33,7 @@ import { formatCollectionProgress } from './microstock-ui';
 import {
     HINT_MAX_LENGTH,
     composeCollectionHint,
+    isBlindDescribe,
     markDescribeValidation,
     parseCollectionHint,
     populateDescribeForm,
@@ -2110,6 +2111,14 @@ function initFileManager(root) {
                     if (hint.length > HINT_MAX_LENGTH) {
                         showToast((config.collectionDescribe?.validation?.tooLong) || config.messages.error, 'error');
                         return;
+                    }
+                    if (isBlindDescribe(sections)) {
+                        const describe = config.collectionDescribe || {};
+                        const warning = describe.validation?.blindWarning
+                            || 'You are about to lock this collection without any description. The AI will generate metadata with no context, which usually produces poor, inconsistent results. Continue?';
+                        if (!window.confirm(warning)) {
+                            return;
+                        }
                     }
                     const fileCount = Math.max(1, countFilesInListing());
                     describeSubmit.disabled = true;
