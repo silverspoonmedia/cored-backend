@@ -22,9 +22,15 @@ class CollectionController extends Controller
     {
         $data = $request->validate([
             'hint' => ['nullable', 'string', 'max:2000'],
+            'billing_mode' => ['nullable', 'string', 'in:free,paid'],
         ]);
 
-        $collection = $this->collections->lock($request->user(), $folder, $data['hint'] ?? null);
+        $collection = $this->collections->lock(
+            $request->user(),
+            $folder,
+            $data['hint'] ?? null,
+            $data['billing_mode'] ?? null,
+        );
 
         return $this->successResponse(
             $this->payload($collection),
@@ -80,6 +86,7 @@ class CollectionController extends Controller
             'id' => $collection->id,
             'collection_status' => $collection->collection_status?->value,
             'collection_hint' => $collection->collection_hint,
+            'collection_billing_mode' => $collection->collection_billing_mode,
             'collection_locked' => $collection->isCollectionLocked(),
         ];
     }

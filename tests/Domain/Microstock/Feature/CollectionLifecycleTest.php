@@ -96,7 +96,7 @@ class CollectionLifecycleTest extends TestCase
         $ws = app(MicrostockService::class)->workspaceFor($this->owner);
         $folder = $this->makeFolder($this->owner, $ws->id);
 
-        app(CollectionService::class)->lock($this->owner, $folder->id, 'a set of kitchen photos');
+        app(CollectionService::class)->lock($this->owner, $folder->id, 'a set of kitchen photos', 'free');
 
         // Gating runs before any storage signing, so the real service throws here.
         try {
@@ -184,7 +184,7 @@ class CollectionLifecycleTest extends TestCase
         $a = $this->makeFile($this->owner, $ws->id, $folder->id, 'a.jpg');
         $b = $this->makeFile($this->owner, $ws->id, $folder->id, 'b.jpg');
 
-        app(CollectionService::class)->lock($this->owner, $folder->id, 'hint');
+        app(CollectionService::class)->lock($this->owner, $folder->id, 'hint', 'free');
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
         // Seed pending rows the way ProcessCollection does, then run the batch.
@@ -212,7 +212,7 @@ class CollectionLifecycleTest extends TestCase
         $files = collect(['a.jpg', 'b.jpg', 'c.jpg', 'd.jpg', 'e.jpg'])
             ->map(fn (string $n) => $this->makeFile($this->owner, $ws->id, $folder->id, $n));
 
-        app(CollectionService::class)->lock($this->owner, $folder->id, 'hint');
+        app(CollectionService::class)->lock($this->owner, $folder->id, 'hint', 'free');
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
         (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) \Illuminate\Support\Str::uuid()))->handle(app(AnalysisStageService::class));
@@ -253,23 +253,52 @@ class CollectionLifecycleTest extends TestCase
         $ws = app(MicrostockService::class)->workspaceFor($this->owner);
         $emptyFolder = $this->makeFolder($this->owner, $ws->id);
 
-        $locked = app(CollectionService::class)->lock($this->owner, $emptyFolder->id, '   ');
+        $locked = app(CollectionService::class)->lock($this->owner, $emptyFolder->id, '   ', 'free');
         $this->assertSame(CollectionStatus::Locked, $locked->collection_status);
         $this->assertNull($locked->collection_hint);
+        $this->assertSame('free', $locked->collection_billing_mode);
         $this->assertNotNull($locked->collection_locked_at);
         $this->assertTrue($locked->isCollectionLocked());
 
         $hintFolder = $this->makeFolder($this->owner, $ws->id, 'Hinted');
-        $lockedWithHint = app(CollectionService::class)->lock($this->owner, $hintFolder->id, 'eco kitchen flat-lays');
+        $lockedWithHint = app(CollectionService::class)->lock($this->owner, $hintFolder->id, 'eco kitchen flat-lays', 'paid');
         $this->assertSame(CollectionStatus::Locked, $lockedWithHint->collection_status);
         $this->assertSame('eco kitchen flat-lays', $lockedWithHint->collection_hint);
+        $this->assertSame('paid', $lockedWithHint->collection_billing_mode);
 
         // Re-lock while locked is rejected.
         try {
-            app(CollectionService::class)->lock($this->owner, $hintFolder->id, 'again');
+            app(CollectionService::class)->lock($this->owner, $hintFolder->id, 'again', 'paid');
             $this->fail('Re-locking a locked collection must be rejected');
         } catch (MicrostockException $e) {
             $this->assertSame(422, $e->statusCode());
+        }
+    }
+
+    public function test_lock_defaults_to_paid_when_daily_free_disabled(): void
+    {
+        config(['microstock.daily_free.enabled' => false]);
+
+        $ws = app(MicrostockService::class)->workspaceFor($this->owner);
+        $folder = $this->makeFolder($this->owner, $ws->id);
+
+        $locked = app(CollectionService::class)->lock($this->owner, $folder->id, 'hint');
+        $this->assertSame('paid', $locked->collection_billing_mode);
+    }
+
+    public function test_lock_requires_billing_mode_when_daily_free_enabled(): void
+    {
+        config(['microstock.daily_free.enabled' => true]);
+
+        $ws = app(MicrostockService::class)->workspaceFor($this->owner);
+        $folder = $this->makeFolder($this->owner, $ws->id);
+
+        try {
+            app(CollectionService::class)->lock($this->owner, $folder->id, 'hint');
+            $this->fail('Lock without billing mode must be rejected when daily free is enabled');
+        } catch (MicrostockException $e) {
+            $this->assertSame(422, $e->statusCode());
+            $this->assertStringContainsString(__('api/microstock.billing_mode_required'), $e->getMessage());
         }
     }
 
@@ -285,7 +314,7 @@ class CollectionLifecycleTest extends TestCase
         ]);
 
         try {
-            app(CollectionService::class)->lock($this->owner, $folder->id, 'hint');
+            app(CollectionService::class)->lock($this->owner, $folder->id, 'hint', 'free');
             $this->fail('Non-microstock folder must not be lockable as a collection');
         } catch (MicrostockException $e) {
             $this->assertSame(404, $e->statusCode());
@@ -310,7 +339,7 @@ class CollectionLifecycleTest extends TestCase
             $this->assertSame(422, $e->statusCode());
         }
 
-        app(CollectionService::class)->lock($this->owner, $folder->id, 'hint');
+        app(CollectionService::class)->lock($this->owner, $folder->id, 'hint', 'free');
         $updated = app(CollectionService::class)->analyze($this->owner, $folder->id);
 
         $this->assertSame(CollectionStatus::Processing, $updated->collection_status);
@@ -321,7 +350,7 @@ class CollectionLifecycleTest extends TestCase
     {
         $ws = app(MicrostockService::class)->workspaceFor($this->owner);
         $folder = $this->makeFolder($this->owner, $ws->id);
-        app(CollectionService::class)->lock($this->owner, $folder->id, 'hint');
+        app(CollectionService::class)->lock($this->owner, $folder->id, 'hint', 'free');
 
         try {
             app(CollectionService::class)->analyze($this->owner, $folder->id);
@@ -342,7 +371,7 @@ class CollectionLifecycleTest extends TestCase
         $inRoot = $this->makeFile($this->owner, $ws->id, $folder->id, 'root.jpg');
         $inSub = $this->makeFile($this->owner, $ws->id, $sub->id, 'sub.jpg'); // must NOT be processed
 
-        app(CollectionService::class)->lock($this->owner, $folder->id, 'kitchen hint');
+        app(CollectionService::class)->lock($this->owner, $folder->id, 'kitchen hint', 'free');
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
         (new ProcessCollection((string) $folder->id, (string) $this->owner->id, (string) \Illuminate\Support\Str::uuid()))->handle(app(AnalysisStageService::class));

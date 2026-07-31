@@ -69,13 +69,24 @@ describe('parseCollectionHint', () => {
 });
 
 describe('validateCollectionDescribe', () => {
-    it('requires primary concept and each chip group', () => {
-        const result = validateCollectionDescribe(emptyDescribeSections());
+    it('requires billing mode when daily free is enabled', () => {
+        const result = validateCollectionDescribe(emptyDescribeSections(), { dailyFreeEnabled: true });
         expect(result.valid).toBe(false);
-        expect(result.errors).toContain('primaryConcept');
-        expect(result.errors).toContain('visible');
-        expect(result.errors).toContain('intent');
-        expect(result.errors).toContain('style');
+        expect(result.errors).toContain('billingMode');
+    });
+
+    it('accepts valid billing mode when daily free is enabled', () => {
+        const result = validateCollectionDescribe({
+            ...emptyDescribeSections(),
+            billingMode: 'paid',
+        }, { dailyFreeEnabled: true });
+        expect(result.valid).toBe(true);
+        expect(result.errors).not.toContain('billingMode');
+    });
+
+    it('skips billing mode validation when daily free is disabled', () => {
+        const result = validateCollectionDescribe(emptyDescribeSections(), { dailyFreeEnabled: false });
+        expect(result.errors).not.toContain('billingMode');
     });
 
     it('accepts other text instead of chips', () => {

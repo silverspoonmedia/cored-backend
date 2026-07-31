@@ -59,11 +59,12 @@ class CollectionService
      * Lock the collection and store the owner's description (AI hint). Allowed
      * from the open states (draft/failed); re-locking re-runs the flow.
      */
-    public function lock(User $actor, string $folderId, ?string $hint): Folder
+    public function lock(User $actor, string $folderId, ?string $hint, ?string $billingMode = null): Folder
     {
         $folder = $this->resolveCollection($actor, $folderId);
 
         $hint = $hint !== null ? trim($hint) : '';
+        $billingMode = $this->resolveBillingMode($billingMode);
 
         $status = $folder->collection_status ?? CollectionStatus::Draft;
         if (! $status->canBeLocked()) {
@@ -74,6 +75,7 @@ class CollectionService
             'collection_status' => CollectionStatus::Locked,
             'collection_hint' => $hint === '' ? null : $hint,
             'collection_locked_at' => now(),
+            'collection_billing_mode' => $billingMode,
         ])->save();
 
         return $folder->refresh();
@@ -96,8 +98,9 @@ class CollectionService
         }
 
         $fileCount = $this->filesIn($folder)->count();
+        $billingMode = $folder->collection_billing_mode;
 
-        $plan = $this->billing->planAnalyze($actor, $fileCount);
+        $plan = $this->billing->planAnalyze($actor, $fileCount, $billingMode);
 
         $folder->markCollectionStatus(CollectionStatus::Processing);
 
@@ -106,6 +109,7 @@ class CollectionService
             (string) $actor->id,
             (string) Str::uuid(),
             $plan->dailySlots,
+            $billingMode,
         );
 
         $folder = $folder->refresh();
@@ -114,6 +118,29 @@ class CollectionService
             ->collectionProgress($folder, force: true);
 
         return $folder;
+    }
+
+    /**
+     * Resolve and validate the billing mode chosen at lock time.
+     * When daily free is disabled, all analyses are paid.
+     * When enabled, the user must explicitly choose free or paid.
+     */
+    private function resolveBillingMode(?string $billingMode): string
+    {
+        $dailyFreeEnabled = app(AiDailyFreeService::class)->isEnabled();
+
+        if (! $dailyFreeEnabled) {
+            return 'paid';
+        }
+
+        if (! in_array($billingMode, ['free', 'paid'], true)) {
+            throw new MicrostockException(
+                __('api/microstock.billing_mode_required'),
+                422,
+            );
+        }
+
+        return $billingMode;
     }
 
     /**

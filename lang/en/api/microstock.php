@@ -29,6 +29,7 @@ return [
     'collection_nothing_finalized' => 'No finalized metadata in this collection to export.',
     'collection_csv_missing' => 'The exported CSV for this collection was not found.',
     'collection_locked' => 'Collection locked.',
+    'billing_mode_required' => 'Select a billing mode (Free or Paid) for this collection.',
     'collection_processing' => 'Collection analysis started.',
     'collection_status' => 'Collection status loaded.',
     'collection_exported' => 'Collection exported.',

@@ -158,6 +158,42 @@ class AiBillingServiceTest extends TestCase
         $this->assertSame(600_000, app(AiBillingService::class)->estimateForAssets(3));
     }
 
+    public function test_plan_analyze_paid_mode_bypasses_daily_free(): void
+    {
+        $user = $this->userWithRole('User', 'paid-mode@example.com');
+        $this->grantMicrostockAiCredits($user, 10_000_000);
+
+        config([
+            'microstock.daily_free.enabled' => true,
+            'microstock.daily_free.limit_per_user' => 5,
+            'microstock.ai_billing.estimated_billable_micro_usd_per_asset' => 10_000,
+            'microstock.ai_billing.estimate_thinking_attempt_factor' => 1.0,
+        ]);
+
+        $plan = app(AiBillingService::class)->planAnalyze($user, 3, 'paid');
+
+        $this->assertSame(0, $plan->dailySlots);
+        $this->assertSame(3, $plan->prepaidSlots);
+    }
+
+    public function test_plan_analyze_free_mode_uses_daily_first(): void
+    {
+        $user = $this->userWithRole('User', 'free-mode@example.com');
+        $this->grantMicrostockAiCredits($user, 10_000_000);
+
+        config([
+            'microstock.daily_free.enabled' => true,
+            'microstock.daily_free.limit_per_user' => 5,
+            'microstock.ai_billing.estimated_billable_micro_usd_per_asset' => 10_000,
+            'microstock.ai_billing.estimate_thinking_attempt_factor' => 1.0,
+        ]);
+
+        $plan = app(AiBillingService::class)->planAnalyze($user, 3, 'free');
+
+        $this->assertSame(3, $plan->dailySlots);
+        $this->assertSame(0, $plan->prepaidSlots);
+    }
+
     public function test_record_usage_splits_batch_tokens_evenly(): void
     {
         $user = $this->userWithRole('User', 'billing@example.com');

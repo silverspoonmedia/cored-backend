@@ -125,6 +125,11 @@ return [
         'describe_validation_style' => 'Pilih minimal satu gaya atau isi Lainnya.',
         'describe_validation_too_long' => 'Hint terlalu panjang. Ringkas catatan atau pilihan.',
         'describe_warning_blind' => 'Anda akan mengunci collection ini tanpa deskripsi apa pun. AI akan membuat metadata tanpa konteks, yang biasanya menghasilkan hasil buruk dan tidak konsisten. Lanjutkan?',
+        'describe_billing_mode_label' => 'Mode penagihan',
+        'describe_billing_mode_hint' => 'Pilih cara analisis collection ini akan ditagih.',
+        'describe_billing_mode_free' => 'Gratis',
+        'describe_billing_mode_paid' => 'Berbayar',
+        'describe_validation_billing_mode' => 'Pilih mode penagihan Gratis atau Berbayar.',
         'describe_placeholder' => 'mis. Kumpulan foto flat-lay produk dapur ramah lingkungan di meja kayu, cahaya alami terang.',
         'describe_submit' => 'Kunci & Analisis',
         'describe_visible_options' => [

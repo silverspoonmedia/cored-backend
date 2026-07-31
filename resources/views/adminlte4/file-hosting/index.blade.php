@@ -78,6 +78,11 @@
         'billingUrl' => route('file-hosting.microstock.billing'),
         'usageUrl' => route('file-hosting.microstock.usage', array_filter(['workspace_id' => $workspaceId])),
         'usageUrlBase' => route('file-hosting.microstock.usage'),
+        'billing' => [
+            'daily_free' => [
+                'enabled' => (bool) config('microstock.daily_free.enabled', false),
+            ],
+        ],
         'toolbarBalanceLabel' => __('web/microstock.usage.toolbar_balance'),
         'usagePanel' => [
             'summaryUrl' => route('file-hosting.microstock.billing'),
@@ -154,6 +159,13 @@
                 'style' => __('web/file-hosting.microstock.describe_validation_style'),
                 'tooLong' => __('web/file-hosting.microstock.describe_validation_too_long'),
                 'blindWarning' => __('web/file-hosting.microstock.describe_warning_blind'),
+                'billingMode' => __('web/file-hosting.microstock.describe_validation_billing_mode'),
+            ],
+            'billingMode' => [
+                'label' => __('web/file-hosting.microstock.describe_billing_mode_label'),
+                'free' => __('web/file-hosting.microstock.describe_billing_mode_free'),
+                'paid' => __('web/file-hosting.microstock.describe_billing_mode_paid'),
+                'hint' => __('web/file-hosting.microstock.describe_billing_mode_hint'),
             ],
             'visibleOptions' => __('web/file-hosting.microstock.describe_visible_options'),
             'intentOptions' => __('web/file-hosting.microstock.describe_intent_options'),
@@ -1019,6 +1031,21 @@
                             <label class="form-label" for="fhDescribeNotes">{{ __('web/file-hosting.microstock.describe_additional_notes') }}</label>
                             <textarea id="fhDescribeNotes" class="form-control" rows="2" data-fh-describe-notes
                                       placeholder="{{ __('web/file-hosting.microstock.describe_additional_placeholder') }}"></textarea>
+                        </div>
+                        <div class="mb-3 {{ config('microstock.daily_free.enabled', false) ? '' : 'd-none' }}" data-fh-describe-billing-group>
+                            <label class="form-label">{{ __('web/file-hosting.microstock.describe_billing_mode_label') }}</label>
+                            <p class="small text-muted mb-2">{{ __('web/file-hosting.microstock.describe_billing_mode_hint') }}</p>
+                            <div class="d-flex flex-wrap gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="fhDescribeBillingMode" id="fhDescribeBillingFree" value="free" data-fh-describe-billing>
+                                    <label class="form-check-label" for="fhDescribeBillingFree">{{ __('web/file-hosting.microstock.describe_billing_mode_free') }}</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="fhDescribeBillingMode" id="fhDescribeBillingPaid" value="paid" data-fh-describe-billing>
+                                    <label class="form-check-label" for="fhDescribeBillingPaid">{{ __('web/file-hosting.microstock.describe_billing_mode_paid') }}</label>
+                                </div>
+                            </div>
+                            <div class="invalid-feedback">{{ __('web/file-hosting.microstock.describe_validation_billing_mode') }}</div>
                         </div>
                         <div class="border rounded p-2 bg-light">
                             <button class="btn btn-link btn-sm p-0 text-decoration-none" type="button"

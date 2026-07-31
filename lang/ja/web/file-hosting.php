@@ -125,6 +125,11 @@ return [
         'describe_validation_style' => 'スタイルを1つ以上選択するか、その他を入力してください。',
         'describe_validation_too_long' => 'ヒントが長すぎます。メモや選択を短くしてください。',
         'describe_warning_blind' => '説明なしでこのコレクションをロックしようとしています。AIはコンテキストなしでメタデータを生成するため、通常は質の低く一貫性のない結果になります。続行しますか？',
+        'describe_billing_mode_label' => '課金モード',
+        'describe_billing_mode_hint' => 'このコレクションの分析方法を選択してください。',
+        'describe_billing_mode_free' => '無料',
+        'describe_billing_mode_paid' => '有料',
+        'describe_validation_billing_mode' => '無料または有料の課金モードを選択してください。',
         'describe_placeholder' => '例：木製テーブルの上のエコキッチン用品のフラットレイ写真集、明るい自然光。',
         'describe_submit' => 'ロックして分析',
         'describe_visible_options' => [

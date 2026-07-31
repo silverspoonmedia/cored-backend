@@ -36,6 +36,7 @@ export function emptyDescribeSections() {
         styleSelected: [],
         styleOther: '',
         additionalNotes: '',
+        billingMode: '',
     };
 }
 
@@ -209,7 +210,7 @@ export function isBlindDescribe(sections) {
 /**
  * @param {ReturnType<typeof emptyDescribeSections>} sections
  */
-export function validateCollectionDescribe(sections) {
+export function validateCollectionDescribe(sections, options = {}) {
     const errors = [];
     const concept = (sections.primaryConcept || '').trim();
     if (concept.length > 0 && concept.length < PRIMARY_CONCEPT_MIN) {
@@ -238,6 +239,10 @@ export function validateCollectionDescribe(sections) {
         }
     }
 
+    if (options.dailyFreeEnabled && !['free', 'paid'].includes(sections.billingMode || '')) {
+        errors.push('billingMode');
+    }
+
     return {
         valid: errors.length === 0,
         errors,
@@ -258,6 +263,7 @@ export function readDescribeForm(form) {
     sections.visibleOther = form.querySelector('[data-fh-describe-visible-other]')?.value || '';
     sections.intentOther = form.querySelector('[data-fh-describe-intent-other]')?.value || '';
     sections.styleOther = form.querySelector('[data-fh-describe-style-other]')?.value || '';
+    sections.billingMode = form.querySelector('[data-fh-describe-billing]:checked')?.value || '';
 
     form.querySelectorAll('[data-fh-describe-visible]:checked').forEach(function (el) {
         sections.visibleSelected.push(el.value);
@@ -353,6 +359,9 @@ export function markDescribeValidation(form, errors) {
     form.querySelectorAll('.is-invalid').forEach(function (el) {
         el.classList.remove('is-invalid');
     });
+    form.querySelectorAll('[data-fh-describe-billing-group].is-invalid').forEach(function (el) {
+        el.classList.remove('is-invalid');
+    });
     (errors || []).forEach(function (key) {
         switch (key) {
             case 'primaryConcept':
@@ -366,6 +375,9 @@ export function markDescribeValidation(form, errors) {
                 break;
             case 'style':
                 form.querySelector('[data-fh-describe-style-other]')?.classList.add('is-invalid');
+                break;
+            case 'billingMode':
+                form.querySelector('[data-fh-describe-billing-group]')?.classList.add('is-invalid');
                 break;
             default:
                 break;

@@ -29,6 +29,7 @@ return [
     'collection_nothing_finalized' => 'このコレクションにはエクスポートする確定済みメタデータがありません。',
     'collection_csv_missing' => 'このコレクションのエクスポート済みCSVが見つかりません。',
     'collection_locked' => 'コレクションをロックしました。',
+    'billing_mode_required' => 'このコレクションの課金モード（無料または有料）を選択してください。',
     'collection_processing' => 'コレクションの分析を開始しました。',
     'collection_status' => 'コレクションの状態を読み込みました。',
     'collection_exported' => 'コレクションをエクスポートしました。',

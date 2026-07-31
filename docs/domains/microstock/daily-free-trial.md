@@ -21,7 +21,9 @@ Free queues (lower priority — list after paid queues on workers):
 ## Behaviour
 
 - **Unit:** one analyzed asset (file) = one slot.
-- **Daily-first:** collection of 5 files with 2 slots left → 2 `daily_free` + 3 `prepaid`.
+- **Daily-first (Free mode):** collection of 5 files with 2 slots left → 2 `daily_free` + 3 `prepaid`.
+- **Paid mode bypass:** when the user selects **Paid** at lock time, `AiBillingService::planAnalyze()` skips daily-free allocation entirely and bills every file to prepaid credits, even if free slots remain.
+- **Free-disabled default:** when `MICROSTOCK_DAILY_FREE_ENABLED=false`, the billing-mode selector is hidden and all analyses are forced to `paid`.
 - **Lazy reset:** `microstock_daily_free_usage` row per `(user_id, usage_date)`; no cron credit top-up.
 - **Reservation:** slots consumed in `AiBillingService::planAnalyze()` inside a DB transaction; rolls back if prepaid balance is insufficient.
 - **Settlement:** `billing_source = daily_free` → provider cost recorded on `microstock_ai_usage_events`, prepaid `debit()` skipped.
@@ -84,4 +86,6 @@ Insufficient prepaid credits (422) may include `daily_free` snapshot in the erro
 
 ## UI
 
-Daily free allowance appears on the **Usage & balance** page summary (`GET /apps/file-hosting/microstock/usage`) and in the collection billing line. Free-tier usage rows show `billing_source = daily_free` on the **AI usage detail** tab; they do not appear in the prepaid ledger tab. Root / Admin / Moderator users see daily-free subsidized cost in the **Platform overview** tab. See [Usage & balance UI](README.md#usage--balance-ui).
+When daily free is enabled, the **Lock & Describe** modal shows a mandatory **Free / Paid** selector. Free mode uses the daily allowance first and falls back to prepaid; Paid mode ignores the daily allowance and bills every file to prepaid credits. The collection billing line in the modal footer updates live as the user toggles the selector.
+
+Daily free allowance also appears on the **Usage & balance** page summary (`GET /apps/file-hosting/microstock/usage`) and in the collection billing line. Free-tier usage rows show `billing_source = daily_free` on the **AI usage detail** tab; they do not appear in the prepaid ledger tab. Root / Admin / Moderator users see daily-free subsidized cost in the **Platform overview** tab. See [Usage & balance UI](README.md#usage--balance-ui).

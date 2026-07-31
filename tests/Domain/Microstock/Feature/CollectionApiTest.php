@@ -53,17 +53,44 @@ class CollectionApiTest extends TestCase
     {
         $emptyFolder = $this->collection();
         $this->actingAsJwt($this->owner)
-            ->postJson("/api/v1/microstock/collections/{$emptyFolder->id}/lock", [])
+            ->postJson("/api/v1/microstock/collections/{$emptyFolder->id}/lock", ['billing_mode' => 'free'])
             ->assertOk()
             ->assertJsonPath('data.collection_status', CollectionStatus::Locked->value)
-            ->assertJsonPath('data.collection_hint', null);
+            ->assertJsonPath('data.collection_hint', null)
+            ->assertJsonPath('data.collection_billing_mode', 'free');
 
         $hintFolder = $this->collection();
         $this->actingAsJwt($this->owner)
-            ->postJson("/api/v1/microstock/collections/{$hintFolder->id}/lock", ['hint' => 'eco kitchen set'])
+            ->postJson("/api/v1/microstock/collections/{$hintFolder->id}/lock", [
+                'hint' => 'eco kitchen set',
+                'billing_mode' => 'paid',
+            ])
             ->assertOk()
             ->assertJsonPath('data.collection_status', CollectionStatus::Locked->value)
-            ->assertJsonPath('data.collection_hint', 'eco kitchen set');
+            ->assertJsonPath('data.collection_hint', 'eco kitchen set')
+            ->assertJsonPath('data.collection_billing_mode', 'paid');
+    }
+
+    public function test_lock_endpoint_rejects_missing_billing_mode_when_daily_free_enabled(): void
+    {
+        config(['microstock.daily_free.enabled' => true]);
+
+        $folder = $this->collection();
+        $this->actingAsJwt($this->owner)
+            ->postJson("/api/v1/microstock/collections/{$folder->id}/lock", ['hint' => 'x'])
+            ->assertStatus(422)
+            ->assertJsonPath('message', __('api/microstock.billing_mode_required'));
+    }
+
+    public function test_lock_endpoint_defaults_to_paid_when_daily_free_disabled(): void
+    {
+        config(['microstock.daily_free.enabled' => false]);
+
+        $folder = $this->collection();
+        $this->actingAsJwt($this->owner)
+            ->postJson("/api/v1/microstock/collections/{$folder->id}/lock", ['hint' => 'x'])
+            ->assertOk()
+            ->assertJsonPath('data.collection_billing_mode', 'paid');
     }
 
     public function test_analyze_endpoint_transitions_and_dispatches(): void
@@ -77,7 +104,10 @@ class CollectionApiTest extends TestCase
             ->assertStatus(422);
 
         $this->actingAsJwt($this->owner)
-            ->postJson("/api/v1/microstock/collections/{$folder->id}/lock", ['hint' => 'hint'])
+            ->postJson("/api/v1/microstock/collections/{$folder->id}/lock", [
+                'hint' => 'hint',
+                'billing_mode' => 'free',
+            ])
             ->assertOk();
 
         $this->actingAsJwt($this->owner)
