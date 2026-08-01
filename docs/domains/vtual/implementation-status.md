@@ -53,7 +53,7 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 
 | Theme | Behavior (short) | Evidence |
 |-------|------------------|----------|
-| **Product foundation** | Locked product domain, activation gate, menus, RBAC seed, platforms catalog (Kick disabled) | `config/domains.php`, `config/products.php`, `VtualRoleSeeder`, `product.active:Vtual`, `MenuSeeder` / `ensureVtualMenuBranch` |
+| **Product foundation** | Locked product domain, activation gate, grouped menu branch, RBAC seed, platforms catalog (Kick disabled) | `config/domains.php`, `config/products.php`, `VtualRoleSeeder`, `product.active:Vtual`, authoritative `MenuSeeder` |
 | **Creator CRUD + membership** | Multi-creator per user; self-create binds `owner`; staff orphan has no members | `CreatorService`, `CreatorAccessService`, `CreatorServiceTest` |
 | **Platform credentials** | Multi-key per platform, envelope secrets, Test gate, mask-only API, optional soft failover (default OFF) | `PlatformCredentialService`, probes, `PlatformCredentialServiceTest` |
 | **Platform HTTP (manual)** | YouTube Data API + Twitch Helix clients; batch caps; gateway + credential bind | `PlatformApiGateway`, `YoutubeDataApiClient`, `TwitchHelixClient`, `config/vtual.php` `http.batch` |
@@ -135,7 +135,7 @@ Not a commitment — default backlog for the next sessions:
 |--------|----------------|
 | Migrate | `php artisan migrate` (includes `vtual_channel_fetch_pool`, claims, appearances, …) |
 | Roles / platforms | `php artisan db:seed --class=VtualRoleSeeder` |
-| Menus | `php artisan db:seed --class=MenuSeeder` then `php artisan menu:flush-cache` |
+| Menus | `php artisan db:seed --class=MenuSeeder` (authoritative rebuild + cache flush) |
 | Flush channel pool (on demand) | `php artisan vtual:flush-channel-pool` |
 | Force flush (ignore 50/15m gate) | `php artisan vtual:flush-channel-pool --force` |
 | Enqueue stale actives then flush | `php artisan vtual:flush-channel-pool --resync` / `--resync --force` |

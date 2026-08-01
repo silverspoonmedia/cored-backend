@@ -156,7 +156,7 @@ Shared sort helper: `PaymentRouteSort` (resolver, `PaymentChannelService::listAl
 
 ### Admin income page (`/apps/payments/income`)
 
-Read-only dashboard for payment gateway revenue (permission: `view invoice`). Menu: **Payments → Payment income**.
+Read-only dashboard for payment gateway revenue (permission: `view invoice`). Menu: **Administration → Payments → Payment income**.
 
 | Metric | Source field | Meaning |
 |--------|--------------|---------|

@@ -264,7 +264,7 @@ Two-level UI:
 - **Index** (`resources/views/adminlte4/product-activations/index.blade.php`) — product cards grid. Each card: product key, type badge, state count chips, product metric summary, "View Insights" link. Consumes `GET /api/v1/admin/product-activations/products`.
 - **Show** (`resources/views/adminlte4/product-activations/show.blade.php`) — per-product dashboard: insight cards (state distribution + product metrics), state filter, per-user activations table with action buttons (suspend/reactivate/approve/reject). Mutations redirect back to the show page.
 
-Menu entry: `Product activations` under `Administration` sidebar header, gated to Root / Admin / Moderator / Management roles.
+Menu entry: **Administration → Access control → Product activations**, gated to Root / Admin / Moderator / Management roles.
 
 ## Events
 

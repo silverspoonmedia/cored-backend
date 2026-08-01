@@ -107,7 +107,7 @@ Authenticated UI under `/apps/*` (route names unprefixed). See [blade-admin — 
 | Routes | `error-logs.index`, `error-logs.show`, `error-logs.status` |
 | Controller | `Http/Controllers/Web/ErrorLogController` — pure `ConsumesApi` |
 | Views | `resources/views/adminlte4/error-logs/{index,show}.blade.php` |
-| Menu | Administration → Error log (Root/Admin), `MenuSeeder` |
+| Menu | Administration → Monitoring → Error log (Root/Admin), `MenuSeeder` |
 | i18n | `lang/{en,id,ja}/web/error-log.php` |
 
 ## Maintenance
@@ -122,8 +122,7 @@ php artisan errorlog:clean --days=30
 ```bash
 php artisan migrate
 php artisan db:seed --class=RoleSeeder   # adds view error log + syncs Root/Admin
-# MenuSeeder skips when menus already exist — create "Error log" menu
-# (route error-logs.index, Root/Admin roles) or reseed menus intentionally.
+php artisan db:seed --class=MenuSeeder   # authoritative rebuild; removes custom menus
 ```
 
 ## Safety

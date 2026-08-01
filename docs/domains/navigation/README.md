@@ -76,7 +76,25 @@ Active menus cached; per-request tree filters by layout + RBAC. Invalidate on me
 
 ## Seeding
 
-`MenuSeeder` — sample hierarchy; early-returns if any menu row exists (fresh seed only). Default sidebar headers: **Menu** (core UX: dashboard, users, notifications, services), **Products** (product surfaces, e.g. File Hosting “My Files”), **Administration** (activity log, payments, nav admin).
+`MenuSeeder` is the authoritative navigation definition. Every run force-deletes all active and trashed menu rows (pivot rows follow FK cascades), then rebuilds both layouts inside one DB transaction. This intentionally removes admin-created/custom menu rows. A failed rebuild rolls the old tree back; a successful rebuild flushes the navigation snapshot cache.
+
+Run `php artisan db:seed --class=MenuSeeder` to converge an existing installation. No separate cache command is required.
+
+Canonical sidebar tree:
+
+- **Workspace** — Dashboard, Notifications, Services.
+- **Products**
+  - **File Hosting** — My Files, Trash, DMCA Blocklist (internal management roles + File Hosting Admin).
+  - **vTual** — Overview, My profiles, Claim as vTuber, Registry & pending (staff), Platform credentials (Root/Admin).
+- **Administration**
+  - **Access control** — User management, Product activations, Product domain access.
+  - **Payments** — Payment income, Invoices, Subscriptions, Payment channels, Payment gateways.
+  - **Monitoring** — Activity log, Error log.
+  - **Navigation** — Menu list, Trashed menus.
+
+Navbar contains Home only. Microstock intentionally stays reachable through Services and the File Hosting workspace switcher. Debug/test fixtures and the vTual Platform API Probe are intentionally absent.
+
+File Hosting and vTual parent nodes carry their product-bound index routes. Ancestor visibility therefore product-gates every child, including child routes not listed independently in `config/products.php`.
 
 Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module registry stays in [`config/domains.php`](../../../config/domains.php); RBAC catalog ownership is separate (`domain_kind` on roles/permissions). Do not add schema just to mirror those axes.
 

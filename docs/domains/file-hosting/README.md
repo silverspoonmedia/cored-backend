@@ -12,7 +12,7 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Public landing | Root **`/file-hosting`** reserved for future promo landing (not the logged-in app) |
 | Seeder | `FileHostingRoleSeeder` (after core `RoleSeeder`) |
 | Product gate | `product.active:FileHosting` middleware (see [Product Activations](../product-activations/README.md)) |
-| Menu auto-hide | `file-hosting.index` menu route bound via `config/products.php` `menu_routes`; hidden when user's FH activation is not `active` |
+| Menu auto-hide | Products → File Hosting parent (`file-hosting.index`) gates My Files, Trash, and DMCA Blocklist via `config/products.php` `menu_routes`; hidden when user's FH activation is not `active` |
 | Analytics | `HostedFile` Eloquent events (`created`/`deleted`/`restored`) + `WorkspaceService::create` + `FolderRepository::restore` write to `product_analytics` via `ProductAnalyticsService` (see [Product Activations § Stored analytics](../product-activations/README.md#stored-analytics-v3)) |
 
 ### Current product surface
@@ -213,7 +213,7 @@ manage any file hosting resource
 
 Middleware stack: `auth:api` -> `product.active:FileHosting` (runtime activation gate, see [Product Activations](../product-activations/README.md)) -> `permission:<perm>` (Spatie RBAC). A user with a suspended File Hosting activation gets 403 before any permission check runs.
 
-**Sidebar menu:** the "My Files" entry (`file-hosting.index` route) is bound to FileHosting via `config/products.php` `menu_routes`. The dynamic menu auto-hides it when the viewer's activation is not `active` (suspended / expired / pending) — see [Navigation — Visibility](../navigation/README.md#visibility-navigation-tree). Guests and active users see it normally.
+**Sidebar menu:** Products → **File Hosting** uses `file-hosting.index` on the parent and exposes **My Files**, **Trash**, and **DMCA Blocklist** children. DMCA Blocklist is limited to internal management roles plus File Hosting Admin. The parent route is bound to FileHosting via `config/products.php` `menu_routes`, so ancestor visibility hides the entire branch when activation is not `active` (suspended / expired / pending) — see [Navigation — Visibility](../navigation/README.md#visibility-navigation-tree).
 
 | Area | Endpoints |
 |------|-----------|
