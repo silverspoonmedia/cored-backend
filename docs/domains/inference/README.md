@@ -50,7 +50,26 @@ Seeded by `InferenceCatalogSeeder` into each provider via `ai_provider_model_rat
 | `claude-opus-5` / `anthropic/claude-opus-5` | $5.00 | $25.00 |
 | `claude-sonnet-5` / `anthropic/claude-sonnet-5` | $2.00 | $10.00 |
 
-Unknown resolved slugs (no `ai_provider_model_rates` row on the active provider) bill at **provisional** rates from `config/inference.php` → `unknown_model_rates` (env `INFERENCE_UNKNOWN_MODEL_*`). Snapshots store `rate_source = unknown_provisional`. Admin gets a deduped `inference_unregistered_model` notification; model cards show **Needs classification**. After ops curates rates on the provider (`PUT …/providers/{id}/rates`), `UnknownModelBillingConsolidationService` recalculates settled prepaid usage and posts ledger **adjustments** (refund or extra debit). `default_rates` (`INFERENCE_DEFAULT_*`) is bootstrap-only when provisional env is unset.
+Unknown resolved slugs (no `ai_provider_model_rates` row on the active provider) bill at **provisional** rates from `config/inference.php` → `unknown_model_rates` (env `INFERENCE_UNKNOWN_MODEL_*`). Snapshots store `rate_source = unknown_provisional`. Admin gets a deduped `inference_unregistered_model` notification; model cards show **Needs classification**. After ops curates rates on the provider (`PUT …/providers/{id}/rates`), `UnknownModelBillingConsolidationService` (Microstock) recalculates settled prepaid usage and posts ledger **adjustments** (refund or extra debit). `default_rates` (`INFERENCE_DEFAULT_*`) is bootstrap-only when provisional env is unset.
+
+### Unknown model workflow
+
+| Step | Behavior |
+|------|----------|
+| Runtime | Unregistered resolved slug → provisional config rates; `ensureModelCard(..., markNeedsClassification: true)` |
+| Snapshot | `ai_model_rate_snapshots.rate_source` = `known` \| `unknown_provisional` \| `config_default` |
+| Admin alert | Deduped `inference_unregistered_model` → deep link `inference.model-cards.show` |
+| Curation | Ops sets provider rate on model card; `InferenceCatalogService::syncProviderRates()` runs consolidation |
+| Post-curation | Prepaid usage with `unknown_provisional` snapshots reconciled; `consolidated_at` set on usage rows |
+
+**Schema (cross-domain):**
+
+| Column | Table | Purpose |
+|--------|-------|---------|
+| `needs_rate_classification` | `ai_model_cards` | Admin badge; cleared after successful consolidation |
+| `rate_source` | `ai_model_rate_snapshots` | Distinguishes catalog vs provisional vs bootstrap fallback |
+| `consolidated_at` | `microstock_ai_usage_events` | Idempotency guard for consolidation reruns |
+| `consolidation_adjustment_micro_usd` | `microstock_ai_usage_events` | Prepaid billable delta applied during consolidation |
 
 Sonnet 5 list prices reflect Anthropic **introductory** pricing through Aug 31, 2026.
 
@@ -98,8 +117,8 @@ Core administration screens under **Administration → Inference** (dynamic menu
 | Providers | `inference.providers.*` | `GET/POST /api/v1/inference/providers`, `PUT /api/v1/inference/providers/{id}/rates` |
 | Usage events | `inference.usage-events.index` | `GET /api/v1/inference/usage/overview`, `GET /api/v1/inference/usage-events` |
 
-Model card **show** includes default-provider rate (`provider_rate`) and 30-day `usage_summary`. Provider **show** supports bulk rate sync via `PUT /api/v1/inference/providers/{id}/rates`. Usage reporting reads `microstock_ai_usage_events` with frozen `rate_snapshot` and optional `inference_provider` on each row.
+Model card **show** includes default-provider rate (`provider_rate`) and 30-day `usage_summary`. Model catalog **datatable** includes a **Needs classification** column/badge when `needs_rate_classification` is true. Provider **show** supports bulk rate sync via `PUT /api/v1/inference/providers/{id}/rates` (triggers consolidation for flagged cards). Usage reporting reads `microstock_ai_usage_events` with frozen `rate_snapshot` and optional `inference_provider` on each row.
 
 ## Tests
 
-`php artisan test --filter=Inference`
+`php artisan test --filter=Inference` — includes `InferenceRateServiceTest` (provisional rates, `isRegisteredOnProvider`), `InferenceCatalogApiTest` (provider rate sync clears classification flag), and Microstock `UnknownModelBillingTest` (consolidation refund/debit, negative balance).

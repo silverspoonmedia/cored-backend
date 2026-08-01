@@ -73,7 +73,7 @@ app/
 │   ├── Microstock/     # Microstock asset mgmt on FH system workspace (product, locked)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
 │   ├── Service/        # Catalog, entitlements, DB FX→IDR, FH grace/purge (core)
-│   └── Inference/      # AI model catalog + rate plans + snapshots (core)
+│   └── Inference/      # AI model catalog + provider model rates + snapshots (core)
 ├── Http/Middleware/    # Kernel
 ├── Repositories/Eloquent/EloquentCrudRepository.php
 ├── Support/            # Api, DataTable, Storage (S3 direct upload), Localization, Web, Auth, Domain, Product (Kernel)

@@ -109,9 +109,22 @@ Sonnet 5 rates above are Anthropic **introductory** pricing through Aug 31, 2026
 
 Amounts are stored as **micro-USD** (1 USD = 1_000_000) end-to-end. `microstock_ai_balances.balance_micro_usd` is **signed** — post-settlement consolidation debits may drive balance negative; new paid analyze is blocked until balance ≥ 0 (top-up via Services). Collection UI and `GET billing` show negative balances (e.g. `-$0.12`).
 
+### Provisional model consolidation
+
+When ops curates an unknown model on a provider ([Inference — unknown model workflow](../inference/README.md#unknown-model-workflow)), `UnknownModelBillingConsolidationService` (triggered from `InferenceCatalogService::syncProviderRates()`):
+
+- Scope: settled prepaid usage events whose snapshot `rate_source = unknown_provisional` for that provider + model slug, `consolidated_at` null.
+- Recalculates `billable_micro_usd` / `provider_cost_micro_usd` at curated rates; posts ledger `adjustment` credit (refund) or debit (extra charge; balance may go negative).
+- Daily-free rows: usage amounts updated for reporting only — no ledger movement.
+- Idempotency: `consolidated_at` prevents double-run.
+
+Services: `AiBillingService`, `AiCreditService`, `UnknownModelBillingConsolidationService`, `BillingLedgerService`.
+
 ### Usage & balance UI
 
 Transparent prepaid balance and AI usage history for the billing subject (the user who triggered analyze).
+
+`GET /api/v1/microstock/billing` returns `balance_usd` as a **display string** (`$49.91` or `-$0.12` when negative); `balance_micro_usd` remains the signed integer source. UI (`microstock-usage.js` `formatUsdDisplay()`) prefers the string when present, else formats from micro-USD.
 
 | Surface | Route / endpoint |
 |---------|------------------|
@@ -122,7 +135,7 @@ Transparent prepaid balance and AI usage history for the billing subject (the us
 
 **Page layout**
 
-1. **Summary** — prepaid `balance_usd`, `estimated_per_analysis_usd`, daily free (`remaining/limit` when enabled).
+1. **Summary** — prepaid `balance_usd` (formatted string from API), `estimated_per_analysis_usd`, daily free (`remaining/limit` when enabled).
 2. **Tab: Balance mutations** — bank-style ledger from `microstock_ai_credit_transactions` (`purchase`, `analysis_debit`, `adjustment`); signed amounts, running `balance_after`.
 3. **Tab: AI usage detail** — per HTTP call from `microstock_ai_usage_events` (stage, model, tokens, cost, `billing_source` badge: Free / Prepaid). Daily-free rows appear here only; they do not create ledger debits.
 4. **Tab: Platform overview** (Root / Admin / Moderator only) — platform-wide aggregates: provider cost, billable, margin, events, active users, daily-free subsidized cost; breakdown by billing source, stage, and model; cross-user usage event list.
@@ -140,11 +153,11 @@ Web hops: `GET /apps/file-hosting/microstock/billing/admin/overview`, `…/admin
 
 | Location | Link |
 |----------|------|
-| File Hosting toolbar (Microstock workspace) | **AI Balance** → usage offcanvas panel (SPA-integrated, no page reload; preserves `workspace_id`; visible on SPA workspace switch without hard reload) |
+| File Hosting toolbar (Microstock workspace) | **AI Balance** → primary UX is SPA offcanvas (`#fhMicrostockUsagePanel`, `createMicrostockUsagePanel` with `isReady`); if bind fails, navigates to standalone usage URL with `workspace_id` |
 | Collection describe modal footer | Billing line + **View balance & history** |
 | `/apps/services` Microstock card | **Usage & balance** next to balance line |
 
-Implementation: `BillingLedgerService`, `AdminBillingAnalyticsService`, `AdminBillingController`, `BillingLedgerEntryResource`, `BillingUsageEventResource`, `AdminBillingUsageEventResource`, `resources/views/adminlte4/file-hosting/microstock-usage.blade.php` (standalone fallback page), `resources/js/file-hosting/microstock-usage.js` (exports `createMicrostockUsagePanel` factory for SPA offcanvas + standalone page bootstrap). The SPA offcanvas (`#fhMicrostockUsagePanel`) is injected into `index.blade.php` and wired via `file-manager.js`; the standalone page remains for direct access/bookmarks. Daily-free behaviour: [daily-free-trial.md](daily-free-trial.md).
+Implementation: `BillingLedgerService`, `AdminBillingAnalyticsService`, `AdminBillingController`, `BillingLedgerEntryResource`, `BillingUsageEventResource`, `AdminBillingUsageEventResource`, `resources/views/adminlte4/file-hosting/microstock-usage.blade.php` (standalone fallback page; inline `@vite` like other FH pages), `resources/js/file-hosting/microstock-usage.js` (exports `createMicrostockUsagePanel` factory for SPA offcanvas + standalone bootstrap). The SPA offcanvas is injected into `index.blade.php` and wired via `file-manager.js`; standalone page remains for direct access/bookmarks and offcanvas fallback. Collection modal **View balance & history** opens the same offcanvas or navigates to the standalone URL. Daily-free behaviour: [daily-free-trial.md](daily-free-trial.md).
 
 ## Collections (folder-as-collection lifecycle)
 
@@ -508,6 +521,8 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 - `MicrostockAiConfigTest`: locks paid/default model aliases and nullable free-tier overrides in config.
 - `PromptsTest`: `visionSystem()` and `thinkingSystem()` char count under gateway limit (~1200); keyword target 50–60 in thinking prompt.
 - `BillingLedgerServiceTest`: ledger pagination, running `balance_after`, signed amounts per transaction type.
+- `UnknownModelBillingTest`: provisional notify dedup, consolidation refund/debit, negative balance, `planAnalyze` gate when balance &lt; 0.
+- `InferenceRateServiceTest`: provisional config rates, `isRegisteredOnProvider`, classification flag on `ensureModelCard`.
 - `BillingLedgerApiTest`: user `GET billing/ledger` + `GET billing/usage-events` (auth, pagination, daily-free vs prepaid rows).
 - `BillingAdminApiTest`: platform overview aggregates, cross-user usage events, role gate (Root/Admin/Moderator vs Management).
 - `KeywordNormalizerTest`: dedupe + cap at 60 keywords.

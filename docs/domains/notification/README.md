@@ -208,7 +208,7 @@ Seeder: `NotificationTypeSettingSeeder` (`notify_subject_user` true). Copy under
 |------|----------|------|
 | `inference_unregistered_model` | Root, Admin, Management | First sighting of a resolved model with no provider catalog rate; provisional billing active |
 
-Deep link: `inference.model-cards.show`. Dedup cache key cleared when classification completes.
+Deep link: `inference.model-cards.show`. DataTable reload: `inference-model-cards-table`. Dedup cache key cleared when classification completes.
 
 ## Role vs user (decision)
 

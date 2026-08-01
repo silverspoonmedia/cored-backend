@@ -6,7 +6,6 @@ use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
-use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Jobs\AnalyzeAssetVision;
 use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Models\AssetMetadata;
@@ -32,7 +31,7 @@ class MicrostockBillingHardeningTest extends TestCase
         $this->seedRolesAndPermissions();
     }
 
-    public function test_compose_result_does_not_leave_generated_when_settle_fails(): void
+    public function test_compose_result_settles_with_negative_balance_when_prepaid_insufficient(): void
     {
         $user = $this->userWithRole('User', 'settle-fail@example.com');
         $this->grantMicrostockAiCredits($user, 100);
@@ -61,17 +60,13 @@ class MicrostockBillingHardeningTest extends TestCase
             'stage_metrics' => [],
         ];
 
-        try {
-            app(AnalysisStageService::class)->composeResultFromThinking($metadata->refresh(), $curated);
-            $this->fail('Expected insufficient credits during settle');
-        } catch (MicrostockException) {
-            // expected
-        }
+        app(AnalysisStageService::class)->composeResultFromThinking($metadata->refresh(), $curated);
 
         $metadata->refresh();
-        $this->assertNotSame(MetadataStatus::Generated, $metadata->status);
-        $this->assertNull($metadata->ai_billing);
-        $this->assertNull(AiUsageEvent::query()->first()?->billed_at);
+        $this->assertSame(MetadataStatus::Generated, $metadata->status);
+        $this->assertIsArray($metadata->ai_billing);
+        $this->assertNotNull(AiUsageEvent::query()->first()?->billed_at);
+        $this->assertLessThan(0, app(AiCreditService::class)->balance((string) $user->id));
     }
 
     public function test_partial_vision_settle_on_thinking_failure(): void
