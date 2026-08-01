@@ -57,7 +57,6 @@ class DatabaseSeeder extends Seeder
         $this->seedProductActivations($admin, $manager, $moderator, $user);
 
         $this->call(MenuSeeder::class);
-        $this->call(MenuRbacSeeder::class);
         $this->call(PaymentGatewaySeeder::class);
         $this->call(PaymentChannelSeeder::class);
         $this->call(CurrencySeeder::class);

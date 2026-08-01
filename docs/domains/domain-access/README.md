@@ -72,7 +72,7 @@ The gate runs live per request; the `menus.navigation.snapshot` cache is product
 
 ## Admin config screen
 
-- Sidebar node **Product domain access** (Administration group), restricted to Root/Admin via `menu_roles`.
+- Sidebar node **Administration → Access control → Product domain access**, restricted to Root/Admin via `menu_roles`.
 - Card grid of product domains with a Public/Private switch gated by `@can('manage domain access')`; the toggle PUTs to the web proxy which forwards to the API.
 - i18n: `lang/{en,id,ja}/domain-access.php`.
 

@@ -56,7 +56,7 @@ class SidebarNavigationWebTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('id="sidebar-menu-root"', false);
-        $response->assertSee('MENU', false);
+        $response->assertSee('WORKSPACE', false);
         $response->assertSee('User management', false);
         $response->assertSee(route('users.index'), false);
     }

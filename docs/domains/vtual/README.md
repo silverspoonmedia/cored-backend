@@ -11,7 +11,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Web | `routes/web/vtual.php` under `/apps/*` → **`/apps/vtual`** (route names `vtual.*`) |
 | Seeder | `VtualRoleSeeder` (after core `RoleSeeder`; also seeds platforms) |
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
-| Menu auto-hide | `vtual.index`, `vtual.profiles.index`, `vtual.claims.*`, credentials routes via `menu_routes`; hidden when activation not `active` |
+| Menu visibility | Parent `vtual.index` plus exact mapped children (`vtual.profiles.index`, `vtual.claims.index`, `vtual.claims.staff`, `vtual.admin.credentials.index`); Domain Access and activation stack across the branch |
 | Progress tracker | [implementation-status.md](implementation-status.md) — done / not done / next |
 | Legacy audit | [archive/vtual-legacy-audit.md](../../archive/vtual-legacy-audit.md) |
 
@@ -93,7 +93,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 
 **In-page nav:** shared partial `resources/views/adminlte4/vtual/partials/nav.blade.php` (Overview / My profiles / Claim / Registry / Credentials).
 
-**Sidebar:** Products → **vTual** parent with children Overview, My profiles, Claim as vTuber, Registry & pending (staff roles). `MenuSeeder` upgrades existing tree idempotently via `ensureVtualMenuBranch()`; re-run `php artisan db:seed --class=MenuSeeder` then `php artisan menu:flush-cache` on existing installs.
+**Sidebar:** Products → **vTual** parent with Overview, My profiles, Claim as vTuber, Registry & pending (Root/Admin/Moderator/Management/Vtual Admin), and Platform credentials (Root/Admin). Parent route `vtual.index` stacks Domain Access and activation gates across the whole branch. `MenuSeeder` authoritatively rebuilds all menu rows and flushes cache after commit. Before a standalone rebuild, seed `RoleSeeder`, `FileHostingRoleSeeder`, and `VtualRoleSeeder`; see [Navigation — Authoritative seeding](../navigation/README.md#authoritative-seeding). Platform API Probe remains a live Root/Admin tool linked from credentials, but it is intentionally not a dynamic-menu node.
 
 **Out of scope (claim UI phase leftovers):** management product UI, survey form, **Add New** approval queue, appeal / permanent reject, OAuth login proof, auto-purge of old cancelled rows, stripping core `User` `create vtual creator` (API legacy self-create still exists; staff Blade seeds orphans only).
 
@@ -355,10 +355,11 @@ Layout: `resources/views/{WEB_LAYOUT}/vtual/` (default `adminlte4`).
 
 ## Seeders
 
-1. `RoleSeeder` — core perms `view/manage vtual platform credentials` for Root/Admin.
-2. `VtualRoleSeeder` — product roles/permissions + `PlatformService::seedDefaults()`.
-3. `MenuSeeder` — Products → **vTual** leaf (`vtual.index`); Administration → **vTual platform credentials** (Root/Admin menu RBAC).
-4. `DatabaseSeeder` calls `VtualRoleSeeder` after `FileHostingRoleSeeder`.
+1. `RoleSeeder` — core permissions `view/manage vtual platform credentials` for Root/Admin.
+2. `FileHostingRoleSeeder` — required because authoritative `MenuSeeder` also builds the File Hosting branch.
+3. `VtualRoleSeeder` — product roles/permissions + `PlatformService::seedDefaults()`.
+4. `MenuSeeder` — Products → **vTual** parent (`vtual.index`) with product children; Platform credentials is a Root/Admin child in the same branch.
+5. `DatabaseSeeder` preserves this order. Running `MenuSeeder` before role seeders can omit expected menu-role pivots.
 
 ## Kick strategy (foundation)
 

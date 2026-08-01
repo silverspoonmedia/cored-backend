@@ -117,6 +117,8 @@ Permissions: `view/create/edit/delete user` (space-separated names). Soft delete
 
 `{user}` = UUID. Blade web controllers **only** proxy these APIs via `ApiClient` — no second RBAC path.
 
+**Sidebar:** **Administration → Access control → User management** (`users.index`), visible to Root, Admin, Moderator, and Management. Menu visibility is presentation only; API policy and H-RBAC remain authoritative.
+
 Notifications on create/update: [notification domain](../notification/README.md).
 
 ## Lookups

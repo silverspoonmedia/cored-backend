@@ -29,7 +29,7 @@ Paid entitlement was already tracked by `service_entitlements` (Active / Grace /
 
 | Type | Behavior | Example |
 |------|----------|---------|
-| **Implicit** | Auto-activated on register. No provisioning step. Lifecycle: `active` ↔ `suspended`. | File Hosting, Vtual |
+| **Implicit** | Auto-activated on register. Registry activation requires no approval; product-specific entitlement/provisioning may still apply. Lifecycle: `active` ↔ `suspended`. | File Hosting, Vtual, Microstock |
 | **Explicit** | Requires provisioning / approval before `active`. Lifecycle: `pending` → `active` → `suspended` → `expired`. | Future products (e.g. KYC-gated billing) |
 
 Declared in `config/products.php`:
@@ -45,10 +45,16 @@ Declared in `config/products.php`:
     'fulfillment_target' => null,
     'menu_routes' => [
         'vtual.index',
+        'vtual.profiles.index',
         'vtual.claims.index',
         'vtual.claims.staff',
         'vtual.admin.credentials.index',
     ],
+],
+'Microstock' => [
+    'activation_type' => 'implicit',
+    'fulfillment_target' => 'microstock',
+    'menu_routes' => [], // discovered through Services/workspace switcher
 ],
 ```
 
@@ -264,7 +270,7 @@ Two-level UI:
 - **Index** (`resources/views/adminlte4/product-activations/index.blade.php`) — product cards grid. Each card: product key, type badge, state count chips, product metric summary, "View Insights" link. Consumes `GET /api/v1/admin/product-activations/products`.
 - **Show** (`resources/views/adminlte4/product-activations/show.blade.php`) — per-product dashboard: insight cards (state distribution + product metrics), state filter, per-user activations table with action buttons (suspend/reactivate/approve/reject). Mutations redirect back to the show page.
 
-Menu entry: `Product activations` under `Administration` sidebar header, gated to Root / Admin / Moderator / Management roles.
+Menu entry: **Administration → Access control → Product activations**, gated to Root / Admin / Moderator / Management roles.
 
 ## Events
 
@@ -292,7 +298,7 @@ composer test -- --filter=Product
 | `AdminProductActivationControllerTest` (feature) | Admin list/filter/suspend/reactivate/stats, products/productShow/userDetail, RBAC (User blocked, Moderator view-only) |
 | `HostedFileAnalyticsHookTest` (feature) | create/soft-delete/restore/force-delete update storage_used_bytes + file_count rows |
 | `TierTransitionAnalyticsTest` (feature) | fulfill free→paid, enterGrace paid→grace, markExpired →free (bucket transfer assertions) |
-| `MenuVisibilityTest` (feature) | FileHosting menu hidden when suspended/expired, visible when active, non-product menu unaffected, guest no auth gate |
+| `MenuVisibilityTest` (feature) | FileHosting menu hidden when suspended/expired, visible when active, non-product menu unaffected; guest case is a page-render smoke test, not a guest-tree visibility assertion |
 | `RegisterProductActivationTest` (feature) | Register creates implicit rows; user can use FH after register |
 | `FileHostingProductGateTest` (feature) | FH regression with new middleware: active pass, suspended 403, public routes ungated |
 
@@ -300,6 +306,7 @@ composer test -- --filter=Product
 
 - [service/README.md](../service/README.md) — paid entitlement, `fulfillment_target` dispatch
 - [identity/README.md](../identity/README.md) — register flow, H-RBAC
-- [file-hosting/README.md](../file-hosting/README.md) — first implicit product, middleware wiring
-- [vtual/README.md](../vtual/README.md) — second implicit product (creator aggregator foundation)
+- [file-hosting/README.md](../file-hosting/README.md) — implicit product and middleware wiring
+- [vtual/README.md](../vtual/README.md) — implicit creator-aggregator product
+- [microstock/README.md](../microstock/README.md) — implicit registry activation plus opt-in workspace entitlement
 - [platform/architecture.md](../../platform/architecture.md) — kernel `app/Support/*` layout

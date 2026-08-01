@@ -9,25 +9,28 @@ Product domain (`kind => product`, `locked => true`) for microstock asset manage
 | API | `routes/api/v1/microstock.php` |
 | Web | `routes/web/microstock.php` under `/apps/*` → **`/apps/microstock`** (`microstock.index`, export); FH-mounted UI under **`/apps/file-hosting/microstock/*`** |
 | Seeder | `MicrostockRoleSeeder` (Beta tester role + Public visibility) |
-| Product gate | `product.active:Microstock` middleware |
-| Menu | **No dynamic sidebar menu** (removed) — reached via `/apps/services` and the File Hosting workspace switcher |
+| Product registry | `activation_type = implicit`; registration creates an active registry row |
+| Workspace gate | Active `microstock_workspace_slots` entitlement; `product.active:Microstock` remains middleware defense |
+| Menu | **No dynamic sidebar menu** (`menu_routes = []`) — reached via `/apps/services` and the File Hosting workspace switcher |
 | Storage class | **Product storage** — consumes the free-tier base (see [File Hosting — Storage classification](../file-hosting/README.md#storage-classification-core-vs-product)) |
 | Quota pool | Shared with File Hosting (one `UserQuota` byte pool) |
 | Fulfillment target | **`microstock`** (standalone — NOT `file_hosting`; see activation below) |
 
-## Activation model (via `/apps/services`)
+## Registry activation vs workspace entitlement
 
-Microstock is **opt-in**, activated by purchasing a service catalog SKU from `/apps/services` — it is never auto-provisioned. Two SKUs (seeded by `ServiceCatalogSeeder`, codes in `App\Domain\Service\Support\MicrostockCatalog`):
+Microstock's Product Activation registry entry is **implicit**: registration creates an active `product_activations` row, matching `config/products.php`. That row alone does not provision or unlock a workspace. Usable Microstock access remains **opt-in** through a `microstock_workspace_slots` entitlement purchased from `/apps/services`; workspace creation remains on demand. `menu_routes = []`, so registry activation never creates or reveals a dedicated dynamic-sidebar node.
+
+Two SKUs are seeded by `ServiceCatalogSeeder` (codes in `App\Domain\Service\Support\MicrostockCatalog`):
 
 | code | name | interval | plan_kind | entitlement | storage_bytes | price |
 |-----|------|----------|-----------|-------------|---------------|-------|
 | `microstock.plan.free` | Microstock Workspace (Free) | `once` | `main` | `microstock_workspace_slots` | 0 | $0 |
 | `microstock.addon.workspace-slot.monthly` | Microstock Workspace Slot | `monthly` | `addon` | `microstock_workspace_slots` | 0 | $1 |
 
-- **Free registration** (`microstock.plan.free`, $0 one-time): the activation gate. Purchasable **once** (`ServiceCheckoutService` throws 422 `api/services.already_activated` on rebuy; unique `(user_id, service_id)` entitlement key is the backstop). Being $0 it is **zero-charge**: `isZeroCharge()` skips the payment gateway, the purchase is immediately `Paid` (`fx_provider = zero_charge`), and fulfillment runs inline. Grants `quantity = 1`, `ends_at = null` (permanent). With `fulfillment_target = 'microstock'`, `ProductRegistry::productKeyByFulfillmentTarget` maps it to the `Microstock` product and `ServiceFulfillmentService::ensureProductActive` activates it **implicitly** (no quota recompute — that only happens for `file_hosting` targets).
+- **Free workspace entitlement** (`microstock.plan.free`, $0 one-time): the workspace-access gate. Purchasable **once** (`ServiceCheckoutService` throws 422 `api/services.already_activated` on rebuy; unique `(user_id, service_id)` entitlement key is the backstop). Being $0 it is **zero-charge**: `isZeroCharge()` skips the payment gateway, the purchase is immediately `Paid` (`fx_provider = zero_charge`), and fulfillment runs inline. Grants `quantity = 1`, `ends_at = null` (permanent). With `fulfillment_target = 'microstock'`, fulfillment also ensures the already-implicit registry activation remains active; it does not auto-create a workspace and does not recompute File Hosting quota.
 - **Slot addon** (`microstock.addon.workspace-slot.monthly`, $1 monthly): repeatable and **compounding** — each paid unit increments `quantity` on the active entitlement via `activateAddon`. Buying 10 units grants 10 extra Microstock workspace slots. Shares the addon anniversary stack with FH addons (`MainPlanChangeCalculator` / `extendAllAddons` cover both `file_hosting` and `microstock` addon targets).
 - **AI credits** (`microstock.addon.ai-credits.5`, $5 once): prepaid analysis balance (`entitlement = microstock_ai_credits`). Fulfillment calls `AiCreditService::creditFromPurchase` — debited only on successful AI analysis (see [Microstock — AI billing](../microstock/README.md#ai-billing-prepaid-credits)).
-- **UX**: `/apps/services` shows a dedicated Microstock card with an **Activate free** button (disabled + "Active" badge once active) and a **Buy slot** button (visible once active) posting to the normal `services.checkout` flow.
+- **UX**: `/apps/services` shows a dedicated Microstock card with an **Activate free** button for the workspace entitlement (disabled + "Active" badge once entitled) and a **Buy slot** button (visible once entitled) posting to the normal `services.checkout` flow. Here “Active” describes workspace entitlement, not creation of the implicit registry row.
 
 ## System workspaces (base storage)
 
@@ -44,7 +47,7 @@ Microstock assets live in `file_hosting_workspaces.kind = 'microstock'` rows —
 
 ### No auto-provision on File Hosting
 
-`FileManagerController@index` does **not** create the Microstock workspace. It appears in the FH switcher only after activation (and provisioning) via `/apps/services`. `GET /apps/microstock` (`microstock.index`) redirects to `/apps/services` with an error flash when not yet activated.
+`FileManagerController@index` does **not** create the Microstock workspace. It appears in the FH switcher only after workspace entitlement and on-demand provisioning via `/apps/services` or Microstock entry points. `GET /apps/microstock` (`microstock.index`) redirects to `/apps/services` with an error flash when the entitlement is missing, even though the Product Activation registry row is already active.
 
 ## Usage & limits
 

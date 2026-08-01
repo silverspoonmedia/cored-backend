@@ -12,7 +12,7 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Public landing | Root **`/file-hosting`** reserved for future promo landing (not the logged-in app) |
 | Seeder | `FileHostingRoleSeeder` (after core `RoleSeeder`) |
 | Product gate | `product.active:FileHosting` middleware (see [Product Activations](../product-activations/README.md)) |
-| Menu auto-hide | `file-hosting.index` menu route bound via `config/products.php` `menu_routes`; hidden when user's FH activation is not `active` |
+| Menu visibility | Products → File Hosting parent (`file-hosting.index`) gates My Files, Trash, and DMCA Blocklist; global Domain Access and authenticated-user activation both propagate through the parent |
 | Analytics | `HostedFile` Eloquent events (`created`/`deleted`/`restored`) + `WorkspaceService::create` + `FolderRepository::restore` write to `product_analytics` via `ProductAnalyticsService` (see [Product Activations § Stored analytics](../product-activations/README.md#stored-analytics-v3)) |
 
 ### Current product surface
@@ -87,17 +87,18 @@ the File Hosting workspace model. A system workspace:
 
 > Status: **implemented by Microstock** — the Microstock product uses system
 > workspaces (`file_hosting_workspaces.kind = 'microstock'`, standalone slots) as
-> the first product-class consumer of this model. Microstock activation is opt-in
-> via `/apps/services` (free registration + compounding slot addon); its slots never
-> overlap with FH team workspace slots. See [Microstock](../microstock/README.md).
+> the first product-class consumer of this model. Its product-registry activation
+> is implicit, while workspace entitlement remains opt-in via `/apps/services`
+> (free entitlement + compounding slot addon); its slots never overlap with FH
+> team workspace slots. See [Microstock](../microstock/README.md).
 
 **Provisioning trigger:** the Microstock system workspace is **not**
 auto-provisioned on File Hosting first paint. It is created on demand —
 `GET /apps/microstock` (redirects to `/apps/services` when the user has no Microstock
 entitlement) or via the switcher/API — and is gated by
 `WorkspaceAccessService::assertCanProvisionMicrostockWorkspace` (slot limit from
-the Microstock entitlements). Until activation it simply does not appear in the
-switcher.
+the Microstock entitlements). Until entitlement and on-demand provisioning it
+simply does not appear in the switcher.
 
 **Switcher UX (SPA):** `WorkspaceResource` exposes `kind`; workspace items are
 rendered **fully client-side** by `file-manager.js` (Blade only provides the
@@ -213,7 +214,7 @@ manage any file hosting resource
 
 Middleware stack: `auth:api` -> `product.active:FileHosting` (runtime activation gate, see [Product Activations](../product-activations/README.md)) -> `permission:<perm>` (Spatie RBAC). A user with a suspended File Hosting activation gets 403 before any permission check runs.
 
-**Sidebar menu:** the "My Files" entry (`file-hosting.index` route) is bound to FileHosting via `config/products.php` `menu_routes`. The dynamic menu auto-hides it when the viewer's activation is not `active` (suspended / expired / pending) — see [Navigation — Visibility](../navigation/README.md#visibility-navigation-tree). Guests and active users see it normally.
+**Sidebar menu:** Products → **File Hosting** uses `file-hosting.index` on the parent and exposes **My Files**, **Trash**, and **DMCA Blocklist** children. DMCA Blocklist is limited to Root, Admin, Moderator, Management, and File Hosting Admin. The parent route is bound to FileHosting through `config/products.php` `menu_routes`, so ancestor visibility applies both the global Domain Access gate and the authenticated viewer's activation state to the entire branch — see [Navigation — Visibility](../navigation/README.md#visibility-navigation-tree).
 
 | Area | Endpoints |
 |------|-----------|
@@ -691,7 +692,7 @@ Grid/list view toggle persists preference in `localStorage` key `fh-view-mode`. 
 
 Row identity for live patch: `data-fh-entity` (`file`|`folder`) + `data-fh-id` on table rows and grid cards. Quota mount: `[data-fh-quota]`. Show counters: `[data-fh-stat="views|downloads"]`. Team offcanvas: `[data-fh-members-body]`, `[data-fh-activity-list]`.
 
-Menu: **My Files** -> `file-hosting.index`.
+Sidebar: **Products → File Hosting → My Files** (`file-hosting.index`). The File Hosting parent uses the same product-bound route, so Domain Access and product activation gate the whole branch.
 
 ## Realtime / live listing
 

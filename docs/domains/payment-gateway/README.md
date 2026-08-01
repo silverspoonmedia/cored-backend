@@ -156,7 +156,7 @@ Shared sort helper: `PaymentRouteSort` (resolver, `PaymentChannelService::listAl
 
 ### Admin income page (`/apps/payments/income`)
 
-Read-only dashboard for payment gateway revenue (permission: `view invoice`). Menu: **Payments → Payment income**.
+Read-only dashboard for payment gateway revenue (permission: `view invoice`). Menu: **Administration → Payments → Payment income**.
 
 | Metric | Source field | Meaning |
 |--------|--------------|---------|
@@ -195,6 +195,8 @@ iPaymu **requires** name + email + phone (`setBuyer`). Midtrans `customer_detail
 Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation guards, active-checkout cancellation when switching channels.
 
 ## Blade / assets
+
+**Sidebar:** **Administration → Payments** contains Payment income (`payments.income.index`), Invoices (`invoices.index`), Subscriptions (`subscriptions.index`), Payment channels (`payment-channels.index`), and Payment gateways (`payment-gateways.index`). Parent and children are visible to Root, Admin, Moderator, and Management; endpoint permissions remain authoritative.
 
 Authenticated admin/checkout UI under `/apps/*` (route names unprefixed): e.g. `/apps/payment-channels`, `/apps/payment-gateways`, `/apps/service-purchases/{id}` (primary payment surface for service sales), `/apps/invoices` (list **View** uses `InvoiceWebDestination`). QR image base is injected via `route('qr.show')` (`window.monolithQrBaseUrl`) — no hard-coded `/apps/qr` in JS. See [blade-admin — URL helpers](../../web/blade-admin.md#url-helpers-auth-shell).
 
