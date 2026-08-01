@@ -1,5 +1,7 @@
 <x-adminlte4::layouts.app :title="__('web/payments.invoices.show_title')">
     @php
+        \Diglactic\Breadcrumbs\Breadcrumbs::setCurrentRoute('invoices.show', $invoice['invoice_number'] ?? $invoice['id'] ?? '');
+
         $invoiceStatus = (string) ($invoice['status'] ?? '');
         $hasChannel = (bool) data_get($invoice, 'payment_channel_code');
         $hasGateway = (bool) data_get($invoice, 'payment_gateway.id');

@@ -1,7 +1,5 @@
 @props([
     'invoice' => null,
-    'orderId' => null,
-    'subscriptionId' => null,
     'paymentChannels' => [],
     'checkoutMode' => 'snap_fallback',
     'hubMode' => false,

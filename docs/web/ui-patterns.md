@@ -85,6 +85,17 @@ Both `monolith-overrides.css` and `file-hosting.css` ship `@media (prefers-reduc
 
 File-hosting modals (`show.blade.php` rename/share, `_move-modal.blade.php`) use `modal-fullscreen-sm-down` so they fill the viewport on phones.
 
+### Sidebar-first column ordering
+
+Detail pages with a main content column + sidebar (invoice show, service-purchase hub) put the **sidebar first on mobile** so the user sees summary/amounts before the long main panel. Source order stays main-first (DOM/SEO/screen-reader friendly); Bootstrap `order-*` utilities reflow visually:
+
+```blade
+<div class="col-lg-8 order-2 order-lg-1">  {{-- main: first in DOM, second on mobile, first on ≥lg --}}
+<div class="col-lg-4 order-1 order-lg-2">  {{-- sidebar: second in DOM, first on mobile, second on ≥lg --}}
+```
+
+Applied to `invoices/show.blade.php` and `service-purchases/show.blade.php`. Reuse this pair for any new main+sidebar detail page.
+
 ### Inline styles
 
 Inline `style="max-width: …"` / `padding-left: …px` were removed. Use utility classes (`ps-3`, `ps-4`) or the `.monolith-truncate-md` helper (28rem, full-width under 576px).

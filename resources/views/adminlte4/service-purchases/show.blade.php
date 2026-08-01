@@ -97,7 +97,7 @@
     @endif
 
     <div class="row g-3 mb-3">
-        <div class="col-lg-8">
+        <div class="col-lg-8 order-2 order-lg-1">
             @if ($invoice)
                 <x-adminlte4::payments.payment-steps
                     :current-step="$paymentUi['step']"
@@ -117,7 +117,7 @@
             @endif
         </div>
 
-        <div class="col-lg-4">
+        <div class="col-lg-4 order-1 order-lg-2">
             <div class="ois-sidebar-card">
                 <div class="ois-sidebar-card__title">{{ __('web/services.purchase_title') }}</div>
                 <dl class="row mb-0 small">

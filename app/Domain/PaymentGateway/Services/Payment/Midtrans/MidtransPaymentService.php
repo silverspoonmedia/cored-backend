@@ -337,6 +337,8 @@ class MidtransPaymentService
                     'status' => $updated->status,
                     'external_transaction_id' => $updated->external_transaction_id,
                     'paid_at' => $updated->paid_at?->toIso8601String(),
+                    'expired_at' => $updated->expired_at?->toIso8601String(),
+                    'invoiceable_status' => $this->resolveInvoiceableStatus($updated),
                 ],
                 'midtrans' => json_decode(json_encode($status), true),
             ],
@@ -400,5 +402,32 @@ class MidtransPaymentService
         }
 
         return round($gross, 2);
+    }
+
+    /**
+     * Resolve the invoiceable's current status string for sync-status responses.
+     *
+     * Mirrors PaymentRealtime::resolveInvoiceableStatus so checkout JS can
+     * soft-update the purchase status badge on polling without a reload.
+     */
+    private function resolveInvoiceableStatus(Invoice $invoice): ?string
+    {
+        $invoiceable = $invoice->invoiceable;
+
+        if ($invoiceable === null) {
+            return null;
+        }
+
+        $status = $invoiceable->status ?? null;
+
+        if ($status instanceof \BackedEnum) {
+            return (string) $status->value;
+        }
+
+        if (is_object($status) && property_exists($status, 'value')) {
+            return (string) $status->value;
+        }
+
+        return $status !== null ? (string) $status : null;
     }
 }

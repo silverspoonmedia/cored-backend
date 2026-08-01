@@ -547,7 +547,21 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
     });
 
     syncButton?.addEventListener('click', () => {
-        void syncStatus(syncStatusUrl, csrfToken, messages, false, handleStatus, showCheckoutToast);
+        if (syncButton.disabled) {
+            return;
+        }
+
+        const originalLabel = syncButton.textContent;
+        syncButton.disabled = true;
+        syncButton.textContent = messages.syncing ?? 'Syncing…';
+
+        syncStatus(syncStatusUrl, csrfToken, messages, false, handleStatus, showCheckoutToast)
+            .finally(() => {
+                if (!terminal) {
+                    syncButton.disabled = false;
+                    syncButton.textContent = originalLabel;
+                }
+            });
     });
 }
 
@@ -860,7 +874,7 @@ function renderInstructions(container, data, messages, showCheckoutToast) {
 
     const instructions = data.instructions ?? {};
     const expiresAt = data.expires_at
-        ? `<p class="text-muted small">${escapeHtml((messages.expiresAt ?? 'Pay before {time}').replace('{time}', formatDate(data.expires_at)))}</p>`
+        ? `<p class="text-muted small">${escapeHtml((messages.expiresAt ?? 'Pay before :time').replace(':time', formatDate(data.expires_at)))}</p>`
         : '';
     let body = '';
 
@@ -949,7 +963,7 @@ async function syncStatus(syncStatusUrl, csrfToken, messages, silent, onStatus, 
         const handled = onStatus?.(invoiceStatus, {
             paid_at: invoice.paid_at ?? null,
             expired_at: invoice.expired_at ?? null,
-            invoiceable_status: null,
+            invoiceable_status: invoice.invoiceable_status ?? null,
         });
 
         if (handled) {

@@ -4,6 +4,7 @@ namespace App\Domain\PaymentGateway\Http\Resources;
 
 use App\Domain\PaymentGateway\Models\PaymentChannelRouteSnapshot;
 use App\Domain\PaymentGateway\Support\Routing\PaymentChannelFeeCalculator;
+use App\Support\Presentation\DatePresenter;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,6 +18,7 @@ class PaymentChannelRouteSnapshotResource extends JsonResource
     {
         $gateway = $this->paymentGateway;
         $calculator = app(PaymentChannelFeeCalculator::class);
+        [$capturedIso, $capturedFormatted, $capturedHuman] = DatePresenter::pack($this->captured_at);
 
         return [
             'id' => $this->id,
@@ -36,7 +38,9 @@ class PaymentChannelRouteSnapshotResource extends JsonResource
             'fee_label' => $calculator->formatFeeLabelFromSnapshot($this->resource),
             'fee_vat_inclusive' => $this->fee_vat_inclusive,
             'policy_tag' => $this->policy_tag,
-            'captured_at' => $this->captured_at?->toIso8601String(),
+            'captured_at' => $capturedIso,
+            'captured_at_formatted' => $capturedFormatted,
+            'captured_at_human' => $capturedHuman,
         ];
     }
 }

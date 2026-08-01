@@ -106,3 +106,53 @@ Breadcrumbs::for('profile.password.edit', function (Trail $trail): void {
 	$trail->parent('dashboard');
 	$trail->push(__('web/profile.password_title'), route('profile.password.edit'));
 });
+
+// Payment gateway — invoices.
+Breadcrumbs::for('invoices.index', function (Trail $trail): void {
+    $trail->parent('dashboard');
+    $trail->push(__('web/payments.invoices.title'), route('invoices.index'));
+});
+
+Breadcrumbs::for('invoices.show', function (Trail $trail, string $invoiceNumber): void {
+    $trail->parent('invoices.index');
+    $trail->push(__('web/payments.invoices.show_title'));
+});
+
+// Payment income dashboard.
+Breadcrumbs::for('payments.income.index', function (Trail $trail): void {
+    $trail->parent('dashboard');
+    $trail->push(__('web/payments.income.title'), route('payments.income.index'));
+});
+
+// Payment channels admin.
+Breadcrumbs::for('payment-channels.index', function (Trail $trail): void {
+    $trail->parent('dashboard');
+    $trail->push(__('web/payments.channels.title'), route('payment-channels.index'));
+});
+
+// Payment gateways admin.
+Breadcrumbs::for('payment-gateways.index', function (Trail $trail): void {
+    $trail->parent('dashboard');
+    $trail->push(__('web/payments.gateways.title'), route('payment-gateways.index'));
+});
+
+// Subscriptions.
+Breadcrumbs::for('subscriptions.index', function (Trail $trail): void {
+    $trail->parent('dashboard');
+    $trail->push(__('web/payments.subscriptions.title'), route('subscriptions.index'));
+});
+
+Breadcrumbs::for('subscriptions.create', function (Trail $trail): void {
+    $trail->parent('subscriptions.index');
+    $trail->push(__('ui.breadcrumb.add'));
+});
+
+Breadcrumbs::for('subscriptions.edit', function (Trail $trail): void {
+    $trail->parent('subscriptions.index');
+    $trail->push(__('ui.breadcrumb.edit'));
+});
+
+Breadcrumbs::for('subscriptions.show', function (Trail $trail, string $subscriptionId): void {
+    $trail->parent('subscriptions.index');
+    $trail->push(__('web/payments.subscriptions.show_title'));
+});

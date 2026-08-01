@@ -203,8 +203,8 @@ Purchase resource fields of note: `quantity` (addon: set at catalog `POST /servi
 ## Web (Blade)
 
 - Catalog index/create/edit/show (API consumer); form fields `plan_kind` + `storage_bytes`
-- Catalog show (`/apps/services/{id}`): addon **quantity** input on checkout form (committed at `POST /services/{id}/checkout`; main plans implicit qty 1)
-- Purchase hub: payment panel + quote breakdown (list/credit/charge/surplus) + **addon quantity stepper** (local preview; committed on Continue to payment via `channel-checkout.quantity`; stepper locks read-only on `paid` via WebSocket/sync without full reload) + addon **stack equation** (`14 + 1 = 15`) when an entitlement stack exists; local qty preview updates list/display/settlement/FX sidebar fields using `MoneyPresenter` / `FxPresenter` rules in `purchase-pricing-preview.js`; FX rate shows `fx_rate_label`; dates use `*_formatted`; grace banner when `status=grace`
+- Catalog show (`/apps/services/{id}`): addon **quantity** input on checkout form (committed at `POST /services/{id}/checkout`; main plans implicit qty 1). Checkout visibility gate uses `Gate::any(['purchase service', 'initiate payment'])` — do **not** inline `@php(...)` with nested parens inside `@can/@else/@endcan` (Blade's inline `@php()` matcher chokes on the inner `Gate::allows('initiate payment')` parens and corrupts compilation of everything after `@endcan`, leaving `$isAddonPlan` undefined); use a block `@php … @endphp` instead
+- Purchase hub: payment panel + quote breakdown (list/credit/charge/surplus) + **addon quantity stepper** (local preview; committed on Continue to payment via `channel-checkout.quantity`; stepper locks read-only on `paid` via WebSocket/sync without full reload) + addon **stack equation** (`14 + 1 = 15`) when an entitlement stack exists; local qty preview updates list/display/settlement/FX sidebar fields using `MoneyPresenter` / `FxPresenter` rules in `purchase-pricing-preview.js`; FX rate shows `fx_rate_label`; dates use `*_formatted`; grace banner when `status=grace`. Layout uses sidebar-first-on-mobile column ordering (`order-2 order-lg-1` / `order-1 order-lg-2`) matching the invoice show page — see [ui-patterns — Sidebar-first column ordering](../../web/ui-patterns.md#sidebar-first-column-ordering)
 - **Not** product UI on PG `/subscriptions`
 
 ## PaymentGateway integration
@@ -257,7 +257,7 @@ composer test -- --filter=EnforceFreeTierQuota
 composer test -- --filter=FileHostingBilling
 ```
 
-Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main renew/up/down, fixed 30-day FH periods, addon fixed anniversary, block unit buy when stack due/pending, addon stack renewal invoice, quota matrix, grace/expire, collaborative works paid gate. Key tests: `MainPlanChangeCalculatorTest`, `MainPlanFairnessFulfillmentTest`, `AddonAnniversaryTest`, `ServiceCheckoutZeroChargeTest`, `FileHostingPlanQuotaMatrixTest`, `FileHostingAdminJourneyScenarioTest`, `WorkspaceCollaborativeWorksTest`.
+Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main renew/up/down, fixed 30-day FH periods, addon fixed anniversary, block unit buy when stack due/pending, addon stack renewal invoice, quota matrix, grace/expire, collaborative works paid gate. Key tests: `MainPlanChangeCalculatorTest`, `MainPlanFairnessFulfillmentTest`, `AddonAnniversaryTest`, `ServiceCheckoutZeroChargeTest`, `FileHostingPlanQuotaMatrixTest`, `FileHostingAdminJourneyScenarioTest`, `WorkspaceCollaborativeWorksTest`. Catalog show Blade render (main hides qty input, addon shows it): `ServiceShowPageTest`.
 
 **Use-case matrix (45):** permanent regression suite — `FileHostingBillingTameUseCasesTest`, `FileHostingBillingNormalUseCasesTest`, `FileHostingBillingAnomalyUseCasesTest` + `FileHostingBillingScenarioHarness`.
 

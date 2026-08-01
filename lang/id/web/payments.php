@@ -20,6 +20,7 @@ $payments['checkout']['channel_unavailable'] = ':channel tidak lagi tersedia.';
 $payments['checkout']['fee_updated'] = 'Biaya :channel diperbarui dari :old menjadi :new.';
 $payments['checkout']['selected_channel_unavailable'] = 'Metode pembayaran yang dipilih tidak lagi tersedia. Silakan pilih yang lain.';
 $payments['checkout']['fee_at_checkout_hint'] = 'Biaya penyedia pembayaran ditambahkan saat Anda memilih metode pembayaran.';
+$payments['checkout']['syncing'] = 'Menyinkronkan…';
 $payments['invoices']['export_csv'] = 'Ekspor CSV';
 $payments['invoices']['datatable']['columns']['subtotal'] = 'Harga layanan';
 $payments['invoices']['datatable']['columns']['fee'] = 'Biaya pembayaran';

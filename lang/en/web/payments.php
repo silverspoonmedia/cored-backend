@@ -218,13 +218,14 @@ return [
         'no_channels' => 'No payment methods are available for this invoice.',
         'permission_required' => 'You do not have permission to start a payment. Ask an administrator for the “initiate payment” permission.',
         'synced' => 'Payment status synced.',
+        'syncing' => 'Syncing…',
         'sync_pending' => 'Payment is still pending.',
         'sync_failed' => 'Could not sync payment status.',
     ],
 
     'instructions' => [
         'title' => 'Payment instructions',
-        'expires_at' => 'Pay before {time}',
+        'expires_at' => 'Pay before :time',
         'qr_string' => 'QR payload',
         'bank' => 'Bank',
         'va_number' => 'Virtual account',

@@ -12,6 +12,7 @@
     data-channels-url="{{ route('invoices.checkout.channels', data_get($invoice, 'id')) }}"
     data-sync-status-url="{{ route('invoices.checkout.sync-status', data_get($invoice, 'id')) }}"
     data-invoice-subtotal="{{ $invoiceSubtotal }}"
+    data-invoice-subtotal-formatted="{{ $formattedSubtotal }}"
     data-invoice-fee="{{ $invoiceFee }}"
     data-invoice-gross="{{ $invoiceGross }}"
     data-invoice-currency="{{ $invoiceCurrency }}"
@@ -29,6 +30,7 @@
         'synced' => __('web/payments.checkout.synced'),
         'syncPending' => __('web/payments.checkout.sync_pending'),
         'syncFailed' => __('web/payments.checkout.sync_failed'),
+        'syncing' => __('web/payments.checkout.syncing'),
         'selectChannel' => __('web/payments.checkout.select_channel'),
         'payWithChannel' => __('web/payments.checkout.pay_with_channel'),
         'confirmPaid' => __('web/payments.checkout.confirm_paid'),
@@ -132,6 +134,7 @@
                             type="button"
                             class="pc-checkout-channel pc-kind-{{ $kind }}{{ $isDefaultChannel ? ' is-selected' : '' }}"
                             data-payment-channel-option="{{ $code }}"
+                            aria-pressed="{{ $isDefaultChannel ? 'true' : 'false' }}"
                             @if ($cheapAlt !== '')
                                 data-cheap-alt-code="{{ $cheapAlt }}"
                                 data-cheap-alt-label="{{ $cheapAltLabel }}"
@@ -171,7 +174,6 @@
                             title="{{ __('web/payments.checkout.confirm_paid_help') }}">
                         {{ __('web/payments.checkout.confirm_paid') }}
                     </button>
-                    <small class="text-muted d-none" data-payment-sync-help>{{ __('web/payments.checkout.confirm_paid_help') }}</small>
                 </div>
 
                 <div class="d-none pc-checkout-instructions mb-0" data-payment-instructions></div>

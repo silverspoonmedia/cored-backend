@@ -29,11 +29,9 @@
             <dd class="col-sm-9">{{ data_get($service, 'description') ?: '—' }}</dd>
         </dl>
 
-        @can('purchase service')
-            @php($canInitiatePayment = true)
-        @else
-            @php($canInitiatePayment = \Illuminate\Support\Facades\Gate::allows('initiate payment'))
-        @endcan
+        @php
+            $canInitiatePayment = \Illuminate\Support\Facades\Gate::any(['purchase service', 'initiate payment']);
+        @endphp
 
         @if (($canInitiatePayment) && data_get($service, 'status') === 'active' && $prices->isNotEmpty())
             @php

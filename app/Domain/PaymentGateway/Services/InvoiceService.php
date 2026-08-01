@@ -18,7 +18,7 @@ class InvoiceService
     public function list(): Collection
     {
         return Invoice::query()
-            ->with(['paymentGateway', 'invoiceable'])
+            ->with(['paymentGateway', 'paymentChannelRouteSnapshot.paymentGateway', 'invoiceable'])
             ->orderByDesc('created_at')
             ->get();
     }

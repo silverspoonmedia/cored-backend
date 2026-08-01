@@ -37,7 +37,7 @@ class MidtransSnapParameterBuilderTest extends TestCase
         $params = app(MidtransSnapParameterBuilder::class)->build($invoice);
 
         $this->assertSame($invoice->invoice_number, $params['transaction_details']['order_id']);
-        $this->assertSame(180000.0, $params['transaction_details']['gross_amount']);
+        $this->assertSame(180000, $params['transaction_details']['gross_amount']);
         $this->assertSame('Snap Customer', $params['customer_details']['first_name']);
         $this->assertSame('snap@example.com', $params['customer_details']['email']);
         $this->assertSame('081000000000', $params['customer_details']['phone']);

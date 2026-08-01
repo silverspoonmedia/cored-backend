@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Http\Resources;
 
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceChannelFeeService;
 use App\Domain\PaymentGateway\Support\InvoiceWebDestination;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
@@ -19,6 +20,8 @@ class PaymentIncomeInvoiceResource extends JsonResource
     public function toArray(Request $request): array
     {
         $currency = $this->currency;
+        $this->loadMissing('paymentChannelRouteSnapshot');
+        $feeBasis = app(InvoiceChannelFeeService::class)->feeBasisFields($this->paymentChannelRouteSnapshot);
 
         return [
             'id' => $this->id,
@@ -32,6 +35,7 @@ class PaymentIncomeInvoiceResource extends JsonResource
             'invoiceable_type' => $this->invoiceable_type,
             ...$this->moneyFields('subtotal', $this->subtotal, $currency),
             ...$this->moneyFields('payment_channel_fee', $this->payment_channel_fee, $currency),
+            ...$feeBasis,
             ...$this->moneyFields('customer_gross_total', $this->customer_gross_total, $currency),
             ...$this->dateFields('paid_at', $this->paid_at),
             ...$this->dateFields('withdrawable_at', $this->withdrawable_at),
