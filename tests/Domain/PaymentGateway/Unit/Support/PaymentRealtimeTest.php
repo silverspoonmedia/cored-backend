@@ -3,6 +3,7 @@
 namespace Tests\Domain\PaymentGateway\Unit\Support;
 
 use App\Domain\PaymentGateway\Events\InvoiceStatusChanged;
+use App\Domain\PaymentGateway\Events\PaymentRoutingCatalogChanged;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Support\PaymentRealtime;
 use App\Domain\Service\Models\ServicePurchase;
@@ -109,6 +110,31 @@ class PaymentRealtimeTest extends TestCase
                 && $e->invoiceableId === (string) $purchase->id
                 && $e->broadcastAs() === 'invoice.status.changed'
                 && $e->broadcastOn()[0]->name === 'private-payments.invoice.'.$invoice->id;
+        });
+    }
+
+    public function test_routing_catalog_changed_noop_when_unconfigured(): void
+    {
+        Event::fake([PaymentRoutingCatalogChanged::class]);
+        $this->disableBroadcast();
+
+        app(PaymentRealtime::class)->routingCatalogChanged('channel_updated', 'qris');
+
+        Event::assertNotDispatched(PaymentRoutingCatalogChanged::class);
+    }
+
+    public function test_routing_catalog_changed_dispatches_when_configured(): void
+    {
+        Event::fake([PaymentRoutingCatalogChanged::class]);
+        $this->enableBroadcast();
+
+        app(PaymentRealtime::class)->routingCatalogChanged('route_updated', 'va_bca');
+
+        Event::assertDispatched(PaymentRoutingCatalogChanged::class, function (PaymentRoutingCatalogChanged $e): bool {
+            return $e->reason === 'route_updated'
+                && $e->channelCode === 'va_bca'
+                && $e->broadcastAs() === 'routing.catalog.changed'
+                && $e->broadcastOn()[0]->name === 'private-payments.routing';
         });
     }
 

@@ -85,7 +85,14 @@ class ServiceController extends Controller
 
         /** @var \App\Domain\Identity\Models\User $user */
         $user = $request->user();
-        $result = $this->checkout->checkout($service, $user, (string) $request->validated('currency'));
+        $validated = $request->validated();
+
+        $result = $this->checkout->checkout(
+            $service,
+            $user,
+            (string) $validated['currency'],
+            (int) ($validated['quantity'] ?? 1),
+        );
 
         return $this->successResponse(
             $this->resolveResource(new ServicePurchaseResource($result['purchase'])),

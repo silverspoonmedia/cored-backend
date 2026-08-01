@@ -147,9 +147,12 @@ class ServiceController extends Controller
 
     public function checkout(Request $request, string $service): RedirectResponse|JsonResponse
     {
-        $response = $this->api()->post("services/{$service}/checkout", [
+        $payload = [
             'currency' => strtoupper((string) $request->input('currency', 'USD')),
-        ]);
+            'quantity' => max(1, (int) $request->input('quantity', 1)),
+        ];
+
+        $response = $this->api()->post("services/{$service}/checkout", $payload);
 
         if (! $response->successful()) {
             return $this->respondFromApi(

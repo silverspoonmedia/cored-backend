@@ -191,17 +191,20 @@ Purge rule: sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + ha
 |--------|------|--------|
 | GET/POST | `/api/v1/services` | List / create (prices nested; currency must exist) |
 | GET/PUT/DELETE | `/api/v1/services/{id}` | Show / update / soft-delete |
-| POST | `/api/v1/services/{id}/checkout` | Body `{ "currency": "USD" }` → purchase (+ invoice if charge > 0); quote fields on purchase |
+| POST | `/api/v1/services/{id}/checkout` | Body `{ "currency": "USD", "quantity": 1 }` → purchase (+ invoice if charge > 0); optional **`quantity`** (addon plans only, 1–`SERVICE_PURCHASE_MAX_QUANTITY`; main plan must be `1` → `quantity_main_plan_fixed`); catalog Blade `/apps/services/{id}` shows quantity input for addons before checkout |
 | GET | `/api/v1/service-purchases/{id}` | Purchase + invoice + **entitlement** (if any) |
+| PATCH | `/api/v1/service-purchases/{id}/quantity` | Direct API repricing (tests/admin); hub uses channel checkout instead |
+| POST | `/api/v1/invoices/{id}/channel-checkout` | Body may include `quantity` for pending **addon** `service_purchase` — commits qty + fresh FX before PG charge |
 
 Catalog resource fields of note: `plan_kind`, `storage_bytes` (+ `storage_bytes_human`), prices as `amount` + `amount_formatted`.
 
-Purchase resource fields of note: `change_type`, raw money (`list_amount`, `credit_amount`, `charge_amount`, `display_amount`, `settlement_amount`) each with `*_formatted`, `surplus_days`, period timestamps with `*_formatted` / `*_human`, `entitlement.{status,quantity,ends_at,grace_ends_at,is_permanent}` (dates dual-field). Display contract: [platform/crud presentation](../../platform/crud.md#api-resource-presentation-dual-fields).
+Purchase resource fields of note: `quantity` (addon: set at catalog `POST /services/{id}/checkout`; hub stepper is local preview until `channel-checkout.quantity` commits again; main plan always `1`), `unit_list_amount`, `unit_charge_amount`, `change_type`, raw money (`list_amount`, `credit_amount`, `charge_amount`, `display_amount`, `settlement_amount`) each with `*_formatted`, `fx_rate` + `fx_rate_formatted` + `fx_rate_label` (e.g. `1 USD = 16.234,57 IDR`), `storage_gain_human` (addon storage preview), `surplus_days`, period timestamps with `*_formatted` / `*_human`, `entitlement.{status,quantity,ends_at,grace_ends_at,is_permanent}` (dates dual-field). Fulfillment adds `purchase.quantity` to entitlement stack (not always +1). Display contract: [platform/crud presentation](../../platform/crud.md#api-resource-presentation-dual-fields).
 
 ## Web (Blade)
 
 - Catalog index/create/edit/show (API consumer); form fields `plan_kind` + `storage_bytes`
-- Purchase hub: payment panel + quote breakdown (list/credit/charge/surplus) + entitlement status/quantity; grace banner when `status=grace`
+- Catalog show (`/apps/services/{id}`): addon **quantity** input on checkout form (committed at `POST /services/{id}/checkout`; main plans implicit qty 1). Checkout visibility gate uses `Gate::any(['purchase service', 'initiate payment'])` — do **not** inline `@php(...)` with nested parens inside `@can/@else/@endcan` (Blade's inline `@php()` matcher chokes on the inner `Gate::allows('initiate payment')` parens and corrupts compilation of everything after `@endcan`, leaving `$isAddonPlan` undefined); use a block `@php … @endphp` instead
+- Purchase hub: payment panel + quote breakdown (list/credit/charge/surplus) + **addon quantity stepper** (local preview; committed on Continue to payment via `channel-checkout.quantity`; stepper locks read-only on `paid` via WebSocket/sync without full reload) + addon **stack equation** (`14 + 1 = 15`) when an entitlement stack exists; local qty preview updates list/display/settlement/FX sidebar fields using `MoneyPresenter` / `FxPresenter` rules in `purchase-pricing-preview.js`; FX rate shows `fx_rate_label`; dates use `*_formatted`; grace banner when `status=grace`. Layout uses sidebar-first-on-mobile column ordering (`order-2 order-lg-1` / `order-1 order-lg-2`) matching the invoice show page — see [ui-patterns — Sidebar-first column ordering](../../web/ui-patterns.md#sidebar-first-column-ordering)
 - **Not** product UI on PG `/subscriptions`
 
 ## PaymentGateway integration
@@ -214,6 +217,8 @@ Morph aliases:
 - `InvoiceAttachableService::createPendingInvoiceForServicePurchase` / `…ForServiceAddonRenewal`
 - Midtrans/iPaymu synchronizers fulfill purchase or addon renewal on paid
 - iPaymu return can redirect to `service-purchases.show`
+- Blade `/apps/invoices` list + show redirect to purchase hub for `service_purchase` (`InvoiceWebDestination::showUrl()`)
+- Purchase hub sidebar shows invoice number as display-only (no duplicate link to `/apps/invoices/{id}`)
 - Product SaaS ≠ PG `Subscription` model
 
 ## Config / env
@@ -225,6 +230,7 @@ Morph aliases:
 | `FRANKFURTER_CACHE_TTL` | `3600` | L1 + “fresh DB snapshot” window (seconds) |
 | `SERVICE_GRACE_DAYS` | `7` | `config/service.php` → grace after `ends_at` |
 | `SERVICE_SETTLEMENT_CURRENCY` | `IDR` | PG settlement currency |
+| `SERVICE_PURCHASE_MAX_QUANTITY` | `99` | Max units per addon purchase on catalog show + hub quantity inputs |
 | `PAYMENT_DEFAULT_BUYER_PHONE` | (see payment docs) | iPaymu buyer phone fallback |
 
 Documented in `.env.example` for Frankfurter; grace/settlement via `config/service.php` + optional env.
@@ -251,7 +257,7 @@ composer test -- --filter=EnforceFreeTierQuota
 composer test -- --filter=FileHostingBilling
 ```
 
-Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main renew/up/down, fixed 30-day FH periods, addon fixed anniversary, block unit buy when stack due/pending, addon stack renewal invoice, quota matrix, grace/expire, collaborative works paid gate. Key tests: `MainPlanChangeCalculatorTest`, `MainPlanFairnessFulfillmentTest`, `AddonAnniversaryTest`, `ServiceCheckoutZeroChargeTest`, `FileHostingPlanQuotaMatrixTest`, `FileHostingAdminJourneyScenarioTest`, `WorkspaceCollaborativeWorksTest`.
+Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main renew/up/down, fixed 30-day FH periods, addon fixed anniversary, block unit buy when stack due/pending, addon stack renewal invoice, quota matrix, grace/expire, collaborative works paid gate. Key tests: `MainPlanChangeCalculatorTest`, `MainPlanFairnessFulfillmentTest`, `AddonAnniversaryTest`, `ServiceCheckoutZeroChargeTest`, `FileHostingPlanQuotaMatrixTest`, `FileHostingAdminJourneyScenarioTest`, `WorkspaceCollaborativeWorksTest`. Catalog show Blade render (main hides qty input, addon shows it): `ServiceShowPageTest`.
 
 **Use-case matrix (45):** permanent regression suite — `FileHostingBillingTameUseCasesTest`, `FileHostingBillingNormalUseCasesTest`, `FileHostingBillingAnomalyUseCasesTest` + `FileHostingBillingScenarioHarness`.
 

@@ -72,7 +72,7 @@ class PaymentCheckoutController extends Controller
     {
         $response = $this->api()->post(
             "invoices/{$invoice}/channel-checkout",
-            $this->apiPayload($request, ['channel_code']),
+            $this->apiPayload($request, ['channel_code', 'quantity']),
         );
 
         if (! $response->successful()) {
@@ -146,5 +146,19 @@ class PaymentCheckoutController extends Controller
         }
 
         return $invoiceResponse->json('data', []);
+    }
+
+    public function checkoutChannels(string $invoice): JsonResponse
+    {
+        $response = $this->api()->get("invoices/{$invoice}/checkout-channels");
+
+        if (! $response->successful()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $this->apiMessage($response),
+            ], $response->status() >= 400 ? $response->status() : 400);
+        }
+
+        return response()->json($response->json());
     }
 }

@@ -10,6 +10,9 @@ use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransChargeParameterBuilder;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransPaymentService;
+use App\Domain\Service\Exceptions\ServiceException;
+use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Services\ServicePurchaseQuantityService;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceChannelCheckoutService
@@ -17,20 +20,32 @@ class InvoiceChannelCheckoutService
     public function __construct(
         private PaymentChannelResolver $channelResolver,
         private InvoiceRepositoryInterface $invoices,
+        private InvoiceChannelFeeService $channelFees,
         private MidtransPaymentService $midtransPayments,
         private IpaymuPaymentService $ipaymuPayments,
         private MidtransChargeParameterBuilder $midtransChargeBuilder,
         private PaymentInstructionNormalizer $instructionNormalizer,
         private InvoiceActiveCheckoutCancellationService $checkoutCancellation,
+        private ServicePurchaseQuantityService $purchaseQuantities,
+        private PaymentChannelRouteSnapshotService $routeSnapshots,
     ) {}
 
     /**
-     * @param  array{channel_code: string, buyer?: array{name?: string, email?: string, phone?: string}}  $input
+     * @param  array{channel_code: string, quantity?: int, buyer?: array{name?: string, email?: string, phone?: string}}  $input
      * @return array{ok: true, data: array<string, mixed>, message_key: string, http: int}|array{ok: false, message: string, http: int, snap_fallback_available?: bool, failed_routes?: int}
      */
     public function checkout(Invoice $invoice, array $input): array
     {
         $channelCode = $input['channel_code'];
+
+        $quantityError = $this->applyServicePurchaseQuantityIfNeeded(
+            $invoice,
+            isset($input['quantity']) ? (int) $input['quantity'] : null,
+        );
+
+        if ($quantityError !== null) {
+            return $quantityError;
+        }
 
         $this->checkoutCancellation->prepareForChannelCheckout($invoice);
 
@@ -76,6 +91,11 @@ class InvoiceChannelCheckoutService
 
             $this->assignGatewayForRoute($invoice, $gateway);
 
+            if ($gateway->name === 'midtrans') {
+                $this->channelFees->applyBeforeCharge($invoice, $route, 'midtrans');
+                $invoice->refresh();
+            }
+
             $chargeResult = match ($gateway->name) {
                 'midtrans' => $this->chargeMidtrans($invoice, $route),
                 'ipaymu' => $this->chargeIpaymu($invoice, $route, $input['buyer'] ?? null),
@@ -93,7 +113,7 @@ class InvoiceChannelCheckoutService
                 continue;
             }
 
-            $this->persistSuccessfulCheckout($invoice, $gateway, $channel);
+            $this->persistSuccessfulCheckout($invoice, $gateway, $channel, $route);
 
             $invoice->refresh();
 
@@ -135,12 +155,18 @@ class InvoiceChannelCheckoutService
         $invoice->refresh();
     }
 
-    private function persistSuccessfulCheckout(Invoice $invoice, PaymentGateway $gateway, PaymentChannel $channel): void
-    {
-        DB::transaction(function () use ($invoice, $gateway, $channel): void {
+    private function persistSuccessfulCheckout(
+        Invoice $invoice,
+        PaymentGateway $gateway,
+        PaymentChannel $channel,
+        PaymentChannelRoute $route,
+    ): void {
+        DB::transaction(function () use ($invoice, $gateway, $channel, $route): void {
             $locked = $this->invoices->findOrFailByIdForUpdate($invoice->id);
+            $this->routeSnapshots->capture($locked, $route);
             $locked->payment_gateway_id = $gateway->id;
             $locked->payment_channel_code = $channel->code;
+            $locked->payment_channel_route_id = $route->id;
             $this->invoices->save($locked);
         });
     }
@@ -187,5 +213,59 @@ class InvoiceChannelCheckoutService
         }
 
         return ['ok' => true, 'data' => $result['data']];
+    }
+
+    /**
+     * @return array{ok: false, message: string, http: int}|null
+     */
+    private function applyServicePurchaseQuantityIfNeeded(Invoice $invoice, ?int $quantity): ?array
+    {
+        if ($quantity === null) {
+            return null;
+        }
+
+        if (! $invoice->isForServicePurchase()) {
+            return [
+                'ok' => false,
+                'message' => __('api/services.quantity_addon_only'),
+                'http' => 422,
+            ];
+        }
+
+        $purchase = ServicePurchase::query()->with('service')->find($invoice->invoiceable_id);
+
+        if ($purchase === null) {
+            return [
+                'ok' => false,
+                'message' => __('api/services.quantity_not_editable'),
+                'http' => 422,
+            ];
+        }
+
+        if ($purchase->service === null || ! $purchase->service->isAddonPlan()) {
+            return [
+                'ok' => false,
+                'message' => __('api/services.quantity_addon_only'),
+                'http' => 422,
+            ];
+        }
+
+        if ((int) $purchase->quantity === $quantity) {
+            return null;
+        }
+
+        try {
+            $this->purchaseQuantities->updateQuantity($purchase, $quantity);
+        } catch (ServiceException $e) {
+            return [
+                'ok' => false,
+                'message' => $e->getMessage(),
+                'http' => $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 422,
+            ];
+        }
+
+        $invoice->refresh();
+
+        return null;
     }
 }

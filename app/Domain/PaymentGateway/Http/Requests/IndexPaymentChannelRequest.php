@@ -22,6 +22,7 @@ class IndexPaymentChannelRequest extends FormRequest
     {
         return [
             'scope' => ['sometimes', 'string', 'in:admin'],
+            'subtotal' => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ];
     }
 }

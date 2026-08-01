@@ -220,6 +220,27 @@
     margin: 0.15rem 0 0;
 }
 
+.ois-fee-breakdown {
+    border: 1px dashed var(--ois-border);
+    border-radius: 0.65rem;
+    padding: 0.85rem 1rem;
+    background: var(--ois-surface);
+}
+
+.ois-fee-breakdown__row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.35rem 0;
+}
+
+.ois-fee-breakdown__row--total {
+    border-top: 1px solid var(--ois-border);
+    margin-top: 0.35rem;
+    padding-top: 0.65rem;
+}
+
 .ois-amount-callout {
     display: flex;
     align-items: center;

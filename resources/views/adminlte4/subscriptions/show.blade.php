@@ -1,4 +1,7 @@
 <x-adminlte4::layouts.app :title="__('web/payments.subscriptions.show_title')">
+    @php
+        \Diglactic\Breadcrumbs\Breadcrumbs::setCurrentRoute('subscriptions.show', $subscription['id'] ?? '');
+    @endphp
     <x-adminlte4::card :title="__('web/payments.subscriptions.show_card_title', ['number' => $subscription['subscription_number'] ?? $subscription['id'] ?? ''])">
         <dl class="row mb-0">
             <dt class="col-sm-3">{{ __('web/payments.subscriptions.fields.subscriber_name') }}</dt>

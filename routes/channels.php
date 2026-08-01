@@ -38,3 +38,7 @@ Broadcast::channel('payments.invoice.{invoiceId}', function (User $user, string 
         return false;
     }
 });
+
+Broadcast::channel('payments.routing', function (User $user): bool {
+    return $user->can('initiate payment') || $user->can('view invoice');
+});

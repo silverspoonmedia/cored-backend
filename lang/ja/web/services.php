@@ -57,6 +57,8 @@ return [
         'period' => '対象期間',
         'entitlement_status' => 'エンタイトルメント',
         'entitlement_quantity' => '数量',
+        'stack_quantity' => 'スタック',
+        'stack_quantity_equation' => ':current + :purchase = :total',
         'entitlement_ends' => '終了日',
         'entitlement_grace' => '猶予終了',
         'change_type' => '変更種別',

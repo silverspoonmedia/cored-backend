@@ -1,3 +1,35 @@
+function routeRoleWeight(role) {
+    if (role === 'only' || role === 'primary') {
+        return 0;
+    }
+
+    if (role === 'fallback') {
+        return 1;
+    }
+
+    return 2;
+}
+
+function compareRouteItems(a, b) {
+    const aRole = routeRoleWeight(a.dataset.routeRole ?? '');
+    const bRole = routeRoleWeight(b.dataset.routeRole ?? '');
+
+    if (aRole !== bRole) {
+        return aRole - bRole;
+    }
+
+    const aPriority = Number.parseInt(
+        a.dataset.routePriority ?? a.querySelector('[data-payment-route-priority]')?.value ?? '9999',
+        10,
+    );
+    const bPriority = Number.parseInt(
+        b.dataset.routePriority ?? b.querySelector('[data-payment-route-priority]')?.value ?? '9999',
+        10,
+    );
+
+    return aPriority - bPriority;
+}
+
 function initPaymentChannelsAdmin(root) {
     if (!root || root.dataset.paymentChannelsAdminBound === '1') {
         return;
@@ -8,6 +40,7 @@ function initPaymentChannelsAdmin(root) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
     const channelTemplate = root.dataset.updateUrlTemplate || '';
     const routeTemplate = root.dataset.routeUpdateUrlTemplate || '';
+    const syncPolicyUrl = root.dataset.syncPolicyUrl || '';
     const messages = JSON.parse(root.dataset.messages || '{}');
     const toast = root.querySelector('[data-payment-admin-toast]');
     const searchInput = root.querySelector('[data-payment-channel-search]');
@@ -15,8 +48,45 @@ function initPaymentChannelsAdmin(root) {
     const noResults = root.querySelector('[data-payment-channel-no-results]');
     const cards = Array.from(root.querySelectorAll('[data-payment-channel-card]'));
 
+    cards.forEach((card) => resortRouteList(card, messages.primaryRoute));
+
     searchInput?.addEventListener('input', () => {
         filterChannels(cards, searchInput.value, countLabel, noResults, messages);
+    });
+
+    root.querySelector('[data-payment-sync-policy]')?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+
+        if (!(button instanceof HTMLButtonElement) || !syncPolicyUrl) {
+            return;
+        }
+
+        button.disabled = true;
+
+        try {
+            const response = await fetch(syncPolicyUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            const payload = await response.json();
+
+            if (!response.ok || payload.status !== 'success') {
+                throw new Error(payload.message || messages.failed || 'Sync failed.');
+            }
+
+            showToast(toast, payload.message || messages.syncPolicyDone, 'success');
+            window.setTimeout(() => window.location.reload(), 1200);
+        } catch (error) {
+            showToast(toast, error instanceof Error ? error.message : (messages.failed || 'Sync failed.'), 'error');
+            button.disabled = false;
+        }
     });
 
     root.querySelectorAll('[data-payment-channel-toggle]').forEach((input) => {
@@ -67,6 +137,10 @@ function initPaymentChannelsAdmin(root) {
     });
 
     root.querySelectorAll('[data-payment-route-priority]').forEach((input) => {
+        if (input.disabled) {
+            return;
+        }
+
         let previous = input.value;
 
         input.addEventListener('change', async () => {
@@ -85,6 +159,10 @@ function initPaymentChannelsAdmin(root) {
             try {
                 await putJson(url, { priority }, csrfToken, messages);
                 showToast(toast, messages.routeUpdated, 'success');
+                const routeItem = input.closest('[data-payment-route-item]');
+                if (routeItem) {
+                    routeItem.dataset.routePriority = String(priority);
+                }
                 resortRouteList(card, messages.primaryRoute);
                 previous = String(priority);
             } catch (error) {
@@ -171,16 +249,7 @@ function refreshPrimaryRouteMarkers(card, primaryLabel) {
     const routes = Array.from(card.querySelectorAll('[data-payment-route-item]'));
     const activeRoutes = routes
         .filter((route) => !route.classList.contains('is-inactive'))
-        .sort((a, b) => {
-            const aPriority = Number.parseInt(a.querySelector('[data-payment-route-priority]')?.value ?? '0', 10);
-            const bPriority = Number.parseInt(b.querySelector('[data-payment-route-priority]')?.value ?? '0', 10);
-
-            if (aPriority !== bPriority) {
-                return aPriority - bPriority;
-            }
-
-            return 0;
-        });
+        .sort(compareRouteItems);
 
     const primaryId = activeRoutes[0]?.dataset.routeId ?? null;
 
@@ -222,15 +291,8 @@ function resortRouteList(card, primaryLabel) {
 
     const items = Array.from(list.querySelectorAll('[data-payment-route-item]'));
 
-    items.sort((a, b) => {
-        const aPriority = Number.parseInt(a.querySelector('[data-payment-route-priority]')?.value ?? '0', 10);
-        const bPriority = Number.parseInt(b.querySelector('[data-payment-route-priority]')?.value ?? '0', 10);
+    items.sort(compareRouteItems);
 
-        return aPriority - bPriority;
-    });
-
-    // Preserve focus across DOM reordering: if the active element lives inside
-    // an item that moves, the browser drops focus. Snapshot + restore by id.
     const active = document.activeElement;
     const activeItem = active ? active.closest('[data-payment-route-item]') : null;
     const activeId = active && active.id ? active.id : null;

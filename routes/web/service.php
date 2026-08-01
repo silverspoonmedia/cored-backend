@@ -16,3 +16,6 @@ Route::post('services/{service}/checkout', [ServiceController::class, 'checkout'
 Route::get('service-purchases/{purchase}', [ServicePurchaseController::class, 'show'])
     ->name('service-purchases.show')
     ->whereUuid('purchase');
+Route::patch('service-purchases/{purchase}/quantity', [ServicePurchaseController::class, 'updateQuantity'])
+    ->name('service-purchases.update-quantity')
+    ->whereUuid('purchase');

@@ -29,14 +29,16 @@
             <dd class="col-sm-9">{{ data_get($service, 'description') ?: '—' }}</dd>
         </dl>
 
-        @can('purchase service')
-            @php($canInitiatePayment = true)
-        @else
-            @php($canInitiatePayment = \Illuminate\Support\Facades\Gate::allows('initiate payment'))
-        @endcan
+        @php
+            $canInitiatePayment = \Illuminate\Support\Facades\Gate::any(['purchase service', 'initiate payment']);
+        @endphp
 
         @if (($canInitiatePayment) && data_get($service, 'status') === 'active' && $prices->isNotEmpty())
-            <form action="{{ route('services.checkout', data_get($service, 'id')) }}" method="POST" class="d-flex gap-2 align-items-end">
+            @php
+                $isAddonPlan = data_get($service, 'plan_kind') === 'addon';
+                $maxPurchaseQuantity = max(1, (int) config('service.purchase.max_quantity', 99));
+            @endphp
+            <form action="{{ route('services.checkout', data_get($service, 'id')) }}" method="POST" class="d-flex flex-wrap gap-2 align-items-end">
                 @csrf
                 <div>
                     <label class="form-label" for="checkout-currency">{{ __('web/services.show.checkout_currency') }}</label>
@@ -48,6 +50,21 @@
                         @endforeach
                     </select>
                 </div>
+                @if ($isAddonPlan)
+                    <div>
+                        <label class="form-label" for="checkout-quantity">{{ __('web/services.show.purchase_quantity') }}</label>
+                        <input
+                            type="number"
+                            name="quantity"
+                            id="checkout-quantity"
+                            class="form-control"
+                            value="1"
+                            min="1"
+                            max="{{ $maxPurchaseQuantity }}"
+                            required
+                        >
+                    </div>
+                @endif
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-credit-card me-1" aria-hidden="true"></i>{{ __('web/services.show.start_checkout') }}
                 </button>

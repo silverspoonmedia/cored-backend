@@ -3,6 +3,7 @@
 namespace App\Domain\PaymentGateway\Http\Resources;
 
 use App\Domain\PaymentGateway\Models\Invoice;
+use App\Domain\PaymentGateway\Services\Payment\InvoiceChannelFeeService;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutInstructionResolver;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
@@ -19,11 +20,15 @@ class InvoiceResource extends JsonResource
     public function toArray(Request $request): array
     {
         $currency = $this->currency;
+        $this->loadMissing('paymentChannelRouteSnapshot.paymentGateway');
+        $feeBasis = app(InvoiceChannelFeeService::class)->feeBasisFields($this->paymentChannelRouteSnapshot);
+        $routeSnapshot = $this->paymentChannelRouteSnapshot;
 
         return [
             'id' => $this->id,
             'invoiceable_id' => $this->invoiceable_id,
             'invoiceable_type' => $this->invoiceable_type,
+            'invoiceable_status' => $this->resolveInvoiceableStatus(),
             'payment_gateway_id' => $this->payment_gateway_id,
             'payment_gateway' => $this->whenLoaded('paymentGateway', fn () => [
                 'id' => $this->paymentGateway?->id,
@@ -34,8 +39,17 @@ class InvoiceResource extends JsonResource
             'external_transaction_id' => $this->external_transaction_id,
             'payment_method' => $this->payment_method,
             'payment_channel_code' => $this->payment_channel_code,
+            'payment_channel_route_id' => $this->payment_channel_route_id,
+            'payment_channel_route_snapshot_id' => $this->payment_channel_route_snapshot_id,
+            'payment_channel_route_snapshot' => $this->whenLoaded('paymentChannelRouteSnapshot', fn () => $routeSnapshot
+                ? (new PaymentChannelRouteSnapshotResource($routeSnapshot))->resolve()
+                : null),
+            'payment_channel_route' => $this->whenLoaded('paymentChannelRouteSnapshot', fn () => $routeSnapshot
+                ? (new PaymentChannelRouteSnapshotResource($routeSnapshot))->resolve()
+                : null),
             ...$this->moneyFields('subtotal', $this->subtotal, $currency),
             ...$this->moneyFields('payment_channel_fee', $this->payment_channel_fee, $currency),
+            ...$feeBasis,
             ...$this->moneyFields('customer_gross_total', $this->customer_gross_total, $currency),
             'currency' => $currency,
             'status' => $this->status,
@@ -48,5 +62,36 @@ class InvoiceResource extends JsonResource
             ...$this->dateFields('updated_at', $this->updated_at),
             'checkout_session' => app(InvoiceCheckoutInstructionResolver::class)->resolve($this->resource),
         ];
+    }
+
+    /**
+     * Resolve the invoiceable's current status string (mirrors PaymentRealtime).
+     *
+     * Used by checkout JS to soft-update the purchase status badge on
+     * sync-status polling without a full page reload.
+     */
+    private function resolveInvoiceableStatus(): ?string
+    {
+        $invoiceable = $this->whenLoaded('invoiceable', fn () => $this->invoiceable, $this->invoiceable);
+
+        if ($invoiceable === null) {
+            return null;
+        }
+
+        $status = $invoiceable->status ?? null;
+
+        if ($status === null) {
+            return null;
+        }
+
+        if ($status instanceof \BackedEnum) {
+            return (string) $status->value;
+        }
+
+        if (is_object($status) && property_exists($status, 'value')) {
+            return (string) $status->value;
+        }
+
+        return (string) $status;
     }
 }

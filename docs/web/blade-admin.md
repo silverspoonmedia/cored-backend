@@ -161,13 +161,24 @@ Soft override CSS layer (light/dark) under layout assets — keep tokenized vari
 - **Submit spinners**: every AJAX submit button (navbar logout, mark-all-read, `menus/index` delete forms) carries a `[data-form-submit-spinner]` span toggled by the ajax-form handler.
 - **Checkout toasts**: `checkout.js` uses `showCheckoutToast(message, type)` (`.ois-toast` container, `role="status"` + `aria-live`). `window.alert` is forbidden. Invoice/purchase show also soft-updates payment status (hero/steps/panel/sidebar) without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
 - **Confirm paid**: the manual confirm button ships a `title` + sibling help text (`web/payments.checkout.confirm_paid_help`) explaining why manual sync exists.
-- **Service checkout dedup**: `services/show` renders a single checkout form. `@can('purchase service')` short-circuits; otherwise `Gate::allows('initiate payment')` gates the same form.
+- **Service checkout dedup**: `services/show` renders a single checkout form. `Gate::any(['purchase service', 'initiate payment'])` (block `@php … @endphp`) gates it — same pair `ServicePolicy::purchase` checks. Do **not** inline `@php(...)` here (see Blade `@php` inline gotcha below).
 - **Payment-channel priority autosave**: priority inputs fire AJAX on `change` and the label carries an italic "saved automatically" hint so users are not surprised by the absence of a Save button.
 - **Local QR generator**: `instructionMedia.js` routes `qrString` fallbacks to `/qr` (`QrCodeController`, `chillerlan/php-qrcode`) — the payment payload never leaves the app.
 - **Clickable breadcrumb parents**: every parent trail in `routes/breadcrumbs.php` passes a `route()` URL — `activity-logs.index`, `notifications.index`, `profile.password.edit` included. The renderer only links non-last items, so a parent without a URL renders as dead text. Policy: all parents must be clickable.
 - **Menu delete cascade modal**: `menus/index` ships one delete trigger per row that opens `#menuDeleteConfirmModal`. The modal's cascade checkbox swaps the form `action` to the cascade URL via JS (`data-menu-cascade-url`, `data-menu-confirm-template`). No more inline twin delete buttons.
 - **Paired card alignment**: `users/edit` keeps the edit form and recent-activity cards flush (no `mt-3`). When activity is empty, the partial renders an `empty-state` inside the card so the right column does not collapse.
 - **File-hosting toolbar symmetry**: `.fh-toolbar` carries a full border + uniform radius (not a half-open bar). The list-view empty row spans all 8 columns.
+
+### Blade `@php` inline gotcha
+
+The inline `@php($expr)` directive compiles via a regex that matches the **first** closing paren. When `$expr` itself contains parens — any method call like `Gate::allows('initiate payment')`, a closure, or a nested function — the matcher consumes the wrong `)` and emits malformed PHP. Everything after the broken directive (`@else`, `@endcan`, `@if`, `@php`, `@endif`) then leaks through as raw text instead of compiled directives, leaving variables undefined and pages 500'ing (`Undefined variable $isAddonPlan` on `services/show`).
+
+| Do | Don't |
+|----|-------|
+| Block form `@php` … `@endphp` for any expression with its own parens | Inline `@php(Gate::allows('initiate payment'))` |
+| Inline `@php($flag = true)` only for trivial scalar assignments | Inline `@php($x = SomeClass::method($arg))` |
+
+Hit on `services/show` (fixed): the `@can/@else/@endcan` + inline `@php(...)` block was replaced with a single block `@php … @endphp` using `Gate::any([...])`. See [service — Web (Blade)](../domains/service/README.md#web-blade).
 
 ## Concurrent server note
 

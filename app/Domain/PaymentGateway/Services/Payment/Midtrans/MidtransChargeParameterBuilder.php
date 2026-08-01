@@ -33,6 +33,10 @@ class MidtransChargeParameterBuilder
             $charge['shopeepay'] = ['callback_url' => rtrim((string) config('app.url'), '/').'/payment/midtrans/shopeepay/callback'];
         }
 
+        if ($paymentType === 'dana') {
+            $charge['dana'] = ['callback_url' => rtrim((string) config('app.url'), '/').'/payment/midtrans/dana/callback'];
+        }
+
         return $charge;
     }
 }

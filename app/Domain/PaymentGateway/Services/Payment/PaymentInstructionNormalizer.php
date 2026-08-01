@@ -10,6 +10,10 @@ use Carbon\Carbon;
 
 class PaymentInstructionNormalizer
 {
+    public function __construct(
+        private InvoiceChannelFeeService $channelFees,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $rawResponse
      * @return array<string, mixed>
@@ -26,7 +30,7 @@ class PaymentInstructionNormalizer
             default => ['type' => $channel->kind->value],
         };
 
-        return [
+        return array_merge([
             'channel_code' => $channel->code,
             'kind' => $channel->kind->value,
             'gateway' => $gateway->name,
@@ -36,7 +40,7 @@ class PaymentInstructionNormalizer
             'expires_at' => $this->resolveExpiresAt($gateway->name, $rawResponse, $invoice),
             'external_transaction_id' => $invoice->external_transaction_id,
             'instructions' => $instructions,
-        ];
+        ], $this->channelFees->moneyBreakdown($invoice));
     }
 
     /**

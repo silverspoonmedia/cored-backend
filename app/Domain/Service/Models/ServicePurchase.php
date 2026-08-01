@@ -23,6 +23,7 @@ class ServicePurchase extends Model
     protected $fillable = [
         'user_id',
         'service_id',
+        'quantity',
         'display_currency',
         'display_amount',
         'list_amount',
@@ -49,6 +50,7 @@ class ServicePurchase extends Model
     {
         return [
             'display_amount' => 'decimal:2',
+            'quantity' => 'integer',
             'list_amount' => 'decimal:2',
             'credit_amount' => 'decimal:2',
             'charge_amount' => 'decimal:2',

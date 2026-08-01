@@ -7,10 +7,10 @@ Core domain `App\Domain\PaymentGateway\`. Secrets in env/config, not DB. Polymor
 ## Layout
 
 ```
-Models/     PaymentGateway, Invoice, Subscription, PaymentChannel
+Models/     PaymentGateway, Invoice, PaymentChannelRouteSnapshot, Subscription, PaymentChannel
 Services/   Payment/* (channel checkout, Midtrans, iPaymu), Billing/*
 Events/     InvoiceStatusChanged (ShouldBroadcastNow)
-Support/    PaymentRealtime, InvoiceChannelAuthorizer, DataTable/*
+Support/    PaymentRealtime, InvoiceChannelAuthorizer, InvoiceWebDestination, Routing/* (policy loader, materializer), DataTable/*
 Http/       API V1 + Web proxies
 Console/    payments:*
 ```
@@ -41,6 +41,10 @@ Primary sell path: [Service](../service/README.md) checkout → `ServicePurchase
 
 **API display companions:** `InvoiceResource` / `SubscriptionResource` keep raw money + ISO timestamps and add `*_formatted` (money with currency code) and `*_formatted` / `*_human` (dates). Blade and DataTables bind companions only — see [platform/crud presentation](../../platform/crud.md#api-resource-presentation-dual-fields).
 
+**InvoiceResource (post-checkout policy):** `invoiceable_status` (resolved from the invoiceable relation, mirrors `PaymentRealtime`), `payment_channel_route_snapshot_id`, nested `payment_channel_route_snapshot` (and `payment_channel_route` alias with the same snapshot shape), plus fee basis companions (`payment_channel_fee_type`, `payment_channel_fee_label`, `payment_channel_fee_basis`) — all from the immutable snapshot, **not** live `payment_channel_routes` rows.
+
+**PaymentIncomeInvoiceResource** (income drill-down): a subset of `InvoiceResource` money + date companions (`subtotal`, `payment_channel_fee`, `customer_gross_total`, `paid_at`, `withdrawable_at`), plus fee basis companions from the snapshot, and `show_url` via `InvoiceWebDestination`. The `.paymentGateway` eager load lives in `PaymentIncomeAnalyticsService::invoicesPaginated()` (the query backing this resource); the resource itself only does `loadMissing('paymentChannelRouteSnapshot')` as a defensive fallback.
+
 ### iPaymu monetary reconcile
 
 On webhook / `checkTransaction` sync (`IpaymuInvoiceSynchronizer`):
@@ -55,6 +59,27 @@ Mismatch beyond epsilon → reject sync (no paid status / no fulfillment). Fee +
 
 **Charge amount:** iPaymu direct/cart must send **merchant sale** (`invoice.subtotal`) only. Sending `customer_gross_total` (sale + prior fee) makes iPaymu treat that as a new SubTotal and add fee again — webhook then fails SubTotal match. Charge response may update fee/gross; before a new charge, fee is reset to 0 and gross = subtotal.
 
+### Buyer-borne channel fees
+
+Policy default: `PAYMENT_CHANNEL_FEE_BEARER=buyer` (`config/payment.php`). YAML route `fee_*` is the **buyer surcharge** shown at checkout and stored on the invoice. Checkout UI shows the **percentage basis** (e.g. `0.7% of service price`) when the route fee is percent-based, so buyers see why the fee amount changes with subtotal.
+
+| Field | Bookkeeping role |
+|-------|------------------|
+| `subtotal` | Merchant sale (service price) — unchanged after invoice creation |
+| `payment_channel_fee` | Buyer-paid channel surcharge |
+| `customer_gross_total` | Cash collected from customer (`subtotal + fee`) |
+
+| Gateway | Fee application |
+|---------|-----------------|
+| **Midtrans** | `InvoiceChannelFeeService` sets fee + gross from policy estimate **before** charge (`gross_amount` = `customer_gross_total`). `MidtransSnapParameterBuilder` / `MidtransPaymentService::midtransGrossAmount()` cast `gross_amount` to **int** for IDR (whole rupiah) and **float (2dp)** for non-IDR — the Snap/charge payload type, not just the invoice column. Codified by `MidtransSnapParameterBuilderTest` (`assertSame(180000, …)` int). |
+| **iPaymu** | Charge sends `subtotal` only; provider returns actual fee + gross (webhook reconciles) |
+
+Checkout UI shows subtotal / payment fee / total due. `GET /api/v1/payment-channels?subtotal=` returns per-channel estimates. Abandoning checkout resets fee/gross to pre-checkout values.
+
+**Reconciliation:** invoice list shows subtotal + fee + gross; `GET /api/v1/invoices/export` (and `/apps/invoices/export`) streams CSV for bookkeeping. `InvoiceService::list()` / `get()` eager-load `paymentGateway`, `paymentChannelRouteSnapshot.paymentGateway`, and `invoiceable` up front to avoid N+1 on the `/apps/invoices` list (consumed by `InvoiceResource` / `PaymentIncomeInvoiceResource`).
+
+**Blade payment surface:** For `invoiceable_type = service_purchase`, `/apps/invoices` datatable **View** links and `GET /apps/invoices/{id}` redirect to the [Service purchase hub](../service/README.md) (`/apps/service-purchases/{id}`) — one combined payment + purchase page. Subscription and other morph types still use `/apps/invoices/{id}`. Helper: `InvoiceWebDestination::showUrl()`.
+
 | Surface | Channel mode | Snap/redirect fallback |
 |---------|--------------|------------------------|
 | **API** | Channel picker + instructions | Yes (`snap_fallback` when no active channels) |
@@ -64,7 +89,90 @@ Mismatch beyond epsilon → reject sync (no paid status / no fulfillment). Fee +
 
 ### Channel checkout
 
-Logical channels (`qris`, `va_*`, e-wallets) + `payment_channel_routes` priority. Seed: `PaymentChannelSeeder` after gateways.
+Logical channels (`qris`, `va_*`, e-wallets) are **materialized from** [Routing_Price.yaml](Routing_Price.yaml) into `payment_channels` + `payment_channel_routes` (fee, settlement tier, route role). Sync: `php artisan payments:sync-routing-policy` (also runs via `PaymentChannelSeeder` after gateways).
+
+**Policy highlights (see [Routing_Rules.md](Routing_Rules.md)):**
+
+| Channel | Routing |
+|---------|---------|
+| `qris` | Midtrans primary (0.7% VAT-incl, H+2) → iPaymu H+2 fallback; never `ipaymu_h0` |
+| `va_*` | iPaymu H+4 primary → Midtrans H+2 fallback; per-bank overrides (SeaBank/Saqu → Midtrans only; Artha Graha/Muamalat → iPaymu only) |
+| E-wallets (`gopay`, `ovo`, `dana`, `shopeepay`) | Midtrans direct only; `cheap_alt_code=qris` is a **checkout UX hint** only |
+| `linkaja` | QRIS proxy (`routing_type=qris_proxy`) — charges via QRIS routes |
+
+`PaymentChannelResolver` orders viable routes by `route_role` (primary/only before fallback) then `priority`, skips `avoid` tags, and checks gateway credentials. Successful checkout stores `payment_channel_route_id` and an immutable **`payment_channel_route_snapshot_id`** on the invoice (policy captured at checkout — see below).
+
+### Route policy snapshot
+
+Parallels [Service FX snapshots](../service/README.md) (`exchange_rate_snapshots` + `fx_rate_snapshot_id`). YAML sync and admin edits mutate `payment_channel_routes`; without a snapshot, invoice fee **amounts** stay locked but fee **basis** (flat/percent, settlement tier, labels) could drift on display.
+
+| When | What is captured |
+|------|------------------|
+| Channel checkout (`InvoiceChannelCheckoutService`) | Insert row in `payment_channel_route_snapshots`; FK on invoice |
+| Midtrans pre-charge (`InvoiceChannelFeeService::applyBeforeCharge`) | Same snapshot reused for fee estimate + gross before charge |
+
+`InvoiceResource`, the [Service purchase hub](../service/README.md) (invoice nested in purchase API), CSV export (`InvoiceCsvExportService`), and any Blade consuming invoice API data read **`payment_channel_route_snapshot`** only — not live route rows. Standalone `/apps/invoices/{id}` Blade applies only to non-`service_purchase` morphs (service purchases redirect per **Blade payment surface** above). Abandoning checkout clears `payment_channel_route_snapshot_id` with the route FK. Pre-production: no backfill for invoices created before this feature.
+
+**Snapshot columns:** `payment_channel_code`, `payment_gateway_id`, `route_role`, `settlement_days`, `fee_flat`, `fee_percent`, `fee_vat_inclusive`, `policy_tag`, `provider_payment_*`, `captured_at` (+ `captured_at_formatted` / `captured_at_human` companions via `DatePresenter`).
+
+### Route schema (`payment_channel_routes`)
+
+| Column | Role |
+|--------|------|
+| `route_role` | `only`, `primary`, or `fallback` — checkout order before `priority` |
+| `priority` | Tie-breaker within the same `route_role` (lower = tried first) |
+| `settlement_days` | Settlement tier from YAML (e.g. H+2, H+4) |
+| `fee_flat` / `fee_percent` | Channel fee model materialized from YAML |
+| `policy_tag` | YAML tag (e.g. `ipaymu_h0`) — resolver skips tags in policy `avoid` |
+| `is_policy_managed` | When true, priority/fee/settlement are owned by YAML sync — admin cannot edit priority |
+
+Shared sort helper: `PaymentRouteSort` (resolver, `PaymentChannelService::listAll`, admin Blade/JS).
+
+### VA bank catalog (`VaBankCatalog`)
+
+13 logical VA channels (`va_bca`, `va_bni`, …) materialized from `VaBankCatalog`. Per-bank PG codes differ (Midtrans vs iPaymu). YAML overrides: SeaBank/Saqu → Midtrans only; Artha Graha/Muamalat/BPD Bali → iPaymu only.
+
+| Slug | Display | Midtrans | iPaymu |
+|------|---------|----------|--------|
+| `bca` | BCA VA | bca | bca |
+| `bni` | BNI VA | bni | bni |
+| `mandiri` | Mandiri VA | mandiri | mandiri |
+| `bri` | BRI VA | bri | bri |
+| `permata` | Permata VA | permata | permata |
+| `cimb` | CIMB Niaga VA | cimb | cimb |
+| `danamon` | Danamon VA | danamon | danamon |
+| `bsi` | BSI VA | bsi | bsi |
+| `seabank` | SeaBank VA | seabank | — |
+| `saqu` | Bank Saqu VA | saqu | — |
+| `artha_graha` | Artha Graha VA | — | bag |
+| `muamalat` | Muamalat VA | — | bmi |
+| `bpdbali` | BPD Bali VA | — | bpdbali |
+
+### Admin UI (`/apps/payment-channels`)
+
+- Routes listed in checkout order (`route_role`, then `priority`); **Tried first** badge on the first active route after that sort.
+- **Sync routing policy** button → `POST /apps/payment-channels/sync-routing-policy` (same as `php artisan payments:sync-routing-policy`).
+- Policy-managed routes: priority input disabled; toggle `is_active` still allowed.
+
+### Admin income page (`/apps/payments/income`)
+
+Read-only dashboard for payment gateway revenue (permission: `view invoice`). Menu: **Payments → Payment income**.
+
+| Metric | Source field | Meaning |
+|--------|--------------|---------|
+| Service revenue | `SUM(subtotal)` | Product sales (merchant income) |
+| Buyer payment fees | `SUM(payment_channel_fee)` | Surcharges collected from customers |
+| Cash collected | `SUM(customer_gross_total)` | Total customer payments |
+
+**Date basis toggle:** filter by `paid_at` (payment recognition) or `withdrawable_at` (PG settlement). Optional gateway filter (Midtrans / iPaymu).
+
+**Date range timezone:** `from` / `to` filters use calendar days in `PAYMENT_REPORTING_TIMEZONE` (default `Asia/Jakarta`), not app UTC. This keeps early-morning WIB payments visible on the default “last 30 days” view when the server clock is still on the previous UTC date.
+
+Also shows **funds pipeline** buckets (awaiting settlement, ready to disburse, in payout, disbursed, failed), breakdowns by gateway/channel/product type, daily trend table, and paginated paid-invoice drill-down. Drill-down `show_url` uses `InvoiceWebDestination::showUrl()` → purchase hub for `service_purchase`, else `/apps/invoices/{id}`.
+
+API: `GET /api/v1/payments/income`, `GET /api/v1/payments/income/invoices`. Export: **Export CSV** on the page (same date filters via `paid_from` / `paid_to`).
+
+Note: amounts are **recorded invoice values**, not PG bank-statement net-of-MDR. Disbursement actions remain CLI (`payments:disbursement-*`).
 
 ```
 POST /api/v1/invoices/{id}/channel-checkout
@@ -88,9 +196,11 @@ Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation 
 
 ## Blade / assets
 
-Authenticated admin/checkout UI under `/apps/*` (route names unprefixed): e.g. `/apps/payment-channels`, `/apps/payment-gateways`, invoice/service-purchase show with checkout panel. QR image base is injected via `route('qr.show')` (`window.monolithQrBaseUrl`) — no hard-coded `/apps/qr` in JS. See [blade-admin — URL helpers](../../web/blade-admin.md#url-helpers-auth-shell).
+Authenticated admin/checkout UI under `/apps/*` (route names unprefixed): e.g. `/apps/payment-channels`, `/apps/payment-gateways`, `/apps/service-purchases/{id}` (primary payment surface for service sales), `/apps/invoices` (list **View** uses `InvoiceWebDestination`). QR image base is injected via `route('qr.show')` (`window.monolithQrBaseUrl`) — no hard-coded `/apps/qr` in JS. See [blade-admin — URL helpers](../../web/blade-admin.md#url-helpers-auth-shell).
 
-Payment-first order/invoice show: hero, steps, `checkout-panel`, `checkout.js`. Web proxies: channel-checkout, sync-status, snap-token (API).
+**Breadcrumbs:** every payment web route has a trail in `routes/breadcrumbs.php` (invoices, payments.income, payment-channels, payment-gateways, subscriptions) — same coverage as users/services/menus. Param routes (`invoices.show`, `subscriptions.show/edit`) call `Breadcrumbs::setCurrentRoute()` in their Blade `@php` block.
+
+Payment-first purchase hub / subscription invoice show: hero, steps, `checkout-panel`, `checkout.js`. Fee breakdown shows **0** until the buyer selects a payment method (restored from active `checkout_session` when instructions exist). Web proxies: channel-checkout, sync-status, snap-token (API). Checkout UX: channel picker buttons carry `aria-pressed` on first paint; sync-status button shows a loading state (disabled + text) during the request; both purchase hub and invoice show use the same mobile column ordering (sidebar first on mobile). Message placeholders use Laravel `:name` convention throughout (e.g. `Pay before :time`).
 
 ### Realtime invoice status (no hard reload)
 
@@ -105,9 +215,23 @@ Checkout pages soft-update hero / steps / panel / sidebar when invoice status ch
 | Emit | Both Midtrans + iPaymu synchronizers after save + fulfillment, **only when status string actually changed** (webhook, sync-status, Midtrans reconcile cron all converge here) |
 | Client | `checkout.js` reuses `createNotificationEcho` + `window.__monolithEcho`; injects `data-broadcast` from `PaymentRealtime::clientConfig()` |
 | Soft updates | Channel checkout success → `showInstructions()` (no reload); terminal `paid` / `expired` / `cancelled` / `failed` → badge/steps/panel/sidebar patch, stop poll |
-| Fallback | 15s `sync-status` poll while instructions active (and when broadcast unconfigured). Confirm-paid button kept |
+| Fallback | 15s `sync-status` poll while instructions active (and when broadcast unconfigured). Confirm-paid button kept; loading state while syncing. Poll response carries `invoiceable_status` so the purchase badge soft-updates without a reload. |
 
-Payload (slim): `invoice_id`, `status`, `previous_status`, `paid_at`, `expired_at`, `invoiceable_type`, `invoiceable_id`, `invoiceable_status`.
+Invoice status payload (slim): `invoice_id`, `status`, `previous_status`, `paid_at`, `expired_at`, `invoiceable_type`, `invoiceable_id`, `invoiceable_status`. The sync-status API response (Midtrans + iPaymu) also includes `expired_at` and `invoiceable_status` on the nested `invoice` object so polling-only clients can patch the purchase badge.
+
+### Realtime routing catalog
+
+When admins toggle payment channels/routes or run `payments:sync-routing-policy`, checkout pages refresh available methods and fee quotes without reload.
+
+| Layer | Behavior |
+|-------|----------|
+| Event | `PaymentRoutingCatalogChanged` → `routing.catalog.changed` |
+| Channel | Private `payments.routing` — auth: `initiate payment` or `view invoice` |
+| Emit | `PaymentChannelService` (channel/route update), `PaymentRouteMaterializer::sync` (non-dry-run) |
+| Refresh API | `GET /api/v1/invoices/{invoice}/checkout-channels` (invoice subtotal quotes); web proxy `GET /apps/invoices/{invoice}/checkout/channels` |
+| Client | `checkout.js` listens on routing channel, refetches channels, re-quotes fees via `quoteChannelForSubtotal` (current invoice/preview subtotal + `formatMoney`), re-renders picker, toasts fee/removal changes; **60s poll** fallback when broadcast unconfigured |
+
+Payload: `revision`, `reason` (`channel_updated` | `route_updated` | `policy_synced`), optional `channel_code`.
 
 ## Permissions & morph map
 
@@ -115,11 +239,11 @@ Permissions in RoleSeeder (`view invoice`, `initiate payment`, `manage payment g
 
 ## Scheduler / commands
 
-`payments:*` artisan commands for billing/disbursement maintenance (see domain Console). Scheduler in `routes/console.php` / kernel as configured.
+`payments:*` artisan commands for billing/disbursement maintenance (see domain Console). Notable: `payments:sync-routing-policy` (`--dry-run`) reloads channel/route rows from YAML. Scheduler in `routes/console.php` / kernel as configured.
 
 ## Config
 
-`config/payment.php` — Midtrans/iPaymu credentials from env; `default_buyer_phone` (`PAYMENT_DEFAULT_BUYER_PHONE`) for iPaymu when profile has no phone. After secret edits: `php artisan config:rebuild`.
+`config/payment.php` — Midtrans/iPaymu credentials from env; `default_buyer_phone` (`PAYMENT_DEFAULT_BUYER_PHONE`) for iPaymu when profile has no phone. `config/payment-routing.php` — path to [Routing_Price.yaml](Routing_Price.yaml). After secret edits: `php artisan config:rebuild`.
 
 ## Encryption
 
@@ -127,7 +251,7 @@ Sensitive invoice payloads, 2FA, etc.: [encryption.md](encryption.md).
 
 ## Tests
 
-`composer test -- --filter=Payment` (and related Invoice/Channel filters). Realtime-specific: `PaymentRealtime`, `InvoiceChannelAuthorizer`, `InvoiceStatusChanged`, `MidtransInvoiceSynchronizerRealtime`.
+`composer test -- --filter=Payment` (and related Invoice/Channel filters). Realtime-specific: `PaymentRealtime`, `InvoiceChannelAuthorizer`, `InvoiceStatusChanged`, `MidtransInvoiceSynchronizerRealtime`. Route snapshot: `InvoiceChannelCheckoutTest` (snapshot FK + immutable fee basis). Web navigation: `InvoiceWebDestinationTest`, `InvoiceWebNavigationTest` (datatable + show redirect to purchase hub). Snap parameter building + IDR int `gross_amount` convention: `MidtransSnapParameterBuilderTest`.
 
 ## Related
 

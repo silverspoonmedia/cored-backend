@@ -20,10 +20,19 @@ class PaymentChannelResource extends JsonResource
             'kind' => $this->kind->value ?? $this->kind,
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,
+            'cheap_alt_code' => $this->cheap_alt_code,
+            'routing_type' => $this->routing_type?->value ?? $this->routing_type,
+            'policy_key' => $this->policy_key,
         ];
 
         if ($request->input('scope') === 'admin' && $this->relationLoaded('routes')) {
             $payload['routes'] = PaymentChannelRouteResource::collection($this->routes)->resolve();
+        }
+
+        $quote = $this->checkout_quote ?? null;
+
+        if (is_array($quote)) {
+            $payload = array_merge($payload, $quote);
         }
 
         return $payload;

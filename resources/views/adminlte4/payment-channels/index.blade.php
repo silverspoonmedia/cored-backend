@@ -60,9 +60,11 @@
                     data-payment-channels-admin
                     data-update-url-template="{{ route('payment-channels.update', ['code' => '__CODE__']) }}"
                     data-route-update-url-template="{{ route('payment-channel-routes.update', ['route' => '__ROUTE__']) }}"
+                    data-sync-policy-url="{{ route('payment-channels.sync-policy') }}"
                     data-messages="{{ json_encode([
                         'updated' => __('web/payments.channels.updated'),
                         'routeUpdated' => __('web/payments.channels.route_updated'),
+                        'syncPolicyDone' => __('web/payments.channels.sync_policy_done'),
                         'failed' => __('web/payments.checkout.sync_failed'),
                         'searchPlaceholder' => __('web/payments.channels.search_placeholder'),
                         'noResults' => __('web/payments.channels.no_results'),
@@ -90,6 +92,18 @@
                         <div class="text-muted small align-self-end" data-payment-channel-count>
                             {{ trans_choice('web/payments.channels.visible_count', $totalChannels, ['count' => $totalChannels]) }}
                         </div>
+                        @can('manage payment gateway')
+                            <div class="align-self-end">
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    data-payment-sync-policy
+                                    title="{{ __('web/payments.channels.sync_policy_hint') }}"
+                                >
+                                    <i class="bi bi-arrow-repeat me-1"></i>{{ __('web/payments.channels.sync_policy') }}
+                                </button>
+                            </div>
+                        @endcan
                     </div>
 
                     @if ($totalChannels === 0)
@@ -106,7 +120,14 @@
                                     $meta = $kindMeta[$kind] ?? ['icon' => 'bi-credit-card', 'class' => '', 'label' => $kind];
                                     $isActive = (bool) data_get($channel, 'is_active');
                                     $routes = collect(data_get($channel, 'routes', []))
-                                        ->sortBy('priority')
+                                        ->sortBy(fn ($route) => [
+                                            match (data_get($route, 'route_role')) {
+                                                'only', 'primary' => 0,
+                                                'fallback' => 1,
+                                                default => 2,
+                                            },
+                                            data_get($route, 'priority', 9999),
+                                        ])
                                         ->values()
                                         ->all();
                                     $primaryRoute = collect($routes)->first(fn ($route) => (bool) data_get($route, 'is_active'));
@@ -192,6 +213,8 @@
                                                         class="pc-route-item {{ $routeActive ? '' : 'is-inactive' }} {{ $isPrimary ? 'is-primary' : '' }}"
                                                         data-payment-route-item
                                                         data-route-id="{{ $routeId }}"
+                                                        data-route-role="{{ data_get($route, 'route_role', '') }}"
+                                                        data-route-priority="{{ data_get($route, 'priority', 9999) }}"
                                                     >
                                                         <span class="pc-route-rank" title="{{ __('web/payments.channels.priority_hint') }}">
                                                             {{ $index + 1 }}
@@ -210,6 +233,18 @@
                                                                 <span class="mx-1">·</span>
                                                                 <span>{{ __('web/payments.channels.route_columns.provider_channel') }}:</span>
                                                                 <span>{{ data_get($route, 'provider_payment_channel') ?: '—' }}</span>
+                                                                <span class="mx-1">·</span>
+                                                                <span>{{ __('web/payments.channels.route_columns.settlement') }}:</span>
+                                                                <span>{{ data_get($route, 'settlement_label', '—') }}</span>
+                                                                <span class="mx-1">·</span>
+                                                                <span>{{ __('web/payments.channels.route_columns.fee') }}:</span>
+                                                                <span>{{ data_get($route, 'fee_label', '—') }}</span>
+                                                                @if (data_get($route, 'route_role'))
+                                                                    <span class="mx-1">·</span>
+                                                                    <span class="badge text-bg-light border">
+                                                                        {{ __('web/payments.channels.route_roles.'.data_get($route, 'route_role')) }}
+                                                                    </span>
+                                                                @endif
                                                             </div>
                                                         </div>
 
@@ -218,7 +253,11 @@
                                                                 <div>
                                                                     <label class="form-label small text-muted mb-0" for="route-priority-{{ $routeId }}">
                                                                         {{ __('web/payments.channels.route_columns.priority') }}
-                                                                        <span class="text-muted fst-italic">({{ __('web/payments.channels.priority_autosave_hint') }})</span>
+                                                                        @if (data_get($route, 'is_policy_managed'))
+                                                                            <span class="text-muted fst-italic">({{ __('web/payments.channels.route_columns.policy_managed') }})</span>
+                                                                        @else
+                                                                            <span class="text-muted fst-italic">({{ __('web/payments.channels.priority_autosave_hint') }})</span>
+                                                                        @endif
                                                                     </label>
                                                                     <input
                                                                         id="route-priority-{{ $routeId }}"
@@ -229,6 +268,7 @@
                                                                         value="{{ data_get($route, 'priority') }}"
                                                                         data-payment-route-priority="{{ $routeId }}"
                                                                         title="{{ __('web/payments.channels.priority_hint') }}"
+                                                                        @disabled((bool) data_get($route, 'is_policy_managed'))
                                                                     >
                                                                 </div>
                                                                 <div class="form-check form-switch m-0">

@@ -15,6 +15,10 @@ return new class extends Migration
             $table->string('kind', 32);
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('sort_order')->default(0);
+            $table->string('provider_bank_code', 64)->nullable();
+            $table->string('cheap_alt_code', 64)->nullable();
+            $table->string('routing_type', 32)->default('dual');
+            $table->string('policy_key', 64)->nullable();
             $table->timestamps();
 
             $table->index(['is_active', 'sort_order']);

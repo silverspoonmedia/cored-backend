@@ -62,6 +62,42 @@ class ServiceCheckoutServiceTest extends TestCase
         $this->assertSame('pending', $invoice->status);
     }
 
+    public function test_addon_checkout_with_quantity_multiplies_amounts(): void
+    {
+        Http::fake([
+            'api.frankfurter.app/*' => Http::response([
+                'rates' => ['IDR' => 18000],
+            ], 200),
+        ]);
+
+        $user = User::factory()->create();
+        $service = Service::factory()->fileHostingAddon100Gb()->create();
+        ServicePrice::factory()->usd(5)->create(['service_id' => $service->id]);
+
+        $result = app(ServiceCheckoutService::class)->checkout($service, $user, 'USD', 3);
+
+        $purchase = $result['purchase'];
+        $invoice = $result['invoice'];
+
+        $this->assertSame(3, (int) $purchase->quantity);
+        $this->assertEquals(15.0, (float) $purchase->display_amount);
+        $this->assertEquals(15.0, (float) $purchase->list_amount);
+        $this->assertEquals(270000.0, (float) $purchase->settlement_amount);
+        $this->assertEquals(270000.0, (float) $invoice->subtotal);
+    }
+
+    public function test_main_plan_checkout_rejects_quantity_greater_than_one(): void
+    {
+        $user = User::factory()->create();
+        $service = Service::factory()->fileHostingMonthly()->create();
+        ServicePrice::factory()->usd(10)->create(['service_id' => $service->id]);
+
+        $this->expectException(ServiceException::class);
+        $this->expectExceptionMessage(__('api/services.quantity_main_plan_fixed'));
+
+        app(ServiceCheckoutService::class)->checkout($service, $user, 'USD', 2);
+    }
+
     public function test_checkout_rejects_inactive_service(): void
     {
         $user = User::factory()->create();
