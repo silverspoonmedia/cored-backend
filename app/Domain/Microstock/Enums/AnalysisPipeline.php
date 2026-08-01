@@ -34,19 +34,11 @@ enum AnalysisPipeline: string
         };
     }
 
-    public function visionOverlapKey(?string $folderId): string
+    public function concurrencyScopeKey(string $stage, ?string $folderId): string
     {
         return match ($this) {
-            self::Collection => 'collection-vision:'.($folderId ?? 'unknown'),
-            self::Solo => 'solo-vision',
-        };
-    }
-
-    public function thinkingOverlapKey(?string $folderId): string
-    {
-        return match ($this) {
-            self::Collection => 'collection-thinking:'.($folderId ?? 'unknown'),
-            self::Solo => 'solo-thinking',
+            self::Collection => 'microstock:conc:'.$stage.':collection:'.($folderId ?? 'unknown'),
+            self::Solo => 'microstock:conc:'.$stage.':solo',
         };
     }
 

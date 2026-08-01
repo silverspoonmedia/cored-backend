@@ -162,7 +162,7 @@ flowchart LR
 | Upload gate | `DirectUploadService::initiate` rejects (422) a Microstock workspace upload with no `folder_id` (`microstock.error_requires_folder`) or into a locked collection (`microstock.error_collection_locked`). Client mirrors this via dropzone `data-workspace-kind` / `data-collection-locked` |
 | Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` (single text field, max 2000, nullable) + `collection_billing_mode` (`free`/`paid`) + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here. **Web UI:** the Lock & Describe modal collects structured sections (Primary concept, Visible subjects, Buyer intent, Style & mood, Additional notes). All sections are optional; they compose into a multi-line hint before lock. A mandatory **Free / Paid** billing-mode selector appears when `MICROSTOCK_DAILY_FREE_ENABLED=true`; when Free is disabled the selector is hidden and every analysis is forced to `paid`. Submitting with no content triggers a client-side `window.confirm` warning that blind locking usually produces poor, inconsistent AI metadata. |
 | Analyze | `POST collections/{folder}/analyze` (requires `locked`, non-empty) sets `processing` and dispatches `ProcessCollection` |
-| Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)** with decoupled stage columns (`ai_vision`, `ai_thinking`, `ai_result`), then dispatches one `AnalyzeAssetVision` job per file on the **collection vision** queue (FIFO by file name). Each vision persists `ai_vision` and dispatches `AnalyzeAssetThinking` on the **collection thinking** queue. **Dual-lane pipeline:** at most one vision + one thinking HTTP call per collection at a time (`WithoutOverlapping` per folder); vision file N+1 may run while thinking file N runs. Collection `review` when **all** assets are terminal (watchdog / thinking completion). Sub-folders are separate collections and are NOT processed |
+| Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)** with decoupled stage columns (`ai_vision`, `ai_thinking`, `ai_result`), then dispatches one `AnalyzeAssetVision` job per file on the **collection vision** queue (FIFO by file name). Each vision persists `ai_vision` and dispatches `AnalyzeAssetThinking` on the **collection thinking** queue. **Dual-lane pipeline:** configurable concurrent vision + thinking jobs per folder (default **3+3**), capped globally by upstream limits (see [Upstream limits](#upstream-limits)); vision file N+1 may run while thinking file N runs. Collection `review` when **all** assets are terminal (watchdog / thinking completion). Sub-folders are separate collections and are NOT processed |
 | Curate | Per-file manual edit via `PATCH assets/{file}/metadata` (existing finalize) while in `review` |
 | Export | `POST collections/{folder}/export` (requires `review`) renders a CSV of the folder's finalized metadata, persists it to `microstock.csv_disk`, saves `collection_csv_path`, sets `exported`. `GET collections/{folder}/download` streams it |
 
@@ -191,11 +191,36 @@ flowchart LR
   T1 --> failed[status failed title empty]
 ```
 
-| Lane | Queue (default) | Concurrency | On success |
-|------|-----------------|-------------|------------|
-| Collection vision | `microstock-collection-vision` | 1 per folder (`WithoutOverlapping`) | Dispatch thinking on collection thinking queue |
-| Collection thinking | `microstock-collection-thinking` | 1 per folder + 1 per asset (`WithoutOverlapping`) | `composeResultFromThinking` + `completeFolderIfReady` |
-| Solo re-analyze | `microstock-solo` | 1 global (`solo-vision` / `solo-thinking` locks) | Vision → thinking on same solo queue |
+| Lane | Queue (default) | Concurrency (default) | On success |
+|------|-----------------|----------------------|------------|
+| Collection vision | `microstock-collection-vision` | **3** per folder + **6** global vision cap | Dispatch thinking on collection thinking queue |
+| Collection thinking | `microstock-collection-thinking` | **3** per folder + **10** global thinking cap + 1 per `metadata_id` (`WithoutOverlapping`) | `composeResultFromThinking` + `completeFolderIfReady` |
+| Solo re-analyze | `microstock-solo` | **2** vision + **2** thinking (solo pool) | Vision → thinking on same solo queue |
+
+### Upstream limits
+
+Shared Open WebUI / 9Router account empirical ceiling: **~20M tokens / 30 min** (frontier models). Microstock allocates the full window to analysis throughput; enforcement is **concurrency caps** via `LimitAnalysisConcurrency` queue middleware (`config/microstock.php` → `ai.upstream`).
+
+| Reference | Value |
+|-----------|-------|
+| `token_budget` | 20,000,000 (ops reference; not runtime-enforced in MVP) |
+| `window_seconds` | 1800 (30 min) |
+| Per-asset typical ceiling | ~20,000 tokens |
+| Theoretical burst assets | ~1,000 / 30 min at 20k/asset |
+
+| Env | Default | Purpose |
+|-----|---------|---------|
+| `MICROSTOCK_AI_UPSTREAM_WINDOW_SECONDS` | `1800` | Sliding window reference (seconds) |
+| `MICROSTOCK_AI_UPSTREAM_TOKEN_BUDGET` | `20000000` | Documented upstream token ceiling |
+| `MICROSTOCK_AI_UPSTREAM_MAX_CONCURRENT_VISION` | `6` | Global in-flight vision jobs |
+| `MICROSTOCK_AI_UPSTREAM_MAX_CONCURRENT_THINKING` | `10` | Global in-flight thinking jobs |
+| `MICROSTOCK_AI_COLLECTION_VISION_CONCURRENCY` | `3` | Per-collection folder vision cap |
+| `MICROSTOCK_AI_COLLECTION_THINKING_CONCURRENCY` | `3` | Per-collection folder thinking cap |
+| `MICROSTOCK_AI_SOLO_VISION_CONCURRENCY` | `2` | Solo re-analyze vision pool |
+| `MICROSTOCK_AI_SOLO_THINKING_CONCURRENCY` | `2` | Solo re-analyze thinking pool |
+| `MICROSTOCK_AI_UPSTREAM_RELEASE_AFTER` | `15` | Seconds before a blocked job retries |
+
+When a cap is full the job is **released** (not failed). Use **Redis** cache in multi-worker deploys so global counters are cluster-safe. If upstream still rate-limits, lower concurrency env vars — no code change needed.
 
 | Stage column | Job | On failure |
 |--------------|-----|------------|
@@ -321,7 +346,7 @@ Images reach the vision stage via `VisionImageResolver` — **signed HTTPS URL**
 
 **Troubleshooting — slow vision / thinking not started yet:**
 
-1. Collection pipeline is **dual-lane** — vision and thinking each run one job at a time per folder, but may overlap (vision file N+1 while thinking file N). Check `microstock.ai.stage` logs for per-stage `duration_ms`.
+1. Collection pipeline is **dual-lane** — vision and thinking run with configurable per-folder concurrency (default 3+3); check `microstock.ai.stage` logs for per-stage `duration_ms`.
 2. Check `microstock.ai.stage` logs in `storage/logs/laravel.log` — compare `vision` `start`/`end` `duration_ms` vs `thinking` `start`/`end`. Multimodal vision at 1024px via Open WebUI commonly takes **40–120s** per call depending on the resolved backend model (grok ~46s verified 2026-07-27; `gpt-5.4` hit HTTP **524** at ~125s on 2026-07-28 probe — see [`probes/gpt54_vs_grok_summary.md`](probes/gpt54_vs_grok_summary.md)).
 3. **`cURL error 28: 0 bytes received` = client timeout**, not proof Open WebUI is hung. A probe with timeout **&lt; production** (`MICROSTOCK_AI_VISION_TIMEOUT`, default 300s) can fail while the same request would succeed at 300s.
 4. High token usage with a stuck worker usually means **slow inference + retries + repeated re-analyze**, not a dead upstream. Expect ~**5 HTTP calls per asset** (1 vision + up to 4 thinking attempts) × `MICROSTOCK_AI_HTTP_RETRIES`.
@@ -518,7 +543,7 @@ Debug one job:
 php artisan microstock:queue-work --once
 ```
 
-**Split workers (production scale):** run at least two processes (vision + thinking) so vision file N+1 can overlap thinking file N within a collection. `WithoutOverlapping` per folder caps each lane to one concurrent job per collection. Use a **shared cache** (Redis/database) for overlap locks in multi-server deploys.
+**Split workers (production scale):** run at least two processes (vision + thinking) so vision file N+1 can overlap thinking file N within a collection. `LimitAnalysisConcurrency` enforces per-folder and global caps from `ai.upstream`. Use a **shared cache** (Redis) for counters in multi-server deploys.
 
 ```bash
 php artisan queue:work --queue=microstock-collection-vision,microstock-solo --tries=3
