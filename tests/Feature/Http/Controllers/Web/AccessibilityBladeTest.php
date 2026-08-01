@@ -512,6 +512,7 @@ class AccessibilityBladeTest extends TestCase
             'error-logs',
             'file-hosting',
             'invoices',
+            'inference',
             'lookups',
             'menus',
             'microstock',

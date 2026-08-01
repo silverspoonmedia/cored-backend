@@ -602,7 +602,7 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 | `resources/js/file-hosting/show-ui.js` | Soft file detail panel from `GET file-hosting/files/{id}` JSON |
 | `resources/js/file-hosting/public-app.js` | Public soft SPA for `/s/f/{id}` + `/s/d/{id}` (no Echo) |
 | `resources/js/file-hosting/direct-upload.js` | Chunked upload; queue shows human file size; batch uploads freeze folder/workspace/lock/kind at `startBatch` (`snapshotBatchContext`); per-file Microstock gate + MIME sniff; awaits abort on failure, init retry on `too_many_concurrent`, PUT retry + 403 re-sign; on complete calls `window.fileHostingSoftRefresh` / `fileHostingUpsertFile` (no hard reload). Successful rows auto-dismiss after ~5s (`scheduleDoneRowDismiss`); failed rows stay. Unit tests: `direct-upload-mime.test.js`, `direct-upload-context.test.js`, `direct-upload-dismiss.test.js` |
-| `resources/js/file-hosting/microstock-usage.js` | Standalone usage/balance page (`/apps/file-hosting/microstock/usage`): summary cards + ledger / AI usage / platform-overview tabs |
+| `resources/js/file-hosting/microstock-usage.js` | Standalone usage/balance page (`/apps/file-hosting/microstock/usage`): summary cards + ledger / AI usage / platform-overview tabs; Blade loads via inline `@vite` (same as other FH pages, not `@push`) |
 | `resources/js/file-hosting/upload-progress.js` | Pure helpers: transfer rate + byte progress — no DOM |
 | `resources/js/file-hosting/upload-queue.js` | Concurrency limiter |
 | `resources/views/adminlte4/file-hosting/partials/` | `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal`, `_team-offcanvas`, `_workspace-switcher` |

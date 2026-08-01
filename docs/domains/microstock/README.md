@@ -83,7 +83,7 @@ Env-gated per-user daily analyses (`MICROSTOCK_DAILY_FREE_ENABLED`). No activati
 |------|-------|-------------|
 | `microstock.addon.ai-credits.5` | $5 once | `microstock_ai_credits` |
 
-**Rate card** (`config/microstock.php` → `ai_billing`):
+**Rate card** — core Inference domain ([Inference README](../inference/README.md)); Microstock applies `markup_multiplier` on top.
 
 | Model | Input / 1M tokens | Output / 1M tokens |
 |-------|-------------------|---------------------|
@@ -95,7 +95,9 @@ Env-gated per-user daily analyses (`MICROSTOCK_DAILY_FREE_ENABLED`). No activati
 | `gpt-5.6-luna` | $1.00 | $6.00 |
 | `claude-opus-5` / `anthropic/claude-opus-5` | $5.00 | $25.00 |
 | `claude-sonnet-5` / `anthropic/claude-sonnet-5` | $2.00 | $10.00 |
-| `default` (unknown slug) | $5.00 | $20.00 |
+| `default` (unknown slug, provisional) | $15.00 | $60.00 |
+
+Provisional holds are reconciled after catalog curation; see [Inference — unknown models](../inference/README.md).
 
 Sonnet 5 rates above are Anthropic **introductory** pricing through Aug 31, 2026; standard from Sep 1 is $3 / $15 per 1M.
 
@@ -103,9 +105,9 @@ Sonnet 5 rates above are Anthropic **introductory** pricing through Aug 31, 2026
 - `estimated_billable_micro_usd_per_asset` — env `MICROSTOCK_AI_BILLING_ESTIMATE_PER_ASSET` (default **150000** = $0.15 buffer for analyze gate)
 - `estimate_thinking_attempt_factor` — env `MICROSTOCK_AI_BILLING_ESTIMATE_FACTOR` (default **1.5**; gate = per-asset estimate × factor)
 - `http_retries` — env `MICROSTOCK_AI_HTTP_RETRIES` (default **0** for billed stages; each retry can duplicate provider charges)
-- Per-model input/output rates under `ai_billing.models` (resolved model from API response; alias from config stored separately)
+- Per-HTTP-call rates resolved from provider model rates (`MICROSTOCK_AI_INFERENCE_PROVIDER` / `INFERENCE_DEFAULT_PROVIDER_SLUG`); immutable provider-specific snapshot on `microstock_ai_usage_events.ai_model_rate_snapshot_id` plus `inference_provider_id` when route known (alias in `alias_model`, resolved slug in `resolved_model`)
 
-Amounts are stored as **micro-USD** (1 USD = 1_000_000) end-to-end.
+Amounts are stored as **micro-USD** (1 USD = 1_000_000) end-to-end. `microstock_ai_balances.balance_micro_usd` is **signed** — post-settlement consolidation debits may drive balance negative; new paid analyze is blocked until balance ≥ 0 (top-up via Services). Collection UI and `GET billing` show negative balances (e.g. `-$0.12`).
 
 ### Usage & balance UI
 
@@ -292,7 +294,9 @@ Canonical probe write-up: [`probes/sonnet5_gpt56_combo_summary.md`](probes/sonne
 
 **Probe finding (2026-07-28, `gpt-5.4`, folder `019fa66d-…`):** persisted `ai_1024` + **`delivery=url`** is required for GPT-5.4 vision on this stack (base64 reliably HTTP **524** @ ~125s). Signed URL payload is ~341 bytes vs ~62KB base64. URL T3 is **intermittent** (~109s when pass, 524 when fail) — run-to-run CF variance, not delivery-mode regression. Full 3-file collection re-probe with config default `url`: T3 0/3, T6 1/3 batch (+ 2119boy T6 ok on spot-check while T3 524'd). Production default is **`url`** (`config/microstock.php`); grok remains faster/more reliable with base64 (~46s). Details: [`probes/gpt54_url_vs_base64_summary.md`](probes/gpt54_url_vs_base64_summary.md), [`probes/collection_url_default_summary.md`](probes/collection_url_default_summary.md).
 
-**Probe scripts:** `php scripts/microstock/probe_ai.php --timeout=300 [--file={uuid}|--folder={uuid}] [--only=T0,T0t,T3,T6] [--label=sonnet5-gpt56]` — **T0** = vision preflight, **T0t** = thinking preflight; **T6** surfaces `stage_metrics` (per-stage `duration_ms`, `resolved_model`, `multimodal`, `tokens_per_second`). Full folder batch: `php scripts/microstock/probe_collection.php {folder_id} [--timeout=300] [--label=sonnet5-gpt56]`. **E2E decoupled pipeline** (persists `ai_vision` / `ai_thinking` / `ai_result`, sync queue): `php scripts/microstock/probe_collection_stages.php {folder_id} [--label=decoupled-probe-e2e] [--wait-timeout=900] [--force]` — use `--force` after zombie `processing` (no metadata rows). Details: [`probes/decoupled_stages_collection_summary.md`](probes/decoupled_stages_collection_summary.md). Matrix: `--matrix`. Requires ready variants (`php scripts/microstock/generate_variants.php {folder_id}` if upload predates worker). JSON artifacts land in `storage/app/probe_results/` (runtime, not committed). Summaries: [`probes/`](probes/).
+**Probe finding (2026-08-01, billing smoke free vs paid, workspace `019fbc21-9faf-700c-94a4-c981f58796aa`):** paired collections with identical 3 files — free `019fbc21-eff1-72af-b14c-494ecbe14328` vs paid `019fbc22-1585-72f4-86d5-ac33faf984d5`. Paid **3/3** @ **~105 s** wall (vision **323–417** tok/s Sonnet, thinking **232–397** tok/s luna); prepaid debit **$0.09** matches usage events. Free **1/3** (2 vision failures on free aliases); **$0** credit debit; 1 asset **70/79** tok/s luna. `inference_provider_id` + rate snapshots on all billed calls. Details: [`probes/billing_smoke_free_vs_paid_summary.md`](probes/billing_smoke_free_vs_paid_summary.md).
+
+**Probe scripts:** `php scripts/microstock/probe_ai.php --timeout=300 [--file={uuid}|--folder={uuid}] [--only=T0,T0t,T3,T6] [--label=sonnet5-gpt56]` — **T0** = vision preflight, **T0t** = thinking preflight; **T6** surfaces `stage_metrics` (per-stage `duration_ms`, `resolved_model`, `multimodal`, `tokens_per_second`). Full folder batch: `php scripts/microstock/probe_collection.php {folder_id} [--timeout=300] [--label=sonnet5-gpt56]`. **E2E decoupled pipeline** (persists `ai_vision` / `ai_thinking` / `ai_result`, sync queue): `php scripts/microstock/probe_collection_stages.php {folder_id} [--label=decoupled-probe-e2e] [--wait-timeout=900] [--force]` — use `--force` after zombie `processing` (no metadata rows); preserves `collection_billing_mode` on re-lock; clears delayed watchdog jobs after analyze on sync queue. **Billing regression:** `billing_smoke_preflight.php`, `billing_smoke_compare.php` — see [`probes/billing_smoke_free_vs_paid_summary.md`](probes/billing_smoke_free_vs_paid_summary.md). Details: [`probes/decoupled_stages_collection_summary.md`](probes/decoupled_stages_collection_summary.md). Matrix: `--matrix`. Requires ready variants (`php scripts/microstock/generate_variants.php {folder_id}` if upload predates worker). JSON artifacts land in `storage/app/probe_results/` (runtime, not committed). Summaries: [`probes/`](probes/).
 
 ### Prompt strategy (marketplace-aligned)
 

@@ -10,6 +10,7 @@ use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AiBillingService;
 use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
+use Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\Concerns\GrantsMicrostockAiCredits;
@@ -26,6 +27,7 @@ class AiBillingServiceTest extends TestCase
     {
         parent::setUp();
         $this->seedRolesAndPermissions();
+        $this->seed(InferenceCatalogSeeder::class);
     }
 
     public function test_costs_for_tokens_applies_markup(): void
@@ -226,6 +228,37 @@ class AiBillingServiceTest extends TestCase
         $this->assertSame(100, $events[0]->completion_tokens);
         $this->assertSame(600, $events[0]->total_tokens);
         $this->assertSame(500, $events[1]->prompt_tokens);
+    }
+
+    public function test_record_usage_captures_rate_snapshot_fk(): void
+    {
+        $user = $this->userWithRole('User', 'snapshot@example.com');
+        $this->grantMicrostockAiCredits($user);
+        [$metadata, $file] = $this->metadataWithFile($user, 'snap.jpg');
+
+        AnalysisBillingContext::run(
+            new AnalysisBillingContext(
+                billingUserId: (string) $user->id,
+                metadataId: (string) $metadata->id,
+                fileId: (string) $file->id,
+            ),
+            function (): void {
+                app(AiBillingService::class)->recordUsage(
+                    'vision',
+                    'internal.vision',
+                    ['prompt_tokens' => 100, 'completion_tokens' => 50, 'total_tokens' => 150],
+                    'grok-grok-4.5-high',
+                );
+            },
+        );
+
+        $event = AiUsageEvent::query()->first();
+        $this->assertNotNull($event);
+        $this->assertNotNull($event->ai_model_rate_snapshot_id);
+        $this->assertDatabaseHas('ai_model_rate_snapshots', [
+            'id' => $event->ai_model_rate_snapshot_id,
+            'model_slug' => 'grok-grok-4.5-high',
+        ]);
     }
 
     public function test_settle_successful_analysis_debits_balance_and_snapshots_metadata(): void

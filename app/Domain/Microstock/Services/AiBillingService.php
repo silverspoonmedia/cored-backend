@@ -3,6 +3,9 @@
 namespace App\Domain\Microstock\Services;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Inference\Enums\InferenceRateSource;
+use App\Domain\Inference\Services\AiModelRateSnapshotService;
+use App\Domain\Inference\Services\InferenceRateService;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Exceptions\MicrostockException;
@@ -10,6 +13,9 @@ use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
 use App\Domain\Microstock\Support\AnalysisBillingPlan;
+use App\Domain\Notification\Events\ActivityNotificationEvent;
+use App\Domain\Notification\Notifications\NotificationType;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -18,6 +24,8 @@ class AiBillingService
     public function __construct(
         private readonly AiCreditService $credits,
         private readonly AiDailyFreeService $dailyFree,
+        private readonly InferenceRateService $inferenceRates,
+        private readonly AiModelRateSnapshotService $rateSnapshots,
     ) {}
 
     public function estimateForAssets(int $count): int
@@ -39,8 +47,17 @@ class AiBillingService
             $userId = (string) $user->id;
 
             if ($forcedMode === 'paid') {
+                $balance = $this->credits->balance($userId);
+                if ($balance < 0) {
+                    throw new MicrostockException(
+                        __('api/microstock.insufficient_ai_credits'),
+                        422,
+                        ['daily_free' => $this->dailyFree->snapshot($userId)],
+                    );
+                }
+
                 $required = $this->estimateForAssets($assetCount);
-                if ($this->credits->balance($userId) < $required) {
+                if ($balance < $required) {
                     throw new MicrostockException(
                         __('api/microstock.insufficient_ai_credits'),
                         422,
@@ -54,8 +71,17 @@ class AiBillingService
             $split = $this->dailyFree->allocateInTransaction($userId, $assetCount);
 
             if ($split['prepaid'] > 0) {
+                $balance = $this->credits->balance($userId);
+                if ($balance < 0) {
+                    throw new MicrostockException(
+                        __('api/microstock.insufficient_ai_credits'),
+                        422,
+                        ['daily_free' => $this->dailyFree->snapshot($userId)],
+                    );
+                }
+
                 $required = $this->estimateForAssets($split['prepaid']);
-                if ($this->credits->balance($userId) < $required) {
+                if ($balance < $required) {
                     throw new MicrostockException(
                         __('api/microstock.insufficient_ai_credits'),
                         422,
@@ -78,6 +104,7 @@ class AiBillingService
         ?string $resolvedModel = null,
         ?int $attemptIndex = null,
         ?string $providerRequestId = null,
+        ?string $inferenceProviderSlug = null,
     ): void {
         $context = AnalysisBillingContext::current();
         if ($context === null) {
@@ -97,7 +124,16 @@ class AiBillingService
         $completion = max(0, (int) ($usage['completion_tokens'] ?? 0));
         $total = max(0, (int) ($usage['total_tokens'] ?? ($prompt + $completion)));
         $resolved = $resolvedModel ?: 'unknown';
-        $costs = $this->costsForTokens($resolved, $prompt, $completion);
+        $providerSlug = $inferenceProviderSlug ?? $this->inferenceRates->defaultProviderSlug();
+
+        if (! $this->inferenceRates->isRegisteredOnProvider($resolved, $providerSlug)) {
+            $card = $this->inferenceRates->ensureModelCard($resolved, markNeedsClassification: true);
+            $this->notifyUnregisteredModelIfNeeded($resolved, $providerSlug, $card->id);
+        }
+
+        $snapshot = $this->rateSnapshots->capture($resolved, $providerSlug);
+        $costs = $this->costsForTokens($resolved, $prompt, $completion, $providerSlug);
+        $inferenceProviderId = $snapshot->inference_provider_id;
 
         if ($context->batchTargets !== []) {
             $this->recordSplitBatch(
@@ -111,6 +147,8 @@ class AiBillingService
                 $costs,
                 $attemptIndex,
                 $providerRequestId,
+                (string) $snapshot->id,
+                $inferenceProviderId,
             );
 
             return;
@@ -127,6 +165,8 @@ class AiBillingService
             'attempt_index' => $attemptIndex,
             'alias_model' => $aliasModel,
             'resolved_model' => $resolved,
+            'ai_model_rate_snapshot_id' => $snapshot->id,
+            'inference_provider_id' => $inferenceProviderId,
             'provider_request_id' => $providerRequestId,
             'prompt_tokens' => $prompt,
             'completion_tokens' => $completion,
@@ -150,6 +190,8 @@ class AiBillingService
         array $costs,
         ?int $attemptIndex,
         ?string $providerRequestId,
+        string $rateSnapshotId,
+        ?string $inferenceProviderId = null,
     ): void {
         $targets = $context->batchTargets;
         $count = max(1, count($targets));
@@ -171,6 +213,8 @@ class AiBillingService
                 'attempt_index' => $attemptIndex,
                 'alias_model' => $aliasModel,
                 'resolved_model' => $resolved,
+                'ai_model_rate_snapshot_id' => $rateSnapshotId,
+                'inference_provider_id' => $inferenceProviderId,
                 'provider_request_id' => $providerRequestId,
                 'prompt_tokens' => $promptShare,
                 'completion_tokens' => $completionShare,
@@ -313,9 +357,13 @@ class AiBillingService
     }
 
     /** @return array{provider: int, billable: int} */
-    public function costsForTokens(string $resolvedModel, int $promptTokens, int $completionTokens): array
-    {
-        $rates = $this->ratesForModel($resolvedModel);
+    public function costsForTokens(
+        string $resolvedModel,
+        int $promptTokens,
+        int $completionTokens,
+        ?string $providerSlug = null,
+    ): array {
+        $rates = $this->inferenceRates->ratesForProviderModel($resolvedModel, $providerSlug);
         $provider = (int) round(
             ($promptTokens / 1_000_000) * $rates['input_per_million_usd'] * 1_000_000
             + ($completionTokens / 1_000_000) * $rates['output_per_million_usd'] * 1_000_000
@@ -329,23 +377,37 @@ class AiBillingService
         ];
     }
 
-    /** @return array{input_per_million_usd: float, output_per_million_usd: float} */
-    private function ratesForModel(string $resolvedModel): array
-    {
-        $models = config('microstock.ai_billing.models', []);
-        $rates = $models[$resolvedModel] ?? $models['default'] ?? [
-            'input_per_million_usd' => 5.0,
-            'output_per_million_usd' => 20.0,
-        ];
-
-        return [
-            'input_per_million_usd' => (float) ($rates['input_per_million_usd'] ?? 5.0),
-            'output_per_million_usd' => (float) ($rates['output_per_million_usd'] ?? 20.0),
-        ];
-    }
-
     public function microUsdToUsd(int $microUsd): float
     {
         return round($microUsd / 1_000_000, 6);
+    }
+
+    private function notifyUnregisteredModelIfNeeded(string $resolvedSlug, string $providerSlug, string $modelCardId): void
+    {
+        $cacheKey = 'inference:unregistered_model_notify:'.$resolvedSlug;
+
+        if (! Cache::add($cacheKey, true, now()->addDays(30))) {
+            return;
+        }
+
+        $rates = $this->inferenceRates->ratesForProviderModel($resolvedSlug, $providerSlug);
+        if (($rates['rate_source'] ?? '') !== InferenceRateSource::UnknownProvisional->value) {
+            Cache::forget($cacheKey);
+
+            return;
+        }
+
+        ActivityNotificationEvent::dispatch(
+            NotificationType::InferenceUnregisteredModel,
+            [
+                'resolved_model' => $resolvedSlug,
+                'provider_slug' => $providerSlug,
+                'input_per_million_usd' => $rates['input_per_million_usd'],
+                'output_per_million_usd' => $rates['output_per_million_usd'],
+            ],
+            roles: ['Root', 'Admin', 'Management'],
+            actionRoute: 'inference.model-cards.show',
+            actionParams: ['modelCard' => $modelCardId],
+        );
     }
 }

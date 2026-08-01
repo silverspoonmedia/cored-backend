@@ -381,6 +381,7 @@ class HttpAiMetadataService implements AiMetadataService
                 $resolvedModel,
                 $attemptIndex,
                 $providerRequestId,
+                (string) config('microstock.ai.inference_provider_slug', 'openwebui-9router'),
             );
         }
 

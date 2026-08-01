@@ -36,6 +36,7 @@ class DomainManager
         'ErrorLog',
         'PaymentGateway',
         'Service',
+        'Inference',
     ];
 
     /** @var list<string> */

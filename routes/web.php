@@ -52,6 +52,7 @@ Route::middleware('web.auth')->prefix('apps')->group(function (): void {
     require __DIR__.'/web/notification.php';
     require __DIR__.'/web/activity-log.php';
     require __DIR__.'/web/error-log.php';
+    require __DIR__.'/web/inference.php';
     require __DIR__.'/web/payment-gateway.php';
     require __DIR__.'/web/service.php';
 

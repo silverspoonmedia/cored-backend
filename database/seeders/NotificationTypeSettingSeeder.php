@@ -30,6 +30,8 @@ class NotificationTypeSettingSeeder extends Seeder
         $this->personal(NotificationType::ServiceSubscriptionGrace);
         $this->personal(NotificationType::ServiceSubscriptionExpired);
 
+        $this->broadcastToRoles(NotificationType::InferenceUnregisteredModel, ['Root', 'Admin', 'Management']);
+
         app(NotificationTypeSettingRepositoryInterface::class)->flushCache();
     }
 
@@ -57,5 +59,24 @@ class NotificationTypeSettingSeeder extends Seeder
         );
 
         $setting->roles()->sync([]);
+    }
+
+  /**
+     * @param  list<string>  $roleNames
+     */
+    private function broadcastToRoles(NotificationType $type, array $roleNames): void
+    {
+        $setting = NotificationTypeSetting::query()->firstOrCreate(
+            ['type' => $type->value],
+            ['notify_subject_user' => false],
+        );
+
+        $setting->roles()->sync(
+            Role::query()
+                ->where('guard_name', 'api')
+                ->whereIn('name', $roleNames)
+                ->pluck('id')
+                ->all(),
+        );
     }
 }

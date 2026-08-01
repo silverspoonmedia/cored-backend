@@ -32,6 +32,9 @@ return [
     ],
 
     'ai' => [
+        // Inference provider slug for upstream cost resolution (see Inference domain).
+        'inference_provider_slug' => env('MICROSTOCK_AI_INFERENCE_PROVIDER', 'openwebui-9router'),
+
         'vision' => [
             'endpoint' => env('MICROSTOCK_AI_VISION_ENDPOINT', 'https://ai-chat.spnd.uk/api/chat/completions'),
             'model' => env('MICROSTOCK_AI_VISION_MODEL', 'internal.vision'),
@@ -146,55 +149,5 @@ return [
         'estimated_billable_micro_usd_per_asset' => (int) env('MICROSTOCK_AI_BILLING_ESTIMATE_PER_ASSET', 150_000),
         // Multiplier for gate estimate to cover multi-attempt thinking (default 1.5×).
         'estimate_thinking_attempt_factor' => (float) env('MICROSTOCK_AI_BILLING_ESTIMATE_FACTOR', 1.5),
-        'models' => [
-            'grok-grok-4.5-high' => [
-                'input_per_million_usd' => 3.0,
-                'output_per_million_usd' => 15.0,
-            ],
-            'gpt-5.4' => [
-                'input_per_million_usd' => 2.5,
-                'output_per_million_usd' => 15.0,
-            ],
-            'kimi-k3' => [
-                'input_per_million_usd' => 3.0,
-                'output_per_million_usd' => 15.0,
-            ],
-            'gpt-5.6' => [
-                'input_per_million_usd' => 5.0,
-                'output_per_million_usd' => 30.0,
-            ],
-            'gpt-5.6-sol' => [
-                'input_per_million_usd' => 5.0,
-                'output_per_million_usd' => 30.0,
-            ],
-            'gpt-5.6-terra' => [
-                'input_per_million_usd' => 2.5,
-                'output_per_million_usd' => 15.0,
-            ],
-            'gpt-5.6-luna' => [
-                'input_per_million_usd' => 1.0,
-                'output_per_million_usd' => 6.0,
-            ],
-            'claude-opus-5' => [
-                'input_per_million_usd' => 5.0,
-                'output_per_million_usd' => 25.0,
-            ],
-            'anthropic/claude-opus-5' => [
-                'input_per_million_usd' => 5.0,
-                'output_per_million_usd' => 25.0,
-            ],
-            'claude-sonnet-5' => [
-                'input_per_million_usd' => 2.0,
-                'output_per_million_usd' => 10.0,
-            ],
-            'anthropic/claude-sonnet-5' => [
-                'input_per_million_usd' => 2.0,
-                'output_per_million_usd' => 10.0,
-            ],
-            'default' => [
-                'input_per_million_usd' => 5.0,
-                'output_per_million_usd' => 20.0,
-            ],
-        ],
     ],
 ];

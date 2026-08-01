@@ -94,7 +94,8 @@ if ($force) {
     }
 
     if ($folder->collection_status !== CollectionStatus::Locked) {
-        $folder = $collectionService->lock($owner, $folderId, $hint);
+        $billingMode = $folder->collection_billing_mode;
+        $folder = $collectionService->lock($owner, $folderId, $hint, $billingMode);
     }
 
     $status = $folder->collection_status;
@@ -126,6 +127,8 @@ $startedAt = microtime(true);
 if ($shouldAnalyze) {
     try {
         app(CollectionService::class)->analyze($owner, $folderId);
+        // Sync queue runs AnalysisWatchdog inline; delayed re-dispatch loops while ANY folder is processing.
+        Illuminate\Support\Facades\DB::table('jobs')->delete();
     } catch (Throwable $e) {
         fwrite(STDERR, 'Analyze failed: '.$e->getMessage()."\n");
         exit(1);

@@ -289,7 +289,5 @@
         </div>
     </div>
 
-    @push('scripts')
-        @vite(['resources/css/file-hosting/file-hosting.css', 'resources/js/file-hosting/microstock-usage.js'])
-    @endpush
+    @vite(['resources/css/file-hosting/file-hosting.css', 'resources/js/file-hosting/microstock-usage.js'])
 </x-adminlte4::layouts.app>

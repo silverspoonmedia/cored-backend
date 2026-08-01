@@ -156,3 +156,49 @@ Breadcrumbs::for('subscriptions.show', function (Trail $trail, string $subscript
     $trail->parent('subscriptions.index');
     $trail->push(__('web/payments.subscriptions.show_title'));
 });
+
+// Inference admin.
+Breadcrumbs::for('inference.model-cards.index', function (Trail $trail): void {
+    $trail->parent('dashboard');
+    $trail->push(__('web/inference.model_cards.title'), route('inference.model-cards.index'));
+});
+
+Breadcrumbs::for('inference.model-cards.create', function (Trail $trail): void {
+    $trail->parent('inference.model-cards.index');
+    $trail->push(__('ui.breadcrumb.add'));
+});
+
+Breadcrumbs::for('inference.model-cards.edit', function (Trail $trail, string $modelCard): void {
+    $trail->parent('inference.model-cards.index');
+    $trail->push(__('ui.breadcrumb.edit'));
+});
+
+Breadcrumbs::for('inference.model-cards.show', function (Trail $trail, string $modelCard): void {
+    $trail->parent('inference.model-cards.index');
+    $trail->push(__('web/inference.model_cards.show_title'));
+});
+
+Breadcrumbs::for('inference.providers.index', function (Trail $trail): void {
+    $trail->parent('dashboard');
+    $trail->push(__('web/inference.providers.title'), route('inference.providers.index'));
+});
+
+Breadcrumbs::for('inference.providers.create', function (Trail $trail): void {
+    $trail->parent('inference.providers.index');
+    $trail->push(__('ui.breadcrumb.add'));
+});
+
+Breadcrumbs::for('inference.providers.edit', function (Trail $trail, string $provider): void {
+    $trail->parent('inference.providers.index');
+    $trail->push(__('ui.breadcrumb.edit'));
+});
+
+Breadcrumbs::for('inference.providers.show', function (Trail $trail, string $provider): void {
+    $trail->parent('inference.providers.index');
+    $trail->push(__('web/inference.providers.show_title'));
+});
+
+Breadcrumbs::for('inference.usage-events.index', function (Trail $trail): void {
+    $trail->parent('dashboard');
+    $trail->push(__('web/inference.usage.title'), route('inference.usage-events.index'));
+});
