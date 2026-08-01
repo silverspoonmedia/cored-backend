@@ -57,6 +57,8 @@ Resource: event, labels, causer, attribute_changes, properties. Web list/show pr
 
 Authenticated UI under `/apps/*` (route names unprefixed): `/apps/activity-logs` (`activity-logs.index`), `/apps/activity-logs/{activity}` (`activity-logs.show`). See [blade-admin — Routes](../../web/blade-admin.md#routes).
 
+**Sidebar:** **Administration → Monitoring → Activity log** (`activity-logs.index`), visible to Root and Admin.
+
 ## Maintenance
 
 ```bash

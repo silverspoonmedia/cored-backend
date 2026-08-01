@@ -4,12 +4,13 @@
 
 ## Agent protocol (mandatory)
 
-Three instructions below are canonical here — no other document may re-define them.
+Instructions below are canonical here — no other document may re-define them.
 
 1. **Assess before changing.** Before any change, check, validate, and assess the task: read the relevant code and docs until the work context is fully understood. No blind edits.
 2. **Update docs with every task.** After finishing a task, always update the relevant related documentation so code and docs never drift (details: rule 2 in [docs/agents/core-rules.md](docs/agents/core-rules.md)).
 3. **`wrap up the docs` keyword.** The exact phrase `wrap up the docs` triggers a session-wide consolidation: reconcile ALL implementations from the session against the documentation as a whole. Per-task doc updates (point 2) cover only that task; the final state may differ — this keyword closes that gap.
 4. **`curate the env` keyword.** The exact phrase `curate the env` triggers env layout curation: run `php artisan env:curate --dry-run` first, show the summary, then `php artisan env:curate` (add `--sync-snapshot` when snapshot sync is needed). Never rewrite `.env` layout with editor tools directly — guarded artisan commands handle transactional backup. For other env mutations, use guarded artisan commands (`env:install`, `env:switch`, `key:generate`) or `php artisan env:backup:create` before manual edits. Details: [docs/platform/environment.md](docs/platform/environment.md).
+5. **Dynamic menu construction.** Before creating or changing dynamic menus, read [docs/domains/navigation/README.md](docs/domains/navigation/README.md); verify every named web route exists, each product parent route appears in `config/products.php` `menu_routes`, and every referenced role has already been seeded. Treat `MenuSeeder` as the sole authoritative tree: group related pages under clear Workspace/Products/Administration branches; use submenus instead of duplicate hub pages; keep route names (never URLs), contiguous sibling order, `en`/`id`/`ja` translations, exact RBAC, and product-bound routes on product parents so ancestor Domain Access and activation gates protect every child. Rebuild active and trashed rows transactionally, flush navigation cache only after commit, never seed debug/test/probe nodes, and lock exact tree plus rebuild/visibility behavior with tests. Update the Navigation guide and every affected domain guide in the same task.
 
 ## Read first
 

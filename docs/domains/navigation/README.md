@@ -1,16 +1,16 @@
 # Navigation — dynamic menu tree
 
-Self-referential, orderable menus with RBAC visibility. Dedicated repository (not generic CRUD). Code: `app/Domain/Navigation/`.
+Self-referential, orderable menus with RBAC, domain-access, product-activation, and per-user visibility. Dedicated repository (not generic CRUD). Code: `app/Domain/Navigation/`.
 
 ## Layers
 
 | Piece | Role |
 |-------|------|
 | `Menu` model | `HasUuids`, Spatie translatable name/description, tree relations |
-| `MenuRepository` | Tree build, visibility, transactional reorder, pivots |
+| `MenuRepository` | Tree build, live visibility, transactional reorder, pivots, snapshot cache |
 | `MenuService` | Field map, orchestration |
 | `MenuController` API/Web | Thin HTTP; web proxies API |
-| `jwt.optional` | Guest or authed tree on `index` |
+| `jwt.optional` | Guest or authenticated tree on `index` |
 
 Bound in `NavigationServiceProvider`.
 
@@ -21,11 +21,11 @@ Bound in `NavigationServiceProvider`.
 | `id`, `parent_id` | UUID; self-FK cascade |
 | `layout` | Shell region: `sidebar`, `navbar` (config `navigation.layouts`) |
 | `name`, `description` | JSON translatable |
-| `icon`, `route` | Full icon class; **route name** not URL |
+| `icon`, `route` | Full icon class; **named web route**, never a URL |
 | `type` | `h` header, `p` parent, `c` child |
 | `order` | Contiguous within `(layout, parent_id, type)`; NULL for soft-deleted |
 | `is_authenticate`, `is_guest_only` | Audience flags |
-| Soft deletes | |
+| Soft deletes | Active and trashed rows share one tree identity space |
 
 Pivots: `menu_roles`, `menu_user_includes`, `menu_user_excludes`. Unique index on `(layout, parent_id, type, order)`.
 
@@ -33,70 +33,113 @@ Pivots: `menu_roles`, `menu_user_includes`, `menu_user_excludes`. Unique index o
 
 ## Visibility (navigation tree)
 
-Node visible only if **it and every ancestor** pass:
+A node is visible only if **it and every ancestor** pass these rules in order:
 
-1. Not in exclude list  
-2. If includes non-empty → viewer in includes  
-3. Guest-only hidden when authenticated  
-4. Authenticate-required hidden for guests  
-5. **Product-activation gate** — if the node's `route` is bound to a product via `config/products.php` `menu_routes`, the viewer must have an `active` activation for that product. Hidden when suspended / expired / pending / not provisioned. Skipped for guests (no auth gate) and for routes not in the map. See [Product Activations — Menu visibility](../product-activations/README.md#menu-visibility-v2).
-6. If roles attached → viewer has any; no roles → open to those who passed above  
+1. Authenticated viewer is not in the node's exclude list.
+2. If the include list is non-empty, the viewer is authenticated and included.
+3. Guest-only node is hidden from authenticated viewers.
+4. Authenticate-required node is hidden from guests.
+5. **Domain Access gate** — if the node's route maps to a product through `config/products.php` `menu_routes`, `DomainAccessService::canAccess` must allow the viewer. This runs for guests too. Private products allow Root/Admin and holders of the matching `Beta tester {Domain}` role or `access {domain} product` permission. See [Domain Access — Menu visibility](../domain-access/README.md#menu-visibility).
+6. **Product activation gate** — for the same mapped product, an authenticated viewer must have an `active` activation. Suspended, expired, pending, or missing activation hides the node. Guests skip this activation check. See [Product Activations — Menu visibility](../product-activations/README.md#menu-visibility-v2).
+7. If roles are attached, the viewer must have any attached role; no roles means open to viewers who passed prior rules.
 
-Empty header/parent branches pruned (except leaf parent with a `route`). Invalid combos rejected at validation (`guest_only` + `authenticate` / roles).
-
-`MenuRepository` resolves `ProductRegistry::productKeyByMenuRoute` per leaf node and calls `ProductActivationService::isActive`. The global snapshot cache stays product-agnostic; the product check runs live per request (same pattern as role checks).
+`MenuRepository` evaluates every candidate node and each ancestor in its chain. For each route-bearing node it resolves `ProductRegistry::productKeyByMenuRoute`; product parent routes therefore gate all descendants, including children whose own routes are not mapped. Empty headers and non-navigable parents are pruned; a parent with a route remains a valid leaf. Validation rejects incompatible audience combinations such as guest-only plus authenticate-required or role restrictions.
 
 ## API (`/api/v1/navigation/menus`)
 
 | Method | Path | Middleware | Purpose |
 |--------|------|------------|---------|
-| GET | `/` | `jwt.optional` | Tree (`?layout=`, `?q=`) |
-| GET | `/list` | view menu | Admin flat list / DataTable |
-| CRUD | `/{menu}` | view/manage menu | Store, show, update, destroy (`?cascade=1`) |
-| GET | `/trashed` | view menu | Soft-deleted |
-| POST | `/{menu}/restore` | restore menu | Restore subtree |
+| GET | `/` | `jwt.optional` | Visible tree (`?layout=`, `?q=`) |
+| GET | `/list` | `auth:api`, `view menu` | Admin flat list / DataTable |
+| GET | `/trashed` | `auth:api`, `view menu` | Soft-deleted rows |
+| POST | `/` | `auth:api`, `manage menu` | Create menu |
+| GET | `/{menu}` | `auth:api`, `view menu` | Show menu |
+| PUT/PATCH | `/{menu}` | `auth:api`, `manage menu` | Update menu |
+| DELETE | `/{menu}` | `auth:api`, `manage menu` | Soft-delete (`?cascade=1`) |
+| POST | `/{menu}/restore` | `auth:api`, `restore menu` | Restore subtree |
 
-Permissions: `view menu`, `manage menu`, `restore menu` (RoleSeeder).
+Permissions come from `RoleSeeder`: `view menu`, `manage menu`, `restore menu`.
 
-**Blade:** web MenuController forwards all mutations to API. **Exceptions:** sidebar/navbar composers call `MenuService::navigationTree` directly (no self-HTTP). Lookups for form options: `/api/v1/lookups/*`.
+**Blade:** web `MenuController` forwards mutations to the API. Sidebar/navbar composers call `MenuService::navigationTree` directly, avoiding self-HTTP. Form option lookups use `/api/v1/lookups/*`.
 
 ### Request fields (store/update)
 
-Service maps friendly names: `parent` → `parent_id`, `authenticate` → `is_authenticate`, etc. Placement: optional `position` + `reference_id` (`before`/`after`/`append`). Structure: `h` root → `p` under `h` → `c` under `p`. Create/update wrap row + pivots in one transaction.
+Service maps friendly names: `parent` → `parent_id`, `authenticate` → `is_authenticate`, etc. Placement accepts optional `position` + `reference_id` (`before`/`after`/`append`). Structure is `h` root → `p` under `h` → `c` under `p`. Create/update wrap row and pivot synchronization in one transaction.
 
-Translatable `name`/`description`: string or locale map — see [localization](../../platform/localization.md).
+Translatable `name`/`description` accepts a string or locale map; see [localization](../../platform/localization.md).
 
 ## Ordering
 
-Two-phase reorder (null free slots, then reassign contiguous orders). Soft delete nulls `order` first.
+Reorder uses two phases: null current slots, then assign contiguous orders. Soft-delete nulls `order` before deletion so active siblings can be compacted safely.
 
 ## Caching
 
-Active menus cached; per-request tree filters by layout + RBAC. Invalidate on menu mutations.
+`MenuRepository` caches all active rows forever under `menus.navigation.snapshot` as serialization-safe primitive arrays, including translated fields, route/layout/order, role names, and include/exclude user IDs. It never caches hydrated Eloquent models or viewer-specific results.
 
-## Seeding
+Layout, include/exclude, auth flags, Domain Access, product activation, and RBAC are evaluated live per request. Domain visibility and activation changes therefore need no navigation-cache flush. Menu row/pivot mutations flush the snapshot; `NavigationServiceProvider` also flushes it after role update/delete because snapshots store role names. `php artisan menu:flush-cache` remains available for manual recovery.
 
-`MenuSeeder` is the authoritative navigation definition. Every run force-deletes all active and trashed menu rows (pivot rows follow FK cascades), then rebuilds both layouts inside one DB transaction. This intentionally removes admin-created/custom menu rows. A failed rebuild rolls the old tree back; a successful rebuild flushes the navigation snapshot cache.
+## Authoritative seeding
 
-Run `php artisan db:seed --class=MenuSeeder` to converge an existing installation. No separate cache command is required.
+`MenuSeeder` is the sole canonical navigation definition. Every run force-deletes all active and trashed menu rows; FK cascades remove their pivot rows. It rebuilds both layouts inside one DB transaction and intentionally removes admin-created/custom menus. A failure inside that transaction restores the prior DB tree. After commit, the seeder flushes the navigation snapshot cache; no separate cache command is needed.
 
-Canonical sidebar tree:
+`MenuSeeder` assumes these role catalogs already exist, in order:
 
-- **Workspace** — Dashboard, Notifications, Services.
+```bash
+php artisan db:seed --class=RoleSeeder
+php artisan db:seed --class=FileHostingRoleSeeder
+php artisan db:seed --class=VtualRoleSeeder
+php artisan db:seed --class=MenuSeeder
+```
+
+`DatabaseSeeder` already preserves this order. Running `MenuSeeder` alone before those role seeders can silently omit expected `menu_roles` pivots because unknown role names are filtered out.
+
+### Canonical sidebar tree
+
+- **Workspace**
+  - Dashboard — `dashboard`
+  - Notifications — `notifications.index`
+  - Services — `services.index`
 - **Products**
-  - **File Hosting** — My Files, Trash, DMCA Blocklist (internal management roles + File Hosting Admin).
-  - **vTual** — Overview, My profiles, Claim as vTuber, Registry & pending (staff), Platform credentials (Root/Admin).
+  - **File Hosting** — parent route `file-hosting.index`
+    - My Files — `file-hosting.index`
+    - Trash — `file-hosting.trash`
+    - DMCA Blocklist — `file-hosting.blocklist.index`; Root, Admin, Moderator, Management, File Hosting Admin
+  - **vTual** — parent route `vtual.index`
+    - Overview — `vtual.index`
+    - My profiles — `vtual.profiles.index`
+    - Claim as vTuber — `vtual.claims.index`
+    - Registry & pending — `vtual.claims.staff`; Root, Admin, Moderator, Management, Vtual Admin
+    - Platform credentials — `vtual.admin.credentials.index`; Root, Admin
 - **Administration**
-  - **Access control** — User management, Product activations, Product domain access.
-  - **Payments** — Payment income, Invoices, Subscriptions, Payment channels, Payment gateways.
-  - **Monitoring** — Activity log, Error log.
-  - **Navigation** — Menu list, Trashed menus.
+  - **Access control** — Root, Admin, Moderator, Management
+    - User management — `users.index`
+    - Product activations — `product-activations.index`
+    - Product domain access — `domain-access.index`; Root, Admin
+  - **Payments** — Root, Admin, Moderator, Management
+    - Payment income — `payments.income.index`
+    - Invoices — `invoices.index`
+    - Subscriptions — `subscriptions.index`
+    - Payment channels — `payment-channels.index`
+    - Payment gateways — `payment-gateways.index`
+  - **Monitoring** — Root, Admin
+    - Activity log — `activity-logs.index`
+    - Error log — `error-logs.index`
+  - **Navigation** — Root, Admin, Moderator, Management
+    - Menu list — `menus.index`
+    - Trashed menus — `menus.trashed`
 
-Navbar contains Home only. Microstock intentionally stays reachable through Services and the File Hosting workspace switcher. Debug/test fixtures and the vTual Platform API Probe are intentionally absent.
+Navbar contains one **Home** shortcut using `dashboard`. File Hosting and vTual parent routes stack Domain Access and activation gates across their branches. Microstock remains discoverable through Services and the File Hosting workspace switcher, with no dynamic-menu node.
 
-File Hosting and vTual parent nodes carry their product-bound index routes. Ancestor visibility therefore product-gates every child, including child routes not listed independently in `config/products.php`.
+No Debug fixture, Microstock node, or vTual Platform API Probe node is seeded. Platform API Probe remains a live Root/Admin surface linked from vTual Platform credentials; its exclusion applies only to dynamic navigation.
 
-Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module registry stays in [`config/domains.php`](../../../config/domains.php); RBAC catalog ownership is separate (`domain_kind` on roles/permissions). Do not add schema just to mirror those axes.
+Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module registry stays in [`config/domains.php`](../../../config/domains.php); RBAC catalog ownership remains separate (`domain_kind` on roles/permissions). Do not add menu schema merely to mirror those axes.
+
+## Tests
+
+- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 33-row sidebar/navbar tree, `en`/`id`/`ja` translations, selected role pivots, absence of Debug/probe/Microstock nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
+- `tests/Domain/Navigation/Feature/Http/Controllers/Web/SidebarNavigationWebTest.php` covers sidebar/navbar composer registration and shell rendering.
+- `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php` covers public/private product visibility, guests, privileged access, and empty-branch pruning.
+- `tests/Domain/Product/Feature/MenuVisibilityTest.php` covers authenticated product-activation visibility; its guest case is a rendering smoke test, not a guest tree assertion.
 
 ## Related
 

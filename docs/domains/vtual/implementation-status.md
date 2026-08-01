@@ -135,7 +135,7 @@ Not a commitment — default backlog for the next sessions:
 |--------|----------------|
 | Migrate | `php artisan migrate` (includes `vtual_channel_fetch_pool`, claims, appearances, …) |
 | Roles / platforms | `php artisan db:seed --class=VtualRoleSeeder` |
-| Menus | `php artisan db:seed --class=MenuSeeder` (authoritative rebuild + cache flush) |
+| Menus | Seed `RoleSeeder`, `FileHostingRoleSeeder`, and `VtualRoleSeeder`, then `php artisan db:seed --class=MenuSeeder` (authoritative rebuild + post-commit cache flush) |
 | Flush channel pool (on demand) | `php artisan vtual:flush-channel-pool` |
 | Force flush (ignore 50/15m gate) | `php artisan vtual:flush-channel-pool --force` |
 | Enqueue stale actives then flush | `php artisan vtual:flush-channel-pool --resync` / `--resync --force` |

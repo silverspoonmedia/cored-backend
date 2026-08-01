@@ -196,6 +196,8 @@ Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation 
 
 ## Blade / assets
 
+**Sidebar:** **Administration → Payments** contains Payment income (`payments.income.index`), Invoices (`invoices.index`), Subscriptions (`subscriptions.index`), Payment channels (`payment-channels.index`), and Payment gateways (`payment-gateways.index`). Parent and children are visible to Root, Admin, Moderator, and Management; endpoint permissions remain authoritative.
+
 Authenticated admin/checkout UI under `/apps/*` (route names unprefixed): e.g. `/apps/payment-channels`, `/apps/payment-gateways`, `/apps/service-purchases/{id}` (primary payment surface for service sales), `/apps/invoices` (list **View** uses `InvoiceWebDestination`). QR image base is injected via `route('qr.show')` (`window.monolithQrBaseUrl`) — no hard-coded `/apps/qr` in JS. See [blade-admin — URL helpers](../../web/blade-admin.md#url-helpers-auth-shell).
 
 **Breadcrumbs:** every payment web route has a trail in `routes/breadcrumbs.php` (invoices, payments.income, payment-channels, payment-gateways, subscriptions) — same coverage as users/services/menus. Param routes (`invoices.show`, `subscriptions.show/edit`) call `Breadcrumbs::setCurrentRoute()` in their Blade `@php` block.

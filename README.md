@@ -104,7 +104,9 @@ php artisan migrate
 php artisan db:seed
 ```
 
-`DatabaseSeeder` runs `RoleSeeder` (roles, permissions, hierarchy levels), `NotificationTypeSettingSeeder`, sample users, and navigation menus:
+`DatabaseSeeder` runs core/product role seeders, domain and notification settings, sample users/product activations, then the authoritative `MenuSeeder`. Every menu seed replaces all active and trashed menu rows and removes admin-created/custom menus; do not run `db:seed` merely to patch one menu entry. See [Navigation — Authoritative seeding](docs/domains/navigation/README.md#authoritative-seeding).
+
+Seeded sample users:
 
 | Email | Password | Role | Purpose |
 |-------|----------|------|---------|

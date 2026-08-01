@@ -71,6 +71,8 @@ Both still may share the browser Echo instance (`window.__monolithEcho` / `creat
 
 Initial unread count is server-rendered by `NotificationBellComposer` as `initialUnreadCount`. Recent-list copy still refetches `/apps/notifications/recent` when the dropdown is open so localization and deep links remain server-owned. Web proxies live under `prefix('apps')` (route names unprefixed: `notifications.*`); composer builds URLs via `route()`.
 
+**Sidebar:** **Workspace → Notifications** (`notifications.index`) has no menu-role pivot and is available to authenticated viewers who pass the navigation audience rules. API access still requires `view notification`. This page entry is distinct from the navbar activity bell: both use Notification-domain data, but the page is the full history surface while the bell is a compact delivery control.
+
 ### Browser health state machine (`bell.js`)
 
 `bell.js` owns the Echo/Pusher connection and exposes current state as:
