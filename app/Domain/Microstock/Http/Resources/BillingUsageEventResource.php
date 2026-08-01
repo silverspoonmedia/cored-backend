@@ -15,6 +15,7 @@ class BillingUsageEventResource extends JsonResource
     public function toArray($request): array
     {
         $ledger = app(BillingLedgerService::class);
+        $this->loadMissing('aiModelRateSnapshot');
 
         return [
             'id' => $this->id,
@@ -22,6 +23,14 @@ class BillingUsageEventResource extends JsonResource
             'stage' => $this->stage,
             'alias_model' => $this->alias_model,
             'resolved_model' => $this->resolved_model,
+            'rate_snapshot' => $this->when(
+                $this->relationLoaded('aiModelRateSnapshot') && $this->aiModelRateSnapshot !== null,
+                fn () => [
+                    'input_per_million_usd' => (float) $this->aiModelRateSnapshot->input_per_million_usd,
+                    'output_per_million_usd' => (float) $this->aiModelRateSnapshot->output_per_million_usd,
+                    'captured_at' => $this->aiModelRateSnapshot->captured_at?->toIso8601String(),
+                ],
+            ),
             'prompt_tokens' => (int) $this->prompt_tokens,
             'completion_tokens' => (int) $this->completion_tokens,
             'total_tokens' => (int) $this->total_tokens,

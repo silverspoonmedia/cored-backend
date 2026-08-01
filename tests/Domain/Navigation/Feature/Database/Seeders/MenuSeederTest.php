@@ -98,6 +98,16 @@ class MenuSeederTest extends TestCase
                         ],
                     ],
                     [
+                        'name' => 'Inference',
+                        'route' => null,
+                        'type' => 'p',
+                        'children' => [
+                            ['name' => 'Model catalog', 'route' => 'inference.model-cards.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Providers', 'route' => 'inference.providers.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Usage events', 'route' => 'inference.usage-events.index', 'type' => 'c', 'children' => []],
+                        ],
+                    ],
+                    [
                         'name' => 'Monitoring',
                         'route' => null,
                         'type' => 'p',
@@ -179,7 +189,7 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(33, Menu::query()->count());
+        $this->assertSame(37, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -187,7 +197,7 @@ class MenuSeederTest extends TestCase
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(33, Menu::query()->count());
+        $this->assertSame(37, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),

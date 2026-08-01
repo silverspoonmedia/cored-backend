@@ -7,6 +7,7 @@ use App\Domain\Microstock\Enums\AnalysisPipeline;
 use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
+use App\Domain\Microstock\Jobs\Middleware\LimitAnalysisConcurrency;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AnalysisStageService;
 use App\Domain\Microstock\Services\VisionImageResolver;
@@ -15,7 +16,6 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Queue\SerializesModels;
 use Throwable;
 
@@ -48,9 +48,7 @@ class AnalyzeAssetVision implements ShouldQueue
     public function middleware(): array
     {
         return [
-            (new WithoutOverlapping($this->pipeline->visionOverlapKey($this->folderId)))
-                ->releaseAfter(30)
-                ->expireAfter($this->timeout + 60),
+            new LimitAnalysisConcurrency('vision', $this->pipeline, $this->folderId),
         ];
     }
 

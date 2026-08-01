@@ -36,6 +36,8 @@ sequenceDiagram
 | `attempt_index` | `microstock_ai_usage_events` | Thinking retry sequence within one run |
 | `provider_request_id` | `microstock_ai_usage_events` | OpenAI-compatible response `id` for 9Router reconciliation |
 | `voided_at` | `microstock_ai_usage_events` | Reserved for future void policy (unused in production path) |
+| `consolidated_at` | `microstock_ai_usage_events` | Set when provisional-model consolidation reconciles a settled row |
+| `consolidation_adjustment_micro_usd` | `microstock_ai_usage_events` | Prepaid billable delta from consolidation (`adjustment` ledger) |
 
 ## Settlement policies
 
@@ -45,9 +47,13 @@ sequenceDiagram
 | Thinking fails, vision OK | `markThinkingFailed` → `settlePartialVisionUsage` (vision-stage events only, `ai_billing.partial = true`) |
 | Vision fails | No settle (no successful deliverable stage) |
 | `billing_source = daily_free` | Settle records provider cost; **skip** prepaid debit; `ai_billing.source = daily_free`, `billable_micro_usd = 0` |
-| Insufficient balance at settle | Transaction rolls back; metadata stays non-`generated`; usage events remain `billed_at = null` |
+| Balance below billable at settle | **Settle proceeds** — `AiCreditService::debit` allows negative balance. Metadata promotes to `generated`; events get `billed_at`. New paid analyze is gated at `planAnalyze` (`balance >= 0` and estimate). Top-up via Services restores balance toward zero. |
 
 Partial then full success (retry after vision-only charge): `settleSuccessfulAnalysis` runs when `ai_billing.partial = true`, debiting only remaining unbilled events (typically thinking), and merges totals into a non-partial `ai_billing` snapshot.
+
+## Provisional model consolidation
+
+After ops curates provider rates for a model that was billed provisionally, `UnknownModelBillingConsolidationService` reconciles settled prepaid usage whose snapshot `rate_source = unknown_provisional` (same provider + model slug, `consolidated_at` null). Cheaper curated rate → `adjustment` credit; more expensive → `adjustment` debit (balance may go negative). Daily-free rows update reporting fields only. See [Inference — unknown model workflow](../inference/README.md#unknown-model-workflow) and [README § Provisional model consolidation](README.md#provisional-model-consolidation).
 
 ## Idempotency and race guards
 
@@ -111,4 +117,4 @@ Production records **one vision HTTP per asset** (`analyzeVision`). A 9Router lo
 
 ## Tests
 
-`tests/Domain/Microstock/Unit/Services/MicrostockBillingHardeningTest.php` covers settle-before-generated, partial vision settle, run-id filtering, vision idempotency, and thinking claim races.
+`tests/Domain/Microstock/Unit/Services/MicrostockBillingHardeningTest.php` covers settle-before-generated, partial vision settle, run-id filtering, vision idempotency, thinking claim races, and post-hoc settle with negative balance when prepaid funds are insufficient at debit time. `UnknownModelBillingTest` covers provisional notify, consolidation, and `planAnalyze` gate.

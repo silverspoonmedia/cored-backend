@@ -22,6 +22,11 @@ class AdminBillingUsageEventResource extends JsonResource
                 'name' => $this->user?->name,
                 'email' => $this->user?->email,
             ]),
+            'inference_provider' => $this->whenLoaded('inferenceProvider', fn (): ?array => $this->inferenceProvider === null ? null : [
+                'id' => $this->inferenceProvider->id,
+                'slug' => $this->inferenceProvider->slug,
+                'name' => $this->inferenceProvider->name,
+            ]),
         ]);
     }
 }

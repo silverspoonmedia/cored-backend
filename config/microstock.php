@@ -32,6 +32,9 @@ return [
     ],
 
     'ai' => [
+        // Inference provider slug for upstream cost resolution (see Inference domain).
+        'inference_provider_slug' => env('MICROSTOCK_AI_INFERENCE_PROVIDER', 'openwebui-9router'),
+
         'vision' => [
             'endpoint' => env('MICROSTOCK_AI_VISION_ENDPOINT', 'https://ai-chat.spnd.uk/api/chat/completions'),
             'model' => env('MICROSTOCK_AI_VISION_MODEL', 'internal.vision'),
@@ -103,6 +106,21 @@ return [
             'variant_kind' => env('MICROSTOCK_AI_VISION_VARIANT', 'ai_1024'),
             'signed_url_ttl_minutes' => (int) env('MICROSTOCK_AI_VISION_URL_TTL', 30),
         ],
+
+        // Upstream throughput limits (shared Open WebUI / 9Router account).
+        // token_budget + window_seconds are ops reference for ~20M tokens / 30 min;
+        // enforcement is via concurrency caps below (see microstock README).
+        'upstream' => [
+            'window_seconds' => (int) env('MICROSTOCK_AI_UPSTREAM_WINDOW_SECONDS', 1800),
+            'token_budget' => (int) env('MICROSTOCK_AI_UPSTREAM_TOKEN_BUDGET', 20_000_000),
+            'max_concurrent_vision' => (int) env('MICROSTOCK_AI_UPSTREAM_MAX_CONCURRENT_VISION', 6),
+            'max_concurrent_thinking' => (int) env('MICROSTOCK_AI_UPSTREAM_MAX_CONCURRENT_THINKING', 10),
+            'collection_vision_concurrency' => (int) env('MICROSTOCK_AI_COLLECTION_VISION_CONCURRENCY', 3),
+            'collection_thinking_concurrency' => (int) env('MICROSTOCK_AI_COLLECTION_THINKING_CONCURRENCY', 3),
+            'solo_vision_concurrency' => (int) env('MICROSTOCK_AI_SOLO_VISION_CONCURRENCY', 2),
+            'solo_thinking_concurrency' => (int) env('MICROSTOCK_AI_SOLO_THINKING_CONCURRENCY', 2),
+            'release_after_seconds' => (int) env('MICROSTOCK_AI_UPSTREAM_RELEASE_AFTER', 15),
+        ],
     ],
 
     // Persisted JPEG derivatives generated on microstock image upload (counts toward FH quota).
@@ -131,55 +149,5 @@ return [
         'estimated_billable_micro_usd_per_asset' => (int) env('MICROSTOCK_AI_BILLING_ESTIMATE_PER_ASSET', 150_000),
         // Multiplier for gate estimate to cover multi-attempt thinking (default 1.5×).
         'estimate_thinking_attempt_factor' => (float) env('MICROSTOCK_AI_BILLING_ESTIMATE_FACTOR', 1.5),
-        'models' => [
-            'grok-grok-4.5-high' => [
-                'input_per_million_usd' => 3.0,
-                'output_per_million_usd' => 15.0,
-            ],
-            'gpt-5.4' => [
-                'input_per_million_usd' => 2.5,
-                'output_per_million_usd' => 15.0,
-            ],
-            'kimi-k3' => [
-                'input_per_million_usd' => 3.0,
-                'output_per_million_usd' => 15.0,
-            ],
-            'gpt-5.6' => [
-                'input_per_million_usd' => 5.0,
-                'output_per_million_usd' => 30.0,
-            ],
-            'gpt-5.6-sol' => [
-                'input_per_million_usd' => 5.0,
-                'output_per_million_usd' => 30.0,
-            ],
-            'gpt-5.6-terra' => [
-                'input_per_million_usd' => 2.5,
-                'output_per_million_usd' => 15.0,
-            ],
-            'gpt-5.6-luna' => [
-                'input_per_million_usd' => 1.0,
-                'output_per_million_usd' => 6.0,
-            ],
-            'claude-opus-5' => [
-                'input_per_million_usd' => 5.0,
-                'output_per_million_usd' => 25.0,
-            ],
-            'anthropic/claude-opus-5' => [
-                'input_per_million_usd' => 5.0,
-                'output_per_million_usd' => 25.0,
-            ],
-            'claude-sonnet-5' => [
-                'input_per_million_usd' => 2.0,
-                'output_per_million_usd' => 10.0,
-            ],
-            'anthropic/claude-sonnet-5' => [
-                'input_per_million_usd' => 2.0,
-                'output_per_million_usd' => 10.0,
-            ],
-            'default' => [
-                'input_per_million_usd' => 5.0,
-                'output_per_million_usd' => 20.0,
-            ],
-        ],
     ],
 ];

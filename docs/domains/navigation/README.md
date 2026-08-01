@@ -121,6 +121,10 @@ php artisan db:seed --class=MenuSeeder
     - Subscriptions — `subscriptions.index`
     - Payment channels — `payment-channels.index`
     - Payment gateways — `payment-gateways.index`
+  - **Inference** — Root, Admin, Moderator, Management
+    - Model catalog — `inference.model-cards.index`
+    - Providers — `inference.providers.index` (show = model rate grid)
+    - Usage events — `inference.usage-events.index`
   - **Monitoring** — Root, Admin
     - Activity log — `activity-logs.index`
     - Error log — `error-logs.index`
@@ -136,7 +140,7 @@ Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module regi
 
 ## Tests
 
-- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 33-row sidebar/navbar tree, `en`/`id`/`ja` translations, selected role pivots, absence of Debug/probe/Microstock nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
+- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 38-row sidebar/navbar tree, `en`/`id`/`ja` translations, selected role pivots, absence of Debug/probe/Microstock nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
 - `tests/Domain/Navigation/Feature/Http/Controllers/Web/SidebarNavigationWebTest.php` covers sidebar/navbar composer registration and shell rendering.
 - `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php` covers public/private product visibility, guests, privileged access, and empty-branch pruning.
 - `tests/Domain/Product/Feature/MenuVisibilityTest.php` covers authenticated product-activation visibility; its guest case is a rendering smoke test, not a guest tree assertion.

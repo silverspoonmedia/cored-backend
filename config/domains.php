@@ -37,6 +37,7 @@ return [
     'ErrorLog' => ['kind' => 'core'],
     'PaymentGateway' => ['kind' => 'core'],
     'Service' => ['kind' => 'core'],
+    'Inference' => ['kind' => 'core'],
 
     // Product
     'FileHosting' => ['kind' => 'product', 'locked' => true],

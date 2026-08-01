@@ -1862,7 +1862,7 @@ function initFileManager(root) {
             const dailyUsed = forcePaid ? 0 : Math.min(dailyRemaining, count);
             const prepaidNeeded = Math.max(0, count - dailyUsed);
             const requiredPrepaidMicro = estimatePer * prepaidNeeded;
-            const affordable = prepaidNeeded === 0 || balanceMicro >= requiredPrepaidMicro;
+            const affordable = balanceMicro >= 0 && (prepaidNeeded === 0 || balanceMicro >= requiredPrepaidMicro);
 
             return {
                 affordable,
@@ -1994,7 +1994,7 @@ function initFileManager(root) {
             const balanceBtn = root.querySelector('[data-fh-toolbar-balance]');
             if (balanceBtn) {
                 balanceBtn.addEventListener('click', function (e) {
-                    if (usagePanel) {
+                    if (usagePanel?.isReady) {
                         e.preventDefault();
                         usagePanel.open();
                     }

@@ -3,7 +3,6 @@
 namespace App\Domain\Microstock\Services;
 
 use App\Domain\Microstock\Enums\AiCreditTransactionType;
-use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Models\AiBalance;
 use App\Domain\Microstock\Models\AiCreditTransaction;
 use App\Domain\Service\Models\ServicePurchase;
@@ -91,20 +90,17 @@ class AiCreditService
         int $amountMicroUsd,
         string $referenceType,
         string $referenceId,
+        AiCreditTransactionType $type = AiCreditTransactionType::AnalysisDebit,
     ): void {
         if ($amountMicroUsd <= 0) {
             return;
         }
 
-        DB::transaction(function () use ($userId, $amountMicroUsd, $referenceType, $referenceId): void {
+        DB::transaction(function () use ($userId, $amountMicroUsd, $referenceType, $referenceId, $type): void {
             $balance = AiBalance::query()->lockForUpdate()->firstOrCreate(
                 ['user_id' => $userId],
                 ['balance_micro_usd' => 0, 'updated_at' => now()],
             );
-
-            if ((int) $balance->balance_micro_usd < $amountMicroUsd) {
-                throw new MicrostockException(__('api/microstock.insufficient_ai_credits'), 422);
-            }
 
             $newBalance = (int) $balance->balance_micro_usd - $amountMicroUsd;
             $balance->forceFill([
@@ -115,7 +111,7 @@ class AiCreditService
             AiCreditTransaction::query()->create([
                 'user_id' => $userId,
                 'amount_micro_usd' => -$amountMicroUsd,
-                'type' => AiCreditTransactionType::AnalysisDebit,
+                'type' => $type,
                 'reference_type' => $referenceType,
                 'reference_id' => $referenceId,
                 'balance_after' => $newBalance,

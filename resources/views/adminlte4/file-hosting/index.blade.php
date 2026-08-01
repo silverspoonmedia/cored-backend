@@ -93,7 +93,7 @@
             'adminOverviewUrl' => ($canViewPlatformBilling ?? false)
                 ? route('file-hosting.microstock.billing.admin.overview')
                 : null,
-            'adminUsageEventsUrl' => ($canViewPlatformBilling ?? false)
+            'adminUsageUrl' => ($canViewPlatformBilling ?? false)
                 ? route('file-hosting.microstock.billing.admin.usage-events')
                 : null,
             'labels' => [

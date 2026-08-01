@@ -60,6 +60,7 @@ class DatabaseSeeder extends Seeder
         $this->call(PaymentGatewaySeeder::class);
         $this->call(PaymentChannelSeeder::class);
         $this->call(CurrencySeeder::class);
+        $this->call(InferenceCatalogSeeder::class);
         $this->call(ServiceCatalogSeeder::class);
     }
 

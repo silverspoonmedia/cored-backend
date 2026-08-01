@@ -3,7 +3,6 @@
 namespace Tests\Domain\Microstock\Unit\Services;
 
 use App\Domain\Microstock\Enums\AiCreditTransactionType;
-use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Models\AiCreditTransaction;
 use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Service\Enums\PurchaseStatus;
@@ -62,13 +61,18 @@ class AiCreditServiceTest extends TestCase
         $this->assertSame(2, AiCreditTransaction::query()->where('type', AiCreditTransactionType::AnalysisDebit)->count());
     }
 
-    public function test_debit_throws_when_balance_insufficient(): void
+    public function test_debit_allows_negative_balance(): void
     {
-        $user = $this->userWithRole('User', 'poor@example.com');
+        $user = $this->userWithRole('User', 'negative@example.com');
+        app(AiCreditService::class)->addCredit(
+            (string) $user->id,
+            100_000,
+            AiCreditTransactionType::Purchase,
+        );
 
-        $this->expectException(MicrostockException::class);
+        app(AiCreditService::class)->debit((string) $user->id, 200_000, 'asset_metadata', 'meta-neg', AiCreditTransactionType::Adjustment);
 
-        app(AiCreditService::class)->debit((string) $user->id, 100, 'asset_metadata', 'meta-2');
+        $this->assertSame(-100_000, app(AiCreditService::class)->balance((string) $user->id));
     }
 
     public function test_ignores_non_ai_credit_purchase(): void

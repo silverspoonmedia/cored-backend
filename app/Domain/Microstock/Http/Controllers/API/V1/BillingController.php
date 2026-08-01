@@ -32,7 +32,9 @@ class BillingController extends Controller
 
         return $this->successResponse([
             'balance_micro_usd' => $balanceMicro,
-            'balance_usd' => $this->billing->microUsdToUsd($balanceMicro),
+            'balance_usd' => $balanceMicro < 0
+                ? $this->ledger->formatUsd($balanceMicro, signed: true)
+                : $this->ledger->formatUsd($balanceMicro),
             'estimated_per_analysis_micro_usd' => $estimateMicro,
             'estimated_per_analysis_usd' => $this->billing->microUsdToUsd($estimateMicro),
             'daily_free' => $this->dailyFree->snapshot($userId),

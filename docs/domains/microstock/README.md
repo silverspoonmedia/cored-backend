@@ -83,7 +83,7 @@ Env-gated per-user daily analyses (`MICROSTOCK_DAILY_FREE_ENABLED`). No activati
 |------|-------|-------------|
 | `microstock.addon.ai-credits.5` | $5 once | `microstock_ai_credits` |
 
-**Rate card** (`config/microstock.php` → `ai_billing`):
+**Rate card** — core Inference domain ([Inference README](../inference/README.md)); Microstock applies `markup_multiplier` on top.
 
 | Model | Input / 1M tokens | Output / 1M tokens |
 |-------|-------------------|---------------------|
@@ -95,7 +95,9 @@ Env-gated per-user daily analyses (`MICROSTOCK_DAILY_FREE_ENABLED`). No activati
 | `gpt-5.6-luna` | $1.00 | $6.00 |
 | `claude-opus-5` / `anthropic/claude-opus-5` | $5.00 | $25.00 |
 | `claude-sonnet-5` / `anthropic/claude-sonnet-5` | $2.00 | $10.00 |
-| `default` (unknown slug) | $5.00 | $20.00 |
+| `default` (unknown slug, provisional) | $15.00 | $60.00 |
+
+Provisional holds are reconciled after catalog curation; see [Inference — unknown models](../inference/README.md).
 
 Sonnet 5 rates above are Anthropic **introductory** pricing through Aug 31, 2026; standard from Sep 1 is $3 / $15 per 1M.
 
@@ -103,13 +105,26 @@ Sonnet 5 rates above are Anthropic **introductory** pricing through Aug 31, 2026
 - `estimated_billable_micro_usd_per_asset` — env `MICROSTOCK_AI_BILLING_ESTIMATE_PER_ASSET` (default **150000** = $0.15 buffer for analyze gate)
 - `estimate_thinking_attempt_factor` — env `MICROSTOCK_AI_BILLING_ESTIMATE_FACTOR` (default **1.5**; gate = per-asset estimate × factor)
 - `http_retries` — env `MICROSTOCK_AI_HTTP_RETRIES` (default **0** for billed stages; each retry can duplicate provider charges)
-- Per-model input/output rates under `ai_billing.models` (resolved model from API response; alias from config stored separately)
+- Per-HTTP-call rates resolved from provider model rates (`MICROSTOCK_AI_INFERENCE_PROVIDER` / `INFERENCE_DEFAULT_PROVIDER_SLUG`); immutable provider-specific snapshot on `microstock_ai_usage_events.ai_model_rate_snapshot_id` plus `inference_provider_id` when route known (alias in `alias_model`, resolved slug in `resolved_model`)
 
-Amounts are stored as **micro-USD** (1 USD = 1_000_000) end-to-end.
+Amounts are stored as **micro-USD** (1 USD = 1_000_000) end-to-end. `microstock_ai_balances.balance_micro_usd` is **signed** — post-settlement consolidation debits may drive balance negative; new paid analyze is blocked until balance ≥ 0 (top-up via Services). Collection UI and `GET billing` show negative balances (e.g. `-$0.12`).
+
+### Provisional model consolidation
+
+When ops curates an unknown model on a provider ([Inference — unknown model workflow](../inference/README.md#unknown-model-workflow)), `UnknownModelBillingConsolidationService` (triggered from `InferenceCatalogService::syncProviderRates()`):
+
+- Scope: settled prepaid usage events whose snapshot `rate_source = unknown_provisional` for that provider + model slug, `consolidated_at` null.
+- Recalculates `billable_micro_usd` / `provider_cost_micro_usd` at curated rates; posts ledger `adjustment` credit (refund) or debit (extra charge; balance may go negative).
+- Daily-free rows: usage amounts updated for reporting only — no ledger movement.
+- Idempotency: `consolidated_at` prevents double-run.
+
+Services: `AiBillingService`, `AiCreditService`, `UnknownModelBillingConsolidationService`, `BillingLedgerService`.
 
 ### Usage & balance UI
 
 Transparent prepaid balance and AI usage history for the billing subject (the user who triggered analyze).
+
+`GET /api/v1/microstock/billing` returns `balance_usd` as a **display string** (`$49.91` or `-$0.12` when negative); `balance_micro_usd` remains the signed integer source. UI (`microstock-usage.js` `formatUsdDisplay()`) prefers the string when present, else formats from micro-USD.
 
 | Surface | Route / endpoint |
 |---------|------------------|
@@ -120,7 +135,7 @@ Transparent prepaid balance and AI usage history for the billing subject (the us
 
 **Page layout**
 
-1. **Summary** — prepaid `balance_usd`, `estimated_per_analysis_usd`, daily free (`remaining/limit` when enabled).
+1. **Summary** — prepaid `balance_usd` (formatted string from API), `estimated_per_analysis_usd`, daily free (`remaining/limit` when enabled).
 2. **Tab: Balance mutations** — bank-style ledger from `microstock_ai_credit_transactions` (`purchase`, `analysis_debit`, `adjustment`); signed amounts, running `balance_after`.
 3. **Tab: AI usage detail** — per HTTP call from `microstock_ai_usage_events` (stage, model, tokens, cost, `billing_source` badge: Free / Prepaid). Daily-free rows appear here only; they do not create ledger debits.
 4. **Tab: Platform overview** (Root / Admin / Moderator only) — platform-wide aggregates: provider cost, billable, margin, events, active users, daily-free subsidized cost; breakdown by billing source, stage, and model; cross-user usage event list.
@@ -138,11 +153,11 @@ Web hops: `GET /apps/file-hosting/microstock/billing/admin/overview`, `…/admin
 
 | Location | Link |
 |----------|------|
-| File Hosting toolbar (Microstock workspace) | **AI Balance** → usage offcanvas panel (SPA-integrated, no page reload; preserves `workspace_id`; visible on SPA workspace switch without hard reload) |
+| File Hosting toolbar (Microstock workspace) | **AI Balance** → primary UX is SPA offcanvas (`#fhMicrostockUsagePanel`, `createMicrostockUsagePanel` with `isReady`); if bind fails, navigates to standalone usage URL with `workspace_id` |
 | Collection describe modal footer | Billing line + **View balance & history** |
 | `/apps/services` Microstock card | **Usage & balance** next to balance line |
 
-Implementation: `BillingLedgerService`, `AdminBillingAnalyticsService`, `AdminBillingController`, `BillingLedgerEntryResource`, `BillingUsageEventResource`, `AdminBillingUsageEventResource`, `resources/views/adminlte4/file-hosting/microstock-usage.blade.php` (standalone fallback page), `resources/js/file-hosting/microstock-usage.js` (exports `createMicrostockUsagePanel` factory for SPA offcanvas + standalone page bootstrap). The SPA offcanvas (`#fhMicrostockUsagePanel`) is injected into `index.blade.php` and wired via `file-manager.js`; the standalone page remains for direct access/bookmarks. Daily-free behaviour: [daily-free-trial.md](daily-free-trial.md).
+Implementation: `BillingLedgerService`, `AdminBillingAnalyticsService`, `AdminBillingController`, `BillingLedgerEntryResource`, `BillingUsageEventResource`, `AdminBillingUsageEventResource`, `resources/views/adminlte4/file-hosting/microstock-usage.blade.php` (standalone fallback page; inline `@vite` like other FH pages), `resources/js/file-hosting/microstock-usage.js` (exports `createMicrostockUsagePanel` factory for SPA offcanvas + standalone bootstrap). The SPA offcanvas is injected into `index.blade.php` and wired via `file-manager.js`; standalone page remains for direct access/bookmarks and offcanvas fallback. Collection modal **View balance & history** opens the same offcanvas or navigates to the standalone URL. Daily-free behaviour: [daily-free-trial.md](daily-free-trial.md).
 
 ## Collections (folder-as-collection lifecycle)
 
@@ -162,7 +177,7 @@ flowchart LR
 | Upload gate | `DirectUploadService::initiate` rejects (422) a Microstock workspace upload with no `folder_id` (`microstock.error_requires_folder`) or into a locked collection (`microstock.error_collection_locked`). Client mirrors this via dropzone `data-workspace-kind` / `data-collection-locked` |
 | Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` (single text field, max 2000, nullable) + `collection_billing_mode` (`free`/`paid`) + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here. **Web UI:** the Lock & Describe modal collects structured sections (Primary concept, Visible subjects, Buyer intent, Style & mood, Additional notes). All sections are optional; they compose into a multi-line hint before lock. A mandatory **Free / Paid** billing-mode selector appears when `MICROSTOCK_DAILY_FREE_ENABLED=true`; when Free is disabled the selector is hidden and every analysis is forced to `paid`. Submitting with no content triggers a client-side `window.confirm` warning that blind locking usually produces poor, inconsistent AI metadata. |
 | Analyze | `POST collections/{folder}/analyze` (requires `locked`, non-empty) sets `processing` and dispatches `ProcessCollection` |
-| Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)** with decoupled stage columns (`ai_vision`, `ai_thinking`, `ai_result`), then dispatches one `AnalyzeAssetVision` job per file on the **collection vision** queue (FIFO by file name). Each vision persists `ai_vision` and dispatches `AnalyzeAssetThinking` on the **collection thinking** queue. **Dual-lane pipeline:** at most one vision + one thinking HTTP call per collection at a time (`WithoutOverlapping` per folder); vision file N+1 may run while thinking file N runs. Collection `review` when **all** assets are terminal (watchdog / thinking completion). Sub-folders are separate collections and are NOT processed |
+| Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)** with decoupled stage columns (`ai_vision`, `ai_thinking`, `ai_result`), then dispatches one `AnalyzeAssetVision` job per file on the **collection vision** queue (FIFO by file name). Each vision persists `ai_vision` and dispatches `AnalyzeAssetThinking` on the **collection thinking** queue. **Dual-lane pipeline:** configurable concurrent vision + thinking jobs per folder (default **3+3**), capped globally by upstream limits (see [Upstream limits](#upstream-limits)); vision file N+1 may run while thinking file N runs. Collection `review` when **all** assets are terminal (watchdog / thinking completion). Sub-folders are separate collections and are NOT processed |
 | Curate | Per-file manual edit via `PATCH assets/{file}/metadata` (existing finalize) while in `review` |
 | Export | `POST collections/{folder}/export` (requires `review`) renders a CSV of the folder's finalized metadata, persists it to `microstock.csv_disk`, saves `collection_csv_path`, sets `exported`. `GET collections/{folder}/download` streams it |
 
@@ -191,11 +206,36 @@ flowchart LR
   T1 --> failed[status failed title empty]
 ```
 
-| Lane | Queue (default) | Concurrency | On success |
-|------|-----------------|-------------|------------|
-| Collection vision | `microstock-collection-vision` | 1 per folder (`WithoutOverlapping`) | Dispatch thinking on collection thinking queue |
-| Collection thinking | `microstock-collection-thinking` | 1 per folder + 1 per asset (`WithoutOverlapping`) | `composeResultFromThinking` + `completeFolderIfReady` |
-| Solo re-analyze | `microstock-solo` | 1 global (`solo-vision` / `solo-thinking` locks) | Vision → thinking on same solo queue |
+| Lane | Queue (default) | Concurrency (default) | On success |
+|------|-----------------|----------------------|------------|
+| Collection vision | `microstock-collection-vision` | **3** per folder + **6** global vision cap | Dispatch thinking on collection thinking queue |
+| Collection thinking | `microstock-collection-thinking` | **3** per folder + **10** global thinking cap + 1 per `metadata_id` (`WithoutOverlapping`) | `composeResultFromThinking` + `completeFolderIfReady` |
+| Solo re-analyze | `microstock-solo` | **2** vision + **2** thinking (solo pool) | Vision → thinking on same solo queue |
+
+### Upstream limits
+
+Shared Open WebUI / 9Router account empirical ceiling: **~20M tokens / 30 min** (frontier models). Microstock allocates the full window to analysis throughput; enforcement is **concurrency caps** via `LimitAnalysisConcurrency` queue middleware (`config/microstock.php` → `ai.upstream`).
+
+| Reference | Value |
+|-----------|-------|
+| `token_budget` | 20,000,000 (ops reference; not runtime-enforced in MVP) |
+| `window_seconds` | 1800 (30 min) |
+| Per-asset typical ceiling | ~20,000 tokens |
+| Theoretical burst assets | ~1,000 / 30 min at 20k/asset |
+
+| Env | Default | Purpose |
+|-----|---------|---------|
+| `MICROSTOCK_AI_UPSTREAM_WINDOW_SECONDS` | `1800` | Sliding window reference (seconds) |
+| `MICROSTOCK_AI_UPSTREAM_TOKEN_BUDGET` | `20000000` | Documented upstream token ceiling |
+| `MICROSTOCK_AI_UPSTREAM_MAX_CONCURRENT_VISION` | `6` | Global in-flight vision jobs |
+| `MICROSTOCK_AI_UPSTREAM_MAX_CONCURRENT_THINKING` | `10` | Global in-flight thinking jobs |
+| `MICROSTOCK_AI_COLLECTION_VISION_CONCURRENCY` | `3` | Per-collection folder vision cap |
+| `MICROSTOCK_AI_COLLECTION_THINKING_CONCURRENCY` | `3` | Per-collection folder thinking cap |
+| `MICROSTOCK_AI_SOLO_VISION_CONCURRENCY` | `2` | Solo re-analyze vision pool |
+| `MICROSTOCK_AI_SOLO_THINKING_CONCURRENCY` | `2` | Solo re-analyze thinking pool |
+| `MICROSTOCK_AI_UPSTREAM_RELEASE_AFTER` | `15` | Seconds before a blocked job retries |
+
+When a cap is full the job is **released** (not failed). Use **Redis** cache in multi-worker deploys so global counters are cluster-safe. If upstream still rate-limits, lower concurrency env vars — no code change needed.
 
 | Stage column | Job | On failure |
 |--------------|-----|------------|
@@ -267,7 +307,9 @@ Canonical probe write-up: [`probes/sonnet5_gpt56_combo_summary.md`](probes/sonne
 
 **Probe finding (2026-07-28, `gpt-5.4`, folder `019fa66d-…`):** persisted `ai_1024` + **`delivery=url`** is required for GPT-5.4 vision on this stack (base64 reliably HTTP **524** @ ~125s). Signed URL payload is ~341 bytes vs ~62KB base64. URL T3 is **intermittent** (~109s when pass, 524 when fail) — run-to-run CF variance, not delivery-mode regression. Full 3-file collection re-probe with config default `url`: T3 0/3, T6 1/3 batch (+ 2119boy T6 ok on spot-check while T3 524'd). Production default is **`url`** (`config/microstock.php`); grok remains faster/more reliable with base64 (~46s). Details: [`probes/gpt54_url_vs_base64_summary.md`](probes/gpt54_url_vs_base64_summary.md), [`probes/collection_url_default_summary.md`](probes/collection_url_default_summary.md).
 
-**Probe scripts:** `php scripts/microstock/probe_ai.php --timeout=300 [--file={uuid}|--folder={uuid}] [--only=T0,T0t,T3,T6] [--label=sonnet5-gpt56]` — **T0** = vision preflight, **T0t** = thinking preflight; **T6** surfaces `stage_metrics` (per-stage `duration_ms`, `resolved_model`, `multimodal`, `tokens_per_second`). Full folder batch: `php scripts/microstock/probe_collection.php {folder_id} [--timeout=300] [--label=sonnet5-gpt56]`. **E2E decoupled pipeline** (persists `ai_vision` / `ai_thinking` / `ai_result`, sync queue): `php scripts/microstock/probe_collection_stages.php {folder_id} [--label=decoupled-probe-e2e] [--wait-timeout=900] [--force]` — use `--force` after zombie `processing` (no metadata rows). Details: [`probes/decoupled_stages_collection_summary.md`](probes/decoupled_stages_collection_summary.md). Matrix: `--matrix`. Requires ready variants (`php scripts/microstock/generate_variants.php {folder_id}` if upload predates worker). JSON artifacts land in `storage/app/probe_results/` (runtime, not committed). Summaries: [`probes/`](probes/).
+**Probe finding (2026-08-01, billing smoke free vs paid, workspace `019fbc21-9faf-700c-94a4-c981f58796aa`):** paired collections with identical 3 files — free `019fbc21-eff1-72af-b14c-494ecbe14328` vs paid `019fbc22-1585-72f4-86d5-ac33faf984d5`. Paid **3/3** @ **~105 s** wall (vision **323–417** tok/s Sonnet, thinking **232–397** tok/s luna); prepaid debit **$0.09** matches usage events. Free **1/3** (2 vision failures on free aliases); **$0** credit debit; 1 asset **70/79** tok/s luna. `inference_provider_id` + rate snapshots on all billed calls. Details: [`probes/billing_smoke_free_vs_paid_summary.md`](probes/billing_smoke_free_vs_paid_summary.md).
+
+**Probe scripts:** `php scripts/microstock/probe_ai.php --timeout=300 [--file={uuid}|--folder={uuid}] [--only=T0,T0t,T3,T6] [--label=sonnet5-gpt56]` — **T0** = vision preflight, **T0t** = thinking preflight; **T6** surfaces `stage_metrics` (per-stage `duration_ms`, `resolved_model`, `multimodal`, `tokens_per_second`). Full folder batch: `php scripts/microstock/probe_collection.php {folder_id} [--timeout=300] [--label=sonnet5-gpt56]`. **E2E decoupled pipeline** (persists `ai_vision` / `ai_thinking` / `ai_result`, sync queue): `php scripts/microstock/probe_collection_stages.php {folder_id} [--label=decoupled-probe-e2e] [--wait-timeout=900] [--force]` — use `--force` after zombie `processing` (no metadata rows); preserves `collection_billing_mode` on re-lock; clears delayed watchdog jobs after analyze on sync queue. **Billing regression:** `billing_smoke_preflight.php`, `billing_smoke_compare.php` — see [`probes/billing_smoke_free_vs_paid_summary.md`](probes/billing_smoke_free_vs_paid_summary.md). Details: [`probes/decoupled_stages_collection_summary.md`](probes/decoupled_stages_collection_summary.md). Matrix: `--matrix`. Requires ready variants (`php scripts/microstock/generate_variants.php {folder_id}` if upload predates worker). JSON artifacts land in `storage/app/probe_results/` (runtime, not committed). Summaries: [`probes/`](probes/).
 
 ### Prompt strategy (marketplace-aligned)
 
@@ -321,7 +363,7 @@ Images reach the vision stage via `VisionImageResolver` — **signed HTTPS URL**
 
 **Troubleshooting — slow vision / thinking not started yet:**
 
-1. Collection pipeline is **dual-lane** — vision and thinking each run one job at a time per folder, but may overlap (vision file N+1 while thinking file N). Check `microstock.ai.stage` logs for per-stage `duration_ms`.
+1. Collection pipeline is **dual-lane** — vision and thinking run with configurable per-folder concurrency (default 3+3); check `microstock.ai.stage` logs for per-stage `duration_ms`.
 2. Check `microstock.ai.stage` logs in `storage/logs/laravel.log` — compare `vision` `start`/`end` `duration_ms` vs `thinking` `start`/`end`. Multimodal vision at 1024px via Open WebUI commonly takes **40–120s** per call depending on the resolved backend model (grok ~46s verified 2026-07-27; `gpt-5.4` hit HTTP **524** at ~125s on 2026-07-28 probe — see [`probes/gpt54_vs_grok_summary.md`](probes/gpt54_vs_grok_summary.md)).
 3. **`cURL error 28: 0 bytes received` = client timeout**, not proof Open WebUI is hung. A probe with timeout **&lt; production** (`MICROSTOCK_AI_VISION_TIMEOUT`, default 300s) can fail while the same request would succeed at 300s.
 4. High token usage with a stuck worker usually means **slow inference + retries + repeated re-analyze**, not a dead upstream. Expect ~**5 HTTP calls per asset** (1 vision + up to 4 thinking attempts) × `MICROSTOCK_AI_HTTP_RETRIES`.
@@ -479,6 +521,8 @@ The curate step of the collection lifecycle lives directly in the file-manager l
 - `MicrostockAiConfigTest`: locks paid/default model aliases and nullable free-tier overrides in config.
 - `PromptsTest`: `visionSystem()` and `thinkingSystem()` char count under gateway limit (~1200); keyword target 50–60 in thinking prompt.
 - `BillingLedgerServiceTest`: ledger pagination, running `balance_after`, signed amounts per transaction type.
+- `UnknownModelBillingTest`: provisional notify dedup, consolidation refund/debit, negative balance, `planAnalyze` gate when balance &lt; 0.
+- `InferenceRateServiceTest`: provisional config rates, `isRegisteredOnProvider`, classification flag on `ensureModelCard`.
 - `BillingLedgerApiTest`: user `GET billing/ledger` + `GET billing/usage-events` (auth, pagination, daily-free vs prepaid rows).
 - `BillingAdminApiTest`: platform overview aggregates, cross-user usage events, role gate (Root/Admin/Moderator vs Management).
 - `KeywordNormalizerTest`: dedupe + cap at 60 keywords.
@@ -518,7 +562,7 @@ Debug one job:
 php artisan microstock:queue-work --once
 ```
 
-**Split workers (production scale):** run at least two processes (vision + thinking) so vision file N+1 can overlap thinking file N within a collection. `WithoutOverlapping` per folder caps each lane to one concurrent job per collection. Use a **shared cache** (Redis/database) for overlap locks in multi-server deploys.
+**Split workers (production scale):** run at least two processes (vision + thinking) so vision file N+1 can overlap thinking file N within a collection. `LimitAnalysisConcurrency` enforces per-folder and global caps from `ai.upstream`. Use a **shared cache** (Redis) for counters in multi-server deploys.
 
 ```bash
 php artisan queue:work --queue=microstock-collection-vision,microstock-solo --tries=3

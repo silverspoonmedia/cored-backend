@@ -267,6 +267,35 @@ class MenuSeeder extends Seeder
                         ],
                     ],
                     [
+                        'name' => $this->translations('Inference', 'Inferensi', '推論'),
+                        'icon' => 'bi bi-cpu',
+                        'type' => 'p',
+                        'roles' => $managementRoles,
+                        'children' => [
+                            [
+                                'name' => $this->translations('Model catalog', 'Katalog model', 'モデルカタログ'),
+                                'icon' => 'bi bi-boxes',
+                                'route' => 'inference.model-cards.index',
+                                'type' => 'c',
+                                'roles' => $managementRoles,
+                            ],
+                            [
+                                'name' => $this->translations('Providers', 'Provider', 'プロバイダー'),
+                                'icon' => 'bi bi-hdd-network',
+                                'route' => 'inference.providers.index',
+                                'type' => 'c',
+                                'roles' => $managementRoles,
+                            ],
+                            [
+                                'name' => $this->translations('Usage events', 'Event penggunaan', '利用イベント'),
+                                'icon' => 'bi bi-graph-up',
+                                'route' => 'inference.usage-events.index',
+                                'type' => 'c',
+                                'roles' => $managementRoles,
+                            ],
+                        ],
+                    ],
+                    [
                         'name' => $this->translations('Monitoring', 'Pemantauan', '監視'),
                         'icon' => 'bi bi-activity',
                         'type' => 'p',

@@ -35,6 +35,9 @@ enum NotificationType: string
     // Personal: subscription expired; free-tier purge applied.
     case ServiceSubscriptionExpired = 'service_subscription_expired';
 
+    // Broadcast: unregistered inference model billed at provisional rates — classify in catalog.
+    case InferenceUnregisteredModel = 'inference_unregistered_model';
+
     /**
      * Bootstrap icon class rendered by the web bell.
      */
@@ -47,6 +50,7 @@ enum NotificationType: string
             self::AccountUpdated => 'bi bi-person-gear',
             self::ServiceSubscriptionGrace => 'bi bi-hourglass-split',
             self::ServiceSubscriptionExpired => 'bi bi-exclamation-triangle',
+            self::InferenceUnregisteredModel => 'bi bi-cpu',
         };
     }
 
@@ -61,6 +65,7 @@ enum NotificationType: string
             self::UserCreated,
             self::UserUpdated,
             self::UserDeleted => ['Root', 'Admin'],
+            self::InferenceUnregisteredModel => ['Root', 'Admin', 'Management'],
             self::AccountUpdated,
             self::ServiceSubscriptionGrace,
             self::ServiceSubscriptionExpired => [],
@@ -88,6 +93,7 @@ enum NotificationType: string
             self::AccountUpdated,
             self::ServiceSubscriptionGrace,
             self::ServiceSubscriptionExpired => null,
+            self::InferenceUnregisteredModel => 'inference-model-cards-table',
         };
     }
 }

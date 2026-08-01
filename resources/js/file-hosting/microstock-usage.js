@@ -38,6 +38,24 @@ function amountClass(amountMicro) {
     return 'text-muted';
 }
 
+function formatUsdFromMicro(microUsd) {
+    const micro = Number(microUsd) || 0;
+    const usd = Math.abs(micro) / 1_000_000;
+    const formatted = usd.toFixed(2);
+    return micro < 0 ? '-$' + formatted : '$' + formatted;
+}
+
+function formatUsdDisplay(usdValue, microFallback) {
+    if (typeof usdValue === 'string' && usdValue.includes('$')) {
+        return usdValue;
+    }
+    const numeric = Number(usdValue);
+    if (!Number.isNaN(numeric) && usdValue !== null && usdValue !== '') {
+        return '$' + numeric.toFixed(2);
+    }
+    return formatUsdFromMicro(microFallback ?? 0);
+}
+
 /**
  * Build a usage panel controller bound to a given root element.
  * Works for both the SPA offcanvas and the standalone page.
@@ -119,10 +137,13 @@ function bindUsagePanel(root, config, csrfToken) {
 
     function renderSummary(data) {
         if (els.balance) {
-            els.balance.textContent = '$' + Number(data.balance_usd || 0).toFixed(2);
+            els.balance.textContent = formatUsdDisplay(data.balance_usd, data.balance_micro_usd);
         }
         if (els.estimate) {
-            els.estimate.textContent = '$' + Number(data.estimated_per_analysis_usd || 0).toFixed(2);
+            els.estimate.textContent = formatUsdDisplay(
+                data.estimated_per_analysis_usd,
+                data.estimated_per_analysis_micro_usd,
+            );
         }
         const daily = data.daily_free;
         if (daily?.enabled && els.dailyCard && els.daily) {
@@ -439,13 +460,13 @@ function bindUsagePanel(root, config, csrfToken) {
 export function createMicrostockUsagePanel(config, csrfToken) {
     const root = document.querySelector('[data-fh-ms-usage-panel]');
     if (!root) {
-        return { open() {}, close() {} };
+        return { isReady: false, open() {}, close() {} };
     }
     const panel = bindUsagePanel(root, config, csrfToken);
     if (!panel) {
-        return { open() {}, close() {} };
+        return { isReady: false, open() {}, close() {} };
     }
-    return panel;
+    return { ...panel, isReady: true };
 }
 
 /**
