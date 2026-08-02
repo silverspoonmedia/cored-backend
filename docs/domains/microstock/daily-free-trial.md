@@ -12,6 +12,8 @@ Optional per-user daily free AI analyses for product discovery. Enabled via **Se
 | `microstock.daily_free.limit_per_user` | `microstock.daily_free.limit_per_user` | `5` | Max analyses per user per calendar day |
 | `microstock.daily_free.timezone` | `microstock.daily_free.timezone` | `UTC` | Calendar day boundary for reset |
 
+On **`APP_ENV=local`**, `migrate:fresh --seed` / `db:seed` applies `enabled=true` and `limit_per_user=1_000_000` via [`LocalSettingsSeeder`](../../database/seeders/LocalSettingsSeeder.php) — prod-safe config literals stay `false` / `5`.
+
 **Env (Tier A — model aliases and queue names):**
 
 | Env | Default | Purpose |

@@ -156,7 +156,7 @@ Retention and enable/disable are in **Settings → Platform** (`errorlog.*` regi
 
 Operational knobs (JWT TTLs, upload limits, notification delivery, etc.) live in **`system_settings`** and are edited via **Administration → Settings**. They are **not** `.env` variables — see [configuration-policy.md](configuration-policy.md). Runtime reads use a forever-cached snapshot (`setting_config()`). Full inventory: [settings.md](settings.md).
 
-After the env→settings migration, `php artisan env:curate` may leave **orphan** operational keys in a local `.env` (moved to the orphans section). Safe to delete them — live values are in `system_settings`.
+After the env→settings migration, `php artisan env:curate` may leave **orphan** operational keys in a local `.env` (moved to the orphans section) when `.env` still contains Tier B vars removed from templates. Safe to delete them — live values are in `system_settings`. After template sync (`env:curate --sync-snapshot`), a clean local `.env` should show **0 orphans**; do not re-add Tier B keys. Upload proxy vars (`FILE_HOSTING_UPLOAD_PROXY_*`) are **Tier A** and belong in the File Hosting env section (present in [`.env.local.example`](../../.env.local.example)).
 
 ## Related
 

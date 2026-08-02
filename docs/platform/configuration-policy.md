@@ -56,6 +56,20 @@ LocalSettingsSeeder (local)   → upsertMany from settings-local.overrides (dev 
 
 Staging and production **never** run `LocalSettingsSeeder`. Do not put local-only values in config literals, `.env`, or orphan keys.
 
+### Current local override inventory
+
+Mirrors [`config/settings-local.php`](../../config/settings-local.php) — update both when adding dev ergonomics:
+
+| Registry key | Local override | Purpose |
+|--------------|----------------|---------|
+| `microstock.daily_free.enabled` | `true` | Dev daily free on |
+| `microstock.daily_free.limit_per_user` | `1_000_000` | Generous local limit |
+| `platform.notifications.delivery` | `realtime` | Bell without polling |
+| `file-hosting.download_vault.enabled` | `true` | Vault download path in hybrid proxy |
+| `microstock.ai.http_retries` | `1` | Faster AI failure in dev |
+| `vtual.claim.accept_anyway_enabled` | `true` | Claim dev ergonomics |
+| `vtual.channel_claim.accept_anyway_enabled` | `true` | Channel claim dev ergonomics |
+
 ## Agent checklist — new operational knob
 
 1. Classify tier (A / B / C).

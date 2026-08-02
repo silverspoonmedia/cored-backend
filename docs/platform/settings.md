@@ -140,7 +140,7 @@ Payment routing fees: YAML → `payments:sync-routing-policy` (partial UI toggle
 php artisan db:seed --class=SettingsSeeder
 ```
 
-**Local profile only** (`APP_ENV=local`): `DatabaseSeeder` also runs `LocalSettingsSeeder`, which `upsertMany`s dev overrides from [`config/settings-local.php`](../../config/settings-local.php) (e.g. generous daily free, realtime notifications). Re-seeding local refreshes those values; staging/production never run this seeder.
+**Local profile only** (`APP_ENV=local`): `DatabaseSeeder` also runs `LocalSettingsSeeder`, which `upsertMany`s dev overrides from [`config/settings-local.php`](../../config/settings-local.php) (e.g. generous daily free, realtime notifications). Re-seeding local refreshes those values; staging/production never run this seeder. Full override inventory: [configuration-policy.md — Local profile overrides](configuration-policy.md#local-profile-overrides).
 
 ```bash
 php artisan db:seed --class=LocalSettingsSeeder   # local only; upserts dev pack
