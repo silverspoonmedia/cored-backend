@@ -37,14 +37,14 @@ class HttpAiMetadataService implements AiMetadataService
             $v = (int) round($v / 1000);
         }
 
-        $max = (int) config('microstock.ai.phase.grace_after', 1500);
+        $max = (int) setting_config('microstock.ai.phase.grace_after', 1500);
 
         return max(10, min($max, $v));
     }
 
     private function httpRetries(): int
     {
-        return max(0, (int) config('microstock.ai.http_retries', 1));
+        return max(0, (int) setting_config('microstock.ai.http_retries', 1));
     }
 
     /**
@@ -138,7 +138,7 @@ class HttpAiMetadataService implements AiMetadataService
             return [];
         }
 
-        $cfg = $this->configForBillingTier(config('microstock.ai.vision'));
+        $cfg = $this->configForBillingTier(setting_config('microstock.ai.vision'));
         $this->assertConfigured($cfg, 'vision');
 
         $content = [];
@@ -206,7 +206,7 @@ class HttpAiMetadataService implements AiMetadataService
      */
     private function vision(string $imageUrl, ?string $hint = null): array
     {
-        $cfg = $this->configForBillingTier(config('microstock.ai.vision'));
+        $cfg = $this->configForBillingTier(setting_config('microstock.ai.vision'));
         $this->assertConfigured($cfg, 'vision');
 
         $messages = [
@@ -250,14 +250,14 @@ class HttpAiMetadataService implements AiMetadataService
         string $category = '',
         ?string $imageUrl = null,
     ): array {
-        $cfg = $this->configForBillingTier(config('microstock.ai.thinking'));
+        $cfg = $this->configForBillingTier(setting_config('microstock.ai.thinking'));
         $this->assertConfigured($cfg, 'thinking');
 
         $userText = Prompts::thinkingUser($title, $keywords, $hint, $description, $category, $imageUrl !== null);
         $system = Prompts::thinkingSystem();
         $attempts = [];
         $visualAttempts = $imageUrl !== null
-            ? max(0, (int) config('microstock.ai.thinking_visual_attempts', 2))
+            ? max(0, (int) setting_config('microstock.ai.thinking_visual_attempts', 2))
             : 0;
 
         if ($imageUrl !== null && $visualAttempts > 0) {
@@ -381,7 +381,7 @@ class HttpAiMetadataService implements AiMetadataService
                 $resolvedModel,
                 $attemptIndex,
                 $providerRequestId,
-                (string) config('microstock.ai.inference_provider_slug', 'openwebui-9router'),
+                (string) setting_config('microstock.ai.inference_provider_slug', 'openwebui-9router'),
             );
         }
 

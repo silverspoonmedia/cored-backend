@@ -32,7 +32,7 @@ class TwitchOauthAppProbe implements PlatformCredentialProbe
             );
         }
 
-        $timeout = (int) config('vtual.credential_test.http_timeout', 20);
+        $timeout = (int) setting_config('vtual.credential_test.http_timeout', 20);
 
         $tokenResponse = Http::asForm()
             ->timeout($timeout)

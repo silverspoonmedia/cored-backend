@@ -332,9 +332,9 @@ class PlatformCredentialService
 
         $credential->refresh();
         $failures = (int) $credential->consecutive_auth_failures + 1;
-        $enabled = (bool) config('vtual.credential.failover.enabled', false);
-        $threshold = max(1, (int) config('vtual.credential.failover.auth_fail_threshold', 2));
-        $skipMinutes = max(1, (int) config('vtual.credential.failover.skip_minutes', 30));
+        $enabled = (bool) setting_config('vtual.credential.failover.enabled', false);
+        $threshold = max(1, (int) setting_config('vtual.credential.failover.auth_fail_threshold', 2));
+        $skipMinutes = max(1, (int) setting_config('vtual.credential.failover.skip_minutes', 30));
 
         $attrs = ['consecutive_auth_failures' => $failures];
         $demoted = false;
@@ -435,7 +435,7 @@ class PlatformCredentialService
             return null;
         }
 
-        $skew = (int) config('vtual.credential_test.twitch_token_skew_seconds', 300);
+        $skew = (int) setting_config('vtual.credential_test.twitch_token_skew_seconds', 300);
         if ($expires->lessThanOrEqualTo(now()->addSeconds(max(0, $skew)))) {
             return null;
         }

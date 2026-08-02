@@ -99,7 +99,7 @@ class RefreshJwtCookie
 
     private function skewSeconds(): int
     {
-        $skewMinutes = (int) config('jwt.refresh_skew', 5);
+        $skewMinutes = (int) setting_config('jwt.refresh_skew', 5);
 
         if ($skewMinutes < 0) {
             $skewMinutes = 0;

@@ -16,7 +16,7 @@ class InvoiceChannelCheckoutRequest extends FormRequest
      */
     public function rules(): array
     {
-        $max = max(1, (int) config('service.purchase.max_quantity', 99));
+        $max = max(1, (int) setting_config('service.purchase.max_quantity', 99));
 
         return [
             'channel_code' => ['required', 'string', 'max:64', 'exists:payment_channels,code'],

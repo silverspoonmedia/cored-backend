@@ -92,10 +92,10 @@ class DirectUploadService
         $diskName = $this->resolveDiskName($disk);
         $objectId = $this->objectKeys->generateObjectId();
         $objectKey = $this->objectKeys->objectKey($ownerId, $objectId);
-        $expiresAt = Carbon::now()->addHours((int) config('file-hosting.session_ttl_hours'));
+        $expiresAt = Carbon::now()->addHours((int) setting_config('file-hosting.session_ttl_hours'));
 
-        $threshold = (int) config('file-hosting.multipart_threshold_bytes');
-        $chunkSize = (int) config('file-hosting.chunk_size_bytes');
+        $threshold = (int) setting_config('file-hosting.multipart_threshold_bytes');
+        $chunkSize = (int) setting_config('file-hosting.chunk_size_bytes');
         $strategy = $this->engine->resolveStrategy($size, $threshold);
         $partCount = $this->engine->expectedPartCount($strategy, $size, $chunkSize);
 
@@ -388,7 +388,7 @@ class DirectUploadService
 
     protected function assertUploadAllowed(string $name, string $mime, int $size): void
     {
-        $prefixes = config('file-hosting.allowed_mime_prefixes', []);
+        $prefixes = setting_config('file-hosting.allowed_mime_prefixes', []);
         $prefixes = is_array($prefixes) ? $prefixes : [];
 
         try {
@@ -396,7 +396,7 @@ class DirectUploadService
                 $name,
                 $mime,
                 $size,
-                (int) config('file-hosting.max_file_size_bytes'),
+                (int) setting_config('file-hosting.max_file_size_bytes'),
                 $prefixes,
             );
         } catch (S3DirectUploadException $e) {
@@ -409,7 +409,7 @@ class DirectUploadService
      */
     protected function assertUnderConcurrentUploadLimit(string $ownerUserId): void
     {
-        $max = (int) config('file-hosting.max_concurrent_uploads', 0);
+        $max = (int) setting_config('file-hosting.max_concurrent_uploads', 0);
         if ($max <= 0) {
             return;
         }
@@ -585,7 +585,7 @@ class DirectUploadService
         }
 
         return $upload->strategy === S3DirectUploadEngine::STRATEGY_MULTIPART
-            ? (int) config('file-hosting.chunk_size_bytes')
+            ? (int) setting_config('file-hosting.chunk_size_bytes')
             : $upload->size;
     }
 
@@ -603,7 +603,7 @@ class DirectUploadService
                 $upload->mime,
                 $upload->s3_upload_id,
                 $partNumbers,
-                (int) config('file-hosting.presign_ttl_minutes'),
+                (int) setting_config('file-hosting.presign_ttl_minutes'),
             );
         } catch (S3DirectUploadException $e) {
             throw $this->mapEngineException($e);
@@ -616,13 +616,13 @@ class DirectUploadService
      */
     protected function resolveDiskName(?string $requested): string
     {
-        $regions = (array) config('file-hosting.regions');
+        $regions = (array) setting_config('file-hosting.regions');
 
         if ($requested !== null && $requested !== '' && isset($regions[$requested])) {
             return (string) $regions[$requested];
         }
 
-        return (string) config('file-hosting.disk');
+        return (string) setting_config('file-hosting.disk');
     }
 
     private function mapEngineException(S3DirectUploadException $e): FileHostingException

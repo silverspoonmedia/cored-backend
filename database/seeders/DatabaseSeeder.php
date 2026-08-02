@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
         $this->call(MicrostockRoleSeeder::class);
         $this->call(DomainAccessSeeder::class);
         $this->call(NotificationTypeSettingSeeder::class);
+        $this->call(SettingsSeeder::class);
 
         $admin = User::factory()->create([
             'name' => 'Admin User',

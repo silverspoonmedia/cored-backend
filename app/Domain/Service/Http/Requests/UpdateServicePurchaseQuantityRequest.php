@@ -16,7 +16,7 @@ class UpdateServicePurchaseQuantityRequest extends FormRequest
      */
     public function rules(): array
     {
-        $max = max(1, (int) config('service.purchase.max_quantity', 99));
+        $max = max(1, (int) setting_config('service.purchase.max_quantity', 99));
 
         return [
             'quantity' => ['required', 'integer', 'min:1', 'max:'.$max],

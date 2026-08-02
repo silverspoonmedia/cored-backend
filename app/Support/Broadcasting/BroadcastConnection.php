@@ -41,7 +41,7 @@ class BroadcastConnection
      */
     public static function usesRealtimeNotifications(): bool
     {
-        return config('notifications.delivery') === 'realtime' && self::isConfigured();
+        return setting_config('notifications.delivery') === 'realtime' && self::isConfigured();
     }
 
     /**

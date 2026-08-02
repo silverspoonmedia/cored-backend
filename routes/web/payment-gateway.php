@@ -14,6 +14,11 @@ Route::get('payments/income/overview', [PaymentIncomeController::class, 'overvie
 Route::get('payments/income/invoices', [PaymentIncomeController::class, 'invoices'])->name('payments.income.invoices');
 
 Route::get('payment-gateways/datatable', [PaymentGatewayController::class, 'datatable'])->name('payment-gateways.datatable');
+Route::get('payment-gateways/create', [PaymentGatewayController::class, 'create'])->name('payment-gateways.create');
+Route::post('payment-gateways', [PaymentGatewayController::class, 'store'])->name('payment-gateways.store');
+Route::get('payment-gateways/{paymentGateway}/edit', [PaymentGatewayController::class, 'edit'])->name('payment-gateways.edit');
+Route::put('payment-gateways/{paymentGateway}', [PaymentGatewayController::class, 'update'])->name('payment-gateways.update');
+Route::delete('payment-gateways/{paymentGateway}', [PaymentGatewayController::class, 'destroy'])->name('payment-gateways.destroy');
 Route::get('payment-gateways', [PaymentGatewayController::class, 'index'])->name('payment-gateways.index');
 
 Route::get('payment-channels', [PaymentChannelController::class, 'index'])->name('payment-channels.index');

@@ -74,7 +74,7 @@ class ChannelFetchPoolService
             ]);
         });
 
-        $threshold = max(1, (int) config('vtual.channel_pool.threshold', 50));
+        $threshold = max(1, (int) setting_config('vtual.channel_pool.threshold', 50));
         $pending = ChannelFetchPoolItem::query()
             ->where('platform_id', $platformModel->id)
             ->where('status', ChannelFetchPoolStatus::Pending)
@@ -94,8 +94,8 @@ class ChannelFetchPoolService
      */
     public function enqueueStaleActiveChannels(?PlatformKey $only = null): int
     {
-        $staleHours = max(1, (int) config('vtual.channel_pool.resync_stale_hours', 24));
-        $limit = max(1, (int) config('vtual.channel_pool.resync_enqueue_limit', 200));
+        $staleHours = max(1, (int) setting_config('vtual.channel_pool.resync_stale_hours', 24));
+        $limit = max(1, (int) setting_config('vtual.channel_pool.resync_enqueue_limit', 200));
         $cutoff = now()->subHours($staleHours);
 
         $query = Channel::query()
@@ -163,7 +163,7 @@ class ChannelFetchPoolService
      */
     private function flushPlatform(Platform $platform, PlatformKey $key, bool $force): array
     {
-        $lockSeconds = max(5, (int) config('vtual.channel_pool.flush_lock_seconds', 30));
+        $lockSeconds = max(5, (int) setting_config('vtual.channel_pool.flush_lock_seconds', 30));
         $lock = Cache::lock('vtual.channel_pool.flush.'.$key->value, $lockSeconds);
 
         if (! $lock->get()) {
@@ -248,11 +248,11 @@ class ChannelFetchPoolService
      */
     private function claimPending(Platform $platform, bool $force): Collection
     {
-        $threshold = max(1, (int) config('vtual.channel_pool.threshold', 50));
-        $maxWait = max(1, (int) config('vtual.channel_pool.max_wait_minutes', 15));
+        $threshold = max(1, (int) setting_config('vtual.channel_pool.threshold', 50));
+        $maxWait = max(1, (int) setting_config('vtual.channel_pool.max_wait_minutes', 15));
         $batchMax = max(1, min(
             $threshold,
-            (int) config('vtual.http.batch.channels', 50),
+            (int) setting_config('vtual.http.batch.channels', 50),
         ));
 
         return DB::transaction(function () use ($platform, $force, $threshold, $maxWait, $batchMax): Collection {

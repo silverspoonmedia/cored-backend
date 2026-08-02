@@ -62,7 +62,7 @@ class RegionResolver
     public static function uploadableKeys(): array
     {
         $regions = self::configuredKeys();
-        $disabled = (array) config('file-hosting.disabled_regions');
+        $disabled = (array) setting_config('file-hosting.disabled_regions');
 
         return array_values(array_diff($regions, $disabled));
     }
@@ -72,7 +72,7 @@ class RegionResolver
      */
     public static function isDisabled(string $key): bool
     {
-        return in_array($key, (array) config('file-hosting.disabled_regions'), true);
+        return in_array($key, (array) setting_config('file-hosting.disabled_regions'), true);
     }
 
     /**

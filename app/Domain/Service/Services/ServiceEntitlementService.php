@@ -427,7 +427,7 @@ class ServiceEntitlementService
             ? $this->fileHostingTierForUser($entitlement->user_id)
             : 'free';
 
-        $graceDays = max(1, (int) config('service.grace_days', 7));
+        $graceDays = max(1, (int) setting_config('service.grace_days', 7));
         $endsAt = $entitlement->ends_at ?? now();
 
         $entitlement->status = EntitlementStatus::Grace;

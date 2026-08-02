@@ -34,7 +34,7 @@ Service → ActivityNotificationEvent → SendActivityNotification
 | Type exists | `NotificationType` enum |
 | When to fire | Service (not controller) |
 | Message | `lang/{locale}/api/notifications.php` |
-| Who receives | Seeder / `notification_type_settings` |
+| Who receives | Admin UI (`/apps/notification-audiences`) or `notification_type_settings` seeder |
 | Deep link | `actionRoute` + `actionParams` on dispatch |
 
 Listener auto-discovered — **do not** double-register.
@@ -175,7 +175,7 @@ Web routes proxy the API through `ConsumesApi` under `/apps/*`. `NotificationBel
 
 ### B — Audience only
 
-Edit seeder / settings pivots; redeploy seed. No admin UI.
+Edit **Administration → Settings → Notification audiences** (`/apps/notification-audiences`) or seeder pivots. Seeder remains the bootstrap baseline.
 
 ### C — Copy only
 

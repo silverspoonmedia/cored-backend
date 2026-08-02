@@ -152,7 +152,7 @@ class QuotaService
 
     public function freeTierQuotaBytes(): int
     {
-        return (int) config('file-hosting.default_quota_bytes', 5 * 1024 * 1024 * 1024);
+        return (int) setting_config('file-hosting.default_quota_bytes', 5 * 1024 * 1024 * 1024);
     }
 
     /**

@@ -157,7 +157,12 @@ Payment: `checkout_mode` derived from active channels at runtime — see [paymen
 
 Independent of `LOG_CHANNEL` file logs. Domain guide: [error-log](../domains/error-log/README.md).
 
+## Runtime settings (Web UI)
+
+Operational knobs (JWT TTLs, upload limits, notification delivery, etc.) can be overridden in the database via **Administration → Settings** without editing `.env`. DB values win over config; secrets and infra bindings remain env-only. Full inventory and fallback chain: [settings.md](settings.md).
+
 ## Related
 
+- [settings.md](settings.md)
 - [octane.md](octane.md)
 - [domains/error-log/README.md](../domains/error-log/README.md)

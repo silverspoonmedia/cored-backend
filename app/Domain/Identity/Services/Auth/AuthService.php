@@ -281,12 +281,12 @@ class AuthService
 
     private function defaultTtlMinutes(): int
     {
-        return (int) config('jwt.ttl', 60);
+        return (int) setting_config('jwt.ttl', 60);
     }
 
     private function rememberTtlMinutes(): int
     {
-        return (int) config('jwt.remember_ttl', config('jwt.refresh_ttl', 20160));
+        return (int) setting_config('jwt.remember_ttl', setting_config('jwt.refresh_ttl', 20160));
     }
 
     /**

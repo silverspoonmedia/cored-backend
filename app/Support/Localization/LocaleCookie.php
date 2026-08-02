@@ -8,7 +8,7 @@ final class LocaleCookie
 {
     public static function name(): string
     {
-        return (string) config('localization.cookie_name', 'locale');
+        return (string) setting_config('localization.cookie_name', 'locale');
     }
 
     public static function queue(string $locale): void
@@ -16,7 +16,7 @@ final class LocaleCookie
         Cookie::queue(Cookie::make(
             self::name(),
             $locale,
-            config('localization.cookie_minutes', 60 * 24 * 365),
+            setting_config('localization.cookie_minutes', 60 * 24 * 365),
             '/',
             null,
             config('session.secure'),

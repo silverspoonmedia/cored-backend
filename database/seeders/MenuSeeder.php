@@ -318,6 +318,35 @@ class MenuSeeder extends Seeder
                         ],
                     ],
                     [
+                        'name' => $this->translations('Settings', 'Pengaturan', '設定'),
+                        'icon' => 'bi bi-gear',
+                        'type' => 'p',
+                        'roles' => $adminRoles,
+                        'children' => [
+                            [
+                                'name' => $this->translations('Platform', 'Platform', 'プラットフォーム'),
+                                'icon' => 'bi bi-sliders',
+                                'route' => 'settings.platform',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                            [
+                                'name' => $this->translations('Notification audiences', 'Audiens notifikasi', '通知オーディエンス'),
+                                'icon' => 'bi bi-bell',
+                                'route' => 'notification-audiences.index',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                            [
+                                'name' => $this->translations('Currencies', 'Mata uang', '通貨'),
+                                'icon' => 'bi bi-currency-exchange',
+                                'route' => 'currencies.index',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                        ],
+                    ],
+                    [
                         'name' => $this->translations('Navigation', 'Navigasi', 'ナビゲーション'),
                         'icon' => 'bi bi-list-nested',
                         'type' => 'p',

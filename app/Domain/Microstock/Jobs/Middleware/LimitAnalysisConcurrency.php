@@ -20,7 +20,7 @@ class LimitAnalysisConcurrency
     public function handle(object $job, Closure $next): void
     {
         /** @var array<string, mixed> $upstream */
-        $upstream = config('microstock.ai.upstream', []);
+        $upstream = setting_config('microstock.ai.upstream', []);
         $releaseAfter = max(1, (int) ($upstream['release_after_seconds'] ?? 15));
 
         $globalMax = $this->globalMax($upstream);

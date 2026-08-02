@@ -35,9 +35,9 @@ class PruneStaleUploads extends Command
 
     public function handle(DirectUploadService $uploads, S3DirectUploadEngine $engine, ObjectKeyResolver $objectKeys): int
     {
-        $grace = max(0, (int) config('file-hosting.stale_upload_grace_hours', 6));
+        $grace = max(0, (int) setting_config('file-hosting.stale_upload_grace_hours', 6));
         $cutoff = Carbon::now()->subHours($grace);
-        $inactivityMins = max(1, (int) config('file-hosting.orphan_inactivity_minutes', 180));
+        $inactivityMins = max(1, (int) setting_config('file-hosting.orphan_inactivity_minutes', 180));
         $inactivityCutoff = Carbon::now()->subMinutes($inactivityMins);
         $limit = max(1, (int) $this->option('limit'));
 

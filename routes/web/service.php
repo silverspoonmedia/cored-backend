@@ -1,8 +1,20 @@
 <?php
 
+use App\Domain\Service\Http\Controllers\Web\CurrencyController;
 use App\Domain\Service\Http\Controllers\Web\ServiceController;
 use App\Domain\Service\Http\Controllers\Web\ServicePurchaseController;
 use Illuminate\Support\Facades\Route;
+
+Route::middleware('permission:view settings')
+    ->prefix('currencies')
+    ->name('currencies.')
+    ->group(function (): void {
+        Route::get('/', [CurrencyController::class, 'index'])->name('index');
+
+        Route::middleware('permission:manage settings')->group(function (): void {
+            Route::put('{code}', [CurrencyController::class, 'update'])->name('update');
+        });
+    });
 
 Route::get('services', [ServiceController::class, 'index'])->name('services.index');
 Route::get('services/create', [ServiceController::class, 'create'])->name('services.create');

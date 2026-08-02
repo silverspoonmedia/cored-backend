@@ -99,7 +99,7 @@ class CreatorClaimService
                 throw new VtualException(__('api/vtual.claim.channel_mismatch'), 422);
             }
 
-            $maxPending = max(1, (int) config('vtual.claim.max_pending_per_user', 5));
+            $maxPending = max(1, (int) setting_config('vtual.claim.max_pending_per_user', 5));
             $pendingCount = CreatorClaim::query()
                 ->where('user_id', $actor->id)
                 ->where('status', CreatorClaimStatus::Pending)
@@ -127,9 +127,9 @@ class CreatorClaimService
                     'closed_reason' => CreatorClaimClosedReason::UserCancel->value,
                 ]);
 
-            $ttlHours = max(1, (int) config('vtual.claim.ttl_hours', 24));
-            $prefix = (string) config('vtual.claim.token_prefix', 'vtual-claim-');
-            $bytes = max(3, (int) config('vtual.claim.token_bytes', 6));
+            $ttlHours = max(1, (int) setting_config('vtual.claim.ttl_hours', 24));
+            $prefix = (string) setting_config('vtual.claim.token_prefix', 'vtual-claim-');
+            $bytes = max(3, (int) setting_config('vtual.claim.token_bytes', 6));
             $token = $prefix.bin2hex(random_bytes($bytes));
 
             $claim = new CreatorClaim([
@@ -184,7 +184,7 @@ class CreatorClaimService
             throw new VtualException(__('api/vtual.policy.denied'), 403);
         }
 
-        if (! (bool) config('vtual.claim.accept_anyway_enabled', false)) {
+        if (! (bool) setting_config('vtual.claim.accept_anyway_enabled', false)) {
             throw new VtualException(__('api/vtual.claim.accept_anyway_disabled'), 422);
         }
 
@@ -235,7 +235,7 @@ class CreatorClaimService
                 'role' => CreatorMemberRole::Owner,
             ]);
 
-            $roleName = (string) config('vtual.claim.vtuber_role', 'Vtual vTuber');
+            $roleName = (string) setting_config('vtual.claim.vtuber_role', 'Vtual vTuber');
             if (! $user->hasRole($roleName)) {
                 $user->assignRole($roleName);
             }
@@ -310,12 +310,12 @@ class CreatorClaimService
 
     private function assertRateLimit(CreatorClaim $claim): void
     {
-        $maxAttempts = max(1, (int) config('vtual.claim.max_attempts', 20));
+        $maxAttempts = max(1, (int) setting_config('vtual.claim.max_attempts', 20));
         if ((int) $claim->attempt_count >= $maxAttempts) {
             throw new VtualException(__('api/vtual.claim.max_attempts'), 422);
         }
 
-        $cooldown = max(0, (int) config('vtual.claim.verify_cooldown_seconds', 60));
+        $cooldown = max(0, (int) setting_config('vtual.claim.verify_cooldown_seconds', 60));
         if ($cooldown > 0
             && $claim->last_attempt_at !== null
             && $claim->last_attempt_at->gt(now()->subSeconds($cooldown))) {

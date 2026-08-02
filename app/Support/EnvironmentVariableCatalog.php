@@ -136,6 +136,8 @@ final class EnvironmentVariableCatalog
             'PUSHER_APP_CLUSTER' => self::TYPE_STRING,
             'PUSHER_HOST' => self::TYPE_STRING,
             'PAYMENT_PREFER_CHANNEL_CHECKOUT' => self::TYPE_BOOL,
+            'PAYMENT_CHANNEL_FEE_BEARER' => self::TYPE_STRING,
+            'PAYMENT_REPORTING_TIMEZONE' => self::TYPE_STRING,
             'PAYMENT_DEFAULT_BUYER_PHONE' => self::TYPE_INT,
             'FRANKFURTER_BASE_URL' => self::TYPE_STRING,
             'FRANKFURTER_TIMEOUT' => self::TYPE_INT,

@@ -44,7 +44,7 @@ class NotificationBellComposer
                 // carry absolute counts, so a healthy WS needs no unread-count HTTP.
                 'initialUnreadCount' => $this->notifications->unreadCount($user),
                 'realtime' => $realtime,
-                'pollingIntervalSeconds' => max(1, (int) config('notifications.polling_interval')),
+                'pollingIntervalSeconds' => max(1, (int) setting_config('notifications.polling_interval')),
                 'userId' => $userId,
                 'broadcast' => $broadcast,
             ];

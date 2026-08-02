@@ -170,7 +170,7 @@ class HostedFile extends Model
             return false;
         }
 
-        $margin = (int) config('file-hosting.signed_download_cache_margin_seconds', 60);
+        $margin = (int) setting_config('file-hosting.signed_download_cache_margin_seconds', 60);
 
         return $this->signed_download_expires_at->greaterThan(now()->addSeconds($margin));
     }

@@ -23,6 +23,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
 | [environment.md](platform/environment.md) | `.env` profiles, config cache |
+| [settings.md](platform/settings.md) | Runtime operational settings (Web UI + DB overrides) |
 | [localization.md](platform/localization.md) | `en` / `id` / `ja` task rules |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |

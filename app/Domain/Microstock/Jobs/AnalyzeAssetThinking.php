@@ -48,7 +48,7 @@ class AnalyzeAssetThinking implements ShouldQueue
      */
     public function middleware(): array
     {
-        $releaseAfter = max(1, (int) config('microstock.ai.upstream.release_after_seconds', 15));
+        $releaseAfter = max(1, (int) setting_config('microstock.ai.upstream.release_after_seconds', 15));
 
         return [
             new LimitAnalysisConcurrency('thinking', $this->pipeline, $this->folderId),

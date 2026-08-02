@@ -30,8 +30,8 @@ class AiBillingService
 
     public function estimateForAssets(int $count): int
     {
-        $perAsset = (int) config('microstock.ai_billing.estimated_billable_micro_usd_per_asset', 150_000);
-        $factor = (float) config('microstock.ai_billing.estimate_thinking_attempt_factor', 1.5);
+        $perAsset = (int) setting_config('microstock.ai_billing.estimated_billable_micro_usd_per_asset', 150_000);
+        $factor = (float) setting_config('microstock.ai_billing.estimate_thinking_attempt_factor', 1.5);
 
         return max(0, $count) * (int) round($perAsset * $factor);
     }
@@ -368,7 +368,7 @@ class AiBillingService
             ($promptTokens / 1_000_000) * $rates['input_per_million_usd'] * 1_000_000
             + ($completionTokens / 1_000_000) * $rates['output_per_million_usd'] * 1_000_000
         );
-        $markup = (float) config('microstock.ai_billing.markup_multiplier', 1.35);
+        $markup = (float) setting_config('microstock.ai_billing.markup_multiplier', 1.35);
         $billable = (int) round($provider * $markup);
 
         return [

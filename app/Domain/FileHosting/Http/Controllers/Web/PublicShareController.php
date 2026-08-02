@@ -109,7 +109,7 @@ class PublicShareController extends Controller
 
     private function temporaryPublicDownloadUrl(string $fileId): string
     {
-        $ttl = (int) config('file-hosting.public_download_signature_ttl_minutes', 5);
+        $ttl = (int) setting_config('file-hosting.public_download_signature_ttl_minutes', 5);
 
         return URL::temporarySignedRoute(
             'file-hosting.public.files.download',

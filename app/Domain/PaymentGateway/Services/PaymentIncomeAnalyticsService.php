@@ -327,6 +327,6 @@ class PaymentIncomeAnalyticsService
 
     private function reportingTimezone(): string
     {
-        return (string) config('payment.reporting_timezone', 'Asia/Jakarta');
+        return (string) setting_config('payment.reporting_timezone', 'Asia/Jakarta');
     }
 }

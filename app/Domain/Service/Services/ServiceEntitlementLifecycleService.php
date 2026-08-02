@@ -101,7 +101,7 @@ class ServiceEntitlementLifecycleService
         }
 
         $userId = $entitlement->user_id;
-        $graceDays = (int) config('service.grace_days', 7);
+        $graceDays = (int) setting_config('service.grace_days', 7);
         $serviceName = $entitlement->service?->name ?? 'Service';
 
         try {

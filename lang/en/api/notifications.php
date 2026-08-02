@@ -17,4 +17,10 @@ return [
         'service_subscription_expired' => 'Your :service subscription grace period ended. Free-tier storage is enforced (:deleted file(s) removed).',
         'inference_unregistered_model' => 'Unregistered model :resolved_model on :provider_slug billed at provisional rates ($:input_per_million_usd / $:output_per_million_usd per 1M). Classify in model catalog to finalize billing.',
     ],
+    'audiences' => [
+        'list_success' => 'Notification audiences loaded.',
+        'show_success' => 'Notification audience loaded.',
+        'updated' => 'Notification audience updated.',
+        'unknown_type' => 'Unknown notification type.',
+    ],
 ];

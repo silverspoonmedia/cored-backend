@@ -8,7 +8,7 @@ class HcaptchaVerifier
 {
     public function isEnabled(): bool
     {
-        return (bool) config('hcaptcha.enabled');
+        return (bool) setting_config('hcaptcha.enabled');
     }
 
     public function verify(string $response, ?string $remoteIp = null): bool
