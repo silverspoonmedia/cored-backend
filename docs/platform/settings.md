@@ -1,20 +1,20 @@
 # Runtime settings (Web Surface)
 
-Operational configuration that changes application behavior without redeploying secrets or infra profiles. Secrets and infrastructure bindings stay in `.env` — see [environment.md](environment.md).
+Operational configuration that changes application behavior without redeploying secrets or infra profiles. Secrets and infrastructure bindings stay in `.env` — see [environment.md](environment.md) and [configuration-policy.md](configuration-policy.md).
 
 ## Fallback chain
 
 ```
-DB system_settings (UI-editable)
+Cached system_settings snapshot (forever TTL, rebuild on write/miss)
+    ↓ key missing from DB
+config/*.php PHP literal default (bootstrap / pre-seed only)
     ↓ miss
-config/*.php (env-backed defaults at bootstrap)
-    ↓ miss
-SettingRegistry hardcoded default
+caller default
 ```
 
-Runtime reads use `App\Support\Settings\SettingsReader` — never `config()->set()` or `env()` outside config files ([octane.md](octane.md)).
+Runtime reads use `App\Support\Settings\SettingsReader` — never `config()->set()` or `env()` outside config files ([octane.md](octane.md)). Recovery: `php artisan settings:rebuild-cache`.
 
-After changing `.env` directly, run `php artisan config:rebuild`. DB overrides take effect immediately (cache flush on write).
+After changing `.env` directly (Tier A only), run `php artisan config:rebuild`. Tier B DB overrides take effect immediately (cache rebuild on write).
 
 ## Permissions
 
@@ -35,7 +35,13 @@ Root and Admin receive both via `RoleSeeder`.
 | Vtual | `/apps/vtual/settings` | `vtual` |
 | Notification audiences | `/apps/notification-audiences` | (separate table) |
 
-Menu: **Administration → Settings** (parent) with Platform child; domain settings linked from product admin hubs.
+Menu: **Administration → Settings** (platform, microstock, notification audiences, currencies); **File Hosting** and **vTual** product branches each include a **Settings** child (`settings.file-hosting`, `settings.vtual`) gated by the product parent plus `view settings` (Root, Admin).
+
+### Localization
+
+Field labels resolve dynamically from `SettingRegistry` keys. The settings form loads the full `fields` map via `__('web/settings.fields')` and looks up each registry key by array index (dot-containing keys such as `platform.auth.default_role` are stored as literal PHP keys, not nested paths). Each registry key must exist in `lang/{en,id,ja}/web/settings.php` under `fields`. Optional helper copy lives under `hints` with the same key.
+
+When adding a new `SettingRegistry` entry, update all three locale files in the same task and keep `SettingRegistryTranslationTest` green. API flash messages for settings live in `lang/{locale}/settings.php`.
 
 ## Tier A — env / artisan only (not in Web UI)
 
@@ -128,14 +134,23 @@ Payment routing fees: YAML → `payments:sync-routing-policy` (partial UI toggle
 
 ## Seeding
 
-`SettingsSeeder` upserts all registry keys from current `config()` values (idempotent). Run after migrate:
+`SettingsSeeder` seeds all registry keys from current `config()` **PHP literal** defaults (idempotent `firstOrCreate`). Run after migrate:
 
 ```bash
 php artisan db:seed --class=SettingsSeeder
 ```
 
+**Local profile only** (`APP_ENV=local`): `DatabaseSeeder` also runs `LocalSettingsSeeder`, which `upsertMany`s dev overrides from [`config/settings-local.php`](../../config/settings-local.php) (e.g. generous daily free, realtime notifications). Re-seeding local refreshes those values; staging/production never run this seeder.
+
+```bash
+php artisan db:seed --class=LocalSettingsSeeder   # local only; upserts dev pack
+```
+
+Cache is rebuilt automatically after seeding. See [configuration-policy.md](configuration-policy.md) for tier rules and cache contract.
+
 ## Related
 
+- [configuration-policy.md](configuration-policy.md) — env vs DB tiers, cache contract, agent checklist
 - [environment.md](environment.md) — `.env` profiles and secret rotation
 - [octane.md](octane.md) — no runtime config mutation
 - [domains/notification/README.md](../domains/notification/README.md) — audience settings

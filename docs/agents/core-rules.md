@@ -66,6 +66,14 @@ All new code must survive long-lived Swoole worker processes, even though Octane
 
 Any change that adds or modifies user-facing text (Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, DB content shown to users) must include translations for **all** supported locales (`en`, `id`, `ja`) in the same task/PR. Use `__('…')` with application-owned files under `lang/{locale}/`, or Spatie translatable fields for DB content. Full checklist: [docs/platform/localization.md](../platform/localization.md#task-rule-required).
 
+## 6. Configuration & secrets (mandatory)
+
+`.env` stores **project-owned sensitive / infra bindings only** (see Tier A in [configuration-policy.md](../platform/configuration-policy.md)). Non-sensitive operational knobs belong in **`system_settings`** (Settings UI, plaintext). Product-domain secrets use **envelope-encrypted dedicated tables** — never `.env` or `system_settings`. Runtime reads of registry settings use **`setting()` / `setting_config()`** through the cached `system_settings` snapshot; never `env()` outside config files; never `config()` for registry-backed paths in domain code. New registry keys require seed + translations + policy tests — no new env vars for Tier B.
+
+## 7. Local settings seed (mandatory when adding dev ergonomics)
+
+**`APP_ENV=local` only:** dev Tier B overrides live in [config/settings-local.php](../../config/settings-local.php) and [LocalSettingsSeeder](../../database/seeders/LocalSettingsSeeder.php) (runs after `SettingsSeeder`, `upsertMany`). Never change `config/*.php` literals or `.env` for local-only knobs. Staging/production use config literals + `SettingsSeeder` only. Details: [configuration-policy.md — Local profile overrides](../platform/configuration-policy.md#local-profile-overrides).
+
 ## Agent workflow checklist
 
 1. Scope: this repository.

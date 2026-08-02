@@ -22,25 +22,25 @@ API issues JWT; browser stores it as HttpOnly `auth_token`; web forwards as Bear
 | `IntendedUrl` | Post-login return URL (full-page GET only; excludes bell/datatable/tree) |
 | `IssuesAuthCookie` | Login/register → cookie + redirect |
 
-**Session holds CSRF, flash, intended URL only — not identity.** If the admin is “kicked out”, debug `auth_token` / `JWT_TTL` / refresh window first, not `SESSION_LIFETIME`.
+**Session holds CSRF, flash, intended URL only — not identity.** If the admin is “kicked out”, debug `auth_token` and **Settings → Platform** JWT knobs (`platform.jwt.ttl`, `platform.jwt.refresh_ttl`) first, not `SESSION_LIFETIME`.
 
 ### Silent refresh (sliding access)
 
-Access JWT hard-expires at `JWT_TTL` (default 60 minutes). Blade never used Laravel’s session guard for login, so without refresh every protected page dies at TTL even while the user is active.
+Access JWT hard-expires at `platform.jwt.ttl` (default 60 minutes; runtime via `setting_config('jwt.ttl')`). Blade never used Laravel’s session guard for login, so without refresh every protected page dies at TTL even while the user is active.
 
 `RefreshJwtCookie` (web stack, after `AuthenticateWithJwtCookie`):
 
-1. Cookie present + valid + remaining life ≤ `JWT_REFRESH_SKEW` minutes → `AuthService::refreshFromToken`, queue new `auth_token`, re-bind `api` guard, swap request cookie so same-request `ApiClient` uses the new Bearer.
-2. Cookie present + guard guest (expired access) but still inside `JWT_REFRESH_TTL` → same refresh path so `web.auth` still passes.
+1. Cookie present + valid + remaining life ≤ `platform.jwt.refresh_skew` minutes → `AuthService::refreshFromToken`, queue new `auth_token`, re-bind `api` guard, swap request cookie so same-request `ApiClient` uses the new Bearer.
+2. Cookie present + guard guest (expired access) but still inside `platform.jwt.refresh_ttl` → same refresh path so `web.auth` still passes.
 3. Past refresh window / blacklisted / invalid → leave guest; `web.auth` redirects to login and forgets the stale cookie.
 
-Multi-tab / parallel AJAX: set `JWT_BLACKLIST_GRACE_PERIOD` (default **30s**) so the predecessor JWT stays acceptable briefly after refresh. Grace period `0` causes random 401s right after silent refresh.
+Multi-tab / parallel AJAX: set `platform.jwt.blacklist_grace_period` (default **30s**) so the predecessor JWT stays acceptable briefly after refresh. Grace period `0` causes random 401s right after silent refresh.
 
-Env knobs: [identity](../domains/identity/README.md#configuration), [environment](../platform/environment.md).
+Tunable in **Administration → Settings → Platform** — see [settings.md Tier B](../platform/settings.md#tier-b--platform-group-platform) and [configuration-policy.md](../platform/configuration-policy.md).
 
 ### hCaptcha
 
-When `HCAPTCHA_ENABLED=true`: invisible widget + `MonolithHcaptcha.execute()` on AJAX submit; API validates. Forward `h-captcha-response` on login/register/forgot/2FA.
+When `platform.hcaptcha.enabled` is on (sitekey/secret stay env): invisible widget + `MonolithHcaptcha.execute()` on AJAX submit; API validates. Forward `h-captcha-response` on login/register/forgot/2FA.
 
 ## API client
 

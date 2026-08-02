@@ -18,6 +18,13 @@ return [
     'invoices' => [
         'list' => '請求書を取得しました。',
         'show' => '請求書を取得しました。',
+        'checkout_channels' => 'チェックアウト決済チャネルを読み込みました。',
+        'checkout_channels_not_payable' => 'この請求書は支払い可能な状態ではありません。',
+    ],
+
+    'income' => [
+        'overview' => '決済収入概要を読み込みました。',
+        'invoices' => '決済収入請求書を読み込みました。',
     ],
 
     'subscriptions' => [

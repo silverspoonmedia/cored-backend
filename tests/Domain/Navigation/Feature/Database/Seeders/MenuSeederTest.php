@@ -53,6 +53,7 @@ class MenuSeederTest extends TestCase
                         'children' => [
                             ['name' => 'My Files', 'route' => 'file-hosting.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Trash', 'route' => 'file-hosting.trash', 'type' => 'c', 'children' => []],
+                            ['name' => 'Settings', 'route' => 'settings.file-hosting', 'type' => 'c', 'children' => []],
                             ['name' => 'DMCA Blocklist', 'route' => 'file-hosting.blocklist.index', 'type' => 'c', 'children' => []],
                         ],
                     ],
@@ -66,6 +67,7 @@ class MenuSeederTest extends TestCase
                             ['name' => 'Claim as vTuber', 'route' => 'vtual.claims.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Registry & pending', 'route' => 'vtual.claims.staff', 'type' => 'c', 'children' => []],
                             ['name' => 'Platform credentials', 'route' => 'vtual.admin.credentials.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Settings', 'route' => 'settings.vtual', 'type' => 'c', 'children' => []],
                         ],
                     ],
                 ],
@@ -117,6 +119,17 @@ class MenuSeederTest extends TestCase
                         ],
                     ],
                     [
+                        'name' => 'Settings',
+                        'route' => null,
+                        'type' => 'p',
+                        'children' => [
+                            ['name' => 'Platform', 'route' => 'settings.platform', 'type' => 'c', 'children' => []],
+                            ['name' => 'Microstock', 'route' => 'settings.microstock', 'type' => 'c', 'children' => []],
+                            ['name' => 'Notification audiences', 'route' => 'notification-audiences.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Currencies', 'route' => 'currencies.index', 'type' => 'c', 'children' => []],
+                        ],
+                    ],
+                    [
                         'name' => 'Navigation',
                         'route' => null,
                         'type' => 'p',
@@ -150,6 +163,18 @@ class MenuSeederTest extends TestCase
         $this->assertSame(
             ['Admin', 'Root'],
             $this->roleNamesForRoute('vtual.admin.credentials.index'),
+        );
+        $this->assertSame(
+            ['Admin', 'Root'],
+            $this->roleNamesForRoute('settings.file-hosting'),
+        );
+        $this->assertSame(
+            ['Admin', 'Root'],
+            $this->roleNamesForRoute('settings.vtual'),
+        );
+        $this->assertSame(
+            ['Admin', 'Root'],
+            $this->roleNamesForRoute('settings.microstock'),
         );
 
         $this->assertSame([
@@ -189,7 +214,7 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(37, Menu::query()->count());
+        $this->assertSame(44, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -197,7 +222,7 @@ class MenuSeederTest extends TestCase
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(37, Menu::query()->count());
+        $this->assertSame(44, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -231,6 +256,8 @@ class MenuSeederTest extends TestCase
         $this->assertContains('Platform credentials', $adminNames);
         $this->assertContains('Product domain access', $adminNames);
         $this->assertContains('Monitoring', $adminNames);
+        $this->assertContains('Settings', $adminNames);
+        $this->assertContains('Microstock', $adminNames);
     }
 
     private function activatedUser(string $role, string $email): User

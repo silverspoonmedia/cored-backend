@@ -9,7 +9,7 @@ return [
     /*
      * If set to false, no activities will be saved to the database.
      */
-    'enabled' => env('ACTIVITYLOG_ENABLED', true),
+    'enabled' => true,
 
     /*
      * When the clean command is executed, all recording activities older than
@@ -64,7 +64,7 @@ return [
      * buffer is flushed.
      */
     'buffer' => [
-        'enabled' => env('ACTIVITYLOG_BUFFER_ENABLED', false),
+        'enabled' => false,
     ],
 
     /*

@@ -1,4 +1,4 @@
-@if (config('hcaptcha.enabled') && config('hcaptcha.sitekey'))
+@if (setting_config('hcaptcha.enabled') && config('hcaptcha.sitekey'))
     <div
         class="hcaptcha-field{{ $errors->has('h-captcha-response') ? ' hcaptcha-field--invalid mb-3' : '' }}"
         data-form-field="h-captcha-response"

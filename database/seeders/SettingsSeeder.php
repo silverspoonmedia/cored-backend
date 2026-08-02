@@ -32,6 +32,6 @@ class SettingsSeeder extends Seeder
             );
         }
 
-        app(SystemSettingRepositoryInterface::class)->flushCache();
+        app(SystemSettingRepositoryInterface::class)->rebuildCache();
     }
 }

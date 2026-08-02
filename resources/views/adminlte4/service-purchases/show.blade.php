@@ -65,7 +65,7 @@
             && in_array($invoiceStatus, ['pending', 'challenge'], true)
             && data_get($service, 'plan_kind') === 'addon';
         $purchaseQuantity = max(1, (int) data_get($purchase, 'quantity', 1));
-        $maxPurchaseQuantity = max(1, (int) config('service.purchase.max_quantity', 99));
+        $maxPurchaseQuantity = max(1, (int) setting_config('service.purchase.max_quantity', 99));
         $currentStackQuantity = max(0, (int) data_get($entitlement, 'quantity', 0));
         $projectedStackQuantity = $currentStackQuantity > 0
             ? $currentStackQuantity + $purchaseQuantity

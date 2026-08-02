@@ -24,8 +24,8 @@ class FileVariantGenerator
      */
     public function encodeJpeg(string $sourceBytes, int $maxPx): array
     {
-        $maxBytes = (int) config('microstock.ai.max_request_image_bytes', 200_000);
-        $quality = (int) config('microstock.ai.image_jpeg_quality', 80);
+        $maxBytes = (int) setting_config('microstock.ai.max_request_image_bytes', 200_000);
+        $quality = (int) setting_config('microstock.ai.image_jpeg_quality', 80);
         $quality = max(40, min(95, $quality));
 
         $manager = new ImageManager(new GdDriver);

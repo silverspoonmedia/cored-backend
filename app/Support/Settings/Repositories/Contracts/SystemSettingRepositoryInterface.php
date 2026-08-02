@@ -19,6 +19,13 @@ interface SystemSettingRepositoryInterface
     public function flushCache(): void;
 
     /**
+     * Rebuild the forever cache from the database and return the fresh snapshot.
+     *
+     * @return array<string, mixed>
+     */
+    public function rebuildCache(): array;
+
+    /**
      * @param  array<string, mixed>  $values  key => raw value
      */
     public function upsertMany(array $values, ?string $updatedByUserId = null): void;

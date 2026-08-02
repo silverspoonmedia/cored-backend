@@ -80,7 +80,7 @@
         'usageUrlBase' => route('file-hosting.microstock.usage'),
         'billing' => [
             'daily_free' => [
-                'enabled' => (bool) config('microstock.daily_free.enabled', false),
+                'enabled' => (bool) setting_config('microstock.daily_free.enabled', false),
             ],
         ],
         'toolbarBalanceLabel' => __('web/microstock.usage.toolbar_balance'),
@@ -449,9 +449,9 @@
                 data-complete-url="{{ route('file-hosting.uploads.complete', ['upload' => '__UPLOAD__']) }}"
                 data-abort-url="{{ route('file-hosting.uploads.destroy', ['upload' => '__UPLOAD__']) }}"
                 data-sign-parts-url="{{ route('file-hosting.uploads.sign-parts', ['upload' => '__UPLOAD__']) }}"
-                data-max-files="{{ (int) config('file-hosting.max_files_per_batch', 20) }}"
-                data-max-concurrent="{{ (int) config('file-hosting.max_concurrent_uploads', 2) }}"
-                data-max-concurrent-parts="{{ (int) config('file-hosting.max_concurrent_parts', 3) }}"
+                data-max-files="{{ (int) setting_config('file-hosting.max_files_per_batch', 20) }}"
+                data-max-concurrent="{{ (int) setting_config('file-hosting.max_concurrent_uploads', 2) }}"
+                data-max-concurrent-parts="{{ (int) setting_config('file-hosting.max_concurrent_parts', 3) }}"
                 role="button"
                 tabindex="0"
                 aria-label="{{ __('web/file-hosting.upload_here') }}"
@@ -1032,7 +1032,7 @@
                             <textarea id="fhDescribeNotes" class="form-control" rows="2" data-fh-describe-notes
                                       placeholder="{{ __('web/file-hosting.microstock.describe_additional_placeholder') }}"></textarea>
                         </div>
-                        <div class="mb-3 {{ config('microstock.daily_free.enabled', false) ? '' : 'd-none' }}" data-fh-describe-billing-group>
+                        <div class="mb-3 {{ setting_config('microstock.daily_free.enabled', false) ? '' : 'd-none' }}" data-fh-describe-billing-group>
                             <label class="form-label">{{ __('web/file-hosting.microstock.describe_billing_mode_label') }}</label>
                             <p class="small text-muted mb-2">{{ __('web/file-hosting.microstock.describe_billing_mode_hint') }}</p>
                             <div class="d-flex flex-wrap gap-3">

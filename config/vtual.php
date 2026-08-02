@@ -17,9 +17,9 @@ return [
         'youtube_probe_channel_id' => env('VTUAL_YT_PROBE_CHANNEL_ID', 'UC_x5XG1OV2P6uZZ5FSM9Ttw'),
 
         // Re-mint Twitch app token this many seconds before expires_at.
-        'twitch_token_skew_seconds' => (int) env('VTUAL_TWITCH_TOKEN_SKEW_SECONDS', 300),
+        'twitch_token_skew_seconds' => 300,
 
-        'http_timeout' => (int) env('VTUAL_CREDENTIAL_HTTP_TIMEOUT', 20),
+        'http_timeout' => 20,
     ],
 
     /*
@@ -34,11 +34,11 @@ return [
     */
     'credential' => [
         'failover' => [
-            'enabled' => (bool) env('VTUAL_CREDENTIAL_FAILOVER_ENABLED', false),
-            'auth_fail_threshold' => (int) env('VTUAL_CREDENTIAL_AUTH_FAIL_THRESHOLD', 2),
-            'skip_minutes' => (int) env('VTUAL_CREDENTIAL_FAILOVER_SKIP_MINUTES', 30),
+            'enabled' => false,
+            'auth_fail_threshold' => 2,
+            'skip_minutes' => 30,
             // 1 = one alternate credential after the first failure path allows switch
-            'max_retries_per_call' => (int) env('VTUAL_CREDENTIAL_FAILOVER_MAX_RETRIES', 1),
+            'max_retries_per_call' => 1,
         ],
     ],
 
@@ -53,7 +53,7 @@ return [
     */
 
     'http' => [
-        'timeout' => (int) env('VTUAL_HTTP_TIMEOUT', env('VTUAL_CREDENTIAL_HTTP_TIMEOUT', 20)),
+        'timeout' => 20,
 
         'batch' => [
             // min(YouTube videos.list 50, Twitch Get Videos by id 100)
@@ -124,13 +124,13 @@ return [
     'claim' => [
         'token_prefix' => env('VTUAL_CLAIM_TOKEN_PREFIX', 'vtual-claim-'),
         'token_bytes' => (int) env('VTUAL_CLAIM_TOKEN_BYTES', 6),
-        'ttl_hours' => (int) env('VTUAL_CLAIM_TTL_HOURS', 24),
-        'verify_cooldown_seconds' => (int) env('VTUAL_CLAIM_VERIFY_COOLDOWN', 60),
-        'max_attempts' => (int) env('VTUAL_CLAIM_MAX_ATTEMPTS', 20),
+        'ttl_hours' => 24,
+        'verify_cooldown_seconds' => 60,
+        'max_attempts' => 20,
         // Soft cap on concurrent pending claims per user (audit rows kept).
-        'max_pending_per_user' => (int) env('VTUAL_CLAIM_MAX_PENDING', 5),
+        'max_pending_per_user' => 5,
         // Local/dev default ON for QA without editing live bios.
-        'accept_anyway_enabled' => (bool) env('VTUAL_CLAIM_ACCEPT_ANYWAY', true),
+        'accept_anyway_enabled' => true,
         'vtuber_role' => 'Vtual vTuber',
     ],
 
@@ -147,10 +147,10 @@ return [
     'channel_claim' => [
         'token_prefix' => env('VTUAL_CHANNEL_CLAIM_TOKEN_PREFIX', 'vtual-ch-'),
         'token_bytes' => (int) env('VTUAL_CHANNEL_CLAIM_TOKEN_BYTES', 6),
-        'ttl_hours' => (int) env('VTUAL_CHANNEL_CLAIM_TTL_HOURS', 24),
-        'verify_cooldown_seconds' => (int) env('VTUAL_CHANNEL_CLAIM_VERIFY_COOLDOWN', 60),
-        'max_attempts' => (int) env('VTUAL_CHANNEL_CLAIM_MAX_ATTEMPTS', 20),
-        'accept_anyway_enabled' => (bool) env('VTUAL_CHANNEL_CLAIM_ACCEPT_ANYWAY', env('VTUAL_CLAIM_ACCEPT_ANYWAY', true)),
+        'ttl_hours' => 24,
+        'verify_cooldown_seconds' => 60,
+        'max_attempts' => 20,
+        'accept_anyway_enabled' => true,
     ],
 
     /*
@@ -165,12 +165,12 @@ return [
     |
     */
     'channel_pool' => [
-        'threshold' => (int) env('VTUAL_CHANNEL_POOL_THRESHOLD', 50),
-        'max_wait_minutes' => (int) env('VTUAL_CHANNEL_POOL_MAX_WAIT_MINUTES', 15),
-        'schedule_every_minutes' => (int) env('VTUAL_CHANNEL_POOL_SCHEDULE_MINUTES', 1),
-        'resync_stale_hours' => (int) env('VTUAL_CHANNEL_POOL_RESYNC_STALE_HOURS', 24),
-        'resync_enqueue_limit' => (int) env('VTUAL_CHANNEL_POOL_RESYNC_ENQUEUE_LIMIT', 200),
-        'flush_lock_seconds' => (int) env('VTUAL_CHANNEL_POOL_FLUSH_LOCK_SECONDS', 30),
+        'threshold' => 50,
+        'max_wait_minutes' => 15,
+        'schedule_every_minutes' => 1,
+        'resync_stale_hours' => 24,
+        'resync_enqueue_limit' => 200,
+        'flush_lock_seconds' => 30,
     ],
 
 ];

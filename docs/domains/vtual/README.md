@@ -66,7 +66,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 |------|-----|----------|
 | Internal seed | Root / Admin / Moderator (`manage any vtual resource`) | `POST /api/v1/vtual/creators/orphan` creates creator **without** owner membership; then register channels as usual. Staff UI: `/apps/vtual/admin/registry` (orphan form only — do not self-bind staff as owner; use a separate account if staff is also a vtuber) |
 | External claim Existing | User with `claim vtual creator` | Pick claimable creator + proof channel, receive token `vtual-claim-...`, put token in YouTube About / Twitch bio, then `POST .../claims/{id}/verify` re-fetches description via production `ChannelProfileResolver` |
-| Accept Anyway | Staff + `VTUAL_CLAIM_ACCEPT_ANYWAY` | Skip bio check (QA / local default **ON**) |
+| Accept Anyway | Staff + `vtual.claim.accept_anyway_enabled` (Settings → vTual) | Skip bio check (QA / local default **ON**) |
 | Staff pending queue | `manage any` | `GET /api/v1/vtual/claims/pending` + web `/apps/vtual/admin/registry` |
 
 **On verify success:** insert `vtual_creator_members` role `owner` for claimant; assign product role **`Vtual vTuber`** (level 2250, own perms similar to Editor); **close all other pending claims** for that creator (`status=cancelled`, `closed_reason=superseded`). Rows are **kept as audit log** (no hard-delete this phase).
@@ -447,7 +447,7 @@ Not shared this phase (no dual-platform signal without extra APIs): subscriber/f
 Do **not** reclassify all BRE as reportable. Do **not** put secrets in message/context.
 ### Soft credential failover
 
-Default **OFF** (`config/vtual.php` → `credential.failover`, env `VTUAL_CREDENTIAL_FAILOVER_ENABLED`).
+Default **OFF** (`vtual.credential.failover.enabled` in **Settings → vTual**; thresholds via `vtual.credential.failover.*` registry keys). See [configuration-policy.md](../../platform/configuration-policy.md).
 
 | Rule | Behavior |
 |------|----------|
@@ -591,7 +591,7 @@ Web UI: link from credentials index → **API probe**.
 | YouTube/Twitch content upsert into `vtual_contents` | `ContentService::upsertFromPrimary` foundation (no sync workers) |
 | Twitch EventSub | Not implemented |
 | Live poll scheduler / CCV snapshots | Not implemented (`fetchStreamsByUserIds` ready for workers) |
-| Soft credential failover (401/403) | Implemented default **OFF** (`VTUAL_CREDENTIAL_FAILOVER_ENABLED`) |
+| Soft credential failover (401/403) | Implemented default **OFF** (`vtual.credential.failover.enabled` in Settings → vTual) |
 | Reveal plaintext credential endpoint | Explicitly out of scope |
 | Kick integration | Deferred; disabled seed |
 | Content lifecycle sync + CCV snapshots | Table + appearances model; no live sync workers |

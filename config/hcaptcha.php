@@ -2,7 +2,7 @@
 
 return [
 
-    'enabled' => (bool) env('HCAPTCHA_ENABLED', false),
+    'enabled' => false,
 
     'secret' => env('HCAPTCHA_SECRET'),
 

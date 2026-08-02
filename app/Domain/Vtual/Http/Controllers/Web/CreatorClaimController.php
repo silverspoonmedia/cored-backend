@@ -51,7 +51,7 @@ class CreatorClaimController extends Controller
 
         return $this->webView('vtual.claims.staff', [
             'pending' => collect($pending->json('data', [])),
-            'acceptAnywayEnabled' => (bool) config('vtual.claim.accept_anyway_enabled', false),
+            'acceptAnywayEnabled' => (bool) setting_config('vtual.claim.accept_anyway_enabled', false),
         ]);
     }
 
@@ -88,7 +88,7 @@ class CreatorClaimController extends Controller
 
         return $this->webView('vtual.claims.show', [
             'claim' => $response->json('data', []),
-            'acceptAnywayEnabled' => (bool) config('vtual.claim.accept_anyway_enabled', false),
+            'acceptAnywayEnabled' => (bool) setting_config('vtual.claim.accept_anyway_enabled', false),
             'canManageAny' => auth()->user()?->can('manage any vtual resource') ?? false,
         ]);
     }

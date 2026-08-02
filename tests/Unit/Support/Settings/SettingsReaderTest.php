@@ -22,7 +22,7 @@ class SettingsReaderTest extends TestCase
             'value' => 120,
         ]);
 
-        app(SystemSettingRepository::class)->flushCache();
+        app(SystemSettingRepository::class)->rebuildCache();
 
         $reader = app(SettingsReader::class);
 
@@ -48,7 +48,7 @@ class SettingsReaderTest extends TestCase
             'value' => true,
         ]);
 
-        app(SystemSettingRepository::class)->flushCache();
+        app(SystemSettingRepository::class)->rebuildCache();
 
         $this->assertTrue(setting_config('hcaptcha.enabled'));
     }

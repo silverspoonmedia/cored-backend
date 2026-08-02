@@ -50,7 +50,7 @@ class AuthService
                 'password' => $data['password'],
             ]);
 
-            $user->assignRole(config('auth.default_role', 'User'));
+            $user->assignRole((string) setting_config('auth.default_role', 'User'));
             $user->sendEmailVerificationNotification();
 
             $this->activateImplicitProducts($user);

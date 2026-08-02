@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'yes' => 'Yes',
+    'no' => 'No',
     'actions' => [
         'save' => 'Save',
         'cancel' => 'Cancel',

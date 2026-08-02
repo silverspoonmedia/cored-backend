@@ -71,7 +71,7 @@ Upload/storage stays on the shared File Hosting quota. **AI analysis** (vision +
 
 ### Daily free trial (optional)
 
-Env-gated per-user daily analyses (`MICROSTOCK_DAILY_FREE_ENABLED`). No activation SKU — slots reset lazily by calendar day in `microstock_daily_free_usage`. Daily-first mixed billing: first N files in a collection use `billing_source = daily_free` (no prepaid debit; provider cost still on usage events); remainder use prepaid. Free-tier jobs route to `*-free` queues and may use separate vision/thinking models through `MICROSTOCK_AI_VISION_MODEL_FREE` / `MICROSTOCK_AI_THINKING_MODEL_FREE`; an empty free override inherits the paid/default stage model. Workers should process paid queues first. Details: [daily-free-trial.md](daily-free-trial.md).
+Settings-gated per-user daily analyses (`microstock.daily_free.enabled` in **Settings → Microstock**). No activation SKU — slots reset lazily by calendar day in `microstock_daily_free_usage`. Daily-first mixed billing: first N files in a collection use `billing_source = daily_free` (no prepaid debit; provider cost still on usage events); remainder use prepaid. Free-tier jobs route to `*-free` queues and may use separate vision/thinking models through `MICROSTOCK_AI_VISION_MODEL_FREE` / `MICROSTOCK_AI_THINKING_MODEL_FREE`; an empty free override inherits the paid/default stage model. Workers should process paid queues first. Details: [daily-free-trial.md](daily-free-trial.md).
 
 **Billing subject:** `microstock_asset_metadata.billing_user_id` is set to the user who called `POST …/analyze` or `POST assets/{file}/analyze` (not the file uploader). Gate, usage events, and debit all use this ID.
 
@@ -101,11 +101,11 @@ Provisional holds are reconciled after catalog curation; see [Inference — unkn
 
 Sonnet 5 rates above are Anthropic **introductory** pricing through Aug 31, 2026; standard from Sep 1 is $3 / $15 per 1M.
 
-- `markup_multiplier` — env `MICROSTOCK_AI_BILLING_MARKUP` (default **1.35**)
-- `estimated_billable_micro_usd_per_asset` — env `MICROSTOCK_AI_BILLING_ESTIMATE_PER_ASSET` (default **150000** = $0.15 buffer for analyze gate)
-- `estimate_thinking_attempt_factor` — env `MICROSTOCK_AI_BILLING_ESTIMATE_FACTOR` (default **1.5**; gate = per-asset estimate × factor)
-- `http_retries` — env `MICROSTOCK_AI_HTTP_RETRIES` (default **0** for billed stages; each retry can duplicate provider charges)
-- Per-HTTP-call rates resolved from provider model rates (`MICROSTOCK_AI_INFERENCE_PROVIDER` / `INFERENCE_DEFAULT_PROVIDER_SLUG`); immutable provider-specific snapshot on `microstock_ai_usage_events.ai_model_rate_snapshot_id` plus `inference_provider_id` when route known (alias in `alias_model`, resolved slug in `resolved_model`)
+- `markup_multiplier` — `microstock.ai_billing.markup_multiplier` (default **1.35**; Settings → Microstock)
+- `estimated_billable_micro_usd_per_asset` — `microstock.ai_billing.estimated_billable_micro_usd_per_asset` (default **150000** = $0.15 buffer for analyze gate)
+- `estimate_thinking_attempt_factor` — `microstock.ai_billing.estimate_thinking_attempt_factor` (default **1.5**; gate = per-asset estimate × factor)
+- `http_retries` — `microstock.ai.http_retries` (default **0** for billed stages; each retry can duplicate provider charges)
+- Per-HTTP-call rates resolved from provider model rates (`MICROSTOCK_AI_INFERENCE_PROVIDER` env / `platform.inference.default_provider_slug` in Settings); immutable provider-specific snapshot on `microstock_ai_usage_events.ai_model_rate_snapshot_id` plus `inference_provider_id` when route known (alias in `alias_model`, resolved slug in `resolved_model`)
 
 Amounts are stored as **micro-USD** (1 USD = 1_000_000) end-to-end. `microstock_ai_balances.balance_micro_usd` is **signed** — post-settlement consolidation debits may drive balance negative; new paid analyze is blocked until balance ≥ 0 (top-up via Services). Collection UI and `GET billing` show negative balances (e.g. `-$0.12`).
 
@@ -175,7 +175,7 @@ flowchart LR
 | Step | Behavior |
 |----|----------|
 | Upload gate | `DirectUploadService::initiate` rejects (422) a Microstock workspace upload with no `folder_id` (`microstock.error_requires_folder`) or into a locked collection (`microstock.error_collection_locked`). Client mirrors this via dropzone `data-workspace-kind` / `data-collection-locked` |
-| Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` (single text field, max 2000, nullable) + `collection_billing_mode` (`free`/`paid`) + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here. **Web UI:** the Lock & Describe modal collects structured sections (Primary concept, Visible subjects, Buyer intent, Style & mood, Additional notes). All sections are optional; they compose into a multi-line hint before lock. A mandatory **Free / Paid** billing-mode selector appears when `MICROSTOCK_DAILY_FREE_ENABLED=true`; when Free is disabled the selector is hidden and every analysis is forced to `paid`. Submitting with no content triggers a client-side `window.confirm` warning that blind locking usually produces poor, inconsistent AI metadata. |
+| Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` (single text field, max 2000, nullable) + `collection_billing_mode` (`free`/`paid`) + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here. **Web UI:** the Lock & Describe modal collects structured sections (Primary concept, Visible subjects, Buyer intent, Style & mood, Additional notes). All sections are optional; they compose into a multi-line hint before lock. A mandatory **Free / Paid** billing-mode selector appears when `microstock.daily_free.enabled` is on; when Free is disabled the selector is hidden and every analysis is forced to `paid`. Submitting with no content triggers a client-side `window.confirm` warning that blind locking usually produces poor, inconsistent AI metadata. |
 | Analyze | `POST collections/{folder}/analyze` (requires `locked`, non-empty) sets `processing` and dispatches `ProcessCollection` |
 | Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)** with decoupled stage columns (`ai_vision`, `ai_thinking`, `ai_result`), then dispatches one `AnalyzeAssetVision` job per file on the **collection vision** queue (FIFO by file name). Each vision persists `ai_vision` and dispatches `AnalyzeAssetThinking` on the **collection thinking** queue. **Dual-lane pipeline:** configurable concurrent vision + thinking jobs per folder (default **3+3**), capped globally by upstream limits (see [Upstream limits](#upstream-limits)); vision file N+1 may run while thinking file N runs. Collection `review` when **all** assets are terminal (watchdog / thinking completion). Sub-folders are separate collections and are NOT processed |
 | Curate | Per-file manual edit via `PATCH assets/{file}/metadata` (existing finalize) while in `review` |
@@ -214,6 +214,8 @@ flowchart LR
 
 ### Upstream limits
 
+Operational concurrency caps: **Settings → Microstock** (`microstock.ai.upstream.*`). See [configuration-policy.md](../../platform/configuration-policy.md).
+
 Shared Open WebUI / 9Router account empirical ceiling: **~20M tokens / 30 min** (frontier models). Microstock allocates the full window to analysis throughput; enforcement is **concurrency caps** via `LimitAnalysisConcurrency` queue middleware (`config/microstock.php` → `ai.upstream`).
 
 | Reference | Value |
@@ -223,19 +225,19 @@ Shared Open WebUI / 9Router account empirical ceiling: **~20M tokens / 30 min** 
 | Per-asset typical ceiling | ~20,000 tokens |
 | Theoretical burst assets | ~1,000 / 30 min at 20k/asset |
 
-| Env | Default | Purpose |
-|-----|---------|---------|
-| `MICROSTOCK_AI_UPSTREAM_WINDOW_SECONDS` | `1800` | Sliding window reference (seconds) |
-| `MICROSTOCK_AI_UPSTREAM_TOKEN_BUDGET` | `20000000` | Documented upstream token ceiling |
-| `MICROSTOCK_AI_UPSTREAM_MAX_CONCURRENT_VISION` | `6` | Global in-flight vision jobs |
-| `MICROSTOCK_AI_UPSTREAM_MAX_CONCURRENT_THINKING` | `10` | Global in-flight thinking jobs |
-| `MICROSTOCK_AI_COLLECTION_VISION_CONCURRENCY` | `3` | Per-collection folder vision cap |
-| `MICROSTOCK_AI_COLLECTION_THINKING_CONCURRENCY` | `3` | Per-collection folder thinking cap |
-| `MICROSTOCK_AI_SOLO_VISION_CONCURRENCY` | `2` | Solo re-analyze vision pool |
-| `MICROSTOCK_AI_SOLO_THINKING_CONCURRENCY` | `2` | Solo re-analyze thinking pool |
-| `MICROSTOCK_AI_UPSTREAM_RELEASE_AFTER` | `15` | Seconds before a blocked job retries |
+| Registry key | Config path | Default | Purpose |
+|--------------|-------------|---------|---------|
+| `microstock.ai.upstream.max_concurrent_vision` | `microstock.ai.upstream.max_concurrent_vision` | `6` | Global in-flight vision jobs |
+| `microstock.ai.upstream.max_concurrent_thinking` | `microstock.ai.upstream.max_concurrent_thinking` | `10` | Global in-flight thinking jobs |
+| `microstock.ai.upstream.collection_vision_concurrency` | `microstock.ai.upstream.collection_vision_concurrency` | `3` | Per-collection folder vision cap |
+| `microstock.ai.upstream.collection_thinking_concurrency` | `microstock.ai.upstream.collection_thinking_concurrency` | `3` | Per-collection folder thinking cap |
+| `microstock.ai.upstream.solo_vision_concurrency` | `microstock.ai.upstream.solo_vision_concurrency` | `2` | Solo re-analyze vision pool |
+| `microstock.ai.upstream.solo_thinking_concurrency` | `microstock.ai.upstream.solo_thinking_concurrency` | `2` | Solo re-analyze thinking pool |
+| `microstock.ai.upstream.release_after_seconds` | `microstock.ai.upstream.release_after_seconds` | `15` | Seconds before a blocked job retries |
 
-When a cap is full the job is **released** (not failed). Use **Redis** cache in multi-worker deploys so global counters are cluster-safe. If upstream still rate-limits, lower concurrency env vars — no code change needed.
+Reference only (not in registry): `token_budget` 20M, `window_seconds` 1800 — ops documentation, not runtime-enforced.
+
+When a cap is full the job is **released** (not failed). Use **Redis** cache in multi-worker deploys so global counters are cluster-safe. If upstream still rate-limits, lower concurrency in **Settings → Microstock** — no code change needed.
 
 | Stage column | Job | On failure |
 |--------------|-----|------------|
@@ -256,15 +258,16 @@ Microstock raster uploads in a `kind = microstock` workspace trigger `GenerateFi
 
 **Quota:** ready variant `size` bytes count toward the owner's File Hosting `used_bytes` (byte sum with the original `HostedFile.size`). See [File Hosting — Quota](../file-hosting/README.md#quota).
 
-**Vision delivery** (`config/microstock.php` → `ai.vision_image`):
+**Vision delivery** — **Settings → Microstock** (`microstock.ai.vision_image.*`):
 
-| Env | Default | Purpose |
-|-----|---------|---------|
-| `MICROSTOCK_AI_VISION_IMAGE_DELIVERY` | `url` | `base64` = data-URI in JSON; `url` = signed HTTPS to variant |
-| `MICROSTOCK_AI_VISION_VARIANT` | `ai_1024` | Which persisted kind to prefer |
-| `MICROSTOCK_AI_VISION_URL_TTL` | `30` | Signed URL minutes when `delivery=url` |
+| Registry key | Config path | Default | Purpose |
+|--------------|-------------|---------|---------|
+| `microstock.ai.vision_image.delivery` | `microstock.ai.vision_image.delivery` | `url` | `base64` = data-URI in JSON; `url` = signed HTTPS to variant |
+| `microstock.ai.vision_image.signed_url_ttl_minutes` | `microstock.ai.vision_image.signed_url_ttl_minutes` | `30` | Signed URL minutes when `delivery=url` |
 
-When the configured variant is not `ready`, analyze logs `microstock.variants.not_ready` and falls back to ephemeral resize (`MICROSTOCK_AI_IMAGE_MAX_PX` / byte cap).
+Variant kind (`ai_1024`) is a config literal (`microstock.ai.vision_image.variant_kind`), not in the registry.
+
+When the configured variant is not `ready`, analyze logs `microstock.variants.not_ready` and falls back to ephemeral resize (`microstock.ai.image_max_px` / `microstock.ai.max_request_image_bytes` settings).
 
 ### Production stack (locked 2026-07-28)
 
@@ -357,7 +360,7 @@ Production uses **Open WebUI** as the only supported AI surface:
 | Reasoning models | `extractContent()` also checks `message.reasoning`, `reasoning_content`, and root `output`. |
 | Batch `response_format: json_object` | `Prompts::batchSystem()` asks for `{"assets": [{id, title, ...}, ...]}` (not a bare array) so the OpenAI JSON-object mode and the prompt agree. `decodeBatch()` also tolerates bare arrays and legacy wrapper shapes. |
 
-Images reach the vision stage via `VisionImageResolver` — **signed HTTPS URL** to a persisted variant (default `delivery=url`) or **base64 data-URI** when overridden (`MICROSTOCK_AI_VISION_IMAGE_DELIVERY`). Variants are JPEG sidecars (`ai_512` / `ai_1024`); ephemeral resize from the original remains the fallback when variants are not ready. The thinking stage receives the same image reference on the first `MICROSTOCK_AI_THINKING_VISUAL_ATTEMPTS` attempts (default **2**) for multimodal VERIFY against the vision draft; probe T6 reports `thinking_multimodal` and per-call `stage_metrics`.
+Images reach the vision stage via `VisionImageResolver` — **signed HTTPS URL** to a persisted variant (default `delivery=url`) or **base64 data-URI** when overridden (`microstock.ai.vision_image.delivery`). Variants are JPEG sidecars (`ai_512` / `ai_1024`); ephemeral resize from the original remains the fallback when variants are not ready. The thinking stage receives the same image reference on the first `microstock.ai.thinking_visual_attempts` attempts (default **2**) for multimodal VERIFY against the vision draft; probe T6 reports `thinking_multimodal` and per-call `stage_metrics`.
 
 **Stage logging:** each HTTP call logs `microstock.ai.stage` (`start` / `end`, `duration_ms`, `body_prefix`, `finish_reason`) to `storage/logs/laravel.log` — use this to confirm vision completes before thinking starts.
 
@@ -366,9 +369,9 @@ Images reach the vision stage via `VisionImageResolver` — **signed HTTPS URL**
 1. Collection pipeline is **dual-lane** — vision and thinking run with configurable per-folder concurrency (default 3+3); check `microstock.ai.stage` logs for per-stage `duration_ms`.
 2. Check `microstock.ai.stage` logs in `storage/logs/laravel.log` — compare `vision` `start`/`end` `duration_ms` vs `thinking` `start`/`end`. Multimodal vision at 1024px via Open WebUI commonly takes **40–120s** per call depending on the resolved backend model (grok ~46s verified 2026-07-27; `gpt-5.4` hit HTTP **524** at ~125s on 2026-07-28 probe — see [`probes/gpt54_vs_grok_summary.md`](probes/gpt54_vs_grok_summary.md)).
 3. **`cURL error 28: 0 bytes received` = client timeout**, not proof Open WebUI is hung. A probe with timeout **&lt; production** (`MICROSTOCK_AI_VISION_TIMEOUT`, default 300s) can fail while the same request would succeed at 300s.
-4. High token usage with a stuck worker usually means **slow inference + retries + repeated re-analyze**, not a dead upstream. Expect ~**5 HTTP calls per asset** (1 vision + up to 4 thinking attempts) × `MICROSTOCK_AI_HTTP_RETRIES`.
+4. High token usage with a stuck worker usually means **slow inference + retries + repeated re-analyze**, not a dead upstream. Expect ~**5 HTTP calls per asset** (1 vision + up to 4 thinking attempts) × `microstock.ai.http_retries` (default 0).
 5. Run structured diagnosis: `php scripts/microstock/probe_ai.php --timeout=300 [--label=sonnet5-gpt56] [--folder=uuid] [--delivery=base64|url] [--variant=ai_512|ai_1024] [--matrix]` — JSON results in `storage/app/probe_results/` (falls back to first available asset if the default folder is empty). E2E single asset: `php storage/app/verify_e2e_asset.php`. Do **not** conclude "model hang" unless text-only T0 also fails at ≥300s **and** Open WebUI shows no completed request.
-6. Tunables if too slow: lower `MICROSTOCK_AI_IMAGE_MAX_PX`, raise `MICROSTOCK_AI_VISION_TIMEOUT`, or set `MICROSTOCK_AI_THINKING_VISUAL_ATTEMPTS=1` (default 2 multimodal thinking attempts).
+6. Tunables if too slow: lower `microstock.ai.image_max_px`, raise `MICROSTOCK_AI_VISION_TIMEOUT` (env), or set `microstock.ai.thinking_visual_attempts=1` (default 2 multimodal thinking attempts) in Settings → Microstock.
 
 **Troubleshooting — all metadata `failed`:**
 
@@ -382,8 +385,8 @@ Images reach the vision stage via `VisionImageResolver` — **signed HTTPS URL**
 
 1. Inspect `ai_raw.vision` vs `ai_raw.thinking` — if vision is wrong but thinking corrected it, visual VERIFY worked. If **both** are wrong (e.g. girl asset titled "boy soccer"), the model still misread the image — manual curation in `review` or per-file re-analyze (`POST assets/{file}/analyze`).
 2. Pre-fix rows may have a **flat** `ai_raw` (batch vision only, no `thinking` key) — re-run analysis after deploying the batch+thinking pipeline.
-3. Multi-image batch cross-assignment (metadata from asset A applied to asset B) — use `MICROSTOCK_AI_BATCH_MIN_FILES=4` (default) so collections with &lt; 4 files never batch; for debugging set `MICROSTOCK_AI_BATCH_CHUNK=1`.
-4. Cartoon/illustration detail loss — set `MICROSTOCK_AI_IMAGE_MAX_PX=1024` (recommended for illustrations).
+3. Multi-image batch cross-assignment (metadata from asset A applied to asset B) — use `microstock.ai.batch_min_files=4` (default) so collections with &lt; 4 files never batch; for debugging set `microstock.ai.batch_chunk=1` in Settings → Microstock.
+4. Cartoon/illustration detail loss — set `microstock.ai.image_max_px=1024` (recommended for illustrations).
 5. Collection hint overfitting (invented soccer/swim gear) — both stages forbid equipment not visible; thinking VERIFY should drop invented terms when the model cooperates.
 6. Thinking multimodal fallback — if the gateway rejects images on the `thinking` combo, `HttpAiMetadataService` retries text-only then keeps the vision draft (`raw.thinking = null`).
 
@@ -401,7 +404,7 @@ Instead, each asset moves through three derived phases, measured from when its m
 | `degraded` | `normal_after .. grace_after` (600–1500s) | still waiting, slow | show **degraded performance** warning |
 | `failed` | `> grace_after` (1500s) | hung / worker died | marked failed |
 
-`phase` is **presentational/derived** — never persisted. `metadata.status` stays `pending/generated/finalized/failed`; `degraded` only appears in the `phase` field of the collection `status()` payload and the per-file `microstock` resource payload. Budgets are tunable via `MICROSTOCK_AI_PHASE_NORMAL` / `MICROSTOCK_AI_PHASE_GRACE`.
+`phase` is **presentational/derived** — never persisted. `metadata.status` stays `pending/generated/finalized/failed`; `degraded` only appears in the `phase` field of the collection `status()` payload and the per-file `microstock` resource payload. Budgets are tunable via `microstock.ai.phase.normal_after` / `microstock.ai.phase.grace_after` in **Settings → Microstock**.
 
 **Watchdog as single failure authority.** `ProcessCollection` dispatches `App\Domain\Microstock\Jobs\AnalysisWatchdog` after enqueueing vision jobs. The watchdog re-dispatches itself every 60s while any collection is `processing` and:
 1. marks per-stage timeouts (`vision_grace_after` / `thinking_grace_after`) on stalled `pending` metadata;

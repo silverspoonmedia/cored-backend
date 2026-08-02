@@ -14,10 +14,11 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
 
     public function snapshot(): array
     {
-        /** @var array<string, mixed> $snapshot */
-        $snapshot = Cache::rememberForever(self::CACHE_KEY, function (): array {
-            return $this->buildSnapshot();
-        });
+        $snapshot = Cache::get(self::CACHE_KEY);
+
+        if (! is_array($snapshot)) {
+            return $this->rebuildCache();
+        }
 
         return $snapshot;
     }
@@ -34,6 +35,19 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
     public function flushCache(): void
     {
         Cache::forget(self::CACHE_KEY);
+    }
+
+    /**
+     * Rebuild the forever cache from the database and return the fresh snapshot.
+     *
+     * @return array<string, mixed>
+     */
+    public function rebuildCache(): array
+    {
+        $snapshot = $this->buildSnapshot();
+        Cache::forever(self::CACHE_KEY, $snapshot);
+
+        return $snapshot;
     }
 
     public function upsertMany(array $values, ?string $updatedByUserId = null): void
@@ -58,7 +72,7 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
             );
         }
 
-        $this->flushCache();
+        $this->rebuildCache();
     }
 
     /**

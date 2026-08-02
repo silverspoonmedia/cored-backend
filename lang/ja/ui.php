@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'yes' => 'はい',
+    'no' => 'いいえ',
     'actions' => [
         'save' => '保存',
         'cancel' => 'キャンセル',

@@ -175,6 +175,28 @@ final class SettingRegistry
     }
 
     /**
+     * Config path → registry key (first definition wins on duplicate paths).
+     *
+     * @return array<string, string>
+     */
+    public static function configPathIndex(): array
+    {
+        static $index = null;
+
+        if ($index !== null) {
+            return $index;
+        }
+
+        $index = [];
+
+        foreach (self::definitions() as $registryKey => $definition) {
+            $index[$definition['config']] ??= $registryKey;
+        }
+
+        return $index;
+    }
+
+    /**
      * @return array{group: string, type: SettingType, config: string}
      */
     private static function def(string $group, SettingType $type, string $config): array

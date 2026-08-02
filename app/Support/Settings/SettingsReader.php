@@ -5,7 +5,7 @@ namespace App\Support\Settings;
 use App\Support\Settings\Repositories\Contracts\SystemSettingRepositoryInterface;
 
 /**
- * Octane-safe runtime reader: DB override → config() fallback.
+ * Octane-safe runtime reader: cached DB snapshot → config() literal fallback.
  */
 final class SettingsReader
 {
@@ -35,14 +35,14 @@ final class SettingsReader
     }
 
     /**
-     * Resolve a config path via registry (first matching key) or direct config().
+     * Resolve a config path via registry index or direct config().
      */
     public function config(string $configPath, mixed $default = null): mixed
     {
-        foreach (SettingRegistry::definitions() as $key => $definition) {
-            if ($definition['config'] === $configPath) {
-                return $this->get($key, $default);
-            }
+        $registryKey = SettingRegistry::configPathIndex()[$configPath] ?? null;
+
+        if ($registryKey !== null) {
+            return $this->get($registryKey, $default);
         }
 
         return config($configPath, $default);

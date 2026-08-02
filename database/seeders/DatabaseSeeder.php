@@ -27,6 +27,10 @@ class DatabaseSeeder extends Seeder
         $this->call(NotificationTypeSettingSeeder::class);
         $this->call(SettingsSeeder::class);
 
+        if (app()->environment('local')) {
+            $this->call(LocalSettingsSeeder::class);
+        }
+
         $admin = User::factory()->create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',

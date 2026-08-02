@@ -41,7 +41,7 @@ flowchart LR
 
 - Laravel’s default non-reportable 4xx (validation, auth, etc.)
 - `BusinessRuleException` (`dontReport` + recorder filter) — intentional API errors, not bugs
-- Anything while `ERRORLOG_ENABLED=false`
+- Anything while `platform.errorlog.enabled` is off (Settings → Platform)
 - Nested writes while the recorder is already active (recursion guard)
 
 Domains may still call `ErrorLogRecorder::recordLog()` for **intentional ops signals** that are not thrown as reportable exceptions — e.g. vTual `PlatformErrorLogger` for platform HTTP / credential Test failures (`PlatformApiException` is a BRE and would be skipped by `recordException`).
@@ -74,14 +74,19 @@ Each new hit:
 | `status` | `open` \| `resolved` \| `ignored` |
 | `resolved_at`, `resolved_by` | admin status audit (`users.id`) |
 
-## Config / env
+## Config / settings
 
-| Key | Default | Role |
-|-----|---------|------|
-| `ERRORLOG_ENABLED` | `true` | Kill-switch |
-| `ERRORLOG_CLEAN_AFTER_DAYS` | `90` | Retention for `errorlog:clean` |
+Operational knobs live in **Settings → Platform** (`system_settings`). See [configuration-policy.md](../../platform/configuration-policy.md).
 
-Also in profile templates (`.env.local.example`, staging, production) and `EnvironmentVariableCatalog`. Size limits + redact keys: `config/errorlog.php`.
+| Registry key | Config path | Default | Role |
+|--------------|-------------|---------|------|
+| `platform.errorlog.enabled` | `errorlog.enabled` | `true` | Kill-switch |
+| `platform.errorlog.clean_after_days` | `errorlog.clean_after_days` | `90` | Retention for `errorlog:clean` |
+| `platform.errorlog.max_message_length` | `errorlog.max_message_length` | — | Truncate stored message |
+| `platform.errorlog.max_trace_length` | `errorlog.max_trace_length` | — | Truncate stored trace |
+| `platform.errorlog.max_context_json_length` | `errorlog.max_context_json_length` | — | Truncate stored context JSON |
+
+Not in registry (bootstrap `config/errorlog.php` literals only): `redact_keys`, `dont_store` — runtime uses `config()` for these.
 
 ## API (`/api/v1`)
 

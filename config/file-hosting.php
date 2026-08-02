@@ -38,10 +38,7 @@ return [
     | region's disk remain downloadable — only new uploads are blocked.
     |--------------------------------------------------------------------------
     */
-    'disabled_regions' => array_values(array_filter(array_map(
-        'trim',
-        explode(',', (string) env('FILE_HOSTING_DISABLED_REGIONS', '')),
-    ))),
+    'disabled_regions' => [],
 
     'directory' => env('FILE_HOSTING_DIRECTORY', 'file-hosting'),
 
@@ -51,15 +48,15 @@ return [
     | multipart_threshold_bytes: size < threshold → single PUT; else multipart.
     |--------------------------------------------------------------------------
     */
-    'chunk_size_bytes' => (int) env('FILE_HOSTING_CHUNK_SIZE', 25 * 1024 * 1024),
+    'chunk_size_bytes' => 25 * 1024 * 1024,
 
-    'multipart_threshold_bytes' => (int) env('FILE_HOSTING_MULTIPART_THRESHOLD', 25 * 1024 * 1024),
+    'multipart_threshold_bytes' => 25 * 1024 * 1024,
 
-    'max_file_size_bytes' => (int) env('FILE_HOSTING_MAX_FILE_SIZE', 5 * 1024 * 1024 * 1024),
+    'max_file_size_bytes' => 5 * 1024 * 1024 * 1024,
 
-    'max_files_per_batch' => (int) env('FILE_HOSTING_MAX_FILES_PER_BATCH', 20),
+    'max_files_per_batch' => 20,
 
-    'max_concurrent_uploads' => (int) env('FILE_HOSTING_MAX_CONCURRENT', 2),
+    'max_concurrent_uploads' => 2,
 
     /*
     |--------------------------------------------------------------------------
@@ -69,7 +66,7 @@ return [
     | sweet spot vs B2 + CF Worker Free limits. Lower to 2 if 520s increase.
     |--------------------------------------------------------------------------
     */
-    'max_concurrent_parts' => (int) env('FILE_HOSTING_MAX_CONCURRENT_PARTS', 3),
+    'max_concurrent_parts' => 3,
 
     /*
     |--------------------------------------------------------------------------
@@ -79,9 +76,9 @@ return [
     | uploads. Was 15 — too short for multi-GB files at degraded speeds.
     |--------------------------------------------------------------------------
     */
-    'presign_ttl_minutes' => (int) env('FILE_HOSTING_PRESIGN_TTL', 60),
+    'presign_ttl_minutes' => 60,
 
-    'session_ttl_hours' => (int) env('FILE_HOSTING_SESSION_TTL', 24),
+    'session_ttl_hours' => 24,
 
     /*
     |--------------------------------------------------------------------------
@@ -92,7 +89,7 @@ return [
     | just-expired session with parts still landing is not yanked mid-transfer.
     |--------------------------------------------------------------------------
     */
-    'stale_upload_grace_hours' => (int) env('FILE_HOSTING_STALE_UPLOAD_GRACE', 6),
+    'stale_upload_grace_hours' => 6,
 
     /*
     |--------------------------------------------------------------------------
@@ -105,16 +102,16 @@ return [
     | so a mistakenly-pruned live upload simply restarts on the next attempt.
     |--------------------------------------------------------------------------
     */
-    'orphan_inactivity_minutes' => (int) env('FILE_HOSTING_ORPHAN_INACTIVITY_MINUTES', 180),
+    'orphan_inactivity_minutes' => 180,
 
-    'max_presigned_parts_per_response' => (int) env('FILE_HOSTING_MAX_PRESIGNED_PARTS', 100),
+    'max_presigned_parts_per_response' => 100,
 
     /*
     |--------------------------------------------------------------------------
     | Default per-user storage quota (bytes). 0 = unlimited.
     |--------------------------------------------------------------------------
     */
-    'default_quota_bytes' => (int) env('FILE_HOSTING_DEFAULT_QUOTA_BYTES', 5 * 1024 * 1024 * 1024),
+    'default_quota_bytes' => 5 * 1024 * 1024 * 1024,
 
     /*
     |--------------------------------------------------------------------------
@@ -122,20 +119,14 @@ return [
     | Extra slots via catalog file-hosting.addon.workspace-slot.monthly (+1 each).
     |--------------------------------------------------------------------------
     */
-    'base_owned_workspace_slots' => (int) env(
-        'FILE_HOSTING_BASE_OWNED_WORKSPACE_SLOTS',
-        FileHostingCatalog::BASE_OWNED_WORKSPACE_SLOTS,
-    ),
+    'base_owned_workspace_slots' => FileHostingCatalog::BASE_OWNED_WORKSPACE_SLOTS,
 
     /*
     |--------------------------------------------------------------------------
     | Allowed MIME prefixes (empty = allow all non-empty mime from client).
     |--------------------------------------------------------------------------
     */
-    'allowed_mime_prefixes' => array_values(array_filter(array_map(
-        'trim',
-        explode(',', (string) env('FILE_HOSTING_ALLOWED_MIME_PREFIXES', 'image/,application/,text/,audio/,video/')),
-    ))),
+    'allowed_mime_prefixes' => ['image/', 'application/', 'text/', 'audio/', 'video/'],
 
     /*
     |--------------------------------------------------------------------------
@@ -146,14 +137,14 @@ return [
     | link validity.
     |--------------------------------------------------------------------------
     */
-    'signed_download_ttl_minutes' => (int) env('FILE_HOSTING_SIGNED_DOWNLOAD_TTL', 60),
+    'signed_download_ttl_minutes' => 60,
 
     /*
     |--------------------------------------------------------------------------
     | Treat cached signed URLs as expired this many seconds early.
     |--------------------------------------------------------------------------
     */
-    'signed_download_cache_margin_seconds' => (int) env('FILE_HOSTING_SIGNED_DOWNLOAD_CACHE_MARGIN', 60),
+    'signed_download_cache_margin_seconds' => 60,
 
     /*
     |--------------------------------------------------------------------------
@@ -161,7 +152,7 @@ return [
     | (/s/f/{id}/download). Blocks unsigned direct download attempts.
     |--------------------------------------------------------------------------
     */
-    'public_download_signature_ttl_minutes' => (int) env('FILE_HOSTING_PUBLIC_DOWNLOAD_SIGNATURE_TTL', 5),
+    'public_download_signature_ttl_minutes' => 5,
 
     /*
     |--------------------------------------------------------------------------
@@ -185,7 +176,7 @@ return [
     ],
 
     'download_vault' => [
-        'enabled' => (bool) env('FILE_HOSTING_DOWNLOAD_VAULT_ENABLED', false),
+        'enabled' => false,
     ],
 
 ];

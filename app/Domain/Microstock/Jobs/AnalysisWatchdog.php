@@ -47,9 +47,9 @@ class AnalysisWatchdog implements ShouldQueue
 
     private function failExpiredStages(AnalysisStageService $stages): void
     {
-        $visionGrace = (int) config('microstock.ai.stage.vision_grace_after', 600);
-        $thinkingGrace = (int) config('microstock.ai.stage.thinking_grace_after', 1800);
-        $legacyGrace = (int) config('microstock.ai.phase.grace_after', 1500);
+        $visionGrace = (int) setting_config('microstock.ai.stage.vision_grace_after', 600);
+        $thinkingGrace = (int) setting_config('microstock.ai.stage.thinking_grace_after', 1800);
+        $legacyGrace = (int) setting_config('microstock.ai.phase.grace_after', 1500);
 
         AssetMetadata::query()
             ->where('status', MetadataStatus::Pending->value)
@@ -90,7 +90,7 @@ class AnalysisWatchdog implements ShouldQueue
 
     private function dispatchThinkingBacklog(): void
     {
-        $backlogAfter = (int) config('microstock.ai.stage.thinking_backlog_after', 120);
+        $backlogAfter = (int) setting_config('microstock.ai.stage.thinking_backlog_after', 120);
         $cutoff = now()->subSeconds($backlogAfter);
 
         AssetMetadata::query()

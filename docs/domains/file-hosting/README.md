@@ -39,7 +39,7 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Nested folders | `parent_id` tree per owner; breadcrumb via `FolderAncestorChain` |
 | Files | `file_hosting_files` — denormalized `user_id`, optional `folder_id` |
 | Upload sessions | `file_hosting_uploads` — init -> browser PUT (direct S3 **or** CF Worker proxy) -> complete promotes row. **Control plane** (init / sign-parts / complete / abort) always Monolith->S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. **No resume**: a dead upload restarts from scratch. Chunk/part layout frozen at init (`chunk_size`/`part_count`). **Prune scheduler** aborts orphaned **multipart** sessions past grace or with no recent S3 part activity (Backblaze has no S3 lifecycle for incomplete multiparts). |
-| Part size | Default **25 MB** chunk + multipart threshold (`FILE_HOSTING_CHUNK_SIZE=26214400`); safe range **10–50 MB** on Worker proxy (100 MB request body cap). See Gateway [upload-performance.md](../../../gateway/docs/upload-performance.md) for A/B tuning. |
+| Part size | Default **25 MB** chunk + multipart threshold (`file-hosting.chunk_size_bytes` in **Settings → File Hosting**); safe range **10–50 MB** on Worker proxy (100 MB request body cap). See Gateway [upload-performance.md](../../../gateway/docs/upload-performance.md) for A/B tuning. |
 | DB `path` | Object id only: 40 lowercase alnum chars (`Str::random(40)`). **Not** a full S3 key. |
 | S3 object key | `file-hosting/{user_id}/{objectId}` — resolved at runtime via `ObjectKeyResolver` from `user_id` + `path` + config `directory`. No `folder_id`, no extension, no upload session id in the key. |
 | Display name | Preferred name kept if free in that owner+folder/parent (soft-deleted ignored). If taken on **upload complete** or **file/folder move** → auto DB rename to `{stem} ({maxN+1}).{ext}` (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`; folders without ext → `Docs (2)`). Shared allocator: `UniqueDisplayNameAllocator`. **Manual rename** still rejects exact sibling collisions (user chose the name). S3 object key stays random and is never renamed. Move/rename are **DB-only**. |
@@ -296,7 +296,7 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 | Item | Value |
 |------|-------|
 | Production URL | `https://gateway.silverspoon.me` — upload **and** vault download on one domain |
-| Part size / concurrency | 25 MB (`FILE_HOSTING_CHUNK_SIZE=26214400`), 3 parallel parts (`FILE_HOSTING_MAX_CONCURRENT_PARTS=3`) |
+| Part size / concurrency | 25 MB (`file-hosting.chunk_size_bytes`), 3 parallel parts (`file-hosting.max_concurrent_parts`) — **Settings → File Hosting** |
 | Gateway Smart Placement | **Must stay off** — enabling `placement.mode: smart` roughly doubles upload latency per part |
 | Dual-host workaround | **Not needed** — pointing upload at `s3.silverspoon.me` while Gateway handles vault was a fallback only; automated benchmark passed with Smart Placement disabled |
 | Benchmark / tuning | [gateway/docs/upload-performance.md](../../../gateway/docs/upload-performance.md) |
@@ -705,7 +705,7 @@ File Hosting listing stays live via **dedicated private channels**. It does **no
 | Check | Behavior |
 |-------|----------|
 | `BroadcastConnection::isConfigured()` | Pusher/Reverb credentials present -> events may broadcast |
-| `APP_NOTIFICATION_TYPE` | **Independent.** FH listing can use websockets while the bell stays on HTTP polling |
+| Platform notification delivery | **Independent.** FH listing can use websockets while the bell stays on HTTP polling (`platform.notifications.delivery` in Settings → Platform) |
 | Client config | `BroadcastConnection::socketClientConfig()` / `FileHostingRealtime::clientConfig()` — same public fields as the bell, without requiring notification realtime mode |
 
 When unconfigured, services still complete business work; no broadcast is dispatched. The browser falls back to a visible-tab soft-refetch poll (~60s after ~30s degrade grace), same health shape as the notification docs.

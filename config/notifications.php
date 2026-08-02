@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'delivery' => env('APP_NOTIFICATION_TYPE', 'polling'),
+    'delivery' => 'polling',
 
     /*
     |--------------------------------------------------------------------------
@@ -27,6 +27,6 @@ return [
     |
     */
 
-    'polling_interval' => max(1, (int) env('APP_NOTIFICATION_POLLING_INTERVAL', 60)),
+    'polling_interval' => 60,
 
 ];

@@ -1,4 +1,8 @@
 {{-- Shared settings group form. Keys use underscore field names (dots → _). --}}
+@php
+    $settingFieldLabels = is_array($labels = __('web/settings.fields')) ? $labels : [];
+    $settingFieldHints = is_array($hints = __('web/settings.hints')) ? $hints : [];
+@endphp
 @can('manage settings')
     <x-adminlte4::form.ajax :action="$action" method="PUT">
         @foreach ($settings as $key => $meta)
@@ -7,8 +11,8 @@
                 $type = $meta['type'] ?? 'string';
                 $value = $meta['value'] ?? null;
                 $source = $meta['source'] ?? 'config';
-                $label = __('web/settings.fields.'.$key);
-                $hint = __('web/settings.hints.'.$key);
+                $label = $settingFieldLabels[$key] ?? 'web/settings.fields.'.$key;
+                $hint = $settingFieldHints[$key] ?? null;
             @endphp
 
             <div class="mb-3">
@@ -49,7 +53,7 @@
                     />
                 @endif
 
-                @if ($hint !== 'web/settings.hints.'.$key)
+                @if ($hint !== null && $hint !== '')
                     <div class="form-text">{{ $hint }}</div>
                 @endif
 
@@ -65,7 +69,7 @@
     <div class="alert alert-info mb-0">{{ __('web/settings.read_only') }}</div>
     <dl class="row mt-3 mb-0">
         @foreach ($settings as $key => $meta)
-            <dt class="col-sm-5">{{ __('web/settings.fields.'.$key) }}</dt>
+            <dt class="col-sm-5">{{ $settingFieldLabels[$key] ?? 'web/settings.fields.'.$key }}</dt>
             <dd class="col-sm-7">
                 @if (($meta['type'] ?? '') === 'bool')
                     {{ ($meta['value'] ?? false) ? __('ui.yes') : __('ui.no') }}

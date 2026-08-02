@@ -66,12 +66,14 @@ After ops curates provider rates for a model that was billed provisionally, `Unk
 
 ## Config knobs
 
-| Key | Env | Default | Notes |
-|-----|-----|---------|-------|
-| `ai_billing.estimated_billable_micro_usd_per_asset` | `MICROSTOCK_AI_BILLING_ESTIMATE_PER_ASSET` | `150000` | Per-asset gate buffer (~$0.15) |
-| `ai_billing.estimate_thinking_attempt_factor` | `MICROSTOCK_AI_BILLING_ESTIMATE_FACTOR` | `1.5` | Gate multiplier for multi-attempt thinking |
-| `ai.http_retries` | `MICROSTOCK_AI_HTTP_RETRIES` | `0` | Keep at 0 for billed calls (retries may charge provider without a matching usage row) |
-| `ai.thinking_visual_attempts` | `MICROSTOCK_AI_THINKING_VISUAL_ATTEMPTS` | `2` | Each attempt with HTTP `usage` creates a separate event |
+Tunable in **Settings → Microstock** — see [configuration-policy.md](../../platform/configuration-policy.md).
+
+| Registry key | Config path | Default | Notes |
+|--------------|-------------|---------|-------|
+| `microstock.ai_billing.estimated_billable_micro_usd_per_asset` | `microstock.ai_billing.estimated_billable_micro_usd_per_asset` | `150000` | Per-asset gate buffer (~$0.15) |
+| `microstock.ai_billing.estimate_thinking_attempt_factor` | `microstock.ai_billing.estimate_thinking_attempt_factor` | `1.5` | Gate multiplier for multi-attempt thinking |
+| `microstock.ai.http_retries` | `microstock.ai.http_retries` | `0` | Keep at 0 for billed calls (retries may charge provider without a matching usage row) |
+| `microstock.ai.thinking_visual_attempts` | `microstock.ai.thinking_visual_attempts` | `2` | Each attempt with HTTP `usage` creates a separate event |
 
 ## Monitoring SQL
 
