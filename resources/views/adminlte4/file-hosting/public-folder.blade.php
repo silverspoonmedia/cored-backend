@@ -37,7 +37,7 @@
             } catch (e) {}
         })();
     </script>
-    @vite(['resources/css/file-hosting/file-hosting.css', 'resources/js/file-hosting/public-app.js'])
+    @vite('resources/css/file-hosting/file-hosting.css')
 </head>
 <body>
 <div class="fh-public" data-fh-public-app data-config="{{ json_encode($publicConfig) }}">
@@ -120,5 +120,6 @@
     </div>
 </div>
 <x-adminlte4::partials.assets-scripts :bare="true" />
+@vite('resources/js/file-hosting/public-app.js')
 </body>
 </html>

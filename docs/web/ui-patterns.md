@@ -17,13 +17,14 @@ Response `data`: `{ results: [{id,text}], pagination: { more } }`.
 
 Implementation: Identity `LookupService` / `LookupController`. Blade proxies (auth shell): `GET /apps/lookups/{users,menus,roles}` (route names `lookups.*`).
 
-Components: `form.select` / `multiselect` (`ajaxUrl`, `select2`). Assets: jQuery + Select2 bundled in `app.js` (Vite, npm). Auto-init via `select2-init.js` (imported by `app.js`, no CDN partial). Attribute: `data-monolith-select2` (**not** `data-select2` — jQuery collision).
+Components: `form.select` / `multiselect` (`ajaxUrl`, `select2`). Assets: jQuery **3.7.1** + Select2 **4.0.13** (exact pin) bundled in `app.js` (Vite, npm). Do **not** bump to Select2 4.1 under Vite ESM — 4.1 maps AJAX results through unbound `AjaxAdapter.prototype._normalizeItem`, and strict-mode `this` is `undefined` → `Cannot read properties of undefined (reading 'container')`. `select2-init.js` owns the Select2 factory (`select2($)`) then defers `initAll` via `queueMicrotask` so attach never races. AJAX fields use Select2’s default **jQuery.ajax** transport (`url` + `data` + `processResults`); `processLookupResults` in `select2-lookup.js` unwraps the Monolith `{ data: { results, pagination } }` envelope. Attribute: `data-monolith-select2` (**not** `data-select2` — jQuery collision).
 
 ### Troubleshooting
 
 - Native select still showing → `npm run build` / `dev`; ensure `app.js` loaded via `@vite` in `assets-scripts.blade.php`
-- "The result could not be loaded" → `select2-init.js` `transport` now checks `response.ok` + `Content-Type: application/json` before parsing. It relies on a generation-based stale-response guard (`generationFor(element) !== generation`) to ignore superseded responses instead of physical aborts (since Select2 actively aborts requests before they hit the network if an abortable object is returned, leading to immediate loading failures). Non-JSON/4xx/5xx bodies route to `failure()` instead of throwing.
-- Dark-mode styles ignored → Select2 dark overrides in `resources/css/monolith-overrides.css` MUST stay **unlayered**. `select2.min.css`/`select2-bootstrap-5-theme.min.css` (imported by `vendor.css`) are unlayered; per CSS cascade layers, unlayered always beats layered regardless of specificity. Do NOT wrap the `[data-bs-theme="dark"] .select2-*` rules in `@layer`.  
+- "The results could not be loaded" / Deferred `container` on `_normalizeItem` → confirm Select2 is **4.0.13** (not 4.1); hard-refresh after `npm run build`. Lookup AJAX 4xx/5xx/non-JSON also surfaces errorLoading. Do **not** reintroduce a custom `fetch` transport / abortable controller — Select2’s default `$.ajax` aborts prior requests with `status === 0` (silent). Chrome extension noise (`message channel closed before a response was received`) is unrelated.
+- Page jumps up on Select2 open/close → `select2-init.js` locks `window.scrollY` around `select2:opening|closing` / `open|close` and refocuses the search field with `{ preventScroll: true }` (Select2 focuses without preventScroll and the browser scrolls the clipped original `<select>` into view).
+- Dark-mode styles ignored → Select2 dark overrides in `resources/css/monolith-overrides.css` MUST stay **unlayered**. Match select2-bootstrap-5-theme specificity (e.g. `[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered`) — a short `.select2-selection__rendered` rule loses to the theme’s hardcoded `color: #212529`. Do NOT wrap these rules in `@layer`.
 
 ## List display modes (query & DataTables)
 
@@ -38,7 +39,7 @@ Covered lists: v1 users, menus list/trashed, file-hosting lists where applicable
 
 ### DataTable init
 
-Shared factory: `initDataTable({ tableId, ajaxUrl, columns, order, language, exposeForReload, onReady })` in `resources/js/datatable-init.js` (Vite entry). Six index views (users, invoices, subscriptions, payment-gateways, inference providers, inference model-cards) load it via `@vite` and call `window.initDataTable(...)` — no ESM import (Vite 8/Rolldown tree-shakes named exports from entry modules). jQuery + DataTables core binding (`window.jQuery`, `DataTable.use(jQuery)`) lives in `resources/js/infra/jquery-init.js` and runs before any consumer — DataTables 3 does not auto-detect `window.jQuery` for `.fn.DataTable` attachment. `exposeForReload` stores instances in `window.dataTables[tableId]` for realtime reload via `bell.js`.
+Shared factory: `initDataTable({ tableId, ajaxUrl, columns, order, language, exposeForReload, onReady })` in `resources/js/datatable-init.js` (Vite entry). Six index views (users, invoices, subscriptions, payment-gateways, inference providers, inference model-cards) load it via `@vite` inside `x-slot:scripts` (after `app.js`) and call `window.initDataTable(...)` — no ESM import (Vite 8/Rolldown tree-shakes named exports from entry modules). jQuery + DataTables core binding (`window.jQuery`, `DataTable.use(jQuery)`) lives in `resources/js/infra/jquery-init.js` and runs before any consumer — DataTables 3 does not auto-detect `window.jQuery` for `.fn.DataTable` attachment. `exposeForReload` stores instances in `window.dataTables[tableId]` for realtime reload via `bell.js`.
 
 ### Actions contract
 
@@ -58,7 +59,7 @@ The Blade admin follows WCAG 2.1 AA. Guards live in `tests/Feature/Http/Controll
 
 | Area | Rule | Where |
 |------|------|-------|
-| Skip link | `<a href="#main-content" class="visually-hidden-focusable">` first in `<body>`; `<main id="main-content">` | `layouts/app.blade.php`, `layouts/auth.blade.php` |
+| Skip link | `<a href="#main-content" class="visually-hidden-focusable">` first in `<body>` (**before** `.app-wrapper` — unnamed grid children break AdminLTE 4 footer/sidebar layout); `<main id="main-content">` | `layouts/app.blade.php`, `layouts/auth.blade.php` |
 | Auth inputs | Visible `<label>` (not placeholder-only) | `auth/*.blade.php` via `form.input :label` |
 | Icon-only buttons | `aria-label` + `title` | `menus/index.blade.php`, navbar toggles |
 | Navbar dropdowns | `aria-expanded="false"` initial (Bootstrap updates dynamically) | `navbar.blade.php` |

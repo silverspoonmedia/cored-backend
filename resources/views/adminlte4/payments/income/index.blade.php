@@ -12,7 +12,7 @@
 @endphp
 
 <x-adminlte4::layouts.app :title="__('web/payments.income.title')">
-    @vite(['resources/css/payments/order-invoice-show.css', 'resources/js/payments/income.js'])
+    @vite('resources/css/payments/order-invoice-show.css')
 
     <div
         class="pg-income"
@@ -188,4 +188,8 @@
             </div>
         </x-adminlte4::card>
     </div>
+
+    <x-slot:scripts>
+        @vite('resources/js/payments/income.js')
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

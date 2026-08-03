@@ -111,5 +111,9 @@
         </x-adminlte4::card>
     </div>
 
-    @vite(['resources/css/inference/rate-plans-admin.css', 'resources/js/inference/rate-plans-admin.js'])
+    @vite('resources/css/inference/rate-plans-admin.css')
+
+    <x-slot:scripts>
+        @vite('resources/js/inference/rate-plans-admin.js')
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

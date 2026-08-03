@@ -8,10 +8,12 @@
         <x-adminlte4::partials.assets-head />
     </head>
     <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+        {{-- Skip-link must stay outside .app-wrapper — AdminLTE 4 CSS grid auto-places
+             unnamed children and can shove the footer under the sidebar. --}}
+        <a href="#main-content" class="visually-hidden-focusable skip-link p-2">
+            {{ __('ui.skip_to_content') }}
+        </a>
         <div class="app-wrapper">
-            <a href="#main-content" class="visually-hidden-focusable skip-link p-2">
-                {{ __('ui.skip_to_content') }}
-            </a>
             <x-adminlte4::partials.navbar />
             <x-adminlte4::partials.sidebar />
 

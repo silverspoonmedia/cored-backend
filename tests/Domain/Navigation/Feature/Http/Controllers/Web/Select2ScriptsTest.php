@@ -30,5 +30,9 @@ class Select2ScriptsTest extends TestCase
         $response->assertOk();
         $response->assertSee('data-monolith-select2="1"', false);
         $response->assertSee('build/assets/app-', false);
+        $response->assertSee('build/assets/vendor-', false);
+        // Page scripts must follow app.js — Select2 lives in the global app entry, not a standalone CDN/init asset.
+        $response->assertDontSee('select2.min.js', false);
+        $response->assertDontSee('cdn.jsdelivr.net/npm/select2', false);
     }
 }

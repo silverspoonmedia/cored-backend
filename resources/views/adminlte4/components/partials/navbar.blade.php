@@ -137,5 +137,7 @@
 </nav>
 
 @can('view notification')
-    @vite('resources/js/notifications/bell.js')
+    @push('scripts')
+        @vite('resources/js/notifications/bell.js')
+    @endpush
 @endcan

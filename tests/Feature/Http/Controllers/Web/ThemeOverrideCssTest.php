@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers\Web;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
@@ -15,6 +16,8 @@ use Tests\TestCase;
  */
 class ThemeOverrideCssTest extends TestCase
 {
+    use RefreshDatabase;
+
     /** @return list<string> */
     private function overrideFiles(): array
     {
@@ -167,6 +170,27 @@ class ThemeOverrideCssTest extends TestCase
             $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $css, "{$label} missing prefers-reduced-motion guard.");
             $this->assertStringContainsString('animation-duration: 0.01ms', $css, "{$label} reduced-motion must shorten animations.");
             $this->assertStringContainsString('transition-duration: 0.01ms', $css, "{$label} reduced-motion must shorten transitions.");
+        }
+    }
+
+    public function test_select2_dark_selected_text_beats_bootstrap5_theme_specificity(): void
+    {
+        foreach ($this->overrideFiles() as $label => $path) {
+            $css = file_get_contents($path);
+
+            // Must match select2-bootstrap-5-theme's
+            // `.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered`
+            // or the theme's hardcoded color: #212529 wins on dark surfaces.
+            $this->assertStringContainsString(
+                '[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered',
+                $css,
+                "{$label} missing high-specificity Select2 dark selected-text override."
+            );
+            $this->assertStringContainsString(
+                'color: var(--monolith-text-body)',
+                $css,
+                "{$label} Select2 dark selected text must use --monolith-text-body."
+            );
         }
     }
 

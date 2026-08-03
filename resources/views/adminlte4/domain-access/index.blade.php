@@ -78,5 +78,7 @@
         @endif
     </x-adminlte4::card>
 
-    @vite(['resources/js/domain-access/toggle.js'])
+    <x-slot:scripts>
+        @vite('resources/js/domain-access/toggle.js')
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

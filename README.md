@@ -128,14 +128,14 @@ php artisan migrate:fresh --seed
 
 ### 4. Frontend assets
 
-Required for the **notification bell** (Vite bundle with Laravel Echo + Pusher). AdminLTE/Bootstrap still load from CDN; only the bell uses Vite.
+AdminLTE / Bootstrap / jQuery / Select2 / DataTables / OverlayScrollbars ship from **npm via Vite** (`resources/css/vendor.css` + `resources/js/app.js`). Source Sans + Bootstrap Icons remain on CDN. Page modules (notification bell, file-hosting, checkout, DataTables factory, …) load after `app.js` via `x-slot:scripts` / `@stack('scripts')`.
 
 ```bash
 npm install
 npm run build
 ```
 
-`package.json` includes `laravel-echo` and `pusher-js` as runtime dependencies. Vite entries are declared in `vite.config.js` (`resources/js/notifications/bell.js`, `resources/js/payments/checkout.js`, `resources/js/payments/channels-admin.js`, `resources/css/monolith-overrides.css`, `resources/css/payments/order-invoice-show.css`, and others).
+`package.json` pins jQuery **3.7.1** and DataTables **3** (with `DataTable.use(jQuery)` in `infra/jquery-init.js`). Vite entries are declared in `vite.config.js`.
 
 For local development with hot reload:
 

@@ -29,4 +29,6 @@
 </div>
 
 <script type="application/json" data-sidebar-nav-config>@json($sidebarNavConfig)</script>
-<script type="module" src="{{ Vite::asset('resources/js/navigation/sidebar-search.js') }}"></script>
+@push('scripts')
+    @vite('resources/js/navigation/sidebar-search.js')
+@endpush

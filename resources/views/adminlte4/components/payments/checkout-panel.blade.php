@@ -59,5 +59,7 @@
             window.monolithQrBaseUrl = @json(route('qr.show'));
         </script>
     @endonce
-    @vite('resources/js/payments/checkout.js')
+    @push('scripts')
+        @vite('resources/js/payments/checkout.js')
+    @endpush
 @endif

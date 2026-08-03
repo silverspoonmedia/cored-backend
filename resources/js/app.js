@@ -19,12 +19,9 @@ import './infra/jquery-init.js';
 // DataTables Bootstrap 5 styling integration.
 import 'datatables.net-bs5';
 
-// Select2 + Bootstrap 5 theme.
-import select2 from 'select2';
-select2();
-
-// Bootstrap 5 (JS bundle includes Popper).
-import 'bootstrap';
+// Bootstrap 5 (ESM — must bind to window for FH/vtual/menus consumers).
+import * as bootstrap from 'bootstrap';
+window.bootstrap = bootstrap;
 
 // AdminLTE 4.
 import 'admin-lte';

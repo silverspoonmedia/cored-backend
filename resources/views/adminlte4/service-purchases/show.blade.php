@@ -42,7 +42,7 @@
         }
     @endphp
 
-    @vite(['resources/css/payments/order-invoice-show.css', 'resources/js/services/purchase-quantity.js'])
+    @vite('resources/css/payments/order-invoice-show.css')
 
     <x-adminlte4::payments.payment-status-hero
         :eyebrow="__('web/services.breadcrumb')"
@@ -235,4 +235,8 @@
             @endif
         </div>
     </div>
+
+    <x-slot:scripts>
+        @vite('resources/js/services/purchase-quantity.js')
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

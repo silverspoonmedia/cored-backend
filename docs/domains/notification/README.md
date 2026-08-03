@@ -162,7 +162,7 @@ Web routes proxy the API through `ConsumesApi` under `/apps/*`. `NotificationBel
 | Bell state | `resources/js/notifications/bell.js` | Badge/list UI, WS health state machine, fallback polling, DataTable reload, tab sync |
 | Users list | `resources/views/adminlte4/users/index.blade.php` | Register `users-table`; health-gated fallback reload |
 | Inbox UI | `resources/views/adminlte4/notifications/index.blade.php` | In-place read-all row/status mutation |
-| AJAX infrastructure | `resources/views/adminlte4/components/partials/api-response-handler.blade.php` | Emit `ajax-form:success` after successful no-redirect mutation |
+| AJAX infrastructure | `resources/js/infra/api-response-handler.js` (via `app.js`) | Emit `ajax-form:success` after successful no-redirect mutation |
 
 ## Workflows (agents)
 

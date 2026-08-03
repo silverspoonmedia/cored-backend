@@ -2039,8 +2039,6 @@ function initFileManager(root) {
                             populateCollectionDescribeModal();
                             if (window.bootstrap?.Modal) {
                                 window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                            } else if (window.bootstrap?.Modal === undefined && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                                new bootstrap.Modal(modalEl).show();
                             } else {
                                 // Last-resort: reveal via data-API fallback classes.
                                 modalEl.classList.add('show');
