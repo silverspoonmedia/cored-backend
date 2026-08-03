@@ -135,7 +135,7 @@ npm install
 npm run build
 ```
 
-`package.json` pins jQuery **3.7.1** and DataTables **3** (with `DataTable.use(jQuery)` in `infra/jquery-init.js`). Vite entries are declared in `vite.config.js`.
+`package.json` pins jQuery **3.7.1**, Select2 **4.0.13** (do not bump to 4.1 under Vite ESM), and DataTables **3** (with `DataTable.use(jQuery)` in `infra/jquery-init.js`). Vite entries are declared in `vite.config.js`.
 
 For local development with hot reload:
 

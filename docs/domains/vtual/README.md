@@ -346,11 +346,11 @@ Layout: `resources/views/{WEB_LAYOUT}/vtual/` (default `adminlte4`).
 ### UI/UX patterns (overhaul 2026-07)
 
 - **AJAX forms**: all mutations use `x-adminlte4::form.ajax` + `ConsumesApi::respondFromApi` (no full page reload; validation errors inline via `data-form-field` / `data-field-error`).
-- **Confirmation modals**: shared `_confirm-modal.blade.php` partial + `confirm-modal.js` (Vite). Trigger buttons carry `data-bs-toggle="modal"` + `data-confirm-body`. Native `confirm()` banned.
+- **Confirmation modals**: shared `_confirm-modal.blade.php` partial + `confirm-modal.js` (Vite). Trigger buttons carry `data-bs-toggle="modal"` + `data-confirm-body`. Native `confirm()` banned. ESM entry must use `window.bootstrap.Modal` (or `import { Modal } from 'bootstrap'`) — bare `bootstrap.Modal` is a ReferenceError in modules.
 - **Status badges**: shared `x-adminlte4::vtual.status-badge` anonymous component (color-mapped: active→success, pending→warning, archived/disabled→secondary).
 - **Accessibility (WCAG 2.1 AA)**: `<caption>` on every data table, `aria-current="page"` on active nav, `aria-label` on icon-only buttons, `role="status"` + `aria-live` on result regions, visible `<label>` on inputs.
 - **Partials**: `profiles/show.blade.php` composes 5 partials (`_profile-meta-form`, `_profile-merge-form`, `_profile-links`, `_profile-channels`, `_profile-content-stub`).
-- **JS extraction**: inline JS moved to `resources/js/vtual/confirm-modal.js` + `credential-form.js`, registered in `vite.config.js`.
+- **JS extraction**: inline JS moved to `resources/js/vtual/confirm-modal.js` + `credential-form.js`, registered in `vite.config.js`. `confirm-modal.js` binds via `window.bootstrap` (set by `app.js`).
 - **i18n**: all user-facing strings via `__('web/vtual.*')` (en/id/ja); `ajax.*`, `confirm.*`, `table.*` keys added.
 
 ## Seeders

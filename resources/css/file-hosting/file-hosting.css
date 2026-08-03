@@ -1,8 +1,8 @@
 /* ============================================================
    File Hosting — dedicated BEM stylesheet
    -----
-   Sits on top of AdminLTE 4 / Bootstrap 5 (loaded via CDN) and
-   the global monolith-overrides.css token layer. All theme
+   Sits on top of AdminLTE 4 / Bootstrap 5 (bundled via vendor.css /
+   Vite) and the global monolith-overrides.css token layer. All theme
    adaptation is driven by [data-bs-theme="dark"] on <html>.
    Loaded per-page via @vite in file-hosting Blade views.
    ============================================================ */
