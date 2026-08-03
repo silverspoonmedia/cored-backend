@@ -1,4 +1,2 @@
-@once('monolith-select2-scripts')
-    <x-adminlte4::partials.select2-assets />
-    <x-adminlte4::partials.select2-init />
-@endonce
+{{-- jQuery + Select2 are bundled via app.js (npm + Vite). This partial is retained
+     as a no-op so Blade form components can include it without double-loading. --}}

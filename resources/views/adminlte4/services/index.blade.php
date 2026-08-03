@@ -97,7 +97,7 @@
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form action="{{ route('services.destroy', $service['id']) }}" method="POST" class="d-inline"
-                                        onsubmit="return confirm(@json(__('web/services.confirm_delete')));">
+                                        data-swal-confirm="@json(__('web/services.confirm_delete'))">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-outline-danger btn-sm">

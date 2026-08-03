@@ -16,115 +16,107 @@
     </x-adminlte4::card>
 
     <x-slot:scripts>
-        <x-adminlte4::partials.datatable-assets />
         <x-adminlte4::partials.datatable-row-actions />
+        @vite('resources/js/datatable-init.js')
 
-        <script>
-            $(function () {
-                const table = $('#users-table').DataTable({
-                    processing: true,
-                    serverSide: true,
-                    ajax: {
-                        url: '{{ route('users.datatable') }}',
-                        error: function (xhr) {
-                            window.MonolithApi.datatableAjaxError(xhr);
+        <script type="module">
+            const initDataTable = window.initDataTable;
+
+            initDataTable({
+                tableId: 'users-table',
+                ajaxUrl: '{{ route('users.datatable') }}',
+                order: [[0, 'asc']],
+                exposeForReload: true,
+                language: {
+                    emptyTable: @json(__('web/users.datatable.empty')),
+                    zeroRecords: @json(__('web/users.datatable.zero_records')),
+                },
+                columns: [
+                    { data: 'name', title: @json(__('web/users.datatable.columns.name')) },
+                    { data: 'email', title: @json(__('web/users.datatable.columns.email')) },
+                    {
+                        data: 'roles',
+                        title: @json(__('web/users.datatable.columns.roles')),
+                        orderable: false,
+                        render: function (roles) {
+                            if (!Array.isArray(roles) || roles.length === 0) {
+                                return '<span class="text-muted">&mdash;</span>';
+                            }
+
+                            return roles.map(function (role) {
+                                return '<span class="badge text-bg-light border me-1">' + role.name + '</span>';
+                            }).join('');
                         },
                     },
-                    order: [[0, 'asc']],
-                    language: {
-                        emptyTable: @json(__('web/users.datatable.empty')),
-                        zeroRecords: @json(__('web/users.datatable.zero_records')),
+                    {
+                        data: 'actions',
+                        title: @json(__('web/users.datatable.columns.actions')),
+                        orderable: false,
+                        searchable: false,
+                        className: 'text-end',
+                        render: function (actions) {
+                            return window.renderDatatableActions(actions);
+                        },
                     },
-                    columns: [
-                        { data: 'name', title: @json(__('web/users.datatable.columns.name')) },
-                        { data: 'email', title: @json(__('web/users.datatable.columns.email')) },
-                        {
-                            data: 'roles',
-                            title: @json(__('web/users.datatable.columns.roles')),
-                            orderable: false,
-                            render: function (roles) {
-                                if (!Array.isArray(roles) || roles.length === 0) {
-                                    return '<span class="text-muted">&mdash;</span>';
-                                }
+                ],
+                onReady: function (table) {
+                    // WebSocket is the primary live-reload path (bell ping ->
+                    // reloadDataTable). Polling is ONLY a fallback: it runs while the
+                    // socket is degraded (down past the bell's grace window) and is torn
+                    // down the moment it reconnects, so the two never overlap.
+                    let lastReload = 0;
+                    let tablePollTimer = null;
 
-                                return roles.map(function (role) {
-                                    return '<span class="badge text-bg-light border me-1">' + role.name + '</span>';
-                                }).join('');
-                            },
-                        },
-                        {
-                            data: 'actions',
-                            title: @json(__('web/users.datatable.columns.actions')),
-                            orderable: false,
-                            searchable: false,
-                            className: 'text-end',
-                            render: function (actions) {
-                                return window.renderDatatableActions(actions);
-                            },
-                        },
-                    ],
-                });
+                    function refreshUsersTable() {
+                        if (document.visibilityState !== 'visible') {
+                            return;
+                        }
 
-                // Expose DataTable API for live reload via notifications
-                window.dataTables = window.dataTables || {};
-                window.dataTables['users-table'] = table;
+                        const now = Date.now();
 
-                // WebSocket is the primary live-reload path (bell ping ->
-                // reloadDataTable). Polling is ONLY a fallback: it runs while the
-                // socket is degraded (down past the bell's grace window) and is torn
-                // down the moment it reconnects, so the two never overlap.
-                let lastReload = 0;
-                let tablePollTimer = null;
+                        if (now - lastReload < 2000) {
+                            return; // debounce
+                        }
 
-                function refreshUsersTable() {
-                    if (document.visibilityState !== 'visible') {
-                        return;
+                        lastReload = now;
+                        table.ajax.reload(null, false); // false = keep current paging
                     }
 
-                    const now = Date.now();
+                    function startTablePolling() {
+                        if (tablePollTimer) {
+                            return;
+                        }
 
-                    if (now - lastReload < 2000) {
-                        return; // debounce
+                        refreshUsersTable();
+                        tablePollTimer = setInterval(refreshUsersTable, 60000);
                     }
 
-                    lastReload = now;
-                    table.ajax.reload(null, false); // false = keep current paging
-                }
-
-                function startTablePolling() {
-                    if (tablePollTimer) {
-                        return;
+                    function stopTablePolling() {
+                        if (tablePollTimer) {
+                            clearInterval(tablePollTimer);
+                            tablePollTimer = null;
+                        }
                     }
 
-                    refreshUsersTable();
-                    tablePollTimer = setInterval(refreshUsersTable, 60000);
-                }
+                    // Follow the realtime health broadcast by bell.js: healthy socket =>
+                    // no polling (pure WS); degraded => polling on; reconnect => polling
+                    // off + one catch-up reload.
+                    window.addEventListener('notification-realtime:connected', function () {
+                        stopTablePolling();
+                        refreshUsersTable();
+                    });
+                    window.addEventListener('notification-realtime:degraded', startTablePolling);
 
-                function stopTablePolling() {
-                    if (tablePollTimer) {
-                        clearInterval(tablePollTimer);
-                        tablePollTimer = null;
+                    // Initial state: bell.js may have set health before this inline script
+                    // ran. Start polling only if realtime is disabled entirely (pure
+                    // polling mode) or already degraded; otherwise wait for events so a
+                    // healthy socket never triggers polling.
+                    const realtimeHealth = window.notificationRealtime;
+
+                    if (realtimeHealth && (realtimeHealth.enabled === false || realtimeHealth.degraded === true)) {
+                        startTablePolling();
                     }
-                }
-
-                // Follow the realtime health broadcast by bell.js: healthy socket =>
-                // no polling (pure WS); degraded => polling on; reconnect => polling
-                // off + one catch-up reload.
-                window.addEventListener('notification-realtime:connected', function () {
-                    stopTablePolling();
-                    refreshUsersTable();
-                });
-                window.addEventListener('notification-realtime:degraded', startTablePolling);
-
-                // Initial state: bell.js may have set health before this inline script
-                // ran. Start polling only if realtime is disabled entirely (pure
-                // polling mode) or already degraded; otherwise wait for events so a
-                // healthy socket never triggers polling.
-                const realtimeHealth = window.notificationRealtime;
-
-                if (realtimeHealth && (realtimeHealth.enabled === false || realtimeHealth.degraded === true)) {
-                    startTablePolling();
-                }
+                },
             });
         </script>
     </x-slot:scripts>

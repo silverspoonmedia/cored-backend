@@ -73,7 +73,7 @@
                     </div>
                 @endforeach
 
-                <div class="domain-access-toast" data-domain-access-toast role="status" aria-live="polite"></div>
+                <div class="monolith-toast-container" data-domain-access-toast role="status" aria-live="polite"></div>
             </div>
         @endif
     </x-adminlte4::card>

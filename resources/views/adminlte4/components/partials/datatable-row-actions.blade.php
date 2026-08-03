@@ -22,8 +22,13 @@
         };
 
         window.handleDatatableAction = async function (action) {
-            if (action.confirm && !window.confirm(action.confirm)) {
-                return;
+            if (action.confirm) {
+                const confirmed = window.MonolithSwal
+                    ? await window.MonolithSwal.confirm(action.confirm, '', { dangerMode: true })
+                    : window.confirm(action.confirm);
+                if (!confirmed) {
+                    return;
+                }
             }
 
             if (action.method === 'GET') {

@@ -12,6 +12,14 @@ import {
     formatTransferRate,
 } from './upload-progress.js';
 
+function monolithAlert(message) {
+    if (window.MonolithSwal?.alert) {
+        window.MonolithSwal.alert(message);
+    } else {
+        window.alert(message);
+    }
+}
+
 /**
  * Resolve mutable upload context (folder / user / workspace) from a live dataset.
  *
@@ -315,12 +323,12 @@ export function initDirectUpload(root) {
         // and never a locked collection. Read live so soft-nav stays accurate.
         if (root.dataset.workspaceKind === 'microstock') {
             if (!root.dataset.folderId) {
-                window.alert(config.messages.requiresFolder || 'Create a folder (collection) first, then upload inside it.');
+                monolithAlert(config.messages.requiresFolder || 'Create a folder (collection) first, then upload inside it.');
                 fileInput.value = '';
                 return;
             }
             if (root.dataset.collectionLocked === '1') {
-                window.alert(config.messages.collectionLocked || 'This collection is locked and no longer accepts uploads.');
+                monolithAlert(config.messages.collectionLocked || 'This collection is locked and no longer accepts uploads.');
                 fileInput.value = '';
                 return;
             }
@@ -331,8 +339,8 @@ export function initDirectUpload(root) {
         const uploadingCount = countUploading();
 
         if (stagedCount + queuedCount + uploadingCount + files.length > config.maxFiles) {
-            window.alert(config.messages.tooManyFiles || 'Too many files.');
-            fileInput.value = '';
+            monolithAlert(config.messages.tooManyFiles || 'Too many files.');
+                fileInput.value = '';
 
             return;
         }
@@ -359,7 +367,7 @@ export function initDirectUpload(root) {
     form?.addEventListener('submit', function (event) {
         if (batchRunning) {
             event.preventDefault();
-            window.alert(config.messages.waitForUploads || 'Please wait for uploads to finish.');
+            monolithAlert(config.messages.waitForUploads || 'Please wait for uploads to finish.');
 
             return;
         }
@@ -367,7 +375,7 @@ export function initDirectUpload(root) {
         for (const entry of active.values()) {
             if (entry.state === 'uploading') {
                 event.preventDefault();
-                window.alert(config.messages.waitForUploads || 'Please wait for uploads to finish.');
+                monolithAlert(config.messages.waitForUploads || 'Please wait for uploads to finish.');
 
                 return;
             }

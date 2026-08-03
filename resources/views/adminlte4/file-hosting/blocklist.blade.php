@@ -61,7 +61,7 @@
                                 <td>{{ $entry->created_at?->toDayDateTimeString() }}</td>
                                 <td class="text-end">
                                     <form method="POST" action="{{ route('file-hosting.blocklist.destroy', $entry->id) }}"
-                                          onsubmit="return confirm('{{ __('web/file-hosting.blocklist_confirm_remove') }}')">
+                                          data-swal-confirm="{{ __('web/file-hosting.blocklist_confirm_remove') }}">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-outline-secondary btn-sm">

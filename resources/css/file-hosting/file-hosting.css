@@ -69,7 +69,7 @@
     inset: 0;
     z-index: 20;
     pointer-events: none;
-    background: color-mix(in srgb, var(--fh-surface, #fff) 55%, transparent);
+    background: color-mix(in srgb, var(--fh-surface) 55%, transparent);
     backdrop-filter: blur(1px);
 }
 
@@ -85,7 +85,7 @@
     z-index: 25;
     align-items: center;
     justify-content: center;
-    background: color-mix(in srgb, var(--fh-surface, #fff) 55%, transparent);
+    background: color-mix(in srgb, var(--fh-surface) 55%, transparent);
     backdrop-filter: blur(1px);
     pointer-events: all;
 }
@@ -102,8 +102,8 @@
 }
 
 .fh-breadcrumb__item.is-drop-target {
-    outline: 2px solid var(--fh-accent, #0d6efd);
-    background-color: color-mix(in srgb, var(--fh-accent, #0d6efd) 14%, transparent);
+    outline: 2px solid var(--fh-accent);
+    background-color: color-mix(in srgb, var(--fh-accent) 14%, transparent);
     border-radius: 0.35rem;
 }
 
@@ -593,7 +593,7 @@
 .fh-table tbody tr.is-selected,
 .fh-file-card.is-selected {
     background-color: var(--fh-accent-soft);
-    outline: 1px solid color-mix(in srgb, var(--fh-accent, #0d6efd) 35%, transparent);
+    outline: 1px solid color-mix(in srgb, var(--fh-accent) 35%, transparent);
 }
 
 /* Drive-like: row select / drag (not text selection) */
@@ -611,8 +611,8 @@
 
 .fh-table tbody tr[data-fh-row].is-drop-target,
 .fh-file-card[data-fh-row].is-drop-target {
-    outline: 2px solid var(--fh-accent, #0d6efd);
-    background-color: color-mix(in srgb, var(--fh-accent, #0d6efd) 12%, transparent);
+    outline: 2px solid var(--fh-accent);
+    background-color: color-mix(in srgb, var(--fh-accent) 12%, transparent);
 }
 
 /* Virtual parent "..." row/card (go up + drop target) */
@@ -634,7 +634,7 @@
 
 .fh-parent-row:hover,
 .fh-file-card.is-parent:hover {
-    background-color: color-mix(in srgb, var(--fh-accent, #0d6efd) 6%, transparent);
+    background-color: color-mix(in srgb, var(--fh-accent) 6%, transparent);
 }
 
 .fh-empty--compact {
@@ -988,71 +988,6 @@
     margin-bottom: 0.25rem;
 }
 
-/* ---- Toast ---- */
-.fh-toast-container {
-    position: fixed;
-    bottom: 1.25rem;
-    right: 1.25rem;
-    z-index: 1080;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    pointer-events: none;
-}
-
-.fh-toast {
-    background: var(--fh-surface);
-    border: 1px solid var(--fh-border);
-    border-radius: var(--fh-radius-sm);
-    box-shadow: var(--fh-shadow-lg);
-    padding: 0.75rem 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 280px;
-    max-width: 400px;
-    pointer-events: auto;
-    animation: fh-toast-in 0.25s ease;
-}
-
-@keyframes fh-toast-in {
-    from {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-.fh-toast.is-success {
-    border-left: 3px solid var(--monolith-status-success-text);
-}
-
-.fh-toast.is-error {
-    border-left: 3px solid var(--monolith-status-danger-text);
-}
-
-.fh-toast__icon {
-    font-size: 1.1rem;
-    flex-shrink: 0;
-}
-
-.fh-toast.is-success .fh-toast__icon {
-    color: var(--monolith-status-success-text);
-}
-
-.fh-toast.is-error .fh-toast__icon {
-    color: var(--monolith-status-danger-text);
-}
-
-.fh-toast__body {
-    font-size: 0.875rem;
-    color: var(--fh-text);
-    flex: 1;
-}
-
 /* ---- Public share pages ---- */
 .fh-public {
     min-height: 100vh;
@@ -1365,10 +1300,6 @@
 
 /* ---- Reduced motion: respect user preference (WCAG 2.3.3) ---- */
 @media (prefers-reduced-motion: reduce) {
-    .fh-toast {
-        animation: none;
-    }
-
     .fh-file-card,
     .fh-dropzone {
         transition: none;

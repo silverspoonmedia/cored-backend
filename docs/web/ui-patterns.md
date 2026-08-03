@@ -17,11 +17,11 @@ Response `data`: `{ results: [{id,text}], pagination: { more } }`.
 
 Implementation: Identity `LookupService` / `LookupController`. Blade proxies (auth shell): `GET /apps/lookups/{users,menus,roles}` (route names `lookups.*`).
 
-Components: `form.select` / `multiselect` (`ajaxUrl`, `select2`). Assets: `select2-init.js` (Vite). Attribute: `data-monolith-select2` (**not** `data-select2` — jQuery collision).
+Components: `form.select` / `multiselect` (`ajaxUrl`, `select2`). Assets: jQuery + Select2 bundled in `app.js` (Vite, npm). Auto-init via `select2-init.js` (imported by `app.js`, no CDN partial). Attribute: `data-monolith-select2` (**not** `data-select2` — jQuery collision).
 
 ### Troubleshooting
 
-- Native select still showing → `npm run build` / `dev`; ensure select2 scripts after jQuery  
+- Native select still showing → `npm run build` / `dev`; ensure `app.js` loaded via `@vite` in `assets-scripts.blade.php`  
 
 ## List display modes (query & DataTables)
 
@@ -33,6 +33,10 @@ Tabular index endpoints support:
 | `display_mode=datatable` or `draw` present | Yajra JSON + per-row `actions[]` |
 
 Covered lists: v1 users, menus list/trashed, file-hosting lists where applicable. Navigation **tree** excluded.
+
+### DataTable init
+
+Shared factory: `initDataTable({ tableId, ajaxUrl, columns, order, language, exposeForReload, onReady })` in `resources/js/datatable-init.js` (Vite entry). Six index views (users, invoices, subscriptions, payment-gateways, inference providers, inference model-cards) load it via `@vite` and call `window.initDataTable(...)` — no ESM import (Vite 8/Rolldown tree-shakes named exports from entry modules). jQuery + DataTables core binding (`window.jQuery`, `DataTable.use(jQuery)`) lives in `resources/js/infra/jquery-init.js` and runs before any consumer — DataTables 3 does not auto-detect `window.jQuery` for `.fn.DataTable` attachment. `exposeForReload` stores instances in `window.dataTables[tableId]` for realtime reload via `bell.js`.
 
 ### Actions contract
 
@@ -102,7 +106,7 @@ Inline `style="max-width: …"` / `padding-left: …px` were removed. Use utilit
 
 ### Radius consistency
 
-`payments/channels-admin.css` uses `var(--pc-radius)` for every border-radius (previously mixed 0.5 / 0.65 / 0.75rem).
+`payments/channels-admin.css` uses `var(--monolith-radius)` for every border-radius (previously mixed 0.5 / 0.65 / 0.75rem, with `--pc-radius` alias). Token consolidated to `--monolith-*` namespace.
 
 ## Empty states
 
@@ -124,7 +128,44 @@ Adopted in: `notifications/index`, `services/index`, `error-logs/index`, `activi
 
 ## Toasts (replacing window.alert)
 
-Checkout errors/confirmations use `showCheckoutToast(message, type)` (`checkout.js`) with `.ois-toast` styles in `order-invoice-show.css`. The toast container exposes `role="status"` + `aria-live="polite"`. `window.alert` is forbidden in checkout. Status transitions (paid / expired / cancelled / failed) soft-patch the same page chrome without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
+Toast routing goes through `window.MonolithSwal.toastMessage(message, type)` — a SweetAlert2 toast mixin (position `top-end`, 4s timer, progress bar, pause on hover). The legacy `.monolith-toast` CSS component (defined in `monolith-overrides.css`) is retained for domain consumers that build toast elements manually (checkout, file-manager, channels-admin, domain-access, inference rate-plans) via local `showToast(message, type)` helpers; those containers expose `role="status"` + `aria-live="polite"`. `window.alert` is forbidden — use `MonolithSwal.alert` (modal) or `MonolithSwal.toastMessage` (toast). Status transitions (paid / expired / cancelled / failed) soft-patch the same page chrome without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
+
+## SweetAlert2 / confirmations
+
+SweetAlert2 (`sweetalert2` npm) replaces every `window.alert` / `window.confirm` in the admin. The wrapper at `resources/js/infra/sweetalert.js` (bundled in `app.js`) exposes `window.MonolithSwal`:
+
+| Method | Signature | Replaces |
+|--------|-----------|----------|
+| `alert(message, title?)` | `Promise<void>` — themed modal, single OK | `window.alert` |
+| `confirm(message, title?, opts?)` | `Promise<boolean>` — `true` if confirmed; `opts.dangerMode` shows warning icon + reverse buttons | `window.confirm` |
+| `toastMessage(message, type?)` | `void` — `type`: `success` \| `error` \| `info` \| `warning` | inline status toasts |
+| `Swal` | raw SweetAlert2 instance for advanced use | — |
+
+### Form confirm delegation (`data-swal-confirm`)
+
+Blade forms marked with `data-swal-confirm="{{ __('...') }}"` trigger a SweetAlert2 confirmation before submit. `app.js` binds a global `submit` listener: it calls `MonolithSwal.confirm(message, '', { dangerMode: true })`, and only submits if confirmed. This replaces inline `onsubmit="return confirm(...)"`.
+
+```blade
+<form method="POST" action="{{ route('services.destroy', $service) }}"
+      data-swal-confirm="{{ __('ui.swal.confirm') }}">
+```
+
+### i18n label blob
+
+Button labels are injected via a JSON blob in `assets-scripts.blade.php`:
+
+```blade
+<script type="application/json" data-monolith-swal-labels>
+    @json(['ok' => __('ui.swal.ok'), 'confirm' => __('ui.swal.confirm'), 'cancel' => __('ui.swal.cancel')])
+</script>
+```
+
+Keys live under `swal.*` in `lang/{en,id,ja}/ui.php`. The wrapper reads them at boot; missing keys fall back to English literals.
+
+### Adoption
+
+- **`data-swal-confirm` forms**: `file-hosting/blocklist.blade.php`, `product-activations/show.blade.php`, `services/index.blade.php`, `file-hosting/partials/_team-offcanvas.blade.php`.
+- **`MonolithSwal.alert` / `confirm` helpers**: `file-hosting/direct-upload.js` (`monolithAlert`), `file-hosting/file-manager.js` (`fhConfirm`), `file-hosting/context-menu.js` (`fhConfirm`). Each helper feature-detects `window.MonolithSwal` and falls back to `window.alert` / `window.confirm` if absent.
 
 ## Theme-color meta
 
@@ -148,10 +189,16 @@ Reference: `users/_activity_history.blade.php`.
 
 ## File-hosting toolbar
 
-`.fh-toolbar` declares a full `border: 1px solid var(--fh-border)` and uniform `border-radius: var(--fh-radius)` so the search box reads as a symmetric shell (not a half-open bar). The list-view empty row spans all columns (`colspan="8"`).
+`.fh-toolbar` declares a full `border: 1px solid var(--fh-border)` and uniform `border-radius: var(--fh-radius)` so the search box reads as a symmetric shell (not a half-open bar). The list-view empty row spans all columns via dynamic `$tableColspan` (7 without region column, 8 with). View split: `index.blade.php` delegates to `partials/_toolbar-zone.blade.php`, `partials/_browse-views.blade.php`, etc.
 
 ## Related
 
 - [blade-admin.md](blade-admin.md)
 - [domains/identity](../domains/identity/README.md)
 - [domains/navigation](../domains/navigation/README.md)
+
+## Known bridge gaps (realtime)
+
+- **`__monolithEcho`**: Pusher/Echo instance exposed on `window.__monolithEcho` by `bell.js` (notifications). Other domain modules (file-hosting realtime) attach to the same instance if present, but there is no shared "echo registry" — each consumer must feature-detect.
+- **Bell → DataTable reload**: `bell.js` reloads DataTables via `window.dataTables[tableId].ajax.reload()` (set by `initDataTable({ exposeForReload: true })`). This bridge is string-keyed by table ID — no type safety, no event contract. A missing table ID silently skips reload.
+- **Polling fallback**: `users/index.blade.php` inline `onReady` polls via `setInterval(60s)` only when realtime is degraded (`notification-realtime:degraded` event) or disabled. The poll is torn down on reconnect (`notification-realtime:connected`). No overlap with WS pushes.

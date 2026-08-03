@@ -32,6 +32,13 @@ export function createContextMenu(deps) {
         setBusy,
     } = deps;
 
+    function fhConfirm(message) {
+        if (window.MonolithSwal?.confirm) {
+            return window.MonolithSwal.confirm(message, '', { dangerMode: true });
+        }
+        return Promise.resolve(window.confirm(message));
+    }
+
     const labels = {
         open: config.messages?.actions?.open || config.messages?.actions?.view || 'Open',
         rename: config.messages?.actions?.rename || 'Rename',
@@ -384,7 +391,7 @@ export function createContextMenu(deps) {
 
         const confirmMsg = config.messages?.bulkConfirmShare
             || 'Share {n} selected items with anyone who has the link?';
-        if (!window.confirm(String(confirmMsg).replace('{n}', String(keys.length)))) {
+        if (!await fhConfirm(String(confirmMsg).replace('{n}', String(keys.length)))) {
             return;
         }
 
@@ -439,7 +446,7 @@ export function createContextMenu(deps) {
                     : (config.messages?.actions?.confirmDeleteFile || 'Move this file to trash?'))
                 : (config.messages?.bulkConfirmDelete || 'Move {n} selected items to trash?');
 
-        if (!window.confirm(String(confirmMsg).replace('{n}', String(keys.length)))) {
+        if (!await fhConfirm(String(confirmMsg).replace('{n}', String(keys.length)))) {
             return;
         }
 

@@ -1,9 +1,16 @@
 function showToast(el, message, isError = false) {
     if (!el) return;
-    el.textContent = message;
-    el.classList.toggle('is-error', isError);
-    el.classList.add('is-visible');
-    window.setTimeout(() => el.classList.remove('is-visible'), 4000);
+
+    const toast = document.createElement('div');
+    toast.className = 'monolith-toast is-' + (isError ? 'error' : 'success');
+    toast.setAttribute('role', 'status');
+    toast.textContent = message;
+    el.appendChild(toast);
+
+    window.setTimeout(() => {
+        toast.classList.add('is-leaving');
+        window.setTimeout(() => toast.remove(), 300);
+    }, 4000);
 }
 
 function initInferenceRatePlanAdmin(root) {

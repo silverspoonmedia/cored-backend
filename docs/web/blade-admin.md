@@ -127,7 +127,7 @@ Layout namespace: `WEB_LAYOUT` / `config/web.php` (default `adminlte4`).
 
 ## Views
 
-CDN AdminLTE 4 / Bootstrap 5 / Icons. Scripts order: `MonolithApi` → `ajax-form` → page scripts. Forms: `x-adminlte4::form.ajax`. Select2: [ui-patterns](ui-patterns.md).
+Bundled AdminLTE 4 / Bootstrap 5 / jQuery / Select2 / DataTables (npm + Vite). Script order: `app.js` (vendor + `MonolithApi` + `ajax-form` + Select2 auto-init) → page scripts. Vendor CSS loaded via `resources/css/vendor.css` in `<head>` (prevents FOUC). Forms: `x-adminlte4::form.ajax`. Select2: [ui-patterns](ui-patterns.md).
 
 ### Display data from API Resources
 
@@ -147,10 +147,14 @@ Raw numeric/ISO fields remain available for conditionals (`if ((float) credit_am
 Soft override CSS layer (light/dark) under layout assets — keep tokenized variables.
 
 - Override file: `resources/css/monolith-overrides.css` (loaded via `@vite` in `assets-head.blade.php`).
+- Vendor CSS (AdminLTE, Bootstrap, DataTables, Select2, OverlayScrollbars) bundled in `resources/css/vendor.css` — loaded in `<head>` before overrides to prevent FOUC.
+- Vendor JS (jQuery, DataTables, Select2, Bootstrap, AdminLTE, OverlayScrollbars) bundled in `resources/js/app.js` with `manualChunks` splitting each vendor into a separate chunk.
 - Card hover lift is **scoped** to interactive cards (`.card.is-clickable`, `.fh-file-card`, `a.card`). The global `.card:hover` lift was removed to avoid jank on static cards.
 - Dark-mode gradient-end token is `--monolith-gradient-end: #312e81` (indigo). The previous `#1a2e1a` was a green-hue typo in an indigo/slate palette.
 - Invalid feedback in `form.input` is rendered as a **sibling** after `.input-group`, not inside it (Bootstrap requirement).
 - `channels-admin.js` toggles channel visibility via `data-hidden="true|false"` (matches the CSS attribute selector); inline `style.display` was removed. Route list reordering preserves focus across DOM moves.
+- Select2 dark-mode overrides wrapped in `@layer overrides` (no `!important` — vendor CSS loads before overrides, selector specificity wins).
+- CSS tokens consolidated: `--pc-*` / `--ois-*` kind/status tokens merged into `--monolith-*`; hex fallbacks stripped (vendor CSS + `@vite` guarantee variable availability).
 - Guarded by `tests/Feature/Http/Controllers/Web/ThemeOverrideCssTest.php`.
 
 ### UX patterns
@@ -159,7 +163,8 @@ Soft override CSS layer (light/dark) under layout assets — keep tokenized vari
 - **Filter reset**: `error-logs/index` exposes a reset icon next to Apply that drops the query string.
 - **Restore confirm**: `menus/trashed` no longer prompts `confirm()` on restore — restore is non-destructive, so the prompt was backwards severity.
 - **Submit spinners**: every AJAX submit button (navbar logout, mark-all-read, `menus/index` delete forms) carries a `[data-form-submit-spinner]` span toggled by the ajax-form handler.
-- **Checkout toasts**: `checkout.js` uses `showCheckoutToast(message, type)` (`.ois-toast` container, `role="status"` + `aria-live`). `window.alert` is forbidden. Invoice/purchase show also soft-updates payment status (hero/steps/panel/sidebar) without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
+- **Checkout toasts**: `checkout.js` uses `showCheckoutToast(message, type)` (`.monolith-toast` container, `role="status"` + `aria-live`). `window.alert` is forbidden. Invoice/purchase show also soft-updates payment status (hero/steps/panel/sidebar) without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
+- **Unified toast**: all toast routing goes through `window.MonolithSwal.toastMessage(message, type)` (SweetAlert2 toast mixin). Legacy `.monolith-toast` CSS component retained for domain consumers (checkout, file-manager, channels-admin, domain-access, inference) that build toast elements manually. No per-domain toast CSS duplication.
 - **Confirm paid**: the manual confirm button ships a `title` + sibling help text (`web/payments.checkout.confirm_paid_help`) explaining why manual sync exists.
 - **Service checkout dedup**: `services/show` renders a single checkout form. `Gate::any(['purchase service', 'initiate payment'])` (block `@php … @endphp`) gates it — same pair `ServicePolicy::purchase` checks. Do **not** inline `@php(...)` here (see Blade `@php` inline gotcha below).
 - **Payment-channel priority autosave**: priority inputs fire AJAX on `change` and the label carries an italic "saved automatically" hint so users are not surprised by the absence of a Save button.
@@ -168,6 +173,11 @@ Soft override CSS layer (light/dark) under layout assets — keep tokenized vari
 - **Menu delete cascade modal**: `menus/index` ships one delete trigger per row that opens `#menuDeleteConfirmModal`. The modal's cascade checkbox swaps the form `action` to the cascade URL via JS (`data-menu-cascade-url`, `data-menu-confirm-template`). No more inline twin delete buttons.
 - **Paired card alignment**: `users/edit` keeps the edit form and recent-activity cards flush (no `mt-3`). When activity is empty, the partial renders an `empty-state` inside the card so the right column does not collapse.
 - **File-hosting toolbar symmetry**: `.fh-toolbar` carries a full border + uniform radius (not a half-open bar). The list-view empty row spans all 8 columns.
+- **File-hosting view split**: `file-hosting/index.blade.php` (was 1521 lines) is split into 7 partials under `partials/_*.blade.php` (config, toolbar-zone, browse-views, trash-show-panels, workspace-modals, microstock-review-panel, usage-offcanvas, file-folder-modals). Index is now ~23 lines of includes.
+- **DataTables factory**: `initDataTable({ tableId, ajaxUrl, columns, order, language, exposeForReload, onReady })` in `datatable-init.js` (Vite entry). Six index views load it via `@vite` and call `window.initDataTable(...)` from inline scripts — no ESM import (Vite 8/Rolldown tree-shakes named exports from entry modules). `exposeForReload` stores instances in `window.dataTables[tableId]` for realtime bell → DT reload bridge. jQuery + DataTables binding (`window.jQuery`, `DataTable.use(jQuery)`) lives in `infra/jquery-init.js` and runs before any consumer — DataTables 3 does not auto-detect `window.jQuery` for `.fn.DataTable` attachment.
+- **JS infrastructure modules**: `api-response-handler.js`, `ajax-form.js`, `theme-scroll.js` (theme toggle + sidebar scrollbar), and `select2-init.js` are bundled in `app.js` (Vite). No inline `<script>` blocks for these. Config passed via `<script type="application/json" data-monolith-api-messages>`.
+- **SweetAlert2**: `sweetalert2` (npm) bundled in `app.js` via `infra/sweetalert.js`. Exposes `window.MonolithSwal` (`alert`, `confirm`, `toastMessage`, `Swal`). Replaces all `window.alert` / `window.confirm`. Form confirm delegation: `[data-swal-confirm]` attribute on `<form>` triggers `MonolithSwal.confirm(message, '', { dangerMode: true })` before submit (global listener in `app.js`). i18n via `<script type="application/json" data-monolith-swal-labels>` JSON blob (keys: `ok`, `confirm`, `cancel` from `lang/{en,id,ja}/ui.php` under `swal.*`). Details: [ui-patterns — SweetAlert2 / confirmations](ui-patterns.md#sweetalert2--confirmations).
+- **Sidebar search**: `sidebar-search.js` (Vite module) reads config from `<script type="application/json" data-sidebar-nav-config>`. No inline JS.
 
 ### Blade `@php` inline gotcha
 

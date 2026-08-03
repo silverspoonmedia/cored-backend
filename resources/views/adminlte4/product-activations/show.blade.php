@@ -169,7 +169,7 @@
                                 @if ($canManage)
                                     @if ($state === 'active')
                                         <form action="{{ route('product-activations.suspend', [$productKey, $activationId]) }}" method="POST" class="d-inline"
-                                            onsubmit="return confirm(@json(__('product-activations.action_suspend')));">
+                                            data-swal-confirm="@json(__('product-activations.action_suspend'))">
                                             @csrf
                                             <button type="submit" class="btn btn-outline-warning btn-sm" title="{{ __('product-activations.action_suspend') }}">
                                                 <i class="bi bi-pause-fill"></i>
@@ -190,7 +190,7 @@
                                             </button>
                                         </form>
                                         <form action="{{ route('product-activations.reject', [$productKey, $activationId]) }}" method="POST" class="d-inline"
-                                            onsubmit="return confirm(@json(__('product-activations.action_reject')));">
+                                            data-swal-confirm="@json(__('product-activations.action_reject'))">
                                             @csrf
                                             <button type="submit" class="btn btn-outline-danger btn-sm" title="{{ __('product-activations.action_reject') }}">
                                                 <i class="bi bi-x-lg"></i>

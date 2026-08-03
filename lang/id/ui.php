@@ -65,4 +65,10 @@ return [
             'restore_menu' => 'Pulihkan item menu ini beserta subtree yang terhapus?',
         ],
     ],
+
+    'swal' => [
+        'ok' => 'OK',
+        'confirm' => 'Konfirmasi',
+        'cancel' => 'Batal',
+    ],
 ];

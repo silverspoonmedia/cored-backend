@@ -102,7 +102,7 @@
                 </tr>
             </template>
 
-            <div class="inf-admin-toast mt-2" data-inference-admin-toast role="status" aria-live="polite"></div>
+            <div class="monolith-toast-container mt-2" data-inference-admin-toast role="status" aria-live="polite"></div>
         </x-adminlte4::card>
     </div>
 

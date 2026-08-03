@@ -231,7 +231,7 @@ class AccessibilityBladeTest extends TestCase
 
     public function test_file_hosting_dropzone_blade_exposes_role_button_and_tabindex(): void
     {
-        $blade = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/index.blade.php'));
+        $blade = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/partials/_toolbar-zone.blade.php'));
 
         $this->assertStringContainsString('role="button"', $blade);
         $this->assertStringContainsString('tabindex="0"', $blade);
@@ -409,12 +409,13 @@ class AccessibilityBladeTest extends TestCase
 
     public function test_file_hosting_empty_row_spans_all_columns(): void
     {
-        $blade = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/index.blade.php'));
+        $config = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/partials/_fm-config.blade.php'));
+        $browse = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/partials/_browse-views.blade.php'));
 
         // Empty row colspan follows $tableColspan (7 without region column, 8 with).
-        $this->assertStringContainsString('colspan="{{ $tableColspan }}"', $blade, 'file-hosting empty row must use dynamic $tableColspan.');
-        $this->assertStringContainsString('$tableColspan = $showRegion ? 8 : 7', $blade, 'file-hosting must derive colspan from region visibility.');
-        $this->assertStringNotContainsString('colspan="6"', $blade, 'file-hosting must not carry a stale colspan="6" empty row.');
+        $this->assertStringContainsString('colspan="{{ $tableColspan }}"', $browse, 'file-hosting empty row must use dynamic $tableColspan.');
+        $this->assertStringContainsString('$tableColspan = $showRegion ? 8 : 7', $config, 'file-hosting must derive colspan from region visibility.');
+        $this->assertStringNotContainsString('colspan="6"', $browse, 'file-hosting must not carry a stale colspan="6" empty row.');
     }
 
     public function test_file_hosting_toolbar_renders_symmetrical_border(): void

@@ -14,58 +14,52 @@
     </x-adminlte4::card>
 
     <x-slot:scripts>
-        <x-adminlte4::partials.datatable-assets />
         <x-adminlte4::partials.datatable-row-actions />
+        @vite('resources/js/datatable-init.js')
 
-        <script>
-            $(function () {
-                $('#inference-model-cards-table').DataTable({
-                    processing: true,
-                    serverSide: true,
-                    ajax: {
-                        url: '{{ route('inference.model-cards.datatable') }}',
-                        error: function (xhr) {
-                            window.MonolithApi.datatableAjaxError(xhr);
+        <script type="module">
+            const initDataTable = window.initDataTable;
+
+            initDataTable({
+                tableId: 'inference-model-cards-table',
+                ajaxUrl: '{{ route('inference.model-cards.datatable') }}',
+                order: [[0, 'asc']],
+                language: {
+                    emptyTable: @json(__('web/inference.model_cards.datatable.empty')),
+                    zeroRecords: @json(__('web/inference.model_cards.datatable.zero_records')),
+                },
+                columns: [
+                    { data: 'slug', title: @json(__('web/inference.model_cards.datatable.columns.slug')) },
+                    { data: 'display_name', title: @json(__('web/inference.model_cards.datatable.columns.display_name')) },
+                    {
+                        data: 'is_active',
+                        title: @json(__('web/inference.model_cards.datatable.columns.is_active')),
+                        render: function (value) {
+                            return value
+                                ? '<span class="badge text-bg-success">Yes</span>'
+                                : '<span class="badge text-bg-secondary">No</span>';
                         },
                     },
-                    order: [[0, 'asc']],
-                    language: {
-                        emptyTable: @json(__('web/inference.model_cards.datatable.empty')),
-                        zeroRecords: @json(__('web/inference.model_cards.datatable.zero_records')),
+                    {
+                        data: 'needs_rate_classification',
+                        title: @json(__('web/inference.model_cards.datatable.columns.needs_rate_classification')),
+                        render: function (value) {
+                            return value
+                                ? '<span class="badge text-bg-warning text-dark">' + @json(__('web/inference.model_cards.datatable.needs_classification_badge')) + '</span>'
+                                : '';
+                        },
                     },
-                    columns: [
-                        { data: 'slug', title: @json(__('web/inference.model_cards.datatable.columns.slug')) },
-                        { data: 'display_name', title: @json(__('web/inference.model_cards.datatable.columns.display_name')) },
-                        {
-                            data: 'is_active',
-                            title: @json(__('web/inference.model_cards.datatable.columns.is_active')),
-                            render: function (value) {
-                                return value
-                                    ? '<span class="badge text-bg-success">Yes</span>'
-                                    : '<span class="badge text-bg-secondary">No</span>';
-                            },
+                    {
+                        data: 'actions',
+                        title: '',
+                        orderable: false,
+                        searchable: false,
+                        className: 'text-end',
+                        render: function (actions) {
+                            return window.renderDatatableActions(actions);
                         },
-                        {
-                            data: 'needs_rate_classification',
-                            title: @json(__('web/inference.model_cards.datatable.columns.needs_rate_classification')),
-                            render: function (value) {
-                                return value
-                                    ? '<span class="badge text-bg-warning text-dark">' + @json(__('web/inference.model_cards.datatable.needs_classification_badge')) + '</span>'
-                                    : '';
-                            },
-                        },
-                        {
-                            data: 'actions',
-                            title: '',
-                            orderable: false,
-                            searchable: false,
-                            className: 'text-end',
-                            render: function (actions) {
-                                return window.renderDatatableActions(actions);
-                            },
-                        },
-                    ],
-                });
+                    },
+                ],
             });
         </script>
     </x-slot:scripts>

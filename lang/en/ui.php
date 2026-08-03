@@ -65,4 +65,10 @@ return [
             'restore_menu' => 'Restore this menu item and its trashed subtree?',
         ],
     ],
+
+    'swal' => [
+        'ok' => 'OK',
+        'confirm' => 'Confirm',
+        'cancel' => 'Cancel',
+    ],
 ];

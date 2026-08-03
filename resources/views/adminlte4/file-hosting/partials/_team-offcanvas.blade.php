@@ -78,7 +78,7 @@
                 <strong class="small">{{ __('web/file-hosting.collab.col_member') }}</strong>
                 @if ($isOwnerOfCurrent)
                     <form method="post" action="{{ route('file-hosting.workspaces.archive', $workspaceId) }}"
-                          onsubmit="return confirm(@js(__('web/file-hosting.collab.confirm_archive')))">
+                          data-swal-confirm="@js(__('web/file-hosting.collab.confirm_archive'))">
                         @csrf
                         <button type="submit" class="btn btn-sm btn-outline-danger">
                             {{ __('web/file-hosting.collab.archive') }}
@@ -113,7 +113,7 @@
                                         <form method="post"
                                               action="{{ route('file-hosting.workspaces.members.destroy', [$workspaceId, $mUserId]) }}"
                                               class="d-inline"
-                                              onsubmit="return confirm(@js(__('web/file-hosting.collab.confirm_remove')))">
+                                              data-swal-confirm="@js(__('web/file-hosting.collab.confirm_remove'))">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-link btn-sm text-danger p-0">
