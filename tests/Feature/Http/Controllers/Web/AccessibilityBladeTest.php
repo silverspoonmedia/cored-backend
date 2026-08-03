@@ -409,7 +409,7 @@ class AccessibilityBladeTest extends TestCase
 
     public function test_file_hosting_empty_row_spans_all_columns(): void
     {
-        $config = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/partials/_fm-config.blade.php'));
+        $config = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/index.blade.php'));
         $browse = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/partials/_browse-views.blade.php'));
 
         // Empty row colspan follows $tableColspan (7 without region column, 8 with).

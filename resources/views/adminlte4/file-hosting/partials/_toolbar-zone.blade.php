@@ -10,12 +10,14 @@
                 <div class="fh-toolbar__search-results" data-fh-search-results></div>
             </div>
 
-            <div class="fh-toolbar__view-toggle">
-                <button type="button" class="fh-toolbar__view-btn" data-fh-view-btn="table" title="{{ __('web/file-hosting.view_list') }}">
-                    <i class="bi bi-list"></i>
+            <div class="fh-toolbar__view-toggle btn-group btn-group-sm" role="group" aria-label="{{ __('web/file-hosting.view_toggle') }}">
+                <button type="button" class="fh-toolbar__view-btn btn btn-outline-secondary" data-fh-view-btn="table"
+                        aria-label="{{ __('web/file-hosting.view_list') }}" title="{{ __('web/file-hosting.view_list') }}">
+                    <i class="bi bi-list" aria-hidden="true"></i>
                 </button>
-                <button type="button" class="fh-toolbar__view-btn" data-fh-view-btn="grid" title="{{ __('web/file-hosting.view_grid') }}">
-                    <i class="bi bi-grid"></i>
+                <button type="button" class="fh-toolbar__view-btn btn btn-outline-secondary" data-fh-view-btn="grid"
+                        aria-label="{{ __('web/file-hosting.view_grid') }}" title="{{ __('web/file-hosting.view_grid') }}">
+                    <i class="bi bi-grid" aria-hidden="true"></i>
                 </button>
             </div>
 
@@ -150,7 +152,7 @@
                 <div class="fh-dropzone__hint">{{ __('web/file-hosting.drag_drop_hint') }}</div>
                 <div class="fh-dropzone__actions">
                     <input type="file" class="d-none" data-direct-upload-input multiple>
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="this.closest('.fh-dropzone').querySelector('[data-direct-upload-input]').click()">
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-direct-upload-browse>
                         <i class="bi bi-folder2-open me-1" aria-hidden="true"></i>{{ __('web/file-hosting.upload.browse') }}
                     </button>
                     @if (count($uploadableRegions) > 1)

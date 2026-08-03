@@ -21,7 +21,9 @@ Components: `form.select` / `multiselect` (`ajaxUrl`, `select2`). Assets: jQuery
 
 ### Troubleshooting
 
-- Native select still showing → `npm run build` / `dev`; ensure `app.js` loaded via `@vite` in `assets-scripts.blade.php`  
+- Native select still showing → `npm run build` / `dev`; ensure `app.js` loaded via `@vite` in `assets-scripts.blade.php`
+- "The result could not be loaded" → `select2-init.js` `transport` now checks `response.ok` + `Content-Type: application/json` before parsing. It relies on a generation-based stale-response guard (`generationFor(element) !== generation`) to ignore superseded responses instead of physical aborts (since Select2 actively aborts requests before they hit the network if an abortable object is returned, leading to immediate loading failures). Non-JSON/4xx/5xx bodies route to `failure()` instead of throwing.
+- Dark-mode styles ignored → Select2 dark overrides in `resources/css/monolith-overrides.css` MUST stay **unlayered**. `select2.min.css`/`select2-bootstrap-5-theme.min.css` (imported by `vendor.css`) are unlayered; per CSS cascade layers, unlayered always beats layered regardless of specificity. Do NOT wrap the `[data-bs-theme="dark"] .select2-*` rules in `@layer`.  
 
 ## List display modes (query & DataTables)
 
@@ -79,7 +81,7 @@ Mobile-first adjustments live in CSS (not inline Blade styles), guarded by `Them
 
 ### Reduced motion
 
-Both `monolith-overrides.css` and `file-hosting.css` ship `@media (prefers-reduced-motion: reduce)` blocks that shorten animations/transitions to `0.01ms` and disable card hover lift. Required for WCAG 2.3.3.
+`monolith-overrides.css`, `file-hosting.css`, `payments/channels-admin.css`, and `payments/order-invoice-show.css` all ship `@media (prefers-reduced-motion: reduce)` blocks that shorten animations/transitions to `0.01ms` (or disable them) and disable card hover lift. Required for WCAG 2.3.3.
 
 ### Mobile navigation fallback
 
@@ -106,7 +108,7 @@ Inline `style="max-width: …"` / `padding-left: …px` were removed. Use utilit
 
 ### Radius consistency
 
-`payments/channels-admin.css` uses `var(--monolith-radius)` for every border-radius (previously mixed 0.5 / 0.65 / 0.75rem, with `--pc-radius` alias). Token consolidated to `--monolith-*` namespace.
+`payments/channels-admin.css` and `payments/order-invoice-show.css` use `var(--monolith-radius)` / `var(--monolith-radius-sm)` for every border-radius (previously mixed legacy `--pc-radius` / `--ois-radius` tokens and hardcoded `0.5` / `0.65` / `0.75rem`). Tokens consolidated to `--monolith-*` namespace; legacy `--pc-*` / `--ois-*` radius/border/muted aliases removed in favor of `--monolith-border-subtle` / `--monolith-text-muted`.
 
 ## Empty states
 
@@ -174,6 +176,14 @@ Keys live under `swal.*` in `lang/{en,id,ja}/ui.php`. The wrapper reads them at 
 ## Action buttons (list rows)
 
 Row action groups use a single `btn-group` with direct-children buttons only. Nested `<form>` inside `btn-group` breaks alignment.
+
+### Row action groups (shared renderer + manual Blade)
+
+The shared DataTable renderer `window.renderDatatableActions` (in `components/partials/datatable-row-actions.blade.php`) wraps every row's action set in `<div class="btn-group btn-group-sm" role="group" aria-label="…">`. Each icon-only button carries both `aria-label` and `title` (set from `action.label`); icons use `aria-hidden="true"`. No `ms-*` margin utilities — spacing comes from `.btn-group`.
+
+Manual Blade row-action clusters (e.g. `services/index`, `product-activations/show`, file-hosting `_browse-views`) follow the same contract: wrap the per-row actions in `<div class="btn-group btn-group-sm" role="group">` (Bootstrap rows) or `<div class="fh-action-group" role="group">` (file-hosting custom `.fh-table__action-btn` cluster, gap-based via `.fh-action-group` in `file-hosting.css`). Every icon-only button must carry `aria-label` + `title`.
+
+Forms carrying destructive actions use `class="d-inline-block"` (not `d-inline`) so they sit cleanly as a direct child of the `btn-group`; the submit button inside carries `[data-form-submit-spinner]` (see [blade-admin — UX patterns](blade-admin.md#ux-patterns)).
 
 ### Destructive cascade pattern
 

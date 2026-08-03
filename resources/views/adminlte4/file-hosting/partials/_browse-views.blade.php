@@ -106,35 +106,41 @@
                         @endif
                         <td data-fh-visibility-cell>@include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $folderVis])</td>
                         <td class="fh-table__actions">
-                            @can('edit file hosting folder')
-                                <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.rename') }}"
-                                        data-bs-toggle="modal" data-bs-target="#fhRenameFolderModal"
-                                        data-id="{{ $folder['id'] }}" data-name="{{ $folder['name'] ?? '' }}">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.move') }}"
-                                        data-bs-toggle="modal" data-bs-target="#fhMoveFolderModal"
-                                        data-id="{{ $folder['id'] }}">
-                                    <i class="bi bi-folder-symlink"></i>
-                                </button>
-                                <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.share') }}"
-                                        data-bs-toggle="modal" data-bs-target="#fhShareFolderModal"
-                                        data-id="{{ $folder['id'] }}"
-                                        data-visibility="{{ $folderVis }}"
-                                        data-share-url="{{ $folder['share_url'] ?? '' }}">
-                                    <i class="bi bi-share"></i>
-                                </button>
-                            @endcan
-                            @can('delete file hosting folder')
-                                <button type="button" class="fh-table__action-btn is-danger" title="{{ __('web/file-hosting.delete') }}"
-                                        data-fh-ajax-action="delete-folder"
-                                        data-fh-action-url="{{ route('file-hosting.folders.destroy', $folder['id']) }}"
-                                        data-fh-method="DELETE"
-                                        data-fh-confirm="{{ __('web/file-hosting.confirm_delete_folder') }}"
-                                        >
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            @endcan
+                            <div class="fh-action-group" role="group" aria-label="{{ __('ui.labels.actions') }}">
+                                @can('edit file hosting folder')
+                                    <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.rename') }}"
+                                            aria-label="{{ __('web/file-hosting.rename') }} {{ $folder['name'] ?? '' }}"
+                                            data-bs-toggle="modal" data-bs-target="#fhRenameFolderModal"
+                                            data-id="{{ $folder['id'] }}" data-name="{{ $folder['name'] ?? '' }}">
+                                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.move') }}"
+                                            aria-label="{{ __('web/file-hosting.move') }} {{ $folder['name'] ?? '' }}"
+                                            data-bs-toggle="modal" data-bs-target="#fhMoveFolderModal"
+                                            data-id="{{ $folder['id'] }}">
+                                        <i class="bi bi-folder-symlink" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.share') }}"
+                                            aria-label="{{ __('web/file-hosting.share') }} {{ $folder['name'] ?? '' }}"
+                                            data-bs-toggle="modal" data-bs-target="#fhShareFolderModal"
+                                            data-id="{{ $folder['id'] }}"
+                                            data-visibility="{{ $folderVis }}"
+                                            data-share-url="{{ $folder['share_url'] ?? '' }}">
+                                        <i class="bi bi-share" aria-hidden="true"></i>
+                                    </button>
+                                @endcan
+                                @can('delete file hosting folder')
+                                    <button type="button" class="fh-table__action-btn is-danger" title="{{ __('web/file-hosting.delete') }}"
+                                            aria-label="{{ __('web/file-hosting.delete') }} {{ $folder['name'] ?? '' }}"
+                                            data-fh-ajax-action="delete-folder"
+                                            data-fh-action-url="{{ route('file-hosting.folders.destroy', $folder['id']) }}"
+                                            data-fh-method="DELETE"
+                                            data-fh-confirm="{{ __('web/file-hosting.confirm_delete_folder') }}"
+                                            >
+                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                    </button>
+                                @endcan
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -175,45 +181,53 @@
                         @endif
                         <td data-fh-visibility-cell>@include('adminlte4.file-hosting.partials._visibility-badge', ['visibility' => $fileVis])</td>
                         <td class="fh-table__actions">
-                            @if ($isMicrostock)
-                                <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.microstock.review') }}"
-                                        data-fh-ms-review="{{ $file['id'] }}">
-                                    <i class="bi bi-stars"></i>
-                                </button>
-                            @endif
-                            <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
-                               class="fh-table__action-btn" title="{{ __('web/file-hosting.view') }}">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            @can('edit file hosting file')
-                                <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.rename') }}"
-                                        data-bs-toggle="modal" data-bs-target="#fhRenameFileModal"
-                                        data-id="{{ $file['id'] }}" data-name="{{ $file['name'] ?? '' }}">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.move') }}"
-                                        data-bs-toggle="modal" data-bs-target="#fhMoveFileModal"
-                                        data-id="{{ $file['id'] }}">
-                                    <i class="bi bi-folder-symlink"></i>
-                                </button>
-                                <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.share') }}"
-                                        data-bs-toggle="modal" data-bs-target="#fhShareFileModal"
-                                        data-id="{{ $file['id'] }}"
-                                        data-visibility="{{ $fileVis }}"
-                                        data-share-url="{{ $file['share_url'] ?? '' }}">
-                                    <i class="bi bi-share"></i>
-                                </button>
-                            @endcan
-                            @can('delete file hosting file')
-                                <button type="button" class="fh-table__action-btn is-danger" title="{{ __('web/file-hosting.delete') }}"
-                                        data-fh-ajax-action="delete-file"
-                                        data-fh-action-url="{{ route('file-hosting.files.destroy', $file['id']) }}"
-                                        data-fh-method="DELETE"
-                                        data-fh-confirm="{{ __('web/file-hosting.confirm_delete_file') }}"
-                                        >
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            @endcan
+                            <div class="fh-action-group" role="group" aria-label="{{ __('ui.labels.actions') }}">
+                                @if ($isMicrostock)
+                                    <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.microstock.review') }}"
+                                            aria-label="{{ __('web/file-hosting.microstock.review') }} {{ $file['name'] ?? '' }}"
+                                            data-fh-ms-review="{{ $file['id'] }}">
+                                        <i class="bi bi-stars" aria-hidden="true"></i>
+                                    </button>
+                                @endif
+                                <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
+                                   class="fh-table__action-btn" title="{{ __('web/file-hosting.view') }}"
+                                   aria-label="{{ __('web/file-hosting.view') }} {{ $file['name'] ?? '' }}">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </a>
+                                @can('edit file hosting file')
+                                    <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.rename') }}"
+                                            aria-label="{{ __('web/file-hosting.rename') }} {{ $file['name'] ?? '' }}"
+                                            data-bs-toggle="modal" data-bs-target="#fhRenameFileModal"
+                                            data-id="{{ $file['id'] }}" data-name="{{ $file['name'] ?? '' }}">
+                                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.move') }}"
+                                            aria-label="{{ __('web/file-hosting.move') }} {{ $file['name'] ?? '' }}"
+                                            data-bs-toggle="modal" data-bs-target="#fhMoveFileModal"
+                                            data-id="{{ $file['id'] }}">
+                                        <i class="bi bi-folder-symlink" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.share') }}"
+                                            aria-label="{{ __('web/file-hosting.share') }} {{ $file['name'] ?? '' }}"
+                                            data-bs-toggle="modal" data-bs-target="#fhShareFileModal"
+                                            data-id="{{ $file['id'] }}"
+                                            data-visibility="{{ $fileVis }}"
+                                            data-share-url="{{ $file['share_url'] ?? '' }}">
+                                        <i class="bi bi-share" aria-hidden="true"></i>
+                                    </button>
+                                @endcan
+                                @can('delete file hosting file')
+                                    <button type="button" class="fh-table__action-btn is-danger" title="{{ __('web/file-hosting.delete') }}"
+                                            aria-label="{{ __('web/file-hosting.delete') }} {{ $file['name'] ?? '' }}"
+                                            data-fh-ajax-action="delete-file"
+                                            data-fh-action-url="{{ route('file-hosting.files.destroy', $file['id']) }}"
+                                            data-fh-method="DELETE"
+                                            data-fh-confirm="{{ __('web/file-hosting.confirm_delete_file') }}"
+                                            >
+                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                    </button>
+                                @endcan
+                            </div>
                         </td>
                     </tr>
                 @endforeach
@@ -273,23 +287,27 @@
                             </a>
                             <div class="fh-file-card__meta">{{ __('web/file-hosting.type_folder') }}</div>
                             <div class="fh-file-card__actions">
-                                @can('edit file hosting folder')
-                                    <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.rename') }}"
-                                            data-bs-toggle="modal" data-bs-target="#fhRenameFolderModal"
-                                            data-id="{{ $folder['id'] }}" data-name="{{ $folder['name'] ?? '' }}">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                @endcan
-                                @can('delete file hosting folder')
-                                    <button type="button" class="fh-table__action-btn is-danger" title="{{ __('web/file-hosting.delete') }}"
-                                            data-fh-ajax-action="delete-folder"
-                                            data-fh-action-url="{{ route('file-hosting.folders.destroy', $folder['id']) }}"
-                                            data-fh-method="DELETE"
-                                            data-fh-confirm="{{ __('web/file-hosting.confirm_delete_folder') }}"
-                                            >
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                @endcan
+                                <div class="fh-action-group" role="group" aria-label="{{ __('ui.labels.actions') }}">
+                                    @can('edit file hosting folder')
+                                        <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.rename') }}"
+                                                aria-label="{{ __('web/file-hosting.rename') }} {{ $folder['name'] ?? '' }}"
+                                                data-bs-toggle="modal" data-bs-target="#fhRenameFolderModal"
+                                                data-id="{{ $folder['id'] }}" data-name="{{ $folder['name'] ?? '' }}">
+                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                        </button>
+                                    @endcan
+                                    @can('delete file hosting folder')
+                                        <button type="button" class="fh-table__action-btn is-danger" title="{{ __('web/file-hosting.delete') }}"
+                                                aria-label="{{ __('web/file-hosting.delete') }} {{ $folder['name'] ?? '' }}"
+                                                data-fh-ajax-action="delete-folder"
+                                                data-fh-action-url="{{ route('file-hosting.folders.destroy', $folder['id']) }}"
+                                                data-fh-method="DELETE"
+                                                data-fh-confirm="{{ __('web/file-hosting.confirm_delete_folder') }}"
+                                                >
+                                            <i class="bi bi-trash" aria-hidden="true"></i>
+                                        </button>
+                                    @endcan
+                                </div>
                             </div>
                         </div>
                     @endforeach
@@ -322,33 +340,39 @@
                                 @endif
                             </div>
                             <div class="fh-file-card__actions">
-                                @if ($isMicrostock)
-                                    <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.microstock.review') }}"
-                                            data-fh-ms-review="{{ $file['id'] }}">
-                                        <i class="bi bi-stars"></i>
-                                    </button>
-                                @endif
-                                <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
-                                   class="fh-table__action-btn" title="{{ __('web/file-hosting.view') }}">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                @can('edit file hosting file')
-                                    <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.rename') }}"
-                                            data-bs-toggle="modal" data-bs-target="#fhRenameFileModal"
-                                            data-id="{{ $file['id'] }}" data-name="{{ $file['name'] ?? '' }}">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                @endcan
-                                @can('delete file hosting file')
-                                    <button type="button" class="fh-table__action-btn is-danger" title="{{ __('web/file-hosting.delete') }}"
-                                            data-fh-ajax-action="delete-file"
-                                            data-fh-action-url="{{ route('file-hosting.files.destroy', $file['id']) }}"
-                                            data-fh-method="DELETE"
-                                            data-fh-confirm="{{ __('web/file-hosting.confirm_delete_file') }}"
-                                            >
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                @endcan
+                                <div class="fh-action-group" role="group" aria-label="{{ __('ui.labels.actions') }}">
+                                    @if ($isMicrostock)
+                                        <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.microstock.review') }}"
+                                                aria-label="{{ __('web/file-hosting.microstock.review') }} {{ $file['name'] ?? '' }}"
+                                                data-fh-ms-review="{{ $file['id'] }}">
+                                            <i class="bi bi-stars" aria-hidden="true"></i>
+                                        </button>
+                                    @endif
+                                    <a href="{{ route('file-hosting.files.show', array_filter(array_merge($ownerQuery, ['file' => $file['id']]))) }}"
+                                       class="fh-table__action-btn" title="{{ __('web/file-hosting.view') }}"
+                                       aria-label="{{ __('web/file-hosting.view') }} {{ $file['name'] ?? '' }}">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </a>
+                                    @can('edit file hosting file')
+                                        <button type="button" class="fh-table__action-btn" title="{{ __('web/file-hosting.rename') }}"
+                                                aria-label="{{ __('web/file-hosting.rename') }} {{ $file['name'] ?? '' }}"
+                                                data-bs-toggle="modal" data-bs-target="#fhRenameFileModal"
+                                                data-id="{{ $file['id'] }}" data-name="{{ $file['name'] ?? '' }}">
+                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                        </button>
+                                    @endcan
+                                    @can('delete file hosting file')
+                                        <button type="button" class="fh-table__action-btn is-danger" title="{{ __('web/file-hosting.delete') }}"
+                                                aria-label="{{ __('web/file-hosting.delete') }} {{ $file['name'] ?? '' }}"
+                                                data-fh-ajax-action="delete-file"
+                                                data-fh-action-url="{{ route('file-hosting.files.destroy', $file['id']) }}"
+                                                data-fh-method="DELETE"
+                                                data-fh-confirm="{{ __('web/file-hosting.confirm_delete_file') }}"
+                                                >
+                                            <i class="bi bi-trash" aria-hidden="true"></i>
+                                        </button>
+                                    @endcan
+                                </div>
                             </div>
                         </div>
                     @endforeach

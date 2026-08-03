@@ -3,7 +3,7 @@
         @can('manage payment gateway')
             <x-slot:actions>
                 <a href="{{ route('payment-gateways.create') }}" class="btn btn-primary btn-sm">
-                    {{ __('web/payments.gateways.create') }}
+                    <i class="bi bi-plus-lg me-1"></i> {{ __('web/payments.gateways.create') }}
                 </a>
             </x-slot:actions>
         @endcan

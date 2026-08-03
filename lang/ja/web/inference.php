@@ -55,6 +55,7 @@ return [
         'rates_lead' => 'このプロバイダー上の各モデルの100万トークンあたりUSD料金。',
         'add_rate' => 'モデル行を追加',
         'save_rates' => '料金を保存',
+        'remove_rate' => '料金を削除',
         'input_rate' => '入力 / 100万 USD',
         'output_rate' => '出力 / 100万 USD',
         'no_rates' => 'モデル料金はまだありません。',

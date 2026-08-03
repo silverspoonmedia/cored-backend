@@ -61,18 +61,21 @@
                                 <td>{{ $entry->created_at?->toDayDateTimeString() }}</td>
                                 <td class="text-end">
                                     <form method="POST" action="{{ route('file-hosting.blocklist.destroy', $entry->id) }}"
-                                          data-swal-confirm="{{ __('web/file-hosting.blocklist_confirm_remove') }}">
+                                          data-swal-confirm="{{ __('web/file-hosting.blocklist_confirm_remove') }}" class="d-inline-block">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
                                             {{ __('web/file-hosting.blocklist_remove') }}
+                                            <span class="visually-hidden" data-form-submit-spinner><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></span>
                                         </button>
                                     </form>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-4">{{ __('web/file-hosting.blocklist_empty') }}</td>
+                                <td colspan="4">
+                                    <x-adminlte4::empty-state icon="bi-shield-slash" :title="__('web/file-hosting.blocklist_empty')" />
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -287,6 +287,7 @@ return [
     'confirm_force_delete' => 'Permanently delete this item? This cannot be undone.',
     'view_grid' => 'Grid view',
     'view_list' => 'List view',
+    'view_toggle' => 'View mode',
     'drag_drop_hint' => 'or click to browse',
     'upload_here' => 'Drop files here to upload',
     'quota_remaining' => 'remaining',

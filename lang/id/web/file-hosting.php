@@ -287,6 +287,7 @@ return [
     'confirm_force_delete' => 'Hapus permanen item ini? Tidak dapat dibatalkan.',
     'view_grid' => 'Tampilan kartu',
     'view_list' => 'Tampilan daftar',
+    'view_toggle' => 'Mode tampilan',
     'drag_drop_hint' => 'atau klik untuk memilih',
     'upload_here' => 'Jatuhkan file di sini untuk mengunggah',
     'quota_remaining' => 'tersisa',

@@ -111,9 +111,9 @@
             @endif
         @endif
 
-        <form method="GET" action="{{ route('product-activations.show', $productKey) }}" class="d-flex align-items-center gap-2 mb-3">
+        <form method="GET" action="{{ route('product-activations.show', $productKey) }}" class="d-flex align-items-center gap-2 mb-3" data-auto-submit>
             <label for="state-filter" class="form-label mb-0 small">{{ __('product-activations.filter_state') }}</label>
-            <select id="state-filter" name="state" class="form-select form-select-sm" style="max-width: 200px;" onchange="this.form.submit()">
+            <select id="state-filter" name="state" class="form-select form-select-sm w-auto" data-auto-submit-trigger>
                 <option value="" @selected($stateFilter === '')>{{ __('product-activations.filter_all') }}</option>
                 <option value="active" @selected($stateFilter === 'active')>{{ __('product-activations.state_active') }}</option>
                 <option value="pending" @selected($stateFilter === 'pending')>{{ __('product-activations.state_pending') }}</option>
@@ -167,36 +167,50 @@
                             <td>{{ $activation['updated_at_human'] ?? $activation['updated_at_formatted'] ?? $activation['updated_at'] ?? '—' }}</td>
                             <td class="text-end">
                                 @if ($canManage)
-                                    @if ($state === 'active')
-                                        <form action="{{ route('product-activations.suspend', [$productKey, $activationId]) }}" method="POST" class="d-inline"
-                                            data-swal-confirm="@json(__('product-activations.action_suspend'))">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-warning btn-sm" title="{{ __('product-activations.action_suspend') }}">
-                                                <i class="bi bi-pause-fill"></i>
-                                            </button>
-                                        </form>
-                                    @elseif ($state === 'suspended')
-                                        <form action="{{ route('product-activations.reactivate', [$productKey, $activationId]) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-success btn-sm" title="{{ __('product-activations.action_reactivate') }}">
-                                                <i class="bi bi-play-fill"></i>
-                                            </button>
-                                        </form>
-                                    @elseif ($state === 'pending')
-                                        <form action="{{ route('product-activations.approve', [$productKey, $activationId]) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-success btn-sm" title="{{ __('product-activations.action_approve') }}">
-                                                <i class="bi bi-check-lg"></i>
-                                            </button>
-                                        </form>
-                                        <form action="{{ route('product-activations.reject', [$productKey, $activationId]) }}" method="POST" class="d-inline"
-                                            data-swal-confirm="@json(__('product-activations.action_reject'))">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="{{ __('product-activations.action_reject') }}">
-                                                <i class="bi bi-x-lg"></i>
-                                            </button>
-                                        </form>
-                                    @endif
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="{{ __('ui.labels.actions') }}">
+                                        @if ($state === 'active')
+                                            <form action="{{ route('product-activations.suspend', [$productKey, $activationId]) }}" method="POST" class="d-inline-block"
+                                                data-swal-confirm="{{ __('product-activations.action_suspend') }}">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-warning btn-sm"
+                                                    aria-label="{{ __('product-activations.action_suspend') }}"
+                                                    title="{{ __('product-activations.action_suspend') }}">
+                                                    <i class="bi bi-pause-fill" aria-hidden="true"></i>
+                                                    <span class="visually-hidden" data-form-submit-spinner><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></span>
+                                                </button>
+                                            </form>
+                                        @elseif ($state === 'suspended')
+                                            <form action="{{ route('product-activations.reactivate', [$productKey, $activationId]) }}" method="POST" class="d-inline-block">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-success btn-sm"
+                                                    aria-label="{{ __('product-activations.action_reactivate') }}"
+                                                    title="{{ __('product-activations.action_reactivate') }}">
+                                                    <i class="bi bi-play-fill" aria-hidden="true"></i>
+                                                    <span class="visually-hidden" data-form-submit-spinner><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></span>
+                                                </button>
+                                            </form>
+                                        @elseif ($state === 'pending')
+                                            <form action="{{ route('product-activations.approve', [$productKey, $activationId]) }}" method="POST" class="d-inline-block">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-success btn-sm"
+                                                    aria-label="{{ __('product-activations.action_approve') }}"
+                                                    title="{{ __('product-activations.action_approve') }}">
+                                                    <i class="bi bi-check-lg" aria-hidden="true"></i>
+                                                    <span class="visually-hidden" data-form-submit-spinner><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></span>
+                                                </button>
+                                            </form>
+                                            <form action="{{ route('product-activations.reject', [$productKey, $activationId]) }}" method="POST" class="d-inline-block"
+                                                data-swal-confirm="{{ __('product-activations.action_reject') }}">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                    aria-label="{{ __('product-activations.action_reject') }}"
+                                                    title="{{ __('product-activations.action_reject') }}">
+                                                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                                    <span class="visually-hidden" data-form-submit-spinner><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></span>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 @endif
                             </td>
                         </tr>

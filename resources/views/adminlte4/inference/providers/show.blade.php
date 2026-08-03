@@ -33,10 +33,11 @@
             @can('manage inference catalog')
                 <div class="d-flex flex-wrap gap-2 mb-3">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-inference-add-entry>
-                        <i class="bi bi-plus-lg me-1"></i>{{ __('web/inference.providers.add_rate') }}
+                        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>{{ __('web/inference.providers.add_rate') }}
                     </button>
                     <button type="button" class="btn btn-primary btn-sm" data-inference-save-entries>
-                        <i class="bi bi-check-lg me-1"></i>{{ __('web/inference.providers.save_rates') }}
+                        <i class="bi bi-check-lg me-1" aria-hidden="true"></i>{{ __('web/inference.providers.save_rates') }}
+                        <span class="visually-hidden" data-form-submit-spinner><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></span>
                     </button>
                 </div>
             @endcan
@@ -68,8 +69,10 @@
                                 </td>
                                 @can('manage inference catalog')
                                     <td class="text-end">
-                                        <button type="button" class="btn btn-outline-danger btn-sm" data-inference-remove-entry>
-                                            <i class="bi bi-trash"></i>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" data-inference-remove-entry
+                                                aria-label="{{ __('web/inference.providers.remove_rate') }}"
+                                                title="{{ __('web/inference.providers.remove_rate') }}">
+                                            <i class="bi bi-trash" aria-hidden="true"></i>
                                         </button>
                                     </td>
                                 @endcan
@@ -95,8 +98,10 @@
                     <td><input type="number" class="form-control form-control-sm" min="0" step="0.0001" data-entry-input value="0"></td>
                     <td><input type="number" class="form-control form-control-sm" min="0" step="0.0001" data-entry-output value="0"></td>
                     <td class="text-end">
-                        <button type="button" class="btn btn-outline-danger btn-sm" data-inference-remove-entry>
-                            <i class="bi bi-trash"></i>
+                        <button type="button" class="btn btn-outline-danger btn-sm" data-inference-remove-entry
+                                aria-label="{{ __('web/inference.providers.remove_rate') }}"
+                                title="{{ __('web/inference.providers.remove_rate') }}">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
                         </button>
                     </td>
                 </tr>

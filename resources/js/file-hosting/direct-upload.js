@@ -364,6 +364,10 @@ export function initDirectUpload(root) {
         void startBatch();
     });
 
+    root.querySelector('[data-direct-upload-browse]')?.addEventListener('click', function () {
+        fileInput?.click();
+    });
+
     form?.addEventListener('submit', function (event) {
         if (batchRunning) {
             event.preventDefault();

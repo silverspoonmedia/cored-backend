@@ -29,8 +29,6 @@ class Select2ScriptsTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('data-monolith-select2="1"', false);
-        $response->assertSee('select2.min.js', false);
-        $response->assertSee('select2-init', false);
-        $response->assertSee('build/assets/select2-init', false);
+        $response->assertSee('build/assets/app-', false);
     }
 }

@@ -7,7 +7,7 @@
         </x-slot:actions>
 
         <div class="table-responsive">
-            <table id="subscriptions-table" class="table table-hover align-middle mb-0 w-100"></table>
+            <table id="subscriptions-table" class="table table-hover align-middle mb-0 w-100" aria-label="{{ __('web/payments.subscriptions.list_title') }}"></table>
         </div>
     </x-adminlte4::card>
 

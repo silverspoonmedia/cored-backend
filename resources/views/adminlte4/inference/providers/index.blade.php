@@ -38,7 +38,7 @@
                     },
                     {
                         data: 'actions',
-                        title: '',
+                        title: @json(__('ui.labels.actions')),
                         orderable: false,
                         searchable: false,
                         className: 'text-end',

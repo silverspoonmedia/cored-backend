@@ -20,7 +20,8 @@ import './infra/jquery-init.js';
 import 'datatables.net-bs5';
 
 // Select2 + Bootstrap 5 theme.
-import 'select2';
+import select2 from 'select2';
+select2();
 
 // Bootstrap 5 (JS bundle includes Popper).
 import 'bootstrap';
@@ -63,3 +64,22 @@ import './infra/ajax-form.js';
 import './infra/sweetalert.js';
 import './infra/theme-scroll.js';
 import './select2-init.js';
+
+/**
+ * Auto-submit delegation — replaces inline onchange="this.form.submit()".
+ * Forms marked with [data-auto-submit] submit when a child element carrying
+ * [data-auto-submit-trigger] fires a `change` event.
+ */
+document.addEventListener('change', (event) => {
+    const trigger = event.target.closest('[data-auto-submit-trigger]');
+
+    if (!trigger) {
+        return;
+    }
+
+    const form = trigger.closest('[data-auto-submit]');
+
+    if (form) {
+        form.submit();
+    }
+});

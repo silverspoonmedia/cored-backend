@@ -437,7 +437,7 @@ a.card:hover {
    Wrapped in @layer so bundled Select2 CSS wins by source order
    and these dark-mode overrides win by selector specificity.
    ============================================================ */
-@layer overrides {
+
 [data-bs-theme="dark"] .select2-selection {
     background-color: var(--monolith-bg-surface);
     border: 1px solid var(--monolith-border-subtle);
@@ -498,7 +498,6 @@ a.card:hover {
     background-color: var(--monolith-bg-muted);
     border: 1px solid var(--monolith-border-subtle);
     color: var(--monolith-text-body);
-}
 }
 
 /* ============================================================

@@ -55,6 +55,7 @@ return [
         'rates_lead' => 'Tarif token USD per 1M untuk setiap model di provider ini.',
         'add_rate' => 'Tambah baris model',
         'save_rates' => 'Simpan tarif',
+        'remove_rate' => 'Hapus tarif',
         'input_rate' => 'Input / 1M USD',
         'output_rate' => 'Output / 1M USD',
         'no_rates' => 'Belum ada tarif model.',

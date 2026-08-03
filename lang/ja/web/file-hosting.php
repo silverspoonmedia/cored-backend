@@ -287,6 +287,7 @@ return [
     'confirm_force_delete' => 'このアイテムを完全に削除しますか？元に戻せません。',
     'view_grid' => 'グリッド表示',
     'view_list' => 'リスト表示',
+    'view_toggle' => '表示モード',
     'drag_drop_hint' => 'またはクリックして選択',
     'upload_here' => 'ファイルをここにドロップしてアップロード',
     'quota_remaining' => '残り',

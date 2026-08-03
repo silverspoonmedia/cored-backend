@@ -1,12 +1,12 @@
 <x-adminlte4::layouts.app :title="__('web/payments.invoices.title')">
     <x-adminlte4::card :title="__('web/payments.invoices.list_title')">
-        <div class="d-flex justify-content-end mb-3">
-            @can('view invoice')
+        @can('view invoice')
+            <x-slot:actions>
                 <a href="{{ route('invoices.export') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-download me-1"></i>{{ __('web/payments.invoices.export_csv') }}
+                    <i class="bi bi-download me-1"></i> {{ __('web/payments.invoices.export_csv') }}
                 </a>
-            @endcan
-        </div>
+            </x-slot:actions>
+        @endcan
 
         <div class="table-responsive">
             <table id="invoices-table" class="table table-hover align-middle mb-0 w-100" aria-label="{{ __('web/payments.invoices.list_title') }}"></table>
