@@ -210,6 +210,6 @@ Reference: `users/_activity_history.blade.php`.
 
 ## Known bridge gaps (realtime)
 
-- **`__monolithEcho`**: Pusher/Echo instance exposed on `window.__monolithEcho` by `bell.js` (notifications). Other domain modules (file-hosting realtime) attach to the same instance if present, but there is no shared "echo registry" — each consumer must feature-detect.
+- **`__monolithEcho`**: Pusher/Echo instance exposed on `window.__monolithEcho` by `bell.js` (notifications; loaded from `assets-scripts` after `app.js`, before page `$scripts`). Other domain modules (file-hosting realtime) attach to the same instance if present, but there is no shared "echo registry" — each consumer must feature-detect.
 - **Bell → DataTable reload**: `bell.js` reloads DataTables via `window.dataTables[tableId].ajax.reload()` (set by `initDataTable({ exposeForReload: true })`). This bridge is string-keyed by table ID — no type safety, no event contract. A missing table ID silently skips reload.
 - **Polling fallback**: `users/index.blade.php` inline `onReady` polls via `setInterval(60s)` only when realtime is degraded (`notification-realtime:degraded` event) or disabled. The poll is torn down on reconnect (`notification-realtime:connected`). No overlap with WS pushes.

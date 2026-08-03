@@ -19,3 +19,8 @@
 <script type="application/json" data-monolith-api-messages>@json($monolithApiMessages)</script>
 <script type="application/json" data-monolith-swal-labels>@json($monolithSwalLabels)</script>
 @vite('resources/js/app.js')
+{{-- Bell must load after app.js (MonolithApi / ajax-form) and before page $scripts
+     so window.notificationRealtime exists when list pages snapshot health. --}}
+@can('view notification')
+    @vite('resources/js/notifications/bell.js')
+@endcan

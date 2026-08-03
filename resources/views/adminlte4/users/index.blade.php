@@ -100,17 +100,16 @@
 
                     // Follow the realtime health broadcast by bell.js: healthy socket =>
                     // no polling (pure WS); degraded => polling on; reconnect => polling
-                    // off + one catch-up reload.
+                    // off + one catch-up reload. Pure polling / failed config emits
+                    // notification-realtime:polling (bell loads in assets-scripts before
+                    // this $scripts slot, so the snapshot below usually sees health already).
                     window.addEventListener('notification-realtime:connected', function () {
                         stopTablePolling();
                         refreshUsersTable();
                     });
                     window.addEventListener('notification-realtime:degraded', startTablePolling);
+                    window.addEventListener('notification-realtime:polling', startTablePolling);
 
-                    // Initial state: bell.js may have set health before this inline script
-                    // ran. Start polling only if realtime is disabled entirely (pure
-                    // polling mode) or already degraded; otherwise wait for events so a
-                    // healthy socket never triggers polling.
                     const realtimeHealth = window.notificationRealtime;
 
                     if (realtimeHealth && (realtimeHealth.enabled === false || realtimeHealth.degraded === true)) {

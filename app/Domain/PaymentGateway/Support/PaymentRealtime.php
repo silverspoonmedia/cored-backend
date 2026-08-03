@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
  * Fire Payment Gateway realtime events after invoice status transitions.
  *
  * Gated on {@see BroadcastConnection::isConfigured()} only — independent of
- * APP_NOTIFICATION_TYPE so checkout can stay live while the bell polls.
+ * `platform.notifications.delivery` so checkout can stay live while the bell polls.
  */
 class PaymentRealtime
 {

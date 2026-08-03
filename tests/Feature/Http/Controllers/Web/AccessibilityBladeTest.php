@@ -211,6 +211,27 @@ class AccessibilityBladeTest extends TestCase
         $this->assertStringContainsString("badge.setAttribute('role', 'status')", $js);
         $this->assertStringContainsString("badge.setAttribute('aria-live', 'polite')", $js);
         $this->assertStringContainsString("list.setAttribute('aria-live', 'polite')", $js);
+        $this->assertStringContainsString('notification-realtime:polling', $js);
+        $this->assertStringContainsString('enterPollingMode', $js);
+    }
+
+    public function test_bell_js_loads_from_assets_scripts_not_navbar_push(): void
+    {
+        $assets = (string) file_get_contents(resource_path('views/adminlte4/components/partials/assets-scripts.blade.php'));
+        $navbar = (string) file_get_contents(resource_path('views/adminlte4/components/partials/navbar.blade.php'));
+        $users = (string) file_get_contents(resource_path('views/adminlte4/users/index.blade.php'));
+
+        $this->assertStringContainsString("@can('view notification')", $assets);
+        $this->assertStringContainsString("@vite('resources/js/notifications/bell.js')", $assets);
+
+        $appPos = strpos($assets, "@vite('resources/js/app.js')");
+        $bellPos = strpos($assets, "@vite('resources/js/notifications/bell.js')");
+        $this->assertNotFalse($appPos);
+        $this->assertNotFalse($bellPos);
+        $this->assertLessThan($bellPos, $appPos, 'app.js must load before bell.js in assets-scripts.');
+
+        $this->assertStringNotContainsString('notifications/bell.js', $navbar);
+        $this->assertStringContainsString('notification-realtime:polling', $users);
     }
 
     public function test_checkout_js_source_sets_aria_pressed_on_channel_buttons(): void
@@ -572,5 +593,15 @@ class AccessibilityBladeTest extends TestCase
         $this->assertStringNotContainsString('FH_AUTH_BASE_FALLBACK', $js, 'router.js must not hard-code FH auth base fallback.');
         $this->assertStringNotContainsString("'/apps/file-hosting'", $js, 'router.js must not hard-code /apps/file-hosting.');
         $this->assertStringNotContainsString('"/apps/file-hosting"', $js, 'router.js must not hard-code /apps/file-hosting.');
+    }
+
+    public function test_settings_form_renders_select_when_options_present(): void
+    {
+        $blade = (string) file_get_contents(resource_path('views/adminlte4/settings/_form.blade.php'));
+
+        $this->assertStringContainsString("\$meta['options']", $blade);
+        $this->assertStringContainsString('x-adminlte4::form.select', $blade);
+        $this->assertStringContainsString(':select2="false"', $blade);
+        $this->assertStringContainsString("web/settings.options.", $blade);
     }
 }

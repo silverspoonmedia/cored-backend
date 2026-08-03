@@ -133,6 +133,7 @@ return [
     ],
     'hints' => [
         'platform.jwt.refresh_skew' => 'Refresh the access token this many minutes before it expires.',
+        'platform.notifications.delivery' => 'Realtime uses WebSockets and requires configured PUSHER_* / broadcast credentials; otherwise the bell falls back to HTTP polling.',
         'platform.payment.channel_fee_bearer' => 'Who absorbs payment channel fees: merchant or customer.',
         'platform.inference.default_provider_slug' => 'Fallback provider when none is specified on a request.',
         'platform.inference.default_input_per_million_usd' => 'Provisional billing rate for registered models without catalog pricing.',
@@ -144,5 +145,15 @@ return [
         'microstock.ai.stage.thinking_backlog_after' => 'Seconds before thinking jobs move to backlog queue.',
         'vtual.credential.failover.enabled' => 'Rotate to the next credential after repeated auth failures.',
         'vtual.claim.accept_anyway_enabled' => 'Allow users to accept a claim even when verification is inconclusive.',
+    ],
+    'options' => [
+        'platform' => [
+            'notifications' => [
+                'delivery' => [
+                    'polling' => 'HTTP polling',
+                    'realtime' => 'WebSocket (realtime)',
+                ],
+            ],
+        ],
     ],
 ];

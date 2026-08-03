@@ -43,6 +43,7 @@ Field labels resolve dynamically from `SettingRegistry` keys. The settings form 
 
 When adding a new `SettingRegistry` entry, update all three locale files in the same task and keep `SettingRegistryTranslationTest` green. API flash messages for settings live in `lang/{locale}/settings.php`.
 
+Enum-like string keys may declare an optional `options` list on the registry definition (values only). `SettingsService::presentGroup` exposes those values; the Blade form renders a native `<select>` (no Select2) and labels come from `web/settings.options.{key}.{value}` (nested lang keys). First use: `platform.notifications.delivery` → `polling` \| `realtime`.
 ## Tier A — env / artisan only (not in Web UI)
 
 | Group | Examples | Why |
@@ -72,7 +73,7 @@ Platform settings page shows **read-only secret status** via `php artisan config
 | `platform.two_factor.window` | `auth.two_factor.window` | |
 | `platform.two_factor.issuer` | `auth.two_factor.issuer` | |
 | `platform.hcaptcha.enabled` | `hcaptcha.enabled` | Sitekey stays env |
-| `platform.notifications.delivery` | `notifications.delivery` | `polling` \| `realtime` |
+| `platform.notifications.delivery` | `notifications.delivery` | `polling` \| `realtime` — select in UI via registry `options` |
 | `platform.notifications.polling_interval` | `notifications.polling_interval` | |
 | `platform.errorlog.enabled` | `errorlog.enabled` | |
 | `platform.errorlog.clean_after_days` | `errorlog.clean_after_days` | |

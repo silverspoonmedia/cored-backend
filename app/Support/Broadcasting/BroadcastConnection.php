@@ -5,9 +5,10 @@ namespace App\Support\Broadcasting;
 /**
  * Decides whether the web notification bell uses WebSocket push or HTTP polling.
  *
- * Realtime delivery requires APP_NOTIFICATION_TYPE=realtime AND a usable broadcast
- * driver (Pusher / Socket-compatible). Polling mode and misconfigured realtime always
- * fall back to HTTP polling so the bell keeps working without a websocket server.
+ * Realtime delivery requires `platform.notifications.delivery` = `realtime`
+ * (Settings → Platform) AND a usable broadcast driver (Pusher / Socket-compatible).
+ * Polling mode and misconfigured realtime always fall back to HTTP polling so the
+ * bell keeps working without a websocket server.
  */
 class BroadcastConnection
 {
@@ -46,7 +47,7 @@ class BroadcastConnection
 
     /**
      * Client-safe Pusher / Echo options for the Blade bell (no secrets).
-     * Requires APP_NOTIFICATION_TYPE=realtime AND configured credentials.
+     * Requires realtime delivery mode AND configured credentials.
      *
      * @return array<string, mixed>|null
      */
@@ -61,7 +62,7 @@ class BroadcastConnection
 
     /**
      * Client-safe Pusher / Echo options whenever a broadcast driver is configured.
-     * Independent of APP_NOTIFICATION_TYPE so other domains (e.g. File Hosting
+     * Independent of `platform.notifications.delivery` so other domains (e.g. File Hosting
      * live listing) can use websockets while the bell stays on polling.
      *
      * @return array<string, mixed>|null

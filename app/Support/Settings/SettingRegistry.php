@@ -10,7 +10,7 @@ namespace App\Support\Settings;
 final class SettingRegistry
 {
     /**
-     * @return array<string, array{group: string, type: SettingType, config: string}>
+     * @return array<string, array{group: string, type: SettingType, config: string, options?: list<string>}>
      */
     public static function definitions(): array
     {
@@ -32,7 +32,7 @@ final class SettingRegistry
             'platform.hcaptcha.enabled' => self::def('platform', SettingType::Bool, 'hcaptcha.enabled'),
 
             // Platform — notifications
-            'platform.notifications.delivery' => self::def('platform', SettingType::String, 'notifications.delivery'),
+            'platform.notifications.delivery' => self::def('platform', SettingType::String, 'notifications.delivery', ['polling', 'realtime']),
             'platform.notifications.polling_interval' => self::def('platform', SettingType::Int, 'notifications.polling_interval'),
 
             // Platform — error log
@@ -156,7 +156,7 @@ final class SettingRegistry
     }
 
     /**
-     * @return array<string, array{group: string, type: SettingType, config: string}>
+     * @return array<string, array{group: string, type: SettingType, config: string, options?: list<string>}>
      */
     public static function forGroup(string $group): array
     {
@@ -167,7 +167,7 @@ final class SettingRegistry
     }
 
     /**
-     * @return array{group: string, type: SettingType, config: string}|null
+     * @return array{group: string, type: SettingType, config: string, options?: list<string>}|null
      */
     public static function get(string $key): ?array
     {
@@ -197,14 +197,20 @@ final class SettingRegistry
     }
 
     /**
-     * @return array{group: string, type: SettingType, config: string}
+     * @return array{group: string, type: SettingType, config: string, options?: list<string>}
      */
-    private static function def(string $group, SettingType $type, string $config): array
+    private static function def(string $group, SettingType $type, string $config, ?array $options = null): array
     {
-        return [
+        $definition = [
             'group' => $group,
             'type' => $type,
             'config' => $config,
         ];
+
+        if ($options !== null && $options !== []) {
+            $definition['options'] = array_values($options);
+        }
+
+        return $definition;
     }
 }

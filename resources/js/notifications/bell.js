@@ -373,6 +373,13 @@ function initNotificationBell(config) {
         }
     }
 
+    /** Pure polling / failed realtime config — not the 30s degrade path. */
+    function enterPollingMode() {
+        window.notificationRealtime = { enabled: false, connected: false };
+        window.dispatchEvent(new CustomEvent('notification-realtime:polling'));
+        startPolling();
+    }
+
     function stopPolling() {
         if (badgePollTimer) {
             clearInterval(badgePollTimer);
@@ -435,8 +442,7 @@ function initNotificationBell(config) {
         const pusherKey = broadcast?.key ?? import.meta.env.VITE_PUSHER_APP_KEY;
 
         if (!broadcast?.authEndpoint || !userId || !pusherKey) {
-            window.notificationRealtime = { enabled: false, connected: false };
-            startPolling();
+            enterPollingMode();
 
             return;
         }
@@ -479,8 +485,7 @@ function initNotificationBell(config) {
                 .private(`App.Models.User.${userId}`)
                 .listen('.activity-notification.received', (e) => onRealtimePing(e, false));
         } catch {
-            window.notificationRealtime = { enabled: false, connected: false };
-            startPolling();
+            enterPollingMode();
         }
     }
 
@@ -514,8 +519,7 @@ function initNotificationBell(config) {
     if (realtime) {
         startRealtime();
     } else {
-        window.notificationRealtime = { enabled: false, connected: false };
-        startPolling();
+        enterPollingMode();
     }
 }
 

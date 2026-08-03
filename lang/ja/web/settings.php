@@ -133,6 +133,7 @@ return [
     ],
     'hints' => [
         'platform.jwt.refresh_skew' => 'アクセストークンの有効期限前にリフレッシュする余裕時間（分）。',
+        'platform.notifications.delivery' => 'リアルタイムは WebSocket を使い、設定済みの PUSHER_* / ブロードキャスト資格情報が必要です。未設定の場合はベルが HTTP ポーリングにフォールバックします。',
         'platform.payment.channel_fee_bearer' => '決済チャネル手数料の負担者: 加盟店または顧客。',
         'platform.inference.default_provider_slug' => 'リクエストで指定がない場合のフォールバックプロバイダー。',
         'platform.inference.default_input_per_million_usd' => 'カタログ価格のない登録モデル向け暫定課金単価。',
@@ -144,5 +145,15 @@ return [
         'microstock.ai.stage.thinking_backlog_after' => '思考ジョブがバックログキューに移るまでの秒数。',
         'vtual.credential.failover.enabled' => '認証失敗が繰り返された後、次の認証情報にローテーションします。',
         'vtual.claim.accept_anyway_enabled' => '検証が不確実でもユーザーがクレームを承認できるようにします。',
+    ],
+    'options' => [
+        'platform' => [
+            'notifications' => [
+                'delivery' => [
+                    'polling' => 'HTTP ポーリング',
+                    'realtime' => 'WebSocket（リアルタイム）',
+                ],
+            ],
+        ],
     ],
 ];

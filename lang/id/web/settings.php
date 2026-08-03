@@ -133,6 +133,7 @@ return [
     ],
     'hints' => [
         'platform.jwt.refresh_skew' => 'Refresh token akses beberapa menit sebelum kedaluwarsa.',
+        'platform.notifications.delivery' => 'Realtime memakai WebSocket dan membutuhkan kredensial PUSHER_* / broadcast yang valid; jika tidak, lonceng kembali ke HTTP polling.',
         'platform.payment.channel_fee_bearer' => 'Siapa yang menanggung biaya channel pembayaran: merchant atau pelanggan.',
         'platform.inference.default_provider_slug' => 'Provider cadangan saat tidak ada yang ditentukan pada permintaan.',
         'platform.inference.default_input_per_million_usd' => 'Tarif penagihan sementara untuk model terdaftar tanpa harga katalog.',
@@ -144,5 +145,15 @@ return [
         'microstock.ai.stage.thinking_backlog_after' => 'Detik sebelum job thinking pindah ke antrean backlog.',
         'vtual.credential.failover.enabled' => 'Rotasi ke kredensial berikutnya setelah kegagalan auth berulang.',
         'vtual.claim.accept_anyway_enabled' => 'Izinkan pengguna menerima klaim meski verifikasi tidak meyakinkan.',
+    ],
+    'options' => [
+        'platform' => [
+            'notifications' => [
+                'delivery' => [
+                    'polling' => 'HTTP polling',
+                    'realtime' => 'WebSocket (realtime)',
+                ],
+            ],
+        ],
     ],
 ];

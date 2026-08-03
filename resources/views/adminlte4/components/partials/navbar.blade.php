@@ -135,9 +135,3 @@
         </ul>
     </div>
 </nav>
-
-@can('view notification')
-    @push('scripts')
-        @vite('resources/js/notifications/bell.js')
-    @endpush
-@endcan

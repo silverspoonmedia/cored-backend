@@ -13,6 +13,11 @@
                 $source = $meta['source'] ?? 'config';
                 $label = $settingFieldLabels[$key] ?? 'web/settings.fields.'.$key;
                 $hint = $settingFieldHints[$key] ?? null;
+                $options = is_array($meta['options'] ?? null) ? $meta['options'] : [];
+                $selectOptions = [];
+                foreach ($options as $optionValue) {
+                    $selectOptions[$optionValue] = __('web/settings.options.'.$key.'.'.$optionValue);
+                }
             @endphp
 
             <div class="mb-3">
@@ -44,6 +49,14 @@
                         name="{{ $field }}"
                         rows="2"
                     >{{ is_array($value) ? implode(', ', $value) : '' }}</textarea>
+                @elseif ($selectOptions !== [])
+                    <x-adminlte4::form.select
+                        :name="$field"
+                        :label="$label"
+                        :options="$selectOptions"
+                        :selected="$value"
+                        :select2="false"
+                    />
                 @else
                     <x-adminlte4::form.input
                         :name="$field"
@@ -69,6 +82,13 @@
     <div class="alert alert-info mb-0">{{ __('web/settings.read_only') }}</div>
     <dl class="row mt-3 mb-0">
         @foreach ($settings as $key => $meta)
+            @php
+                $options = is_array($meta['options'] ?? null) ? $meta['options'] : [];
+                $displayValue = $meta['value'] ?? '—';
+                if ($options !== [] && is_string($meta['value'] ?? null)) {
+                    $displayValue = __('web/settings.options.'.$key.'.'.$meta['value']);
+                }
+            @endphp
             <dt class="col-sm-5">{{ $settingFieldLabels[$key] ?? 'web/settings.fields.'.$key }}</dt>
             <dd class="col-sm-7">
                 @if (($meta['type'] ?? '') === 'bool')
@@ -76,7 +96,7 @@
                 @elseif (($meta['type'] ?? '') === 'array')
                     {{ is_array($meta['value'] ?? null) ? implode(', ', $meta['value']) : '—' }}
                 @else
-                    {{ $meta['value'] ?? '—' }}
+                    {{ $displayValue }}
                 @endif
             </dd>
         @endforeach

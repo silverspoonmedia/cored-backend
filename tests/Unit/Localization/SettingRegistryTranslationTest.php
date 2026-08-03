@@ -37,4 +37,36 @@ class SettingRegistryTranslationTest extends TestCase
             }
         }
     }
+
+    public function test_every_registry_option_value_has_translation_in_all_locales(): void
+    {
+        $locales = array_values((array) config('localization.supported_locales', ['en', 'id', 'ja']));
+
+        foreach (SettingRegistry::definitions() as $key => $definition) {
+            $options = $definition['options'] ?? [];
+
+            if ($options === []) {
+                continue;
+            }
+
+            foreach ($options as $value) {
+                $transKey = 'web/settings.options.'.$key.'.'.$value;
+
+                foreach ($locales as $locale) {
+                    $label = trans($transKey, [], $locale);
+
+                    $this->assertNotSame(
+                        $transKey,
+                        $label,
+                        "Missing [{$locale}] option label for [{$key}] value [{$value}].",
+                    );
+                    $this->assertNotSame(
+                        '',
+                        trim((string) $label),
+                        "Empty [{$locale}] option label for [{$key}] value [{$value}].",
+                    );
+                }
+            }
+        }
+    }
 }

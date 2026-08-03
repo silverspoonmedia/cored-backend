@@ -2,7 +2,7 @@
  * File Hosting live listing — dedicated private channels (not notification bell).
  *
  * Soft-refetch is the correctness floor; single-entity DOM patch is polish.
- * Gate: broadcast credentials only (independent of APP_NOTIFICATION_TYPE).
+ * Gate: broadcast credentials only (independent of platform.notifications.delivery).
  */
 import { createNotificationEcho } from '../notifications/echo';
 

@@ -14,7 +14,7 @@ final class SettingsService
     ) {}
 
     /**
-     * @return array<string, array{value: mixed, source: string, type: string}>
+     * @return array<string, array{value: mixed, source: string, type: string, options?: list<string>}>
      */
     public function presentGroup(string $group): array
     {
@@ -26,11 +26,17 @@ final class SettingsService
             $inDb = array_key_exists($key, $dbSnapshot);
             $value = $inDb ? $dbSnapshot[$key] : config($definition['config']);
 
-            $presented[$key] = [
+            $row = [
                 'value' => $definition['type']->cast($value),
                 'source' => $inDb ? 'database' : 'config',
                 'type' => $definition['type']->value,
             ];
+
+            if (! empty($definition['options']) && is_array($definition['options'])) {
+                $row['options'] = array_values($definition['options']);
+            }
+
+            $presented[$key] = $row;
         }
 
         return $presented;

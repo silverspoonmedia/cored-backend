@@ -93,8 +93,11 @@ It also emits window events consumed by list pages:
 |-------|---------|---------------|
 | `notification-realtime:connected` | WS connected/reconnected | Stop badge + DataTable polling; one catch-up reload on reconnect |
 | `notification-realtime:degraded` | WS stayed non-connected for 30 seconds | Start badge + registered-page fallback polling every 60 seconds |
+| `notification-realtime:polling` | Pure polling mode or failed realtime config (no WS attempt) | Start DataTable fallback polling immediately (badge already polling) |
 
 `connected: false, degraded: false` means connecting or inside the 30-second grace period — **do not poll yet**. While connected, badge and DataTable polling are both off. Reconnect cancels the grace timer, clears fallback intervals, and restores pure WS delivery.
+
+**Script order:** `bell.js` loads from `assets-scripts.blade.php` immediately after `app.js` (gated by `@can('view notification')`), **before** page `$scripts`. List pages (e.g. `/apps/users`) may snapshot `window.notificationRealtime` on init and also listen for the events above. Do not `@push` `bell.js` onto `@stack('scripts')` — that runs after `$scripts` and breaks the pure-polling DataTable fallback race.
 
 ### Expected Network behavior
 
@@ -191,7 +194,7 @@ Dispatch only from service.
 
 Map `tableId()` to the key used by `window.dataTables`; `bell.js` calls `ajax.reload(null, false)` to preserve paging. The WS event is **per-recipient** (`recipientUserIds`), so reload only fires for users in that notification's audience. To reload a shared admin list on any row change, the reload signal must be a **role-broadcast** to the watchers (Root+Admin), not a personal note — see `user_created`/`user_updated`/`user_deleted`.
 
-List pages that require resilience subscribe to `notification-realtime:connected` / `notification-realtime:degraded`. `/apps/users` stops its fallback timer while connected, starts a visible-tab-only 60-second `ajax.reload` after degradation, and performs one catch-up reload on reconnect. Create/delete flash reload remains a same-tab redirect baseline.
+List pages that require resilience subscribe to `notification-realtime:connected` / `notification-realtime:degraded` / `notification-realtime:polling`. `/apps/users` stops its fallback timer while connected, starts a visible-tab-only 60-second `ajax.reload` after degradation or pure polling, and performs one catch-up reload on reconnect. Create/delete flash reload remains a same-tab redirect baseline.
 
 ## Types used by Service (personal)
 

@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Cache;
  * Fire File Hosting realtime events after successful mutations.
  *
  * Gated on {@see BroadcastConnection::isConfigured()} only — independent of
- * APP_NOTIFICATION_TYPE so listing can stay live while the bell polls.
+ * `platform.notifications.delivery` so listing can stay live while the bell polls.
  */
 class FileHostingRealtime
 {
