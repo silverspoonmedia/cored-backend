@@ -39,7 +39,7 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Nested folders | `parent_id` tree per owner; breadcrumb via `FolderAncestorChain` |
 | Files | `file_hosting_files` — denormalized `user_id`, optional `folder_id` |
 | Upload sessions | `file_hosting_uploads` — init -> browser PUT (direct S3 **or** CF Worker proxy) -> complete promotes row. **Control plane** (init / sign-parts / complete / abort) always Monolith->S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. **No resume**: a dead upload restarts from scratch. Chunk/part layout frozen at init (`chunk_size`/`part_count`). **Prune scheduler** aborts orphaned **multipart** sessions past grace or with no recent S3 part activity (Backblaze has no S3 lifecycle for incomplete multiparts). |
-| Part size | Default **25 MB** chunk + multipart threshold (`FILE_HOSTING_CHUNK_SIZE=26214400`); safe range **10–50 MB** on Worker proxy (100 MB request body cap). See Gateway [upload-performance.md](../../../gateway/docs/upload-performance.md) for A/B tuning. |
+| Part size | Default **25 MB** chunk + multipart threshold (`file-hosting.chunk_size_bytes` in **Settings → File Hosting**); safe range **10–50 MB** on Worker proxy (100 MB request body cap). See Gateway [upload-performance.md](../../../gateway/docs/upload-performance.md) for A/B tuning. |
 | DB `path` | Object id only: 40 lowercase alnum chars (`Str::random(40)`). **Not** a full S3 key. |
 | S3 object key | `file-hosting/{user_id}/{objectId}` — resolved at runtime via `ObjectKeyResolver` from `user_id` + `path` + config `directory`. No `folder_id`, no extension, no upload session id in the key. |
 | Display name | Preferred name kept if free in that owner+folder/parent (soft-deleted ignored). If taken on **upload complete** or **file/folder move** → auto DB rename to `{stem} ({maxN+1}).{ext}` (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`; folders without ext → `Docs (2)`). Shared allocator: `UniqueDisplayNameAllocator`. **Manual rename** still rejects exact sibling collisions (user chose the name). S3 object key stays random and is never renamed. Move/rename are **DB-only**. |
@@ -275,7 +275,7 @@ Upload **init** does not reject a display name that already exists in the same o
 
 S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never renamed or moved when the display name / folder changes. **Manual rename** still enforces exact sibling uniqueness (422). Clients must show **`file.name` from complete/move response**, not the original client filename. API `path` is the object id only.
 
-#### Hybrid proxy env
+#### Hybrid proxy env (Tier A)
 
 | Env | Role |
 |-----|------|
@@ -283,7 +283,8 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 | `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Same value as Gateway `S3_TARGETS.uploadToken` — upload **Bearer** + download **HMAC secret** (never put raw token in download URLs) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_CE` | Uploader target **alias** for disk `s3FileHostingCe` (must match a key under Gateway `S3_TARGETS.targets`, e.g. `sbs`) |
 | `FILE_HOSTING_UPLOAD_PROXY_TARGET_US` | Alias for disk `s3FileHostingUs` (optional) |
-| `FILE_HOSTING_DOWNLOAD_VAULT_ENABLED` | When `true`, download URLs use `/vault/{alias}/{userId}/{objectId}` (vault code = upload alias; `file-hosting/` prefix stripped from path). Gateway must have matching `vaultOrigins.{alias}` with `keyPrefix`. |
+
+**Vault download path (Tier B):** `file-hosting.download_vault.enabled` in **Settings → File Hosting** (`/apps/file-hosting/settings`). When enabled, download URLs use `/vault/{alias}/{userId}/{objectId}` (vault code = upload alias; `file-hosting/` prefix stripped from path). Gateway must have matching `vaultOrigins.{alias}` with `keyPrefix`. Local dev default `true` via [`config/settings-local.php`](../../../config/settings-local.php).
 
 **Upload vs download paths (hybrid proxy on):**
 
@@ -296,14 +297,14 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 | Item | Value |
 |------|-------|
 | Production URL | `https://gateway.silverspoon.me` — upload **and** vault download on one domain |
-| Part size / concurrency | 25 MB (`FILE_HOSTING_CHUNK_SIZE=26214400`), 3 parallel parts (`FILE_HOSTING_MAX_CONCURRENT_PARTS=3`) |
+| Part size / concurrency | 25 MB (`file-hosting.chunk_size_bytes`), 3 parallel parts (`file-hosting.max_concurrent_parts`) — **Settings → File Hosting** |
 | Gateway Smart Placement | **Must stay off** — enabling `placement.mode: smart` roughly doubles upload latency per part |
 | Dual-host workaround | **Not needed** — pointing upload at `s3.silverspoon.me` while Gateway handles vault was a fallback only; automated benchmark passed with Smart Placement disabled |
 | Benchmark / tuning | [gateway/docs/upload-performance.md](../../../gateway/docs/upload-performance.md) |
 
 HMAC always signs the **full** object key (`file-hosting/{userId}/{objectId}`) and upload **alias** (`sbs`). Gateway reassembles the key from `keyPrefix` + short vault path.
 
-**Where does `/uploader/{alias}/…` come from?** Monolith maps disk → alias via `upload_proxy.disk_targets`. Upload always uses the full object key in the path. Download uses Vault when `FILE_HOSTING_DOWNLOAD_VAULT_ENABLED=true`.
+**Where does `/uploader/{alias}/…` come from?** Monolith maps disk → alias via `upload_proxy.disk_targets`. Upload always uses the full object key in the path. Download uses Vault when vault download is enabled in **Settings → File Hosting** (`file-hosting.download_vault.enabled`).
 
 **Proxy URL path = S3 object key (keep `file-hosting` prefix)**
 
@@ -378,7 +379,7 @@ sequenceDiagram
   Vault-->>Browser: attachment or inline
 ```
 
-When `FILE_HOSTING_DOWNLOAD_VAULT_ENABLED` is false, the Gateway hop is **Uploader** (`GET /uploader/{alias}/…`) with the same HMAC — backward compatible.
+When `file-hosting.download_vault.enabled` is off, the Gateway hop is **Uploader** (`GET /uploader/{alias}/…`) with the same HMAC — backward compatible.
 
 | Query param | Role |
 |-------------|------|
@@ -422,7 +423,7 @@ Big uploads that die mid-flight (crowded network, tab close, cancel) leave S3 mu
 1. **Expired + past grace** — `expires_at` in the past beyond `stale_upload_grace_hours` → abort directly (no S3 check needed; the session is contractually dead).
 2. **Orphan-by-inactivity (S3-truth)** — for each pending multipart candidate, call `S3DirectUploadEngine::listParts()`; abort only when **no part has `LastModified >= now - orphan_inactivity_minutes`** (or `ListParts` is empty). This is the source of truth for "no new multipart data received". A `ListParts` **error skips the candidate** — never abort blind. Providers without `ListParts` make arm 2 a no-op (arm 1 still runs).
 
-`listParts()` returns each part's `last_modified` (ISO) from S3 `Parts[].LastModified`; `latestPartModifiedAt()` collapses it to the newest timestamp. Default inactivity window is **180 minutes** (config `orphan_inactivity_minutes`, env-tunable).
+`listParts()` returns each part's `last_modified` (ISO) from S3 `Parts[].LastModified`; `latestPartModifiedAt()` collapses it to the newest timestamp. Default inactivity window is **180 minutes** — **Settings → File Hosting** (`file-hosting.orphan_inactivity_minutes`).
 
 **Concurrent-slot fairness:** `max_concurrent_uploads` is enforced on the fresh-init path. With resume removed there is exactly one init path, so the cap is checked on every `initiate()`.
 
@@ -705,7 +706,7 @@ File Hosting listing stays live via **dedicated private channels**. It does **no
 | Check | Behavior |
 |-------|----------|
 | `BroadcastConnection::isConfigured()` | Pusher/Reverb credentials present -> events may broadcast |
-| `APP_NOTIFICATION_TYPE` | **Independent.** FH listing can use websockets while the bell stays on HTTP polling |
+| Platform notification delivery | **Independent.** FH listing can use websockets while the bell stays on HTTP polling (`platform.notifications.delivery` in Settings → Platform) |
 | Client config | `BroadcastConnection::socketClientConfig()` / `FileHostingRealtime::clientConfig()` — same public fields as the bell, without requiring notification realtime mode |
 
 When unconfigured, services still complete business work; no broadcast is dispatched. The browser falls back to a visible-tab soft-refetch poll (~60s after ~30s degrade grace), same health shape as the notification docs.
@@ -772,23 +773,39 @@ Region keys for new uploads: `ce` (Central European), `us`. Client field name is
 
 Region UI (list column, detail badge, soft-refetch): `RegionResolver::shouldDisplayRegion()` — true when `count(configured regions) > 1` **or** historical distinct disks on `HostedFile` (with trashed) > 1 after alias collapse.
 
+### Tier A — env / deploy
+
 | Key | Role |
 |-----|------|
 | `disk` / `directory` | Default Laravel disk for new uploads (`FILE_HOSTING_DISK`, default `s3FileHostingCe`) + key prefix (`FILE_HOSTING_DIRECTORY`, default `file-hosting`). Prefix is **not** stored in DB `path`. |
 | `regions` | Region key -> disk name map (`ce` -> `s3FileHostingCe`, optional `us`); only regions with non-empty disk appear in upload dropdown. Labels: `lang/*/web/file-hosting.php` (`Central European`, etc.). |
 | `disk_aliases` | Optional disk name -> canonical disk map for region reverse-lookup and historical multi-disk collapse |
-| `disabled_regions` | Comma-separated region keys blocked for new uploads only (downloads still served) |
-| `chunk_size_bytes` / `multipart_threshold_bytes` | Upload strategy (default **25 MiB** each) |
-| `upload_proxy.*` | Optional CF Worker hybrid byte path for **upload + download** (`base_url`, `token`, `disk_targets`) |
-| `default_quota_bytes` | Free-tier base always stacked (typically 5 GiB); also used when no `UserQuota` denorm row |
-| `max_concurrent_uploads` | Server-side cap on pending non-expired upload sessions per storage owner (default 2) |
-| `stale_upload_grace_hours` | Extra grace after a pending multipart session expires before `file-hosting:prune-stale-uploads` aborts it and reclaims orphaned multipart storage (default 6, `FILE_HOSTING_STALE_UPLOAD_GRACE`) |
-| `max_concurrent_parts` | Concurrent part XHR streams within one file (default 3, `FILE_HOSTING_MAX_CONCURRENT_PARTS`). Parallel parts fix single-stream throughput collapse on long files; lower to 2 if 520s increase |
-| `presign_ttl_minutes` | Presigned part-URL lifetime (default 60, `FILE_HOSTING_PRESIGN_TTL`). Init signs every part upfront; 60 min + client re-sign-on-403 covers slow multi-GB uploads (was 15, too short) |
-| `orphan_inactivity_minutes` | Reclaim a not-yet-expired pending **multipart** session with no recent S3 part activity for this many minutes (cancel/tab-close right after init). `S3DirectUploadEngine::listParts()` `LastModified` is the activity truth; a `ListParts` error skips the candidate (default 180, `FILE_HOSTING_ORPHAN_INACTIVITY_MINUTES`). Single-PUT sessions are never pruned by this arm |
-| `signed_download_ttl_minutes` | Cached download URL lifetime (Worker HMAC `exp` or S3 temp URL). Default **60** (`FILE_HOSTING_SIGNED_DOWNLOAD_TTL`; was 15) — cuts remints on repeat downloads |
-| `signed_download_cache_margin_seconds` | Treat cache expired early |
-| `public_download_signature_ttl_minutes` | Laravel signed hop for `/s/f/.../download` (Monolith hop only; storage URL has its own TTL) |
+| `upload_proxy.*` | Optional CF Worker hybrid byte path for **upload + download** (`base_url`, `token`, `disk_targets`) — bound from `FILE_HOSTING_UPLOAD_PROXY_*` env vars |
+
+### Tier B — Settings → File Hosting
+
+Edit via `/apps/file-hosting/settings`; runtime reads `setting_config()`. See [settings.md — File Hosting](../../platform/settings.md#file-hosting-file-hosting).
+
+| Registry key | Default | Role |
+|--------------|---------|------|
+| `file-hosting.disabled_regions` | `[]` | Region keys blocked for new uploads only (downloads still served) |
+| `file-hosting.chunk_size_bytes` / `file-hosting.multipart_threshold_bytes` | 25 MiB each | Upload strategy |
+| `file-hosting.max_file_size_bytes` | 5 GiB | Per-file upload cap |
+| `file-hosting.max_files_per_batch` | 20 | Batch upload cap |
+| `file-hosting.default_quota_bytes` | 5 GiB | Free-tier base always stacked; also used when no `UserQuota` denorm row |
+| `file-hosting.base_owned_workspace_slots` | 10 | Owned team workspaces included with paid storage |
+| `file-hosting.max_concurrent_uploads` | 2 | Server-side cap on pending non-expired upload sessions per storage owner |
+| `file-hosting.max_concurrent_parts` | 3 | Concurrent part XHR streams within one file; lower to 2 if 520s increase |
+| `file-hosting.max_presigned_parts_per_response` | 100 | Part URLs signed per init response |
+| `file-hosting.presign_ttl_minutes` | 60 | Presigned part-URL lifetime; init signs every part upfront |
+| `file-hosting.session_ttl_hours` | 24 | Pending upload session TTL |
+| `file-hosting.stale_upload_grace_hours` | 6 | Extra grace after session expiry before `file-hosting:prune-stale-uploads` aborts and reclaims multipart storage |
+| `file-hosting.orphan_inactivity_minutes` | 180 | Reclaim pending **multipart** sessions with no recent S3 part activity (`ListParts` `LastModified` is truth; error skips candidate). Single-PUT sessions never pruned by this arm |
+| `file-hosting.signed_download_ttl_minutes` | 60 | Cached download URL lifetime (Worker HMAC `exp` or S3 temp URL) |
+| `file-hosting.signed_download_cache_margin_seconds` | 60 | Treat cache expired early |
+| `file-hosting.public_download_signature_ttl_minutes` | 5 | Laravel signed hop for `/s/f/.../download` (Monolith hop only) |
+| `file-hosting.allowed_mime_prefixes` | image/application/text/audio/video | Allowed MIME prefixes (empty = allow all non-empty client MIME) |
+| `file-hosting.download_vault.enabled` | `false` | Vault download path when hybrid proxy is on (`true` on local via `settings-local.php`) |
 
 ## Quota
 

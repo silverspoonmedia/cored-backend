@@ -61,7 +61,7 @@ Mismatch beyond epsilon → reject sync (no paid status / no fulfillment). Fee +
 
 ### Buyer-borne channel fees
 
-Policy default: `PAYMENT_CHANNEL_FEE_BEARER=buyer` (`config/payment.php`). YAML route `fee_*` is the **buyer surcharge** shown at checkout and stored on the invoice. Checkout UI shows the **percentage basis** (e.g. `0.7% of service price`) when the route fee is percent-based, so buyers see why the fee amount changes with subtotal.
+Policy default: `platform.payment.channel_fee_bearer` = `buyer` (Settings → Platform). YAML route `fee_*` is the **buyer surcharge** shown at checkout and stored on the invoice. Checkout UI shows the **percentage basis** (e.g. `0.7% of service price`) when the route fee is percent-based, so buyers see why the fee amount changes with subtotal.
 
 | Field | Bookkeeping role |
 |-------|------------------|
@@ -166,7 +166,7 @@ Read-only dashboard for payment gateway revenue (permission: `view invoice`). Me
 
 **Date basis toggle:** filter by `paid_at` (payment recognition) or `withdrawable_at` (PG settlement). Optional gateway filter (Midtrans / iPaymu).
 
-**Date range timezone:** `from` / `to` filters use calendar days in `PAYMENT_REPORTING_TIMEZONE` (default `Asia/Jakarta`), not app UTC. This keeps early-morning WIB payments visible on the default “last 30 days” view when the server clock is still on the previous UTC date.
+**Date range timezone:** `from` / `to` filters use calendar days in `platform.payment.reporting_timezone` (default `Asia/Jakarta`; Settings → Platform), not app UTC. This keeps early-morning WIB payments visible on the default “last 30 days” view when the server clock is still on the previous UTC date.
 
 Also shows **funds pipeline** buckets (awaiting settlement, ready to disburse, in payout, disbursed, failed), breakdowns by gateway/channel/product type, daily trend table, and paginated paid-invoice drill-down. Drill-down `show_url` uses `InvoiceWebDestination::showUrl()` → purchase hub for `service_purchase`, else `/apps/invoices/{id}`.
 
@@ -210,7 +210,7 @@ Checkout pages soft-update hero / steps / panel / sidebar when invoice status ch
 
 | Layer | Behavior |
 |-------|----------|
-| Broadcast gate | `BroadcastConnection::isConfigured()` only — **not** `APP_NOTIFICATION_TYPE` (same independence as File Hosting) |
+| Broadcast gate | `BroadcastConnection::isConfigured()` only — **not** `platform.notifications.delivery` (same independence as File Hosting) |
 | Helper | `PaymentRealtime` → `InvoiceStatusChanged` (`ShouldBroadcastNow`) |
 | Channel | Private `payments.invoice.{invoiceId}` — auth via `InvoiceChannelAuthorizer`: `view invoice` **or** invoiceable owner (`ServicePurchase` / `ServiceAddonRenewal` `user_id`; Subscription matches `subscriber_email`) |
 | Event name | `invoice.status.changed` (client: `.invoice.status.changed`) |

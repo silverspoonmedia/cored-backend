@@ -31,7 +31,7 @@ class BearerTokenProbe implements PlatformCredentialProbe
         }
 
         $platformKey = $credential->platform?->key;
-        $timeout = (int) config('vtual.credential_test.http_timeout', 20);
+        $timeout = (int) setting_config('vtual.credential_test.http_timeout', 20);
 
         if ($platformKey === PlatformKey::Twitch) {
             $clientId = $secretPayload['client_id'] ?? null;

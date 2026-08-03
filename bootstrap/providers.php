@@ -15,6 +15,7 @@ use App\Providers\Domain\VtualServiceProvider;
 use App\Providers\DomainAccessServiceProvider;
 use App\Providers\EncryptionServiceProvider;
 use App\Providers\ProductServiceProvider;
+use App\Providers\SettingsServiceProvider;
 
 return [
     // Kernel
@@ -22,6 +23,7 @@ return [
     EncryptionServiceProvider::class,
     ProductServiceProvider::class,
     DomainAccessServiceProvider::class,
+    SettingsServiceProvider::class,
 
     // Core domains (config/domains.php kind=core)
     IdentityServiceProvider::class,

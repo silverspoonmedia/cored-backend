@@ -59,17 +59,15 @@ function showToast(element, message, type) {
         return;
     }
 
-    element.textContent = message;
-    element.classList.remove('is-success', 'is-error', 'is-visible');
-    element.classList.add(type === 'error' ? 'is-error' : 'is-success');
+    const toast = document.createElement('div');
+    toast.className = 'monolith-toast is-' + (type === 'error' ? 'error' : 'success');
+    toast.setAttribute('role', 'status');
+    toast.textContent = message;
+    element.appendChild(toast);
 
-    window.requestAnimationFrame(() => {
-        element.classList.add('is-visible');
-    });
-
-    window.clearTimeout(showToast.timer);
-    showToast.timer = window.setTimeout(() => {
-        element.classList.remove('is-visible');
+    window.setTimeout(() => {
+        toast.classList.add('is-leaving');
+        window.setTimeout(() => toast.remove(), 300);
     }, 2800);
 }
 

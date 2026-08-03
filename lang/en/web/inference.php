@@ -55,6 +55,7 @@ return [
         'rates_lead' => 'Per-million USD token rates for each model on this provider.',
         'add_rate' => 'Add model row',
         'save_rates' => 'Save rates',
+        'remove_rate' => 'Remove rate',
         'input_rate' => 'Input / 1M USD',
         'output_rate' => 'Output / 1M USD',
         'no_rates' => 'No model rates yet.',

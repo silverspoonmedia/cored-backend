@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'yes' => 'Yes',
+    'no' => 'No',
     'actions' => [
         'save' => 'Save',
         'cancel' => 'Cancel',
@@ -62,5 +64,11 @@ return [
             'delete_menu' => 'Delete this menu item?',
             'restore_menu' => 'Restore this menu item and its trashed subtree?',
         ],
+    ],
+
+    'swal' => [
+        'ok' => 'OK',
+        'confirm' => 'Confirm',
+        'cancel' => 'Cancel',
     ],
 ];

@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'yes' => 'Ya',
+    'no' => 'Tidak',
     'actions' => [
         'save' => 'Simpan',
         'cancel' => 'Batal',
@@ -62,5 +64,11 @@ return [
             'delete_menu' => 'Hapus item menu ini?',
             'restore_menu' => 'Pulihkan item menu ini beserta subtree yang terhapus?',
         ],
+    ],
+
+    'swal' => [
+        'ok' => 'OK',
+        'confirm' => 'Konfirmasi',
+        'cancel' => 'Batal',
     ],
 ];

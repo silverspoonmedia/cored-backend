@@ -132,7 +132,7 @@ class ServiceAddonRenewalService
             return null;
         }
 
-        $settlement = (string) config('service.settlement_currency', ExchangeRateService::SETTLEMENT_CURRENCY);
+        $settlement = (string) setting_config('service.settlement_currency', ExchangeRateService::SETTLEMENT_CURRENCY);
         $fx = $this->exchangeRates->convert($displayTotal, $displayCurrency, $settlement);
 
         return DB::transaction(function () use ($userId, $displayCurrency, $displayTotal, $fx, $lines, $billingEndsBefore): ServiceAddonRenewal {

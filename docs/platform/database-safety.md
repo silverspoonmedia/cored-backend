@@ -31,8 +31,10 @@ Allowed: sqlite (tests) or `ALLOW_DESTRUCTIVE_DB=true` (intentional reset).
 ```bash
 php artisan db:seed
 # Full reset only when intentional:
-# ALLOW_DESTRUCTIVE_DB=true then migrate:fresh --seed
+# ALLOW_DESTRUCTIVE_DB=true php artisan migrate:fresh --seed
 ```
+
+On **local**, `--seed` runs `SettingsSeeder` then `LocalSettingsSeeder` (Tier B dev pack from `config/settings-local.php`). Staging/production: `SettingsSeeder` only. Tier B values are not restored from `.env`.
 
 Default sign-in: `admin@example.com` / `123456789`. Invoices are **not** recreated by seed.
 

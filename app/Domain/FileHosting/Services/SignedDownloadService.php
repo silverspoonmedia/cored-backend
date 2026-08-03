@@ -59,7 +59,7 @@ class SignedDownloadService
             throw new FileHostingException(__('api/file-hosting.download_unavailable'));
         }
 
-        $ttlMinutes = (int) config('microstock.ai.vision_image.signed_url_ttl_minutes', 30);
+        $ttlMinutes = (int) setting_config('microstock.ai.vision_image.signed_url_ttl_minutes', 30);
         $expiresAt = Carbon::now()->addMinutes(max(1, $ttlMinutes));
         $name = $this->variantDownloadName($file->name, $variant);
 
@@ -101,7 +101,7 @@ class SignedDownloadService
      */
     private function mint(HostedFile $file, bool $inline): array
     {
-        $ttlMinutes = (int) config('file-hosting.signed_download_ttl_minutes', 60);
+        $ttlMinutes = (int) setting_config('file-hosting.signed_download_ttl_minutes', 60);
         $expiresAt = Carbon::now()->addMinutes($ttlMinutes);
         $url = $this->mintUrl($file, $expiresAt, $inline);
 
@@ -209,7 +209,7 @@ class SignedDownloadService
 
     private function downloadVaultEnabled(): bool
     {
-        return (bool) config('file-hosting.download_vault.enabled', false);
+        return (bool) setting_config('file-hosting.download_vault.enabled', false);
     }
 
     private function vaultUrlPath(string $objectKey): string

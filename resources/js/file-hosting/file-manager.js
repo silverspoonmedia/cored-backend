@@ -30,6 +30,13 @@ import { createDragMove, moveItemsRequest } from './drag-move';
 import { createMicrostockPanel } from './microstock-panel';
 import { createMicrostockUsagePanel } from './microstock-usage';
 import { formatCollectionProgress } from './microstock-ui';
+
+function fhConfirm(message, opts = {}) {
+    if (window.MonolithSwal?.confirm) {
+        return window.MonolithSwal.confirm(message, '', { dangerMode: true, ...opts });
+    }
+    return Promise.resolve(window.confirm(message));
+}
 import {
     HINT_MAX_LENGTH,
     composeCollectionHint,
@@ -859,7 +866,7 @@ function initFileManager(root) {
             const softNavAfter = btn.dataset.fhSoftNavAfter;
             const userId = btn.dataset.fhUserId || config.ownerUserId || '';
 
-            if (confirmMsg && !window.confirm(confirmMsg)) {
+            if (confirmMsg && !await fhConfirm(confirmMsg)) {
                 return;
             }
 
@@ -950,7 +957,7 @@ function initFileManager(root) {
 
         async function submitFhForm(form) {
             const confirmMsg = form.dataset.fhConfirm || form.querySelector('[data-fh-confirm]')?.dataset?.fhConfirm;
-            if (confirmMsg && !window.confirm(confirmMsg)) {
+            if (confirmMsg && !await fhConfirm(confirmMsg)) {
                 return;
             }
 
@@ -2032,8 +2039,6 @@ function initFileManager(root) {
                             populateCollectionDescribeModal();
                             if (window.bootstrap?.Modal) {
                                 window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                            } else if (window.bootstrap?.Modal === undefined && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                                new bootstrap.Modal(modalEl).show();
                             } else {
                                 // Last-resort: reveal via data-API fallback classes.
                                 modalEl.classList.add('show');
@@ -2103,7 +2108,7 @@ function initFileManager(root) {
 
             const describeSubmit = document.querySelector('[data-fh-collection-describe-submit]');
             if (describeSubmit) {
-                describeSubmit.addEventListener('click', function () {
+                describeSubmit.addEventListener('click', async function () {
                     const modalEl = document.getElementById('fhCollectionDescribeModal');
                     const form = modalEl?.querySelector('[data-fh-collection-describe-form]');
                     const maps = describeLabelMaps();
@@ -2135,7 +2140,7 @@ function initFileManager(root) {
                         const describe = config.collectionDescribe || {};
                         const warning = describe.validation?.blindWarning
                             || 'You are about to lock this collection without any description. The AI will generate metadata with no context, which usually produces poor, inconsistent results. Continue?';
-                        if (!window.confirm(warning)) {
+                        if (!await fhConfirm(warning)) {
                             return;
                         }
                     }
@@ -2347,7 +2352,7 @@ function initFileManager(root) {
                 }
 
                 const confirmMsg = btn.dataset.fhConfirm;
-                if (confirmMsg && !window.confirm(confirmMsg.replace('{n}', selected.size))) {
+                if (confirmMsg && !await fhConfirm(confirmMsg.replace('{n}', selected.size))) {
                     return;
                 }
 
@@ -2449,10 +2454,10 @@ function initFileManager(root) {
 
         // ---- Toast ----
         function showToast(message, type) {
-            let container = document.querySelector('.fh-toast-container');
+            let container = document.querySelector('.monolith-toast-container');
             if (!container) {
                 container = document.createElement('div');
-                container.className = 'fh-toast-container';
+                container.className = 'monolith-toast-container';
                 container.setAttribute('role', 'status');
                 container.setAttribute('aria-live', 'polite');
                 container.setAttribute('aria-atomic', 'false');
@@ -2460,19 +2465,18 @@ function initFileManager(root) {
             }
 
             const toast = document.createElement('div');
-            toast.className = 'fh-toast is-' + (type || 'success');
+            toast.className = 'monolith-toast is-' + (type || 'success');
             toast.setAttribute('role', 'status');
 
             const icon = type === 'error' ? 'bi-x-circle-fill' : 'bi-check-circle-fill';
             toast.innerHTML =
-                '<i class="bi ' + icon + ' fh-toast__icon" aria-hidden="true"></i>'
-                + '<div class="fh-toast__body">' + escapeHtml(message) + '</div>';
+                '<i class="bi ' + icon + ' monolith-toast__icon" aria-hidden="true"></i>'
+                + '<div class="monolith-toast__body">' + escapeHtml(message) + '</div>';
 
             container.appendChild(toast);
 
             setTimeout(function () {
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.3s';
+                toast.classList.add('is-leaving');
                 setTimeout(function () {
                     toast.remove();
                 }, 300);

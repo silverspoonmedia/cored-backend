@@ -129,6 +129,7 @@
         </div>
     </x-adminlte4::card>
 
+    <x-slot:scripts>
     <script>
         (function () {
             'use strict';
@@ -196,7 +197,7 @@
                     activeForm.setAttribute('action', defaultUrl);
                 }
 
-                const modal = bootstrap.Modal.getInstance(modalEl);
+                const modal = window.bootstrap?.Modal?.getInstance(modalEl);
                 if (modal) {
                     modal.hide();
                 }
@@ -205,4 +206,5 @@
             });
         })();
     </script>
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

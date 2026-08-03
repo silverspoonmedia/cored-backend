@@ -125,7 +125,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'default_role' => env('AUTH_DEFAULT_ROLE', 'User'),
+    'default_role' => 'User',
 
     /*
     |--------------------------------------------------------------------------
@@ -134,7 +134,7 @@ return [
     */
 
     'verification' => [
-        'expire' => (int) env('AUTH_VERIFICATION_EXPIRE', 60),
+        'expire' => 60,
     ],
 
     /*
@@ -144,8 +144,8 @@ return [
     */
 
     'two_factor' => [
-        'window' => (int) env('TWO_FACTOR_WINDOW', 1),
-        'issuer' => env('TWO_FACTOR_ISSUER', env('APP_NAME', 'Monolith')),
+        'window' => 1,
+        'issuer' => 'Monolith',
     ],
 
 ];

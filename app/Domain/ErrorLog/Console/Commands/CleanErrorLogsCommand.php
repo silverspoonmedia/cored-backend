@@ -17,7 +17,7 @@ class CleanErrorLogsCommand extends Command
         $days = $this->option('days');
         $days = $days !== null && $days !== ''
             ? (int) $days
-            : (int) config('errorlog.clean_after_days', 90);
+            : (int) setting_config('errorlog.clean_after_days', 90);
 
         $deleted = $errorLogs->clean($days);
 

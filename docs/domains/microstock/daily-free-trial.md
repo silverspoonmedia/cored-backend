@@ -1,14 +1,23 @@
 # Microstock daily free trial
 
-Optional per-user daily free AI analyses for product discovery. Enabled via env — no separate trial activation SKU.
+Optional per-user daily free AI analyses for product discovery. Enabled via **Settings → Microstock** — no separate trial activation SKU. See [configuration-policy.md](../../platform/configuration-policy.md).
 
 ## Configuration
 
+**Settings → Microstock** (`/apps/microstock/settings`):
+
+| Registry key | Config path | Default | Purpose |
+|--------------|-------------|---------|---------|
+| `microstock.daily_free.enabled` | `microstock.daily_free.enabled` | `false` | Master switch |
+| `microstock.daily_free.limit_per_user` | `microstock.daily_free.limit_per_user` | `5` | Max analyses per user per calendar day |
+| `microstock.daily_free.timezone` | `microstock.daily_free.timezone` | `UTC` | Calendar day boundary for reset |
+
+On **`APP_ENV=local`**, `migrate:fresh --seed` / `db:seed` applies `enabled=true` and `limit_per_user=1_000_000` via [`LocalSettingsSeeder`](../../database/seeders/LocalSettingsSeeder.php) — prod-safe config literals stay `false` / `5`.
+
+**Env (Tier A — model aliases and queue names):**
+
 | Env | Default | Purpose |
 |-----|---------|---------|
-| `MICROSTOCK_DAILY_FREE_ENABLED` | `false` | Master switch |
-| `MICROSTOCK_DAILY_FREE_LIMIT` | `5` | Max analyses per user per calendar day |
-| `MICROSTOCK_DAILY_FREE_TIMEZONE` | `UTC` | Calendar day boundary for reset |
 | `MICROSTOCK_AI_VISION_MODEL_FREE` | empty | Free-tier vision alias; empty inherits `MICROSTOCK_AI_VISION_MODEL` |
 | `MICROSTOCK_AI_THINKING_MODEL_FREE` | empty | Free-tier thinking alias; empty inherits `MICROSTOCK_AI_THINKING_MODEL` |
 
@@ -26,7 +35,7 @@ Free queues (lower priority — list after paid queues on workers):
 - **Daily-first (Free mode):** collection of 5 files with 2 slots left → 2 `daily_free` + 3 `prepaid`; assignment follows the collection's deterministic filename order.
 - **Paid mode bypass:** when the user selects **Paid** at lock time, `AiBillingService::planAnalyze()` skips daily-free allocation entirely and bills every file to prepaid credits, even if free slots remain.
 - **Solo mode:** per-file re-analysis has no billing selector; it uses daily-first allocation automatically when daily free is enabled, otherwise prepaid.
-- **Free-disabled default:** when `MICROSTOCK_DAILY_FREE_ENABLED=false`, the billing-mode selector is hidden and all analyses are forced to `paid`.
+- **Free-disabled default:** when `microstock.daily_free.enabled` is off, the billing-mode selector is hidden and all analyses are forced to `paid`.
 - **Tier model:** each asset keeps one `billing_source` through vision and thinking. `daily_free` uses the optional `*_MODEL_FREE` aliases; `prepaid` uses the existing paid/default aliases. Empty free aliases inherit paid aliases. Mixed collections therefore use both model pairs without new queues or schema.
 - **Accounting:** usage stores the selected alias in `alias_model`; provider pricing still resolves from the response's `resolved_model`, preventing cheap-looking aliases from lying to billing.
 - **Lazy reset:** `microstock_daily_free_usage` row per `(user_id, usage_date)`; no cron credit top-up.

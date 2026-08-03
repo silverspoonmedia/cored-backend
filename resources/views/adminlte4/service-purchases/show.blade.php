@@ -42,7 +42,7 @@
         }
     @endphp
 
-    @vite(['resources/css/payments/order-invoice-show.css', 'resources/js/services/purchase-quantity.js'])
+    @vite('resources/css/payments/order-invoice-show.css')
 
     <x-adminlte4::payments.payment-status-hero
         :eyebrow="__('web/services.breadcrumb')"
@@ -65,7 +65,7 @@
             && in_array($invoiceStatus, ['pending', 'challenge'], true)
             && data_get($service, 'plan_kind') === 'addon';
         $purchaseQuantity = max(1, (int) data_get($purchase, 'quantity', 1));
-        $maxPurchaseQuantity = max(1, (int) config('service.purchase.max_quantity', 99));
+        $maxPurchaseQuantity = max(1, (int) setting_config('service.purchase.max_quantity', 99));
         $currentStackQuantity = max(0, (int) data_get($entitlement, 'quantity', 0));
         $projectedStackQuantity = $currentStackQuantity > 0
             ? $currentStackQuantity + $purchaseQuantity
@@ -235,4 +235,8 @@
             @endif
         </div>
     </div>
+
+    <x-slot:scripts>
+        @vite('resources/js/services/purchase-quantity.js')
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

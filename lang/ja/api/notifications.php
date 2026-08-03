@@ -17,4 +17,10 @@ return [
         'service_subscription_expired' => ':service の猶予期間が終了しました。無料枠が適用され、:deleted 件のファイルが削除されました。',
         'inference_unregistered_model' => '未登録モデル :resolved_model（:provider_slug）が暫定料金（入力 $:input_per_million_usd / 出力 $:output_per_million_usd / 100万）で課金されました。モデルカタログで分類して課金を確定してください。',
     ],
+    'audiences' => [
+        'list_success' => '通知オーディエンスを読み込みました。',
+        'show_success' => '通知オーディエンスを読み込みました。',
+        'updated' => '通知オーディエンスを更新しました。',
+        'unknown_type' => '不明な通知タイプです。',
+    ],
 ];

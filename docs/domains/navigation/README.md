@@ -103,6 +103,7 @@ php artisan db:seed --class=MenuSeeder
   - **File Hosting** — parent route `file-hosting.index`
     - My Files — `file-hosting.index`
     - Trash — `file-hosting.trash`
+    - Settings — `settings.file-hosting`; Root, Admin
     - DMCA Blocklist — `file-hosting.blocklist.index`; Root, Admin, Moderator, Management, File Hosting Admin
   - **vTual** — parent route `vtual.index`
     - Overview — `vtual.index`
@@ -110,6 +111,7 @@ php artisan db:seed --class=MenuSeeder
     - Claim as vTuber — `vtual.claims.index`
     - Registry & pending — `vtual.claims.staff`; Root, Admin, Moderator, Management, Vtual Admin
     - Platform credentials — `vtual.admin.credentials.index`; Root, Admin
+    - Settings — `settings.vtual`; Root, Admin
 - **Administration**
   - **Access control** — Root, Admin, Moderator, Management
     - User management — `users.index`
@@ -128,6 +130,11 @@ php artisan db:seed --class=MenuSeeder
   - **Monitoring** — Root, Admin
     - Activity log — `activity-logs.index`
     - Error log — `error-logs.index`
+  - **Settings** — Root, Admin
+    - Platform — `settings.platform`
+    - Microstock — `settings.microstock`
+    - Notification audiences — `notification-audiences.index`
+    - Currencies — `currencies.index`
   - **Navigation** — Root, Admin, Moderator, Management
     - Menu list — `menus.index`
     - Trashed menus — `menus.trashed`
@@ -140,7 +147,7 @@ Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module regi
 
 ## Tests
 
-- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 38-row sidebar/navbar tree, `en`/`id`/`ja` translations, selected role pivots, absence of Debug/probe/Microstock nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
+- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 44-row sidebar/navbar tree, `en`/`id`/`ja` translations, selected role pivots, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
 - `tests/Domain/Navigation/Feature/Http/Controllers/Web/SidebarNavigationWebTest.php` covers sidebar/navbar composer registration and shell rendering.
 - `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php` covers public/private product visibility, guests, privileged access, and empty-branch pruning.
 - `tests/Domain/Product/Feature/MenuVisibilityTest.php` covers authenticated product-activation visibility; its guest case is a rendering smoke test, not a guest tree assertion.

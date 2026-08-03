@@ -255,7 +255,7 @@ class CollectionService
      */
     public static function phaseFor(\DateTimeInterface $startedAt): string
     {
-        $normal = (int) config('microstock.ai.phase.normal_after', 600);
+        $normal = (int) setting_config('microstock.ai.phase.normal_after', 600);
         $elapsed = now()->getTimestamp() - $startedAt->getTimestamp();
 
         return $elapsed < $normal ? 'analyzing' : 'degraded';
@@ -304,7 +304,7 @@ class CollectionService
         fclose($handle);
 
         $path = 'microstock/collections/'.$folder->id.'.csv';
-        Storage::disk(config('microstock.csv_disk', 'local'))
+        Storage::disk(setting_config('microstock.csv_disk', 'local'))
             ->put($path, $contents === false ? '' : $contents);
 
         $folder->forceFill([
@@ -325,11 +325,11 @@ class CollectionService
         $folder = $this->resolveCollection($actor, $folderId);
 
         $path = $folder->collection_csv_path;
-        if ($path === null || ! Storage::disk(config('microstock.csv_disk', 'local'))->exists($path)) {
+        if ($path === null || ! Storage::disk(setting_config('microstock.csv_disk', 'local'))->exists($path)) {
             throw new MicrostockException(__('api/microstock.collection_csv_missing'), 404);
         }
 
-        $contents = Storage::disk(config('microstock.csv_disk', 'local'))->get($path);
+        $contents = Storage::disk(setting_config('microstock.csv_disk', 'local'))->get($path);
 
         return [
             'contents' => $contents,

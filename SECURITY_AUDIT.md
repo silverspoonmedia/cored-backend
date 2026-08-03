@@ -377,7 +377,7 @@ curl -I http://monolith.test/dashboard
 ```
 
 **Residual Risk Notes:**
-CSP (Content-Security-Policy) intentionally omitted to avoid breaking AdminLTE CDN and Vite hot reload. Add manually if needed.
+CSP (Content-Security-Policy) intentionally omitted to avoid breaking remaining CDN font/icon assets (Source Sans, Bootstrap Icons) and Vite hot reload. Add manually if needed.
 
 ---
 
@@ -857,7 +857,7 @@ rg "DB::raw|whereRaw|orderByRaw|selectRaw" --type php
 1. **Playground routes in non-production** — Demo CRUD surface remains available in local/staging; ensure `APP_ENV=production` in production deploys (guard verified by automated test)
 2. **Rate limiting needs distributed solution** — Single-server throttle is not effective against distributed attacks
 3. **Dependency pinning** — pdf-tools can change without notice
-4. **CSP not implemented** — Security headers middleware is active; Content-Security-Policy intentionally omitted to avoid breaking AdminLTE CDN and Vite hot reload
+4. **CSP not implemented** — Security headers middleware is active; Content-Security-Policy intentionally omitted to avoid breaking remaining CDN font/icon assets (Source Sans, Bootstrap Icons) and Vite hot reload
 5. **Auth logging is file-based** — Login/logout/failed-login events are logged locally; centralized logging and alerting recommended for production
 
 ### Next Priority Recommendations

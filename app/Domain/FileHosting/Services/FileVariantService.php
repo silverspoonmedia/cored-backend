@@ -85,7 +85,7 @@ class FileVariantService
             return;
         }
 
-        $estimateBytes = (int) config('microstock.ai.max_request_image_bytes', 200_000);
+        $estimateBytes = (int) setting_config('microstock.ai.max_request_image_bytes', 200_000);
 
         try {
             $this->quota->assertCanAccept((string) $file->user_id, $estimateBytes);

@@ -34,17 +34,19 @@ Service → ActivityNotificationEvent → SendActivityNotification
 | Type exists | `NotificationType` enum |
 | When to fire | Service (not controller) |
 | Message | `lang/{locale}/api/notifications.php` |
-| Who receives | Seeder / `notification_type_settings` |
+| Who receives | Admin UI (`/apps/notification-audiences`) or `notification_type_settings` seeder |
 | Deep link | `actionRoute` + `actionParams` on dispatch |
 
 Listener auto-discovered — **do not** double-register.
 
 ## Delivery
 
-| Mode | Config | Primary transport | Fallback |
-|------|--------|-------------------|----------|
-| Polling | `APP_NOTIFICATION_TYPE=polling` | HTTP every configured interval | None |
-| Realtime | `APP_NOTIFICATION_TYPE=realtime` + valid Pusher/Reverb | Private WebSocket channel | HTTP after 30 seconds degraded |
+Tunable in **Administration → Settings → Platform** — see [configuration-policy.md](../../platform/configuration-policy.md).
+
+| Mode | Setting | Primary transport | Fallback |
+|------|---------|-------------------|----------|
+| Polling | `platform.notifications.delivery` = `polling` | HTTP every `platform.notifications.polling_interval` seconds | None |
+| Realtime | `platform.notifications.delivery` = `realtime` + valid Pusher/Reverb | Private WebSocket channel | HTTP after 30 seconds degraded |
 
 ### Realtime event contract
 
@@ -65,7 +67,7 @@ After persistence, `NotificationService` resolves every recipient and broadcasts
 **Not this bus:**
 
 - File Hosting live listing uses dedicated private channels (`file-hosting.user.*` / `file-hosting.workspace.*`) and domain events under `App\Domain\FileHosting\Events\` — no `NotificationType`, no `table_id`. See [file-hosting/README.md — Realtime / live listing](../file-hosting/README.md#realtime--live-listing).
-- Payment Gateway invoice checkout uses private `payments.invoice.{invoiceId}` + `InvoiceStatusChanged` / `PaymentRealtime` — no `NotificationType`, independent of `APP_NOTIFICATION_TYPE`. See [payment-gateway/README.md — Realtime invoice status](../payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
+- Payment Gateway invoice checkout uses private `payments.invoice.{invoiceId}` + `InvoiceStatusChanged` / `PaymentRealtime` — no `NotificationType`, independent of platform notification delivery mode. See [payment-gateway/README.md — Realtime invoice status](../payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
 
 Both still may share the browser Echo instance (`window.__monolithEcho` / `createNotificationEcho`) when credentials are configured; they do not ride the activity-notification event.
 
@@ -160,7 +162,7 @@ Web routes proxy the API through `ConsumesApi` under `/apps/*`. `NotificationBel
 | Bell state | `resources/js/notifications/bell.js` | Badge/list UI, WS health state machine, fallback polling, DataTable reload, tab sync |
 | Users list | `resources/views/adminlte4/users/index.blade.php` | Register `users-table`; health-gated fallback reload |
 | Inbox UI | `resources/views/adminlte4/notifications/index.blade.php` | In-place read-all row/status mutation |
-| AJAX infrastructure | `resources/views/adminlte4/components/partials/api-response-handler.blade.php` | Emit `ajax-form:success` after successful no-redirect mutation |
+| AJAX infrastructure | `resources/js/infra/api-response-handler.js` (via `app.js`) | Emit `ajax-form:success` after successful no-redirect mutation |
 
 ## Workflows (agents)
 
@@ -175,7 +177,7 @@ Web routes proxy the API through `ConsumesApi` under `/apps/*`. `NotificationBel
 
 ### B — Audience only
 
-Edit seeder / settings pivots; redeploy seed. No admin UI.
+Edit **Administration → Settings → Notification audiences** (`/apps/notification-audiences`) or seeder pivots. Seeder remains the bootstrap baseline.
 
 ### C — Copy only
 
@@ -253,7 +255,7 @@ Icon renders from Blade even when the JS never runs, so an empty/stale badge can
 7. **Private-channel auth** — `POST /broadcasting/auth` must return 2xx after socket connect. A 401/403 means channel subscription failed even if the socket itself is open.
 8. **Payload** — inspect `.activity-notification.received`: expected `type`, `table_id`, and numeric `unread_count`. Missing count causes stale badge; wrong/null table ID prevents list reload.
 9. **HTTP fallback** — `/apps/notifications/unread-count` may appear for degraded polling, single-read reconciliation, or reconnect catch-up. `/apps/notifications/recent` is expected when dropdown opens. On API failure the web proxies return `0` / `[]`, which can mask the source error.
-10. **Delivery mode** — compare `APP_NOTIFICATION_TYPE` with `BroadcastConnection::usesRealtimeNotifications()`. Cached config can preserve old env values; clear application config cache after env changes.
+10. **Delivery mode** — compare **Settings → Platform** `platform.notifications.delivery` with `BroadcastConnection::usesRealtimeNotifications()`. If the cache snapshot looks stale, run `php artisan settings:rebuild-cache`.
 11. **Built asset** — manifest must point to the current `bell-*.js`, and that file must exist. Run `npm run build`, then hard-refresh once after the hash changes.
 12. **Personal types** — `subject_user_id` (or explicit `users`) set at emit time? Missing target = nobody sees it.
 

@@ -9,21 +9,33 @@
                 return '';
             }
 
-            return actions.map(function (action) {
+            const groupLabel = @json(__('ui.labels.actions'));
+
+            const buttons = actions.map(function (action) {
                 const icon = action.icon
-                    ? '<i class="' + action.icon + '"></i>'
+                    ? '<i class="' + action.icon + '" aria-hidden="true"></i>'
                     : action.label;
                 const payload = JSON.stringify(action).replace(/'/g, '&#39;');
 
-                return '<button type="button" class="btn btn-sm btn-' + action.style + ' ms-1" '
-                    + 'data-datatable-action=\'' + payload + '\' title="' + action.label + '">'
+                return '<button type="button" class="btn btn-sm btn-' + action.style + '" '
+                    + 'data-datatable-action=\'' + payload + '\' '
+                    + 'aria-label="' + action.label + '" title="' + action.label + '">'
                     + icon + '</button>';
             }).join('');
+
+            return '<div class="btn-group btn-group-sm" role="group" aria-label="' + groupLabel + '">'
+                + buttons
+                + '</div>';
         };
 
         window.handleDatatableAction = async function (action) {
-            if (action.confirm && !window.confirm(action.confirm)) {
-                return;
+            if (action.confirm) {
+                const confirmed = window.MonolithSwal
+                    ? await window.MonolithSwal.confirm(action.confirm, '', { dangerMode: true })
+                    : window.confirm(action.confirm);
+                if (!confirmed) {
+                    return;
+                }
             }
 
             if (action.method === 'GET') {

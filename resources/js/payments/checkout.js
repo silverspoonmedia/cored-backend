@@ -217,7 +217,7 @@ function initChannelCheckout(root, csrfToken, messages, ui, invoiceId, broadcast
     function showCheckoutToast(message, type) {
         const container = ensureToastContainer(root);
         const toast = document.createElement('div');
-        toast.className = 'ois-toast is-' + (type || 'info');
+        toast.className = 'monolith-toast is-' + (type || 'info');
         toast.setAttribute('role', 'status');
         toast.textContent = message;
         container.appendChild(toast);
@@ -838,7 +838,7 @@ function ensureToastContainer(root) {
     let container = root.querySelector('[data-payment-toast-container]');
     if (!container) {
         container = document.createElement('div');
-        container.className = 'ois-toast-container';
+        container.className = 'monolith-toast-container';
         container.setAttribute('data-payment-toast-container', '');
         container.setAttribute('role', 'status');
         container.setAttribute('aria-live', 'polite');

@@ -30,8 +30,8 @@ class YoutubeApiKeyProbe implements PlatformCredentialProbe
             );
         }
 
-        $channelId = (string) config('vtual.credential_test.youtube_probe_channel_id');
-        $timeout = (int) config('vtual.credential_test.http_timeout', 20);
+        $channelId = (string) setting_config('vtual.credential_test.youtube_probe_channel_id');
+        $timeout = (int) setting_config('vtual.credential_test.http_timeout', 20);
 
         $response = Http::timeout($timeout)
             ->acceptJson()

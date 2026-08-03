@@ -17,4 +17,10 @@ return [
         'service_subscription_expired' => 'Masa grace langganan :service berakhir. Kuota free tier diberlakukan (:deleted file dihapus).',
         'inference_unregistered_model' => 'Model tidak terdaftar :resolved_model di :provider_slug ditagih dengan tarif sementara ($:input_per_million_usd / $:output_per_million_usd per 1M). Klasifikasikan di katalog model untuk menyelesaikan penagihan.',
     ],
+    'audiences' => [
+        'list_success' => 'Audiens notifikasi dimuat.',
+        'show_success' => 'Audiens notifikasi dimuat.',
+        'updated' => 'Audiens notifikasi diperbarui.',
+        'unknown_type' => 'Tipe notifikasi tidak dikenal.',
+    ],
 ];

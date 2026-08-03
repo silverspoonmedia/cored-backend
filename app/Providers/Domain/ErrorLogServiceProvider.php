@@ -20,7 +20,7 @@ class ErrorLogServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(MessageLogged::class, function (MessageLogged $event): void {
-            if (! config('errorlog.enabled', true)) {
+            if (! setting_config('errorlog.enabled', true)) {
                 return;
             }
 

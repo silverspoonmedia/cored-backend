@@ -14,45 +14,39 @@
     </x-adminlte4::card>
 
     <x-slot:scripts>
-        <x-adminlte4::partials.datatable-assets />
         <x-adminlte4::partials.datatable-row-actions />
+        @vite('resources/js/datatable-init.js')
 
-        <script>
-            $(function () {
-                $('#inference-providers-table').DataTable({
-                    processing: true,
-                    serverSide: true,
-                    ajax: {
-                        url: '{{ route('inference.providers.datatable') }}',
-                        error: function (xhr) {
-                            window.MonolithApi.datatableAjaxError(xhr);
+        <script type="module">
+            const initDataTable = window.initDataTable;
+
+            initDataTable({
+                tableId: 'inference-providers-table',
+                ajaxUrl: '{{ route('inference.providers.datatable') }}',
+                order: [[0, 'asc']],
+                language: {
+                    emptyTable: @json(__('web/inference.providers.datatable.empty')),
+                    zeroRecords: @json(__('web/inference.providers.datatable.zero_records')),
+                },
+                columns: [
+                    { data: 'slug', title: @json(__('web/inference.providers.datatable.columns.slug')) },
+                    { data: 'name', title: @json(__('web/inference.providers.datatable.columns.name')) },
+                    {
+                        data: 'model_rates_count',
+                        title: @json(__('web/inference.providers.datatable.columns.rates_count')),
+                        defaultContent: '0',
+                    },
+                    {
+                        data: 'actions',
+                        title: @json(__('ui.labels.actions')),
+                        orderable: false,
+                        searchable: false,
+                        className: 'text-end',
+                        render: function (actions) {
+                            return window.renderDatatableActions(actions);
                         },
                     },
-                    order: [[0, 'asc']],
-                    language: {
-                        emptyTable: @json(__('web/inference.providers.datatable.empty')),
-                        zeroRecords: @json(__('web/inference.providers.datatable.zero_records')),
-                    },
-                    columns: [
-                        { data: 'slug', title: @json(__('web/inference.providers.datatable.columns.slug')) },
-                        { data: 'name', title: @json(__('web/inference.providers.datatable.columns.name')) },
-                        {
-                            data: 'model_rates_count',
-                            title: @json(__('web/inference.providers.datatable.columns.rates_count')),
-                            defaultContent: '0',
-                        },
-                        {
-                            data: 'actions',
-                            title: '',
-                            orderable: false,
-                            searchable: false,
-                            className: 'text-end',
-                            render: function (actions) {
-                                return window.renderDatatableActions(actions);
-                            },
-                        },
-                    ],
-                });
+                ],
             });
         </script>
     </x-slot:scripts>

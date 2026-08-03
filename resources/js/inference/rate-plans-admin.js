@@ -1,9 +1,16 @@
 function showToast(el, message, isError = false) {
     if (!el) return;
-    el.textContent = message;
-    el.classList.toggle('is-error', isError);
-    el.classList.add('is-visible');
-    window.setTimeout(() => el.classList.remove('is-visible'), 4000);
+
+    const toast = document.createElement('div');
+    toast.className = 'monolith-toast is-' + (isError ? 'error' : 'success');
+    toast.setAttribute('role', 'status');
+    toast.textContent = message;
+    el.appendChild(toast);
+
+    window.setTimeout(() => {
+        toast.classList.add('is-leaving');
+        window.setTimeout(() => toast.remove(), 300);
+    }, 4000);
 }
 
 function initInferenceRatePlanAdmin(root) {
@@ -31,9 +38,12 @@ function initInferenceRatePlanAdmin(root) {
         btn.closest('[data-inference-entry-row]')?.remove();
     });
 
-    root.querySelector('[data-inference-save-entries]')?.addEventListener('click', async () => {
+    root.querySelector('[data-inference-save-entries]')?.addEventListener('click', async (event) => {
         if (!syncUrl || !tbody) return;
 
+        const saveButton = event.currentTarget;
+        const spinner = saveButton.querySelector('[data-form-submit-spinner]');
+        
         const rates = Array.from(tbody.querySelectorAll('[data-inference-entry-row]')).map((row) => {
             const modelCardId = row.dataset.modelCardId
                 || row.querySelector('[data-entry-model-select]')?.value;
@@ -44,6 +54,11 @@ function initInferenceRatePlanAdmin(root) {
                 output_per_million_usd: Number(row.querySelector('[data-entry-output]')?.value ?? 0),
             };
         }).filter((entry) => entry.model_card_id);
+
+        if (spinner) {
+            spinner.classList.remove('visually-hidden');
+            saveButton.setAttribute('disabled', 'true');
+        }
 
         try {
             const response = await fetch(syncUrl, {
@@ -62,6 +77,10 @@ function initInferenceRatePlanAdmin(root) {
 
             if (!response.ok || payload.status !== 'success') {
                 showToast(toast, payload.message || 'Save failed', true);
+                if (spinner) {
+                    spinner.classList.add('visually-hidden');
+                    saveButton.removeAttribute('disabled');
+                }
                 return;
             }
 
@@ -69,6 +88,10 @@ function initInferenceRatePlanAdmin(root) {
             window.location.reload();
         } catch {
             showToast(toast, 'Save failed', true);
+            if (spinner) {
+                spinner.classList.add('visually-hidden');
+                saveButton.removeAttribute('disabled');
+            }
         }
     });
 }

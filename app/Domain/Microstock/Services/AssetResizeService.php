@@ -56,7 +56,7 @@ class AssetResizeService
         $source = $this->generator->readOriginalBytes($file);
         $encoded = $this->generator->encodeJpeg($source, $maxPx);
 
-        if (strlen($encoded['bytes']) > (int) config('microstock.ai.max_request_image_bytes', 200_000)) {
+        if (strlen($encoded['bytes']) > (int) setting_config('microstock.ai.max_request_image_bytes', 200_000)) {
             Log::warning('microstock.ai.preview_oversize', [
                 'file_id' => $file->id,
                 'bytes' => strlen($encoded['bytes']),

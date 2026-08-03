@@ -32,7 +32,7 @@ class ServiceCheckoutService
     public function checkout(Service $service, User $user, string $currency, int $quantity = 1): array
     {
         $currency = strtoupper(trim($currency));
-        $maxQuantity = max(1, (int) config('service.purchase.max_quantity', 99));
+        $maxQuantity = max(1, (int) setting_config('service.purchase.max_quantity', 99));
 
         if ($quantity < 1 || $quantity > $maxQuantity) {
             throw new ServiceException(__('api/services.quantity_out_of_range', ['max' => $maxQuantity]), 422);
@@ -82,7 +82,7 @@ class ServiceCheckoutService
             : $unitCharge;
         $creditAmount = $service->isAddonPlan() && $quantity > 1 ? 0.0 : $quote->creditAmount;
         $surplusDays = $service->isAddonPlan() && $quantity > 1 ? 0 : $quote->surplusDays;
-        $settlement = (string) config('service.settlement_currency', ExchangeRateService::SETTLEMENT_CURRENCY);
+        $settlement = (string) setting_config('service.settlement_currency', ExchangeRateService::SETTLEMENT_CURRENCY);
 
         if ($quote->isZeroCharge()) {
             $fx = [

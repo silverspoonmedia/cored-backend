@@ -66,7 +66,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 |------|-----|----------|
 | Internal seed | Root / Admin / Moderator (`manage any vtual resource`) | `POST /api/v1/vtual/creators/orphan` creates creator **without** owner membership; then register channels as usual. Staff UI: `/apps/vtual/admin/registry` (orphan form only — do not self-bind staff as owner; use a separate account if staff is also a vtuber) |
 | External claim Existing | User with `claim vtual creator` | Pick claimable creator + proof channel, receive token `vtual-claim-...`, put token in YouTube About / Twitch bio, then `POST .../claims/{id}/verify` re-fetches description via production `ChannelProfileResolver` |
-| Accept Anyway | Staff + `VTUAL_CLAIM_ACCEPT_ANYWAY` | Skip bio check (QA / local default **ON**) |
+| Accept Anyway | Staff + `vtual.claim.accept_anyway_enabled` (Settings → vTual) | Skip bio check (QA / local default **ON**) |
 | Staff pending queue | `manage any` | `GET /api/v1/vtual/claims/pending` + web `/apps/vtual/admin/registry` |
 
 **On verify success:** insert `vtual_creator_members` role `owner` for claimant; assign product role **`Vtual vTuber`** (level 2250, own perms similar to Editor); **close all other pending claims** for that creator (`status=cancelled`, `closed_reason=superseded`). Rows are **kept as audit log** (no hard-delete this phase).
@@ -346,11 +346,11 @@ Layout: `resources/views/{WEB_LAYOUT}/vtual/` (default `adminlte4`).
 ### UI/UX patterns (overhaul 2026-07)
 
 - **AJAX forms**: all mutations use `x-adminlte4::form.ajax` + `ConsumesApi::respondFromApi` (no full page reload; validation errors inline via `data-form-field` / `data-field-error`).
-- **Confirmation modals**: shared `_confirm-modal.blade.php` partial + `confirm-modal.js` (Vite). Trigger buttons carry `data-bs-toggle="modal"` + `data-confirm-body`. Native `confirm()` banned.
+- **Confirmation modals**: shared `_confirm-modal.blade.php` partial + `confirm-modal.js` (Vite). Trigger buttons carry `data-bs-toggle="modal"` + `data-confirm-body`. Native `confirm()` banned. ESM entry must use `window.bootstrap.Modal` (or `import { Modal } from 'bootstrap'`) — bare `bootstrap.Modal` is a ReferenceError in modules.
 - **Status badges**: shared `x-adminlte4::vtual.status-badge` anonymous component (color-mapped: active→success, pending→warning, archived/disabled→secondary).
 - **Accessibility (WCAG 2.1 AA)**: `<caption>` on every data table, `aria-current="page"` on active nav, `aria-label` on icon-only buttons, `role="status"` + `aria-live` on result regions, visible `<label>` on inputs.
 - **Partials**: `profiles/show.blade.php` composes 5 partials (`_profile-meta-form`, `_profile-merge-form`, `_profile-links`, `_profile-channels`, `_profile-content-stub`).
-- **JS extraction**: inline JS moved to `resources/js/vtual/confirm-modal.js` + `credential-form.js`, registered in `vite.config.js`.
+- **JS extraction**: inline JS moved to `resources/js/vtual/confirm-modal.js` + `credential-form.js`, registered in `vite.config.js`. `confirm-modal.js` binds via `window.bootstrap` (set by `app.js`).
 - **i18n**: all user-facing strings via `__('web/vtual.*')` (en/id/ja); `ajax.*`, `confirm.*`, `table.*` keys added.
 
 ## Seeders
@@ -447,7 +447,7 @@ Not shared this phase (no dual-platform signal without extra APIs): subscriber/f
 Do **not** reclassify all BRE as reportable. Do **not** put secrets in message/context.
 ### Soft credential failover
 
-Default **OFF** (`config/vtual.php` → `credential.failover`, env `VTUAL_CREDENTIAL_FAILOVER_ENABLED`).
+Default **OFF** (`vtual.credential.failover.enabled` in **Settings → vTual**; thresholds via `vtual.credential.failover.*` registry keys). See [configuration-policy.md](../../platform/configuration-policy.md).
 
 | Rule | Behavior |
 |------|----------|
@@ -591,7 +591,7 @@ Web UI: link from credentials index → **API probe**.
 | YouTube/Twitch content upsert into `vtual_contents` | `ContentService::upsertFromPrimary` foundation (no sync workers) |
 | Twitch EventSub | Not implemented |
 | Live poll scheduler / CCV snapshots | Not implemented (`fetchStreamsByUserIds` ready for workers) |
-| Soft credential failover (401/403) | Implemented default **OFF** (`VTUAL_CREDENTIAL_FAILOVER_ENABLED`) |
+| Soft credential failover (401/403) | Implemented default **OFF** (`vtual.credential.failover.enabled` in Settings → vTual) |
 | Reveal plaintext credential endpoint | Explicitly out of scope |
 | Kick integration | Deferred; disabled seed |
 | Content lifecycle sync + CCV snapshots | Table + appearances model; no live sync workers |

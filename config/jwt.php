@@ -92,7 +92,7 @@ return [
     |
     */
 
-    'ttl' => (int) env('JWT_TTL', 60),
+    'ttl' => 60,
 
     /*
     |--------------------------------------------------------------------------
@@ -104,7 +104,7 @@ return [
     | while active browser sessions slide within JWT_REFRESH_TTL.
     |
     */
-    'refresh_skew' => (int) env('JWT_REFRESH_SKEW', 5),
+    'refresh_skew' => 5,
 
     /*
     |--------------------------------------------------------------------------
@@ -116,7 +116,7 @@ return [
     |
     */
 
-    'remember_ttl' => (int) env('JWT_REMEMBER_TTL', env('JWT_REFRESH_TTL', 20160)),
+    'remember_ttl' => 20160,
 
     /*
     |--------------------------------------------------------------------------
@@ -145,7 +145,7 @@ return [
     */
 
     'refresh_iat' => env('JWT_REFRESH_IAT', false),
-    'refresh_ttl' => (int) env('JWT_REFRESH_TTL', 20160),
+    'refresh_ttl' => 20160,
 
     /*
     |--------------------------------------------------------------------------
@@ -261,7 +261,7 @@ return [
 
     // Seconds the predecessor JWT stays acceptable after refresh (parallel tabs /
     // in-flight ApiClient calls). Zero caused random multi-tab 401 after silent refresh.
-    'blacklist_grace_period' => (int) env('JWT_BLACKLIST_GRACE_PERIOD', 30),
+    'blacklist_grace_period' => 30,
 
     /*
     |--------------------------------------------------------------------------

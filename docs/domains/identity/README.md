@@ -44,20 +44,32 @@ app/Domain/Identity/
 
 ## Configuration
 
-| Variable | Notes |
-|----------|-------|
-| `JWT_SECRET` | HS256 signing secret |
-| `JWT_TTL` | Access token lifetime (minutes). Default 60. Blade identity cookie max-age tracks this. |
-| `JWT_REFRESH_TTL` | Window (minutes from `iat`) in which an expired access token can still be refreshed. Default 20160 (~14d). |
-| `JWT_REMEMBER_TTL` | Access TTL when `remember_me=true` on login |
-| `JWT_REFRESH_SKEW` | Minutes before `exp` when Blade `RefreshJwtCookie` proactively refreshes. Default 5. |
-| `JWT_BLACKLIST_GRACE_PERIOD` | Seconds the predecessor JWT stays valid after refresh (parallel tabs). Default **30**. |
-| `AUTH_GUARD=api`, `AUTH_DEFAULT_ROLE=User` | |
-| `HCAPTCHA_ENABLED`, `HCAPTCHA_*` | Public auth endpoints when enabled |
+Tier A (env only) vs operational settings: [configuration-policy.md](../../platform/configuration-policy.md).
+
+| Variable / setting | Notes |
+|------------------|-------|
+| `JWT_SECRET` | HS256 signing secret (env) |
+| `HCAPTCHA_SITEKEY`, `HCAPTCHA_SECRET` | hCaptcha credentials (env) |
+| `AUTH_GUARD=api` | Default API guard |
+
+**Settings → Platform** (`system_settings`; runtime `setting_config()`):
+
+| Registry key | Config path | Notes |
+|--------------|-------------|-------|
+| `platform.jwt.ttl` | `jwt.ttl` | Access token lifetime (minutes). Blade cookie max-age tracks this. Default 60. |
+| `platform.jwt.refresh_ttl` | `jwt.refresh_ttl` | Refresh window from `iat`. Default 20160 (~14d). |
+| `platform.jwt.remember_ttl` | `jwt.remember_ttl` | Access TTL when `remember_me=true` on login |
+| `platform.jwt.refresh_skew` | `jwt.refresh_skew` | Minutes before `exp` when Blade proactively refreshes. Default 5. |
+| `platform.jwt.blacklist_grace_period` | `jwt.blacklist_grace_period` | Seconds predecessor JWT stays valid after refresh (parallel tabs). Default **30**. |
+| `platform.auth.default_role` | `auth.default_role` | Role assigned on registration. Default `User`. |
+| `platform.auth.verification_expire` | `auth.verification.expire` | Email verification link TTL |
+| `platform.two_factor.window` | `auth.two_factor.window` | TOTP verification window |
+| `platform.two_factor.issuer` | `auth.two_factor.issuer` | QR label issuer |
+| `platform.hcaptcha.enabled` | `hcaptcha.enabled` | Master switch (sitekey/secret stay env) |
 
 ### Blade silent refresh
 
-Blade does **not** use the Laravel session guard for identity. After login, `auth_token` is the only identity cookie. `RefreshJwtCookie` + `AuthService::refreshFromToken` slide access tokens within `JWT_REFRESH_TTL` so admins are not hard-kicked at `JWT_TTL`. API: `POST /api/v1/auth/refresh` (Bearer; single refresh inside `AuthService` — no double `jwt.refresh` middleware). Details: [web/blade-admin](../../web/blade-admin.md#silent-refresh-sliding-access).
+Blade does **not** use the Laravel session guard for identity. After login, `auth_token` is the only identity cookie. `RefreshJwtCookie` + `AuthService::refreshFromToken` slide access tokens within `setting_config('jwt.refresh_ttl')` so admins are not hard-kicked at `setting_config('jwt.ttl')`. API: `POST /api/v1/auth/refresh` (Bearer; single refresh inside `AuthService` — no double `jwt.refresh` middleware). Details: [web/blade-admin](../../web/blade-admin.md#silent-refresh-sliding-access).
 
 ### hCaptcha
 

@@ -17,7 +17,7 @@ class FileHostingQuotaRecomputeService
      */
     public function recompute(string $userId): array
     {
-        $free = (int) config('file-hosting.default_quota_bytes', 5 * 1024 * 1024 * 1024);
+        $free = (int) setting_config('file-hosting.default_quota_bytes', 5 * 1024 * 1024 * 1024);
         $mainBytes = 0;
         $addonBytes = 0;
 

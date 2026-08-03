@@ -16,7 +16,7 @@ final class PlatformHttp
 {
     public static function client(?int $timeout = null): PendingRequest
     {
-        $seconds = $timeout ?? (int) config('vtual.http.timeout', 20);
+        $seconds = $timeout ?? (int) setting_config('vtual.http.timeout', 20);
 
         return Http::timeout(max(1, $seconds))->acceptJson();
     }

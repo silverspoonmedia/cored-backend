@@ -36,7 +36,7 @@
         @if (($canInitiatePayment) && data_get($service, 'status') === 'active' && $prices->isNotEmpty())
             @php
                 $isAddonPlan = data_get($service, 'plan_kind') === 'addon';
-                $maxPurchaseQuantity = max(1, (int) config('service.purchase.max_quantity', 99));
+                $maxPurchaseQuantity = max(1, (int) setting_config('service.purchase.max_quantity', 99));
             @endphp
             <form action="{{ route('services.checkout', data_get($service, 'id')) }}" method="POST" class="d-flex flex-wrap gap-2 align-items-end">
                 @csrf

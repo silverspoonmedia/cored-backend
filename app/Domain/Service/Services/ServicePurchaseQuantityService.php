@@ -39,7 +39,7 @@ class ServicePurchaseQuantityService
             throw new ServiceException(__('api/services.quantity_not_editable'), 422);
         }
 
-        $maxQuantity = max(1, (int) config('service.purchase.max_quantity', 99));
+        $maxQuantity = max(1, (int) setting_config('service.purchase.max_quantity', 99));
 
         if ($quantity < 1 || $quantity > $maxQuantity) {
             throw new ServiceException(__('api/services.quantity_out_of_range', ['max' => $maxQuantity]), 422);
@@ -59,7 +59,7 @@ class ServicePurchaseQuantityService
         $unitCharge = $quote->chargeAmount;
         $listAmount = round($unitList * $quantity, 2);
         $chargeAmount = round($unitCharge * $quantity, 2);
-        $settlement = (string) config('service.settlement_currency', ExchangeRateService::SETTLEMENT_CURRENCY);
+        $settlement = (string) setting_config('service.settlement_currency', ExchangeRateService::SETTLEMENT_CURRENCY);
 
         if ($chargeAmount <= 0) {
             $fx = [

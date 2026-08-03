@@ -30,8 +30,8 @@ final class PaymentGatewayRowActionResolver implements RowActionResolverInterfac
             new ActionButton(
                 key: 'edit',
                 label: __('ui.datatable.edit'),
-                method: 'PUT',
-                url: route('api.v1.payment-gateways.update', $model),
+                method: 'GET',
+                url: route('payment-gateways.edit', $model),
                 style: 'primary',
                 icon: 'fas fa-edit',
             ),

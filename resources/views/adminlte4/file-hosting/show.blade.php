@@ -293,5 +293,9 @@
         </div>{{-- /data-fh-panel=show --}}
     </div>{{-- /fh-manager --}}
 
-    @vite(['resources/css/file-hosting/file-hosting.css', 'resources/js/file-hosting/file-manager.js'])
+    @vite('resources/css/file-hosting/file-hosting.css')
+
+    <x-slot:scripts>
+        @vite('resources/js/file-hosting/file-manager.js')
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

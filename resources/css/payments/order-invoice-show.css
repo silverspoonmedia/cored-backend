@@ -1,7 +1,4 @@
 .ois {
-    --ois-radius: 0.75rem;
-    --ois-border: rgba(15, 23, 42, 0.08);
-    --ois-muted: #64748b;
     --ois-surface: #f8fafc;
     --ois-card-bg: #ffffff;
     --ois-text-strong: #0f172a;
@@ -21,25 +18,9 @@
     --ois-hero-gradient-start: #eff6ff;
     --ois-hero-gradient-mid: #f8fafc;
     --ois-hero-gradient-end: #ecfdf5;
-    --ois-kind-qris-bg: #eef2ff;
-    --ois-kind-qris-text: #4338ca;
-    --ois-kind-va-bg: #ecfeff;
-    --ois-kind-va-text: #0e7490;
-    --ois-kind-ewallet-bg: #fff7ed;
-    --ois-kind-ewallet-text: #c2410c;
-    --ois-status-secondary-bg: #e2e8f0;
-    --ois-status-secondary-text: #334155;
-    --ois-status-warning-bg: #fef3c7;
-    --ois-status-warning-text: #92400e;
-    --ois-status-success-bg: #dcfce7;
-    --ois-status-success-text: #166534;
-    --ois-status-danger-bg: #fee2e2;
-    --ois-status-danger-text: #991b1b;
 }
 
 [data-bs-theme="dark"] .ois {
-    --ois-border: rgba(255, 255, 255, 0.10);
-    --ois-muted: #94a3b8;
     --ois-surface: rgba(255, 255, 255, 0.03);
     --ois-card-bg: #1e293b;
     --ois-text-strong: #f1f5f9;
@@ -59,26 +40,12 @@
     --ois-hero-gradient-start: rgba(59, 130, 246, 0.08);
     --ois-hero-gradient-mid: rgba(255, 255, 255, 0.02);
     --ois-hero-gradient-end: rgba(34, 197, 94, 0.06);
-    --ois-kind-qris-bg: rgba(99, 102, 241, 0.15);
-    --ois-kind-qris-text: #a5b4fc;
-    --ois-kind-va-bg: rgba(6, 182, 212, 0.15);
-    --ois-kind-va-text: #67e8f9;
-    --ois-kind-ewallet-bg: rgba(249, 115, 22, 0.15);
-    --ois-kind-ewallet-text: #fdba74;
-    --ois-status-secondary-bg: rgba(148, 163, 184, 0.20);
-    --ois-status-secondary-text: #cbd5e1;
-    --ois-status-warning-bg: rgba(245, 158, 11, 0.18);
-    --ois-status-warning-text: #fcd34d;
-    --ois-status-success-bg: rgba(34, 197, 94, 0.18);
-    --ois-status-success-text: #86efac;
-    --ois-status-danger-bg: rgba(239, 68, 68, 0.18);
-    --ois-status-danger-text: #fca5a5;
 }
 
 .ois-hero {
     background: linear-gradient(135deg, var(--ois-hero-gradient-start) 0%, var(--ois-hero-gradient-mid) 55%, var(--ois-hero-gradient-end) 100%);
-    border: 1px solid var(--ois-border);
-    border-radius: var(--ois-radius);
+    border: 1px solid var(--monolith-border-subtle);
+    border-radius: var(--monolith-radius);
     padding: 1.35rem 1.5rem;
     margin-bottom: 1.25rem;
 }
@@ -92,7 +59,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--ois-muted);
+    color: var(--monolith-text-muted);
     margin-bottom: 0.35rem;
 }
 
@@ -118,14 +85,14 @@
 }
 
 .ois-payment-card {
-    border: 1px solid var(--ois-border);
-    border-radius: var(--ois-radius);
+    border: 1px solid var(--monolith-border-subtle);
+    border-radius: var(--monolith-radius);
     background: var(--ois-card-bg);
 }
 
 .ois-payment-card__head {
     padding: 1rem 1.15rem;
-    border-bottom: 1px solid var(--ois-border);
+    border-bottom: 1px solid var(--monolith-border-subtle);
     background: var(--ois-surface);
 }
 
@@ -134,8 +101,8 @@
 }
 
 .ois-sidebar-card {
-    border: 1px solid var(--ois-border);
-    border-radius: var(--ois-radius);
+    border: 1px solid var(--monolith-border-subtle);
+    border-radius: var(--monolith-radius);
     background: var(--ois-card-bg);
     padding: 1rem 1.15rem;
     margin-bottom: 1rem;
@@ -150,7 +117,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--ois-muted);
+    color: var(--monolith-text-muted);
     margin-bottom: 0.75rem;
 }
 
@@ -170,8 +137,8 @@
     display: flex;
     gap: 0.65rem;
     align-items: flex-start;
-    border: 1px solid var(--ois-border);
-    border-radius: 0.65rem;
+    border: 1px solid var(--monolith-border-subtle);
+    border-radius: var(--monolith-radius);
     padding: 0.75rem 0.85rem;
     background: var(--ois-card-bg);
 }
@@ -216,13 +183,13 @@
 
 .ois-step__body {
     font-size: 0.8rem;
-    color: var(--ois-muted);
+    color: var(--monolith-text-muted);
     margin: 0.15rem 0 0;
 }
 
 .ois-fee-breakdown {
-    border: 1px dashed var(--ois-border);
-    border-radius: 0.65rem;
+    border: 1px dashed var(--monolith-border-subtle);
+    border-radius: var(--monolith-radius);
     padding: 0.85rem 1rem;
     background: var(--ois-surface);
 }
@@ -236,27 +203,9 @@
 }
 
 .ois-fee-breakdown__row--total {
-    border-top: 1px solid var(--ois-border);
+    border-top: 1px solid var(--monolith-border-subtle);
     margin-top: 0.35rem;
     padding-top: 0.65rem;
-}
-
-.ois-amount-callout {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    border: 1px dashed var(--ois-border);
-    border-radius: 0.65rem;
-    padding: 0.85rem 1rem;
-    background: var(--ois-surface);
-    margin-bottom: 1rem;
-}
-
-.ois-amount-callout__label {
-    font-size: 0.85rem;
-    color: var(--ois-muted);
-    margin: 0;
 }
 
 .ois-amount-callout__value {
@@ -276,7 +225,7 @@
     align-items: center;
     gap: 0.5rem;
     border: 1px solid var(--ois-channel-border);
-    border-radius: 0.65rem;
+    border-radius: var(--monolith-radius);
     padding: 0.55rem 0.85rem;
     background: var(--ois-card-bg);
     color: var(--ois-channel-text);
@@ -326,7 +275,7 @@
 .pc-checkout-channel__icon {
     width: 2rem;
     height: 2rem;
-    border-radius: 0.5rem;
+    border-radius: var(--monolith-radius-sm);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -335,93 +284,51 @@
 }
 
 .pc-kind-qris .pc-checkout-channel__icon {
-    background: var(--ois-kind-qris-bg);
-    color: var(--ois-kind-qris-text);
+    background: var(--monolith-kind-qris-bg);
+    color: var(--monolith-kind-qris-text);
 }
 
 .pc-kind-va .pc-checkout-channel__icon {
-    background: var(--ois-kind-va-bg);
-    color: var(--ois-kind-va-text);
+    background: var(--monolith-kind-va-bg);
+    color: var(--monolith-kind-va-text);
 }
 
 .pc-kind-ewallet .pc-checkout-channel__icon {
-    background: var(--ois-kind-ewallet-bg);
-    color: var(--ois-kind-ewallet-text);
+    background: var(--monolith-kind-ewallet-bg);
+    color: var(--monolith-kind-ewallet-text);
 }
 
 .pc-checkout-instructions {
-    border: 1px solid var(--ois-border);
-    border-radius: 0.65rem;
+    border: 1px solid var(--monolith-border-subtle);
+    border-radius: var(--monolith-radius);
     padding: 1rem;
     background: var(--ois-surface);
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .pc-checkout-channel {
+        transition: none !important;
+    }
+}
+
 .ois-status-secondary {
-    background: var(--ois-status-secondary-bg) !important;
-    color: var(--ois-status-secondary-text) !important;
+    background: var(--monolith-status-secondary-bg);
+    color: var(--monolith-status-secondary-text);
 }
 
 .ois-status-warning {
-    background: var(--ois-status-warning-bg) !important;
-    color: var(--ois-status-warning-text) !important;
+    background: var(--monolith-status-warning-bg);
+    color: var(--monolith-status-warning-text);
 }
 
 .ois-status-success {
-    background: var(--ois-status-success-bg) !important;
-    color: var(--ois-status-success-text) !important;
+    background: var(--monolith-status-success-bg);
+    color: var(--monolith-status-success-text);
 }
 
 .ois-status-danger {
-    background: var(--ois-status-danger-bg) !important;
-    color: var(--ois-status-danger-text) !important;
+    background: var(--monolith-status-danger-bg);
+    color: var(--monolith-status-danger-text);
 }
 
-/* ---- Checkout toasts (replaces window.alert) ---- */
-.ois-toast-container {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    z-index: 1080;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-width: calc(100vw - 2rem);
-    pointer-events: none;
-}
-
-.ois-toast {
-    pointer-events: auto;
-    min-width: 18rem;
-    max-width: 24rem;
-    padding: 0.75rem 1rem;
-    border-radius: var(--monolith-radius, 0.75rem);
-    box-shadow: var(--monolith-shadow, 0 4px 6px -1px rgba(15, 23, 42, 0.10));
-    background: var(--monolith-bg-surface, #fff);
-    color: var(--monolith-text-body, #1e293b);
-    border: 1px solid var(--monolith-border-subtle, rgba(15, 23, 42, 0.12));
-    border-left-width: 3px;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.ois-toast.is-success {
-    border-left-color: var(--monolith-status-success-text, #166534);
-}
-
-.ois-toast.is-error {
-    border-left-color: var(--monolith-status-danger-text, #991b1b);
-}
-
-.ois-toast.is-info {
-    border-left-color: var(--monolith-accent, #6366f1);
-}
-
-.ois-toast.is-leaving {
-    opacity: 0;
-    transform: translateX(1rem);
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .ois-toast {
-        transition: none;
-    }
-}
+/* ---- Checkout toasts: unified .monolith-toast in monolith-overrides.css ---- */

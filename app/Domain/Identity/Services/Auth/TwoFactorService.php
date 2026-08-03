@@ -98,7 +98,7 @@ class TwoFactorService
 
     private function verifyCode(string $secret, string $code): bool
     {
-        return (bool) $this->google2fa()->verifyKey($secret, $code, (int) config('auth.two_factor.window', 1));
+        return (bool) $this->google2fa()->verifyKey($secret, $code, (int) setting_config('auth.two_factor.window', 1));
     }
 
     private function secret(User $user): ?string
@@ -111,7 +111,7 @@ class TwoFactorService
      */
     private function setupPayload(User $user, string $secret): array
     {
-        $issuer = (string) config('auth.two_factor.issuer', config('app.name', 'Monolith'));
+        $issuer = (string) setting_config('auth.two_factor.issuer', config('app.name', 'Monolith'));
 
         return [
             'secret' => $secret,

@@ -90,7 +90,7 @@ class InvoiceChannelFeeService
 
     public function buyerBearsFee(): bool
     {
-        return config('payment.channel_fee_bearer', 'buyer') === 'buyer';
+        return setting_config('payment.channel_fee_bearer', 'buyer') === 'buyer';
     }
 
     /**

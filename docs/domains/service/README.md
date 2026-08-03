@@ -227,10 +227,10 @@ Morph aliases:
 
 | Key | Default | Role |
 |-----|---------|------|
-| `FRANKFURTER_BASE_URL` | `https://api.frankfurter.app` | FX HTTP client |
-| `FRANKFURTER_TIMEOUT` | `10` | seconds |
-| `FRANKFURTER_CACHE_TTL` | `3600` | L1 + “fresh DB snapshot” window (seconds) |
-| `SERVICE_GRACE_DAYS` | `7` | `config/service.php` → grace after `ends_at` |
+| `FRANKFURTER_BASE_URL` | `https://api.frankfurter.app` | FX HTTP client (env) |
+| `FRANKFURTER_TIMEOUT` | `10` | seconds (env) |
+| `platform.frankfurter.cache_ttl` | `3600` | L1 + “fresh DB snapshot” window (seconds) — Settings → Platform |
+| `platform.service.grace_days` | `7` | Grace after `ends_at` — Settings → Platform |
 | `SERVICE_SETTLEMENT_CURRENCY` | `IDR` | PG settlement currency |
 | `SERVICE_PURCHASE_MAX_QUANTITY` | `99` | Max units per addon purchase on catalog show + hub quantity inputs |
 | `PAYMENT_DEFAULT_BUYER_PHONE` | (see payment docs) | iPaymu buyer phone fallback |

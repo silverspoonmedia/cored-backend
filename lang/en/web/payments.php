@@ -4,6 +4,15 @@ return [
     'gateways' => [
         'title' => 'Payment gateways',
         'list_title' => 'Payment gateway list',
+        'create' => 'Add gateway',
+        'create_title' => 'Create payment gateway',
+        'edit_title' => 'Edit payment gateway',
+        'form' => [
+            'name' => 'System name',
+            'display_name' => 'Display name',
+            'priority' => 'Priority',
+            'is_active' => 'Active',
+        ],
         'datatable' => [
             'empty' => 'No payment gateways configured.',
             'zero_records' => 'No payment gateways match your search.',

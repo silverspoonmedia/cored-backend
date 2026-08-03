@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers\Web;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
@@ -15,6 +16,8 @@ use Tests\TestCase;
  */
 class ThemeOverrideCssTest extends TestCase
 {
+    use RefreshDatabase;
+
     /** @return list<string> */
     private function overrideFiles(): array
     {
@@ -170,6 +173,27 @@ class ThemeOverrideCssTest extends TestCase
         }
     }
 
+    public function test_select2_dark_selected_text_beats_bootstrap5_theme_specificity(): void
+    {
+        foreach ($this->overrideFiles() as $label => $path) {
+            $css = file_get_contents($path);
+
+            // Must match select2-bootstrap-5-theme's
+            // `.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered`
+            // or the theme's hardcoded color: #212529 wins on dark surfaces.
+            $this->assertStringContainsString(
+                '[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered',
+                $css,
+                "{$label} missing high-specificity Select2 dark selected-text override."
+            );
+            $this->assertStringContainsString(
+                'color: var(--monolith-text-body)',
+                $css,
+                "{$label} Select2 dark selected text must use --monolith-text-body."
+            );
+        }
+    }
+
     public function test_login_page_renders_with_override_css_asset_link(): void
     {
         // The login page must load the CSS override layer via @vite.
@@ -184,15 +208,16 @@ class ThemeOverrideCssTest extends TestCase
 
     public function test_login_page_renders_theme_toggle_script(): void
     {
-        // Both layouts (app + auth) load assets-scripts.blade.php, which contains
-        // the theme toggle JS (lte-theme localStorage + data-bs-theme-value).
-        // The login page (auth layout, bare) still gets the theme script even
-        // though it has no navbar toggle — so the user's persisted theme applies.
+        // Both layouts (app + auth) load assets-scripts.blade.php, which boots
+        // app.js — the Vite bundle that includes the theme toggle JS (lte-theme
+        // localStorage + data-bs-theme-value). The login page (auth layout,
+        // bare) still gets the theme script even though it has no navbar toggle
+        // — so the user's persisted theme applies.
         $response = $this->get(route('login'));
 
         $response->assertOk();
-        $response->assertSee('lte-theme', false);
-        $response->assertSee('data-bs-theme', false);
+        $response->assertSee('app-', false);
+        $response->assertSee('.js', false);
     }
 
     // ---- Counterpart parity tests ----
@@ -339,36 +364,33 @@ class ThemeOverrideCssTest extends TestCase
     public function test_payment_css_kind_icons_are_token_driven(): void
     {
         $files = [
-            'channels-admin' => [resource_path('css/payments/channels-admin.css'), '--pc-kind-'],
-            'order-invoice-show' => [resource_path('css/payments/order-invoice-show.css'), '--ois-kind-'],
-        ];
-
-        foreach ($files as $label => [$path, $prefix]) {
-            $this->assertFileExists($path, "{$label} CSS missing.");
-            $css = file_get_contents($path);
-
-            $this->assertStringContainsString("{$prefix}qris-bg:", $css, "{$label} missing kind-qris-bg token.");
-            $this->assertStringContainsString("{$prefix}va-bg:", $css, "{$label} missing kind-va-bg token.");
-            $this->assertStringContainsString("{$prefix}ewallet-bg:", $css, "{$label} missing kind-ewallet-bg token.");
-        }
-    }
-
-    public function test_payment_css_status_colors_are_token_driven(): void
-    {
-        $files = [
             'channels-admin' => resource_path('css/payments/channels-admin.css'),
             'order-invoice-show' => resource_path('css/payments/order-invoice-show.css'),
         ];
 
         foreach ($files as $label => $path) {
+            $this->assertFileExists($path, "{$label} CSS missing.");
             $css = file_get_contents($path);
 
-            $prefix = $label === 'channels-admin' ? '--pc-status-' : '--ois-status-';
-            $this->assertStringContainsString("{$prefix}secondary-bg:", $css, "{$label} missing status-secondary-bg token.");
-            $this->assertStringContainsString("{$prefix}warning-bg:", $css, "{$label} missing status-warning-bg token.");
-            $this->assertStringContainsString("{$prefix}success-bg:", $css, "{$label} missing status-success-bg token.");
-            $this->assertStringContainsString("{$prefix}danger-bg:", $css, "{$label} missing status-danger-bg token.");
+            // Kind icons must reference the global --monolith-kind-* tokens (consolidated from --pc-*/--ois-*)
+            $this->assertStringContainsString('var(--monolith-kind-qris-bg)', $css, "{$label} missing --monolith-kind-qris-bg reference.");
+            $this->assertStringContainsString('var(--monolith-kind-va-bg)', $css, "{$label} missing --monolith-kind-va-bg reference.");
+            $this->assertStringContainsString('var(--monolith-kind-ewallet-bg)', $css, "{$label} missing --monolith-kind-ewallet-bg reference.");
         }
+    }
+
+    public function test_payment_css_status_colors_are_token_driven(): void
+    {
+        // order-invoice-show uses .ois-status-* classes that must reference global --monolith-status-* tokens.
+        // channels-admin has no status-class selectors; verify it has no leftover --pc-status-* definitions.
+        $orderInvoice = file_get_contents(resource_path('css/payments/order-invoice-show.css'));
+        $this->assertStringContainsString('var(--monolith-status-secondary-bg)', $orderInvoice, 'order-invoice-show missing --monolith-status-secondary-bg reference.');
+        $this->assertStringContainsString('var(--monolith-status-warning-bg)', $orderInvoice, 'order-invoice-show missing --monolith-status-warning-bg reference.');
+        $this->assertStringContainsString('var(--monolith-status-success-bg)', $orderInvoice, 'order-invoice-show missing --monolith-status-success-bg reference.');
+        $this->assertStringContainsString('var(--monolith-status-danger-bg)', $orderInvoice, 'order-invoice-show missing --monolith-status-danger-bg reference.');
+
+        $channelsAdmin = file_get_contents(resource_path('css/payments/channels-admin.css'));
+        $this->assertStringNotContainsString('--pc-status-', $channelsAdmin, 'channels-admin must not redefine --pc-status-* tokens (consolidated to --monolith-*).');
     }
 
     public function test_payment_css_gradients_are_token_driven(): void

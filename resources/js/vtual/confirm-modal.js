@@ -48,7 +48,7 @@
             return;
         }
 
-        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+        window.bootstrap.Modal.getOrCreateInstance(modalEl).hide();
         activeForm.requestSubmit();
     });
 })();

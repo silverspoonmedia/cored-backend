@@ -2,7 +2,7 @@
 
 return [
     'checkout' => [
-        'prefer_channel_checkout' => filter_var(env('PAYMENT_PREFER_CHANNEL_CHECKOUT', true), FILTER_VALIDATE_BOOLEAN),
+        'prefer_channel_checkout' => true,
     ],
 
     /*
@@ -17,14 +17,14 @@ return [
     | Channel fee bearer (buyer | merchant)
     |--------------------------------------------------------------------------
     */
-    'channel_fee_bearer' => env('PAYMENT_CHANNEL_FEE_BEARER', 'buyer'),
+    'channel_fee_bearer' => 'buyer',
 
     /*
     |--------------------------------------------------------------------------
     | Reporting timezone (admin income page date filters)
     |--------------------------------------------------------------------------
     */
-    'reporting_timezone' => env('PAYMENT_REPORTING_TIMEZONE', 'Asia/Jakarta'),
+    'reporting_timezone' => 'Asia/Jakarta',
 
     'gateways' => [
         'midtrans' => [

@@ -89,22 +89,31 @@
                                 <span class="badge text-bg-light border">{{ $service['status'] ?? '' }}</span>
                             </td>
                             <td class="text-end">
-                                <a href="{{ route('services.show', $service['id']) }}" class="btn btn-outline-info btn-sm">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                @can('manage service')
-                                    <a href="{{ route('services.edit', $service['id']) }}" class="btn btn-outline-secondary btn-sm">
-                                        <i class="bi bi-pencil"></i>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="{{ __('ui.labels.actions') }}">
+                                    <a href="{{ route('services.show', $service['id']) }}" class="btn btn-outline-info btn-sm"
+                                        aria-label="{{ __('ui.actions.view') }} {{ $service['name'] ?? '' }}"
+                                        title="{{ __('ui.actions.view') }}">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
                                     </a>
-                                    <form action="{{ route('services.destroy', $service['id']) }}" method="POST" class="d-inline"
-                                        onsubmit="return confirm(@json(__('web/services.confirm_delete')));">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-sm">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                @endcan
+                                    @can('manage service')
+                                        <a href="{{ route('services.edit', $service['id']) }}" class="btn btn-outline-secondary btn-sm"
+                                            aria-label="{{ __('ui.actions.edit') }} {{ $service['name'] ?? '' }}"
+                                            title="{{ __('ui.actions.edit') }}">
+                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                        </a>
+                                        <form action="{{ route('services.destroy', $service['id']) }}" method="POST" class="d-inline-block"
+                                            data-swal-confirm="{{ __('web/services.confirm_delete') }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                aria-label="{{ __('ui.actions.delete') }} {{ $service['name'] ?? '' }}"
+                                                title="{{ __('ui.actions.delete') }}">
+                                                <i class="bi bi-trash" aria-hidden="true"></i>
+                                                <span class="visually-hidden" data-form-submit-spinner><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></span>
+                                            </button>
+                                        </form>
+                                    @endcan
+                                </div>
                             </td>
                         </tr>
                     @empty

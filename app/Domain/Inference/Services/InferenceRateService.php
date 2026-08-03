@@ -49,7 +49,10 @@ class InferenceRateService
             }
         }
 
-        $unknown = config('inference.unknown_model_rates', []);
+        $unknown = [
+            'input_per_million_usd' => setting_config('inference.unknown_model_rates.input_per_million_usd', 15.0),
+            'output_per_million_usd' => setting_config('inference.unknown_model_rates.output_per_million_usd', 60.0),
+        ];
         $unknownInput = $unknown['input_per_million_usd'] ?? null;
         $unknownOutput = $unknown['output_per_million_usd'] ?? null;
 
@@ -65,7 +68,10 @@ class InferenceRateService
             ];
         }
 
-        $default = config('inference.default_rates', []);
+        $default = [
+            'input_per_million_usd' => setting_config('inference.default_rates.input_per_million_usd', 5.0),
+            'output_per_million_usd' => setting_config('inference.default_rates.output_per_million_usd', 20.0),
+        ];
 
         return [
             'input_per_million_usd' => (float) ($default['input_per_million_usd'] ?? 5.0),
@@ -80,7 +86,7 @@ class InferenceRateService
 
     public function defaultProviderSlug(): string
     {
-        return (string) config('inference.default_provider_slug', 'openwebui-9router');
+        return (string) setting_config('inference.default_provider_slug', 'openwebui-9router');
     }
 
     public function findProviderBySlug(string $slug): ?InferenceProvider

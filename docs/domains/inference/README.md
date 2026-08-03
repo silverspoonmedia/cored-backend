@@ -50,7 +50,7 @@ Seeded by `InferenceCatalogSeeder` into each provider via `ai_provider_model_rat
 | `claude-opus-5` / `anthropic/claude-opus-5` | $5.00 | $25.00 |
 | `claude-sonnet-5` / `anthropic/claude-sonnet-5` | $2.00 | $10.00 |
 
-Unknown resolved slugs (no `ai_provider_model_rates` row on the active provider) bill at **provisional** rates from `config/inference.php` → `unknown_model_rates` (env `INFERENCE_UNKNOWN_MODEL_*`). Snapshots store `rate_source = unknown_provisional`. Admin gets a deduped `inference_unregistered_model` notification; model cards show **Needs classification**. After ops curates rates on the provider (`PUT …/providers/{id}/rates`), `UnknownModelBillingConsolidationService` (Microstock) recalculates settled prepaid usage and posts ledger **adjustments** (refund or extra debit). `default_rates` (`INFERENCE_DEFAULT_*`) is bootstrap-only when provisional env is unset.
+Unknown resolved slugs (no `ai_provider_model_rates` row on the active provider) bill at **provisional** rates from `setting_config('inference.unknown_model_rates.*')` (registry `platform.inference.unknown_*`). Snapshots store `rate_source = unknown_provisional`. Admin gets a deduped `inference_unregistered_model` notification; model cards show **Needs classification**. After ops curates rates on the provider (`PUT …/providers/{id}/rates`), `UnknownModelBillingConsolidationService` (Microstock) recalculates settled prepaid usage and posts ledger **adjustments** (refund or extra debit). `platform.inference.default_*` rates are bootstrap fallbacks when no DB row exists yet.
 
 ### Unknown model workflow
 
@@ -83,14 +83,19 @@ Sonnet 5 list prices reflect Anthropic **introductory** pricing through Aug 31, 
 
 ## Config
 
+Operational rates and default provider slug: **Settings → Platform** — see [configuration-policy.md](../../platform/configuration-policy.md).
+
+| Registry key | Config path | Default | Purpose |
+|--------------|-------------|---------|---------|
+| `platform.inference.default_provider_slug` | `inference.default_provider_slug` | `openwebui-9router` | Default provider for rate resolution and snapshots |
+| `platform.inference.default_input_per_million_usd` | `inference.default_rates.input_per_million_usd` | `5` | Bootstrap fallback when no DB row |
+| `platform.inference.default_output_per_million_usd` | `inference.default_rates.output_per_million_usd` | `20` | Bootstrap fallback when no DB row |
+| `platform.inference.unknown_input_per_million_usd` | `inference.unknown_model_rates.input_per_million_usd` | `15` | Provisional input $/1M for unregistered resolved models |
+| `platform.inference.unknown_output_per_million_usd` | `inference.unknown_model_rates.output_per_million_usd` | `60` | Provisional output $/1M for unregistered resolved models |
+
 | Env | Default | Purpose |
 |-----|---------|---------|
-| `INFERENCE_DEFAULT_PROVIDER_SLUG` | `openwebui-9router` | Default provider for rate resolution and snapshots |
-| `MICROSTOCK_AI_INFERENCE_PROVIDER` | `openwebui-9router` | Provider slug passed to `recordUsage` from Microstock HTTP AI |
-| `INFERENCE_DEFAULT_INPUT_PER_MILLION_USD` | `5` | Bootstrap fallback when provisional env missing |
-| `INFERENCE_DEFAULT_OUTPUT_PER_MILLION_USD` | `20` | Bootstrap fallback when provisional env missing |
-| `INFERENCE_UNKNOWN_MODEL_INPUT_PER_MILLION_USD` | `15` | Provisional input $/1M for unregistered resolved models |
-| `INFERENCE_UNKNOWN_MODEL_OUTPUT_PER_MILLION_USD` | `60` | Provisional output $/1M for unregistered resolved models |
+| `MICROSTOCK_AI_INFERENCE_PROVIDER` | `openwebui-9router` | Provider slug passed to `recordUsage` from Microstock HTTP AI (not in registry) |
 
 ## Services
 

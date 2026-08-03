@@ -110,7 +110,7 @@ class ChannelClaimService
                     'closed_reason' => CreatorClaimClosedReason::UserCancel->value,
                 ]);
 
-            $ttlHours = max(1, (int) config('vtual.channel_claim.ttl_hours', config('vtual.claim.ttl_hours', 24)));
+            $ttlHours = max(1, (int) setting_config('vtual.channel_claim.ttl_hours', setting_config('vtual.claim.ttl_hours', 24)));
             $token = $this->bio->mintToken('vtual.channel_claim');
 
             $claim = new ChannelClaim([
@@ -172,7 +172,7 @@ class ChannelClaimService
             throw new VtualException(__('api/vtual.policy.denied'), 403);
         }
 
-        if (! (bool) config('vtual.channel_claim.accept_anyway_enabled', config('vtual.claim.accept_anyway_enabled', false))) {
+        if (! (bool) setting_config('vtual.channel_claim.accept_anyway_enabled', setting_config('vtual.claim.accept_anyway_enabled', false))) {
             throw new VtualException(__('api/vtual.channel_claim.accept_anyway_disabled'), 422);
         }
 
@@ -304,12 +304,12 @@ class ChannelClaimService
 
     private function assertRateLimit(ChannelClaim $claim): void
     {
-        $maxAttempts = max(1, (int) config('vtual.channel_claim.max_attempts', config('vtual.claim.max_attempts', 20)));
+        $maxAttempts = max(1, (int) setting_config('vtual.channel_claim.max_attempts', setting_config('vtual.claim.max_attempts', 20)));
         if ((int) $claim->attempt_count >= $maxAttempts) {
             throw new VtualException(__('api/vtual.channel_claim.max_attempts'), 422);
         }
 
-        $cooldown = max(0, (int) config('vtual.channel_claim.verify_cooldown_seconds', config('vtual.claim.verify_cooldown_seconds', 60)));
+        $cooldown = max(0, (int) setting_config('vtual.channel_claim.verify_cooldown_seconds', setting_config('vtual.claim.verify_cooldown_seconds', 60)));
         if ($cooldown > 0
             && $claim->last_attempt_at !== null
             && $claim->last_attempt_at->gt(now()->subSeconds($cooldown))) {

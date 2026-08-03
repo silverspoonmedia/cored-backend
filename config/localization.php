@@ -24,9 +24,9 @@ return [
     |
     */
 
-    'cookie_name' => env('LOCALE_COOKIE', 'locale'),
+    'cookie_name' => 'locale',
 
-    'cookie_minutes' => (int) env('LOCALE_COOKIE_MINUTES', 60 * 24 * 365),
+    'cookie_minutes' => 60 * 24 * 365,
 
     /*
     |--------------------------------------------------------------------------

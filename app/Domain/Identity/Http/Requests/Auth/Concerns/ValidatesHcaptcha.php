@@ -11,7 +11,7 @@ trait ValidatesHcaptcha
      */
     protected function hcaptchaRules(): array
     {
-        if (! config('hcaptcha.enabled')) {
+        if (! setting_config('hcaptcha.enabled')) {
             return [];
         }
 

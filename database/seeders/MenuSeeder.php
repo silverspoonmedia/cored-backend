@@ -124,7 +124,7 @@ class MenuSeeder extends Seeder
                     [
                         'name' => $this->translations('File Hosting', 'File Hosting', 'ファイルホスティング'),
                         'icon' => 'bi bi-cloud',
-                        'route' => 'file-hosting.index',
+                        'route' => null, # Keep this as null
                         'type' => 'p',
                         'children' => [
                             [
@@ -140,6 +140,13 @@ class MenuSeeder extends Seeder
                                 'type' => 'c',
                             ],
                             [
+                                'name' => $this->translations('Settings', 'Pengaturan', '設定'),
+                                'icon' => 'bi bi-sliders',
+                                'route' => 'settings.file-hosting',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                            [
                                 'name' => $this->translations('DMCA Blocklist', 'Daftar Blokir DMCA', 'DMCA ブロックリスト'),
                                 'icon' => 'bi bi-shield-x',
                                 'route' => 'file-hosting.blocklist.index',
@@ -151,7 +158,7 @@ class MenuSeeder extends Seeder
                     [
                         'name' => $this->translations('vTual', 'vTual', 'vTual'),
                         'icon' => 'bi bi-broadcast',
-                        'route' => 'vtual.index',
+                        'route' => null, # Keep this as null
                         'type' => 'p',
                         'children' => [
                             [
@@ -183,6 +190,13 @@ class MenuSeeder extends Seeder
                                 'name' => $this->translations('Platform credentials', 'Kredensial platform', 'プラットフォーム認証情報'),
                                 'icon' => 'bi bi-key',
                                 'route' => 'vtual.admin.credentials.index',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                            [
+                                'name' => $this->translations('Settings', 'Pengaturan', '設定'),
+                                'icon' => 'bi bi-sliders',
+                                'route' => 'settings.vtual',
                                 'type' => 'c',
                                 'roles' => $adminRoles,
                             ],
@@ -312,6 +326,42 @@ class MenuSeeder extends Seeder
                                 'name' => $this->translations('Error log', 'Log Error', 'エラーログ'),
                                 'icon' => 'bi bi-bug',
                                 'route' => 'error-logs.index',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => $this->translations('Settings', 'Pengaturan', '設定'),
+                        'icon' => 'bi bi-gear',
+                        'type' => 'p',
+                        'roles' => $adminRoles,
+                        'children' => [
+                            [
+                                'name' => $this->translations('Platform', 'Platform', 'プラットフォーム'),
+                                'icon' => 'bi bi-sliders',
+                                'route' => 'settings.platform',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                            [
+                                'name' => $this->translations('Microstock', 'Microstock', 'Microstock'),
+                                'icon' => 'bi bi-images',
+                                'route' => 'settings.microstock',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                            [
+                                'name' => $this->translations('Notification audiences', 'Audiens notifikasi', '通知オーディエンス'),
+                                'icon' => 'bi bi-bell',
+                                'route' => 'notification-audiences.index',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                            [
+                                'name' => $this->translations('Currencies', 'Mata uang', '通貨'),
+                                'icon' => 'bi bi-currency-exchange',
+                                'route' => 'currencies.index',
                                 'type' => 'c',
                                 'roles' => $adminRoles,
                             ],

@@ -10,17 +10,17 @@ class AiDailyFreeService
 {
     public function isEnabled(): bool
     {
-        return (bool) config('microstock.daily_free.enabled', false);
+        return (bool) setting_config('microstock.daily_free.enabled', false);
     }
 
     public function limit(): int
     {
-        return max(0, (int) config('microstock.daily_free.limit_per_user', 0));
+        return max(0, (int) setting_config('microstock.daily_free.limit_per_user', 0));
     }
 
     public function today(): CarbonImmutable
     {
-        $tz = (string) config('microstock.daily_free.timezone', 'UTC');
+        $tz = (string) setting_config('microstock.daily_free.timezone', 'UTC');
 
         return CarbonImmutable::now($tz)->startOfDay();
     }

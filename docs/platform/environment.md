@@ -115,9 +115,11 @@ Never bare `config:cache` without verify. After secret changes: `config:rebuild`
 |----------|-------|--------------------|
 | `APP_DEBUG` | true | false |
 | `SESSION_SECURE_COOKIE` / encrypt | false | true |
-| `HCAPTCHA_ENABLED` | false | true |
+| `HCAPTCHA_SITEKEY` / `HCAPTCHA_SECRET` | optional / false | required when enabled in Settings |
 | Cache/queue | database | redis |
-| Notifications | polling | realtime |
+| Tier B settings seed | `LocalSettingsSeeder` + [settings-local.php](../../config/settings-local.php) (after `SettingsSeeder`) | `SettingsSeeder` + config literals only |
+
+On **local**, `php artisan db:seed` applies dev overrides (e.g. daily free enabled, realtime notifications) via `LocalSettingsSeeder` — no Tier B keys in `.env`. See [settings.md — Seeding](settings.md#seeding).
 
 ## JWT lifecycle (Blade identity)
 
@@ -125,11 +127,9 @@ Blade identity is the HttpOnly `auth_token` cookie (JWT), **not** the Laravel se
 
 | Variable | Role |
 |----------|------|
-| `JWT_TTL` | Access token minutes (cookie max-age) |
-| `JWT_REFRESH_TTL` | Refresh window minutes from `iat` |
-| `JWT_REMEMBER_TTL` | Access TTL when remember-me login |
-| `JWT_REFRESH_SKEW` | Proactive Blade refresh minutes before `exp` |
-| `JWT_BLACKLIST_GRACE_PERIOD` | Seconds old JWT accepted after refresh (parallel tabs; default 30) |
+| `JWT_SECRET` | Signing secret (Tier A — env only) |
+
+Operational JWT knobs (TTL, refresh skew, blacklist grace) live in **Settings → Platform** (`system_settings`). See [settings.md](settings.md) and [configuration-policy.md](configuration-policy.md).
 
 See [identity](../domains/identity/README.md#configuration) and [blade-admin silent refresh](../web/blade-admin.md#silent-refresh-sliding-access).
 
@@ -137,7 +137,7 @@ See [identity](../domains/identity/README.md#configuration) and [blade-admin sil
 
 - `APP_ENV=production`, `APP_DEBUG=false`
 - Secure session cookies; `JWT_SECRET` set
-- Prefer non-zero `JWT_BLACKLIST_GRACE_PERIOD` when Blade silent refresh is enabled
+- Prefer non-zero **Settings → Platform** `platform.jwt.blacklist_grace_period` when Blade silent refresh is enabled
 - `config:rebuild`; `oci:kms-verify` if OCI
 - Liveness: `route:list --path=api/ping` shows `GET /api/ping`
 - Network exposure: firewall / reverse proxy as needed (no in-app shared-secret API perimeter)
@@ -146,18 +146,21 @@ See [identity](../domains/identity/README.md#configuration) and [blade-admin sil
 
 PHPUnit: `APP_ENV=testing`, sqlite, CSRF bypass for web proxy tests. Prefer `composer test`. See [database-safety.md](database-safety.md).
 
-Payment: `checkout_mode` derived from active channels at runtime — see [payment-gateway](../domains/payment-gateway/README.md). After editing `Routing_Price.yaml`, run `php artisan payments:sync-routing-policy` (or use the admin **Sync routing policy** button). Channel fees default to buyer-borne (`PAYMENT_CHANNEL_FEE_BEARER=buyer`). Encryption env: [encryption](../domains/payment-gateway/encryption.md).
+Payment: `checkout_mode` derived from active channels at runtime — see [payment-gateway](../domains/payment-gateway/README.md). After editing `Routing_Price.yaml`, run `php artisan payments:sync-routing-policy` (or use the admin **Sync routing policy** button). Channel fee bearer and reporting timezone are in **Settings → Platform**. Encryption env: [encryption](../domains/payment-gateway/encryption.md).
 
 ## Persistent error log
 
-| Variable | Role |
-|----------|------|
-| `ERRORLOG_ENABLED` | Store reportable exceptions + `Log::error+` in DB (`true` / `false`) |
-| `ERRORLOG_CLEAN_AFTER_DAYS` | Retention for `php artisan errorlog:clean` |
+Retention and enable/disable are in **Settings → Platform** (`errorlog.*` registry keys). Independent of `LOG_CHANNEL` file logs. Domain guide: [error-log](../domains/error-log/README.md).
 
-Independent of `LOG_CHANNEL` file logs. Domain guide: [error-log](../domains/error-log/README.md).
+## Runtime settings (Web UI)
+
+Operational knobs (JWT TTLs, upload limits, notification delivery, etc.) live in **`system_settings`** and are edited via **Administration → Settings**. They are **not** `.env` variables — see [configuration-policy.md](configuration-policy.md). Runtime reads use a forever-cached snapshot (`setting_config()`). Full inventory: [settings.md](settings.md).
+
+After the env→settings migration, `php artisan env:curate` may leave **orphan** operational keys in a local `.env` (moved to the orphans section) when `.env` still contains Tier B vars removed from templates. Safe to delete them — live values are in `system_settings`. After template sync (`env:curate --sync-snapshot`), a clean local `.env` should show **0 orphans**; do not re-add Tier B keys. Upload proxy vars (`FILE_HOSTING_UPLOAD_PROXY_*`) are **Tier A** and belong in the File Hosting env section (present in [`.env.local.example`](../../.env.local.example)).
 
 ## Related
 
+- [configuration-policy.md](configuration-policy.md) — env vs DB tiers, cache contract
+- [settings.md](settings.md)
 - [octane.md](octane.md)
 - [domains/error-log/README.md](../domains/error-log/README.md)

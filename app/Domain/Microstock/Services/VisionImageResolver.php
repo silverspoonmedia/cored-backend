@@ -27,7 +27,7 @@ class VisionImageResolver
         ?string $deliveryOverride = null,
         ?string $variantKindOverride = null,
     ): string {
-        $delivery = $deliveryOverride ?? (string) config('microstock.ai.vision_image.delivery', 'base64');
+        $delivery = $deliveryOverride ?? (string) setting_config('microstock.ai.vision_image.delivery', 'base64');
         $kind = $this->resolveKind($variantKindOverride);
 
         if ($delivery === 'url') {
@@ -61,7 +61,7 @@ class VisionImageResolver
             }
         }
 
-        $configured = (string) config('microstock.ai.vision_image.variant_kind', FileVariantKind::Ai1024->value);
+        $configured = (string) setting_config('microstock.ai.vision_image.variant_kind', FileVariantKind::Ai1024->value);
         $kind = FileVariantKind::tryFrom($configured);
 
         return $kind ?? FileVariantKind::Ai1024;

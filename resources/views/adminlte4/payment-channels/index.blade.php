@@ -305,11 +305,15 @@
                         </p>
                     @endif
 
-                    <div class="pc-admin-toast" data-payment-admin-toast role="status" aria-live="polite"></div>
+                    <div class="monolith-toast-container" data-payment-admin-toast role="status" aria-live="polite"></div>
                 </div>
             @endif
         </x-adminlte4::card>
     </div>
 
-    @vite(['resources/css/payments/channels-admin.css', 'resources/js/payments/channels-admin.js'])
+    @vite('resources/css/payments/channels-admin.css')
+
+    <x-slot:scripts>
+        @vite('resources/js/payments/channels-admin.js')
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

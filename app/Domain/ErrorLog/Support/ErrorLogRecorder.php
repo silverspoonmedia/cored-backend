@@ -42,7 +42,7 @@ class ErrorLogRecorder
             'message' => $e->getMessage() !== '' ? $e->getMessage() : $e::class,
             'file' => $file !== '' ? $file : null,
             'line' => $line > 0 ? $line : null,
-            'trace' => $this->truncate($e->getTraceAsString(), (int) config('errorlog.max_trace_length', 65536)),
+            'trace' => $this->truncate($e->getTraceAsString(), (int) setting_config('errorlog.max_trace_length', 65536)),
             'context' => $this->requestContext(),
         ]);
     }
@@ -52,7 +52,7 @@ class ErrorLogRecorder
      */
     public function recordLog(string $level, string $message, array $context = [], ?string $channel = null): void
     {
-        if (! config('errorlog.enabled', true) || $this->recording) {
+        if (! setting_config('errorlog.enabled', true) || $this->recording) {
             return;
         }
 
@@ -92,7 +92,7 @@ class ErrorLogRecorder
 
     private function shouldStoreException(Throwable $e): bool
     {
-        if (! config('errorlog.enabled', true) || $this->recording) {
+        if (! setting_config('errorlog.enabled', true) || $this->recording) {
             return false;
         }
 
@@ -100,7 +100,7 @@ class ErrorLogRecorder
             return false;
         }
 
-        foreach (config('errorlog.dont_store', []) as $class) {
+        foreach (setting_config('errorlog.dont_store', []) as $class) {
             if (is_string($class) && $class !== '' && $e instanceof $class) {
                 return false;
             }
@@ -130,7 +130,7 @@ class ErrorLogRecorder
         $this->recording = true;
 
         try {
-            $maxMessage = (int) config('errorlog.max_message_length', 2000);
+            $maxMessage = (int) setting_config('errorlog.max_message_length', 2000);
             $message = $this->truncate($payload['message'], $maxMessage);
 
             $fingerprint = $this->fingerprint->make(
@@ -214,7 +214,7 @@ class ErrorLogRecorder
      */
     private function limitContext(array $context): array
     {
-        $max = (int) config('errorlog.max_context_json_length', 32768);
+        $max = (int) setting_config('errorlog.max_context_json_length', 32768);
         $json = json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         if ($json === false || strlen($json) <= $max) {

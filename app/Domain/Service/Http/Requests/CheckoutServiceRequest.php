@@ -17,7 +17,7 @@ class CheckoutServiceRequest extends FormRequest
      */
     public function rules(): array
     {
-        $maxQuantity = max(1, (int) config('service.purchase.max_quantity', 99));
+        $maxQuantity = max(1, (int) setting_config('service.purchase.max_quantity', 99));
 
         return [
             'currency' => [

@@ -26,9 +26,9 @@ return [
 
     // Per-user daily free analyses (lazy calendar reset; no prepaid balance credit).
     'daily_free' => [
-        'enabled' => filter_var(env('MICROSTOCK_DAILY_FREE_ENABLED', false), FILTER_VALIDATE_BOOL),
-        'limit_per_user' => (int) env('MICROSTOCK_DAILY_FREE_LIMIT', 5),
-        'timezone' => env('MICROSTOCK_DAILY_FREE_TIMEZONE', 'UTC'),
+        'enabled' => false,
+        'limit_per_user' => 5,
+        'timezone' => 'UTC',
     ],
 
     'ai' => [
@@ -53,29 +53,29 @@ return [
         // Longest side (px) of the downscaled preview sent to the AI vision
         // stage. The original file is never modified; the small derivative keeps
         // the gateway from hitting its ~60s cutoff on full-size images.
-        'image_max_px' => (int) env('MICROSTOCK_AI_IMAGE_MAX_PX', 1024),
+        'image_max_px' => 1024,
 
         // JPEG quality for the AI preview derivative (40-95).
-        'image_jpeg_quality' => (int) env('MICROSTOCK_AI_IMAGE_JPEG_QUALITY', 80),
+        'image_jpeg_quality' => 80,
 
         // Cap raw JPEG bytes before base64 encoding; preview scales down until
         // under this limit to avoid token bombs on reasoning models.
-        'max_request_image_bytes' => (int) env('MICROSTOCK_AI_MAX_REQUEST_IMAGE_BYTES', 200_000),
+        'max_request_image_bytes' => 200_000,
 
         // HTTP retries per AI stage (0 = no retry). Billed calls should stay at 0
         // so each provider charge maps to one usage event.
-        'http_retries' => (int) env('MICROSTOCK_AI_HTTP_RETRIES', 0),
+        'http_retries' => 0,
 
         // Multimodal thinking attempts when a preview is available (0 = text-only).
-        'thinking_visual_attempts' => (int) env('MICROSTOCK_AI_THINKING_VISUAL_ATTEMPTS', 2),
+        'thinking_visual_attempts' => 2,
 
         // How many images are packed into one batch AI request when analyzing a
         // whole collection. Larger chunks = fewer requests but bigger payloads.
-        'batch_chunk' => (int) env('MICROSTOCK_AI_BATCH_CHUNK', 10),
+        'batch_chunk' => 10,
 
         // Multi-image batch requests can mis-assign metadata across assets. Below
         // this file count per chunk, run per-file vision+thinking instead.
-        'batch_min_files' => (int) env('MICROSTOCK_AI_BATCH_MIN_FILES', 4),
+        'batch_min_files' => 4,
 
         // Adaptive failure deadline per asset, measured from when analysis was
         // queued (metadata.created_at) — NOT a per-request HTTP timeout. The AI
@@ -88,23 +88,23 @@ return [
         // = 1800) so the watchdog declares failure before the queue re-dispatches
         // the still-running job.
         'phase' => [
-            'normal_after' => (int) env('MICROSTOCK_AI_PHASE_NORMAL', 600),
-            'grace_after' => (int) env('MICROSTOCK_AI_PHASE_GRACE', 1500),
+            'normal_after' => 600,
+            'grace_after' => 1500,
         ],
 
         // Per-stage grace deadlines for decoupled vision/thinking jobs (seconds).
         'stage' => [
-            'vision_grace_after' => (int) env('MICROSTOCK_AI_VISION_GRACE_AFTER', 600),
-            'thinking_grace_after' => (int) env('MICROSTOCK_AI_THINKING_GRACE_AFTER', 1800),
+            'vision_grace_after' => 600,
+            'thinking_grace_after' => 1800,
             // Re-dispatch thinking when vision ok but thinking job never started (worker crash).
-            'thinking_backlog_after' => (int) env('MICROSTOCK_AI_THINKING_BACKLOG_AFTER', 120),
+            'thinking_backlog_after' => 120,
         ],
 
         // How vision receives the image: base64 data-URI or signed HTTPS URL.
         'vision_image' => [
-            'delivery' => env('MICROSTOCK_AI_VISION_IMAGE_DELIVERY', 'url'),
+            'delivery' => 'url',
             'variant_kind' => env('MICROSTOCK_AI_VISION_VARIANT', 'ai_1024'),
-            'signed_url_ttl_minutes' => (int) env('MICROSTOCK_AI_VISION_URL_TTL', 30),
+            'signed_url_ttl_minutes' => 30,
         ],
 
         // Upstream throughput limits (shared Open WebUI / 9Router account).
@@ -113,13 +113,13 @@ return [
         'upstream' => [
             'window_seconds' => (int) env('MICROSTOCK_AI_UPSTREAM_WINDOW_SECONDS', 1800),
             'token_budget' => (int) env('MICROSTOCK_AI_UPSTREAM_TOKEN_BUDGET', 20_000_000),
-            'max_concurrent_vision' => (int) env('MICROSTOCK_AI_UPSTREAM_MAX_CONCURRENT_VISION', 6),
-            'max_concurrent_thinking' => (int) env('MICROSTOCK_AI_UPSTREAM_MAX_CONCURRENT_THINKING', 10),
-            'collection_vision_concurrency' => (int) env('MICROSTOCK_AI_COLLECTION_VISION_CONCURRENCY', 3),
-            'collection_thinking_concurrency' => (int) env('MICROSTOCK_AI_COLLECTION_THINKING_CONCURRENCY', 3),
-            'solo_vision_concurrency' => (int) env('MICROSTOCK_AI_SOLO_VISION_CONCURRENCY', 2),
-            'solo_thinking_concurrency' => (int) env('MICROSTOCK_AI_SOLO_THINKING_CONCURRENCY', 2),
-            'release_after_seconds' => (int) env('MICROSTOCK_AI_UPSTREAM_RELEASE_AFTER', 15),
+            'max_concurrent_vision' => 6,
+            'max_concurrent_thinking' => 10,
+            'collection_vision_concurrency' => 3,
+            'collection_thinking_concurrency' => 3,
+            'solo_vision_concurrency' => 2,
+            'solo_thinking_concurrency' => 2,
+            'release_after_seconds' => 15,
         ],
     ],
 
@@ -140,14 +140,14 @@ return [
     ],
 
     // Filesystem disk that stores generated per-collection CSV exports.
-    'csv_disk' => env('MICROSTOCK_CSV_DISK', 'local'),
+    'csv_disk' => 'local',
 
     // Prepaid AI analysis billing: token costs, markup, and analyze gate estimate.
     'ai_billing' => [
-        'markup_multiplier' => (float) env('MICROSTOCK_AI_BILLING_MARKUP', 1.35),
+        'markup_multiplier' => 1.35,
         // Buffer above typical ~$0.11/asset; used by assertCanAnalyze before dispatch.
-        'estimated_billable_micro_usd_per_asset' => (int) env('MICROSTOCK_AI_BILLING_ESTIMATE_PER_ASSET', 150_000),
+        'estimated_billable_micro_usd_per_asset' => 150_000,
         // Multiplier for gate estimate to cover multi-attempt thinking (default 1.5×).
-        'estimate_thinking_attempt_factor' => (float) env('MICROSTOCK_AI_BILLING_ESTIMATE_FACTOR', 1.5),
+        'estimate_thinking_attempt_factor' => 1.5,
     ],
 ];

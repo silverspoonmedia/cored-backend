@@ -12,7 +12,7 @@ return [
     |
     */
 
-    'enabled' => env('ERRORLOG_ENABLED', true),
+    'enabled' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -23,7 +23,7 @@ return [
     |
     */
 
-    'clean_after_days' => (int) env('ERRORLOG_CLEAN_AFTER_DAYS', 90),
+    'clean_after_days' => 90,
 
     /*
     |--------------------------------------------------------------------------
@@ -31,9 +31,9 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'max_message_length' => (int) env('ERRORLOG_MAX_MESSAGE_LENGTH', 2000),
-    'max_trace_length' => (int) env('ERRORLOG_MAX_TRACE_LENGTH', 65536),
-    'max_context_json_length' => (int) env('ERRORLOG_MAX_CONTEXT_JSON_LENGTH', 32768),
+    'max_message_length' => 2000,
+    'max_trace_length' => 65536,
+    'max_context_json_length' => 32768,
 
     /*
     |--------------------------------------------------------------------------

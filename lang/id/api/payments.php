@@ -18,6 +18,13 @@ return [
     'invoices' => [
         'list' => 'Invoice berhasil diambil.',
         'show' => 'Invoice berhasil diambil.',
+        'checkout_channels' => 'Channel pembayaran checkout dimuat.',
+        'checkout_channels_not_payable' => 'Invoice tidak terbuka untuk pembayaran.',
+    ],
+
+    'income' => [
+        'overview' => 'Ringkasan pendapatan pembayaran dimuat.',
+        'invoices' => 'Invoice pendapatan pembayaran dimuat.',
     ],
 
     'subscriptions' => [

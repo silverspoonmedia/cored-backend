@@ -15,8 +15,9 @@ use Symfony\Component\HttpFoundation\Response;
  * - Referrer leakage (Referrer-Policy)
  * - Unwanted browser features (Permissions-Policy)
  *
- * CSP is intentionally omitted to avoid breaking AdminLTE CDN assets
- * and Vite hot reload. Add CSP headers manually if needed.
+ * CSP is intentionally omitted to avoid breaking remaining CDN font/icon
+ * assets (Source Sans, Bootstrap Icons) and Vite hot reload. Add CSP
+ * headers manually if needed.
  */
 class SecurityHeaders
 {

@@ -289,5 +289,9 @@
         </div>
     </div>
 
-    @vite(['resources/css/file-hosting/file-hosting.css', 'resources/js/file-hosting/microstock-usage.js'])
+    @vite('resources/css/file-hosting/file-hosting.css')
+
+    <x-slot:scripts>
+        @vite('resources/js/file-hosting/microstock-usage.js')
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>
