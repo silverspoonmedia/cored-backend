@@ -73,7 +73,7 @@ Mirrors [`config/settings-local.php`](../../config/settings-local.php) — updat
 ## Agent checklist — new operational knob
 
 1. Classify tier (A / B / C).
-2. **Tier B:** add `SettingRegistry` entry → `SettingsSeeder` picks it up → translations in `lang/{en,id,ja}/web/settings.php` → `SettingRegistryTranslationTest` green → **no** new env key. For **local-only** dev defaults, add to `config/settings-local.php` (not config literals).
+2. **Tier B:** add `SettingRegistry` entry → `SettingsSeeder` picks it up → translations in `lang/{en,id,ja}/web/settings.php` (`fields` + optional `hints`) → `SettingRegistryTranslationTest` green → **no** new env key. For enum-like strings, declare registry `options`, ship `web/settings.options.{key}.{value}` labels (en/id/ja), and rely on `presentGroup` + `_form` native `<select>` (no Select2) — see [settings.md](settings.md). For **local-only** dev defaults, add to `config/settings-local.php` (not config literals).
 3. **Tier C:** dedicated migration + model with envelope cast; admin UI; never registry.
 4. Domain code reads via `setting_config()` only — never `config()` for registry paths.
 5. Update [settings.md](settings.md) and this doc if tier boundaries change.

@@ -41,9 +41,10 @@ Menu: **Administration → Settings** (platform, microstock, notification audien
 
 Field labels resolve dynamically from `SettingRegistry` keys. The settings form loads the full `fields` map via `__('web/settings.fields')` and looks up each registry key by array index (dot-containing keys such as `platform.auth.default_role` are stored as literal PHP keys, not nested paths). Each registry key must exist in `lang/{en,id,ja}/web/settings.php` under `fields`. Optional helper copy lives under `hints` with the same key.
 
-When adding a new `SettingRegistry` entry, update all three locale files in the same task and keep `SettingRegistryTranslationTest` green. API flash messages for settings live in `lang/{locale}/settings.php`.
+When adding a new `SettingRegistry` entry, update all three locale files in the same task and keep `SettingRegistryTranslationTest` green (field labels **and** any registry `options` value labels). API flash messages for settings live in `lang/{locale}/settings.php`.
 
 Enum-like string keys may declare an optional `options` list on the registry definition (values only). `SettingsService::presentGroup` exposes those values; the Blade form renders a native `<select>` (no Select2) and labels come from `web/settings.options.{key}.{value}` (nested lang keys). First use: `platform.notifications.delivery` → `polling` \| `realtime`.
+
 ## Tier A — env / artisan only (not in Web UI)
 
 | Group | Examples | Why |
