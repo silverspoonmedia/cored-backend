@@ -241,6 +241,8 @@
             'deleteFile' => $authUser?->can('delete file hosting file') ?? false,
             'editFolder' => $authUser?->can('edit file hosting folder') ?? false,
             'deleteFolder' => $authUser?->can('delete file hosting folder') ?? false,
+            'createFile' => $authUser?->can('create file hosting file') ?? false,
+            'createFolder' => $authUser?->can('create file hosting folder') ?? false,
         ],
         'realtime' => [
             'enabled' => $fhBroadcast !== null,
@@ -321,28 +323,124 @@
     ];
 @endphp
 
+@php
+    $uploadableRegionsList = collect($uploadableRegions)
+        ->map(fn ($disk, $key) => ['key' => (string) $key, 'label' => __('web/file-hosting.regions.'.$key)])
+        ->values()
+        ->all();
+
+    $vueFhBootstrap = [
+        'config' => $fmConfig,
+        'browse' => $browse,
+        'trash' => null,
+        'showFile' => null,
+        'quota' => $quota,
+        'workspaces' => $workspaces,
+        'workspaceMembers' => $workspaceMembers ?? [],
+        'workspaceActivity' => $workspaceActivity ?? [],
+        'currentWorkspace' => $currentWorkspace ?? null,
+        'ui' => [
+            'canCreateFolder' => $fmConfig['permissions']['createFolder'] ?? false,
+            'canCreateFile' => $fmConfig['permissions']['createFile'] ?? false,
+            'canCreateWorkspace' => (bool) ($canCreateWorkspace ?? false),
+            'planState' => $planState ?? 'free',
+            'ownedWorkspaceUsed' => (int) ($ownedWorkspaceUsed ?? 0),
+            'ownedWorkspaceLimit' => (int) ($ownedWorkspaceLimit ?? 0),
+            'searchPlaceholder' => __('web/file-hosting.search_placeholder'),
+            'viewToggle' => __('web/file-hosting.view_toggle'),
+            'viewList' => __('web/file-hosting.view_list'),
+            'viewGrid' => __('web/file-hosting.view_grid'),
+            'trash' => __('web/file-hosting.trash'),
+            'newFolder' => __('web/file-hosting.new_folder'),
+            'personalLabel' => __('web/file-hosting.workspace_personal'),
+            'workspaceTeam' => __('web/file-hosting.workspace_team'),
+            'selectAll' => __('web/file-hosting.bulk.select_all'),
+            'selected' => __('web/file-hosting.bulk.selected'),
+            'bulkMove' => __('web/file-hosting.bulk.move'),
+            'bulkShare' => __('web/file-hosting.bulk.share'),
+            'bulkUnshare' => __('web/file-hosting.bulk.unshare'),
+            'bulkDelete' => __('web/file-hosting.bulk.delete'),
+            'targetFolder' => __('web/file-hosting.move'),
+            'createWorkspace' => __('web/file-hosting.collab.create_workspace'),
+            'slotsFull' => __('web/file-hosting.collab.slots_full'),
+            'slotsCounter' => ($planState ?? 'free') === 'paid'
+                ? __('web/file-hosting.collab.slots_counter', [
+                    'used' => (int) ($ownedWorkspaceUsed ?? 0),
+                    'limit' => (int) ($ownedWorkspaceLimit ?? 0),
+                ])
+                : null,
+            'freeCannotCreate' => ($planState ?? 'free') === 'free'
+                ? __('web/file-hosting.collab.free_cannot_create')
+                : null,
+            'upgradeCta' => ($planState ?? 'free') === 'free'
+                ? __('web/file-hosting.collab.upgrade_cta')
+                : null,
+            'buySlotCta' => __('web/file-hosting.collab.buy_slot_cta'),
+            'servicesUrl' => route('services.index'),
+            'team' => __('web/file-hosting.collab.team_settings'),
+            'lockDescribe' => __('web/file-hosting.microstock.lock_describe'),
+            'reviewFiles' => __('web/file-hosting.microstock.review_files'),
+            'aiBalance' => __('web/microstock.usage.toolbar_balance'),
+            'columns' => [
+                'name' => __('web/file-hosting.columns.name'),
+                'type' => __('web/file-hosting.columns.type'),
+                'size' => __('web/file-hosting.columns.size'),
+                'region' => __('web/file-hosting.columns.region'),
+                'visibility' => __('web/file-hosting.columns.visibility'),
+                'actions' => __('web/file-hosting.columns.actions'),
+                'deleted_at' => __('web/file-hosting.columns.deleted_at'),
+            ],
+        ],
+        'upload' => ($fmConfig['permissions']['createFile'] ?? false) ? [
+            'initUrl' => route('file-hosting.uploads.store'),
+            'statusUrl' => route('file-hosting.uploads.show', ['upload' => '__UPLOAD__']),
+            'completeUrl' => route('file-hosting.uploads.complete', ['upload' => '__UPLOAD__']),
+            'abortUrl' => route('file-hosting.uploads.destroy', ['upload' => '__UPLOAD__']),
+            'signPartsUrl' => route('file-hosting.uploads.sign-parts', ['upload' => '__UPLOAD__']),
+            'maxFiles' => (int) setting_config('file-hosting.max_files_per_batch', 20),
+            'maxConcurrent' => (int) setting_config('file-hosting.max_concurrent_uploads', 2),
+            'maxConcurrentParts' => (int) setting_config('file-hosting.max_concurrent_parts', 3),
+            'uploadHere' => __('web/file-hosting.upload_here'),
+            'dragHint' => __('web/file-hosting.drag_drop_hint'),
+            'browse' => __('web/file-hosting.upload.browse'),
+            'start' => __('web/file-hosting.upload.start'),
+            'regionLabel' => __('web/file-hosting.upload.region'),
+            'regions' => $uploadableRegionsList,
+            'messages' => [
+                'tooManyFiles' => __('web/file-hosting.upload.too_many'),
+                'waitForUploads' => __('web/file-hosting.upload.wait'),
+                'uploadFailed' => __('web/file-hosting.upload.failed'),
+                'pending' => __('web/file-hosting.upload.pending'),
+                'waiting' => __('web/file-hosting.upload.waiting'),
+                'uploading' => __('web/file-hosting.upload.uploading'),
+                'completing' => __('web/file-hosting.upload.completing'),
+                'done' => __('web/file-hosting.upload.done'),
+                'remove' => __('web/file-hosting.upload.remove'),
+                'requiresFolder' => __('web/file-hosting.microstock.error_requires_folder'),
+                'collectionLocked' => __('web/file-hosting.microstock.error_collection_locked'),
+            ],
+        ] : null,
+    ];
+@endphp
+
 <x-adminlte4::layouts.app :title="__('web/file-hosting.title')">
-    <div class="fh-manager" data-file-manager data-fh-spa data-fh-app data-config="{{ json_encode($fmConfig) }}">
-
-        @include('adminlte4.file-hosting.partials._toolbar-zone')
-
-        @include('adminlte4.file-hosting.partials._browse-views')
-
-        @include('adminlte4.file-hosting.partials._trash-show-panels')
-
-    </div>
+    <div id="vue-file-hosting"></div>
+    <script type="application/json" data-vue-file-hosting data-vue-mount-failed="{{ __('web/file-hosting.vue_mount_failed') }}">@json($vueFhBootstrap)</script>
 
     @include('adminlte4.file-hosting.partials._workspace-modals')
-
     @include('adminlte4.file-hosting.partials._microstock-review-panel')
-
     @include('adminlte4.file-hosting.partials._usage-offcanvas')
-
     @include('adminlte4.file-hosting.partials._file-folder-modals')
+    @include('adminlte4.file-hosting.partials._team-offcanvas', [
+        'workspaceId' => $workspaceId,
+        'currentWorkspace' => $currentWorkspace ?? null,
+        'workspaceMembers' => $workspaceMembers ?? [],
+        'workspaceActivity' => $workspaceActivity ?? [],
+    ])
 
     @vite('resources/css/file-hosting/file-hosting.css')
 
     <x-slot:scripts>
-        @vite('resources/js/file-hosting/file-manager.js')
+        @vite('resources/js/vue/islands/file-hosting/main.js')
     </x-slot:scripts>
 </x-adminlte4::layouts.app>

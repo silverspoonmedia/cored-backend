@@ -21,7 +21,7 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 
 | Surface | Behavior |
 |---------|----------|
-| Auth UI | Blade SSR first paint + **FH-only client router** + vanilla ES modules — **not** React/Inertia and **not** a monorepo-wide SPA. See [UI architecture / SPA shell](#ui-architecture--spa-shell). |
+| Auth UI | Blade AdminLTE shell + **Vite Vue 3 island SPA** (`resources/js/vue/islands/file-hosting/`) — soft-nav client router, same web BFF JSON contracts. **Not** Inertia / CDN Vue / monorepo-wide SPA. See [UI architecture / SPA shell](#ui-architecture--spa-shell). |
 | Browse gestures | Drive-like select / context menu / drag-move; bulk bar **Move / share / unshare / delete**. Single and bulk stay in lockstep — [Drive-like listing](#drive-like-listing-interactions-browse-only), [Action surface parity](#action-surface-parity-single--bulk). |
 | Nested folders | Virtual first row/card **`...`** (parent) + breadcrumb chips as drop targets (`data-fh-drop-folder`). Root has no `...`. |
 | Live listing | Dedicated private Echo channels + soft-refetch (listing/quota/trash/show). **Not** the notification bell bus. See [Realtime / live listing](#realtime--live-listing). |
@@ -101,16 +101,12 @@ the Microstock entitlements). Until entitlement and on-demand provisioning it
 simply does not appear in the switcher.
 
 **Switcher UX (SPA):** `WorkspaceResource` exposes `kind`; workspace items are
-rendered **fully client-side** by `file-manager.js` (Blade only provides the
-skeleton). `refreshWorkspaceSwitcher()` re-fetches `GET file-hosting/workspaces`
-and `renderWorkspaceMenuItems()` rebuilds the items grouped by kind —
-**Microstock group first, Team group second, each preceded by its own dynamic
-divider** (no stacked/empty dividers) — then re-renders the label/icon
-(`bi-images` for `microstock`, `bi-people` for team, `bi-person` for personal),
-the `.active` item, and the Microstock slot section, on init and on soft-nav
-workspace changes (no hard reload). The **Microstock slot section** fetches
-`file-hosting.microstock.slots` and renders the right entry (activate CTA /
-"New Microstock workspace" / slots-full note). Creating a Microstock workspace
+rendered **client-side** by the Vue island (`App.vue` workspace dropdown from
+bootstrap + soft-refetch of `GET file-hosting/workspaces`). Blade supplies modal
+shells (`#fhCreateWorkspaceModal`, Microstock create modal) and JSON bootstrap —
+legacy vanilla shell is retired — auth browse is Vue-only. Soft-nav workspace
+changes rebind Echo and refresh members/activity. The **Microstock** create flow
+still uses Blade `#fhCreateMicrostockModal` opened via `window.bootstrap`. Creating a Microstock workspace
 opens `#fhCreateMicrostockModal` (name input) → POSTs, and the new workspace
 appears in its group immediately.
 
@@ -587,26 +583,29 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 
 ### UI architecture / SPA shell
 
-File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **FH-only client router** (`history.pushState` / `popstate`) on top of Blade SSR first paint + vanilla ES modules + existing Echo.
+Authenticated File Hosting browse is a **single Vite Vue 3 island** mounted on Blade (`#vue-file-hosting` + `data-vue-file-hosting` bootstrap). Soft-nav still uses the shared FH client router (`history.pushState` / `popstate`). Browser talks to **web BFF** JSON (`FileManagerController`), not `/api/v1` directly. **Not** Inertia / CDN Vue / monorepo-wide AdminLTE SPA.
+
+**Fair Vue boundary:** a *Vue island* is a page-level mount with its own lifecycle — not every helper. Auth browse is one island. Pure helpers (`router`, upload math, `moveItemsRequest`, Echo glue, selection helpers) stay JS. Interactive leftovers that belong under auth browse become **components/composables on that island** (`useFhUpload`, `useFhDragMove`). Public `/s/*` stays vanilla [`public-app.js`](../../resources/js/file-hosting/public-app.js) unless deliberately invested as a second island. Standalone Microstock usage page is not an island by default.
+
+**First paint:** Blade supplies AdminLTE chrome + empty `#vue-file-hosting` + `<script type="application/json" data-vue-file-hosting>` bootstrap (and sibling modal/offcanvas shells on index). Listing/toolbar/upload are **client Vue** — not SSR HTML rows. Invalid/missing bootstrap shows an alert via `data-vue-mount-failed` / `web/file-hosting.vue_mount_failed` (see island `main.js`). Leftover Blade partials `_toolbar-zone` / `_browse-views` are **not** the live paint path (orphans; do not `@include` them on the Vue index).
 
 | Asset | Role |
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
-| `resources/js/file-hosting/router.js` | Client router: parse auth FH paths via `/file-hosting` segment (prefix-agnostic, works under `/apps/…`) + public `/s/*`; `resolveFhBase()` (Blade `fhBase` → `browseUrl` → location → `''`); `joinFhPath()` fail-closed joins (no hard-coded `/apps` base); intercept in-app links, `navigate` + `popstate` |
-| `resources/js/file-hosting/file-manager.js` | Auth shell: AJAX CRUD/forms, search, grid/list, move tree, bulk (incl. **Move** → same multi-move modal as context), toast, soft-refetch, SPA panels (`browse`/`trash`/`show`), Echo rebind on workspace switch; Drive-like select/menu/drag; `.is-fh-busy` mutation spinner. On soft-nav, `syncConfigFromRoute` mirrors the current folder/workspace/user onto the dropzone's flat `data-folder-id` / `data-workspace-id` / `data-user-id` (empty → attribute removed = root) so uploads target the folder you soft-navigated into. `updateMicrostockToolbarChrome()` toggles `[data-fh-toolbar-balance]` (always rendered in Blade) on init and workspace switch; `usageUrlBase` preserves `workspace_id`. **AI Balance** click opens usage offcanvas when `usagePanel.isReady`; otherwise navigates to standalone usage URL (see `microstock-usage.js`) |
-| `resources/js/file-hosting/selection.js` | Browse listing selection: click = select, Ctrl/Cmd toggle, Shift range, Escape clear; name/icon single-click selects (open on double-click); ignores virtual parent `...` for bulk keys |
-| `resources/js/file-hosting/context-menu.js` | Right-click: Open / Rename / Move / Share / Delete (modals + bulk endpoints); multi-move via move modal tree; parent `...` → Open only |
-| `resources/js/file-hosting/drag-move.js` | Drag selected onto folder **or** breadcrumb parent/root **or** listing `...` (`data-fh-drop-folder`) → sequential `PATCH …/move` (`application/x-fh-items` so OS file drops still hit upload dropzone); parent row not draggable |
-| `resources/js/file-hosting/realtime.js` | Dedicated FH Echo subscribe (user/workspace private channels), health + fallback poll; `page`/`fileId`/`workspaceId` live-read from config |
-| `resources/js/file-hosting/listing-ui.js` | Browse JSON → table/grid (incl. virtual parent `...` row/card when nested), breadcrumb soft-update (`data-fh-drop-folder`), light DOM patch, quota bar, show stats |
-| `resources/js/file-hosting/trash-ui.js` | Trash JSON → table rows (restore/force-delete actions); **no** `location.reload` |
-| `resources/js/file-hosting/show-ui.js` | Soft file detail panel from `GET file-hosting/files/{id}` JSON |
-| `resources/js/file-hosting/public-app.js` | Public soft SPA for `/s/f/{id}` + `/s/d/{id}` (no Echo) |
-| `resources/js/file-hosting/direct-upload.js` | Chunked upload; queue shows human file size; batch uploads freeze folder/workspace/lock/kind at `startBatch` (`snapshotBatchContext`); per-file Microstock gate + MIME sniff; awaits abort on failure, init retry on `too_many_concurrent`, PUT retry + 403 re-sign; on complete calls `window.fileHostingSoftRefresh` / `fileHostingUpsertFile` (no hard reload). Successful rows auto-dismiss after ~5s (`scheduleDoneRowDismiss`); failed rows stay. Unit tests: `direct-upload-mime.test.js`, `direct-upload-context.test.js`, `direct-upload-dismiss.test.js` |
-| `resources/js/file-hosting/microstock-usage.js` | Standalone usage/balance page (`/apps/file-hosting/microstock/usage`): summary cards + ledger / AI usage / platform-overview tabs; Blade loads via inline `@vite` (same as other FH pages, not `@push`) |
-| `resources/js/file-hosting/upload-progress.js` | Pure helpers: transfer rate + byte progress — no DOM |
-| `resources/js/file-hosting/upload-queue.js` | Concurrency limiter |
-| `resources/views/adminlte4/file-hosting/partials/` | `_file-icon`, `_visibility-badge`, `_quota-bar`, `_move-modal`, `_team-offcanvas`, `_workspace-switcher` |
+| `resources/js/file-hosting/router.js` | Client router: parse auth FH paths via `/file-hosting` segment (prefix-agnostic, works under `/apps/…`) + public `/s/*`; `resolveFhBase()` (Blade `fhBase` → `browseUrl` → location → `''`); `joinFhPath()` fail-closed joins; intercept in-app links; **pending-nav queue** while busy (latest intent wins — rapid clicks / back-forward are not swallowed) |
+| `resources/js/file-hosting/selection.js` | Pure Drive selection helpers (`listingKeys`, `rangeKeys`, `applyBrowseClick`) — used by Vue `App.vue` |
+| `resources/js/vue/islands/file-hosting/main.js` | Vite entry: bootstrap guard + `mountIsland('#vue-file-hosting', App)` — loaded from index/trash/show Blade |
+| `resources/js/vue/islands/file-hosting/App.vue` | **Vue 3 SFC shell:** `bootstrap` prop (`config`, `browse`, `trash`, `showFile`, `quota`, `workspaces`, `ui`, `upload`). `useFhShell` + `useFhMutations` + `useFhDragMove`; FH router; Echo via `initFileHostingRealtime`; Microstock panel/usage when Blade offcanvas DOM exists; soft-nav browse/trash/show; bulk bar; context menu; Vue modals (folder/rename/share/move); Drive select/gestures + drag-move onto folder/breadcrumb/parent `...`. Blade Bootstrap surfaces (`#fhCollectionDescribeModal`, `#fhMicrostockPanel`, `#fhTeamOffcanvas`, `#fhCreateWorkspaceModal`) via `window.bootstrap` |
+| `resources/js/vue/islands/file-hosting/composables/` | `useFhApi` (BFF fetch), `useFhShell` (`hasBrowseChrome` / soft-nav gate), `useFhMutations`, `useFhUpload` (Vue queue UI), `useFhDragMove` (gestures → `moveItemsRequest`) |
+| `resources/js/vue/islands/file-hosting/components/` | `FhIcon.vue`, `FhDropzone.vue` (Vue-owned queue + OS drop; props `softRefresh` / `upsertFile` — no `window.fileHosting*` bridge) |
+| `resources/js/file-hosting/realtime.js` | Dedicated FH Echo subscribe (user/workspace private channels), health + fallback poll; `browseUrlWithContext` / `fetchJson` |
+| `resources/js/file-hosting/direct-upload.js` | Pure helpers + legacy `initDirectUpload` (auto-init skips `[data-fh-vue-upload]`); auth island uses `run-direct-upload.js` via `useFhUpload` |
+| `resources/js/file-hosting/run-direct-upload.js` | Framework-agnostic init→PUT→complete protocol shared by Vue upload |
+| `resources/js/file-hosting/drag-move.js` | `FH_ITEMS_MIME`, `canDropOnFolder`, `moveItemsRequest` — stay JS; gestures live in Vue |
+| `resources/js/file-hosting/microstock-panel.js` / `microstock-usage.js` / `microstock-ui.js` / `collection-describe.js` | Microstock review/usage/helpers — wired from Vue when DOM present (Blade offcanvas factories OK; not separate islands) |
+| `resources/js/file-hosting/public-app.js` | Public soft SPA for `/s/f/{id}` + `/s/d/{id}` (vanilla; optional future island only if deliberately invested) |
+| `resources/js/file-hosting/upload-progress.js` / `upload-queue.js` / `part-uploader.js` | Pure upload helpers — stay JS |
+| `resources/views/adminlte4/file-hosting/partials/` | Live shells: `_workspace-modals`, `_microstock-review-panel`, `_usage-offcanvas`, `_file-folder-modals`, `_team-offcanvas`. Listing/toolbar/upload painted by Vue |
 
 #### Soft-nav rules (auth)
 
@@ -617,9 +616,9 @@ File Hosting is **not** React/Inertia. Authenticated + public FH pages use a **F
 | `/apps/file-hosting/files/{uuid}` | `show` | `GET file-hosting/files/{uuid}` Accept JSON (**dual response**) |
 | Workspace switcher links | browse + Echo rebind | same browse JSON; channel flips `user.*` ↔ `workspace.*` |
 
-**Always full navigation:** file download hops (`…/download` → signed storage URL: Worker HMAC or S3), non-FH routes, plans/services links, cold load of show/trash when listing shell is missing.
+**Always full navigation:** file download hops (`…/download` → signed storage URL: Worker HMAC or S3), non-FH routes, plans/services links, and **cold trash/show → browse** when `hasBrowseChrome(config)` is false — gate is **non-empty `config.workspacesUrl` only** (`useFhShell`). Cold trash/show bootstraps omit that URL (and strip upload/ui chrome); soft-nav to browse would keep stripped config, so the island forces a full document load. Warm path (land on index first — index injects `workspacesUrl` — then soft-nav trash/show and back) keeps soft-nav.
 
-**Mutations:** all FH forms/buttons use `fetch` + `Accept: application/json`. `ConsumesApi::jsonFromApi` forwards API `data` entity so the shell can soft-update. Shell **ignores** `redirect` for same-shell actions. Success path for in-shell FH actions **never depends on** `window.location.reload` — soft-refetch listing/quota/trash/show or soft-nav instead. Post-mutation soft-refetch and [Realtime / live listing](#realtime--live-listing) Echo invalidation share the same paint helpers (`listing-ui` / `trash-ui` / `show-ui` / quota).
+**Mutations:** all FH forms/buttons use `fetch` + `Accept: application/json`. `ConsumesApi::jsonFromApi` forwards API `data` entity so the shell can soft-update. Shell **ignores** `redirect` for same-shell actions. Success path for in-shell FH actions **never depends on** `window.location.reload` — soft-refetch listing/quota/trash/show or soft-nav instead. Post-mutation soft-refetch and [Realtime / live listing](#realtime--live-listing) Echo invalidation share the same Vue shell paint path (`useFhShell` soft-refetch helpers).
 
 
 #### Drive-like listing interactions (browse only)
@@ -681,7 +680,7 @@ Listing mutations must stay **in lockstep** across surfaces. When shipping a new
 | Mutations (`POST`/`PATCH`/`DELETE` …) | `{ status, message, data?, redirect? }` — SPA ignores redirect when shell bound |
 | `GET /s/f/{id}`, `GET /s/d/{id}` | `{ data: … }` guest payload |
 
-SSR first paint remains correct on hard refresh. After first soft-nav, listing/trash/show prefer **one JS render path** (permissions/labels from Blade `data-config`).
+Auth index/trash/show Blade injects JSON bootstrap (`data-vue-file-hosting`) with permissions/labels/URLs and first-paint snapshots. After mount, listing/trash/show paint through **one Vue path** (`useFhShell` soft-refetch helpers). Permissions/labels come from that bootstrap `config` (not a Blade `data-config` listing shell).
 
 **Upload progress UI (client-only):** Monolith never sees PUT body bytes (direct S3 or Worker). Progress % = `uploadedBytes / file.size` where `uploadedBytes` is the **sum of per-part loaded bytes** (a Map keyed by part number, so parallel re-PUTs and out-of-order completion never double-count). Speed = a **sliding-window (5s) instantaneous rate** via `createRateSampler` — not a cumulative average — so it recovers after a stall instead of drifting down for the rest of the upload. Multipart parts upload **in parallel** (`max_concurrent_parts`, default 3 XHR streams via `uploadPartsParallel` + `runWithConcurrency`) — a strictly sequential single stream collapses to per-connection throughput on long files (the 20→10→1 MB/s decay). Init presigns **every** part upfront (`presign_ttl_minutes`, default 60); a PUT that returns **403 (expired URL)** is re-signed and retried once per part. After the last part PUT, the row shows **Finalizing…** (`upload.completing`) at 100% with speed cleared while the client calls `POST …/complete` (merge parts / promote `HostedFile`) — then **Done**. Successful rows stay ~**5s** (`DONE_ROW_DISMISS_MS` via `scheduleDoneRowDismiss`) with a short fade (`.is-dismissing`), then leave the queue and free the `active` slot so the list stays uncluttered; **failed** rows stay so the user can see what went wrong. Ongoing (pending / uploading / finalizing) rows always stay. API session payloads do not include progress or speed fields.
 
@@ -747,12 +746,12 @@ Helper: `App\Domain\FileHosting\Support\FileHostingRealtime` — single gate + r
 
 ### Client strategy
 
-1. Inject `realtime.broadcast` + `userId` on index / trash / show via Blade `data-config` when socket config exists.
-2. Prefer **one** browser Echo (`window.__monolithEcho`) shared with the notification bell and payment checkout (`checkout.js` / `PaymentRealtime`) when those surfaces are active.
+1. Inject `realtime` (`broadcast`, `userId`, `enabled`, `page`, …) into the Vue island bootstrap (`config.realtime` on index / trash / show) when socket config exists.
+2. Prefer **one** browser Echo (`window.__monolithEcho`) shared with the notification bell and payment checkout (`checkout.js` / `PaymentRealtime`) when those surfaces are active; FH creates its own Echo when the bell is absent.
 3. Subscribe to personal or workspace channel based on `workspaceId` / `ownerUserId`.
-4. **Apply:** soft-refetch browse JSON for current folder (correctness floor); light DOM patch for delete/rename when `resource` / row identity allow; quota bar via `GET file-hosting/quota`; team members/activity soft-refetch; show page listens for matching `file_id` stats.
-5. Replace hard `location.reload()` after mutations/upload complete with soft-refetch when the manager is bound.
-6. Health: WS primary -> 30s grace -> visible-tab poll ~60s; reconnect stops poll + one catch-up soft-refetch.
+4. **Apply:** soft-refetch browse/trash/show/quota/members/activity JSON via `useFhShell` helpers (correctness floor). Listing patch is **not** used — Vue wires `onListingPatch: () => false`. Row identity attrs (`data-fh-entity` / `data-fh-id`) remain for drag-move / a11y, not for a live DOM-patch path.
+5. Replace hard `location.reload()` after mutations/upload complete with soft-refetch when the island is bound.
+6. Health: WS primary → 30s grace → visible-tab poll ~60s; reconnect stops poll + one catch-up soft-refetch.
 
 ### Not live
 
@@ -852,7 +851,7 @@ npm run test:js
 | Suite | What it covers |
 |-------|----------------|
 | PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 25 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest` — HTML + SPA JSON contracts for index/trash/show/workspaces + mutation `data` forward), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302, public show JSON + paid gate 404). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
-| Vitest `npm run test:js` | Pure client helpers in `resources/js/file-hosting/upload-progress.test.js` (transfer rate, format, byte percent) and `direct-upload-dismiss.test.js` (Done-row auto-dismiss timer/fade/`active` cleanup). Pattern: `resources/js/**/*.test.js`. |
+| Vitest `npm run test:js` | Pure client helpers: `resources/js/file-hosting/upload-progress.test.js`, `direct-upload-*.test.js`, `selection.test.js` (Drive click/range), `vue/islands/file-hosting/fh-shell.test.js` (`hasBrowseChrome`, router helpers), plus microstock/upload helpers. Pattern: `resources/js/**/*.test.js`. |
 | Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Gateway uploader tests: `c:\laragon\www\gateway` (`npm test`). |
 | Qualification | `composer test -- --filter=FileHostingQualification` — 50 IDs (Low/Normal/Medium/Hard/Anomaly) |
 

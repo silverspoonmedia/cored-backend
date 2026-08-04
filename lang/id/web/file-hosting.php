@@ -293,6 +293,7 @@ return [
     'quota_remaining' => 'tersisa',
     'quota_unlimited' => 'Tak terbatas',
     'load_failed' => 'Gagal memuat.',
+    'vue_mount_failed' => 'UI File Hosting gagal dimuat. Muat ulang halaman.',
     'link_copied' => 'Tautan disalin ke papan klip.',
     'ajax_success' => 'Aksi selesai.',
     'ajax_error' => 'Aksi gagal.',

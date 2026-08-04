@@ -241,21 +241,21 @@ class AccessibilityBladeTest extends TestCase
         $this->assertStringContainsString("setAttribute('aria-pressed'", $js);
     }
 
-    public function test_file_manager_js_source_exposes_move_tree_keyboard_and_role(): void
+    public function test_file_hosting_vue_move_modal_list_exposes_role_button_targets(): void
     {
-        $js = (string) file_get_contents(resource_path('js/file-hosting/file-manager.js'));
+        $vue = (string) file_get_contents(resource_path('js/vue/islands/file-hosting/App.vue'));
 
-        $this->assertStringContainsString("setAttribute('role', 'button')", $js);
-        $this->assertStringContainsString("setAttribute('tabindex', '0')", $js);
-        $this->assertStringContainsString("setAttribute('aria-current', 'true')", $js);
+        $this->assertStringContainsString('data-fh-drop-folder', $vue);
+        $this->assertStringContainsString('draggable="true"', $vue);
+        $this->assertStringContainsString('useFhDragMove', $vue);
     }
 
-    public function test_file_hosting_dropzone_blade_exposes_role_button_and_tabindex(): void
+    public function test_file_hosting_dropzone_vue_exposes_role_button_and_tabindex(): void
     {
-        $blade = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/partials/_toolbar-zone.blade.php'));
+        $vue = (string) file_get_contents(resource_path('js/vue/islands/file-hosting/components/FhDropzone.vue'));
 
-        $this->assertStringContainsString('role="button"', $blade);
-        $this->assertStringContainsString('tabindex="0"', $blade);
+        $this->assertStringContainsString('role="button"', $vue);
+        $this->assertStringContainsString('tabindex="0"', $vue);
     }
 
     public function test_empty_state_component_renders_role_status_and_icon(): void
@@ -431,12 +431,12 @@ class AccessibilityBladeTest extends TestCase
     public function test_file_hosting_empty_row_spans_all_columns(): void
     {
         $config = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/index.blade.php'));
-        $browse = (string) file_get_contents(resource_path('views/adminlte4/file-hosting/partials/_browse-views.blade.php'));
+        $vue = (string) file_get_contents(resource_path('js/vue/islands/file-hosting/App.vue'));
 
-        // Empty row colspan follows $tableColspan (7 without region column, 8 with).
-        $this->assertStringContainsString('colspan="{{ $tableColspan }}"', $browse, 'file-hosting empty row must use dynamic $tableColspan.');
-        $this->assertStringContainsString('$tableColspan = $showRegion ? 8 : 7', $config, 'file-hosting must derive colspan from region visibility.');
-        $this->assertStringNotContainsString('colspan="6"', $browse, 'file-hosting must not carry a stale colspan="6" empty row.');
+        // Empty row colspan follows region visibility (7 without region column, 8 with).
+        $this->assertStringContainsString(':colspan="config.showRegion ? 8 : 7"', $vue, 'Vue browse empty row must use dynamic region colspan.');
+        $this->assertStringContainsString('$tableColspan = $showRegion ? 8 : 7', $config, 'file-hosting bootstrap must derive colspan from region visibility.');
+        $this->assertStringNotContainsString('colspan="6"', $vue, 'file-hosting must not carry a stale colspan="6" empty row.');
     }
 
     public function test_file_hosting_toolbar_renders_symmetrical_border(): void

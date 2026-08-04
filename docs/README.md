@@ -43,7 +43,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) |
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, FH grace/purge (core domain) |
 | Inference | [domains/inference/README.md](domains/inference/README.md) — AI model catalog, provider model rates, per-usage rate snapshots (core domain) |
-| File Hosting | [domains/file-hosting/README.md](domains/file-hosting/README.md) — nested folders, multi-disk S3, Gateway hybrid upload (25 MB parts, `gateway.silverspoon.me`), paid link share, collab workspaces, Blade SPA shell + live listing (product, locked) |
+| File Hosting | [domains/file-hosting/README.md](domains/file-hosting/README.md) — nested folders, multi-disk S3, Gateway hybrid upload (25 MB parts, `gateway.silverspoon.me`), paid link share, collab workspaces, Vue island SPA shell + live listing (product, locked) |
 | vTual | [domains/vtual/README.md](domains/vtual/README.md) — creator aggregator (product, locked); progress [implementation-status.md](domains/vtual/implementation-status.md); legacy audit [archive/vtual-legacy-audit.md](archive/vtual-legacy-audit.md) |
 | Microstock | [domains/microstock/README.md](domains/microstock/README.md) — microstock asset mgmt on FH system workspace: AI metadata, prepaid AI billing + usage/balance UI (ledger, usage detail, admin platform tab), CSV export, encrypted marketplace creds (product, locked) |
 | Product Activations | [domains/product-activations/README.md](domains/product-activations/README.md) — kernel runtime-access registry for product domains |
@@ -53,8 +53,8 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 | Document | Topic |
 |----------|-------|
-| [blade-admin.md](web/blade-admin.md) | JWT cookie, ApiClient, auth shell `/apps`, URL helpers, theming |
-| [ui-patterns.md](web/ui-patterns.md) | Select2 lookups, list/DataTable modes |
+| [blade-admin.md](web/blade-admin.md) | JWT cookie, ApiClient, auth shell `/apps`, URL helpers, theming, [dual-path JS vs Vue islands](web/blade-admin.md#dual-path--when-to-use-which) |
+| [ui-patterns.md](web/ui-patterns.md) | Select2 lookups, list/DataTable modes, Vue island pointers |
 
 ## Integration
 

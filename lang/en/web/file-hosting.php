@@ -293,6 +293,7 @@ return [
     'quota_remaining' => 'remaining',
     'quota_unlimited' => 'Unlimited',
     'load_failed' => 'Failed to load.',
+    'vue_mount_failed' => 'File Hosting UI failed to load. Refresh the page.',
     'link_copied' => 'Link copied to clipboard.',
     'ajax_success' => 'Action completed.',
     'ajax_error' => 'Action failed.',

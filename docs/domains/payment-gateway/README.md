@@ -204,6 +204,22 @@ Authenticated admin/checkout UI under `/apps/*` (route names unprefixed): e.g. `
 
 Payment-first purchase hub / subscription invoice show: hero, steps, `checkout-panel`, `checkout.js`. Fee breakdown shows **0** until the buyer selects a payment method (restored from active `checkout_session` when instructions exist). Web proxies: channel-checkout, sync-status, snap-token (API). Checkout UX: channel picker buttons carry `aria-pressed` on first paint; sync-status button shows a loading state (disabled + text) during the request; both purchase hub and invoice show use the same mobile column ordering (sidebar first on mobile). Message placeholders use Laravel `:name` convention throughout (e.g. `Pay before :time`).
 
+### Checkout UI architecture (vanilla soft-update — not a Vue island)
+
+Primary buyer surface: `/apps/service-purchases/{uuid}` (`service-purchases.show`). Shared checkout chrome also mounts on invoice show for non–service-purchase morphs; service purchases redirect to the hub via `InvoiceWebDestination`.
+
+| Asset | Role |
+|-------|------|
+| `resources/js/payments/checkout.js` | Channel picker, instructions, Echo + poll soft status/routing updates |
+| `resources/js/services/purchase-quantity.js` | Qty controls on purchase hub |
+| `resources/js/services/purchase-pricing-preview.js` | Pure pricing preview math |
+
+**Fair Vue boundary:** this page does **not** earn a page-level Vue island under the [dual-path checklist](../../web/blade-admin.md#dual-path--when-to-use-which). Soft-SPA here means Echo + poll + DOM patch on one detail URL until terminal — already implemented in vanilla. Contrast File Hosting auth browse (soft-nav + Drive gestures + upload queue), which earns one island. Do **not** Vue-wash pricing math, Echo subscribe, sync-status poll, or spawn widget islands for channel picker / QR / qty.
+
+**Triggers for Vue later (not now):** (1) channel/instruction templates become unmaintainable → small Blade-mounted Vue **components** driven by the same vanilla orchestrator, not a page island; (2) true multi-view soft-nav on one document; (3) dual Blade+JS ownership war on the same nodes.
+
+Admin siblings (`channels-admin.js`, `income.js`, invoice DataTables) stay vanilla for the same reason. Invoice/gateway DataTables use `exposeForReload: true` so bell-driven soft reload works without hard refresh.
+
 ### Realtime invoice status (no hard reload)
 
 Checkout pages soft-update hero / steps / panel / sidebar when invoice status changes. **No visual redesign** — same Blade chrome, client patches `data-payment-*` hooks (hero badges, steps, panel body, sidebar status). Entitlement/period sidebar fields are **not** live-refetched (known non-goal; payment progress is the target).

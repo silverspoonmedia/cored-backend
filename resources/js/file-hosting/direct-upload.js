@@ -275,9 +275,9 @@ export function isAuthExpired(error) {
     return /status 403|SignatureDoesNotMatch|expired|Request has expired/i.test(message);
 }
 
-export function initDirectUpload(root) {
+export function initDirectUpload(root, hooks = {}) {
     if (!root || root.dataset.directUploadBound === '1') {
-        return;
+        return null;
     }
 
     root.dataset.directUploadBound = '1';
@@ -450,7 +450,12 @@ export function initDirectUpload(root) {
      * hard-reload when `[data-file-manager]` is present (SPA-ish contract).
      */
     function refreshListingAfterUpload() {
-        const manager = document.querySelector('[data-file-manager]');
+        if (typeof hooks.softRefresh === 'function') {
+            hooks.softRefresh();
+            return;
+        }
+
+        const manager = document.querySelector('[data-file-manager], [data-fh-vue-root]');
         const soft = typeof window.fileHostingSoftRefresh === 'function'
             ? window.fileHostingSoftRefresh
             : (manager && typeof manager.__fhSoftRefresh === 'function'
@@ -468,6 +473,11 @@ export function initDirectUpload(root) {
             let attempts = 0;
             const timer = setInterval(function () {
                 attempts += 1;
+                if (typeof hooks.softRefresh === 'function') {
+                    clearInterval(timer);
+                    hooks.softRefresh();
+                    return;
+                }
                 if (typeof window.fileHostingSoftRefresh === 'function') {
                     clearInterval(timer);
                     window.fileHostingSoftRefresh();
@@ -646,7 +656,9 @@ export function initDirectUpload(root) {
 
             // Per-file: optional optimistic row inject. Full soft-refresh runs once at batch end.
             const hosted = completed.data?.file;
-            if (hosted && typeof window.fileHostingUpsertFile === 'function') {
+            if (hosted && typeof hooks.upsertFile === 'function') {
+                hooks.upsertFile(hosted);
+            } else if (hosted && typeof window.fileHostingUpsertFile === 'function') {
                 window.fileHostingUpsertFile(hosted);
             }
         } catch (error) {
@@ -1016,7 +1028,7 @@ export function initDirectUpload(root) {
 }
 
 if (typeof document !== 'undefined') {
-    document.querySelectorAll('[data-direct-upload]').forEach(function (root) {
+    document.querySelectorAll('[data-direct-upload]:not([data-fh-vue-upload])').forEach(function (root) {
         initDirectUpload(root);
     });
 }

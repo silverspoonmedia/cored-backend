@@ -24,6 +24,7 @@
                 tableId: 'invoices-table',
                 ajaxUrl: '{{ route('invoices.datatable') }}',
                 order: [[5, 'desc']],
+                exposeForReload: true,
                 language: {
                     emptyTable: @json(__('web/payments.invoices.datatable.empty')),
                     zeroRecords: @json(__('web/payments.invoices.datatable.zero_records')),

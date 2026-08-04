@@ -207,12 +207,15 @@ export function createFhRouter(options) {
     } = options;
 
     let busy = false;
+    let pending = null;
     let currentHref = window.location.pathname + window.location.search;
 
     async function go(href, { replace = false, popstate = false } = {}) {
         const url = new URL(href, window.location.origin);
         const next = url.pathname + url.search;
         if (busy) {
+            // Keep latest intent so rapid clicks / back-forward are not swallowed.
+            pending = { href: next, replace, popstate };
             return;
         }
         busy = true;
@@ -235,6 +238,14 @@ export function createFhRouter(options) {
             await onNavigate(route, { replace, popstate });
         } finally {
             busy = false;
+            if (pending) {
+                const nextNav = pending;
+                pending = null;
+                await go(nextNav.href, {
+                    replace: nextNav.replace,
+                    popstate: nextNav.popstate,
+                });
+            }
         }
     }
 
@@ -278,6 +289,7 @@ export function createFhRouter(options) {
         destroy() {
             root.removeEventListener('click', onClick);
             window.removeEventListener('popstate', onPopState);
+            pending = null;
         },
     };
 }

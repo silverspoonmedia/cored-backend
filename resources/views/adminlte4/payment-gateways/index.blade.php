@@ -22,6 +22,7 @@
                 tableId: 'payment-gateways-table',
                 ajaxUrl: '{{ route('payment-gateways.datatable') }}',
                 order: [[3, 'asc']],
+                exposeForReload: true,
                 language: {
                     emptyTable: @json(__('web/payments.gateways.datatable.empty')),
                     zeroRecords: @json(__('web/payments.gateways.datatable.zero_records')),

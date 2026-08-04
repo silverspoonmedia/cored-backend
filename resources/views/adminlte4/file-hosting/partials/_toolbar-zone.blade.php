@@ -168,9 +168,6 @@
                 </div>
                 <div class="fh-upload-queue" data-direct-upload-queue></div>
             </div>
-            @push('scripts')
-                @vite('resources/js/file-hosting/direct-upload.js')
-            @endpush
         @endcan
 
         {{-- Bulk action bar --}}

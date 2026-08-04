@@ -49,7 +49,7 @@
         </a>
 
         {{-- Dynamic workspace items are rendered client-side by
-             file-manager.js renderWorkspaceMenuItems() (grouped: microstock
+             Vue FH island workspace menu (grouped: microstock
              first, team second, each preceded by its own divider). Blade only
              provides the skeleton below. --}}
 

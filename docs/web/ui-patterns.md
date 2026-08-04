@@ -39,7 +39,7 @@ Covered lists: v1 users, menus list/trashed, file-hosting lists where applicable
 
 ### DataTable init
 
-Shared factory: `initDataTable({ tableId, ajaxUrl, columns, order, language, exposeForReload, onReady })` in `resources/js/datatable-init.js` (Vite entry). Six index views (users, invoices, subscriptions, payment-gateways, inference providers, inference model-cards) load it via `@vite` inside `x-slot:scripts` (after `app.js`) and call `window.initDataTable(...)` — no ESM import (Vite 8/Rolldown tree-shakes named exports from entry modules). jQuery + DataTables core binding (`window.jQuery`, `DataTable.use(jQuery)`) lives in `resources/js/infra/jquery-init.js` and runs before any consumer — DataTables 3 does not auto-detect `window.jQuery` for `.fn.DataTable` attachment. `exposeForReload` stores instances in `window.dataTables[tableId]` for realtime reload via `bell.js`.
+Shared factory: `initDataTable({ tableId, ajaxUrl, columns, order, language, exposeForReload, onReady })` in `resources/js/datatable-init.js` (Vite entry). Six index views (users, invoices, subscriptions, payment-gateways, inference providers, inference model-cards) load it via `@vite` inside `x-slot:scripts` (after `app.js`) and call `window.initDataTable(...)` — no ESM import (Vite 8/Rolldown tree-shakes named exports from entry modules). jQuery + DataTables core binding (`window.jQuery`, `DataTable.use(jQuery)`) lives in `resources/js/infra/jquery-init.js` and runs before any consumer — DataTables 3 does not auto-detect `window.jQuery` for `.fn.DataTable` attachment. **Always set `exposeForReload: true`** on these admin lists so `bell.js` can soft-reload via `window.dataTables[tableId]` without a hard page refresh.
 
 ### Actions contract
 
@@ -66,11 +66,24 @@ The Blade admin follows WCAG 2.1 AA. Guards live in `tests/Feature/Http/Controll
 | Active nav | `aria-current="page"` | `nav/tree.blade.php`, `nav/bar-tree.blade.php`, `sidebar-nav-search.blade.php` JS |
 | Breadcrumbs | `<nav aria-label="breadcrumb">`; every parent must expose a clickable `route()` URL (no plain-text parents) | `partials/breadcrumbs.blade.php`, `routes/breadcrumbs.php` |
 | DataTables | `aria-label` on `<table>`; `<caption>` where helpful | `users/index.blade.php`, `invoices/index.blade.php`, `payment-gateways/index.blade.php` |
-| Status regions | `role="status"` + `aria-live="polite"` | `payment-status-hero.blade.php`, bell badge (`bell.js`), toasts (`file-manager.js`) |
+| Status regions | `role="status"` + `aria-live="polite"` | `payment-status-hero.blade.php`, bell badge (`bell.js`), toasts (checkout / FH island) |
 | Toggle buttons | `aria-pressed` | `checkout.js` channel buttons |
-| Interactive divs | `role="button"` + `tabindex="0"` + Enter/Space handler | file-hosting dropzone, move-tree items (`file-manager.js`) |
+| Interactive divs | `role="button"` + `tabindex="0"` + Enter/Space handler | file-hosting dropzone (`FhDropzone.vue`), move-tree items |
 
-File Hosting browse is a **domain-local SPA shell** (select, context menu, drag-move, bulk bar, soft-nav, live listing) — not a global AdminLTE SPA. Full behavior and asset map: [domains/file-hosting/README.md — UI architecture / SPA shell](../domains/file-hosting/README.md#ui-architecture--spa-shell).
+File Hosting authenticated browse is a **domain-local Vue island SPA** (soft-nav, listing, bulk, upload dropzone, Microstock chrome) — not a global AdminLTE SPA. Public `/s/*` stays vanilla. Full behavior and asset map: [domains/file-hosting/README.md — UI architecture / SPA shell](../domains/file-hosting/README.md#ui-architecture--spa-shell).
+
+## Vue islands
+
+When a page needs richer client UI than vanilla ESM + jQuery plugins, mount a **Vite Vue 3 island** inside Blade — only after the dual-path checklist passes. Conventions, identification rules, mount contract, `useApi` / `MonolithApi` alignment, and anti-Inertia/CDN rules: [blade-admin — Dual-path / Vue islands](blade-admin.md#dual-path--when-to-use-which).
+
+| Do | Don't |
+|----|--------|
+| SFC under `resources/js/vue/islands/{name}/` + Vite entry | Inline CDN Vue or runtime `template:` strings as house style |
+| Bootstrap URLs via `route()` in Blade JSON | Hard-code `/apps/…` in SFCs |
+| Fetch via `apiFetch` → web JSON proxy | Re-implement 401/419/422 toast logic outside `MonolithApi` |
+| Keep DataTables/Select2 pages on existing stack until they truly hurt | Big-bang rewrite of all Blade CRUD to Vue |
+
+Reference islands: dashboard live-session; File Hosting auth browse (XOR — no `file-manager.js`).
 
 ### Lang keys
 
@@ -131,7 +144,7 @@ Adopted in: `notifications/index`, `services/index`, `error-logs/index`, `activi
 
 ## Toasts (replacing window.alert)
 
-Toast routing goes through `window.MonolithSwal.toastMessage(message, type)` — a SweetAlert2 toast mixin (position `top-end`, 4s timer, progress bar, pause on hover). The legacy `.monolith-toast` CSS component (defined in `monolith-overrides.css`) is retained for domain consumers that build toast elements manually (checkout, file-manager, channels-admin, domain-access, inference rate-plans) via local `showToast(message, type)` helpers; those containers expose `role="status"` + `aria-live="polite"`. `window.alert` is forbidden — use `MonolithSwal.alert` (modal) or `MonolithSwal.toastMessage` (toast). Status transitions (paid / expired / cancelled / failed) soft-patch the same page chrome without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
+Toast routing goes through `window.MonolithSwal.toastMessage(message, type)` — a SweetAlert2 toast mixin (position `top-end`, 4s timer, progress bar, pause on hover). The legacy `.monolith-toast` CSS component (defined in `monolith-overrides.css`) is retained for domain consumers that build toast elements manually (checkout, channels-admin, domain-access, inference rate-plans) via local `showToast(message, type)` helpers; File Hosting Vue island uses `MonolithSwal` via `useFhApi`. Those containers expose `role="status"` + `aria-live="polite"`. `window.alert` is forbidden — use `MonolithSwal.alert` (modal) or `MonolithSwal.toastMessage` (toast). Status transitions (paid / expired / cancelled / failed) soft-patch the same page chrome without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
 
 ## SweetAlert2 / confirmations
 
@@ -168,7 +181,7 @@ Keys live under `swal.*` in `lang/{en,id,ja}/ui.php`. The wrapper reads them at 
 ### Adoption
 
 - **`data-swal-confirm` forms**: `file-hosting/blocklist.blade.php`, `product-activations/show.blade.php`, `services/index.blade.php`, `file-hosting/partials/_team-offcanvas.blade.php`.
-- **`MonolithSwal.alert` / `confirm` helpers**: `file-hosting/direct-upload.js` (`monolithAlert`), `file-hosting/file-manager.js` (`fhConfirm`), `file-hosting/context-menu.js` (`fhConfirm`). Each helper feature-detects `window.MonolithSwal` and falls back to `window.alert` / `window.confirm` if absent.
+- **`MonolithSwal.alert` / `confirm` helpers**: `file-hosting/direct-upload.js` (`monolithAlert`), Vue FH `useFhApi` (`fhConfirm` / `toast`). Each helper feature-detects `window.MonolithSwal` and falls back to `window.alert` / `window.confirm` if absent.
 
 ## Theme-color meta
 
@@ -182,7 +195,7 @@ Row action groups use a single `btn-group` with direct-children buttons only. Ne
 
 The shared DataTable renderer `window.renderDatatableActions` (in `components/partials/datatable-row-actions.blade.php`) wraps every row's action set in `<div class="btn-group btn-group-sm" role="group" aria-label="…">`. Each icon-only button carries both `aria-label` and `title` (set from `action.label`); icons use `aria-hidden="true"`. No `ms-*` margin utilities — spacing comes from `.btn-group`.
 
-Manual Blade row-action clusters (e.g. `services/index`, `product-activations/show`, file-hosting `_browse-views`) follow the same contract: wrap the per-row actions in `<div class="btn-group btn-group-sm" role="group">` (Bootstrap rows) or `<div class="fh-action-group" role="group">` (file-hosting custom `.fh-table__action-btn` cluster, gap-based via `.fh-action-group` in `file-hosting.css`). Every icon-only button must carry `aria-label` + `title`.
+Manual Blade row-action clusters (e.g. `services/index`, `product-activations/show`) follow the same contract: wrap the per-row actions in `<div class="btn-group btn-group-sm" role="group">` (Bootstrap rows). File Hosting auth browse row actions live in the Vue island (`App.vue` / `.fh-action-group` in `file-hosting.css`) — not orphan `_browse-views`. Every icon-only button must carry `aria-label` + `title`.
 
 Forms carrying destructive actions use `class="d-inline-block"` (not `d-inline`) so they sit cleanly as a direct child of the `btn-group`; the submit button inside carries `[data-form-submit-spinner]` (see [blade-admin — UX patterns](blade-admin.md#ux-patterns)).
 
@@ -200,7 +213,7 @@ Reference: `users/_activity_history.blade.php`.
 
 ## File-hosting toolbar
 
-`.fh-toolbar` declares a full `border: 1px solid var(--fh-border)` and uniform `border-radius: var(--fh-radius)` so the search box reads as a symmetric shell (not a half-open bar). The list-view empty row spans all columns via dynamic `$tableColspan` (7 without region column, 8 with). View split: `index.blade.php` delegates to `partials/_toolbar-zone.blade.php`, `partials/_browse-views.blade.php`, etc.
+`.fh-toolbar` declares a full `border: 1px solid var(--fh-border)` and uniform `border-radius: var(--fh-radius)` so the search box reads as a symmetric shell (not a half-open bar). Auth browse listing/toolbar/empty-state colspan are painted by the Vue island (`App.vue`); Blade index only mounts `#vue-file-hosting` + modal/offcanvas shells. Orphan `_toolbar-zone` / `_browse-views` are not the live paint path.
 
 ## Related
 

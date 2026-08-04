@@ -71,6 +71,38 @@
                     </a>
                 </div>
             </x-adminlte4::card>
+
+            {{-- Vue island: live session refresh via same-route JSON (Accept: application/json). --}}
+            <div class="mt-3">
+                <div id="vue-dashboard-session"></div>
+                @php
+                    $vueDashboardSession = [
+                        'profile' => [
+                            'name' => $profile['name'] ?? null,
+                            'email' => $profile['email'] ?? null,
+                            'roles' => $profile['roles'] ?? [],
+                        ],
+                        'meUrl' => route('dashboard'),
+                        'labels' => [
+                            'title' => __('web/dashboard.session_island.title'),
+                            'hint' => __('web/dashboard.session_island.hint'),
+                            'name' => __('ui.labels.name'),
+                            'email' => __('ui.labels.email'),
+                            'roles' => __('ui.labels.role'),
+                            'noRoles' => __('web/dashboard.no_roles'),
+                            'refresh' => __('web/dashboard.session_island.refresh'),
+                            'refreshing' => __('web/dashboard.session_island.refreshing'),
+                            'refreshedAt' => __('web/dashboard.session_island.refreshed_at'),
+                            'loadFailed' => __('web/dashboard.session_island.load_failed'),
+                        ],
+                    ];
+                @endphp
+                <script type="application/json" data-vue-dashboard-session>@json($vueDashboardSession)</script>
+            </div>
         </div>
     </div>
+
+    <x-slot:scripts>
+        @vite('resources/js/vue/islands/dashboard-session/main.js')
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

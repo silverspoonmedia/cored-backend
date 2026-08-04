@@ -2,7 +2,7 @@
  * Microstock AI usage & balance — summary, ledger mutations, usage detail.
  *
  * Two entry points:
- * 1. createMicrostockUsagePanel(config, csrfToken) — SPA offcanvas factory (used by file-manager.js)
+ * 1. createMicrostockUsagePanel(config, csrfToken) — SPA offcanvas factory (used by Vue FH island)
  * 2. initMicrostockUsage(root) — standalone page bootstrap (used by microstock-usage.blade.php)
  */
 
@@ -453,7 +453,7 @@ function bindUsagePanel(root, config, csrfToken) {
 }
 
 /**
- * SPA offcanvas factory — called by file-manager.js.
+ * SPA offcanvas factory — called by the Vue FH island.
  * @param {object} config  config.usagePanel from data-config
  * @param {string} csrfToken
  */

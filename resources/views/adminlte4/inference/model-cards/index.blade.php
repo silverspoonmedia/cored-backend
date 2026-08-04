@@ -24,6 +24,7 @@
                 tableId: 'inference-model-cards-table',
                 ajaxUrl: '{{ route('inference.model-cards.datatable') }}',
                 order: [[0, 'asc']],
+                exposeForReload: true,
                 language: {
                     emptyTable: @json(__('web/inference.model_cards.datatable.empty')),
                     zeroRecords: @json(__('web/inference.model_cards.datatable.zero_records')),

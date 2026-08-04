@@ -24,6 +24,7 @@
                 tableId: 'inference-providers-table',
                 ajaxUrl: '{{ route('inference.providers.datatable') }}',
                 order: [[0, 'asc']],
+                exposeForReload: true,
                 language: {
                     emptyTable: @json(__('web/inference.providers.datatable.empty')),
                     zeroRecords: @json(__('web/inference.providers.datatable.zero_records')),

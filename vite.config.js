@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
+import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
     plugins: [
@@ -16,7 +17,6 @@ export default defineConfig({
                 'resources/js/navigation/sidebar-search.js',
                 'resources/js/notifications/bell.js',
                 'resources/js/file-hosting/direct-upload.js',
-                'resources/js/file-hosting/file-manager.js',
                 'resources/js/file-hosting/microstock-usage.js',
                 'resources/js/file-hosting/public-app.js',
                 'resources/js/payments/checkout.js',
@@ -28,8 +28,18 @@ export default defineConfig({
                 'resources/js/domain-access/toggle.js',
                 'resources/js/vtual/confirm-modal.js',
                 'resources/js/vtual/credential-form.js',
+                'resources/js/vue/islands/dashboard-session/main.js',
+                'resources/js/vue/islands/file-hosting/main.js',
             ],
             refresh: true,
+        }),
+        vue({
+            template: {
+                transformAssetUrls: {
+                    base: null,
+                    includeAbsolute: false,
+                },
+            },
         }),
     ],
     server: {
@@ -49,6 +59,7 @@ export default defineConfig({
                         if (id.includes('bootstrap')) return 'vendor-bootstrap';
                         if (id.includes('admin-lte')) return 'vendor-adminlte';
                         if (id.includes('overlayscrollbars')) return 'vendor-overlayscrollbars';
+                        if (id.includes('vue')) return 'vendor-vue';
                     }
                 },
             },

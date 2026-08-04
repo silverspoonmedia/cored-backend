@@ -123,11 +123,94 @@ Future policy only (not implemented): optional temporary 302 for **non-product**
 
 Deploy note: after JS changes under `resources/js/`, run `npm run build` (or Vite dev) so production bundles pick up fail-closed helpers.
 
-Layout namespace: `WEB_LAYOUT` / `config/web.php` (default `adminlte4`).
+<a id="layout-namespace-and-configwebphp"></a>
+
+**Layout namespace:** `WEB_LAYOUT` / `config/web.php` (default `adminlte4`).
 
 ## Views
 
-Bundled AdminLTE 4 / Bootstrap 5 / jQuery **3.7.1** / Select2 / DataTables 3 (npm + Vite). Script order contract: `app.js` (vendor + `window.bootstrap` + `MonolithApi` + `ajax-form` + Select2 auto-init) → **`bell.js`** (when `@can('view notification')`, also in `assets-scripts`) → page `$scripts` → `@stack('scripts')`. Layout renders `assets-scripts` then `$scripts` / `@stack('scripts')` — page JS **must** use `x-slot:scripts` or `@push('scripts')`, never mid-`$slot` `@vite` for JS (CSS may stay early). Do **not** load `bell.js` via `@push('scripts')` (runs after page modules; list pages miss pure-polling health). Skip-link is the first child of `<body>`, **outside** `.app-wrapper` (AdminLTE 4 CSS grid; unnamed children break footer/sidebar placement). Vendor CSS loaded via `resources/css/vendor.css` in `<head>` (prevents FOUC; DataTables CSS is BS5 theme only). Forms: `x-adminlte4::form.ajax`. Select2: [ui-patterns](ui-patterns.md).
+Bundled AdminLTE 4 / Bootstrap 5 / jQuery **3.7.1** / Select2 / DataTables 3 / Vue 3 (npm + Vite). Script order contract: `app.js` (vendor + `window.bootstrap` + `MonolithApi` + `ajax-form` + Select2 auto-init) → **`bell.js`** (when `@can('view notification')`, also in `assets-scripts`) → page `$scripts` → `@stack('scripts')`. Layout renders `assets-scripts` then `$scripts` / `@stack('scripts')` — page JS **must** use `x-slot:scripts` or `@push('scripts')`, never mid-`$slot` `@vite` for JS (CSS may stay early). Do **not** load `bell.js` via `@push('scripts')` (runs after page modules; list pages miss pure-polling health). Skip-link is the first child of `<body>`, **outside** `.app-wrapper` (AdminLTE 4 CSS grid; unnamed children break footer/sidebar placement). Vendor CSS loaded via `resources/css/vendor.css` in `<head>` (prevents FOUC; DataTables CSS is BS5 theme only). Forms: `x-adminlte4::form.ajax`. Select2: [ui-patterns](ui-patterns.md). Dual-path UI: [Vue islands](#vue-islands-vite-sfc) vs [optimize Blade JS](#dual-path--when-to-use-which).
+
+### Dual-path — when to use which
+
+**Default = optimize existing Blade JS** (ajax-form, DataTables, soft refetch, Echo bridges). Promote a surface to a **Vue island** only when the checklist below passes. Do not add Vue “for consistency.”
+
+**Use a Vue island when ALL of (A) and AT LEAST TWO of (B) hold:**
+
+| | Rule |
+|--|------|
+| **(A) Gate** (all required) | Interactive subtree is page/product-scoped (not global AdminLTE chrome). Team accepts **XOR cutover**: one orchestrator owns that subtree (no dual-boot with legacy JS on the same listing/shell). |
+| **(B) Signals** (≥2) | Rich client state that must stay coherent (selection, queues, multi-panel, soft-nav history). Frequent partial UI updates from mutations and/or Echo (live listing, progress, status). Existing vanilla module is a god-file / tightly coupled DOM patching (related surface ≳1k LOC). Re-renders and derived UI are cheaper as declarative Vue than manual DOM sync. |
+
+**Stay on optimized JS when:**
+
+- Index / form / DataTable + ajax-form is enough
+- “Live” = bell → DataTable reload or soft-patch after submit
+- Checkout-style soft-update already works without multi-view client routing
+- Size alone (“JS file is large”) without page-lifecycle complexity — **size ≠ island**
+
+**XOR rule:** A given auth page surface is either the legacy JS orchestrator **or** a Vue island — never both mounting the same listing/shell.
+
+**Promotion path:** Simple surfaces stay on JS forever unless they grow into (A)+(B).
+
+**Backlog (do not promote until the checklist trips):**
+
+| Surface | Current path | Why not an island yet |
+|---------|--------------|------------------------|
+| Payment checkout / purchase hub | Vanilla soft-update (`checkout.js`) | Echo + poll + DOM patch on one URL already; size ≠ island — see [payment-gateway](../domains/payment-gateway/README.md#checkout-ui-architecture-vanilla-soft-update--not-a-vue-island) |
+| Payment channels admin | Vanilla (`channels-admin.js`) | Dense toggles, no soft-nav lifecycle |
+| Inference rate-plan grid / usage events | Vanilla | Multi-row editor; promote only if dual DOM ownership appears |
+| vTual claims / credentials | Vanilla + small helpers | Forms + confirm modals; revisit when live ingestion needs multi-view client state |
+| Users / menus / settings / logs | Blade + ajax-form + DataTables | Classic CRUD; bell → `exposeForReload` soft DT reload is enough |
+
+Optional later shared helper: thin `useEcho` wrapper if multiple islands subscribe — avoid premature abstraction while only dashboard + FH islands exist.
+
+**Realtime (both paths):** Keep/extend existing Echo + poll (notification bell, File Hosting, payment checkout). Elsewhere prefer soft-update after own mutations + DataTable reload bridges — do not add websockets to every CRUD admin page by default.
+
+### Vue islands (Vite SFC)
+
+Progressive Vue 3 islands on Blade — **not** Inertia, **not** CDN Vue, **not** a monorepo-wide SPA. Blade + AdminLTE keep the shell (layout, sidebar/`MenuService`, breadcrumbs, `web.auth`, CSRF). Interactive subtrees mount as SFCs when the [dual-path checklist](#dual-path--when-to-use-which) says so.
+
+```
+Blade mountpoint + JSON bootstrap
+        → @vite island entry (resources/js/vue/islands/…)
+        → apiFetch / web JSON proxy → ConsumesApi → /api/v1/*
+```
+
+| Piece | Role |
+|-------|------|
+| `vue` + `@vitejs/plugin-vue` | npm; Vite compiles SFCs; `manualChunks` → `vendor-vue` |
+| `resources/js/vue/mountIsland.js` | `mountIsland('#el', App, props)` — no-op when `#el` missing; `readIslandBootstrap('[data-…]')` |
+| `resources/js/vue/composables/useApi.js` | `apiFetch` / `unwrapData` / `csrfToken` — same-origin, CSRF on mutations, routes envelopes through `window.MonolithApi` when present |
+| Island entries | One Vite `input` per island under `resources/js/vue/islands/{name}/main.js` — **not** bundled into global `app.js` |
+
+**Mount contract**
+
+1. Blade: `<div id="vue-…">` + `<script type="application/json" data-vue-…>@json($bootstrap)</script>`.
+2. Load the island via `x-slot:scripts` / `@push('scripts')` with `@vite('resources/js/vue/islands/…/main.js')` (after `app.js` so `MonolithApi` exists).
+3. Bootstrap may carry **config only** (URLs from `route()`, locale labels, feature flags, first-paint snapshot). Domain lists/mutations still come from web JSON proxies or the API — do not dump full domain catalogs as Blade-only props that bypass the API contract.
+4. Prefer existing AJAX web routes (`Accept: application/json` / `expectsJson()`) that already forward via `ConsumesApi`. Direct browser → `/api/v1` still needs a Bearer the SPA does not have today (JWT is HttpOnly cookie); same-host web proxy remains the default.
+5. **Mount-fail:** invalid/missing bootstrap must paint a visible alert (FH: `data-vue-mount-failed` / `web/file-hosting.vue_mount_failed`) — never a silent empty mount.
+
+**Reference island:** Dashboard “Live session” card (`#vue-dashboard-session`) — `resources/js/vue/islands/dashboard-session/`. Refresh calls `GET` `route('dashboard')` with JSON Accept; `DashboardController@index` returns `{ status, data }` when `expectsJson()`.
+
+**Domain SPA:** File Hosting authenticated browse — `#vue-file-hosting` / `resources/js/vue/islands/file-hosting/` (single auth island; pure helpers stay JS). Public `/s/*` and standalone Microstock usage stay vanilla unless separately promoted. See [file-hosting — UI architecture / SPA shell](../domains/file-hosting/README.md#ui-architecture--spa-shell). Legacy `file-manager.js` is **retired** (XOR cutover). Cold trash/show → browse soft-nav requires `hasBrowseChrome` (non-empty `config.workspacesUrl`); detail in that FH guide.
+
+**Stay vanilla (soft-update, not an island):** Payment purchase hub `/apps/service-purchases/{uuid}` and shared `checkout-panel` — Blade chrome + `checkout.js` / `purchase-quantity.js` / pure `purchase-pricing-preview.js`. Soft status/routing updates via Echo + poll without hard reload. Not an island unless multi-view soft-nav or dual DOM ownership appears. Details: [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
+
+**Anti-patterns**
+
+| Don't | Why |
+|-------|-----|
+| Inertia (`Inertia::render`) | Couples Vue to Laravel web props/forms; fights API-first |
+| Vue via CDN script tags | No SFCs, weak Vitest, fights the Vite pipeline |
+| Vue Router for all of `/apps` | Soft-SPA admin shell is out of scope; FH keeps domain-local routing |
+| Dual-boot vanilla orchestrator + Vue on the same FH page | Two orchestrators fight; XOR cutover only |
+| Vue island per widget (dropzone-island, panel-island, …) | Overfit; widgets are components on the page island |
+| Rewriting Echo / router / part-uploader as SFCs | Pure helpers stay JS |
+| Vue island for payment purchase hub “because checkout.js is large” | Soft-update Blade already owns the SPA-ish contract; size ≠ page lifecycle |
+
+Tests: Vitest `resources/js/vue/**/*.test.js` (`npm run test:js`); web JSON/mount guards in domain Feature tests (e.g. `DashboardControllerTest`).
 
 ### Display data from API Resources
 
@@ -164,7 +247,7 @@ Soft override CSS layer (light/dark) under layout assets — keep tokenized vari
 - **Restore confirm**: `menus/trashed` no longer prompts `confirm()` on restore — restore is non-destructive, so the prompt was backwards severity.
 - **Submit spinners**: every AJAX submit button (navbar logout, mark-all-read, `menus/index` delete forms) carries a `[data-form-submit-spinner]` span toggled by the ajax-form handler.
 - **Checkout toasts**: `checkout.js` uses `showCheckoutToast(message, type)` (`.monolith-toast` container, `role="status"` + `aria-live`). `window.alert` is forbidden. Invoice/purchase show also soft-updates payment status (hero/steps/panel/sidebar) without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
-- **Unified toast**: all toast routing goes through `window.MonolithSwal.toastMessage(message, type)` (SweetAlert2 toast mixin). Legacy `.monolith-toast` CSS component retained for domain consumers (checkout, file-manager, channels-admin, domain-access, inference) that build toast elements manually. No per-domain toast CSS duplication.
+- **Unified toast**: all toast routing goes through `window.MonolithSwal.toastMessage(message, type)` (SweetAlert2 toast mixin). Legacy `.monolith-toast` CSS component retained for domain consumers (checkout, file-hosting Vue island, channels-admin, domain-access, inference) that build toast elements manually. No per-domain toast CSS duplication.
 - **Confirm paid**: the manual confirm button ships a `title` + sibling help text (`web/payments.checkout.confirm_paid_help`) explaining why manual sync exists.
 - **Service checkout dedup**: `services/show` renders a single checkout form. `Gate::any(['purchase service', 'initiate payment'])` (block `@php … @endphp`) gates it — same pair `ServicePolicy::purchase` checks. Do **not** inline `@php(...)` here (see Blade `@php` inline gotcha below).
 - **Payment-channel priority autosave**: priority inputs fire AJAX on `change` and the label carries an italic "saved automatically" hint so users are not surprised by the absence of a Save button.
@@ -172,8 +255,8 @@ Soft override CSS layer (light/dark) under layout assets — keep tokenized vari
 - **Clickable breadcrumb parents**: every parent trail in `routes/breadcrumbs.php` passes a `route()` URL — `activity-logs.index`, `notifications.index`, `profile.password.edit` included. The renderer only links non-last items, so a parent without a URL renders as dead text. Policy: all parents must be clickable.
 - **Menu delete cascade modal**: `menus/index` ships one delete trigger per row that opens `#menuDeleteConfirmModal`. The modal's cascade checkbox swaps the form `action` to the cascade URL via JS (`data-menu-cascade-url`, `data-menu-confirm-template`). No more inline twin delete buttons.
 - **Paired card alignment**: `users/edit` keeps the edit form and recent-activity cards flush (no `mt-3`). When activity is empty, the partial renders an `empty-state` inside the card so the right column does not collapse.
-- **File-hosting toolbar symmetry**: `.fh-toolbar` carries a full border + uniform radius (not a half-open bar). The list-view empty row spans all 8 columns.
-- **File-hosting view split**: `file-hosting/index.blade.php` (was 1521 lines) is split into 7 partials under `partials/_*.blade.php` (config, toolbar-zone, browse-views, trash-show-panels, workspace-modals, microstock-review-panel, usage-offcanvas, file-folder-modals). Index is now ~23 lines of includes.
+- **File-hosting toolbar symmetry**: `.fh-toolbar` carries a full border + uniform radius (not a half-open bar). Empty listing colspan is owned by Vue `App.vue` (not Blade `$tableColspan`).
+- **File-hosting Vue shell**: `file-hosting/index.blade.php` mounts `#vue-file-hosting` + JSON bootstrap and includes live modal/offcanvas shells (`_workspace-modals`, `_microstock-review-panel`, `_usage-offcanvas`, `_file-folder-modals`, `_team-offcanvas`). Listing, toolbar, upload, and row actions live in `App.vue` — leftover `_toolbar-zone` / `_browse-views` are orphans (not the live paint path).
 - **DataTables factory**: `initDataTable({ tableId, ajaxUrl, columns, order, language, exposeForReload, onReady })` in `datatable-init.js` (Vite entry). Six index views load it via `@vite` and call `window.initDataTable(...)` from inline scripts — no ESM import (Vite 8/Rolldown tree-shakes named exports from entry modules). `exposeForReload` stores instances in `window.dataTables[tableId]` for realtime bell → DT reload bridge. jQuery + DataTables binding (`window.jQuery`, `DataTable.use(jQuery)`) lives in `infra/jquery-init.js` and runs before any consumer — DataTables 3 does not auto-detect `window.jQuery` for `.fn.DataTable` attachment.
 - **JS infrastructure modules**: `api-response-handler.js`, `ajax-form.js`, `theme-scroll.js` (theme toggle + sidebar scrollbar), and `select2-init.js` are bundled in `app.js` (Vite). No inline `<script>` blocks for these; the old Blade partials were removed. Config passed via `<script type="application/json" data-monolith-api-messages>`.
 - **SweetAlert2**: `sweetalert2` (npm) bundled in `app.js` via `infra/sweetalert.js`. Exposes `window.MonolithSwal` (`alert`, `confirm`, `toastMessage`, `Swal`). Replaces all `window.alert` / `window.confirm`. Form confirm delegation: `[data-swal-confirm]` attribute on `<form>` triggers `MonolithSwal.confirm(message, '', { dangerMode: true })` before submit (global listener in `app.js`). i18n via `<script type="application/json" data-monolith-swal-labels>` JSON blob (keys: `ok`, `confirm`, `cancel` from `lang/{en,id,ja}/ui.php` under `swal.*`). Details: [ui-patterns — SweetAlert2 / confirmations](ui-patterns.md#sweetalert2--confirmations).
@@ -182,7 +265,7 @@ Soft override CSS layer (light/dark) under layout assets — keep tokenized vari
 - **Icon-only buttons**: every icon-only button (row actions, view toggles, toolbars) carries both `aria-label` and `title` (WCAG 2.1 AA — see [ui-patterns — Accessibility](ui-patterns.md#accessibility-aria)). Icons use `aria-hidden="true"` so screen readers skip the glyph. The shared `renderDatatableActions` renderer sets both from `action.label`; manual Blade rows must do the same.
 - **SweetAlert2 confirm attribute**: forms marked `data-swal-confirm` must use the Blade echo form `data-swal-confirm="{{ __('...') }}"` (not `@json(...)` / `@js(...)`). `@json()` / `@js()` run `json_encode` with `JSON_HEX_QUOT`, which escapes the message's double quotes into `\u0022` tokens that render literally inside the SweetAlert2 dialog. Reference: `file-hosting/blocklist.blade.php`, `file-hosting/partials/_team-offcanvas.blade.php` (correct), `services/index.blade.php` & `product-activations/show.blade.php` (fixed).
 - **Auto-submit delegation**: forms that should submit on a child `change` event carry `data-auto-submit` on the `<form>` and `data-auto-submit-trigger` on the triggering control (e.g. a `<select>` filter). A global listener in `app.js` handles the submit — no inline `onchange="this.form.submit()"`. Replaces the inline-JS pattern previously on `product-activations/show`'s state filter.
-- **Direct-upload browse trigger**: the file-hosting dropzone browse button carries `data-direct-upload-browse`; `direct-upload.js` binds the click → hidden file input. No inline `onclick=`.
+- **Direct-upload browse trigger**: auth FH dropzone is Vue (`FhDropzone.vue`) — browse button / OS drop / click-to-open open the file picker; queue UI is reactive. Legacy `direct-upload.js` `initDirectUpload` remains for non-Vue auto-init only.
 
 ### Blade `@php` inline gotcha
 

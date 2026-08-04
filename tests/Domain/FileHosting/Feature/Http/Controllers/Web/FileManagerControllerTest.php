@@ -84,9 +84,57 @@ class FileManagerControllerTest extends TestCase
         $response->assertViewHas('quota');
         $response->assertViewHas('planState', 'free');
         $response->assertViewHas('canCreateWorkspace', false);
-        $response->assertSee(__('web/file-hosting.workspace_personal'));
-        $response->assertSee(__('web/file-hosting.collab.free_cannot_create'));
-        $response->assertSee(__('web/file-hosting.collab.upgrade_cta'));
+        $response->assertSee('id="vue-file-hosting"', false);
+        $response->assertSee('data-vue-file-hosting', false);
+        $response->assertDontSee('file-manager.js', false);
+        $response->assertSee('Documents', false);
+        $response->assertSee('report.pdf', false);
+    }
+
+    public function test_index_free_plan_bootstrap_includes_upgrade_copy(): void
+    {
+        $user = $this->actingWithApiGuard(User::factory()->create());
+
+        Http::fake([
+            '*/api/v1/file-hosting/browse*' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'owner_id' => fake()->uuid(),
+                    'folder' => null,
+                    'breadcrumb' => [],
+                    'folders' => [],
+                    'files' => [],
+                ],
+            ], 200),
+            '*/api/v1/file-hosting/quota*' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'used_bytes' => 0,
+                    'quota_bytes' => 1048576,
+                    'remaining_bytes' => 1048576,
+                    'state' => 'free',
+                    'collaborative_works' => false,
+                    'can_create_workspace' => false,
+                    'owned_workspace_used' => 0,
+                    'owned_workspace_limit' => 0,
+                ],
+            ], 200),
+            '*/api/v1/file-hosting/workspaces' => Http::response([
+                'status' => 'success',
+                'data' => [],
+            ], 200),
+        ]);
+
+        $response = $user->get(route('file-hosting.index'));
+
+        $response->assertOk();
+        $response->assertViewHas('planState', 'free');
+        $response->assertViewHas('canCreateWorkspace', false);
+        $response->assertSee('id="vue-file-hosting"', false);
+        $response->assertSee(__('web/file-hosting.workspace_personal'), false);
+        // JSON bootstrap escapes & as \u0026 — assert the unescaped fragments.
+        $response->assertSee('freeCannotCreate', false);
+        $response->assertSee('upgradeCta', false);
     }
 
     public function test_index_paid_shows_create_workspace_cta(): void
@@ -129,9 +177,10 @@ class FileManagerControllerTest extends TestCase
         $response->assertViewHas('planState', 'paid');
         $response->assertViewHas('canCreateWorkspace', true);
         $response->assertViewHas('ownedWorkspaceLimit', 10);
-        $response->assertSee(__('web/file-hosting.collab.create_workspace'));
-        $response->assertSee(__('web/file-hosting.collab.slots_counter', ['used' => 0, 'limit' => 10]));
-        $response->assertDontSee(__('web/file-hosting.collab.free_cannot_create'));
+        $response->assertSee('id="vue-file-hosting"', false);
+        $response->assertSee(__('web/file-hosting.collab.create_workspace'), false);
+        $response->assertSee('slotsCounter', false);
+        $response->assertSee('"freeCannotCreate":null', false);
     }
 
     public function test_index_does_not_auto_provision_microstock_system_workspace(): void

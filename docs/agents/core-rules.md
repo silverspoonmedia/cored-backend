@@ -34,7 +34,7 @@ Omitting the tag is identical to `[fullstack]` — untagged tasks keep today's b
 |-------|----------------|
 | **API** | Versioned routes (`/api/v1/*`), controllers, form requests, policies, repositories, API responses |
 | **Web** | Web controllers consuming the API (`ConsumesApi` / `ApiClient`), `routes/web.php` / `routes/web/*.php`, request forwarding |
-| **Blade views** | Screens, forms, list tables, partials under `resources/views/{layout}/` (default `adminlte4` via `WEB_LAYOUT` / `config/web.php`) — see [blade-admin.md](../web/blade-admin.md#layout-namespace-and-configwebphp) |
+| **Blade views** | Screens, forms, list tables, partials under `resources/views/{layout}/` (default `adminlte4` via `WEB_LAYOUT` / `config/web.php`) — see [blade-admin.md](../web/blade-admin.md#layout-namespace-and-configwebphp). Progressive Vue islands may mount inside Blade when the dual-path checklist says so (does not replace API-first / Blade-as-API-consumer). |
 | **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (`en`, `id`, `ja`) |
 | **Other (as applicable)** | Migrations, seeders, models, events/listeners, notifications, navigation menu entries, tests, and the relevant `docs/` guide |
 
