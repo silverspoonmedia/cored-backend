@@ -42,12 +42,11 @@ class ChannelBioTokenVerifier
 
     public function mintToken(string $configKeyPrefix = 'vtual.channel_claim'): string
     {
-        $prefix = (string) config($configKeyPrefix.'.token_prefix', config('vtual.claim.token_prefix', 'vtual-ch-'));
-        // Prefer channel-specific prefix when set; fall back to claim prefix then hard default.
+        $prefix = (string) setting_config($configKeyPrefix.'.token_prefix', setting_config('vtual.claim.token_prefix', 'vtual-ch-'));
         if ($configKeyPrefix === 'vtual.channel_claim') {
-            $prefix = (string) config('vtual.channel_claim.token_prefix', 'vtual-ch-');
+            $prefix = (string) setting_config('vtual.channel_claim.token_prefix', 'vtual-ch-');
         }
-        $bytes = max(3, (int) config($configKeyPrefix.'.token_bytes', config('vtual.claim.token_bytes', 6)));
+        $bytes = max(3, (int) setting_config($configKeyPrefix.'.token_bytes', setting_config('vtual.claim.token_bytes', 6)));
 
         return $prefix.bin2hex(random_bytes($bytes));
     }

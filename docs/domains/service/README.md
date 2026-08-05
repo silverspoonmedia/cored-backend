@@ -227,15 +227,15 @@ Morph aliases:
 
 | Key | Default | Role |
 |-----|---------|------|
-| `FRANKFURTER_BASE_URL` | `https://api.frankfurter.app` | FX HTTP client (env) |
-| `FRANKFURTER_TIMEOUT` | `10` | seconds (env) |
+| `FRANKFURTER_BASE_URL` | `https://api.frankfurter.app` | FX HTTP client (env — Tier A) |
+| `platform.frankfurter.timeout` | `10` | FX HTTP timeout (seconds) — Settings → Platform |
 | `platform.frankfurter.cache_ttl` | `3600` | L1 + “fresh DB snapshot” window (seconds) — Settings → Platform |
 | `platform.service.grace_days` | `7` | Grace after `ends_at` — Settings → Platform |
-| `SERVICE_SETTLEMENT_CURRENCY` | `IDR` | PG settlement currency |
-| `SERVICE_PURCHASE_MAX_QUANTITY` | `99` | Max units per addon purchase on catalog show + hub quantity inputs |
-| `PAYMENT_DEFAULT_BUYER_PHONE` | (see payment docs) | iPaymu buyer phone fallback |
+| `platform.service.settlement_currency` | `IDR` | PG settlement currency — Settings → Platform |
+| `platform.service.purchase_max_quantity` | `99` | Max units per addon purchase — Settings → Platform |
+| `platform.payment.default_buyer_phone` | `081000000000` | iPaymu buyer phone fallback — Settings → Platform |
 
-Documented in `.env.example` for Frankfurter; grace/settlement via `config/service.php` + optional env.
+Frankfurter base URL stays in `.env.example`; timeout/cache TTL and service knobs are Tier B (`system_settings`).
 
 **Deploy order:** migrate through `2026_07_18_110002` (purchase quote fields + addon renewals) → `CurrencySeeder` → `ServiceCatalogSeeder` (removes free SKU if present).
 

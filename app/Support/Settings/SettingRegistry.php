@@ -50,10 +50,15 @@ final class SettingRegistry
             'platform.localization.locale_cookie' => self::def('platform', SettingType::String, 'localization.cookie_name'),
             'platform.localization.locale_cookie_minutes' => self::def('platform', SettingType::Int, 'localization.cookie_minutes'),
 
+            // Platform — mail identity (transport secrets stay env)
+            'platform.mail.from_address' => self::def('platform', SettingType::String, 'mail.from.address'),
+            'platform.mail.from_name' => self::def('platform', SettingType::String, 'mail.from.name'),
+
             // Platform — payment checkout
             'platform.payment.channel_fee_bearer' => self::def('platform', SettingType::String, 'payment.channel_fee_bearer'),
             'platform.payment.reporting_timezone' => self::def('platform', SettingType::String, 'payment.reporting_timezone'),
             'platform.payment.prefer_channel_checkout' => self::def('platform', SettingType::Bool, 'payment.checkout.prefer_channel_checkout'),
+            'platform.payment.default_buyer_phone' => self::def('platform', SettingType::String, 'payment.default_buyer_phone'),
 
             // Platform — service
             'platform.service.grace_days' => self::def('platform', SettingType::Int, 'service.grace_days'),
@@ -69,6 +74,7 @@ final class SettingRegistry
 
             // Platform — Frankfurter FX
             'platform.frankfurter.cache_ttl' => self::def('platform', SettingType::Int, 'services.frankfurter.cache_ttl'),
+            'platform.frankfurter.timeout' => self::def('platform', SettingType::Int, 'services.frankfurter.timeout'),
 
             // File Hosting
             'file-hosting.max_file_size_bytes' => self::def('file-hosting', SettingType::Int, 'file-hosting.max_file_size_bytes'),
@@ -111,7 +117,17 @@ final class SettingRegistry
             'microstock.ai.stage.thinking_grace_after' => self::def('microstock', SettingType::Int, 'microstock.ai.stage.thinking_grace_after'),
             'microstock.ai.stage.thinking_backlog_after' => self::def('microstock', SettingType::Int, 'microstock.ai.stage.thinking_backlog_after'),
             'microstock.ai.vision_image.delivery' => self::def('microstock', SettingType::String, 'microstock.ai.vision_image.delivery'),
+            'microstock.ai.vision_image.variant_kind' => self::def('microstock', SettingType::String, 'microstock.ai.vision_image.variant_kind'),
             'microstock.ai.vision_image.signed_url_ttl_minutes' => self::def('microstock', SettingType::Int, 'microstock.ai.vision_image.signed_url_ttl_minutes'),
+            'microstock.ai.inference_provider_slug' => self::def('microstock', SettingType::String, 'microstock.ai.inference_provider_slug'),
+            'microstock.ai.vision.model' => self::def('microstock', SettingType::String, 'microstock.ai.vision.model'),
+            'microstock.ai.vision.free_model' => self::def('microstock', SettingType::String, 'microstock.ai.vision.free_model'),
+            'microstock.ai.vision.timeout' => self::def('microstock', SettingType::Int, 'microstock.ai.vision.timeout'),
+            'microstock.ai.thinking.model' => self::def('microstock', SettingType::String, 'microstock.ai.thinking.model'),
+            'microstock.ai.thinking.free_model' => self::def('microstock', SettingType::String, 'microstock.ai.thinking.free_model'),
+            'microstock.ai.thinking.timeout' => self::def('microstock', SettingType::Int, 'microstock.ai.thinking.timeout'),
+            'microstock.ai.upstream.window_seconds' => self::def('microstock', SettingType::Int, 'microstock.ai.upstream.window_seconds'),
+            'microstock.ai.upstream.token_budget' => self::def('microstock', SettingType::Int, 'microstock.ai.upstream.token_budget'),
             'microstock.ai.upstream.max_concurrent_vision' => self::def('microstock', SettingType::Int, 'microstock.ai.upstream.max_concurrent_vision'),
             'microstock.ai.upstream.max_concurrent_thinking' => self::def('microstock', SettingType::Int, 'microstock.ai.upstream.max_concurrent_thinking'),
             'microstock.ai.upstream.collection_vision_concurrency' => self::def('microstock', SettingType::Int, 'microstock.ai.upstream.collection_vision_concurrency'),
@@ -124,6 +140,7 @@ final class SettingRegistry
             // Vtual
             'vtual.credential_test.http_timeout' => self::def('vtual', SettingType::Int, 'vtual.credential_test.http_timeout'),
             'vtual.credential_test.twitch_token_skew_seconds' => self::def('vtual', SettingType::Int, 'vtual.credential_test.twitch_token_skew_seconds'),
+            'vtual.credential_test.youtube_probe_channel_id' => self::def('vtual', SettingType::String, 'vtual.credential_test.youtube_probe_channel_id'),
             'vtual.credential.failover.enabled' => self::def('vtual', SettingType::Bool, 'vtual.credential.failover.enabled'),
             'vtual.credential.failover.auth_fail_threshold' => self::def('vtual', SettingType::Int, 'vtual.credential.failover.auth_fail_threshold'),
             'vtual.credential.failover.skip_minutes' => self::def('vtual', SettingType::Int, 'vtual.credential.failover.skip_minutes'),
@@ -134,10 +151,14 @@ final class SettingRegistry
             'vtual.claim.max_attempts' => self::def('vtual', SettingType::Int, 'vtual.claim.max_attempts'),
             'vtual.claim.max_pending_per_user' => self::def('vtual', SettingType::Int, 'vtual.claim.max_pending_per_user'),
             'vtual.claim.accept_anyway_enabled' => self::def('vtual', SettingType::Bool, 'vtual.claim.accept_anyway_enabled'),
+            'vtual.claim.token_prefix' => self::def('vtual', SettingType::String, 'vtual.claim.token_prefix'),
+            'vtual.claim.token_bytes' => self::def('vtual', SettingType::Int, 'vtual.claim.token_bytes'),
             'vtual.channel_claim.ttl_hours' => self::def('vtual', SettingType::Int, 'vtual.channel_claim.ttl_hours'),
             'vtual.channel_claim.verify_cooldown_seconds' => self::def('vtual', SettingType::Int, 'vtual.channel_claim.verify_cooldown_seconds'),
             'vtual.channel_claim.max_attempts' => self::def('vtual', SettingType::Int, 'vtual.channel_claim.max_attempts'),
             'vtual.channel_claim.accept_anyway_enabled' => self::def('vtual', SettingType::Bool, 'vtual.channel_claim.accept_anyway_enabled'),
+            'vtual.channel_claim.token_prefix' => self::def('vtual', SettingType::String, 'vtual.channel_claim.token_prefix'),
+            'vtual.channel_claim.token_bytes' => self::def('vtual', SettingType::Int, 'vtual.channel_claim.token_bytes'),
             'vtual.channel_pool.threshold' => self::def('vtual', SettingType::Int, 'vtual.channel_pool.threshold'),
             'vtual.channel_pool.max_wait_minutes' => self::def('vtual', SettingType::Int, 'vtual.channel_pool.max_wait_minutes'),
             'vtual.channel_pool.schedule_every_minutes' => self::def('vtual', SettingType::Int, 'vtual.channel_pool.schedule_every_minutes'),

@@ -52,4 +52,30 @@ class SettingsReaderTest extends TestCase
 
         $this->assertTrue(setting_config('hcaptcha.enabled'));
     }
+
+    public function test_parent_array_overlays_registered_descendant_overrides(): void
+    {
+        SystemSetting::query()->create([
+            'key' => 'microstock.ai.vision.timeout',
+            'group' => 'microstock',
+            'type' => SettingType::Int->value,
+            'value' => 999,
+        ]);
+        SystemSetting::query()->create([
+            'key' => 'microstock.ai.vision.model',
+            'group' => 'microstock',
+            'type' => SettingType::String->value,
+            'value' => 'override.model',
+        ]);
+
+        app(SystemSettingRepository::class)->rebuildCache();
+
+        $vision = setting_config('microstock.ai.vision');
+
+        $this->assertIsArray($vision);
+        $this->assertSame(999, $vision['timeout']);
+        $this->assertSame('override.model', $vision['model']);
+        $this->assertArrayHasKey('endpoint', $vision);
+        $this->assertArrayHasKey('api_key', $vision);
+    }
 }

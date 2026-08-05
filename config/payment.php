@@ -10,7 +10,8 @@ return [
     | Default buyer phone (iPaymu requires phone; User profile has no phone yet)
     |--------------------------------------------------------------------------
     */
-    'default_buyer_phone' => env('PAYMENT_DEFAULT_BUYER_PHONE', '081000000000'),
+    // Tier B — Settings → Platform (platform.payment.default_buyer_phone)
+    'default_buyer_phone' => '081000000000',
 
     /*
     |--------------------------------------------------------------------------

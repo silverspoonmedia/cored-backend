@@ -124,7 +124,7 @@ class MenuSeeder extends Seeder
                     [
                         'name' => $this->translations('File Hosting', 'File Hosting', 'ファイルホスティング'),
                         'icon' => 'bi bi-cloud',
-                        'route' => null, # Keep this as null
+                        'route' => 'file-hosting.index',
                         'type' => 'p',
                         'children' => [
                             [
@@ -140,13 +140,6 @@ class MenuSeeder extends Seeder
                                 'type' => 'c',
                             ],
                             [
-                                'name' => $this->translations('Settings', 'Pengaturan', '設定'),
-                                'icon' => 'bi bi-sliders',
-                                'route' => 'settings.file-hosting',
-                                'type' => 'c',
-                                'roles' => $adminRoles,
-                            ],
-                            [
                                 'name' => $this->translations('DMCA Blocklist', 'Daftar Blokir DMCA', 'DMCA ブロックリスト'),
                                 'icon' => 'bi bi-shield-x',
                                 'route' => 'file-hosting.blocklist.index',
@@ -158,7 +151,7 @@ class MenuSeeder extends Seeder
                     [
                         'name' => $this->translations('vTual', 'vTual', 'vTual'),
                         'icon' => 'bi bi-broadcast',
-                        'route' => null, # Keep this as null
+                        'route' => 'vtual.index',
                         'type' => 'p',
                         'children' => [
                             [
@@ -190,13 +183,6 @@ class MenuSeeder extends Seeder
                                 'name' => $this->translations('Platform credentials', 'Kredensial platform', 'プラットフォーム認証情報'),
                                 'icon' => 'bi bi-key',
                                 'route' => 'vtual.admin.credentials.index',
-                                'type' => 'c',
-                                'roles' => $adminRoles,
-                            ],
-                            [
-                                'name' => $this->translations('Settings', 'Pengaturan', '設定'),
-                                'icon' => 'bi bi-sliders',
-                                'route' => 'settings.vtual',
                                 'type' => 'c',
                                 'roles' => $adminRoles,
                             ],
@@ -345,9 +331,23 @@ class MenuSeeder extends Seeder
                                 'roles' => $adminRoles,
                             ],
                             [
+                                'name' => $this->translations('File Hosting', 'File Hosting', 'ファイルホスティング'),
+                                'icon' => 'bi bi-cloud',
+                                'route' => 'settings.file-hosting',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                            [
                                 'name' => $this->translations('Microstock', 'Microstock', 'Microstock'),
                                 'icon' => 'bi bi-images',
                                 'route' => 'settings.microstock',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                            [
+                                'name' => $this->translations('vTual', 'vTual', 'vTual'),
+                                'icon' => 'bi bi-broadcast',
+                                'route' => 'settings.vtual',
                                 'type' => 'c',
                                 'roles' => $adminRoles,
                             ],

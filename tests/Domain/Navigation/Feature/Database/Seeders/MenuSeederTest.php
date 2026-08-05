@@ -53,7 +53,6 @@ class MenuSeederTest extends TestCase
                         'children' => [
                             ['name' => 'My Files', 'route' => 'file-hosting.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Trash', 'route' => 'file-hosting.trash', 'type' => 'c', 'children' => []],
-                            ['name' => 'Settings', 'route' => 'settings.file-hosting', 'type' => 'c', 'children' => []],
                             ['name' => 'DMCA Blocklist', 'route' => 'file-hosting.blocklist.index', 'type' => 'c', 'children' => []],
                         ],
                     ],
@@ -67,7 +66,6 @@ class MenuSeederTest extends TestCase
                             ['name' => 'Claim as vTuber', 'route' => 'vtual.claims.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Registry & pending', 'route' => 'vtual.claims.staff', 'type' => 'c', 'children' => []],
                             ['name' => 'Platform credentials', 'route' => 'vtual.admin.credentials.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'Settings', 'route' => 'settings.vtual', 'type' => 'c', 'children' => []],
                         ],
                     ],
                 ],
@@ -124,7 +122,9 @@ class MenuSeederTest extends TestCase
                         'type' => 'p',
                         'children' => [
                             ['name' => 'Platform', 'route' => 'settings.platform', 'type' => 'c', 'children' => []],
+                            ['name' => 'File Hosting', 'route' => 'settings.file-hosting', 'type' => 'c', 'children' => []],
                             ['name' => 'Microstock', 'route' => 'settings.microstock', 'type' => 'c', 'children' => []],
+                            ['name' => 'vTual', 'route' => 'settings.vtual', 'type' => 'c', 'children' => []],
                             ['name' => 'Notification audiences', 'route' => 'notification-audiences.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Currencies', 'route' => 'currencies.index', 'type' => 'c', 'children' => []],
                         ],
@@ -257,7 +257,10 @@ class MenuSeederTest extends TestCase
         $this->assertContains('Product domain access', $adminNames);
         $this->assertContains('Monitoring', $adminNames);
         $this->assertContains('Settings', $adminNames);
+        $this->assertContains('Platform', $adminNames);
+        $this->assertContains('File Hosting', $adminNames);
         $this->assertContains('Microstock', $adminNames);
+        $this->assertContains('vTual', $adminNames);
     }
 
     private function activatedUser(string $role, string $email): User

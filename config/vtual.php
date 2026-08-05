@@ -14,7 +14,8 @@ return [
 
     'credential_test' => [
         // Public Google Developers channel — stable id for YouTube Data API smoke.
-        'youtube_probe_channel_id' => env('VTUAL_YT_PROBE_CHANNEL_ID', 'UC_x5XG1OV2P6uZZ5FSM9Ttw'),
+        // Tier B — Settings → vTual (vtual.credential_test.youtube_probe_channel_id)
+        'youtube_probe_channel_id' => 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
 
         // Re-mint Twitch app token this many seconds before expires_at.
         'twitch_token_skew_seconds' => 300,
@@ -122,8 +123,9 @@ return [
     |
     */
     'claim' => [
-        'token_prefix' => env('VTUAL_CLAIM_TOKEN_PREFIX', 'vtual-claim-'),
-        'token_bytes' => (int) env('VTUAL_CLAIM_TOKEN_BYTES', 6),
+        // Tier B — Settings → vTual (vtual.claim.token_*)
+        'token_prefix' => 'vtual-claim-',
+        'token_bytes' => 6,
         'ttl_hours' => 24,
         'verify_cooldown_seconds' => 60,
         'max_attempts' => 20,
@@ -145,8 +147,9 @@ return [
     |
     */
     'channel_claim' => [
-        'token_prefix' => env('VTUAL_CHANNEL_CLAIM_TOKEN_PREFIX', 'vtual-ch-'),
-        'token_bytes' => (int) env('VTUAL_CHANNEL_CLAIM_TOKEN_BYTES', 6),
+        // Tier B — Settings → vTual (vtual.channel_claim.token_*)
+        'token_prefix' => 'vtual-ch-',
+        'token_bytes' => 6,
         'ttl_hours' => 24,
         'verify_cooldown_seconds' => 60,
         'max_attempts' => 20,

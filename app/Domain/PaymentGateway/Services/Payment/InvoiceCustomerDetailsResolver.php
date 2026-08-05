@@ -86,7 +86,7 @@ class InvoiceCustomerDetailsResolver
             $override['phone'] ?? null,
             $fromInvoiceable['phone'] ?? null,
             $fromUser['phone'] ?? null,
-            (string) config('payment.default_buyer_phone', '081000000000'),
+            (string) setting_config('payment.default_buyer_phone', '081000000000'),
         );
 
         if ($email === null || $email === '') {

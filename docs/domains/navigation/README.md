@@ -103,7 +103,6 @@ php artisan db:seed --class=MenuSeeder
   - **File Hosting** — parent route `file-hosting.index`
     - My Files — `file-hosting.index`
     - Trash — `file-hosting.trash`
-    - Settings — `settings.file-hosting`; Root, Admin
     - DMCA Blocklist — `file-hosting.blocklist.index`; Root, Admin, Moderator, Management, File Hosting Admin
   - **vTual** — parent route `vtual.index`
     - Overview — `vtual.index`
@@ -111,7 +110,6 @@ php artisan db:seed --class=MenuSeeder
     - Claim as vTuber — `vtual.claims.index`
     - Registry & pending — `vtual.claims.staff`; Root, Admin, Moderator, Management, Vtual Admin
     - Platform credentials — `vtual.admin.credentials.index`; Root, Admin
-    - Settings — `settings.vtual`; Root, Admin
 - **Administration**
   - **Access control** — Root, Admin, Moderator, Management
     - User management — `users.index`
@@ -130,9 +128,11 @@ php artisan db:seed --class=MenuSeeder
   - **Monitoring** — Root, Admin
     - Activity log — `activity-logs.index`
     - Error log — `error-logs.index`
-  - **Settings** — Root, Admin
+  - **Settings** — Root, Admin (single hub for all `settings.*` groups)
     - Platform — `settings.platform`
+    - File Hosting — `settings.file-hosting`
     - Microstock — `settings.microstock`
+    - vTual — `settings.vtual`
     - Notification audiences — `notification-audiences.index`
     - Currencies — `currencies.index`
   - **Navigation** — Root, Admin, Moderator, Management

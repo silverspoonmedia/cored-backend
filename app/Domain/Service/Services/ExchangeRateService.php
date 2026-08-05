@@ -84,7 +84,7 @@ class ExchangeRateService
             ];
         }
 
-        $ttl = (int) config('services.frankfurter.cache_ttl', 3600);
+        $ttl = (int) setting_config('services.frankfurter.cache_ttl', 3600);
         $cacheKey = "fx.frankfurter.{$from}.{$to}";
 
         /** @var array{rate: float, provider: string, fetched_at: string, snapshot_id: string|null}|null $cached */
@@ -146,7 +146,7 @@ class ExchangeRateService
     private function fetchAndPersist(string $from, string $to): ExchangeRateSnapshot
     {
         $baseUrl = rtrim((string) config('services.frankfurter.base_url', 'https://api.frankfurter.app'), '/');
-        $timeout = (int) config('services.frankfurter.timeout', 10);
+        $timeout = (int) setting_config('services.frankfurter.timeout', 10);
 
         $response = Http::timeout($timeout)
             ->acceptJson()

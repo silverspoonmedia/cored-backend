@@ -35,6 +35,8 @@ Rules:
 
 Fallback when a registry key has no DB row yet (pre-seed): `config()` **PHP literal** default from the owning config file — not `env()`.
 
+Parent array reads via `setting_config('microstock.ai.vision')` (and similar) overlay any registered descendant leaf overrides onto the config array so mixed Tier A secrets + Tier B knobs stay coherent without `config()->set()`.
+
 ## Tier A inventory
 
 See [settings.md — Tier A](settings.md#tier-a--env--artisan-only-not-in-web-ui). Infra profile keys (`APP_ENV`, `LOG_LEVEL`, cache/queue drivers) stay env via `env:switch` — not in `SettingRegistry`.
@@ -69,6 +71,12 @@ Mirrors [`config/settings-local.php`](../../config/settings-local.php) — updat
 | `microstock.ai.http_retries` | `1` | Faster AI failure in dev |
 | `vtual.claim.accept_anyway_enabled` | `true` | Claim dev ergonomics |
 | `vtual.channel_claim.accept_anyway_enabled` | `true` | Channel claim dev ergonomics |
+| `microstock.ai.vision.model` | `internal.sspn_pro_vision` | Local Open WebUI vision alias |
+| `microstock.ai.vision.free_model` | `internal.sspn_free_vision` | Local free-tier vision alias |
+| `microstock.ai.vision.timeout` | `300` | Shorter local vision HTTP timeout |
+| `microstock.ai.thinking.model` | `internal.sspn_pro_thinking` | Local Open WebUI thinking alias |
+| `microstock.ai.thinking.free_model` | `internal.sspn_free_thinking` | Local free-tier thinking alias |
+| `microstock.ai.thinking.timeout` | `300` | Shorter local thinking HTTP timeout |
 
 ## Agent checklist — new operational knob
 

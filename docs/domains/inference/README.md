@@ -95,7 +95,9 @@ Operational rates and default provider slug: **Settings → Platform** — see [
 
 | Env | Default | Purpose |
 |-----|---------|---------|
-| `MICROSTOCK_AI_INFERENCE_PROVIDER` | `openwebui-9router` | Provider slug passed to `recordUsage` from Microstock HTTP AI (not in registry) |
+| _(none for Microstock provider slug)_ | — | Use Settings → Microstock `microstock.ai.inference_provider_slug` (Tier B); endpoints/API keys stay env |
+
+Provider slug for Microstock `recordUsage` is registry-backed (`microstock.ai.inference_provider_slug`), separate from `platform.inference.default_provider_slug` (core Inference fallbacks).
 
 ## Services
 

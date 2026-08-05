@@ -188,7 +188,7 @@ Response: normalized instructions (VA numbers, QR, expiry, etc.). All routes fai
 | 1 | Request `buyer` / `customer_details` (partial merge) |
 | 2 | Invoiceable: Subscription `subscriber_*`, ServicePurchase → `user.name` / `user.email` |
 | 3 | Authenticated user profile |
-| 4 | Phone: request → invoiceable → `config('payment.default_buyer_phone')` (User has no phone column yet) |
+| 4 | Phone: request → invoiceable → `setting_config('payment.default_buyer_phone')` (User has no phone column yet) |
 
 iPaymu **requires** name + email + phone (`setBuyer`). Midtrans `customer_details` optional but always sent when resolvable (helps VA / Akulaku). Blade `checkout.js` does not send `buyer` — server fills from profile.
 
@@ -261,7 +261,7 @@ Permissions in RoleSeeder (`view invoice`, `initiate payment`, `manage payment g
 
 ## Config
 
-`config/payment.php` — Midtrans/iPaymu credentials from env; `default_buyer_phone` (`PAYMENT_DEFAULT_BUYER_PHONE`) for iPaymu when profile has no phone. `config/payment-routing.php` — path to [Routing_Price.yaml](Routing_Price.yaml). After secret edits: `php artisan config:rebuild`.
+`config/payment.php` — Midtrans/iPaymu credentials from env (Tier A); `default_buyer_phone` is Tier B (`platform.payment.default_buyer_phone` via Settings → Platform) for iPaymu when profile has no phone. `config/payment-routing.php` — path to [Routing_Price.yaml](Routing_Price.yaml). After secret edits: `php artisan config:rebuild`.
 
 ## Encryption
 

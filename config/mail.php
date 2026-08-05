@@ -111,8 +111,9 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+        // Tier B — Settings → Platform (platform.mail.from_*); MessageSending applies DB overlay.
+        'address' => 'hello@example.com',
+        'name' => 'Laravel',
     ],
 
 ];

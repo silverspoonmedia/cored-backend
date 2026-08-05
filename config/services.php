@@ -44,7 +44,8 @@ return [
     */
     'frankfurter' => [
         'base_url' => env('FRANKFURTER_BASE_URL', 'https://api.frankfurter.app'),
-        'timeout' => (int) env('FRANKFURTER_TIMEOUT', 10),
+        // Tier B — Settings → Platform (platform.frankfurter.timeout / cache_ttl)
+        'timeout' => 10,
         'cache_ttl' => 3600,
     ],
 

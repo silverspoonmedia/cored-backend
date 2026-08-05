@@ -14,12 +14,12 @@ Optional per-user daily free AI analyses for product discovery. Enabled via **Se
 
 On **`APP_ENV=local`**, `migrate:fresh --seed` / `db:seed` applies `enabled=true` and `limit_per_user=1_000_000` via [`LocalSettingsSeeder`](../../database/seeders/LocalSettingsSeeder.php) — prod-safe config literals stay `false` / `5`.
 
-**Env (Tier A — model aliases and queue names):**
+**Env (Tier A — queue names only) + Settings (Tier B — free model aliases):**
 
-| Env | Default | Purpose |
+| Key | Default | Purpose |
 |-----|---------|---------|
-| `MICROSTOCK_AI_VISION_MODEL_FREE` | empty | Free-tier vision alias; empty inherits `MICROSTOCK_AI_VISION_MODEL` |
-| `MICROSTOCK_AI_THINKING_MODEL_FREE` | empty | Free-tier thinking alias; empty inherits `MICROSTOCK_AI_THINKING_MODEL` |
+| `microstock.ai.vision.free_model` | empty | Free-tier vision alias; empty inherits `microstock.ai.vision.model` — Settings → Microstock |
+| `microstock.ai.thinking.free_model` | empty | Free-tier thinking alias; empty inherits `microstock.ai.thinking.model` — Settings → Microstock |
 
 Free queues (lower priority — list after paid queues on workers):
 

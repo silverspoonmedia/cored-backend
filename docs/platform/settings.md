@@ -35,7 +35,7 @@ Root and Admin receive both via `RoleSeeder`.
 | Vtual | `/apps/vtual/settings` | `vtual` |
 | Notification audiences | `/apps/notification-audiences` | (separate table) |
 
-Menu: **Administration → Settings** (platform, microstock, notification audiences, currencies); **File Hosting** and **vTual** product branches each include a **Settings** child (`settings.file-hosting`, `settings.vtual`) gated by the product parent plus `view settings` (Root, Admin).
+Menu: **Administration → Settings** — single hub for all groups (`settings.platform`, `settings.file-hosting`, `settings.microstock`, `settings.vtual`, plus notification audiences and currencies). Root/Admin via `view settings` / `manage settings`.
 
 ### Localization
 
@@ -83,11 +83,14 @@ Platform settings page shows **read-only secret status** via `php artisan config
 | `platform.errorlog.max_context_json_length` | `errorlog.max_context_json_length` | |
 | `platform.activitylog.enabled` | `activitylog.enabled` | |
 | `platform.activitylog.buffer_enabled` | `activitylog.buffer.enabled` | |
-| `platform.localization.locale_cookie` | `localization.locale_cookie` | |
-| `platform.localization.locale_cookie_minutes` | `localization.locale_cookie_minutes` | |
+| `platform.localization.locale_cookie` | `localization.cookie_name` | |
+| `platform.localization.locale_cookie_minutes` | `localization.cookie_minutes` | |
+| `platform.mail.from_address` | `mail.from.address` | Applied on `MessageSending` (Octane-safe) |
+| `platform.mail.from_name` | `mail.from.name` | |
 | `platform.payment.channel_fee_bearer` | `payment.channel_fee_bearer` | `buyer` \| `merchant` |
 | `platform.payment.reporting_timezone` | `payment.reporting_timezone` | |
 | `platform.payment.prefer_channel_checkout` | `payment.checkout.prefer_channel_checkout` | |
+| `platform.payment.default_buyer_phone` | `payment.default_buyer_phone` | iPaymu fallback |
 | `platform.service.grace_days` | `service.grace_days` | Purge scheduler |
 | `platform.service.settlement_currency` | `service.settlement_currency` | |
 | `platform.service.purchase_max_quantity` | `service.purchase.max_quantity` | |
@@ -97,6 +100,7 @@ Platform settings page shows **read-only secret status** via `php artisan config
 | `platform.inference.unknown_input_per_million_usd` | `inference.unknown_model_rates.input_per_million_usd` | |
 | `platform.inference.unknown_output_per_million_usd` | `inference.unknown_model_rates.output_per_million_usd` | |
 | `platform.frankfurter.cache_ttl` | `services.frankfurter.cache_ttl` | |
+| `platform.frankfurter.timeout` | `services.frankfurter.timeout` | |
 
 **Not in hub:** `APP_DEBUG`, `APP_ENV`, `LOG_LEVEL`, cache/queue/session drivers — profile switch via `env:switch`.
 
@@ -110,11 +114,11 @@ SKU codes and free-tier bytes stay in `FileHostingCatalog` (deploy + seeder).
 
 ### Microstock (`microstock.*`)
 
-Daily free tier, AI billing markup, pipeline batch/watchdog, image prep, retries, vision delivery, upstream concurrency. API keys and queue names stay env.
+Daily free tier, AI billing markup, pipeline batch/watchdog, image prep, retries, vision delivery / variant kind, stage models + timeouts, inference provider slug, upstream window/budget/concurrency. API keys, endpoints, and queue names stay env.
 
 ### Vtual (`vtual.*`)
 
-Claim/channel-claim TTLs, credential failover, HTTP timeouts, channel pool thresholds. Platform credentials stay in `vtual_platform_credentials` table.
+Claim/channel-claim TTLs and bio token mint (`token_prefix` / `token_bytes`), credential failover, HTTP timeouts, YouTube probe channel id, channel pool thresholds. Platform credentials stay in `vtual_platform_credentials` table.
 
 ## Already UI-manageable (DB, not system_settings)
 

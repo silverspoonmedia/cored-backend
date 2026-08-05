@@ -33,21 +33,24 @@ return [
 
     'ai' => [
         // Inference provider slug for upstream cost resolution (see Inference domain).
-        'inference_provider_slug' => env('MICROSTOCK_AI_INFERENCE_PROVIDER', 'openwebui-9router'),
+        // Tier B — Settings → Microstock (microstock.ai.inference_provider_slug)
+        'inference_provider_slug' => 'openwebui-9router',
 
         'vision' => [
+            // Tier A — endpoint + API key stay env
             'endpoint' => env('MICROSTOCK_AI_VISION_ENDPOINT', 'https://ai-chat.spnd.uk/api/chat/completions'),
-            'model' => env('MICROSTOCK_AI_VISION_MODEL', 'internal.vision'),
-            'free_model' => env('MICROSTOCK_AI_VISION_MODEL_FREE'),
+            // Tier B — model / free_model / timeout via Settings → Microstock
+            'model' => 'internal.vision',
+            'free_model' => '',
             'api_key' => env('MICROSTOCK_AI_VISION_API_KEY'),
-            'timeout' => (int) env('MICROSTOCK_AI_VISION_TIMEOUT', 1500),
+            'timeout' => 1500,
         ],
         'thinking' => [
             'endpoint' => env('MICROSTOCK_AI_THINKING_ENDPOINT', 'https://ai-chat.spnd.uk/api/chat/completions'),
-            'model' => env('MICROSTOCK_AI_THINKING_MODEL', 'internal.thinking'),
-            'free_model' => env('MICROSTOCK_AI_THINKING_MODEL_FREE'),
+            'model' => 'internal.thinking',
+            'free_model' => '',
             'api_key' => env('MICROSTOCK_AI_THINKING_API_KEY'),
-            'timeout' => (int) env('MICROSTOCK_AI_THINKING_TIMEOUT', 1500),
+            'timeout' => 1500,
         ],
 
         // Longest side (px) of the downscaled preview sent to the AI vision
@@ -103,7 +106,8 @@ return [
         // How vision receives the image: base64 data-URI or signed HTTPS URL.
         'vision_image' => [
             'delivery' => 'url',
-            'variant_kind' => env('MICROSTOCK_AI_VISION_VARIANT', 'ai_1024'),
+            // Tier B — Settings → Microstock (microstock.ai.vision_image.variant_kind)
+            'variant_kind' => 'ai_1024',
             'signed_url_ttl_minutes' => 30,
         ],
 
@@ -111,8 +115,9 @@ return [
         // token_budget + window_seconds are ops reference for ~20M tokens / 30 min;
         // enforcement is via concurrency caps below (see microstock README).
         'upstream' => [
-            'window_seconds' => (int) env('MICROSTOCK_AI_UPSTREAM_WINDOW_SECONDS', 1800),
-            'token_budget' => (int) env('MICROSTOCK_AI_UPSTREAM_TOKEN_BUDGET', 20_000_000),
+            // Tier B — Settings → Microstock
+            'window_seconds' => 1800,
+            'token_budget' => 20_000_000,
             'max_concurrent_vision' => 6,
             'max_concurrent_thinking' => 10,
             'collection_vision_concurrency' => 3,

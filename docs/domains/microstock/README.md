@@ -71,7 +71,7 @@ Upload/storage stays on the shared File Hosting quota. **AI analysis** (vision +
 
 ### Daily free trial (optional)
 
-Settings-gated per-user daily analyses (`microstock.daily_free.enabled` in **Settings → Microstock**). No activation SKU — slots reset lazily by calendar day in `microstock_daily_free_usage`. Daily-first mixed billing: first N files in a collection use `billing_source = daily_free` (no prepaid debit; provider cost still on usage events); remainder use prepaid. Free-tier jobs route to `*-free` queues and may use separate vision/thinking models through `MICROSTOCK_AI_VISION_MODEL_FREE` / `MICROSTOCK_AI_THINKING_MODEL_FREE`; an empty free override inherits the paid/default stage model. Workers should process paid queues first. Details: [daily-free-trial.md](daily-free-trial.md).
+Settings-gated per-user daily analyses (`microstock.daily_free.enabled` in **Settings → Microstock**). No activation SKU — slots reset lazily by calendar day in `microstock_daily_free_usage`. Daily-first mixed billing: first N files in a collection use `billing_source = daily_free` (no prepaid debit; provider cost still on usage events); remainder use prepaid. Free-tier jobs route to `*-free` queues and may use separate vision/thinking models through Settings → Microstock (`microstock.ai.vision.free_model` / `microstock.ai.thinking.free_model`); an empty free override inherits the paid/default stage model. Workers should process paid queues first. Details: [daily-free-trial.md](daily-free-trial.md).
 
 **Billing subject:** `microstock_asset_metadata.billing_user_id` is set to the user who called `POST …/analyze` or `POST assets/{file}/analyze` (not the file uploader). Gate, usage events, and debit all use this ID.
 
@@ -105,7 +105,7 @@ Sonnet 5 rates above are Anthropic **introductory** pricing through Aug 31, 2026
 - `estimated_billable_micro_usd_per_asset` — `microstock.ai_billing.estimated_billable_micro_usd_per_asset` (default **150000** = $0.15 buffer for analyze gate)
 - `estimate_thinking_attempt_factor` — `microstock.ai_billing.estimate_thinking_attempt_factor` (default **1.5**; gate = per-asset estimate × factor)
 - `http_retries` — `microstock.ai.http_retries` (default **0** for billed stages; each retry can duplicate provider charges)
-- Per-HTTP-call rates resolved from provider model rates (`MICROSTOCK_AI_INFERENCE_PROVIDER` env / `platform.inference.default_provider_slug` in Settings); immutable provider-specific snapshot on `microstock_ai_usage_events.ai_model_rate_snapshot_id` plus `inference_provider_id` when route known (alias in `alias_model`, resolved slug in `resolved_model`)
+- Per-HTTP-call rates resolved from provider model rates (`microstock.ai.inference_provider_slug` in Settings → Microstock / `platform.inference.default_provider_slug` in Settings → Platform); immutable provider-specific snapshot on `microstock_ai_usage_events.ai_model_rate_snapshot_id` plus `inference_provider_id` when route known (alias in `alias_model`, resolved slug in `resolved_model`)
 
 Amounts are stored as **micro-USD** (1 USD = 1_000_000) end-to-end. `microstock_ai_balances.balance_micro_usd` is **signed** — post-settlement consolidation debits may drive balance negative; new paid analyze is blocked until balance ≥ 0 (top-up via Services). Collection UI and `GET billing` show negative balances (e.g. `-$0.12`).
 
@@ -280,15 +280,17 @@ Default config + `.env.example` use Open WebUI aliases for paid/prepaid analyses
 
 | Setting | Default | Notes |
 |---------|---------|-------|
-| Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` | Both stages and tiers |
-| Paid vision model | `MICROSTOCK_AI_VISION_MODEL=internal.vision` | Used for `billing_source=prepaid` and calls without billing context |
-| Free vision model | `MICROSTOCK_AI_VISION_MODEL_FREE=""` | Empty inherits paid vision; set an Open WebUI alias to differentiate daily-free calls |
-| Paid thinking model | `MICROSTOCK_AI_THINKING_MODEL=internal.thinking` | Used for `billing_source=prepaid` and calls without billing context |
-| Free thinking model | `MICROSTOCK_AI_THINKING_MODEL_FREE=""` | Empty inherits paid thinking; set an Open WebUI alias to differentiate daily-free calls |
+| Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` | Both stages and tiers (env — Tier A) |
+| Paid vision model | `microstock.ai.vision.model` = `internal.vision` | Settings → Microstock; used for `billing_source=prepaid` and calls without billing context |
+| Free vision model | `microstock.ai.vision.free_model` = `""` | Empty inherits paid vision; set an Open WebUI alias to differentiate daily-free calls |
+| Paid thinking model | `microstock.ai.thinking.model` = `internal.thinking` | Settings → Microstock |
+| Free thinking model | `microstock.ai.thinking.free_model` = `""` | Empty inherits paid thinking |
+| Stage timeouts | `microstock.ai.vision.timeout` / `.thinking.timeout` | Settings → Microstock (seconds) |
 | `delivery` | `url` | Signed HTTPS to `ai_1024` variant (~341 B payload) |
+| `variant_kind` | `ai_1024` | Settings → Microstock (`microstock.ai.vision_image.variant_kind`) |
 | `thinking_visual_attempts` | `2` | First 2 thinking attempts include image + draft |
 
-Model selection follows each asset's persisted `billing_source`, not the queue name. Mixed collections therefore use free models for daily slots and paid models for prepaid remainder; solo re-analysis follows its daily-first billing allocation. Alias selection is recorded on `microstock_ai_usage_events.alias_model`, while billing rates continue to use the provider response's `resolved_model`. After changing model env values, rebuild Laravel config and restart queue workers so long-lived processes load the new aliases.
+Model selection follows each asset's persisted `billing_source`, not the queue name. Mixed collections therefore use free models for daily slots and paid models for prepaid remainder; solo re-analysis follows its daily-first billing allocation. Alias selection is recorded on `microstock_ai_usage_events.alias_model`, while billing rates continue to use the provider response's `resolved_model`. After changing model settings in the UI (or re-seeding local overrides), restart queue workers so long-lived processes pick up new aliases from the settings snapshot.
 
 `batch_chunk` / `batch_min_files` remain in config for `HttpAiMetadataService::generateBatch()` (probes only); the collection pipeline always uses per-file `analyzeVision()`.
 
@@ -331,7 +333,7 @@ All three request builders (`vision()`, `thinkingRequest()`, `generateBatch()`) 
 
 ### Prompt-length constraint (verified)
 
-Models behind `internal.vision` / `internal.thinking` **choke on long system prompts when an image is attached** — verified 2026-07-27: a ~1700-char system prompt returns **HTTP 524** (Cloudflare origin timeout) at ~125 s, while ~1050 chars returns **200** in ~107 s. `Prompts::marketplaceRules()` is therefore intentionally dense — keep `Prompts::visionSystem()` and `Prompts::thinkingSystem()` under ~1200 chars (unit-tested in `PromptsTest`). If the upstream model behind an alias never responds acceptably, change the model mapping in Open WebUI admin or override `MICROSTOCK_AI_VISION_MODEL` / `MICROSTOCK_AI_THINKING_MODEL`.
+Models behind `internal.vision` / `internal.thinking` **choke on long system prompts when an image is attached** — verified 2026-07-27: a ~1700-char system prompt returns **HTTP 524** (Cloudflare origin timeout) at ~125 s, while ~1050 chars returns **200** in ~107 s. `Prompts::marketplaceRules()` is therefore intentionally dense — keep `Prompts::visionSystem()` and `Prompts::thinkingSystem()` under ~1200 chars (unit-tested in `PromptsTest`). If the upstream model behind an alias never responds acceptably, change the model mapping in Open WebUI admin or override `microstock.ai.vision.model` / `microstock.ai.thinking.model` in Settings → Microstock.
 
 `AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage is independently configurable in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: endpoint, paid/default model, optional free model, API key, timeout; all env-driven). Tests bind a stub.
 
@@ -343,9 +345,9 @@ Production uses **Open WebUI** as the only supported AI surface:
 |---------|-------|
 | Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` |
 | Paid/default vision model | `internal.vision` |
-| Free vision model | inherits paid when `MICROSTOCK_AI_VISION_MODEL_FREE` is empty |
+| Free vision model | inherits paid when `microstock.ai.vision.free_model` is empty |
 | Paid/default thinking model | `internal.thinking` |
-| Free thinking model | inherits paid when `MICROSTOCK_AI_THINKING_MODEL_FREE` is empty |
+| Free thinking model | inherits paid when `microstock.ai.thinking.free_model` is empty |
 | Auth | JWT Bearer (`MICROSTOCK_AI_*_API_KEY`) |
 
 `HttpAiMetadataService` normalizes upstream quirks before decoding:
@@ -368,10 +370,10 @@ Images reach the vision stage via `VisionImageResolver` — **signed HTTPS URL**
 
 1. Collection pipeline is **dual-lane** — vision and thinking run with configurable per-folder concurrency (default 3+3); check `microstock.ai.stage` logs for per-stage `duration_ms`.
 2. Check `microstock.ai.stage` logs in `storage/logs/laravel.log` — compare `vision` `start`/`end` `duration_ms` vs `thinking` `start`/`end`. Multimodal vision at 1024px via Open WebUI commonly takes **40–120s** per call depending on the resolved backend model (grok ~46s verified 2026-07-27; `gpt-5.4` hit HTTP **524** at ~125s on 2026-07-28 probe — see [`probes/gpt54_vs_grok_summary.md`](probes/gpt54_vs_grok_summary.md)).
-3. **`cURL error 28: 0 bytes received` = client timeout**, not proof Open WebUI is hung. A probe with timeout **&lt; production** (`MICROSTOCK_AI_VISION_TIMEOUT`, default 300s) can fail while the same request would succeed at 300s.
+3. **`cURL error 28: 0 bytes received` = client timeout**, not proof Open WebUI is hung. A probe with timeout **&lt; production** (`microstock.ai.vision.timeout` in Settings → Microstock, config default 1500s) can fail while the same request would succeed at the production timeout.
 4. High token usage with a stuck worker usually means **slow inference + retries + repeated re-analyze**, not a dead upstream. Expect ~**5 HTTP calls per asset** (1 vision + up to 4 thinking attempts) × `microstock.ai.http_retries` (default 0).
 5. Run structured diagnosis: `php scripts/microstock/probe_ai.php --timeout=300 [--label=sonnet5-gpt56] [--folder=uuid] [--delivery=base64|url] [--variant=ai_512|ai_1024] [--matrix]` — JSON results in `storage/app/probe_results/` (falls back to first available asset if the default folder is empty). E2E single asset: `php storage/app/verify_e2e_asset.php`. Do **not** conclude "model hang" unless text-only T0 also fails at ≥300s **and** Open WebUI shows no completed request.
-6. Tunables if too slow: lower `microstock.ai.image_max_px`, raise `MICROSTOCK_AI_VISION_TIMEOUT` (env), or set `microstock.ai.thinking_visual_attempts=1` (default 2 multimodal thinking attempts) in Settings → Microstock.
+6. Tunables if too slow: lower `microstock.ai.image_max_px`, raise `microstock.ai.vision.timeout` in Settings → Microstock, or set `microstock.ai.thinking_visual_attempts=1` (default 2 multimodal thinking attempts).
 
 **Troubleshooting — all metadata `failed`:**
 
@@ -421,7 +423,7 @@ As a safety net, `HttpAiMetadataService::thinking()` still degrades gracefully i
 4. Attempt D: fused text-only user.
 5. Fallback: if all fail, the **vision draft is kept** (`raw.thinking = null`) so the asset still reaches `status = generated`. Each failure is `report()`ed.
 
-`Prompts::thinkingSystem()` is intentionally short (a single dense paragraph). If a gateway model never responds acceptably, point `ai.thinking.model` to a different model via `MICROSTOCK_AI_THINKING_MODEL`.
+`Prompts::thinkingSystem()` is intentionally short (a single dense paragraph). If a gateway model never responds acceptably, point `microstock.ai.thinking.model` to a different model via Settings → Microstock.
 
 | Column | Notes |
 |----|-------|
