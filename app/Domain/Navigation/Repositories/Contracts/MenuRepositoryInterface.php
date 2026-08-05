@@ -56,9 +56,27 @@ interface MenuRepositoryInterface
     public function trashedList(?string $loadType, ?string $layout = null): array;
 
     /**
-     * Forget the cached navigation snapshot (e.g. after a role rename).
+     * Forget the cached navigation snapshot and bump presented-tree epoch
+     * (e.g. after a role rename or menu mutation).
      */
     public function flushNavigationCache(): void;
+
+    /**
+     * Drop presented navigation trees for one viewer under the current epoch
+     * (e.g. after product activation or role changes for that user).
+     */
+    public function forgetPresentedTreeFor(?User $user): void;
+
+    /**
+     * @see forgetPresentedTreeFor()
+     */
+    public function forgetPresentedTreeForUserId(string $userId): void;
+
+    /**
+     * Invalidate all presented trees without rebuilding the menu row snapshot
+     * (e.g. Domain Access visibility changes).
+     */
+    public function bumpPresentedTreeEpoch(): void;
 
     /**
      * @param  list<string>  $idsOrNames

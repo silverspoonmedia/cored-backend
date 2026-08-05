@@ -210,7 +210,7 @@ manage any file hosting resource
 
 Middleware stack: `auth:api` -> `product.active:FileHosting` (runtime activation gate, see [Product Activations](../product-activations/README.md)) -> `permission:<perm>` (Spatie RBAC). A user with a suspended File Hosting activation gets 403 before any permission check runs.
 
-**Sidebar menu:** Products → **File Hosting** uses `file-hosting.index` on the parent and exposes **My Files**, **Trash**, and **DMCA Blocklist** children. DMCA Blocklist is limited to Root, Admin, Moderator, Management, and File Hosting Admin. The parent route is bound to FileHosting through `config/products.php` `menu_routes`, so ancestor visibility applies both the global Domain Access gate and the authenticated viewer's activation state to the entire branch — see [Navigation — Visibility](../navigation/README.md#visibility-navigation-tree).
+**Sidebar menu:** Products → **File Hosting** stores `file-hosting.index` on the parent in the DB (Domain Access + activation ancestor gates) and exposes **My Files**, **Trash**, and **DMCA Blocklist** children. While those children are visible, the presented tree masks the parent to `#` (expand-only); if every child is pruned, the stored route is shown again as a navigable leaf. DMCA Blocklist is limited to Root, Admin, Moderator, Management, and File Hosting Admin. See [Navigation — Visibility](../navigation/README.md#visibility-navigation-tree).
 
 | Area | Endpoints |
 |------|-----------|
@@ -692,7 +692,7 @@ Grid/list view toggle persists preference in `localStorage` key `fh-view-mode`. 
 
 Row identity for live patch: `data-fh-entity` (`file`|`folder`) + `data-fh-id` on table rows and grid cards. Quota mount: `[data-fh-quota]`. Show counters: `[data-fh-stat="views|downloads"]`. Team offcanvas: `[data-fh-members-body]`, `[data-fh-activity-list]`.
 
-Sidebar: **Products → File Hosting → My Files** (`file-hosting.index`). The File Hosting parent uses the same product-bound route, so Domain Access and product activation gate the whole branch.
+Sidebar: **Products → File Hosting → My Files** (`file-hosting.index`). The File Hosting parent stores the same product-bound route for Domain Access and activation; presented navigation masks it to `#` while children remain visible.
 
 ## Realtime / live listing
 

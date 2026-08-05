@@ -43,7 +43,9 @@ A node is visible only if **it and every ancestor** pass these rules in order:
 6. **Product activation gate** — for the same mapped product, an authenticated viewer must have an `active` activation. Suspended, expired, pending, or missing activation hides the node. Guests skip this activation check. See [Product Activations — Menu visibility](../product-activations/README.md#menu-visibility-v2).
 7. If roles are attached, the viewer must have any attached role; no roles means open to viewers who passed prior rules.
 
-`MenuRepository` evaluates every candidate node and each ancestor in its chain. For each route-bearing node it resolves `ProductRegistry::productKeyByMenuRoute`; product parent routes therefore gate all descendants, including children whose own routes are not mapped. Empty headers and non-navigable parents are pruned; a parent with a route remains a valid leaf. Validation rejects incompatible audience combinations such as guest-only plus authenticate-required or role restrictions.
+`MenuRepository` evaluates every candidate node and each ancestor in its chain. For each route-bearing node it resolves `ProductRegistry::productKeyByMenuRoute` using the **stored DB route** (never the presentational `#`); product parent routes therefore gate all descendants, including children whose own routes are not mapped. Empty headers and non-navigable parents are pruned; a parent with a route remains a valid leaf when children are all hidden. Validation rejects incompatible audience combinations such as guest-only plus authenticate-required or role restrictions.
+
+**Presentation mask:** after visibility filtering, a `p` node with one or more visible children is emitted with `route = '#'` (expand-only in the sidebar). When every child is pruned, the stored DB route is emitted again so the parent acts as a navigable leaf. Admin flat list / CRUD always expose real DB routes.
 
 ## API (`/api/v1/navigation/menus`)
 
@@ -74,13 +76,28 @@ Reorder uses two phases: null current slots, then assign contiguous orders. Soft
 
 ## Caching
 
-`MenuRepository` caches all active rows forever under `menus.navigation.snapshot` as serialization-safe primitive arrays, including translated fields, route/layout/order, role names, and include/exclude user IDs. It never caches hydrated Eloquent models or viewer-specific results.
+Two forever tiers — hot path must not query the `menus` table on a presented-tree hit:
 
-Layout, include/exclude, auth flags, Domain Access, product activation, and RBAC are evaluated live per request. Domain visibility and activation changes therefore need no navigation-cache flush. Menu row/pivot mutations flush the snapshot; `NavigationServiceProvider` also flushes it after role update/delete because snapshots store role names. `php artisan menu:flush-cache` remains available for manual recovery.
+| Key | Contents |
+|-----|----------|
+| `menus.navigation.snapshot` | All active menu primitives (translations, stored routes, layout/order, role names, include/exclude user IDs). Never hydrated Eloquent. |
+| `menus.navigation.tree_epoch` | Integer generation bumped on structural invalidation. |
+| `menus.navigation.presented.{epoch}.{layout}.{viewer}` | Final filtered + `#`-masked tree for `guest` or `u:{userId}`. |
+
+On miss, `navigationTree` loads the snapshot (DB only if snapshot also misses), runs visibility + presentation mask, then stores the presented tree.
+
+| Event | Action |
+|-------|--------|
+| Menu create/update/delete/restore/reorder/seeder; role update/delete; `menu:flush-cache` | Forget snapshot + bump epoch (all presented keys miss) |
+| Domain Access visibility upsert | Bump epoch |
+| Product activation state change for user U | Forget presented keys for U under the current epoch (both layouts) |
+| User role sync that affects menu RBAC (`UserManagementService`, claim assignRole) | Forget presented keys for that user |
+
+`php artisan menu:flush-cache` remains available for manual recovery.
 
 ## Authoritative seeding
 
-`MenuSeeder` is the sole canonical navigation definition. Every run force-deletes all active and trashed menu rows; FK cascades remove their pivot rows. It rebuilds both layouts inside one DB transaction and intentionally removes admin-created/custom menus. A failure inside that transaction restores the prior DB tree. After commit, the seeder flushes the navigation snapshot cache; no separate cache command is needed.
+`MenuSeeder` is the sole canonical navigation definition. Every run force-deletes all active and trashed menu rows; FK cascades remove their pivot rows. It rebuilds both layouts inside one DB transaction and intentionally removes admin-created/custom menus. A failure inside that transaction restores the prior DB tree. After commit, the seeder flushes the navigation snapshot and bumps the presented-tree epoch; no separate cache command is needed.
 
 `MenuSeeder` assumes these role catalogs already exist, in order:
 
@@ -147,6 +164,7 @@ Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module regi
 
 ## Tests
 
+- `tests/Domain/Navigation/Unit/Repositories/Eloquent/MenuRepositoryTest.php` covers CRUD/ordering plus presentational `#` masking, presented-tree cache hits (no `menus` queries), epoch refresh after menu mutation, and per-user `forgetPresentedTreeFor`.
 - `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 44-row sidebar/navbar tree, `en`/`id`/`ja` translations, selected role pivots, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
 - `tests/Domain/Navigation/Feature/Http/Controllers/Web/SidebarNavigationWebTest.php` covers sidebar/navbar composer registration and shell rendering.
 - `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php` covers public/private product visibility, guests, privileged access, and empty-branch pruning.

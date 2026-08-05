@@ -53,6 +53,11 @@ class UserManagementService
 
         $user->syncRoles([$roleName]);
 
+        if (app()->bound(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)) {
+            app(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)
+                ->forgetPresentedTreeForUserId((string) $user->id);
+        }
+
         activity()
             ->useLog('user')
             ->causedBy($actor)
@@ -99,6 +104,11 @@ class UserManagementService
         if (isset($data['role'])) {
             $previousRole = $user->roles->first()?->name;
             $user->syncRoles([$data['role']]);
+
+            if (app()->bound(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)) {
+                app(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)
+                    ->forgetPresentedTreeForUserId((string) $user->id);
+            }
 
             if ($previousRole !== $data['role']) {
                 activity()

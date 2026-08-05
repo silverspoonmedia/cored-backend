@@ -318,6 +318,109 @@ class MenuRepositoryTest extends TestCase
         $this->assertSame(['H', 'P', 'C1', 'C2'], $names);
     }
 
+    public function test_navigation_tree_masks_parent_route_when_children_visible(): void
+    {
+        $header = $this->makeMenu(['name' => 'Products', 'type' => 'h']);
+        $parent = $this->makeMenu([
+            'name' => 'Expand Parent',
+            'type' => 'p',
+            'parent_id' => $header->id,
+            'route' => 'dashboard',
+        ]);
+        $this->makeMenu([
+            'name' => 'Leaf',
+            'type' => 'c',
+            'parent_id' => $parent->id,
+            'route' => 'dashboard',
+        ]);
+
+        $node = $this->treeNodeByName($this->userWithRole('Admin'), 'Expand Parent');
+
+        $this->assertNotNull($node);
+        $this->assertSame('#', $node['route']);
+        $this->assertNotSame([], $node['children']);
+    }
+
+    public function test_navigation_tree_restores_parent_route_when_children_pruned(): void
+    {
+        $header = $this->makeMenu(['name' => 'Products', 'type' => 'h']);
+        $parent = $this->makeMenu([
+            'name' => 'Leaf Parent',
+            'type' => 'p',
+            'parent_id' => $header->id,
+            'route' => 'dashboard',
+        ]);
+        $child = $this->makeMenu([
+            'name' => 'Admin Only Child',
+            'type' => 'c',
+            'parent_id' => $parent->id,
+            'route' => 'dashboard',
+        ]);
+        $this->repository->syncRoles($child, ['Admin']);
+
+        $userNode = $this->treeNodeByName($this->userWithRole('User'), 'Leaf Parent');
+
+        $this->assertNotNull($userNode);
+        $this->assertSame('dashboard', $userNode['route']);
+        $this->assertSame([], $userNode['children']);
+    }
+
+    public function test_navigation_tree_second_call_does_not_query_menus_table(): void
+    {
+        $this->makeMenu(['name' => 'Cached Leaf', 'type' => 'c', 'route' => 'dashboard']);
+        $user = $this->userWithRole('Admin');
+
+        // Warm snapshot + presented tree.
+        $this->repository->navigationTree($user, 'sidebar');
+
+        $menuQueries = 0;
+        \Illuminate\Support\Facades\DB::listen(function ($query) use (&$menuQueries): void {
+            if (str_contains($query->sql, ' from `menus`') || str_contains($query->sql, ' from "menus"')) {
+                $menuQueries++;
+            }
+        });
+
+        $this->assertContains('Cached Leaf', $this->treeNames($user));
+        $this->assertSame(0, $menuQueries);
+    }
+
+    public function test_presented_tree_refreshes_after_menu_mutation(): void
+    {
+        $user = $this->userWithRole('Admin');
+        $this->makeMenu(['name' => 'Before', 'type' => 'c', 'route' => 'dashboard']);
+        $this->assertContains('Before', $this->treeNames($user));
+
+        $this->makeMenu(['name' => 'After', 'type' => 'c', 'route' => 'dashboard']);
+        $this->assertContains('After', $this->treeNames($user));
+    }
+
+    public function test_forget_presented_tree_for_user_forces_rebuild(): void
+    {
+        $header = $this->makeMenu(['name' => 'H', 'type' => 'h']);
+        $parent = $this->makeMenu([
+            'name' => 'P',
+            'type' => 'p',
+            'parent_id' => $header->id,
+            'route' => 'dashboard',
+        ]);
+        $child = $this->makeMenu([
+            'name' => 'Secret',
+            'type' => 'c',
+            'parent_id' => $parent->id,
+            'route' => 'dashboard',
+        ]);
+        $this->repository->syncRoles($child, ['Admin']);
+
+        $admin = $this->userWithRole('Admin');
+        $this->assertContains('Secret', $this->treeNames($admin));
+
+        // Simulate role loss without going through UserManagementService.
+        $admin->syncRoles(['User']);
+        $this->repository->forgetPresentedTreeFor($admin);
+
+        $this->assertNotContains('Secret', $this->treeNames($admin));
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -336,6 +439,27 @@ class MenuRepositoryTest extends TestCase
         $user->assignRole($role);
 
         return $user;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function treeNodeByName(?User $user, string $name): ?array
+    {
+        $found = null;
+        $walk = function (array $nodes) use (&$walk, &$found, $name): void {
+            foreach ($nodes as $node) {
+                if ($node['name'] === $name) {
+                    $found = $node;
+
+                    return;
+                }
+                $walk($node['children'] ?? []);
+            }
+        };
+        $walk($this->repository->navigationTree($user, 'sidebar'));
+
+        return $found;
     }
 
     /**

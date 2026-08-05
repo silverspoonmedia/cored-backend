@@ -32,6 +32,11 @@ class MenuRepository implements MenuRepositoryInterface
     private const CACHE_KEY = 'menus.navigation.snapshot';
 
     /**
+     * Generation counter for presented (viewer-filtered) trees.
+     */
+    private const TREE_EPOCH_KEY = 'menus.navigation.tree_epoch';
+
+    /**
      * Sentinel for grouping root-level menus (parent_id === null).
      */
     private const ROOT = '__root__';
@@ -43,9 +48,14 @@ class MenuRepository implements MenuRepositoryInterface
 
     public function navigationTree(?User $user, string $layout): array
     {
-        $nodes = $this->navigationSnapshot();
+        return Cache::rememberForever(
+            $this->presentedCacheKey($layout, $user),
+            function () use ($user, $layout): array {
+                $nodes = $this->navigationSnapshot();
 
-        return $this->buildVisibleTree(null, $user, $nodes, $this->indexChildren($nodes), $layout);
+                return $this->buildVisibleTree(null, $user, $nodes, $this->indexChildren($nodes), $layout);
+            },
+        );
     }
 
     public function adminFlatList(?string $loadType, ?string $layout = null): array
@@ -364,9 +374,73 @@ class MenuRepository implements MenuRepositoryInterface
         $this->flushCache();
     }
 
+    public function forgetPresentedTreeFor(?User $user): void
+    {
+        $epoch = $this->treeEpoch();
+        $viewer = $this->viewerKey($user);
+
+        foreach (MenuLayout::all() as $layout) {
+            Cache::forget($this->presentedCacheKeyFor($epoch, $layout, $viewer));
+        }
+    }
+
+    public function forgetPresentedTreeForUserId(string $userId): void
+    {
+        $epoch = $this->treeEpoch();
+        $viewer = 'u:'.$userId;
+
+        foreach (MenuLayout::all() as $layout) {
+            Cache::forget($this->presentedCacheKeyFor($epoch, $layout, $viewer));
+        }
+    }
+
+    public function bumpPresentedTreeEpoch(): void
+    {
+        $this->bumpTreeEpoch();
+    }
+
     private function flushCache(): void
     {
         Cache::forget(self::CACHE_KEY);
+        $this->bumpTreeEpoch();
+    }
+
+    private function treeEpoch(): int
+    {
+        $epoch = Cache::get(self::TREE_EPOCH_KEY);
+
+        if (! is_int($epoch) && ! is_numeric($epoch)) {
+            Cache::forever(self::TREE_EPOCH_KEY, 1);
+
+            return 1;
+        }
+
+        return (int) $epoch;
+    }
+
+    private function bumpTreeEpoch(): void
+    {
+        $next = $this->treeEpoch() + 1;
+        Cache::forever(self::TREE_EPOCH_KEY, $next);
+    }
+
+    private function presentedCacheKey(string $layout, ?User $user): string
+    {
+        return $this->presentedCacheKeyFor($this->treeEpoch(), $layout, $this->viewerKey($user));
+    }
+
+    private function presentedCacheKeyFor(int $epoch, string $layout, string $viewer): string
+    {
+        return 'menus.navigation.presented.'.$epoch.'.'.$layout.'.'.$viewer;
+    }
+
+    private function viewerKey(?User $user): string
+    {
+        if ($user === null) {
+            return 'guest';
+        }
+
+        return 'u:'.(string) $user->getAuthIdentifier();
     }
 
     /**
@@ -493,12 +567,17 @@ class MenuRepository implements MenuRepositoryInterface
                 continue;
             }
 
+            $storedRoute = $child['route'] ?? null;
+            $presentedRoute = ($child['type'] ?? 'c') === 'p' && $nested !== []
+                ? '#'
+                : $storedRoute;
+
             $out[] = [
                 'id' => $child['id'],
                 'name' => TranslationResolver::resolve($child['name_translations'] ?? []),
                 'description' => TranslationResolver::resolve($child['description_translations'] ?? []),
                 'icon' => $child['icon'],
-                'route' => $child['route'],
+                'route' => $presentedRoute,
                 'type' => $child['type'],
                 'order' => $child['order'],
                 'children' => $nested,

@@ -6,6 +6,7 @@ use App\Domain\Identity\Models\User;
 use App\Support\Domain\DomainManager;
 use App\Support\DomainAccess\Enums\DomainVisibility;
 use App\Support\DomainAccess\Models\ProductDomainVisibility;
+use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 
 /**
  * Runtime access gate for product domains.
@@ -57,6 +58,11 @@ class DomainAccessService
         );
 
         $this->cache = null;
+
+        // Presented trees encode Domain Access outcomes — bump epoch globally.
+        if (app()->bound(MenuRepositoryInterface::class)) {
+            app(MenuRepositoryInterface::class)->bumpPresentedTreeEpoch();
+        }
     }
 
     /**

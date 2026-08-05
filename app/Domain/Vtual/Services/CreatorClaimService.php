@@ -238,6 +238,10 @@ class CreatorClaimService
             $roleName = (string) setting_config('vtual.claim.vtuber_role', 'Vtual vTuber');
             if (! $user->hasRole($roleName)) {
                 $user->assignRole($roleName);
+                if (app()->bound(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)) {
+                    app(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)
+                        ->forgetPresentedTreeForUserId((string) $user->id);
+                }
             }
 
             $locked->forceFill([
