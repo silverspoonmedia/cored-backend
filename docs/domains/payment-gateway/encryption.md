@@ -17,7 +17,7 @@ Tiered crypto for sensitive columns. KEK = OCI KMS master key; DEK per value (AE
 |-------|------|
 | `OciKmsClient` / `LocalKmsDekClient` | generate/unwrap DEK |
 | `EnvelopeEncryptionService` | encrypt/decrypt; **sole** decrypt audit choke point; resolves per-resource TTL |
-| `DecryptedValueCache` | Plaintext until change, explicit forget, or TTL cap |
+| `DecryptedValueCache` | Plaintext forever until change, explicit forget, or optional non-zero TTL cap |
 | `EnvelopeEncrypted*` casts | Model integration |
 | `CryptoActivityRecorder` | `log_name: crypto` |
 
@@ -29,9 +29,11 @@ Tiered crypto for sensitive columns. KEK = OCI KMS master key; DEK per value (AE
 
 ### Decrypt cache TTL
 
+Aligned with [cache-policy.md](../../platform/cache-policy.md): forever by default; invalidate on encrypt / cast set / flush.
+
 | Config | Meaning |
 |--------|---------|
-| `encryption.decrypted_cache_max_ttl` | Global safety cap (seconds). Default `86400`. `0` = forever until forget. |
+| `encryption.decrypted_cache_max_ttl` | Optional safety cap (seconds). Default `0` = forever until forget. Non-zero still expires when configured. |
 | `encryption.decrypted_cache_ttl_by_resource_type` | Per-`resourceType` override. Missing key → global. |
 
 Current map:
@@ -39,7 +41,7 @@ Current map:
 | resourceType | TTL |
 |--------------|-----|
 | `vtual_platform_credentials` | `0` (forever until secret/runtime rewrite / `markFailed` / flush) |
-| (all others) | global `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` |
+| (all others) | global `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` (default `0`) |
 
 Prod/Octane: use a **shared** cache store (Redis). Per-worker `array` cache breaks forever semantics across processes.
 
@@ -61,7 +63,7 @@ Envelope JSON v1: `v`, `alg`, `kms_key_id`, `dek_ciphertext`, `iv`, `tag`, `ciph
 | Variable | Purpose |
 |----------|---------|
 | `ENCRYPTION_KMS_ENABLED` | false in PHPUnit; true prod |
-| `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` | default 86400 |
+| `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` | default `0` (forever until forget) |
 | `ENCRYPTION_AUDIT_DECRYPTS` | `cache_miss` \| `always` |
 | `ENCRYPTION_BLIND_INDEX_PEPPER` | HMAC pepper |
 | `ENCRYPTION_LOG_INVOICE_PAYLOAD_DECRYPTS` | optional trace log |

@@ -16,13 +16,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Decrypted value cache (invalidate-on-change + safety cap)
+    | Decrypted value cache (invalidate-on-change; forever by default)
     |--------------------------------------------------------------------------
     |
     | Plaintext is cached after the first successful KMS unwrap + AES decrypt
     | per decryption context and ciphertext fingerprint. Entries are flushed on
     | encrypt() / cast set() when the value changes. decrypted_cache_max_ttl is
-    | a safety cap (seconds); 0 = no cap (forever until forget).
+    | an optional safety cap (seconds); 0 = forever until forget (project default).
+    | See docs/platform/cache-policy.md.
     |
     | ENCRYPTION_DECRYPTED_CACHE_TTL is a deprecated alias read when MAX_TTL is
     | unset (one-release backward compatibility).
@@ -31,7 +32,7 @@ return [
 
     'decrypted_cache_max_ttl' => (int) env(
         'ENCRYPTION_DECRYPTED_CACHE_MAX_TTL',
-        env('ENCRYPTION_DECRYPTED_CACHE_TTL', 86400),
+        env('ENCRYPTION_DECRYPTED_CACHE_TTL', 0),
     ),
 
     /*

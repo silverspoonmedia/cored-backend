@@ -61,7 +61,7 @@ return [
         'platform.inference.unknown_input_per_million_usd' => '未登録モデル入力単価（100万トークンあたりUSD）',
         'platform.inference.unknown_output_per_million_usd' => '未登録モデル出力単価（100万トークンあたりUSD）',
         // Platform — Frankfurter FX
-        'platform.frankfurter.cache_ttl' => 'Frankfurter FXキャッシュTTL（秒）',
+        'platform.frankfurter.cache_ttl' => 'Frankfurter FX鮮度ウィンドウ（秒）',
         'platform.frankfurter.timeout' => 'Frankfurter FX HTTPタイムアウト（秒）',
         // File Hosting
         'file-hosting.max_file_size_bytes' => '最大ファイルサイズ（バイト）',

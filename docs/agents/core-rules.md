@@ -18,7 +18,7 @@ Every feature or change must be implemented end to end across all relevant layer
 
 ### Scope tags
 
-Prefix the task instruction with one of these tags to declare intended scope. Only this rule (rule 1) is affected by the tag — rules 2-5 below (living docs, database safety, Octane, localization) stay mandatory **regardless of tag**.
+Prefix the task instruction with one of these tags to declare intended scope. Only this rule (rule 1) is affected by the tag — rules 2–8 below (living docs, database safety, Octane, localization, configuration, cache, local settings) stay mandatory **regardless of tag**.
 
 | Tag | Default? | Touch |
 |-----|----------|-------|
@@ -70,7 +70,11 @@ Any change that adds or modifies user-facing text (Blade labels, API `message` s
 
 `.env` stores **project-owned sensitive / infra bindings only** (see Tier A in [configuration-policy.md](../platform/configuration-policy.md)). Non-sensitive operational knobs belong in **`system_settings`** (Settings UI, plaintext). Product-domain secrets use **envelope-encrypted dedicated tables** — never `.env` or `system_settings`. Runtime reads of registry settings use **`setting()` / `setting_config()`** through the cached `system_settings` snapshot; never `env()` outside config files; never `config()` for registry-backed paths in domain code. New registry keys require seed + translations + policy tests — no new env vars for Tier B.
 
-## 7. Local settings seed (mandatory when adding dev ergonomics)
+## 7. Cache — forever + invalidate (mandatory for domain data)
+
+Laravel `Cache` entries that store domain/derived data must use **lifetime** storage (`rememberForever` / `forever`), **rebuild on miss**, and **explicit invalidation** when underlying data changes. Must work on any driver (including default `database`) — **no `Cache::tags`**. Short TTL is allowed only for documented exceptions (locks, throttles, 2FA challenge tokens, JWT blacklist). Full contract and inventory: [cache-policy.md](../platform/cache-policy.md).
+
+## 8. Local settings seed (mandatory when adding dev ergonomics)
 
 **`APP_ENV=local` only:** dev Tier B overrides live in [config/settings-local.php](../../config/settings-local.php) and [LocalSettingsSeeder](../../database/seeders/LocalSettingsSeeder.php) (runs after `SettingsSeeder`, `upsertMany`). Never change `config/*.php` literals or `.env` for local-only knobs. Staging/production use config literals + `SettingsSeeder` only. Details: [configuration-policy.md — Local profile overrides](../platform/configuration-policy.md#local-profile-overrides).
 

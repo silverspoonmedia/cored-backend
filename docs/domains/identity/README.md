@@ -18,7 +18,7 @@ Auth is **not** on global `/api/*` — only versioned v1.
 
 ## Packages
 
-`php-open-source-saver/jwt-auth`, `pragmarx/google2fa-laravel`, `spatie/laravel-permission`. Config: `jwt.php`, `auth.php`, `permission.php` (custom `Role` / `Permission` models).
+`php-open-source-saver/jwt-auth`, `pragmarx/google2fa-laravel`, `spatie/laravel-permission`. Config: `jwt.php`, `auth.php`, `permission.php` (custom `Role` / `Permission` models). Spatie permission catalog cache uses a century-scale `expiration_time` (package has no forever API) and flushes on role/permission mutation — [cache-policy.md](../../platform/cache-policy.md).
 
 ## Architecture
 

@@ -196,11 +196,12 @@ return [
     'cache' => [
 
         /*
-         * By default all permissions are cached for 24 hours to speed up performance.
-         * When permissions or roles are updated the cache is flushed automatically.
+         * Permissions are cached for a century-scale lifetime (Spatie's remember()
+         * API has no forever). Role/permission mutations flush the key automatically.
+         * See docs/platform/cache-policy.md.
          */
 
-        'expiration_time' => DateInterval::createFromDateString('24 hours'),
+        'expiration_time' => DateInterval::createFromDateString('100 years'),
 
         /*
          * The cache key used to store all permissions.

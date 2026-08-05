@@ -61,7 +61,7 @@ return [
         'platform.inference.unknown_input_per_million_usd' => 'Unknown model input rate (USD per 1M tokens)',
         'platform.inference.unknown_output_per_million_usd' => 'Unknown model output rate (USD per 1M tokens)',
         // Platform — Frankfurter FX
-        'platform.frankfurter.cache_ttl' => 'Frankfurter FX cache TTL (seconds)',
+        'platform.frankfurter.cache_ttl' => 'Frankfurter FX freshness window (seconds)',
         'platform.frankfurter.timeout' => 'Frankfurter FX HTTP timeout (seconds)',
         // File Hosting
         'file-hosting.max_file_size_bytes' => 'Max file size (bytes)',

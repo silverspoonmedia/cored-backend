@@ -165,6 +165,25 @@ class ProductInsightServiceTest extends TestCase
         $this->insights->productSummary('Nonexistent');
     }
 
+    public function test_file_hosting_metrics_cache_survives_past_former_ttl_until_forget(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow('2026-01-01 00:00:00');
+
+        $first = $this->insights->productMetrics('FileHosting');
+        $this->assertTrue(Cache::has('product_insights.FileHosting.metrics'));
+
+        \Illuminate\Support\Carbon::setTestNow('2026-01-01 01:00:00'); // past former 300s TTL
+
+        $second = $this->insights->productMetrics('FileHosting');
+        $this->assertSame($first, $second);
+        $this->assertTrue(Cache::has('product_insights.FileHosting.metrics'));
+
+        Cache::forget('product_insights.FileHosting.metrics');
+        $this->assertFalse(Cache::has('product_insights.FileHosting.metrics'));
+
+        \Illuminate\Support\Carbon::setTestNow();
+    }
+
     private function userWithRole(string $role, string $email = 'user@example.com'): User
     {
         $user = User::factory()->create([

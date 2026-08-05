@@ -93,7 +93,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 
 **In-page nav:** shared partial `resources/views/adminlte4/vtual/partials/nav.blade.php` (Overview / My profiles / Claim / Registry / Credentials).
 
-**Sidebar:** Products → **vTual** parent with Overview, My profiles, Claim as vTuber, Registry & pending (Root/Admin/Moderator/Management/Vtual Admin), and Platform credentials (Root/Admin). Parent route `vtual.index` stacks Domain Access and activation gates across the whole branch. `MenuSeeder` authoritatively rebuilds all menu rows and flushes cache after commit. Before a standalone rebuild, seed `RoleSeeder`, `FileHostingRoleSeeder`, and `VtualRoleSeeder`; see [Navigation — Authoritative seeding](../navigation/README.md#authoritative-seeding). Platform API Probe remains a live Root/Admin tool linked from credentials, but it is intentionally not a dynamic-menu node.
+**Sidebar:** Products → **vTual** parent stores `vtual.index` in the DB (Domain Access + activation ancestor gates) and exposes Overview, My profiles, Claim as vTuber, Registry & pending (Root/Admin/Moderator/Management/Vtual Admin), and Platform credentials (Root/Admin). While children are visible, the presented tree masks the parent to `#` (expand-only); if every child is pruned, the stored route is shown again. `MenuSeeder` authoritatively rebuilds all menu rows and flushes cache after commit. Before a standalone rebuild, seed `RoleSeeder`, `FileHostingRoleSeeder`, and `VtualRoleSeeder`; see [Navigation — Authoritative seeding](../navigation/README.md#authoritative-seeding). Platform API Probe remains a live Root/Admin tool linked from credentials, but it is intentionally not a dynamic-menu node.
 
 **Out of scope (claim UI phase leftovers):** management product UI, survey form, **Add New** approval queue, appeal / permanent reject, OAuth login proof, auto-purge of old cancelled rows, stripping core `User` `create vtual creator` (API legacy self-create still exists; staff Blade seeds orphans only).
 
@@ -289,7 +289,7 @@ Not 1 read = 1 KMS. Cast → `EnvelopeEncryptionService::decrypt` → `Decrypted
 |------|----------|
 | resourceType | `vtual_platform_credentials` (covers **both** `secret_payload` and `runtime_payload` fields) |
 | TTL | **0** (forever until invalidate) via `encryption.decrypted_cache_ttl_by_resource_type` |
-| Other envelope fields | Still use global `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` (default 86400) |
+| Other envelope fields | Still use global `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` (default `0` = forever until forget) |
 | Healthy use | `resolvePayload()` + `markUsed()` — **no** cache forget |
 | Failure | `markFailed` stamps `last_error_*` and forgets secret + runtime decrypt caches |
 | Secret/runtime rewrite | Cast `set` / encrypt already forgets that field's cache |
@@ -631,7 +631,7 @@ composer test -- --filter=AccessibilityBlade
 | `CreatorClaimServiceTest` | Orphan create, claimable list, bio verify Http::fake, cooldown, Accept Anyway, already-owned (no attempt burn), winner supersedes other pending, max_pending_per_user, staff listPending |
 | `PlatformApiGatewayTest` / `BatchIdChunkerTest` | Manual HTTP clients: multi-id, batch max, parts, auth, 401 markFailed + ErrorLog + soft failover (no secrets) |
 | `PlatformCredentialApiTest` | Masked CRUD + Test, RBAC, Root/Admin OK, User/Moderator 403, validation 422 |
-| `DecryptedValueCacheTest` | vtual resource TTL 0 past global cap; non-mapped type still expires |
+| `DecryptedValueCacheTest` | vtual resource TTL 0; default global `0` forever; non-zero global TTL still expires when configured |
 | `VtualApiTest` | CRUD API, user channel claim path, staff seed active channel, product gate, peer isolation |
 | `RegisterVtualActivationTest` | Register creates implicit Vtual activation |
 | `VtualBladeWebTest` | Web view rendering, AJAX form presence, modal confirm, partial inclusion |

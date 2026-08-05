@@ -24,9 +24,6 @@ use Illuminate\Support\Facades\Cache;
  */
 class ProductInsightService
 {
-    /** Cache TTL (seconds) for heavy aggregate metrics. */
-    private const METRICS_CACHE_TTL = 300;
-
     public function __construct(
         private readonly ProductActivationService $activations,
         private readonly QuotaService $quota,
@@ -136,9 +133,8 @@ class ProductInsightService
      */
     private function fileHostingMetrics(): array
     {
-        return Cache::remember(
+        return Cache::rememberForever(
             'product_insights.FileHosting.metrics',
-            self::METRICS_CACHE_TTL,
             function (): array {
                 $rows = ProductAnalytic::query()
                     ->where('product_key', 'FileHosting')

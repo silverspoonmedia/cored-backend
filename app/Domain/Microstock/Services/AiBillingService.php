@@ -386,7 +386,8 @@ class AiBillingService
     {
         $cacheKey = 'inference:unregistered_model_notify:'.$resolvedSlug;
 
-        if (! Cache::add($cacheKey, true, now()->addDays(30))) {
+        // Forever dedup flag (null TTL → Cache::forever). Forget when classified.
+        if (! Cache::add($cacheKey, true)) {
             return;
         }
 

@@ -167,7 +167,7 @@ Self-service endpoints authorize via the `ProductActivationPolicy::view` method:
 
 `ProductInsightService` aggregates per-product metrics for the admin dashboard. Lives at `app/Support/Product/Services/ProductInsightService.php`.
 
-Reads from the stored `product_analytics` table (kept in sync on domain mutations by `ProductAnalyticsService`) and caches the aggregate read for 5 minutes. Cache is invalidated on every write — no stale windows.
+Reads from the stored `product_analytics` table (kept in sync on domain mutations by `ProductAnalyticsService`) and caches the aggregate read forever. Cache is invalidated on every write — no stale windows. See [cache-policy.md](../../platform/cache-policy.md).
 
 | Method | Returns |
 |--------|---------|
@@ -257,7 +257,7 @@ if ($user && $node['route'] !== null) {
 
 - Non-product routes return `null` from the map → skip the check.
 - Guests skip the check (no auth gate; governed by `is_authenticate` / `is_guest_only`).
-- Cache stays global snapshot; per-user product state checked live each request (same pattern as role checks).
+- Activation outcomes are baked into forever **presented** trees per viewer (built from the global snapshot using **stored** DB routes). `ProductActivationStateChanged` forgets that user’s presented keys under the current epoch; user role sync does the same. Snapshot is unchanged; the next `navigationTree` miss rebuilds. See [Navigation — Caching](../navigation/README.md#caching) and [cache-policy](../../platform/cache-policy.md).
 
 Helpers on `ProductRegistry`:
 - `menuRoutesFor(string $productKey): array` — routes bound to a product.

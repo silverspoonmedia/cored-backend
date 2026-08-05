@@ -14,6 +14,8 @@ Canonical rules for where values live and how runtime settings are read. Agent p
 
 ## Cache contract (Tier B)
 
+This is the Tier B specialization of the project-wide [cache-policy.md](cache-policy.md) (forever + miss rebuild + invalidate; any driver; no tags).
+
 All runtime reads of `SettingRegistry` keys go through `App\Support\Settings\SettingsReader`:
 
 ```

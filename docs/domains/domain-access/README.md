@@ -68,7 +68,7 @@ if ($productKey !== null) {
 }
 ```
 
-The gate runs live per request; the `menus.navigation.snapshot` cache is product/user-agnostic so no invalidation is needed. New domains still need their routes listed in `config/products.php` `menu_routes` to be gated (same requirement as the activation gate).
+Domain Access, product activation, and RBAC run when `MenuRepository` **builds** the presented navigation tree (on cache miss). The `menus.navigation.snapshot` stays product/user-agnostic and stores real DB routes — gates never see presentational `#`. Changing Public/Private via `setVisibility` bumps the presented-tree epoch (`bumpPresentedTreeEpoch`) so every viewer rebuilds. See [Navigation — Caching](../navigation/README.md#caching) and [cache-policy](../../platform/cache-policy.md). New domains still need their routes listed in `config/products.php` `menu_routes` to be gated (same requirement as the activation gate).
 
 ## Admin config screen
 

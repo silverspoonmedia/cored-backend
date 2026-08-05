@@ -7,7 +7,7 @@ Self-referential, orderable menus with RBAC, domain-access, product-activation, 
 | Piece | Role |
 |-------|------|
 | `Menu` model | `HasUuids`, Spatie translatable name/description, tree relations |
-| `MenuRepository` | Tree build, live visibility, transactional reorder, pivots, snapshot cache |
+| `MenuRepository` | Tree build, visibility + `#` mask, two-tier forever cache (snapshot + presented) |
 | `MenuService` | Field map, orchestration |
 | `MenuController` API/Web | Thin HTTP; web proxies API |
 | `jwt.optional` | Guest or authenticated tree on `index` |

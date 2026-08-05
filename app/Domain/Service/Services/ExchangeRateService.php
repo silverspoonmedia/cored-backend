@@ -11,9 +11,11 @@ use Illuminate\Support\Facades\Http;
 
 /**
  * Frankfurter (ECB) FX client — display currency → settlement IDR.
- * Rates are persisted to exchange_rate_snapshots; Laravel cache is L1 only.
+ * Rates are persisted to exchange_rate_snapshots; Laravel cache is forever L1
+ * with logical freshness via fetched_at (platform.frankfurter.cache_ttl).
  *
  * @see https://www.frankfurter.app/docs/
+ * @see docs/platform/cache-policy.md
  */
 class ExchangeRateService
 {
@@ -84,28 +86,34 @@ class ExchangeRateService
             ];
         }
 
-        $ttl = (int) setting_config('services.frankfurter.cache_ttl', 3600);
+        $freshnessSeconds = (int) setting_config('services.frankfurter.cache_ttl', 3600);
         $cacheKey = "fx.frankfurter.{$from}.{$to}";
 
         /** @var array{rate: float, provider: string, fetched_at: string, snapshot_id: string|null}|null $cached */
         $cached = Cache::get($cacheKey);
 
         if (is_array($cached) && isset($cached['rate'])) {
-            return [
-                'rate' => (float) $cached['rate'],
-                'provider' => (string) ($cached['provider'] ?? self::PROVIDER),
-                'fetched_at' => isset($cached['fetched_at'])
-                    ? Carbon::parse($cached['fetched_at'])
-                    : now(),
-                'snapshot_id' => $cached['snapshot_id'] ?? null,
-            ];
+            $fetchedAt = isset($cached['fetched_at'])
+                ? Carbon::parse($cached['fetched_at'])
+                : null;
+
+            if ($fetchedAt !== null && $fetchedAt->gte(now()->subSeconds($freshnessSeconds))) {
+                return [
+                    'rate' => (float) $cached['rate'],
+                    'provider' => (string) ($cached['provider'] ?? self::PROVIDER),
+                    'fetched_at' => $fetchedAt,
+                    'snapshot_id' => $cached['snapshot_id'] ?? null,
+                ];
+            }
+
+            Cache::forget($cacheKey);
         }
 
         $freshDb = ExchangeRateSnapshot::query()
             ->where('base_currency', $from)
             ->where('quote_currency', $to)
             ->where('provider', self::PROVIDER)
-            ->where('fetched_at', '>=', now()->subSeconds($ttl))
+            ->where('fetched_at', '>=', now()->subSeconds($freshnessSeconds))
             ->orderByDesc('fetched_at')
             ->first();
 
@@ -116,7 +124,7 @@ class ExchangeRateService
                 'fetched_at' => $freshDb->fetched_at?->toIso8601String() ?? now()->toIso8601String(),
                 'snapshot_id' => $freshDb->id,
             ];
-            Cache::put($cacheKey, $payload, $ttl);
+            Cache::forever($cacheKey, $payload);
 
             return [
                 'rate' => (float) $freshDb->rate,
@@ -133,7 +141,7 @@ class ExchangeRateService
             'fetched_at' => $snapshot->fetched_at?->toIso8601String() ?? now()->toIso8601String(),
             'snapshot_id' => $snapshot->id,
         ];
-        Cache::put($cacheKey, $payload, $ttl);
+        Cache::forever($cacheKey, $payload);
 
         return [
             'rate' => (float) $snapshot->rate,

@@ -111,6 +111,32 @@ class ExchangeRateServiceTest extends TestCase
 
         Http::assertSentCount(1);
         $this->assertSame(1, ExchangeRateSnapshot::query()->count());
+        $this->assertTrue(Cache::has('fx.frankfurter.USD.IDR'));
+    }
+
+    public function test_aged_l1_cache_forces_rebuild_from_fresh_db_or_http(): void
+    {
+        Http::fake([
+            'api.frankfurter.app/*' => Http::sequence()
+                ->push(['rates' => ['IDR' => 16000]], 200)
+                ->push(['rates' => ['IDR' => 17000]], 200),
+        ]);
+
+        \Illuminate\Support\Carbon::setTestNow('2026-01-01 00:00:00');
+        $this->assertSame(16000.0, $this->service->rate('USD', 'IDR'));
+        Http::assertSentCount(1);
+
+        // Within freshness (default 3600s): forever L1 hit, no new HTTP.
+        \Illuminate\Support\Carbon::setTestNow('2026-01-01 00:30:00');
+        $this->assertSame(16000.0, $this->service->rate('USD', 'IDR'));
+        Http::assertSentCount(1);
+
+        // Past freshness: L1 ignored; DB snapshot also stale → new Frankfurter fetch.
+        \Illuminate\Support\Carbon::setTestNow('2026-01-01 02:00:00');
+        $this->assertSame(17000.0, $this->service->rate('USD', 'IDR'));
+        Http::assertSentCount(2);
+
+        \Illuminate\Support\Carbon::setTestNow();
     }
 
     public function test_db_snapshot_within_ttl_avoids_http_after_cache_flush(): void

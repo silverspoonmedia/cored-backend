@@ -133,10 +133,14 @@ Command (hourly): `service:process-addon-renewals`. No auto-charge. Unpaid renew
 ```
 Display charge (list or net after credit)
   → ExchangeRateService
-       prefer L1 cache → fresh DB snapshot within TTL → else Frankfurter + INSERT snapshot
+       prefer forever L1 if fetched_at within freshness window
+       → else fresh DB snapshot within window → Cache::forever
+       → else Frankfurter + INSERT snapshot → Cache::forever
   → round with currencies.decimal_places (IDR whole rupiah)
   → ServicePurchase / ServiceAddonRenewal + Invoice IDR
 ```
+
+`platform.frankfurter.cache_ttl` is a **freshness window** (seconds), not a Laravel Cache TTL. Aged L1 entries are forgotten and rebuilt. See [cache-policy.md](../../platform/cache-policy.md).
 
 Same-currency (IDR→IDR) skips HTTP; no snapshot row. Zero-charge skips FX HTTP (`provider=zero_charge`).
 
@@ -229,13 +233,13 @@ Morph aliases:
 |-----|---------|------|
 | `FRANKFURTER_BASE_URL` | `https://api.frankfurter.app` | FX HTTP client (env — Tier A) |
 | `platform.frankfurter.timeout` | `10` | FX HTTP timeout (seconds) — Settings → Platform |
-| `platform.frankfurter.cache_ttl` | `3600` | L1 + “fresh DB snapshot” window (seconds) — Settings → Platform |
+| `platform.frankfurter.cache_ttl` | `3600` | Freshness window for L1 + DB snapshot (seconds) — Settings → Platform; not a Cache TTL |
 | `platform.service.grace_days` | `7` | Grace after `ends_at` — Settings → Platform |
 | `platform.service.settlement_currency` | `IDR` | PG settlement currency — Settings → Platform |
 | `platform.service.purchase_max_quantity` | `99` | Max units per addon purchase — Settings → Platform |
 | `platform.payment.default_buyer_phone` | `081000000000` | iPaymu buyer phone fallback — Settings → Platform |
 
-Frankfurter base URL stays in `.env.example`; timeout/cache TTL and service knobs are Tier B (`system_settings`).
+Frankfurter base URL stays in `.env.example`; timeout/freshness window and service knobs are Tier B (`system_settings`).
 
 **Deploy order:** migrate through `2026_07_18_110002` (purchase quote fields + addon renewals) → `CurrencySeeder` → `ServiceCatalogSeeder` (removes free SKU if present).
 

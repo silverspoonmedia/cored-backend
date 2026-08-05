@@ -23,7 +23,8 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
 | [environment.md](platform/environment.md) | `.env` profiles, typed quoting, assignment-key parity, `env:curate`, config cache |
-| [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, cache contract, agent checklist |
+| [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, Tier B settings cache contract, agent checklist |
+| [cache-policy.md](platform/cache-policy.md) | Project-wide forever Cache + invalidate; driver-agnostic; exceptions |
 | [settings.md](platform/settings.md) | Runtime operational settings (Web UI + DB overrides) |
 | [localization.md](platform/localization.md) | `en` / `id` / `ja` task rules |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |

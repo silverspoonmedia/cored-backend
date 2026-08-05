@@ -61,7 +61,7 @@ return [
         'platform.inference.unknown_input_per_million_usd' => 'Tarif input model tidak dikenal (USD per 1M token)',
         'platform.inference.unknown_output_per_million_usd' => 'Tarif output model tidak dikenal (USD per 1M token)',
         // Platform — Frankfurter FX
-        'platform.frankfurter.cache_ttl' => 'TTL cache Frankfurter FX (detik)',
+        'platform.frankfurter.cache_ttl' => 'Jendela kesegaran FX Frankfurter (detik)',
         'platform.frankfurter.timeout' => 'Timeout HTTP Frankfurter FX (detik)',
         // File Hosting
         'file-hosting.max_file_size_bytes' => 'Ukuran file maksimum (byte)',

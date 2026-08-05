@@ -144,6 +144,38 @@ class DecryptedValueCacheTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_default_global_ttl_zero_is_forever_until_forget(): void
+    {
+        config([
+            'encryption.decrypted_cache_max_ttl' => 0,
+            'encryption.decrypted_cache_ttl_by_resource_type' => [],
+            'encryption.audit_decrypts' => 'cache_miss',
+        ]);
+
+        Carbon::setTestNow('2026-01-01 00:00:00');
+        Cache::flush();
+
+        $service = new EnvelopeEncryptionService(
+            new LocalKmsDekClient,
+            new DecryptedValueCache,
+            new CryptoActivityRecorder,
+            new InvoicePayloadDecryptLogger,
+        );
+
+        $context = new DecryptionContext('users', 'user-forever', 'two_factor_secret', 'test');
+        $this->assertSame(0, $service->resolveDecryptCacheTtl($context));
+
+        $envelope = $service->encrypt('cached-secret', $context);
+        $service->decrypt($envelope, $context);
+
+        Carbon::setTestNow('2026-01-05 00:00:00');
+        $service->decrypt($envelope, $context);
+
+        $this->assertSame(1, Activity::query()->where('log_name', 'crypto')->count());
+
+        Carbon::setTestNow();
+    }
+
     public function test_non_mapped_resource_type_uses_global_ttl(): void
     {
         config([

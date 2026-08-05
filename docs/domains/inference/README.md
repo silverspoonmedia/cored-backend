@@ -50,7 +50,7 @@ Seeded by `InferenceCatalogSeeder` into each provider via `ai_provider_model_rat
 | `claude-opus-5` / `anthropic/claude-opus-5` | $5.00 | $25.00 |
 | `claude-sonnet-5` / `anthropic/claude-sonnet-5` | $2.00 | $10.00 |
 
-Unknown resolved slugs (no `ai_provider_model_rates` row on the active provider) bill at **provisional** rates from `setting_config('inference.unknown_model_rates.*')` (registry `platform.inference.unknown_*`). Snapshots store `rate_source = unknown_provisional`. Admin gets a deduped `inference_unregistered_model` notification; model cards show **Needs classification**. After ops curates rates on the provider (`PUT …/providers/{id}/rates`), `UnknownModelBillingConsolidationService` (Microstock) recalculates settled prepaid usage and posts ledger **adjustments** (refund or extra debit). `platform.inference.default_*` rates are bootstrap fallbacks when no DB row exists yet.
+Unknown resolved slugs (no `ai_provider_model_rates` row on the active provider) bill at **provisional** rates from `setting_config('inference.unknown_model_rates.*')` (registry `platform.inference.unknown_*`). Snapshots store `rate_source = unknown_provisional`. Admin gets a deduped `inference_unregistered_model` notification (forever flag `inference:unregistered_model_notify:{slug}` via `Cache::add`; forgotten when the model is classified — see [cache-policy](../../platform/cache-policy.md)); model cards show **Needs classification**. After ops curates rates on the provider (`PUT …/providers/{id}/rates`), `UnknownModelBillingConsolidationService` (Microstock) recalculates settled prepaid usage and posts ledger **adjustments** (refund or extra debit). `platform.inference.default_*` rates are bootstrap fallbacks when no DB row exists yet.
 
 ### Unknown model workflow
 
@@ -58,7 +58,7 @@ Unknown resolved slugs (no `ai_provider_model_rates` row on the active provider)
 |------|----------|
 | Runtime | Unregistered resolved slug → provisional config rates; `ensureModelCard(..., markNeedsClassification: true)` |
 | Snapshot | `ai_model_rate_snapshots.rate_source` = `known` \| `unknown_provisional` \| `config_default` |
-| Admin alert | Deduped `inference_unregistered_model` → deep link `inference.model-cards.show` |
+| Admin alert | Forever-deduped `inference_unregistered_model` (`inference:unregistered_model_notify:{slug}`) → deep link `inference.model-cards.show` |
 | Curation | Ops sets provider rate on model card; `InferenceCatalogService::syncProviderRates()` runs consolidation |
 | Post-curation | Prepaid usage with `unknown_provisional` snapshots reconciled; `consolidated_at` set on usage rows |
 
