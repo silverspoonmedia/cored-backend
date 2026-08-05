@@ -10,7 +10,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 |------|------|
 | Agent scope | [agents/core-rules.md](agents/core-rules.md) · root [AGENTS.md](../AGENTS.md) |
 | Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
-| Env profiles, secrets | [platform/environment.md](platform/environment.md) · [configuration-policy.md](platform/configuration-policy.md) |
+| Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [configuration-policy.md](platform/configuration-policy.md) |
 | Blade admin (API consumer) | [web/blade-admin.md](web/blade-admin.md) |
 | Auth web URI layout | Authenticated Blade under **`/apps/*`** (route names unprefixed); guest/public + `POST /logout` at site root; product roots (`/file-hosting`, …) reserved empty; API `/api/v1/*` unchanged — [blade-admin — Routes](web/blade-admin.md#routes) · [architecture — Routes](platform/architecture.md#routes) |
 
@@ -22,7 +22,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [api-routing.md](platform/api-routing.md) | Global vs versioned API |
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
-| [environment.md](platform/environment.md) | `.env` profiles, config cache |
+| [environment.md](platform/environment.md) | `.env` profiles, typed quoting, assignment-key parity, `env:curate`, config cache |
 | [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, cache contract, agent checklist |
 | [settings.md](platform/settings.md) | Runtime operational settings (Web UI + DB overrides) |
 | [localization.md](platform/localization.md) | `en` / `id` / `ja` task rules |

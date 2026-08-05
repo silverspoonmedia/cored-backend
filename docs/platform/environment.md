@@ -28,7 +28,7 @@ php artisan migrate
 php artisan db:seed
 ```
 
-`env:install` copies the template, seeds the snapshot, sets profile, generates empty `APP_KEY`, `JWT_SECRET`, `ENCRYPTION_BLIND_INDEX_PEPPER`.
+`env:install` copies the template, seeds the snapshot, sets profile, and generates `APP_KEY`, `JWT_SECRET`, and `ENCRYPTION_BLIND_INDEX_PEPPER` (filled, double-quoted via Monolith writers — not bare `jwt:secret`).
 
 ## Value types
 
@@ -98,7 +98,7 @@ AI agents: the exact phrase **`curate the env`** must use `env:curate` (dry-run 
 | `force-past-backup` | Bypasses the block but can leave **stale** pending dirs; only the latest is restored by `env:restore` without an id |
 | Snapshot staleness | Editing `.env` does not update `.env.{profile}` until you switch away (save-on-switch) or `env:curate --sync-snapshot` |
 | Duplicate keys in `.env` | Curator uses **last assignment wins** when parsing; duplicate keys in the template emit **duplicate lines** |
-| Orphan keys | Keys in `.env` but not in the profile template are appended under `Extra keys (not in template)` |
+| Orphan keys | Keys in `.env` but not in the **active profile template** are appended under `Extra keys (not in template)`. Catalog Tier A keys landing here usually mean **profile template drift** (violates assignment key parity above). Genuine orphans are true extras or retired Tier B leftovers after the env→settings migration |
 | Typed quoting | Curate normalizes catalog keys to typed quoting; unquoted strings become `"…"` |
 | First switch to a profile | If no snapshot exists, bootstraps from `.env.{profile}.example` (fresh secrets, not a copy of current `.env`) |
 | `jwt:secret` standalone | Not wrapped by the mutation guard; writes unquoted values — prefer guarded install/seed or `env:backup:create` then `env:curate` |
