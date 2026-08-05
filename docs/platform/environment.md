@@ -14,6 +14,8 @@ Laravel loads **one** `.env` at boot. Monolith adds profile snapshots for local 
 
 All four committed templates share the **same section layout** (Application → locale → auth → encryption → logging → database → infrastructure → mail → File Hosting → hCaptcha → notifications/Vite → payments → Microstock). Subsections use `# · …` markers. See [`.env.example`](../../.env.example) for the canonical order and comments.
 
+**Assignment key parity (mandatory):** master, all three profile templates, and `EnvironmentVariableCatalog::types()` must expose the **same set of live `KEY=` assignments**. A commented `# KEY=…` line does **not** count — `env:curate` only sees real assignments in the active profile template, so a key that exists only as a comment (or only in master) becomes an orphan in `.env`. Lock: `EnvProfileSyncTest` + `EnvironmentTemplateQuotingTest`. Values may still differ per profile (`APP_DEBUG`, drivers, proxy URLs, etc.).
+
 **Storage env:** cloud uploads use `FILE_HOSTING_S3_*` (disk `s3FileHostingCe`). The Laravel default `s3` disk remains in `config/filesystems.php` but `AWS_*` keys are **not** listed in env templates — set them manually only if `FILESYSTEM_DISK=s3`.
 
 ## Quick start
@@ -39,7 +41,9 @@ Defined in `EnvironmentVariableCatalog`:
 | int | Digits unquoted |
 | null | `null` unquoted |
 
-Empty secrets or optional string overrides use `KEY=""`. When adding keys: update `.env.example`, all three profile templates, and `EnvironmentVariableCatalog::types()`. Microstock's optional free-tier model overrides inherit their paid/default model when empty.
+Empty secrets or optional string overrides use `KEY=""`. When adding keys: update `.env.example`, all three profile templates, and `EnvironmentVariableCatalog::types()` with a **live assignment** in every file (not a commented example). Microstock's optional free-tier model overrides inherit their paid/default model when empty.
+
+`EnvironmentVariableCatalog::formatRawValue()` is the single formatter: templates must already match these rules (`EnvironmentTemplateQuotingTest`), and `env:curate` re-applies them to live `.env` values (so unquoted strings from tools like bare `jwt:secret` get healed).
 
 ## Application keys
 
@@ -50,6 +54,8 @@ Empty secrets or optional string overrides use `KEY=""`. When adding keys: updat
 
 `key:generate --force` appends current key to previous, writes new key. Implementation: `EnvironmentKeyWriter` (file-based, not broken by quoted values).
 
+`env:install` / profile secret seeding writes `JWT_SECRET` via Monolith’s quoted writer (`EnvironmentProfileManager::writeJwtSecret`). Do **not** rely on standalone `jwt:secret` for on-disk writes — the package writes unquoted `JWT_SECRET` / `JWT_ALGO` and is not mutation-guarded.
+
 ## Switching profiles (local)
 
 | Command | Purpose |
@@ -57,7 +63,7 @@ Empty secrets or optional string overrides use `KEY=""`. When adding keys: updat
 | `env:install {profile}` | Fresh from template (backs up existing `.env` / snapshot first) |
 | `env:switch {profile}` | Save current → load target snapshot; clears config cache |
 | `env:switch` / `--list` | Show active / list snapshots |
-| `env:curate` | Reformat `.env` using active profile template layout; preserves values |
+| `env:curate` | Reformat `.env` using active profile template layout; preserves values; **normalizes quoting** to catalog types |
 | `env:restore` | Restore from a pending transactional backup |
 | `env:backup:create` | Manual pending backup before hand-editing `.env` |
 
@@ -79,7 +85,7 @@ php artisan env:curate                # apply layout from .env.{profile}.example
 php artisan env:curate --sync-snapshot
 ```
 
-Layout source: **active profile template** (`.env.profile` → `.env.{profile}.example`). Existing values are kept; missing template keys get template defaults; keys only in `.env` are appended under `Extra keys (not in template)`.
+Layout source: **active profile template** (`.env.profile` → `.env.{profile}.example`). Existing **semantic** values are kept; assignment formatting is **normalized** to catalog types (strings always double-quoted; bool/int/null unquoted). Missing template keys get template defaults (also normalized); keys only in `.env` are appended under `Extra keys (not in template)`.
 
 AI agents: the exact phrase **`curate the env`** must use `env:curate` (dry-run first) — never hand-edit `.env` for layout. See [AGENTS.md](../../AGENTS.md).
 
@@ -93,8 +99,9 @@ AI agents: the exact phrase **`curate the env`** must use `env:curate` (dry-run 
 | Snapshot staleness | Editing `.env` does not update `.env.{profile}` until you switch away (save-on-switch) or `env:curate --sync-snapshot` |
 | Duplicate keys in `.env` | Curator uses **last assignment wins** when parsing; duplicate keys in the template emit **duplicate lines** |
 | Orphan keys | Keys in `.env` but not in the profile template are appended under `Extra keys (not in template)` |
+| Typed quoting | Curate normalizes catalog keys to typed quoting; unquoted strings become `"…"` |
 | First switch to a profile | If no snapshot exists, bootstraps from `.env.{profile}.example` (fresh secrets, not a copy of current `.env`) |
-| `jwt:secret` standalone | Not wrapped by the mutation guard; use `key:generate` / guarded commands or `env:backup:create` first |
+| `jwt:secret` standalone | Not wrapped by the mutation guard; writes unquoted values — prefer guarded install/seed or `env:backup:create` then `env:curate` |
 | `env:backup:create` | Creates a pending backup **without** mutating files; blocks other env commands until `--discard` |
 
 ## Config caching
@@ -158,7 +165,7 @@ Operational knobs (JWT TTLs, upload limits, notification delivery, etc.) live in
 
 `VITE_PUSHER_*` in the active `.env` must be **literals** matching `PUSHER_*` (Vite does not expand `${PUSHER_*}` at build time). Blade still injects the runtime Pusher key when notification delivery is realtime; the Vite vars are the JS fallback for Echo construction.
 
-After the env→settings migration, `php artisan env:curate` may leave **orphan** operational keys in a local `.env` (moved to the orphans section) when `.env` still contains Tier B vars removed from templates. Safe to delete them — live values are in `system_settings`. After template sync (`env:curate --sync-snapshot`), a clean local `.env` should show **0 orphans**; do not re-add Tier B keys. Upload proxy vars (`FILE_HOSTING_UPLOAD_PROXY_*`) are **Tier A** and belong in the File Hosting env section (present in [`.env.local.example`](../../.env.local.example)).
+After the env→settings migration, `php artisan env:curate` may leave **orphan** operational keys in a local `.env` (moved to the orphans section) when `.env` still contains Tier B vars removed from templates. Safe to delete them — live values are in `system_settings`. After template sync (`env:curate --sync-snapshot`), a clean local `.env` should show **0 orphans**; do not re-add Tier B keys. Upload proxy vars (`FILE_HOSTING_UPLOAD_PROXY_*`) are **Tier A** and belong as live assignments in the File Hosting env section of **all** templates (empty URL = browser-direct; local profile may ship gateway defaults).
 
 ## Related
 

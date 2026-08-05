@@ -175,13 +175,112 @@ final class EnvironmentVariableCatalog
         };
     }
 
-    private static function isStringValue(string $rawValue): bool
+    /**
+     * Re-emit a parsed assignment value using catalog type rules.
+     * Unknown types (orphan keys) keep bool/int/null literals; otherwise quote as string.
+     */
+    public static function formatRawValue(?string $type, string $rawValue): string
     {
-        if (self::isQuotedString($rawValue)) {
-            return true;
+        $semantic = self::semanticValue($rawValue);
+
+        return match ($type) {
+            self::TYPE_STRING => self::quoteString($semantic),
+            self::TYPE_BOOL => self::formatBool($semantic, $rawValue),
+            self::TYPE_INT => self::formatInt($semantic, $rawValue),
+            self::TYPE_NULL => self::formatNull($semantic),
+            default => self::formatUnknown($rawValue, $semantic),
+        };
+    }
+
+    /**
+     * Strip surrounding double quotes and unescape \" and \\.
+     */
+    public static function semanticValue(string $rawValue): string
+    {
+        if (! self::isQuotedString($rawValue)) {
+            return $rawValue;
         }
 
-        return preg_match('/^[A-Za-z0-9_.${}\/-]+$/', $rawValue) === 1;
+        return self::unescapeQuotedInner(substr($rawValue, 1, -1));
+    }
+
+    private static function unescapeQuotedInner(string $inner): string
+    {
+        $result = '';
+        $length = strlen($inner);
+
+        for ($index = 0; $index < $length; $index++) {
+            if ($inner[$index] === '\\' && $index + 1 < $length) {
+                $next = $inner[$index + 1];
+
+                if ($next === '\\' || $next === '"') {
+                    $result .= $next;
+                    $index++;
+
+                    continue;
+                }
+            }
+
+            $result .= $inner[$index];
+        }
+
+        return $result;
+    }
+
+    private static function quoteString(string $semantic): string
+    {
+        return '"'.str_replace(['\\', '"'], ['\\\\', '\\"'], $semantic).'"';
+    }
+
+    private static function formatBool(string $semantic, string $rawValue): string
+    {
+        $normalized = strtolower($semantic);
+
+        if ($normalized === 'true' || $normalized === 'false') {
+            return $normalized;
+        }
+
+        return $rawValue;
+    }
+
+    private static function formatInt(string $semantic, string $rawValue): string
+    {
+        if (preg_match('/^-?\d+$/', $semantic) === 1) {
+            return $semantic;
+        }
+
+        return $rawValue;
+    }
+
+    private static function formatNull(string $semantic): string
+    {
+        if ($semantic === '' || strtolower($semantic) === 'null') {
+            return 'null';
+        }
+
+        return self::quoteString($semantic);
+    }
+
+    private static function formatUnknown(string $rawValue, string $semantic): string
+    {
+        if ($rawValue === 'true' || $rawValue === 'false') {
+            return $rawValue;
+        }
+
+        if (preg_match('/^-?\d+$/', $rawValue) === 1) {
+            return $rawValue;
+        }
+
+        if ($rawValue === 'null') {
+            return 'null';
+        }
+
+        return self::quoteString($semantic);
+    }
+
+    private static function isStringValue(string $rawValue): bool
+    {
+        return self::isQuotedString($rawValue);
     }
 
     private static function isQuotedString(string $rawValue): bool

@@ -34,14 +34,38 @@ class EnvironmentCuratorEdgeTest extends TestCase
         $this->assertSame('"realtime"', $parsed['APP_NOTIFICATION_TYPE']);
     }
 
-    public function test_i07_unquoted_jwt_secret_preserved_after_curate(): void
+    public function test_i07_unquoted_jwt_secret_normalized_to_quoted_after_curate(): void
     {
-        $template = "JWT_SECRET=\"\"\nAPP_ENV=\"local\"\n";
-        $env = "JWT_SECRET=unquotedSecretValue123\nAPP_ENV=\"local\"\n";
+        $template = "JWT_SECRET=\"\"\nJWT_ALGO=\"HS256\"\nAPP_ENV=\"local\"\n";
+        $env = "JWT_SECRET=unquotedSecretValue123\nJWT_ALGO=HS256\nAPP_ENV=\"local\"\n";
 
         $output = $this->curator->buildCuratedContents($template, $env);
 
-        $this->assertStringContainsString('JWT_SECRET=unquotedSecretValue123', $output);
+        $this->assertStringContainsString('JWT_SECRET="unquotedSecretValue123"', $output);
+        $this->assertStringContainsString('JWT_ALGO="HS256"', $output);
+    }
+
+    public function test_curate_normalizes_quoted_bool_and_int_to_unquoted(): void
+    {
+        $template = "APP_DEBUG=true\nDB_PORT=3306\nAPP_ENV=\"local\"\n";
+        $env = "APP_DEBUG=\"true\"\nDB_PORT=\"3306\"\nAPP_ENV=\"local\"\n";
+
+        $output = $this->curator->buildCuratedContents($template, $env);
+
+        $this->assertStringContainsString('APP_DEBUG=true', $output);
+        $this->assertStringContainsString('DB_PORT=3306', $output);
+        $this->assertStringNotContainsString('APP_DEBUG="true"', $output);
+        $this->assertStringNotContainsString('DB_PORT="3306"', $output);
+    }
+
+    public function test_curate_preserves_escaped_quotes_inside_strings(): void
+    {
+        $template = "APP_NAME=\"Laravel\"\n";
+        $env = "APP_NAME=\"My \\\"App\\\"\"\n";
+
+        $output = $this->curator->buildCuratedContents($template, $env);
+
+        $this->assertStringContainsString('APP_NAME="My \\"App\\""', $output);
     }
 
     public function test_i08_template_adds_pusher_host_when_missing_from_env(): void

@@ -104,7 +104,10 @@ class EnvironmentCurator
             if ($parsed !== null) {
                 $templateKeys[$parsed['name']] = true;
                 $rawValue = $values[$parsed['name']] ?? $parsed['raw_value'];
-                $lines[] = $parsed['name'].'='.$rawValue;
+                $lines[] = $parsed['name'].'='.EnvironmentVariableCatalog::formatRawValue(
+                    EnvironmentVariableCatalog::type($parsed['name']),
+                    $rawValue,
+                );
 
                 continue;
             }
@@ -124,7 +127,10 @@ class EnvironmentCurator
             $lines[] = '# Keys present in .env but not in the profile template.';
 
             foreach ($orphans as $key) {
-                $lines[] = $key.'='.$values[$key];
+                $lines[] = $key.'='.EnvironmentVariableCatalog::formatRawValue(
+                    EnvironmentVariableCatalog::type($key),
+                    $values[$key],
+                );
             }
         }
 

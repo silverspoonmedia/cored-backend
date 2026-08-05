@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use InvalidArgumentException;
 use RuntimeException;
@@ -300,11 +299,7 @@ class EnvironmentProfileManager
     private function fillEmptySecrets(string $envPath): void
     {
         if ($this->jwtSecretIsEmpty($envPath)) {
-            if (realpath($envPath) === realpath($this->envPath())) {
-                Artisan::call('jwt:secret', ['--force' => true]);
-            } else {
-                $this->writeJwtSecret($envPath);
-            }
+            $this->writeJwtSecret($envPath);
         }
 
         $this->keyWriter->writeBlindIndexPepperIfEmpty($envPath);
