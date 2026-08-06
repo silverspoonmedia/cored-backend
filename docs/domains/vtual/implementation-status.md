@@ -61,13 +61,16 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Channel profile normalize** | UC… / `@handle` / URL → canonical `external_id` + handle | `ChannelProfileResolver`, `ChannelProfileResolverTest` |
 | **Channel snapshot columns** | `description`, `avatar_url`, `banner_url`, `platform_created_at` on create/refresh apply | migration `…_add_profile_columns_to_vtual_channels`, `ChannelService` |
 | **Creator claim Existing** | Orphan claim via bio token; Accept Anyway; race → `superseded`; audit rows kept | `CreatorClaimService`, `vtual_creator_claims`, `CreatorClaimServiceTest` |
-| **Staff registry UX** | Orphan seed + pending claims; claimant on detail; platform on proof channel | `/apps/vtual/admin/registry`, `CreatorClaimController` (web) |
+| **Staff registry UX** | Orphan seed + pending claims; claimant on detail; platform on proof channel | `/apps/vtual/admin/registry`, `AdminRegistryController` (web) |
 | **User claim UX** | Claimable list + my claims | `/apps/vtual/claims` |
-| **Channel dual path** | Staff: instant `seedForStaff` active. Owner: `ChannelClaim` + bio / Accept Anyway → `activateFromDto` | `ChannelClaimService`, `ChannelService`, `ChannelClaimServiceTest`, `ChannelServiceTest` |
+| **Channel dual path** | Staff POST channel: deferred `registerPendingForStaff` (pending + batch resolve). Owner: `ChannelClaim` + bio / Accept Anyway → `activateFromDto`. `seedForStaff` kept for instant bind paths. | `ChannelClaimService`, `ChannelService`, `ChannelRegistrationFlushService`, tests |
+| **Orphan admin UX** | `/apps/vtual/orphans`: minimal create (prefixed slug), redirect to edit, channel registration on edit | `OrphanVtuberController`, `vtual-orphans` views, `OrphanVtuberWebTest` |
+| **Platform credentials UI** | `/apps/vtual/platform-credentials`: platform index table + per-platform CRUD + API probe | `PlatformCredentialController`, `PlatformApiProbeController`, `vtual-platform-credentials` views, `PlatformCredentialWebTest` |
 | **My profiles manage** | List bound profiles; edit meta; external links CRUD; channel claims + active/archived channels | `/apps/vtual/profiles`, `CreatorProfileController`, `ExternalLinkService` |
 | **Profile merge (absorb)** | Same-owner or manage-any; move channels/links/contents/appearances; cancel pendings `merged`; archive source + slug mangle | `CreatorMergeService`, `POST creators/{id}/merge`, `CreatorMergeServiceTest` |
 | **Channel archive / restore** | Soft hide `archived`; list archived; restore → `active` | `ChannelService::archive` / `restore`, `ChannelServiceTest` |
 | **Channel fetch pool** | Non-interactive refresh + scheduled resync; flush at **50** ids **or** **15 min** age; single lock/claim flusher | `ChannelFetchPoolService`, `vtual:flush-channel-pool`, schedule in `routes/console.php`, `ChannelFetchPoolServiceTest` |
+| **Channel registration pool** | Staff pending channel adds; same 50 / 15m gate per platform; flushed before fetch pool in `vtual:flush-channel-pool` | `ChannelRegistrationFlushService`, `profile_input` on `vtual_channels`, `ChannelRegistrationFlushServiceTest` |
 | **Content model foundation** | Primary host + appearances; explicit attach; no auto collab from API | `ContentService`, appearances migration, README content section |
 | **Error logging** | Platform HTTP failures can log to ErrorLog | platform client / gateway error path + docs |
 | **i18n** | en / id / ja for API + web vtual strings | `lang/*/api/vtual.php`, `lang/*/web/vtual.php` |
@@ -80,7 +83,8 @@ Representative suite under `tests/Domain/Vtual/`:
 | Test | Focus |
 |------|--------|
 | `ChannelFetchPoolServiceTest` | Threshold / age / force / coalesce / single HTTP |
-| `ChannelServiceTest` | Staff seed, activate, refresh enqueues pool, archive/restore |
+| `ChannelRegistrationFlushServiceTest` | Staff pending registration: 50/platform flush, 15m age, cross-platform isolation |
+| `ChannelServiceTest` | Staff pending register, seedForStaff, activate, refresh enqueues pool, archive/restore |
 | `ChannelClaimServiceTest` | Bio verify attach |
 | `CreatorClaimServiceTest` | Orphan claim, supersede, Accept Anyway |
 | `CreatorMergeServiceTest` | Absorb, clash, staff orphans |
@@ -104,7 +108,7 @@ Mapped to original TASK / product vision. **Do not treat as bugs** unless a mile
 | **Twitch EventSub** | Not implemented | Same |
 | **Live CCV / multi-stream session** | Not implemented | `fetchStreamsByUserIds` exists for future workers |
 | **Video / stream fetch pool** | Not implemented | Only **channel** external_id pool exists |
-| **Pool interactive paths** | Out of scope by design | Claim start, bio verify, staff seed, handle resolve stay **sync** single-call |
+| **Pool interactive paths** | Out of scope by design | Claim start, bio verify, Accept Anyway resolve stay **sync** single-call; staff channel POST is **deferred** (not sync) |
 | **Auto appearance discovery** | Cancelled by design | Platform APIs lack safe multi-channel collab list |
 | **Management product UI** | Not implemented | Schema/API skeleton only; no staff talent-org UI |
 | **Viewer-only until claim** | Partial | Ideal: User cannot self-create creator until claim; API `POST creators` still exists for legacy |
@@ -142,7 +146,7 @@ Not a commitment — default backlog for the next sessions:
 | Platform filter | `--platform=youtube` or `twitch` |
 | Schedule | `routes/console.php`: every minute `vtual:flush-channel-pool`; hourly `--resync` (needs `schedule:work` / cron) |
 | Admin probe | `/apps/vtual/admin/platform-api-probe` (Root/Admin) |
-| Credentials UI | `/apps/vtual/admin/platform-credentials` |
+| Credentials UI | `/apps/vtual/platform-credentials` |
 | Registry / pending claims | `/apps/vtual/admin/registry` |
 | My profiles | `/apps/vtual/profiles` |
 | Build Vite assets (after JS/CSS change) | `npm run build` |
@@ -176,6 +180,9 @@ High-level order of work that landed in this long implementation arc (not exhaus
 9. Channel fetch pool (50 / 15m) + artisan/schedule  
 10. This status doc + README gap close  
 11. Web UI/UX overhaul — AJAX forms, Bootstrap modal confirmations, WCAG 2.1 AA, partial extraction, dead code removal, respondFromApi refactor  
+12. Internal vs external surface split — separate routes (`vtual.php` / `vtual-admin.php`), nav partials (`nav-app` / `nav-admin`), Administration menu branch (Root/Admin/Moderator)  
+13. Admin UI polish — registry stats + DataTable pending queue; credentials intro/stats/platform cards; per-platform credentials CRUD split (create/edit pages, shared `_form`, client-side DataTable index)  
+14. **Web UI reset** — archive all legacy Blade (external + internal); new `/apps/vtual/orphans` staff CRUD (users-pattern DataTable + create/edit); API `GET creators/orphans`  
 
 ---
 

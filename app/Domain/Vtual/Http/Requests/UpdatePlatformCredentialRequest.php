@@ -2,11 +2,9 @@
 
 namespace App\Domain\Vtual\Http\Requests;
 
-use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
 use App\Domain\Vtual\Models\PlatformCredential;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdatePlatformCredentialRequest extends FormRequest
@@ -24,8 +22,6 @@ class UpdatePlatformCredentialRequest extends FormRequest
         return [
             'label' => ['sometimes', 'string', 'max:120'],
             'priority' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:999999'],
-            // Promoting to active is blocked in service unless already active (keep).
-            'status' => ['sometimes', 'string', Rule::in(PlatformCredentialStatus::values())],
             'secret' => ['sometimes', 'array'],
             'secret.api_key' => ['nullable', 'string', 'max:4096'],
             'secret.client_id' => ['nullable', 'string', 'max:4096'],

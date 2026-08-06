@@ -47,7 +47,7 @@ Declared in `config/products.php`:
         'vtual.index',
         'vtual.profiles.index',
         'vtual.claims.index',
-        'vtual.claims.staff',
+        'vtual.admin.registry',
         'vtual.admin.credentials.index',
     ],
 ],

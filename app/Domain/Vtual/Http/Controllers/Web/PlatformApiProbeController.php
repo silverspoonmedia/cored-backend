@@ -14,7 +14,6 @@ use Throwable;
 
 /**
  * Browser probe for PlatformApiGateway. Root/Admin only (manage credential perm).
- * Prefer API for automation; this page is for manual smoke tests.
  */
 class PlatformApiProbeController extends Controller
 {
@@ -24,7 +23,7 @@ class PlatformApiProbeController extends Controller
 
     public function show(Request $request): View
     {
-        return $this->webView('vtual.admin.platform-api-probe', [
+        return $this->webView('vtual.platform-credentials.probe', [
             'methods' => PlatformApiProbeService::METHODS,
             'resultJson' => null,
             'error' => null,
@@ -53,7 +52,7 @@ class PlatformApiProbeController extends Controller
                 ], $e->statusCode());
             }
 
-            return $this->webView('vtual.admin.platform-api-probe', [
+            return $this->webView('vtual.platform-credentials.probe', [
                 'methods' => PlatformApiProbeService::METHODS,
                 'resultJson' => null,
                 'error' => $e->getMessage(),
@@ -69,7 +68,7 @@ class PlatformApiProbeController extends Controller
                 ], 500);
             }
 
-            return $this->webView('vtual.admin.platform-api-probe', [
+            return $this->webView('vtual.platform-credentials.probe', [
                 'methods' => PlatformApiProbeService::METHODS,
                 'resultJson' => null,
                 'error' => $message,
@@ -85,7 +84,7 @@ class PlatformApiProbeController extends Controller
             ]);
         }
 
-        return $this->webView('vtual.admin.platform-api-probe', [
+        return $this->webView('vtual.platform-credentials.probe', [
             'methods' => PlatformApiProbeService::METHODS,
             'resultJson' => json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             'error' => null,

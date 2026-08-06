@@ -82,14 +82,18 @@
                 showMessage(alertEl, data.message, 'danger');
             }
 
-            document.dispatchEvent(new CustomEvent('ajax-form:invalid'));
+            document.dispatchEvent(new CustomEvent('ajax-form:invalid', {
+                detail: { data: data, form: form, message: data.message },
+            }));
 
             return { handled: true, invalid: true };
         }
 
         if (response.status === 422 && data.message) {
             showMessage(alertEl, data.message, 'danger');
-            document.dispatchEvent(new CustomEvent('ajax-form:invalid'));
+            document.dispatchEvent(new CustomEvent('ajax-form:invalid', {
+                detail: { data: data, form: form, message: data.message },
+            }));
 
             return { handled: true, invalid: true };
         }

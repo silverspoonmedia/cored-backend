@@ -3,6 +3,7 @@
 namespace Tests\Domain\Vtual\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Models\PlatformCredential;
 use App\Domain\Vtual\Services\PlatformService;
@@ -291,30 +292,53 @@ class PlatformCredentialApiTest extends TestCase
     }
 
     #[Test]
-    public function disable_and_delete(): void
+    public function delete_pending_and_revoke_active_then_delete(): void
     {
         $admin = $this->userWithRole('Admin');
         $this->activations->activateImplicit($admin, 'Vtual');
 
-        $created = $this->actingAsJwt($admin)
+        $pending = $this->actingAsJwt($admin)
             ->postJson('/api/v1/vtual/admin/platforms/'.$this->youtube->id.'/credentials', [
-                'label' => 'yt-del',
+                'label' => 'yt-del-pending',
                 'type' => 'api_key',
-                'secret' => ['api_key' => 'to-delete-9999'],
+                'secret' => ['api_key' => 'to-delete-pending-99'],
             ])
             ->assertCreated()
             ->json('data');
 
         $this->actingAsJwt($admin)
-            ->postJson('/api/v1/vtual/admin/credentials/'.$created['id'].'/disable')
-            ->assertOk()
-            ->assertJsonPath('data.status', 'disabled');
-
-        $this->actingAsJwt($admin)
-            ->deleteJson('/api/v1/vtual/admin/credentials/'.$created['id'])
+            ->deleteJson('/api/v1/vtual/admin/credentials/'.$pending['id'])
             ->assertOk();
 
-        $this->assertDatabaseMissing('vtual_platform_credentials', ['id' => $created['id']]);
+        $this->assertDatabaseMissing('vtual_platform_credentials', ['id' => $pending['id']]);
+
+        $active = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/admin/platforms/'.$this->youtube->id.'/credentials', [
+                'label' => 'yt-revoke',
+                'type' => 'api_key',
+                'secret' => ['api_key' => 'to-revoke-active-88'],
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        \App\Domain\Vtual\Models\PlatformCredential::query()
+            ->whereKey($active['id'])
+            ->update(['status' => PlatformCredentialStatus::Active->value]);
+
+        $this->actingAsJwt($admin)
+            ->deleteJson('/api/v1/vtual/admin/credentials/'.$active['id'])
+            ->assertStatus(422);
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/admin/credentials/'.$active['id'].'/revoke')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'revoked');
+
+        $this->actingAsJwt($admin)
+            ->deleteJson('/api/v1/vtual/admin/credentials/'.$active['id'])
+            ->assertOk();
+
+        $this->assertDatabaseMissing('vtual_platform_credentials', ['id' => $active['id']]);
     }
 
     private function actingAsJwt(User $user): static

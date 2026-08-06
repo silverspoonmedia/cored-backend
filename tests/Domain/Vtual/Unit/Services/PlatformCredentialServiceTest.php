@@ -85,11 +85,49 @@ class PlatformCredentialServiceTest extends TestCase
         $this->assertNotNull($picked);
         $this->assertSame($high->id, $picked->id);
 
-        $this->service->disable($high);
+        $this->service->revoke($high);
         $pickedAfter = $this->service->pickActive($this->youtube);
         $this->assertNotNull($pickedAfter);
         $this->assertSame($low->id, $pickedAfter->id);
-        $this->assertSame(PlatformCredentialStatus::Disabled, $high->fresh()->status);
+        $this->assertSame(PlatformCredentialStatus::Revoked, $high->fresh()->status);
+    }
+
+    #[Test]
+    public function update_on_active_credential_demotes_to_pending(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $credential = $this->service->create($admin, $this->youtube, [
+            'label' => 'yt-active-edit',
+            'type' => PlatformCredentialType::ApiKey->value,
+            'secret' => ['api_key' => 'active-edit-key-1234'],
+        ]);
+        $credential->forceFill([
+            'status' => PlatformCredentialStatus::Active,
+            'verified_at' => now(),
+        ])->save();
+
+        $updated = $this->service->update($credential, [
+            'label' => 'yt-active-edit-renamed',
+        ]);
+
+        $this->assertSame('yt-active-edit-renamed', $updated->label);
+        $this->assertSame(PlatformCredentialStatus::Pending, $updated->status);
+        $this->assertNull($updated->verified_at);
+    }
+
+    #[Test]
+    public function delete_active_requires_revoke_first(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $credential = $this->service->create($admin, $this->youtube, [
+            'label' => 'yt-no-hard-delete',
+            'type' => PlatformCredentialType::ApiKey->value,
+            'secret' => ['api_key' => 'no-delete-active-99'],
+        ]);
+        $credential->forceFill(['status' => PlatformCredentialStatus::Active])->save();
+
+        $this->expectException(\App\Domain\Vtual\Exceptions\VtualException::class);
+        $this->service->delete($credential);
     }
 
     #[Test]

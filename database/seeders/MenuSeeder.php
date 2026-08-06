@@ -91,6 +91,7 @@ class MenuSeeder extends Seeder
     {
         $managementRoles = ['Root', 'Admin', 'Moderator', 'Management'];
         $adminRoles = ['Root', 'Admin'];
+        $internalStaffRoles = config('vtual.internal_web_roles', ['Root', 'Admin', 'Moderator']);
 
         return [
             [
@@ -145,46 +146,6 @@ class MenuSeeder extends Seeder
                                 'route' => 'file-hosting.blocklist.index',
                                 'type' => 'c',
                                 'roles' => [...$managementRoles, 'File Hosting Admin'],
-                            ],
-                        ],
-                    ],
-                    [
-                        'name' => $this->translations('vTual', 'vTual', 'vTual'),
-                        'icon' => 'bi bi-broadcast',
-                        'route' => 'vtual.index',
-                        'type' => 'p',
-                        'children' => [
-                            [
-                                'name' => $this->translations('Overview', 'Ringkasan', '概要'),
-                                'icon' => 'bi bi-house',
-                                'route' => 'vtual.index',
-                                'type' => 'c',
-                            ],
-                            [
-                                'name' => $this->translations('My profiles', 'Profil saya', 'マイプロフィール'),
-                                'icon' => 'bi bi-person-badge',
-                                'route' => 'vtual.profiles.index',
-                                'type' => 'c',
-                            ],
-                            [
-                                'name' => $this->translations('Claim as vTuber', 'Klaim sebagai vTuber', 'vTuber としてクレーム'),
-                                'icon' => 'bi bi-person-check',
-                                'route' => 'vtual.claims.index',
-                                'type' => 'c',
-                            ],
-                            [
-                                'name' => $this->translations('Registry & pending', 'Registri & tertunda', '登録・保留'),
-                                'icon' => 'bi bi-inbox',
-                                'route' => 'vtual.claims.staff',
-                                'type' => 'c',
-                                'roles' => [...$managementRoles, 'Vtual Admin'],
-                            ],
-                            [
-                                'name' => $this->translations('Platform credentials', 'Kredensial platform', 'プラットフォーム認証情報'),
-                                'icon' => 'bi bi-key',
-                                'route' => 'vtual.admin.credentials.index',
-                                'type' => 'c',
-                                'roles' => $adminRoles,
                             ],
                         ],
                     ],
@@ -312,6 +273,29 @@ class MenuSeeder extends Seeder
                                 'name' => $this->translations('Error log', 'Log Error', 'エラーログ'),
                                 'icon' => 'bi bi-bug',
                                 'route' => 'error-logs.index',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => $this->translations('vTual', 'vTual', 'vTual'),
+                        'icon' => 'bi bi-broadcast',
+                        'route' => 'vtual.orphans.index',
+                        'type' => 'p',
+                        'roles' => $internalStaffRoles,
+                        'children' => [
+                            [
+                                'name' => $this->translations('Orphan vTubers', 'vTuber yatim', '未クレーム vTuber'),
+                                'icon' => 'bi bi-person-plus',
+                                'route' => 'vtual.orphans.index',
+                                'type' => 'c',
+                                'roles' => $internalStaffRoles,
+                            ],
+                            [
+                                'name' => $this->translations('Platform credentials', 'Kredensial platform', 'プラットフォーム認証情報'),
+                                'icon' => 'bi bi-key',
+                                'route' => 'vtual.platform-credentials.index',
                                 'type' => 'c',
                                 'roles' => $adminRoles,
                             ],

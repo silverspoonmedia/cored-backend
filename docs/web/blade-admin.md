@@ -61,7 +61,7 @@ Web forwards raw input (except `_token`/`_method`); **API validates**. Never cal
 
 | Status | UX |
 |--------|-----|
-| 422 + errors | Inline fields + alert; `ajax-form:invalid` |
+| 422 + errors | Inline fields + alert; `ajax-form:invalid` with `detail: { data, form, message }`; `ajax-form:complete` fires in `finally` after every submit |
 | **401** (auth death) | Flash `web/session.expired` + redirect login |
 | CSRF **419** (web) | `reload: true` after alert — **not** treated as auth logout |
 | 403/5xx | Message alert (do **not** clear `auth_token`) |

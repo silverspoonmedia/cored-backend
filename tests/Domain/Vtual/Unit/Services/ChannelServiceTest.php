@@ -19,6 +19,7 @@ use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
@@ -60,6 +61,89 @@ class ChannelServiceTest extends TestCase
         $this->admin = $this->userWithRole('Admin');
         $this->youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
         $this->twitch = Platform::query()->where('key', 'twitch')->firstOrFail();
+    }
+
+    #[Test]
+    public function register_pending_for_staff_stores_profile_without_http(): void
+    {
+        $httpCalls = 0;
+        Http::fake(function () use (&$httpCalls) {
+            $httpCalls++;
+
+            return Http::response([], 404);
+        });
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Orphan Pending']);
+
+        $channel = $this->channels->registerPendingForStaff($this->admin, $orphan->id, [
+            'platform_key' => 'youtube',
+            'profile' => '@stream',
+        ]);
+
+        $this->assertSame(0, $httpCalls);
+        $this->assertSame(ChannelStatus::Pending, $channel->status);
+        $this->assertSame('@stream', $channel->profile_input);
+        $this->assertStringStartsWith('pending:', $channel->external_id);
+    }
+
+    #[Test]
+    public function register_pending_rejects_youtube_url_when_twitch_selected(): void
+    {
+        Http::fake(fn () => Http::response([], 404));
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Mismatch Orphan']);
+
+        $this->expectException(ValidationException::class);
+        $this->channels->registerPendingForStaff($this->admin, $orphan->id, [
+            'platform_key' => 'twitch',
+            'profile' => 'https://www.youtube.com/@AizawaEma',
+        ]);
+    }
+
+    #[Test]
+    public function register_pending_rejects_twitch_url_when_youtube_selected(): void
+    {
+        Http::fake(fn () => Http::response([], 404));
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Mismatch Orphan 2']);
+
+        $this->expectException(ValidationException::class);
+        $this->channels->registerPendingForStaff($this->admin, $orphan->id, [
+            'platform_key' => 'youtube',
+            'profile' => 'https://www.twitch.tv/ludwig',
+        ]);
+    }
+
+    #[Test]
+    public function register_pending_rejects_duplicate_profile_on_same_creator(): void
+    {
+        Http::fake(fn () => Http::response([], 404));
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Dup Orphan']);
+
+        $this->channels->registerPendingForStaff($this->admin, $orphan->id, [
+            'platform_key' => 'youtube',
+            'profile' => 'https://www.youtube.com/@AizawaEma',
+        ]);
+
+        $this->expectException(ValidationException::class);
+        $this->channels->registerPendingForStaff($this->admin, $orphan->id, [
+            'platform_key' => 'youtube',
+            'profile' => '@AizawaEma',
+        ]);
+    }
+
+    #[Test]
+    public function register_pending_for_staff_rejects_non_staff(): void
+    {
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Owned']);
+
+        $this->expectException(VtualException::class);
+        $this->channels->registerPendingForStaff($user, $creator->id, [
+            'platform_key' => 'youtube',
+            'profile' => self::YT_ID,
+        ]);
     }
 
     #[Test]

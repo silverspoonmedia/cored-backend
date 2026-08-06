@@ -93,7 +93,6 @@ class PlatformCredentialService
      * @param  array{
      *     label?: string|null,
      *     priority?: int|null,
-     *     status?: string|null,
      *     secret?: array<string, mixed>|null
      * }  $data
      */
@@ -112,26 +111,18 @@ class PlatformCredentialService
                 $locked->priority = max(0, (int) $data['priority']);
             }
 
-            if (array_key_exists('status', $data) && $data['status'] !== null) {
-                $newStatus = PlatformCredentialStatus::from((string) $data['status']);
-                // Admin cannot promote to active without Test — only disable/revoke/pending.
-                if ($newStatus === PlatformCredentialStatus::Active && $locked->status !== PlatformCredentialStatus::Active) {
-                    throw new VtualException(__('api/vtual.credential.status_active_requires_test'), 422);
-                }
-                $locked->status = $newStatus;
-            }
-
             if (array_key_exists('secret', $data) && is_array($data['secret']) && $data['secret'] !== []) {
                 $type = $locked->type;
                 $payload = PlatformCredentialSecrets::normalizePayload($type, $data['secret']);
                 $locked->secret_payload = $payload;
                 $locked->secret_fingerprint = PlatformCredentialSecrets::fingerprint($type, $payload);
                 $locked->secret_hint = PlatformCredentialSecrets::hint($type, $payload);
-                // Secret rotate → must re-Test.
-                $locked->status = PlatformCredentialStatus::Pending;
-                $locked->runtime_payload = null;
-                $locked->verified_at = null;
             }
+
+            // Any edit demotes to pending — must re-Test before workers use it again.
+            $locked->status = PlatformCredentialStatus::Pending;
+            $locked->verified_at = null;
+            $locked->runtime_payload = null;
 
             $locked->save();
 
@@ -139,15 +130,33 @@ class PlatformCredentialService
         });
     }
 
-    public function disable(PlatformCredential $credential): PlatformCredential
+    public function revoke(PlatformCredential $credential): PlatformCredential
     {
-        return $this->update($credential, [
-            'status' => PlatformCredentialStatus::Disabled->value,
-        ]);
+        if ($credential->status !== PlatformCredentialStatus::Active) {
+            throw new VtualException(__('api/vtual.credential.revoke_requires_active'), 422);
+        }
+
+        return DB::transaction(function () use ($credential): PlatformCredential {
+            $locked = PlatformCredential::query()->whereKey($credential->id)->lockForUpdate()->firstOrFail();
+
+            $locked->status = PlatformCredentialStatus::Revoked;
+            $locked->runtime_payload = null;
+            $locked->consecutive_auth_failures = 0;
+            $locked->failover_skip_until = null;
+            $locked->save();
+
+            $this->invalidateDecryptCache($locked);
+
+            return $locked->load('platform');
+        });
     }
 
     public function delete(PlatformCredential $credential): void
     {
+        if ($credential->status === PlatformCredentialStatus::Active) {
+            throw new VtualException(__('api/vtual.credential.delete_requires_revoke'), 422);
+        }
+
         $this->invalidateDecryptCache($credential);
         $credential->delete();
     }
@@ -184,7 +193,7 @@ class PlatformCredentialService
     {
         $credential->loadMissing('platform');
 
-        if (in_array($credential->status, [PlatformCredentialStatus::Disabled, PlatformCredentialStatus::Revoked], true)) {
+        if ($credential->status === PlatformCredentialStatus::Revoked) {
             throw new VtualException(__('api/vtual.credential.test_not_allowed_status'), 422);
         }
 

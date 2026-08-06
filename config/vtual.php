@@ -4,6 +4,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Internal web audience (core platform staff)
+    |--------------------------------------------------------------------------
+    |
+    | Root / Admin / Moderator — gates vTual admin Blade routes and menu branch.
+    |
+    */
+
+    'internal_web_roles' => ['Root', 'Admin', 'Moderator'],
+
+    /*
+    |--------------------------------------------------------------------------
     | Platform credential test / runtime tokens
     |--------------------------------------------------------------------------
     |

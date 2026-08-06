@@ -1,6 +1,6 @@
 # vTual — product domain
 
-Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and admin Blade surfaces. **Scheduled content ingestion** (live/VOD poll workers) and **push** (WebSub / EventSub) remain deferred — see [implementation-status.md](implementation-status.md).
+Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Web UI reset (2026-08):** legacy Blade product/admin UIs are [archived](ui-archive.md); active web is internal **orphan vTuber** admin only. **Scheduled content ingestion** (live/VOD poll workers) and **push** (WebSub / EventSub) remain deferred — see [implementation-status.md](implementation-status.md).
 
 | | |
 |--|--|
@@ -8,10 +8,10 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Config | [`config/products.php`](../../../config/products.php) key `Vtual` · [`config/vtual.php`](../../../config/vtual.php) |
 | Registry | [`config/domains.php`](../../../config/domains.php) `Vtual` product locked |
 | API | `routes/api/v1/vtual.php` |
-| Web | `routes/web/vtual.php` under `/apps/*` → **`/apps/vtual`** (route names `vtual.*`) |
+| Web | `routes/web/vtual-orphans.php` → **`/apps/vtual/orphans`** (`vtual.orphans.*`); `routes/web/vtual-platform-credentials.php` → **`/apps/vtual/platform-credentials`** (`vtual.platform-credentials.*`, Root/Admin). Archived: [ui-archive.md](ui-archive.md) |
 | Seeder | `VtualRoleSeeder` (after core `RoleSeeder`; also seeds platforms) |
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
-| Menu visibility | Parent `vtual.index` plus exact mapped children (`vtual.profiles.index`, `vtual.claims.index`, `vtual.claims.staff`, `vtual.admin.credentials.index`); Domain Access and activation stack across the branch |
+| Menu visibility | Administration → **vTual** → Orphan vTubers (`vtual.orphans.index`, Root/Admin/Moderator) + Platform credentials (`vtual.platform-credentials.index`, Root/Admin). Mapped in `config/products.php` `menu_routes` |
 | Progress tracker | [implementation-status.md](implementation-status.md) — done / not done / next |
 | Legacy audit | [archive/vtual-legacy-audit.md](../../archive/vtual-legacy-audit.md) |
 
@@ -28,7 +28,8 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Creator assignment | `vtual_management_creators` with `joined_at` / `left_at` (historical leave without hard delete). |
 | Platform | Seeded catalog: youtube, twitch, **kick** (kick `enabled = false`). |
 | Platform credential | Child table `vtual_platform_credentials`: multi-key per platform, envelope-encrypted `secret_payload`, mask-only API. |
-| Channel | External channel on a creator; unique `(platform_id, external_id)`. **Dual path on** `POST creators/{id}/channels`: (1) **Staff** (`manage any vtual resource`) → `ChannelService::seedForStaff` resolve + insert **active** immediately (orphan proof-channel seed; no claim row). (2) **Owner/editor** → `ChannelClaimService::start` pending + bio token; verify / Accept Anyway → `activateFromDto`. Snapshot: `description`, `avatar_url`, `banner_url`, `platform_created_at`. Refresh **enqueues** channel fetch pool (batch 50 / max wait 15m); soft remove = **`archived`**; **restore** returns archived → **active** (no auto re-fetch). |
+| Channel | External channel on a creator; unique `(platform_id, external_id)`. **Dual path on** `POST creators/{id}/channels`: (1) **Staff** (`manage any vtual resource`) → `ChannelService::registerPendingForStaff` stores raw `profile_input` as **pending** (no immediate API resolve); batch activation via `ChannelRegistrationFlushService` (50 per platform or 15 min). (2) **Owner/editor** → `ChannelClaimService::start` pending claim + bio token; verify / Accept Anyway → `activateFromDto`. `seedForStaff` remains for instant bind paths (e.g. Accept Anyway). Snapshot: `description`, `avatar_url`, `banner_url`, `platform_created_at`. Refresh **enqueues** channel fetch pool (batch 50 / max wait 15m); soft remove = **`archived`**; **restore** returns archived → **active** (no auto re-fetch). |
+| Channel registration pool | Staff orphan channel adds: pending rows with `profile_input` + placeholder `external_id` (`pending:{uuid}`). Same threshold/wait as fetch pool, per platform. Flushed by `vtual:flush-channel-pool` (registration phase before fetch pool). |
 | Content | Canonical platform item (`vtual_contents`): **one row** per `(platform_id, external_id)`. `channel_id`/`creator_id` = **primary host** (API truth). Extra channels via **appearances** — not multi-ownership. Sync workers still foundation-only. Content manage UI **out of scope** this phase. |
 | External links | Morph `vtual_external_links` for creator (and management) social/donation/website URLs. Creator-scoped CRUD via `ExternalLinkService` + API under `/creators/{id}/links` and `/links/{id}`. |
 | Profile merge | Absorb source Creator into destination (same owner or manage-any). Source archived. See [Profile merge](#profile-merge-absorb--implemented). |
@@ -77,23 +78,17 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 
 **Not claimable:** creators that already have an `owner` member. Double-owner race fails hard (no silent steal).
 
-**Web surfaces (split):**
+**Web surfaces:**
 
 | Surface | Route | Audience |
 |---------|-------|----------|
-| Overview hub | `/apps/vtual` | All product users — creators list + "Where to go" cards |
-| My vTuber profiles | `/apps/vtual/profiles` | Membership list (staff with view/manage any: all active); Manage CTA |
-| Manage profile | `/apps/vtual/profiles/{id}` | Edit profile meta, external links CRUD, channel add / verify-refresh / archive. Content section stub only. Legacy `/apps/vtual/creators/{id}` uses same controller. |
-| Claim as vTuber | `/apps/vtual/claims` | Users — claimable list + my pending; **no** orphan create, **no** management |
-| Registry + pending | `/apps/vtual/admin/registry` | Staff — orphan seed + pending claims table (platform + handle on proof channel; **Claim expires** = request TTL) + Accept Anyway |
-| Claim detail | `/apps/vtual/claims/{id}` | Claimant or staff — shows **Claimant name/email** before Accept Anyway bypass |
-| Platform credentials | `/apps/vtual/admin/platform-credentials` | Root/Admin |
+| Orphan vTubers (staff) | `/apps/vtual/orphans` | Internal (Root/Admin/Moderator) — claimable profiles only; users-pattern DataTable + CRUD |
+| Platform credentials | `/apps/vtual/platform-credentials` | Root/Admin — platform index table + per-platform credential CRUD; API probe at `/probe` |
+| *Archived* | hub, profiles, claims, registry, credentials, probe | See [ui-archive.md](ui-archive.md) |
 
 **Privacy:** Manage UI never shows "same User owns these profiles" to third parties. List scope is actor-accessible only.
 
-**In-page nav:** shared partial `resources/views/adminlte4/vtual/partials/nav.blade.php` (Overview / My profiles / Claim / Registry / Credentials).
-
-**Sidebar:** Products → **vTual** parent stores `vtual.index` in the DB (Domain Access + activation ancestor gates) and exposes Overview, My profiles, Claim as vTuber, Registry & pending (Root/Admin/Moderator/Management/Vtual Admin), and Platform credentials (Root/Admin). While children are visible, the presented tree masks the parent to `#` (expand-only); if every child is pruned, the stored route is shown again. `MenuSeeder` authoritatively rebuilds all menu rows and flushes cache after commit. Before a standalone rebuild, seed `RoleSeeder`, `FileHostingRoleSeeder`, and `VtualRoleSeeder`; see [Navigation — Authoritative seeding](../navigation/README.md#authoritative-seeding). Platform API Probe remains a live Root/Admin tool linked from credentials, but it is intentionally not a dynamic-menu node.
+**Sidebar:** Administration → **vTual** (`vtual.orphans.index`): Orphan vTubers (Root/Admin/Moderator); Platform credentials (Root/Admin). Legacy external/internal Blade UIs archived — see [ui-archive.md](ui-archive.md).
 
 **Out of scope (claim UI phase leftovers):** management product UI, survey form, **Add New** approval queue, appeal / permanent reject, OAuth login proof, auto-purge of old cancelled rows, stripping core `User` `create vtual creator` (API legacy self-create still exists; staff Blade seeds orphans only).
 
@@ -139,11 +134,8 @@ Canonical content is **not** multi-owned. Same platform video may **appear** on 
     'activation_type' => 'implicit',
     'fulfillment_target' => null,
     'menu_routes' => [
-        'vtual.index',
-        'vtual.profiles.index',
-        'vtual.claims.index',
-        'vtual.claims.staff',
-        'vtual.admin.credentials.index',
+        'vtual.orphans.index',
+        'vtual.platform-credentials.index',
     ],
 ],
 ```
@@ -217,7 +209,7 @@ Multi-credential child of `vtual_platforms` for future YouTube/Twitch sync rotat
 | `secret_fingerprint` | HMAC blind index of canonical admin payload (not reversible) |
 | `secret_hint` | Last 4 of primary secret field (safe to show) |
 | `priority` | Lower preferred for `pickActive()` (default 100) |
-| `status` | `pending` \| `active` \| `disabled` \| `revoked` |
+| `status` | `pending` \| `active` \| `revoked` |
 | `verified_at` | Set on successful manual Test |
 | `last_used_at` / `last_error_*` | Workers + Test |
 
@@ -227,9 +219,11 @@ Multi-credential child of `vtual_platforms` for future YouTube/Twitch sync rotat
 2. Workers / `pickActive()` ignore pending.
 3. Admin presses **Test** (`POST .../credentials/{id}/test`) → platform probe.
 4. Success → `active`, `verified_at=now()`, clear errors; Twitch `oauth_app` also writes `runtime_payload`.
-5. Failure → stay `pending` (or leave disabled/revoked untouched if already), `last_error_*` set.
-6. Secret rotate on update → back to `pending`, clear `runtime_payload` + `verified_at` (must re-Test).
-7. Admin cannot promote to `active` without Test (`status_active_requires_test`).
+5. Failure → stay `pending` (or leave `revoked` untouched if already), `last_error_*` set.
+6. Any edit (label/priority/secret) → `pending`, clear `runtime_payload` + `verified_at` (must re-Test).
+7. **Revoke** (`POST .../revoke`) on `active` → `revoked` (workers stop; row kept for audit).
+8. **Delete** hard-removes `pending` or `revoked` rows; `active` must be revoked first.
+9. Status is not editable via form — only Test / Revoke / Delete buttons change lifecycle (except edit demotes to pending).
 
 ```mermaid
 flowchart TD
@@ -267,7 +261,7 @@ flowchart TD
 
 - List/show/update/test responses: metadata + `secret_hint` + `has_secret` + `has_runtime` + `runtime_expires_at` + `verified_at` only.
 - **Never** return `secret_payload`, `runtime_payload`, tokens, or fingerprint.
-- Update without `secret` keeps encrypted blob; with `secret` re-encrypts, refreshes hint/fingerprint, resets to pending.
+- Update without `secret` keeps encrypted blob; with `secret` re-encrypts, refreshes hint/fingerprint; any update demotes to `pending`.
 - No reveal-plaintext endpoint.
 
 ### Workers
@@ -295,7 +289,7 @@ Not 1 read = 1 KMS. Cast → `EnvelopeEncryptionService::decrypt` → `Decrypted
 | Secret/runtime rewrite | Cast `set` / encrypt already forgets that field's cache |
 | Delete | `delete()` forgets caches then removes row |
 
-**Twitch `expires_at` is not a decrypt-cache TTL.** It is token validity for Helix. Cached plaintext DEK unwrap stays until rotate, disable, delete, or `markFailed`. Re-mint rewrites `runtime_payload` only (admin secrets unchanged).
+**Twitch `expires_at` is not a decrypt-cache TTL.** It is token validity for Helix. Cached plaintext DEK unwrap stays until rotate, revoke, delete, or `markFailed`. Re-mint rewrites `runtime_payload` only (admin secrets unchanged).
 
 Workers must call `PlatformCredentialService` helpers so invalidate paths stay consistent.
 
@@ -322,35 +316,60 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 | DELETE | `/managements/{id}/creators/{creatorId}` | edit management | Unassign (`left_at`) |
 | GET | `/admin/platforms/{id}/credentials` | view vtual platform credentials | List credentials (masked) |
 | POST | `/admin/platforms/{id}/credentials` | manage vtual platform credentials | Create credential (`pending`) |
-| GET/PATCH/DELETE | `/admin/credentials/{id}` | view / manage | Show / update / delete |
-| POST | `/admin/credentials/{id}/disable` | manage | Set status `disabled` |
+| GET/PATCH/DELETE | `/admin/credentials/{id}` | view / manage | Show / update / delete (`active` delete blocked until revoked) |
+| POST | `/admin/credentials/{id}/revoke` | manage | Soft-revoke `active` → `revoked` |
 | POST | `/admin/credentials/{id}/test` | manage | Manual Test gate; returns masked credential + `test.{ok,message,platform}` |
 
 ## Web Blade
 
+> **Archived (2026-08):** hub, profiles, claims, registry, credentials, and probe Blade UIs are parked under [`ui-archive.md`](ui-archive.md). Domain API unchanged.
+
 | Route | View |
 |-------|------|
-| `GET vtual` (`vtual.index`) | Hub cards + creators table + platform list |
-| `GET vtual/profiles` (`vtual.profiles.index`) | My profiles table |
-| `GET vtual/profiles/{id}` (`vtual.profiles.show`) | Profile manage: meta form, merge, links, channels (claims + active + archived) |
-| `GET vtual/claims` (`vtual.claims.index`) | Claimable orphans + my pending claims |
-| `GET vtual/claims/{id}` (`vtual.claims.show`) | Claim detail + verify/cancel/accept-anyway |
-| `GET vtual/admin/registry` (`vtual.claims.staff`) | Staff orphan seed + pending claims queue |
-| `GET vtual/admin/platform-credentials` | Admin platform list → drill into credentials |
-| `GET vtual/admin/platforms/{id}/credentials` | Credential table + create/update/Test (mask only; no app tokens) |
-| `GET vtual/admin/platform-api-probe` | Live platform API probe (Root/Admin) |
-| Mutations | POST/PATCH/DELETE forward via `ConsumesApi::respondFromApi` to versioned API |
+| `GET vtual/orphans` (`vtual.orphans.index`) | Orphan vTuber index (server-side DataTable; claimable profiles only) |
+| `GET vtual/orphans/datatable` (`vtual.orphans.datatable`) | DataTables JSON proxy → `GET api/v1/vtual/creators/orphans?display_mode=datatable` |
+| `GET vtual/orphans/create` (`vtual.orphans.create`) | Create orphan form |
+| `POST vtual/orphans` (`vtual.orphans.store`) | → `POST api/v1/vtual/creators/orphan`; redirects to edit (not index) |
+| `GET vtual/orphans/{id}/edit` (`vtual.orphans.edit`) | Edit form + deferred channel registration UI |
+| `POST vtual/orphans/{id}/channels` (`vtual.orphans.channels.store`) | → `POST api/v1/vtual/creators/{id}/channels` (staff pending queue) |
+| `PATCH vtual/orphans/{id}` (`vtual.orphans.update`) | → `PATCH api/v1/vtual/creators/{id}` |
+| `DELETE vtual/orphans/{id}` (`vtual.orphans.destroy`) | → `DELETE api/v1/vtual/creators/{id}` (archives) |
 
-Layout: `resources/views/{WEB_LAYOUT}/vtual/` (default `adminlte4`).
+**Platform credentials (Root/Admin):**
 
-### UI/UX patterns (overhaul 2026-07)
+| Route | Behavior |
+|-------|----------|
+| `GET vtual/platform-credentials` (`vtual.platform-credentials.index`) | Platform list table + Manage action; probe link |
+| `GET vtual/platform-credentials/platforms/{id}` (`vtual.platform-credentials.platform`) | Credential list (Test / Revoke / Delete by status) |
+| `GET/POST …/platforms/{id}/create` / `store` | Create credential (pending until Test) |
+| `GET/PATCH …/credentials/{id}/edit` / `update` | Edit credential |
+| `GET/POST vtual/platform-credentials/probe` | Manual Platform API gateway smoke test |
 
-- **AJAX forms**: all mutations use `x-adminlte4::form.ajax` + `ConsumesApi::respondFromApi` (no full page reload; validation errors inline via `data-form-field` / `data-field-error`).
-- **Confirmation modals**: shared `_confirm-modal.blade.php` partial + `confirm-modal.js` (Vite). Trigger buttons carry `data-bs-toggle="modal"` + `data-confirm-body`. Native `confirm()` banned. ESM entry must use `window.bootstrap.Modal` (or `import { Modal } from 'bootstrap'`) — bare `bootstrap.Modal` is a ReferenceError in modules.
-- **Status badges**: shared `x-adminlte4::vtual.status-badge` anonymous component (color-mapped: active→success, pending→warning, archived/disabled→secondary).
-- **Accessibility (WCAG 2.1 AA)**: `<caption>` on every data table, `aria-current="page"` on active nav, `aria-label` on icon-only buttons, `role="status"` + `aria-live` on result regions, visible `<label>` on inputs.
-- **Partials**: `profiles/show.blade.php` composes 5 partials (`_profile-meta-form`, `_profile-merge-form`, `_profile-links`, `_profile-channels`, `_profile-content-stub`).
-- **JS extraction**: inline JS moved to `resources/js/vtual/confirm-modal.js` + `credential-form.js`, registered in `vite.config.js`. `confirm-modal.js` binds via `window.bootstrap` (set by `app.js`).
+Layout: `resources/views/{WEB_LAYOUT}/vtual/platform-credentials/` — thin `ConsumesApi` proxy (same pattern as orphans).
+
+Orphan layout: `resources/views/{WEB_LAYOUT}/vtual/orphans/` (default `adminlte4`). Pattern mirrors [`/apps/users`](../../routes/web/identity.php): thin `ConsumesApi` proxy + `initDataTable`.
+
+### API — orphan staff list (new)
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `vtual/creators/orphans` | `listClaimable()`; `display_mode=datatable` for DataTables |
+| GET | `vtual/creators/orphans/{id}` | 403 if profile is no longer claimable |
+
+### UI/UX patterns (orphan admin)
+
+- **Server-side DataTable**: `datatable-init.js` + API `display_mode=datatable` (same as users).
+- **AJAX forms**: `x-adminlte4::form.ajax` + `ConsumesApi::respondFromApi`.
+- **Create slug**: auto `{random6}-{slugified-display-name}` when slug omitted (orphan only); create form is display-name minimal.
+- **Deferred channels**: edit page registers platform profile without API call; scheduler resolves in batch (50/platform or 15 min). Form resets after add; pending rows append inline from nested AJAX `data` channel entity (no websocket). Duplicate profiles per creator+platform rejected via parser-based `profile_fingerprint` (`@handle` vs profile URL normalize to same key). **Platform URL guard:** profile URLs with a recognizable YouTube/Twitch host must match the platform dropdown; bare handles/ids follow the selected platform.
+- **Claimed profiles excluded**: list uses `CreatorService::listClaimable()` — active creators with no owner member.
+
+### UI/UX patterns (platform credentials)
+
+- **Row actions**: Edit / Test / Revoke (active) / Delete (pending & revoked) in a horizontal flex bar (`_credential_actions`); AJAX forms use `:showAlert="false"` so success/error uses toast (not inline alert inside the table). Action buttons disable for the duration of each request.
+- **Status refresh**: after Test or Revoke (success or failed Test), the credential row updates in place from the AJAX response; Delete removes the row — no full page reload.
+
+### Archived UI patterns (2026-07 overhaul, see ui-archive.md)
 - **i18n**: all user-facing strings via `__('web/vtual.*')` (en/id/ja); `ajax.*`, `confirm.*`, `table.*` keys added.
 
 ## Seeders
@@ -358,7 +377,7 @@ Layout: `resources/views/{WEB_LAYOUT}/vtual/` (default `adminlte4`).
 1. `RoleSeeder` — core permissions `view/manage vtual platform credentials` for Root/Admin.
 2. `FileHostingRoleSeeder` — required because authoritative `MenuSeeder` also builds the File Hosting branch.
 3. `VtualRoleSeeder` — product roles/permissions + `PlatformService::seedDefaults()`.
-4. `MenuSeeder` — Products → **vTual** parent (`vtual.index`) with product children; Platform credentials is a Root/Admin child in the same branch.
+4. `MenuSeeder` — Administration → **vTual** parent (`vtual.orphans.index`) with Orphan vTubers (Root/Admin/Moderator) and Platform credentials (Root/Admin).
 5. `DatabaseSeeder` preserves this order. Running `MenuSeeder` before role seeders can omit expected menu-role pivots.
 
 ## Kick strategy (foundation)
@@ -415,7 +434,9 @@ Not shared this phase (no dual-platform signal without extra APIs): subscriber/f
 
 **Refresh** (`POST /api/v1/vtual/channels/{id}/refresh`): enqueues `vtual_channel_fetch_pool` by stored `external_id` (no immediate platform HTTP). Snapshot updates on pool flush. Rejects archived channels.
 
-**Channel fetch pool:** non-interactive only (refresh + scheduled resync). Flush when pending unique ids per platform ≥ `config(vtual.channel_pool.threshold)` (50) **or** oldest pending age ≥ `max_wait_minutes` (15). Single `Cache::lock` + claim-to-`processing` prevents double HTTP for the same set. Interactive claim/seed/verify/handle resolve stay sync. Command: `php artisan vtual:flush-channel-pool` (`--force`, `--platform=`, `--resync`). Schedule: every minute flush + hourly `--resync`.
+**Channel fetch pool:** non-interactive only (refresh + scheduled resync). Flush when pending unique ids per platform ≥ `config(vtual.channel_pool.threshold)` (50) **or** oldest pending age ≥ `max_wait_minutes` (15). Single `Cache::lock` + claim-to-`processing` prevents double HTTP for the same set. Interactive claim verify / Accept Anyway resolve stay sync. Command: `php artisan vtual:flush-channel-pool` (`--force`, `--platform=`, `--resync`) runs **registration flush first**, then fetch pool. Schedule: every minute flush + hourly `--resync`.
+
+**Channel registration pool (staff):** `registerPendingForStaff` stores `profile_input` on `vtual_channels` (`status=pending`, `external_id=pending:{uuid}`). `ChannelRegistrationFlushService` uses the same 50 / 15m gate **per platform** (YouTube count ≠ Twitch count). On flush: resolve profiles → activate channel row. Failed resolve sets `resolve_error`, keeps pending.
 
 **Archive** (`POST /api/v1/vtual/channels/{id}/archive`): soft-remove (`status=archived`); hidden from default list. No hard-delete this phase.
 

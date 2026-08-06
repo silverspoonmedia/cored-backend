@@ -175,38 +175,17 @@ class VtualApiTest extends TestCase
     }
 
     #[Test]
-    public function staff_post_channel_seeds_active_without_claim(): void
+    public function staff_post_channel_queues_pending_without_immediate_http(): void
     {
         $admin = $this->userWithRole('Admin');
         $this->activations->activateImplicit($admin, 'Vtual');
 
-        $youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
-        $credential = app(PlatformCredentialService::class)->create($admin, $youtube, [
-            'label' => 'yt-staff-seed',
-            'type' => PlatformCredentialType::ApiKey->value,
-            'secret' => ['api_key' => 'yt-api-staff-seed'],
-        ]);
-        $credential->forceFill([
-            'status' => PlatformCredentialStatus::Active,
-            'verified_at' => now(),
-        ])->save();
+        $httpCalls = 0;
+        Http::fake(function () use (&$httpCalls) {
+            $httpCalls++;
 
-        $ytId = 'UCPkKpOHxEDcwmUAnRpIu-Ng';
-        Http::fake([
-            'www.googleapis.com/youtube/v3/channels*' => Http::response([
-                'items' => [
-                    [
-                        'id' => $ytId,
-                        'snippet' => [
-                            'title' => 'Orphan YT',
-                            'description' => 'seeded',
-                            'customUrl' => '@orphan',
-                            'thumbnails' => [],
-                        ],
-                    ],
-                ],
-            ], 200),
-        ]);
+            return Http::response([], 404);
+        });
 
         $orphan = $this->actingAsJwt($admin)
             ->postJson('/api/v1/vtual/creators/orphan', ['display_name' => 'Staff Orphan'])
@@ -219,14 +198,65 @@ class VtualApiTest extends TestCase
                 'profile' => '@orphan',
             ])
             ->assertCreated()
-            ->assertJsonPath('data.status', 'active')
-            ->assertJsonPath('data.external_id', $ytId)
-            ->assertJsonPath('data.handle', 'orphan')
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('data.profile_input', '@orphan')
             ->json('data');
 
-        // Response is ChannelResource (no claim token field).
+        $this->assertSame(0, $httpCalls);
+        $this->assertStringStartsWith('pending:', $channel['external_id']);
         $this->assertArrayNotHasKey('token', $channel);
         $this->assertSame(0, \App\Domain\Vtual\Models\ChannelClaim::query()->count());
+    }
+
+    #[Test]
+    public function staff_post_channel_rejects_duplicate_profile_on_creator(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+
+        Http::fake(fn () => Http::response([], 404));
+
+        $orphan = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/orphan', ['display_name' => 'Dup Staff Orphan'])
+            ->assertCreated()
+            ->json('data');
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/'.$orphan['id'].'/channels', [
+                'platform_key' => 'youtube',
+                'profile' => 'https://www.youtube.com/@AizawaEma',
+            ])
+            ->assertCreated();
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/'.$orphan['id'].'/channels', [
+                'platform_key' => 'youtube',
+                'profile' => '@AizawaEma',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['profile']);
+    }
+
+    #[Test]
+    public function staff_post_channel_rejects_cross_platform_profile_url(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+
+        Http::fake(fn () => Http::response([], 404));
+
+        $orphan = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/orphan', ['display_name' => 'Mismatch Staff Orphan'])
+            ->assertCreated()
+            ->json('data');
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/'.$orphan['id'].'/channels', [
+                'platform_key' => 'twitch',
+                'profile' => 'https://www.youtube.com/@AizawaEma',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['profile']);
     }
 
     #[Test]

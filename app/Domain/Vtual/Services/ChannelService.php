@@ -8,10 +8,14 @@ use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
+use App\Domain\Vtual\Integrations\Support\ChannelProfileFingerprint;
+use App\Domain\Vtual\Integrations\Support\ChannelProfilePlatformGuard;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ChannelService
 {
@@ -19,6 +23,7 @@ class ChannelService
         private readonly CreatorAccessService $creatorAccess,
         private readonly ChannelProfileResolver $profiles,
         private readonly ChannelFetchPoolService $fetchPool,
+        private readonly ChannelRegistrationFlushService $registrationFlush,
     ) {}
 
     /**
@@ -87,9 +92,119 @@ class ChannelService
             throw new VtualException(__('api/vtual.channel.profile_required'), 422);
         }
 
-        $dto = $this->profiles->resolve($this->platformKey($platform), $profile);
+        $platformKey = $this->platformKey($platform);
+        ChannelProfilePlatformGuard::assertMatchesPlatform($platformKey, $profile);
+
+        $dto = $this->profiles->resolve($platformKey, $profile);
 
         return $this->activateFromDto((string) $creator->id, $platform, $dto);
+    }
+
+    /**
+     * Staff-only deferred bind: store raw profile for batch resolve (no API call in this request).
+     *
+     * @param  array{platform_key: string, profile: string}  $data
+     */
+    public function registerPendingForStaff(User $actor, string $creatorId, array $data): Channel
+    {
+        if (! $actor->can('manage any vtual resource')) {
+            throw new VtualException(__('api/vtual.policy.denied'), 403);
+        }
+
+        $creator = $this->creatorAccess->findOrFail($creatorId);
+        $this->creatorAccess->assertCanMutate($creator, $actor);
+
+        $platform = Platform::query()->where('key', $data['platform_key'] ?? null)->first();
+        if ($platform === null) {
+            throw new VtualException(__('api/vtual.channel.platform_unknown'), 422);
+        }
+        if (! $platform->isEnabled()) {
+            throw new VtualException(__('api/vtual.channel.platform_disabled'), 422);
+        }
+
+        $profile = trim((string) ($data['profile'] ?? ''));
+        if ($profile === '') {
+            throw new VtualException(__('api/vtual.channel.profile_required'), 422);
+        }
+
+        $platformKey = $this->platformKey($platform);
+        ChannelProfilePlatformGuard::assertMatchesPlatform($platformKey, $profile);
+
+        try {
+            $fingerprint = ChannelProfileFingerprint::from($platformKey, $profile);
+        } catch (VtualException $e) {
+            throw ValidationException::withMessages([
+                'profile' => [$e->getMessage()],
+            ]);
+        }
+
+        $duplicate = Channel::query()
+            ->where('creator_id', $creator->id)
+            ->where('platform_id', $platform->id)
+            ->where('profile_fingerprint', $fingerprint)
+            ->where('status', '!=', ChannelStatus::Archived)
+            ->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'profile' => [__('api/vtual.channel.duplicate_on_creator')],
+            ]);
+        }
+
+        $channelId = (string) Str::uuid();
+
+        $channel = Channel::query()->create([
+            'id' => $channelId,
+            'creator_id' => $creator->id,
+            'platform_id' => $platform->id,
+            'external_id' => 'pending:'.$channelId,
+            'profile_input' => $profile,
+            'profile_fingerprint' => $fingerprint,
+            'status' => ChannelStatus::Pending,
+        ]);
+
+        $threshold = max(1, (int) setting_config('vtual.channel_pool.threshold', 50));
+        $pending = Channel::query()
+            ->where('platform_id', $platform->id)
+            ->where('status', ChannelStatus::Pending)
+            ->whereNotNull('profile_input')
+            ->count();
+
+        if ($pending >= $threshold) {
+            $this->registrationFlush->flush($this->platformKey($platform), force: false);
+        }
+
+        return $channel->load('platform');
+    }
+
+    /**
+     * Promote a pending registration row after batch profile resolve.
+     */
+    public function activatePendingFromDto(
+        Channel $channel,
+        Platform $platform,
+        PlatformChannelDto $dto,
+    ): Channel {
+        $exists = Channel::query()
+            ->where('platform_id', $platform->id)
+            ->where('external_id', $dto->externalId)
+            ->where('id', '!=', $channel->id)
+            ->exists();
+
+        if ($exists) {
+            throw new VtualException(__('api/vtual.channel.external_id_taken'), 422);
+        }
+
+        $channel->forceFill(array_merge(
+            [
+                'external_id' => $dto->externalId,
+                'profile_input' => null,
+                'resolve_error' => null,
+            ],
+            $this->attributesFromDto($dto),
+        ))->save();
+
+        return $channel->refresh()->load('platform');
     }
 
     /**

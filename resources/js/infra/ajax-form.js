@@ -87,15 +87,21 @@
     }
 
     function setSubmitting(form, submitting) {
-        const button = form.querySelector('[type="submit"]');
-        if (!button) {
+        form.querySelectorAll('button').forEach(function (button) {
+            button.disabled = submitting;
+            if (submitting) {
+                button.setAttribute('aria-busy', 'true');
+            } else {
+                button.removeAttribute('aria-busy');
+            }
+        });
+
+        const submitButton = form.querySelector('[type="submit"]');
+        if (!submitButton) {
             return;
         }
 
-        button.disabled = submitting;
-        button.setAttribute('aria-busy', submitting ? 'true' : 'false');
-
-        const spinner = button.querySelector('[data-form-submit-spinner]');
+        const spinner = submitButton.querySelector('[data-form-submit-spinner]');
         if (spinner) {
             spinner.classList.toggle('d-none', !submitting);
         }
@@ -161,6 +167,9 @@
             console.error('AJAX form submit failed', error);
         } finally {
             setSubmitting(form, false);
+            document.dispatchEvent(new CustomEvent('ajax-form:complete', {
+                detail: { form: form },
+            }));
         }
     }
 

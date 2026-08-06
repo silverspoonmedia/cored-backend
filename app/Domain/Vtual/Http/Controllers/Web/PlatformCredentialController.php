@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Admin platform credentials — pure consumer of `/api/v1/vtual/admin/*`.
+ * Staff platform credentials — pure consumer of `/api/v1/vtual/admin/*`.
  */
 class PlatformCredentialController extends Controller
 {
@@ -24,28 +24,62 @@ class PlatformCredentialController extends Controller
             return redirect()->route('dashboard')->with('error', $this->apiMessage($platforms));
         }
 
-        return $this->webView('vtual.admin.credentials.index', [
-            'platforms' => collect($platforms->json('data', [])),
+        $enriched = collect($platforms->json('data', []))
+            ->map(fn (array $platform): array => $this->enrichPlatformWithCredentialCounts($platform));
+
+        return $this->webView('vtual.platform-credentials.index', [
+            'platforms' => $enriched,
         ]);
     }
 
     public function showPlatform(string $platform): View|RedirectResponse
     {
-        $platforms = $this->api()->get('vtual/platforms');
+        $platformRow = $this->resolvePlatform($platform);
         $credentials = $this->api()->get('vtual/admin/platforms/'.$platform.'/credentials');
 
         if (! $credentials->successful()) {
-            return redirect()->route('vtual.admin.credentials.index')
+            return redirect()->route('vtual.platform-credentials.index')
                 ->with('error', $this->apiMessage($credentials));
         }
 
-        $platformRow = collect($platforms->successful() ? $platforms->json('data', []) : [])
-            ->firstWhere('id', $platform);
-
-        return $this->webView('vtual.admin.credentials.platform', [
+        return $this->webView('vtual.platform-credentials.platform', [
             'platformId' => $platform,
             'platform' => $platformRow ?? ['id' => $platform, 'name' => $platform, 'key' => ''],
             'credentials' => collect($credentials->json('data', [])),
+        ]);
+    }
+
+    public function create(string $platform): View|RedirectResponse
+    {
+        $platformRow = $this->resolvePlatform($platform);
+        if ($platformRow === null) {
+            return redirect()->route('vtual.platform-credentials.index')
+                ->with('error', __('api/vtual.policy.denied'));
+        }
+
+        return $this->webView('vtual.platform-credentials.create', [
+            'platformId' => $platform,
+            'platform' => $platformRow,
+            'credential' => null,
+        ]);
+    }
+
+    public function edit(string $credential): View|RedirectResponse
+    {
+        $response = $this->api()->get('vtual/admin/credentials/'.$credential);
+        if (! $response->successful()) {
+            return redirect()->route('vtual.platform-credentials.index')
+                ->with('error', $this->apiMessage($response));
+        }
+
+        $credentialRow = $response->json('data', []);
+        $platformId = (string) ($credentialRow['platform_id'] ?? '');
+        $platformRow = $platformId !== '' ? $this->resolvePlatform($platformId) : null;
+
+        return $this->webView('vtual.platform-credentials.edit', [
+            'platformId' => $platformId,
+            'platform' => $platformRow ?? ['id' => $platformId, 'name' => $platformId, 'key' => ''],
+            'credential' => $credentialRow,
         ]);
     }
 
@@ -58,7 +92,6 @@ class PlatformCredentialController extends Controller
             'label' => $request->input('label'),
             'type' => $type,
             'priority' => $request->input('priority'),
-            // Service always forces pending until Test; do not send active from UI.
             'secret' => $secret,
         ];
 
@@ -67,7 +100,7 @@ class PlatformCredentialController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn () => redirect()->route('vtual.admin.credentials.platform', $platform)
+            fn () => redirect()->route('vtual.platform-credentials.platform', $platform)
                 ->with('success', $this->apiMessage($response, __('web/vtual.ajax.credential_saved'))),
             __('web/vtual.ajax.credential_saved'),
         );
@@ -81,7 +114,6 @@ class PlatformCredentialController extends Controller
         $payload = [
             'label' => $request->input('label'),
             'priority' => $request->input('priority'),
-            'status' => $request->input('status'),
         ];
 
         $secret = $this->secretFromRequest($request, $type, allowEmpty: true);
@@ -94,10 +126,9 @@ class PlatformCredentialController extends Controller
         return $this->respondFromApi(
             $request,
             $response,
-            fn () => $this->platformRedirect($platformId)
+            fn () => redirect()->route('vtual.platform-credentials.edit', $credential)
                 ->with('success', $this->apiMessage($response, __('web/vtual.ajax.credential_saved'))),
             __('web/vtual.ajax.credential_saved'),
-            stayOnPageOnSuccess: true,
         );
     }
 
@@ -112,20 +143,21 @@ class PlatformCredentialController extends Controller
             fn () => $this->platformRedirect($platformId)
                 ->with('success', $this->apiMessage($response, __('web/vtual.ajax.credential_deleted'))),
             __('web/vtual.ajax.credential_deleted'),
+            stayOnPageOnSuccess: true,
         );
     }
 
-    public function disable(Request $request, string $credential): RedirectResponse|JsonResponse
+    public function revoke(Request $request, string $credential): RedirectResponse|JsonResponse
     {
         $platformId = (string) $request->input('platform_id');
-        $response = $this->api()->post('vtual/admin/credentials/'.$credential.'/disable');
+        $response = $this->api()->post('vtual/admin/credentials/'.$credential.'/revoke');
 
         return $this->respondFromApi(
             $request,
             $response,
             fn () => $this->platformRedirect($platformId)
-                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.credential_disabled'))),
-            __('web/vtual.ajax.credential_disabled'),
+                ->with('success', $this->apiMessage($response, __('web/vtual.ajax.credential_revoked'))),
+            __('web/vtual.ajax.credential_revoked'),
             stayOnPageOnSuccess: true,
         );
     }
@@ -145,11 +177,48 @@ class PlatformCredentialController extends Controller
         );
     }
 
+    /**
+     * @param  array<string, mixed>  $platform
+     * @return array<string, mixed>
+     */
+    private function enrichPlatformWithCredentialCounts(array $platform): array
+    {
+        $platformId = (string) ($platform['id'] ?? '');
+        $credentials = $platformId !== ''
+            ? $this->api()->get('vtual/admin/platforms/'.$platformId.'/credentials')
+            : null;
+
+        $items = ($credentials !== null && $credentials->successful())
+            ? collect($credentials->json('data', []))
+            : collect();
+
+        return array_merge($platform, [
+            'credentials_total' => $items->count(),
+            'credentials_active' => $items->where('status', 'active')->count(),
+            'credentials_pending' => $items->where('status', 'pending')->count(),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolvePlatform(string $platformId): ?array
+    {
+        $platforms = $this->api()->get('vtual/platforms');
+        if (! $platforms->successful()) {
+            return null;
+        }
+
+        $row = collect($platforms->json('data', []))->firstWhere('id', $platformId);
+
+        return is_array($row) ? $row : null;
+    }
+
     private function platformRedirect(string $platformId): RedirectResponse
     {
         return $platformId !== ''
-            ? redirect()->route('vtual.admin.credentials.platform', $platformId)
-            : redirect()->route('vtual.admin.credentials.index');
+            ? redirect()->route('vtual.platform-credentials.platform', $platformId)
+            : redirect()->route('vtual.platform-credentials.index');
     }
 
     /**

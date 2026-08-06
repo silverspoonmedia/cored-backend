@@ -56,18 +56,6 @@ class MenuSeederTest extends TestCase
                             ['name' => 'DMCA Blocklist', 'route' => 'file-hosting.blocklist.index', 'type' => 'c', 'children' => []],
                         ],
                     ],
-                    [
-                        'name' => 'vTual',
-                        'route' => 'vtual.index',
-                        'type' => 'p',
-                        'children' => [
-                            ['name' => 'Overview', 'route' => 'vtual.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'My profiles', 'route' => 'vtual.profiles.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'Claim as vTuber', 'route' => 'vtual.claims.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'Registry & pending', 'route' => 'vtual.claims.staff', 'type' => 'c', 'children' => []],
-                            ['name' => 'Platform credentials', 'route' => 'vtual.admin.credentials.index', 'type' => 'c', 'children' => []],
-                        ],
-                    ],
                 ],
             ],
             [
@@ -117,6 +105,14 @@ class MenuSeederTest extends TestCase
                         ],
                     ],
                     [
+                        'name' => 'vTual',
+                        'route' => 'vtual.orphans.index',
+                        'type' => 'p',
+                        'children' => [
+                            ['name' => 'Orphan vTubers', 'route' => 'vtual.orphans.index', 'type' => 'c', 'children' => []],
+                        ],
+                    ],
+                    [
                         'name' => 'Settings',
                         'route' => null,
                         'type' => 'p',
@@ -157,12 +153,8 @@ class MenuSeederTest extends TestCase
             $this->roleNamesForRoute('file-hosting.blocklist.index'),
         );
         $this->assertSame(
-            ['Admin', 'Management', 'Moderator', 'Root', 'Vtual Admin'],
-            $this->roleNamesForRoute('vtual.claims.staff'),
-        );
-        $this->assertSame(
-            ['Admin', 'Root'],
-            $this->roleNamesForRoute('vtual.admin.credentials.index'),
+            ['Admin', 'Moderator', 'Root'],
+            $this->roleNamesForRoute('vtual.orphans.index'),
         );
         $this->assertSame(
             ['Admin', 'Root'],
@@ -214,7 +206,7 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(44, Menu::query()->count());
+        $this->assertSame(40, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -222,7 +214,7 @@ class MenuSeederTest extends TestCase
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(44, Menu::query()->count());
+        $this->assertSame(40, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -236,7 +228,7 @@ class MenuSeederTest extends TestCase
 
         $this->assertContains('My Files', $userNames);
         $this->assertContains('Trash', $userNames);
-        $this->assertContains('Overview', $userNames);
+        $this->assertNotContains('Orphan vTubers', $userNames);
         $this->assertNotContains('DMCA Blocklist', $userNames);
         $this->assertNotContains('Registry & pending', $userNames);
         $this->assertNotContains('Administration', $userNames);
@@ -245,15 +237,23 @@ class MenuSeederTest extends TestCase
         $managementNames = $this->visibleNames($management);
 
         $this->assertContains('DMCA Blocklist', $managementNames);
-        $this->assertContains('Registry & pending', $managementNames);
+        $this->assertNotContains('Registry & pending', $managementNames);
         $this->assertContains('Access control', $managementNames);
         $this->assertNotContains('Platform credentials', $managementNames);
         $this->assertNotContains('Monitoring', $managementNames);
 
+        $moderator = $this->activatedUser('Moderator', 'moderator@example.com');
+        $moderatorNames = $this->visibleNames($moderator);
+
+        $this->assertContains('Orphan vTubers', $moderatorNames);
+        $this->assertNotContains('Platform credentials', $moderatorNames);
+
         $admin = $this->activatedUser('Admin', 'admin@example.com');
         $adminNames = $this->visibleNames($admin);
 
-        $this->assertContains('Platform credentials', $adminNames);
+        $this->assertContains('Orphan vTubers', $adminNames);
+        $this->assertNotContains('Platform credentials', $adminNames);
+        $this->assertNotContains('Registry & pending', $adminNames);
         $this->assertContains('Product domain access', $adminNames);
         $this->assertContains('Monitoring', $adminNames);
         $this->assertContains('Settings', $adminNames);

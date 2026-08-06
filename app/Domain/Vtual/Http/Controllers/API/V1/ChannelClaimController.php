@@ -52,11 +52,11 @@ class ChannelClaimController extends Controller
         $data = $request->validated();
 
         if ($actor->can('manage any vtual resource')) {
-            $channel = $this->channels->seedForStaff($actor, $creator->id, $data);
+            $channel = $this->channels->registerPendingForStaff($actor, $creator->id, $data);
 
             return $this->successResponse(
                 $this->resolveResource(new ChannelResource($channel)),
-                __('api/vtual.channel.seeded'),
+                __('api/vtual.channel.registered_pending'),
                 201,
             );
         }

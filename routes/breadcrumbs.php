@@ -37,6 +37,48 @@ Breadcrumbs::for('users.edit', function (Trail $trail): void {
     $trail->push(__('ui.breadcrumb.edit'));
 });
 
+// vTual orphan vTubers (internal staff).
+Breadcrumbs::for('vtual.orphans.index', function (Trail $trail): void {
+    $trail->parent('dashboard');
+    $trail->push(__('web/vtual-orphans.breadcrumb'), route('vtual.orphans.index'));
+});
+
+Breadcrumbs::for('vtual.orphans.create', function (Trail $trail): void {
+    $trail->parent('vtual.orphans.index');
+    $trail->push(__('web/vtual-orphans.create_title'));
+});
+
+Breadcrumbs::for('vtual.orphans.edit', function (Trail $trail): void {
+    $trail->parent('vtual.orphans.index');
+    $trail->push(__('web/vtual-orphans.edit_title'));
+});
+
+// vTual platform credentials (Root/Admin).
+Breadcrumbs::for('vtual.platform-credentials.index', function (Trail $trail): void {
+    $trail->parent('dashboard');
+    $trail->push(__('web/vtual-platform-credentials.breadcrumb'), route('vtual.platform-credentials.index'));
+});
+
+Breadcrumbs::for('vtual.platform-credentials.platform', function (Trail $trail): void {
+    $trail->parent('vtual.platform-credentials.index');
+    $trail->push(__('web/vtual.credentials.list'));
+});
+
+Breadcrumbs::for('vtual.platform-credentials.create', function (Trail $trail): void {
+    $trail->parent('vtual.platform-credentials.index');
+    $trail->push(__('web/vtual.admin.credentials.create_title'));
+});
+
+Breadcrumbs::for('vtual.platform-credentials.edit', function (Trail $trail): void {
+    $trail->parent('vtual.platform-credentials.index');
+    $trail->push(__('web/vtual.admin.credentials.edit_title'));
+});
+
+Breadcrumbs::for('vtual.platform-credentials.probe', function (Trail $trail): void {
+    $trail->parent('vtual.platform-credentials.index');
+    $trail->push(__('web/vtual.probe.title'));
+});
+
 // Services (sellable catalog + purchase checkout).
 Breadcrumbs::for('services.index', function (Trail $trail): void {
     $trail->parent('dashboard');

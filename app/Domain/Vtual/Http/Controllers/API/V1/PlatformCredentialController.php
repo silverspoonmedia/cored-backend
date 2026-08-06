@@ -88,15 +88,15 @@ class PlatformCredentialController extends Controller
         );
     }
 
-    public function disable(PlatformCredential $credential): JsonResponse
+    public function revoke(PlatformCredential $credential): JsonResponse
     {
         $this->authorize('update', $credential);
 
-        $updated = $this->credentials->disable($credential);
+        $updated = $this->credentials->revoke($credential);
 
         return $this->successResponse(
             $this->resolveResource(new PlatformCredentialResource($updated)),
-            __('api/vtual.credential.disabled'),
+            __('api/vtual.credential.revoked'),
         );
     }
 

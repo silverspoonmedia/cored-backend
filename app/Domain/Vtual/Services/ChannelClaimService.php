@@ -8,6 +8,7 @@ use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Enums\CreatorClaimVerifiedVia;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\Support\ChannelBioTokenVerifier;
+use App\Domain\Vtual\Integrations\Support\ChannelProfilePlatformGuard;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\ChannelClaim;
@@ -76,6 +77,7 @@ class ChannelClaimService
         }
 
         $platformKey = $this->bio->platformKeyFromModel($platform);
+        ChannelProfilePlatformGuard::assertMatchesPlatform($platformKey, $profile);
         $dto = $this->profiles->resolve($platformKey, $profile);
 
         $exists = Channel::query()

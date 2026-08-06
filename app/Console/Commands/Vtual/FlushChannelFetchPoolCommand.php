@@ -4,6 +4,7 @@ namespace App\Console\Commands\Vtual;
 
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Services\ChannelFetchPoolService;
+use App\Domain\Vtual\Services\ChannelRegistrationFlushService;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Throwable;
@@ -18,8 +19,10 @@ class FlushChannelFetchPoolCommand extends Command
 
     protected $description = 'Flush vTual channel fetch pool (batch platform channel snapshots)';
 
-    public function handle(ChannelFetchPoolService $pool): int
-    {
+    public function handle(
+        ChannelRegistrationFlushService $registration,
+        ChannelFetchPoolService $pool,
+    ): int {
         $platformOpt = $this->option('platform');
         $only = null;
         if (is_string($platformOpt) && $platformOpt !== '') {
@@ -43,6 +46,19 @@ class FlushChannelFetchPoolCommand extends Command
         if ($resync) {
             $enqueued = $pool->enqueueStaleActiveChannels($only);
             $this->info("Resync enqueue: {$enqueued} channel(s).");
+        }
+
+        $registrationSummary = $registration->flush($only, $force);
+
+        foreach ($registrationSummary['platforms'] as $key => $row) {
+            $this->line(sprintf(
+                '[%s] registration status=%s claimed=%d applied=%d failed=%d',
+                $key,
+                $row['status'],
+                $row['claimed'],
+                $row['applied'],
+                $row['failed'],
+            ));
         }
 
         $summary = $pool->flush($only, $force);

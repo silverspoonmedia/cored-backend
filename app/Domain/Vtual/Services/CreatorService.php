@@ -95,6 +95,7 @@ class CreatorService
                 $q->where('role', CreatorMemberRole::Owner);
             })
             ->with(['channels.platform'])
+            ->withCount('channels')
             ->orderBy('display_name')
             ->get();
     }
@@ -109,14 +110,20 @@ class CreatorService
             throw new VtualException(__('api/vtual.creator.name_required'), 422);
         }
 
-        $baseSlug = isset($data['slug']) && is_string($data['slug']) && trim($data['slug']) !== ''
+        $explicitSlug = isset($data['slug']) && is_string($data['slug']) && trim($data['slug']) !== ''
             ? trim($data['slug'])
-            : $displayName;
+            : null;
 
-        return DB::transaction(function () use ($actor, $data, $displayName, $baseSlug, $bindOwner): Creator {
-            $slug = SlugGenerator::unique($baseSlug, fn (string $s): bool => Creator::query()
-                ->where('slug', $s)
-                ->exists());
+        return DB::transaction(function () use ($actor, $data, $displayName, $explicitSlug, $bindOwner): Creator {
+            $exists = fn (string $s): bool => Creator::query()->where('slug', $s)->exists();
+
+            if ($explicitSlug !== null) {
+                $slug = SlugGenerator::unique($explicitSlug, $exists);
+            } elseif (! $bindOwner) {
+                $slug = SlugGenerator::uniquePrefixed($displayName, $exists);
+            } else {
+                $slug = SlugGenerator::unique($displayName, $exists);
+            }
 
             $creator = Creator::query()->create([
                 'slug' => $slug,

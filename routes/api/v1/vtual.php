@@ -6,6 +6,7 @@ use App\Domain\Vtual\Http\Controllers\API\V1\CreatorClaimController;
 use App\Domain\Vtual\Http\Controllers\API\V1\CreatorController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ExternalLinkController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ManagementController;
+use App\Domain\Vtual\Http\Controllers\API\V1\OrphanCreatorController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformApiProbeController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformCredentialController;
@@ -39,6 +40,10 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
     });
 
     Route::middleware('permission:manage any vtual resource')->group(function (): void {
+        Route::get('creators/orphans', [OrphanCreatorController::class, 'index'])->name('creators.orphans.index');
+        Route::get('creators/orphans/{creator}', [OrphanCreatorController::class, 'show'])
+            ->whereUuid('creator')
+            ->name('creators.orphans.show');
         Route::post('creators/orphan', [CreatorController::class, 'storeOrphan'])->name('creators.orphan');
         Route::get('claims/pending', [CreatorClaimController::class, 'pending'])->name('claims.pending');
         Route::post('claims/{claim}/accept-anyway', [CreatorClaimController::class, 'acceptAnyway'])
@@ -150,9 +155,9 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
             Route::delete('credentials/{credential}', [PlatformCredentialController::class, 'destroy'])
                 ->whereUuid('credential')
                 ->name('credentials.destroy');
-            Route::post('credentials/{credential}/disable', [PlatformCredentialController::class, 'disable'])
+            Route::post('credentials/{credential}/revoke', [PlatformCredentialController::class, 'revoke'])
                 ->whereUuid('credential')
-                ->name('credentials.disable');
+                ->name('credentials.revoke');
             Route::post('credentials/{credential}/test', [PlatformCredentialController::class, 'test'])
                 ->whereUuid('credential')
                 ->name('credentials.test');

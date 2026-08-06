@@ -18,6 +18,7 @@ use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
@@ -78,6 +79,19 @@ class ChannelClaimServiceTest extends TestCase
         $this->assertStringStartsWith('vtual-ch-', (string) $claim->token);
         $this->assertNull($claim->channel_id);
         $this->assertSame(0, Channel::query()->count());
+    }
+
+    #[Test]
+    public function start_rejects_cross_platform_profile_url(): void
+    {
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Owner']);
+
+        $this->expectException(ValidationException::class);
+        $this->claims->start($user, $creator->id, [
+            'platform_key' => 'twitch',
+            'profile' => 'https://www.youtube.com/@stream',
+        ]);
     }
 
     #[Test]

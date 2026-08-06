@@ -2,7 +2,6 @@
 
 namespace App\Domain\Vtual\Http\Requests;
 
-use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -24,8 +23,6 @@ class StorePlatformCredentialRequest extends FormRequest
             'label' => ['required', 'string', 'max:120'],
             'type' => ['required', 'string', Rule::in(PlatformCredentialType::values())],
             'priority' => ['nullable', 'integer', 'min:0', 'max:999999'],
-            // Ignored by service (always pending until Test); kept for backward-compatible clients.
-            'status' => ['nullable', 'string', Rule::in(PlatformCredentialStatus::values())],
             'secret' => ['required', 'array'],
             'secret.api_key' => ['nullable', 'string', 'max:4096'],
             'secret.client_id' => ['nullable', 'string', 'max:4096'],

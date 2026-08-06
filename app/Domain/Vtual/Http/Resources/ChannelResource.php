@@ -2,6 +2,7 @@
 
 namespace App\Domain\Vtual\Http\Resources;
 
+use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -29,6 +30,14 @@ class ChannelResource extends JsonResource
             'url' => $this->url,
             ...$this->dateFields('platform_created_at', $this->platform_created_at),
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,
+            'profile_input' => $this->when(
+                $this->status === ChannelStatus::Pending && $this->profile_input !== null,
+                fn () => $this->profile_input,
+            ),
+            'resolve_error' => $this->when(
+                $this->status === ChannelStatus::Pending && $this->resolve_error !== null,
+                fn () => $this->resolve_error,
+            ),
             ...$this->dateFields('last_synced_at', $this->last_synced_at),
             'platform' => $this->whenLoaded('platform', fn () => new PlatformResource($this->platform)),
             ...$this->dateFields('created_at', $this->created_at),

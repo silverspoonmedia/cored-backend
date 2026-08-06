@@ -103,11 +103,18 @@ trait ConsumesApi
         }
 
         if ($response->status() === 422) {
-            return response()->json([
+            $payload = [
                 'status' => 'error',
                 'message' => $this->apiMessage($response, __('ui.ajax.validation_failed')),
                 'errors' => $response->json('errors', []),
-            ], 422);
+            ];
+
+            $apiData = $response->json('data');
+            if ($apiData !== null) {
+                $payload['data'] = $apiData;
+            }
+
+            return response()->json($payload, 422);
         }
 
         // Auth death only. Web CSRF 419 is handled by the exception renderer

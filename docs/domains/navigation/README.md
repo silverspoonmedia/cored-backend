@@ -121,12 +121,6 @@ php artisan db:seed --class=MenuSeeder
     - My Files — `file-hosting.index`
     - Trash — `file-hosting.trash`
     - DMCA Blocklist — `file-hosting.blocklist.index`; Root, Admin, Moderator, Management, File Hosting Admin
-  - **vTual** — parent route `vtual.index`
-    - Overview — `vtual.index`
-    - My profiles — `vtual.profiles.index`
-    - Claim as vTuber — `vtual.claims.index`
-    - Registry & pending — `vtual.claims.staff`; Root, Admin, Moderator, Management, Vtual Admin
-    - Platform credentials — `vtual.admin.credentials.index`; Root, Admin
 - **Administration**
   - **Access control** — Root, Admin, Moderator, Management
     - User management — `users.index`
@@ -145,6 +139,9 @@ php artisan db:seed --class=MenuSeeder
   - **Monitoring** — Root, Admin
     - Activity log — `activity-logs.index`
     - Error log — `error-logs.index`
+  - **vTual** — parent route `vtual.orphans.index`; Root, Admin, Moderator
+    - Orphan vTubers — `vtual.orphans.index`
+    - Platform credentials — `vtual.platform-credentials.index` (Root, Admin)
   - **Settings** — Root, Admin (single hub for all `settings.*` groups)
     - Platform — `settings.platform`
     - File Hosting — `settings.file-hosting`
@@ -158,7 +155,7 @@ php artisan db:seed --class=MenuSeeder
 
 Navbar contains one **Home** shortcut using `dashboard`. File Hosting and vTual parent routes stack Domain Access and activation gates across their branches. Microstock remains discoverable through Services and the File Hosting workspace switcher, with no dynamic-menu node.
 
-No Debug fixture, Microstock node, or vTual Platform API Probe node is seeded. Platform API Probe remains a live Root/Admin surface linked from vTual Platform credentials; its exclusion applies only to dynamic navigation.
+No Debug fixture, Microstock node, or vTual Platform API Probe menu node is seeded. Platform API Probe is linked from Platform credentials index (`vtual.platform-credentials.probe`); probe is excluded from dynamic navigation.
 
 Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module registry stays in [`config/domains.php`](../../../config/domains.php); RBAC catalog ownership remains separate (`domain_kind` on roles/permissions). Do not add menu schema merely to mirror those axes.
 
