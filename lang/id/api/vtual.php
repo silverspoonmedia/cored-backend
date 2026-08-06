@@ -16,6 +16,10 @@ return [
         'show_success' => 'Creator yatim dimuat.',
         'not_claimable' => 'Profil ini bukan yatim lagi (sudah diklaim atau tidak aktif).',
     ],
+    'vtuber' => [
+        'show_success' => 'Profil vTuber dimuat.',
+        'not_found' => 'Profil vTuber tidak ditemukan atau tidak tersedia.',
+    ],
     'merge' => [
         'success' => 'Profil digabung. Source diarsipkan; data sekarang di profil destination.',
         'self' => 'Tidak bisa merge profil ke dirinya sendiri.',
@@ -111,6 +115,8 @@ return [
         'appearance_already_attached' => 'Channel ini sudah terhubung sebagai appearance pada konten.',
         'appearance_not_found' => 'Appearance konten untuk channel ini tidak ditemukan.',
         'cannot_detach_primary' => 'Host primer tidak bisa dilepas. Tetapkan host primer lain terlebih dahulu.',
+        'fetch_platform_unsupported' => 'Fetch konten tidak didukung untuk platform :platform.',
+        'fetch_channel_not_active' => 'Fetch konten membutuhkan channel aktif.',
     ],
     'platform' => [
         'list_success' => 'Daftar platform dimuat.',
@@ -164,6 +170,7 @@ return [
         'invalid_part' => 'Part YouTube :resource ":part" tidak diizinkan.',
         'parts_required' => 'Minimal satu part YouTube :resource wajib diisi.',
         'handle_required' => 'Handle atau login channel wajib diisi.',
+        'youtube_channel_id_required' => 'ID channel YouTube valid (UC…) wajib diisi.',
         'upstream_error' => 'Request platform :platform gagal (HTTP :status).',
         'upstream_error_detail' => 'Request platform :platform gagal (HTTP :status): :detail',
         'upstream_connection_error' => 'Koneksi ke platform :platform gagal.',

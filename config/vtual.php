@@ -72,6 +72,8 @@ return [
             'videos' => 50,
             // min(YouTube channels.list 50, Twitch Get Users 100)
             'channels' => 50,
+            // YouTube playlistItems.list max per request
+            'playlist_items' => 50,
             // Twitch Get Streams user_id max (platform-specific)
             'streams_user_ids' => 100,
         ],
@@ -117,6 +119,19 @@ return [
             'brandingSettings',
             'topicDetails',
             'localizations',
+        ],
+
+        'default_playlist_item_parts' => [
+            'snippet',
+            'contentDetails',
+            'status',
+        ],
+
+        'allowed_playlist_item_parts' => [
+            'id',
+            'snippet',
+            'contentDetails',
+            'status',
         ],
     ],
 

@@ -1,0 +1,40 @@
+<?php
+
+return [
+    'title' => 'vTuber profile',
+    'breadcrumb' => 'vTuber profile',
+    'section_bio' => 'Profile',
+    'section_channels' => 'Channels',
+    'section_contents' => 'Content',
+    'channels_empty' => 'No channels linked yet.',
+    'contents_empty' => 'No content indexed yet.',
+    'bio_empty' => 'No bio yet.',
+    'table_caption_channels' => 'Platform channels',
+    'table_caption_contents' => 'Indexed content',
+    'columns' => [
+        'avatar' => 'Avatar',
+        'platform' => 'Platform',
+        'handle' => 'Handle',
+        'display_name' => 'Display name',
+        'link' => 'Link',
+        'thumbnail' => 'Thumbnail',
+        'title' => 'Title',
+        'type' => 'Type',
+        'status' => 'Status',
+        'published_at' => 'Published',
+    ],
+    'content_type' => [
+        'live' => 'Live',
+        'archive' => 'Archive',
+        'vod' => 'VOD',
+    ],
+    'content_status' => [
+        'scheduled' => 'Scheduled',
+        'live' => 'Live',
+        'ended' => 'Ended',
+        'archived' => 'Archived',
+        'uploaded' => 'Uploaded',
+        'unknown' => 'Unknown',
+    ],
+    'open_link' => 'Open',
+];

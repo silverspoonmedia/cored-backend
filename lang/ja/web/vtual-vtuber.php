@@ -1,0 +1,40 @@
+<?php
+
+return [
+    'title' => 'vTuber プロフィール',
+    'breadcrumb' => 'vTuber プロフィール',
+    'section_bio' => 'プロフィール',
+    'section_channels' => 'チャンネル',
+    'section_contents' => 'コンテンツ',
+    'channels_empty' => 'リンクされたチャンネルはまだありません。',
+    'contents_empty' => 'インデックスされたコンテンツはまだありません。',
+    'bio_empty' => '自己紹介はまだありません。',
+    'table_caption_channels' => 'プラットフォームチャンネル',
+    'table_caption_contents' => 'インデックス済みコンテンツ',
+    'columns' => [
+        'avatar' => 'アバター',
+        'platform' => 'プラットフォーム',
+        'handle' => 'ハンドル',
+        'display_name' => '表示名',
+        'link' => 'リンク',
+        'thumbnail' => 'サムネイル',
+        'title' => 'タイトル',
+        'type' => '種類',
+        'status' => 'ステータス',
+        'published_at' => '公開日',
+    ],
+    'content_type' => [
+        'live' => 'ライブ',
+        'archive' => 'アーカイブ',
+        'vod' => 'VOD',
+    ],
+    'content_status' => [
+        'scheduled' => '予定',
+        'live' => 'ライブ',
+        'ended' => '終了',
+        'archived' => 'アーカイブ',
+        'uploaded' => 'アップロード済み',
+        'unknown' => '不明',
+    ],
+    'open_link' => '開く',
+];

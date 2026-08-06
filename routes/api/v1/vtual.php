@@ -10,9 +10,13 @@ use App\Domain\Vtual\Http\Controllers\API\V1\OrphanCreatorController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformApiProbeController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformCredentialController;
+use App\Domain\Vtual\Http\Controllers\API\V1\VtuberProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->prefix('vtual')->name('vtual.')->group(function (): void {
+    Route::get('vtubers/{creator}', [VtuberProfileController::class, 'show'])
+        ->name('vtubers.show');
+
     Route::middleware('permission:view vtual creator')->group(function (): void {
         Route::get('platforms', [PlatformController::class, 'index'])->name('platforms.index');
         Route::get('creators', [CreatorController::class, 'index'])->name('creators.index');

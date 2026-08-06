@@ -9,6 +9,7 @@ use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\Contracts\FetchesChannels;
 use App\Domain\Vtual\Integrations\Contracts\FetchesStreams;
 use App\Domain\Vtual\Integrations\Contracts\FetchesVideos;
+use App\Domain\Vtual\Integrations\Contracts\ListsChannelVideos;
 use App\Domain\Vtual\Integrations\Contracts\PlatformClient;
 use App\Domain\Vtual\Integrations\Contracts\ResolvesChannel;
 use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
@@ -84,6 +85,26 @@ class PlatformApiGateway
         }
 
         return $all->values();
+    }
+
+    /**
+     * List recent uploads for a channel (platform-specific catalog read).
+     *
+     * @return Collection<int, string> Platform video external ids (newest first)
+     */
+    public function listChannelVideos(
+        PlatformKey|Platform|string $platform,
+        string $channelExternalId,
+        int $limit = 50,
+    ): Collection {
+        return $this->runWithCredentialFailover($platform, function (PlatformClient $client) use ($channelExternalId, $limit): Collection {
+            $this->assertSupports($client, PlatformApiOperation::ListChannelVideos);
+            if (! $client instanceof ListsChannelVideos) {
+                throw new UnsupportedPlatformOperationException($client->key(), PlatformApiOperation::ListChannelVideos);
+            }
+
+            return $client->listChannelVideos($channelExternalId, $limit);
+        });
     }
 
     /**

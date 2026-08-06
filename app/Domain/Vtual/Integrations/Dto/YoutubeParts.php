@@ -34,6 +34,18 @@ final class YoutubeParts
     }
 
     /**
+     * @param  list<string>|null  $parts
+     * @return list<string>
+     */
+    public static function forPlaylistItems(?array $parts = null): array
+    {
+        $resolved = $parts ?? (array) config('vtual.youtube.default_playlist_item_parts', []);
+        $allowed = (array) config('vtual.youtube.allowed_playlist_item_parts', []);
+
+        return self::validate($resolved, $allowed, 'playlistItem');
+    }
+
+    /**
      * @param  list<string>  $parts
      * @param  list<string>  $allowed
      * @return list<string>

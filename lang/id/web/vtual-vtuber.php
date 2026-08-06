@@ -1,0 +1,40 @@
+<?php
+
+return [
+    'title' => 'Profil vTuber',
+    'breadcrumb' => 'Profil vTuber',
+    'section_bio' => 'Profil',
+    'section_channels' => 'Channel',
+    'section_contents' => 'Konten',
+    'channels_empty' => 'Belum ada channel terhubung.',
+    'contents_empty' => 'Belum ada konten terindeks.',
+    'bio_empty' => 'Belum ada bio.',
+    'table_caption_channels' => 'Channel platform',
+    'table_caption_contents' => 'Konten terindeks',
+    'columns' => [
+        'avatar' => 'Avatar',
+        'platform' => 'Platform',
+        'handle' => 'Handle',
+        'display_name' => 'Nama tampilan',
+        'link' => 'Tautan',
+        'thumbnail' => 'Thumbnail',
+        'title' => 'Judul',
+        'type' => 'Tipe',
+        'status' => 'Status',
+        'published_at' => 'Dipublikasikan',
+    ],
+    'content_type' => [
+        'live' => 'Live',
+        'archive' => 'Arsip',
+        'vod' => 'VOD',
+    ],
+    'content_status' => [
+        'scheduled' => 'Terjadwal',
+        'live' => 'Live',
+        'ended' => 'Selesai',
+        'archived' => 'Diarsipkan',
+        'uploaded' => 'Diunggah',
+        'unknown' => 'Tidak diketahui',
+    ],
+    'open_link' => 'Buka',
+];

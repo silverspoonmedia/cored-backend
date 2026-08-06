@@ -79,6 +79,11 @@ Breadcrumbs::for('vtual.platform-credentials.probe', function (Trail $trail): vo
     $trail->push(__('web/vtual.probe.title'));
 });
 
+Breadcrumbs::for('vtual.vtuber.show', function (Trail $trail, string $displayName): void {
+    $trail->parent('dashboard');
+    $trail->push($displayName);
+});
+
 // Services (sellable catalog + purchase checkout).
 Breadcrumbs::for('services.index', function (Trail $trail): void {
     $trail->parent('dashboard');

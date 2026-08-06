@@ -16,6 +16,10 @@ return [
         'show_success' => 'オーファンクリエイターを読み込みました。',
         'not_claimable' => 'このプロフィールはオーファンではなくなりました（クレーム済みまたは非アクティブ）。',
     ],
+    'vtuber' => [
+        'show_success' => 'vTuber プロフィールを読み込みました。',
+        'not_found' => 'vTuber プロフィールが見つからないか、利用できません。',
+    ],
     'merge' => [
         'success' => 'プロフィールをマージしました。ソースはアーカイブされ、データは宛先に移りました。',
         'self' => '同じプロフィール同士はマージできません。',
@@ -111,6 +115,8 @@ return [
         'appearance_already_attached' => 'このチャンネルは既にコンテンツの appearance としてリンクされています。',
         'appearance_not_found' => 'このチャンネルのコンテンツ appearance が見つかりません。',
         'cannot_detach_primary' => 'プライマリホストは取り外せません。先に別のプライマリを設定してください。',
+        'fetch_platform_unsupported' => 'プラットフォーム :platform ではコンテンツ取得はサポートされていません。',
+        'fetch_channel_not_active' => 'コンテンツ取得には有効なチャンネルが必要です。',
     ],
     'platform' => [
         'list_success' => 'プラットフォーム一覧を読み込みました。',
@@ -164,6 +170,7 @@ return [
         'invalid_part' => 'YouTube の :resource part ":part" は許可されていません。',
         'parts_required' => 'YouTube の :resource part を少なくとも 1 つ指定してください。',
         'handle_required' => 'チャンネルのハンドルまたはログインが必要です。',
+        'youtube_channel_id_required' => '有効な YouTube チャンネル ID（UC…）が必要です。',
         'upstream_error' => 'プラットフォーム :platform へのリクエストが失敗しました（HTTP :status）。',
         'upstream_error_detail' => 'プラットフォーム :platform へのリクエストが失敗しました（HTTP :status）: :detail',
         'upstream_connection_error' => 'プラットフォーム :platform への接続に失敗しました。',

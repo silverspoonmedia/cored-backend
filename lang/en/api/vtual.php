@@ -16,6 +16,10 @@ return [
         'show_success' => 'Orphan creator loaded.',
         'not_claimable' => 'This profile is no longer an orphan (already claimed or not active).',
     ],
+    'vtuber' => [
+        'show_success' => 'vTuber profile loaded.',
+        'not_found' => 'vTuber profile not found or not available.',
+    ],
     'merge' => [
         'success' => 'Profile merged. Source was archived; data now lives on the destination profile.',
         'self' => 'Cannot merge a profile into itself.',
@@ -111,6 +115,8 @@ return [
         'appearance_already_attached' => 'This channel is already linked as an appearance on the content.',
         'appearance_not_found' => 'Content appearance not found for this channel.',
         'cannot_detach_primary' => 'Cannot detach the primary host channel. Set another primary first.',
+        'fetch_platform_unsupported' => 'Content fetch is not supported for platform :platform.',
+        'fetch_channel_not_active' => 'Content fetch requires an active channel.',
     ],
     'platform' => [
         'list_success' => 'Platforms loaded.',
@@ -164,6 +170,7 @@ return [
         'invalid_part' => 'YouTube :resource part ":part" is not allowed.',
         'parts_required' => 'At least one YouTube :resource part is required.',
         'handle_required' => 'Channel handle or login is required.',
+        'youtube_channel_id_required' => 'A valid YouTube channel id (UC…) is required.',
         'upstream_error' => 'Platform :platform request failed (HTTP :status).',
         'upstream_error_detail' => 'Platform :platform request failed (HTTP :status): :detail',
         'upstream_connection_error' => 'Platform :platform connection failed.',

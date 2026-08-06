@@ -8,7 +8,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Config | [`config/products.php`](../../../config/products.php) key `Vtual` · [`config/vtual.php`](../../../config/vtual.php) |
 | Registry | [`config/domains.php`](../../../config/domains.php) `Vtual` product locked |
 | API | `routes/api/v1/vtual.php` |
-| Web | `routes/web/vtual-orphans.php` → **`/apps/vtual/orphans`** (`vtual.orphans.*`); `routes/web/vtual-platform-credentials.php` → **`/apps/vtual/platform-credentials`** (`vtual.platform-credentials.*`, Root/Admin). Archived: [ui-archive.md](ui-archive.md) |
+| Web | `routes/web/vtual-orphans.php` → **`/apps/vtual/orphans`** (`vtual.orphans.*`); `routes/web/vtual-platform-credentials.php` → **`/apps/vtual/platform-credentials`** (`vtual.platform-credentials.*`, Root/Admin); `routes/web/vtual-vtuber.php` → **`/apps/vtual/vtuber/{slug}`** (`vtual.vtuber.show`, read-only profile; UUID legacy → 301 slug). Archived: [ui-archive.md](ui-archive.md) |
 | Seeder | `VtualRoleSeeder` (after core `RoleSeeder`; also seeds platforms) |
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
 | Menu visibility | Administration → **vTual** → Orphan vTubers (`vtual.orphans.index`, Root/Admin/Moderator) + Platform credentials (`vtual.platform-credentials.index`, Root/Admin). Mapped in `config/products.php` `menu_routes` |
@@ -83,6 +83,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 | Surface | Route | Audience |
 |---------|-------|----------|
 | Orphan vTubers (staff) | `/apps/vtual/orphans` | Internal (Root/Admin/Moderator) — claimable profiles only; users-pattern DataTable + CRUD |
+| vTuber profile (read) | `/apps/vtual/vtuber/{slug}` | Any logged-in user — biodata, active channels, indexed contents (aggregator step 1). Canonical slug URL; UUID bookmark → 301 to slug. |
 | Platform credentials | `/apps/vtual/platform-credentials` | Root/Admin — platform index table + per-platform credential CRUD; API probe at `/probe` |
 | *Archived* | hub, profiles, claims, registry, credentials, probe | See [ui-archive.md](ui-archive.md) |
 
@@ -301,6 +302,7 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 |--------|------|------------|---------|
 | GET | `/platforms` | view vtual creator | Platform catalog (includes disabled Kick) — **no credentials** |
 | GET/POST | `/creators` | view / create | List (scoped) / create (actor becomes owner) |
+| GET | `/vtubers/{key}` | auth only | Read-only profile aggregate (bio + active channels + contents); `{key}` = UUID or slug; no membership/RBAC |
 | GET/PATCH/DELETE | `/creators/{id}` | view / edit / delete | Show / update / archive |
 | GET/POST | `/creators/{id}/channels` | view channel / edit creator | List (non-archived) / register channel (`active` after resolve) |
 | GET | `/channels/{id}` | view channel | Show channel |
@@ -334,6 +336,7 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 | `POST vtual/orphans/{id}/channels` (`vtual.orphans.channels.store`) | → `POST api/v1/vtual/creators/{id}/channels` (staff pending queue) |
 | `PATCH vtual/orphans/{id}` (`vtual.orphans.update`) | → `PATCH api/v1/vtual/creators/{id}` |
 | `DELETE vtual/orphans/{id}` (`vtual.orphans.destroy`) | → `DELETE api/v1/vtual/creators/{id}` (archives) |
+| `GET vtual/vtuber/{slug}` (`vtual.vtuber.show`) | Read-only profile: bio + channels + contents → `GET api/v1/vtual/vtubers/{key}`. Canonical slug URL; `rel=canonical` + `profile_url` in API. UUID in path → **301** to current slug (web only). Slug rename: old slug 404; UUID bookmark still resolves. Slug redirect history — future. |
 
 **Platform credentials (Root/Admin):**
 
@@ -436,6 +439,8 @@ Not shared this phase (no dual-platform signal without extra APIs): subscriber/f
 
 **Channel fetch pool:** non-interactive only (refresh + scheduled resync). Flush when pending unique ids per platform ≥ `config(vtual.channel_pool.threshold)` (50) **or** oldest pending age ≥ `max_wait_minutes` (15). Single `Cache::lock` + claim-to-`processing` prevents double HTTP for the same set. Interactive claim verify / Accept Anyway resolve stay sync. Command: `php artisan vtual:flush-channel-pool` (`--force`, `--platform=`, `--resync`) runs **registration flush first**, then fetch pool. Schedule: every minute flush + hourly `--resync`.
 
+**YouTube content fetch (POC):** `php artisan vtual:fetch-channel-content {vtual_channels_uuid} {--limit=50}` — active YouTube channel only. Two API calls: `playlistItems.list` on uploads playlist (`UC`→`UU`) then `videos.list` (batch ≤50). Persists via `ChannelContentFetchService` → `ContentService::upsertFromPrimary`. Idempotent on `(platform_id, external_id)`. No scheduler yet.
+
 **Channel registration pool (staff):** `registerPendingForStaff` stores `profile_input` on `vtual_channels` (`status=pending`, `external_id=pending:{uuid}`). `ChannelRegistrationFlushService` uses the same 50 / 15m gate **per platform** (YouTube count ≠ Twitch count). On flush: resolve profiles → activate channel row. Failed resolve sets `resolve_error`, keeps pending.
 
 **Archive** (`POST /api/v1/vtual/channels/{id}/archive`): soft-remove (`status=archived`); hidden from default list. No hard-delete this phase.
@@ -505,7 +510,7 @@ Product flags `supports_live` / `supports_vod` gate **ingestion policy**, not ra
 | Method | Platform | Notes |
 |--------|----------|-------|
 | `fetchStreamsByUserIds` | Twitch only | `GET /helix/streams?user_id=` (max 100). Throws `UnsupportedPlatformOperation` on YouTube. |
-| Channel catalog / uploads playlist | — | Not implemented (YT `playlistItems` / Twitch `videos?user_id=` differ). |
+| Channel catalog / uploads playlist | YouTube `playlistItems.list` on uploads playlist (`UC`→`UU`) via `PlatformApiGateway::listChannelVideos` | Twitch catalog fetch deferred (platform scope TBD). |
 | Live discovery via `search.list` | — | Documented only; separate quota bucket — avoid as primary path. |
 
 ### Normalized DTOs
@@ -623,7 +628,7 @@ Web UI: link from credentials index → **API probe**.
 | Profile merge (absorb) | **Implemented** (same-owner or staff; source archived) |
 | Ideal Viewer-only until claim (strip User create creator) | Follow-up; not in phase 1 |
 | Multi-stream session correlation | Not implemented |
-| Public homepage / SEO creator & management profiles | Not implemented |
+| Public homepage / SEO creator & management profiles | Partial — per-creator read profile at `/apps/vtual/vtuber/{slug}` (login only; slug canonical + UUID 301; guest/SEO still pending) |
 | Paid Service catalog SKUs for Vtual | Not implemented |
 | Data migration from broadercastv2 | Not planned in foundation |
 

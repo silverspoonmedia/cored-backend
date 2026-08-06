@@ -6,6 +6,7 @@
     <head>
         <title>{{ $title ? $title.' | ' : '' }}{{ config('app.name', 'Monolith') }}</title>
         <x-adminlte4::partials.assets-head />
+        @stack('head')
     </head>
     <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
         {{-- Skip-link must stay outside .app-wrapper — AdminLTE 4 CSS grid auto-places

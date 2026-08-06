@@ -8,6 +8,7 @@ use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\Concerns\UsesPlatformCredential;
 use App\Domain\Vtual\Integrations\Contracts\FetchesChannels;
 use App\Domain\Vtual\Integrations\Contracts\FetchesVideos;
+use App\Domain\Vtual\Integrations\Contracts\ListsChannelVideos;
 use App\Domain\Vtual\Integrations\Contracts\PlatformClient;
 use App\Domain\Vtual\Integrations\Contracts\ResolvesChannel;
 use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
@@ -20,7 +21,7 @@ use App\Domain\Vtual\Services\PlatformCredentialService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
-class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChannels, ResolvesChannel
+class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChannels, ResolvesChannel, ListsChannelVideos
 {
     use UsesPlatformCredential;
 
@@ -38,10 +39,48 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
         return match ($operation) {
             PlatformApiOperation::FetchVideos,
             PlatformApiOperation::FetchChannels,
-            PlatformApiOperation::ResolveChannel => true,
-            PlatformApiOperation::FetchStreams,
-            PlatformApiOperation::ListChannelVideos => false,
+            PlatformApiOperation::ResolveChannel,
+            PlatformApiOperation::ListChannelVideos => true,
+            PlatformApiOperation::FetchStreams => false,
         };
+    }
+
+    public function listChannelVideos(string $channelExternalId, int $limit = 50): Collection
+    {
+        $max = (int) config('vtual.http.batch.playlist_items', 50);
+        $maxResults = min(max(1, $limit), $max);
+        $playlistId = YoutubeUploadsPlaylist::fromChannelId($channelExternalId);
+        $partList = YoutubeParts::forPlaylistItems(null);
+        $apiKey = $this->apiKey();
+
+        try {
+            $response = PlatformHttp::get(
+                $this->baseUrl().'/playlistItems',
+                [
+                    'part' => implode(',', $partList),
+                    'playlistId' => $playlistId,
+                    'maxResults' => $maxResults,
+                    'key' => $apiKey,
+                ],
+                platformKey: PlatformKey::Youtube->value,
+                logContext: $this->httpLogContext('list_channel_videos'),
+            );
+        } catch (PlatformApiException $e) {
+            $this->handleAuthFailure($e, $this->credentials);
+        }
+
+        $this->credentials->markUsed($this->requireCredential());
+
+        $items = $response->json('items') ?? [];
+        if (! is_array($items)) {
+            $items = [];
+        }
+
+        return collect($items)
+            ->filter(fn (mixed $item): bool => is_array($item))
+            ->map(fn (array $item): ?string => $this->extractPlaylistVideoId($item))
+            ->filter(fn (?string $id): bool => is_string($id) && $id !== '')
+            ->values();
     }
 
     public function fetchVideos(array $externalIds, ?array $parts = null): Collection
@@ -166,6 +205,25 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
     private function baseUrl(): string
     {
         return rtrim((string) config('vtual.youtube.base_url', 'https://www.googleapis.com/youtube/v3'), '/');
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    private function extractPlaylistVideoId(array $item): ?string
+    {
+        $contentDetails = is_array($item['contentDetails'] ?? null) ? $item['contentDetails'] : [];
+        if (isset($contentDetails['videoId']) && is_string($contentDetails['videoId']) && $contentDetails['videoId'] !== '') {
+            return $contentDetails['videoId'];
+        }
+
+        $snippet = is_array($item['snippet'] ?? null) ? $item['snippet'] : [];
+        $resourceId = is_array($snippet['resourceId'] ?? null) ? $snippet['resourceId'] : [];
+        if (isset($resourceId['videoId']) && is_string($resourceId['videoId']) && $resourceId['videoId'] !== '') {
+            return $resourceId['videoId'];
+        }
+
+        return null;
     }
 
     /**

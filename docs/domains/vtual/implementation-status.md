@@ -65,6 +65,8 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **User claim UX** | Claimable list + my claims | `/apps/vtual/claims` |
 | **Channel dual path** | Staff POST channel: deferred `registerPendingForStaff` (pending + batch resolve). Owner: `ChannelClaim` + bio / Accept Anyway → `activateFromDto`. `seedForStaff` kept for instant bind paths. | `ChannelClaimService`, `ChannelService`, `ChannelRegistrationFlushService`, tests |
 | **Orphan admin UX** | `/apps/vtual/orphans`: minimal create (prefixed slug), redirect to edit, channel registration on edit; edit channels table shows per-channel avatar when resolved (`avatar_url`) | `OrphanVtuberController`, `vtual-orphans` views, `OrphanVtuberWebTest` |
+| **YouTube content fetch POC** | `vtual:fetch-channel-content` — list uploads + hydrate videos (2 API calls, max 50) → `vtual_contents` | `ChannelContentFetchService`, `YoutubeDataApiClient::listChannelVideos`, `FetchChannelContentCommand` |
+| **vTuber profile (read)** | `/apps/vtual/vtuber/{slug}` — bio + active channels + indexed contents; any logged-in user (no RBAC/membership); UUID → 301 slug (web) | `VtuberProfileService`, `VtuberProfileController`, `ContentResource`, `VtuberProfileWebTest` |
 | **Platform credentials UI** | `/apps/vtual/platform-credentials`: platform index table + per-platform CRUD + API probe | `PlatformCredentialController`, `PlatformApiProbeController`, `vtual-platform-credentials` views, `PlatformCredentialWebTest` |
 | **My profiles manage** | List bound profiles; edit meta; external links CRUD; channel claims + active/archived channels | `/apps/vtual/profiles`, `CreatorProfileController`, `ExternalLinkService` |
 | **Profile merge (absorb)** | Same-owner or manage-any; move channels/links/contents/appearances; cancel pendings `merged`; archive source + slug mangle | `CreatorMergeService`, `POST creators/{id}/merge`, `CreatorMergeServiceTest` |
@@ -103,7 +105,8 @@ Mapped to original TASK / product vision. **Do not treat as bugs** unless a mile
 |-------|--------|--------|
 | **Claim Add New** | Not implemented | Survey + staff approval + appeal / permanent reject |
 | **Public homepage** | Not implemented | Live / archive / VOD sections, SEO creator & management profiles |
-| **Content ingestion workers** | Not implemented | No poll scheduler writing `vtual_contents` from live/VOD catalogs |
+| **Public read surfaces** | Partial | Per-creator profile at `/apps/vtual/vtuber/{slug}` (login required; slug canonical; guest SEO pending) |
+| **Content ingestion workers** | POC only | Manual `vtual:fetch-channel-content {channel}` — YouTube uploads playlist (`playlistItems.list`) + `videos.list` batch → `ContentService::upsertFromPrimary`. No scheduler yet. |
 | **YouTube WebSub / PubSubHubbub** | Not implemented | Manual HTTP ready; push not wired |
 | **Twitch EventSub** | Not implemented | Same |
 | **Live CCV / multi-stream session** | Not implemented | `fetchStreamsByUserIds` exists for future workers |
