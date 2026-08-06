@@ -32,6 +32,7 @@ return [
     'channels' => [
         'section_title' => 'Channel platform',
         'section_help' => 'Tambahkan profil channel untuk di-resolve secara batch (tanpa panggilan API langsung). Otomatis di-resolve saat 50 channel per platform terkumpul atau setelah 15 menit.',
+        'avatar' => 'Avatar',
         'platform' => 'Platform',
         'profile' => 'Profil channel',
         'profile_help' => 'ID channel platform, @handle, login, atau URL profil.',

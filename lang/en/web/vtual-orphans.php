@@ -32,6 +32,7 @@ return [
     'channels' => [
         'section_title' => 'Platform channels',
         'section_help' => 'Add channel profiles to resolve in batch (no immediate API call). Resolved automatically when 50 channels per platform are queued or after 15 minutes.',
+        'avatar' => 'Avatar',
         'platform' => 'Platform',
         'profile' => 'Channel profile',
         'profile_help' => 'Platform channel id, @handle, login, or profile URL.',

@@ -188,7 +188,7 @@ class OrphanVtuberWebTest extends TestCase
         $this->assertStringContainsString('data-orphan-channels-form', $editHtml);
         $this->assertStringContainsString('id="orphan-channels-tbody"', $editHtml);
         $this->assertStringContainsString('id="orphan-channels-empty"', $editHtml);
-        $this->assertStringContainsString(__('web/vtual-orphans.channels.profile_help'), $editHtml);
+        $this->assertStringContainsString(__('web/vtual-orphans.channels.profile_help_youtube'), $editHtml);
         $this->assertStringContainsString('data-field-error="profile"', $editHtml);
     }
 
@@ -244,6 +244,69 @@ class OrphanVtuberWebTest extends TestCase
 
         $this->assertStringContainsString('https://www.youtube.com/@AizawaEma', $editHtml);
         $this->assertStringContainsString(__('web/vtual-orphans.channels.status_pending'), $editHtml);
+        $this->assertStringContainsString(__('web/vtual-orphans.channels.avatar'), $editHtml);
         $this->assertStringNotContainsString('id="orphan-channels-empty"', $editHtml);
+        $this->assertStringContainsString('<span class="text-muted small">—</span>', $editHtml);
+        $this->assertStringNotContainsString('yt3.ggpht.com', $editHtml);
+    }
+
+    public function test_edit_page_renders_active_channel_avatar(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $channelId = (string) Str::uuid();
+        $avatarUrl = 'https://yt3.ggpht.com/example-avatar=s88-c-k-c0x00ffffff-no-rj';
+
+        Http::fake([
+            '*/api/v1/auth/me' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => 'test',
+                    'name' => 'Test',
+                    'email' => 'test@example.com',
+                    'roles' => [],
+                    'permissions' => [],
+                    'email_verified_at' => now()->toIso8601String(),
+                    'two_factor_enabled' => false,
+                ],
+            ], 200),
+            '*/api/v1/vtual/creators/orphans/'.$this->orphanId => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => $this->orphanId,
+                    'display_name' => 'Orphan Fox',
+                    'slug' => 'orphan-fox',
+                    'bio' => null,
+                    'avatar_url' => null,
+                    'channels' => [
+                        [
+                            'id' => $channelId,
+                            'platform' => ['key' => 'youtube', 'name' => 'YouTube'],
+                            'external_id' => 'UC6YoF5-OmChAXHNff3ifR6Q',
+                            'handle' => 'aizawaema_sub',
+                            'display_name' => 'Aizawa Ema Sub',
+                            'avatar_url' => $avatarUrl,
+                            'status' => 'active',
+                        ],
+                    ],
+                ],
+            ], 200),
+            '*/api/v1/vtual/platforms' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    ['key' => 'youtube', 'name' => 'YouTube', 'enabled' => true],
+                ],
+            ], 200),
+        ]);
+
+        $editHtml = $this->actingWithJwtCookie($admin)
+            ->get(route('vtual.orphans.edit', $this->orphanId))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString(__('web/vtual-orphans.channels.avatar'), $editHtml);
+        $this->assertStringContainsString($avatarUrl, $editHtml);
+        $this->assertStringContainsString('rounded-circle object-fit-cover', $editHtml);
+        $this->assertStringContainsString('data-channel-id="'.$channelId.'"', $editHtml);
+        $this->assertStringContainsString(__('web/vtual-orphans.channels.status_active'), $editHtml);
     }
 }

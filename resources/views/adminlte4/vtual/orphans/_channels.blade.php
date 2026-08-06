@@ -67,6 +67,7 @@
         <caption class="visually-hidden">{{ __('web/vtual-orphans.channels.table_caption') }}</caption>
         <thead>
             <tr>
+                <th>{{ __('web/vtual-orphans.channels.avatar') }}</th>
                 <th>{{ __('web/vtual-orphans.channels.platform') }}</th>
                 <th>{{ __('web/vtual-orphans.channels.profile_or_id') }}</th>
                 <th>{{ __('web/vtual-orphans.channels.handle') }}</th>
@@ -78,7 +79,7 @@
                 @include(config('web.layout').'.vtual.orphans._channel_row', ['channel' => $channel])
             @empty
                 <tr id="orphan-channels-empty" data-empty-row>
-                    <td colspan="4" class="text-muted">{{ __('web/vtual-orphans.channels.empty') }}</td>
+                    <td colspan="5" class="text-muted">{{ __('web/vtual-orphans.channels.empty') }}</td>
                 </tr>
             @endforelse
         </tbody>
@@ -169,6 +170,30 @@
         return code;
     }
 
+    function avatarCell(channel) {
+        const td = document.createElement('td');
+        td.className = 'text-nowrap';
+
+        if (channel.avatar_url) {
+            const img = document.createElement('img');
+            img.src = channel.avatar_url;
+            img.alt = channel.display_name || channel.handle || '';
+            img.className = 'rounded-circle object-fit-cover';
+            img.width = 36;
+            img.height = 36;
+            img.loading = 'lazy';
+            img.referrerPolicy = 'no-referrer';
+            td.appendChild(img);
+        } else {
+            const placeholder = document.createElement('span');
+            placeholder.className = 'text-muted small';
+            placeholder.textContent = '—';
+            td.appendChild(placeholder);
+        }
+
+        return td;
+    }
+
     function appendChannelRow(channel) {
         if (!channel || typeof channel !== 'object') {
             return;
@@ -190,6 +215,8 @@
         if (channel.id) {
             row.dataset.channelId = channel.id;
         }
+
+        row.appendChild(avatarCell(channel));
 
         const platformTd = document.createElement('td');
         platformTd.textContent = platformName;
