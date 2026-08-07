@@ -6,6 +6,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\CreatorClaimClosedReason;
 use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Enums\CreatorClaimVerifiedVia;
+use App\Domain\Vtual\Enums\CreatorClaimVerifyPoolStatus;
 use App\Domain\Vtual\Enums\CreatorMemberRole;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
@@ -13,7 +14,9 @@ use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Models\CreatorClaim;
+use App\Domain\Vtual\Models\CreatorClaimBlock;
 use App\Domain\Vtual\Models\CreatorMember;
+use App\Domain\Vtual\Support\VtualClaimRealtime;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -27,6 +30,7 @@ class CreatorClaimService
     public function __construct(
         private readonly CreatorService $creators,
         private readonly ChannelProfileResolver $profiles,
+        private readonly CreatorClaimVerifyPoolService $verifyPool,
     ) {}
 
     /**
@@ -88,8 +92,12 @@ class CreatorClaimService
     {
         $channel = Channel::query()->with('platform')->findOrFail($channelId);
 
-        return DB::transaction(function () use ($actor, $creatorId, $channel): CreatorClaim {
+        $claim = DB::transaction(function () use ($actor, $creatorId, $channel): CreatorClaim {
             $creator = Creator::query()->whereKey($creatorId)->lockForUpdate()->firstOrFail();
+
+            if ($this->isBlocked($actor, (string) $creator->id)) {
+                throw new VtualException(__('api/vtual.claim.blocked'), 422);
+            }
 
             if (! $this->creators->isClaimable($creator)) {
                 throw new VtualException(__('api/vtual.claim.not_claimable'), 422);
@@ -147,13 +155,26 @@ class CreatorClaimService
 
             return $claim->load(['creator', 'channel.platform']);
         });
+
+        app(VtualClaimRealtime::class)->progress($claim, 'started');
+
+        return $claim;
     }
 
     public function verify(User $actor, string $claimId): CreatorClaim
     {
+        return $this->queueVerify($actor, $claimId);
+    }
+
+    public function queueVerify(User $actor, string $claimId): CreatorClaim
+    {
         $claim = $this->lockPendingClaim($claimId);
         $this->assertClaimant($claim, $actor);
         $this->assertNotExpired($claim);
+
+        if ($this->isBlocked($actor, (string) $claim->creator_id)) {
+            throw new VtualException(__('api/vtual.claim.blocked'), 422);
+        }
 
         // Already owned by someone else: close without burning rate-limit attempts.
         if (! $this->creators->isClaimable($claim->creator)) {
@@ -168,14 +189,134 @@ class CreatorClaimService
             'last_attempt_at' => now(),
         ])->save();
 
-        $description = $this->fetchChannelDescription($claim->channel);
+        $this->verifyPool->enqueue($claim->fresh(['creator', 'channel.platform', 'user']) ?? $claim);
+
+        $fresh = $claim->fresh(['creator', 'channel.platform', 'user']) ?? $claim;
+        app(VtualClaimRealtime::class)->progress($fresh, 'verify_queued');
+
+        return $fresh;
+    }
+
+    public function processQueuedVerify(CreatorClaim $claim, ?string $description): CreatorClaimProcessResult
+    {
+        $claim = $this->lockPendingClaim($claim->id);
+
+        if (! $this->creators->isClaimable($claim->creator)) {
+            $this->closeClaim($claim, CreatorClaimStatus::Cancelled, CreatorClaimClosedReason::Superseded);
+            $this->verifyPool->finalizeOpenItemForClaim((string) $claim->id, CreatorClaimVerifyPoolStatus::Done);
+            app(VtualClaimRealtime::class)->progress($claim->fresh(['creator', 'channel.platform', 'user']) ?? $claim, 'cancelled');
+
+            return CreatorClaimProcessResult::TokenNotFound;
+        }
+
         $token = (string) $claim->token;
 
         if ($token === '' || $description === null || ! str_contains($description, $token)) {
-            throw new VtualException(__('api/vtual.claim.token_not_found'), 422);
+            $this->handleFailedVerifyAttempt($claim);
+            $fresh = $claim->fresh(['creator', 'channel.platform', 'user']) ?? $claim;
+            $phase = $fresh->status === CreatorClaimStatus::Cancelled
+                && $fresh->closed_reason === CreatorClaimClosedReason::MaxAttempts
+                ? 'max_attempts_blocked'
+                : 'verify_failed';
+            $this->verifyPool->finalizeOpenItemForClaim(
+                (string) $fresh->id,
+                CreatorClaimVerifyPoolStatus::Done,
+                $phase === 'verify_failed' ? 'Token not found in channel description.' : null,
+            );
+            app(VtualClaimRealtime::class)->progress($fresh, $phase);
+
+            return CreatorClaimProcessResult::TokenNotFound;
         }
 
-        return $this->complete($claim, CreatorClaimVerifiedVia::Bio, null);
+        $completed = $this->complete($claim, CreatorClaimVerifiedVia::Bio, null);
+        $this->verifyPool->finalizeOpenItemForClaim((string) $completed->id, CreatorClaimVerifyPoolStatus::Done);
+        app(VtualClaimRealtime::class)->progress($completed, 'verified');
+
+        return CreatorClaimProcessResult::Verified;
+    }
+
+    public function isBlocked(User $actor, string $creatorId): bool
+    {
+        return $this->blockedUntil($actor, $creatorId) !== null;
+    }
+
+    public function blockedUntil(User $actor, string $creatorId): ?\Illuminate\Support\Carbon
+    {
+        /** @var CreatorClaimBlock|null $block */
+        $block = CreatorClaimBlock::query()
+            ->where('user_id', $actor->id)
+            ->where('creator_id', $creatorId)
+            ->first();
+
+        if ($block === null || $block->blocked_until === null || $block->blocked_until->isPast()) {
+            return null;
+        }
+
+        return $block->blocked_until;
+    }
+
+    public function maxAttempts(): int
+    {
+        return max(1, (int) setting_config('vtual.claim.max_attempts', 3));
+    }
+
+    public function verifyQueueStatus(CreatorClaim $claim): ?string
+    {
+        $status = $this->verifyPool->openQueueStatusForClaim($claim->id);
+
+        return $status?->value;
+    }
+
+    public function canQueueVerify(CreatorClaim $claim, User $actor): bool
+    {
+        if ($claim->status !== CreatorClaimStatus::Pending) {
+            return false;
+        }
+
+        if ($this->isBlocked($actor, (string) $claim->creator_id)) {
+            return false;
+        }
+
+        if ($this->verifyPool->openQueueStatusForClaim($claim->id) !== null) {
+            return false;
+        }
+
+        if ((int) $claim->attempt_count >= $this->maxAttempts()) {
+            return false;
+        }
+
+        $cooldown = max(0, (int) setting_config('vtual.claim.verify_cooldown_seconds', 60));
+        if ($cooldown > 0
+            && $claim->last_attempt_at !== null
+            && $claim->last_attempt_at->gt(now()->subSeconds($cooldown))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function handleFailedVerifyAttempt(CreatorClaim $claim): void
+    {
+        if ((int) $claim->attempt_count >= $this->maxAttempts()) {
+            $this->closeClaim($claim, CreatorClaimStatus::Cancelled, CreatorClaimClosedReason::MaxAttempts);
+            $this->applyBlock($claim);
+        }
+    }
+
+    private function applyBlock(CreatorClaim $claim): void
+    {
+        $hours = max(1, (int) setting_config('vtual.claim.block_hours_after_max_attempts', 24));
+        $until = now()->addHours($hours);
+
+        CreatorClaimBlock::query()->updateOrCreate(
+            [
+                'user_id' => $claim->user_id,
+                'creator_id' => $claim->creator_id,
+            ],
+            [
+                'blocked_until' => $until,
+            ],
+        );
     }
 
     public function acceptAnyway(User $staff, string $claimId): CreatorClaim
@@ -206,7 +347,10 @@ class CreatorClaimService
 
         $this->closeClaim($claim, CreatorClaimStatus::Cancelled, CreatorClaimClosedReason::UserCancel);
 
-        return $claim->fresh(['creator', 'channel.platform']) ?? $claim;
+        $fresh = $claim->fresh(['creator', 'channel.platform']) ?? $claim;
+        app(VtualClaimRealtime::class)->progress($fresh, 'cancelled');
+
+        return $fresh;
     }
 
     private function complete(
@@ -314,7 +458,7 @@ class CreatorClaimService
 
     private function assertRateLimit(CreatorClaim $claim): void
     {
-        $maxAttempts = max(1, (int) setting_config('vtual.claim.max_attempts', 20));
+        $maxAttempts = $this->maxAttempts();
         if ((int) $claim->attempt_count >= $maxAttempts) {
             throw new VtualException(__('api/vtual.claim.max_attempts'), 422);
         }
@@ -327,29 +471,5 @@ class CreatorClaimService
                 'seconds' => $cooldown,
             ]), 422);
         }
-    }
-
-    private function fetchChannelDescription(Channel $channel): ?string
-    {
-        $channel->loadMissing('platform');
-        $platform = $channel->platform;
-        if ($platform === null) {
-            throw new VtualException(__('api/vtual.channel.platform_unknown'), 422);
-        }
-
-        $key = $platform->key instanceof PlatformKey
-            ? $platform->key
-            : PlatformKey::from((string) $platform->key);
-
-        $dto = $this->profiles->resolveByExternalId($key, (string) $channel->external_id);
-
-        $channel->forceFill([
-            'handle' => $dto->handle,
-            'display_name' => $dto->displayName,
-            'url' => $dto->url,
-            'last_synced_at' => now(),
-        ])->save();
-
-        return $dto->description;
     }
 }

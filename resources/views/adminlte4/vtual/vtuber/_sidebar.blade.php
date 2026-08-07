@@ -38,6 +38,13 @@
             <p class="text-secondary mb-3"><code>{{ $profile['slug'] }}</code></p>
         @endif
 
+        @if (! empty($profile['is_claimable']) && ! empty($profile['claim_process_url']))
+            <a href="{{ $profile['claim_process_url'] }}" class="btn btn-primary btn-sm w-100 mb-3">
+                <i class="bi bi-person-check me-1" aria-hidden="true"></i>
+                {{ __('web/vtual-vtuber.claim_button') }}
+            </a>
+        @endif
+
         <ul class="list-group list-group-flush text-start small">
             <li class="list-group-item d-flex justify-content-between px-0">
                 <span class="text-secondary">{{ __('web/vtual-vtuber.stat_channels') }}</span>

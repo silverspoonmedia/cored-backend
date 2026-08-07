@@ -34,7 +34,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Content | Canonical platform item (`vtual_contents`): **one row** per `(platform_id, external_id)`. `channel_id`/`creator_id` = **primary host** (API truth). Extra channels via **appearances** — not multi-ownership. Sync workers still foundation-only. Content manage UI **out of scope** this phase. |
 | External links | Morph `vtual_external_links` for creator (and management) social/donation/website URLs. Creator-scoped CRUD via `ExternalLinkService` + API under `/creators/{id}/links` and `/links/{id}`. |
 | Profile merge | Absorb source Creator into destination (same owner or manage-any). Source archived. See [Profile merge](#profile-merge-absorb--implemented). |
-| Channel fetch pool | Non-interactive channel snapshot batch: refresh + scheduled resync. Threshold 50 or max wait 15m. Interactive claim/seed/verify stay sync. |
+| Channel fetch pool | Non-interactive channel snapshot batch: refresh + scheduled resync. Threshold 50 or max wait 15m. **Creator claim bio verify** uses separate `claim_verify_pool` (same 50 / 15m gate). Accept Anyway stays sync. |
 | User vs vTuber Profile | **User** = Identity login (`users`). **vTuber Profile** = `vtual_creators` (public-facing bio, links, channels, content). Membership is **private**: product UI must not expose that two profiles share the same User. |
 
 ### Identity model (locked product decision)
@@ -67,7 +67,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 | Path | Who | Behavior |
 |------|-----|----------|
 | Internal seed | Root / Admin / Moderator (`manage any vtual resource`) | `POST /api/v1/vtual/creators/orphan` creates creator **without** owner membership; then register channels as usual. Staff UI: `/apps/vtual/orphans` (do not self-bind staff as owner; use a separate account if staff is also a vtuber) |
-| External claim Existing | User with `claim vtual creator` | Pick claimable creator + proof channel, receive token `vtual-claim-...`, put token in YouTube About / Twitch bio, then `POST .../claims/{id}/verify` re-fetches description via production `ChannelProfileResolver` |
+| External claim Existing | User with `claim vtual creator` | Pick claimable creator + proof channel (`POST .../claims`), receive token `vtual-claim-...`, put token in YouTube About / Twitch bio, then `POST .../claims/{id}/verify` **enqueues** bio check (strict batch pool: flush when pending ≥ 50 **or** oldest ≥ 15 min). Claim page pushes progress over WebSocket (`claim.progress` on `private-vtual.claim.{id}`) when broadcast is configured — **no polling**. Without broadcast: AJAX ack for queue/start/cancel + manual reload for pool outcome. Staff **Accept Anyway** stays synchronous. |
 | Accept Anyway | Staff + `vtual.claim.accept_anyway_enabled` (Settings → vTual) | Skip bio check (QA / local default **ON**) |
 | Staff pending queue | `manage any` | `GET /api/v1/vtual/claims/pending` (legacy registry web archived) |
 
@@ -75,7 +75,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 
 **Race / already owned:** `verify` / `acceptAnyway` check claimable **before** burning rate-limit attempts; if already owned, claim closes as superseded. Winner path uses creator row lock + `closeCompetingClaims`.
 
-**Spam soft-guard:** `vtual.claim.max_pending_per_user` (default 5) + cooldown + max attempts. Restarting the same creator cancels the user's prior pending for that creator (`closed_reason=user_cancel`) and does not double-count against the cap.
+**Spam soft-guard:** `vtual.claim.max_pending_per_user` (default 5) + cooldown + **max attempts (default 3)**. After max failed verify attempts, claim closes (`closed_reason=max_attempts`) and user is **blocked 24h** per creator (`vtual_creator_claim_blocks`). Restarting the same creator cancels the user's prior pending for that creator (`closed_reason=user_cancel`) and does not double-count against the cap.
 
 **Not claimable:** creators that already have an `owner` member. Double-owner race fails hard (no silent steal).
 
@@ -85,7 +85,8 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 |---------|-------|----------|
 | Orphan vTubers (staff) | `/apps/vtual/orphans` | Internal (Root/Admin/Moderator) — claimable profiles only; users-pattern DataTable + CRUD |
 | vTual product hub (placeholder) | `/apps/vtual/vtuber` | Any logged-in user — blank AdminLTE shell for upcoming product surfaces |
-| vTuber profile (read) | `/apps/vtual/vtuber/{slug}` | Any logged-in user — AdminLTE profile layout (sidebar col-4: avatar/stats/about + channel ID cards; main col-8: YouTube-style content grid). Canonical slug URL; UUID bookmark → 301 to slug. |
+| vTuber profile (read) | `/apps/vtual/vtuber/{slug}` | Any logged-in user — AdminLTE profile layout; **Claim** button when `is_claimable` (orphan) |
+| Claim process (interactive) | `/apps/vtual/vtuber/{slug}/claim` | Any logged-in user — channel pick → token → queued verify; start claim is AJAX with in-place active panel (no full reload); active claim shows proof channel; Echo `claim.progress` realtime when `BROADCAST_CONNECTION` + Pusher configured (reuses `window.__monolithEcho` when the navbar bell already opened Pusher); `verify_failed` snapshots clear queue status (pool finalized before broadcast) + inline failed banner; degraded AJAX-only + reload notice otherwise; orphan only; owned → redirect to profile |
 | Platform credentials | `/apps/vtual/platform-credentials` | Root/Admin — platform index table + per-platform credential CRUD; API probe at `/probe` |
 | *Archived* | hub, profiles, claims, registry | See [ui-archive.md](ui-archive.md) |
 
@@ -331,6 +332,10 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 | Route | View |
 |-------|------|
 | `GET vtual/vtuber` (`vtual.vtuber.index`) | Product hub placeholder (blank AdminLTE layout; upcoming surfaces) |
+| `POST vtual/vtuber/{slug}/claim/start` (`vtual.vtuber.claim.start`) | Start claim for selected channel → `POST api/v1/vtual/claims` |
+| `POST vtual/vtuber/{slug}/claim/verify` (`vtual.vtuber.claim.verify`) | Queue bio verify → `POST api/v1/vtual/claims/{id}/verify` |
+| `POST vtual/vtuber/{slug}/claim/cancel` (`vtual.vtuber.claim.cancel`) | Cancel pending claim → `POST api/v1/vtual/claims/{id}/cancel` |
+| `GET vtual/vtuber/{slug}/claim` (`vtual.vtuber.claim`) | Interactive claim: channel pick, token, queued verify UI (orphan only; owned → redirect to show) |
 | `GET vtual/orphans` (`vtual.orphans.index`) | Orphan vTuber index (server-side DataTable; claimable profiles only) |
 | `GET vtual/orphans/datatable` (`vtual.orphans.datatable`) | DataTables JSON proxy → `GET api/v1/vtual/creators/orphans?display_mode=datatable` |
 | `GET vtual/orphans/create` (`vtual.orphans.create`) | Create orphan form |
@@ -449,7 +454,7 @@ Not shared this phase (no dual-platform signal without extra APIs): Twitch follo
 
 **Refresh** (`POST /api/v1/vtual/channels/{id}/refresh`): enqueues `vtual_channel_fetch_pool` by stored `external_id` (no immediate platform HTTP). Snapshot updates on pool flush. Rejects archived channels.
 
-**Channel fetch pool:** non-interactive only (refresh + scheduled resync). Flush when pending unique ids per platform ≥ `config(vtual.channel_pool.threshold)` (50) **or** oldest pending age ≥ `max_wait_minutes` (15). Single `Cache::lock` + claim-to-`processing` prevents double HTTP for the same set. Interactive claim verify / Accept Anyway resolve stay sync. Command: `php artisan vtual:flush-channel-pool` (`--force`, `--platform=`, `--resync`) runs **registration flush first**, then fetch pool. `--resync` enqueues active channels with stale/null `last_synced_at` **or** null `subscriber_count` (snapshot backfill). Schedule: every minute flush + hourly `--resync`.
+**Channel fetch pool:** non-interactive only (refresh + scheduled resync). Flush when pending unique ids per platform ≥ `config(vtual.channel_pool.threshold)` (50) **or** oldest pending age ≥ `max_wait_minutes` (15). Single `Cache::lock` + claim-to-`processing` prevents double HTTP for the same set. **Creator claim bio verify** uses `claim_verify_pool` (same threshold semantics; batch `fetchChannels` up to 50 ids per platform). Accept Anyway resolve stays sync. Commands: `php artisan vtual:flush-channel-pool` (`--force`, `--platform=`, `--resync`) runs **registration flush first**, then fetch pool; `php artisan vtual:flush-claim-verify-pool` (`--force`) for claim verify queue. `--resync` enqueues active channels with stale/null `last_synced_at` **or** null `subscriber_count` (snapshot backfill). Schedule: every minute flush channel pool + claim verify pool; hourly channel `--resync`.
 
 **YouTube content fetch (POC):** `php artisan vtual:fetch-channel-content {vtual_channels_uuid}` — **manual last frontier** (recovery/debug). Not scheduled. Use `--video` / `--discover-live` for known ids or live search. Default path ingests via onboarding backfill + feed poll + content pool below.
 

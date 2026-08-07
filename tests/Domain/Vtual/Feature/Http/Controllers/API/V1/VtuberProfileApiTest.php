@@ -82,6 +82,8 @@ class VtuberProfileApiTest extends TestCase
             ->assertJsonPath('data.display_name', 'Aizawa Ema')
             ->assertJsonPath('data.slug', $creator->slug)
             ->assertJsonPath('data.profile_url', route('vtual.vtuber.show', $creator->slug))
+            ->assertJsonPath('data.is_claimable', true)
+            ->assertJsonPath('data.claim_process_url', route('vtual.vtuber.claim', $creator->slug))
             ->assertJsonPath('data.channels.0.handle', 'aizawaema')
             ->assertJsonPath('data.channels.0.subscriber_count', 125000)
             ->assertJsonPath('data.contents.0.title', 'Archive Stream 1')
@@ -102,6 +104,23 @@ class VtuberProfileApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.id', $creator->id)
             ->assertJsonPath('data.display_name', 'Slug Lookup');
+    }
+
+    #[Test]
+    public function owned_creator_profile_is_not_claimable(): void
+    {
+        $owner = $this->userWithRole('User');
+        $viewer = $this->userWithRole('User');
+        $this->activations->activateImplicit($owner, 'Vtual');
+        $this->activations->activateImplicit($viewer, 'Vtual');
+
+        $creator = $this->creators->create($owner, ['display_name' => 'Owned Profile']);
+
+        $this->actingAsJwt($viewer)
+            ->getJson('/api/v1/vtual/vtubers/'.$creator->slug)
+            ->assertOk()
+            ->assertJsonPath('data.is_claimable', false)
+            ->assertJsonPath('data.claim_process_url', null);
     }
 
     #[Test]

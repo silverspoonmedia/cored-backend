@@ -72,13 +72,15 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Live CCV poll** | Scheduled `vtual:poll-live-contents` | `LiveContentPollService` |
 | **YouTube WebSub** | Push trigger + `vtual:renew-websub-subscriptions` (`--repair-missing`) | `YoutubeWebSubSubscriptionService`, `YoutubeWebSubNotificationService`, webhook route; subscribe on `ChannelActivationService` |
 | **YouTube WebSub hardening** | Strict hub verify, dual sha1/sha256 signature, resilient topic lookup, body cap, structured logging + `last_error`, shared Atom parser | `YoutubeAtomFeedParser`, `YoutubeWebSubWebhookController`, `config/vtual.php` `websub.max_body_bytes`, registry `vtual.websub.max_body_bytes` |
-| **vTuber profile (read)** | `/apps/vtual/vtuber/{slug}` — col-4/8 AdminLTE layout; sidebar channel ID cards with `subscriber_count_formatted`; uniform 3-slot content cards (`vtuber-content-card__title|__meta|__badges`, `monolith-line-clamp-2`); any logged-in user; UUID → 301 slug (web) | `VtuberProfileService`, `VtuberProfileController`, `ChannelResource`, `ContentResource`, partials under `vtual/vtuber/`, `monolith-overrides.css`, `VtuberProfileWebTest` |
+| **vTuber profile (read)** | `/apps/vtual/vtuber/{slug}` — col-4/8 AdminLTE layout; Claim button when orphan (`is_claimable`); uniform content cards; any logged-in user; UUID → 301 slug (web) | `VtuberProfileService`, `VtuberProfileController`, `VtuberProfileResource`, `VtuberProfileWebTest` |
+| **Claim process (interactive)** | `/apps/vtual/vtuber/{slug}/claim` — channel pick → token → queued verify (POST start/verify/cancel); WebSocket `claim.progress` on `private-vtual.claim.{id}` (`VtualClaimRealtime`); no polling; `claim_blocked_until` on profile API | `VtuberProfileController`, `claim.blade.php`, `claim-realtime.js`, `CreatorClaimVerifyPoolService`, `VtuberProfileWebTest`, `VtualClaimRealtimeTest`, `CreatorClaimProgressChannelTest` |
 | **vTual product hub (placeholder)** | `/apps/vtual/vtuber` — blank AdminLTE shell for upcoming product surfaces; any logged-in user | `VtuberProfileController::index`, `vtual/vtuber/index.blade.php`, `vtual.vtuber.index` |
 | **Management naming guide** | Core role `Management` vs `vtual_managements` talent org — canonical vocabulary | [naming-conventions.md](naming-conventions.md) |
 | **Platform credentials UI** | `/apps/vtual/platform-credentials`: platform index table + per-platform CRUD + probe at `/probe` | `PlatformCredentialController`, `PlatformApiProbeController`, `vtual-platform-credentials` views, `PlatformCredentialWebTest` |
 | **My profiles manage (API only)** | List bound profiles; edit meta; external links CRUD; channel claims + active/archived channels | API `/creators/*`, `ExternalLinkService`; web `CreatorProfileController` in `_archive/` |
 | **Profile merge (absorb)** | Same-owner or manage-any; move channels/links/contents/appearances; cancel pendings `merged`; archive source + slug mangle | `CreatorMergeService`, `POST creators/{id}/merge`, `CreatorMergeServiceTest` |
 | **Channel archive / restore** | Soft hide `archived`; list archived; restore → `active` | `ChannelService::archive` / `restore`, `ChannelServiceTest` |
+| **Claim verify pool** | Queued creator-claim bio verify; flush at **50** pending **or** **15 min** oldest age; max **3** attempts then **24h** block per user+creator | `CreatorClaimVerifyPoolService`, `vtual:flush-claim-verify-pool`, `CreatorClaimVerifyPoolServiceTest` |
 | **Channel fetch pool** | Non-interactive refresh + scheduled resync; flush at **50** ids **or** **15 min** age; `--resync` also enqueues when `last_synced_at` stale **or** `subscriber_count IS NULL`; single lock/claim flusher | `ChannelFetchPoolService`, `vtual:flush-channel-pool`, schedule in `routes/console.php`, `ChannelFetchPoolServiceTest` |
 | **Content fetch pool** | Video id hydrate batch after feed/WebSub discovery; `vtual:flush-content-pool` every 1m | `ContentFetchPoolService`, `ChannelContentFetchService`, `ContentIngestionPoolTest` |
 | **Channel registration pool** | Staff pending channel adds; same 50 / 15m gate per platform; flush delegates activate to `ChannelActivationService` | `ChannelRegistrationFlushService`, `ChannelActivationService`, `ChannelRegistrationFlushServiceTest` |
@@ -104,12 +106,15 @@ Representative suite under `tests/Domain/Vtual/`:
 | `ChannelInitialContentBackfillServiceTest` | One-time backfill, watermark, skip/fail paths |
 | `ChannelFeedPollServiceTest` | Watermark enqueue, initial backfill guard |
 | `ChannelClaimServiceTest` | Bio verify attach |
-| `CreatorClaimServiceTest` | Orphan claim, supersede, Accept Anyway |
+| `CreatorClaimServiceTest` | Orphan claim, queued verify + pool flush, supersede, Accept Anyway, max attempts block, progress event on queue |
+| `CreatorClaimVerifyPoolServiceTest` | Enqueue coalesce, skip below threshold, force flush, progress events |
+| `VtualClaimRealtimeTest` | Event dispatch when broadcast configured; no-op when null driver |
+| `CreatorClaimProgressChannelTest` | Private channel auth: claimant allowed, other user denied |
 | `CreatorMergeServiceTest` | Absorb, clash, staff orphans |
 | `PlatformApiGatewayTest` / client tests | Batch + ops |
 | `PlatformCredentialServiceTest` | Test gate, tokens, failover knobs |
 | `VtualApiTest` / `PlatformApiProbeApiTest` | HTTP surface smoke; admin probe gate |
-| `VtuberProfileWebTest` | Profile layout, canonical, UUID 301, uniform card slots, subscriber display |
+| `VtuberProfileWebTest` | Profile layout, canonical, UUID 301, claim button, interactive claim page |
 | `PlatformCredentialWebTest` | Active credentials CRUD web |
 | `ContentIngestionPoolTest` | Feed poll + content pool + live CCV integration |
 | `VtualBladeWebTest` | **Archived** — `tests/_archive/Feature/Http/Controllers/Web/` |
@@ -129,7 +134,7 @@ Mapped to original TASK / product vision. **Do not treat as bugs** unless a mile
 | **Multi-stream session correlation** | Not implemented | `fetchStreamsByUserIds` exists for future workers; live CCV poll (`vtual:poll-live-contents`) is done |
 | **WebSub tombstone / deleted video** | Not implemented | Mark content unavailable when `videos.list` returns 404 during content pool flush |
 | **Archived user web UI** | Web archived, API live | Profiles, claims, registry hub — restore or rebuild is backlog; see [ui-archive.md](ui-archive.md) |
-| **Pool interactive paths** | Out of scope by design | Claim start, bio verify, Accept Anyway resolve stay **sync** single-call; staff channel POST is **deferred** (not sync) |
+| **Pool interactive paths** | Partial by design | Creator **profile** claim verify is **queued** (`claim_verify_pool`); Accept Anyway stays sync; staff channel POST remains **deferred** |
 | **Auto appearance discovery** | Cancelled by design | Platform APIs lack safe multi-channel collab list |
 | **Management product UI** | Not implemented | Schema/API skeleton only; no staff talent-org UI |
 | **Viewer-only until claim** | Partial | Ideal: User cannot self-create creator until claim; API `POST creators` still exists for legacy |
@@ -161,6 +166,7 @@ Not a commitment — default backlog for the next sessions:
 | Migrate | `php artisan migrate` (includes `vtual_channel_fetch_pool`, claims, appearances, …) |
 | Roles / platforms | `php artisan db:seed --class=VtualRoleSeeder` |
 | Menus | Seed `RoleSeeder`, `FileHostingRoleSeeder`, and `VtualRoleSeeder`, then `php artisan db:seed --class=MenuSeeder` (authoritative rebuild + post-commit cache flush) |
+| Flush claim verify pool | `php artisan vtual:flush-claim-verify-pool` (`--force`) |
 | Flush channel pool (on demand) | `php artisan vtual:flush-channel-pool` |
 | Poll channel feeds | `php artisan vtual:poll-channel-feeds` (`--channel=`, `--force`) |
 | Flush content pool | `php artisan vtual:flush-content-pool` (`--force`) |
@@ -170,10 +176,11 @@ Not a commitment — default backlog for the next sessions:
 | Force flush (ignore 50/15m gate) | `php artisan vtual:flush-channel-pool --force` |
 | Enqueue stale actives then flush | `php artisan vtual:flush-channel-pool --resync` / `--resync --force` |
 | Platform filter | `--platform=youtube` or `twitch` |
-| Schedule | `routes/console.php`: every minute `vtual:flush-channel-pool`; hourly `--resync` (needs `schedule:work` / cron) |
+| Schedule | `routes/console.php`: every minute `vtual:flush-channel-pool` + `vtual:flush-claim-verify-pool`; hourly channel `--resync` (needs `schedule:work` / cron) |
 | Admin probe | `/apps/vtual/platform-credentials/probe` (Root/Admin) |
 | Credentials UI | `/apps/vtual/platform-credentials` |
 | vTuber profile (read) | `/apps/vtual/vtuber/{slug}` (any logged-in user) |
+| Claim process (interactive) | `/apps/vtual/vtuber/{slug}/claim` (orphan / `is_claimable`) |
 | vTual product hub (placeholder) | `/apps/vtual/vtuber` |
 | Orphan admin / staff seed | `/apps/vtual/orphans` |
 | Pending claims (API) | `GET /api/v1/vtual/claims/pending` (registry web archived) |
@@ -189,7 +196,8 @@ Not a commitment — default backlog for the next sessions:
 | `channel_pool.max_wait_minutes` | Age flush (15) |
 | `channel_pool.resync_stale_hours` | Stale active enqueue (24) |
 | `channel_pool.resync_enqueue_limit` | Cap per resync tick (200) |
-| `claim.*` / `channel_claim.*` | Token TTL, cooldown, Accept Anyway |
+| `claim.*` / `channel_claim.*` | Token TTL, cooldown, max attempts (3), 24h block, Accept Anyway |
+| `claim_verify_pool.*` | Claim bio verify batch gate (50 / 15m) |
 | `credential.failover.*` | Soft demote on 401/403 (default OFF) |
 
 ---
@@ -219,6 +227,9 @@ High-level order of work that landed in this long implementation arc (not exhaus
 19. **YouTube WebSub hardening** — strict verify, dual signature, shared Atom parser, body cap  
 20. **Management naming guide** — [naming-conventions.md](naming-conventions.md) (core `Management` vs `vtual_managements`)  
 21. **vTual product hub placeholder** — `/apps/vtual/vtuber` blank AdminLTE shell (`vtual.vtuber.index`)  
+22. **Profile claim UX (info)** — Claim button on orphan profile; `/apps/vtual/vtuber/{slug}/claim` informational page; API `is_claimable` + `claim_process_url`  
+23. **Interactive claim + verify pool** — Web start/verify/cancel; `claim_verify_pool` strict 50/15m; max 3 attempts + 24h block; `claim_blocked_until` on profile API  
+24. **Claim page WebSocket realtime** — `CreatorClaimProgressChanged` / `claim.progress` on `private-vtual.claim.{id}`; `claim-realtime.js` (no polling); degraded AJAX + manual reload when broadcast off; `vtual.claim.max_attempts` = 3 in config + Settings  
 
 ---
 

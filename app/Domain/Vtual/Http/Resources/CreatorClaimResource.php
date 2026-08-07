@@ -2,6 +2,7 @@
 
 namespace App\Domain\Vtual\Http\Resources;
 
+use App\Domain\Vtual\Services\CreatorClaimService;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -16,6 +17,14 @@ class CreatorClaimResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $actor = $request->user();
+        $claims = app(CreatorClaimService::class);
+        $maxAttempts = $claims->maxAttempts();
+        $attemptCount = (int) $this->attempt_count;
+        $blockedUntil = $actor !== null
+            ? $claims->blockedUntil($actor, (string) $this->creator_id)
+            : null;
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -26,7 +35,12 @@ class CreatorClaimResource extends JsonResource
             'closed_reason' => $this->closed_reason instanceof \BackedEnum
                 ? $this->closed_reason->value
                 : $this->closed_reason,
-            'attempt_count' => $this->attempt_count,
+            'attempt_count' => $attemptCount,
+            'attempts_remaining' => max(0, $maxAttempts - $attemptCount),
+            'max_attempts' => $maxAttempts,
+            'verify_queue_status' => $claims->verifyQueueStatus($this->resource),
+            'can_verify' => $actor !== null && $claims->canQueueVerify($this->resource, $actor),
+            ...$this->dateFields('blocked_until', $blockedUntil),
             ...$this->dateFields('last_attempt_at', $this->last_attempt_at),
             ...$this->dateFields('expires_at', $this->expires_at),
             ...$this->dateFields('verified_at', $this->verified_at),

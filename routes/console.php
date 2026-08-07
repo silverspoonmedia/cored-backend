@@ -23,6 +23,9 @@ Schedule::command('file-hosting:prune-stale-uploads')
 Schedule::command('vtual:flush-channel-pool')
     ->everyMinute()
     ->withoutOverlapping();
+Schedule::command('vtual:flush-claim-verify-pool')
+    ->everyMinute()
+    ->withoutOverlapping();
 Schedule::command('vtual:flush-channel-pool --resync')
     ->hourly()
     ->withoutOverlapping();

@@ -8,6 +8,7 @@ use App\Domain\Vtual\Enums\CreatorClaimClosedReason;
 use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Enums\CreatorClaimVerifiedVia;
 use App\Domain\Vtual\Enums\CreatorMemberRole;
+use App\Domain\Vtual\Events\CreatorClaimProgressChanged;
 use App\Domain\Vtual\Models\CreatorClaim;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
@@ -15,11 +16,14 @@ use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\CreatorMember;
 use App\Domain\Vtual\Models\Platform;
+use App\Domain\Vtual\Models\CreatorClaimBlock;
 use App\Domain\Vtual\Services\CreatorClaimService;
+use App\Domain\Vtual\Services\CreatorClaimVerifyPoolService;
 use App\Domain\Vtual\Services\CreatorService;
 use App\Domain\Vtual\Services\PlatformCredentialService;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -60,7 +64,8 @@ class CreatorClaimServiceTest extends TestCase
         config([
             'vtual.claim.accept_anyway_enabled' => true,
             'vtual.claim.verify_cooldown_seconds' => 60,
-            'vtual.claim.max_attempts' => 20,
+            'vtual.claim.max_attempts' => 3,
+            'vtual.claim.block_hours_after_max_attempts' => 24,
             'vtual.claim.ttl_hours' => 24,
             'vtual.claim.max_pending_per_user' => 5,
         ]);
@@ -126,6 +131,33 @@ class CreatorClaimServiceTest extends TestCase
     }
 
     #[Test]
+    public function queue_verify_dispatches_progress_when_broadcast_enabled(): void
+    {
+        config([
+            'broadcasting.default' => 'pusher',
+            'broadcasting.connections.pusher' => [
+                'driver' => 'pusher',
+                'key' => 'key',
+                'secret' => 'secret',
+                'app_id' => 'app',
+                'options' => ['cluster' => 'ap1'],
+            ],
+        ]);
+        Event::fake([CreatorClaimProgressChanged::class]);
+
+        [$orphan, $channel] = $this->seedOrphanWithChannel();
+        $user = $this->userWithRole('User');
+        $claim = $this->claims->start($user, $orphan->id, $channel->id);
+
+        $this->claims->queueVerify($user, $claim->id);
+
+        Event::assertDispatched(CreatorClaimProgressChanged::class, function (CreatorClaimProgressChanged $event) use ($claim): bool {
+            return $event->claimId === (string) $claim->id
+                && $event->phase === 'verify_queued';
+        });
+    }
+
+    #[Test]
     public function verify_success_when_description_contains_token(): void
     {
         $this->activateYoutubeCredential();
@@ -135,7 +167,10 @@ class CreatorClaimServiceTest extends TestCase
 
         $this->fakeYoutubeChannel(self::YT_ID, 'neuron', 'Neuron', 'Hello '.$claim->token.' world');
 
-        $verified = $this->claims->verify($user, $claim->id);
+        $this->claims->queueVerify($user, $claim->id);
+        app(CreatorClaimVerifyPoolService::class)->flush(force: true);
+
+        $verified = CreatorClaim::query()->findOrFail($claim->id);
 
         $this->assertSame(CreatorClaimStatus::Verified, $verified->status);
         $this->assertSame(CreatorClaimVerifiedVia::Bio, $verified->verified_via);
@@ -160,16 +195,51 @@ class CreatorClaimServiceTest extends TestCase
 
         $this->fakeYoutubeChannel(self::YT_ID, 'neuron', 'Neuron', 'no token here');
 
-        try {
-            $this->claims->verify($user, $claim->id);
-            $this->fail('Expected VtualException');
-        } catch (VtualException $e) {
-            $this->assertStringContainsString('token', strtolower($e->getMessage()));
-        }
+        $this->claims->queueVerify($user, $claim->id);
+        app(CreatorClaimVerifyPoolService::class)->flush(force: true);
 
         $claim->refresh();
         $this->assertSame(1, (int) $claim->attempt_count);
         $this->assertSame(CreatorClaimStatus::Pending, $claim->status);
+    }
+
+    #[Test]
+    public function verify_failed_broadcast_snapshot_clears_queue_status_when_broadcast_enabled(): void
+    {
+        config([
+            'broadcasting.default' => 'pusher',
+            'broadcasting.connections.pusher' => [
+                'driver' => 'pusher',
+                'key' => 'key',
+                'secret' => 'secret',
+                'app_id' => 'app',
+                'options' => ['cluster' => 'ap1'],
+            ],
+            'vtual.claim.verify_cooldown_seconds' => 0,
+        ]);
+        Event::fake([CreatorClaimProgressChanged::class]);
+
+        $this->activateYoutubeCredential();
+        [$orphan, $channel] = $this->seedOrphanWithChannel();
+        $user = $this->userWithRole('User');
+        $claim = $this->claims->start($user, $orphan->id, $channel->id);
+
+        $this->fakeYoutubeChannel(self::YT_ID, 'neuron', 'Neuron', 'no token here');
+
+        $this->claims->queueVerify($user, $claim->id);
+        app(CreatorClaimVerifyPoolService::class)->flush(force: true);
+
+        Event::assertDispatched(CreatorClaimProgressChanged::class, function (CreatorClaimProgressChanged $event) use ($claim): bool {
+            return $event->claimId === (string) $claim->id
+                && $event->phase === 'verify_failed'
+                && ($event->claim['verify_queue_status'] ?? null) === null;
+        });
+
+        Event::assertDispatched(CreatorClaimProgressChanged::class, function (CreatorClaimProgressChanged $event) use ($claim): bool {
+            return $event->claimId === (string) $claim->id
+                && $event->phase === 'verify_failed'
+                && $event->claim['can_verify'] === true;
+        });
     }
 
     #[Test]
@@ -184,15 +254,15 @@ class CreatorClaimServiceTest extends TestCase
         $this->fakeYoutubeChannel(self::YT_ID, 'neuron', 'Neuron', 'nope');
 
         try {
-            $this->claims->verify($user, $claim->id);
+            $this->claims->queueVerify($user, $claim->id);
         } catch (VtualException) {
-            // first fail increments attempt
+            // first queue increments attempt
         }
 
         $this->fakeYoutubeChannel(self::YT_ID, 'neuron', 'Neuron', 'nope again');
 
         try {
-            $this->claims->verify($user, $claim->id);
+            $this->claims->queueVerify($user, $claim->id);
             $this->fail('Expected cooldown VtualException');
         } catch (VtualException $e) {
             $this->assertStringContainsString('wait', strtolower($e->getMessage()));
@@ -217,7 +287,7 @@ class CreatorClaimServiceTest extends TestCase
         $this->fakeYoutubeChannel(self::YT_ID, 'neuron', 'Neuron', $claim->token);
 
         try {
-            $this->claims->verify($user, $claim->id);
+            $this->claims->queueVerify($user, $claim->id);
             $this->fail('Expected VtualException');
         } catch (VtualException $e) {
             $this->assertTrue(
@@ -245,7 +315,10 @@ class CreatorClaimServiceTest extends TestCase
 
         $this->fakeYoutubeChannel(self::YT_ID, 'neuron', 'Neuron', 'bio '.$claimA->token);
 
-        $verified = $this->claims->verify($userA, $claimA->id);
+        $this->claims->queueVerify($userA, $claimA->id);
+        app(CreatorClaimVerifyPoolService::class)->flush(force: true);
+
+        $verified = CreatorClaim::query()->findOrFail($claimA->id);
         $this->assertSame(CreatorClaimStatus::Verified, $verified->status);
 
         $claimB->refresh();
@@ -253,11 +326,45 @@ class CreatorClaimServiceTest extends TestCase
         $this->assertSame(CreatorClaimClosedReason::Superseded, $claimB->closed_reason);
 
         try {
-            $this->claims->verify($userB, $claimB->id);
+            $this->claims->queueVerify($userB, $claimB->id);
             $this->fail('Expected not_pending after supersede');
         } catch (VtualException $e) {
             $this->assertStringContainsString('pending', strtolower($e->getMessage()));
         }
+    }
+
+    #[Test]
+    public function max_verify_attempts_blocks_user_for_creator(): void
+    {
+        $this->activateYoutubeCredential();
+        [$orphan, $channel] = $this->seedOrphanWithChannel();
+        $user = $this->userWithRole('User');
+        $claim = $this->claims->start($user, $orphan->id, $channel->id);
+
+        config(['vtual.claim.verify_cooldown_seconds' => 0]);
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->fakeYoutubeChannel(self::YT_ID, 'neuron', 'Neuron', 'no token');
+            $this->claims->queueVerify($user, $claim->id);
+            app(CreatorClaimVerifyPoolService::class)->flush(force: true);
+            $claim->refresh();
+        }
+
+        $this->assertSame(CreatorClaimStatus::Cancelled, $claim->status);
+        $this->assertSame(CreatorClaimClosedReason::MaxAttempts, $claim->closed_reason);
+        $this->assertTrue($this->claims->isBlocked($user, $orphan->id));
+
+        try {
+            $this->claims->start($user, $orphan->id, $channel->id);
+            $this->fail('Expected blocked');
+        } catch (VtualException $e) {
+            $this->assertStringContainsString('block', strtolower($e->getMessage()));
+        }
+
+        $this->assertNotNull(CreatorClaimBlock::query()
+            ->where('user_id', $user->id)
+            ->where('creator_id', $orphan->id)
+            ->first());
     }
 
     #[Test]

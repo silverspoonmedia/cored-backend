@@ -156,7 +156,8 @@ return [
         'token_bytes' => 6,
         'ttl_hours' => 24,
         'verify_cooldown_seconds' => 60,
-        'max_attempts' => 20,
+        'max_attempts' => 3,
+        'block_hours_after_max_attempts' => 24,
         // Soft cap on concurrent pending claims per user (audit rows kept).
         'max_pending_per_user' => 5,
         // Local/dev default ON for QA without editing live bios.
@@ -201,6 +202,22 @@ return [
         'schedule_every_minutes' => 1,
         'resync_stale_hours' => 24,
         'resync_enqueue_limit' => 200,
+        'flush_lock_seconds' => 30,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Creator claim verify pool (queued bio verification)
+    |--------------------------------------------------------------------------
+    |
+    | Profile claim verify is enqueued then flushed when pending >= threshold
+    | OR oldest pending age >= max_wait (strict pool — no immediate flush below
+    | threshold). Batch channel fetches up to http.batch.channels per platform.
+    |
+    */
+    'claim_verify_pool' => [
+        'threshold' => 50,
+        'max_wait_minutes' => 15,
         'flush_lock_seconds' => 30,
     ],
 

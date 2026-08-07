@@ -76,11 +76,11 @@ class CreatorClaimController extends Controller
 
     public function verify(Request $request, CreatorClaim $claim): JsonResponse
     {
-        $verified = $this->claims->verify($request->user(), $claim->id);
+        $queued = $this->claims->queueVerify($request->user(), $claim->id);
 
         return $this->successResponse(
-            $this->resolveResource(new CreatorClaimResource($verified)),
-            __('api/vtual.claim.verified'),
+            $this->resolveResource(new CreatorClaimResource($queued)),
+            __('api/vtual.claim.verify_queued'),
         );
     }
 

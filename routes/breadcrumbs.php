@@ -84,6 +84,11 @@ Breadcrumbs::for('vtual.vtuber.index', function (Trail $trail): void {
     $trail->push(__('web/vtual-vtuber.hub_title'), route('vtual.vtuber.index'));
 });
 
+Breadcrumbs::for('vtual.vtuber.claim', function (Trail $trail, string $displayName): void {
+    $trail->parent('vtual.vtuber.show', $displayName);
+    $trail->push(__('web/vtual-vtuber.claim_page_title'));
+});
+
 Breadcrumbs::for('vtual.vtuber.show', function (Trail $trail, string $displayName): void {
     $trail->parent('vtual.vtuber.index');
     $trail->push($displayName);

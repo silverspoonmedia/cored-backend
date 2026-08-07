@@ -16,6 +16,9 @@ enum CreatorClaimClosedReason: string
     /** Creator profile was absorbed into another profile (merge). */
     case Merged = 'merged';
 
+    /** Verify attempts exhausted (profile claim). */
+    case MaxAttempts = 'max_attempts';
+
     /**
      * @return list<string>
      */

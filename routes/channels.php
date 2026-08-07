@@ -4,6 +4,7 @@ use App\Domain\FileHosting\Services\WorkspaceAccessService;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Support\InvoiceChannelAuthorizer;
+use App\Domain\Vtual\Models\CreatorClaim;
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('App.Models.User.{id}', function (User $user, string $id): bool {
@@ -41,4 +42,11 @@ Broadcast::channel('payments.invoice.{invoiceId}', function (User $user, string 
 
 Broadcast::channel('payments.routing', function (User $user): bool {
     return $user->can('initiate payment') || $user->can('view invoice');
+});
+
+Broadcast::channel('vtual.claim.{claimId}', function (User $user, string $claimId): bool {
+    return CreatorClaim::query()
+        ->whereKey($claimId)
+        ->where('user_id', $user->id)
+        ->exists();
 });
