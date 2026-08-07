@@ -19,6 +19,7 @@ return [
         'file-hosting.download_vault.enabled' => true,
         'microstock.ai.http_retries' => 1,
         'vtual.claim.accept_anyway_enabled' => true,
+        'vtual.claim.discord_verify_enabled' => true,
         'vtual.channel_claim.accept_anyway_enabled' => true,
         // Local Open WebUI model aliases + shorter stage timeouts (ops, not secrets).
         'microstock.ai.vision.model' => 'internal.sspn_pro_vision',

@@ -5,6 +5,10 @@
     $verifyQueueStatus = $claim['verify_queue_status'] ?? null;
     $canVerify = ! empty($claim['can_verify']);
     $claimId = $claim['id'] ?? '';
+    $discordVerifyEnabled = $discordVerifyEnabled ?? false;
+    $discordConnected = $discordConnected ?? false;
+    $proofPlatformKey = is_array($proofChannel) ? ($proofChannel['platform']['key'] ?? '') : '';
+    $showDiscordVerify = $discordVerifyEnabled && $proofPlatformKey !== 'kick' && $proofPlatformKey !== '';
 @endphp
 
 <h5 class="h6 mb-2">{{ __('web/vtual-vtuber.claim_active_heading') }}</h5>
@@ -87,4 +91,32 @@
             class="btn btn-outline-danger btn-sm"
         />
     </x-adminlte4::form.ajax>
+
+    @if ($showDiscordVerify)
+        <div data-claim-discord-wrap>
+            @if ($discordConnected)
+                <x-adminlte4::form.ajax
+                    :action="route('vtual.vtuber.claim.discord-verify', $slug)"
+                    method="POST"
+                    class="d-inline"
+                    :showAlert="false"
+                    data-claim-discord-verify-form
+                >
+                    <input type="hidden" name="claim_id" value="{{ $claimId }}">
+                    <x-adminlte4::form.submit
+                        :label="__('web/vtual-vtuber.claim_discord_verify_button')"
+                        class="btn btn-outline-primary btn-sm"
+                    />
+                </x-adminlte4::form.ajax>
+            @else
+                <a
+                    href="{{ route('auth.discord.redirect', ['intent' => 'claim_verify', 'slug' => $slug, 'claim_id' => $claimId]) }}"
+                    class="btn btn-outline-primary btn-sm"
+                >
+                    {{ __('web/vtual-vtuber.claim_discord_connect_cta') }}
+                </a>
+            @endif
+        </div>
+        <p class="text-muted small mt-2 mb-0">{{ __('web/vtual-vtuber.claim_discord_panel_hint') }}</p>
+    @endif
 </div>

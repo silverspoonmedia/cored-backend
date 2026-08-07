@@ -67,6 +67,9 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
         Route::get('claims/{claim}', [CreatorClaimController::class, 'show'])
             ->whereUuid('claim')
             ->name('claims.show');
+        Route::post('claims/{claim}/verify-discord', [CreatorClaimController::class, 'verifyDiscord'])
+            ->whereUuid('claim')
+            ->name('claims.verify-discord');
         Route::post('claims/{claim}/verify', [CreatorClaimController::class, 'verify'])
             ->whereUuid('claim')
             ->name('claims.verify');

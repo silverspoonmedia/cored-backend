@@ -14,4 +14,5 @@ return [
     'profile' => 'Profil',
     'password' => 'Ubah kata sandi',
     'two_factor' => 'Autentikasi dua faktor',
+    'connected_accounts' => 'Akun terhubung',
 ];

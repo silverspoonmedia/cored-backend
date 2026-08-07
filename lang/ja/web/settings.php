@@ -137,6 +137,7 @@ return [
         'vtual.claim.block_hours_after_max_attempts' => '最大試行後のクレームブロック時間（時間）',
         'vtual.claim.max_pending_per_user' => 'ユーザーあたり最大保留クレーム数',
         'vtual.claim.accept_anyway_enabled' => 'クレーム強制承認有効',
+        'vtual.claim.discord_verify_enabled' => 'クレームDiscord検証有効',
         'vtual.claim.token_prefix' => 'クレームトークン接頭辞',
         'vtual.claim.token_bytes' => 'クレームトークン乱数バイト数',
         'vtual.channel_claim.ttl_hours' => 'チャネルクレームTTL（時間）',
@@ -184,6 +185,7 @@ return [
         'microstock.ai.stage.thinking_backlog_after' => '思考ジョブがバックログキューに移るまでの秒数。',
         'vtual.credential.failover.enabled' => '認証失敗が繰り返された後、次の認証情報にローテーションします。',
         'vtual.claim.accept_anyway_enabled' => '検証が不確実でもユーザーがクレームを承認できるようにします。',
+        'vtual.claim.discord_verify_enabled' => 'DiscordにリンクされたYouTube/Twitchアカウントの照合による孤児クレーム検証を許可します。',
     ],
     'options' => [
         'platform' => [

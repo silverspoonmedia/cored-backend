@@ -152,6 +152,7 @@ final class SettingRegistry
             'vtual.claim.block_hours_after_max_attempts' => self::def('vtual', SettingType::Int, 'vtual.claim.block_hours_after_max_attempts'),
             'vtual.claim.max_pending_per_user' => self::def('vtual', SettingType::Int, 'vtual.claim.max_pending_per_user'),
             'vtual.claim.accept_anyway_enabled' => self::def('vtual', SettingType::Bool, 'vtual.claim.accept_anyway_enabled'),
+            'vtual.claim.discord_verify_enabled' => self::def('vtual', SettingType::Bool, 'vtual.claim.discord_verify_enabled'),
             'vtual.claim.token_prefix' => self::def('vtual', SettingType::String, 'vtual.claim.token_prefix'),
             'vtual.claim.token_bytes' => self::def('vtual', SettingType::Int, 'vtual.claim.token_bytes'),
             'vtual.channel_claim.ttl_hours' => self::def('vtual', SettingType::Int, 'vtual.channel_claim.ttl_hours'),

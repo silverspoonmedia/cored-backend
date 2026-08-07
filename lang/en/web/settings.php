@@ -137,6 +137,7 @@ return [
         'vtual.claim.block_hours_after_max_attempts' => 'Claim block duration after max attempts (hours)',
         'vtual.claim.max_pending_per_user' => 'Max pending claims per user',
         'vtual.claim.accept_anyway_enabled' => 'Claim accept-anyway enabled',
+        'vtual.claim.discord_verify_enabled' => 'Claim Discord verification enabled',
         'vtual.claim.token_prefix' => 'Claim token prefix',
         'vtual.claim.token_bytes' => 'Claim token random bytes',
         'vtual.channel_claim.ttl_hours' => 'Channel claim TTL (hours)',
@@ -184,6 +185,7 @@ return [
         'microstock.ai.stage.thinking_backlog_after' => 'Seconds before thinking jobs move to backlog queue.',
         'vtual.credential.failover.enabled' => 'Rotate to the next credential after repeated auth failures.',
         'vtual.claim.accept_anyway_enabled' => 'Allow users to accept a claim even when verification is inconclusive.',
+        'vtual.claim.discord_verify_enabled' => 'Allow users to verify orphan claims by matching Discord-linked YouTube/Twitch accounts.',
     ],
     'options' => [
         'platform' => [

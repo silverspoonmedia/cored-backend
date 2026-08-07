@@ -6,6 +6,7 @@ enum CreatorClaimVerifiedVia: string
 {
     case Bio = 'bio';
     case AcceptAnyway = 'accept_anyway';
+    case DiscordConnection = 'discord_connection';
 
     /**
      * @return list<string>

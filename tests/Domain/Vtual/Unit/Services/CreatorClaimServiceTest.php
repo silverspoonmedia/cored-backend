@@ -2,6 +2,8 @@
 
 namespace Tests\Domain\Vtual\Unit\Services;
 
+use App\Domain\Identity\Enums\OAuthProvider;
+use App\Domain\Identity\Models\IdentityOAuthAccount;
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\CreatorClaimClosedReason;
@@ -201,6 +203,44 @@ class CreatorClaimServiceTest extends TestCase
         $claim->refresh();
         $this->assertSame(1, (int) $claim->attempt_count);
         $this->assertSame(CreatorClaimStatus::Pending, $claim->status);
+    }
+
+    #[Test]
+    public function verify_via_discord_completes_when_connection_matches(): void
+    {
+        config([
+            'vtual.claim.discord_verify_enabled' => true,
+            'vtual.claim.verify_cooldown_seconds' => 0,
+        ]);
+
+        [$orphan, $channel] = $this->seedOrphanWithChannel();
+        $user = $this->userWithRole('User');
+        $claim = $this->claims->start($user, $orphan->id, $channel->id);
+
+        $account = new IdentityOAuthAccount();
+        $account->user_id = $user->id;
+        $account->provider = OAuthProvider::Discord;
+        $account->provider_user_id = 'discord-user';
+        $account->forceFill([
+            'access_token' => 'discord-access',
+            'refresh_token' => 'discord-refresh',
+        ])->save();
+
+        Http::fake([
+            'discord.com/api/users/@me/connections' => Http::response([
+                [
+                    'type' => 'youtube',
+                    'id' => self::YT_ID,
+                    'name' => 'neuron',
+                    'verified' => true,
+                ],
+            ], 200),
+        ]);
+
+        $verified = $this->claims->verifyViaDiscord($user, $claim->id);
+
+        $this->assertSame(CreatorClaimStatus::Verified, $verified->status);
+        $this->assertSame(CreatorClaimVerifiedVia::DiscordConnection, $verified->verified_via);
     }
 
     #[Test]

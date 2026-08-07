@@ -7,6 +7,8 @@
     $hasActiveClaim = is_array($activeClaim) && ($activeClaim['status'] ?? '') === 'pending';
     $blockedUntil = $profile['claim_blocked_until'] ?? $profile['claim_blocked_until_formatted']
         ?? ($activeClaim['blocked_until'] ?? $activeClaim['blocked_until_formatted'] ?? null);
+    $discordVerifyEnabled = $discordVerifyEnabled ?? false;
+    $discordConnected = $discordConnected ?? false;
     $claimConfig = [
         'profileUrl' => $profileUrl,
         'realtime' => $claimRealtime ?? [],
@@ -83,6 +85,8 @@
                     'claim' => $hasActiveClaim ? $activeClaim : [],
                     'slug' => $slug,
                     'claimRealtime' => $claimRealtime ?? [],
+                    'discordVerifyEnabled' => $discordVerifyEnabled,
+                    'discordConnected' => $discordConnected,
                 ])
             </div>
 
@@ -92,6 +96,8 @@
                         'claim' => [],
                         'slug' => $slug,
                         'claimRealtime' => $claimRealtime ?? [],
+                        'discordVerifyEnabled' => $discordVerifyEnabled,
+                        'discordConnected' => $discordConnected,
                     ])
                 </div>
             </template>
@@ -134,6 +140,30 @@
                                                 class="btn btn-primary btn-sm"
                                             />
                                         </x-adminlte4::form.ajax>
+                                        @if ($discordVerifyEnabled && ($channel['platform']['key'] ?? '') !== 'kick')
+                                            @if ($discordConnected)
+                                                <x-adminlte4::form.ajax
+                                                    :action="route('vtual.vtuber.claim.discord', $slug)"
+                                                    method="POST"
+                                                    class="d-inline"
+                                                    :showAlert="false"
+                                                    data-claim-discord-start-form
+                                                >
+                                                    <input type="hidden" name="channel_id" value="{{ $channel['id'] ?? '' }}">
+                                                    <x-adminlte4::form.submit
+                                                        :label="__('web/vtual-vtuber.claim_verify_with_discord')"
+                                                        class="btn btn-outline-primary btn-sm"
+                                                    />
+                                                </x-adminlte4::form.ajax>
+                                            @else
+                                                <a
+                                                    href="{{ route('auth.discord.redirect', ['intent' => 'claim_channel', 'slug' => $slug, 'channel_id' => $channel['id'] ?? '']) }}"
+                                                    class="btn btn-outline-primary btn-sm"
+                                                >
+                                                    {{ __('web/vtual-vtuber.claim_discord_connect_cta') }}
+                                                </a>
+                                            @endif
+                                        @endif
                                     </div>
                                 </div>
                             </li>

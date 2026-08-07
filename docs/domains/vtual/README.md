@@ -67,7 +67,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 | Path | Who | Behavior |
 |------|-----|----------|
 | Internal seed | Root / Admin / Moderator (`manage any vtual resource`) | `POST /api/v1/vtual/creators/orphan` creates creator **without** owner membership; then register channels as usual. Staff UI: `/apps/vtual/orphans` (do not self-bind staff as owner; use a separate account if staff is also a vtuber) |
-| External claim Existing | User with `claim vtual creator` | Pick claimable creator + proof channel (`POST .../claims`), receive token `vtual-claim-...`, put token in YouTube About / Twitch bio, then `POST .../claims/{id}/verify` **enqueues** bio check (strict batch pool: flush when pending ≥ 50 **or** oldest ≥ 15 min). Claim page pushes progress over WebSocket (`claim.progress` on `private-vtual.claim.{id}`) when broadcast is configured — **no polling**. Without broadcast: AJAX ack for queue/start/cancel + manual reload for pool outcome. Staff **Accept Anyway** stays synchronous. |
+| External claim Existing | User with `claim vtual creator` | Pick claimable creator + proof channel. **Bio:** token in YouTube About / Twitch bio → `POST .../claims/{id}/verify` (queued batch pool). **Discord:** connect at `/apps/profile/connections`, then `POST .../claims/{id}/verify-discord` (sync) — matches verified YouTube/Twitch on Discord profile to `vtual_channels.external_id` (`verified_via=discord_connection`). Both routes sit behind `permission:claim vtual creator`; claimant/pending checks are enforced in `CreatorClaimService` (no separate claim policy middleware). Claim page WebSocket `claim.progress` when broadcast configured. Staff **Accept Anyway** stays synchronous. |
 | Accept Anyway | Staff + `vtual.claim.accept_anyway_enabled` (Settings → vTual) | Skip bio check (QA / local default **ON**) |
 | Staff pending queue | `manage any` | `GET /api/v1/vtual/claims/pending` (legacy registry web archived) |
 
@@ -94,7 +94,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 
 **Sidebar:** Administration → **vTual** (`vtual.orphans.index`): Orphan vTubers (Root/Admin/Moderator); Platform credentials (Root/Admin). Legacy external/internal Blade UIs archived — see [ui-archive.md](ui-archive.md).
 
-**Out of scope (claim UI phase leftovers):** management product UI, survey form, **Add New** approval queue, appeal / permanent reject, OAuth login proof, auto-purge of old cancelled rows, stripping core `User` `create vtual creator` (API legacy self-create still exists; staff Blade seeds orphans only).
+**Out of scope (claim UI phase leftovers):** management product UI, survey form, **Add New** approval queue, appeal / permanent reject, Discord-as-login (connected accounts are for claim proof only), auto-purge of old cancelled rows, stripping core `User` `create vtual creator` (API legacy self-create still exists; staff Blade seeds orphans only).
 
 **Shipped later (do not list as missing):** [profile merge (absorb)](#profile-merge-absorb--implemented), channel archive/restore, [channel fetch pool](#platform-http-clients-manual-fetch) (refresh/resync). Full matrix: [implementation-status.md](implementation-status.md).
 

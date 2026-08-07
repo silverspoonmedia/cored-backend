@@ -84,6 +84,20 @@ class CreatorClaimController extends Controller
         );
     }
 
+    public function verifyDiscord(Request $request, CreatorClaim $claim): JsonResponse
+    {
+        $verified = $this->claims->verifyViaDiscord($request->user(), $claim->id);
+
+        $message = $verified->status === \App\Domain\Vtual\Enums\CreatorClaimStatus::Verified
+            ? __('api/vtual.claim.verified')
+            : __('api/vtual.claim.discord_no_match');
+
+        return $this->successResponse(
+            $this->resolveResource(new CreatorClaimResource($verified)),
+            $message,
+        );
+    }
+
     public function cancel(Request $request, CreatorClaim $claim): JsonResponse
     {
         $cancelled = $this->claims->cancel($request->user(), $claim->id);

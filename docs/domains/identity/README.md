@@ -137,6 +137,10 @@ Notifications on create/update: [notification domain](../notification/README.md)
 
 Paginated select options: `GET /api/v1/lookups/*` — [web/ui-patterns](../../web/ui-patterns.md).
 
+## Connected accounts (Discord)
+
+Web: `/apps/profile/connections`. OAuth routes: `auth.discord.redirect`, `auth.discord.callback` (`identify` + `connections` scopes). Table `identity_oauth_accounts` stores envelope-encrypted tokens + cached YouTube/Twitch connection snapshot. Used by vTual claim `verify-discord` ([vtual/README](../vtual/README.md)). Env: non-empty `DISCORD_CLIENT_ID` + `DISCORD_CLIENT_SECRET` required; `DISCORD_REDIRECT_URI` defaults to `{APP_URL}/apps/auth/discord/callback` when unset. Connected-accounts and claim Discord UI stay hidden until credentials are configured.
+
 ## Tests
 
 Feature/unit under `tests/Domain/Identity/`. Prefer `composer test -- --filter=…`.

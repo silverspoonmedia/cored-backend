@@ -1,7 +1,9 @@
 <?php
 
+use App\Domain\Identity\Http\Controllers\Web\Auth\DiscordOAuthController;
 use App\Domain\Identity\Http\Controllers\Web\Auth\EmailVerificationController;
 use App\Domain\Identity\Http\Controllers\Web\Auth\PasswordController;
+use App\Domain\Identity\Http\Controllers\Web\Auth\ProfileConnectionsController;
 use App\Domain\Identity\Http\Controllers\Web\Auth\ProfileTwoFactorController;
 use App\Domain\Identity\Http\Controllers\Web\DashboardController;
 use App\Domain\Identity\Http\Controllers\Web\LookupController;
@@ -13,6 +15,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('profile/password', [PasswordController::class, 'edit'])->name('profile.password.edit');
 Route::put('profile/password', [PasswordController::class, 'update'])->name('profile.password.update');
+Route::get('profile/connections', [ProfileConnectionsController::class, 'index'])->name('profile.connections.edit');
+Route::post('profile/connections/discord/disconnect', [ProfileConnectionsController::class, 'disconnectDiscord'])
+    ->name('profile.connections.discord.disconnect');
+Route::get('auth/discord/redirect', [DiscordOAuthController::class, 'redirect'])->name('auth.discord.redirect');
+Route::get('auth/discord/callback', [DiscordOAuthController::class, 'callback'])->name('auth.discord.callback');
 Route::get('profile/two-factor', [ProfileTwoFactorController::class, 'edit'])->name('profile.two-factor.edit');
 Route::post('profile/two-factor/setup', [ProfileTwoFactorController::class, 'setup'])->name('profile.two-factor.setup');
 Route::post('profile/two-factor/confirm', [ProfileTwoFactorController::class, 'confirm'])->name('profile.two-factor.confirm');

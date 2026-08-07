@@ -137,6 +137,7 @@ return [
         'vtual.claim.block_hours_after_max_attempts' => 'Durasi blokir klaim setelah percobaan maksimum (jam)',
         'vtual.claim.max_pending_per_user' => 'Klaim tertunda maksimum per pengguna',
         'vtual.claim.accept_anyway_enabled' => 'Terima klaim tetap aktif',
+        'vtual.claim.discord_verify_enabled' => 'Verifikasi klaim Discord aktif',
         'vtual.claim.token_prefix' => 'Prefiks token klaim',
         'vtual.claim.token_bytes' => 'Byte acak token klaim',
         'vtual.channel_claim.ttl_hours' => 'TTL klaim channel (jam)',
@@ -184,6 +185,7 @@ return [
         'microstock.ai.stage.thinking_backlog_after' => 'Detik sebelum job thinking pindah ke antrean backlog.',
         'vtual.credential.failover.enabled' => 'Rotasi ke kredensial berikutnya setelah kegagalan auth berulang.',
         'vtual.claim.accept_anyway_enabled' => 'Izinkan pengguna menerima klaim meski verifikasi tidak meyakinkan.',
+        'vtual.claim.discord_verify_enabled' => 'Izinkan verifikasi klaim yatim dengan mencocokkan akun YouTube/Twitch tertaut di Discord.',
     ],
     'options' => [
         'platform' => [

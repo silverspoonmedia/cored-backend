@@ -14,4 +14,5 @@ return [
     'profile' => 'Profile',
     'password' => 'Change password',
     'two_factor' => 'Two-factor authentication',
+    'connected_accounts' => 'Connected accounts',
 ];

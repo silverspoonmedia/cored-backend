@@ -2,6 +2,8 @@
 
 namespace App\Domain\Vtual\Http\Controllers\Web;
 
+use App\Domain\Identity\Services\DiscordOAuthService;
+use App\Domain\Identity\Services\UserOAuthAccountService;
 use App\Domain\Vtual\Support\VtualClaimRealtime;
 use App\Http\Controllers\Web\Concerns\ConsumesApi;
 use App\Http\Controllers\Web\Controller;
@@ -52,6 +54,10 @@ class VtuberProfileController extends Controller
         $activeClaim = $this->activeClaimForCreator($result['id'] ?? null);
         $claimRealtime = app(VtualClaimRealtime::class);
         $broadcast = $claimRealtime->clientConfig();
+        $oauthAccounts = app(UserOAuthAccountService::class);
+        $discordOAuth = app(DiscordOAuthService::class);
+        $user = Auth::guard('api')->user();
+        $discordVerifySetting = (bool) setting_config('vtual.claim.discord_verify_enabled', false);
 
         return $this->webView('vtual.vtuber.claim', [
             'profile' => $result,
@@ -63,6 +69,8 @@ class VtuberProfileController extends Controller
                 'userId' => Auth::guard('api')->id(),
             ],
             'profileUrl' => $result['profile_url'] ?? route('vtual.vtuber.show', $result['slug'] ?? $creator),
+            'discordConnected' => $user !== null && $oauthAccounts->hasDiscordConnection($user),
+            'discordVerifyEnabled' => $discordVerifySetting && $discordOAuth->isConfigured(),
         ]);
     }
 
@@ -106,6 +114,97 @@ class VtuberProfileController extends Controller
                 ->route('vtual.vtuber.claim', $profile['slug'] ?? $creator)
                 ->with('success', $this->apiMessage($response, __('web/vtual-vtuber.claim_verify_queued'))),
             __('web/vtual-vtuber.claim_verify_queued'),
+            stayOnPageOnSuccess: true,
+        );
+    }
+
+    public function discordClaimChannel(Request $request, string $creator): RedirectResponse|JsonResponse
+    {
+        $profile = $this->resolveProfileOrAbort($creator);
+        $channelId = (string) $request->input('channel_id', '');
+        $slug = (string) ($profile['slug'] ?? $creator);
+
+        if ($channelId === '') {
+            abort(422, __('web/vtual-vtuber.claim_missing_channel'));
+        }
+
+        $oauthAccounts = app(UserOAuthAccountService::class);
+        if (! $oauthAccounts->hasDiscordConnection($request->user())) {
+            return redirect()->route('auth.discord.redirect', [
+                'intent' => 'claim_channel',
+                'slug' => $slug,
+                'channel_id' => $channelId,
+            ]);
+        }
+
+        $startResponse = $this->api()->post('vtual/claims', [
+            'creator_id' => $profile['id'] ?? '',
+            'channel_id' => $channelId,
+        ]);
+
+        if (! $startResponse->successful()) {
+            return $this->respondFromApi(
+                $request,
+                $startResponse,
+                fn (): RedirectResponse => back(),
+                __('web/vtual.ajax.claim_started'),
+            );
+        }
+
+        $claimId = (string) ($startResponse->json('data.id') ?? '');
+        $verifyResponse = $this->api()->post('vtual/claims/'.$claimId.'/verify-discord');
+
+        return $this->respondFromApi(
+            $request,
+            $verifyResponse,
+            function () use ($verifyResponse, $slug): RedirectResponse {
+                if (($verifyResponse->json('data.status') ?? '') === 'verified') {
+                    return redirect()->route('vtual.vtuber.show', $slug)
+                        ->with('success', __('web/vtual-vtuber.claim_progress_verified'));
+                }
+
+                return redirect()->route('vtual.vtuber.claim', $slug)
+                    ->with('warning', __('web/vtual-vtuber.claim_progress_failed'));
+            },
+            __('web/vtual-vtuber.claim_discord_verified'),
+            stayOnPageOnSuccess: true,
+        );
+    }
+
+    public function discordVerifyClaim(Request $request, string $creator): RedirectResponse|JsonResponse
+    {
+        $profile = $this->resolveProfileOrAbort($creator);
+        $claimId = (string) $request->input('claim_id', '');
+        $slug = (string) ($profile['slug'] ?? $creator);
+
+        if ($claimId === '') {
+            abort(422, __('web/vtual-vtuber.claim_missing_active'));
+        }
+
+        $oauthAccounts = app(UserOAuthAccountService::class);
+        if (! $oauthAccounts->hasDiscordConnection($request->user())) {
+            return redirect()->route('auth.discord.redirect', [
+                'intent' => 'claim_verify',
+                'slug' => $slug,
+                'claim_id' => $claimId,
+            ]);
+        }
+
+        $response = $this->api()->post('vtual/claims/'.$claimId.'/verify-discord');
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            function () use ($response, $slug): RedirectResponse {
+                if (($response->json('data.status') ?? '') === 'verified') {
+                    return redirect()->route('vtual.vtuber.show', $slug)
+                        ->with('success', __('web/vtual-vtuber.claim_progress_verified'));
+                }
+
+                return redirect()->route('vtual.vtuber.claim', $slug)
+                    ->with('warning', __('web/vtual-vtuber.claim_progress_failed'));
+            },
+            __('web/vtual-vtuber.claim_discord_verified'),
             stayOnPageOnSuccess: true,
         );
     }

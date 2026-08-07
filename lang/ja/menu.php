@@ -14,4 +14,5 @@ return [
     'profile' => 'プロフィール',
     'password' => 'パスワード変更',
     'two_factor' => '二要素認証',
+    'connected_accounts' => '連携アカウント',
 ];

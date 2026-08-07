@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('vtual/vtuber', [VtuberProfileController::class, 'index'])
     ->name('vtual.vtuber.index');
 
+Route::post('vtual/vtuber/{creator}/claim/discord-verify', [VtuberProfileController::class, 'discordVerifyClaim'])
+    ->name('vtual.vtuber.claim.discord-verify');
+Route::post('vtual/vtuber/{creator}/claim/discord', [VtuberProfileController::class, 'discordClaimChannel'])
+    ->name('vtual.vtuber.claim.discord');
 Route::post('vtual/vtuber/{creator}/claim/start', [VtuberProfileController::class, 'startClaim'])
     ->name('vtual.vtuber.claim.start');
 Route::post('vtual/vtuber/{creator}/claim/verify', [VtuberProfileController::class, 'verifyClaim'])

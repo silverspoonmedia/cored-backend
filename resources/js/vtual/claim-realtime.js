@@ -458,6 +458,8 @@ export function initClaimRealtime(options) {
             phase = 'verify_queued';
         } else if (form.matches('[data-claim-cancel-form]')) {
             phase = 'cancelled';
+        } else if (form.matches('[data-claim-discord-verify-form]') || form.matches('[data-claim-discord-start-form]')) {
+            phase = claim.status === 'verified' ? 'verified' : 'verify_failed';
         }
 
         applyClaimSnapshot(claim, phase);

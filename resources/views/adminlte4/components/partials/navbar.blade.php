@@ -120,6 +120,9 @@
                             <a href="{{ route('profile.two-factor.edit') }}" class="btn btn-outline-secondary btn-sm text-start">
                                 <i class="bi bi-shield-lock me-1"></i> {{ __('menu.two_factor') }}
                             </a>
+                            <a href="{{ route('profile.connections.edit') }}" class="btn btn-outline-secondary btn-sm text-start">
+                                <i class="bi bi-link-45deg me-1"></i> {{ __('menu.connected_accounts') }}
+                            </a>
                         </div>
                     </li>
                     <li class="user-footer">

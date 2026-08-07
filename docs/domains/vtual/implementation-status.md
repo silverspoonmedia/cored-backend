@@ -140,7 +140,7 @@ Mapped to original TASK / product vision. **Do not treat as bugs** unless a mile
 | **Viewer-only until claim** | Partial | Ideal: User cannot self-create creator until claim; API `POST creators` still exists for legacy |
 | **Kick** | Catalog only | `enabled = false` until official API strategy |
 | **Paid Service SKUs for vTual** | Not implemented | Product activations gate product; no vTual catalog SKUs |
-| **OAuth login as ownership proof** | Not implemented | Bio token + Accept Anyway only |
+| **OAuth login as ownership proof** | Partial | Discord **connected accounts** + `verify-discord` claim path (`discord_connection`); bio token + Accept Anyway remain; not Discord login-as-auth |
 | **Undo merge / field-pick merge** | Not implemented | Absorb is one-way; destination meta kept |
 | **E2E / full TASK test matrix** | Not implemented | Unit + API feature tests only |
 | **Realtime “pool flush done” push** | Not implemented | User reloads manage page after refresh queue |

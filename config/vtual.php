@@ -162,6 +162,7 @@ return [
         'max_pending_per_user' => 5,
         // Local/dev default ON for QA without editing live bios.
         'accept_anyway_enabled' => true,
+        'discord_verify_enabled' => false,
         'vtuber_role' => 'Vtual vTuber',
     ],
 

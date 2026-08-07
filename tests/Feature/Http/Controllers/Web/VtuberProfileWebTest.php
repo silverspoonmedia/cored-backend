@@ -4,6 +4,9 @@ namespace Tests\Feature\Http\Controllers\Web;
 
 use App\Domain\Identity\Models\User;
 use App\Support\Auth\AuthCookie;
+use App\Support\Settings\Models\SystemSetting;
+use App\Support\Settings\Repositories\Eloquent\SystemSettingRepository;
+use App\Support\Settings\SettingType;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -311,6 +314,57 @@ class VtuberProfileWebTest extends TestCase
         );
     }
 
+    public function test_claim_page_hides_discord_cta_when_oauth_not_configured(): void
+    {
+        $user = $this->userWithRole('User');
+        $this->fakeAuthMe();
+        $this->enableDiscordClaimVerifySetting();
+        config([
+            'services.discord.client_id' => '',
+            'services.discord.client_secret' => '',
+            'services.discord.redirect' => 'https://example.test/apps/auth/discord/callback',
+        ]);
+
+        Http::fake([
+            '*/api/v1/vtual/vtubers/aizawa-ema' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => $this->creatorId,
+                    'slug' => 'aizawa-ema',
+                    'profile_url' => route('vtual.vtuber.show', 'aizawa-ema'),
+                    'is_claimable' => true,
+                    'claim_process_url' => route('vtual.vtuber.claim', 'aizawa-ema'),
+                    'claim_blocked_until' => null,
+                    'display_name' => 'Aizawa Ema',
+                    'bio' => null,
+                    'avatar_url' => null,
+                    'channels' => [
+                        [
+                            'id' => (string) Str::uuid(),
+                            'platform' => ['key' => 'youtube', 'name' => 'YouTube'],
+                            'handle' => 'aizawaema',
+                            'url' => 'https://www.youtube.com/@AizawaEma',
+                            'status' => 'active',
+                        ],
+                    ],
+                    'contents' => [],
+                ],
+            ], 200),
+            '*/api/v1/vtual/claims/mine' => Http::response([
+                'status' => 'success',
+                'data' => [],
+            ], 200),
+        ]);
+
+        $html = $this->actingWithJwtCookie($user)
+            ->get(route('vtual.vtuber.claim', 'aizawa-ema'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString(__('web/vtual-vtuber.claim_verify_with_discord'), $html);
+        $this->assertStringNotContainsString(__('web/vtual-vtuber.claim_discord_connect_cta'), $html);
+    }
+
     public function test_claim_page_redirects_when_profile_not_claimable(): void
     {
         $user = $this->userWithRole('User');
@@ -382,6 +436,18 @@ class VtuberProfileWebTest extends TestCase
         $this->actingWithJwtCookie($user)
             ->get(route('vtual.vtuber.show', $this->creatorId))
             ->assertNotFound();
+    }
+
+    private function enableDiscordClaimVerifySetting(): void
+    {
+        SystemSetting::query()->create([
+            'key' => 'vtual.claim.discord_verify_enabled',
+            'group' => 'vtual',
+            'type' => SettingType::Bool->value,
+            'value' => true,
+        ]);
+
+        app(SystemSettingRepository::class)->rebuildCache();
     }
 
     private function userWithRole(string $role): User
