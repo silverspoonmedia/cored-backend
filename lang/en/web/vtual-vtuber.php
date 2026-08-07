@@ -2,6 +2,7 @@
 
 return [
     'title' => 'vTuber profile',
+    'hub_title' => 'vTual',
     'breadcrumb' => 'vTuber profile',
     'section_bio' => 'Profile',
     'section_about' => 'About',

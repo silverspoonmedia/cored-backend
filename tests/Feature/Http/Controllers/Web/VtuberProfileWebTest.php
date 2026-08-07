@@ -32,6 +32,23 @@ class VtuberProfileWebTest extends TestCase
             ->assertRedirect(route('login'));
     }
 
+    public function test_guest_is_redirected_to_login_from_hub(): void
+    {
+        $this->get(route('vtual.vtuber.index'))
+            ->assertRedirect(route('login'));
+    }
+
+    public function test_authenticated_user_sees_blank_hub_page(): void
+    {
+        $user = $this->userWithRole('User');
+        $this->fakeAuthMe();
+
+        $this->actingWithJwtCookie($user)
+            ->get(route('vtual.vtuber.index'))
+            ->assertOk()
+            ->assertViewIs(config('web.layout').'.vtual.vtuber.index');
+    }
+
     public function test_authenticated_user_sees_profile_sections(): void
     {
         $user = $this->userWithRole('User');

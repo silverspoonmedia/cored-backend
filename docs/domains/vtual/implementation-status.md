@@ -73,6 +73,8 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **YouTube WebSub** | Push trigger + `vtual:renew-websub-subscriptions` (`--repair-missing`) | `YoutubeWebSubSubscriptionService`, `YoutubeWebSubNotificationService`, webhook route; subscribe on `ChannelActivationService` |
 | **YouTube WebSub hardening** | Strict hub verify, dual sha1/sha256 signature, resilient topic lookup, body cap, structured logging + `last_error`, shared Atom parser | `YoutubeAtomFeedParser`, `YoutubeWebSubWebhookController`, `config/vtual.php` `websub.max_body_bytes`, registry `vtual.websub.max_body_bytes` |
 | **vTuber profile (read)** | `/apps/vtual/vtuber/{slug}` — col-4/8 AdminLTE layout; sidebar channel ID cards with `subscriber_count_formatted`; uniform 3-slot content cards (`vtuber-content-card__title|__meta|__badges`, `monolith-line-clamp-2`); any logged-in user; UUID → 301 slug (web) | `VtuberProfileService`, `VtuberProfileController`, `ChannelResource`, `ContentResource`, partials under `vtual/vtuber/`, `monolith-overrides.css`, `VtuberProfileWebTest` |
+| **vTual product hub (placeholder)** | `/apps/vtual/vtuber` — blank AdminLTE shell for upcoming product surfaces; any logged-in user | `VtuberProfileController::index`, `vtual/vtuber/index.blade.php`, `vtual.vtuber.index` |
+| **Management naming guide** | Core role `Management` vs `vtual_managements` talent org — canonical vocabulary | [naming-conventions.md](naming-conventions.md) |
 | **Platform credentials UI** | `/apps/vtual/platform-credentials`: platform index table + per-platform CRUD + probe at `/probe` | `PlatformCredentialController`, `PlatformApiProbeController`, `vtual-platform-credentials` views, `PlatformCredentialWebTest` |
 | **My profiles manage (API only)** | List bound profiles; edit meta; external links CRUD; channel claims + active/archived channels | API `/creators/*`, `ExternalLinkService`; web `CreatorProfileController` in `_archive/` |
 | **Profile merge (absorb)** | Same-owner or manage-any; move channels/links/contents/appearances; cancel pendings `merged`; archive source + slug mangle | `CreatorMergeService`, `POST creators/{id}/merge`, `CreatorMergeServiceTest` |
@@ -172,6 +174,7 @@ Not a commitment — default backlog for the next sessions:
 | Admin probe | `/apps/vtual/platform-credentials/probe` (Root/Admin) |
 | Credentials UI | `/apps/vtual/platform-credentials` |
 | vTuber profile (read) | `/apps/vtual/vtuber/{slug}` (any logged-in user) |
+| vTual product hub (placeholder) | `/apps/vtual/vtuber` |
 | Orphan admin / staff seed | `/apps/vtual/orphans` |
 | Pending claims (API) | `GET /api/v1/vtual/claims/pending` (registry web archived) |
 | My profiles (API) | `/api/v1/vtual/creators` etc. (web `/apps/vtual/profiles` archived) |
@@ -214,6 +217,8 @@ High-level order of work that landed in this long implementation arc (not exhaus
 17. **Channel resync backfill** — `--resync` enqueues when `subscriber_count IS NULL`  
 18. **Uniform content card grid** — 3-slot flex cards (`vtuber-content-card__*`) + `monolith-overrides.css`  
 19. **YouTube WebSub hardening** — strict verify, dual signature, shared Atom parser, body cap  
+20. **Management naming guide** — [naming-conventions.md](naming-conventions.md) (core `Management` vs `vtual_managements`)  
+21. **vTual product hub placeholder** — `/apps/vtual/vtuber` blank AdminLTE shell (`vtual.vtuber.index`)  
 
 ---
 

@@ -2,6 +2,7 @@
 
 return [
     'title' => 'vTuber プロフィール',
+    'hub_title' => 'vTual',
     'breadcrumb' => 'vTuber プロフィール',
     'section_bio' => 'プロフィール',
     'section_about' => '概要',

@@ -15,6 +15,11 @@ class VtuberProfileController extends Controller
 {
     use ConsumesApi;
 
+    public function index(): View
+    {
+        return $this->webView('vtual.vtuber.index');
+    }
+
     public function show(string $creator): View|RedirectResponse
     {
         $response = $this->api()->get('vtual/vtubers/'.$creator);

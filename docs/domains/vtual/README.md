@@ -8,7 +8,8 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Config | [`config/products.php`](../../../config/products.php) key `Vtual` · [`config/vtual.php`](../../../config/vtual.php) |
 | Registry | [`config/domains.php`](../../../config/domains.php) `Vtual` product locked |
 | API | `routes/api/v1/vtual.php` |
-| Web | `routes/web/vtual-orphans.php` → **`/apps/vtual/orphans`** (`vtual.orphans.*`); `routes/web/vtual-platform-credentials.php` → **`/apps/vtual/platform-credentials`** (`vtual.platform-credentials.*`, Root/Admin); `routes/web/vtual-vtuber.php` → **`/apps/vtual/vtuber/{slug}`** (`vtual.vtuber.show`, read-only profile; UUID legacy → 301 slug). Archived: [ui-archive.md](ui-archive.md) |
+| Web | `routes/web/vtual-orphans.php` → **`/apps/vtual/orphans`** (`vtual.orphans.*`); `routes/web/vtual-platform-credentials.php` → **`/apps/vtual/platform-credentials`** (`vtual.platform-credentials.*`, Root/Admin); `routes/web/vtual-vtuber.php` → **`/apps/vtual/vtuber`** (`vtual.vtuber.index`, product hub placeholder) + **`/apps/vtual/vtuber/{slug}`** (`vtual.vtuber.show`, read-only profile; UUID legacy → 301 slug). Archived: [ui-archive.md](ui-archive.md) |
+| Naming (Management disambiguation) | [naming-conventions.md](naming-conventions.md) — core role `Management` vs `vtual_managements` talent org |
 | Seeder | `VtualRoleSeeder` (after core `RoleSeeder`; also seeds platforms) |
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
 | Menu visibility | Administration → **vTual** → Orphan vTubers (`vtual.orphans.index`, Root/Admin/Moderator) + Platform credentials (`vtual.platform-credentials.index`, Root/Admin). Mapped in `config/products.php` `menu_routes` |
@@ -23,7 +24,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Creator membership | `vtual_creator_members`: one user may own/edit/view **many** creators (`owner` \| `editor` \| `viewer`). Self-create inserts actor as `owner`. Staff `createOrphan` seeds **no** members (claimable). |
 | Creator claim (phase 1) | `vtual_creator_claims`: claim **orphan** (no owner member) via channel bio token or staff **Accept Anyway**. On success: `CreatorMember` owner + Spatie product role `Vtual vTuber`. Losing pendings stay as audit log (`cancelled` + `closed_reason=superseded`). |
 | Channel claim | **Non-staff only:** `vtual_channel_claims` attach via bio token (`vtual-ch-…`) or staff **Accept Anyway** on a pending claim. Channel row only after success. Config: `config/vtual.php` `channel_claim.*`. |
-| Management | Talent org (`vtual_managements`), not core Spatie role `Management`. |
+| Management | Talent org (`vtual_managements`), not core Spatie role `Management`. See [naming-conventions.md](naming-conventions.md). |
 | Management staff | `vtual_management_members` (`owner` \| `admin` \| `staff`). |
 | Creator assignment | `vtual_management_creators` with `joined_at` / `left_at` (historical leave without hard delete). |
 | Platform | Seeded catalog: youtube, twitch, **kick** (kick `enabled = false`). |
@@ -57,7 +58,7 @@ Content 1 --- N ContentAppearance --- N Channel  (primary | collaborator | netwo
 YouTube Data API: `videos.list` returns **one** `snippet.channelId` (host). Multi-channel product UI (collab / network) is modeled as appearances, not multi-owner content.
 ```
 
-Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtual_managements`.
+Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtual_managements`. Full disambiguation: [naming-conventions.md](naming-conventions.md).
 
 ### Creator claim (phase 1 - binding)
 
@@ -83,6 +84,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 | Surface | Route | Audience |
 |---------|-------|----------|
 | Orphan vTubers (staff) | `/apps/vtual/orphans` | Internal (Root/Admin/Moderator) — claimable profiles only; users-pattern DataTable + CRUD |
+| vTual product hub (placeholder) | `/apps/vtual/vtuber` | Any logged-in user — blank AdminLTE shell for upcoming product surfaces |
 | vTuber profile (read) | `/apps/vtual/vtuber/{slug}` | Any logged-in user — AdminLTE profile layout (sidebar col-4: avatar/stats/about + channel ID cards; main col-8: YouTube-style content grid). Canonical slug URL; UUID bookmark → 301 to slug. |
 | Platform credentials | `/apps/vtual/platform-credentials` | Root/Admin — platform index table + per-platform credential CRUD; API probe at `/probe` |
 | *Archived* | hub, profiles, claims, registry | See [ui-archive.md](ui-archive.md) |
@@ -328,6 +330,7 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 
 | Route | View |
 |-------|------|
+| `GET vtual/vtuber` (`vtual.vtuber.index`) | Product hub placeholder (blank AdminLTE layout; upcoming surfaces) |
 | `GET vtual/orphans` (`vtual.orphans.index`) | Orphan vTuber index (server-side DataTable; claimable profiles only) |
 | `GET vtual/orphans/datatable` (`vtual.orphans.datatable`) | DataTables JSON proxy → `GET api/v1/vtual/creators/orphans?display_mode=datatable` |
 | `GET vtual/orphans/create` (`vtual.orphans.create`) | Create orphan form |
@@ -721,6 +724,7 @@ Not implemented: field pick from source, cross-user merge without dual ownership
 ## Related
 
 - [implementation-status.md](implementation-status.md) — done / not done / next (living progress tracker)
+- [naming-conventions.md](naming-conventions.md) — core `Management` vs talent org (`vtual_managements`)
 - [product-activations/README.md](../product-activations/README.md) — runtime gate
 - [file-hosting/README.md](../file-hosting/README.md) — sibling product domain pattern
 - [identity/README.md](../identity/README.md) — User hub, product RBAC domain_kind

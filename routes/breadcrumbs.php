@@ -79,8 +79,13 @@ Breadcrumbs::for('vtual.platform-credentials.probe', function (Trail $trail): vo
     $trail->push(__('web/vtual.probe.title'));
 });
 
-Breadcrumbs::for('vtual.vtuber.show', function (Trail $trail, string $displayName): void {
+Breadcrumbs::for('vtual.vtuber.index', function (Trail $trail): void {
     $trail->parent('dashboard');
+    $trail->push(__('web/vtual-vtuber.hub_title'), route('vtual.vtuber.index'));
+});
+
+Breadcrumbs::for('vtual.vtuber.show', function (Trail $trail, string $displayName): void {
+    $trail->parent('vtual.vtuber.index');
     $trail->push($displayName);
 });
 
