@@ -62,6 +62,7 @@ class VtuberProfileApiTest extends TestCase
             'display_name' => 'Aizawa Ema',
             'avatar_url' => 'https://img.example/avatar.jpg',
             'url' => 'https://www.youtube.com/channel/UCaizawaema1234567890abcd',
+            'subscriber_count' => 125000,
             'status' => ChannelStatus::Active,
         ]);
 
@@ -82,6 +83,7 @@ class VtuberProfileApiTest extends TestCase
             ->assertJsonPath('data.slug', $creator->slug)
             ->assertJsonPath('data.profile_url', route('vtual.vtuber.show', $creator->slug))
             ->assertJsonPath('data.channels.0.handle', 'aizawaema')
+            ->assertJsonPath('data.channels.0.subscriber_count', 125000)
             ->assertJsonPath('data.contents.0.title', 'Archive Stream 1')
             ->assertJsonPath('data.contents.0.external_id', 'vid-api-1');
     }

@@ -59,7 +59,7 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Platform HTTP (manual)** | YouTube Data API + Twitch Helix clients; batch caps; gateway + credential bind | `PlatformApiGateway`, `YoutubeDataApiClient`, `TwitchHelixClient`, `config/vtual.php` `http.batch` |
 | **Admin probe** | Web/API probe must use **production** gateway methods only | `PlatformApiProbeService`, `PlatformApiProbe*Test` |
 | **Channel profile normalize** | UC… / `@handle` / URL → canonical `external_id` + handle | `ChannelProfileResolver`, `ChannelProfileResolverTest` |
-| **Channel snapshot columns** | `description`, `avatar_url`, `banner_url`, `platform_created_at` on create/refresh apply | migration `…_add_profile_columns_to_vtual_channels`, `ChannelService` |
+| **Channel snapshot columns** | `description`, `avatar_url`, `banner_url`, `platform_created_at`, `subscriber_count` (YouTube) on create/refresh apply | migration profile columns + `…_add_subscriber_count_to_vtual_channels`, `ChannelService` / pool flush |
 | **Creator claim Existing** | Orphan claim via bio token; Accept Anyway; race → `superseded`; audit rows kept | `CreatorClaimService`, `vtual_creator_claims`, `CreatorClaimServiceTest` |
 | **Staff registry UX** | Orphan seed + pending claims; claimant on detail; platform on proof channel | `/apps/vtual/admin/registry`, `AdminRegistryController` (web) |
 | **User claim UX** | Claimable list + my claims | `/apps/vtual/claims` |
@@ -72,7 +72,7 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Live CCV poll** | Scheduled `vtual:poll-live-contents` | `LiveContentPollService` |
 | **YouTube WebSub** | Push trigger + `vtual:renew-websub-subscriptions` (`--repair-missing`) | `YoutubeWebSubSubscriptionService`, `YoutubeWebSubNotificationService`, webhook route; subscribe on `ChannelActivationService` |
 | **YouTube WebSub hardening** | Strict hub verify, dual sha1/sha256 signature, resilient topic lookup, body cap, structured logging + `last_error`, shared Atom parser | `YoutubeAtomFeedParser`, `YoutubeWebSubWebhookController`, `config/vtual.php` `websub.max_body_bytes`, registry `vtual.websub.max_body_bytes` |
-| **vTuber profile (read)** | `/apps/vtual/vtuber/{slug}` — bio + active channels + indexed contents; any logged-in user (no RBAC/membership); UUID → 301 slug (web) | `VtuberProfileService`, `VtuberProfileController`, `ContentResource`, `VtuberProfileWebTest` |
+| **vTuber profile (read)** | `/apps/vtual/vtuber/{slug}` — sidebar channel ID cards + main content grid (col-4/8); any logged-in user (no RBAC/membership); UUID → 301 slug (web) | `VtuberProfileService`, `VtuberProfileController`, `ContentResource`, `VtuberProfileWebTest` |
 | **Platform credentials UI** | `/apps/vtual/platform-credentials`: platform index table + per-platform CRUD + API probe | `PlatformCredentialController`, `PlatformApiProbeController`, `vtual-platform-credentials` views, `PlatformCredentialWebTest` |
 | **My profiles manage** | List bound profiles; edit meta; external links CRUD; channel claims + active/archived channels | `/apps/vtual/profiles`, `CreatorProfileController`, `ExternalLinkService` |
 | **Profile merge (absorb)** | Same-owner or manage-any; move channels/links/contents/appearances; cancel pendings `merged`; archive source + slug mangle | `CreatorMergeService`, `POST creators/{id}/merge`, `CreatorMergeServiceTest` |

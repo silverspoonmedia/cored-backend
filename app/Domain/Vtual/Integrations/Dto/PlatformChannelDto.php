@@ -27,6 +27,7 @@ final class PlatformChannelDto
         public readonly ?string $url,
         public readonly ?string $bannerUrl = null,
         public readonly ?CarbonInterface $platformCreatedAt = null,
+        public readonly ?int $subscriberCount = null,
         public readonly ?array $raw = null,
     ) {}
 
@@ -45,6 +46,7 @@ final class PlatformChannelDto
             'banner_url' => $this->bannerUrl,
             'url' => $this->url,
             'platform_created_at' => $this->platformCreatedAt?->toIso8601String(),
+            'subscriber_count' => $this->subscriberCount,
         ];
     }
 }

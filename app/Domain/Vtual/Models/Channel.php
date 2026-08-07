@@ -31,6 +31,7 @@ class Channel extends Model
         'banner_url',
         'url',
         'platform_created_at',
+        'subscriber_count',
         'status',
         'last_synced_at',
         'feed_last_polled_at',

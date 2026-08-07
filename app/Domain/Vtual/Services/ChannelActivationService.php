@@ -84,6 +84,7 @@ class ChannelActivationService
             'banner_url' => $dto->bannerUrl,
             'url' => $dto->url,
             'platform_created_at' => $dto->platformCreatedAt,
+            'subscriber_count' => $dto->subscriberCount,
             'status' => ChannelStatus::Active,
             'last_synced_at' => now(),
         ];

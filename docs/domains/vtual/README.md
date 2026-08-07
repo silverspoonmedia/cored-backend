@@ -28,7 +28,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Creator assignment | `vtual_management_creators` with `joined_at` / `left_at` (historical leave without hard delete). |
 | Platform | Seeded catalog: youtube, twitch, **kick** (kick `enabled = false`). |
 | Platform credential | Child table `vtual_platform_credentials`: multi-key per platform, envelope-encrypted `secret_payload`, mask-only API. |
-| Channel | External channel on a creator; unique `(platform_id, external_id)`. **Dual path on** `POST creators/{id}/channels`: (1) **Staff** (`manage any vtual resource`) → `ChannelService::registerPendingForStaff` stores raw `profile_input` as **pending** (no immediate API resolve); batch activation via `ChannelRegistrationFlushService` (50 per platform or 15 min). (2) **Owner/editor** → `ChannelClaimService::start` pending claim + bio token; verify / Accept Anyway → `activateFromDto`. `seedForStaff` remains for instant bind paths (e.g. Accept Anyway). Snapshot: `description`, `avatar_url`, `banner_url`, `platform_created_at`. Refresh **enqueues** channel fetch pool (batch 50 / max wait 15m); soft remove = **`archived`**; **restore** returns archived → **active** (no auto re-fetch). |
+| Channel | External channel on a creator; unique `(platform_id, external_id)`. **Dual path on** `POST creators/{id}/channels`: (1) **Staff** (`manage any vtual resource`) → `ChannelService::registerPendingForStaff` stores raw `profile_input` as **pending** (no immediate API resolve); batch activation via `ChannelRegistrationFlushService` (50 per platform or 15 min). (2) **Owner/editor** → `ChannelClaimService::start` pending claim + bio token; verify / Accept Anyway → `activateFromDto`. `seedForStaff` remains for instant bind paths (e.g. Accept Anyway). Snapshot: `description`, `avatar_url`, `banner_url`, `platform_created_at`, `subscriber_count` (YouTube). Refresh **enqueues** channel fetch pool (batch 50 / max wait 15m); soft remove = **`archived`**; **restore** returns archived → **active** (no auto re-fetch). |
 | Channel registration pool | Staff orphan channel adds: pending rows with `profile_input` + placeholder `external_id` (`pending:{uuid}`). Same threshold/wait as fetch pool, per platform. Flushed by `vtual:flush-channel-pool` (registration phase before fetch pool). |
 | Content | Canonical platform item (`vtual_contents`): **one row** per `(platform_id, external_id)`. `channel_id`/`creator_id` = **primary host** (API truth). Extra channels via **appearances** — not multi-ownership. Sync workers still foundation-only. Content manage UI **out of scope** this phase. |
 | External links | Morph `vtual_external_links` for creator (and management) social/donation/website URLs. Creator-scoped CRUD via `ExternalLinkService` + API under `/creators/{id}/links` and `/links/{id}`. |
@@ -83,7 +83,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 | Surface | Route | Audience |
 |---------|-------|----------|
 | Orphan vTubers (staff) | `/apps/vtual/orphans` | Internal (Root/Admin/Moderator) — claimable profiles only; users-pattern DataTable + CRUD |
-| vTuber profile (read) | `/apps/vtual/vtuber/{slug}` | Any logged-in user — biodata, active channels, indexed contents (aggregator step 1). Canonical slug URL; UUID bookmark → 301 to slug. |
+| vTuber profile (read) | `/apps/vtual/vtuber/{slug}` | Any logged-in user — AdminLTE profile layout (sidebar col-4: avatar/stats/about + channel ID cards; main col-8: YouTube-style content grid). Canonical slug URL; UUID bookmark → 301 to slug. |
 | Platform credentials | `/apps/vtual/platform-credentials` | Root/Admin — platform index table + per-platform credential CRUD; API probe at `/probe` |
 | *Archived* | hub, profiles, claims, registry, credentials, probe | See [ui-archive.md](ui-archive.md) |
 
@@ -431,13 +431,14 @@ Requires **active** platform credential (same as gateway). Parser → `ChannelPr
 | `avatar_url` | best `snippet.thumbnails` (high→medium→default) | `profile_image_url` | DTO `thumbnailUrl` |
 | `banner_url` | `brandingSettings.image.bannerExternalUrl` | `offline_image_url` | Twitch offline banner ≠ YT banner pixel-perfect |
 | `platform_created_at` | `snippet.publishedAt` | `created_at` | platform account/channel birth |
+| `subscriber_count` | `statistics.subscriberCount` (null when hidden) | — | YouTube only; refreshed via channel pool |
 
-Not shared this phase (no dual-platform signal without extra APIs): subscriber/follower counts, video_count, view_count (Twitch deprecated), country, broadcaster_type. Existing rows: click **Verify / refresh** to backfill snapshot.
+Not shared this phase (no dual-platform signal without extra APIs): Twitch follower counts, video_count, view_count (Twitch deprecated), country, broadcaster_type. Existing rows: channel pool resync backfills snapshot including `subscriber_count`.
 
 
 **Refresh** (`POST /api/v1/vtual/channels/{id}/refresh`): enqueues `vtual_channel_fetch_pool` by stored `external_id` (no immediate platform HTTP). Snapshot updates on pool flush. Rejects archived channels.
 
-**Channel fetch pool:** non-interactive only (refresh + scheduled resync). Flush when pending unique ids per platform ≥ `config(vtual.channel_pool.threshold)` (50) **or** oldest pending age ≥ `max_wait_minutes` (15). Single `Cache::lock` + claim-to-`processing` prevents double HTTP for the same set. Interactive claim verify / Accept Anyway resolve stay sync. Command: `php artisan vtual:flush-channel-pool` (`--force`, `--platform=`, `--resync`) runs **registration flush first**, then fetch pool. Schedule: every minute flush + hourly `--resync`.
+**Channel fetch pool:** non-interactive only (refresh + scheduled resync). Flush when pending unique ids per platform ≥ `config(vtual.channel_pool.threshold)` (50) **or** oldest pending age ≥ `max_wait_minutes` (15). Single `Cache::lock` + claim-to-`processing` prevents double HTTP for the same set. Interactive claim verify / Accept Anyway resolve stay sync. Command: `php artisan vtual:flush-channel-pool` (`--force`, `--platform=`, `--resync`) runs **registration flush first**, then fetch pool. `--resync` enqueues active channels with stale/null `last_synced_at` **or** null `subscriber_count` (snapshot backfill). Schedule: every minute flush + hourly `--resync`.
 
 **YouTube content fetch (POC):** `php artisan vtual:fetch-channel-content {vtual_channels_uuid}` — **manual last frontier** (recovery/debug). Not scheduled. Use `--video` / `--discover-live` for known ids or live search. Default path ingests via onboarding backfill + feed poll + content pool below.
 

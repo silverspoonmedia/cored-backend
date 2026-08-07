@@ -7,15 +7,13 @@
     @php
         \Diglactic\Breadcrumbs\Breadcrumbs::setCurrentRoute('vtual.vtuber.show', $profile['display_name'] ?? __('web/vtual-vtuber.title'));
     @endphp
-    <x-adminlte4::card :title="$profile['display_name'] ?? __('web/vtual-vtuber.title')">
-        @include(config('web.layout').'.vtual.vtuber._bio', ['profile' => $profile])
 
-        <hr class="my-4">
-
-        @include(config('web.layout').'.vtual.vtuber._channels', ['profile' => $profile])
-
-        <hr class="my-4">
-
-        @include(config('web.layout').'.vtual.vtuber._contents', ['profile' => $profile])
-    </x-adminlte4::card>
+    <div class="row g-3">
+        <div class="col-md-4">
+            @include(config('web.layout').'.vtual.vtuber._sidebar', ['profile' => $profile])
+        </div>
+        <div class="col-md-8">
+            @include(config('web.layout').'.vtual.vtuber._content_panel', ['profile' => $profile])
+        </div>
+    </div>
 </x-adminlte4::layouts.app>

@@ -6,6 +6,7 @@ use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Number;
 
 /** @mixin \App\Domain\Vtual\Models\Channel */
 class ChannelResource extends JsonResource
@@ -29,6 +30,10 @@ class ChannelResource extends JsonResource
             'banner_url' => $this->banner_url,
             'url' => $this->url,
             ...$this->dateFields('platform_created_at', $this->platform_created_at),
+            'subscriber_count' => $this->subscriber_count,
+            'subscriber_count_formatted' => $this->subscriber_count !== null
+                ? Number::format($this->subscriber_count)
+                : null,
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,
             'profile_input' => $this->when(
                 $this->status === ChannelStatus::Pending && $this->profile_input !== null,

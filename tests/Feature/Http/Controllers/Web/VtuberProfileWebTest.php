@@ -55,6 +55,8 @@ class VtuberProfileWebTest extends TestCase
                             'display_name' => 'Aizawa Ema',
                             'avatar_url' => 'https://img.example/channel.jpg',
                             'url' => 'https://www.youtube.com/@AizawaEma',
+                            'subscriber_count' => 125000,
+                            'subscriber_count_formatted' => '125,000',
                             'status' => 'active',
                         ],
                     ],
@@ -87,6 +89,19 @@ class VtuberProfileWebTest extends TestCase
         $this->assertStringContainsString('Morning stream archive', $html);
         $this->assertStringContainsString(__('web/vtual-vtuber.section_channels'), $html);
         $this->assertStringContainsString(__('web/vtual-vtuber.section_contents'), $html);
+        $this->assertStringContainsString(__('web/vtual-vtuber.section_about'), $html);
+        $this->assertStringContainsString(__('web/vtual-vtuber.stat_channels'), $html);
+        $this->assertStringContainsString('row-cols', $html);
+        $this->assertStringContainsString('min-w-0', $html);
+        $this->assertStringContainsString('vtuber-content-card', $html);
+        $this->assertStringContainsString('vtuber-content-card__title', $html);
+        $this->assertStringContainsString('vtuber-content-card__meta', $html);
+        $this->assertStringContainsString('vtuber-content-card__badges', $html);
+        $this->assertStringContainsString('position-relative z-1', $html);
+        $this->assertStringContainsString('monolith-line-clamp-2', $html);
+        $this->assertStringContainsString('ratio-16x9', $html);
+        $this->assertStringContainsString(__('web/vtual-vtuber.subscribers', ['count' => '125,000']), $html);
+        $this->assertStringContainsString('https://www.youtube.com/@AizawaEma', $html);
         $this->assertStringContainsString('https://img.example/channel.jpg', $html);
         $this->assertStringContainsString('rel="canonical"', $html);
         $this->assertStringContainsString(route('vtual.vtuber.show', 'aizawa-ema'), $html);

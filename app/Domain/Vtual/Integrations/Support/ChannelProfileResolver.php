@@ -97,6 +97,7 @@ class ChannelProfileResolver
             url: $dto->url,
             bannerUrl: $dto->bannerUrl,
             platformCreatedAt: $dto->platformCreatedAt,
+            subscriberCount: $dto->subscriberCount,
             raw: $dto->raw,
         );
     }

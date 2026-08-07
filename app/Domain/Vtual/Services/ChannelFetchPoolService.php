@@ -103,7 +103,8 @@ class ChannelFetchPoolService
             ->where('status', ChannelStatus::Active)
             ->where(function ($q) use ($cutoff): void {
                 $q->whereNull('last_synced_at')
-                    ->orWhere('last_synced_at', '<=', $cutoff);
+                    ->orWhere('last_synced_at', '<=', $cutoff)
+                    ->orWhereNull('subscriber_count');
             })
             ->orderBy('last_synced_at')
             ->limit($limit);
@@ -341,6 +342,7 @@ class ChannelFetchPoolService
             'banner_url' => $dto->bannerUrl,
             'url' => $dto->url,
             'platform_created_at' => $dto->platformCreatedAt,
+            'subscriber_count' => $dto->subscriberCount,
             'last_synced_at' => now(),
         ];
     }

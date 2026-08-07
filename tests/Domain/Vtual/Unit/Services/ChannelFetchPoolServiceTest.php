@@ -98,6 +98,10 @@ class ChannelFetchPoolServiceTest extends TestCase
                             'publishedAt' => '2017-04-19T14:57:55Z',
                             'thumbnails' => ['high' => ['url' => 'https://img.example/'.$id.'.jpg']],
                         ],
+                        'statistics' => [
+                            'subscriberCount' => '42000',
+                            'hiddenSubscriberCount' => false,
+                        ],
                     ];
                 }
 
@@ -123,6 +127,10 @@ class ChannelFetchPoolServiceTest extends TestCase
         $this->assertSame(
             'New UCPOOL001',
             \App\Domain\Vtual\Models\Channel::query()->where('external_id', 'UCPOOL001')->value('display_name'),
+        );
+        $this->assertSame(
+            42000,
+            \App\Domain\Vtual\Models\Channel::query()->where('external_id', 'UCPOOL001')->value('subscriber_count'),
         );
     }
 
@@ -311,6 +319,39 @@ class ChannelFetchPoolServiceTest extends TestCase
         $this->assertSame(ChannelStatus::Archived, $channel->status);
         $this->assertSame('Before', $channel->display_name);
         $this->assertSame(ChannelFetchPoolStatus::Done, ChannelFetchPoolItem::query()->whereKey($item->id)->first()?->status);
+    }
+
+    #[Test]
+    public function resync_enqueues_recently_synced_channel_when_subscriber_count_is_null(): void
+    {
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Missing Subs']);
+
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: 'UCMISSINGSUBS001',
+            handle: 'missing-subs',
+            displayName: 'Missing Subs',
+            description: null,
+            thumbnailUrl: null,
+            url: null,
+            subscriberCount: 5000,
+        ));
+
+        $channel->forceFill([
+            'subscriber_count' => null,
+            'last_synced_at' => now(),
+        ])->save();
+
+        $enqueued = $this->pool->enqueueStaleActiveChannels(PlatformKey::Youtube);
+
+        $this->assertSame(1, $enqueued);
+        $this->assertTrue(
+            ChannelFetchPoolItem::query()
+                ->where('channel_id', $channel->id)
+                ->where('status', ChannelFetchPoolStatus::Pending)
+                ->exists(),
+        );
     }
 
     private function activateYoutubeCredential(): void

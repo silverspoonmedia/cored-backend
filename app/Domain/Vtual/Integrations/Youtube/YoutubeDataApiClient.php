@@ -365,6 +365,12 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
         $banner = isset($brandingImage['bannerExternalUrl']) && is_string($brandingImage['bannerExternalUrl'])
             ? $brandingImage['bannerExternalUrl']
             : null;
+        $stats = is_array($item['statistics'] ?? null) ? $item['statistics'] : [];
+        $hidden = (bool) ($stats['hiddenSubscriberCount'] ?? false);
+        $subscriberCount = null;
+        if (! $hidden && isset($stats['subscriberCount']) && is_numeric($stats['subscriberCount'])) {
+            $subscriberCount = (int) $stats['subscriberCount'];
+        }
 
         return new PlatformChannelDto(
             platform: PlatformKey::Youtube,
@@ -376,6 +382,7 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
             url: $id !== '' ? 'https://www.youtube.com/channel/'.$id : null,
             bannerUrl: $banner !== null && $banner !== '' ? $banner : null,
             platformCreatedAt: $this->parseTime($snippet['publishedAt'] ?? null),
+            subscriberCount: $subscriberCount,
             raw: null,
         );
     }
