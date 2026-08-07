@@ -121,6 +121,9 @@ Representative suite under `tests/Domain/Vtual/`:
 | `VtuberProfileWebTest` | Profile layout, canonical, UUID 301, claim button, interactive claim page |
 | `PlatformCredentialWebTest` | Active credentials CRUD web |
 | `ContentIngestionPoolTest` | Feed poll + content pool + live CCV integration |
+| `DiscordConnectionDiscoveryServiceTest` | Private bind, promote, external links |
+| `DiscordConnectionsClientTest` | Snapshot normalize, ownershipEligible, externalLinkCandidates |
+| `CreatorProfileManageWebTest` | Manage profile; Discord verify; promote discovered channel |
 | `VtualBladeWebTest` | **Archived** — `tests/_archive/Feature/Http/Controllers/Web/` |
 
 ---
@@ -137,6 +140,12 @@ Mapped to original TASK / product vision. **Do not treat as bugs** unless a mile
 | **Twitch EventSub** | Not implemented | YouTube WebSub done; Twitch push deferred |
 | **Multi-stream session correlation** | Not implemented | `fetchStreamsByUserIds` exists for future workers; live CCV poll (`vtual:poll-live-contents`) is done |
 | **WebSub tombstone / deleted video** | Not implemented | Mark content unavailable when `videos.list` returns 404 during content pool flush |
+| **Pool `done` row retention** | Not implemented | `vtual_channel_fetch_pool` / `vtual_content_fetch_pool` processed rows grow without prune |
+| **Feed poll vs content pool deadlock** | Fix backlog | MySQL 1213 observed under concurrent feed poll + content pool insert; retry works |
+| **WebSub push E2E validation** | Partial | Hub verify OK; `last_notify_at` may stay null until real publish in staging |
+| **Private discovered channels** | By design | Excluded from feed/WebSub until `POST channels/{id}/promote` |
+| **`verified_channel_id` API exposure** | Not implemented | Stored on `vtual_creator_claims`; not in API resources or claim UI |
+| **`promoteDiscoveredChannel` dedicated test** | Gap | Behavior covered indirectly; no isolated feature test |
 | **Archived user web UI** | Web archived, API live | Profiles, claims, registry hub — restore or rebuild is backlog; see [ui-archive.md](ui-archive.md) |
 | **Pool interactive paths** | Partial by design | Creator **profile** claim verify is **queued** (`claim_verify_pool`); Accept Anyway stays sync; staff channel POST remains **deferred** |
 | **Auto appearance discovery** | Cancelled by design | Platform APIs lack safe multi-channel collab list |
@@ -144,7 +153,7 @@ Mapped to original TASK / product vision. **Do not treat as bugs** unless a mile
 | **Viewer-only until claim** | Partial | Ideal: User cannot self-create creator until claim; API `POST creators` still exists for legacy |
 | **Kick** | Catalog only | `enabled = false` until official API strategy |
 | **Paid Service SKUs for vTual** | Not implemented | Product activations gate product; no vTual catalog SKUs |
-| **OAuth login as ownership proof** | Partial | Discord **connected accounts** + `verify-discord` claim path (`discord_connection`); bio token + Accept Anyway remain; not Discord login-as-auth |
+| **OAuth login as ownership proof** | Partial | Discord **connected accounts** implemented for orphan claim + channel attach (`verify-discord`, discovery bind); bio token + Accept Anyway remain; not Discord login-as-auth |
 | **Undo merge / field-pick merge** | Not implemented | Absorb is one-way; destination meta kept |
 | **E2E / full TASK test matrix** | Not implemented | Unit + API feature tests only |
 | **Realtime “pool flush done” push** | Not implemented | User reloads manage page after refresh queue |
@@ -156,9 +165,9 @@ Mapped to original TASK / product vision. **Do not treat as bugs** unless a mile
 Not a commitment — default backlog for the next sessions:
 
 1. **Claim Add New** — form + staff queue + reject/appeal (closes chicken-egg for unknown profiles).
-2. **Restore archived user web** — profiles / claims (or rebuild on orphans pattern); API already complete.
+2. **Restore archived user web** — standalone claims hub (or rebuild on orphans pattern); API already complete.
 3. **Public read surfaces** — homepage live/archive sections + guest/SEO creator profile (read-only).
-4. **YouTube hardening** — WebSub tombstone / deleted-video handling (mark unavailable on API 404); strip casual `POST creators` for non-staff.
+4. **YouTube hardening (assessment-driven)** — feed poll deadlock fix; pool `done` retention job; WebSub tombstone / deleted-video 404; staging WebSub push validation; strip casual `POST creators` for non-staff.
 5. **Twitch EventSub** — push notifications after YouTube path is stable (explicitly deferred).
 
 ---
@@ -190,6 +199,7 @@ Not a commitment — default backlog for the next sessions:
 | Pending claims (API) | `GET /api/v1/vtual/claims/pending` (registry web archived) |
 | My profiles (API) | `/api/v1/vtual/creators` etc. (web `/apps/vtual/profiles` archived) |
 | Build Vite assets (after JS/CSS change) | `npm run build` |
+| **YouTube ops stability assessment** | [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md) — live probe rubric (credentials, gateway, DB, quota, scheduler); re-run after major ingestion changes |
 
 ### Config knobs (`config/vtual.php`)
 
@@ -234,12 +244,17 @@ High-level order of work that landed in this long implementation arc (not exhaus
 22. **Profile claim UX (info)** — Claim button on orphan profile; `/apps/vtual/vtuber/{slug}/claim` informational page; API `is_claimable` + `claim_process_url`  
 23. **Interactive claim + verify pool** — Web start/verify/cancel; `claim_verify_pool` strict 50/15m; max 3 attempts + 24h block; `claim_blocked_until` on profile API  
 24. **Claim page WebSocket realtime** — `CreatorClaimProgressChanged` / `claim.progress` on `private-vtual.claim.{id}`; `claim-realtime.js` (no polling); degraded AJAX + manual reload when broadcast off; `vtual.claim.max_attempts` = 3 in config + Settings  
+25. **Claim verify hardening** — bio proof-channel-only; Discord contract `verified_channel_id`  
+26. **Discord connection discovery** — private YT/Twitch bind, external links, promote → public + backfill  
+27. **Channel visibility / discovery columns** — migration `2026_08_07_200001`  
+28. **YouTube ops stability assessment** — [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md)  
 
 ---
 
 ## Related
 
 - [README.md](README.md) — full domain guide  
+- [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md) — YouTube ops probe rubric  
 - [archive/vtual-legacy-audit.md](../../archive/vtual-legacy-audit.md) — broadercastv2 reference  
 - [product-activations/README.md](../product-activations/README.md) — product gate  
 - Root [`TASK.md`](../../../TASK.md) — original discovery/implementation brief  

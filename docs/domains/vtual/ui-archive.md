@@ -1,7 +1,7 @@
 # vTual Web UI Archive
 
 **Archived:** 2026-08-05  
-**Reason:** UI/UX restart — staff work began with orphan vTuber CRUD only. External product surfaces and legacy admin Blade UIs are parked, not deleted. **Subsequent rebuilds (2026-08):** platform credentials, probe, and vTuber read profile were added as **new** active surfaces (not restored from `_archive/`).
+**Reason:** UI/UX restart — staff work began with orphan vTuber CRUD only. External product surfaces and legacy admin Blade UIs are parked under `_archive/` paths, not deleted. **Subsequent rebuilds (2026-08):** platform credentials, probe, vTuber read/claim profile, and **owned profiles list + manage** were added as **new** active surfaces (not restored from `_archive/`).
 
 ## What was archived
 
@@ -28,8 +28,10 @@ Active build ([`vite.config.js`](../../vite.config.js)) registers:
 
 ### Archived surfaces (summary)
 
-**External (user):** hub, profiles, claims, channel/link management  
-**Internal (staff):** registry & pending claims web UI
+**External (user):** legacy hub, standalone claims UI, channel/link management from old `_archive/` routes  
+**Internal (staff):** registry & pending claims web UI from `_archive/vtual-admin.php`
+
+**Not archived:** `/apps/vtual/profiles` (owned list + manage, including promote discovered channels) — rebuilt at `routes/web/vtual-profiles.php`, not served from `_archive/`.
 
 Platform credentials and API probe were **rebuilt** at new routes (see active list below) — they are not served from `_archive/` paths.
 
@@ -38,9 +40,10 @@ Platform credentials and API probe were **rebuilt** at new routes (see active li
 - **API** — [`routes/api/v1/vtual.php`](../../routes/api/v1/vtual.php) and all domain services unchanged
 - **Settings** — `settings.vtual` menu entry (operational knobs, not archived Blade product UI)
 - **Orphan admin** — [`/apps/vtual/orphans`](../../routes/web/vtual-orphans.php) (staff CRUD)
+- **Owned profiles** — [`/apps/vtual/profiles`](../../routes/web/vtual-profiles.php) (list + manage; promote private discovered channels via `POST …/channels/{id}/promote` → API)
 - **Platform credentials** — [`/apps/vtual/platform-credentials`](../../routes/web/vtual-platform-credentials.php) (Root/Admin); views in `resources/views/adminlte4/vtual/platform-credentials/` (new, not restored from archive)
 - **API probe** — `/apps/vtual/platform-credentials/probe` (same route file)
-- **vTuber profile (read)** — [`/apps/vtual/vtuber/{slug}`](../../routes/web/vtual-vtuber.php) (login required); views in `resources/views/adminlte4/vtual/vtuber/`
+- **vTuber profile (read + claim)** — [`/apps/vtual/vtuber`](../../routes/web/vtual-vtuber.php) (login required); views in `resources/views/adminlte4/vtual/vtuber/`
 
 ## Restoring archived UI
 

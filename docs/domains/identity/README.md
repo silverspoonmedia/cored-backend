@@ -139,7 +139,11 @@ Paginated select options: `GET /api/v1/lookups/*` — [web/ui-patterns](../../we
 
 ## Connected accounts (Discord)
 
-Web: `/apps/profile/connections`. OAuth routes: `auth.discord.redirect`, `auth.discord.callback` (`identify` + `connections` scopes). Table `identity_oauth_accounts` stores envelope-encrypted tokens + **full** Discord connection snapshot (`connections_snapshot` JSON: all connection types, documented safe fields — no secrets). TTL setting `identity.discord.connections_snapshot_max_age_minutes` (default 60): stale snapshot refreshes on profile connections page load and on vTual verify miss. vTual ownership verify filters YouTube/Twitch verified subset in code ([vtual/README](../vtual/README.md)). Env: non-empty `DISCORD_CLIENT_ID` + `DISCORD_CLIENT_SECRET` required; `DISCORD_REDIRECT_URI` defaults to `{APP_URL}/apps/auth/discord/callback` when unset. Connected-accounts and claim Discord UI stay hidden until credentials are configured.
+Web: `/apps/profile/connections`. OAuth routes: `auth.discord.redirect`, `auth.discord.callback` (`identify` + `connections` scopes). Table `identity_oauth_accounts` stores envelope-encrypted tokens + **full** Discord connection snapshot (`connections_snapshot` JSON: all connection types, documented safe fields — no secrets). TTL setting `identity.discord.connections_snapshot_max_age_minutes` (default 60): stale snapshot refreshes on profile connections page load and on vTual verify miss.
+
+vTual consumes the snapshot in two ways: **`ownershipEligible()`** (YouTube/Twitch verified subset) for claim verify paths; other connection types map to creator external links via `DiscordConnectionExternalLinkMapper`. Private discovered YouTube/Twitch channels bind on orphan Discord claim until owner promote — see [vTual README — Creator claim](../vtual/README.md#creator-claim-phase-1---binding).
+
+Env: non-empty `DISCORD_CLIENT_ID` + `DISCORD_CLIENT_SECRET` required; `DISCORD_REDIRECT_URI` defaults to `{APP_URL}/apps/auth/discord/callback` when unset. Connected-accounts and claim Discord UI stay hidden until credentials are configured.
 
 ## Tests
 

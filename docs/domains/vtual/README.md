@@ -1,6 +1,6 @@
 # vTual — product domain
 
-Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Active web (2026-08):** staff **orphan** admin (`/apps/vtual/orphans`), **platform credentials** (`/apps/vtual/platform-credentials`, Root/Admin), **owned profiles list** (`/apps/vtual/profiles`, Products menu under File Hosting), and **read-only vTuber profile** (`/apps/vtual/vtuber/{slug}`, login required). Hub, profiles, claims, and registry Blade UIs are [archived](ui-archive.md). **Scheduled content ingestion** (feed poll, content pool, live CCV) and **YouTube WebSub push** are implemented; **Twitch EventSub** remains deferred — see [implementation-status.md](implementation-status.md).
+Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Active web (2026-08):** staff **orphan** admin (`/apps/vtual/orphans`), **platform credentials** (`/apps/vtual/platform-credentials`, Root/Admin), **owned profiles list + manage** (`/apps/vtual/profiles`, Products menu under File Hosting), **read-only vTuber profile** + interactive claim (`/apps/vtual/vtuber/{slug}`, login required). Legacy hub, standalone claims, and registry Blade UIs remain [archived](ui-archive.md) (`_archive/` paths only — rebuilt profiles/manage are **not** archive). **Scheduled content ingestion** (feed poll, content pool, live CCV) and **YouTube WebSub push** are implemented; **Twitch EventSub** remains deferred — see [implementation-status.md](implementation-status.md).
 
 | | |
 |--|--|
@@ -14,6 +14,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
 | Menu visibility | Administration → **vTual** → Orphan vTubers (`vtual.orphans.index`, Root/Admin/Moderator) + Platform credentials (`vtual.platform-credentials.index`, Root/Admin). Mapped in `config/products.php` `menu_routes` |
 | Progress tracker | [implementation-status.md](implementation-status.md) — done / not done / next |
+| Ops assessments | [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md) |
 | Legacy audit | [archive/vtual-legacy-audit.md](../../archive/vtual-legacy-audit.md) |
 
 ## Concepts
@@ -29,7 +30,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Creator assignment | `vtual_management_creators` with `joined_at` / `left_at` (historical leave without hard delete). |
 | Platform | Seeded catalog: youtube, twitch, **kick** (kick `enabled = false`). |
 | Platform credential | Child table `vtual_platform_credentials`: multi-key per platform, envelope-encrypted `secret_payload`, mask-only API. |
-| Channel | External channel on a creator; unique `(platform_id, external_id)`. **Dual path on** `POST creators/{id}/channels`: (1) **Staff** (`manage any vtual resource`) → `ChannelService::registerPendingForStaff` stores raw `profile_input` as **pending** (no immediate API resolve); batch activation via `ChannelRegistrationFlushService` (50 per platform or 15 min). (2) **Owner/editor** → `ChannelClaimService::start` pending claim + bio token; verify / Accept Anyway → `activateFromDto`. `seedForStaff` remains for instant bind paths (e.g. Accept Anyway). Snapshot: `description`, `avatar_url`, `banner_url`, `platform_created_at`, `subscriber_count` (YouTube). Refresh **enqueues** channel fetch pool (batch 50 / max wait 15m); soft remove = **`archived`**; **restore** returns archived → **active** (no auto re-fetch). |
+| Channel | External channel on a creator; unique `(platform_id, external_id)`. **`visibility`** `public` \| `private` — public profile, feed poll, and WebSub only include `public`; Discord discovery may bind **private** rows (`discovery_source=discord_connection`) until owner **promote**. **Dual path on** `POST creators/{id}/channels`: (1) **Staff** (`manage any vtual resource`) → `ChannelService::registerPendingForStaff` stores raw `profile_input` as **pending** (no immediate API resolve); batch activation via `ChannelRegistrationFlushService` (50 per platform or 15 min). (2) **Owner/editor** → `ChannelClaimService::start` pending claim + bio token; verify / Accept Anyway → `activateFromDto`. `seedForStaff` remains for instant bind paths (e.g. Accept Anyway). Snapshot: `description`, `avatar_url`, `banner_url`, `platform_created_at`, `subscriber_count` (YouTube). Refresh **enqueues** channel fetch pool (batch 50 / max wait 15m); soft remove = **`archived`**; **restore** returns archived → **active** (no auto re-fetch). Migration: `2026_08_07_200001_add_discord_discovery_columns_to_vtual`. |
 | Channel registration pool | Staff orphan channel adds: pending rows with `profile_input` + placeholder `external_id` (`pending:{uuid}`). Same threshold/wait as fetch pool, per platform. Flushed by `vtual:flush-channel-pool` (registration phase before fetch pool). |
 | Content | Canonical platform item (`vtual_contents`): **one row** per `(platform_id, external_id)`. `channel_id`/`creator_id` = **primary host** (API truth). Extra channels via **appearances** — not multi-ownership. Sync workers still foundation-only. Content manage UI **out of scope** this phase. |
 | External links | Morph `vtual_external_links` for creator (and management) social/donation/website URLs. Creator-scoped CRUD via `ExternalLinkService` + API under `/creators/{id}/links` and `/links/{id}`. |
@@ -71,6 +72,8 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 | Accept Anyway | Staff + `vtual.claim.accept_anyway_enabled` (Settings → vTual) | Skip bio check (QA / local default **ON**) |
 | Staff pending queue | `manage any` | `GET /api/v1/vtual/claims/pending` (legacy registry web archived) |
 
+**Claim row contract (Discord):** `channel_id` = bio proof channel (when bio path); `verified_channel_id` = contract channel when `verified_via=discord_connection`. **`verified_channel_id` not yet exposed** in API resources or claim UI (known gap).
+
 **On verify success:** insert `vtual_creator_members` role `owner` for claimant; assign product role **`Vtual vTuber`** (level 2250, own perms similar to Editor); **close all other pending claims** for that creator (`status=cancelled`, `closed_reason=superseded`). Rows are **kept as audit log** (no hard-delete this phase).
 
 **Race / already owned:** `verify` / `acceptAnyway` check claimable **before** burning rate-limit attempts; if already owned, claim closes as superseded. Winner path uses creator row lock + `closeCompetingClaims`.
@@ -90,7 +93,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 | vTuber profile (read) | `/apps/vtual/vtuber/{slug}` | Any logged-in user — AdminLTE profile layout; **Claim** button when `is_claimable` (orphan) |
 | Claim process (interactive) | `/apps/vtual/vtuber/{slug}/claim` | Any logged-in user — channel pick → token → queued verify; start claim is AJAX with in-place active panel (no full reload); active claim shows proof channel; Echo `claim.progress` realtime when `BROADCAST_CONNECTION` + Pusher configured (reuses `window.__monolithEcho` when the navbar bell already opened Pusher); `verify_failed` snapshots clear queue status (pool finalized before broadcast) + inline failed banner; degraded AJAX-only + reload notice otherwise; orphan only; owned → redirect to profile |
 | Platform credentials | `/apps/vtual/platform-credentials` | Root/Admin — platform index table + per-platform credential CRUD; API probe at `/probe` |
-| *Archived* | hub, profiles, claims, registry | See [ui-archive.md](ui-archive.md) |
+| *Archived* | hub, standalone claims, registry (`_archive/` Blade only) | See [ui-archive.md](ui-archive.md) — **not** `/apps/vtual/profiles` (rebuilt active) |
 
 **Privacy:** Manage UI never shows "same User owns these profiles" to third parties. List scope is actor-accessible only.
 
@@ -312,6 +315,7 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 | GET/POST | `/creators/{id}/channels` | view channel / edit creator | List (non-archived) / register channel (`active` after resolve) |
 | GET | `/channels/{id}` | view channel | Show channel |
 | POST | `/channels/{id}/refresh` | edit creator | Enqueue pool refresh by `external_id` (async batch) |
+| POST | `/channels/{id}/promote` | edit creator | Private discovered channel → `public` + channel fetch pool + initial content backfill |
 | GET | `/creators/{id}/channels/archived` | view channel | List archived only |
 | POST | `/channels/{id}/archive` | edit creator | Soft archive (`archived`) |
 | POST | `/channels/{id}/restore` | edit creator | Restore archived → `active` |
@@ -326,13 +330,28 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 | GET/PATCH/DELETE | `/admin/credentials/{id}` | view / manage | Show / update / delete (`active` delete blocked until revoked) |
 | POST | `/admin/credentials/{id}/revoke` | manage | Soft-revoke `active` → `revoked` |
 | POST | `/admin/credentials/{id}/test` | manage | Manual Test gate; returns masked credential + `test.{ok,message,platform}` |
+| POST | `/admin/platform-api/probe` | manage vtual platform credentials | Live gateway probe — see [Admin probe](#admin-probe-permanent-rootadmin-debug) |
+| GET | `/claims/claimable-creators` | claim vtual creator | List orphan creators user may claim |
+| GET | `/claims/mine` | claim vtual creator | Actor's claim rows |
+| POST | `/claims` | claim vtual creator | Start orphan creator claim |
+| GET | `/claims/{id}` | claim vtual creator | Show claim row |
+| POST | `/claims/{id}/verify` | claim vtual creator | Queue bio verify (claim verify pool) |
+| POST | `/claims/{id}/verify-discord` | claim vtual creator | Discord discovery verify (`DiscordConnectionDiscoveryService`) |
+| POST | `/claims/{id}/cancel` | claim vtual creator | Cancel pending claim |
+| POST | `/channel-claims/{id}/verify` | edit creator | Bio verify channel attach claim |
+| POST | `/channel-claims/{id}/verify-discord` | edit creator | Discord verify channel attach claim |
+| POST | `/channel-claims/{id}/cancel` | edit creator | Cancel pending channel claim |
+| GET | `/claims/pending` | manage any vtual resource | Staff pending creator claims queue |
 
 ## Web Blade
 
-> **Archived (2026-08):** hub, profiles, claims, and registry Blade UIs are parked under [`ui-archive.md`](ui-archive.md). Orphans, platform credentials, probe, and vTuber read profile remain active below. Domain API unchanged.
+> **Archived (2026-08):** legacy hub, standalone claims, and registry Blade UIs are parked under [`ui-archive.md`](ui-archive.md) (`routes/web/_archive/`, `resources/views/_archive/`). **Active below:** orphans, platform credentials, probe, vTuber read/claim, **owned profiles list + manage** (rebuilt — not restored from `_archive/`). Domain API unchanged.
 
 | Route | View |
 |-------|------|
+| `GET vtual/profiles` (`vtual.profiles.index`) | Owned profiles list → `GET api/v1/vtual/creators/owned` |
+| `GET vtual/profiles/{slug}` (`vtual.profiles.show`) | Manage profile: meta, links, merge, channels (bio + Discord verify), promote private discovered |
+| `POST vtual/profiles/{slug}/channels/{id}/promote` (`vtual.profiles.channels.promote`) | → `POST api/v1/vtual/channels/{id}/promote` (private discovered → public + fetch pool + backfill) |
 | `GET vtual/vtuber` (`vtual.vtuber.index`) | Product hub placeholder (blank AdminLTE layout; upcoming surfaces) |
 | `POST vtual/vtuber/{slug}/claim/start` (`vtual.vtuber.claim.start`) | Start claim for selected channel → `POST api/v1/vtual/claims` |
 | `POST vtual/vtuber/{slug}/claim/verify` (`vtual.vtuber.claim.verify`) | Queue bio verify → `POST api/v1/vtual/claims/{id}/verify` |
@@ -471,7 +490,19 @@ Not shared this phase (no dual-platform signal without extra APIs): Twitch follo
 | Live CCV + ended | `vtual:poll-live-contents` | every 2m | `videos.list` for `status=live` rows only |
 | WebSub renew / repair | `vtual:renew-websub-subscriptions` (`--repair-missing` for legacy) | daily | hub subscribe |
 
-Flow: **onboarding** (WebSub + backfill job on activate via `ChannelActivationService`) → feed/WebSub deltas → enqueue video id → `ContentFetchPoolService` → `ChannelContentFetchService::fetchVideosAndPersist` → `ContentService::upsertFromPrimary`. Feed/WebSub discovery only (0 quota); hydrate via API batch ≤50. WebSub and feed share the same content pool (coalesce on pending id; upsert idempotent — no conflict). WebSub callback: `GET /api/v1/vtual/webhooks/youtube-websub` (hub verify) and `POST` same path (notifications; `throttle:120,1` per IP). Subscribe on YouTube channel activate (all paths); unsubscribe on archive. Hub verify needs public `APP_URL` — local without tunnel may leave row `pending`/`failed`; feed poll remains safety net. Scheduled feed poll skips channels until `content_initial_backfill_at` is set.
+Flow: **onboarding** (WebSub + backfill job on activate via `ChannelActivationService`) → feed/WebSub deltas → enqueue video id → `ContentFetchPoolService` → `ChannelContentFetchService::fetchVideosAndPersist` → `ContentService::upsertFromPrimary`. Feed/WebSub discovery only (0 quota); hydrate via API batch ≤50. WebSub and feed share the same content pool (coalesce on pending id; upsert idempotent — no conflict). WebSub callback: `GET /api/v1/vtual/webhooks/youtube-websub` (hub verify) and `POST` same path (notifications; `throttle:120,1` per IP). Subscribe on YouTube channel activate (all paths); unsubscribe on archive. Hub verify needs public `APP_URL` — local without tunnel may leave row `pending`/`failed`; feed poll remains safety net. Scheduled feed poll skips channels until `content_initial_backfill_at` is set. **Private discovered channels** (`visibility=private`) are excluded from feed poll and WebSub until owner promote.
+
+### YouTube operational stability (ops)
+
+Live probe rubric and results: [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md).
+
+| Requirement | Why |
+|-------------|-----|
+| `schedule:work` or cron | `vtual:flush-*-pool`, feed poll, live CCV, hourly resync |
+| `queue:work` when `QUEUE_CONNECTION=database` | `RunChannelInitialContentBackfillJob` on activate — sync driver runs inline |
+| Public `APP_URL` | WebSub hub verify + subscription lease |
+
+**Assessment rubric:** L1–L8 (credentials, gateway, cohort, pools, WebSub, scheduler, **DB performance**, **API quota**). **Product gate:** L7 or L8 **Red** → not worth it at scale even if functional probes pass. Re-run assessment after major ingestion or credential changes.
 
 **YouTube WebSub hardening:** Shared Atom parsing via [`YoutubeAtomFeedParser`](app/Domain/Vtual/Integrations/Youtube/YoutubeAtomFeedParser.php) (feed client + notification). **GET verify:** only `hub.mode` ∈ `subscribe` | `unsubscribe`; `markVerified` updates row only when state allows (`pending`/`failed` → `active` on subscribe; `active`/`pending` → `unsubscribed` on unsubscribe); unknown mode → **403** (no challenge echo). **POST:** dual HMAC (`X-Hub-Signature` `sha1=` or `sha256=`); body cap `vtual.websub.max_body_bytes` (default 1 MiB, Settings registry) → **413** when exceeded; invalid signature → **204** (no leak) + structured `Log::warning` + `last_error` on subscription row. **Topic lookup:** exact `topic` column, then fallback parse `channel_id` from topic URL → match active subscription by channel `external_id`. **Deleted/tombstone videos** (`at:deleted`) deferred — future: mark unavailable when `videos.list` returns 404 during content pool flush.
 
@@ -671,6 +702,11 @@ Web UI: link from credentials index → **API probe**.
 | Public homepage / SEO creator & management profiles | Partial — per-creator read profile at `/apps/vtual/vtuber/{slug}` (login only; slug canonical + UUID 301; guest/SEO still pending) |
 | Paid Service catalog SKUs for Vtual | Not implemented |
 | Data migration from broadercastv2 | Not planned in foundation |
+| Pool `done` row retention | Not implemented — `vtual_*_fetch_pool` processed rows accumulate |
+| Feed poll vs content pool deadlock | Observed MySQL 1213 under concurrent enqueue; retry succeeds; fix backlog |
+| WebSub push E2E validation | Subscription may be `active` while `last_notify_at` stays null until real publish |
+| Private discovered channels | Excluded from feed/WebSub until `POST channels/{id}/promote` |
+| `verified_channel_id` API exposure | Stored on claim row; not yet in API resources or claim UI |
 
 ## Tests
 
@@ -703,6 +739,10 @@ composer test -- --filter=AccessibilityBlade
 | `VtuberProfileWebTest` | Profile layout, canonical, UUID 301, uniform card slots, subscriber display |
 | `PlatformCredentialWebTest` | Active credentials CRUD web |
 | `ContentIngestionPoolTest` | Feed poll + content pool + live CCV integration |
+| `DiscordConnectionDiscoveryServiceTest` | Private channel bind, promote, external links from Discord snapshot |
+| `DiscordConnectionsClientTest` | Normalize all connection types; `ownershipEligible`; `externalLinkCandidates` |
+| `CreatorProfileManageWebTest` | Manage profile web; channel add; Discord verify; promote discovered |
+| `CreatorClaimServiceTest` (filters) | Bio proof-channel-only; Discord discovery; `verified_channel_id` contract |
 | `VtualBladeWebTest` | **Archived** — `tests/_archive/Feature/Http/Controllers/Web/` |
 | `AccessibilityBladeTest` (vtual) | `_confirm-modal`, `vtual-nav`, `status-badge`, `confirm-modal.js`, `credential-form.js` a11y invariants |
 
@@ -731,6 +771,7 @@ Not implemented: field pick from source, cross-user merge without dual ownership
 ## Related
 
 - [implementation-status.md](implementation-status.md) — done / not done / next (living progress tracker)
+- [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md) — YouTube ops probe rubric (2026-08-07)
 - [naming-conventions.md](naming-conventions.md) — core `Management` vs talent org (`vtual_managements`)
 - [product-activations/README.md](../product-activations/README.md) — runtime gate
 - [file-hosting/README.md](../file-hosting/README.md) — sibling product domain pattern
