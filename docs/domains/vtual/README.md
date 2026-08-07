@@ -1,6 +1,6 @@
 # vTual — product domain
 
-Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Web UI reset (2026-08):** legacy Blade product/admin UIs are [archived](ui-archive.md); active web is internal **orphan vTuber** admin only. **Scheduled content ingestion** (feed poll, content pool, live CCV) and **YouTube WebSub push** are implemented; **Twitch EventSub** remains deferred — see [implementation-status.md](implementation-status.md).
+Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Active web (2026-08):** staff **orphan** admin (`/apps/vtual/orphans`), **platform credentials** (`/apps/vtual/platform-credentials`, Root/Admin), and **read-only vTuber profile** (`/apps/vtual/vtuber/{slug}`, login required). Hub, profiles, claims, and registry Blade UIs are [archived](ui-archive.md). **Scheduled content ingestion** (feed poll, content pool, live CCV) and **YouTube WebSub push** are implemented; **Twitch EventSub** remains deferred — see [implementation-status.md](implementation-status.md).
 
 | | |
 |--|--|
@@ -65,10 +65,10 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 
 | Path | Who | Behavior |
 |------|-----|----------|
-| Internal seed | Root / Admin / Moderator (`manage any vtual resource`) | `POST /api/v1/vtual/creators/orphan` creates creator **without** owner membership; then register channels as usual. Staff UI: `/apps/vtual/admin/registry` (orphan form only — do not self-bind staff as owner; use a separate account if staff is also a vtuber) |
+| Internal seed | Root / Admin / Moderator (`manage any vtual resource`) | `POST /api/v1/vtual/creators/orphan` creates creator **without** owner membership; then register channels as usual. Staff UI: `/apps/vtual/orphans` (do not self-bind staff as owner; use a separate account if staff is also a vtuber) |
 | External claim Existing | User with `claim vtual creator` | Pick claimable creator + proof channel, receive token `vtual-claim-...`, put token in YouTube About / Twitch bio, then `POST .../claims/{id}/verify` re-fetches description via production `ChannelProfileResolver` |
 | Accept Anyway | Staff + `vtual.claim.accept_anyway_enabled` (Settings → vTual) | Skip bio check (QA / local default **ON**) |
-| Staff pending queue | `manage any` | `GET /api/v1/vtual/claims/pending` + web `/apps/vtual/admin/registry` |
+| Staff pending queue | `manage any` | `GET /api/v1/vtual/claims/pending` (legacy registry web archived) |
 
 **On verify success:** insert `vtual_creator_members` role `owner` for claimant; assign product role **`Vtual vTuber`** (level 2250, own perms similar to Editor); **close all other pending claims** for that creator (`status=cancelled`, `closed_reason=superseded`). Rows are **kept as audit log** (no hard-delete this phase).
 
@@ -85,7 +85,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 | Orphan vTubers (staff) | `/apps/vtual/orphans` | Internal (Root/Admin/Moderator) — claimable profiles only; users-pattern DataTable + CRUD |
 | vTuber profile (read) | `/apps/vtual/vtuber/{slug}` | Any logged-in user — AdminLTE profile layout (sidebar col-4: avatar/stats/about + channel ID cards; main col-8: YouTube-style content grid). Canonical slug URL; UUID bookmark → 301 to slug. |
 | Platform credentials | `/apps/vtual/platform-credentials` | Root/Admin — platform index table + per-platform credential CRUD; API probe at `/probe` |
-| *Archived* | hub, profiles, claims, registry, credentials, probe | See [ui-archive.md](ui-archive.md) |
+| *Archived* | hub, profiles, claims, registry | See [ui-archive.md](ui-archive.md) |
 
 **Privacy:** Manage UI never shows "same User owns these profiles" to third parties. List scope is actor-accessible only.
 
@@ -324,7 +324,7 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 
 ## Web Blade
 
-> **Archived (2026-08):** hub, profiles, claims, registry, credentials, and probe Blade UIs are parked under [`ui-archive.md`](ui-archive.md). Domain API unchanged.
+> **Archived (2026-08):** hub, profiles, claims, and registry Blade UIs are parked under [`ui-archive.md`](ui-archive.md). Orphans, platform credentials, probe, and vTuber read profile remain active below. Domain API unchanged.
 
 | Route | View |
 |-------|------|
@@ -371,6 +371,14 @@ Orphan layout: `resources/views/{WEB_LAYOUT}/vtual/orphans/` (default `adminlte4
 
 - **Row actions**: Edit / Test / Revoke (active) / Delete (pending & revoked) in a horizontal flex bar (`_credential_actions`); AJAX forms use `:showAlert="false"` so success/error uses toast (not inline alert inside the table). Action buttons disable for the duration of each request.
 - **Status refresh**: after Test or Revoke (success or failed Test), the credential row updates in place from the AJAX response; Delete removes the row — no full page reload.
+
+### UI/UX patterns (vTuber profile read)
+
+- **Layout**: `show.blade.php` → `_sidebar` (identity, stats, about, `_channels`) + `_content_panel` → `_contents`.
+- **Grid**: `row-cols-1 row-cols-sm-2 row-cols-xl-3`, `ratio-16x9` thumbnails, `stretched-link` whole-card click.
+- **Uniform content cards**: 3-slot flex body — `vtuber-content-card__title` (2-line `monolith-line-clamp-2`), `__meta` (date · platform, `text-truncate`), `__badges` (pinned with `margin-top: auto`) — CSS in `resources/css/monolith-overrides.css`.
+- **Channel ID cards**: `subscriber_count` / `subscriber_count_formatted` from `ChannelResource` in sidebar `_channels`.
+- **Auth**: any logged-in user; guest → login redirect; UUID path → **301** to canonical slug (web).
 
 ### Archived UI patterns (2026-07 overhaul, see ui-archive.md)
 - **i18n**: all user-facing strings via `__('web/vtual.*')` (en/id/ja); `ajax.*`, `confirm.*`, `table.*` keys added.
@@ -554,7 +562,7 @@ Permanent debug surface for **production** `PlatformApiGateway` — **not** temp
 
 | Surface | Method | Path |
 |---------|--------|------|
-| Web form | GET/POST | `/apps/vtual/admin/platform-api-probe` |
+| Web form | GET/POST | `/apps/vtual/platform-credentials/probe` |
 | API | POST | `/api/v1/vtual/admin/platform-api/probe` |
 
 **Methods:** `fetch_videos`, `fetch_videos_chunked`, `fetch_channels`, `resolve_channel`, `fetch_streams` (Twitch only).
@@ -584,7 +592,7 @@ When **adding, removing, or renaming** a worker-facing gateway method that shoul
 1. `PlatformApiProbeService::METHODS` + `run()` match arm
 2. `PlatformApiProbeRequest` validation (`Rule::in`)
 3. Web labels/help in `lang/{en,id,ja}/web/vtual.php` (`probe.method_*`, `ids_help`)
-4. Feature tests (`PlatformApiProbeApiTest` / `PlatformApiProbeWebTest`)
+4. Feature tests (`PlatformApiProbeApiTest`; web probe test archived as `PlatformApiProbeWebTest` in `tests/_archive/`)
 5. This README section (methods table + notes)
 
 Video/VOD ids stay raw (no profile resolve). Channel/stream profile normalize is the shared production resolver used by channel register — not probe-only logic.
@@ -619,9 +627,15 @@ Web UI: link from credentials index → **API probe**.
 
 `tests/Domain/Vtual/Unit/Integrations/PlatformApiGatewayTest.php`, `BatchIdChunkerTest.php` — `Http::fake`, batch caps, parts whitelist, auth headers, 401 → `markFailed` + ErrorLog (no secrets), unsupported ops.
 
-`PlatformApiProbeApiTest` / `PlatformApiProbeWebTest` — admin probe gate, multi-id path, Twitch streams/channels profile normalize (login → user_id).
+`PlatformApiProbeApiTest` — admin probe gate, multi-id path, Twitch streams/channels profile normalize (login → user_id).
 
-`VtualBladeWebTest` — web view rendering, AJAX form presence, modal confirm, partial inclusion after UI/UX overhaul.
+`VtuberProfileWebTest` — profile layout, canonical, UUID 301, uniform card slot classes, subscriber display.
+
+`PlatformCredentialWebTest` — active credentials CRUD web.
+
+`ContentIngestionPoolTest` — feed poll + content pool + live CCV integration.
+
+`VtualBladeWebTest` — **archived** (`tests/_archive/Feature/Http/Controllers/Web/`).
 
 `AccessibilityBladeTest` (vtual assertions) — `_confirm-modal`, `vtual-nav`, `status-badge`, `confirm-modal.js`, `credential-form.js` a11y invariants (WCAG 2.1 AA).
 
@@ -630,20 +644,20 @@ Web UI: link from credentials index → **API probe**.
 | Item | Status |
 |------|--------|
 | YouTube WebSub / PubSubHubbub | Implemented — `YoutubeWebSubSubscriptionService`, public webhook, lease renew; subscribe on channel activate; hardened verify/signature/topic lookup (see ingestion **WebSub hardening**) |
-| YouTube/Twitch content upsert into `vtual_contents` | `ContentService::upsertFromPrimary` foundation (no sync workers) |
+| YouTube/Twitch content upsert into `vtual_contents` | **Implemented** — scheduled ingestion (`ContentService::upsertFromPrimary` + feed poll + content pool + WebSub) |
 | Twitch EventSub | Not implemented |
-| Live poll scheduler / CCV snapshots | Not implemented (`fetchStreamsByUserIds` ready for workers) |
+| Live CCV poll | **Implemented** — `vtual:poll-live-contents` (`LiveContentPollService`) |
+| WebSub tombstone / deleted video | Not implemented — mark unavailable when `videos.list` returns 404 during content pool flush |
 | Soft credential failover (401/403) | Implemented default **OFF** (`vtual.credential.failover.enabled` in Settings → vTual) |
 | Reveal plaintext credential endpoint | Explicitly out of scope |
 | Kick integration | Deferred; disabled seed |
-| Content lifecycle sync + CCV snapshots | Table + appearances model; no live sync workers |
+| Multi-stream session correlation | Not implemented |
 | Auto collab/network appearance discovery | **Cancelled** (no platform partner list; explicit `attachAppearance` only) |
 | Creator claim Existing (bio token) | **Phase 1 implemented** (orphan seed + verify + Accept Anyway) |
 | Channel claim (attach channel) | **Implemented** dual path: staff seed instant active; non-staff pending claim + bio / Accept Anyway |
 | Claim Add New + survey + appeal | Not implemented (phase 2+) |
 | Profile merge (absorb) | **Implemented** (same-owner or staff; source archived) |
 | Ideal Viewer-only until claim (strip User create creator) | Follow-up; not in phase 1 |
-| Multi-stream session correlation | Not implemented |
 | Public homepage / SEO creator & management profiles | Partial — per-creator read profile at `/apps/vtual/vtuber/{slug}` (login only; slug canonical + UUID 301; guest/SEO still pending) |
 | Paid Service catalog SKUs for Vtual | Not implemented |
 | Data migration from broadercastv2 | Not planned in foundation |
@@ -676,7 +690,10 @@ composer test -- --filter=AccessibilityBlade
 | `DecryptedValueCacheTest` | vtual resource TTL 0; default global `0` forever; non-zero global TTL still expires when configured |
 | `VtualApiTest` | CRUD API, user channel claim path, staff seed active channel, product gate, peer isolation |
 | `RegisterVtualActivationTest` | Register creates implicit Vtual activation |
-| `VtualBladeWebTest` | Web view rendering, AJAX form presence, modal confirm, partial inclusion |
+| `VtuberProfileWebTest` | Profile layout, canonical, UUID 301, uniform card slots, subscriber display |
+| `PlatformCredentialWebTest` | Active credentials CRUD web |
+| `ContentIngestionPoolTest` | Feed poll + content pool + live CCV integration |
+| `VtualBladeWebTest` | **Archived** — `tests/_archive/Feature/Http/Controllers/Web/` |
 | `AccessibilityBladeTest` (vtual) | `_confirm-modal`, `vtual-nav`, `status-badge`, `confirm-modal.js`, `credential-form.js` a11y invariants |
 
 
