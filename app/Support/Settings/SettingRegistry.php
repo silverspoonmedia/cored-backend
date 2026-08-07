@@ -165,6 +165,14 @@ final class SettingRegistry
             'vtual.channel_pool.resync_stale_hours' => self::def('vtual', SettingType::Int, 'vtual.channel_pool.resync_stale_hours'),
             'vtual.channel_pool.resync_enqueue_limit' => self::def('vtual', SettingType::Int, 'vtual.channel_pool.resync_enqueue_limit'),
             'vtual.channel_pool.flush_lock_seconds' => self::def('vtual', SettingType::Int, 'vtual.channel_pool.flush_lock_seconds'),
+            'vtual.content_pool.threshold' => self::def('vtual', SettingType::Int, 'vtual.content_pool.threshold'),
+            'vtual.content_pool.max_wait_minutes' => self::def('vtual', SettingType::Int, 'vtual.content_pool.max_wait_minutes'),
+            'vtual.content_pool.flush_lock_seconds' => self::def('vtual', SettingType::Int, 'vtual.content_pool.flush_lock_seconds'),
+            'vtual.feed_poll.interval_minutes' => self::def('vtual', SettingType::Int, 'vtual.feed_poll.interval_minutes'),
+            'vtual.live_poll.interval_minutes' => self::def('vtual', SettingType::Int, 'vtual.live_poll.interval_minutes'),
+            'vtual.websub.lease_seconds' => self::def('vtual', SettingType::Int, 'vtual.websub.lease_seconds'),
+            'vtual.websub.renew_before_hours' => self::def('vtual', SettingType::Int, 'vtual.websub.renew_before_hours'),
+            'vtual.websub.max_body_bytes' => self::def('vtual', SettingType::Int, 'vtual.websub.max_body_bytes'),
         ];
     }
 

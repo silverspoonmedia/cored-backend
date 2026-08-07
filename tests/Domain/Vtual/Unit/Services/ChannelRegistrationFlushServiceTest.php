@@ -6,8 +6,10 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
+use App\Domain\Vtual\Jobs\RunChannelInitialContentBackfillJob;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
+use App\Domain\Vtual\Models\WebsubSubscription;
 use App\Domain\Vtual\Services\ChannelRegistrationFlushService;
 use App\Domain\Vtual\Services\ChannelService;
 use App\Domain\Vtual\Services\CreatorService;
@@ -15,6 +17,7 @@ use App\Domain\Vtual\Services\PlatformCredentialService;
 use Carbon\Carbon;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
@@ -54,6 +57,7 @@ class ChannelRegistrationFlushServiceTest extends TestCase
             'vtual.channel_pool.max_wait_minutes' => 15,
             'vtual.http.batch.channels' => 50,
         ]);
+        Bus::fake();
     }
 
     #[Test]
@@ -64,6 +68,10 @@ class ChannelRegistrationFlushServiceTest extends TestCase
 
         $httpCalls = 0;
         Http::fake(function ($request) use (&$httpCalls) {
+            if (str_contains($request->url(), 'pubsubhubbub.appspot.com')) {
+                return Http::response('', 202);
+            }
+
             if (str_contains($request->url(), 'youtube/v3/channels')) {
                 $httpCalls++;
                 $id = 'UCBATCH001';
@@ -120,6 +128,25 @@ class ChannelRegistrationFlushServiceTest extends TestCase
     {
         $this->activateYoutubeCredential();
         $this->fakeYoutubeChannel($ageId = $this->youtubeChannelId(99), 'age', 'Age Channel');
+        Http::fake([
+            'pubsubhubbub.appspot.com/*' => Http::response('', 202),
+            'www.googleapis.com/youtube/v3/channels*' => Http::response([
+                'items' => [
+                    [
+                        'id' => $ageId,
+                        'snippet' => [
+                            'title' => 'Age Channel',
+                            'description' => 'YouTube channel bio',
+                            'customUrl' => '@age',
+                            'publishedAt' => '2017-04-19T14:57:55Z',
+                            'thumbnails' => [
+                                'high' => ['url' => 'https://img.example/hi.jpg'],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
         $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Age Orphan']);
 
         $channel = $this->channels->registerPendingForStaff($this->admin, $orphan->id, [
@@ -140,6 +167,13 @@ class ChannelRegistrationFlushServiceTest extends TestCase
         $this->assertSame(ChannelStatus::Active, $channel->status);
         $this->assertSame($ageId, $channel->external_id);
         $this->assertNull($channel->profile_input);
+
+        Bus::assertDispatched(RunChannelInitialContentBackfillJob::class, function (RunChannelInitialContentBackfillJob $job) use ($channel): bool {
+            return $job->channelId === (string) $channel->id;
+        });
+        $this->assertTrue(
+            WebsubSubscription::query()->where('channel_id', $channel->id)->exists()
+        );
     }
 
     #[Test]

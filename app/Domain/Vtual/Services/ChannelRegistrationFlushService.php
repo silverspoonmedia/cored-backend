@@ -5,7 +5,6 @@ namespace App\Domain\Vtual\Services;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
-use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
@@ -22,6 +21,7 @@ class ChannelRegistrationFlushService
 {
     public function __construct(
         private readonly ChannelProfileResolver $profiles,
+        private readonly ChannelActivationService $activation,
     ) {}
 
     /**
@@ -89,7 +89,7 @@ class ChannelRegistrationFlushService
                     }
 
                     $dto = $this->profiles->resolve($key, $profile);
-                    $this->activatePendingFromDto($channel, $platform, $dto);
+                    $this->activation->activatePendingFromDto($channel, $platform, $dto);
                     $applied++;
                 } catch (Throwable $e) {
                     $channel->forceFill([
@@ -165,33 +165,5 @@ class ChannelRegistrationFlushService
         }
 
         return PlatformKey::from((string) $key);
-    }
-
-    private function activatePendingFromDto(Channel $channel, Platform $platform, PlatformChannelDto $dto): void
-    {
-        $exists = Channel::query()
-            ->where('platform_id', $platform->id)
-            ->where('external_id', $dto->externalId)
-            ->where('id', '!=', $channel->id)
-            ->exists();
-
-        if ($exists) {
-            throw new VtualException(__('api/vtual.channel.external_id_taken'), 422);
-        }
-
-        $channel->forceFill([
-            'external_id' => $dto->externalId,
-            'handle' => $dto->handle,
-            'display_name' => $dto->displayName,
-            'description' => $dto->description,
-            'avatar_url' => $dto->thumbnailUrl,
-            'banner_url' => $dto->bannerUrl,
-            'url' => $dto->url,
-            'platform_created_at' => $dto->platformCreatedAt,
-            'status' => ChannelStatus::Active,
-            'last_synced_at' => now(),
-            'profile_input' => null,
-            'resolve_error' => null,
-        ])->save();
     }
 }

@@ -10,6 +10,7 @@ use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
+use App\Domain\Vtual\Jobs\RunChannelInitialContentBackfillJob;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Services\ChannelService;
 use App\Domain\Vtual\Services\CreatorService;
@@ -17,6 +18,7 @@ use App\Domain\Vtual\Services\PlatformCredentialService;
 use Carbon\Carbon;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
@@ -61,6 +63,7 @@ class ChannelServiceTest extends TestCase
         $this->admin = $this->userWithRole('Admin');
         $this->youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
         $this->twitch = Platform::query()->where('key', 'twitch')->firstOrFail();
+        Bus::fake();
     }
 
     #[Test]
@@ -208,7 +211,30 @@ class ChannelServiceTest extends TestCase
     }
 
     #[Test]
-    public function activate_twitch_dto_stores_numeric_id(): void
+    public function activate_youtube_dispatches_initial_content_backfill_job(): void
+    {
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Stream']);
+
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'stream',
+            displayName: 'Stream Channel',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: null,
+        );
+
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+
+        Bus::assertDispatched(RunChannelInitialContentBackfillJob::class, function (RunChannelInitialContentBackfillJob $job) use ($channel): bool {
+            return $job->channelId === (string) $channel->id;
+        });
+    }
+
+    #[Test]
+    public function activate_twitch_does_not_dispatch_initial_content_backfill_job(): void
     {
         $this->activateTwitchCredential();
         Http::fake([
@@ -245,6 +271,8 @@ class ChannelServiceTest extends TestCase
         $this->assertSame('https://img.example/offline.png', $channel->banner_url);
         $this->assertNotNull($channel->platform_created_at);
         $this->assertSame('2019-10-10', $channel->platform_created_at->toDateString());
+
+        Bus::assertNotDispatched(RunChannelInitialContentBackfillJob::class);
     }
 
     #[Test]

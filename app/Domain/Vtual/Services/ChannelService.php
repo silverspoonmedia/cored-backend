@@ -24,6 +24,8 @@ class ChannelService
         private readonly ChannelProfileResolver $profiles,
         private readonly ChannelFetchPoolService $fetchPool,
         private readonly ChannelRegistrationFlushService $registrationFlush,
+        private readonly ChannelActivationService $activation,
+        private readonly YoutubeWebSubSubscriptionService $websub,
     ) {}
 
     /**
@@ -185,26 +187,7 @@ class ChannelService
         Platform $platform,
         PlatformChannelDto $dto,
     ): Channel {
-        $exists = Channel::query()
-            ->where('platform_id', $platform->id)
-            ->where('external_id', $dto->externalId)
-            ->where('id', '!=', $channel->id)
-            ->exists();
-
-        if ($exists) {
-            throw new VtualException(__('api/vtual.channel.external_id_taken'), 422);
-        }
-
-        $channel->forceFill(array_merge(
-            [
-                'external_id' => $dto->externalId,
-                'profile_input' => null,
-                'resolve_error' => null,
-            ],
-            $this->attributesFromDto($dto),
-        ))->save();
-
-        return $channel->refresh()->load('platform');
+        return $this->activation->activatePendingFromDto($channel, $platform, $dto);
     }
 
     /**
@@ -231,10 +214,13 @@ class ChannelService
                 'platform_id' => $platform->id,
                 'external_id' => $dto->externalId,
             ],
-            $this->attributesFromDto($dto),
+            $this->activation->attributesFromDto($dto),
         ));
 
-        return $channel->load('platform');
+        $channel = $channel->load('platform');
+        $this->activation->applyYoutubeActivationHooks($channel);
+
+        return $channel;
     }
 
     /**
@@ -277,6 +263,8 @@ class ChannelService
             'status' => ChannelStatus::Archived,
         ])->save();
 
+        $this->websub->unsubscribe($channel);
+
         return $channel->refresh()->load('platform');
     }
 
@@ -296,7 +284,10 @@ class ChannelService
             'status' => ChannelStatus::Active,
         ])->save();
 
-        return $channel->refresh()->load('platform');
+        $channel = $channel->refresh()->load('platform');
+        $this->subscribeWebsubIfYoutube($channel);
+
+        return $channel;
     }
 
     public function show(User $actor, string $channelId): Channel
@@ -307,26 +298,6 @@ class ChannelService
         return $channel;
     }
 
-    /**
-     * Shared snapshot fields from platform resolve (create + refresh).
-     *
-     * @return array<string, mixed>
-     */
-    private function attributesFromDto(PlatformChannelDto $dto): array
-    {
-        return [
-            'handle' => $dto->handle,
-            'display_name' => $dto->displayName,
-            'description' => $dto->description,
-            'avatar_url' => $dto->thumbnailUrl,
-            'banner_url' => $dto->bannerUrl,
-            'url' => $dto->url,
-            'platform_created_at' => $dto->platformCreatedAt,
-            'status' => ChannelStatus::Active,
-            'last_synced_at' => now(),
-        ];
-    }
-
     private function platformKey(Platform $platform): PlatformKey
     {
         $key = $platform->key;
@@ -335,5 +306,20 @@ class ChannelService
         }
 
         return PlatformKey::from((string) $key);
+    }
+
+    private function subscribeWebsubIfYoutube(Channel $channel): void
+    {
+        $channel->loadMissing('platform');
+        $platform = $channel->platform;
+        if ($platform === null) {
+            return;
+        }
+
+        if ($this->platformKey($platform) !== PlatformKey::Youtube) {
+            return;
+        }
+
+        $this->websub->subscribe($channel);
     }
 }

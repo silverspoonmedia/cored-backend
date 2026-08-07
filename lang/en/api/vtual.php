@@ -117,6 +117,7 @@ return [
         'cannot_detach_primary' => 'Cannot detach the primary host channel. Set another primary first.',
         'fetch_platform_unsupported' => 'Content fetch is not supported for platform :platform.',
         'fetch_channel_not_active' => 'Content fetch requires an active channel.',
+        'fetch_video_channel_mismatch' => 'Video :video does not belong to channel :channel.',
     ],
     'platform' => [
         'list_success' => 'Platforms loaded.',
@@ -171,6 +172,9 @@ return [
         'parts_required' => 'At least one YouTube :resource part is required.',
         'handle_required' => 'Channel handle or login is required.',
         'youtube_channel_id_required' => 'A valid YouTube channel id (UC…) is required.',
+        'search_event_type_invalid' => 'Search event type must be live, upcoming, or completed.',
+        'feed_fetch_failed' => 'YouTube feed request failed (HTTP :status).',
+        'feed_parse_failed' => 'YouTube feed response could not be parsed.',
         'upstream_error' => 'Platform :platform request failed (HTTP :status).',
         'upstream_error_detail' => 'Platform :platform request failed (HTTP :status): :detail',
         'upstream_connection_error' => 'Platform :platform connection failed.',

@@ -74,6 +74,8 @@ return [
             'channels' => 50,
             // YouTube playlistItems.list max per request
             'playlist_items' => 50,
+            // YouTube search.list max per request (live discovery fallback)
+            'search_channel_videos' => 5,
             // Twitch Get Streams user_id max (platform-specific)
             'streams_user_ids' => 100,
         ],
@@ -200,6 +202,36 @@ return [
         'resync_stale_hours' => 24,
         'resync_enqueue_limit' => 200,
         'flush_lock_seconds' => 30,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Content fetch pool (video id hydrate after feed / WebSub discovery)
+    |--------------------------------------------------------------------------
+    */
+    'content_pool' => [
+        'threshold' => 50,
+        'max_wait_minutes' => 15,
+        'flush_lock_seconds' => 30,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Feed poll + live CCV + WebSub lease
+    |--------------------------------------------------------------------------
+    */
+    'feed_poll' => [
+        'interval_minutes' => 15,
+    ],
+
+    'live_poll' => [
+        'interval_minutes' => 2,
+    ],
+
+    'websub' => [
+        'lease_seconds' => 864000,
+        'renew_before_hours' => 24,
+        'max_body_bytes' => 1_048_576,
     ],
 
 ];

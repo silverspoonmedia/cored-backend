@@ -7,7 +7,7 @@ Tracks what the **vTual product domain** has shipped in Monolith versus the orig
 | Domain guide (behavior detail) | [README.md](README.md) |
 | Code | `app/Domain/Vtual/` |
 | Config | [`config/vtual.php`](../../../config/vtual.php), product key `Vtual` in [`config/products.php`](../../../config/products.php) |
-| Last reviewed | 2026-07-23 |
+| Last reviewed | 2026-08-05 |
 
 ---
 
@@ -65,14 +65,20 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **User claim UX** | Claimable list + my claims | `/apps/vtual/claims` |
 | **Channel dual path** | Staff POST channel: deferred `registerPendingForStaff` (pending + batch resolve). Owner: `ChannelClaim` + bio / Accept Anyway → `activateFromDto`. `seedForStaff` kept for instant bind paths. | `ChannelClaimService`, `ChannelService`, `ChannelRegistrationFlushService`, tests |
 | **Orphan admin UX** | `/apps/vtual/orphans`: minimal create (prefixed slug), redirect to edit, channel registration on edit; edit channels table shows per-channel avatar when resolved (`avatar_url`) | `OrphanVtuberController`, `vtual-orphans` views, `OrphanVtuberWebTest` |
-| **YouTube content fetch POC** | `vtual:fetch-channel-content` — list uploads + hydrate videos (2 API calls, max 50) → `vtual_contents` | `ChannelContentFetchService`, `YoutubeDataApiClient::listChannelVideos`, `FetchChannelContentCommand` |
+| **YouTube content fetch POC** | Manual `vtual:fetch-channel-content` (last frontier) | `ChannelContentFetchService`, `FetchChannelContentCommand` |
+| **YouTube initial content backfill** | Auto on YouTube activate (async job); manual `vtual:backfill-initial-content` for existing rows | `ChannelInitialContentBackfillService`, `RunChannelInitialContentBackfillJob`, `ChannelActivationService`, `content_initial_backfill_at` |
+| **Channel activation hooks** | Single entry: WebSub + backfill job on all YouTube activate paths (including registration flush) | `ChannelActivationService` |
+| **Feed poll ingestion** | Scheduled `vtual:poll-channel-feeds` + `vtual:flush-content-pool`; skips until initial backfill done | `YoutubeChannelVideoFeedClient`, `ChannelFeedPollService`, `ContentFetchPoolService` |
+| **Live CCV poll** | Scheduled `vtual:poll-live-contents` | `LiveContentPollService` |
+| **YouTube WebSub** | Push trigger + `vtual:renew-websub-subscriptions` (`--repair-missing`) | `YoutubeWebSubSubscriptionService`, `YoutubeWebSubNotificationService`, webhook route; subscribe on `ChannelActivationService` |
+| **YouTube WebSub hardening** | Strict hub verify, dual sha1/sha256 signature, resilient topic lookup, body cap, structured logging + `last_error`, shared Atom parser | `YoutubeAtomFeedParser`, `YoutubeWebSubWebhookController`, `config/vtual.php` `websub.max_body_bytes`, registry `vtual.websub.max_body_bytes` |
 | **vTuber profile (read)** | `/apps/vtual/vtuber/{slug}` — bio + active channels + indexed contents; any logged-in user (no RBAC/membership); UUID → 301 slug (web) | `VtuberProfileService`, `VtuberProfileController`, `ContentResource`, `VtuberProfileWebTest` |
 | **Platform credentials UI** | `/apps/vtual/platform-credentials`: platform index table + per-platform CRUD + API probe | `PlatformCredentialController`, `PlatformApiProbeController`, `vtual-platform-credentials` views, `PlatformCredentialWebTest` |
 | **My profiles manage** | List bound profiles; edit meta; external links CRUD; channel claims + active/archived channels | `/apps/vtual/profiles`, `CreatorProfileController`, `ExternalLinkService` |
 | **Profile merge (absorb)** | Same-owner or manage-any; move channels/links/contents/appearances; cancel pendings `merged`; archive source + slug mangle | `CreatorMergeService`, `POST creators/{id}/merge`, `CreatorMergeServiceTest` |
 | **Channel archive / restore** | Soft hide `archived`; list archived; restore → `active` | `ChannelService::archive` / `restore`, `ChannelServiceTest` |
 | **Channel fetch pool** | Non-interactive refresh + scheduled resync; flush at **50** ids **or** **15 min** age; single lock/claim flusher | `ChannelFetchPoolService`, `vtual:flush-channel-pool`, schedule in `routes/console.php`, `ChannelFetchPoolServiceTest` |
-| **Channel registration pool** | Staff pending channel adds; same 50 / 15m gate per platform; flushed before fetch pool in `vtual:flush-channel-pool` | `ChannelRegistrationFlushService`, `profile_input` on `vtual_channels`, `ChannelRegistrationFlushServiceTest` |
+| **Channel registration pool** | Staff pending channel adds; same 50 / 15m gate per platform; flush delegates activate to `ChannelActivationService` | `ChannelRegistrationFlushService`, `ChannelActivationService`, `ChannelRegistrationFlushServiceTest` |
 | **Content model foundation** | Primary host + appearances; explicit attach; no auto collab from API | `ContentService`, appearances migration, README content section |
 | **Error logging** | Platform HTTP failures can log to ErrorLog | platform client / gateway error path + docs |
 | **i18n** | en / id / ja for API + web vtual strings | `lang/*/api/vtual.php`, `lang/*/web/vtual.php` |
@@ -85,8 +91,15 @@ Representative suite under `tests/Domain/Vtual/`:
 | Test | Focus |
 |------|--------|
 | `ChannelFetchPoolServiceTest` | Threshold / age / force / coalesce / single HTTP |
-| `ChannelRegistrationFlushServiceTest` | Staff pending registration: 50/platform flush, 15m age, cross-platform isolation |
-| `ChannelServiceTest` | Staff pending register, seedForStaff, activate, refresh enqueues pool, archive/restore |
+| `ChannelRegistrationFlushServiceTest` | Staff pending registration: 50/platform flush, 15m age, WebSub + backfill job on activate |
+| `ChannelActivationServiceTest` | YouTube hooks on pending activate; Twitch skips hooks |
+| `YoutubeWebSubSubscriptionServiceTest` | `subscribeMissingActiveChannels` repair path; `attemptMarkVerified` state guards; `resolveSubscriptionForTopic` |
+| `YoutubeWebSubNotificationServiceTest` | sha1/sha256 signature, bad signature + `last_error`, topic fallback |
+| `YoutubeAtomFeedParserTest` / `YoutubeFeedTopicParserTest` | Shared Atom parse + topic URL `channel_id` extraction |
+| `YoutubeWebSubWebhookTest` | GET verify echo, invalid mode 403, POST valid/invalid signature 204 |
+| `ChannelServiceTest` | Staff pending register, seedForStaff, activate, backfill job dispatch, refresh enqueues pool, archive/restore |
+| `ChannelInitialContentBackfillServiceTest` | One-time backfill, watermark, skip/fail paths |
+| `ChannelFeedPollServiceTest` | Watermark enqueue, initial backfill guard |
 | `ChannelClaimServiceTest` | Bio verify attach |
 | `CreatorClaimServiceTest` | Orphan claim, supersede, Accept Anyway |
 | `CreatorMergeServiceTest` | Absorb, clash, staff orphans |
@@ -106,8 +119,7 @@ Mapped to original TASK / product vision. **Do not treat as bugs** unless a mile
 | **Claim Add New** | Not implemented | Survey + staff approval + appeal / permanent reject |
 | **Public homepage** | Not implemented | Live / archive / VOD sections, SEO creator & management profiles |
 | **Public read surfaces** | Partial | Per-creator profile at `/apps/vtual/vtuber/{slug}` (login required; slug canonical; guest SEO pending) |
-| **Content ingestion workers** | POC only | Manual `vtual:fetch-channel-content {channel}` — YouTube uploads playlist (`playlistItems.list`) + `videos.list` batch → `ContentService::upsertFromPrimary`. No scheduler yet. |
-| **YouTube WebSub / PubSubHubbub** | Not implemented | Manual HTTP ready; push not wired |
+| **Content ingestion workers** | Onboarding backfill + feed poll + content pool + live CCV + WebSub (scheduled); manual command = last frontier | See README ingestion table |
 | **Twitch EventSub** | Not implemented | Same |
 | **Live CCV / multi-stream session** | Not implemented | `fetchStreamsByUserIds` exists for future workers |
 | **Video / stream fetch pool** | Not implemented | Only **channel** external_id pool exists |
@@ -128,11 +140,10 @@ Mapped to original TASK / product vision. **Do not treat as bugs** unless a mile
 
 Not a commitment — default backlog for the next sessions:
 
-1. **Content ingestion worker** — poll or scheduled batch using `fetchVideos` / streams → `ContentService::upsertFromPrimary`; optional explicit `attachAppearance` ops path.
-2. **Claim Add New** — form + staff queue + reject/appeal (closes chicken-egg for unknown profiles).
-3. **Public read surfaces** — homepage live/archive sections + public creator profile (read-only).
-4. **Platform push** — YouTube WebSub and/or Twitch EventSub after poll path is stable.
-5. **Hardening** — strip casual `POST creators` for non-staff; management UI; video/stream pooling if quota hurts.
+1. **Claim Add New** — form + staff queue + reject/appeal (closes chicken-egg for unknown profiles).
+2. **Public read surfaces** — homepage live/archive sections + public creator profile (read-only).
+3. **Twitch EventSub** — push notifications after poll path is stable.
+4. **Hardening** — strip casual `POST creators` for non-staff; management UI; video/stream pooling if quota hurts; WebSub deleted-video / tombstone handling (mark unavailable on API 404).
 
 ---
 
@@ -144,6 +155,11 @@ Not a commitment — default backlog for the next sessions:
 | Roles / platforms | `php artisan db:seed --class=VtualRoleSeeder` |
 | Menus | Seed `RoleSeeder`, `FileHostingRoleSeeder`, and `VtualRoleSeeder`, then `php artisan db:seed --class=MenuSeeder` (authoritative rebuild + post-commit cache flush) |
 | Flush channel pool (on demand) | `php artisan vtual:flush-channel-pool` |
+| Poll channel feeds | `php artisan vtual:poll-channel-feeds` (`--channel=`, `--force`) |
+| Flush content pool | `php artisan vtual:flush-content-pool` (`--force`) |
+| Poll live CCV | `php artisan vtual:poll-live-contents` |
+| Renew / repair WebSub | `php artisan vtual:renew-websub-subscriptions` (`--repair-missing` for channels without a row) |
+| Manual content recovery | `php artisan vtual:fetch-channel-content {channel}` (`--video`, `--discover-live`) |
 | Force flush (ignore 50/15m gate) | `php artisan vtual:flush-channel-pool --force` |
 | Enqueue stale actives then flush | `php artisan vtual:flush-channel-pool --resync` / `--resync --force` |
 | Platform filter | `--platform=youtube` or `twitch` |

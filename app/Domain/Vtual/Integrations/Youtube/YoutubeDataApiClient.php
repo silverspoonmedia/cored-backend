@@ -11,6 +11,7 @@ use App\Domain\Vtual\Integrations\Contracts\FetchesVideos;
 use App\Domain\Vtual\Integrations\Contracts\ListsChannelVideos;
 use App\Domain\Vtual\Integrations\Contracts\PlatformClient;
 use App\Domain\Vtual\Integrations\Contracts\ResolvesChannel;
+use App\Domain\Vtual\Integrations\Contracts\SearchesChannelVideos;
 use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
 use App\Domain\Vtual\Integrations\Dto\PlatformVideoDto;
 use App\Domain\Vtual\Integrations\Dto\YoutubeParts;
@@ -21,7 +22,7 @@ use App\Domain\Vtual\Services\PlatformCredentialService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
-class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChannels, ResolvesChannel, ListsChannelVideos
+class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChannels, ResolvesChannel, ListsChannelVideos, SearchesChannelVideos
 {
     use UsesPlatformCredential;
 
@@ -40,7 +41,8 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
             PlatformApiOperation::FetchVideos,
             PlatformApiOperation::FetchChannels,
             PlatformApiOperation::ResolveChannel,
-            PlatformApiOperation::ListChannelVideos => true,
+            PlatformApiOperation::ListChannelVideos,
+            PlatformApiOperation::SearchChannelVideos => true,
             PlatformApiOperation::FetchStreams => false,
         };
     }
@@ -79,6 +81,49 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
         return collect($items)
             ->filter(fn (mixed $item): bool => is_array($item))
             ->map(fn (array $item): ?string => $this->extractPlaylistVideoId($item))
+            ->filter(fn (?string $id): bool => is_string($id) && $id !== '')
+            ->values();
+    }
+
+    public function searchChannelVideos(string $channelExternalId, string $eventType, int $limit = 5): Collection
+    {
+        $eventType = strtolower(trim($eventType));
+        if (! in_array($eventType, ['live', 'upcoming', 'completed'], true)) {
+            throw new VtualException(__('api/vtual.integrations.search_event_type_invalid'), 422);
+        }
+
+        $max = (int) config('vtual.http.batch.search_channel_videos', 5);
+        $maxResults = min(max(1, $limit), $max);
+        $apiKey = $this->apiKey();
+
+        try {
+            $response = PlatformHttp::get(
+                $this->baseUrl().'/search',
+                [
+                    'part' => 'snippet',
+                    'channelId' => $channelExternalId,
+                    'type' => 'video',
+                    'eventType' => $eventType,
+                    'maxResults' => $maxResults,
+                    'key' => $apiKey,
+                ],
+                platformKey: PlatformKey::Youtube->value,
+                logContext: $this->httpLogContext('search_channel_videos'),
+            );
+        } catch (PlatformApiException $e) {
+            $this->handleAuthFailure($e, $this->credentials);
+        }
+
+        $this->credentials->markUsed($this->requireCredential());
+
+        $items = $response->json('items') ?? [];
+        if (! is_array($items)) {
+            $items = [];
+        }
+
+        return collect($items)
+            ->filter(fn (mixed $item): bool => is_array($item))
+            ->map(fn (array $item): ?string => $this->extractSearchVideoId($item))
             ->filter(fn (?string $id): bool => is_string($id) && $id !== '')
             ->values();
     }
@@ -215,6 +260,25 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
         $contentDetails = is_array($item['contentDetails'] ?? null) ? $item['contentDetails'] : [];
         if (isset($contentDetails['videoId']) && is_string($contentDetails['videoId']) && $contentDetails['videoId'] !== '') {
             return $contentDetails['videoId'];
+        }
+
+        $snippet = is_array($item['snippet'] ?? null) ? $item['snippet'] : [];
+        $resourceId = is_array($snippet['resourceId'] ?? null) ? $snippet['resourceId'] : [];
+        if (isset($resourceId['videoId']) && is_string($resourceId['videoId']) && $resourceId['videoId'] !== '') {
+            return $resourceId['videoId'];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    private function extractSearchVideoId(array $item): ?string
+    {
+        $id = is_array($item['id'] ?? null) ? $item['id'] : [];
+        if (isset($id['videoId']) && is_string($id['videoId']) && $id['videoId'] !== '') {
+            return $id['videoId'];
         }
 
         $snippet = is_array($item['snippet'] ?? null) ? $item['snippet'] : [];

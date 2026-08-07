@@ -123,6 +123,68 @@ class ChannelContentFetchServiceTest extends TestCase
     }
 
     #[Test]
+    public function fetch_videos_and_persist_stores_live_content_with_concurrent_viewers(): void
+    {
+        $channel = $this->seedActiveYoutubeChannel('UCPkKpOHxEDcwmUAnRpIu-Ng');
+
+        $gateway = Mockery::mock(PlatformApiGateway::class);
+        $gateway->shouldReceive('fetchVideos')
+            ->once()
+            ->with(PlatformKey::Youtube, ['VgdAA0Gdzn0'])
+            ->andReturn(collect([
+                $this->videoDto('VgdAA0Gdzn0', 'Live Now', 'live', 1234),
+            ]));
+
+        $this->fetch = app(ChannelContentFetchService::class, ['gateway' => $gateway]);
+
+        $summary = $this->fetch->fetchVideosAndPersist($channel, ['VgdAA0Gdzn0']);
+
+        $this->assertSame(['requested' => 1, 'fetched' => 1, 'upserted' => 1], $summary);
+        $this->assertDatabaseHas('vtual_contents', [
+            'channel_id' => $channel->id,
+            'external_id' => 'VgdAA0Gdzn0',
+            'title' => 'Live Now',
+            'type' => ContentType::Live->value,
+            'status' => ContentStatus::Live->value,
+            'concurrent_viewers' => 1234,
+        ]);
+    }
+
+    #[Test]
+    public function fetch_videos_and_persist_rejects_video_from_other_channel(): void
+    {
+        $channel = $this->seedActiveYoutubeChannel('UCPkKpOHxEDcwmUAnRpIu-Ng');
+
+        $gateway = Mockery::mock(PlatformApiGateway::class);
+        $gateway->shouldReceive('fetchVideos')
+            ->once()
+            ->andReturn(collect([
+                $this->videoDto('other-vid', 'Wrong Channel', 'live', null, 'UCotherchannel000000000000'),
+            ]));
+
+        $this->fetch = app(ChannelContentFetchService::class, ['gateway' => $gateway]);
+
+        $this->expectException(VtualException::class);
+        $this->fetch->fetchVideosAndPersist($channel, ['other-vid']);
+    }
+
+    #[Test]
+    public function discover_live_video_ids_returns_search_results(): void
+    {
+        $channel = $this->seedActiveYoutubeChannel('UCPkKpOHxEDcwmUAnRpIu-Ng');
+
+        $gateway = Mockery::mock(PlatformApiGateway::class);
+        $gateway->shouldReceive('searchChannelVideos')
+            ->once()
+            ->with(PlatformKey::Youtube, 'UCPkKpOHxEDcwmUAnRpIu-Ng', 'live', 5)
+            ->andReturn(collect(['VgdAA0Gdzn0']));
+
+        $this->fetch = app(ChannelContentFetchService::class, ['gateway' => $gateway]);
+
+        $this->assertSame(['VgdAA0Gdzn0'], $this->fetch->discoverLiveVideoIds($channel));
+    }
+
+    #[Test]
     public function fetch_returns_zero_counts_when_playlist_empty(): void
     {
         $channel = $this->seedActiveYoutubeChannel('UCPkKpOHxEDcwmUAnRpIu-Ng');
@@ -158,23 +220,28 @@ class ChannelContentFetchServiceTest extends TestCase
         ]);
     }
 
-    private function videoDto(string $id, string $title): PlatformVideoDto
-    {
+    private function videoDto(
+        string $id,
+        string $title,
+        string $status = 'uploaded',
+        ?int $concurrentViewers = null,
+        string $channelExternalId = 'UCPkKpOHxEDcwmUAnRpIu-Ng',
+    ): PlatformVideoDto {
         return new PlatformVideoDto(
             platform: PlatformKey::Youtube,
             externalId: $id,
-            channelExternalId: 'UCPkKpOHxEDcwmUAnRpIu-Ng',
+            channelExternalId: $channelExternalId,
             title: $title,
             description: null,
             thumbnailUrl: 'https://img.example/'.$id.'.jpg',
             url: 'https://www.youtube.com/watch?v='.$id,
-            status: 'uploaded',
+            status: $status,
             publishedAt: Carbon::parse('2026-01-01T00:00:00Z'),
-            startedAt: null,
+            startedAt: Carbon::parse('2026-01-01T00:00:00Z'),
             endedAt: null,
             durationSeconds: 60,
             viewCount: 1,
-            concurrentViewers: null,
+            concurrentViewers: $concurrentViewers,
         );
     }
 

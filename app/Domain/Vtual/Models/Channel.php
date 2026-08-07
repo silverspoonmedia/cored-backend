@@ -33,6 +33,9 @@ class Channel extends Model
         'platform_created_at',
         'status',
         'last_synced_at',
+        'feed_last_polled_at',
+        'feed_last_entry_updated_at',
+        'content_initial_backfill_at',
     ];
 
     /**
@@ -44,6 +47,9 @@ class Channel extends Model
             'status' => ChannelStatus::class,
             'platform_created_at' => 'datetime',
             'last_synced_at' => 'datetime',
+            'feed_last_polled_at' => 'datetime',
+            'feed_last_entry_updated_at' => 'datetime',
+            'content_initial_backfill_at' => 'datetime',
         ];
     }
 

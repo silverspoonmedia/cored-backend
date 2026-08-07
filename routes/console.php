@@ -26,3 +26,17 @@ Schedule::command('vtual:flush-channel-pool')
 Schedule::command('vtual:flush-channel-pool --resync')
     ->hourly()
     ->withoutOverlapping();
+
+// vTual: content ingestion — feed discovery (zero quota) + content pool hydrate + live CCV poll.
+Schedule::command('vtual:poll-channel-feeds')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping();
+Schedule::command('vtual:flush-content-pool')
+    ->everyMinute()
+    ->withoutOverlapping();
+Schedule::command('vtual:poll-live-contents')
+    ->everyTwoMinutes()
+    ->withoutOverlapping();
+Schedule::command('vtual:renew-websub-subscriptions')
+    ->daily()
+    ->withoutOverlapping();

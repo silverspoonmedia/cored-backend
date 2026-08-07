@@ -117,6 +117,7 @@ return [
         'cannot_detach_primary' => 'Host primer tidak bisa dilepas. Tetapkan host primer lain terlebih dahulu.',
         'fetch_platform_unsupported' => 'Fetch konten tidak didukung untuk platform :platform.',
         'fetch_channel_not_active' => 'Fetch konten membutuhkan channel aktif.',
+        'fetch_video_channel_mismatch' => 'Video :video bukan milik channel :channel.',
     ],
     'platform' => [
         'list_success' => 'Daftar platform dimuat.',
@@ -171,6 +172,9 @@ return [
         'parts_required' => 'Minimal satu part YouTube :resource wajib diisi.',
         'handle_required' => 'Handle atau login channel wajib diisi.',
         'youtube_channel_id_required' => 'ID channel YouTube valid (UC…) wajib diisi.',
+        'search_event_type_invalid' => 'Tipe event pencarian harus live, upcoming, atau completed.',
+        'feed_fetch_failed' => 'Permintaan feed YouTube gagal (HTTP :status).',
+        'feed_parse_failed' => 'Respons feed YouTube tidak dapat diurai.',
         'upstream_error' => 'Request platform :platform gagal (HTTP :status).',
         'upstream_error_detail' => 'Request platform :platform gagal (HTTP :status): :detail',
         'upstream_connection_error' => 'Koneksi ke platform :platform gagal.',

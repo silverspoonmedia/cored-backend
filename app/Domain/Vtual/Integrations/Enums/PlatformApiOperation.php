@@ -9,4 +9,5 @@ enum PlatformApiOperation: string
     case ResolveChannel = 'resolve_channel';
     case FetchStreams = 'fetch_streams';
     case ListChannelVideos = 'list_channel_videos';
+    case SearchChannelVideos = 'search_channel_videos';
 }

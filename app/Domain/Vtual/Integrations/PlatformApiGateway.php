@@ -12,6 +12,7 @@ use App\Domain\Vtual\Integrations\Contracts\FetchesVideos;
 use App\Domain\Vtual\Integrations\Contracts\ListsChannelVideos;
 use App\Domain\Vtual\Integrations\Contracts\PlatformClient;
 use App\Domain\Vtual\Integrations\Contracts\ResolvesChannel;
+use App\Domain\Vtual\Integrations\Contracts\SearchesChannelVideos;
 use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
 use App\Domain\Vtual\Integrations\Enums\PlatformApiOperation;
 use App\Domain\Vtual\Integrations\Support\BatchIdChunker;
@@ -104,6 +105,28 @@ class PlatformApiGateway
             }
 
             return $client->listChannelVideos($channelExternalId, $limit);
+        });
+    }
+
+    /**
+     * Search channel videos by broadcast event (YouTube search.list).
+     *
+     * @param  'live'|'upcoming'|'completed'  $eventType
+     * @return Collection<int, string> Platform video external ids
+     */
+    public function searchChannelVideos(
+        PlatformKey|Platform|string $platform,
+        string $channelExternalId,
+        string $eventType,
+        int $limit = 5,
+    ): Collection {
+        return $this->runWithCredentialFailover($platform, function (PlatformClient $client) use ($channelExternalId, $eventType, $limit): Collection {
+            $this->assertSupports($client, PlatformApiOperation::SearchChannelVideos);
+            if (! $client instanceof SearchesChannelVideos) {
+                throw new UnsupportedPlatformOperationException($client->key(), PlatformApiOperation::SearchChannelVideos);
+            }
+
+            return $client->searchChannelVideos($channelExternalId, $eventType, $limit);
         });
     }
 

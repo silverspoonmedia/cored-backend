@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns="http://www.w3.org/2005/Atom">
+    <entry>
+        <yt:videoId>VgdAA0Gdzn0</yt:videoId>
+        <title>Live Stream Title</title>
+        <link rel="alternate" href="https://www.youtube.com/watch?v=VgdAA0Gdzn0"/>
+        <published>2026-08-06T08:00:00+00:00</published>
+        <updated>2026-08-06T08:30:00+00:00</updated>
+    </entry>
+    <entry>
+        <yt:videoId>olderVideoId12</yt:videoId>
+        <title>Older VOD</title>
+        <published>2026-08-01T08:00:00+00:00</published>
+        <updated>2026-08-01T09:00:00+00:00</updated>
+    </entry>
+</feed>

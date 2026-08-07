@@ -43,7 +43,8 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
             PlatformApiOperation::FetchChannels,
             PlatformApiOperation::ResolveChannel,
             PlatformApiOperation::FetchStreams => true,
-            PlatformApiOperation::ListChannelVideos => false,
+            PlatformApiOperation::ListChannelVideos,
+            PlatformApiOperation::SearchChannelVideos => false,
         };
     }
 
