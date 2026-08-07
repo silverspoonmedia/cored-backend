@@ -4,6 +4,7 @@ namespace Tests\Domain\Vtual\Unit\Services;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\ChannelStatus;
+use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Enums\EntityStatus;
@@ -83,6 +84,38 @@ class VtuberProfileServiceTest extends TestCase
         $this->assertSame(ChannelStatus::Active, $loaded->channels->first()?->status);
         $this->assertCount(1, $loaded->getRelation('profileContents'));
         $this->assertSame('Hello VOD', $loaded->getRelation('profileContents')->first()?->title);
+    }
+
+    #[Test]
+    public function show_excludes_private_discovered_channels(): void
+    {
+        $staff = $this->userWithRole('Admin');
+        $creator = $this->creators->createOrphan($staff, ['display_name' => 'Private Fox']);
+
+        Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $creator->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UC-public-show',
+            'display_name' => 'Public',
+            'status' => ChannelStatus::Active,
+            'visibility' => ChannelVisibility::Public,
+        ]);
+
+        Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $creator->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UC-private-show',
+            'display_name' => 'Private',
+            'status' => ChannelStatus::Active,
+            'visibility' => ChannelVisibility::Private,
+        ]);
+
+        $loaded = $this->profiles->show((string) $creator->id);
+
+        $this->assertCount(1, $loaded->channels);
+        $this->assertSame('UC-public-show', $loaded->channels->first()?->external_id);
     }
 
     #[Test]

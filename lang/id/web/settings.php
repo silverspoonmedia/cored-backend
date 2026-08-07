@@ -41,6 +41,7 @@ return [
         'platform.activitylog.buffer_enabled' => 'Buffer log aktivitas aktif',
         // Platform — localization
         'platform.localization.locale_cookie' => 'Nama cookie locale',
+        'identity.discord.connections_snapshot_max_age_minutes' => 'Umur maks snapshot koneksi Discord (menit)',
         'platform.localization.locale_cookie_minutes' => 'Masa hidup cookie locale (menit)',
         // Platform — payment
         'platform.payment.channel_fee_bearer' => 'Pembawa biaya channel',
@@ -144,6 +145,7 @@ return [
         'vtual.channel_claim.verify_cooldown_seconds' => 'Cooldown verifikasi klaim channel (detik)',
         'vtual.channel_claim.max_attempts' => 'Percobaan klaim channel maksimum',
         'vtual.channel_claim.accept_anyway_enabled' => 'Terima klaim channel tetap aktif',
+        'vtual.channel_claim.discord_verify_enabled' => 'Verifikasi Discord klaim channel aktif',
         'vtual.channel_claim.token_prefix' => 'Prefiks token klaim channel',
         'vtual.channel_claim.token_bytes' => 'Byte acak token klaim channel',
         'vtual.channel_pool.threshold' => 'Ambang rendah pool channel',
@@ -186,6 +188,7 @@ return [
         'vtual.credential.failover.enabled' => 'Rotasi ke kredensial berikutnya setelah kegagalan auth berulang.',
         'vtual.claim.accept_anyway_enabled' => 'Izinkan pengguna menerima klaim meski verifikasi tidak meyakinkan.',
         'vtual.claim.discord_verify_enabled' => 'Izinkan verifikasi klaim yatim dengan mencocokkan akun YouTube/Twitch tertaut di Discord.',
+        'vtual.channel_claim.discord_verify_enabled' => 'Izinkan pemilik profil memverifikasi klaim channel via akun YouTube/Twitch tertaut di Discord.',
     ],
     'options' => [
         'platform' => [

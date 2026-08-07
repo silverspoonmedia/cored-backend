@@ -3,9 +3,12 @@
 namespace App\Domain\Vtual\Services;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Identity\Services\UserOAuthAccountService;
+use App\Domain\Vtual\Enums\ChannelDiscoverySource;
 use App\Domain\Vtual\Enums\CreatorClaimClosedReason;
 use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Enums\CreatorClaimVerifiedVia;
+use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\Support\ChannelBioTokenVerifier;
 use App\Domain\Vtual\Integrations\Support\ChannelProfilePlatformGuard;
@@ -13,6 +16,7 @@ use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\ChannelClaim;
 use App\Domain\Vtual\Models\Platform;
+use App\Domain\Vtual\Support\DiscordChannelOwnershipMatcher;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -28,6 +32,7 @@ class ChannelClaimService
         private readonly ChannelProfileResolver $profiles,
         private readonly ChannelBioTokenVerifier $bio,
         private readonly ChannelService $channels,
+        private readonly UserOAuthAccountService $oauthAccounts,
     ) {}
 
     /**
@@ -168,6 +173,68 @@ class ChannelClaimService
         return $this->complete($claim, CreatorClaimVerifiedVia::Bio, null, $result['dto']);
     }
 
+    public function verifyViaDiscord(User $actor, string $claimId): ChannelClaim
+    {
+        if (! (bool) setting_config(
+            'vtual.channel_claim.discord_verify_enabled',
+            setting_config('vtual.claim.discord_verify_enabled', false),
+        )) {
+            throw new VtualException(__('api/vtual.channel_claim.discord_verify_disabled'), 422);
+        }
+
+        $claim = $this->lockPendingClaim($claimId);
+        $this->assertClaimant($claim, $actor);
+        $this->assertNotExpired($claim);
+        $this->assertExternalIdStillFree($claim);
+        $this->assertRateLimit($claim);
+
+        $platform = $claim->platform;
+        if ($platform === null) {
+            throw new VtualException(__('api/vtual.channel.platform_unknown'), 422);
+        }
+
+        $platformKey = $this->bio->platformKeyFromModel($platform);
+        if ($platformKey === PlatformKey::Kick) {
+            throw new VtualException(__('api/vtual.channel_claim.discord_verify_unsupported_platform'), 422);
+        }
+
+        if (! $this->oauthAccounts->hasDiscordConnection($actor)) {
+            throw new VtualException(__('api/vtual.channel_claim.discord_not_connected'), 422);
+        }
+
+        $claim->forceFill([
+            'attempt_count' => (int) $claim->attempt_count + 1,
+            'last_attempt_at' => now(),
+        ])->save();
+
+        $externalId = (string) $claim->external_id;
+
+        try {
+            $connections = $this->oauthAccounts->connectionsForOwnershipVerify(
+                $actor,
+                fn (array $conns): bool => DiscordChannelOwnershipMatcher::matchesExternalId(
+                    $platformKey,
+                    $externalId,
+                    $conns,
+                ),
+            );
+        } catch (\Throwable) {
+            throw new VtualException(__('api/vtual.channel_claim.discord_connections_failed'), 422);
+        }
+
+        if (! DiscordChannelOwnershipMatcher::matchesExternalId(
+            $platformKey,
+            $externalId,
+            $connections,
+        )) {
+            throw new VtualException(__('api/vtual.channel_claim.discord_no_match'), 422);
+        }
+
+        $dto = $this->profiles->resolveByExternalId($platformKey, $externalId);
+
+        return $this->complete($claim, CreatorClaimVerifiedVia::DiscordConnection, null, $dto);
+    }
+
     public function acceptAnyway(User $staff, string $claimId): ChannelClaim
     {
         if (! $staff->can('manage any vtual resource')) {
@@ -224,6 +291,7 @@ class ChannelClaimService
                 (string) $locked->creator_id,
                 $platform,
                 $dto,
+                ChannelDiscoverySource::ChannelClaim,
             );
 
             $locked->forceFill([

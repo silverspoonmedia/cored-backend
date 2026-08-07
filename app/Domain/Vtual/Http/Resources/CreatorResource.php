@@ -28,6 +28,7 @@ class CreatorResource extends JsonResource
             'id' => $this->id,
             'slug' => $this->slug,
             'display_name' => $this->display_name,
+            'profile_url' => route('vtual.vtuber.show', $this->slug),
             'bio' => $this->bio,
             'avatar_url' => $this->avatar_url,
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,

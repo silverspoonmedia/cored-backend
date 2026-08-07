@@ -41,6 +41,7 @@ return [
         'platform.activitylog.buffer_enabled' => 'Activity log buffer enabled',
         // Platform — localization
         'platform.localization.locale_cookie' => 'Locale cookie name',
+        'identity.discord.connections_snapshot_max_age_minutes' => 'Discord connections snapshot max age (minutes)',
         'platform.localization.locale_cookie_minutes' => 'Locale cookie lifetime (minutes)',
         // Platform — payment
         'platform.payment.channel_fee_bearer' => 'Channel fee bearer',
@@ -144,6 +145,7 @@ return [
         'vtual.channel_claim.verify_cooldown_seconds' => 'Channel claim verify cooldown (seconds)',
         'vtual.channel_claim.max_attempts' => 'Channel claim max attempts',
         'vtual.channel_claim.accept_anyway_enabled' => 'Channel claim accept-anyway enabled',
+        'vtual.channel_claim.discord_verify_enabled' => 'Channel claim Discord verification enabled',
         'vtual.channel_claim.token_prefix' => 'Channel claim token prefix',
         'vtual.channel_claim.token_bytes' => 'Channel claim token random bytes',
         'vtual.channel_pool.threshold' => 'Channel pool low threshold',
@@ -186,6 +188,8 @@ return [
         'vtual.credential.failover.enabled' => 'Rotate to the next credential after repeated auth failures.',
         'vtual.claim.accept_anyway_enabled' => 'Allow users to accept a claim even when verification is inconclusive.',
         'vtual.claim.discord_verify_enabled' => 'Allow users to verify orphan claims by matching Discord-linked YouTube/Twitch accounts.',
+        'vtual.channel_claim.discord_verify_enabled' => 'Allow profile owners to verify channel attach claims by matching Discord-linked YouTube/Twitch accounts.',
+        'identity.discord.connections_snapshot_max_age_minutes' => 'How long stored Discord connection snapshots are trusted before a verify miss triggers a live Discord API refresh.',
     ],
     'options' => [
         'platform' => [

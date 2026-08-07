@@ -51,6 +51,63 @@ class CreatorClaimVerifyDiscordApiTest extends TestCase
     }
 
     #[Test]
+    public function verify_discord_succeeds_when_connection_matches_different_profile_channel(): void
+    {
+        $claimant = $this->userWithRole('Vtual Viewer');
+        app(ProductActivationService::class)->activateImplicit($claimant, 'Vtual');
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Multi Channel Orphan']);
+        $channelA = Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $orphan->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UC-CHANNEL-A',
+            'handle' => 'channel-a',
+            'display_name' => 'Channel A',
+            'status' => ChannelStatus::Active,
+        ]);
+        Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $orphan->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => self::YT_ID,
+            'handle' => 'channel-b',
+            'display_name' => 'Channel B',
+            'status' => ChannelStatus::Active,
+        ]);
+
+        $claim = $this->claims->start($claimant, $orphan->id, $channelA->id);
+
+        $account = new IdentityOAuthAccount();
+        $account->user_id = $claimant->id;
+        $account->provider = OAuthProvider::Discord;
+        $account->provider_user_id = 'discord-user';
+        $account->forceFill([
+            'access_token' => 'discord-access',
+            'refresh_token' => 'discord-refresh',
+            'connections_snapshot' => [
+                [
+                    'type' => 'youtube',
+                    'id' => self::YT_ID,
+                    'name' => 'channel-b',
+                    'verified' => true,
+                ],
+            ],
+            'connections_synced_at' => now(),
+        ])->save();
+
+        Http::fake();
+
+        $this->actingAsJwt($claimant)
+            ->postJson('/api/v1/vtual/claims/'.$claim->id.'/verify-discord')
+            ->assertOk()
+            ->assertJsonPath('data.status', CreatorClaimStatus::Verified->value)
+            ->assertJsonPath('data.verified_via', 'discord_connection');
+
+        Http::assertNothingSent();
+    }
+
+    #[Test]
     public function verify_discord_returns_success_for_claimant_not_forbidden(): void
     {
         $claimant = $this->userWithRole('Vtual Viewer');

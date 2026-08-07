@@ -2,7 +2,9 @@
 
 namespace App\Domain\Vtual\Models;
 
+use App\Domain\Vtual\Enums\ChannelDiscoverySource;
 use App\Domain\Vtual\Enums\ChannelStatus;
+use App\Domain\Vtual\Enums\ChannelVisibility;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,6 +39,8 @@ class Channel extends Model
         'feed_last_polled_at',
         'feed_last_entry_updated_at',
         'content_initial_backfill_at',
+        'visibility',
+        'discovery_source',
     ];
 
     /**
@@ -46,6 +50,8 @@ class Channel extends Model
     {
         return [
             'status' => ChannelStatus::class,
+            'visibility' => ChannelVisibility::class,
+            'discovery_source' => ChannelDiscoverySource::class,
             'platform_created_at' => 'datetime',
             'last_synced_at' => 'datetime',
             'feed_last_polled_at' => 'datetime',

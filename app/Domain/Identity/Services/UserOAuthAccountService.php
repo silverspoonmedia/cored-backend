@@ -35,7 +35,7 @@ class UserOAuthAccountService
   }
 
   /**
-   * @return list<array{type: string, id: string, name: string, verified: bool}>
+   * @return list<array<string, mixed>>
    */
   public function connectionsSnapshotFor(User $user): array
   {
@@ -47,6 +47,48 @@ class UserOAuthAccountService
     $snapshot = $account->connections_snapshot;
 
     return is_array($snapshot) ? $snapshot : [];
+  }
+
+  public function isConnectionsSnapshotFresh(User $user): bool
+  {
+    $account = $this->discordAccountFor($user);
+    if ($account === null || $account->connections_synced_at === null) {
+      return false;
+    }
+
+    $maxAgeMinutes = max(1, (int) setting_config(
+      'identity.discord.connections_snapshot_max_age_minutes',
+      (int) config('services.discord.connections_snapshot_max_age_minutes', 60),
+    ));
+
+    return $account->connections_synced_at->gt(now()->subMinutes($maxAgeMinutes));
+  }
+
+  /**
+   * Snapshot-first connections for ownership verify: use stored snapshot when it
+   * satisfies $matcher; sync from Discord only when snapshot misses and is stale/empty.
+   *
+   * @param  callable(list<array<string, mixed>>): bool  $matcher
+   * @return list<array<string, mixed>>
+   */
+  public function connectionsForOwnershipVerify(User $user, callable $matcher): array
+  {
+    if (! $this->hasDiscordConnection($user)) {
+      throw new IdentityOAuthException(__('api/identity.oauth.discord_not_connected'), 422);
+    }
+
+    $snapshot = $this->connectionsSnapshotFor($user);
+    $eligible = $this->connectionsClient->ownershipEligible($snapshot);
+
+    if ($eligible !== [] && $matcher($eligible)) {
+      return $snapshot;
+    }
+
+    if ($snapshot !== [] && $this->isConnectionsSnapshotFresh($user)) {
+      return $snapshot;
+    }
+
+    return $this->syncDiscordConnections($user);
   }
 
   /**
@@ -83,7 +125,7 @@ class UserOAuthAccountService
   }
 
   /**
-   * @return list<array{type: string, id: string, name: string, verified: bool}>
+   * @return list<array<string, mixed>>
    */
   public function syncDiscordConnections(User $user, ?IdentityOAuthAccount $account = null): array
   {

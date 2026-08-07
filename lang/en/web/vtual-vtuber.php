@@ -66,7 +66,7 @@ return [
     'claim_discord_verified' => 'Discord verification complete.',
     'claim_discord_verify_failed' => 'Discord verification could not complete.',
     'claim_missing_channel' => 'Select a channel to claim.',
-    'claim_discord_panel_hint' => 'We match this proof channel against verified YouTube or Twitch accounts linked on your Discord profile.',
+    'claim_discord_panel_hint' => 'We match any active channel on this vTuber profile against verified YouTube or Twitch accounts linked on your Discord profile (not only the proof channel you selected for bio token).',
     'claim_verify_button' => 'Verify',
     'claim_verify_queued' => 'Verification queued. Reload this page later for the result.',
     'claim_verify_queue_notice' => 'Verification runs in a shared batch queue: when 50 verifications are pending, or after the oldest wait window (up to 15 minutes). Reload this page to see updates.',

@@ -23,10 +23,15 @@
                                         <span class="badge text-bg-light border">{{ strtoupper($connection['type'] ?? '') }}</span>
                                         <span class="ms-1">{{ $connection['name'] ?? $connection['id'] ?? '' }}</span>
                                     </span>
-                                    <span class="badge {{ ($connection['verified'] ?? false) ? 'text-bg-success' : 'text-bg-secondary' }}">
-                                        {{ ($connection['verified'] ?? false)
-                                            ? __('web/identity-connections.linked_verified')
-                                            : __('web/identity-connections.linked_unverified') }}
+                                    <span class="d-flex gap-1 align-items-center">
+                                        @if (($connection['revoked'] ?? false))
+                                            <span class="badge text-bg-warning">{{ __('web/identity-connections.linked_revoked') }}</span>
+                                        @endif
+                                        <span class="badge {{ ($connection['verified'] ?? false) ? 'text-bg-success' : 'text-bg-secondary' }}">
+                                            {{ ($connection['verified'] ?? false)
+                                                ? __('web/identity-connections.linked_verified')
+                                                : __('web/identity-connections.linked_unverified') }}
+                                        </span>
                                     </span>
                                 </li>
                             @endforeach

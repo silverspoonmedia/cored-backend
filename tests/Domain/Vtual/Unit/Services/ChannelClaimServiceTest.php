@@ -234,6 +234,87 @@ class ChannelClaimServiceTest extends TestCase
         $this->assertSame(0, Channel::query()->count());
     }
 
+    #[Test]
+    public function verify_via_discord_creates_active_channel_when_connection_matches(): void
+    {
+        config([
+            'vtual.channel_claim.discord_verify_enabled' => true,
+            'vtual.channel_claim.verify_cooldown_seconds' => 0,
+        ]);
+
+        $this->activateYoutubeCredential();
+        $this->fakeYoutube(self::YT_ID, 'stream', 'Stream', 'no token');
+
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Owner']);
+        $claim = $this->claims->start($user, $creator->id, [
+            'platform_key' => 'youtube',
+            'profile' => self::YT_ID,
+        ]);
+
+        $account = new \App\Domain\Identity\Models\IdentityOAuthAccount();
+        $account->user_id = $user->id;
+        $account->provider = \App\Domain\Identity\Enums\OAuthProvider::Discord;
+        $account->provider_user_id = 'discord-user';
+        $account->forceFill([
+            'access_token' => 'discord-access',
+            'refresh_token' => 'discord-refresh',
+        ])->save();
+
+        Http::fake([
+            'discord.com/api/users/@me/connections' => Http::response([
+                [
+                    'type' => 'youtube',
+                    'id' => self::YT_ID,
+                    'name' => 'stream',
+                    'verified' => true,
+                ],
+            ], 200),
+        ]);
+
+        $done = $this->claims->verifyViaDiscord($user, $claim->id);
+
+        $this->assertSame(CreatorClaimStatus::Verified, $done->status);
+        $this->assertSame(CreatorClaimVerifiedVia::DiscordConnection, $done->verified_via);
+        $this->assertSame(1, Channel::query()->count());
+    }
+
+    #[Test]
+    public function verify_via_discord_rejects_kick_platform(): void
+    {
+        config(['vtual.channel_claim.discord_verify_enabled' => true]);
+
+        $kick = Platform::query()->where('key', 'kick')->firstOrFail();
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Owner']);
+
+        $claim = new \App\Domain\Vtual\Models\ChannelClaim([
+            'user_id' => $user->id,
+            'creator_id' => $creator->id,
+            'platform_id' => $kick->id,
+            'external_id' => 'kick-user-1',
+            'profile_input' => 'kick-user-1',
+            'token' => 'vtual-ch-test',
+            'status' => CreatorClaimStatus::Pending,
+            'attempt_count' => 0,
+            'expires_at' => now()->addDay(),
+        ]);
+        $claim->id = (string) \Illuminate\Support\Str::uuid7();
+        $claim->save();
+
+        $account = new \App\Domain\Identity\Models\IdentityOAuthAccount();
+        $account->user_id = $user->id;
+        $account->provider = \App\Domain\Identity\Enums\OAuthProvider::Discord;
+        $account->provider_user_id = 'discord-user';
+        $account->forceFill([
+            'access_token' => 'discord-access',
+            'refresh_token' => 'discord-refresh',
+        ])->save();
+
+        $this->expectException(VtualException::class);
+        $this->claims->verifyViaDiscord($user, $claim->id);
+    }
+
     private function fakeYoutube(string $id, string $handle, string $title, string $description): void
     {
         Http::fake([

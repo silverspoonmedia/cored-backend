@@ -90,6 +90,16 @@ class ChannelClaimController extends Controller
         );
     }
 
+    public function verifyDiscord(Request $request, ChannelClaim $channelClaim): JsonResponse
+    {
+        $claim = $this->claims->verifyViaDiscord($request->user(), $channelClaim->id);
+
+        return $this->successResponse(
+            $this->resolveResource(new ChannelClaimResource($claim)),
+            __('api/vtual.channel_claim.discord_verified'),
+        );
+    }
+
     public function cancel(Request $request, ChannelClaim $channelClaim): JsonResponse
     {
         $claim = $this->claims->cancel($request->user(), $channelClaim->id);

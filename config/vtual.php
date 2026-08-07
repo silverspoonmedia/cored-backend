@@ -184,6 +184,7 @@ return [
         'verify_cooldown_seconds' => 60,
         'max_attempts' => 20,
         'accept_anyway_enabled' => true,
+        'discord_verify_enabled' => false,
     ],
 
     /*

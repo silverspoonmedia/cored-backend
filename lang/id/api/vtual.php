@@ -3,6 +3,7 @@
 return [
     'creator' => [
         'list_success' => 'Daftar creator dimuat.',
+        'owned_list_success' => 'Profil vTuber milik Anda dimuat.',
         'show_success' => 'Creator dimuat.',
         'created' => 'Creator dibuat.',
         'orphan_created' => 'Creator orphan dibuat (tanpa owner; bisa di-claim).',
@@ -78,6 +79,10 @@ return [
         'refresh_queued' => 'Refresh channel diantrekan (di-batch dengan request pending lainnya).',
         'archived' => 'Channel diarsipkan.',
         'restored' => 'Channel dipulihkan ke aktif.',
+        'promoted' => 'Channel dipromosikan ke publik; hydrate profil dan backfill konten diantri.',
+        'not_private_discovered' => 'Hanya channel private yang ditemukan dapat dipromosikan.',
+        'promote_not_discovered' => 'Hanya channel yang ditemukan via Discord dapat dipromosikan melalui aksi ini.',
+        'promote_unsupported_platform' => 'Promote tidak didukung untuk platform ini.',
         'not_archived' => 'Channel tidak dalam status arsip.',
         'archived_list_success' => 'Daftar channel diarsipkan dimuat.',
         'platform_unknown' => 'Platform tidak dikenal.',
@@ -105,6 +110,12 @@ return [
         'cooldown' => 'Tunggu :seconds detik sebelum verifikasi lagi.',
         'accept_anyway_disabled' => 'Accept Anyway dinonaktifkan di environment ini.',
         'pending_other' => 'User lain sudah punya claim pending untuk channel platform ini.',
+        'discord_verify_disabled' => 'Verifikasi Discord untuk klaim channel dinonaktifkan.',
+        'discord_verify_unsupported_platform' => 'Verifikasi Discord tidak didukung untuk platform ini.',
+        'discord_not_connected' => 'Hubungkan Discord di Profil → Akun terhubung sebelum verifikasi.',
+        'discord_connections_failed' => 'Gagal memuat koneksi Discord. Coba lagi atau gunakan verifikasi token bio.',
+        'discord_no_match' => 'Tidak ada koneksi Discord terverifikasi yang cocok dengan channel platform ini.',
+        'discord_verified' => 'Channel diverifikasi via Discord dan terikat ke profil ini.',
     ],
     'link' => [
         'list_success' => 'Link eksternal dimuat.',

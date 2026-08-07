@@ -69,6 +69,7 @@ Route::middleware('web.auth')->prefix('apps')->group(function (): void {
     require __DIR__.'/web/file-hosting.php';
     require __DIR__.'/web/vtual-orphans.php';
     require __DIR__.'/web/vtual-platform-credentials.php';
+    require __DIR__.'/web/vtual-profiles.php';
     require __DIR__.'/web/vtual-vtuber.php';
     require __DIR__.'/web/microstock.php';
 });

@@ -3,6 +3,7 @@
 namespace App\Domain\Vtual\Http\Resources;
 
 use App\Domain\Vtual\Enums\ChannelStatus;
+use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -35,6 +36,10 @@ class ChannelResource extends JsonResource
                 ? Number::format($this->subscriber_count)
                 : null,
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,
+            'visibility' => $this->visibility instanceof \BackedEnum ? $this->visibility->value : $this->visibility,
+            'discovery_source' => $this->discovery_source instanceof \BackedEnum
+                ? $this->discovery_source->value
+                : $this->discovery_source,
             'profile_input' => $this->when(
                 $this->status === ChannelStatus::Pending && $this->profile_input !== null,
                 fn () => $this->profile_input,

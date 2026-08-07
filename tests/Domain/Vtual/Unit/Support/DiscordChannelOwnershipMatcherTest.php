@@ -56,6 +56,25 @@ class DiscordChannelOwnershipMatcherTest extends TestCase
         ]));
     }
 
+    #[Test]
+    public function matches_any_returns_first_matching_channel(): void
+    {
+        $channelA = $this->youtubeChannel('UC-AAA');
+        $channelB = $this->youtubeChannel('UC-BBB');
+
+        $match = DiscordChannelOwnershipMatcher::firstMatch(
+            [$channelA, $channelB],
+            [['type' => 'youtube', 'id' => 'UC-BBB', 'name' => 'B', 'verified' => true]],
+        );
+
+        $this->assertNotNull($match);
+        $this->assertSame('UC-BBB', $match->external_id);
+        $this->assertTrue(DiscordChannelOwnershipMatcher::matchesAny(
+            [$channelA, $channelB],
+            [['type' => 'youtube', 'id' => 'UC-BBB', 'name' => 'B', 'verified' => true]],
+        ));
+    }
+
     private function youtubeChannel(string $externalId): Channel
     {
         $platform = Platform::query()->where('key', PlatformKey::Youtube->value)->firstOrFail();

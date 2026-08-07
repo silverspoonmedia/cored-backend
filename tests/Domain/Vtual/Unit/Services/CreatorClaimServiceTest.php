@@ -6,6 +6,7 @@ use App\Domain\Identity\Enums\OAuthProvider;
 use App\Domain\Identity\Models\IdentityOAuthAccount;
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\ChannelStatus;
+use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\CreatorClaimClosedReason;
 use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Enums\CreatorClaimVerifiedVia;
@@ -214,6 +215,7 @@ class CreatorClaimServiceTest extends TestCase
         ]);
 
         [$orphan, $channel] = $this->seedOrphanWithChannel();
+        $channel->forceFill(['status' => ChannelStatus::Active])->save();
         $user = $this->userWithRole('User');
         $claim = $this->claims->start($user, $orphan->id, $channel->id);
 
@@ -241,6 +243,193 @@ class CreatorClaimServiceTest extends TestCase
 
         $this->assertSame(CreatorClaimStatus::Verified, $verified->status);
         $this->assertSame(CreatorClaimVerifiedVia::DiscordConnection, $verified->verified_via);
+    }
+
+    #[Test]
+    public function verify_via_discord_matches_any_active_channel_on_profile(): void
+    {
+        config([
+            'vtual.claim.discord_verify_enabled' => true,
+            'vtual.claim.verify_cooldown_seconds' => 0,
+        ]);
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Multi Orphan']);
+        $channelA = Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $orphan->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UC-PROOF-A',
+            'handle' => 'proof-a',
+            'display_name' => 'Proof A',
+            'status' => ChannelStatus::Active,
+        ]);
+        Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $orphan->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => self::YT_ID,
+            'handle' => 'proof-b',
+            'display_name' => 'Proof B',
+            'status' => ChannelStatus::Active,
+        ]);
+
+        $user = $this->userWithRole('User');
+        $claim = $this->claims->start($user, $orphan->id, $channelA->id);
+
+        $account = new IdentityOAuthAccount();
+        $account->user_id = $user->id;
+        $account->provider = OAuthProvider::Discord;
+        $account->provider_user_id = 'discord-user';
+        $account->forceFill([
+            'access_token' => 'discord-access',
+            'refresh_token' => 'discord-refresh',
+            'connections_snapshot' => [
+                [
+                    'type' => 'youtube',
+                    'id' => self::YT_ID,
+                    'name' => 'proof-b',
+                    'verified' => true,
+                ],
+            ],
+            'connections_synced_at' => now(),
+        ])->save();
+
+        Http::fake();
+
+        $verified = $this->claims->verifyViaDiscord($user, $claim->id);
+
+        $this->assertSame(CreatorClaimStatus::Verified, $verified->status);
+        $verified->refresh();
+        $this->assertSame(self::YT_ID, $verified->verifiedChannel?->external_id);
+        Http::assertNothingSent();
+    }
+
+    #[Test]
+    public function verify_via_discord_closes_curation_gap_with_discord_only_channel(): void
+    {
+        config([
+            'vtual.claim.discord_verify_enabled' => true,
+            'vtual.claim.verify_cooldown_seconds' => 0,
+        ]);
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Gap Claim Orphan']);
+        $wrongChannel = Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $orphan->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UC-WRONG-INTERNAL',
+            'handle' => 'wrong',
+            'display_name' => 'Wrong Internal',
+            'status' => ChannelStatus::Active,
+        ]);
+
+        $user = $this->userWithRole('User');
+        $claim = $this->claims->start($user, $orphan->id, $wrongChannel->id);
+
+        $account = new IdentityOAuthAccount();
+        $account->user_id = $user->id;
+        $account->provider = OAuthProvider::Discord;
+        $account->provider_user_id = 'discord-user';
+        $account->forceFill([
+            'access_token' => 'discord-access',
+            'refresh_token' => 'discord-refresh',
+            'connections_snapshot' => [
+                ['type' => 'youtube', 'id' => 'UC-DISCORD-REAL', 'name' => 'Real', 'verified' => true],
+            ],
+            'connections_synced_at' => now(),
+        ])->save();
+
+        Http::fake();
+
+        $verified = $this->claims->verifyViaDiscord($user, $claim->id);
+
+        $this->assertSame(CreatorClaimStatus::Verified, $verified->status);
+        $this->assertSame('UC-DISCORD-REAL', $verified->verifiedChannel?->external_id);
+        $this->assertDatabaseHas('vtual_channels', [
+            'creator_id' => $orphan->id,
+            'external_id' => 'UC-DISCORD-REAL',
+            'visibility' => ChannelVisibility::Private->value,
+        ]);
+    }
+
+    #[Test]
+    public function bio_verify_does_not_accept_token_on_other_profile_channel(): void
+    {
+        $this->activateYoutubeCredential();
+        config(['vtual.claim.verify_cooldown_seconds' => 0]);
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Bio Bound Orphan']);
+        $channelA = Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $orphan->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UC-BIO-A',
+            'handle' => 'bio-a',
+            'display_name' => 'Bio A',
+            'status' => ChannelStatus::Active,
+        ]);
+        Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $orphan->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UC-BIO-B',
+            'handle' => 'bio-b',
+            'display_name' => 'Bio B',
+            'status' => ChannelStatus::Active,
+        ]);
+
+        $user = $this->userWithRole('User');
+        $claim = $this->claims->start($user, $orphan->id, $channelA->id);
+        $token = (string) $claim->token;
+
+        Http::fake(function ($request) use ($token) {
+            if (! str_contains($request->url(), 'youtube/v3/channels')) {
+                return Http::response([], 404);
+            }
+
+            $url = $request->url();
+            if (str_contains($url, 'UC-BIO-B')) {
+                return Http::response([
+                    'items' => [
+                        [
+                            'id' => 'UC-BIO-B',
+                            'snippet' => [
+                                'title' => 'Bio B',
+                                'description' => 'proof '.$token,
+                                'customUrl' => '@bio-b',
+                            ],
+                        ],
+                    ],
+                ], 200);
+            }
+
+            return Http::response([
+                'items' => [
+                    [
+                        'id' => 'UC-BIO-A',
+                        'snippet' => [
+                            'title' => 'Bio A',
+                            'description' => 'no token on proof channel',
+                            'customUrl' => '@bio-a',
+                        ],
+                    ],
+                ],
+            ], 200);
+        });
+
+        $this->claims->queueVerify($user, $claim->id);
+        app(CreatorClaimVerifyPoolService::class)->flush(force: true);
+
+        $claim->refresh();
+        $this->assertSame(CreatorClaimStatus::Pending, $claim->status);
+        $this->assertSame(1, (int) $claim->attempt_count);
+
+        Http::assertSent(function ($request): bool {
+            return str_contains($request->url(), 'UC-BIO-A');
+        });
+        Http::assertNotSent(function ($request): bool {
+            return str_contains($request->url(), 'UC-BIO-B');
+        });
     }
 
     #[Test]

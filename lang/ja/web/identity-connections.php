@@ -17,5 +17,6 @@ return [
     'linked_accounts_empty' => 'DiscordプロフィールにYouTubeまたはTwitchアカウントがまだリンクされていません。',
     'linked_verified' => '認証済み',
     'linked_unverified' => '未認証',
+    'linked_revoked' => '取り消し済み',
     'synced_at' => '最終同期: :at',
 ];

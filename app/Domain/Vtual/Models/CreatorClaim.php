@@ -20,6 +20,7 @@ class CreatorClaim extends Model
         'user_id',
         'creator_id',
         'channel_id',
+        'verified_channel_id',
         'token',
         'status',
         'closed_reason',
@@ -69,6 +70,14 @@ class CreatorClaim extends Model
     public function channel(): BelongsTo
     {
         return $this->belongsTo(Channel::class, 'channel_id');
+    }
+
+    /**
+     * @return BelongsTo<Channel, $this>
+     */
+    public function verifiedChannel(): BelongsTo
+    {
+        return $this->belongsTo(Channel::class, 'verified_channel_id');
     }
 
     /**

@@ -56,6 +56,14 @@ class MenuSeederTest extends TestCase
                             ['name' => 'DMCA Blocklist', 'route' => 'file-hosting.blocklist.index', 'type' => 'c', 'children' => []],
                         ],
                     ],
+                    [
+                        'name' => 'vTual',
+                        'route' => 'vtual.profiles.index',
+                        'type' => 'p',
+                        'children' => [
+                            ['name' => 'My vTuber profiles', 'route' => 'vtual.profiles.index', 'type' => 'c', 'children' => []],
+                        ],
+                    ],
                 ],
             ],
             [
@@ -110,6 +118,7 @@ class MenuSeederTest extends TestCase
                         'type' => 'p',
                         'children' => [
                             ['name' => 'Orphan vTubers', 'route' => 'vtual.orphans.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Platform credentials', 'route' => 'vtual.platform-credentials.index', 'type' => 'c', 'children' => []],
                         ],
                     ],
                     [
@@ -155,6 +164,10 @@ class MenuSeederTest extends TestCase
         $this->assertSame(
             ['Admin', 'Moderator', 'Root'],
             $this->roleNamesForRoute('vtual.orphans.index'),
+        );
+        $this->assertSame(
+            ['Vtual Admin', 'Vtual Editor', 'Vtual vTuber'],
+            $this->roleNamesForRoute('vtual.profiles.index'),
         );
         $this->assertSame(
             ['Admin', 'Root'],
@@ -206,7 +219,7 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(40, Menu::query()->count());
+        $this->assertSame(43, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -214,7 +227,7 @@ class MenuSeederTest extends TestCase
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(40, Menu::query()->count());
+        $this->assertSame(43, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -252,7 +265,7 @@ class MenuSeederTest extends TestCase
         $adminNames = $this->visibleNames($admin);
 
         $this->assertContains('Orphan vTubers', $adminNames);
-        $this->assertNotContains('Platform credentials', $adminNames);
+        $this->assertContains('Platform credentials', $adminNames);
         $this->assertNotContains('Registry & pending', $adminNames);
         $this->assertContains('Product domain access', $adminNames);
         $this->assertContains('Monitoring', $adminNames);

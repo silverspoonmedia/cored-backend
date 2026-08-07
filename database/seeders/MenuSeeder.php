@@ -149,6 +149,22 @@ class MenuSeeder extends Seeder
                             ],
                         ],
                     ],
+                    [
+                        'name' => $this->translations('vTual', 'vTual', 'vTual'),
+                        'icon' => 'bi bi-broadcast',
+                        'route' => 'vtual.profiles.index',
+                        'type' => 'p',
+                        'roles' => ['Vtual vTuber', 'Vtual Editor', 'Vtual Admin'],
+                        'children' => [
+                            [
+                                'name' => $this->translations('My vTuber profiles', 'Profil vTuber saya', 'マイ vTuber プロフィール'),
+                                'icon' => 'bi bi-person-badge',
+                                'route' => 'vtual.profiles.index',
+                                'type' => 'c',
+                                'roles' => ['Vtual vTuber', 'Vtual Editor', 'Vtual Admin'],
+                            ],
+                        ],
+                    ],
                 ],
             ],
             [

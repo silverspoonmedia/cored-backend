@@ -65,7 +65,7 @@ return [
     'claim_discord_verify_button' => 'Verifikasi dengan Discord',
     'claim_discord_verified' => 'Verifikasi Discord selesai.',
     'claim_discord_verify_failed' => 'Verifikasi Discord tidak dapat diselesaikan.',
-    'claim_discord_panel_hint' => 'Kami mencocokkan channel bukti ini dengan akun YouTube atau Twitch terverifikasi yang tertaut di profil Discord Anda.',
+    'claim_discord_panel_hint' => 'Kami mencocokkan channel aktif mana pun di profil vTuber ini dengan akun YouTube/Twitch terverifikasi di profil Discord Anda (bukan hanya channel bukti yang dipilih untuk token bio).',
     'claim_verify_button' => 'Verifikasi',
     'claim_verify_queued' => 'Verifikasi diantrekan. Muat ulang halaman ini nanti untuk hasilnya.',
     'claim_verify_queue_notice' => 'Verifikasi berjalan dalam antrean batch bersama: saat 50 verifikasi tertunda, atau setelah jendela tunggu tertua (hingga 15 menit). Muat ulang halaman untuk pembaruan.',

@@ -97,4 +97,17 @@ class ChannelController extends Controller
             __('api/vtual.channel.restored'),
         );
     }
+
+    public function promote(Request $request, Channel $channel): JsonResponse
+    {
+        $this->authorize('create', Channel::class);
+        $this->authorize('view', $channel);
+
+        $promoted = $this->channels->promoteDiscoveredChannel($request->user(), $channel->id);
+
+        return $this->successResponse(
+            $this->resolveResource(new ChannelResource($promoted)),
+            __('api/vtual.channel.promoted'),
+        );
+    }
 }

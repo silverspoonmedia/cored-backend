@@ -8,6 +8,7 @@ use App\Domain\Identity\Services\UserOAuthAccountService;
 use App\Domain\Identity\Support\DiscordOAuthState;
 use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Models\Creator;
+use App\Domain\Vtual\Services\ChannelClaimService;
 use App\Domain\Vtual\Services\CreatorClaimService;
 use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +20,7 @@ class DiscordOAuthController extends Controller
         private readonly DiscordOAuthService $discordOAuth,
         private readonly UserOAuthAccountService $oauthAccounts,
         private readonly CreatorClaimService $claims,
+        private readonly ChannelClaimService $channelClaims,
     ) {}
 
     public function redirect(Request $request): RedirectResponse
@@ -84,6 +86,10 @@ class DiscordOAuthController extends Controller
             return $this->attemptClaimVerify($user, $payload['slug'], $payload['claim_id']);
         }
 
+        if ($payload['intent'] === 'channel_claim_verify' && $payload['claim_id'] && $payload['slug']) {
+            return $this->attemptChannelClaimVerify($user, $payload['slug'], $payload['claim_id']);
+        }
+
         return redirect()->route('profile.connections.edit')
             ->with('success', __('web/identity-connections.discord_connected'));
     }
@@ -131,11 +137,33 @@ class DiscordOAuthController extends Controller
         }
     }
 
+    private function attemptChannelClaimVerify($user, string $slug, string $claimId): RedirectResponse
+    {
+        try {
+            $verified = $this->channelClaims->verifyViaDiscord($user, $claimId);
+
+            if ($verified->status === CreatorClaimStatus::Verified) {
+                return redirect()->route('vtual.profiles.show', $slug)
+                    ->with('success', __('web/vtual-vtuber.claim_progress_verified'));
+            }
+
+            return redirect()->route('vtual.profiles.show', $slug)
+                ->with('warning', __('web/vtual-vtuber.claim_progress_failed'));
+        } catch (\Throwable) {
+            return redirect()->route('vtual.profiles.show', $slug)
+                ->with('error', __('web/vtual-vtuber.claim_discord_verify_failed'));
+        }
+    }
+
     /**
      * @param  array{user_id: string, intent: string, slug?: ?string, channel_id?: ?string, claim_id?: ?string}  $payload
      */
     private function redirectAfterCallback(array $payload): RedirectResponse
     {
+        if ($payload['intent'] === 'channel_claim_verify' && $payload['slug']) {
+            return redirect()->route('vtual.profiles.show', $payload['slug']);
+        }
+
         if ($payload['slug']) {
             return redirect()->route('vtual.vtuber.claim', $payload['slug']);
         }

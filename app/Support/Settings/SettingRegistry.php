@@ -48,6 +48,13 @@ final class SettingRegistry
 
             // Platform — localization
             'platform.localization.locale_cookie' => self::def('platform', SettingType::String, 'localization.cookie_name'),
+
+            // Identity — Discord OAuth
+            'identity.discord.connections_snapshot_max_age_minutes' => self::def(
+                'identity',
+                SettingType::Int,
+                'services.discord.connections_snapshot_max_age_minutes',
+            ),
             'platform.localization.locale_cookie_minutes' => self::def('platform', SettingType::Int, 'localization.cookie_minutes'),
 
             // Platform — mail identity (transport secrets stay env)
@@ -153,6 +160,7 @@ final class SettingRegistry
             'vtual.claim.max_pending_per_user' => self::def('vtual', SettingType::Int, 'vtual.claim.max_pending_per_user'),
             'vtual.claim.accept_anyway_enabled' => self::def('vtual', SettingType::Bool, 'vtual.claim.accept_anyway_enabled'),
             'vtual.claim.discord_verify_enabled' => self::def('vtual', SettingType::Bool, 'vtual.claim.discord_verify_enabled'),
+            'vtual.channel_claim.discord_verify_enabled' => self::def('vtual', SettingType::Bool, 'vtual.channel_claim.discord_verify_enabled'),
             'vtual.claim.token_prefix' => self::def('vtual', SettingType::String, 'vtual.claim.token_prefix'),
             'vtual.claim.token_bytes' => self::def('vtual', SettingType::Int, 'vtual.claim.token_bytes'),
             'vtual.channel_claim.ttl_hours' => self::def('vtual', SettingType::Int, 'vtual.channel_claim.ttl_hours'),

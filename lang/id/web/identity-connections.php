@@ -17,5 +17,6 @@ return [
     'linked_accounts_empty' => 'Belum ada akun YouTube atau Twitch tertaut di profil Discord Anda.',
     'linked_verified' => 'Terverifikasi',
     'linked_unverified' => 'Belum terverifikasi',
+    'linked_revoked' => 'Dicabut',
     'synced_at' => 'Terakhir disinkronkan: :at',
 ];

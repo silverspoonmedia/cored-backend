@@ -3,6 +3,7 @@
 return [
     'creator' => [
         'list_success' => 'Creators loaded.',
+        'owned_list_success' => 'Your owned vTuber profiles loaded.',
         'show_success' => 'Creator loaded.',
         'created' => 'Creator created.',
         'orphan_created' => 'Orphan creator created (no owner; claimable).',
@@ -79,6 +80,10 @@ return [
         'refresh_queued' => 'Channel refresh queued (batched with other pending requests).',
         'archived' => 'Channel archived.',
         'restored' => 'Channel restored to active.',
+        'promoted' => 'Channel promoted to public; profile hydrate and content backfill queued.',
+        'not_private_discovered' => 'Only private discovered channels can be promoted.',
+        'promote_not_discovered' => 'Only Discord-discovered channels can be promoted through this action.',
+        'promote_unsupported_platform' => 'Promote is not supported for this platform.',
         'not_archived' => 'Channel is not archived.',
         'archived_list_success' => 'Archived channels loaded.',
         'platform_unknown' => 'Unknown platform.',
@@ -106,6 +111,12 @@ return [
         'cooldown' => 'Please wait :seconds seconds before verifying again.',
         'accept_anyway_disabled' => 'Accept Anyway is disabled on this environment.',
         'pending_other' => 'Another user already has a pending claim for this platform channel.',
+        'discord_verify_disabled' => 'Discord verification for channel claims is disabled.',
+        'discord_verify_unsupported_platform' => 'Discord verification is not supported for this platform.',
+        'discord_not_connected' => 'Connect Discord under Profile → Connected accounts before verifying.',
+        'discord_connections_failed' => 'Could not load Discord connections. Try again or use bio token verification.',
+        'discord_no_match' => 'No verified Discord connection matches this platform channel.',
+        'discord_verified' => 'Channel verified via Discord and bound to this profile.',
     ],
     'link' => [
         'list_success' => 'External links loaded.',

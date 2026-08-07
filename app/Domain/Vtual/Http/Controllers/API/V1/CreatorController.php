@@ -35,6 +35,16 @@ class CreatorController extends Controller
         );
     }
 
+    public function owned(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Creator::class);
+
+        return $this->successResponse(
+            $this->resolveResource(CreatorResource::collection($this->creators->listOwnedForUser($request->user()))),
+            __('api/vtual.creator.owned_list_success'),
+        );
+    }
+
     public function store(StoreCreatorRequest $request): JsonResponse
     {
         $this->authorize('create', Creator::class);

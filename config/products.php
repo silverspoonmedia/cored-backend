@@ -43,6 +43,8 @@ return [
         'menu_routes' => [
             'vtual.orphans.index',
             'vtual.platform-credentials.index',
+            'vtual.profiles.index',
+            'vtual.profiles.show',
         ],
     ],
     'Microstock' => [

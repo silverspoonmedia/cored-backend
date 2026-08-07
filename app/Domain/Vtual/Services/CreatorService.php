@@ -46,6 +46,26 @@ class CreatorService
     }
 
     /**
+     * Active creators where the actor is owner (claimed / self-created).
+     *
+     * @return Collection<int, Creator>
+     */
+    public function listOwnedForUser(User $actor): Collection
+    {
+        $ids = CreatorMember::query()
+            ->where('user_id', $actor->id)
+            ->where('role', CreatorMemberRole::Owner)
+            ->pluck('creator_id');
+
+        return Creator::query()
+            ->whereIn('id', $ids)
+            ->where('status', EntityStatus::Active)
+            ->withCount('channels')
+            ->orderBy('display_name')
+            ->get();
+    }
+
+    /**
      * @param  array{display_name: string, slug?: string|null, bio?: string|null, avatar_url?: string|null}  $data
      */
     public function create(User $actor, array $data): Creator

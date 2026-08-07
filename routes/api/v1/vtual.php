@@ -19,6 +19,7 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
 
     Route::middleware('permission:view vtual creator')->group(function (): void {
         Route::get('platforms', [PlatformController::class, 'index'])->name('platforms.index');
+        Route::get('creators/owned', [CreatorController::class, 'owned'])->name('creators.owned');
         Route::get('creators', [CreatorController::class, 'index'])->name('creators.index');
         Route::get('creators/{creator}', [CreatorController::class, 'show'])->whereUuid('creator')->name('creators.show');
         Route::get('creators/{creator}/channels', [ChannelController::class, 'index'])
@@ -91,6 +92,9 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
         Route::post('channel-claims/{channelClaim}/verify', [ChannelClaimController::class, 'verify'])
             ->whereUuid('channelClaim')
             ->name('channel-claims.verify');
+        Route::post('channel-claims/{channelClaim}/verify-discord', [ChannelClaimController::class, 'verifyDiscord'])
+            ->whereUuid('channelClaim')
+            ->name('channel-claims.verify-discord');
         Route::post('channel-claims/{channelClaim}/cancel', [ChannelClaimController::class, 'cancel'])
             ->whereUuid('channelClaim')
             ->name('channel-claims.cancel');
@@ -103,6 +107,9 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
         Route::post('channels/{channel}/restore', [ChannelController::class, 'restore'])
             ->whereUuid('channel')
             ->name('channels.restore');
+        Route::post('channels/{channel}/promote', [ChannelController::class, 'promote'])
+            ->whereUuid('channel')
+            ->name('channels.promote');
         Route::post('creators/{creator}/links', [ExternalLinkController::class, 'store'])
             ->whereUuid('creator')
             ->name('creators.links.store');

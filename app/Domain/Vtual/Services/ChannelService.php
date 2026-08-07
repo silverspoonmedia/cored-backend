@@ -3,8 +3,10 @@
 namespace App\Domain\Vtual\Services;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Vtual\Enums\ChannelDiscoverySource;
 use App\Domain\Vtual\Enums\ChannelFetchPoolReason;
 use App\Domain\Vtual\Enums\ChannelStatus;
+use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
@@ -99,7 +101,7 @@ class ChannelService
 
         $dto = $this->profiles->resolve($platformKey, $profile);
 
-        return $this->activateFromDto((string) $creator->id, $platform, $dto);
+        return $this->activateFromDto((string) $creator->id, $platform, $dto, ChannelDiscoverySource::StaffSeed);
     }
 
     /**
@@ -198,6 +200,7 @@ class ChannelService
         string $creatorId,
         Platform $platform,
         PlatformChannelDto $dto,
+        ?ChannelDiscoverySource $discoverySource = null,
     ): Channel {
         $exists = Channel::query()
             ->where('platform_id', $platform->id)
@@ -213,6 +216,8 @@ class ChannelService
                 'creator_id' => $creatorId,
                 'platform_id' => $platform->id,
                 'external_id' => $dto->externalId,
+                'visibility' => ChannelVisibility::Public,
+                'discovery_source' => $discoverySource,
             ],
             $this->activation->attributesFromDto($dto),
         ));
@@ -288,6 +293,49 @@ class ChannelService
         $this->subscribeWebsubIfYoutube($channel);
 
         return $channel;
+    }
+
+    /**
+     * Promote a private Discord-discovered channel to public and queue platform hydrate + backfill.
+     */
+    public function promoteDiscoveredChannel(User $actor, string $channelId): Channel
+    {
+        $channel = Channel::query()->with(['platform', 'creator'])->findOrFail($channelId);
+        $this->creatorAccess->assertCanMutate($channel->creator, $actor);
+
+        if ($channel->visibility !== ChannelVisibility::Private) {
+            throw new VtualException(__('api/vtual.channel.not_private_discovered'), 422);
+        }
+
+        if ($channel->discovery_source !== ChannelDiscoverySource::DiscordConnection) {
+            throw new VtualException(__('api/vtual.channel.promote_not_discovered'), 422);
+        }
+
+        if ($channel->status === ChannelStatus::Archived) {
+            throw new VtualException(__('api/vtual.channel.archived'), 422);
+        }
+
+        $platform = $channel->platform;
+        if ($platform === null || ! $platform->isEnabled()) {
+            throw new VtualException(__('api/vtual.channel.platform_disabled'), 422);
+        }
+
+        if ($this->platformKey($platform) === PlatformKey::Kick) {
+            throw new VtualException(__('api/vtual.channel.promote_unsupported_platform'), 422);
+        }
+
+        $channel->forceFill([
+            'visibility' => ChannelVisibility::Public,
+        ])->save();
+
+        $this->fetchPool->enqueue(
+            $platform,
+            (string) $channel->external_id,
+            (string) $channel->id,
+            ChannelFetchPoolReason::Refresh,
+        );
+
+        return $channel->refresh()->load('platform');
     }
 
     public function show(User $actor, string $channelId): Channel

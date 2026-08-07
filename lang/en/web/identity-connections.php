@@ -17,5 +17,6 @@ return [
     'linked_accounts_empty' => 'No YouTube or Twitch accounts are linked on your Discord profile yet.',
     'linked_verified' => 'Verified',
     'linked_unverified' => 'Not verified',
+    'linked_revoked' => 'Revoked',
     'synced_at' => 'Last synced: :at',
 ];

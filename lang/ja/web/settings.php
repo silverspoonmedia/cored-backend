@@ -41,6 +41,7 @@ return [
         'platform.activitylog.buffer_enabled' => 'アクティビティログバッファ有効',
         // Platform — localization
         'platform.localization.locale_cookie' => 'ロケールCookie名',
+        'identity.discord.connections_snapshot_max_age_minutes' => 'Discord接続スナップショット最大有効時間（分）',
         'platform.localization.locale_cookie_minutes' => 'ロケールCookie有効期間（分）',
         // Platform — payment
         'platform.payment.channel_fee_bearer' => 'チャネル手数料負担者',
@@ -144,6 +145,7 @@ return [
         'vtual.channel_claim.verify_cooldown_seconds' => 'チャネルクレーム検証クールダウン（秒）',
         'vtual.channel_claim.max_attempts' => 'チャネルクレーム最大試行回数',
         'vtual.channel_claim.accept_anyway_enabled' => 'チャネルクレーム強制承認有効',
+        'vtual.channel_claim.discord_verify_enabled' => 'チャネルクレームDiscord検証有効',
         'vtual.channel_claim.token_prefix' => 'チャネルクレームトークン接頭辞',
         'vtual.channel_claim.token_bytes' => 'チャネルクレームトークン乱数バイト数',
         'vtual.channel_pool.threshold' => 'チャネルプール低水位閾値',
@@ -186,6 +188,7 @@ return [
         'vtual.credential.failover.enabled' => '認証失敗が繰り返された後、次の認証情報にローテーションします。',
         'vtual.claim.accept_anyway_enabled' => '検証が不確実でもユーザーがクレームを承認できるようにします。',
         'vtual.claim.discord_verify_enabled' => 'DiscordにリンクされたYouTube/Twitchアカウントの照合による孤児クレーム検証を許可します。',
+        'vtual.channel_claim.discord_verify_enabled' => 'プロフィール所有者がDiscord連携のYouTube/Twitch照合でチャネル追加クレームを検証できるようにします。',
     ],
     'options' => [
         'platform' => [

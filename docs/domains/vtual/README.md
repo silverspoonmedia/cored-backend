@@ -1,6 +1,6 @@
 # vTual — product domain
 
-Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Active web (2026-08):** staff **orphan** admin (`/apps/vtual/orphans`), **platform credentials** (`/apps/vtual/platform-credentials`, Root/Admin), and **read-only vTuber profile** (`/apps/vtual/vtuber/{slug}`, login required). Hub, profiles, claims, and registry Blade UIs are [archived](ui-archive.md). **Scheduled content ingestion** (feed poll, content pool, live CCV) and **YouTube WebSub push** are implemented; **Twitch EventSub** remains deferred — see [implementation-status.md](implementation-status.md).
+Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Active web (2026-08):** staff **orphan** admin (`/apps/vtual/orphans`), **platform credentials** (`/apps/vtual/platform-credentials`, Root/Admin), **owned profiles list** (`/apps/vtual/profiles`, Products menu under File Hosting), and **read-only vTuber profile** (`/apps/vtual/vtuber/{slug}`, login required). Hub, profiles, claims, and registry Blade UIs are [archived](ui-archive.md). **Scheduled content ingestion** (feed poll, content pool, live CCV) and **YouTube WebSub push** are implemented; **Twitch EventSub** remains deferred — see [implementation-status.md](implementation-status.md).
 
 | | |
 |--|--|
@@ -8,7 +8,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Config | [`config/products.php`](../../../config/products.php) key `Vtual` · [`config/vtual.php`](../../../config/vtual.php) |
 | Registry | [`config/domains.php`](../../../config/domains.php) `Vtual` product locked |
 | API | `routes/api/v1/vtual.php` |
-| Web | `routes/web/vtual-orphans.php` → **`/apps/vtual/orphans`** (`vtual.orphans.*`); `routes/web/vtual-platform-credentials.php` → **`/apps/vtual/platform-credentials`** (`vtual.platform-credentials.*`, Root/Admin); `routes/web/vtual-vtuber.php` → **`/apps/vtual/vtuber`** (`vtual.vtuber.index`, product hub placeholder) + **`/apps/vtual/vtuber/{slug}`** (`vtual.vtuber.show`, read-only profile; UUID legacy → 301 slug). Archived: [ui-archive.md](ui-archive.md) |
+| Web | `routes/web/vtual-orphans.php` → **`/apps/vtual/orphans`** (`vtual.orphans.*`); `routes/web/vtual-platform-credentials.php` → **`/apps/vtual/platform-credentials`** (`vtual.platform-credentials.*`, Root/Admin); `routes/web/vtual-profiles.php` → **`/apps/vtual/profiles`** (owned list + **`/apps/vtual/profiles/{slug}`** manage; Products sidebar); `routes/web/vtual-vtuber.php` → **`/apps/vtual/vtuber`** (`vtual.vtuber.index`, product hub placeholder) + **`/apps/vtual/vtuber/{slug}`** (`vtual.vtuber.show`, read-only profile; UUID legacy → 301 slug). Archived: [ui-archive.md](ui-archive.md) |
 | Naming (Management disambiguation) | [naming-conventions.md](naming-conventions.md) — core role `Management` vs `vtual_managements` talent org |
 | Seeder | `VtualRoleSeeder` (after core `RoleSeeder`; also seeds platforms) |
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
@@ -67,7 +67,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 | Path | Who | Behavior |
 |------|-----|----------|
 | Internal seed | Root / Admin / Moderator (`manage any vtual resource`) | `POST /api/v1/vtual/creators/orphan` creates creator **without** owner membership; then register channels as usual. Staff UI: `/apps/vtual/orphans` (do not self-bind staff as owner; use a separate account if staff is also a vtuber) |
-| External claim Existing | User with `claim vtual creator` | Pick claimable creator + proof channel. **Bio:** token in YouTube About / Twitch bio → `POST .../claims/{id}/verify` (queued batch pool). **Discord:** connect at `/apps/profile/connections`, then `POST .../claims/{id}/verify-discord` (sync) — matches verified YouTube/Twitch on Discord profile to `vtual_channels.external_id` (`verified_via=discord_connection`). Both routes sit behind `permission:claim vtual creator`; claimant/pending checks are enforced in `CreatorClaimService` (no separate claim policy middleware). Claim page WebSocket `claim.progress` when broadcast configured. Staff **Accept Anyway** stays synchronous. |
+| External claim Existing | User with `claim vtual creator` | Pick claimable creator + proof channel. **Bio:** token bound to the selected proof channel only → `POST .../claims/{id}/verify` (queued batch pool checks that channel’s description). **Discord:** connect at `/apps/profile/connections` (full snapshot on `identity_oauth_accounts`); `POST .../claims/{id}/verify-discord` runs `DiscordConnectionDiscoveryService` — matches public profile channels or binds new YouTube/Twitch as **private** discovered rows (no backfill); sets `verified_channel_id` contract channel; upserts external links from other Discord connection types. Channel attach uses snapshot-first verify but matches one target `external_id`. (`verified_via=discord_connection`). Private discovered channels: owner **promote** → public + fetch pool + content backfill (`POST channels/{id}/promote`). Both routes sit behind `permission:claim vtual creator`; claimant/pending checks are enforced in `CreatorClaimService` (no separate claim policy middleware). Claim page WebSocket `claim.progress` when broadcast configured. Staff **Accept Anyway** stays synchronous. |
 | Accept Anyway | Staff + `vtual.claim.accept_anyway_enabled` (Settings → vTual) | Skip bio check (QA / local default **ON**) |
 | Staff pending queue | `manage any` | `GET /api/v1/vtual/claims/pending` (legacy registry web archived) |
 
@@ -85,6 +85,8 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 |---------|-------|----------|
 | Orphan vTubers (staff) | `/apps/vtual/orphans` | Internal (Root/Admin/Moderator) — claimable profiles only; users-pattern DataTable + CRUD |
 | vTual product hub (placeholder) | `/apps/vtual/vtuber` | Any logged-in user — blank AdminLTE shell for upcoming product surfaces |
+| Owned vTuber profiles | `/apps/vtual/profiles` | `Vtual vTuber` / Editor / Admin with active Vtual activation — owned list (`GET api/v1/vtual/creators/owned`); Products sidebar under File Hosting |
+| Manage claimed profile | `/apps/vtual/profiles/{slug}` | Owner/editor — meta, links, merge, channel add (bio token + Discord verify on `channel-claims`), active/archived channels |
 | vTuber profile (read) | `/apps/vtual/vtuber/{slug}` | Any logged-in user — AdminLTE profile layout; **Claim** button when `is_claimable` (orphan) |
 | Claim process (interactive) | `/apps/vtual/vtuber/{slug}/claim` | Any logged-in user — channel pick → token → queued verify; start claim is AJAX with in-place active panel (no full reload); active claim shows proof channel; Echo `claim.progress` realtime when `BROADCAST_CONNECTION` + Pusher configured (reuses `window.__monolithEcho` when the navbar bell already opened Pusher); `verify_failed` snapshots clear queue status (pool finalized before broadcast) + inline failed banner; degraded AJAX-only + reload notice otherwise; orphan only; owned → redirect to profile |
 | Platform credentials | `/apps/vtual/platform-credentials` | Root/Admin — platform index table + per-platform credential CRUD; API probe at `/probe` |
@@ -662,7 +664,7 @@ Web UI: link from credentials index → **API probe**.
 | Multi-stream session correlation | Not implemented |
 | Auto collab/network appearance discovery | **Cancelled** (no platform partner list; explicit `attachAppearance` only) |
 | Creator claim Existing (bio token) | **Phase 1 implemented** (orphan seed + verify + Accept Anyway) |
-| Channel claim (attach channel) | **Implemented** dual path: staff seed instant active; non-staff pending claim + bio / Accept Anyway |
+| Channel claim (attach channel) | **Implemented** dual path: staff seed instant active; non-staff pending claim + bio / Discord (`POST channel-claims/{id}/verify-discord`) / Accept Anyway |
 | Claim Add New + survey + appeal | Not implemented (phase 2+) |
 | Profile merge (absorb) | **Implemented** (same-owner or staff; source archived) |
 | Ideal Viewer-only until claim (strip User create creator) | Follow-up; not in phase 1 |

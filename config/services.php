@@ -53,6 +53,8 @@ return [
         'client_id' => env('DISCORD_CLIENT_ID'),
         'client_secret' => env('DISCORD_CLIENT_SECRET'),
         'redirect' => env('DISCORD_REDIRECT_URI') ?: rtrim((string) config('app.url'), '/').'/apps/auth/discord/callback',
+        // Tier B — Settings → Identity (identity.discord.connections_snapshot_max_age_minutes)
+        'connections_snapshot_max_age_minutes' => 60,
     ],
 
 ];

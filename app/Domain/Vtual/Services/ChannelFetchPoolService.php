@@ -3,8 +3,10 @@
 namespace App\Domain\Vtual\Services;
 
 use App\Domain\Vtual\Enums\ChannelFetchPoolReason;
+use App\Domain\Vtual\Enums\ChannelDiscoverySource;
 use App\Domain\Vtual\Enums\ChannelFetchPoolStatus;
 use App\Domain\Vtual\Enums\ChannelStatus;
+use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
 use App\Domain\Vtual\Integrations\PlatformApiGateway;
@@ -324,6 +326,12 @@ class ChannelFetchPoolService
             }
 
             $channel->forceFill($this->snapshotAttributesFromDto($dto))->save();
+
+            if ($channel->visibility === ChannelVisibility::Public
+                && $channel->discovery_source === ChannelDiscoverySource::DiscordConnection
+                && $channel->content_initial_backfill_at === null) {
+                app(ChannelActivationService::class)->applyYoutubeActivationHooks($channel->refresh());
+            }
         }
     }
 

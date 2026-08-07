@@ -2,6 +2,7 @@
 
 namespace App\Domain\Vtual\Services;
 
+use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\EntityStatus;
 use App\Domain\Vtual\Exceptions\VtualException;
@@ -24,6 +25,7 @@ class VtuberProfileService
         $creator->load([
             'channels' => function ($query): void {
                 $query->where('status', ChannelStatus::Active)
+                    ->where('visibility', ChannelVisibility::Public)
                     ->with('platform')
                     ->orderBy('created_at');
             },

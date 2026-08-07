@@ -4,12 +4,12 @@ namespace App\Domain\Vtual\Services;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\UserOAuthAccountService;
+use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\CreatorClaimClosedReason;
 use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Enums\CreatorClaimVerifiedVia;
 use App\Domain\Vtual\Enums\CreatorClaimVerifyPoolStatus;
 use App\Domain\Vtual\Enums\CreatorMemberRole;
-use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Models\Channel;
@@ -17,8 +17,8 @@ use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Models\CreatorClaim;
 use App\Domain\Vtual\Models\CreatorClaimBlock;
 use App\Domain\Vtual\Models\CreatorMember;
-use App\Domain\Vtual\Support\DiscordChannelOwnershipMatcher;
 use App\Domain\Vtual\Support\VtualClaimRealtime;
+use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -34,6 +34,7 @@ class CreatorClaimService
         private readonly ChannelProfileResolver $profiles,
         private readonly CreatorClaimVerifyPoolService $verifyPool,
         private readonly UserOAuthAccountService $oauthAccounts,
+        private readonly DiscordConnectionDiscoveryService $discordDiscovery,
     ) {}
 
     /**
@@ -223,17 +224,6 @@ class CreatorClaimService
             throw new VtualException(__('api/vtual.claim.verify_already_queued'), 422);
         }
 
-        $claim->loadMissing('channel.platform');
-        $channel = $claim->channel;
-        if ($channel === null) {
-            throw new VtualException(__('api/vtual.claim.channel_missing'), 422);
-        }
-
-        $platformKey = $channel->platform?->key;
-        if ($platformKey instanceof PlatformKey && $platformKey === PlatformKey::Kick) {
-            throw new VtualException(__('api/vtual.claim.discord_verify_unsupported_platform'), 422);
-        }
-
         if (! $this->oauthAccounts->hasDiscordConnection($actor)) {
             throw new VtualException(__('api/vtual.claim.discord_not_connected'), 422);
         }
@@ -246,7 +236,10 @@ class CreatorClaimService
         ])->save();
 
         try {
-            $connections = $this->oauthAccounts->syncDiscordConnections($actor);
+            $connections = $this->oauthAccounts->connectionsForOwnershipVerify(
+                $actor,
+                fn (array $eligible): bool => $eligible !== [],
+            );
         } catch (\Throwable) {
             $this->handleFailedVerifyAttempt($claim);
             $fresh = $claim->fresh(['creator', 'channel.platform', 'user']) ?? $claim;
@@ -259,22 +252,29 @@ class CreatorClaimService
             throw new VtualException(__('api/vtual.claim.discord_connections_failed'), 422);
         }
 
-        if (DiscordChannelOwnershipMatcher::matches($channel, $connections)) {
-            $completed = $this->complete($claim, CreatorClaimVerifiedVia::DiscordConnection, null);
-            app(VtualClaimRealtime::class)->progress($completed, 'verified');
+        $discovery = $this->discordDiscovery->apply($claim->creator, $connections);
 
-            return $completed;
+        if ($discovery->contractChannel === null) {
+            $this->handleFailedVerifyAttempt($claim);
+            $fresh = $claim->fresh(['creator', 'channel.platform', 'user']) ?? $claim;
+            $phase = $fresh->status === CreatorClaimStatus::Cancelled
+                && $fresh->closed_reason === CreatorClaimClosedReason::MaxAttempts
+                ? 'max_attempts_blocked'
+                : 'verify_failed';
+            app(VtualClaimRealtime::class)->progress($fresh, $phase);
+
+            return $fresh;
         }
 
-        $this->handleFailedVerifyAttempt($claim);
-        $fresh = $claim->fresh(['creator', 'channel.platform', 'user']) ?? $claim;
-        $phase = $fresh->status === CreatorClaimStatus::Cancelled
-            && $fresh->closed_reason === CreatorClaimClosedReason::MaxAttempts
-            ? 'max_attempts_blocked'
-            : 'verify_failed';
-        app(VtualClaimRealtime::class)->progress($fresh, $phase);
+        $completed = $this->complete(
+            $claim,
+            CreatorClaimVerifiedVia::DiscordConnection,
+            null,
+            $discovery->contractChannel,
+        );
+        app(VtualClaimRealtime::class)->progress($completed, 'verified');
 
-        return $fresh;
+        return $completed;
     }
 
     public function processQueuedVerify(CreatorClaim $claim, ?string $description): CreatorClaimProcessResult
@@ -437,8 +437,9 @@ class CreatorClaimService
         CreatorClaim $claim,
         CreatorClaimVerifiedVia $via,
         ?User $staff,
+        ?Channel $verifiedChannel = null,
     ): CreatorClaim {
-        return DB::transaction(function () use ($claim, $via, $staff): CreatorClaim {
+        return DB::transaction(function () use ($claim, $via, $staff, $verifiedChannel): CreatorClaim {
             $locked = CreatorClaim::query()->whereKey($claim->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== CreatorClaimStatus::Pending) {
                 throw new VtualException(__('api/vtual.claim.not_pending'), 422);
@@ -468,12 +469,17 @@ class CreatorClaimService
                 }
             }
 
+            app(ProductActivationService::class)->activateImplicit($user, 'Vtual', 'claim_success');
+
             $locked->forceFill([
                 'status' => CreatorClaimStatus::Verified,
                 'closed_reason' => null,
                 'verified_at' => now(),
                 'verified_via' => $via,
                 'verified_by_user_id' => $staff?->id,
+                'verified_channel_id' => $via === CreatorClaimVerifiedVia::DiscordConnection
+                    ? $verifiedChannel?->id
+                    : null,
             ])->save();
 
             $this->closeCompetingClaims((string) $creator->id, (string) $locked->id);

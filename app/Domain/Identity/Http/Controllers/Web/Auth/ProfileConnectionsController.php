@@ -20,6 +20,16 @@ class ProfileConnectionsController extends Controller
     {
         $user = $request->user();
         $discordAccount = $this->oauthAccounts->discordAccountFor($user);
+
+        if ($discordAccount !== null && ! $this->oauthAccounts->isConnectionsSnapshotFresh($user)) {
+            try {
+                $this->oauthAccounts->syncDiscordConnections($user);
+                $discordAccount = $this->oauthAccounts->discordAccountFor($user);
+            } catch (\Throwable) {
+                // Keep stale snapshot when Discord API is unavailable.
+            }
+        }
+
         $connections = $this->oauthAccounts->connectionsSnapshotFor($user);
 
         return $this->webView('profile.connections', [

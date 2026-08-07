@@ -3,6 +3,7 @@
 return [
     'creator' => [
         'list_success' => 'クリエイター一覧を読み込みました。',
+        'owned_list_success' => '所有 vTuber プロフィールを読み込みました。',
         'show_success' => 'クリエイターを読み込みました。',
         'created' => 'クリエイターを作成しました。',
         'orphan_created' => 'オーナーなしのクリエイターを作成しました（クレーム可能）。',
@@ -78,6 +79,10 @@ return [
         'refresh_queued' => 'チャンネル更新をキューに追加しました（他の保留中リクエストとまとめて処理）。',
         'archived' => 'チャンネルをアーカイブしました。',
         'restored' => 'チャンネルをアクティブに復元しました。',
+        'promoted' => 'チャンネルを公開に昇格しました。プロフィール取得とコンテンツバックフィルをキューに追加しました。',
+        'not_private_discovered' => '昇格できるのは非公開の発見チャンネルのみです。',
+        'promote_not_discovered' => 'この操作で昇格できるのはDiscord発見チャンネルのみです。',
+        'promote_unsupported_platform' => 'このプラットフォームでは昇格はサポートされていません。',
         'not_archived' => 'チャンネルはアーカイブ状態ではありません。',
         'archived_list_success' => 'アーカイブ済みチャンネルを読み込みました。',
         'platform_unknown' => '不明なプラットフォームです。',
@@ -105,6 +110,12 @@ return [
         'cooldown' => '再検証まで :seconds 秒待ってください。',
         'accept_anyway_disabled' => 'この環境では Accept Anyway が無効です。',
         'pending_other' => '別のユーザーが既にこのプラットフォームチャンネルの保留クレームを持っています。',
+        'discord_verify_disabled' => 'チャンネルクレームのDiscord検証は無効です。',
+        'discord_verify_unsupported_platform' => 'このプラットフォームではDiscord検証はサポートされていません。',
+        'discord_not_connected' => '検証前にプロフィール → 連携アカウントでDiscordを接続してください。',
+        'discord_connections_failed' => 'Discord接続を読み込めませんでした。再試行するか、バイオトークン検証を使用してください。',
+        'discord_no_match' => 'このプラットフォームチャンネルと一致する検証済みDiscord接続がありません。',
+        'discord_verified' => 'Discordで検証され、このプロフィールにチャンネルが紐づけられました。',
     ],
     'link' => [
         'list_success' => '外部リンクを読み込みました。',
