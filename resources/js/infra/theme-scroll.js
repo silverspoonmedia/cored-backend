@@ -16,7 +16,7 @@ const prefersDark = () => globalThis.matchMedia('(prefers-color-scheme: dark)').
 const getPreferredTheme = () => {
     const stored = getStoredTheme();
     if (stored) return stored;
-    return prefersDark() ? 'dark' : 'light';
+    return 'dark';
 };
 
 const setTheme = (theme) => {

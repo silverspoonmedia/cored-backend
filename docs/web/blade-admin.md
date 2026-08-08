@@ -227,7 +227,11 @@ Raw numeric/ISO fields remain available for conditionals (`if ((float) credit_am
 
 ### Theming
 
-Soft override CSS layer (light/dark) under layout assets — keep tokenized variables.
+Soft override CSS layer (light/dark) under layout assets — keep tokenized variables. **Default is dark** when no user preference is stored in localStorage:
+
+- `resources/js/infra/theme-scroll.js` sets `data-bs-theme` on `<html>` before first paint. Priority: stored `lte-theme` localStorage value → dark fallback. Users who switch to `auto` get `prefers-color-scheme` resolved live; users who explicitly pick `light` get light (stored).
+- File-hosting standalone public pages (`public-folder.blade.php`, `public-file.blade.php`) mirror the same logic via inline IIFE: `<html data-bs-theme="dark">` as the HTML attribute fallback, then overridden to light if the user stored `light` or has `prefers-color-scheme: light` and no stored value.
+- Navbar toggle has three modes: Light, Dark, Auto (default selected state). Clicking stores the choice and re-applies immediately. System color-scheme change listener re-evaluates only when stored value is absent or `auto`.
 
 - Override file: `resources/css/monolith-overrides.css` (loaded via `@vite` in `assets-head.blade.php`).
 - Vendor CSS (AdminLTE, Bootstrap, DataTables BS5, Select2, OverlayScrollbars) bundled in `resources/css/vendor.css` — loaded in `<head>` before overrides to prevent FOUC. Do **not** also import `datatables.net-dt` default CSS (fights the BS5 theme).

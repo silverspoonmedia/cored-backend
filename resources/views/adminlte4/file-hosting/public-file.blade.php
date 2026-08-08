@@ -17,7 +17,7 @@
     ];
 @endphp
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-bs-theme="light">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-bs-theme="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,8 +27,8 @@
         (function () {
             try {
                 var pref = localStorage.getItem('lte-theme');
-                if (pref === 'dark' || (!pref && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                if (pref === 'light' || (!pref && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+                    document.documentElement.setAttribute('data-bs-theme', 'light');
                 }
             } catch (e) {}
         })();
