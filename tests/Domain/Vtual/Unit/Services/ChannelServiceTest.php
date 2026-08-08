@@ -90,6 +90,21 @@ class ChannelServiceTest extends TestCase
     }
 
     #[Test]
+    public function register_pending_normalizes_percent_encoded_profile_input(): void
+    {
+        Http::fake(fn () => Http::response([], 404));
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Encoded Orphan']);
+
+        $channel = $this->channels->registerPendingForStaff($this->admin, $orphan->id, [
+            'platform_key' => 'youtube',
+            'profile' => 'https://www.youtube.com/@%E5%85%AB%E9%9B%B2%E3%81%B9%E3%81%AB',
+        ]);
+
+        $this->assertSame('https://www.youtube.com/@八雲べに', $channel->profile_input);
+    }
+
+    #[Test]
     public function register_pending_rejects_youtube_url_when_twitch_selected(): void
     {
         Http::fake(fn () => Http::response([], 404));

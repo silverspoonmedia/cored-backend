@@ -54,7 +54,7 @@ final class ChannelProfileInputParser
 
         $parts = parse_url($url);
         $path = isset($parts['path']) ? (string) $parts['path'] : '';
-        $path = trim($path, '/');
+        $path = rawurldecode(trim($path, '/'));
         $segments = $path === '' ? [] : explode('/', $path);
 
         // /channel/UCxxxx
@@ -124,7 +124,7 @@ final class ChannelProfileInputParser
 
         $parts = parse_url($url);
         $path = isset($parts['path']) ? (string) $parts['path'] : '';
-        $path = trim($path, '/');
+        $path = rawurldecode(trim($path, '/'));
         $segments = $path === '' ? [] : explode('/', $path);
 
         // Ignore common non-profile first segments

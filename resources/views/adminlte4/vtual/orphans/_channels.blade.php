@@ -14,53 +14,14 @@
 <h5 class="mb-2">{{ __('web/vtual-orphans.channels.section_title') }}</h5>
 <p class="text-muted small mb-3">{{ __('web/vtual-orphans.channels.section_help') }}</p>
 
-<x-adminlte4::form.ajax
-    :action="route('vtual.orphans.channels.store', $creatorId)"
-    method="POST"
-    class="border rounded p-3 mb-3"
-    data-orphan-channels-form
-    :showAlert="false"
-    data-help-youtube="{{ __('web/vtual-orphans.channels.profile_help_youtube') }}"
-    data-help-twitch="{{ __('web/vtual-orphans.channels.profile_help_twitch') }}"
-    data-placeholder-youtube="{{ __('web/vtual-orphans.channels.profile_placeholder_youtube') }}"
-    data-placeholder-twitch="{{ __('web/vtual-orphans.channels.profile_placeholder_twitch') }}"
->
-    <div class="row g-2 align-items-end">
-        <div class="col-md-3" data-form-field="platform_key">
-            <label class="form-label" for="platform_key">{{ __('web/vtual-orphans.channels.platform') }}</label>
-            <select id="platform_key" name="platform_key" class="form-select form-select-sm" required>
-                @foreach ($platforms as $platform)
-                    @if (!empty($platform['enabled']))
-                        <option value="{{ $platform['key'] }}">{{ $platform['name'] }}</option>
-                    @endif
-                @endforeach
-            </select>
-        </div>
-        <div class="col-md-6" data-form-field="profile">
-            <label class="form-label" for="profile_input">{{ __('web/vtual-orphans.channels.profile') }}</label>
-            <input type="text" id="profile_input" name="profile" class="form-control form-control-sm font-monospace"
-                   required maxlength="512" placeholder="{{ __('web/vtual-orphans.channels.profile_placeholder_youtube') }}">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label invisible" aria-hidden="true">&nbsp;</label>
-            <x-adminlte4::form.submit :label="__('web/vtual-orphans.channels.add_button')" class="btn btn-primary btn-sm w-100" />
-        </div>
-    </div>
-    <div class="row g-1">
-        <div class="col-md-3">
-            <x-adminlte4::form.error name="platform_key" />
-        </div>
-        <div class="col-md-6">
-            <x-adminlte4::form.error name="profile" />
-        </div>
-        <div class="col-md-3"></div>
-    </div>
-    <div class="row g-2">
-        <div class="col-12">
-            <div class="form-text mb-0" id="orphan-channel-profile-help">{{ __('web/vtual-orphans.channels.profile_help_youtube') }}</div>
-        </div>
-    </div>
-</x-adminlte4::form.ajax>
+@include(config('web.layout').'.vtual.partials._channel-add-form', [
+    'action' => route('vtual.orphans.channels.store', $creatorId),
+    'transPrefix' => 'web/vtual-orphans.channels',
+    'formKind' => 'orphans',
+    'helpElId' => 'orphan-channel-profile-help',
+    'platforms' => $platforms,
+    'showAlert' => false,
+])
 
 <div class="table-responsive" id="orphan-channels-table" data-status-labels='@json($statusLabels)'>
     <table class="table table-sm table-hover align-middle mb-0" aria-label="{{ __('web/vtual-orphans.channels.table_caption') }}">
@@ -93,39 +54,8 @@
 
     const tableWrapper = document.getElementById('orphan-channels-table');
     const tbody = document.getElementById('orphan-channels-tbody');
-    const channelForm = document.querySelector('[data-orphan-channels-form]');
     if (!tableWrapper || !tbody) {
         return;
-    }
-
-    function applyPlatformHints() {
-        if (!channelForm) {
-            return;
-        }
-
-        const platformSelect = channelForm.querySelector('[name="platform_key"]');
-        const profileInput = channelForm.querySelector('#profile_input');
-        const helpEl = document.getElementById('orphan-channel-profile-help');
-        if (!platformSelect || !profileInput || !helpEl) {
-            return;
-        }
-
-        const key = platformSelect.value;
-        if (key === 'twitch') {
-            profileInput.placeholder = channelForm.dataset.placeholderTwitch || '';
-            helpEl.textContent = channelForm.dataset.helpTwitch || '';
-        } else {
-            profileInput.placeholder = channelForm.dataset.placeholderYoutube || '';
-            helpEl.textContent = channelForm.dataset.helpYoutube || '';
-        }
-    }
-
-    if (channelForm) {
-        const platformSelect = channelForm.querySelector('[name="platform_key"]');
-        if (platformSelect) {
-            platformSelect.addEventListener('change', applyPlatformHints);
-            applyPlatformHints();
-        }
     }
 
     let statusLabels = {};
@@ -249,7 +179,7 @@
 
     document.addEventListener('ajax-form:success', function (event) {
         const form = event.detail?.form;
-        if (!form || !form.hasAttribute('data-orphan-channels-form')) {
+        if (!form || form.dataset.formKind !== 'orphans') {
             return;
         }
 
@@ -266,8 +196,6 @@
         if (platformSelect && platformSelect.options.length > 0) {
             platformSelect.selectedIndex = 0;
         }
-
-        applyPlatformHints();
     });
 })();
 </script>

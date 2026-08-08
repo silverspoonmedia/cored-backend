@@ -126,7 +126,7 @@ class ChannelService
             throw new VtualException(__('api/vtual.channel.platform_disabled'), 422);
         }
 
-        $profile = trim((string) ($data['profile'] ?? ''));
+        $profile = rawurldecode(trim((string) ($data['profile'] ?? '')));
         if ($profile === '') {
             throw new VtualException(__('api/vtual.channel.profile_required'), 422);
         }

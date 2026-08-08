@@ -1,20 +1,31 @@
 @php
     $displayName = $profile['display_name'] ?? __('web/vtual-vtuber.title');
-    $channels = $profile['channels'] ?? [];
-    $profileUrl = $profileUrl ?? $profile['profile_url'] ?? route('vtual.vtuber.show', $profile['slug'] ?? '');
-    $creatorId = $profile['id'] ?? '';
     $slug = $profile['slug'] ?? '';
-    $hasActiveClaim = is_array($activeClaim) && ($activeClaim['status'] ?? '') === 'pending';
-    $blockedUntil = $profile['claim_blocked_until'] ?? $profile['claim_blocked_until_formatted']
-        ?? ($activeClaim['blocked_until'] ?? $activeClaim['blocked_until_formatted'] ?? null);
-    $discordVerifyEnabled = $discordVerifyEnabled ?? false;
-    $discordConnected = $discordConnected ?? false;
-    $claimConfig = [
-        'profileUrl' => $profileUrl,
-        'realtime' => $claimRealtime ?? [],
-        'messages' => [
+    $creatorId = $profile['id'] ?? '';
+    $bootstrap = [
+        'profile' => $profile,
+        'activeClaim' => $activeClaim,
+        'realtime' => $claimRealtime,
+        'profileUrl' => $profileUrl ?? $profile['profile_url'] ?? route('vtual.vtuber.show', $slug),
+        'discordConnected' => $discordConnected ?? false,
+        'discordVerifyEnabled' => $discordVerifyEnabled ?? false,
+        'canAcceptAnyway' => $canAcceptAnyway ?? false,
+        'routes' => [
+            'startClaim' => route('vtual.vtuber.claim.start', $slug),
+            'verifyClaim' => route('vtual.vtuber.claim.verify', $slug),
+            'cancelClaim' => route('vtual.vtuber.claim.cancel', $slug),
+            'acceptAnywayClaim' => route('vtual.vtuber.claim.accept-anyway', $slug),
+            'discordVerifyClaim' => route('vtual.vtuber.claim.discord-verify', $slug),
+            'discordClaimChannel' => route('vtual.vtuber.claim.discord', $slug),
+            'discordRedirect' => route('auth.discord.redirect'),
+        ],
+        'labels' => [
+            'claimPageTitle' => __('web/vtual-vtuber.claim_page_title'),
+            'claimPageSubtitle' => __('web/vtual-vtuber.claim_page_subtitle'),
+            'backToProfile' => __('web/vtual-vtuber.claim_back_to_profile'),
             'connected' => __('web/vtual-vtuber.claim_realtime_connected'),
             'connecting' => __('web/vtual-vtuber.claim_realtime_connecting'),
+            'degraded' => __('web/vtual-vtuber.claim_realtime_degraded'),
             'realtimeNotice' => __('web/vtual-vtuber.claim_verify_queue_notice_realtime'),
             'degradedNotice' => __('web/vtual-vtuber.claim_verify_queue_notice_degraded'),
             'started' => __('web/vtual.ajax.claim_started'),
@@ -28,8 +39,33 @@
             'blockedUntil' => __('web/vtual-vtuber.claim_blocked_until', ['until' => ':until']),
             'queue_pending' => __('web/vtual-vtuber.claim_queue_status_pending'),
             'queue_processing' => __('web/vtual-vtuber.claim_queue_status_processing'),
+            'activeHeading' => __('web/vtual-vtuber.claim_active_heading'),
+            'tokenLabel' => __('web/vtual-vtuber.claim_token_label'),
+            'tokenHelp' => __('web/vtual.claims.token_help'),
+            'attemptsRemaining' => __('web/vtual-vtuber.claim_attempts_remaining'),
+            'queueStatusLabel' => __('web/vtual-vtuber.claim_queue_status_label'),
+            'verifyButton' => __('web/vtual-vtuber.claim_verify_button'),
+            'cancel' => __('web/vtual-vtuber.claim_cancel'),
+            'verifyWithChannel' => __('web/vtual-vtuber.claim_verify_with_channel'),
+            'claimWithDiscord' => __('web/vtual-vtuber.claim_verify_with_discord'),
+            'discordConnectCta' => __('web/vtual-vtuber.claim_discord_connect_cta'),
+            'discordVerifyButton' => __('web/vtual-vtuber.claim_discord_verify_button'),
+            'discordPanelHint' => __('web/vtual-vtuber.claim_discord_panel_hint'),
+            'channelsHeading' => __('web/vtual-vtuber.claim_channels_heading'),
+            'noChannelsNote' => __('web/vtual-vtuber.claim_no_channels_note'),
+            'stepsHeading' => __('web/vtual-vtuber.claim_steps_heading'),
+            'step1' => __('web/vtual-vtuber.claim_step_1'),
+            'step2' => __('web/vtual-vtuber.claim_step_2'),
+            'step3' => __('web/vtual-vtuber.claim_step_3'),
+            'step4' => __('web/vtual-vtuber.claim_step_4'),
+            'step5' => __('web/vtual-vtuber.claim_step_5'),
+            'acceptAnyway' => __('web/vtual.claims.accept_anyway'),
+            'acceptAnywayHelp' => __('web/vtual.claims.accept_anyway_help'),
+            'acceptAnywayConfirmTitle' => __('web/vtual.confirm.accept_anyway_title'),
+            'acceptAnywayConfirmBody' => __('web/vtual.confirm.accept_anyway_body'),
         ],
     ];
+    $mountFailed = __('web/vtual-vtuber.claim_realtime_degraded');
 @endphp
 
 <x-adminlte4::layouts.app :title="__('web/vtual-vtuber.claim_page_title').' — '.$displayName">
@@ -37,151 +73,11 @@
         \Diglactic\Breadcrumbs\Breadcrumbs::setCurrentRoute('vtual.vtuber.claim', $displayName);
     @endphp
 
-    @vite('resources/js/vtual/claim-realtime.js')
-
-    <div id="vtual-claim-root" class="card">
-        <script type="application/json" data-claim-config>@json($claimConfig)</script>
-
-        <div class="card-header d-flex align-items-center gap-2">
-            <h3 class="card-title mb-0 flex-grow-1 float-none">{{ __('web/vtual-vtuber.claim_page_title') }}</h3>
-            <div class="card-tools float-none me-0 flex-shrink-0">
-                <a href="{{ $profileUrl }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>{{ __('web/vtual-vtuber.claim_back_to_profile') }}
-                </a>
-            </div>
-        </div>
-
-        <div class="card-body">
-            <p class="text-muted small mb-3">{{ __('web/vtual-vtuber.claim_page_subtitle') }}</p>
-
-            @if (! empty($claimRealtime['enabled']))
-                <div
-                    class="d-flex align-items-center gap-2 small text-secondary mb-3"
-                    data-claim-realtime-bar
-                    role="status"
-                    aria-live="polite"
-                >
-                    <i class="bi bi-broadcast" data-claim-realtime-icon aria-hidden="true"></i>
-                    <span data-claim-realtime-status>{{ __('web/vtual-vtuber.claim_realtime_connecting') }}</span>
-                </div>
-            @endif
-
-            <div class="alert alert-info small mb-3 d-none" data-claim-degraded role="status">
-                {{ __('web/vtual-vtuber.claim_realtime_degraded') }}
-            </div>
-
-            @if (! empty($blockedUntil))
-                <div class="alert alert-warning small mb-3" data-claim-blocked-banner role="alert">
-                    {{ __('web/vtual-vtuber.claim_blocked_until', ['until' => $profile['claim_blocked_until_formatted'] ?? $blockedUntil]) }}
-                </div>
-            @endif
-
-            <div
-                class="border rounded p-3 mb-4 {{ $hasActiveClaim ? '' : 'd-none' }}"
-                id="vtual-active-claim-panel"
-                data-claim-panel
-            >
-                @include('adminlte4.vtual.vtuber.partials.claim-active-panel', [
-                    'claim' => $hasActiveClaim ? $activeClaim : [],
-                    'slug' => $slug,
-                    'claimRealtime' => $claimRealtime ?? [],
-                    'discordVerifyEnabled' => $discordVerifyEnabled,
-                    'discordConnected' => $discordConnected,
-                ])
-            </div>
-
-            <template data-claim-panel-template>
-                <div class="border rounded p-3 mb-4" data-claim-panel>
-                    @include('adminlte4.vtual.vtuber.partials.claim-active-panel', [
-                        'claim' => [],
-                        'slug' => $slug,
-                        'claimRealtime' => $claimRealtime ?? [],
-                        'discordVerifyEnabled' => $discordVerifyEnabled,
-                        'discordConnected' => $discordConnected,
-                    ])
-                </div>
-            </template>
-
-            <div
-                class="{{ ($hasActiveClaim || ! empty($blockedUntil)) ? 'd-none' : '' }}"
-                data-claim-channels-section
-            >
-                <h5 class="h6 mb-2">{{ __('web/vtual-vtuber.claim_channels_heading') }}</h5>
-                @if (count($channels) === 0)
-                    <p class="text-muted small mb-4">{{ __('web/vtual-vtuber.claim_no_channels_note') }}</p>
-                @else
-                    <ul class="list-group list-group-flush mb-4">
-                        @foreach ($channels as $channel)
-                            <li class="list-group-item px-0">
-                                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-                                    <span>
-                                        <span class="badge text-bg-light border">
-                                            {{ $channel['platform']['name'] ?? $channel['platform']['key'] ?? '—' }}
-                                        </span>
-                                        <span class="ms-1">{{ $channel['handle'] ?? $channel['display_name'] ?? $channel['external_id'] ?? '' }}</span>
-                                    </span>
-                                    <div class="d-flex gap-2">
-                                        @if (! empty($channel['url']))
-                                            <a href="{{ $channel['url'] }}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">
-                                                {{ __('web/vtual-vtuber.open_link') }}
-                                            </a>
-                                        @endif
-                                        <x-adminlte4::form.ajax
-                                            :action="route('vtual.vtuber.claim.start', $slug)"
-                                            method="POST"
-                                            class="d-inline"
-                                            :showAlert="false"
-                                            data-claim-start-form
-                                        >
-                                            <input type="hidden" name="creator_id" value="{{ $creatorId }}">
-                                            <input type="hidden" name="channel_id" value="{{ $channel['id'] ?? '' }}">
-                                            <x-adminlte4::form.submit
-                                                :label="__('web/vtual-vtuber.claim_verify_with_channel')"
-                                                class="btn btn-primary btn-sm"
-                                            />
-                                        </x-adminlte4::form.ajax>
-                                        @if ($discordVerifyEnabled && ($channel['platform']['key'] ?? '') !== 'kick')
-                                            @if ($discordConnected)
-                                                <x-adminlte4::form.ajax
-                                                    :action="route('vtual.vtuber.claim.discord', $slug)"
-                                                    method="POST"
-                                                    class="d-inline"
-                                                    :showAlert="false"
-                                                    data-claim-discord-start-form
-                                                >
-                                                    <input type="hidden" name="channel_id" value="{{ $channel['id'] ?? '' }}">
-                                                    <x-adminlte4::form.submit
-                                                        :label="__('web/vtual-vtuber.claim_verify_with_discord')"
-                                                        class="btn btn-outline-primary btn-sm"
-                                                    />
-                                                </x-adminlte4::form.ajax>
-                                            @else
-                                                <a
-                                                    href="{{ route('auth.discord.redirect', ['intent' => 'claim_channel', 'slug' => $slug, 'channel_id' => $channel['id'] ?? '']) }}"
-                                                    class="btn btn-outline-primary btn-sm"
-                                                >
-                                                    {{ __('web/vtual-vtuber.claim_discord_connect_cta') }}
-                                                </a>
-                                            @endif
-                                        @endif
-                                    </div>
-                                </div>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
-
-            <details class="small">
-                <summary class="fw-semibold mb-2">{{ __('web/vtual-vtuber.claim_steps_heading') }}</summary>
-                <ol class="mb-0 mt-2">
-                    <li>{{ __('web/vtual-vtuber.claim_step_1') }}</li>
-                    <li>{{ __('web/vtual-vtuber.claim_step_2') }}</li>
-                    <li>{{ __('web/vtual-vtuber.claim_step_3') }}</li>
-                    <li>{{ __('web/vtual-vtuber.claim_step_4') }}</li>
-                    <li>{{ __('web/vtual-vtuber.claim_step_5') }}</li>
-                </ol>
-            </details>
-        </div>
+    <div id="vue-vtual-claim">
+        <script type="application/json" data-vue-vtual-claim data-vue-mount-failed="{{ $mountFailed }}">@json($bootstrap)</script>
     </div>
+
+    <x-slot:scripts>
+        @vite('resources/js/vue/islands/vtual-claim/main.js')
+    </x-slot:scripts>
 </x-adminlte4::layouts.app>

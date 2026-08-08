@@ -16,6 +16,8 @@ Route::post('vtual/vtuber/{creator}/claim/verify', [VtuberProfileController::cla
     ->name('vtual.vtuber.claim.verify');
 Route::post('vtual/vtuber/{creator}/claim/cancel', [VtuberProfileController::class, 'cancelClaim'])
     ->name('vtual.vtuber.claim.cancel');
+Route::post('vtual/vtuber/{creator}/claim/accept-anyway', [VtuberProfileController::class, 'acceptAnywayClaim'])
+    ->name('vtual.vtuber.claim.accept-anyway');
 
 Route::get('vtual/vtuber/{creator}/claim', [VtuberProfileController::class, 'claim'])
     ->name('vtual.vtuber.claim');

@@ -76,7 +76,7 @@ class ChannelClaimService
         }
         $this->bio->assertPlatformEnabled($platform);
 
-        $profile = trim((string) ($data['profile'] ?? ''));
+        $profile = rawurldecode(trim((string) ($data['profile'] ?? '')));
         if ($profile === '') {
             throw new VtualException(__('api/vtual.channel.profile_required'), 422);
         }

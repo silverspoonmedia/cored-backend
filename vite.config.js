@@ -30,7 +30,7 @@ export default defineConfig({
                 'resources/js/vtual/confirm-modal.js',
                 'resources/js/vtual/credentials-platform.js',
                 'resources/js/vtual/credential-form.js',
-                'resources/js/vtual/claim-realtime.js',
+                'resources/js/vue/islands/vtual-claim/main.js',
                 'resources/js/vue/islands/dashboard-session/main.js',
                 'resources/js/vue/islands/file-hosting/main.js',
             ],

@@ -185,7 +185,7 @@ class OrphanVtuberWebTest extends TestCase
         $this->assertStringContainsString('data-ajax-form', $editHtml);
         $this->assertStringContainsString('Orphan Fox', $editHtml);
         $this->assertStringContainsString(__('web/vtual-orphans.channels.section_title'), $editHtml);
-        $this->assertStringContainsString('data-orphan-channels-form', $editHtml);
+        $this->assertStringContainsString('data-form-kind="orphans"', $editHtml);
         $this->assertStringContainsString('id="orphan-channels-tbody"', $editHtml);
         $this->assertStringContainsString('id="orphan-channels-empty"', $editHtml);
         $this->assertStringContainsString(__('web/vtual-orphans.channels.profile_help_youtube'), $editHtml);

@@ -37,6 +37,11 @@ class ChannelProfileInputParserTest extends TestCase
             'handle_url' => ['https://www.youtube.com/@aizawaema', ChannelProfileInputKind::Handle, 'aizawaema'],
             'c_url' => ['https://youtube.com/c/SomeName', ChannelProfileInputKind::Handle, 'SomeName'],
             'bare_handle' => ['aizawaema', ChannelProfileInputKind::Handle, 'aizawaema'],
+            'encoded_handle_url' => [
+                'https://www.youtube.com/@%E5%85%AB%E9%9B%B2%E3%81%B9%E3%81%AB',
+                ChannelProfileInputKind::Handle,
+                '八雲べに',
+            ],
         ];
     }
 

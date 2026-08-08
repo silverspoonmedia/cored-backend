@@ -215,24 +215,9 @@ class VtuberProfileWebTest extends TestCase
         $this->assertStringContainsString(__('web/vtual-vtuber.claim_page_title'), $html);
         $this->assertStringContainsString(__('web/vtual-vtuber.claim_steps_heading'), $html);
         $this->assertStringContainsString(__('web/vtual-vtuber.claim_step_1'), $html);
-        $this->assertStringContainsString(__('web/vtual-vtuber.claim_verify_with_channel'), $html);
-        $this->assertStringContainsString('id="vtual-claim-root"', $html);
-        $this->assertStringContainsString('data-claim-config', $html);
-        $this->assertStringContainsString('aizawaema', $html);
+        $this->assertStringContainsString('id="vue-vtual-claim"', $html);
+        $this->assertStringContainsString('data-vue-vtual-claim', $html);
         $this->assertClaimConfigJsonIsParseable($html);
-        $this->assertStringContainsString('data-claim-panel-template', $html);
-        $this->assertMatchesRegularExpression(
-            '/<div[^>]*id="vtual-active-claim-panel"[^>]*>/s',
-            $html,
-            'Claim panel shell should exist in the DOM.',
-        );
-        if (preg_match('/<div[^>]*id="vtual-active-claim-panel"[^>]*>/s', $html, $panelTag)) {
-            $this->assertStringContainsString(
-                'd-none',
-                $panelTag[0],
-                'Empty claim panel shell should be hidden when no pending claim.',
-            );
-        }
     }
 
     public function test_claim_page_shows_active_claim_token_and_verify_button(): void
@@ -299,19 +284,22 @@ class VtuberProfileWebTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('vtual-claim-testtoken123', $html);
-        $this->assertStringContainsString(__('web/vtual-vtuber.claim_verify_button'), $html);
+        // Vue island: the mountpoint + bootstrap JSON are server-rendered.
+        // Vue DOM (token, verify button, active claim panel) renders client-side.
+        $this->assertStringContainsString('id="vue-vtual-claim"', $html);
+        $this->assertClaimConfigJsonIsParseable($html);
+        $bootstrap = $this->extractClaimBootstrapArray($html);
+        $this->assertNotNull($bootstrap, 'Bootstrap JSON must be parseable.');
+        $this->assertArrayHasKey('activeClaim', $bootstrap);
+        $this->assertNotNull($bootstrap['activeClaim'], 'activeClaim should be present when user has a pending claim.');
+        $this->assertSame('vtual-claim-testtoken123', $bootstrap['activeClaim']['token'] ?? '');
+        $this->assertSame($claimId, $bootstrap['activeClaim']['id'] ?? '');
+        $this->assertTrue($bootstrap['activeClaim']['can_verify'] ?? false);
+
+        // Translation labels are serialized into the bootstrap JSON for Vue
         $this->assertStringContainsString(__('web/vtual-vtuber.claim_active_heading'), $html);
         $this->assertStringContainsString(__('web/vtual-vtuber.claim_proof_channel_label'), $html);
-        $this->assertStringContainsString('data-claim-proof-channel', $html);
-        $this->assertStringContainsString('data-claim-failed-banner', $html);
-        $this->assertStringContainsString('aizawaema', $html);
-        $this->assertStringContainsString('id="vtual-active-claim-panel"', $html);
-        $this->assertMatchesRegularExpression(
-            '/<div\s+class="d-none"\s+data-claim-channels-section/s',
-            $html,
-            'Channel pick list should be hidden while an active claim is pending.',
-        );
+        $this->assertStringContainsString(__('web/vtual-vtuber.claim_verify_button'), $html);
     }
 
     public function test_claim_page_hides_discord_cta_when_oauth_not_configured(): void
@@ -361,8 +349,9 @@ class VtuberProfileWebTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringNotContainsString(__('web/vtual-vtuber.claim_verify_with_discord'), $html);
-        $this->assertStringNotContainsString(__('web/vtual-vtuber.claim_discord_connect_cta'), $html);
+        $bootstrap = $this->extractClaimBootstrapArray($html);
+        $this->assertNotNull($bootstrap, 'Bootstrap JSON must be parseable.');
+        $this->assertFalse($bootstrap['discordVerifyEnabled'] ?? true, 'discordVerifyEnabled must be false when OAuth is not configured.');
     }
 
     public function test_claim_page_redirects_when_profile_not_claimable(): void
@@ -391,6 +380,146 @@ class VtuberProfileWebTest extends TestCase
         $this->actingWithJwtCookie($user)
             ->get(route('vtual.vtuber.claim', 'owned-profile'))
             ->assertRedirect(route('vtual.vtuber.show', 'owned-profile'));
+    }
+
+    public function test_staff_sees_accept_anyway_flag_in_bootstrap(): void
+    {
+        $this->enableAcceptAnywaySetting();
+        $user = $this->userWithRole('Admin');
+        $this->fakeAuthMe();
+
+        Http::fake([
+            '*/api/v1/vtual/vtubers/aizawa-ema' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => $this->creatorId,
+                    'slug' => 'aizawa-ema',
+                    'profile_url' => route('vtual.vtuber.show', 'aizawa-ema'),
+                    'is_claimable' => true,
+                    'claim_process_url' => route('vtual.vtuber.claim', 'aizawa-ema'),
+                    'claim_blocked_until' => null,
+                    'display_name' => 'Aizawa Ema',
+                    'bio' => null,
+                    'avatar_url' => null,
+                    'channels' => [
+                        [
+                            'id' => (string) Str::uuid(),
+                            'platform' => ['key' => 'youtube', 'name' => 'YouTube'],
+                            'handle' => 'aizawaema',
+                            'url' => 'https://www.youtube.com/@AizawaEma',
+                            'status' => 'active',
+                        ],
+                    ],
+                    'contents' => [],
+                ],
+            ], 200),
+            '*/api/v1/vtual/claims/mine' => Http::response([
+                'status' => 'success',
+                'data' => [],
+            ], 200),
+        ]);
+
+        $html = $this->actingWithJwtCookie($user)
+            ->get(route('vtual.vtuber.claim', 'aizawa-ema'))
+            ->assertOk()
+            ->getContent();
+
+        $bootstrap = $this->extractClaimBootstrapArray($html);
+        $this->assertNotNull($bootstrap);
+        $this->assertTrue($bootstrap['canAcceptAnyway'] ?? false, 'canAcceptAnyway must be true for staff with feature flag enabled.');
+        $this->assertArrayHasKey('acceptAnywayClaim', $bootstrap['routes'] ?? []);
+    }
+
+    public function test_non_staff_does_not_see_accept_anyway_flag(): void
+    {
+        $this->enableAcceptAnywaySetting();
+        $user = $this->userWithRole('User');
+        $this->fakeAuthMe();
+
+        Http::fake([
+            '*/api/v1/vtual/vtubers/aizawa-ema' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => $this->creatorId,
+                    'slug' => 'aizawa-ema',
+                    'profile_url' => route('vtual.vtuber.show', 'aizawa-ema'),
+                    'is_claimable' => true,
+                    'claim_process_url' => route('vtual.vtuber.claim', 'aizawa-ema'),
+                    'claim_blocked_until' => null,
+                    'display_name' => 'Aizawa Ema',
+                    'bio' => null,
+                    'avatar_url' => null,
+                    'channels' => [
+                        [
+                            'id' => (string) Str::uuid(),
+                            'platform' => ['key' => 'youtube', 'name' => 'YouTube'],
+                            'handle' => 'aizawaema',
+                            'url' => 'https://www.youtube.com/@AizawaEma',
+                            'status' => 'active',
+                        ],
+                    ],
+                    'contents' => [],
+                ],
+            ], 200),
+            '*/api/v1/vtual/claims/mine' => Http::response([
+                'status' => 'success',
+                'data' => [],
+            ], 200),
+        ]);
+
+        $html = $this->actingWithJwtCookie($user)
+            ->get(route('vtual.vtuber.claim', 'aizawa-ema'))
+            ->assertOk()
+            ->getContent();
+
+        $bootstrap = $this->extractClaimBootstrapArray($html);
+        $this->assertNotNull($bootstrap);
+        $this->assertFalse($bootstrap['canAcceptAnyway'] ?? true, 'canAcceptAnyway must be false for non-staff users.');
+    }
+
+    public function test_staff_sees_accept_anyway_false_when_feature_flag_off(): void
+    {
+        config(['vtual.claim.accept_anyway_enabled' => false]);
+        // Reset the DB cache so the config override takes effect
+        // (Cache::forever survives RefreshDatabase — the prior test's
+        // enableAcceptAnywaySetting persisted the DB row + cache).
+        app(SystemSettingRepository::class)->flushCache();
+
+        // Feature flag disabled (no setting record)
+        $user = $this->userWithRole('Admin');
+        $this->fakeAuthMe();
+
+        Http::fake([
+            '*/api/v1/vtual/vtubers/aizawa-ema' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'id' => $this->creatorId,
+                    'slug' => 'aizawa-ema',
+                    'profile_url' => route('vtual.vtuber.show', 'aizawa-ema'),
+                    'is_claimable' => true,
+                    'claim_process_url' => route('vtual.vtuber.claim', 'aizawa-ema'),
+                    'claim_blocked_until' => null,
+                    'display_name' => 'Aizawa Ema',
+                    'bio' => null,
+                    'avatar_url' => null,
+                    'channels' => [],
+                    'contents' => [],
+                ],
+            ], 200),
+            '*/api/v1/vtual/claims/mine' => Http::response([
+                'status' => 'success',
+                'data' => [],
+            ], 200),
+        ]);
+
+        $html = $this->actingWithJwtCookie($user)
+            ->get(route('vtual.vtuber.claim', 'aizawa-ema'))
+            ->assertOk()
+            ->getContent();
+
+        $bootstrap = $this->extractClaimBootstrapArray($html);
+        $this->assertNotNull($bootstrap);
+        $this->assertFalse($bootstrap['canAcceptAnyway'] ?? true, 'canAcceptAnyway must be false when feature flag is off, even for staff.');
     }
 
     public function test_uuid_profile_redirects_to_slug(): void
@@ -450,6 +579,18 @@ class VtuberProfileWebTest extends TestCase
         app(SystemSettingRepository::class)->rebuildCache();
     }
 
+    private function enableAcceptAnywaySetting(): void
+    {
+        SystemSetting::query()->create([
+            'key' => 'vtual.claim.accept_anyway_enabled',
+            'group' => 'vtual',
+            'type' => SettingType::Bool->value,
+            'value' => true,
+        ]);
+
+        app(SystemSettingRepository::class)->rebuildCache();
+    }
+
     private function userWithRole(string $role): User
     {
         $user = User::factory()->create();
@@ -485,28 +626,49 @@ class VtuberProfileWebTest extends TestCase
 
     private function assertClaimConfigJsonIsParseable(string $html): void
     {
-        $body = $this->extractClaimConfigScriptBody($html);
+        $body = $this->extractClaimBootstrapBody($html);
+        $this->assertNotFalse(
+            $body,
+            'Claim page missing bootstrap JSON (data-vue-vtual-claim script).',
+        );
         $this->assertStringNotContainsString(
             '&quot;',
-            $body,
-            'Claim config JSON must not be HTML-escaped (use @json in Blade).',
+            (string) $body,
+            'Claim bootstrap JSON must not be HTML-escaped (use @json in Blade).',
         );
-        $decoded = json_decode($body, true);
+        $decoded = json_decode((string) $body, true);
         $this->assertIsArray(
             $decoded,
-            'Claim config script must be valid JSON: '.json_last_error_msg(),
+            'Claim bootstrap script must be valid JSON: '.json_last_error_msg(),
         );
-        $this->assertArrayHasKey('profileUrl', $decoded);
-        $this->assertArrayHasKey('realtime', $decoded);
-        $this->assertArrayHasKey('messages', $decoded);
+        $this->assertArrayHasKey('profile', $decoded, 'Bootstrap must have profile key.');
+        $this->assertArrayHasKey('realtime', $decoded, 'Bootstrap must have realtime key.');
+        $this->assertArrayHasKey('routes', $decoded, 'Bootstrap must have routes key.');
+        $this->assertArrayHasKey('labels', $decoded, 'Bootstrap must have labels key.');
     }
 
-    private function extractClaimConfigScriptBody(string $html): string
+    private function extractClaimBootstrapBody(string $html): string|false
     {
-        if (! preg_match('/<script[^>]*data-claim-config[^>]*>(.*?)<\/script>/s', $html, $matches)) {
-            $this->fail('Claim page missing data-claim-config script.');
+        if (! preg_match('/<script[^>]*data-vue-vtual-claim[^>]*>(.*?)<\/script>/s', $html, $matches)) {
+            return false;
         }
 
         return trim($matches[1]);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function extractClaimBootstrapArray(string $html): ?array
+    {
+        $body = $this->extractClaimBootstrapBody($html);
+
+        if ($body === false || $body === '') {
+            return null;
+        }
+
+        $decoded = json_decode($body, true);
+
+        return is_array($decoded) ? $decoded : null;
     }
 }

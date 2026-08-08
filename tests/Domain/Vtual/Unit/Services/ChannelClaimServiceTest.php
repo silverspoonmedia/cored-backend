@@ -82,6 +82,23 @@ class ChannelClaimServiceTest extends TestCase
     }
 
     #[Test]
+    public function start_normalizes_percent_encoded_profile_input(): void
+    {
+        $this->activateYoutubeCredential();
+        $this->fakeYoutube(self::YT_ID, '八雲べに', '八雲べに', 'kanji handle');
+
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Owner']);
+
+        $claim = $this->claims->start($user, $creator->id, [
+            'platform_key' => 'youtube',
+            'profile' => 'https://www.youtube.com/@%E5%85%AB%E9%9B%B2%E3%81%B9%E3%81%AB',
+        ]);
+
+        $this->assertSame('https://www.youtube.com/@八雲べに', $claim->profile_input);
+    }
+
+    #[Test]
     public function start_rejects_cross_platform_profile_url(): void
     {
         $user = $this->userWithRole('User');

@@ -10,6 +10,7 @@ return [
     'add_creator' => 'クリエイターを追加',
     'add_management' => 'マネジメントを追加',
     'add_channel' => 'チャンネルを登録',
+    'add_button' => 'チャンネル追加',
     'display_name' => '表示名',
     'name' => '名前',
     'slug' => 'スラッグ（任意）',

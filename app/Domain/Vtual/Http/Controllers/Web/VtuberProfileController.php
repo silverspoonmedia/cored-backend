@@ -58,6 +58,9 @@ class VtuberProfileController extends Controller
         $discordOAuth = app(DiscordOAuthService::class);
         $user = Auth::guard('api')->user();
         $discordVerifySetting = (bool) setting_config('vtual.claim.discord_verify_enabled', false);
+        $canAcceptAnyway = $user !== null
+            && $user->can('manage any vtual resource')
+            && (bool) setting_config('vtual.claim.accept_anyway_enabled', false);
 
         return $this->webView('vtual.vtuber.claim', [
             'profile' => $result,
@@ -71,6 +74,7 @@ class VtuberProfileController extends Controller
             'profileUrl' => $result['profile_url'] ?? route('vtual.vtuber.show', $result['slug'] ?? $creator),
             'discordConnected' => $user !== null && $oauthAccounts->hasDiscordConnection($user),
             'discordVerifyEnabled' => $discordVerifySetting && $discordOAuth->isConfigured(),
+            'canAcceptAnyway' => $canAcceptAnyway,
         ]);
     }
 
@@ -228,6 +232,39 @@ class VtuberProfileController extends Controller
                 ->with('success', $this->apiMessage($response, __('web/vtual.ajax.claim_cancelled'))),
             __('web/vtual.ajax.claim_cancelled'),
             stayOnPageOnSuccess: true,
+        );
+    }
+
+    public function acceptAnywayClaim(Request $request, string $creator): RedirectResponse|JsonResponse
+    {
+        $profile = $this->resolveProfileOrAbort($creator);
+        $claimId = (string) $request->input('claim_id', '');
+
+        if ($claimId === '') {
+            abort(422, __('web/vtual-vtuber.claim_missing_active'));
+        }
+
+        $response = $this->api()->post('vtual/claims/'.$claimId.'/accept-anyway');
+
+        if (! $response->successful()) {
+            return $this->respondFromApi(
+                $request,
+                $response,
+                fn (): RedirectResponse => redirect()
+                    ->route('vtual.vtuber.claim', $profile['slug'] ?? $creator)
+                    ->with('warning', $this->apiMessage($response, __('web/vtual.claims.accept_anyway_help'))),
+                __('web/vtual.claims.accept_anyway_help'),
+                stayOnPageOnSuccess: true,
+            );
+        }
+
+        return $this->respondFromApi(
+            $request,
+            $response,
+            fn (): RedirectResponse => redirect()
+                ->route('vtual.vtuber.show', $profile['slug'] ?? $creator)
+                ->with('success', __('web/vtual-vtuber.claim_progress_verified')),
+            __('web/vtual-vtuber.claim_progress_verified'),
         );
     }
 
