@@ -430,7 +430,7 @@ class VtuberProfileWebTest extends TestCase
         $this->assertArrayHasKey('acceptAnywayClaim', $bootstrap['routes'] ?? []);
     }
 
-    public function test_non_staff_does_not_see_accept_anyway_flag(): void
+    public function test_non_staff_sees_accept_anyway_when_feature_enabled(): void
     {
         $this->enableAcceptAnywaySetting();
         $user = $this->userWithRole('User');
@@ -474,7 +474,7 @@ class VtuberProfileWebTest extends TestCase
 
         $bootstrap = $this->extractClaimBootstrapArray($html);
         $this->assertNotNull($bootstrap);
-        $this->assertFalse($bootstrap['canAcceptAnyway'] ?? true, 'canAcceptAnyway must be false for non-staff users.');
+        $this->assertTrue($bootstrap['canAcceptAnyway'] ?? false, 'canAcceptAnyway must be true when feature flag is enabled, regardless of role.');
     }
 
     public function test_staff_sees_accept_anyway_false_when_feature_flag_off(): void

@@ -31,7 +31,17 @@
         </div>
     </x-adminlte4::form.ajax>
 @endif
-<div class="table-responsive mb-4">
+@php
+    $linkActionLabels = [
+        'delete' => __('web/vtual.delete'),
+        'confirm' => [
+            'delete_title' => __('web/vtual.confirm.delete_link_title'),
+            'delete_body' => __('web/vtual.confirm.delete_link_body'),
+            'delete_submit' => __('web/vtual.delete'),
+        ],
+    ];
+@endphp
+<div class="table-responsive mb-4" id="profile-links-table" data-link-action-labels='@json($linkActionLabels)'>
     <table class="table table-sm table-hover align-middle mb-0" aria-label="{{ __('web/vtual.table.caption_links') }}">
         <caption class="visually-hidden">{{ __('web/vtual.table.caption_links') }}</caption>
         <thead>
@@ -42,7 +52,7 @@
                 @if ($canMutate)<th class="text-end">{{ __('web/vtual.table.label_actions') }}</th>@endif
             </tr>
         </thead>
-        <tbody>
+        <tbody id="profile-links-tbody">
             @forelse ($links as $link)
                 <tr>
                     <td>{{ $link['label'] ?? '—' }}</td>
@@ -67,7 +77,7 @@
                     @endif
                 </tr>
             @empty
-                <tr>
+                <tr id="profile-links-empty" data-empty-row>
                     <td colspan="{{ $canMutate ? 4 : 3 }}">
                         <x-adminlte4::empty-state icon="bi-link-45deg" :title="__('web/vtual.profiles.empty_links')" />
                     </td>

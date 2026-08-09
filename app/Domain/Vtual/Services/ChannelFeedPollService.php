@@ -18,6 +18,7 @@ class ChannelFeedPollService
     public function __construct(
         private readonly YoutubeChannelVideoFeedClient $feedClient,
         private readonly ContentFetchPoolService $contentPool,
+        private readonly ContentService $contents,
     ) {}
 
     /**
@@ -26,7 +27,7 @@ class ChannelFeedPollService
     public function pollChannel(Channel $channel, bool $force = false): array
     {
         $channel->loadMissing('platform');
-        if ($channel->status !== ChannelStatus::Active) {
+        if (! in_array($channel->status, [ChannelStatus::Active, ChannelStatus::Archived], true)) {
             return ['enqueued' => 0, 'skipped' => 0];
         }
 
@@ -64,7 +65,16 @@ class ChannelFeedPollService
                 continue;
             }
 
-            $this->contentPool->enqueue($channel, $entry->videoId, ContentFetchPoolSource::FeedPoll);
+            if ($channel->status === ChannelStatus::Archived) {
+                $this->contents->upsertStubFromPrimary($channel, [
+                    'external_id' => $entry->videoId,
+                    'title' => $entry->title,
+                    'url' => $entry->url,
+                    'published_at' => $entry->publishedAt,
+                ]);
+            } else {
+                $this->contentPool->enqueue($channel, $entry->videoId, ContentFetchPoolSource::FeedPoll);
+            }
             $enqueued++;
 
             if ($entry->updatedAt !== null && ($maxUpdated === null || $entry->updatedAt->gt($maxUpdated))) {
@@ -87,7 +97,7 @@ class ChannelFeedPollService
     {
         $query = Channel::query()
             ->with('platform')
-            ->where('status', ChannelStatus::Active)
+            ->whereIn('status', [ChannelStatus::Active, ChannelStatus::Archived])
             ->whereNotNull('content_initial_backfill_at')
             ->whereHas('platform', fn ($q) => $q->where('key', PlatformKey::Youtube->value)->where('enabled', true))
             ->where('external_id', 'like', 'UC%');

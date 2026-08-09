@@ -26,7 +26,7 @@ class YoutubeWebSubSubscriptionService
 
     public function subscribe(Channel $channel): ?WebsubSubscription
     {
-        if (! $this->isYoutubeActiveChannel($channel)) {
+        if (! $this->isYoutubeWebSubEligibleChannel($channel)) {
             return null;
         }
 
@@ -66,6 +66,14 @@ class YoutubeWebSubSubscriptionService
         }
 
         return $subscription->refresh();
+    }
+
+    /**
+     * Force hub re-subscribe (e.g. after channel restore from legacy unsubscribed state).
+     */
+    public function resubscribe(Channel $channel): ?WebsubSubscription
+    {
+        return $this->subscribe($channel);
     }
 
     public function unsubscribe(Channel $channel): void
@@ -180,7 +188,7 @@ class YoutubeWebSubSubscriptionService
             ->limit(50)
             ->each(function (WebsubSubscription $subscription) use (&$count): void {
                 $channel = $subscription->channel;
-                if ($channel === null || ! $this->isYoutubeActiveChannel($channel)) {
+                if ($channel === null || ! $this->isYoutubeWebSubEligibleChannel($channel)) {
                     return;
                 }
 
@@ -225,6 +233,44 @@ class YoutubeWebSubSubscriptionService
         return $count;
     }
 
+    /**
+     * Re-subscribe archived YouTube channels missing an active/pending WebSub row (legacy repair).
+     *
+     * @return int Number of channels subscribed
+     */
+    public function subscribeMissingArchivedChannels(int $limit = 50): int
+    {
+        $limit = max(1, $limit);
+        $count = 0;
+
+        Channel::query()
+            ->with('platform')
+            ->where('status', ChannelStatus::Archived)
+            ->where('external_id', 'like', 'UC%')
+            ->whereHas('platform', fn ($q) => $q->where('key', PlatformKey::Youtube->value)->where('enabled', true))
+            ->whereNotExists(function ($query): void {
+                $query->selectRaw('1')
+                    ->from('vtual_websub_subscriptions')
+                    ->whereColumn('vtual_websub_subscriptions.channel_id', 'vtual_channels.id')
+                    ->whereIn('status', [
+                        WebsubSubscriptionStatus::Active->value,
+                        WebsubSubscriptionStatus::Pending->value,
+                    ]);
+            })
+            ->orderBy('updated_at')
+            ->limit($limit)
+            ->each(function (Channel $channel) use (&$count): void {
+                if (! $this->isYoutubeWebSubEligibleChannel($channel)) {
+                    return;
+                }
+
+                $this->subscribe($channel);
+                $count++;
+            });
+
+        return $count;
+    }
+
     public function callbackUrl(): string
     {
         return route('api.v1.vtual.webhooks.youtube-websub');
@@ -233,6 +279,15 @@ class YoutubeWebSubSubscriptionService
     private function isYoutubeActiveChannel(Channel $channel): bool
     {
         if ($channel->status !== ChannelStatus::Active) {
+            return false;
+        }
+
+        return $this->isYoutubeWebSubEligibleChannel($channel);
+    }
+
+    private function isYoutubeWebSubEligibleChannel(Channel $channel): bool
+    {
+        if (! in_array($channel->status, [ChannelStatus::Active, ChannelStatus::Archived], true)) {
             return false;
         }
 

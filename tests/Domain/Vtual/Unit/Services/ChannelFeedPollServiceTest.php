@@ -68,7 +68,10 @@ class ChannelFeedPollServiceTest extends TestCase
             ->once()
             ->with(Mockery::type(Channel::class), 'VgdAA0Gdzn0', ContentFetchPoolSource::FeedPoll);
 
-        $service = new ChannelFeedPollService($feed, $pool);
+        $contents = Mockery::mock(\App\Domain\Vtual\Services\ContentService::class);
+        $contents->shouldNotReceive('upsertStubFromPrimary');
+
+        $service = new ChannelFeedPollService($feed, $pool, $contents);
         $result = $service->pollChannel($channel->fresh(), force: false);
 
         $this->assertSame(1, $result['enqueued']);
@@ -93,7 +96,10 @@ class ChannelFeedPollServiceTest extends TestCase
         $pool = Mockery::mock(ContentFetchPoolService::class);
         $pool->shouldReceive('enqueue')->twice();
 
-        $service = new ChannelFeedPollService($feed, $pool);
+        $contents = Mockery::mock(\App\Domain\Vtual\Services\ContentService::class);
+        $contents->shouldNotReceive('upsertStubFromPrimary');
+
+        $service = new ChannelFeedPollService($feed, $pool, $contents);
         $result = $service->pollChannel($channel, force: true);
 
         $this->assertSame(2, $result['enqueued']);
@@ -110,11 +116,80 @@ class ChannelFeedPollServiceTest extends TestCase
         $pool = Mockery::mock(ContentFetchPoolService::class);
         $pool->shouldNotReceive('enqueue');
 
-        $service = new ChannelFeedPollService($feed, $pool);
+        $contents = Mockery::mock(\App\Domain\Vtual\Services\ContentService::class);
+        $contents->shouldNotReceive('upsertStubFromPrimary');
+
+        $service = new ChannelFeedPollService($feed, $pool, $contents);
         $result = $service->pollChannel($channel, force: false);
 
         $this->assertSame(0, $result['enqueued']);
         $this->assertSame(0, $result['skipped']);
+    }
+
+    #[Test]
+    public function poll_archived_channel_upserts_stubs_not_pool(): void
+    {
+        $channel = $this->seedChannel();
+        $channel->forceFill([
+            'status' => ChannelStatus::Archived,
+            'content_initial_backfill_at' => now(),
+            'feed_last_entry_updated_at' => Carbon::parse('2026-08-06T08:00:00Z'),
+        ])->save();
+
+        $feed = Mockery::mock(YoutubeChannelVideoFeedClient::class);
+        $feed->shouldReceive('listVideos')
+            ->once()
+            ->andReturn(collect([
+                new YoutubeFeedVideoEntryDto(
+                    'VgdAA0Gdzn0',
+                    Carbon::parse('2026-08-06T08:00:00Z'),
+                    Carbon::parse('2026-08-06T08:30:00Z'),
+                    'Archived Live',
+                    'https://www.youtube.com/watch?v=VgdAA0Gdzn0',
+                ),
+            ]));
+
+        $pool = Mockery::mock(ContentFetchPoolService::class);
+        $pool->shouldNotReceive('enqueue');
+
+        $contents = Mockery::mock(\App\Domain\Vtual\Services\ContentService::class);
+        $contents->shouldReceive('upsertStubFromPrimary')
+            ->once()
+            ->with(Mockery::type(Channel::class), Mockery::on(function (array $data): bool {
+                return $data['external_id'] === 'VgdAA0Gdzn0'
+                    && $data['title'] === 'Archived Live';
+            }));
+
+        $service = new ChannelFeedPollService($feed, $pool, $contents);
+        $result = $service->pollChannel($channel->fresh(), force: false);
+
+        $this->assertSame(1, $result['enqueued']);
+        $this->assertSame(0, $result['skipped']);
+    }
+
+    #[Test]
+    public function poll_due_channels_includes_archived_with_backfill(): void
+    {
+        $channel = $this->seedChannel();
+        $channel->forceFill([
+            'status' => ChannelStatus::Archived,
+            'content_initial_backfill_at' => now(),
+        ])->save();
+
+        $feed = Mockery::mock(YoutubeChannelVideoFeedClient::class);
+        $feed->shouldReceive('listVideos')->once()->andReturn(collect());
+
+        $pool = Mockery::mock(ContentFetchPoolService::class);
+        $pool->shouldNotReceive('enqueue');
+
+        $contents = Mockery::mock(\App\Domain\Vtual\Services\ContentService::class);
+        $contents->shouldNotReceive('upsertStubFromPrimary');
+
+        $service = new ChannelFeedPollService($feed, $pool, $contents);
+        $summary = $service->pollDueChannels(force: true);
+
+        $this->assertSame(1, $summary['channels']);
+        $this->assertSame(0, $summary['enqueued']);
     }
 
     #[Test]
@@ -128,7 +203,10 @@ class ChannelFeedPollServiceTest extends TestCase
         $pool = Mockery::mock(ContentFetchPoolService::class);
         $pool->shouldNotReceive('enqueue');
 
-        $service = new ChannelFeedPollService($feed, $pool);
+        $contents = Mockery::mock(\App\Domain\Vtual\Services\ContentService::class);
+        $contents->shouldNotReceive('upsertStubFromPrimary');
+
+        $service = new ChannelFeedPollService($feed, $pool, $contents);
         $summary = $service->pollDueChannels(force: true);
 
         $this->assertSame(0, $summary['channels']);

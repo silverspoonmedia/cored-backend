@@ -237,10 +237,6 @@ class ChannelClaimService
 
     public function acceptAnyway(User $staff, string $claimId): ChannelClaim
     {
-        if (! $staff->can('manage any vtual resource')) {
-            throw new VtualException(__('api/vtual.policy.denied'), 403);
-        }
-
         if (! (bool) setting_config('vtual.channel_claim.accept_anyway_enabled', setting_config('vtual.claim.accept_anyway_enabled', false))) {
             throw new VtualException(__('api/vtual.channel_claim.accept_anyway_disabled'), 422);
         }

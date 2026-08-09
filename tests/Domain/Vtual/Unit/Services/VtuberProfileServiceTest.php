@@ -131,6 +131,75 @@ class VtuberProfileServiceTest extends TestCase
     }
 
     #[Test]
+    public function show_excludes_content_on_archived_channel(): void
+    {
+        $staff = $this->userWithRole('Admin');
+        $creator = $this->creators->createOrphan($staff, ['display_name' => 'Archived Content Fox']);
+
+        $activeChannel = Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $creator->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UC-active-content',
+            'display_name' => 'Active',
+            'status' => ChannelStatus::Active,
+            'visibility' => ChannelVisibility::Public,
+        ]);
+
+        $archivedChannel = Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $creator->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UC-archived-content',
+            'display_name' => 'Archived',
+            'status' => ChannelStatus::Archived,
+            'visibility' => ChannelVisibility::Public,
+        ]);
+
+        $this->contents->upsertFromPrimary($activeChannel, [
+            'external_id' => 'visible-vid',
+            'title' => 'Visible VOD',
+        ]);
+        $this->contents->upsertFromPrimary($archivedChannel, [
+            'external_id' => 'hidden-vid',
+            'title' => 'Hidden VOD',
+        ]);
+
+        $loaded = $this->profiles->show((string) $creator->slug);
+
+        $this->assertCount(1, $loaded->channels);
+        $this->assertCount(1, $loaded->getRelation('profileContents'));
+        $this->assertSame('Visible VOD', $loaded->getRelation('profileContents')->first()?->title);
+    }
+
+    #[Test]
+    public function show_hides_all_content_when_only_archived_channels(): void
+    {
+        $staff = $this->userWithRole('Admin');
+        $creator = $this->creators->createOrphan($staff, ['display_name' => 'All Archived Fox']);
+
+        $archivedChannel = Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $creator->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UC-only-archived',
+            'display_name' => 'Archived Only',
+            'status' => ChannelStatus::Archived,
+            'visibility' => ChannelVisibility::Public,
+        ]);
+
+        $this->contents->upsertFromPrimary($archivedChannel, [
+            'external_id' => 'hidden-only-vid',
+            'title' => 'Should Not Show',
+        ]);
+
+        $loaded = $this->profiles->show((string) $creator->slug);
+
+        $this->assertCount(0, $loaded->channels);
+        $this->assertCount(0, $loaded->getRelation('profileContents'));
+    }
+
+    #[Test]
     public function show_rejects_archived_creator(): void
     {
         $user = $this->userWithRole('Admin');

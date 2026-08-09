@@ -9,6 +9,7 @@ use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
+use App\Domain\Vtual\Jobs\RunChannelStubContentBackfillJob;
 use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileFingerprint;
 use App\Domain\Vtual\Integrations\Support\ChannelProfilePlatformGuard;
@@ -16,6 +17,7 @@ use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -263,23 +265,23 @@ class ChannelService
     {
         $channel = Channel::query()->with(['platform', 'creator'])->findOrFail($channelId);
         $this->creatorAccess->assertCanMutate($channel->creator, $actor);
+        $this->assertLifecycleRateLimit($actor, $channelId);
 
         $channel->forceFill([
             'status' => ChannelStatus::Archived,
         ])->save();
 
-        $this->websub->unsubscribe($channel);
-
         return $channel->refresh()->load('platform');
     }
 
     /**
-     * Restore archived channel to active (no platform re-fetch; use refresh after).
+     * Restore archived channel to active; re-subscribe WebSub and batch-hydrate stub contents.
      */
     public function restore(User $actor, string $channelId): Channel
     {
         $channel = Channel::query()->with(['platform', 'creator'])->findOrFail($channelId);
         $this->creatorAccess->assertCanMutate($channel->creator, $actor);
+        $this->assertLifecycleRateLimit($actor, $channelId);
 
         if ($channel->status !== ChannelStatus::Archived) {
             throw new VtualException(__('api/vtual.channel.not_archived'), 422);
@@ -290,7 +292,8 @@ class ChannelService
         ])->save();
 
         $channel = $channel->refresh()->load('platform');
-        $this->subscribeWebsubIfYoutube($channel);
+        $this->resubscribeWebsubIfYoutube($channel);
+        RunChannelStubContentBackfillJob::dispatch((string) $channel->id);
 
         return $channel;
     }
@@ -356,7 +359,7 @@ class ChannelService
         return PlatformKey::from((string) $key);
     }
 
-    private function subscribeWebsubIfYoutube(Channel $channel): void
+    private function resubscribeWebsubIfYoutube(Channel $channel): void
     {
         $channel->loadMissing('platform');
         $platform = $channel->platform;
@@ -368,6 +371,32 @@ class ChannelService
             return;
         }
 
-        $this->websub->subscribe($channel);
+        $this->websub->resubscribe($channel);
+    }
+
+    private function assertLifecycleRateLimit(User $actor, string $channelId): void
+    {
+        $cooldown = max(0, (int) setting_config('vtual.channel_lifecycle.cooldown_seconds', 30));
+        $maxPerMinute = max(1, (int) setting_config('vtual.channel_lifecycle.max_per_minute', 10));
+
+        $channelKey = 'vtual:channel-lifecycle:channel:'.$channelId;
+        if ($cooldown > 0 && RateLimiter::tooManyAttempts($channelKey, 1)) {
+            $seconds = RateLimiter::availableIn($channelKey);
+
+            throw new VtualException(__('api/vtual.channel.lifecycle_cooldown', [
+                'seconds' => max(1, $seconds),
+            ]), 429);
+        }
+
+        $userKey = 'vtual:channel-lifecycle:user:'.$actor->id;
+        if (RateLimiter::tooManyAttempts($userKey, $maxPerMinute)) {
+            throw new VtualException(__('api/vtual.channel.lifecycle_rate_limited'), 429);
+        }
+
+        if ($cooldown > 0) {
+            RateLimiter::hit($channelKey, $cooldown);
+        }
+
+        RateLimiter::hit($userKey, 60);
     }
 }

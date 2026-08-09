@@ -643,24 +643,28 @@ class CreatorClaimServiceTest extends TestCase
     }
 
     #[Test]
-    public function accept_anyway_staff_only(): void
+    public function accept_anyway_open_to_all_roles(): void
     {
         [$orphan, $channel] = $this->seedOrphanWithChannel();
         $user = $this->userWithRole('User');
         $claim = $this->claims->start($user, $orphan->id, $channel->id);
 
-        try {
-            $this->claims->acceptAnyway($user, $claim->id);
-            $this->fail('Expected VtualException');
-        } catch (VtualException $e) {
-            $this->assertSame(403, $e->statusCode());
-        }
-
-        $verified = $this->claims->acceptAnyway($this->admin, $claim->id);
+        $verified = $this->claims->acceptAnyway($user, $claim->id);
         $this->assertSame(CreatorClaimStatus::Verified, $verified->status);
         $this->assertSame(CreatorClaimVerifiedVia::AcceptAnyway, $verified->verified_via);
-        $this->assertSame((string) $this->admin->id, (string) $verified->verified_by_user_id);
+        $this->assertSame((string) $user->id, (string) $verified->verified_by_user_id);
         $this->assertTrue($user->fresh()->hasRole('Vtual vTuber'));
+
+        // Admin can also accept anyway on another orphan (distinct external_id).
+        [$orphan2, $channel2] = $this->seedOrphanWithChannelNamed('Admin Orphan');
+        $user2 = $this->userWithRole('User');
+        $claim2 = $this->claims->start($user2, $orphan2->id, $channel2->id);
+
+        $verified2 = $this->claims->acceptAnyway($this->admin, $claim2->id);
+        $this->assertSame(CreatorClaimStatus::Verified, $verified2->status);
+        $this->assertSame(CreatorClaimVerifiedVia::AcceptAnyway, $verified2->verified_via);
+        $this->assertSame((string) $this->admin->id, (string) $verified2->verified_by_user_id);
+        $this->assertTrue($user2->fresh()->hasRole('Vtual vTuber'));
     }
 
     #[Test]

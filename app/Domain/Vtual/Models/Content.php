@@ -39,6 +39,7 @@ class Content extends Model
         'started_at',
         'ended_at',
         'published_at',
+        'hydrated_at',
     ];
 
     /**
@@ -54,6 +55,7 @@ class Content extends Model
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
             'published_at' => 'datetime',
+            'hydrated_at' => 'datetime',
         ];
     }
 

@@ -33,7 +33,7 @@ class VtuberProfileService
 
         $creator->setRelation(
             'profileContents',
-            $this->contents->listForCreator($creator->id),
+            $this->contents->listForPublicProfile($creator->id),
         );
 
         return $creator;

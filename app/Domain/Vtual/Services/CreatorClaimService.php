@@ -401,9 +401,6 @@ class CreatorClaimService
 
     public function acceptAnyway(User $staff, string $claimId): CreatorClaim
     {
-        if (! $staff->can('manage any vtual resource')) {
-            throw new VtualException(__('api/vtual.policy.denied'), 403);
-        }
 
         if (! (bool) setting_config('vtual.claim.accept_anyway_enabled', false)) {
             throw new VtualException(__('api/vtual.claim.accept_anyway_disabled'), 422);

@@ -55,6 +55,79 @@ class ContentServiceTest extends TestCase
     }
 
     #[Test]
+    public function upsert_from_primary_sets_hydrated_at(): void
+    {
+        $neuron = $this->seedChannel(self::NEURON_CHANNEL_ID, 'neuron', 'Neuron');
+
+        $content = $this->contents->upsertFromPrimary($neuron, [
+            'external_id' => self::VIDEO_ID,
+            'title' => 'Hydrated',
+        ]);
+
+        $this->assertNotNull($content->hydrated_at);
+    }
+
+    #[Test]
+    public function upsert_stub_creates_minimal_row_with_null_hydrated_at(): void
+    {
+        $neuron = $this->seedChannel(self::NEURON_CHANNEL_ID, 'neuron', 'Neuron');
+
+        $content = $this->contents->upsertStubFromPrimary($neuron, [
+            'external_id' => self::VIDEO_ID,
+            'title' => 'Feed title',
+            'url' => 'https://www.youtube.com/watch?v='.self::VIDEO_ID,
+        ]);
+
+        $this->assertNull($content->hydrated_at);
+        $this->assertSame(ContentStatus::Unknown, $content->status);
+        $this->assertSame('Feed title', $content->title);
+    }
+
+    #[Test]
+    public function upsert_stub_does_not_downgrade_hydrated_content(): void
+    {
+        $neuron = $this->seedChannel(self::NEURON_CHANNEL_ID, 'neuron', 'Neuron');
+
+        $hydrated = $this->contents->upsertFromPrimary($neuron, [
+            'external_id' => self::VIDEO_ID,
+            'title' => 'Full title',
+            'status' => ContentStatus::Uploaded->value,
+        ]);
+
+        $stubAttempt = $this->contents->upsertStubFromPrimary($neuron, [
+            'external_id' => self::VIDEO_ID,
+            'title' => 'Stub title',
+        ]);
+
+        $this->assertSame((string) $hydrated->id, (string) $stubAttempt->id);
+        $this->assertNotNull($stubAttempt->hydrated_at);
+        $this->assertSame('Full title', $stubAttempt->title);
+        $this->assertSame(ContentStatus::Uploaded, $stubAttempt->status);
+    }
+
+    #[Test]
+    public function list_for_public_profile_excludes_archived_channel_content(): void
+    {
+        $neuron = $this->seedChannel(self::NEURON_CHANNEL_ID, 'neuron', 'Neuron');
+        $archived = $this->seedChannel(self::HIPOTESA_CHANNEL_ID, 'hipotesa', 'Hipotesa');
+        $archived->forceFill(['status' => ChannelStatus::Archived])->save();
+
+        $this->contents->upsertFromPrimary($neuron, [
+            'external_id' => 'visible-'.self::VIDEO_ID,
+            'title' => 'Visible',
+        ]);
+        $this->contents->upsertFromPrimary($archived, [
+            'external_id' => 'hidden-'.self::VIDEO_ID,
+            'title' => 'Hidden',
+        ]);
+
+        $public = $this->contents->listForPublicProfile((string) $neuron->creator_id);
+
+        $this->assertCount(1, $public);
+        $this->assertSame('Visible', $public->first()?->title);
+    }
+
+    #[Test]
     public function upsert_from_primary_creates_content_and_primary_appearance(): void
     {
         $neuron = $this->seedChannel(self::NEURON_CHANNEL_ID, 'neuron', 'Neuron');

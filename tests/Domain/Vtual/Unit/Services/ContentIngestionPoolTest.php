@@ -75,6 +75,32 @@ class ContentIngestionPoolTest extends TestCase
     }
 
     #[Test]
+    public function content_pool_flush_upserts_stubs_for_archived_channel(): void
+    {
+        $channel = $this->seedChannel();
+        $channel->forceFill(['status' => ChannelStatus::Archived])->save();
+
+        $fetch = Mockery::mock(ChannelContentFetchService::class);
+        $fetch->shouldNotReceive('fetchVideosAndPersist');
+
+        $pool = app(ContentFetchPoolService::class, ['contentFetch' => $fetch]);
+        $pool->enqueue($channel, 'VgdAA0Gdzn0');
+
+        $summary = $pool->flush(PlatformKey::Youtube, force: true);
+
+        $this->assertSame('flushed', $summary['platforms']['youtube']['status']);
+        $this->assertDatabaseHas('vtual_contents', [
+            'external_id' => 'VgdAA0Gdzn0',
+            'channel_id' => $channel->id,
+            'hydrated_at' => null,
+        ]);
+        $this->assertDatabaseHas('vtual_content_fetch_pool', [
+            'video_external_id' => 'VgdAA0Gdzn0',
+            'status' => ContentFetchPoolStatus::Done->value,
+        ]);
+    }
+
+    #[Test]
     public function live_poll_marks_ended_stream_as_archive(): void
     {
         $channel = $this->seedChannel();

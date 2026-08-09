@@ -2,6 +2,7 @@
 
 namespace App\Domain\Vtual\Services;
 
+use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ContentFetchPoolSource;
 use App\Domain\Vtual\Enums\ContentFetchPoolStatus;
 use App\Domain\Vtual\Enums\PlatformKey;
@@ -20,6 +21,7 @@ class ContentFetchPoolService
 {
     public function __construct(
         private readonly ChannelContentFetchService $contentFetch,
+        private readonly ContentService $contents,
     ) {}
 
     public function enqueue(
@@ -154,6 +156,23 @@ class ContentFetchPoolService
                 }
 
                 $videoIds = $items->pluck('video_external_id')->unique()->values()->all();
+
+                if ($channel->status === ChannelStatus::Archived) {
+                    foreach ($items as $item) {
+                        $this->contents->upsertStubFromPrimary($channel, [
+                            'external_id' => (string) $item->video_external_id,
+                        ]);
+                        $item->forceFill([
+                            'status' => ContentFetchPoolStatus::Done,
+                            'processed_at' => now(),
+                            'error' => null,
+                        ])->save();
+                    }
+                    $upserted += $items->count();
+
+                    continue;
+                }
+
                 $batchMax = max(1, (int) setting_config('vtual.http.batch.videos', 50));
 
                 foreach (array_chunk($videoIds, $batchMax) as $chunk) {

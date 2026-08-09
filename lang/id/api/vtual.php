@@ -84,6 +84,8 @@ return [
         'promote_not_discovered' => 'Hanya channel yang ditemukan via Discord dapat dipromosikan melalui aksi ini.',
         'promote_unsupported_platform' => 'Promote tidak didukung untuk platform ini.',
         'not_archived' => 'Channel tidak dalam status arsip.',
+        'lifecycle_cooldown' => 'Tunggu :seconds detik sebelum mengarsipkan atau memulihkan channel ini lagi.',
+        'lifecycle_rate_limited' => 'Terlalu banyak aksi arsip/pulihkan channel. Coba lagi nanti.',
         'archived_list_success' => 'Daftar channel diarsipkan dimuat.',
         'platform_unknown' => 'Platform tidak dikenal.',
         'platform_disabled' => 'Platform ini belum diaktifkan.',

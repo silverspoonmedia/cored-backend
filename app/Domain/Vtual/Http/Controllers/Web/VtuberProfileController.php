@@ -59,7 +59,6 @@ class VtuberProfileController extends Controller
         $user = Auth::guard('api')->user();
         $discordVerifySetting = (bool) setting_config('vtual.claim.discord_verify_enabled', false);
         $canAcceptAnyway = $user !== null
-            && $user->can('manage any vtual resource')
             && (bool) setting_config('vtual.claim.accept_anyway_enabled', false);
 
         return $this->webView('vtual.vtuber.claim', [

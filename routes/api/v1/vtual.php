@@ -51,12 +51,6 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
             ->name('creators.orphans.show');
         Route::post('creators/orphan', [CreatorController::class, 'storeOrphan'])->name('creators.orphan');
         Route::get('claims/pending', [CreatorClaimController::class, 'pending'])->name('claims.pending');
-        Route::post('claims/{claim}/accept-anyway', [CreatorClaimController::class, 'acceptAnyway'])
-            ->whereUuid('claim')
-            ->name('claims.accept-anyway');
-        Route::post('channel-claims/{channelClaim}/accept-anyway', [ChannelClaimController::class, 'acceptAnyway'])
-            ->whereUuid('channelClaim')
-            ->name('channel-claims.accept-anyway');
     });
 
     // Claim existing orphan creator (bio token / Accept Anyway).
@@ -77,6 +71,12 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
         Route::post('claims/{claim}/cancel', [CreatorClaimController::class, 'cancel'])
             ->whereUuid('claim')
             ->name('claims.cancel');
+        Route::post('claims/{claim}/accept-anyway', [CreatorClaimController::class, 'acceptAnyway'])
+            ->whereUuid('claim')
+            ->name('claims.accept-anyway');
+        Route::post('channel-claims/{channelClaim}/accept-anyway', [ChannelClaimController::class, 'acceptAnyway'])
+            ->whereUuid('channelClaim')
+            ->name('channel-claims.accept-anyway');
     });
 
     Route::middleware('permission:edit vtual creator')->group(function (): void {

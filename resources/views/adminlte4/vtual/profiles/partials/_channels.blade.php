@@ -9,6 +9,21 @@
         'disconnected' => __('web/vtual-orphans.channels.status_disconnected'),
         'archived' => __('web/vtual-orphans.channels.status_archived'),
     ];
+    $actionLabels = [
+        'promote' => __('web/vtual.profiles.promote_channel'),
+        'refresh' => __('web/vtual.refresh_channel'),
+        'archive' => __('web/vtual.archive_channel'),
+        'restore' => __('web/vtual.restore_channel'),
+        'private' => __('web/vtual.profiles.channel_private_discovered'),
+        'confirm' => [
+            'archive_title' => __('web/vtual.confirm.archive_channel_title'),
+            'archive_body' => __('web/vtual.confirm.archive_channel_body'),
+            'archive_submit' => __('web/vtual.archive_channel'),
+            'restore_title' => __('web/vtual.confirm.restore_channel_title'),
+            'restore_body' => __('web/vtual.confirm.restore_channel_body'),
+            'restore_submit' => __('web/vtual.restore_channel'),
+        ],
+    ];
 @endphp
 <h5 class="mb-2">{{ __('web/vtual.profiles.section_channels') }}</h5>
 @if ($canMutate)
@@ -35,7 +50,7 @@
                 @if ($canMutate)<th class="text-end">{{ __('web/vtual.table.label_actions') }}</th>@endif
             </tr>
         </thead>
-        <tbody>
+        <tbody id="profile-channel-claims-tbody">
             @forelse ($channelClaims as $claim)
                 @php
                     $platformKey = $claim['platform']['key'] ?? '';
@@ -104,7 +119,7 @@
                     @endif
                 </tr>
             @empty
-                <tr>
+                <tr id="profile-channel-claims-empty" data-empty-row>
                     <td colspan="{{ $canMutate ? 6 : 5 }}">
                         <span class="text-muted small">{{ __('web/vtual.profiles.empty_channel_claims') }}</span>
                     </td>
@@ -115,7 +130,7 @@
 </div>
 
 <h6 class="mb-2">{{ __('web/vtual.profiles.section_active_channels') }}</h6>
-<div class="table-responsive mb-4" id="profile-active-channels-table" data-status-labels='@json($statusLabels)'>
+<div class="table-responsive mb-4" id="profile-active-channels-table" data-status-labels='@json($statusLabels)' data-action-labels='@json($actionLabels)'>
     <table class="table table-hover align-middle mb-0" aria-label="{{ __('web/vtual.table.caption_channels') }}">
         <caption class="visually-hidden">{{ __('web/vtual.table.caption_channels') }}</caption>
         <thead>
@@ -196,7 +211,7 @@
                     @endif
                 </tr>
             @empty
-                <tr id="profile-channels-empty" data-empty-row>
+                <tr id="profile-active-channels-empty" data-empty-row>
                     <td colspan="{{ $canMutate ? 7 : 6 }}">
                         <x-adminlte4::empty-state icon="bi-broadcast" :title="__('web/vtual.empty_channels')" />
                     </td>
@@ -219,9 +234,9 @@
                 @if ($canMutate)<th class="text-end">{{ __('web/vtual.table.label_actions') }}</th>@endif
             </tr>
         </thead>
-        <tbody>
+        <tbody id="profile-archived-channels-tbody">
             @forelse (($archivedChannels ?? collect()) as $channel)
-                <tr>
+                <tr data-channel-id="{{ $channel['id'] ?? '' }}">
                     <td>{{ $channel['platform']['name'] ?? $channel['platform']['key'] ?? '' }}</td>
                     <td><code>{{ $channel['external_id'] ?? '' }}</code></td>
                     <td>{{ $channel['handle'] ?? '—' }}</td>
@@ -244,7 +259,7 @@
                     @endif
                 </tr>
             @empty
-                <tr>
+                <tr id="profile-archived-channels-empty" data-empty-row>
                     <td colspan="{{ $canMutate ? 5 : 4 }}">
                         <span class="text-muted small">{{ __('web/vtual.profiles.empty_archived_channels') }}</span>
                     </td>
@@ -253,170 +268,3 @@
         </tbody>
     </table>
 </div>
-
-@push('scripts')
-<script>
-(function () {
-    'use strict';
-
-    const tableWrapper = document.getElementById('profile-active-channels-table');
-    const tbody = document.getElementById('profile-active-channels-tbody');
-    if (!tableWrapper || !tbody) {
-        return;
-    }
-
-    let statusLabels = {};
-    try {
-        statusLabels = JSON.parse(tableWrapper.dataset.statusLabels || '{}');
-    } catch (e) {
-        statusLabels = {};
-    }
-
-    function extractChannel(payload) {
-        if (!payload || typeof payload !== 'object') {
-            return null;
-        }
-
-        if (payload.id && (payload.platform || payload.platform_id)) {
-            return payload;
-        }
-
-        if (payload.data && payload.data.id) {
-            return payload.data;
-        }
-
-        return null;
-    }
-
-    function badgeClass(status) {
-        if (status === 'active') {
-            return 'success';
-        }
-        if (status === 'pending') {
-            return 'warning';
-        }
-
-        return 'secondary';
-    }
-
-    function profileCell(channel) {
-        const code = document.createElement('code');
-        code.className = 'user-select-all';
-        code.textContent = channel.profile_input || channel.external_id || '';
-
-        return code;
-    }
-
-    function avatarCell(channel) {
-        const td = document.createElement('td');
-        td.className = 'text-nowrap';
-
-        if (channel.avatar_url) {
-            const img = document.createElement('img');
-            img.src = channel.avatar_url;
-            img.alt = channel.display_name || channel.handle || '';
-            img.className = 'rounded-circle object-fit-cover';
-            img.width = 36;
-            img.height = 36;
-            img.loading = 'lazy';
-            img.referrerPolicy = 'no-referrer';
-            td.appendChild(img);
-        } else {
-            const placeholder = document.createElement('span');
-            placeholder.className = 'text-muted small';
-            placeholder.textContent = '—';
-            td.appendChild(placeholder);
-        }
-
-        return td;
-    }
-
-    function appendChannelRow(channel) {
-        if (!channel || typeof channel !== 'object') {
-            return;
-        }
-
-        if (channel.id && tbody.querySelector('[data-channel-id="' + CSS.escape(channel.id) + '"]')) {
-            return;
-        }
-
-        const emptyRow = document.getElementById('profile-channels-empty');
-        if (emptyRow) {
-            emptyRow.remove();
-        }
-
-        const status = channel.status || 'pending';
-        const platformName = (channel.platform && (channel.platform.name || channel.platform.key)) || '';
-        const descText = channel.description || '';
-
-        const row = document.createElement('tr');
-        if (channel.id) {
-            row.dataset.channelId = channel.id;
-        }
-
-        row.appendChild(avatarCell(channel));
-
-        const platformTd = document.createElement('td');
-        platformTd.textContent = platformName;
-        row.appendChild(platformTd);
-
-        const profileTd = document.createElement('td');
-        profileTd.appendChild(profileCell(channel));
-        row.appendChild(profileTd);
-
-        const handleTd = document.createElement('td');
-        handleTd.textContent = channel.handle || '—';
-        row.appendChild(handleTd);
-
-        const bioTd = document.createElement('td');
-        bioTd.className = 'small text-muted';
-        bioTd.textContent = descText || '—';
-        if (descText) {
-            bioTd.title = descText;
-        }
-        row.appendChild(bioTd);
-
-        const statusTd = document.createElement('td');
-        const badge = document.createElement('span');
-        badge.className = 'badge text-bg-' + badgeClass(status);
-        badge.textContent = statusLabels[status] || status;
-        statusTd.appendChild(badge);
-
-        if (channel.resolve_error) {
-            const error = document.createElement('div');
-            error.className = 'form-text text-danger';
-            error.textContent = channel.resolve_error;
-            statusTd.appendChild(error);
-        }
-
-        row.appendChild(statusTd);
-
-        // Actions cell — empty for JS-appended rows; user reloads for full controls
-        row.appendChild(document.createElement('td'));
-
-        tbody.appendChild(row);
-    }
-
-    document.addEventListener('ajax-form:success', function (event) {
-        const form = event.detail?.form;
-        if (!form || form.dataset.formKind !== 'profiles') {
-            return;
-        }
-
-        const channel = extractChannel(event.detail?.data);
-        if (!channel) {
-            return;
-        }
-
-        appendChannelRow(channel);
-
-        form.reset();
-
-        const platformSelect = form.querySelector('[name="platform_key"]');
-        if (platformSelect && platformSelect.options.length > 0) {
-            platformSelect.selectedIndex = 0;
-        }
-    });
-})();
-</script>
-@endpush

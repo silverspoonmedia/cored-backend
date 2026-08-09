@@ -84,6 +84,8 @@ return [
         'promote_not_discovered' => 'この操作で昇格できるのはDiscord発見チャンネルのみです。',
         'promote_unsupported_platform' => 'このプラットフォームでは昇格はサポートされていません。',
         'not_archived' => 'チャンネルはアーカイブ状態ではありません。',
+        'lifecycle_cooldown' => 'このチャンネルを再度アーカイブまたは復元するまで :seconds 秒お待ちください。',
+        'lifecycle_rate_limited' => 'チャンネルのアーカイブ/復元操作が多すぎます。しばらくしてから再試行してください。',
         'archived_list_success' => 'アーカイブ済みチャンネルを読み込みました。',
         'platform_unknown' => '不明なプラットフォームです。',
         'platform_disabled' => 'このプラットフォームはまだ有効ではありません。',

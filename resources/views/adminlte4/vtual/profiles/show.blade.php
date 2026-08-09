@@ -16,16 +16,28 @@
             @endif
         </x-slot:actions>
 
+        <div data-profile-route-key="{{ $routeKey }}"
+             data-profile-can-mutate="{{ $canMutate ? '1' : '0' }}"
+             data-profile-can-accept-anyway="{{ ($canAcceptAnyway ?? false) ? '1' : '0' }}"
+             data-channel-refresh-url="{{ route('vtual.profiles.channels.refresh', [$routeKey, '__CHANNEL__']) }}"
+             data-channel-archive-url="{{ route('vtual.profiles.channels.archive', [$routeKey, '__CHANNEL__']) }}"
+             data-channel-restore-url="{{ route('vtual.profiles.channels.restore', [$routeKey, '__CHANNEL__']) }}"
+             data-channel-promote-url="{{ route('vtual.profiles.channels.promote', [$routeKey, '__CHANNEL__']) }}"
+             data-link-destroy-url="{{ route('vtual.profiles.links.destroy', [$routeKey, '__LINK__']) }}">
+        <div data-profile-meta data-profile-display-name="{{ $creator['display_name'] ?? '' }}" data-profile-slug="{{ $creator['slug'] ?? '' }}">
         @include(config('web.layout').'.vtual.profiles.partials._meta-form')
+        </div>
         @include(config('web.layout').'.vtual.profiles.partials._merge-form')
         @include(config('web.layout').'.vtual.profiles.partials._links')
         @include(config('web.layout').'.vtual.profiles.partials._channels')
         @include(config('web.layout').'.vtual.profiles.partials._content-stub')
+        </div>
     </x-adminlte4::card>
 
     @include(config('web.layout').'.vtual.partials._confirm-modal')
 
     <x-slot:scripts>
         @vite('resources/js/vtual/confirm-modal.js')
+        @vite('resources/js/vtual/profiles-live.js')
     </x-slot:scripts>
 </x-adminlte4::layouts.app>

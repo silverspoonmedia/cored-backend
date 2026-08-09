@@ -171,6 +171,27 @@ class YoutubeWebSubSubscriptionServiceTest extends TestCase
         $this->assertSame((string) $channel->id, (string) $resolved->channel_id);
     }
 
+    #[Test]
+    public function subscribe_missing_archived_channels_repairs_unsubscribed_rows(): void
+    {
+        $archived = $this->seedArchivedYoutubeChannel('UCARCHIVEDWEBSUB1');
+        WebsubSubscription::query()->create([
+            'channel_id' => $archived->id,
+            'topic' => 'https://www.youtube.com/feeds/videos.xml?channel_id=UCARCHIVEDWEBSUB1',
+            'callback_url' => 'https://example.test/webhook',
+            'secret' => 'secret',
+            'status' => WebsubSubscriptionStatus::Unsubscribed,
+        ]);
+
+        $repaired = $this->websub->subscribeMissingArchivedChannels();
+
+        $this->assertSame(1, $repaired);
+        $this->assertDatabaseHas('vtual_websub_subscriptions', [
+            'channel_id' => $archived->id,
+            'status' => WebsubSubscriptionStatus::Pending->value,
+        ]);
+    }
+
     private function seedActiveYoutubeChannel(string $externalId): Channel
     {
         $user = User::query()->create([
@@ -189,6 +210,27 @@ class YoutubeWebSubSubscriptionServiceTest extends TestCase
             'handle' => 'websub',
             'display_name' => 'WebSub Channel',
             'status' => ChannelStatus::Active,
+        ]);
+    }
+
+    private function seedArchivedYoutubeChannel(string $externalId): Channel
+    {
+        $user = User::query()->create([
+            'name' => 'WebSub User',
+            'email' => 'websub-arch-'.uniqid().'@example.com',
+            'password' => Hash::make('password'),
+        ]);
+        $user->assignRole('Admin');
+        $creator = $this->creators->createOrphan($user, ['display_name' => 'Archived WebSub Fox']);
+
+        return Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $creator->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => $externalId,
+            'handle' => 'archivedwebsub',
+            'display_name' => 'Archived WebSub Channel',
+            'status' => ChannelStatus::Archived,
         ]);
     }
 }

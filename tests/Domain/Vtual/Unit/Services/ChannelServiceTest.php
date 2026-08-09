@@ -7,11 +7,14 @@ use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
 use App\Domain\Vtual\Enums\PlatformKey;
+use App\Domain\Vtual\Enums\WebsubSubscriptionStatus;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Jobs\RunChannelInitialContentBackfillJob;
+use App\Domain\Vtual\Jobs\RunChannelStubContentBackfillJob;
 use App\Domain\Vtual\Models\Platform;
+use App\Domain\Vtual\Models\WebsubSubscription;
 use App\Domain\Vtual\Services\ChannelService;
 use App\Domain\Vtual\Services\CreatorService;
 use App\Domain\Vtual\Services\PlatformCredentialService;
@@ -21,6 +24,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -390,6 +394,72 @@ class ChannelServiceTest extends TestCase
     }
 
     #[Test]
+    public function archive_keeps_websub_subscription_active(): void
+    {
+        Http::fake([
+            'pubsubhubbub.appspot.com/*' => Http::response('', 202),
+        ]);
+
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Stream']);
+
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'stream',
+            displayName: 'Stream Channel',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: null,
+        );
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+
+        $subscription = WebsubSubscription::query()->where('channel_id', $channel->id)->first();
+        $this->assertNotNull($subscription);
+        $subscription->forceFill(['status' => WebsubSubscriptionStatus::Active])->save();
+
+        $this->channels->archive($user, $channel->id);
+
+        $this->assertSame(
+            WebsubSubscriptionStatus::Active,
+            WebsubSubscription::query()->where('channel_id', $channel->id)->value('status'),
+        );
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'pubsubhubbub.appspot.com')
+            && ($request->data()['hub.mode'] ?? null) === 'unsubscribe');
+    }
+
+    #[Test]
+    public function restore_dispatches_stub_backfill_job(): void
+    {
+        Http::fake([
+            'pubsubhubbub.appspot.com/*' => Http::response('', 202),
+        ]);
+
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Stream']);
+
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'stream',
+            displayName: 'Stream Channel',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: null,
+        );
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+        $this->channels->archive($user, $channel->id);
+
+        Bus::fake();
+        $this->clearChannelLifecycleLimits($user, $channel->id);
+        $this->channels->restore($user, $channel->id);
+
+        Bus::assertDispatched(RunChannelStubContentBackfillJob::class, function (RunChannelStubContentBackfillJob $job) use ($channel): bool {
+            return $job->channelId === (string) $channel->id;
+        });
+    }
+
+    #[Test]
     public function restore_returns_channel_to_active_list(): void
     {
         $user = $this->userWithRole('User');
@@ -407,6 +477,7 @@ class ChannelServiceTest extends TestCase
         $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
         $this->channels->archive($user, $channel->id);
 
+        $this->clearChannelLifecycleLimits($user, $channel->id);
         $restored = $this->channels->restore($user, $channel->id);
 
         $this->assertSame(ChannelStatus::Active, $restored->status);
@@ -459,6 +530,103 @@ class ChannelServiceTest extends TestCase
     }
 
     #[Test]
+    public function restore_resubscribes_websub_from_unsubscribed_state(): void
+    {
+        Http::fake([
+            'pubsubhubbub.appspot.com/*' => Http::response('', 202),
+        ]);
+
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Legacy WebSub']);
+
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'stream',
+            displayName: 'Stream Channel',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: null,
+        );
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+
+        WebsubSubscription::query()->where('channel_id', $channel->id)->update([
+            'status' => WebsubSubscriptionStatus::Unsubscribed->value,
+        ]);
+
+        $this->channels->archive($user, $channel->id);
+        $this->clearChannelLifecycleLimits($user, $channel->id);
+
+        $this->channels->restore($user, $channel->id);
+
+        $this->assertSame(
+            WebsubSubscriptionStatus::Pending,
+            WebsubSubscription::query()->where('channel_id', $channel->id)->value('status'),
+        );
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'pubsubhubbub.appspot.com')
+            && ($request->data()['hub.mode'] ?? null) === 'subscribe');
+    }
+
+    #[Test]
+    public function archive_rate_limited_when_channel_cooldown_active(): void
+    {
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Cooldown Fox']);
+
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'stream',
+            displayName: 'Stream Channel',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: null,
+        );
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+
+        $this->channels->archive($user, $channel->id);
+
+        try {
+            $this->channels->restore($user, $channel->id);
+            $this->fail('Expected VtualException for channel cooldown');
+        } catch (VtualException $e) {
+            $this->assertSame(429, $e->statusCode());
+            $this->assertStringContainsString('seconds', strtolower($e->getMessage()));
+        }
+    }
+
+    #[Test]
+    public function restore_rate_limited_when_user_burst_exceeded(): void
+    {
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Burst Fox']);
+
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'stream',
+            displayName: 'Stream Channel',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: null,
+        );
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+
+        $userKey = 'vtual:channel-lifecycle:user:'.$user->id;
+        for ($i = 0; $i < 10; $i++) {
+            RateLimiter::hit($userKey, 60);
+        }
+
+        try {
+            $this->channels->archive($user, $channel->id);
+            $this->fail('Expected VtualException for user burst limit');
+        } catch (VtualException $e) {
+            $this->assertSame(429, $e->statusCode());
+            $this->assertStringContainsString('archive/restore', strtolower($e->getMessage()));
+        }
+    }
+
+    #[Test]
     public function refresh_rejects_archived_channel(): void
     {
         $this->activateYoutubeCredential();
@@ -473,6 +641,12 @@ class ChannelServiceTest extends TestCase
 
         $this->expectException(VtualException::class);
         $this->channels->refresh($user, $channel->id);
+    }
+
+    private function clearChannelLifecycleLimits(User $user, string $channelId): void
+    {
+        RateLimiter::clear('vtual:channel-lifecycle:channel:'.$channelId);
+        RateLimiter::clear('vtual:channel-lifecycle:user:'.$user->id);
     }
 
     private function fakeYoutubeChannel(string $id, string $handle, string $title): void

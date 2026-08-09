@@ -95,7 +95,7 @@ class CreatorProfileManageWebTest extends TestCase
             ->getContent();
 
         $this->assertStringContainsString(__('web/vtual.profiles.section_channels'), $html);
-        $this->assertStringContainsString(__('web/vtual.add_channel'), $html);
+        $this->assertStringContainsString(__('web/vtual.add_button'), $html);
         $this->assertStringContainsString('Manage Me', $html);
     }
 

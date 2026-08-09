@@ -4,11 +4,14 @@ namespace Tests\Domain\Vtual\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\ChannelStatus;
+use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Enums\EntityStatus;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
+use App\Domain\Vtual\Services\ChannelService;
+use App\Domain\Vtual\Services\ChannelStubContentBackfillService;
 use App\Domain\Vtual\Services\ContentService;
 use App\Domain\Vtual\Services\CreatorService;
 use App\Support\Product\Services\ProductActivationService;
@@ -29,6 +32,8 @@ class VtuberProfileApiTest extends TestCase
 
     private ContentService $contents;
 
+    private ChannelService $channels;
+
     private ProductActivationService $activations;
 
     private Platform $youtube;
@@ -40,6 +45,7 @@ class VtuberProfileApiTest extends TestCase
         $this->seed(VtualRoleSeeder::class);
         $this->creators = app(CreatorService::class);
         $this->contents = app(ContentService::class);
+        $this->channels = app(ChannelService::class);
         $this->activations = app(ProductActivationService::class);
         $this->youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
     }
@@ -121,6 +127,103 @@ class VtuberProfileApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.is_claimable', false)
             ->assertJsonPath('data.claim_process_url', null);
+    }
+
+    #[Test]
+    public function archived_channel_hides_contents_from_profile_api(): void
+    {
+        $staff = $this->userWithRole('Admin');
+        $viewer = $this->userWithRole('User');
+        $this->activations->activateImplicit($viewer, 'Vtual');
+
+        $creator = $this->creators->createOrphan($staff, ['display_name' => 'Archived Channel Fox']);
+
+        $channel = Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $creator->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UCarchivedprofileapi1',
+            'handle' => 'archivedfox',
+            'display_name' => 'Archived Fox',
+            'status' => ChannelStatus::Active,
+            'visibility' => ChannelVisibility::Public,
+        ]);
+
+        $this->contents->upsertFromPrimary($channel, [
+            'external_id' => 'vid-archived-api',
+            'type' => ContentType::Vod->value,
+            'status' => ContentStatus::Uploaded->value,
+            'title' => 'Hidden When Archived',
+        ]);
+
+        $this->channels->archive($staff, (string) $channel->id);
+
+        $this->actingAsJwt($viewer)
+            ->getJson('/api/v1/vtual/vtubers/'.$creator->slug)
+            ->assertOk()
+            ->assertJsonPath('data.channels', [])
+            ->assertJsonPath('data.contents', []);
+    }
+
+    #[Test]
+    public function restored_channel_shows_contents_after_stub_backfill(): void
+    {
+        $staff = $this->userWithRole('Admin');
+        $viewer = $this->userWithRole('User');
+        $this->activations->activateImplicit($viewer, 'Vtual');
+
+        $creator = $this->creators->createOrphan($staff, ['display_name' => 'Restore Profile Fox']);
+
+        $channel = Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $creator->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UCrestoreprofileapi1',
+            'handle' => 'restorefox',
+            'display_name' => 'Restore Fox',
+            'status' => ChannelStatus::Active,
+            'visibility' => ChannelVisibility::Public,
+        ]);
+
+        $this->contents->upsertStubFromPrimary($channel, [
+            'external_id' => 'vid-restore-api',
+            'title' => 'Stub Before Hydrate',
+        ]);
+
+        $this->channels->archive($staff, (string) $channel->id);
+        $restored = $this->channels->restore($staff, (string) $channel->id);
+
+        $fetch = \Mockery::mock(\App\Domain\Vtual\Services\ChannelContentFetchService::class);
+        $fetch->shouldReceive('fetchVideosAndPersist')
+            ->once()
+            ->with(\Mockery::type(Channel::class), ['vid-restore-api'])
+            ->andReturnUsing(function (Channel $ch, array $ids) {
+                app(ContentService::class)->upsertFromPrimary($ch, [
+                    'external_id' => 'vid-restore-api',
+                    'type' => ContentType::Vod->value,
+                    'status' => ContentStatus::Uploaded->value,
+                    'title' => 'Hydrated After Restore',
+                ]);
+
+                return ['requested' => 1, 'fetched' => 1, 'upserted' => 1];
+            });
+
+        $backfill = new ChannelStubContentBackfillService($fetch);
+        $result = $backfill->run($restored);
+        $this->assertSame('completed', $result['status']);
+
+        $this->actingAsJwt($viewer)
+            ->getJson('/api/v1/vtual/vtubers/'.$creator->slug)
+            ->assertOk()
+            ->assertJsonPath('data.channels.0.handle', 'restorefox')
+            ->assertJsonPath('data.contents.0.external_id', 'vid-restore-api')
+            ->assertJsonPath('data.contents.0.title', 'Hydrated After Restore');
+    }
+
+    protected function tearDown(): void
+    {
+        \Mockery::close();
+        parent::tearDown();
     }
 
     #[Test]

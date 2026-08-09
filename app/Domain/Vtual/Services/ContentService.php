@@ -2,6 +2,7 @@
 
 namespace App\Domain\Vtual\Services;
 
+use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ContentAppearanceRole;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
@@ -70,6 +71,7 @@ class ContentService
                 'started_at' => $data['started_at'] ?? null,
                 'ended_at' => $data['ended_at'] ?? null,
                 'published_at' => $data['published_at'] ?? null,
+                'hydrated_at' => now(),
             ];
 
             if ($content === null) {
@@ -78,6 +80,69 @@ class ContentService
                 $content->save();
             } else {
                 // Keep existing non-primary appearances; only re-host primary FKs + metadata.
+                $content->fill($attrs)->save();
+            }
+
+            $this->syncPrimaryAppearance($content, $lockedChannel);
+
+            return $content->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $content;
+        });
+    }
+
+    /**
+     * Minimal ingest from feed/WebSub while channel is archived (no API hydrate).
+     * Never downgrades a row that already has hydrated_at set.
+     *
+     * @param  array{
+     *     external_id: string,
+     *     title?: string|null,
+     *     url?: string|null,
+     *     published_at?: mixed,
+     * }  $data
+     */
+    public function upsertStubFromPrimary(Channel $primaryChannel, array $data): Content
+    {
+        $externalId = trim((string) ($data['external_id'] ?? ''));
+        if ($externalId === '') {
+            throw new VtualException(__('api/vtual.content.external_id_required'), 422);
+        }
+
+        return DB::transaction(function () use ($primaryChannel, $data, $externalId): Content {
+            $lockedChannel = Channel::query()->whereKey($primaryChannel->id)->lockForUpdate()->firstOrFail();
+
+            $content = Content::query()
+                ->where('platform_id', $lockedChannel->platform_id)
+                ->where('external_id', $externalId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($content !== null && $content->hydrated_at !== null) {
+                return $content->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $content;
+            }
+
+            $url = $data['url'] ?? null;
+            if ($url === null || trim((string) $url) === '') {
+                $url = 'https://www.youtube.com/watch?v='.$externalId;
+            }
+
+            $attrs = [
+                'creator_id' => $lockedChannel->creator_id,
+                'channel_id' => $lockedChannel->id,
+                'platform_id' => $lockedChannel->platform_id,
+                'external_id' => $externalId,
+                'type' => ContentType::Vod,
+                'status' => ContentStatus::Unknown,
+                'title' => $data['title'] ?? null,
+                'url' => $url,
+                'published_at' => $data['published_at'] ?? null,
+                'hydrated_at' => null,
+            ];
+
+            if ($content === null) {
+                $content = new Content($attrs);
+                $content->id = (string) Str::uuid7();
+                $content->save();
+            } else {
                 $content->fill($attrs)->save();
             }
 
@@ -255,6 +320,25 @@ class ContentService
                 $q->where('creator_id', $creatorId)
                     ->orWhereHas('appearances', fn ($a) => $a->where('creator_id', $creatorId));
             })
+            ->with(['channel', 'creator', 'platform', 'appearances'])
+            ->orderByDesc('published_at')
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
+     * Public vTuber profile: exclude content whose primary channel is archived.
+     *
+     * @return Collection<int, Content>
+     */
+    public function listForPublicProfile(string $creatorId): Collection
+    {
+        return Content::query()
+            ->where(function ($q) use ($creatorId): void {
+                $q->where('creator_id', $creatorId)
+                    ->orWhereHas('appearances', fn ($a) => $a->where('creator_id', $creatorId));
+            })
+            ->whereDoesntHave('channel', fn ($q) => $q->where('status', ChannelStatus::Archived))
             ->with(['channel', 'creator', 'platform', 'appearances'])
             ->orderByDesc('published_at')
             ->orderByDesc('created_at')

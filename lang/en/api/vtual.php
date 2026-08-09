@@ -85,6 +85,8 @@ return [
         'promote_not_discovered' => 'Only Discord-discovered channels can be promoted through this action.',
         'promote_unsupported_platform' => 'Promote is not supported for this platform.',
         'not_archived' => 'Channel is not archived.',
+        'lifecycle_cooldown' => 'Wait :seconds seconds before archiving or restoring this channel again.',
+        'lifecycle_rate_limited' => 'Too many channel archive/restore actions. Try again later.',
         'archived_list_success' => 'Archived channels loaded.',
         'platform_unknown' => 'Unknown platform.',
         'platform_disabled' => 'This platform is not enabled yet.',

@@ -7,7 +7,7 @@ Tracks what the **vTual product domain** has shipped in Monolith versus the orig
 | Domain guide (behavior detail) | [README.md](README.md) |
 | Code | `app/Domain/Vtual/` |
 | Config | [`config/vtual.php`](../../../config/vtual.php), product key `Vtual` in [`config/products.php`](../../../config/products.php) |
-| Last reviewed | 2026-08-07 |
+| Last reviewed | 2026-08-09 |
 
 ---
 
@@ -68,11 +68,11 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **YouTube content fetch POC** | Manual `vtual:fetch-channel-content` (last frontier) | `ChannelContentFetchService`, `FetchChannelContentCommand` |
 | **YouTube initial content backfill** | Auto on YouTube activate (async job); manual `vtual:backfill-initial-content` for existing rows | `ChannelInitialContentBackfillService`, `RunChannelInitialContentBackfillJob`, `ChannelActivationService`, `content_initial_backfill_at` |
 | **Channel activation hooks** | Single entry: WebSub + backfill job on all YouTube activate paths (including registration flush) | `ChannelActivationService` |
-| **Feed poll ingestion** | Scheduled `vtual:poll-channel-feeds` + `vtual:flush-content-pool`; skips until initial backfill done | `YoutubeChannelVideoFeedClient`, `ChannelFeedPollService`, `ContentFetchPoolService` |
+| **Feed poll ingestion** | Scheduled `vtual:poll-channel-feeds` + `vtual:flush-content-pool`; polls **active + archived** public channels; archived → inline **stub** upsert (no content-pool enqueue for hydrate); skips until initial backfill done | `YoutubeChannelVideoFeedClient`, `ChannelFeedPollService`, `ContentFetchPoolService` |
 | **Live CCV poll** | Scheduled `vtual:poll-live-contents` | `LiveContentPollService` |
-| **YouTube WebSub** | Push trigger + `vtual:renew-websub-subscriptions` (`--repair-missing`) | `YoutubeWebSubSubscriptionService`, `YoutubeWebSubNotificationService`, webhook route; subscribe on `ChannelActivationService` |
+| **YouTube WebSub** | Push trigger + `vtual:renew-websub-subscriptions` (`--repair-missing`); archive **keeps** subscription; restore calls **`resubscribe()`**; ops `vtual:repair-archived-websub` for legacy rows | `YoutubeWebSubSubscriptionService`, `YoutubeWebSubNotificationService`, webhook route; subscribe on `ChannelActivationService` |
 | **YouTube WebSub hardening** | Strict hub verify, dual sha1/sha256 signature, resilient topic lookup, body cap, structured logging + `last_error`, shared Atom parser | `YoutubeAtomFeedParser`, `YoutubeWebSubWebhookController`, `config/vtual.php` `websub.max_body_bytes`, registry `vtual.websub.max_body_bytes` |
-| **vTuber profile (read)** | `/apps/vtual/vtuber/{slug}` — col-4/8 AdminLTE layout; Claim button when orphan (`is_claimable`); uniform content cards; any logged-in user; UUID → 301 slug (web) | `VtuberProfileService`, `VtuberProfileController`, `VtuberProfileResource`, `VtuberProfileWebTest` |
+| **vTuber profile (read)** | `/apps/vtual/vtuber/{slug}` — col-4/8 AdminLTE layout; Claim button when orphan (`is_claimable`); uniform content cards; public contents via **`listForPublicProfile`** (hides primary-channel-archived rows); any logged-in user; UUID → 301 slug (web) | `VtuberProfileService`, `VtuberProfileController`, `VtuberProfileResource`, `VtuberProfileWebTest` |
 | **Claim process (interactive)** | `/apps/vtual/vtuber/{slug}/claim` — channel pick → token → queued verify (POST start/verify/cancel); WebSocket `claim.progress` on `private-vtual.claim.{id}` (`VtualClaimRealtime`); no polling; `claim_blocked_until` on profile API | `VtuberProfileController`, `claim.blade.php`, `claim-realtime.js`, `CreatorClaimVerifyPoolService`, `VtuberProfileWebTest`, `VtualClaimRealtimeTest`, `CreatorClaimProgressChannelTest` |
 | **Owned profiles list** | `/apps/vtual/profiles` — owner membership table; `GET api/v1/vtual/creators/owned`; Products menu (`Vtual vTuber`+); claim success assigns role + `activateImplicit(Vtual)` | `CreatorProfilesController`, `CreatorService::listOwnedForUser`, `MenuSeeder`, `CreatorProfilesWebTest` |
 | **Claimed profile manage (web)** | `/apps/vtual/profiles/{slug}` — meta, links, merge, channel add (bio + `POST channel-claims/{id}/verify-discord`), active/archived channels | `CreatorProfilesController`, lifted Blade partials, `ChannelClaimService::verifyViaDiscord`, `CreatorProfileManageWebTest` |
@@ -83,12 +83,15 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Platform credentials UI** | `/apps/vtual/platform-credentials`: platform index table + per-platform CRUD + probe at `/probe` | `PlatformCredentialController`, `PlatformApiProbeController`, `vtual-platform-credentials` views, `PlatformCredentialWebTest` |
 | **My profiles manage (API only)** | List bound profiles; edit meta; external links CRUD; channel claims + active/archived channels | API `/creators/*`, `ExternalLinkService`; web manage restored at `/apps/vtual/profiles/{slug}` |
 | **Profile merge (absorb)** | Same-owner or manage-any; move channels/links/contents/appearances; cancel pendings `merged`; archive source + slug mangle | `CreatorMergeService`, `POST creators/{id}/merge`, `CreatorMergeServiceTest` |
-| **Channel archive / restore** | Soft hide `archived`; list archived; restore → `active` | `ChannelService::archive` / `restore`, `ChannelServiceTest` |
+| **Channel archive / restore** | Soft hide `archived`; list archived; restore → `active` + **WebSub resubscribe** + stub backfill job; **public profile hides all content** from archived primary channels; **lifecycle rate limit** (per-channel cooldown + per-user burst) | `ChannelService::archive` / `restore`, `YoutubeWebSubSubscriptionService::resubscribe`, `ChannelServiceTest` |
+| **Archived channel stub ingest** | While archived: feed poll + WebSub/content pool persist **stubs** (`hydrated_at` null) only; WebSub stays subscribed; API hydrate blocked | `ContentService::upsertStubFromPrimary`, `ChannelFeedPollService`, `ContentFetchPoolService`, `hydrated_at` migration |
+| **Stub restore backfill** | On restore: `RunChannelStubContentBackfillJob` batch-hydrates stubs via API | `ChannelStubContentBackfillService`, `ChannelStubContentBackfillServiceTest` |
+| **Archived WebSub legacy repair** | One-shot `vtual:repair-archived-websub` for pre-policy archived channels missing active/pending subscription | `RepairArchivedWebsubCommand`, `YoutubeWebSubSubscriptionService::subscribeMissingArchivedChannels` |
 | **Claim verify pool** | Queued creator-claim bio verify; flush at **50** pending **or** **15 min** oldest age; max **3** attempts then **24h** block per user+creator | `CreatorClaimVerifyPoolService`, `vtual:flush-claim-verify-pool`, `CreatorClaimVerifyPoolServiceTest` |
 | **Channel fetch pool** | Non-interactive refresh + scheduled resync; flush at **50** ids **or** **15 min** age; `--resync` also enqueues when `last_synced_at` stale **or** `subscriber_count IS NULL`; single lock/claim flusher | `ChannelFetchPoolService`, `vtual:flush-channel-pool`, schedule in `routes/console.php`, `ChannelFetchPoolServiceTest` |
 | **Content fetch pool** | Video id hydrate batch after feed/WebSub discovery; `vtual:flush-content-pool` every 1m | `ContentFetchPoolService`, `ChannelContentFetchService`, `ContentIngestionPoolTest` |
 | **Channel registration pool** | Staff pending channel adds; same 50 / 15m gate per platform; flush delegates activate to `ChannelActivationService` | `ChannelRegistrationFlushService`, `ChannelActivationService`, `ChannelRegistrationFlushServiceTest` |
-| **Content model foundation** | Primary host + appearances; explicit attach; no auto collab from API | `ContentService`, appearances migration, README content section |
+| **Content model foundation** | Primary host + appearances; explicit attach; no auto collab from API; **`hydrated_at`** null = stub, full hydrate sets timestamp | `ContentService`, appearances migration, README content section |
 | **Error logging** | Platform HTTP failures can log to ErrorLog | platform client / gateway error path + docs |
 | **i18n** | en / id / ja for API + web vtual strings | `lang/*/api/vtual.php`, `lang/*/web/vtual.php` |
 | **Web UI/UX overhaul (archived suite)** | Full-suite Blade polish from 2026-07: AJAX forms, modal confirmations, WCAG 2.1 AA, Vite JS — **archived** with hub/profiles/claims/registry; patterns reused in orphans + credentials + vtuber profile | `resources/views/_archive/adminlte4/vtual/**`, `tests/_archive/Feature/Http/Controllers/Web/VtualBladeWebTest.php` |
@@ -106,9 +109,12 @@ Representative suite under `tests/Domain/Vtual/`:
 | `YoutubeWebSubNotificationServiceTest` | sha1/sha256 signature, bad signature + `last_error`, topic fallback |
 | `YoutubeAtomFeedParserTest` / `YoutubeFeedTopicParserTest` | Shared Atom parse + topic URL `channel_id` extraction |
 | `YoutubeWebSubWebhookTest` | GET verify echo, invalid mode 403, POST valid/invalid signature 204 |
-| `ChannelServiceTest` | Staff pending register, seedForStaff, activate, backfill job dispatch, refresh enqueues pool, archive/restore |
+| `ChannelServiceTest` | Staff pending register, seedForStaff, activate, backfill job dispatch, refresh enqueues pool, archive/restore, WebSub kept on archive, restore resub from unsubscribed, lifecycle rate limits |
+| `ChannelStubContentBackfillServiceTest` | Stub hydrate on restore; skip paths |
+| `VtuberProfileApiTest` | Public profile API; archived channel hides contents; restore + backfill shows contents |
+| `VtuberProfileServiceTest` | `show` excludes archived-channel content; all-archived → 0 contents |
 | `ChannelInitialContentBackfillServiceTest` | One-time backfill, watermark, skip/fail paths |
-| `ChannelFeedPollServiceTest` | Watermark enqueue, initial backfill guard |
+| `ChannelFeedPollServiceTest` | Watermark enqueue, initial backfill guard; archived channel stub upsert (no pool enqueue); archived included in due poll |
 | `ChannelClaimServiceTest` | Bio verify attach |
 | `CreatorClaimServiceTest` | Orphan claim, queued verify + pool flush, supersede, Accept Anyway, max attempts block, progress event on queue |
 | `CreatorClaimVerifyPoolServiceTest` | Enqueue coalesce, skip below threshold, force flush, progress events |
@@ -120,7 +126,7 @@ Representative suite under `tests/Domain/Vtual/`:
 | `VtualApiTest` / `PlatformApiProbeApiTest` | HTTP surface smoke; admin probe gate |
 | `VtuberProfileWebTest` | Profile layout, canonical, UUID 301, claim button, interactive claim page |
 | `PlatformCredentialWebTest` | Active credentials CRUD web |
-| `ContentIngestionPoolTest` | Feed poll + content pool + live CCV integration |
+| `ContentIngestionPoolTest` | Feed poll + content pool + live CCV integration; content pool flush upserts stubs for archived channel |
 | `DiscordConnectionDiscoveryServiceTest` | Private bind, promote, external links |
 | `DiscordConnectionsClientTest` | Snapshot normalize, ownershipEligible, externalLinkCandidates |
 | `CreatorProfileManageWebTest` | Manage profile; Discord verify; promote discovered channel |
@@ -185,6 +191,7 @@ Not a commitment — default backlog for the next sessions:
 | Flush content pool | `php artisan vtual:flush-content-pool` (`--force`) |
 | Poll live CCV | `php artisan vtual:poll-live-contents` |
 | Renew / repair WebSub | `php artisan vtual:renew-websub-subscriptions` (`--repair-missing` for channels without a row) |
+| Repair archived WebSub | `php artisan vtual:repair-archived-websub` — re-subscribe archived channels missing active/pending subscription (legacy pre-policy rows) |
 | Manual content recovery | `php artisan vtual:fetch-channel-content {channel}` (`--video`, `--discover-live`) |
 | Force flush (ignore 50/15m gate) | `php artisan vtual:flush-channel-pool --force` |
 | Enqueue stale actives then flush | `php artisan vtual:flush-channel-pool --resync` / `--resync --force` |
@@ -212,6 +219,8 @@ Not a commitment — default backlog for the next sessions:
 | `channel_pool.resync_enqueue_limit` | Cap per resync tick (200) |
 | `claim.*` / `channel_claim.*` | Token TTL, cooldown, max attempts (3), 24h block, Accept Anyway |
 | `claim_verify_pool.*` | Claim bio verify batch gate (50 / 15m) |
+| `channel_lifecycle.cooldown_seconds` | Per-channel archive/restore cooldown (default 30) |
+| `channel_lifecycle.max_per_minute` | Per-user archive/restore burst (default 10/min) |
 | `credential.failover.*` | Soft demote on 401/403 (default OFF) |
 
 ---
@@ -248,6 +257,10 @@ High-level order of work that landed in this long implementation arc (not exhaus
 26. **Discord connection discovery** — private YT/Twitch bind, external links, promote → public + backfill  
 27. **Channel visibility / discovery columns** — migration `2026_08_07_200001`  
 28. **YouTube ops stability assessment** — [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md)  
+29. **Archived channel content policy** — `hydrated_at`, stub ingest while archived, public profile hide via `listForPublicProfile`  
+30. **Stub restore backfill job** + `vtual:repair-archived-websub` for legacy archived WebSub rows  
+31. **WebSub resub on restore** + channel lifecycle rate limits (`channel_lifecycle` config, 429 on archive/restore)  
+32. **Test coverage** — profile API/service archived content; feed poll archived stub; content pool stub flush  
 
 ---
 
