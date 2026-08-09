@@ -180,6 +180,8 @@ class OrphanVtuberWebTest extends TestCase
         $editHtml = $this->actingWithJwtCookie($admin)
             ->get(route('vtual.orphans.edit', $this->orphanId))
             ->assertOk()
+            ->assertViewHas('creator')
+            ->assertViewHas('platforms')
             ->getContent();
 
         $this->assertStringContainsString('data-ajax-form', $editHtml);

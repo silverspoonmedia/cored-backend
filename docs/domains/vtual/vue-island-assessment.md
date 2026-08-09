@@ -13,7 +13,7 @@ The checklist gates promotion on (A) all required — interactive subtree is pro
 
 ### 1. vtuber/show.blade.php — Read-only vTuber profile
 
-**Current:** 20-line Blade shell composing `_sidebar` + `_content_panel` partials. Zero JS, pure API data display (bio, channels, content cards).
+**Current:** 20-line Blade shell composing `vtuber/partials/sidebar` + `content-panel` partials. Zero JS, pure API data display (bio, channels, content cards).
 
 **Checklist:**
 - (A) Gate: Fails. Not interactive beyond scroll/click. No mutating subtree.
@@ -59,7 +59,7 @@ The checklist gates promotion on (A) all required — interactive subtree is pro
 
 ### 4. profiles/show.blade.php — Manage owned profile
 
-**Current:** 32-line Blade shell composing 5 partials (`_meta-form`, `_merge-form`, `_links`, `_channels`, `_content-stub`). Interactive via AJAX forms on `_channels.blade.php` (259 lines: 3 tables with inline forms for verify / cancel / accept-anyway / refresh / archive / restore / promote, confirm modal delegation to `_confirm-modal`). `confirm-modal.js` (49 lines) handles modal → form `requestSubmit()`.
+**Current:** 32-line Blade shell composing 5 partials (`profiles/partials/meta-form`, `merge-form`, `links`, `channels`, `content-stub`). Interactive via AJAX forms on `profiles/partials/channels.blade.php` (259 lines: 3 tables with inline forms for verify / cancel / accept-anyway / refresh / archive / restore / promote, confirm modal delegation to `vtual/partials/confirm-modal`). Staff orphan channel tables use a separate `orphans/partials/channels` partial — do not merge with profiles. `confirm-modal.js` (49 lines) handles modal → form `requestSubmit()`.
 
 **Checklist:**
 - (A) Gate: Product-scoped subtree. But it is CRUD forms, not a rich interactive surface.

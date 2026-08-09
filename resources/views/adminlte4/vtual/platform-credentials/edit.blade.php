@@ -18,7 +18,7 @@
             </a>
 
             <x-adminlte4::form.ajax :action="route('vtual.platform-credentials.update', $credentialId)" method="PATCH" id="vtual-credential-edit-form">
-                @include(config('web.layout').'.vtual.platform-credentials._form', ['credential' => $credential])
+                @include(config('web.layout').'.vtual.platform-credentials.partials.form', ['credential' => $credential])
             </x-adminlte4::form.ajax>
         </x-adminlte4::card>
     </div>

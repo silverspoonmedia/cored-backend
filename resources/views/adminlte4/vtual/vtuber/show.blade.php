@@ -10,10 +10,10 @@
 
     <div class="row g-3">
         <div class="col-md-4">
-            @include(config('web.layout').'.vtual.vtuber._sidebar', ['profile' => $profile])
+            @include(config('web.layout').'.vtual.vtuber.partials.sidebar', ['profile' => $profile])
         </div>
         <div class="col-md-8">
-            @include(config('web.layout').'.vtual.vtuber._content_panel', ['profile' => $profile])
+            @include(config('web.layout').'.vtual.vtuber.partials.content-panel', ['profile' => $profile])
         </div>
     </div>
 </x-adminlte4::layouts.app>

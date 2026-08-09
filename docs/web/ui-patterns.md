@@ -103,7 +103,7 @@ Mobile-first adjustments live in CSS (not inline Blade styles), guarded by `Them
 
 ### Modals
 
-File-hosting modals (`show.blade.php` rename/share, `_move-modal.blade.php`) use `modal-fullscreen-sm-down` so they fill the viewport on phones.
+File-hosting modals (`show.blade.php` rename/share, `file-hosting/partials/move-modal.blade.php`) use `modal-fullscreen-sm-down` so they fill the viewport on phones.
 
 ### Sidebar-first column ordering
 
@@ -180,7 +180,7 @@ Keys live under `swal.*` in `lang/{en,id,ja}/ui.php`. The wrapper reads them at 
 
 ### Adoption
 
-- **`data-swal-confirm` forms**: `file-hosting/blocklist.blade.php`, `product-activations/show.blade.php`, `services/index.blade.php`, `file-hosting/partials/_team-offcanvas.blade.php`.
+- **`data-swal-confirm` forms**: `file-hosting/blocklist.blade.php`, `product-activations/show.blade.php`, `services/index.blade.php`, `file-hosting/partials/team-offcanvas.blade.php`.
 - **`MonolithSwal.alert` / `confirm` helpers**: `file-hosting/direct-upload.js` (`monolithAlert`), Vue FH `useFhApi` (`fhConfirm` / `toast`). Each helper feature-detects `window.MonolithSwal` and falls back to `window.alert` / `window.confirm` if absent.
 
 ## Theme-color meta
@@ -195,7 +195,7 @@ Row action groups use a single `btn-group` with direct-children buttons only. Ne
 
 The shared DataTable renderer `window.renderDatatableActions` (in `components/partials/datatable-row-actions.blade.php`) wraps every row's action set in `<div class="btn-group btn-group-sm" role="group" aria-label="…">`. Each icon-only button carries both `aria-label` and `title` (set from `action.label`); icons use `aria-hidden="true"`. No `ms-*` margin utilities — spacing comes from `.btn-group`.
 
-Manual Blade row-action clusters (e.g. `services/index`, `product-activations/show`) follow the same contract: wrap the per-row actions in `<div class="btn-group btn-group-sm" role="group">` (Bootstrap rows). File Hosting auth browse row actions live in the Vue island (`App.vue` / `.fh-action-group` in `file-hosting.css`) — not orphan `_browse-views`. Every icon-only button must carry `aria-label` + `title`.
+Manual Blade row-action clusters (e.g. `services/index`, `product-activations/show`) follow the same contract: wrap the per-row actions in `<div class="btn-group btn-group-sm" role="group">` (Bootstrap rows). File Hosting auth browse row actions live in the Vue island (`App.vue` / `.fh-action-group` in `file-hosting.css`) — not archived `resources/views/_archive/adminlte4/file-hosting/partials/browse-views`. Every icon-only button must carry `aria-label` + `title`.
 
 Forms carrying destructive actions use `class="d-inline-block"` (not `d-inline`) so they sit cleanly as a direct child of the `btn-group`; the submit button inside carries `[data-form-submit-spinner]` (see [blade-admin — UX patterns](blade-admin.md#ux-patterns)).
 
@@ -209,11 +209,11 @@ Reference: `menus/index.blade.php` (`#menuDeleteConfirmModal` + `data-menu-casca
 
 When two cards sit in sibling columns (e.g. `users/edit.blade.php` edit form + recent activity), both must align flush: no `mt-3` on either card. If one column may be empty at runtime, render an `<x-adminlte4::empty-state>` inside the card so the column does not collapse and break the grid symmetry.
 
-Reference: `users/_activity_history.blade.php`.
+Reference: `users/partials/activity-history.blade.php`.
 
 ## File-hosting toolbar
 
-`.fh-toolbar` declares a full `border: 1px solid var(--fh-border)` and uniform `border-radius: var(--fh-radius)` so the search box reads as a symmetric shell (not a half-open bar). Auth browse listing/toolbar/empty-state colspan are painted by the Vue island (`App.vue`); Blade index only mounts `#vue-file-hosting` + modal/offcanvas shells. Orphan `_toolbar-zone` / `_browse-views` are not the live paint path.
+`.fh-toolbar` declares a full `border: 1px solid var(--fh-border)` and uniform `border-radius: var(--fh-radius)` so the search box reads as a symmetric shell (not a half-open bar). Auth browse listing/toolbar/empty-state colspan are painted by the Vue island (`App.vue`); Blade index only mounts `#vue-file-hosting` + modal/offcanvas shells. Archived `toolbar-zone` / `browse-views` under `resources/views/_archive/adminlte4/file-hosting/partials/` are not the live paint path.
 
 ## Related
 

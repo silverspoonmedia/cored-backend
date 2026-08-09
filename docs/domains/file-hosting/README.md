@@ -587,7 +587,7 @@ Authenticated File Hosting browse is a **single Vite Vue 3 island** mounted on B
 
 **Fair Vue boundary:** a *Vue island* is a page-level mount with its own lifecycle — not every helper. Auth browse is one island. Pure helpers (`router`, upload math, `moveItemsRequest`, Echo glue, selection helpers) stay JS. Interactive leftovers that belong under auth browse become **components/composables on that island** (`useFhUpload`, `useFhDragMove`). Public `/s/*` stays vanilla [`public-app.js`](../../resources/js/file-hosting/public-app.js) unless deliberately invested as a second island. Standalone Microstock usage page is not an island by default.
 
-**First paint:** Blade supplies AdminLTE chrome + empty `#vue-file-hosting` + `<script type="application/json" data-vue-file-hosting>` bootstrap (and sibling modal/offcanvas shells on index). Listing/toolbar/upload are **client Vue** — not SSR HTML rows. Invalid/missing bootstrap shows an alert via `data-vue-mount-failed` / `web/file-hosting.vue_mount_failed` (see island `main.js`). Leftover Blade partials `_toolbar-zone` / `_browse-views` are **not** the live paint path (orphans; do not `@include` them on the Vue index).
+**First paint:** Blade supplies AdminLTE chrome + empty `#vue-file-hosting` + `<script type="application/json" data-vue-file-hosting>` bootstrap (and sibling modal/offcanvas shells on index). Listing/toolbar/upload are **client Vue** — not SSR HTML rows. Invalid/missing bootstrap shows an alert via `data-vue-mount-failed` / `web/file-hosting.vue_mount_failed` (see island `main.js`). Archived Blade partials `toolbar-zone` / `browse-views` / `trash-show-panels` live under `resources/views/_archive/adminlte4/file-hosting/partials/` — **not** the live paint path (do not `@include` them on the Vue index).
 
 | Asset | Role |
 |-------|------|
@@ -605,7 +605,7 @@ Authenticated File Hosting browse is a **single Vite Vue 3 island** mounted on B
 | `resources/js/file-hosting/microstock-panel.js` / `microstock-usage.js` / `microstock-ui.js` / `collection-describe.js` | Microstock review/usage/helpers — wired from Vue when DOM present (Blade offcanvas factories OK; not separate islands) |
 | `resources/js/file-hosting/public-app.js` | Public soft SPA for `/s/f/{id}` + `/s/d/{id}` (vanilla; optional future island only if deliberately invested) |
 | `resources/js/file-hosting/upload-progress.js` / `upload-queue.js` / `part-uploader.js` | Pure upload helpers — stay JS |
-| `resources/views/adminlte4/file-hosting/partials/` | Live shells: `_workspace-modals`, `_microstock-review-panel`, `_usage-offcanvas`, `_file-folder-modals`, `_team-offcanvas`. Listing/toolbar/upload painted by Vue |
+| `resources/views/adminlte4/file-hosting/partials/` | Live shells: `workspace-modals`, `microstock-review-panel`, `usage-offcanvas`, `file-folder-modals`, `team-offcanvas`, `move-modal`, `file-icon`, `visibility-badge`, `microstock-badge`, `quota-bar`, `workspace-switcher`. Listing/toolbar/upload painted by Vue. Archived orphans: `resources/views/_archive/adminlte4/file-hosting/partials/` (`toolbar-zone`, `browse-views`, `trash-show-panels`). Full inventory: [partial-manifest.md](../../web/partial-manifest.md) |
 
 #### Soft-nav rules (auth)
 
@@ -686,7 +686,7 @@ Auth index/trash/show Blade injects JSON bootstrap (`data-vue-file-hosting`) wit
 
 All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `data?`, `redirect?`). Successful mutations **do not** hard-reload the page when the SPA shell is bound — they soft-refetch browse/quota/trash/show (and peers update via WebSocket or poll fallback).
 
-File type icons map MIME -> Bootstrap Icons via `_file-icon.blade.php` partial: image, PDF, video, audio, archive, spreadsheet, document, code, fallback — each with a color modifier (`.fh-icon--*`).
+File type icons map MIME -> Bootstrap Icons via `file-icon.blade.php` partial: image, PDF, video, audio, archive, spreadsheet, document, code, fallback — each with a color modifier (`.fh-icon--*`).
 
 Grid/list view toggle persists preference in `localStorage` key `fh-view-mode`. Default: list (table).
 

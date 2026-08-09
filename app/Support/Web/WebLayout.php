@@ -49,4 +49,14 @@ class WebLayout
     {
         return self::view('partials.breadcrumbs');
     }
+
+    /**
+     * Fully-qualified view name for an include partial under resources/views/{layout}/.
+     *
+     * Alias for view() — use in @include(WebLayout::partial('users.partials.form'), $data).
+     */
+    public static function partial(string $path): string
+    {
+        return self::view($path);
+    }
 }

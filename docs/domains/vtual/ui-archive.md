@@ -56,7 +56,7 @@ Platform credentials and API probe were **rebuilt** at new routes (see active li
 ## Reusable patterns from archive
 
 - `ConsumesApi` + `respondFromApi` web proxy pattern
-- `x-adminlte4::form.ajax` + Bootstrap confirm modal (`confirm-modal.js`)
+- `x-adminlte4::form.ajax` + Bootstrap confirm modal (`confirm-modal.js`). **Active** shared modal: `resources/views/adminlte4/vtual/partials/confirm-modal.blade.php`; archived copy remains under `resources/views/_archive/adminlte4/vtual/partials/`.
 - `x-adminlte4::vtual.status-badge` component (in archive)
 - Client-side DataTables for small queues (registry/credentials admin)
 

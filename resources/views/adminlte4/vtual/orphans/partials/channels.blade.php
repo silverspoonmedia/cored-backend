@@ -14,7 +14,7 @@
 <h5 class="mb-2">{{ __('web/vtual-orphans.channels.section_title') }}</h5>
 <p class="text-muted small mb-3">{{ __('web/vtual-orphans.channels.section_help') }}</p>
 
-@include(config('web.layout').'.vtual.partials._channel-add-form', [
+@include(config('web.layout').'.vtual.partials.channel-add-form', [
     'action' => route('vtual.orphans.channels.store', $creatorId),
     'transPrefix' => 'web/vtual-orphans.channels',
     'formKind' => 'orphans',
@@ -37,7 +37,7 @@
         </thead>
         <tbody id="orphan-channels-tbody">
             @forelse ($channels as $channel)
-                @include(config('web.layout').'.vtual.orphans._channel_row', ['channel' => $channel])
+                @include(config('web.layout').'.vtual.orphans.partials.channel-row', ['channel' => $channel])
             @empty
                 <tr id="orphan-channels-empty" data-empty-row>
                     <td colspan="5" class="text-muted">{{ __('web/vtual-orphans.channels.empty') }}</td>

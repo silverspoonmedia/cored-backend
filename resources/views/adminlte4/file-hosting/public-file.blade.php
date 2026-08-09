@@ -42,7 +42,7 @@
             <div class="fh-public__card-body">
                 <div class="fh-public__label">{{ __('web/file-hosting.public.shared_file') }}</div>
                 <div class="fh-public__file-icon">
-                    @include('adminlte4.file-hosting.partials._file-icon', ['mime' => $file['mime'] ?? null, 'isFolder' => false])
+                    @include(config('web.layout').'.file-hosting.partials.file-icon', ['mime' => $file['mime'] ?? null, 'isFolder' => false])
                 </div>
                 <h1 class="fh-public__file-name">{{ $file['name'] ?? '' }}</h1>
                 <div class="fh-public__meta">

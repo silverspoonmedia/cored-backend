@@ -89,4 +89,4 @@
     </div>
 </div>
 
-@include(config('web.layout').'.vtual.vtuber._channels', ['profile' => $profile])
+@include(config('web.layout').'.vtual.vtuber.partials.channels', ['profile' => $profile])

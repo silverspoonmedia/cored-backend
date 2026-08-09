@@ -9,7 +9,7 @@
 
 <x-adminlte4::layouts.app :title="__($titleKey)">
     <x-adminlte4::card :title="__($titleKey)">
-        @include(config('web.layout').'.settings._form', [
+        @include(config('web.layout').'.settings.partials.form', [
             'group' => $group,
             'settings' => $settings ?? [],
             'action' => route('settings.update', $group),

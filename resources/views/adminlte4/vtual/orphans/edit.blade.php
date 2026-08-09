@@ -1,6 +1,6 @@
 <x-adminlte4::layouts.app :title="__('web/vtual-orphans.edit_title')">
     <x-adminlte4::card :title="__('web/vtual-orphans.edit_title')">
-        @include(config('web.layout').'.vtual.orphans._form', [
+        @include(config('web.layout').'.vtual.orphans.partials.form', [
             'action' => route('vtual.orphans.update', $creator['id'] ?? ''),
             'method' => 'PATCH',
             'isEdit' => true,
@@ -8,7 +8,7 @@
             'submitLabel' => __('web/vtual-orphans.form.submit_update'),
         ])
 
-        @include(config('web.layout').'.vtual.orphans._channels', [
+        @include(config('web.layout').'.vtual.orphans.partials.channels', [
             'creator' => $creator,
             'platforms' => $platforms ?? collect(),
         ])

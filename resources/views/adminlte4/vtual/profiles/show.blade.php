@@ -25,16 +25,16 @@
              data-channel-promote-url="{{ route('vtual.profiles.channels.promote', [$routeKey, '__CHANNEL__']) }}"
              data-link-destroy-url="{{ route('vtual.profiles.links.destroy', [$routeKey, '__LINK__']) }}">
         <div data-profile-meta data-profile-display-name="{{ $creator['display_name'] ?? '' }}" data-profile-slug="{{ $creator['slug'] ?? '' }}">
-        @include(config('web.layout').'.vtual.profiles.partials._meta-form')
+        @include(config('web.layout').'.vtual.profiles.partials.meta-form')
         </div>
-        @include(config('web.layout').'.vtual.profiles.partials._merge-form')
-        @include(config('web.layout').'.vtual.profiles.partials._links')
-        @include(config('web.layout').'.vtual.profiles.partials._channels')
-        @include(config('web.layout').'.vtual.profiles.partials._content-stub')
+        @include(config('web.layout').'.vtual.profiles.partials.merge-form')
+        @include(config('web.layout').'.vtual.profiles.partials.links')
+        @include(config('web.layout').'.vtual.profiles.partials.channels')
+        @include(config('web.layout').'.vtual.profiles.partials.content-stub')
         </div>
     </x-adminlte4::card>
 
-    @include(config('web.layout').'.vtual.partials._confirm-modal')
+    @include(config('web.layout').'.vtual.partials.confirm-modal')
 
     <x-slot:scripts>
         @vite('resources/js/vtual/confirm-modal.js')

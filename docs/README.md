@@ -54,7 +54,8 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 | Document | Topic |
 |----------|-------|
-| [blade-admin.md](web/blade-admin.md) | JWT cookie, ApiClient, auth shell `/apps`, URL helpers, theming, [dual-path JS vs Vue islands](web/blade-admin.md#dual-path--when-to-use-which) |
+| [blade-admin.md](web/blade-admin.md) | JWT cookie, ApiClient, auth shell `/apps`, URL helpers, theming, [partial layout conventions](web/blade-admin.md#partial-and-component-layout), [dual-path JS vs Vue islands](web/blade-admin.md#dual-path--when-to-use-which) |
+| [partial-manifest.md](web/partial-manifest.md) | Active Blade partial inventory (callers, contracts) |
 | [ui-patterns.md](web/ui-patterns.md) | Select2 lookups, list/DataTable modes, Vue island pointers |
 
 ## Integration

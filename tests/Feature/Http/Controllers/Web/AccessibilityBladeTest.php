@@ -453,14 +453,14 @@ class AccessibilityBladeTest extends TestCase
 
     public function test_user_activity_history_card_does_not_carry_top_margin(): void
     {
-        $blade = (string) file_get_contents(resource_path('views/adminlte4/users/_activity_history.blade.php'));
+        $blade = (string) file_get_contents(resource_path('views/adminlte4/users/partials/activity-history.blade.php'));
 
         $this->assertStringNotContainsString('mt-3', $blade, 'activity history card must align flush with the edit-user card (no mt-3).');
     }
 
     public function test_user_activity_history_renders_empty_state_when_no_logs(): void
     {
-        $blade = (string) file_get_contents(resource_path('views/adminlte4/users/_activity_history.blade.php'));
+        $blade = (string) file_get_contents(resource_path('views/adminlte4/users/partials/activity-history.blade.php'));
 
         $this->assertStringContainsString('@else', $blade, 'activity history partial must render an @else branch for the empty case.');
         $this->assertStringContainsString('empty-state', $blade, 'activity history partial must fall back to the empty-state component when no logs exist.');
@@ -478,7 +478,7 @@ class AccessibilityBladeTest extends TestCase
 
     public function test_vtual_confirm_modal_partial_exposes_aria_labelledby(): void
     {
-        $blade = (string) file_get_contents(resource_path('views/_archive/adminlte4/vtual/partials/_confirm-modal.blade.php'));
+        $blade = (string) file_get_contents(resource_path('views/adminlte4/vtual/partials/confirm-modal.blade.php'));
 
         $this->assertStringContainsString('aria-labelledby="vtualConfirmLabel"', $blade);
         $this->assertStringContainsString('aria-hidden="true"', $blade);
@@ -597,7 +597,7 @@ class AccessibilityBladeTest extends TestCase
 
     public function test_settings_form_renders_select_when_options_present(): void
     {
-        $blade = (string) file_get_contents(resource_path('views/adminlte4/settings/_form.blade.php'));
+        $blade = (string) file_get_contents(resource_path('views/adminlte4/settings/partials/form.blade.php'));
 
         $this->assertStringContainsString("\$meta['options']", $blade);
         $this->assertStringContainsString('x-adminlte4::form.select', $blade);

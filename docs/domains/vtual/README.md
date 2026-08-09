@@ -346,7 +346,7 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 
 ## Web Blade
 
-> **Archived (2026-08):** legacy hub, standalone claims, and registry Blade UIs are parked under [`ui-archive.md`](ui-archive.md) (`routes/web/_archive/`, `resources/views/_archive/`). **Active below:** orphans, platform credentials, probe, vTuber read/claim, **owned profiles list + manage** (rebuilt — not restored from `_archive/`). Domain API unchanged.
+> **Archived (2026-08):** legacy hub, standalone claims, and registry Blade UIs are parked under [`ui-archive.md`](ui-archive.md) (`routes/web/_archive/`, `resources/views/_archive/`). **Active below:** orphans, platform credentials, probe, vTuber read/claim, **owned profiles list + manage** (rebuilt — not restored from `_archive/`). Domain API unchanged. Active partial layout and inventory: [partial-manifest.md](../../web/partial-manifest.md) · [blade-admin — Partial layout](../../web/blade-admin.md#partial-and-component-layout).
 
 | Route | View |
 |-------|------|
@@ -401,15 +401,15 @@ Orphan layout: `resources/views/{WEB_LAYOUT}/vtual/orphans/` (default `adminlte4
 
 ### UI/UX patterns (platform credentials)
 
-- **Row actions**: Edit / Test / Revoke (active) / Delete (pending & revoked) in a horizontal flex bar (`_credential_actions`); AJAX forms use `:showAlert="false"` so success/error uses toast (not inline alert inside the table). Action buttons disable for the duration of each request.
+- **Row actions**: Edit / Test / Revoke (active) / Delete (pending & revoked) in a horizontal flex bar (`platform-credentials/partials/credential-actions`); AJAX forms use `:showAlert="false"` so success/error uses toast (not inline alert inside the table). Action buttons disable for the duration of each request.
 - **Status refresh**: after Test or Revoke (success or failed Test), the credential row updates in place from the AJAX response; Delete removes the row — no full page reload.
 
 ### UI/UX patterns (vTuber profile read)
 
-- **Layout**: `show.blade.php` → `_sidebar` (identity, stats, about, `_channels`) + `_content_panel` → `_contents`.
+- **Layout**: `show.blade.php` → `vtuber/partials/sidebar` (identity, stats, about, `channels`) + `content-panel` → `contents`.
 - **Grid**: `row-cols-1 row-cols-sm-2 row-cols-xl-3`, `ratio-16x9` thumbnails, `stretched-link` whole-card click.
 - **Uniform content cards**: 3-slot flex body — `vtuber-content-card__title` (2-line `monolith-line-clamp-2`), `__meta` (date · platform, `text-truncate`), `__badges` (pinned with `margin-top: auto`) — CSS in `resources/css/monolith-overrides.css`.
-- **Channel ID cards**: `subscriber_count` / `subscriber_count_formatted` from `ChannelResource` in sidebar `_channels`.
+- **Channel ID cards**: `subscriber_count` / `subscriber_count_formatted` from `ChannelResource` in sidebar `vtuber/partials/channels`.
 - **Content filter**: `VtuberProfileService` → `ContentService::listForPublicProfile` — excludes rows whose **primary channel** is `archived` (read profile shows 0 contents when all channels archived; manage surfaces may still list archived channels separately).
 - **Auth**: any logged-in user; guest → login redirect; UUID path → **301** to canonical slug (web).
 
@@ -684,7 +684,7 @@ Web UI: link from credentials index → **API probe**.
 
 `VtualBladeWebTest` — **archived** (`tests/_archive/Feature/Http/Controllers/Web/`).
 
-`AccessibilityBladeTest` (vtual assertions) — `_confirm-modal`, `vtual-nav`, `status-badge`, `confirm-modal.js`, `credential-form.js` a11y invariants (WCAG 2.1 AA).
+`AccessibilityBladeTest` (vtual assertions) — `vtual/partials/confirm-modal`, `vtual-nav`, `status-badge`, `confirm-modal.js`, `credential-form.js` a11y invariants (WCAG 2.1 AA).
 
 ## Known limitations (deferred)
 
@@ -754,7 +754,7 @@ composer test -- --filter=AccessibilityBlade
 | `CreatorProfileManageWebTest` | Manage profile web; channel add; Discord verify; promote discovered |
 | `CreatorClaimServiceTest` (filters) | Bio proof-channel-only; Discord discovery; `verified_channel_id` contract |
 | `VtualBladeWebTest` | **Archived** — `tests/_archive/Feature/Http/Controllers/Web/` |
-| `AccessibilityBladeTest` (vtual) | `_confirm-modal`, `vtual-nav`, `status-badge`, `confirm-modal.js`, `credential-form.js` a11y invariants |
+| `AccessibilityBladeTest` (vtual) | `vtual/partials/confirm-modal`, `vtual-nav`, `status-badge`, `confirm-modal.js`, `credential-form.js` a11y invariants |
 
 
 ## Profile merge (absorb) — implemented

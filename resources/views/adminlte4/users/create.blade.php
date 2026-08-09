@@ -2,7 +2,7 @@
     <div class="row">
         <div class="col-lg-6">
             <x-adminlte4::card :title="__('web/users.new_card_title')">
-                @include(config('web.layout').'.users._form', [
+                @include(config('web.layout').'.users.partials.form', [
                     'action' => route('users.store'),
                     'method' => 'POST',
                     'isEdit' => false,

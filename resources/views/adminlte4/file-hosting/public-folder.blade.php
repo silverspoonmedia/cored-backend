@@ -83,7 +83,7 @@
                                     <tr>
                                         <td class="fh-table__icon-cell">
                                             <a href="{{ route('file-hosting.public.folders.show', $child['id']) }}">
-                                                @include('adminlte4.file-hosting.partials._file-icon', ['mime' => null, 'isFolder' => true])
+                                                @include(config('web.layout').'.file-hosting.partials.file-icon', ['mime' => null, 'isFolder' => true])
                                             </a>
                                         </td>
                                         <td>
@@ -99,7 +99,7 @@
                                     <tr>
                                         <td class="fh-table__icon-cell">
                                             <a href="{{ route('file-hosting.public.files.show', $file['id']) }}">
-                                                @include('adminlte4.file-hosting.partials._file-icon', ['mime' => $file['mime'] ?? null, 'isFolder' => false])
+                                                @include(config('web.layout').'.file-hosting.partials.file-icon', ['mime' => $file['mime'] ?? null, 'isFolder' => false])
                                             </a>
                                         </td>
                                         <td>

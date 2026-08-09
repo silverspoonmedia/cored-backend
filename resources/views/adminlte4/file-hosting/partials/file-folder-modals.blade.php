@@ -1,4 +1,4 @@
-﻿    {{-- Rename File Modal --}}
+    {{-- Rename File Modal --}}
     @can('edit file hosting file')
         <div class="modal fade" id="fhRenameFileModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
@@ -75,7 +75,7 @@
             </div>
         </div>
 
-        @include('adminlte4.file-hosting.partials._move-modal', [
+        @include(config('web.layout').'.file-hosting.partials.move-modal', [
             'modalId' => 'fhMoveFileModal',
             'formId' => 'fhMoveFileForm',
             'title' => __('web/file-hosting.move_title'),
@@ -159,7 +159,7 @@
             </div>
         </div>
 
-        @include('adminlte4.file-hosting.partials._move-modal', [
+        @include(config('web.layout').'.file-hosting.partials.move-modal', [
             'modalId' => 'fhMoveFolderModal',
             'formId' => 'fhMoveFolderForm',
             'title' => __('web/file-hosting.move_title'),

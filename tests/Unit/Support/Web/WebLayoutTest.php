@@ -15,6 +15,7 @@ class WebLayoutTest extends TestCase
         $this->assertSame('adminlte4', WebLayout::name());
         $this->assertSame('adminlte4.dashboard', WebLayout::view('dashboard'));
         $this->assertSame('adminlte4.partials.breadcrumbs', WebLayout::breadcrumbsView());
+        $this->assertSame('adminlte4.users.partials.form', WebLayout::partial('users.partials.form'));
         $this->assertSame(
             hash('xxh128', 'adminlte4').'::partials.sidebar',
             WebLayout::sidebarComposerView(),

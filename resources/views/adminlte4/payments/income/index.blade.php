@@ -124,21 +124,21 @@
             <div class="col-lg-4">
                 <x-adminlte4::card :title="__('web/payments.income.breakdown.gateway')">
                     <div class="table-responsive" data-payment-income-by-gateway>
-                        @include('adminlte4.payments.income.partials.breakdown-table', ['rows' => data_get($overview, 'by_gateway', [])])
+                        @include(config('web.layout').'.payments.income.partials.breakdown-table', ['rows' => data_get($overview, 'by_gateway', [])])
                     </div>
                 </x-adminlte4::card>
             </div>
             <div class="col-lg-4">
                 <x-adminlte4::card :title="__('web/payments.income.breakdown.channel')">
                     <div class="table-responsive" data-payment-income-by-channel>
-                        @include('adminlte4.payments.income.partials.breakdown-table', ['rows' => data_get($overview, 'by_channel', [])])
+                        @include(config('web.layout').'.payments.income.partials.breakdown-table', ['rows' => data_get($overview, 'by_channel', [])])
                     </div>
                 </x-adminlte4::card>
             </div>
             <div class="col-lg-4">
                 <x-adminlte4::card :title="__('web/payments.income.breakdown.product')">
                     <div class="table-responsive" data-payment-income-by-product>
-                        @include('adminlte4.payments.income.partials.breakdown-table', ['rows' => data_get($overview, 'by_invoiceable_type', [])])
+                        @include(config('web.layout').'.payments.income.partials.breakdown-table', ['rows' => data_get($overview, 'by_invoiceable_type', [])])
                     </div>
                 </x-adminlte4::card>
             </div>
@@ -173,7 +173,7 @@
 
         <x-adminlte4::card :title="__('web/payments.income.invoices_title')">
             <div class="table-responsive" data-payment-income-invoices>
-                @include('adminlte4.payments.income.partials.invoices-table', ['items' => $invoiceItems])
+                @include(config('web.layout').'.payments.income.partials.invoices-table', ['items' => $invoiceItems])
             </div>
             <div class="d-flex justify-content-end mt-3" data-payment-income-pagination>
                 @php $pagination = data_get($invoices, 'pagination', []); @endphp

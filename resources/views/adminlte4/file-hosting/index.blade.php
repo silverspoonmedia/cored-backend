@@ -427,11 +427,11 @@
     <div id="vue-file-hosting"></div>
     <script type="application/json" data-vue-file-hosting data-vue-mount-failed="{{ __('web/file-hosting.vue_mount_failed') }}">@json($vueFhBootstrap)</script>
 
-    @include('adminlte4.file-hosting.partials._workspace-modals')
-    @include('adminlte4.file-hosting.partials._microstock-review-panel')
-    @include('adminlte4.file-hosting.partials._usage-offcanvas')
-    @include('adminlte4.file-hosting.partials._file-folder-modals')
-    @include('adminlte4.file-hosting.partials._team-offcanvas', [
+    @include(config('web.layout').'.file-hosting.partials.workspace-modals')
+    @include(config('web.layout').'.file-hosting.partials.microstock-review-panel')
+    @include(config('web.layout').'.file-hosting.partials.usage-offcanvas')
+    @include(config('web.layout').'.file-hosting.partials.file-folder-modals')
+    @include(config('web.layout').'.file-hosting.partials.team-offcanvas', [
         'workspaceId' => $workspaceId,
         'currentWorkspace' => $currentWorkspace ?? null,
         'workspaceMembers' => $workspaceMembers ?? [],

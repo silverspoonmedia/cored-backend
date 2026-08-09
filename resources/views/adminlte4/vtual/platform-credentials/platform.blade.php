@@ -59,7 +59,7 @@
                                     @endif
                                 </td>
                                 <td class="text-end">
-                                    @include(config('web.layout').'.vtual.platform-credentials._credential_actions', [
+                                    @include(config('web.layout').'.vtual.platform-credentials.partials.credential-actions', [
                                         'credential' => $credential,
                                         'platformId' => $platformId,
                                     ])
@@ -85,7 +85,7 @@
         </x-adminlte4::card>
     </div>
 
-    @include('adminlte4.vtual.partials._confirm-modal')
+    @include(config('web.layout').'.vtual.partials.confirm-modal')
 
     @vite('resources/css/vtual/admin.css')
 

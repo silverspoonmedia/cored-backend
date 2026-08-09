@@ -14,7 +14,7 @@
             </a>
 
             <x-adminlte4::form.ajax :action="route('vtual.platform-credentials.store', $platformId)" method="POST" id="vtual-credential-create-form">
-                @include(config('web.layout').'.vtual.platform-credentials._form', ['credential' => null])
+                @include(config('web.layout').'.vtual.platform-credentials.partials.form', ['credential' => null])
             </x-adminlte4::form.ajax>
         </x-adminlte4::card>
     </div>

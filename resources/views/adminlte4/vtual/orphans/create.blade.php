@@ -1,6 +1,6 @@
 <x-adminlte4::layouts.app :title="__('web/vtual-orphans.create_title')">
     <x-adminlte4::card :title="__('web/vtual-orphans.create_title')">
-        @include(config('web.layout').'.vtual.orphans._form', [
+        @include(config('web.layout').'.vtual.orphans.partials.form', [
             'action' => route('vtual.orphans.store'),
             'method' => 'POST',
             'isEdit' => false,

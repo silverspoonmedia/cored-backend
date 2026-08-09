@@ -241,7 +241,7 @@ High-level order of work that landed in this long implementation arc (not exhaus
 10. This status doc + README gap close  
 11. Web UI/UX overhaul — AJAX forms, Bootstrap modal confirmations, WCAG 2.1 AA, partial extraction, dead code removal, respondFromApi refactor  
 12. Internal vs external surface split — separate routes (`vtual.php` / `vtual-admin.php`), nav partials (`nav-app` / `nav-admin`), Administration menu branch (Root/Admin/Moderator)  
-13. Admin UI polish — registry stats + DataTable pending queue; credentials intro/stats/platform cards; per-platform credentials CRUD split (create/edit pages, shared `_form`, client-side DataTable index)  
+13. Admin UI polish — registry stats + DataTable pending queue; credentials intro/stats/platform cards; per-platform credentials CRUD split (create/edit pages, shared `platform-credentials/partials/form`, client-side DataTable index)  
 14. **Web UI reset** — archive all legacy Blade (external + internal); new `/apps/vtual/orphans` staff CRUD (users-pattern DataTable + create/edit); API `GET creators/orphans`  
 15. **vTuber read profile** — `vtual-vtuber.php`, AdminLTE col-4/8 (sidebar + content grid)  
 16. **YouTube `subscriber_count`** — migration + API `subscriber_count_formatted` + channel ID cards on profile  

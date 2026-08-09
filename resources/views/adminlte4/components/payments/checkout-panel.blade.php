@@ -45,12 +45,12 @@
                 <h2 class="h5 mb-0">{{ __('web/payments.checkout.title') }}</h2>
             </div>
             <div class="ois-payment-card__body">
-                @include('adminlte4.components.payments.checkout-panel-body')
+                @include(config('web.layout').'.components.payments.checkout-panel-body')
             </div>
         </div>
     @else
         <x-adminlte4::card :title="__('web/payments.checkout.title')">
-            @include('adminlte4.components.payments.checkout-panel-body')
+            @include(config('web.layout').'.components.payments.checkout-panel-body')
         </x-adminlte4::card>
     @endif
 

@@ -260,14 +260,14 @@ Soft override CSS layer (light/dark) under layout assets — keep tokenized vari
 - **Menu delete cascade modal**: `menus/index` ships one delete trigger per row that opens `#menuDeleteConfirmModal`. The modal's cascade checkbox swaps the form `action` to the cascade URL via JS (`data-menu-cascade-url`, `data-menu-confirm-template`). No more inline twin delete buttons.
 - **Paired card alignment**: `users/edit` keeps the edit form and recent-activity cards flush (no `mt-3`). When activity is empty, the partial renders an `empty-state` inside the card so the right column does not collapse.
 - **File-hosting toolbar symmetry**: `.fh-toolbar` carries a full border + uniform radius (not a half-open bar). Empty listing colspan is owned by Vue `App.vue` (not Blade `$tableColspan`).
-- **File-hosting Vue shell**: `file-hosting/index.blade.php` mounts `#vue-file-hosting` + JSON bootstrap and includes live modal/offcanvas shells (`_workspace-modals`, `_microstock-review-panel`, `_usage-offcanvas`, `_file-folder-modals`, `_team-offcanvas`). Listing, toolbar, upload, and row actions live in `App.vue` — leftover `_toolbar-zone` / `_browse-views` are orphans (not the live paint path).
+- **File-hosting Vue shell**: `file-hosting/index.blade.php` mounts `#vue-file-hosting` + JSON bootstrap and includes live modal/offcanvas shells (`workspace-modals`, `microstock-review-panel`, `usage-offcanvas`, `file-folder-modals`, `team-offcanvas`). Listing, toolbar, upload, and row actions live in `App.vue` — archived `toolbar-zone` / `browse-views` / `trash-show-panels` under `resources/views/_archive/adminlte4/file-hosting/partials/` are not the live paint path.
 - **DataTables factory**: `initDataTable({ tableId, ajaxUrl, columns, order, language, exposeForReload, onReady })` in `datatable-init.js` (Vite entry). Six index views load it via `@vite` and call `window.initDataTable(...)` from inline scripts — no ESM import (Vite 8/Rolldown tree-shakes named exports from entry modules). `exposeForReload` stores instances in `window.dataTables[tableId]` for realtime bell → DT reload bridge. jQuery + DataTables binding (`window.jQuery`, `DataTable.use(jQuery)`) lives in `infra/jquery-init.js` and runs before any consumer — DataTables 3 does not auto-detect `window.jQuery` for `.fn.DataTable` attachment.
 - **JS infrastructure modules**: `api-response-handler.js`, `ajax-form.js`, `theme-scroll.js` (theme toggle + sidebar scrollbar), and `select2-init.js` are bundled in `app.js` (Vite). No inline `<script>` blocks for these; the old Blade partials were removed. Config passed via `<script type="application/json" data-monolith-api-messages>`.
 - **SweetAlert2**: `sweetalert2` (npm) bundled in `app.js` via `infra/sweetalert.js`. Exposes `window.MonolithSwal` (`alert`, `confirm`, `toastMessage`, `Swal`). Replaces all `window.alert` / `window.confirm`. Form confirm delegation: `[data-swal-confirm]` attribute on `<form>` triggers `MonolithSwal.confirm(message, '', { dangerMode: true })` before submit (global listener in `app.js`). i18n via `<script type="application/json" data-monolith-swal-labels>` JSON blob (keys: `ok`, `confirm`, `cancel` from `lang/{en,id,ja}/ui.php` under `swal.*`). Details: [ui-patterns — SweetAlert2 / confirmations](ui-patterns.md#sweetalert2--confirmations).
 - **Sidebar search**: `sidebar-search.js` loads via `@vite` + `@push('scripts')` (after `app.js`). Config from `<script type="application/json" data-sidebar-nav-config>`. No inline JS.
 - **Header actions**: index card headers expose their primary action via `<x-slot:actions>` (e.g. "Add" / "Create" / "Export" buttons), not a bespoke `d-flex` div in the card body. Every sibling index view follows this slot — `invoices/index`, `users/index`, `subscriptions/index`, `payment-gateways/index`, `inference/providers/index`, `inference/model-cards/index`. Create/add buttons prefix the label with `<i class="bi bi-plus-lg me-1"></i>` for consistency.
 - **Icon-only buttons**: every icon-only button (row actions, view toggles, toolbars) carries both `aria-label` and `title` (WCAG 2.1 AA — see [ui-patterns — Accessibility](ui-patterns.md#accessibility-aria)). Icons use `aria-hidden="true"` so screen readers skip the glyph. The shared `renderDatatableActions` renderer sets both from `action.label`; manual Blade rows must do the same.
-- **SweetAlert2 confirm attribute**: forms marked `data-swal-confirm` must use the Blade echo form `data-swal-confirm="{{ __('...') }}"` (not `@json(...)` / `@js(...)`). `@json()` / `@js()` run `json_encode` with `JSON_HEX_QUOT`, which escapes the message's double quotes into `\u0022` tokens that render literally inside the SweetAlert2 dialog. Reference: `file-hosting/blocklist.blade.php`, `file-hosting/partials/_team-offcanvas.blade.php` (correct), `services/index.blade.php` & `product-activations/show.blade.php` (fixed).
+- **SweetAlert2 confirm attribute**: forms marked `data-swal-confirm` must use the Blade echo form `data-swal-confirm="{{ __('...') }}"` (not `@json(...)` / `@js(...)`). `@json()` / `@js()` run `json_encode` with `JSON_HEX_QUOT`, which escapes the message's double quotes into `\u0022` tokens that render literally inside the SweetAlert2 dialog. Reference: `file-hosting/blocklist.blade.php`, `file-hosting/partials/team-offcanvas.blade.php` (correct), `services/index.blade.php` & `product-activations/show.blade.php` (fixed).
 - **Auto-submit delegation**: forms that should submit on a child `change` event carry `data-auto-submit` on the `<form>` and `data-auto-submit-trigger` on the triggering control (e.g. a `<select>` filter). A global listener in `app.js` handles the submit — no inline `onchange="this.form.submit()"`. Replaces the inline-JS pattern previously on `product-activations/show`'s state filter.
 - **Direct-upload browse trigger**: auth FH dropzone is Vue (`FhDropzone.vue`) — browse button / OS drop / click-to-open open the file picker; queue UI is reactive. Legacy `direct-upload.js` `initDirectUpload` remains for non-Vue auto-init only.
 
@@ -281,6 +281,28 @@ The inline `@php($expr)` directive compiles via a regex that matches the **first
 | Inline `@php($flag = true)` only for trivial scalar assignments | Inline `@php($x = SomeClass::method($arg))` |
 
 Hit on `services/show` (fixed): the `@can/@else/@endcan` + inline `@php(...)` block was replaced with a single block `@php … @endphp` using `Gate::any([...])`. See [service — Web (Blade)](../domains/service/README.md#web-blade).
+
+## Partial and component layout
+
+Views live under `resources/views/{layout}/` where `{layout}` is `config('web.layout')` (default `adminlte4`). [`WebLayout`](../../app/Support/Web/WebLayout.php) resolves screen and partial names — never hard-code `adminlte4.` in domain Blade.
+
+| Kind | Path | Include / tag |
+|------|------|----------------|
+| Full page | `{layout}/{domain}/{action}.blade.php` | `webView('users.edit')` in controller |
+| Domain fragment | `{layout}/{domain}/partials/{name}.blade.php` | `@include(config('web.layout').'.users.partials.form', …)` or `@include(\App\Support\Web\WebLayout::partial('users.partials.form'), …)` |
+| Reusable UI (tag) | `{layout}/components/{group}/{name}.blade.php` | `<x-adminlte4::form.input …>` |
+| Layout shell (composer-bound) | `{layout}/components/partials/` | `<x-adminlte4::layouts.app>` includes sidebar/navbar — **do not move** without updating [`NavigationServiceProvider`](../../app/Providers/Domain/NavigationServiceProvider.php) / [`NotificationServiceProvider`](../../app/Providers/Domain/NotificationServiceProvider.php) |
+| Shared layout misc | `{layout}/partials/` | e.g. `partials/breadcrumbs` via `WebLayout::breadcrumbsView()` |
+
+**Rules:**
+
+- Partials belong in a `partials/` subdirectory, not beside index/create/edit pages. Drop the leading `_` prefix when the file is already under `partials/`.
+- `@include` inherits parent scope; `<x-adminlte4::…>` components only receive explicit attributes/slots — do not convert includes with implicit parent variables without passing data.
+- Do not move `@vite` into shared partials (bundle bleed / duplicate loads). Page shells own asset entries.
+- Extract a shared partial only when **≥2 active callers** share the same data/DOM contract (e.g. `vtual/partials/channel-add-form`, `payments/income/partials/breakdown-table`).
+- Orphan Blade (no caller, superseded by Vue islands) → `resources/views/_archive/` — not refactored with active surface. Inventory: [partial-manifest.md](partial-manifest.md).
+
+**Anti-patterns (do not consolidate):** one generic CRUD `_form`; cross-domain status badges; merging vTual orphan channel tables with profile manage channels (different RBAC, routes, DOM ids, JS).
 
 ## Concurrent server note
 

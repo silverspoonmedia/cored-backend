@@ -1,6 +1,6 @@
 <x-adminlte4::layouts.app :title="__('web/services.edit_title')">
     <x-adminlte4::card :title="__('web/services.edit_card_title', ['name' => $service->name ?? ''])">
-        @include(config('web.layout').'.services._form', [
+        @include(config('web.layout').'.services.partials.form', [
             'action' => route('services.update', $service->id),
             'method' => 'PUT',
             'isEdit' => true,

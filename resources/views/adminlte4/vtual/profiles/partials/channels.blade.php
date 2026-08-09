@@ -27,7 +27,7 @@
 @endphp
 <h5 class="mb-2">{{ __('web/vtual.profiles.section_channels') }}</h5>
 @if ($canMutate)
-    @include(config('web.layout').'.vtual.partials._channel-add-form', [
+    @include(config('web.layout').'.vtual.partials.channel-add-form', [
         'action' => route('vtual.profiles.channels.store', $routeKey),
         'transPrefix' => 'web/vtual',
         'formKind' => 'profiles',

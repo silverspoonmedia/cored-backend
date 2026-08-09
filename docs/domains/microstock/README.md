@@ -494,7 +494,7 @@ The Lock & Describe modal (`#fhCollectionDescribeModal`) uses a compact 2-column
 
 ### Switcher multi-workspace UI
 
-The workspace switcher is painted by Vue (`App.vue`): reactive `workspaces` from island bootstrap, refreshed via `softRefetchWorkspaces` (`GET file-hosting/workspaces`). Microstock workspaces appear as `kind === 'microstock'` rows in that same list (stars icon). Team create uses `#fhCreateWorkspaceModal` when `ui.planState` / `ui.canCreateWorkspace` allow; free/grace CTAs point at Services. Legacy vanilla rebuilds (`renderWorkspaceMenuItems`, `refreshMicrostockSlotSection`, `data-fh-microstock-slot`) are **not** on the live island path — orphan Blade `_workspace-switcher` still mentions them but is not included by the Vue index.
+The workspace switcher is painted by Vue (`App.vue`): reactive `workspaces` from island bootstrap, refreshed via `softRefetchWorkspaces` (`GET file-hosting/workspaces`). Microstock workspaces appear as `kind === 'microstock'` rows in that same list (stars icon). Team create uses `#fhCreateWorkspaceModal` when `ui.planState` / `ui.canCreateWorkspace` allow; free/grace CTAs point at Services. Legacy vanilla rebuilds (`renderWorkspaceMenuItems`, `refreshMicrostockSlotSection`, `data-fh-microstock-slot`) are **not** on the live island path — the Vue index does not include the archived `workspace-switcher` Blade partial.
 
 ### Review UI (curate metadata)
 
