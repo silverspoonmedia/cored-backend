@@ -2,6 +2,9 @@
 
 namespace App\Domain\Service\Http\Controllers\API\V1;
 
+use App\Domain\Service\Enums\BillingInterval;
+use App\Domain\Service\Enums\PlanKind;
+use App\Domain\Service\Enums\ServiceStatus;
 use App\Domain\Service\Http\Requests\CheckoutServiceRequest;
 use App\Domain\Service\Http\Requests\StoreServiceRequest;
 use App\Domain\Service\Http\Requests\UpdateServiceRequest;
@@ -33,6 +36,17 @@ class ServiceController extends Controller
             $this->resolveResource(ServiceResource::collection($this->catalog->list())),
             __('api/services.list_success'),
         );
+    }
+
+    public function options(): JsonResponse
+    {
+        $this->authorize('viewAny', Service::class);
+
+        return $this->successResponse([
+            'billing_intervals' => BillingInterval::values(),
+            'plan_kinds' => PlanKind::values(),
+            'statuses' => ServiceStatus::values(),
+        ], __('api/services.options_success'));
     }
 
     public function show(Service $service): JsonResponse

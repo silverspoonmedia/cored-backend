@@ -2,6 +2,7 @@
 
 return [
     'list_success' => 'Layanan berhasil diambil.',
+    'options_success' => 'Opsi layanan berhasil diambil.',
     'show_success' => 'Layanan berhasil diambil.',
     'created' => 'Layanan berhasil dibuat.',
     'updated' => 'Layanan berhasil diperbarui.',

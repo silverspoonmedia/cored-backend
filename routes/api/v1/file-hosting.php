@@ -3,6 +3,7 @@
 use App\Domain\FileHosting\Http\Controllers\API\V1\BrowseController;
 use App\Domain\FileHosting\Http\Controllers\API\V1\FileController;
 use App\Domain\FileHosting\Http\Controllers\API\V1\FolderController;
+use App\Domain\FileHosting\Http\Controllers\API\V1\HashBlocklistController;
 use App\Domain\FileHosting\Http\Controllers\API\V1\QuotaController;
 use App\Domain\FileHosting\Http\Controllers\API\V1\TrashController;
 use App\Domain\FileHosting\Http\Controllers\API\V1\UploadController;
@@ -85,5 +86,12 @@ Route::middleware(['auth:api', 'domain.access:FileHosting', 'product.active:File
         Route::post('uploads/{upload}/sign-parts', [UploadController::class, 'signParts'])->whereUuid('upload')->name('uploads.sign-parts');
         Route::post('uploads/{upload}/complete', [UploadController::class, 'complete'])->whereUuid('upload')->name('uploads.complete');
         Route::delete('uploads/{upload}', [UploadController::class, 'destroy'])->whereUuid('upload')->name('uploads.destroy');
+    });
+
+    // DMCA hash blocklist admin (manage any file hosting resource).
+    Route::middleware('permission:manage any file hosting resource')->prefix('blocklist')->name('blocklist.')->group(function (): void {
+        Route::get('/', [HashBlocklistController::class, 'index'])->name('index');
+        Route::post('/', [HashBlocklistController::class, 'store'])->name('store');
+        Route::delete('/{entry}', [HashBlocklistController::class, 'destroy'])->whereUuid('entry')->name('destroy');
     });
 });

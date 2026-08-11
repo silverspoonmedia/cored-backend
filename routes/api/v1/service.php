@@ -18,6 +18,7 @@ Route::middleware(['auth:api', 'permission:view settings'])
 
 Route::middleware('auth:api')->group(function (): void {
     Route::get('services', [ServiceController::class, 'index'])->name('services.index');
+    Route::get('services/options', [ServiceController::class, 'options'])->name('services.options');
     Route::post('services', [ServiceController::class, 'store'])->name('services.store');
     Route::get('services/{service}', [ServiceController::class, 'show'])->name('services.show')->whereUuid('service');
     Route::put('services/{service}', [ServiceController::class, 'update'])->name('services.update')->whereUuid('service');

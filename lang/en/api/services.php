@@ -2,6 +2,7 @@
 
 return [
     'list_success' => 'Services retrieved successfully.',
+    'options_success' => 'Service options retrieved successfully.',
     'show_success' => 'Service retrieved successfully.',
     'created' => 'Service created successfully.',
     'updated' => 'Service updated successfully.',

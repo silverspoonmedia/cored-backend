@@ -82,6 +82,24 @@ class ServiceCrudTest extends TestCase
             ->assertJsonCount(1, 'data');
     }
 
+    public function test_options_returns_enum_values(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        $this->actingAsJwt($admin)
+            ->getJson('/api/v1/services/options')
+            ->assertOk()
+            ->assertJsonPath('data.billing_intervals', ['monthly', 'quarterly', 'yearly', 'once'])
+            ->assertJsonPath('data.plan_kinds', ['main', 'addon'])
+            ->assertJsonPath('data.statuses', ['draft', 'active', 'archived']);
+    }
+
+    public function test_guest_cannot_access_options(): void
+    {
+        $this->getJson('/api/v1/services/options')
+            ->assertUnauthorized();
+    }
+
     public function test_duplicate_code_returns_422(): void
     {
         $admin = $this->userWithRole('Admin');

@@ -2,6 +2,7 @@
 
 return [
     'list_success' => 'サービスを取得しました。',
+    'options_success' => 'サービスオプションを取得しました。',
     'show_success' => 'サービスを取得しました。',
     'created' => 'サービスを作成しました。',
     'updated' => 'サービスを更新しました。',
