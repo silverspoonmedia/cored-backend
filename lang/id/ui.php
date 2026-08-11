@@ -3,6 +3,9 @@
 return [
     'yes' => 'Ya',
     'no' => 'Tidak',
+    'loading' => 'Memuat…',
+    'home' => 'Beranda',
+    'all_rights_reserved' => 'Hak cipta dilindungi.',
     'actions' => [
         'save' => 'Simpan',
         'cancel' => 'Batal',

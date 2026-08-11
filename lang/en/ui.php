@@ -3,6 +3,9 @@
 return [
     'yes' => 'Yes',
     'no' => 'No',
+    'loading' => 'Loading…',
+    'home' => 'Home',
+    'all_rights_reserved' => 'All rights reserved.',
     'actions' => [
         'save' => 'Save',
         'cancel' => 'Cancel',

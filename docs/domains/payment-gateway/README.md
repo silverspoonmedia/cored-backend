@@ -25,9 +25,17 @@ Relative prefixes below mount under **`/api/v1`** (not the Blade `/apps` shell).
 |------|------------|------|
 | Gateways | `/payment-gateways` | manage/view permissions |
 | Invoices | `/invoices`, channel-checkout | view invoice / initiate payment |
-| Channels | `/payment-channels`, routes | view / manage |
+| Channels | `/payment-channels`, routes, sync-policy | view / manage |
 | Subscriptions | `/subscriptions` | view/manage subscription |
 | Midtrans / iPaymu | `/payments/providers/{midtrans\|ipaymu}/*` | JWT except webhooks |
+
+### Channel sync (API)
+
+`POST /api/v1/payment-channels/sync-policy` — materializes routing policy from [Routing_Price.yaml](Routing_Price.yaml) into `payment_channels` + `payment_channel_routes` rows. API equivalent of the web sync button (`POST /apps/payment-channels/sync-routing-policy`) and `php artisan payments:sync-routing-policy`. Permission: `manage payment gateway`. Returns `{ channels: int, routes: int, skipped: int }`.
+
+### PaymentChannelResource checkout quote flattening
+
+When `checkout_quote` is set on the model (via `PaymentChannelService::listAvailable` with a `subtotal` query param), `PaymentChannelResource` flattens the quote fields to the **top level** of the resource via `array_merge` — they are NOT nested under a `checkout_quote` key. Flattened fields: `estimated_channel_fee`, `estimated_channel_fee_formatted`, `estimated_customer_total`, `estimated_customer_total_formatted`, `fee_label`, `fee_type`, `fee_basis`, `fee_flat`, `fee_percent`, `gateway_name`, `route_role`.
 
 ### Webhooks
 

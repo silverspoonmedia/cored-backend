@@ -10,6 +10,7 @@ return [
     'view_all' => 'View all',
     'mark_all_read' => 'Mark all as read',
     'empty' => 'No notifications.',
+    'mark_all_failed' => 'Failed to mark notifications as read.',
     'columns' => [
         'message' => 'Notification',
         'time' => 'Time',

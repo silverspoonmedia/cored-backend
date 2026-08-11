@@ -140,7 +140,7 @@ When a paid entitlement activates, `ensureProductActive` maps the Service catalo
 | GET | `/products` | `view product activations` | List products with summary (v2) |
 | GET | `/products/{productKey}` | `view product activations` | Per-product detail + paginated activations (v2) |
 | GET | `/products/{productKey}/users/{userId}` | `view product activations` | Per-user drill-down (v2) |
-| GET | `/` | `view product activations` | List/filter (`product_key`, `state`, `user_id`) |
+| GET | `/` | `view product activations` | List/filter (`product_key`, `state`, `user_id`); returns flat `ProductActivationResource[]` in `data` (no `{ data, pagination }` wrapper). The per-product `GET /products/{productKey}` endpoint DOES return `{ summary, activations, pagination }`. |
 | GET | `/stats` | `view product activations` | Count by state |
 | GET | `/{productActivation}` | `view product activations` | Show (owner sees own) |
 | POST | `/{productActivation}/approve` | `manage product activations` | Pending → Active |

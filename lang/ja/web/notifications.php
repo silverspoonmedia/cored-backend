@@ -10,6 +10,7 @@ return [
     'view_all' => 'すべて表示',
     'mark_all_read' => 'すべて既読にする',
     'empty' => '通知はありません。',
+    'mark_all_failed' => '通知を既読にできませんでした。',
     'columns' => [
         'message' => '通知',
         'time' => '日時',

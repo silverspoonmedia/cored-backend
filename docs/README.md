@@ -12,6 +12,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
 | Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [configuration-policy.md](platform/configuration-policy.md) |
 | Blade admin (API consumer) | [web/blade-admin.md](web/blade-admin.md) |
+| External SPA port (Vue-Workers) | [integration/vue-workers-spa.md](integration/vue-workers-spa.md) |
 | Auth web URI layout | Authenticated Blade under **`/apps/*`** (route names unprefixed); guest/public + `POST /logout` at site root; product roots (`/file-hosting`, …) reserved empty; API `/api/v1/*` unchanged — [blade-admin — Routes](web/blade-admin.md#routes) · [architecture — Routes](platform/architecture.md#routes) |
 
 ## Platform (kernel / cross-cutting)
@@ -60,7 +61,9 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 ## Integration
 
-`docs/integration/` is reserved for future external-client / integration guides. No living guide currently lives there.
+| Document | Topic |
+|----------|-------|
+| [vue-workers-spa.md](integration/vue-workers-spa.md) | External Vue 3 SPA port (Cloudflare Workers) — API contracts, type alignment, i18n porting, component conventions |
 
 ## Archive (not daily reading)
 

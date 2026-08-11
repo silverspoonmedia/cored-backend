@@ -124,7 +124,7 @@ Services: `AiBillingService`, `AiCreditService`, `UnknownModelBillingConsolidati
 
 Transparent prepaid balance and AI usage history for the billing subject (the user who triggered analyze).
 
-`GET /api/v1/microstock/billing` returns `balance_usd` as a **display string** (`$49.91` or `-$0.12` when negative); `balance_micro_usd` remains the signed integer source. UI (`microstock-usage.js` `formatUsdDisplay()`) prefers the string when present, else formats from micro-USD.
+`GET /api/v1/microstock/billing` returns `balance_micro_usd` (signed integer source), `balance_usd` (display string, `$49.91` or `-$0.12` when negative), `estimated_per_analysis_micro_usd`, `estimated_per_analysis_usd`, and `daily_free` snapshot from `AiDailyFreeService::snapshot()`: `{ enabled: bool, limit: int, used: int, remaining: int, resets_at: string|null }`. UI (`microstock-usage.js` `formatUsdDisplay()`) prefers the string when present, else formats from micro-USD.
 
 | Surface | Route / endpoint |
 |---------|------------------|
@@ -135,7 +135,7 @@ Transparent prepaid balance and AI usage history for the billing subject (the us
 
 **Page layout**
 
-1. **Summary** — prepaid `balance_usd` (formatted string from API), `estimated_per_analysis_usd`, daily free (`remaining/limit` when enabled).
+1. **Summary** — prepaid `balance_usd` (formatted string from API), `estimated_per_analysis_usd`, daily free (`daily_free: { enabled, limit, used, remaining, resets_at }` when enabled; `resets_at` is ISO 8601 or null).
 2. **Tab: Balance mutations** — bank-style ledger from `microstock_ai_credit_transactions` (`purchase`, `analysis_debit`, `adjustment`); signed amounts, running `balance_after`.
 3. **Tab: AI usage detail** — per HTTP call from `microstock_ai_usage_events` (stage, model, tokens, cost, `billing_source` badge: Free / Prepaid). Daily-free rows appear here only; they do not create ledger debits.
 4. **Tab: Platform overview** (Root / Admin / Moderator only) — platform-wide aggregates: provider cost, billable, margin, events, active users, daily-free subsidized cost; breakdown by billing source, stage, and model; cross-user usage event list.

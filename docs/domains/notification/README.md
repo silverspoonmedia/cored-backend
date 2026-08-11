@@ -146,7 +146,7 @@ Viewer API endpoints:
 | API endpoint | Purpose |
 |--------------|---------|
 | `GET /api/v1/notifications` | Visible notifications with viewer-specific `is_read` |
-| `GET /api/v1/notifications/unread-count` | Absolute count; polling/reconciliation fallback |
+| `GET /api/v1/notifications/unread-count` | Absolute count (`{ unread: number }`); polling/reconciliation fallback |
 | `POST /api/v1/notifications/{id}/read` | Idempotent single-read |
 | `POST /api/v1/notifications/read-all` | Returns `{ marked, unread: 0 }` |
 

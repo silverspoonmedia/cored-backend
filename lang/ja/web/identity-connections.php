@@ -19,4 +19,5 @@ return [
     'linked_unverified' => '未認証',
     'linked_revoked' => '取り消し済み',
     'synced_at' => '最終同期: :at',
+    'discord_disconnect_failed' => 'Discordの連携解除に失敗しました。',
 ];

@@ -10,6 +10,7 @@ return [
     'view_all' => 'Lihat semua',
     'mark_all_read' => 'Tandai semua dibaca',
     'empty' => 'Tidak ada notifikasi.',
+    'mark_all_failed' => 'Gagal menandai notifikasi sebagai dibaca.',
     'columns' => [
         'message' => 'Notifikasi',
         'time' => 'Waktu',

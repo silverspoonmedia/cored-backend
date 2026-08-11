@@ -3,6 +3,9 @@
 return [
     'yes' => 'はい',
     'no' => 'いいえ',
+    'loading' => '読み込み中…',
+    'home' => 'ホーム',
+    'all_rights_reserved' => 'All rights reserved.',
     'actions' => [
         'save' => '保存',
         'cancel' => 'キャンセル',

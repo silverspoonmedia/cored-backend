@@ -19,4 +19,5 @@ return [
     'linked_unverified' => 'Not verified',
     'linked_revoked' => 'Revoked',
     'synced_at' => 'Last synced: :at',
+    'discord_disconnect_failed' => 'Failed to disconnect Discord.',
 ];

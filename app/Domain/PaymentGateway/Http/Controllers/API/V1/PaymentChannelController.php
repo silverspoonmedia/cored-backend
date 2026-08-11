@@ -6,6 +6,7 @@ use App\Domain\PaymentGateway\Http\Requests\IndexPaymentChannelRequest;
 use App\Domain\PaymentGateway\Http\Requests\UpdatePaymentChannelRequest;
 use App\Domain\PaymentGateway\Http\Resources\PaymentChannelResource;
 use App\Domain\PaymentGateway\Services\PaymentChannelService;
+use App\Domain\PaymentGateway\Support\Routing\PaymentRouteMaterializer;
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -54,6 +55,21 @@ class PaymentChannelController extends Controller
         return $this->successResponse(
             (new PaymentChannelResource($channel))->resolve(),
             __('api/payments.channels.updated'),
+        );
+    }
+
+    public function syncRoutingPolicy(PaymentRouteMaterializer $materializer): JsonResponse
+    {
+        $this->authorize('manage payment gateway');
+
+        $stats = $materializer->sync(dryRun: false);
+
+        return $this->successResponse(
+            $stats,
+            __('web/payments.channels.sync_policy_done', [
+                'channels' => $stats['channels'],
+                'routes' => $stats['routes'],
+            ]),
         );
     }
 }

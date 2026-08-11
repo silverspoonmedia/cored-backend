@@ -41,6 +41,9 @@ Route::middleware('auth:api')->group(function (): void {
         ->whereUuid('route')
         ->middleware('permission:manage payment gateway')
         ->name('payment-channel-routes.update');
+    Route::post('payment-channels/sync-policy', [PaymentChannelController::class, 'syncRoutingPolicy'])
+        ->middleware('permission:manage payment gateway')
+        ->name('payment-channels.sync-policy');
     Route::apiResource('subscriptions', SubscriptionController::class);
 });
 

@@ -19,4 +19,5 @@ return [
     'linked_unverified' => 'Belum terverifikasi',
     'linked_revoked' => 'Dicabut',
     'synced_at' => 'Terakhir disinkronkan: :at',
+    'discord_disconnect_failed' => 'Gagal memutuskan Discord.',
 ];
