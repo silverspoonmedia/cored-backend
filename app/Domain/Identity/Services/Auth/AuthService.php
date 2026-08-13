@@ -94,6 +94,7 @@ class AuthService
                 Auth::forgetGuards();
                 $guard = $this->guard();
                 $guard->setTTL($ttlMinutes);
+                $guard->claims($this->customClaims($remember));
 
                 if (! $token = $guard->attempt($credentials)) {
                     throw new InvalidCredentialsException;
@@ -158,7 +159,9 @@ class AuthService
      */
     public function refreshFromToken(string $token): array
     {
-        return $this->withTokenLifetime(false, function (int $ttlMinutes) use ($token) {
+        $remember = $this->resolveRememberForRefresh($token);
+
+        return $this->withTokenLifetime($remember, function (int $ttlMinutes) use ($token, $remember) {
             Auth::forgetGuards();
             $guard = $this->guard();
             $guard->setTTL($ttlMinutes);
@@ -173,8 +176,45 @@ class AuthService
                 throw new \PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException('User not found');
             }
 
-            return $this->buildAuthPayload($user, $newToken, $ttlMinutes, false);
+            return $this->buildAuthPayload($user, $newToken, $ttlMinutes, $remember);
         });
+    }
+
+    /**
+     * Preserve the remember flag across token refresh.
+     *
+     * Priority:
+     * 1. Explicit `remember` in the request body (SPA opt-in for this refresh).
+     * 2. `rm` custom claim carried on the original token (set at login).
+     * 3. Fallback false.
+     */
+    private function resolveRememberForRefresh(string $token): bool
+    {
+        $request = request();
+        if ($request?->has('remember')) {
+            return $request->boolean('remember');
+        }
+
+        try {
+            $payload = $this->guard()->setToken($token)->payload();
+            /** @var mixed $rm */
+            $rm = $payload->get('rm');
+
+            return $rm === true || $rm === 1 || $rm === '1';
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * Custom JWT claims injected at login so they persist across refreshes
+     * (configured via `jwt.persistent_claims`).
+     *
+     * @return array<string, mixed>
+     */
+    private function customClaims(bool $remember): array
+    {
+        return ['rm' => $remember ? 1 : 0];
     }
 
     public function loginWithTwoFactorToken(string $twoFactorToken, string $code): array
@@ -220,7 +260,7 @@ class AuthService
             $guard = $this->guard();
             $guard->setTTL($ttlMinutes);
 
-            $token = $guard->login($user);
+            $token = $guard->login($user, $this->customClaims((bool) $challenge['remember']));
 
             return $this->buildAuthPayload($user, $token, $ttlMinutes, (bool) $challenge['remember']);
         });
@@ -335,7 +375,7 @@ class AuthService
                 Auth::forgetGuards();
                 $guard = $this->guard();
                 $guard->setTTL($ttlMinutes ?? $ttl);
-                $token = $guard->login($user);
+                $token = $guard->login($user, $this->customClaims($remember));
                 $actualTtl = $ttlMinutes ?? $guard->getTTL() ?? $this->defaultTtlMinutes();
 
                 return [

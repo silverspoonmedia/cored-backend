@@ -71,6 +71,16 @@ Tier A (env only) vs operational settings: [configuration-policy.md](../../platf
 
 Blade does **not** use the Laravel session guard for identity. After login, `auth_token` is the only identity cookie. `RefreshJwtCookie` + `AuthService::refreshFromToken` slide access tokens within `setting_config('jwt.refresh_ttl')` so admins are not hard-kicked at `setting_config('jwt.ttl')`. API: `POST /api/v1/auth/refresh` (Bearer; single refresh inside `AuthService` — no double `jwt.refresh` middleware). Details: [web/blade-admin](../../web/blade-admin.md#silent-refresh-sliding-access).
 
+### Remember-flag preservation across refresh
+
+`AuthService::refreshFromToken` preserves the `remember` flag across token refresh so a remember-me session does not silently downgrade to a short-TTL session. The flag is resolved with priority:
+
+1. `remember` in the refresh request body (SPA opt-in per refresh).
+2. `rm` custom claim on the original token (set at login: `1` = remember, `0` = normal; persisted across refreshes via `jwt.persistent_claims`).
+3. Fallback `false`.
+
+Login, 2FA login, and register all inject the `rm` claim via `AuthService::customClaims()`. The Vue SPA cross-tab auth layer relies on this — see [vue-workers-spa — Cross-tab auth](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
+
 ### hCaptcha
 
 When enabled: login, register, forgot-password, two-factor login require `h-captcha-response`. Server: `HcaptchaVerifier` + Form Request trait. Blade: `<x-adminlte4::form.hcaptcha />` — see [web/blade-admin](../../web/blade-admin.md).

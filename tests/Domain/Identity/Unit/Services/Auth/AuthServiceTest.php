@@ -119,4 +119,51 @@ class AuthServiceTest extends TestCase
         $this->assertFalse($normalPayload['remember']);
         $this->assertSame(60 * 60, $normalPayload['expires_in']);
     }
+
+    public function test_refresh_preserves_remember_flag_from_original_token(): void
+    {
+        config(['jwt.ttl' => 60, 'jwt.remember_ttl' => 120, 'jwt.refresh_ttl' => 20160]);
+
+        User::factory()->create([
+            'email' => 'refresh-remember@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $loginPayload = $this->service->login([
+            'email' => 'refresh-remember@example.com',
+            'password' => 'password123',
+            'remember_me' => true,
+        ]);
+
+        $this->assertTrue($loginPayload['remember']);
+
+        $refreshed = $this->service->refreshFromToken($loginPayload['token']);
+
+        $this->assertTrue($refreshed['remember'], 'refresh should preserve remember=true from original token');
+        $this->assertSame(120 * 60, $refreshed['expires_in']);
+        $this->assertNotSame($loginPayload['token'], $refreshed['token']);
+    }
+
+    public function test_refresh_preserves_non_remember_flag_from_original_token(): void
+    {
+        config(['jwt.ttl' => 60, 'jwt.remember_ttl' => 120, 'jwt.refresh_ttl' => 20160]);
+
+        User::factory()->create([
+            'email' => 'refresh-normal@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $loginPayload = $this->service->login([
+            'email' => 'refresh-normal@example.com',
+            'password' => 'password123',
+            'remember_me' => false,
+        ]);
+
+        $this->assertFalse($loginPayload['remember']);
+
+        $refreshed = $this->service->refreshFromToken($loginPayload['token']);
+
+        $this->assertFalse($refreshed['remember'], 'refresh should preserve remember=false from original token');
+        $this->assertSame(60 * 60, $refreshed['expires_in']);
+    }
 }

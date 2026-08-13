@@ -19,6 +19,9 @@ require __DIR__.'/v1/domain-access.php';
 // Kernel settings registry (App\Support\Settings) — operational runtime settings.
 require __DIR__.'/v1/settings.php';
 
+// Broadcast auth for cross-origin JWT clients (Vue-Workers SPA).
+require __DIR__.'/v1/broadcasting.php';
+
 // Product domains (kind=product). domain:make appends here; keep product requires last.
 require __DIR__.'/v1/file-hosting.php';
 require __DIR__.'/v1/vtual-webhooks.php';

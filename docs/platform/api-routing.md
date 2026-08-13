@@ -33,6 +33,7 @@ routes/
 │       ├── error-log.php         # core
 │       ├── payment-gateway.php   # core
 │       ├── service.php           # core
+│       ├── broadcasting.php      # core — broadcast auth for JWT clients (api middleware)
 │       └── file-hosting.php      # product
 └── web/
     ├── identity-guest.php        # web.guest (auth surface, not kind)
@@ -76,7 +77,7 @@ JSON errors for `api/*` via `$exceptions->shouldRenderJsonWhen(...)`.
 
 ## Versioned routes
 
-Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, error-logs, payments, services, file-hosting.
+Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, error-logs, payments, services, file-hosting. Also includes `POST /api/v1/broadcasting/auth` — broadcast channel auth for cross-origin JWT clients (Vue-Workers SPA) under `auth:api` middleware, distinct from Laravel's default web-middleware `/broadcasting/auth` used by Blade.
 
 ## Adding a new API version
 

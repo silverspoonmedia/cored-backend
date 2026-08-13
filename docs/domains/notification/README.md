@@ -129,6 +129,8 @@ The bell opens a per-user, same-origin `BroadcastChannel` named `activity-notifi
 
 No hard reload, timer hack, or unread-count refetch is required for mark-all. If `BroadcastChannel` is unavailable, the current tab still updates immediately; other tabs reconcile on their next WS event, reconnect, or fallback poll.
 
+The Vue-Workers SPA mirrors this pattern in `src/composables/useNotifications.ts` — same `activity-notifications.{userId}` channel, same `read-all` / `read` messages. See [vue-workers-spa — Realtime](../../integration/vue-workers-spa.md#realtime-laravel-echo--pusher).
+
 ## Schema (essentials)
 
 - `activity_notifications` — type, data JSON, action route/params, timestamps  
