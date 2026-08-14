@@ -4,7 +4,9 @@ Canonical, single-source mandatory rules for AI coding agents. Read this once pe
 
 ## Scope
 
-Daily work stays in **this repository** — Laravel 13 API + Blade admin. Domain logic, DB, JWT/RBAC, and versioned routes (`/api/v1/*`) live here. This repository is the source of truth: business rules, validation, Spatie RBAC, persistence, and API contracts all live here.
+Daily work stays in **this repository** — Laravel 13 API + in-repo Blade admin. Domain logic, DB, JWT/RBAC, and versioned routes (`/api/v1/*`) live here. This repository is the source of truth: business rules, validation, Spatie RBAC, persistence, and API contracts all live here. **Do not strip Blade** — it stays until the Vue-Workers port actually succeeds; it is the reference for appearance and behavior.
+
+The **leading SPA frontend** is the sibling `monolith-vue-workers` repository ([vue-workers-spa.md](../integration/vue-workers-spa.md)). Backend and that SPA are separate projects; that split is the intended end state. SPA changes belong in that sibling. The `[frontend]` tag in this repo still means Blade/web, not that SPA.
 
 ```
 Browser → Blade admin (AdminLTE) → same-host /api/v1/* (JWT cookie → Bearer)

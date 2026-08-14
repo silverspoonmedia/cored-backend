@@ -1,6 +1,6 @@
 # AI Agents — Monolith
 
-**Role:** Laravel 13 application — domain logic, database, JWT/RBAC, versioned API (`/api/v1/*`), and Blade admin.
+**Role:** Laravel 13 backend — domain logic, database, JWT/RBAC, versioned API (`/api/v1/*`), and the in-repo Blade admin (keep Blade until the SPA port succeeds; do not strip it). The **leading SPA frontend** is the sibling `monolith-vue-workers` repo — [vue-workers-spa.md](docs/integration/vue-workers-spa.md). The `[frontend]` scope tag in this repo still means Blade/web, not that SPA.
 
 ## Agent protocol (mandatory)
 
@@ -21,4 +21,4 @@ Instructions below are canonical here — no other document may re-define them.
 
 **Doc map (load domain/platform guides on demand):** [docs/README.md](docs/README.md)
 
-Daily work stays in **this repository only**.
+Daily work stays in **this repository only**. SPA work belongs in sibling `monolith-vue-workers`; the contract is [docs/integration/vue-workers-spa.md](docs/integration/vue-workers-spa.md).

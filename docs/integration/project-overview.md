@@ -2,6 +2,8 @@
 
 High-level summary of the two projects and their relationship. For the detailed SPA integration contract, see [vue-workers-spa.md](vue-workers-spa.md).
 
+**Monolith-Vue-Workers** (`monolith-vue-workers` sibling) is the **leading SPA frontend**. Backend (this Laravel repo) and that SPA are separate projects; that split is the intended end state. The **Blade admin in this repo** is the current in-repo frontend: keep it until the SPA port is actually done. Do not remove it. It is the reference for appearance and behavior parity.
+
 ## Architecture at a glance
 
 ```mermaid
@@ -41,18 +43,18 @@ The Blade admin is a **pure API-consumer** — web controllers forward to `/api/
 
 Stack: AdminLTE 4 / Bootstrap 5 / jQuery 3.7 / Select2 / DataTables 3 via Vite, with Vue islands for complex interactive surfaces (file-hosting SPA shell, direct-upload widget).
 
-**The Blade frontend is retained as the reference implementation.** It is not deprecated and not deleted — it stays as the source of truth for appearance and behavior parity.
+**Keep Blade until the Vue-Workers port actually succeeds.** It is not deleted and not deprecated in the meantime — it remains the in-repo frontend and the reference for appearance and behavior parity. It is not the long-term product UI; Vue-Workers is.
 
 See [web/blade-admin.md](../web/blade-admin.md) for Blade internals.
 
-## Monolith-Vue-Workers — SPA port (also API-consumer)
+## Monolith-Vue-Workers — leading SPA frontend (also API-consumer)
 
-Separate Vue 3 SPA that consumes the same `/api/v1/*` API. Lives in a sibling repository. Deployed to Cloudflare Workers.
+Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes the same `/api/v1/*` API. Lives in the sibling `monolith-vue-workers` repository. Deployed to Cloudflare Workers.
 
 | Aspect | Detail |
 |--------|--------|
 | Framework | Vue 3 + Vite 8 + TypeScript |
-| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`) |
+| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Worker reverse-proxies same-origin `/api/v1/*` to `MONOLITH_API_ORIGIN` (hostname mask in DevTools). |
 | API | Same `/api/v1/*` endpoints as Blade — second API client, no business logic in SPA |
 | Auth | JWT in `localStorage` + `Authorization: Bearer` header (no HttpOnly cookie — that is Blade-only) |
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware (distinct from Blade's web-middleware `/broadcasting/auth` with cookie + CSRF) |
@@ -111,7 +113,7 @@ Route coverage matches Blade. Product-surface appearance gaps from waves 1–3 p
 
 Mimic is appearance + behavior + intent, not a pixel clone. One list API, two presentations (`display_mode=query` for the SPA DataTable, `display_mode=datatable` for Blade Yajra). Query mode is a flat `T[]` unless `page` / `per_page` / `search` are present, then `{ items, pagination }` (default 10). Parse as-is. Row actions are icon-only.
 
-**A — Platform:** JWT in `localStorage`, SPA broadcasting auth, no CSRF on Bearer, hCaptcha Vite gate, duplicate vue-i18n JSON, CF Workers origin, breadcrumb config map, guest cannot read `system_settings`.
+**A — Platform:** JWT in `localStorage`, SPA broadcasting auth, no CSRF on Bearer, hCaptcha Vite gate, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`.
 
 **B — Intentional:** Vue `DataTable` (not Yajra JS), Select2 only for server-side lookup, navigation from `GET navigation/menus?layout=sidebar`, FH three Vue routes vs Blade island, team as a page vs offcanvas, listing-only move picker, rate save re-fetch (no full reload).
 

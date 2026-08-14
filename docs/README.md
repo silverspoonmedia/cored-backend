@@ -11,9 +11,9 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Agent scope | [agents/core-rules.md](agents/core-rules.md) · root [AGENTS.md](../AGENTS.md) |
 | Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
 | Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [configuration-policy.md](platform/configuration-policy.md) |
-| Blade admin (API consumer) | [web/blade-admin.md](web/blade-admin.md) |
+| Blade admin (in-repo frontend; keep until SPA port succeeds) | [web/blade-admin.md](web/blade-admin.md) |
 | Project overview (Monolith + Vue-Workers) | [integration/project-overview.md](integration/project-overview.md) |
-| External SPA port (Vue-Workers) | [integration/vue-workers-spa.md](integration/vue-workers-spa.md) |
+| Leading SPA frontend (Vue-Workers; separate project) | [integration/vue-workers-spa.md](integration/vue-workers-spa.md) |
 | Auth web URI layout | Authenticated Blade **and** Vue-Workers SPA under **`/apps/*`** (route names unprefixed); guest/public + `POST /logout` at site root; product roots (`/file-hosting`, …) reserved empty; API `/api/v1/*` unchanged — [blade-admin — Routes](web/blade-admin.md#routes) · [architecture — Routes](platform/architecture.md#routes) · [vue-workers-spa — `/apps` shell](integration/vue-workers-spa.md) |
 
 ## Platform (kernel / cross-cutting)
@@ -64,8 +64,8 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 | Document | Topic |
 |----------|-------|
-| [project-overview.md](integration/project-overview.md) | High-level summary of Monolith (API-first backend + Blade API-consumer) and Monolith-Vue-Workers (Vue 3 SPA port, also API-consumer) — architecture, relationship, porting status |
-| [vue-workers-spa.md](integration/vue-workers-spa.md) | External Vue 3 SPA port (Cloudflare Workers) — API contracts, type alignment, i18n porting, component conventions |
+| [project-overview.md](integration/project-overview.md) | Monolith (API-first backend + in-repo Blade, kept until the SPA port succeeds) and Monolith-Vue-Workers (leading SPA frontend, separate project) — architecture, relationship, porting status |
+| [vue-workers-spa.md](integration/vue-workers-spa.md) | Leading Vue 3 SPA frontend (Cloudflare Workers, sibling repo) — API contracts, type alignment, i18n porting, component conventions |
 
 ## Archive (not daily reading)
 

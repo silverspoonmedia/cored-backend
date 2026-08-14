@@ -1,20 +1,35 @@
-# External SPA port — Monolith-Vue-Workers
+# Leading SPA frontend — Monolith-Vue-Workers
 
-Separate Vue 3 SPA that consumes the Monolith `/api/v1/*` API. Lives in a sibling repository (`monolith-vue-workers`), not inside the Monolith codebase. This doc is the integration contract between the SPA and the API.
+Monolith-Vue-Workers (`monolith-vue-workers` sibling) is the **leading SPA frontend**. Backend (the Laravel repo) and this SPA are separate projects; that split is the intended end state. It consumes the Monolith `/api/v1/*` API. This doc is the integration contract between the SPA and the API.
 
-For the Blade admin + Vue islands frontend, see [web/blade-admin.md](../web/blade-admin.md).
+The Blade admin in Monolith stays as the in-repo frontend **until this port actually succeeds** — do not remove it; it is the reference for appearance and behavior. See [web/blade-admin.md](../web/blade-admin.md).
 
 ## Architecture
 
 | Piece | Role |
 |-------|------|
 | Vue 3 + Vite + TypeScript | SPA runtime, SFC components, type safety |
-| Cloudflare Workers | Deployment target (`@cloudflare/vite-plugin`) |
+| Cloudflare Workers | Deployment target (`@cloudflare/vite-plugin`). Also the `/api/v1` reverse proxy (hostname mask). |
 | Token-based auth | JWT stored in memory + `localStorage` (shared across tabs); sent as `Authorization: Bearer` header (no HttpOnly cookie — that is Blade-only). Cross-tab sync via `storage` event + `BroadcastChannel` coordinates refresh so only one tab refreshes; `remember` flag only affects TTL, not storage location. |
-| `fetch` wrapper (`src/api/client.ts`) | Builds URLs from `VITE_API_BASE_URL`, injects Bearer token, handles 401 refresh + retry, parses `{ status, message, data }` envelope. `getBlob()` is the non-JSON path (CSV / file download). |
+| `fetch` wrapper (`src/api/client.ts`) | Same-origin `/api/v1/...` via `src/api/baseUrl.ts` (optional `VITE_API_BASE_URL` absolute override). Injects Bearer token, handles 401 refresh + retry, parses `{ status, message, data }` envelope. `getBlob()` is the non-JSON path (CSV / file download). |
 | `vue-i18n` | Full locale system (`en`, `id`, `ja`) converted from Laravel PHP lang files |
 
-Base URL: `VITE_API_BASE_URL` (e.g. `https://monolith-ph24.spnd.uk/api/v1`). All API call paths in composables are relative to this base.
+Base URL: empty `VITE_API_BASE_URL` (default). Composable paths are relative (`auth/me`); the client prefixes `/api/v1`. The Worker forwards that to `{MONOLITH_API_ORIGIN}/api/v1/...`. Set `VITE_API_BASE_URL` to an absolute prefix (`https://monolith-ph24.spnd.uk/api/v1`) only as an emergency bypass — DevTools will then show the monolith host.
+
+## API hostname mask
+
+The browser calls **same-origin** `/api/v1/*`. DevTools Network shows the Vue-Workers origin, not the monolith host. `@cloudflare/vite-plugin` runs `server/index.ts` in `npm run dev` **and** on deploy — one proxy, both environments.
+
+This is **hostname masking, not a control.** Paths stay `/api/v1/auth/login`. JWT stays in `localStorage`. The Worker **is** the public API. `MONOLITH_API_ORIGIN` lives in Wrangler `vars` / `.dev.vars` (not `VITE_`, not the JS bundle).
+
+Still naked (browser talks to these hosts directly):
+
+- Pusher / Reverb WebSockets (`VITE_PUSHER_*`)
+- Discord OAuth + the Monolith web callback (`SPA_URL` return)
+- File Hosting presigned / gateway byte URLs
+- hCaptcha JS
+
+Local gotcha: Vite env files stack — `.env.local` **overrides** `.env` (gitignored via `*.local`). Restarting `npm run dev` does nothing if `.env.local` still has `VITE_API_BASE_URL=https://…/api/v1`. Leave that key **empty in both files**. Put `MONOLITH_API_ORIGIN` in `.dev.vars` (copy `.dev.vars.example`). An absolute Vite API URL means the browser talks to the monolith host directly; the Worker never sees the request. After changing env files, restart Vite and hard-refresh the browser (env is baked at compile).
 
 ## API contract reference
 
@@ -308,7 +323,7 @@ The SPA fetches and parses **as-is**. Do not port Yajra JS. Do not invent a seco
 
 These are the safe zone. Keep the current approaches.
 
-**A — Platform.** JWT in `localStorage`, `POST /api/v1/broadcasting/auth`, no CSRF on Bearer, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, breadcrumb config map, guest cannot read `system_settings`. These exist so the SPA can run cross-origin. Mimic the session and realtime intent, not the cookie.
+**A — Platform.** JWT in `localStorage`, `POST /api/v1/broadcasting/auth`, no CSRF on Bearer, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`. Mimic the session and realtime intent, not the cookie.
 
 **B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout=sidebar`. File Hosting three Vue routes vs Blade island; team as a page vs offcanvas; listing-only move picker; rate editor re-fetch instead of full reload. Mimic intent, not Blade DOM ids (`#fhTeamOffcanvas`, `#fhCreateWorkspaceModal`, `#fhMicrostockPanel`).
 
@@ -345,7 +360,8 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 
 | Var | Purpose |
 |-----|---------|
-| `VITE_API_BASE_URL` | Monolith API base (e.g. `https://monolith-ph24.spnd.uk/api/v1`) — used for both API calls and the broadcast auth endpoint |
+| `MONOLITH_API_ORIGIN` | Worker-only. Monolith origin (no `/api/v1` suffix, no trailing slash). Wrangler `vars` + `.dev.vars`. **Not** bundled into the browser. Empty → Worker 503. |
+| `VITE_API_BASE_URL` | Optional absolute API prefix baked into the client. **Leave empty in `.env` and `.env.local`** so calls stay same-origin `/api/v1` (Worker mask). `.env.local` wins. Set only to bypass the proxy. |
 | `VITE_PUSHER_APP_KEY` | Pusher app key (required for Echo — must match Monolith `PUSHER_APP_KEY`) |
 | `VITE_PUSHER_APP_CLUSTER` | Pusher cluster (default `mt1`) |
 | `VITE_PUSHER_HOST` | Self-hosted/Reverb host (omit for Pusher-hosted) |
@@ -355,15 +371,15 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 
 Discord OAuth return is **not** a Vite var. Set `SPA_URL` on the Monolith API host to this SPA's public origin (Vite/Workers URL). Empty `SPA_URL` → `GET auth/discord/authorize-url` 503.
 
-Values must mirror Monolith's `.env` `PUSHER_*` literals (and `HCAPTCHA_SITEKEY` when hCaptcha is on). `.env.local` may override `VITE_API_BASE_URL` for local development.
+Values must mirror Monolith's `.env` `PUSHER_*` literals (and `HCAPTCHA_SITEKEY` when hCaptcha is on). `.env.local` overrides `.env` for every `VITE_*` key (that is why an old absolute `VITE_API_BASE_URL` survived Vite restarts). Worker origin is `.dev.vars` `MONOLITH_API_ORIGIN`, not a `VITE_` var.
 
 When `VITE_PUSHER_APP_KEY` is unset, Echo is not initialized and all realtime-dependent features fall back to polling.
 
 ### Auth
 
-Echo private channel auth uses a dedicated API broadcast auth endpoint: `POST {VITE_API_BASE_URL}/broadcasting/auth` (i.e. `POST /api/v1/broadcasting/auth`). The request carries `Authorization: Bearer {jwt}` header with the JWT from the auth store's `token` ref via a `tokenProvider` callback.
+Echo private channel auth uses a dedicated API broadcast auth endpoint: `POST /api/v1/broadcasting/auth` (same-origin Worker proxy; optional `VITE_API_BASE_URL` override). The request carries `Authorization: Bearer {jwt}` header with the JWT from the auth store's `token` ref via a `tokenProvider` callback.
 
-**Why a dedicated API route?** Laravel's default `/broadcasting/auth` (auto-registered by `withRouting(channels:...)` in `bootstrap/app.php`) lives under the `web` middleware group — it requires CSRF + session, which is incompatible with a cross-origin Bearer-token SPA. The API route (`routes/api/v1/broadcasting.php`) mirrors the same `Broadcast::auth($request)` call but under `api` middleware (JWT guard, CORS-covered via `api/*`):
+**Why a dedicated API route?** Laravel's default `/broadcasting/auth` (auto-registered by `withRouting(channels:...)` in `bootstrap/app.php`) lives under the `web` middleware group — it requires CSRF + session, which is incompatible with a Bearer-token SPA. The API route (`routes/api/v1/broadcasting.php`) mirrors the same `Broadcast::auth($request)` call but under `api` middleware (JWT guard):
 
 ```php
 Route::post('broadcasting/auth', function (Request $request) {
