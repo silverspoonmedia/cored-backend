@@ -78,7 +78,7 @@ These paths tripped up the SPA port — documented here to prevent regression:
 
 ## Type alignment
 
-TS types in `src/api/types.ts` must match Laravel API Resources exactly. No transformation layer.
+TS types in `src/api/types.ts` must match Laravel API Resources exactly. No transformation layer. `DiscordConnection` / `ProfileConnections` match `GET /api/v1/profile/connections`: `connections[]` with nullable `id` / `name` (see `ProfileConnectionsController::presentConnections`). One interface — do not redeclare `DiscordConnection`.
 
 ### Conventions
 
@@ -335,7 +335,7 @@ Do not treat a read-only show-page microstock card as “review is done.” Revi
 
 The SPA supports realtime updates via Laravel Echo and Pusher, with polling fallback.
 
-- **Composable**: `src/composables/useEcho.ts` — singleton Echo instance, reads Pusher config from `VITE_PUSHER_*` env vars, handles JWT auth via `broadcasting/auth` endpoint.
+- **Composable**: `src/composables/useEcho.ts` — singleton `Echo<'pusher'>` (`EchoOptions<'pusher'>`), reads Pusher config from `VITE_PUSHER_*` env vars, JWT auth via custom authorizer → `broadcasting/auth`. Connection flag uses `connector.onConnectionChange` / `connectionStatus()`. Subscribe via `getEcho()`; `useEcho()` exposes `init` / `disconnect` / `connected` only.
 - **Notification bell**: `src/components/AppNavbar.vue` — inits Echo on mount, subscribes to `App.Models.User.{id}` private channel for `.activity-notification.received` events. Polling (60s) starts as fallback if Echo fails to connect within 30s grace window. On each WS event, the bell also calls `fetchList(5)` to refresh its own recent-notification dropdown content (capped at 5 — the full list is fetched on dropdown open or navigation to `/notifications`).
 - **File Hosting**: `src/composables/useFileHostingRealtime.ts` — singleton channel manager for `file-hosting.user.{userId}` (`.listing.changed`, `.quota.changed`, `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress`). Multiple views register handlers; the channel is subscribed once and torn down when the last handler unregisters. See [Pattern B](#pattern-b-direct-channel-subscription) below.
 - **Microstock**: collection mutations (`lockCollection`, `analyzeCollection`, `fetchCollectionStatus`, `exportCollection`, `downloadCollectionCsv`, asset metadata GET/PATCH, `analyzeAsset`, `fetchSlots`, `createWorkspace`) live in `useMicrostock.ts` and are wired from `FileHostingView` / `FhMicrostockReviewModal`. Realtime subscriptions go through `useFileHostingRealtime.ts` (same channel, Microstock events).
