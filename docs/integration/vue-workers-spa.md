@@ -31,6 +31,18 @@ Still naked (browser talks to these hosts directly):
 
 Local gotcha: Vite env files stack — `.env.local` **overrides** `.env` (gitignored via `*.local`). Restarting `npm run dev` does nothing if `.env.local` still has `VITE_API_BASE_URL=https://…/api/v1`. Leave that key **empty in both files** (required for hostname mask **and** the BFF cookie). Put `MONOLITH_API_ORIGIN` in `.dev.vars` (copy `.dev.vars.example`). An absolute Vite API URL means the browser talks to the monolith host directly; the Worker never sees the request. After changing env files, restart Vite and hard-refresh the browser (env is baked at compile).
 
+## Worker invocation vs static assets
+
+HTML, JS, CSS, and SPA fallback do **not** invoke the isolate. Wrangler `assets.run_worker_first` is only `["/api/*"]` — see `monolith-vue-workers/wrangler.jsonc`. Cloudflare’s free-tier **100,000 requests/day** is function invocations, not static views.
+
+One browser `fetch` to the SPA origin `/api/*` is **one** invocation. The Worker’s `fetch` to Laravel is a subrequest (per-invocation cap), not a second daily request. `npm run dev` runs the same `server/index.ts` locally and is **not** billed. A 401 that refresh-retries can be three invocations (original + `POST auth/refresh` + retry). Pusher, S3/gateway byte URLs, Discord OAuth, and hCaptcha are not Worker requests.
+
+`/api/*` reverse-proxy + HttpOnly `spa_jwt` is **deemed necessary**. Keep that script small (`fetch` only). Do not add cron, queues, Durable Objects, extra `run_worker_first` paths, or domain logic in the Worker without an explicit reason in this guide. Business work stays on Monolith; the SPA fetches and parses.
+
+Vite `server.proxy` is a **local Node** reverse proxy. It does not run on Cloudflare Static Assets. It can mask a host in `npm run dev` when nothing else intercepts `/api`, but it cannot mint `spa_jwt` or replace this Worker while BFF is deemed necessary (`SameSite=Strict` on the SPA origin — every authenticated call must hit that origin). `@cloudflare/vite-plugin` already sends `/api/*` through `server/index.ts` in `npm run dev`; a second Vite proxy for the same path is dead or breaks login. Do not treat Vite proxy as a production “no-function mask.”
+
+Do not add a client fallback that naked-fetches the monolith host when the function cap is hit: the cookie would not be sent (different origin), JS has no JWT, and locking Laravel to the Worker would block that path anyway. The Worker **is** the public API; hostname masking is not a control.
+
 ## Local dogfood checklist
 
 Daily driver is `npm run dev` at `http://localhost:5173`. Blade stays at `APP_URL` as the reference. Set Monolith `SPA_URL="http://localhost:5173"`. Empty `VITE_API_BASE_URL` in `.env` and `.env.local`.
@@ -240,7 +252,7 @@ Authenticated routes set `meta.titleKey` (and guest auth routes also `meta.headi
 
 ### Blob / CSV downloads
 
-`src/api/client.ts` `get()` always sets `Accept: application/json` and `res.json()`. CSV and other attachments use `getBlob()` (same Bearer + 401 refresh, `Accept: */*`) plus `src/utils/download.ts` `saveBlob()`. Wired for `GET invoices/export` (invoices list and income page; income sends `status=paid` plus optional `paid_from`/`paid_to`) and `GET microstock/collections/{folder}/download`.
+`src/api/client.ts` `get()` always sets `Accept: application/json` and `res.json()`. CSV and other attachments use `getBlob()` (same cookie session + 401 refresh, `Accept: */*`) plus `src/utils/download.ts` `saveBlob()`. Wired for `GET invoices/export` (invoices list and income page; income sends `status=paid` plus optional `paid_from`/`paid_to`) and `GET microstock/collections/{folder}/download`.
 
 ### OverlayScrollbars
 
@@ -254,7 +266,7 @@ The SPA cannot read `system_settings`. Treat `VITE_HCAPTCHA_SITE_KEY` as the ena
 
 ### File Hosting Drive UX
 
-Browse/trash/show use `.fh-manager` (CSS: `src/assets/file-hosting.css`, imported from `main.css`). Vue Router stays three routes — this is **not** the Blade single-island soft-nav shell. JWT composables (`useFileHosting`, `useFileHostingRealtime`) are unchanged.
+Browse/trash/show use `.fh-manager` (CSS: `src/assets/file-hosting.css`, imported from `main.css`). Vue Router stays three routes — this is **not** the Blade single-island soft-nav shell. `useFileHosting` / `useFileHostingRealtime` go through the shared cookie client (`src/api/client.ts`); they do not attach a Bearer token in JS.
 
 **Browse (`FileHostingView.vue`)** matches Blade Drive-lite:
 

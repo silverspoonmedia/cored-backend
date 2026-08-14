@@ -54,7 +54,7 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | Aspect | Detail |
 |--------|--------|
 | Framework | Vue 3 + Vite 8 + TypeScript |
-| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Worker reverse-proxies same-origin `/api/v1/*` to `MONOLITH_API_ORIGIN` (hostname mask in DevTools). |
+| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Static SPA assets do not invoke the isolate; only `/api/*` is the Worker function (`run_worker_first`). That function reverse-proxies same-origin `/api/v1/*` to `MONOLITH_API_ORIGIN` (hostname mask + `spa_jwt` BFF). Do not add more Worker logic unless deemed necessary — see [vue-workers-spa.md — Worker invocation vs static assets](vue-workers-spa.md#worker-invocation-vs-static-assets). |
 | API | Same `/api/v1/*` endpoints as Blade — second API client, no business logic in SPA |
 | Auth | HttpOnly `spa_jwt` on the Vue-Workers origin (Worker BFF). JS does not store the JWT. Direct Monolith `/api/v1` still returns Bearer JSON. Blade uses HttpOnly `auth_token` on `APP_URL`. |
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware (distinct from Blade's web-middleware `/broadcasting/auth` with cookie + CSRF) |
@@ -93,7 +93,7 @@ Route coverage matches Blade. Product-surface appearance gaps from waves 1–3 p
 - Guest + authenticated screens for all 11 domains (identity, navigation, notification, activity/error log, payments, service, inference, file hosting, vTual, product activations, domain access, settings, dashboard)
 - **Chrome:** i18n page titles + `{page} | Monolith` tab title, OverlayScrollbars sidebar, API-driven sidebar/navbar, breadcrumbs, DataTable chrome strings
 - **Auth:** login/register/forgot/reset/2FA with i18n labels; invisible hCaptcha when `VITE_HCAPTCHA_SITE_KEY` is set (`h-captcha-response`)
-- **File Hosting Drive UX:** `.fh-manager` browse (click=select / dblclick=open / shift-range / context / drag-move / search overlay / `FhIcon`); trash/show chrome; JWT composables unchanged
+- **File Hosting Drive UX:** `.fh-manager` browse (click=select / dblclick=open / shift-range / context / drag-move / search overlay / `FhIcon`); trash/show chrome; FH composables use the shared cookie client (no JWT in JS)
 - **Microstock lifecycle:** lock/describe chips, analyze/export/download CSV, review curator modal, `POST microstock/workspaces`, slot CTAs from `GET microstock/slots`
 - **Public share:** `/s/d` breadcrumb + file links to `/s/f` (`PublicLayout`)
 - **Inference provider rates:** `InferenceProviderShowView` add/edit/remove/save via `PUT inference/providers/{id}/rates` (full replace), gated by `manage inference catalog`

@@ -2,7 +2,7 @@
 
 API-first Blade admin: every web controller forwards to `/api/v1/*`. **No business logic, Form Requests, or `$this->authorize()` in the web layer.**
 
-This Blade layer stays in-repo as the current frontend and the **reference** until the Vue-Workers port succeeds — do not remove it. Monolith-Vue-Workers is the **leading SPA frontend** (separate project, same `/api/v1/*` API, Bearer token) — see [integration/vue-workers-spa.md](../integration/vue-workers-spa.md).
+This Blade layer stays in-repo as the current frontend and the **reference** until the Vue-Workers port succeeds — do not remove it. Monolith-Vue-Workers is the **leading SPA frontend** (separate project, same `/api/v1/*` API). The browser session there is HttpOnly `spa_jwt` on the SPA origin; the Worker forwards it as Bearer to Laravel — see [integration/vue-workers-spa.md](../integration/vue-workers-spa.md).
 
 ```
 Browser → Web controller → ApiClient → /api/v1/* → Services / Policies
