@@ -14,9 +14,9 @@ flowchart TB
         API --> Blade
     end
     subgraph VueWorkers["Monolith-Vue-Workers (Vue 3 + CF Workers)"]
-        SPA["SPA<br>API-consumer<br>Bearer JWT"]
+        SPA["SPA<br>API-consumer<br>HttpOnly spa_jwt"]
     end
-    API -->|"Authorization: Bearer"| SPA
+    API -->|"Worker BFF cookie to Bearer"| SPA
     API -->|"Pusher WS"| Blade
     API -->|"Pusher WS"| SPA
 ```
@@ -56,7 +56,7 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | Framework | Vue 3 + Vite 8 + TypeScript |
 | Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Worker reverse-proxies same-origin `/api/v1/*` to `MONOLITH_API_ORIGIN` (hostname mask in DevTools). |
 | API | Same `/api/v1/*` endpoints as Blade — second API client, no business logic in SPA |
-| Auth | JWT in `localStorage` + `Authorization: Bearer` header (no HttpOnly cookie — that is Blade-only) |
+| Auth | HttpOnly `spa_jwt` on the Vue-Workers origin (Worker BFF). JS does not store the JWT. Direct Monolith `/api/v1` still returns Bearer JSON. Blade uses HttpOnly `auth_token` on `APP_URL`. |
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware (distinct from Blade's web-middleware `/broadcasting/auth` with cookie + CSRF) |
 | Type alignment | TS types in `src/api/types.ts` match Laravel API Resources exactly — snake_case, no transform layer |
 | i18n | `vue-i18n` (`en` / `id` / `ja`) converted from Laravel PHP lang files |
@@ -65,11 +65,9 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 
 ### Auth divergence from Blade
 
-Blade stores the JWT in an HttpOnly cookie and the server forwards it as Bearer. The SPA cannot use HttpOnly cookies cross-origin, so it stores the JWT in `localStorage` and sends it as `Authorization: Bearer` directly. Multi-tab session sync uses three mechanisms in `src/stores/auth.ts`:
+Blade stores the JWT in an HttpOnly `auth_token` cookie on `APP_URL` and the web layer forwards it as Bearer. The SPA uses a **second** HttpOnly cookie, `spa_jwt`, on the Vue-Workers origin. The Worker strips `data.token` from login/register/refresh/2FA-login JSON, sets the cookie, and on later requests copies it to `Authorization: Bearer` toward Laravel (never forwards `Cookie`). XSS cannot read the JWT; it can still session-ride. Mutating cookie requests need `X-Requested-With: XMLHttpRequest`.
 
-1. Always `localStorage` (never `sessionStorage`) — `remember` flag affects TTL only, not storage location.
-2. `storage` event listener — syncs token writes across tabs.
-3. `BroadcastChannel('monolith-auth')` — coordinates refresh so only one tab calls `auth/refresh`; others wait for `refresh-done`. Prevents the refresh race where two tabs blacklist each other's tokens.
+Multi-tab: the cookie is shared. `BroadcastChannel('monolith-auth')` only coordinates refresh so one tab calls `auth/refresh` (blacklist race) and broadcasts `logout` — messages do **not** carry the JWT. Hydrate is `GET auth/me`.
 
 Backend `AuthService::refreshFromToken` preserves the `remember` flag via the `rm` custom claim (`jwt.persistent_claims`) so a remember-me session does not silently downgrade on refresh.
 
@@ -113,7 +111,7 @@ Route coverage matches Blade. Product-surface appearance gaps from waves 1–3 p
 
 Mimic is appearance + behavior + intent, not a pixel clone. One list API, two presentations (`display_mode=query` for the SPA DataTable, `display_mode=datatable` for Blade Yajra). Query mode is a flat `T[]` unless `page` / `per_page` / `search` are present, then `{ items, pagination }` (default 10). Parse as-is. Row actions are icon-only.
 
-**A — Platform:** JWT in `localStorage`, SPA broadcasting auth, no CSRF on Bearer, hCaptcha Vite gate, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`.
+**A — Platform:** HttpOnly `spa_jwt` (Worker BFF; JS does not store the JWT), SPA broadcasting auth via Worker cookie→Bearer, Worker CSRF header, hCaptcha Vite gate, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`.
 
 **B — Intentional:** Vue `DataTable` (not Yajra JS), Select2 only for server-side lookup, navigation from `GET navigation/menus?layout=sidebar`, FH three Vue routes vs Blade island, team as a page vs offcanvas, listing-only move picker, rate save re-fetch (no full reload).
 

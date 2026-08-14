@@ -9,18 +9,18 @@ The Blade admin in Monolith stays as the in-repo frontend **until this port actu
 | Piece | Role |
 |-------|------|
 | Vue 3 + Vite + TypeScript | SPA runtime, SFC components, type safety |
-| Cloudflare Workers | Deployment target (`@cloudflare/vite-plugin`). Also the `/api/v1` reverse proxy (hostname mask). |
-| Token-based auth | JWT stored in memory + `localStorage` (shared across tabs); sent as `Authorization: Bearer` header (no HttpOnly cookie — that is Blade-only). Cross-tab sync via `storage` event + `BroadcastChannel` coordinates refresh so only one tab refreshes; `remember` flag only affects TTL, not storage location. |
-| `fetch` wrapper (`src/api/client.ts`) | Same-origin `/api/v1/...` via `src/api/baseUrl.ts` (optional `VITE_API_BASE_URL` absolute override). Injects Bearer token, handles 401 refresh + retry, parses `{ status, message, data }` envelope. `getBlob()` is the non-JSON path (CSV / file download). |
+| Cloudflare Workers | Deployment target (`@cloudflare/vite-plugin`). Also the `/api/v1` reverse proxy (hostname mask) and BFF: HttpOnly `spa_jwt` cookie → `Authorization: Bearer` to Laravel; strips `data.token` from login/register/refresh/2FA-login JSON. |
+| Session auth | HttpOnly `spa_jwt` on the Vue-Workers origin. JS never stores the JWT. `GET auth/me` hydrates `user`. Cross-tab: the cookie is shared; `BroadcastChannel` only coordinates refresh/logout (no token in the messages). `remember` affects cookie `Max-Age` via API `expires_in`. |
+| `fetch` wrapper (`src/api/client.ts`) | Same-origin `/api/v1/...` via `src/api/baseUrl.ts` (`credentials: 'same-origin'`, `X-Requested-With: XMLHttpRequest`). No `Authorization` header — the Worker attaches Bearer from the cookie. 401 refresh + retry. `getBlob()` is the non-JSON path (CSV / file download). |
 | `vue-i18n` | Full locale system (`en`, `id`, `ja`) converted from Laravel PHP lang files |
 
-Base URL: empty `VITE_API_BASE_URL` (default). Composable paths are relative (`auth/me`); the client prefixes `/api/v1`. The Worker forwards that to `{MONOLITH_API_ORIGIN}/api/v1/...`. Set `VITE_API_BASE_URL` to an absolute prefix (`https://monolith-ph24.spnd.uk/api/v1`) only as an emergency bypass — DevTools will then show the monolith host.
+Base URL: empty `VITE_API_BASE_URL` (required). Composable paths are relative (`auth/me`); the client prefixes `/api/v1`. The Worker forwards that to `{MONOLITH_API_ORIGIN}/api/v1/...` and owns the session cookie. An absolute `VITE_API_BASE_URL` bypasses the Worker — DevTools shows the monolith host **and** the HttpOnly BFF cookie never reaches Laravel. Leave it empty.
 
 ## API hostname mask
 
 The browser calls **same-origin** `/api/v1/*`. DevTools Network shows the Vue-Workers origin, not the monolith host. `@cloudflare/vite-plugin` runs `server/index.ts` in `npm run dev` **and** on deploy — one proxy, both environments.
 
-This is **hostname masking, not a control.** Paths stay `/api/v1/auth/login`. JWT stays in `localStorage`. The Worker **is** the public API. `MONOLITH_API_ORIGIN` lives in Wrangler `vars` / `.dev.vars` (not `VITE_`, not the JS bundle).
+This is **hostname masking, not a control.** Paths stay `/api/v1/auth/login`. The Worker **is** the public API and the BFF: it sets HttpOnly `spa_jwt` (not Blade `auth_token`) and never forwards `Cookie` to Laravel. Direct hits to Monolith `/api/v1` still return Bearer JSON for PHPUnit and non-browser clients. `MONOLITH_API_ORIGIN` lives in Wrangler `vars` / `.dev.vars` (not `VITE_`, not the JS bundle). XSS can still session-ride; it cannot read the JWT. Mutating requests with a cookie require `X-Requested-With: XMLHttpRequest` (`SameSite=Strict` plus that header).
 
 Still naked (browser talks to these hosts directly):
 
@@ -29,7 +29,19 @@ Still naked (browser talks to these hosts directly):
 - File Hosting presigned / gateway byte URLs
 - hCaptcha JS
 
-Local gotcha: Vite env files stack — `.env.local` **overrides** `.env` (gitignored via `*.local`). Restarting `npm run dev` does nothing if `.env.local` still has `VITE_API_BASE_URL=https://…/api/v1`. Leave that key **empty in both files**. Put `MONOLITH_API_ORIGIN` in `.dev.vars` (copy `.dev.vars.example`). An absolute Vite API URL means the browser talks to the monolith host directly; the Worker never sees the request. After changing env files, restart Vite and hard-refresh the browser (env is baked at compile).
+Local gotcha: Vite env files stack — `.env.local` **overrides** `.env` (gitignored via `*.local`). Restarting `npm run dev` does nothing if `.env.local` still has `VITE_API_BASE_URL=https://…/api/v1`. Leave that key **empty in both files** (required for hostname mask **and** the BFF cookie). Put `MONOLITH_API_ORIGIN` in `.dev.vars` (copy `.dev.vars.example`). An absolute Vite API URL means the browser talks to the monolith host directly; the Worker never sees the request. After changing env files, restart Vite and hard-refresh the browser (env is baked at compile).
+
+## Local dogfood checklist
+
+Daily driver is `npm run dev` at `http://localhost:5173`. Blade stays at `APP_URL` as the reference. Set Monolith `SPA_URL="http://localhost:5173"`. Empty `VITE_API_BASE_URL` in `.env` and `.env.local`.
+
+Pass/fail (compare Blade when unsure):
+
+- Network: `/api/v1/...` on `localhost:5173`, not `monolith-ph24`. Login JSON has **no** `token`. Request has Cookie `spa_jwt` + `X-Requested-With`, not `Authorization`.
+- Application: `spa_jwt` HttpOnly; no `mw_auth` in localStorage.
+- Hard refresh still logged in; logout clears the cookie; two tabs, one logout, the other dies on the next API call / `BroadcastChannel` logout.
+- Login / remember / 2FA / refresh near TTL.
+- FH browse + upload, invoice CSV, Discord connect (`SPA_URL`), Echo bell or FH live event (or poll fallback).
 
 ## API contract reference
 
@@ -288,7 +300,7 @@ View mode persists in `localStorage` key `fh-view-mode` (default table).
 
 ### Payment return URLs
 
-SPA routes: `/payment/return` and `/payment/cancel` (`PaymentReturnView`, `requiresAuth`). Blade uses `/payment/ipaymu/return|cancel`. Paths do **not** need to match Blade — configure the payment gateway (and any SPA-origin env the API uses for return URLs) to the Vue-Workers origin. JWT in `localStorage` survives the gateway bounce; `beforeEach` keeps `redirect=fullPath`. Do not reopen these as guest routes unless a real gateway hit arrives without a token. These stay at the **site root**, not under `/apps`.
+SPA routes: `/payment/return` and `/payment/cancel` (`PaymentReturnView`, `requiresAuth`). Blade uses `/payment/ipaymu/return|cancel`. Paths do **not** need to match Blade — configure the payment gateway (and any SPA-origin env the API uses for return URLs) to the Vue-Workers origin. HttpOnly `spa_jwt` survives the gateway bounce (`SameSite=Strict` still sends the cookie on same-origin XHR after the SPA loads); `beforeEach` hydrates via `GET auth/me` and keeps `redirect=fullPath`. Do not reopen these as guest routes unless a real gateway hit arrives without a session. These stay at the **site root**, not under `/apps`.
 
 ### `/apps` shell
 
@@ -323,7 +335,7 @@ The SPA fetches and parses **as-is**. Do not port Yajra JS. Do not invent a seco
 
 These are the safe zone. Keep the current approaches.
 
-**A — Platform.** JWT in `localStorage`, `POST /api/v1/broadcasting/auth`, no CSRF on Bearer, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`. Mimic the session and realtime intent, not the cookie.
+**A — Platform.** HttpOnly `spa_jwt` on the Vue-Workers origin (Worker BFF; JS does not store the JWT). Blade remains HttpOnly `auth_token` on `APP_URL`. Direct Monolith `/api/v1` still returns Bearer JSON. `POST /api/v1/broadcasting/auth` (cookie → Worker Bearer), Worker CSRF header on mutating cookie requests, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`. Mimic the session and realtime intent; two cookies, two origins.
 
 **B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout=sidebar`. File Hosting three Vue routes vs Blade island; team as a page vs offcanvas; listing-only move picker; rate editor re-fetch instead of full reload. Mimic intent, not Blade DOM ids (`#fhTeamOffcanvas`, `#fhCreateWorkspaceModal`, `#fhMicrostockPanel`).
 
@@ -335,7 +347,7 @@ Do not treat a read-only show-page microstock card as “review is done.” Revi
 
 The SPA supports realtime updates via Laravel Echo and Pusher, with polling fallback.
 
-- **Composable**: `src/composables/useEcho.ts` — singleton `Echo<'pusher'>` (`EchoOptions<'pusher'>`), reads Pusher config from `VITE_PUSHER_*` env vars, JWT auth via custom authorizer → `broadcasting/auth`. Connection flag uses `connector.onConnectionChange` / `connectionStatus()`. Subscribe via `getEcho()`; `useEcho()` exposes `init` / `disconnect` / `connected` only.
+- **Composable**: `src/composables/useEcho.ts` — singleton `Echo<'pusher'>` (`EchoOptions<'pusher'>`), reads Pusher config from `VITE_PUSHER_*` env vars. Authorizer `fetch` is same-origin + `X-Requested-With` (no Bearer); the Worker attaches JWT from `spa_jwt`. Connection flag uses `connector.onConnectionChange` / `connectionStatus()`. Subscribe via `getEcho()`; `useEcho()` exposes `init` / `disconnect` / `connected` only.
 - **Notification bell**: `src/components/AppNavbar.vue` — inits Echo on mount, subscribes to `App.Models.User.{id}` private channel for `.activity-notification.received` events. Polling (60s) starts as fallback if Echo fails to connect within 30s grace window. On each WS event, the bell also calls `fetchList(5)` to refresh its own recent-notification dropdown content (capped at 5 — the full list is fetched on dropdown open or navigation to `/notifications`).
 - **File Hosting**: `src/composables/useFileHostingRealtime.ts` — singleton channel manager for `file-hosting.user.{userId}` (`.listing.changed`, `.quota.changed`, `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress`). Multiple views register handlers; the channel is subscribed once and torn down when the last handler unregisters. See [Pattern B](#pattern-b-direct-channel-subscription) below.
 - **Microstock**: collection mutations (`lockCollection`, `analyzeCollection`, `fetchCollectionStatus`, `exportCollection`, `downloadCollectionCsv`, asset metadata GET/PATCH, `analyzeAsset`, `fetchSlots`, `createWorkspace`) live in `useMicrostock.ts` and are wired from `FileHostingView` / `FhMicrostockReviewModal`. Realtime subscriptions go through `useFileHostingRealtime.ts` (same channel, Microstock events).
@@ -361,7 +373,7 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 | Var | Purpose |
 |-----|---------|
 | `MONOLITH_API_ORIGIN` | Worker-only. Monolith origin (no `/api/v1` suffix, no trailing slash). Wrangler `vars` + `.dev.vars`. **Not** bundled into the browser. Empty → Worker 503. |
-| `VITE_API_BASE_URL` | Optional absolute API prefix baked into the client. **Leave empty in `.env` and `.env.local`** so calls stay same-origin `/api/v1` (Worker mask). `.env.local` wins. Set only to bypass the proxy. |
+| `VITE_API_BASE_URL` | Must stay **empty** so calls stay same-origin `/api/v1` (Worker mask + BFF cookie). `.env.local` wins. An absolute prefix bypasses the Worker — hostname leak **and** no `spa_jwt`. |
 | `VITE_PUSHER_APP_KEY` | Pusher app key (required for Echo — must match Monolith `PUSHER_APP_KEY`) |
 | `VITE_PUSHER_APP_CLUSTER` | Pusher cluster (default `mt1`) |
 | `VITE_PUSHER_HOST` | Self-hosted/Reverb host (omit for Pusher-hosted) |
@@ -377,7 +389,7 @@ When `VITE_PUSHER_APP_KEY` is unset, Echo is not initialized and all realtime-de
 
 ### Auth
 
-Echo private channel auth uses a dedicated API broadcast auth endpoint: `POST /api/v1/broadcasting/auth` (same-origin Worker proxy; optional `VITE_API_BASE_URL` override). The request carries `Authorization: Bearer {jwt}` header with the JWT from the auth store's `token` ref via a `tokenProvider` callback.
+Echo private channel auth uses a dedicated API broadcast auth endpoint: `POST /api/v1/broadcasting/auth` (same-origin Worker proxy). The SPA sends cookies + `X-Requested-With`; the Worker attaches `Authorization: Bearer` from `spa_jwt`. Empty `VITE_API_BASE_URL` is required — an absolute override skips the BFF.
 
 **Why a dedicated API route?** Laravel's default `/broadcasting/auth` (auto-registered by `withRouting(channels:...)` in `bootstrap/app.php`) lives under the `web` middleware group — it requires CSRF + session, which is incompatible with a Bearer-token SPA. The API route (`routes/api/v1/broadcasting.php`) mirrors the same `Broadcast::auth($request)` call but under `api` middleware (JWT guard):
 
@@ -391,15 +403,13 @@ This delegates to the same channel authorization callbacks in `routes/channels.p
 
 ## Cross-tab auth (multi-tab session sync)
 
-The SPA keeps a logged-in session alive across browser tabs without forcing re-login. Three mechanisms work together in `src/stores/auth.ts`:
+The SPA keeps a logged-in session alive across browser tabs without forcing re-login.
 
-1. **Always `localStorage`** — JWT is stored in `localStorage` (never `sessionStorage`). The `remember` flag only affects TTL (remember = longer refresh window via `jwt.remember_ttl`), not storage location. This eliminates the per-tab isolation that caused Tab B to start empty.
+1. **HttpOnly `spa_jwt`** — the browser shares the cookie across tabs on the Vue-Workers origin. JS does not persist the JWT (`mw_auth` leftover keys are cleared on hydrate). `remember` only affects `Max-Age` via API `expires_in`.
+2. **`GET auth/me` on hydrate** — each tab learns `user` from the cookie, not from `localStorage`.
+3. **`BroadcastChannel('monolith-auth')` coordinated refresh** — when multiple tabs' refresh timers fire near-simultaneously, only one tab performs `POST auth/refresh`; the others wait for `refresh-done`. This prevents the refresh race where two tabs each call refresh, one blacklists the other's token, and both tabs lose. Messages: `refresh-request`, `refresh-response`, `refresh-done` (`ok` + `user` / expiry — **no JWT**), `logout`.
 
-2. **`storage` event listener** — when Tab A writes a new token to `localStorage`, Tab B's `storage` event fires. Tab B updates its in-memory `token` / `user` / `expiresAt` / `remember` refs and reschedules its refresh timer. A `null` newValue (cleared by another tab) clears the local session.
-
-3. **`BroadcastChannel('monolith-auth')` coordinated refresh** — when multiple tabs' refresh timers fire near-simultaneously, only one tab performs `POST auth/refresh`; the others wait for the `refresh-done` broadcast. This prevents the refresh race where two tabs each call refresh, one blacklists the other's token, and both tabs lose. Messages: `refresh-request` (tab asks if anyone is already refreshing), `refresh-response` (active refresher says "I'm on it"), `refresh-done` (new token or null on failure), `logout` (coordinated logout).
-
-`clearAuth()` broadcasts `logout` so other tabs clear their in-memory state without each independently nuking `localStorage`. The `storage` event handles the actual key removal sync.
+`clearAuth()` broadcasts `logout` so other tabs drop in-memory `user`. The Worker expires `spa_jwt` on `POST auth/logout`.
 
 ### Backend `remember` preservation
 
