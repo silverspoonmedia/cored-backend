@@ -57,4 +57,12 @@ return [
         'connections_snapshot_max_age_minutes' => 60,
     ],
 
+    /*
+    | Vue-Workers SPA public origin. OAuth callback return_to allowlist (with APP_URL).
+    | Empty disables SPA OAuth return (Blade connections page stays the landing).
+    */
+    'spa' => [
+        'url' => env('SPA_URL', ''),
+    ],
+
 ];

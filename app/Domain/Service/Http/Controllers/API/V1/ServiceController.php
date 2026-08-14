@@ -2,10 +2,12 @@
 
 namespace App\Domain\Service\Http\Controllers\API\V1;
 
+use App\Domain\Identity\Models\User;
 use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
 use App\Domain\Service\Http\Requests\CheckoutServiceRequest;
+use App\Domain\Service\Http\Requests\IndexServiceRequest;
 use App\Domain\Service\Http\Requests\StoreServiceRequest;
 use App\Domain\Service\Http\Requests\UpdateServiceRequest;
 use App\Domain\Service\Http\Resources\ServicePurchaseResource;
@@ -13,6 +15,7 @@ use App\Domain\Service\Http\Resources\ServiceResource;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\Service\Services\ServiceCheckoutService;
+use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Traits\ApiResponse;
@@ -22,18 +25,23 @@ class ServiceController extends Controller
 {
     use ApiResponse;
     use ResolvesResourceArray;
+    use RespondsWithListDisplayMode;
 
     public function __construct(
         private readonly ServiceCatalogService $catalog,
         private readonly ServiceCheckoutService $checkout,
     ) {}
 
-    public function index(): JsonResponse
+    public function index(IndexServiceRequest $request): JsonResponse
     {
         $this->authorize('viewAny', Service::class);
 
-        return $this->successResponse(
-            $this->resolveResource(ServiceResource::collection($this->catalog->list())),
+        $services = $this->catalog->list();
+
+        return $this->respondToQueryList(
+            $request,
+            $services,
+            fn ($list) => $this->resolveResource(ServiceResource::collection($list)),
             __('api/services.list_success'),
         );
     }
@@ -46,6 +54,7 @@ class ServiceController extends Controller
             'billing_intervals' => BillingInterval::values(),
             'plan_kinds' => PlanKind::values(),
             'statuses' => ServiceStatus::values(),
+            'purchase_max_quantity' => max(1, (int) setting_config('service.purchase.max_quantity', 99)),
         ], __('api/services.options_success'));
     }
 
@@ -97,7 +106,7 @@ class ServiceController extends Controller
     {
         $this->authorize('purchase', $service);
 
-        /** @var \App\Domain\Identity\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
         $validated = $request->validated();
 

@@ -91,7 +91,8 @@ class ServiceCrudTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.billing_intervals', ['monthly', 'quarterly', 'yearly', 'once'])
             ->assertJsonPath('data.plan_kinds', ['main', 'addon'])
-            ->assertJsonPath('data.statuses', ['draft', 'active', 'archived']);
+            ->assertJsonPath('data.statuses', ['draft', 'active', 'archived'])
+            ->assertJsonPath('data.purchase_max_quantity', max(1, (int) setting_config('service.purchase.max_quantity', 99)));
     }
 
     public function test_guest_cannot_access_options(): void
@@ -113,6 +114,21 @@ class ServiceCrudTest extends TestCase
                 'status' => 'draft',
             ])
             ->assertStatus(422);
+    }
+
+    public function test_query_paging_returns_items_envelope(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        Service::factory()->count(12)->create();
+
+        $response = $this->actingAsJwt($admin)
+            ->getJson('/api/v1/services?page=1&per_page=10')
+            ->assertOk()
+            ->assertJsonPath('data.pagination.per_page', 10)
+            ->assertJsonPath('data.pagination.current_page', 1);
+
+        $this->assertCount(10, $response->json('data.items'));
+        $this->assertSame(12, $response->json('data.pagination.total'));
     }
 
     public function test_update_and_delete(): void

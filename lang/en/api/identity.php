@@ -8,5 +8,12 @@ return [
         'connections_failed' => 'Could not load Discord linked accounts.',
         'discord_not_connected' => 'Connect Discord from Connected accounts first.',
         'discord_user_missing' => 'Discord did not return a user id.',
+        'authorize_url' => 'Discord authorization URL issued.',
+        'spa_url_missing' => 'SPA origin is not configured on this server.',
+        'return_path_invalid' => 'OAuth return path is not allowed.',
+    ],
+    'connections' => [
+        'show' => 'Connected accounts loaded.',
+        'discord_disconnected' => 'Discord disconnected.',
     ],
 ];

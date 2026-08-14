@@ -2,9 +2,11 @@
 
 use App\Domain\Identity\Http\Controllers\API\V1\AdminController;
 use App\Domain\Identity\Http\Controllers\API\V1\Auth\AuthController;
+use App\Domain\Identity\Http\Controllers\API\V1\Auth\DiscordOAuthController;
 use App\Domain\Identity\Http\Controllers\API\V1\Auth\EmailVerificationController;
 use App\Domain\Identity\Http\Controllers\API\V1\Auth\LocaleController;
 use App\Domain\Identity\Http\Controllers\API\V1\Auth\PasswordController;
+use App\Domain\Identity\Http\Controllers\API\V1\Auth\ProfileConnectionsController;
 use App\Domain\Identity\Http\Controllers\API\V1\Auth\TwoFactorController;
 use App\Domain\Identity\Http\Controllers\API\V1\LookupController;
 use App\Domain\Identity\Http\Controllers\API\V1\UserController;
@@ -48,6 +50,9 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
         Route::post('two-factor/disable', [TwoFactorController::class, 'disable'])
             ->middleware('throttle:3,1')
             ->name('two-factor.disable');
+        Route::get('discord/authorize-url', [DiscordOAuthController::class, 'authorizeUrl'])
+            ->middleware('throttle:10,1')
+            ->name('discord.authorize-url');
     });
 
     // Single refresh inside AuthService (no jwt.refresh middleware — that layer
@@ -58,6 +63,11 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
 });
 
 Route::middleware('auth:api')->group(function (): void {
+    Route::get('profile/connections', [ProfileConnectionsController::class, 'show'])
+        ->name('profile.connections.show');
+    Route::delete('profile/connections/discord', [ProfileConnectionsController::class, 'disconnectDiscord'])
+        ->name('profile.connections.discord.disconnect');
+
     Route::get('users/assignable-roles', [UserController::class, 'assignableRoles'])
         ->name('users.assignable-roles');
 

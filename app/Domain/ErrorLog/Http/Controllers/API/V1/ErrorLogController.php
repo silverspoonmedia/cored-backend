@@ -2,11 +2,13 @@
 
 namespace App\Domain\ErrorLog\Http\Controllers\API\V1;
 
+use App\Domain\ActivityLog\Http\Controllers\API\V1\ActivityLogController;
 use App\Domain\ErrorLog\Http\Requests\IndexErrorLogRequest;
 use App\Domain\ErrorLog\Http\Requests\UpdateErrorLogStatusRequest;
 use App\Domain\ErrorLog\Http\Resources\ErrorLogResource;
 use App\Domain\ErrorLog\Models\ErrorLog;
 use App\Domain\ErrorLog\Services\ErrorLogService;
+use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Traits\ApiResponse;
@@ -15,13 +17,14 @@ use Illuminate\Http\JsonResponse;
 /**
  * Grouped persistent application errors for administrators and agents.
  *
- * Distinct from {@see \App\Domain\ActivityLog\Http\Controllers\API\V1\ActivityLogController}
+ * Distinct from {@see ActivityLogController}
  * (audit trail) and notification bell.
  */
 class ErrorLogController extends Controller
 {
     use ApiResponse;
     use ResolvesResourceArray;
+    use RespondsWithListDisplayMode;
 
     public function __construct(
         private readonly ErrorLogService $errorLogs,
@@ -29,11 +32,16 @@ class ErrorLogController extends Controller
 
     public function index(IndexErrorLogRequest $request): JsonResponse
     {
-        $limit = (int) ($request->validated()['limit'] ?? 50);
-        $items = $this->errorLogs->list($request->validated(), $limit);
+        $validated = $request->validated();
+        $limit = $request->wantsQueryPaging()
+            ? 500
+            : (int) ($validated['limit'] ?? 50);
+        $items = $this->errorLogs->list($validated, $limit);
 
-        return $this->successResponse(
-            $this->resolveResource(ErrorLogResource::collection($items)),
+        return $this->respondToQueryList(
+            $request,
+            $items,
+            fn ($list) => $this->resolveResource(ErrorLogResource::collection($list)),
             __('api/error-log.list_success'),
         );
     }

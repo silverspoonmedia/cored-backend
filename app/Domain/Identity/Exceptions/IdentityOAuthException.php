@@ -2,15 +2,20 @@
 
 namespace App\Domain\Identity\Exceptions;
 
-use RuntimeException;
+use App\Exceptions\BusinessRuleException;
 
-class IdentityOAuthException extends RuntimeException
+class IdentityOAuthException extends BusinessRuleException
 {
     public function __construct(
         string $message,
-        public readonly int $statusCode = 422,
+        private readonly int $httpStatus = 422,
         ?\Throwable $previous = null,
     ) {
-        parent::__construct($message, $statusCode, $previous);
+        parent::__construct($message, $httpStatus, $previous);
+    }
+
+    public function statusCode(): int
+    {
+        return $this->httpStatus;
     }
 }

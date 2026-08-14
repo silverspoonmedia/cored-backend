@@ -3,16 +3,16 @@
 namespace App\Domain\Identity\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Exceptions\CannotDeleteSelfException;
-use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
-use App\Http\Controllers\Controller;
 use App\Domain\Identity\Http\Requests\IndexUserRequest;
 use App\Domain\Identity\Http\Requests\StoreUserRequest;
 use App\Domain\Identity\Http\Requests\UpdateUserRequest;
-use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Domain\Identity\Http\Resources\UserManagementResource;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\Rbac\RoleService;
 use App\Domain\Identity\Services\User\UserManagementService;
+use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\DataTable\DataTableResponseFactory;
 use App\Support\DataTable\Resolvers\UserRowActionResolver;
 use App\Support\User\UserManagementPresenter;
@@ -42,8 +42,10 @@ class UserController extends Controller
 
         return $this->respondToListDisplayMode(
             $request,
-            fn (): JsonResponse => $this->successResponse(
-                $this->resolveResource(UserManagementResource::collection($users)),
+            fn (): JsonResponse => $this->respondToQueryList(
+                $request,
+                $users,
+                fn ($list) => $this->resolveResource(UserManagementResource::collection($list)),
                 __('api/users.list_success'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

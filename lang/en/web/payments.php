@@ -13,6 +13,7 @@ return [
             'priority' => 'Priority',
             'is_active' => 'Active',
         ],
+        'confirm_delete' => 'Delete this payment gateway?',
         'datatable' => [
             'empty' => 'No payment gateways configured.',
             'zero_records' => 'No payment gateways match your search.',

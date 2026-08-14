@@ -3,9 +3,11 @@
 namespace App\Domain\Identity\Http\Controllers\Web\Auth;
 
 use App\Domain\Identity\Exceptions\IdentityOAuthException;
+use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\DiscordOAuthService;
 use App\Domain\Identity\Services\UserOAuthAccountService;
 use App\Domain\Identity\Support\DiscordOAuthState;
+use App\Domain\Identity\Support\OAuthReturnUrl;
 use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Services\ChannelClaimService;
@@ -30,6 +32,9 @@ class DiscordOAuthController extends Controller
         $slug = $request->query('slug');
         $channelId = $request->query('channel_id');
         $claimId = $request->query('claim_id');
+        $returnTo = OAuthReturnUrl::sanitize(
+            is_string($request->query('return_to')) ? $request->query('return_to') : null,
+        );
 
         $state = DiscordOAuthState::encode(
             (string) $user->id,
@@ -37,6 +42,7 @@ class DiscordOAuthController extends Controller
             is_string($slug) ? $slug : null,
             is_string($channelId) ? $channelId : null,
             is_string($claimId) ? $claimId : null,
+            $returnTo,
         );
 
         return redirect()->away($this->discordOAuth->authorizeUrl($state));
@@ -44,58 +50,83 @@ class DiscordOAuthController extends Controller
 
     public function callback(Request $request): RedirectResponse
     {
-        $user = $request->user();
         $code = (string) $request->query('code', '');
         $state = (string) $request->query('state', '');
         $oauthError = $request->query('error');
 
+        $payload = null;
+        if ($state !== '') {
+            try {
+                $payload = DiscordOAuthState::decode($state);
+            } catch (\InvalidArgumentException) {
+                $payload = null;
+            }
+        }
+
         if ($oauthError !== null) {
-            return redirect()->route('profile.connections.edit')
-                ->with('error', __('web/identity-connections.discord_denied'));
+            return $this->redirectAfterCallback($payload, 'denied', 'error', __('web/identity-connections.discord_denied'));
         }
 
-        if ($code === '' || $state === '') {
-            return redirect()->route('profile.connections.edit')
-                ->with('error', __('web/identity-connections.discord_callback_invalid'));
+        if ($code === '' || $payload === null) {
+            return $this->redirectAfterCallback($payload, 'error', 'error', __('web/identity-connections.discord_callback_invalid'));
         }
 
-        try {
-            $payload = DiscordOAuthState::decode($state);
-        } catch (\InvalidArgumentException) {
-            return redirect()->route('profile.connections.edit')
-                ->with('error', __('web/identity-connections.discord_callback_invalid'));
-        }
-
-        if ($payload['user_id'] !== (string) $user->id) {
-            abort(403);
-        }
+        $user = $this->userFromCallback($request, $payload);
 
         try {
             $tokenPayload = $this->discordOAuth->exchangeCode($code);
             $this->oauthAccounts->connectDiscord($user, $tokenPayload);
         } catch (IdentityOAuthException $e) {
-            return $this->redirectAfterCallback($payload)
-                ->with('error', $e->getMessage());
+            return $this->redirectAfterCallback($payload, 'error', 'error', $e->getMessage());
         }
 
         if ($payload['intent'] === 'claim_channel' && $payload['slug'] && $payload['channel_id']) {
-            return $this->attemptClaimChannelVerify($user, $payload['slug'], $payload['channel_id']);
+            return $this->attemptClaimChannelVerify($user, $payload);
         }
 
         if ($payload['intent'] === 'claim_verify' && $payload['claim_id'] && $payload['slug']) {
-            return $this->attemptClaimVerify($user, $payload['slug'], $payload['claim_id']);
+            return $this->attemptClaimVerify($user, $payload);
         }
 
         if ($payload['intent'] === 'channel_claim_verify' && $payload['claim_id'] && $payload['slug']) {
-            return $this->attemptChannelClaimVerify($user, $payload['slug'], $payload['claim_id']);
+            return $this->attemptChannelClaimVerify($user, $payload);
         }
 
-        return redirect()->route('profile.connections.edit')
-            ->with('success', __('web/identity-connections.discord_connected'));
+        return $this->redirectAfterCallback(
+            $payload,
+            'connected',
+            'success',
+            __('web/identity-connections.discord_connected'),
+        );
     }
 
-    private function attemptClaimChannelVerify($user, string $slug, string $channelId): RedirectResponse
+    /**
+     * @param  array{user_id: string, intent: string, slug?: ?string, channel_id?: ?string, claim_id?: ?string, return_to?: ?string}  $payload
+     */
+    private function userFromCallback(Request $request, array $payload): User
     {
+        $sessionUser = $request->user();
+        if ($sessionUser instanceof User && (string) $sessionUser->id !== $payload['user_id']) {
+            abort(403);
+        }
+
+        /** @var User|null $user */
+        $user = User::query()->find($payload['user_id']);
+        if ($user === null) {
+            abort(403);
+        }
+
+        return $user;
+    }
+
+    /**
+     * @param  array{user_id: string, intent: string, slug?: ?string, channel_id?: ?string, claim_id?: ?string, return_to?: ?string}  $payload
+     */
+    private function attemptClaimChannelVerify(User $user, array $payload): RedirectResponse
+    {
+        $slug = (string) $payload['slug'];
+        $channelId = (string) $payload['channel_id'];
+
         try {
             /** @var Creator|null $creator */
             $creator = Creator::query()->where('slug', $slug)->first();
@@ -107,67 +138,151 @@ class DiscordOAuthController extends Controller
             $verified = $this->claims->verifyViaDiscord($user, (string) $claim->id);
 
             if ($verified->status === CreatorClaimStatus::Verified) {
-                return redirect()->route('vtual.vtuber.show', $slug)
-                    ->with('success', __('web/vtual-vtuber.claim_progress_verified'));
+                return $this->redirectAfterCallback(
+                    $payload,
+                    'connected',
+                    'success',
+                    __('web/vtual-vtuber.claim_progress_verified'),
+                    'vtual.vtuber.show',
+                    $slug,
+                );
             }
 
-            return redirect()->route('vtual.vtuber.claim', $slug)
-                ->with('warning', __('web/vtual-vtuber.claim_progress_failed'));
+            return $this->redirectAfterCallback(
+                $payload,
+                'error',
+                'warning',
+                __('web/vtual-vtuber.claim_progress_failed'),
+                'vtual.vtuber.claim',
+                $slug,
+            );
         } catch (\Throwable) {
-            return redirect()->route('vtual.vtuber.claim', $slug)
-                ->with('error', __('web/vtual-vtuber.claim_discord_verify_failed'));
-        }
-    }
-
-    private function attemptClaimVerify($user, string $slug, string $claimId): RedirectResponse
-    {
-        try {
-            $verified = $this->claims->verifyViaDiscord($user, $claimId);
-
-            if ($verified->status === CreatorClaimStatus::Verified) {
-                return redirect()->route('vtual.vtuber.show', $slug)
-                    ->with('success', __('web/vtual-vtuber.claim_progress_verified'));
-            }
-
-            return redirect()->route('vtual.vtuber.claim', $slug)
-                ->with('warning', __('web/vtual-vtuber.claim_progress_failed'));
-        } catch (\Throwable) {
-            return redirect()->route('vtual.vtuber.claim', $slug)
-                ->with('error', __('web/vtual-vtuber.claim_discord_verify_failed'));
-        }
-    }
-
-    private function attemptChannelClaimVerify($user, string $slug, string $claimId): RedirectResponse
-    {
-        try {
-            $verified = $this->channelClaims->verifyViaDiscord($user, $claimId);
-
-            if ($verified->status === CreatorClaimStatus::Verified) {
-                return redirect()->route('vtual.profiles.show', $slug)
-                    ->with('success', __('web/vtual-vtuber.claim_progress_verified'));
-            }
-
-            return redirect()->route('vtual.profiles.show', $slug)
-                ->with('warning', __('web/vtual-vtuber.claim_progress_failed'));
-        } catch (\Throwable) {
-            return redirect()->route('vtual.profiles.show', $slug)
-                ->with('error', __('web/vtual-vtuber.claim_discord_verify_failed'));
+            return $this->redirectAfterCallback(
+                $payload,
+                'error',
+                'error',
+                __('web/vtual-vtuber.claim_discord_verify_failed'),
+                'vtual.vtuber.claim',
+                $slug,
+            );
         }
     }
 
     /**
-     * @param  array{user_id: string, intent: string, slug?: ?string, channel_id?: ?string, claim_id?: ?string}  $payload
+     * @param  array{user_id: string, intent: string, slug?: ?string, channel_id?: ?string, claim_id?: ?string, return_to?: ?string}  $payload
      */
-    private function redirectAfterCallback(array $payload): RedirectResponse
+    private function attemptClaimVerify(User $user, array $payload): RedirectResponse
     {
-        if ($payload['intent'] === 'channel_claim_verify' && $payload['slug']) {
-            return redirect()->route('vtual.profiles.show', $payload['slug']);
+        $slug = (string) $payload['slug'];
+        $claimId = (string) $payload['claim_id'];
+
+        try {
+            $verified = $this->claims->verifyViaDiscord($user, $claimId);
+
+            if ($verified->status === CreatorClaimStatus::Verified) {
+                return $this->redirectAfterCallback(
+                    $payload,
+                    'connected',
+                    'success',
+                    __('web/vtual-vtuber.claim_progress_verified'),
+                    'vtual.vtuber.show',
+                    $slug,
+                );
+            }
+
+            return $this->redirectAfterCallback(
+                $payload,
+                'error',
+                'warning',
+                __('web/vtual-vtuber.claim_progress_failed'),
+                'vtual.vtuber.claim',
+                $slug,
+            );
+        } catch (\Throwable) {
+            return $this->redirectAfterCallback(
+                $payload,
+                'error',
+                'error',
+                __('web/vtual-vtuber.claim_discord_verify_failed'),
+                'vtual.vtuber.claim',
+                $slug,
+            );
+        }
+    }
+
+    /**
+     * @param  array{user_id: string, intent: string, slug?: ?string, channel_id?: ?string, claim_id?: ?string, return_to?: ?string}  $payload
+     */
+    private function attemptChannelClaimVerify(User $user, array $payload): RedirectResponse
+    {
+        $slug = (string) $payload['slug'];
+        $claimId = (string) $payload['claim_id'];
+
+        try {
+            $verified = $this->channelClaims->verifyViaDiscord($user, $claimId);
+
+            if ($verified->status === CreatorClaimStatus::Verified) {
+                return $this->redirectAfterCallback(
+                    $payload,
+                    'connected',
+                    'success',
+                    __('web/vtual-vtuber.claim_progress_verified'),
+                    'vtual.profiles.show',
+                    $slug,
+                );
+            }
+
+            return $this->redirectAfterCallback(
+                $payload,
+                'error',
+                'warning',
+                __('web/vtual-vtuber.claim_progress_failed'),
+                'vtual.profiles.show',
+                $slug,
+            );
+        } catch (\Throwable) {
+            return $this->redirectAfterCallback(
+                $payload,
+                'error',
+                'error',
+                __('web/vtual-vtuber.claim_discord_verify_failed'),
+                'vtual.profiles.show',
+                $slug,
+            );
+        }
+    }
+
+    /**
+     * @param  array{user_id: string, intent: string, slug?: ?string, channel_id?: ?string, claim_id?: ?string, return_to?: ?string}|null  $payload
+     */
+    private function redirectAfterCallback(
+        ?array $payload,
+        string $spaStatus,
+        string $flashType,
+        string $flashMessage,
+        ?string $bladeRoute = null,
+        ?string $bladeParam = null,
+    ): RedirectResponse {
+        $returnTo = is_string($payload['return_to'] ?? null)
+            ? OAuthReturnUrl::sanitize((string) $payload['return_to'])
+            : null;
+
+        if ($returnTo !== null) {
+            return redirect()->away(OAuthReturnUrl::withDiscordStatus($returnTo, $spaStatus));
         }
 
-        if ($payload['slug']) {
-            return redirect()->route('vtual.vtuber.claim', $payload['slug']);
+        if ($bladeRoute !== null && $bladeParam !== null) {
+            return redirect()->route($bladeRoute, $bladeParam)->with($flashType, $flashMessage);
         }
 
-        return redirect()->route('profile.connections.edit');
+        if (is_array($payload) && ($payload['intent'] ?? '') === 'channel_claim_verify' && ($payload['slug'] ?? null)) {
+            return redirect()->route('vtual.profiles.show', $payload['slug'])->with($flashType, $flashMessage);
+        }
+
+        if (is_array($payload) && ($payload['slug'] ?? null)) {
+            return redirect()->route('vtual.vtuber.claim', $payload['slug'])->with($flashType, $flashMessage);
+        }
+
+        return redirect()->route('profile.connections.edit')->with($flashType, $flashMessage);
     }
 }

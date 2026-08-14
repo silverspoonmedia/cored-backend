@@ -11,7 +11,7 @@ For the Blade admin + Vue islands frontend, see [web/blade-admin.md](../web/blad
 | Vue 3 + Vite + TypeScript | SPA runtime, SFC components, type safety |
 | Cloudflare Workers | Deployment target (`@cloudflare/vite-plugin`) |
 | Token-based auth | JWT stored in memory + `localStorage` (shared across tabs); sent as `Authorization: Bearer` header (no HttpOnly cookie — that is Blade-only). Cross-tab sync via `storage` event + `BroadcastChannel` coordinates refresh so only one tab refreshes; `remember` flag only affects TTL, not storage location. |
-| `fetch` wrapper (`src/api/client.ts`) | Builds URLs from `VITE_API_BASE_URL`, injects Bearer token, handles 401 refresh + retry, parses `{ status, message, data }` envelope |
+| `fetch` wrapper (`src/api/client.ts`) | Builds URLs from `VITE_API_BASE_URL`, injects Bearer token, handles 401 refresh + retry, parses `{ status, message, data }` envelope. `getBlob()` is the non-JSON path (CSV / file download). |
 | `vue-i18n` | Full locale system (`en`, `id`, `ja`) converted from Laravel PHP lang files |
 
 Base URL: `VITE_API_BASE_URL` (e.g. `https://monolith-ph24.spnd.uk/api/v1`). All API call paths in composables are relative to this base.
@@ -44,6 +44,9 @@ These paths tripped up the SPA port — documented here to prevent regression:
 | `useMicrostockBilling.fetchAdminOverview` | `GET admin/microstock/billing/overview` | `file-hosting/microstock/billing/admin/overview` |
 | `useMicrostockBilling.fetchAdminUsageEvents` | `GET admin/microstock/billing/usage-events` | `file-hosting/microstock/billing/admin/usage-events` |
 | `usePaymentChannels.syncPolicy` | `POST payment-channels/sync-policy` | No API route existed previously; added in `routes/api/v1/payment-gateway.php` |
+| `useRatePlanAdmin.saveRates` | `PUT inference/providers/{id}/rates` | Body `{ rates: [...] }` is a **full replace** (same as Blade). Gated by `manage inference catalog`. |
+| `useConnections.fetchConnections` | `GET profile/connections` | Not under `auth/`. Any authenticated user. |
+| `useConnections.authorizeUrl` | `GET auth/discord/authorize-url` | Query `intent` + `return_path` (must start `/apps/`). Returns `{ url }` — navigate the browser there. Discord still callbacks to Monolith web. |
 
 ### Response shape gotchas
 
@@ -54,6 +57,9 @@ These paths tripped up the SPA port — documented here to prevent regression:
 | `GET admin/product-activations` (index) | Flat `ProductActivationResource[]` in `data` | No `{ data, pagination }` wrapper — `res.data` is the array directly |
 | `GET admin/product-activations/products/{productKey}` | `{ summary, activations, pagination }` in `data` | This one DOES have a wrapper — opposite of index |
 | `GET payment-channels?subtotal=` | `PaymentChannelResource[]` with flattened quote fields | Quote fields (`estimated_channel_fee`, `estimated_channel_fee_formatted`, `fee_label`, etc.) are at top level, NOT nested under `checkout_quote`. See [payment-gateway](../domains/payment-gateway/README.md#paymentchannelresource-checkout-quote-flattening). |
+| `GET services/options` | `{ billing_intervals, plan_kinds, statuses, purchase_max_quantity }` | `purchase_max_quantity` is the live `platform.service.purchase_max_quantity` cap. SPA checkout/purchase steppers parse it. Fallback `99` only when the call fails (options requires `view service`; purchase owners may lack it). |
+| `GET profile/connections` | `{ discord_connected, discord_oauth_configured, discord_synced_at, discord_synced_at_formatted, discord_synced_at_human, connections[] }` | `connections[]` items are `{ type, id, name, verified, revoked }`. Stale Discord snapshots refresh on this GET (same as Blade). |
+| `GET auth/discord/authorize-url` | `{ url }` | Requires `SPA_URL` on the API host. `return_path` is a path, not an origin — the API prefixes `SPA_URL`. |
 
 ## Type alignment
 
@@ -71,9 +77,20 @@ TS types in `src/api/types.ts` must match Laravel API Resources exactly. No tran
 
 Three patterns exist in the API:
 
-1. **Flat array** — `ProductActivationResource::collection(...)` returned directly. `data` is `T[]`. No pagination metadata.
-2. **`{ items, pagination: { current_page, last_page, per_page, total, has_more } }`** — used by microstock billing ledger/usage-events, inference usage events.
+1. **Flat array** — `ProductActivationResource::collection(...)` returned directly. `data` is `T[]`. No pagination metadata. Query-mode catalog indexes **without** `page` / `per_page` / `search` also stay this shape (legacy clients / tests).
+2. **`{ items, pagination: { current_page, last_page, per_page, total, has_more } }`** — microstock billing ledger/usage-events, inference usage events, **and** query-mode catalog indexes when the SPA (or any client) sends `page` / `per_page` / `search`. Default `per_page` is 10 (max 100). Same list URL — not a second API.
 3. **`{ summary, activations, pagination: { current_page, last_page, per_page, total } }`** — product activation per-product show endpoint. `has_more` is not returned here.
+
+## Status badges
+
+Lifecycle status in the SPA is one renderer, many maps — not one semantic mega-badge.
+
+- Component: `src/components/StatusBadge.vue` (`status`, optional `label`, `mapping`, `fallback`, `extraClass`).
+- Maps: `src/utils/statusBadge.ts` (`INVOICE_STATUS_BADGE`, `SERVICE_STATUS_BADGE`, `SUBSCRIPTION_STATUS_BADGE`, `ERROR_LOG_STATUS_BADGE`, `ERROR_LOG_LEVEL_BADGE`, `PRODUCT_ACTIVATION_STATE_BADGE`, `VTUAL_STATUS_BADGE`). Domain maps **merge over** defaults. `expired` is secondary on invoices and danger on product activations — that is why a single default map is forbidden.
+- Empty / null status → label `—`, color = `fallback` (default `secondary`). Mapped color `light` also gets `border` (Blade vTual unknown/disconnected).
+- Do **not** add a per-view `statusClass()`. Do **not** add a generic Blade `x-adminlte4::status-badge` — [blade-admin.md](../web/blade-admin.md) anti-pattern “cross-domain status badges”. Blade keeps `x-adminlte4::vtual.status-badge`.
+
+Leave specialized chrome alone: `PaymentStatusHero` (`ois-status-*` + `data-payment-badge`), FH `fh-badge` / `fh-ms-badge`, keyword chips, navbar unread count, product-activation count chips, type/kind/role/code chips.
 
 ## i18n porting notes
 
@@ -183,6 +200,122 @@ The map mirrors `routes/breadcrumbs.php` from Monolith. Parent chains resolve re
 
 To add a new route's breadcrumb, add an entry to `BREADCRUMB_MAP` in `useBreadcrumbs.ts` with the correct `parent` chain and `labelKey` (must exist in locale JSON files).
 
+## Page titles and admin chrome
+
+Authenticated routes set `meta.titleKey` (and guest auth routes also `meta.headingKey`) to the same i18n keys Blade uses on `layouts.app` / `layouts.auth`. Do **not** hardcode English in router `props.title`.
+
+- **Composable**: `src/composables/usePageTitle.ts` — resolves the title from `route.matched` meta; special-cases settings groups (`web.settings.groups.*` from `route.params.group` **or** MenuSeeder names `settings.platform.view` / `settings.file-hosting.view` / `settings.microstock.view` / `settings.vtual.view`) and product-activation show (`product-activations.product_title` with `{product}`).
+- **Content header**: `AppLayout.vue` renders `pageTitle` in the `h3`.
+- **Auth heading**: `AuthLayout.vue` renders `heading` as `login-box-msg`.
+- **Tab title**: `App.vue` watches `documentTitle` and sets `document.title` to `{page} | Monolith` (or `Monolith` when there is no title). Recomputes on locale change.
+- **DataTable chrome**: `DataTable.vue` uses `ui.datatable.*` (`search_placeholder`, `empty_title`, `info`, `per_page`) and `ui.labels.actions`. Catalog dumps (`useResource` + DataTable) send `display_mode=query&page&per_page=10` (and `search` when the box is used) and parse `{ items, pagination }` **or** a legacy flat `T[]`. Default page size is **10** (Blade DataTables). Menus tree stays a full dump + client slice. Do not port Yajra JS. Do not invent a second list URL.
+- **Row actions**: icon-only (`RowActions.vue`) — `aria-label` + `title` from the label, icon `aria-hidden`, `btn-group btn-group-sm`. Toolbar primaries stay icon + text (`Add user`). File Hosting `.fh-action-group` is already icon-only — leave it.
+
+### Blob / CSV downloads
+
+`src/api/client.ts` `get()` always sets `Accept: application/json` and `res.json()`. CSV and other attachments use `getBlob()` (same Bearer + 401 refresh, `Accept: */*`) plus `src/utils/download.ts` `saveBlob()`. Wired for `GET invoices/export` (invoices list and income page; income sends `status=paid` plus optional `paid_from`/`paid_to`) and `GET microstock/collections/{folder}/download`.
+
+### OverlayScrollbars
+
+Sidebar CSS is bundled in `src/assets/vendor.css`. JS init lives in `useSidebar.init()` (called from `AppLayout` on mount): desktop only (`max-width: 991.98px` skipped), target `.sidebar-wrapper`, `os-theme-dark` / `os-theme-light` from `data-bs-theme`, `autoHide: 'leave'`. Theme changes call `syncOverlayScrollbarTheme()`. Destroy on `AppLayout` unmount. Auth layout has no sidebar wrapper — skip.
+
+### hCaptcha
+
+Login, register, forgot-password, and 2FA challenge mount `HcaptchaWidget` (invisible). The widget is a no-op unless `VITE_HCAPTCHA_SITE_KEY` is set. When the key is present, `execute()` runs before submit and the token is sent as **`h-captcha-response`** on the same API FormRequests Blade uses (`ValidatesHcaptcha`).
+
+The SPA cannot read `system_settings`. Treat `VITE_HCAPTCHA_SITE_KEY` as the enabled gate. If the API has `platform.hcaptcha.enabled` on and the SPA env key is missing, those endpoints 422 — same class of misconfig as Blade missing `HCAPTCHA_SITEKEY`.
+
+### File Hosting Drive UX
+
+Browse/trash/show use `.fh-manager` (CSS: `src/assets/file-hosting.css`, imported from `main.css`). Vue Router stays three routes — this is **not** the Blade single-island soft-nav shell. JWT composables (`useFileHosting`, `useFileHostingRealtime`) are unchanged.
+
+**Browse (`FileHostingView.vue`)** matches Blade Drive-lite:
+
+| Gesture | Behavior |
+|---------|----------|
+| Click row/card/name/icon | Select only (ignores checkbox/actions) |
+| Ctrl/Cmd+click | Toggle |
+| Shift+click | Inclusive range over visible folder+file order (`useFhSelection.ts`) |
+| Dblclick | Open: folder → `file-hosting.index.folder`; file → `file-hosting.show.view` |
+| Right-click | Select if needed + permission-gated context menu |
+| Drag onto folder / breadcrumb / parent `...` | Move (`useFhDragMove.ts`); refuse self-drop |
+| Escape | Clear selection + close context + close search |
+
+Search is a **debounced API overlay** (`GET file-hosting/search`). It does **not** filter or hide the listing. Overlay results are files only and navigate to show.
+
+Folder navigation: root is `file-hosting.index.view`; nested is `file-hosting.index.folder` with `params.folderId`. `workspace_id` / `user_id` stay query params and are watched (reload browse/quota/workspaces). Echo stays user-scoped (`file-hosting.user.{id}`) — do not rebind on workspace switch.
+
+New Folder is gated by `create file hosting folder`. Dropzone still mounts when a microstock collection is locked; add/drop toasts `web.file-hosting.microstock.error_collection_locked` / `error_requires_folder`. Microstock row badges when `browse.workspace.kind === 'microstock'`.
+
+**Microstock collection lifecycle** (`FileHostingView` when workspace `kind === 'microstock'`): toolbar follows `collection_status` — draft/failed → Lock & Describe (`FhCollectionDescribeModal`, chip compose in `src/utils/fhCollectionDescribe.ts` → `POST microstock/collections/{folder}/lock`); locked → Start analysis (`POST …/analyze`; API `assertCanAnalyze` is the only gate — toast the API `message` on 422; do **not** invent client credit math); processing → status + progress (`GET …/status` + Echo `.collection.analysis.progress`); review → Review + Export; exported → Download CSV (`getBlob` on `GET …/download`). Review is `FhMicrostockReviewModal` (signed preview from `GET file-hosting/files/{id}/download?preview=1`, stage strip, PATCH title/keywords, solo `POST microstock/assets/{file}/analyze`). Show page opens the same modal. Create system workspace is `POST microstock/workspaces` — not `POST file-hosting/workspaces` (team). Switcher CTAs parse quota (team slots) and `GET microstock/slots` (used/limit/`can_create`); full/unactivated links to Services.
+
+Share modal: visibility select (`private` / `anyone_with_link`) + readonly URL. Move modal: root + current listing folders (not a tree picker). Bulk bar: Move / share / unshare / delete.
+
+**Trash / show / workspaces / blocklist:** browse Drive gestures stay on the listing only. Workspaces and hash blocklist use `.fh-manager.fh-admin-page` intro chrome (header + lead), not a nested Card dump. Show uses `FhShareModal` and `FhMicrostockReviewModal`.
+
+**Public share** (`/s/d/:id`, `/s/f/:id`): `PublicLayout` (no sidebar, no auth Drive gestures). `PublicFolderView` maps `breadcrumb` ids to `public.folder` and file rows to `public.file`. Reloads when `route.params.id` changes.
+
+View mode persists in `localStorage` key `fh-view-mode` (default table).
+
+### Inference provider rate editor
+
+`InferenceProviderShowView` wires `useRatePlanAdmin`. After `fetchOne`, `initRates(provider.model_rates)`. Model-card options come from `useInferenceModelCards().fetchList` (`display_name` on the select, not slug-only). `canManage` (`manage inference catalog`) gates Add / Save / Remove and makes rate inputs `readonly` when false.
+
+`saveRates()` `PUT inference/providers/{id}/rates` with `{ rates: [...] }` — **full replace**, same contract as Blade `rate-plans-admin.js`. On success the view re-fetches the provider and re-inits rows; it does not full-reload the SPA.
+
+### Payment channels admin chrome
+
+`.pc-admin` CSS lives in `src/assets/channels-admin.css` (imported from `main.css`). `PaymentChannelsView` ports Blade intro / 3 steps / stats / kind icons (`qris` / `va` / `ewallet`) / ranked `.pc-route-*` rows. Channel and route toggle / priority / sync-policy handlers are unchanged.
+
+### Inference usage chrome
+
+`InferenceUsageEventsView` wraps filters/totals with `.inf-usage-admin` header + subtitle (`web.inference.usage.list_title` / `.subtitle`). Same chrome move as `.pc-admin`. Filters and totals were already wired.
+
+### Payment return URLs
+
+SPA routes: `/payment/return` and `/payment/cancel` (`PaymentReturnView`, `requiresAuth`). Blade uses `/payment/ipaymu/return|cancel`. Paths do **not** need to match Blade — configure the payment gateway (and any SPA-origin env the API uses for return URLs) to the Vue-Workers origin. JWT in `localStorage` survives the gateway bounce; `beforeEach` keeps `redirect=fullPath`. Do not reopen these as guest routes unless a real gateway hit arrives without a token. These stay at the **site root**, not under `/apps`.
+
+### `/apps` shell
+
+Authenticated `AppLayout` routes are prefixed `/apps/*` (dashboard, users, settings, file-hosting, vtual, invoices, …). `/` redirects to `/apps/dashboard`. Route **names** stay unprefixed — sidebar `NavTree` / `AppNavbar` already `push` by name.
+
+**Not prefixed** (same exceptions as Blade): auth (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/two-factor-challenge`), public share (`/s/f/:id`, `/s/d/:id`), payment bounce (`/payment/return`, `/payment/cancel`).
+
+Legacy bare paths (`/users` → `/apps/users`, …) redirect so bookmarks do not 404. Catch-all 404 stays last, inside `AppLayout`.
+
+### Settings menu names
+
+Every Settings screen is ported (`SettingsFormView` on `/apps/settings/:group`). MenuSeeder children are `settings.platform`, `settings.file-hosting`, `settings.microstock`, `settings.vtual`. The SPA registers those **as named routes** (`settings.platform.view`, …) pointing at the same SFC, **before** the parameterized `settings.group.view` (used for `identity` and any future registry group). Sidebar `hasRoute(node.route + '.view')` is what makes the click work — a redirect-only alias would lose `isActive`. Do **not** add `identity` to MenuSeeder.
+
+Static vTual credential probe (`/apps/vtual/platform-credentials/probe`) is registered **before** `/apps/vtual/platform-credentials/:platformId` so `/probe` is not captured as a platform id.
+
+### 404 catch-all
+
+Last route: `path: '/:pathMatch(.*)*'` → `NotFoundView` inside `AppLayout`, `meta: { requiresAuth: true, titleKey: 'errors.not_found' }`. This is an admin SPA — unknown URLs for guests already hit `beforeEach` → login with `redirect`. After login they see 404 **inside** the sidebar, not a naked page. Catch-all stays below `/s/f/:id`, `/payment/return`, and the legacy `/users` → `/apps/users` redirects.
+
+### Mimic doctrine
+
+Mimic is **appearance + behavior + intent**, done well and safely — not a pixel clone of Blade DOM, routes, or libraries.
+
+Monolith is API-first. One list endpoint, two presentations via `display_mode`:
+
+- `query` — Eloquent-shaped JSON (SPA `DataTable.vue` / `useResource.ts`). Optional `page` / `per_page` / `search` → `{ items, pagination }`; omit them → legacy flat `T[]`.
+- `datatable` — same rows, Yajra-shaped for Blade DataTables
+
+The SPA fetches and parses **as-is**. Do not port Yajra JS. Do not invent a second list API.
+
+### Accepted divergences (A / B / C)
+
+These are the safe zone. Keep the current approaches.
+
+**A — Platform.** JWT in `localStorage`, `POST /api/v1/broadcasting/auth`, no CSRF on Bearer, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, breadcrumb config map, guest cannot read `system_settings`. These exist so the SPA can run cross-origin. Mimic the session and realtime intent, not the cookie.
+
+**B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout=sidebar`. File Hosting three Vue routes vs Blade island; team as a page vs offcanvas; listing-only move picker; rate editor re-fetch instead of full reload. Mimic intent, not Blade DOM ids (`#fhTeamOffcanvas`, `#fhCreateWorkspaceModal`, `#fhMicrostockPanel`).
+
+**C — Gray (optional later, not a product blocker).** Live-reload on 2 of 7 catalogs (`NotificationType::tableId()` only emits those two), local row-action chrome vs query-mode `actions[]` (deletes on users / inference / gateways / services are wired locally with Blade-equivalent permission + confirm; hierarchy still 403s from the API), Laravel plural pipe hack.
+
+Do not treat a read-only show-page microstock card as “review is done.” Review is `FhMicrostockReviewModal` consuming `GET|PATCH microstock/assets/{file}/metadata`.
+
 ## Realtime (Laravel Echo + Pusher)
 
 The SPA supports realtime updates via Laravel Echo and Pusher, with polling fallback.
@@ -190,7 +323,7 @@ The SPA supports realtime updates via Laravel Echo and Pusher, with polling fall
 - **Composable**: `src/composables/useEcho.ts` — singleton Echo instance, reads Pusher config from `VITE_PUSHER_*` env vars, handles JWT auth via `broadcasting/auth` endpoint.
 - **Notification bell**: `src/components/AppNavbar.vue` — inits Echo on mount, subscribes to `App.Models.User.{id}` private channel for `.activity-notification.received` events. Polling (60s) starts as fallback if Echo fails to connect within 30s grace window. On each WS event, the bell also calls `fetchList(5)` to refresh its own recent-notification dropdown content (capped at 5 — the full list is fetched on dropdown open or navigation to `/notifications`).
 - **File Hosting**: `src/composables/useFileHostingRealtime.ts` — singleton channel manager for `file-hosting.user.{userId}` (`.listing.changed`, `.quota.changed`, `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress`). Multiple views register handlers; the channel is subscribed once and torn down when the last handler unregisters. See [Pattern B](#pattern-b-direct-channel-subscription) below.
-- **Microstock**: collection mutations (`lockCollection`, `analyzeCollection`, `fetchCollectionStatus`, `exportCollection`) live in `useMicrostock.ts`; realtime subscriptions go through `useFileHostingRealtime.ts` (same channel, Microstock events).
+- **Microstock**: collection mutations (`lockCollection`, `analyzeCollection`, `fetchCollectionStatus`, `exportCollection`, `downloadCollectionCsv`, asset metadata GET/PATCH, `analyzeAsset`, `fetchSlots`, `createWorkspace`) live in `useMicrostock.ts` and are wired from `FileHostingView` / `FhMicrostockReviewModal`. Realtime subscriptions go through `useFileHostingRealtime.ts` (same channel, Microstock events).
 - **vTual claim**: `src/views/VtualVtuberClaimView.vue` — subscribes to `vtual.claim.{claimId}` private channel for `.claim.progress` events. Polling (5s) stays active as fallback alongside Echo.
 
 #### Cross-tab notification read-state sync
@@ -213,15 +346,16 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 | Var | Purpose |
 |-----|---------|
 | `VITE_API_BASE_URL` | Monolith API base (e.g. `https://monolith-ph24.spnd.uk/api/v1`) — used for both API calls and the broadcast auth endpoint |
-| `VITE_MONOLITH_WEB_URL` | Monolith web root (e.g. `https://monolith-ph24.spnd.uk`) — used for web OAuth redirects and Blade links |
 | `VITE_PUSHER_APP_KEY` | Pusher app key (required for Echo — must match Monolith `PUSHER_APP_KEY`) |
 | `VITE_PUSHER_APP_CLUSTER` | Pusher cluster (default `mt1`) |
 | `VITE_PUSHER_HOST` | Self-hosted/Reverb host (omit for Pusher-hosted) |
 | `VITE_PUSHER_PORT` | WebSocket port (default `443`) |
 | `VITE_PUSHER_SCHEME` | `https` or `http` (default `https`) |
-| `VITE_HCAPTCHA_SITE_KEY` | hCaptcha site key (optional) |
+| `VITE_HCAPTCHA_SITE_KEY` | hCaptcha site key. When set, guest auth forms run the invisible widget and POST `h-captcha-response`. When unset, the widget is omitted (API must also have hCaptcha off or login 422s) |
 
-Values must mirror Monolith's `.env` `PUSHER_*` literals. `.env.local` may override `VITE_API_BASE_URL` for local development.
+Discord OAuth return is **not** a Vite var. Set `SPA_URL` on the Monolith API host to this SPA's public origin (Vite/Workers URL). Empty `SPA_URL` → `GET auth/discord/authorize-url` 503.
+
+Values must mirror Monolith's `.env` `PUSHER_*` literals (and `HCAPTCHA_SITEKEY` when hCaptcha is on). `.env.local` may override `VITE_API_BASE_URL` for local development.
 
 When `VITE_PUSHER_APP_KEY` is unset, Echo is not initialized and all realtime-dependent features fall back to polling.
 
@@ -371,7 +505,7 @@ onUnmounted(() => {
 | `private-payments.invoice.{invoiceId}` | `.invoice.status.changed` | Patch status badge, steps, sidebar; emit `status-updated` + `invoice-updated` |
 | `private-payments.routing` | `.routing.catalog.changed` | Re-fetch checkout channels, update picker |
 
-Wired into `CheckoutPanel.vue` with 15s polling fallback (down from previous 60s).
+Wired into `CheckoutPanel.vue` with 15s polling fallback (down from previous 60s). Sync-status provider is parsed from `checkoutResult.gateway` or `invoice.payment_gateway.name`. If neither is present, skip the call — do **not** default to `midtrans`. Blade resolves the provider in the web hop (`InvoiceCheckoutGatewayResolver`); the SPA has no `defaultForInvoice()` equivalent.
 
 #### vTual claim — inline in `VtualVtuberClaimView.vue`
 
@@ -402,7 +536,7 @@ The SPA ports Monolith's payment Blade components to Vue:
 
 - **PaymentStatusHero** (`src/components/PaymentStatusHero.vue`) — hero banner with eyebrow, title, amount, and status badges. Uses `ois-hero` CSS classes.
 - **PaymentSteps** (`src/components/PaymentSteps.vue`) — 3-step progress indicator (Choose method → Pay → Confirmation). Uses `ois-steps` CSS classes.
-- **CheckoutPanel** (`src/components/CheckoutPanel.vue`) — invoice checkout with payment channel selection.
+- **CheckoutPanel** (`src/components/CheckoutPanel.vue`) — invoice checkout with payment channel selection. Sync-status uses the gateway from the checkout payload or the invoice resource; unknown provider → skip.
 
 CSS for these components is in `src/assets/order-invoice-show.css`, ported from Monolith's `resources/css/payments/order-invoice-show.css`. Uses Bootstrap 5 CSS variables for dark mode compatibility.
 
@@ -411,7 +545,7 @@ CSS for these components is in `src/assets/order-invoice-show.css`, ported from 
 `ServiceShowView.vue` includes a checkout form that mirrors Monolith's `services/show.blade.php`:
 
 - Currency select (populated from service prices)
-- Quantity input (shown only for addon plan kind)
+- Quantity input (shown only for addon plan kind); `:max` from `GET services/options` `purchase_max_quantity` (last-resort 99 only if that call fails)
 - Start checkout button (gated by `purchase service` or `initiate payment` permission)
 - On submit, calls `POST services/{id}/checkout` API and redirects to the purchase detail page
 
@@ -419,6 +553,30 @@ CSS for these components is in `src/assets/order-invoice-show.css`, ported from 
 - `PaymentStatusHero` with purchase status and payment status badges
 - `PaymentSteps` indicator (current step based on invoice status)
 - Grace banner alert when entitlement is in grace period
-- Sidebar card with: quantity editor (addon only), change type, list/credit/display/settlement amounts, FX rate, period, entitlement status, stack quantity equation
+- Sidebar card with: quantity editor (addon only, same `purchase_max_quantity` cap), change type, list/credit/display/settlement amounts, FX rate, period, entitlement status, stack quantity equation
 - `CheckoutPanel` for invoice payment
+
+## Non-blocking consumer decision findings
+
+Assessment of whether Vue-Workers invents business rules that belong in Monolith. **Blocking** cases (client `canAffordAnalysis` math, sync-status default `'midtrans'`, hardcoded purchase qty `99`) were moved to the API / parse-as-is in the same task. The rows below are still SPA (or Blade-JS) decisions, but they do **not** stop a flow the API would complete. Leave them for a later discussion — do not “fix” them as part of this contract.
+
+| Finding | Why it is decision-making | Why not blocking |
+|---------|---------------------------|------------------|
+| Accept Anyway always painted on the claim page | SPA cannot read `vtual.claim.accept_anyway_enabled` | Blade claim page also shows it to any logged-in user when the setting is on; API 422s when off. Profile-page staff-gate is a **different** surface (channel claims). Extra button ≠ blocked verify. |
+| Discord verify on the **creator claim** page is always painted | SPA cannot read `vtual.claim` Discord-verify settings | API 422s; bio verify still works. Profile manage **does** hide Kick and shows Connect vs Verify from `GET profile/connections`. |
+| `collection_status` → CTA map | Local state machine in `FileHostingView` | API rejects illegal transitions; documented mimic of Blade toolbar |
+| Invoice/purchase `status` → PaymentSteps / hero | Chrome | Display only |
+| `plan_kind === 'addon'` qty editor | Chrome from a field | API rejects non-addon qty |
+| JWT `hasPermission` hide-buttons | Stale until refresh | API still 403s |
+| `analysisEstimateUsd` display multiply | Preview math in `FhCollectionDescribeModal` | Does not gate analyze (`assertCanAnalyze` is the only gate) |
+| Describe chips + min-10 | Port of Blade `collection-describe.js` | Mimic, not new money/lifecycle math |
+| `useMicrostock.createWorkspace` invents `is_owner` / `Owner` | Optimistic shape vs resource | Local list until refetch |
+| `ROLE_RANK`, kind icons, chip catalogs, settings slug list, invite roles, subscription cycle literals | Presentation / form enums | Wrong sort or extra option; API validates |
+| `projectedStackQuantity` | Display preview | Not sent as the charge |
+| Local `formatBytes` vs `*_human` | Presentation | Prefer API fields later |
+| Payment channel client search; menus client DataTable | Accepted B | |
+| Blade JS `purchase-pricing-preview.js` fee re-quote | Blade also does this | Baseline mimic, not a new SPA crime |
+| SPA cannot call `PaymentGateway::defaultForInvoice()` | Blade web hop resolves a missing gateway; SPA skips sync when provider is unknown | Skip is safe; poll resumes after checkout returns `gateway` |
+
+**Correct consumer pattern (keep):** `quota.can_create_workspace`, `slots.can_create`, `claim.can_verify`, flattened channel quotes, invoice fee snapshots, `*_formatted`.
 

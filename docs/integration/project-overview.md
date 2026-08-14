@@ -19,7 +19,7 @@ flowchart TB
     API -->|"Pusher WS"| SPA
 ```
 
-Both frontends are **API-consumers** — no business logic lives in either. All validation, CRUD, RBAC, and audit run once in the API.
+Both frontends are **API-consumers** — no business logic lives in either. All validation, CRUD, RBAC, and audit run once in the API. SPA chrome that is still a local decision but does **not** block the product outcome is listed in [vue-workers-spa.md — Non-blocking consumer decision findings](vue-workers-spa.md#non-blocking-consumer-decision-findings).
 
 ## Monolith — API-First backend
 
@@ -86,33 +86,40 @@ See [vue-workers-spa.md](vue-workers-spa.md) for the full integration contract.
 
 ## Porting status
 
-The SPA port is **in progress** — appearance and behavior are not yet 100% parity with Blade.
+Route coverage matches Blade. Product-surface appearance gaps from waves 1–3 plus D polish (microstock lifecycle, public share wiring, invoice CSV blob, leftover i18n, FH/inference chrome) are closed. What is left vs Blade is accepted divergence (A/B/C), not missing pages.
 
 ### What is ported
 
-- ~95 Vue views, 41 composables, all 11 domains represented
-- **Identity:** login, register, forgot/reset password, 2FA challenge, profile (password, 2FA, connections), users CRUD
-- **Navigation:** menus CRUD + trashed
-- **Notification:** list, audiences CRUD
-- **ActivityLog / ErrorLog:** list + show
-- **PaymentGateway:** gateways, subscriptions, invoices, payment channels, payments income, return/cancel
-- **Service:** services CRUD + show, checkout flow, service purchases show
-- **Inference:** model cards, providers, usage events
-- **FileHosting:** browse, file show, trash, blocklist, workspaces, microstock usage, public share
-- **vTual:** profiles, vtuber (show + claim), orphans CRUD, platform credentials
-- **Product Activations, Settings, Domain Access, Dashboard**
+- Guest + authenticated screens for all 11 domains (identity, navigation, notification, activity/error log, payments, service, inference, file hosting, vTual, product activations, domain access, settings, dashboard)
+- **Chrome:** i18n page titles + `{page} | Monolith` tab title, OverlayScrollbars sidebar, API-driven sidebar/navbar, breadcrumbs, DataTable chrome strings
+- **Auth:** login/register/forgot/reset/2FA with i18n labels; invisible hCaptcha when `VITE_HCAPTCHA_SITE_KEY` is set (`h-captcha-response`)
+- **File Hosting Drive UX:** `.fh-manager` browse (click=select / dblclick=open / shift-range / context / drag-move / search overlay / `FhIcon`); trash/show chrome; JWT composables unchanged
+- **Microstock lifecycle:** lock/describe chips, analyze/export/download CSV, review curator modal, `POST microstock/workspaces`, slot CTAs from `GET microstock/slots`
+- **Public share:** `/s/d` breadcrumb + file links to `/s/f` (`PublicLayout`)
+- **Inference provider rates:** `InferenceProviderShowView` add/edit/remove/save via `PUT inference/providers/{id}/rates` (full replace), gated by `manage inference catalog`
+- **Payment channels admin:** `.pc-admin` intro/stats/kind/ranked-route chrome (`src/assets/channels-admin.css`)
+- **Admin hygiene:** invoice CSV via `getBlob()` on invoices **and** income (income export sends `status=paid` plus `paid_from`/`paid_to` from the date filters, same as Blade), i18n DataTable labels, 2FA copy keys, payment return stays authenticated at SPA `/payment/return|cancel` (not under `/apps`)
+- **Connected accounts:** `GET/DELETE profile/connections` + `GET auth/discord/authorize-url`; Discord callback stays on Monolith web and returns to the SPA when `SPA_URL` is set
+- **vTual profile Discord verify:** channel-claim Discord button + OAuth hop when Discord is not connected
+- **SPA shell:** authenticated routes under `/apps/*`; auth, `/s/*`, payment bounce at site root; Settings MenuSeeder names registered on the Vue router
+- **404:** last-route `/:pathMatch(.*)*` → `NotFoundView` inside `AppLayout` (`requiresAuth`)
 - **Realtime:** bell, file hosting (6 events), payments (invoice + routing), vTual claim — all with polling fallback
-- **Components:** ConfirmModal, SubmitButton, FormInput, FormSelect2, PaymentStatusHero, PaymentSteps, CheckoutPanel, breadcrumbs
-- **Cross-tab auth sync** + **cross-tab notification sync**
-- **i18n:** `en` / `id` / `ja` locale files
+- **Cross-tab:** auth refresh coordination + notification read-state
+- **i18n:** `en` / `id` / `ja`
 
-### What remains
+### Accepted divergences (measured against Blade)
 
-Porting continues toward full parity. Blade stays as the reference implementation — gaps are measured against it. Areas likely still needing work: edge CRUD screens, polish, feature parity gaps not visible from route coverage alone.
+Mimic is appearance + behavior + intent, not a pixel clone. One list API, two presentations (`display_mode=query` for the SPA DataTable, `display_mode=datatable` for Blade Yajra). Query mode is a flat `T[]` unless `page` / `per_page` / `search` are present, then `{ items, pagination }` (default 10). Parse as-is. Row actions are icon-only.
+
+**A — Platform:** JWT in `localStorage`, SPA broadcasting auth, no CSRF on Bearer, hCaptcha Vite gate, duplicate vue-i18n JSON, CF Workers origin, breadcrumb config map, guest cannot read `system_settings`.
+
+**B — Intentional:** Vue `DataTable` (not Yajra JS), Select2 only for server-side lookup, navigation from `GET navigation/menus?layout=sidebar`, FH three Vue routes vs Blade island, team as a page vs offcanvas, listing-only move picker, rate save re-fetch (no full reload).
+
+**C — Gray (optional):** live-reload on 2 of 7 catalogs, local row-action chrome vs query-mode `actions[]` (list deletes are wired locally), Laravel plural pipe hack.
 
 ## References
 
-- [vue-workers-spa.md](vue-workers-spa.md) — detailed SPA integration contract (API types, i18n, realtime, auth)
+- [vue-workers-spa.md](vue-workers-spa.md) — detailed SPA integration contract (API types, i18n, realtime, auth); [non-blocking consumer findings](vue-workers-spa.md#non-blocking-consumer-decision-findings)
 - [platform/architecture.md](../platform/architecture.md) — Monolith domain layout, taxonomy, namespaces
 - [platform/api-routing.md](../platform/api-routing.md) — versioned API routing design
 - [web/blade-admin.md](../web/blade-admin.md) — Blade admin as API-consumer

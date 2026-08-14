@@ -34,8 +34,10 @@ class OrphanCreatorController extends Controller
 
         return $this->respondToListDisplayMode(
             $request,
-            fn (): JsonResponse => $this->successResponse(
-                $this->resolveResource(CreatorResource::collection($orphans)),
+            fn (): JsonResponse => $this->respondToQueryList(
+                $request,
+                $orphans,
+                fn ($list) => $this->resolveResource(CreatorResource::collection($list)),
                 __('api/vtual.orphan.list_success'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

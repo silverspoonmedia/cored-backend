@@ -340,7 +340,7 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 | POST | `/claims/{id}/verify-discord` | claim vtual creator | Discord discovery verify (`DiscordConnectionDiscoveryService`) |
 | POST | `/claims/{id}/cancel` | claim vtual creator | Cancel pending claim |
 | POST | `/channel-claims/{id}/verify` | edit creator | Bio verify channel attach claim |
-| POST | `/channel-claims/{id}/verify-discord` | edit creator | Discord verify channel attach claim |
+| POST | `/channel-claims/{id}/verify-discord` | edit creator | Discord verify channel attach claim. SPA profile manage wires this plus `GET auth/discord/authorize-url` (`intent=channel_claim_verify`, `return_path=/apps/vtual/profiles/{id}`) when Discord is not connected. |
 | POST | `/channel-claims/{id}/cancel` | edit creator | Cancel pending channel claim |
 | GET | `/claims/pending` | manage any vtual resource | Staff pending creator claims queue |
 

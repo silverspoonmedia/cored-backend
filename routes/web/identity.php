@@ -19,7 +19,6 @@ Route::get('profile/connections', [ProfileConnectionsController::class, 'index']
 Route::post('profile/connections/discord/disconnect', [ProfileConnectionsController::class, 'disconnectDiscord'])
     ->name('profile.connections.discord.disconnect');
 Route::get('auth/discord/redirect', [DiscordOAuthController::class, 'redirect'])->name('auth.discord.redirect');
-Route::get('auth/discord/callback', [DiscordOAuthController::class, 'callback'])->name('auth.discord.callback');
 Route::get('profile/two-factor', [ProfileTwoFactorController::class, 'edit'])->name('profile.two-factor.edit');
 Route::post('profile/two-factor/setup', [ProfileTwoFactorController::class, 'setup'])->name('profile.two-factor.setup');
 Route::post('profile/two-factor/confirm', [ProfileTwoFactorController::class, 'confirm'])->name('profile.two-factor.confirm');

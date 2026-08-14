@@ -37,8 +37,10 @@ class AiModelCardController extends Controller
 
         return $this->respondToListDisplayMode(
             $request,
-            fn (): JsonResponse => $this->successResponse(
-                $this->resolveResource(AiModelCardResource::collection($cards)),
+            fn (): JsonResponse => $this->respondToQueryList(
+                $request,
+                $cards,
+                fn ($list) => $this->resolveResource(AiModelCardResource::collection($list)),
                 __('api/inference.model_cards.list'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

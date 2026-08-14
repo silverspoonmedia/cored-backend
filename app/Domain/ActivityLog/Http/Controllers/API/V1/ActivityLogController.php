@@ -2,12 +2,13 @@
 
 namespace App\Domain\ActivityLog\Http\Controllers\API\V1;
 
-use App\Http\Controllers\Controller;
 use App\Domain\ActivityLog\Http\Requests\IndexActivityLogRequest;
 use App\Domain\ActivityLog\Http\Resources\ActivityLogResource;
-use App\Http\Resources\Concerns\ResolvesResourceArray;
-use App\Domain\Identity\Models\User;
 use App\Domain\ActivityLog\Services\ActivityLogService;
+use App\Domain\Identity\Models\User;
+use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Spatie\Activitylog\Models\Activity;
@@ -21,6 +22,7 @@ class ActivityLogController extends Controller
 {
     use ApiResponse;
     use ResolvesResourceArray;
+    use RespondsWithListDisplayMode;
 
     public function __construct(
         private readonly ActivityLogService $activityLogs,
@@ -28,11 +30,16 @@ class ActivityLogController extends Controller
 
     public function index(IndexActivityLogRequest $request): JsonResponse
     {
-        $limit = (int) ($request->validated()['limit'] ?? 50);
-        $items = $this->activityLogs->list($request->validated(), $limit);
+        $validated = $request->validated();
+        $limit = $request->wantsQueryPaging()
+            ? 500
+            : (int) ($validated['limit'] ?? 50);
+        $items = $this->activityLogs->list($validated, $limit);
 
-        return $this->successResponse(
-            $this->resolveResource(ActivityLogResource::collection($items)),
+        return $this->respondToQueryList(
+            $request,
+            $items,
+            fn ($list) => $this->resolveResource(ActivityLogResource::collection($list)),
             __('api/activity-log.list_success'),
         );
     }

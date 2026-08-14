@@ -34,8 +34,10 @@ class PaymentGatewayController extends Controller
 
         return $this->respondToListDisplayMode(
             $request,
-            fn (): JsonResponse => $this->successResponse(
-                $this->resolveResource(PaymentGatewayResource::collection($gateways)),
+            fn (): JsonResponse => $this->respondToQueryList(
+                $request,
+                $gateways,
+                fn ($list) => $this->resolveResource(PaymentGatewayResource::collection($list)),
                 __('api/payments.gateways.list'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

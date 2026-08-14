@@ -16,7 +16,7 @@ final class EnvironmentVariableCatalog
 
     public const TYPE_NULL = 'null';
 
-  /** @var list<string> */
+    /** @var list<string> */
     private const AUTO_GENERATED = [
         'APP_KEY',
         'JWT_SECRET',
@@ -35,6 +35,7 @@ final class EnvironmentVariableCatalog
             'APP_PREVIOUS_KEYS' => self::TYPE_STRING,
             'APP_DEBUG' => self::TYPE_BOOL,
             'APP_URL' => self::TYPE_STRING,
+            'SPA_URL' => self::TYPE_STRING,
             'APP_LOCALE' => self::TYPE_STRING,
             'APP_FALLBACK_LOCALE' => self::TYPE_STRING,
             'APP_FAKER_LOCALE' => self::TYPE_STRING,

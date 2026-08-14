@@ -28,6 +28,7 @@ Route::get('locale/{locale}', LocaleController::class)->name('locale.switch');
 
 // Public / provider return (no web.auth) — not ordered by domain kind.
 require __DIR__.'/web/payment-ipaymu-return.php';
+require __DIR__.'/web/identity-oauth-callback.php';
 require __DIR__.'/web/file-hosting-public.php';
 
 Route::middleware('web.guest')->group(function (): void {

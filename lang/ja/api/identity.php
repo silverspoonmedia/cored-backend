@@ -8,5 +8,12 @@ return [
         'connections_failed' => 'Discordのリンクアカウントを読み込めませんでした。',
         'discord_not_connected' => '先に連携アカウントからDiscordを連携してください。',
         'discord_user_missing' => 'DiscordからユーザーIDが返されませんでした。',
+        'authorize_url' => 'Discord認可URLを発行しました。',
+        'spa_url_missing' => 'このサーバーではSPAのオリジンが設定されていません。',
+        'return_path_invalid' => 'OAuthの戻り先パスは許可されていません。',
+    ],
+    'connections' => [
+        'show' => '連携アカウントを読み込みました。',
+        'discord_disconnected' => 'Discord連携を解除しました。',
     ],
 ];

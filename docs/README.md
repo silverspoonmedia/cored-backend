@@ -14,7 +14,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Blade admin (API consumer) | [web/blade-admin.md](web/blade-admin.md) |
 | Project overview (Monolith + Vue-Workers) | [integration/project-overview.md](integration/project-overview.md) |
 | External SPA port (Vue-Workers) | [integration/vue-workers-spa.md](integration/vue-workers-spa.md) |
-| Auth web URI layout | Authenticated Blade under **`/apps/*`** (route names unprefixed); guest/public + `POST /logout` at site root; product roots (`/file-hosting`, …) reserved empty; API `/api/v1/*` unchanged — [blade-admin — Routes](web/blade-admin.md#routes) · [architecture — Routes](platform/architecture.md#routes) |
+| Auth web URI layout | Authenticated Blade **and** Vue-Workers SPA under **`/apps/*`** (route names unprefixed); guest/public + `POST /logout` at site root; product roots (`/file-hosting`, …) reserved empty; API `/api/v1/*` unchanged — [blade-admin — Routes](web/blade-admin.md#routes) · [architecture — Routes](platform/architecture.md#routes) · [vue-workers-spa — `/apps` shell](integration/vue-workers-spa.md) |
 
 ## Platform (kernel / cross-cutting)
 

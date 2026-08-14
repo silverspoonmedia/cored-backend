@@ -34,8 +34,10 @@ class SubscriptionController extends Controller
 
         return $this->respondToListDisplayMode(
             $request,
-            fn (): JsonResponse => $this->successResponse(
-                $this->resolveResource(SubscriptionResource::collection($subscriptions)),
+            fn (): JsonResponse => $this->respondToQueryList(
+                $request,
+                $subscriptions,
+                fn ($list) => $this->resolveResource(SubscriptionResource::collection($list)),
                 __('api/payments.subscriptions.list'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

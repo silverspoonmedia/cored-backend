@@ -193,6 +193,7 @@ Purge rule: sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + ha
 
 | Method | Path | Action |
 |--------|------|--------|
+| GET | `/api/v1/services/options` | `billing_intervals`, `plan_kinds`, `statuses`, **`purchase_max_quantity`** (`max(1, setting_config('service.purchase.max_quantity', 99))`). `view service`. SPA addon steppers parse this; do not hardcode 99. |
 | GET/POST | `/api/v1/services` | List / create (prices nested; currency must exist) |
 | GET/PUT/DELETE | `/api/v1/services/{id}` | Show / update / soft-delete |
 | POST | `/api/v1/services/{id}/checkout` | Body `{ "currency": "USD", "quantity": 1 }` → purchase (+ invoice if charge > 0); optional **`quantity`** (addon plans only, 1–`SERVICE_PURCHASE_MAX_QUANTITY`; main plan must be `1` → `quantity_main_plan_fixed`); catalog Blade `/apps/services/{id}` shows quantity input for addons before checkout |
@@ -236,7 +237,7 @@ Morph aliases:
 | `platform.frankfurter.cache_ttl` | `3600` | Freshness window for L1 + DB snapshot (seconds) — Settings → Platform; not a Cache TTL |
 | `platform.service.grace_days` | `7` | Grace after `ends_at` — Settings → Platform |
 | `platform.service.settlement_currency` | `IDR` | PG settlement currency — Settings → Platform |
-| `platform.service.purchase_max_quantity` | `99` | Max units per addon purchase — Settings → Platform |
+| `platform.service.purchase_max_quantity` | `99` | Max units per addon purchase — Settings → Platform. Exposed to API consumers as `GET /api/v1/services/options` `purchase_max_quantity` (Blade injects the setting into the view). |
 | `platform.payment.default_buyer_phone` | `081000000000` | iPaymu buyer phone fallback — Settings → Platform |
 
 Frankfurter base URL stays in `.env.example`; timeout/freshness window and service knobs are Tier B (`system_settings`).

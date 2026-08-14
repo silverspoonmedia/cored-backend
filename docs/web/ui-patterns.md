@@ -32,10 +32,11 @@ Tabular index endpoints support:
 
 | Signal | Response |
 |--------|----------|
-| default / `display_mode=query` | `{ status, message, data }` |
-| `display_mode=datatable` or `draw` present | Yajra JSON + per-row `actions[]` |
+| default / `display_mode=query` (no paging params) | `{ status, message, data }` where `data` is a flat `T[]` |
+| `display_mode=query` **and** `page` / `per_page` / `search` | `{ status, message, data: { items, pagination } }` — `pagination` is `{ current_page, last_page, per_page, total, has_more }`. Default `per_page` 10, max 100. In-memory search + slice (`ListQueryPaginator`); SQL `LIMIT` per domain is a later wave. |
+| `display_mode=datatable` or `draw` present | Yajra JSON + per-row `actions[]` (unchanged) |
 
-Covered lists: v1 users, menus list/trashed, file-hosting lists where applicable. Navigation **tree** excluded.
+Covered query-paging lists: users, invoices, payment-gateways, subscriptions, services, inference providers, inference model-cards, vtual orphans, activity logs, error logs. Navigation **tree** / menus list excluded (still a full dump). Helper: `RespondsWithListDisplayMode::respondToQueryList`.
 
 ### DataTable init
 

@@ -6,6 +6,8 @@ use Illuminate\Validation\Rule;
 
 trait InteractsWithListDisplayMode
 {
+    use InteractsWithListQueryPaging;
+
     /**
      * Whether the client wants a Yajra DataTables response.
      *
@@ -32,8 +34,8 @@ trait InteractsWithListDisplayMode
      */
     protected function listDisplayModeRules(): array
     {
-        return [
+        return array_merge([
             'display_mode' => ['sometimes', 'nullable', 'string', Rule::in(['query', 'datatable'])],
-        ];
+        ], $this->listQueryPagingRules());
     }
 }

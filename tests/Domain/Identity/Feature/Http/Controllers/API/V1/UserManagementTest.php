@@ -249,6 +249,40 @@ class UserManagementTest extends TestCase
             ]);
     }
 
+    public function test_query_mode_paging_returns_items_envelope(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        for ($i = 0; $i < 12; $i++) {
+            $user = User::factory()->create(['email' => "page{$i}@example.com"]);
+            $user->assignRole('User');
+        }
+
+        $response = $this->actingAsJwt($admin)
+            ->getJson('/api/v1/users?display_mode=query&page=1&per_page=10')
+            ->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.pagination.per_page', 10)
+            ->assertJsonPath('data.pagination.current_page', 1);
+
+        $this->assertCount(10, $response->json('data.items'));
+        $this->assertGreaterThanOrEqual(12, $response->json('data.pagination.total'));
+        $this->assertTrue($response->json('data.pagination.has_more'));
+    }
+
+    public function test_query_mode_without_paging_stays_flat_array(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        $response = $this->actingAsJwt($admin)
+            ->getJson('/api/v1/users?display_mode=query')
+            ->assertOk();
+
+        $data = $response->json('data');
+        $this->assertIsArray($data);
+        $this->assertArrayNotHasKey('items', $data);
+        $this->assertArrayNotHasKey('pagination', $data);
+    }
+
     public function test_actor_with_multiple_roles_uses_lowest_level(): void
     {
         $actor = User::factory()->create();

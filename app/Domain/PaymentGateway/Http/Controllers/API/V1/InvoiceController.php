@@ -36,8 +36,10 @@ class InvoiceController extends Controller
 
         return $this->respondToListDisplayMode(
             $request,
-            fn (): JsonResponse => $this->successResponse(
-                $this->resolveResource(InvoiceResource::collection($invoices)),
+            fn (): JsonResponse => $this->respondToQueryList(
+                $request,
+                $invoices,
+                fn ($list) => $this->resolveResource(InvoiceResource::collection($list)),
                 __('api/payments.invoices.list'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

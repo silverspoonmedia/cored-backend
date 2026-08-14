@@ -51,6 +51,7 @@ Empty secrets or optional string overrides use `KEY=""`. When adding keys: updat
 |----------|------|
 | `APP_KEY` | Active Laravel encryption key |
 | `APP_PREVIOUS_KEYS` | Retired keys after rotation (decrypt still works) |
+| `SPA_URL` | Public origin of Monolith-Vue-Workers. OAuth `return_to` allowlist (with `APP_URL`). Empty disables SPA OAuth return. |
 
 `key:generate --force` appends current key to previous, writes new key. Implementation: `EnvironmentKeyWriter` (file-based, not broken by quoted values).
 

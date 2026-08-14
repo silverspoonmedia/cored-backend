@@ -35,8 +35,10 @@ class InferenceProviderController extends Controller
 
         return $this->respondToListDisplayMode(
             $request,
-            fn (): JsonResponse => $this->successResponse(
-                $this->resolveResource(InferenceProviderResource::collection($providers)),
+            fn (): JsonResponse => $this->respondToQueryList(
+                $request,
+                $providers,
+                fn ($list) => $this->resolveResource(InferenceProviderResource::collection($list)),
                 __('api/inference.providers.list'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

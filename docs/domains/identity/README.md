@@ -34,7 +34,7 @@ Auth failures: `App\Domain\Identity\Exceptions\Auth\*` (`BusinessRuleException`)
 app/Domain/Identity/
 ├── Http/Controllers/API/V1/Auth/*, AdminController, UserController
 ├── Http/Controllers/Web/…
-├── Services/Auth/*, UserManagementService, RoleService, TwoFactorService
+├── Services/Auth/*, UserManagementService, RoleService, TwoFactorService, UserOAuthAccountService
 ├── Repositories/…/UserRepository
 ├── Models/User, Role, Permission
 └── Exceptions/, Notifications/
@@ -50,6 +50,7 @@ Tier A (env only) vs operational settings: [configuration-policy.md](../../platf
 |------------------|-------|
 | `JWT_SECRET` | HS256 signing secret (env) |
 | `HCAPTCHA_SITEKEY`, `HCAPTCHA_SECRET` | hCaptcha credentials (env) |
+| `SPA_URL` | Vue-Workers public origin. OAuth return_to allowlist. Empty disables SPA OAuth return. |
 | `AUTH_GUARD=api` | Default API guard |
 
 **Settings → Platform** (`system_settings`; runtime `setting_config()`):
@@ -149,11 +150,15 @@ Paginated select options: `GET /api/v1/lookups/*` — [web/ui-patterns](../../we
 
 ## Connected accounts (Discord)
 
-Web: `/apps/profile/connections`. OAuth routes: `auth.discord.redirect`, `auth.discord.callback` (`identify` + `connections` scopes). Table `identity_oauth_accounts` stores envelope-encrypted tokens + **full** Discord connection snapshot (`connections_snapshot` JSON: all connection types, documented safe fields — no secrets). TTL setting `identity.discord.connections_snapshot_max_age_minutes` (default 60): stale snapshot refreshes on profile connections page load and on vTual verify miss.
+Web: `/apps/profile/connections`. API (SPA): `GET /api/v1/profile/connections`, `DELETE /api/v1/profile/connections/discord`, `GET /api/v1/auth/discord/authorize-url` (Bearer). OAuth **callback** stays Monolith web (`auth.discord.callback` at `/apps/auth/discord/callback`) and is **not** behind `web.auth` — identity is the encrypted state, not the Blade cookie. Blade still starts OAuth via `auth.discord.redirect` (`web.auth`). SPA starts OAuth via the authorize-url endpoint, then `window.location` to Discord.
+
+Scopes: `identify` + `connections`. Table `identity_oauth_accounts` stores envelope-encrypted tokens + **full** Discord connection snapshot (`connections_snapshot` JSON: all connection types, documented safe fields — no secrets). TTL setting `identity.discord.connections_snapshot_max_age_minutes` (default 60): stale snapshot refreshes on profile connections page load (Blade and `GET profile/connections`) and on vTual verify miss.
+
+Post-OAuth browser return: encrypted state may carry `return_to`. Allowlisted origins are `APP_URL` (Blade) and `SPA_URL` (Vue-Workers). Paths must start with `/apps/`. SPA passes `return_path` only; the API prefixes `SPA_URL`. Empty `SPA_URL` → authorize-url 503.
 
 vTual consumes the snapshot in two ways: **`ownershipEligible()`** (YouTube/Twitch verified subset) for claim verify paths; other connection types map to creator external links via `DiscordConnectionExternalLinkMapper`. Private discovered YouTube/Twitch channels bind on orphan Discord claim until owner promote — see [vTual README — Creator claim](../vtual/README.md#creator-claim-phase-1---binding).
 
-Env: non-empty `DISCORD_CLIENT_ID` + `DISCORD_CLIENT_SECRET` required; `DISCORD_REDIRECT_URI` defaults to `{APP_URL}/apps/auth/discord/callback` when unset. Connected-accounts and claim Discord UI stay hidden until credentials are configured.
+Env: non-empty `DISCORD_CLIENT_ID` + `DISCORD_CLIENT_SECRET` required; `DISCORD_REDIRECT_URI` defaults to `{APP_URL}/apps/auth/discord/callback` when unset. `SPA_URL` is the Vue-Workers public origin (OAuth return allowlist). Connected-accounts and claim Discord UI stay hidden until Discord credentials are configured.
 
 ## Tests
 
