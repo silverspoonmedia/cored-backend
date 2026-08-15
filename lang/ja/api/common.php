@@ -13,4 +13,5 @@ return [
     'batch_path_not_allowed' => 'バッチエントリはこのAPIのみを対象にできます。',
     'batch_sub_failed' => 'バッチ内のリクエストの1つが完了できませんでした。',
     'batch_ok' => 'バッチが完了しました。',
+    'spa_origin_required' => 'このAPIはアプリケーション経由でのみアクセスできます。',
 ];

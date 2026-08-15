@@ -56,7 +56,7 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | Framework | Vue 3 + Vite 8 + TypeScript |
 | Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Static SPA assets do not invoke the isolate; only `/api/*` is the Worker function (`run_worker_first`). That function reverse-proxies same-origin `/api/v1/*` to `MONOLITH_API_ORIGIN` (hostname mask + `spa_jwt` BFF). Do not add more Worker logic unless deemed necessary — see [vue-workers-spa.md — Worker invocation vs static assets](vue-workers-spa.md#worker-invocation-vs-static-assets). |
 | API | Same `/api/v1/*` endpoints as Blade — second API client, no business logic in SPA |
-| Auth | HttpOnly `spa_jwt` on the Vue-Workers origin (Worker BFF). JS does not store the JWT. Direct Monolith `/api/v1` still returns Bearer JSON. Blade uses HttpOnly `auth_token` on `APP_URL`. |
+| Auth | HttpOnly `spa_jwt` on the Vue-Workers origin (Worker BFF). JS does not store the JWT. Direct Monolith `/api/v1` hits without the Worker's `X-SPA-Origin` header are audit-logged and rejected with 403 outside local/testing (`RequireSpaOrigin`). Blade uses HttpOnly `auth_token` on `APP_URL`. |
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware (distinct from Blade's web-middleware `/broadcasting/auth` with cookie + CSRF) |
 | Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), Worker cache headers on reference-data GETs, JWT TTL 240 min, polling backoff — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
 | Type alignment | TS types in `src/api/types.ts` match Laravel API Resources exactly — snake_case, no transform layer |

@@ -160,6 +160,8 @@ Workspace-slot SKU is **not** a storage plan: does not raise GiB quota, does not
 
 **Tables:** `file_hosting_workspaces` (no unique on `owner_user_id`; index `(owner_user_id, status)`; `kind` = `team` user-created team-slot-counted vs `microstock` built-in standalone-slotted), `file_hosting_workspace_members`, `file_hosting_workspace_invites`; nullable `workspace_id` on folders/files/uploads; `created_by` on files.
 
+**File payload contract:** `HostedFileResource` exposes `workspace: { id, kind, name } | null` (when the relation is loaded — `FileService::show()` and `FolderService::browse()` both eager-load it) and emits the `microstock` key **only** when `workspace.kind === 'microstock'` — team-workspace and personal files never carry the key, so the SPA detail view gates its Microstock card on `file.workspace?.kind === 'microstock'` instead of key presence. `FileService::show()` additionally eager-loads `microstockMetadata` only for microstock-workspace files.
+
 **Browse:** `GET browse?workspace_id=` for team tree; omit for personal. Never leak personal through workspace.
 
 ## Visibility

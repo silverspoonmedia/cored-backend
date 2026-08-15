@@ -13,4 +13,5 @@ return [
     'batch_path_not_allowed' => 'Batch entries may only target this API.',
     'batch_sub_failed' => 'A batched request failed to complete.',
     'batch_ok' => 'Batch completed.',
+    'spa_origin_required' => 'This API is only reachable through the application.',
 ];

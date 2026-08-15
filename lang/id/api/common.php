@@ -13,4 +13,5 @@ return [
     'batch_path_not_allowed' => 'Entri batch hanya boleh menargetkan API ini.',
     'batch_sub_failed' => 'Salah satu request batch gagal diselesaikan.',
     'batch_ok' => 'Batch selesai.',
+    'spa_origin_required' => 'API ini hanya dapat diakses melalui aplikasi.',
 ];

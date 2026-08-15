@@ -49,6 +49,7 @@ class FolderService
             ->where('user_id', $ownerId)
             ->where('workspace_id', $wsId)
             ->where('folder_id', $folderId)
+            ->with('workspace')
             ->when(
                 $workspace?->kind === WorkspaceKind::Microstock,
                 fn ($q) => $q->with('microstockMetadata')

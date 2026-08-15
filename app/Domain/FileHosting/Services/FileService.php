@@ -2,6 +2,7 @@
 
 namespace App\Domain\FileHosting\Services;
 
+use App\Domain\FileHosting\Enums\WorkspaceKind;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Models\Workspace;
@@ -67,6 +68,11 @@ class FileService
     public function show(User $actor, string $fileId, ?string $userId = null, ?string $workspaceId = null): HostedFile
     {
         $file = $this->resolveFileForView($actor, $fileId, $userId, $workspaceId);
+        $file->load('workspace');
+
+        if ($file->workspace?->kind === WorkspaceKind::Microstock) {
+            $file->load('microstockMetadata');
+        }
 
         return $this->recordView($file);
     }

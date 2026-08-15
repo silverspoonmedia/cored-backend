@@ -9,9 +9,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Tags API requests brokered by the Vue-Workers BFF (header `X-SPA-Origin`)
- * and audits the ones that were not. Never blocks: PHPUnit, mobile clients,
- * and third-party integrations hit the API directly by design — the audit
- * trail exists so abuse patterns stand out from legitimate direct traffic.
+ * and audits the ones that were not. On non-local environments the header is
+ * enforced: the SPA is the only sanctioned consumer of the public API, so a
+ * direct hit to the origin (tunnel hostname in hand) gets a 403 instead of
+ * raw JSON. Local and testing stay open for PHPUnit, tinker, and tooling.
+ * OPTIONS preflights always pass — browsers never send custom headers there.
  */
 class RequireSpaOrigin
 {
@@ -30,6 +32,10 @@ class RequireSpaOrigin
                 'ip' => $request->ip(),
                 'user_id' => $request->user()?->getAuthIdentifier(),
             ]);
+
+            if ($request->method() !== 'OPTIONS' && ! app()->environment(['local', 'testing'])) {
+                abort(403, __('api/common.spa_origin_required'));
+            }
         }
 
         return $next($request);
