@@ -82,7 +82,9 @@ return [
     |--------------------------------------------------------------------------
     |
     | Specify the length of time (in minutes) that the token will be valid for.
-    | Defaults to 1 hour.
+    | Defaults to 4 hours. Every Worker-BFF refresh costs 3 function
+    | invocations (original 401 + refresh + retry), so a longer window keeps the
+    | free-tier quota in check while refresh rotation still bounds theft.
     |
     | You can also set this to null, to yield a never expiring token.
     | Some people may want this behaviour for e.g. a mobile app.
@@ -92,7 +94,7 @@ return [
     |
     */
 
-    'ttl' => 60,
+    'ttl' => (int) env('JWT_TTL', 240),
 
     /*
     |--------------------------------------------------------------------------

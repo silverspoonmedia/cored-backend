@@ -8,18 +8,21 @@ use App\Http\Middleware\EnsureWebAuthenticated;
 use App\Http\Middleware\OptionalJwtAuthenticate;
 use App\Http\Middleware\RedirectIfWebAuthenticated;
 use App\Http\Middleware\RefreshJwtCookie;
+use App\Http\Middleware\RequireSpaOrigin;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Support\ApiResponder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Middleware\Authenticate;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenBlacklistedException;
@@ -51,7 +54,15 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         api: __DIR__.'/../routes/api.php',
         then: function (): void {
-            Route::middleware('api')
+            // Global API throttle: the Vue-Workers BFF concentrates every
+            // browser tab onto one origin, so per-user/IP limits keep a single
+            // abusive session from starving the rest. Stricter per-route
+            // throttles (login, 2FA, batch) still win where defined.
+            RateLimiter::for('api', fn (Request $request) => [
+                Limit::perMinute(60)->by($request->user()?->getAuthIdentifier() ?: $request->ip()),
+            ]);
+
+            Route::middleware(['api', 'throttle:api'])
                 ->prefix('api/v1')
                 ->name('api.v1.')
                 ->group(base_path('routes/api/v1.php'));
@@ -69,6 +80,9 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Cloudflare Tunnel (and other local reverse proxies) forward X-Forwarded-*
         // headers so route()/redirect() use the public host, not the Laragon vhost.
+        // The chain stays wildcard-trusted; RequireSpaOrigin + rate limits below
+        // treat $request->ip() (the outermost Cloudflare client IP) as the
+        // identity, which is what audit and throttling need.
         $middleware->trustProxies(
             at: '*',
             headers: Request::HEADER_X_FORWARDED_FOR
@@ -95,6 +109,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->api(append: [
+            RequireSpaOrigin::class,
             SetLocale::class,
         ]);
 

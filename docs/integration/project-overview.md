@@ -58,6 +58,7 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | API | Same `/api/v1/*` endpoints as Blade — second API client, no business logic in SPA |
 | Auth | HttpOnly `spa_jwt` on the Vue-Workers origin (Worker BFF). JS does not store the JWT. Direct Monolith `/api/v1` still returns Bearer JSON. Blade uses HttpOnly `auth_token` on `APP_URL`. |
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware (distinct from Blade's web-middleware `/broadcasting/auth` with cookie + CSRF) |
+| Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), Worker cache headers on reference-data GETs, JWT TTL 240 min, polling backoff — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
 | Type alignment | TS types in `src/api/types.ts` match Laravel API Resources exactly — snake_case, no transform layer |
 | i18n | `vue-i18n` (`en` / `id` / `ja`) converted from Laravel PHP lang files |
 | UI parity | AdminLTE 4 / Bootstrap 5 / jQuery / Select2 (same libraries as Blade) |
@@ -111,7 +112,7 @@ Route coverage matches Blade. Product-surface appearance gaps from waves 1–3 p
 
 Mimic is appearance + behavior + intent, not a pixel clone. One list API, two presentations (`display_mode=query` for the SPA DataTable, `display_mode=datatable` for Blade Yajra). Query mode is a flat `T[]` unless `page` / `per_page` / `search` are present, then `{ items, pagination }` (default 10). Parse as-is. Row actions are icon-only.
 
-**A — Platform:** HttpOnly `spa_jwt` (Worker BFF; JS does not store the JWT), SPA broadcasting auth via Worker cookie→Bearer, Worker CSRF header, hCaptcha Vite gate, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`.
+**A — Platform:** HttpOnly `spa_jwt` (Worker BFF; JS does not store the JWT), SPA broadcasting auth via Worker cookie→Bearer, Worker CSRF header, hCaptcha Vite gate, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`, invocation budget controls (`/api/v1/batch`, Worker cache headers, JWT TTL 240, polling backoff).
 
 **B — Intentional:** Vue `DataTable` (not Yajra JS), Select2 only for server-side lookup, navigation from `GET navigation/menus?layout=sidebar`, FH three Vue routes vs Blade island, team as a page vs offcanvas, listing-only move picker, rate save re-fetch (no full reload).
 

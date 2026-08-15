@@ -22,6 +22,9 @@ require __DIR__.'/v1/settings.php';
 // Broadcast auth for cross-origin JWT clients (Vue-Workers SPA).
 require __DIR__.'/v1/broadcasting.php';
 
+// Read-only batch fan-in (Vue-Workers SPA invocation saver).
+require __DIR__.'/v1/batch.php';
+
 // Product domains (kind=product). domain:make appends here; keep product requires last.
 require __DIR__.'/v1/file-hosting.php';
 require __DIR__.'/v1/vtual-webhooks.php';

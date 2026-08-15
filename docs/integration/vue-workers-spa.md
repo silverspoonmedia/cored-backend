@@ -39,6 +39,19 @@ One browser `fetch` to the SPA origin `/api/*` is **one** invocation. The Worker
 
 `/api/*` reverse-proxy + HttpOnly `spa_jwt` is **deemed necessary**. Keep that script small (`fetch` only). Do not add cron, queues, Durable Objects, extra `run_worker_first` paths, or domain logic in the Worker without an explicit reason in this guide. Business work stays on Monolith; the SPA fetches and parses.
 
+## Invocation budget controls
+
+Because every `/api/*` call is one Worker invocation, the stack has explicit quota savers:
+
+- **Batch fan-in** — `POST /api/v1/batch` (`routes/api/v1/batch.php`, `BatchController`) dispatches up to **10** read-only (`GET`/`HEAD`) sub-requests through the kernel in one HTTP call, each keeping its own auth/permission middleware. SPA wrapper: `batch()` in `src/api/client.ts`. Throttled `30,1`; mutations are rejected (`422` per entry). Use it for multi-widget hydrates (dashboard) instead of N parallel fetches.
+- **Shell hydrate** — `useShellHydrate.hydrateShell()` (called from `AppLayout` on mount) batches `auth/me` + `navigation/menus`(sidebar+navbar) + `notifications/unread-count` into one invocation, then seeds each store via `setUser` / `seedTree` / `seedUnreadCount`. Per-entry success check; any failure leaves the owning composable's lazy loader as the fallback (`AppNavbar` skips `loadNavigation('navbar')` / `loadBellData()` only when `isTreeLoaded` / `hasSeededUnread`). Dashboard reads `auth/me` from the seeded store — no extra fetch. `resetShellHydration()` exists for re-hydration after logout.
+- **File Hosting hydrate** — `useFhHydrate.hydrateFileHosting()` batches the four independent FH reads (`file-hosting/browse`, `file-hosting/quota`, `file-hosting/workspaces`, `microstock/slots`) into one invocation from `FileHostingView.loadAll()`. Failed subs return `null` and fall back to their own loader (`loadBrowse` toasts; quota/workspaces/slots stay silent). The dependent stage (`microstock/billing`, collection status) still runs after — it gates on `browse.workspace.kind === 'microstock'`. Realtime (`.listing.changed` / `.quota.changed`) and polling fallback are unchanged — batching only trims the initial hydrate.
+- **Worker cache headers** — `server/index.ts` stamps `cache-control` on reference-data GET responses (`navigation/menus`, `services/options`, `currencies*`): `private, max-age=60/300` when a `spa_jwt` session is present, `public` when not. The browser serves repeats from disk cache without touching the Worker.
+- **JWT TTL 240** — `config/jwt.php` `'ttl' => env('JWT_TTL', 240)`. A 401 refresh round-trip costs 3 invocations; longer TTL makes that rare. Refresh rotation + blacklist still bound token theft.
+- **Polling backoff** — `useListingLiveUpdate` (base 90s) and the `AppNavbar` bell (base 120s) double their interval after 5 unchanged polls (cap 5 min), reset on any change. Echo events remain the primary channel; polling is the degraded fallback.
+
+Do **not** add a client fallback that naked-fetches the monolith host when the budget is tight — see the warning above.
+
 Vite `server.proxy` is a **local Node** reverse proxy. It does not run on Cloudflare Static Assets. It can mask a host in `npm run dev` when nothing else intercepts `/api`, but it cannot mint `spa_jwt` or replace this Worker while BFF is deemed necessary (`SameSite=Strict` on the SPA origin — every authenticated call must hit that origin). `@cloudflare/vite-plugin` already sends `/api/*` through `server/index.ts` in `npm run dev`; a second Vite proxy for the same path is dead or breaks login. Do not treat Vite proxy as a production “no-function mask.”
 
 Do not add a client fallback that naked-fetches the monolith host when the function cap is hit: the cookie would not be sent (different origin), JS has no JWT, and locking Laravel to the Worker would block that path anyway. The Worker **is** the public API; hostname masking is not a control.
@@ -347,7 +360,7 @@ The SPA fetches and parses **as-is**. Do not port Yajra JS. Do not invent a seco
 
 These are the safe zone. Keep the current approaches.
 
-**A — Platform.** HttpOnly `spa_jwt` on the Vue-Workers origin (Worker BFF; JS does not store the JWT). Blade remains HttpOnly `auth_token` on `APP_URL`. Direct Monolith `/api/v1` still returns Bearer JSON. `POST /api/v1/broadcasting/auth` (cookie → Worker Bearer), Worker CSRF header on mutating cookie requests, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`. Mimic the session and realtime intent; two cookies, two origins.
+**A — Platform.** HttpOnly `spa_jwt` on the Vue-Workers origin (Worker BFF; JS does not store the JWT). Blade remains HttpOnly `auth_token` on `APP_URL`. Direct Monolith `/api/v1` still returns Bearer JSON. `POST /api/v1/broadcasting/auth` (cookie → Worker Bearer), Worker CSRF header on mutating cookie requests, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`, invocation budget controls (`/api/v1/batch`, Worker cache headers, JWT TTL 240, polling backoff). Mimic the session and realtime intent; two cookies, two origins.
 
 **B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout=sidebar`. File Hosting three Vue routes vs Blade island; team as a page vs offcanvas; listing-only move picker; rate editor re-fetch instead of full reload. Mimic intent, not Blade DOM ids (`#fhTeamOffcanvas`, `#fhCreateWorkspaceModal`, `#fhMicrostockPanel`).
 
@@ -385,6 +398,7 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 | Var | Purpose |
 |-----|---------|
 | `MONOLITH_API_ORIGIN` | Worker-only. Monolith origin (no `/api/v1` suffix, no trailing slash). Wrangler `vars` + `.dev.vars`. **Not** bundled into the browser. Empty → Worker 503. |
+| `JWT_TTL` (Monolith) | Access-token minutes (default `240`). Longer window = fewer Worker refresh round-trips. |
 | `VITE_API_BASE_URL` | Must stay **empty** so calls stay same-origin `/api/v1` (Worker mask + BFF cookie). `.env.local` wins. An absolute prefix bypasses the Worker — hostname leak **and** no `spa_jwt`. |
 | `VITE_PUSHER_APP_KEY` | Pusher app key (required for Echo — must match Monolith `PUSHER_APP_KEY`) |
 | `VITE_PUSHER_APP_CLUSTER` | Pusher cluster (default `mt1`) |
@@ -398,6 +412,10 @@ Discord OAuth return is **not** a Vite var. Set `SPA_URL` on the Monolith API ho
 Values must mirror Monolith's `.env` `PUSHER_*` literals (and `HCAPTCHA_SITEKEY` when hCaptcha is on). `.env.local` overrides `.env` for every `VITE_*` key (that is why an old absolute `VITE_API_BASE_URL` survived Vite restarts). Worker origin is `.dev.vars` `MONOLITH_API_ORIGIN`, not a `VITE_` var.
 
 When `VITE_PUSHER_APP_KEY` is unset, Echo is not initialized and all realtime-dependent features fall back to polling.
+
+### Self-hosted websocket (Sockudo)
+
+Production realtime targets **Sockudo** (Pusher-compatible WS). No code change is needed on either side — the SPA (`useEcho.ts`, broadcaster `pusher`) and Monolith (`pusher/pusher-php-server`, `BROADCAST_CONNECTION=pusher`) speak the Pusher protocol. Migration is env-only: point `PUSHER_HOST` / `PUSHER_PORT` / `PUSHER_SCHEME` (and the `VITE_PUSHER_*` mirrors) at the Sockudo host. Development stays on Pusher-hosted (`PUSHER_HOST` empty → `ws-{cluster}.pusher.com`).
 
 ### Auth
 

@@ -7,6 +7,7 @@ use App\Support\Settings\Repositories\Contracts\SystemSettingRepositoryInterface
 use App\Support\Settings\SettingRegistry;
 use App\Support\Settings\SettingType;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class SystemSettingRepository implements SystemSettingRepositoryInterface
 {
@@ -16,11 +17,18 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
     {
         $snapshot = Cache::get(self::CACHE_KEY);
 
-        if (! is_array($snapshot)) {
-            return $this->rebuildCache();
+        if (is_array($snapshot)) {
+            return $snapshot;
         }
 
-        return $snapshot;
+        // Pre-migration callers (fresh install, early artisan, tests without
+        // RefreshDatabase) must not blow up on a missing table — an empty
+        // snapshot makes SettingsReader fall back to config literals.
+        if (! Schema::hasTable('system_settings')) {
+            return [];
+        }
+
+        return $this->rebuildCache();
     }
 
     public function snapshotForGroup(string $group): array

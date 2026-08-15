@@ -14,13 +14,29 @@ use Symfony\Component\HttpFoundation\Response;
  * - MIME sniffing (X-Content-Type-Options)
  * - Referrer leakage (Referrer-Policy)
  * - Unwanted browser features (Permissions-Policy)
+ * - Script exfiltration (Content-Security-Policy)
  *
- * CSP is intentionally omitted to avoid breaking remaining CDN font/icon
- * assets (Source Sans, Bootstrap Icons) and Vite hot reload. Add CSP
- * headers manually if needed.
+ * CSP stays on the Blade admin only (this middleware runs in the `web` group);
+ * the Vue-Workers SPA sets its own policy at the edge. 'unsafe-inline' styles
+ * remain because AdminLTE/jQuery plugins inject inline style attributes; a
+ * nonce-based policy belongs to the SPA, not this legacy stack. hCaptcha is
+ * whitelisted for the auth forms.
  */
 class SecurityHeaders
 {
+    private const CSP_DIRECTIVES = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' https://hcaptcha.com https://*.hcaptcha.com",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https:",
+        "font-src 'self' data:",
+        "connect-src 'self' https://*.pusher.com wss://*.pusher.com https://hcaptcha.com https://*.hcaptcha.com",
+        "frame-src https://hcaptcha.com https://*.hcaptcha.com",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+    ];
+
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
@@ -39,6 +55,12 @@ class SecurityHeaders
             'Permissions-Policy',
             'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()'
         );
+
+        // Local Vite dev injects HMR/eval scripts a strict CSP would break, so
+        // the policy only ships from non-local environments.
+        if (! app()->environment('local')) {
+            $response->headers->set('Content-Security-Policy', implode('; ', self::CSP_DIRECTIVES));
+        }
 
         return $response;
     }

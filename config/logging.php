@@ -81,6 +81,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Direct API hits that bypass the Vue-Workers BFF — kept separate so
+        // the main log is not flooded with per-request audit lines.
+        'spa_audit' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/spa-audit.log'),
+            'level' => 'info',
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),
