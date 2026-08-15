@@ -11,13 +11,17 @@ use App\Support\Product\Exceptions\ProductActivationException;
 use App\Support\Product\Exceptions\ProductNotFoundException;
 use App\Support\Product\Models\ProductActivation;
 use App\Support\Product\ProductRegistry;
+use App\Support\Product\Support\ProductActivationRealtime;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProductActivationService
 {
-    public function __construct(private readonly ProductRegistry $registry) {}
+    public function __construct(
+        private readonly ProductRegistry $registry,
+        private readonly ProductActivationRealtime $realtime,
+    ) {}
 
     public function find(string $userId, string $productKey): ?ProductActivation
     {
@@ -274,6 +278,11 @@ class ProductActivationService
         $activation->save();
 
         ProductActivationStateChanged::dispatch($activation, $previous);
+        $this->realtime->activationChanged(
+            $activation->product_key,
+            $target->value,
+            $activation->user_id,
+        );
 
         return $activation;
     }

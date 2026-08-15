@@ -8,6 +8,7 @@ use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Events\AssetMetadataProgress;
 use App\Domain\Microstock\Events\CollectionAnalysisProgress;
+use App\Domain\Microstock\Events\MicrostockBillingChanged;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\CollectionService;
 use App\Support\Broadcasting\BroadcastConnection;
@@ -77,6 +78,15 @@ class MicrostockRealtime
             workspaceId: $file->workspace_id,
             microstock: $this->microstockPayload($metadata),
         ));
+    }
+
+    public function billingChanged(string $ownerUserId, string $action): void
+    {
+        if (! $this->enabled()) {
+            return;
+        }
+
+        event(new MicrostockBillingChanged($ownerUserId, $action));
     }
 
     public function notifyAssetAndCollection(AssetMetadata $metadata, bool $forceCollection = false): void

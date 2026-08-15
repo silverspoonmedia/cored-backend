@@ -7,6 +7,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Notification\Notifications\NotificationType;
 use App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface;
 use App\Domain\Identity\Services\Rbac\RoleService;
+use App\Domain\Identity\Support\RbacRealtime;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
@@ -16,6 +17,7 @@ class UserManagementService
     public function __construct(
         private readonly UserRepositoryInterface $users,
         private readonly RoleService $roleService,
+        private readonly RbacRealtime $realtime,
     ) {}
 
     /**
@@ -57,6 +59,8 @@ class UserManagementService
             app(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)
                 ->forgetPresentedTreeForUserId((string) $user->id);
         }
+
+        $this->realtime->changed('role_assigned', null, (string) $user->id);
 
         activity()
             ->useLog('user')
@@ -109,6 +113,8 @@ class UserManagementService
                 app(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)
                     ->forgetPresentedTreeForUserId((string) $user->id);
             }
+
+            $this->realtime->changed('role_assigned', null, (string) $user->id);
 
             if ($previousRole !== $data['role']) {
                 activity()

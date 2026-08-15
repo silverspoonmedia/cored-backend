@@ -6,6 +6,7 @@ use App\Domain\Inference\Models\AiModelCard;
 use App\Domain\Inference\Models\AiModelRateSnapshot;
 use App\Domain\Inference\Models\InferenceProvider;
 use App\Domain\Inference\Models\ProviderModelRate;
+use App\Domain\Inference\Support\InferenceRealtime;
 use App\Domain\Microstock\Services\UnknownModelBillingConsolidationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -17,6 +18,7 @@ class InferenceCatalogService
     public function __construct(
         private readonly InferenceRateService $rateService,
         private readonly UnknownModelBillingConsolidationService $consolidation,
+        private readonly InferenceRealtime $realtime,
     ) {}
 
     /**
@@ -39,7 +41,10 @@ class InferenceCatalogService
      */
     public function createModelCard(array $data): AiModelCard
     {
-        return AiModelCard::query()->create($data);
+        $card = AiModelCard::query()->create($data);
+        $this->realtime->catalogChanged('model_card', 'created', $card->id);
+
+        return $card;
     }
 
     /**
@@ -50,7 +55,10 @@ class InferenceCatalogService
         $card = $this->getModelCard($id);
         $card->update($data);
 
-        return $card->fresh() ?? $card;
+        $card = $card->fresh() ?? $card;
+        $this->realtime->catalogChanged('model_card', 'updated', $card->id);
+
+        return $card;
     }
 
     public function deleteModelCard(string $id): void
@@ -62,6 +70,7 @@ class InferenceCatalogService
         }
 
         $card->delete();
+        $this->realtime->catalogChanged('model_card', 'deleted', $id);
     }
 
     /**
@@ -97,7 +106,10 @@ class InferenceCatalogService
      */
     public function createProvider(array $data): InferenceProvider
     {
-        return InferenceProvider::query()->create($data);
+        $provider = InferenceProvider::query()->create($data);
+        $this->realtime->catalogChanged('provider', 'created', $provider->id);
+
+        return $provider;
     }
 
     /**
@@ -108,12 +120,16 @@ class InferenceCatalogService
         $provider = InferenceProvider::query()->findOrFail($id);
         $provider->update($data);
 
-        return $this->getProvider($provider->id);
+        $provider = $this->getProvider($provider->id);
+        $this->realtime->catalogChanged('provider', 'updated', $provider->id);
+
+        return $provider;
     }
 
     public function deleteProvider(string $id): void
     {
         InferenceProvider::query()->findOrFail($id)->delete();
+        $this->realtime->catalogChanged('provider', 'deleted', $id);
     }
 
     /**
@@ -170,6 +186,9 @@ class InferenceCatalogService
             }
         });
 
-        return $this->getProvider($provider->id);
+        $provider = $this->getProvider($provider->id);
+        $this->realtime->catalogChanged('provider', 'rates_synced', $provider->id);
+
+        return $provider;
     }
 }

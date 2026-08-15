@@ -9,6 +9,7 @@ use App\Domain\Service\Exceptions\DuplicateServiceCodeException;
 use App\Domain\Service\Exceptions\ServiceException;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePrice;
+use App\Domain\Service\Support\ServiceRealtime;
 use App\Repositories\Contracts\EloquentCrudRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ class ServiceCatalogService
 {
     public function __construct(
         private readonly EloquentCrudRepositoryInterface $repository,
+        private readonly ServiceRealtime $realtime,
     ) {}
 
     /**
@@ -53,7 +55,10 @@ class ServiceCatalogService
             $service = $this->repository->create(Service::class, $payload);
             $this->syncPrices($service, $prices);
 
-            return $service->load('prices');
+            $service = $service->load('prices');
+            $this->realtime->catalogChanged('created', $service->id);
+
+            return $service;
         });
     }
 
@@ -79,13 +84,17 @@ class ServiceCatalogService
                 $this->syncPrices($service, $prices ?? []);
             }
 
-            return $service->load('prices');
+            $service = $service->load('prices');
+            $this->realtime->catalogChanged('updated', $service->id);
+
+            return $service;
         });
     }
 
     public function delete(string $id): void
     {
         $this->repository->delete(Service::class, $id);
+        $this->realtime->catalogChanged('deleted', $id);
     }
 
     /**

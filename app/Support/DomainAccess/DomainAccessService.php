@@ -6,6 +6,7 @@ use App\Domain\Identity\Models\User;
 use App\Support\Domain\DomainManager;
 use App\Support\DomainAccess\Enums\DomainVisibility;
 use App\Support\DomainAccess\Models\ProductDomainVisibility;
+use App\Support\DomainAccess\Support\DomainAccessRealtime;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 
 /**
@@ -32,7 +33,10 @@ class DomainAccessService
     /** @var array<string, DomainVisibility>|null Request-scoped cache. */
     private ?array $cache = null;
 
-    public function __construct(private readonly DomainManager $domains) {}
+    public function __construct(
+        private readonly DomainManager $domains,
+        private readonly DomainAccessRealtime $realtime,
+    ) {}
 
     /**
      * Resolve a product domain's visibility. Defaults to Public when no
@@ -63,6 +67,8 @@ class DomainAccessService
         if (app()->bound(MenuRepositoryInterface::class)) {
             app(MenuRepositoryInterface::class)->bumpPresentedTreeEpoch();
         }
+
+        $this->realtime->visibilityChanged($productKey, $visibility->value);
     }
 
     /**

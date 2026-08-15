@@ -6,6 +6,7 @@ use App\Domain\Navigation\Models\Menu;
 use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use App\Domain\Navigation\Support\MenuLayout;
+use App\Domain\Navigation\Support\NavigationRealtime;
 use App\Domain\Navigation\Support\NavigationTreeFilter;
 use Illuminate\Support\Facades\DB;
 
@@ -13,6 +14,7 @@ class MenuService
 {
     public function __construct(
         private readonly MenuRepositoryInterface $menus,
+        private readonly NavigationRealtime $realtime,
     ) {}
 
     /**
@@ -61,7 +63,10 @@ class MenuService
             $this->menus->syncUserIncludes($menu, $data['user_includes'] ?? []);
             $this->menus->syncUserExcludes($menu, $data['user_excludes'] ?? []);
 
-            return $this->menus->read($menu->id);
+            $created = $this->menus->read($menu->id);
+            $this->realtime->menuTreeChanged($created->layout, 'created');
+
+            return $created;
         });
     }
 
@@ -96,18 +101,24 @@ class MenuService
                 $this->menus->syncUserExcludes($menu, $data['user_excludes']);
             }
 
-            return $this->menus->read($menu->id);
+            $updated = $this->menus->read($menu->id);
+            $this->realtime->menuTreeChanged($updated->layout, 'updated');
+
+            return $updated;
         });
     }
 
     public function delete(Menu $menu, bool $cascade = false): void
     {
+        $layout = $menu->layout;
         $this->menus->deleteMenu($menu, $cascade);
+        $this->realtime->menuTreeChanged($layout, 'deleted');
     }
 
     public function restore(Menu $menu): void
     {
         $this->menus->restoreMenu($menu);
+        $this->realtime->menuTreeChanged($menu->layout, 'restored');
     }
 
     /**

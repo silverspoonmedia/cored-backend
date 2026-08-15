@@ -10,6 +10,7 @@ use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Support\FileHostingCatalog;
 use App\Domain\Service\Support\MicrostockCatalog;
+use App\Domain\Service\Support\ServiceRealtime;
 use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;
 use Illuminate\Support\Facades\Log;
@@ -21,6 +22,7 @@ class ServiceFulfillmentService
         private readonly FileHostingQuotaRecomputeService $quotaRecompute,
         private readonly ProductActivationService $productActivations,
         private readonly AiCreditService $aiCredits,
+        private readonly ServiceRealtime $realtime,
     ) {}
 
     public function fulfill(ServicePurchase $purchase): void
@@ -40,6 +42,7 @@ class ServiceFulfillmentService
             ]);
             $purchase->status = PurchaseStatus::Paid;
             $purchase->save();
+            $this->realtime->purchaseChanged($purchase->id, 'paid');
 
             return;
         }
@@ -54,6 +57,7 @@ class ServiceFulfillmentService
         $purchase->period_start = $result['period_start'];
         $purchase->period_end = $result['period_end'];
         $purchase->save();
+        $this->realtime->purchaseChanged($purchase->id, 'paid');
 
         $target = $service?->fulfillment_target;
 
@@ -134,6 +138,7 @@ class ServiceFulfillmentService
 
         $purchase->status = PurchaseStatus::Cancelled;
         $purchase->save();
+        $this->realtime->purchaseChanged($purchase->id, 'cancelled');
     }
 
     public function markFailed(ServicePurchase $purchase): void
@@ -144,6 +149,7 @@ class ServiceFulfillmentService
 
         $purchase->status = PurchaseStatus::Failed;
         $purchase->save();
+        $this->realtime->purchaseChanged($purchase->id, 'failed');
     }
 
     public function markAddonRenewalCancelled(ServiceAddonRenewal $renewal): void

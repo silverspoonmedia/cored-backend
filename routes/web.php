@@ -74,3 +74,5 @@ Route::middleware('web.auth')->prefix('apps')->group(function (): void {
     require __DIR__.'/web/vtual-vtuber.php';
     require __DIR__.'/web/microstock.php';
 });
+
+

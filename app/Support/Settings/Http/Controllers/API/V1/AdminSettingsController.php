@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Support\ApiResponder;
 use App\Support\Settings\Http\Requests\UpdateSettingsGroupRequest;
 use App\Support\Settings\SettingsService;
+use App\Support\Settings\Support\SettingsRealtime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,6 +14,7 @@ class AdminSettingsController extends Controller
 {
     public function __construct(
         private readonly SettingsService $settings,
+        private readonly SettingsRealtime $realtime,
     ) {}
 
     public function groups(Request $request): JsonResponse
@@ -53,6 +55,8 @@ class AdminSettingsController extends Controller
             $request->settingsPayload(),
             $request->user()?->id,
         );
+
+        $this->realtime->groupChanged($group, 'updated');
 
         return ApiResponder::success(
             [

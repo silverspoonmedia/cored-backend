@@ -5,12 +5,25 @@ namespace App\Domain\Microstock\Services;
 use App\Domain\Microstock\Enums\AiCreditTransactionType;
 use App\Domain\Microstock\Models\AiBalance;
 use App\Domain\Microstock\Models\AiCreditTransaction;
+use App\Domain\Microstock\Support\MicrostockRealtime;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Support\MicrostockCatalog;
 use Illuminate\Support\Facades\DB;
 
 class AiCreditService
 {
+    /**
+     * MicrostockRealtime is resolved lazily (app()) to break the circular
+     * dependency: CollectionService → AiBillingService → AiCreditService →
+     * MicrostockRealtime → CollectionService.
+     */
+    public function __construct() {}
+
+    private function realtime(): MicrostockRealtime
+    {
+        return app(MicrostockRealtime::class);
+    }
+
     public function balance(string $userId): int
     {
         return (int) (AiBalance::query()->find($userId)?->balance_micro_usd ?? 0);
@@ -83,6 +96,8 @@ class AiCreditService
                 'created_at' => now(),
             ]);
         });
+
+        $this->realtime()->billingChanged($userId, $type->value);
     }
 
     public function debit(
@@ -118,5 +133,7 @@ class AiCreditService
                 'created_at' => now(),
             ]);
         });
+
+        $this->realtime()->billingChanged($userId, $type->value);
     }
 }

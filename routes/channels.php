@@ -50,3 +50,46 @@ Broadcast::channel('vtual.claim.{claimId}', function (User $user, string $claimI
         ->where('user_id', $user->id)
         ->exists();
 });
+
+Broadcast::channel('navigation.menus', function (User $user): bool {
+    return $user->can('view navigation menu');
+});
+
+Broadcast::channel('services.catalog', function (User $user): bool {
+    return $user->can('view service');
+});
+
+Broadcast::channel('services.purchase.{purchaseId}', function (User $user, string $purchaseId): bool {
+    return \App\Domain\Service\Models\ServicePurchase::query()
+        ->whereKey($purchaseId)
+        ->where('user_id', $user->id)
+        ->exists();
+});
+
+Broadcast::channel('inference.catalog', function (User $user): bool {
+    return $user->can('view inference catalog');
+});
+
+Broadcast::channel('settings.{group}', function (User $user, string $group): bool {
+    return $user->can('view settings');
+});
+
+Broadcast::channel('logs.errors', function (User $user): bool {
+    return $user->can('view error log');
+});
+
+Broadcast::channel('product-activations', function (User $user): bool {
+    return $user->can('view product activations');
+});
+
+Broadcast::channel('domain-access', function (User $user): bool {
+    return $user->can('view domain access');
+});
+
+Broadcast::channel('rbac', function (User $user): bool {
+    return $user->can('view user') || $user->can('manage user');
+});
+
+Broadcast::channel('payments.admin', function (User $user): bool {
+    return $user->can('view invoice');
+});

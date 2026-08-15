@@ -2,6 +2,7 @@
 
 namespace App\Domain\PaymentGateway\Support;
 
+use App\Domain\PaymentGateway\Events\InvoiceListChanged;
 use App\Domain\PaymentGateway\Events\InvoiceStatusChanged;
 use App\Domain\PaymentGateway\Events\PaymentRoutingCatalogChanged;
 use App\Domain\PaymentGateway\Models\Invoice;
@@ -67,11 +68,33 @@ class PaymentRealtime
                     : null,
                 invoiceableStatus: $this->resolveInvoiceableStatus($invoice),
             ));
+
+            $this->invoiceListChanged($current);
         } catch (\Throwable $e) {
             // Never break payment fulfillment because of a push failure.
             Log::warning('PaymentRealtime broadcast failed', [
                 'invoice_id' => $invoice->id,
                 'status' => $current,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Broadcast a lightweight signal to the admin invoice list when any
+     * invoice status transitions. Count-only — no invoice payload.
+     */
+    public function invoiceListChanged(string $action): void
+    {
+        if (! $this->enabled()) {
+            return;
+        }
+
+        try {
+            event(new InvoiceListChanged($action));
+        } catch (\Throwable $e) {
+            Log::warning('PaymentRealtime invoice list broadcast failed', [
+                'action' => $action,
                 'error' => $e->getMessage(),
             ]);
         }

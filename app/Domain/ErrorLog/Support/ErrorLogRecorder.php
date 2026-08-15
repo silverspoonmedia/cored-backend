@@ -4,6 +4,7 @@ namespace App\Domain\ErrorLog\Support;
 
 use App\Domain\ErrorLog\Models\ErrorLog;
 use App\Domain\ErrorLog\Repositories\Contracts\ErrorLogRepositoryInterface;
+use App\Domain\ErrorLog\Support\ErrorLogRealtime;
 use App\Exceptions\BusinessRuleException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +25,7 @@ class ErrorLogRecorder
         private readonly ErrorLogRepositoryInterface $repository,
         private readonly ErrorFingerprint $fingerprint,
         private readonly ErrorContextRedactor $redactor,
+        private readonly ErrorLogRealtime $realtime,
     ) {}
 
     public function recordException(Throwable $e): void
@@ -159,6 +161,8 @@ class ErrorLogRecorder
                     'context' => $context,
                 ],
             );
+
+            $this->realtime->recorded($payload['level'], $payload['type']);
         } catch (Throwable) {
             // Never break the request or logging pipeline.
         } finally {
