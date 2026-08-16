@@ -28,6 +28,7 @@ class ServicePurchaseResource extends JsonResource
         $changeType = $this->change_type;
         $displayCurrency = $this->display_currency;
         $settlementCurrency = $this->settlement_currency;
+        $staff = $request->user()?->can('view invoice') ?? false;
         $chargeAmount = $this->charge_amount !== null
             ? (float) $this->charge_amount
             : (float) $this->display_amount;
@@ -71,14 +72,16 @@ class ServicePurchaseResource extends JsonResource
                 ? $changeType->value
                 : $changeType,
             'previous_entitlement_id' => $this->previous_entitlement_id,
-            'settlement_currency' => $settlementCurrency,
-            ...$this->moneyFields('settlement_amount', $this->settlement_amount, $settlementCurrency, asFloat: true),
-            'fx_rate' => $this->fx_rate !== null ? (float) $this->fx_rate : null,
-            'fx_rate_formatted' => FxPresenter::formattedRate($this->fx_rate),
-            'fx_rate_label' => FxPresenter::label($this->fx_rate, $displayCurrency, $settlementCurrency),
-            'fx_provider' => $this->fx_provider,
-            ...$this->dateFields('fx_fetched_at', $this->fx_fetched_at),
-            'fx_rate_snapshot_id' => $this->fx_rate_snapshot_id,
+            ...($staff ? [
+                'settlement_currency' => $settlementCurrency,
+                ...$this->moneyFields('settlement_amount', $this->settlement_amount, $settlementCurrency, asFloat: true),
+                'fx_rate' => $this->fx_rate !== null ? (float) $this->fx_rate : null,
+                'fx_rate_formatted' => FxPresenter::formattedRate($this->fx_rate),
+                'fx_rate_label' => FxPresenter::label($this->fx_rate, $displayCurrency, $settlementCurrency),
+                'fx_provider' => $this->fx_provider,
+                ...$this->dateFields('fx_fetched_at', $this->fx_fetched_at),
+                'fx_rate_snapshot_id' => $this->fx_rate_snapshot_id,
+            ] : []),
             ...$this->dateFields('period_start', $this->period_start),
             ...$this->dateFields('period_end', $this->period_end),
             'status' => $status instanceof PurchaseStatus ? $status->value : (string) $status,

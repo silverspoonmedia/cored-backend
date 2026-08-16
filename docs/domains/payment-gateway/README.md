@@ -24,9 +24,9 @@ Relative prefixes below mount under **`/api/v1`** (not the Blade `/apps` shell).
 | Area | API prefix | Auth |
 |------|------------|------|
 | Gateways | `/payment-gateways` | manage/view permissions |
-| Invoices | `/invoices`, channel-checkout | view invoice / initiate payment |
+| Invoices | `/invoices`, channel-checkout | **List/show/export:** `view invoice` (staff). Channel-checkout: `initiate payment`. Checkout-channels: owner or `view invoice` via `InvoiceChannelAuthorizer`. |
 | Channels | `/payment-channels`, routes, sync-policy | view / manage |
-| Subscriptions | `/subscriptions` | view/manage subscription |
+| Subscriptions | `/subscriptions` | **index/show:** `view subscription`. **store/update/destroy:** `manage subscription`. Not owner-scoped. |
 | Midtrans / iPaymu | `/payments/providers/{midtrans\|ipaymu}/*` | JWT except webhooks |
 
 ### Channel sync (API)
@@ -49,7 +49,9 @@ Primary sell path: [Service](../service/README.md) checkout → `ServicePurchase
 
 **API display companions:** `InvoiceResource` / `SubscriptionResource` keep raw money + ISO timestamps and add `*_formatted` (money with currency code) and `*_formatted` / `*_human` (dates). Blade and DataTables bind companions only — see [platform/crud presentation](../../platform/crud.md#api-resource-presentation-dual-fields).
 
-**InvoiceResource (post-checkout policy):** `invoiceable_status` (resolved from the invoiceable relation, mirrors `PaymentRealtime`), `payment_channel_route_snapshot_id`, nested `payment_channel_route_snapshot` (and `payment_channel_route` alias with the same snapshot shape), plus fee basis companions (`payment_channel_fee_type`, `payment_channel_fee_label`, `payment_channel_fee_basis`) — all from the immutable snapshot, **not** live `payment_channel_routes` rows.
+**InvoiceResource (per-viewer):** nested under `ServicePurchaseResource` for buyers. Staff (`view invoice`) also get `invoiceable_type`, `external_transaction_id`, route snapshot id + `payment_channel_route` (snapshot shape; the old duplicate `payment_channel_route_snapshot` key is gone), disbursement timestamps. Buyers keep amounts, status, `checkout_session`, and fee-basis labels they already paid. Post-checkout policy fields (`invoiceable_status`, fee basis companions) stay on the shared shape; snapshot internals are staff-only.
+
+**InvoiceResource (post-checkout policy):** `invoiceable_status` (resolved from the invoiceable relation, mirrors `PaymentRealtime`) plus fee basis companions (`payment_channel_fee_type`, `payment_channel_fee_label`, `payment_channel_fee_basis`) — all from the immutable snapshot, **not** live `payment_channel_routes` rows.
 
 **PaymentIncomeInvoiceResource** (income drill-down): a subset of `InvoiceResource` money + date companions (`subtotal`, `payment_channel_fee`, `customer_gross_total`, `paid_at`, `withdrawable_at`), plus fee basis companions from the snapshot, and `show_url` via `InvoiceWebDestination`. The `.paymentGateway` eager load lives in `PaymentIncomeAnalyticsService::invoicesPaginated()` (the query backing this resource); the resource itself only does `loadMissing('paymentChannelRouteSnapshot')` as a defensive fallback.
 
@@ -119,7 +121,7 @@ Parallels [Service FX snapshots](../service/README.md) (`exchange_rate_snapshots
 | Channel checkout (`InvoiceChannelCheckoutService`) | Insert row in `payment_channel_route_snapshots`; FK on invoice |
 | Midtrans pre-charge (`InvoiceChannelFeeService::applyBeforeCharge`) | Same snapshot reused for fee estimate + gross before charge |
 
-`InvoiceResource`, the [Service purchase hub](../service/README.md) (invoice nested in purchase API), CSV export (`InvoiceCsvExportService`), and any Blade consuming invoice API data read **`payment_channel_route_snapshot`** only — not live route rows. Standalone `/apps/invoices/{id}` Blade applies only to non-`service_purchase` morphs (service purchases redirect per **Blade payment surface** above). Abandoning checkout clears `payment_channel_route_snapshot_id` with the route FK. Pre-production: no backfill for invoices created before this feature.
+`InvoiceResource` (staff viewers), the [Service purchase hub](../service/README.md) (invoice nested in purchase API — buyers do **not** receive the snapshot object), CSV export (`InvoiceCsvExportService`), and Blade invoice show read **`payment_channel_route`** (snapshot shape, staff-only on the Resource) — not live route rows. Standalone `/apps/invoices/{id}` Blade applies only to non-`service_purchase` morphs (service purchases redirect per **Blade payment surface** above). Abandoning checkout clears `payment_channel_route_snapshot_id` with the route FK. Pre-production: no backfill for invoices created before this feature.
 
 **Snapshot columns:** `payment_channel_code`, `payment_gateway_id`, `route_role`, `settlement_days`, `fee_flat`, `fee_percent`, `fee_vat_inclusive`, `policy_tag`, `provider_payment_*`, `captured_at` (+ `captured_at_formatted` / `captured_at_human` companions via `DatePresenter`).
 

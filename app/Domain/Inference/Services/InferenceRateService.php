@@ -50,8 +50,8 @@ class InferenceRateService
         }
 
         $unknown = [
-            'input_per_million_usd' => setting_config('inference.unknown_model_rates.input_per_million_usd', 15.0),
-            'output_per_million_usd' => setting_config('inference.unknown_model_rates.output_per_million_usd', 60.0),
+            'input_per_million_usd' => setting_config('inference.unknown_model_rates.input_per_million_usd'),
+            'output_per_million_usd' => setting_config('inference.unknown_model_rates.output_per_million_usd'),
         ];
         $unknownInput = $unknown['input_per_million_usd'] ?? null;
         $unknownOutput = $unknown['output_per_million_usd'] ?? null;

@@ -6,14 +6,35 @@ use PHPUnit\Framework\TestCase as BaseTestCase;
 
 class LoadMonolithEnvironmentVariablesTest extends BaseTestCase
 {
+    private const PROCESS_KEYS = ['APP_ENV', 'APP_KEY', 'IPAYMU_API_KEY', 'IPAYMU_VA_KEY'];
+
     private ?string $envBackup = null;
 
     private ?string $envLocalBackup = null;
+
+    /** @var array<string, array{env: mixed, server: mixed, putenv: string|false, had_env: bool, had_server: bool}> */
+    private array $processEnvSnapshot = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        foreach (self::PROCESS_KEYS as $key) {
+            $this->processEnvSnapshot[$key] = [
+                'env' => $_ENV[$key] ?? null,
+                'server' => $_SERVER[$key] ?? null,
+                'putenv' => getenv($key),
+                'had_env' => array_key_exists($key, $_ENV),
+                'had_server' => array_key_exists($key, $_SERVER),
+            ];
+        }
+    }
 
     protected function tearDown(): void
     {
         $this->restoreFile($this->envPath(), $this->envBackup);
         $this->restoreFile($this->envLocalPath(), $this->envLocalBackup);
+        $this->restoreProcessEnv();
 
         parent::tearDown();
     }
@@ -87,6 +108,29 @@ class LoadMonolithEnvironmentVariablesTest extends BaseTestCase
 
         if (is_file($path)) {
             unlink($path);
+        }
+    }
+
+    private function restoreProcessEnv(): void
+    {
+        foreach ($this->processEnvSnapshot as $key => $snapshot) {
+            if ($snapshot['putenv'] === false) {
+                putenv($key);
+            } else {
+                putenv("{$key}={$snapshot['putenv']}");
+            }
+
+            if ($snapshot['had_env']) {
+                $_ENV[$key] = $snapshot['env'];
+            } else {
+                unset($_ENV[$key]);
+            }
+
+            if ($snapshot['had_server']) {
+                $_SERVER[$key] = $snapshot['server'];
+            } else {
+                unset($_SERVER[$key]);
+            }
         }
     }
 }

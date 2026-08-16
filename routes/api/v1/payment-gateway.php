@@ -12,15 +12,22 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:api')->group(function (): void {
     Route::apiResource('payment-gateways', PaymentGatewayController::class);
-    Route::get('invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
-    Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('invoices/export', [InvoiceController::class, 'export'])
+        ->middleware('permission:view invoice')
+        ->name('invoices.export');
+    Route::get('invoices', [InvoiceController::class, 'index'])
+        ->middleware('permission:view invoice')
+        ->name('invoices.index');
     Route::get('payments/income', [PaymentIncomeController::class, 'overview'])
         ->middleware('permission:view invoice')
         ->name('payments.income.overview');
     Route::get('payments/income/invoices', [PaymentIncomeController::class, 'invoices'])
         ->middleware('permission:view invoice')
         ->name('payments.income.invoices');
-    Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->whereUuid('invoice')->name('invoices.show');
+    Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])
+        ->whereUuid('invoice')
+        ->middleware('permission:view invoice')
+        ->name('invoices.show');
     Route::post('invoices/{invoice}/channel-checkout', InvoiceChannelCheckoutController::class)
         ->whereUuid('invoice')
         ->middleware('permission:initiate payment')
@@ -44,7 +51,14 @@ Route::middleware('auth:api')->group(function (): void {
     Route::post('payment-channels/sync-policy', [PaymentChannelController::class, 'syncRoutingPolicy'])
         ->middleware('permission:manage payment gateway')
         ->name('payment-channels.sync-policy');
-    Route::apiResource('subscriptions', SubscriptionController::class);
+    Route::apiResource('subscriptions', SubscriptionController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:view subscription')
+        ->whereUuid('subscription');
+    Route::apiResource('subscriptions', SubscriptionController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->middleware('permission:manage subscription')
+        ->whereUuid('subscription');
 });
 
 Route::prefix('payments/providers/midtrans')->name('payments.providers.midtrans.')->group(function (): void {

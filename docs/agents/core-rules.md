@@ -20,7 +20,7 @@ Every feature or change must be implemented end to end across all relevant layer
 
 ### Scope tags
 
-Prefix the task instruction with one of these tags to declare intended scope. Only this rule (rule 1) is affected by the tag — rules 2–8 below (living docs, database safety, Octane, localization, configuration, cache, local settings) stay mandatory **regardless of tag**.
+Prefix the task instruction with one of these tags to declare intended scope. Only this rule (rule 1) is affected by the tag — rules 2–9 below (living docs, database safety, Octane, localization, configuration, cache, local settings, response data minimization) stay mandatory **regardless of tag**.
 
 | Tag | Default? | Touch |
 |-----|----------|-------|
@@ -80,6 +80,10 @@ Laravel `Cache` entries that store domain/derived data must use **lifetime** sto
 
 **`APP_ENV=local` only:** dev Tier B overrides live in [config/settings-local.php](../../config/settings-local.php) and [LocalSettingsSeeder](../../database/seeders/LocalSettingsSeeder.php) (runs after `SettingsSeeder`, `upsertMany`). Never change `config/*.php` literals or `.env` for local-only knobs. Staging/production use config literals + `SettingsSeeder` only. Details: [configuration-policy.md — Local profile overrides](../platform/configuration-policy.md#local-profile-overrides).
 
+## 9. Response data minimization (mandatory)
+
+Every JSON Resource is a **per-viewer** contract, not a dump of the Eloquent model. Guest endpoints must not reuse owner Resources. Never emit credential secrets, live accept/claim tokens to non-owners, upstream cost to customers, FX/settlement internals to buyers, other users’ emails to non-staff, or storage `path` / `disk` / `checksum` to non-owner/non-staff. New list/show endpoints need one “wrong viewer 403” test and one “sensitive field absent” test. Full rules: [platform/security.md](../platform/security.md#response-data-minimization-mandatory).
+
 ## Agent workflow checklist
 
 1. Scope: this repository.
@@ -95,3 +99,4 @@ Laravel `Cache` entries that store domain/derived data must use **lifetime** sto
 - Create new documentation as a subject file at `docs/*.md` root — place under `domains/`, `platform/`, `web/`, `integration/`, `agents/`, or `archive/` per [docs/README.md](../README.md#rules-for-new-documentation-mandatory).
 - Ship a change touching only one of API / Web / Blade / translations when the others are affected, without an explicit `[backend]`/`[frontend]` scope tag (rule 1).
 - Change vTual `PlatformApiGateway` surface without updating the admin platform-api-probe in the same PR — probe must mirror production methods; see [vTual README — Admin probe](../domains/vtual/README.md#admin-probe-permanent-rootadmin-debug).
+- Dump Eloquent models into JSON Resources without per-viewer gating — see rule 9.

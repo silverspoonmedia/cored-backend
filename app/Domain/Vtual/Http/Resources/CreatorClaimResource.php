@@ -30,7 +30,10 @@ class CreatorClaimResource extends JsonResource
             'user_id' => $this->user_id,
             'creator_id' => $this->creator_id,
             'channel_id' => $this->channel_id,
-            'token' => $this->token,
+            'token' => $this->when(
+                $actor !== null && (string) $actor->getAuthIdentifier() === (string) $this->user_id,
+                $this->token,
+            ),
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,
             'closed_reason' => $this->closed_reason instanceof \BackedEnum
                 ? $this->closed_reason->value
@@ -53,7 +56,14 @@ class CreatorClaimResource extends JsonResource
             'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user?->id,
                 'name' => $this->user?->name,
-                'email' => $this->user?->email,
+                'email' => $this->when(
+                    $actor !== null && (
+                        (string) $actor->getAuthIdentifier() === (string) $this->user_id
+                        || $actor->can('view any vtual resource')
+                        || $actor->can('manage any vtual resource')
+                    ),
+                    $this->user?->email,
+                ),
             ]),
             ...$this->dateFields('created_at', $this->created_at),
             ...$this->dateFields('updated_at', $this->updated_at),

@@ -74,7 +74,7 @@ class ServicePurchaseQuantityApiTest extends TestCase
 
         $data = $response->json('data');
         $this->assertSame(3, $data['quantity']);
-        $this->assertEquals(159300.0, (float) $data['settlement_amount']);
+        $this->assertArrayNotHasKey('settlement_amount', $data);
         $this->assertEquals(159300.0, (float) $data['invoice']['subtotal']);
 
         $purchase->refresh();
@@ -82,6 +82,7 @@ class ServicePurchaseQuantityApiTest extends TestCase
 
         $this->assertSame(3, (int) $purchase->quantity);
         $this->assertEquals(8.85, (float) $purchase->charge_amount);
+        $this->assertEquals(159300.0, (float) $purchase->settlement_amount);
         $this->assertEquals(159300.0, (float) $invoice->subtotal);
     }
 

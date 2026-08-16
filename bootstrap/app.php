@@ -100,7 +100,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // API, carried in an HttpOnly cookie. Reading it on every web request
         // lets `permission:`/`role:` middleware and policies work unchanged.
         // RefreshJwtCookie silently extends access tokens within refresh_ttl so
-        // active admins are not hard-kicked at JWT_TTL.
+        // active admins are not hard-kicked at jwt.ttl.
         $middleware->web(append: [
             AuthenticateWithJwtCookie::class,
             RefreshJwtCookie::class,

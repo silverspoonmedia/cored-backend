@@ -28,7 +28,7 @@ API issues JWT; browser stores it as HttpOnly `auth_token`; web forwards as Bear
 
 ### Silent refresh (sliding access)
 
-Access JWT hard-expires at `platform.jwt.ttl` (default 60 minutes; runtime via `setting_config('jwt.ttl')`). Blade never used Laravel’s session guard for login, so without refresh every protected page dies at TTL even while the user is active.
+Access JWT hard-expires at `platform.jwt.ttl` (config literal **240** minutes; runtime via `setting_config('jwt.ttl')`). Blade never used Laravel’s session guard for login, so without refresh every protected page dies at TTL even while the user is active.
 
 `RefreshJwtCookie` (web stack, after `AuthenticateWithJwtCookie`):
 

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Vtual\Http\Resources;
 
+use App\Domain\Vtual\Services\ManagementAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,8 +22,32 @@ class ManagementMemberResource extends JsonResource
             'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
-                'email' => $this->user->email,
+                'email' => $this->when($this->viewerMaySeeEmail($request), $this->user->email),
             ]),
         ];
+    }
+
+    private function viewerMaySeeEmail(Request $request): bool
+    {
+        $actor = $request->user();
+
+        if ($actor === null) {
+            return false;
+        }
+
+        if ((string) $actor->getAuthIdentifier() === (string) $this->user_id) {
+            return true;
+        }
+
+        if ($actor->can('view any vtual resource') || $actor->can('manage any vtual resource')) {
+            return true;
+        }
+
+        $this->loadMissing('management');
+        $role = $this->management !== null
+            ? app(ManagementAccessService::class)->roleFor($this->management, $actor)
+            : null;
+
+        return $role?->canManageMembers() ?? false;
     }
 }

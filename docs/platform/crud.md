@@ -100,7 +100,7 @@ Rules:
 
 - Null raw → null companions (not empty string).
 - Keep raw types for math / gateway / interop; companions are display-only additive (non-breaking).
-- Money always pairs with the currency field on the same payload (`currency`, `display_currency`, `settlement_currency`).
+- Money always pairs with the currency field on the same payload (`currency`, `display_currency`, `settlement_currency`). Staff-only money keys (purchase settlement/FX) still use the same companions **when emitted**; they are omitted for buyers — [security — response data minimization](security.md#response-data-minimization-mandatory).
 - Non-Resource array presenters (`UserPresenter`, upload session serializers, quota usage) call the same `*Presenter` classes.
 - **Do not** `number_format` / `diffForHumans` / ad-hoc byte math in Blade for API data.
 

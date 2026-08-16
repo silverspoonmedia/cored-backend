@@ -13,14 +13,14 @@ class MicrostockAiConfigTest extends TestCase
             config('microstock.ai.vision.endpoint'),
         );
         $this->assertSame('internal.vision', config('microstock.ai.vision.model'));
-        $this->assertNull(config('microstock.ai.vision.free_model'));
+        $this->assertSame('', config('microstock.ai.vision.free_model'));
 
         $this->assertSame(
             'https://ai-chat.spnd.uk/api/chat/completions',
             config('microstock.ai.thinking.endpoint'),
         );
         $this->assertSame('internal.thinking', config('microstock.ai.thinking.model'));
-        $this->assertNull(config('microstock.ai.thinking.free_model'));
+        $this->assertSame('', config('microstock.ai.thinking.free_model'));
 
         $this->assertSame('url', config('microstock.ai.vision_image.delivery'));
         $this->assertSame('ai_1024', config('microstock.ai.vision_image.variant_kind'));
@@ -33,10 +33,11 @@ class MicrostockAiConfigTest extends TestCase
         $contents = file_get_contents(base_path('config/microstock.php'));
 
         $this->assertIsString($contents);
-        $this->assertStringContainsString("env('MICROSTOCK_AI_VISION_TIMEOUT', 1500)", $contents);
-        $this->assertStringContainsString("env('MICROSTOCK_AI_THINKING_TIMEOUT', 1500)", $contents);
-        $this->assertStringContainsString("env('MICROSTOCK_AI_VISION_MODEL_FREE')", $contents);
-        $this->assertStringContainsString("env('MICROSTOCK_AI_THINKING_MODEL_FREE')", $contents);
+        $this->assertStringContainsString("'timeout' => 1500", $contents);
+        $this->assertStringNotContainsString("env('MICROSTOCK_AI_VISION_TIMEOUT'", $contents);
+        $this->assertStringNotContainsString("env('MICROSTOCK_AI_THINKING_TIMEOUT'", $contents);
+        $this->assertStringNotContainsString("env('MICROSTOCK_AI_VISION_MODEL_FREE'", $contents);
+        $this->assertStringNotContainsString("env('MICROSTOCK_AI_THINKING_MODEL_FREE'", $contents);
         $this->assertStringContainsString("'internal.vision'", $contents);
         $this->assertStringContainsString("'internal.thinking'", $contents);
     }

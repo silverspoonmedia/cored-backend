@@ -334,7 +334,7 @@ class EnvManagementStressTest extends TestCase
             'APP_KEY="base64:'.base64_encode(random_bytes(32)).'"',
             'APP_PREVIOUS_KEYS=""',
             'JWT_SECRET="orphan-jwt"',
-            'FILE_HOSTING_UPLOAD_PROXY_URL="http://proxy.test"',
+            'ORPHAN_PROBE_KEY="x"',
         ]));
 
         $this->artisan('env:curate', ['--no-interaction' => true])
@@ -342,7 +342,7 @@ class EnvManagementStressTest extends TestCase
 
         $env = File::get($this->profiles->envPath());
         $this->assertStringContainsString('# --- Extra keys (not in template) ---', $env);
-        $this->assertStringContainsString('FILE_HOSTING_UPLOAD_PROXY_URL="http://proxy.test"', $env);
+        $this->assertStringContainsString('ORPHAN_PROBE_KEY="x"', $env);
     }
 
     public function test_h12_force_past_backup_allows_second_operation_leaving_stale_pending(): void

@@ -91,15 +91,29 @@ class PresentationResourceTest extends TestCase
         $purchase->created_at = now();
         $purchase->updated_at = now();
 
-        $payload = (new ServicePurchaseResource($purchase))->toArray(Request::create('/'));
+        $buyerPayload = (new ServicePurchaseResource($purchase))->toArray(Request::create('/'));
 
-        $this->assertSame(12.5, $payload['display_amount']);
-        $this->assertSame('USD 12.50', $payload['display_amount_formatted']);
-        $this->assertSame('USD 15.00', $payload['list_amount_formatted']);
-        $this->assertSame('USD 2.50', $payload['credit_amount_formatted']);
-        $this->assertSame('USD 12.50', $payload['charge_amount_formatted']);
-        $this->assertSame(200000.0, $payload['settlement_amount']);
-        $this->assertSame('IDR 200,000.00', $payload['settlement_amount_formatted']);
+        $this->assertSame(12.5, $buyerPayload['display_amount']);
+        $this->assertSame('USD 12.50', $buyerPayload['display_amount_formatted']);
+        $this->assertSame('USD 15.00', $buyerPayload['list_amount_formatted']);
+        $this->assertSame('USD 2.50', $buyerPayload['credit_amount_formatted']);
+        $this->assertSame('USD 12.50', $buyerPayload['charge_amount_formatted']);
+        $this->assertArrayNotHasKey('settlement_amount', $buyerPayload);
+        $this->assertArrayNotHasKey('settlement_currency', $buyerPayload);
+
+        $staffRequest = Request::create('/');
+        $staffRequest->setUserResolver(fn () => new class
+        {
+            public function can(string $ability): bool
+            {
+                return $ability === 'view invoice';
+            }
+        });
+
+        $staffPayload = (new ServicePurchaseResource($purchase))->toArray($staffRequest);
+
+        $this->assertSame(200000.0, $staffPayload['settlement_amount']);
+        $this->assertSame('IDR 200,000.00', $staffPayload['settlement_amount_formatted']);
     }
 
     public function test_product_activation_resource_date_companions(): void

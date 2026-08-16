@@ -617,6 +617,7 @@
                 "discord_connections_failed": "Discordのリンクアカウントを読み込めませんでした。Discordの再接続をお試しください。",
                 "discord_no_match": "Discordプロフィールに一致する認証済みYouTubeまたはTwitchアカウントが見つかりませんでした。",
                 "discord_verify_unsupported_platform": "このプラットフォームではDiscord検証は利用できません。",
+                "channel_missing": "クレーム証明チャンネルがありません。",
                 "max_pending": "保留中のクレームが既に :max 件あります。1 件キャンセルするか検証を完了してください。",
                 "pending_success": "保留中のクレームを読み込みました。",
                 "superseded": "このクリエイターの別クレームが既に完了したため、このクレームは閉じられました。"
@@ -2806,7 +2807,8 @@
                 "vtual.credential.failover.enabled": "認証失敗が繰り返された後、次の認証情報にローテーションします。",
                 "vtual.claim.accept_anyway_enabled": "検証が不確実でもユーザーがクレームを承認できるようにします。",
                 "vtual.claim.discord_verify_enabled": "DiscordにリンクされたYouTube/Twitchアカウントの照合による孤児クレーム検証を許可します。",
-                "vtual.channel_claim.discord_verify_enabled": "プロフィール所有者がDiscord連携のYouTube/Twitch照合でチャネル追加クレームを検証できるようにします。"
+                "vtual.channel_claim.discord_verify_enabled": "プロフィール所有者がDiscord連携のYouTube/Twitch照合でチャネル追加クレームを検証できるようにします。",
+                "identity.discord.connections_snapshot_max_age_minutes": "検証ミス時にライブDiscord API更新を行うまで、保存済みDiscord接続スナップショットを信頼する時間。"
             },
             "options": {
                 "platform": {
@@ -3000,6 +3002,7 @@
             "claim_discord_verify_button": "Discordで検証",
             "claim_discord_verified": "Discord検証が完了しました。",
             "claim_discord_verify_failed": "Discord検証を完了できませんでした。",
+            "claim_missing_channel": "クレームするチャンネルを選択してください。",
             "claim_discord_panel_hint": "この vTuber プロフィールの任意のアクティブチャンネルを、Discord にリンクされた認証済み YouTube/Twitch と照合します（バイオ用に選んだ証明チャンネルだけではありません）。",
             "claim_verify_button": "検証",
             "claim_verify_queued": "検証をキューに追加しました。結果は後でこのページを再読み込みしてください。",
@@ -3045,6 +3048,10 @@
             "handle": "ハンドル",
             "profile": "プロフィール",
             "profile_help": "YouTube: UC… ID、@ハンドル、またはチャンネル URL。Twitch: ユーザー ID、ログイン、または twitch.tv/login URL。正規 ID と現在のハンドルに解決されます。",
+            "profile_help_youtube": "YouTube: UC チャンネル ID、@ハンドル、または youtube.com/… のプロフィール URL。",
+            "profile_help_twitch": "Twitch: 数値ユーザー ID、ログイン、または twitch.tv/… のプロフィール URL。",
+            "profile_placeholder_youtube": "UC… / @handle / https://youtube.com/@handle",
+            "profile_placeholder_twitch": "12345678 / login / https://twitch.tv/login",
             "refresh_channel": "検証 / 更新",
             "archive_channel": "チャンネルをアーカイブ",
             "restore_channel": "チャンネルを復元",

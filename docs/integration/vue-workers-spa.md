@@ -47,7 +47,7 @@ Because every `/api/*` call is one Worker invocation, the stack has explicit quo
 - **Shell hydrate** — `useShellHydrate.hydrateShell()` (called from `AppLayout` on mount) batches `auth/me` + `navigation/menus`(sidebar+navbar) + `notifications/unread-count` into one invocation, then seeds each store via `setUser` / `seedTree` / `seedUnreadCount`. Per-entry success check; any failure leaves the owning composable's lazy loader as the fallback (`AppNavbar` skips `loadNavigation('navbar')` / `loadBellData()` only when `isTreeLoaded` / `hasSeededUnread`). Dashboard reads `auth/me` from the seeded store — no extra fetch. `resetShellHydration()` exists for re-hydration after logout.
 - **File Hosting hydrate** — `useFhHydrate.hydrateFileHosting()` batches the four independent FH reads (`file-hosting/browse`, `file-hosting/quota`, `file-hosting/workspaces`, `microstock/slots`) into one invocation from `FileHostingView.loadAll()`. Failed subs return `null` and fall back to their own loader (`loadBrowse` toasts; quota/workspaces/slots stay silent). The dependent stage (`microstock/billing`, collection status) still runs after — it gates on `browse.workspace.kind === 'microstock'`. Realtime (`.listing.changed` / `.quota.changed`) and polling fallback are unchanged — batching only trims the initial hydrate.
 - **Worker cache headers** — `server/index.ts` stamps `cache-control` on reference-data GET responses (`navigation/menus`, `services/options`, `currencies*`): `private, max-age=60/300` when a `spa_jwt` session is present, `public` when not. The browser serves repeats from disk cache without touching the Worker.
-- **JWT TTL 240** — `config/jwt.php` `'ttl' => env('JWT_TTL', 240)`. A 401 refresh round-trip costs 3 invocations; longer TTL makes that rare. Refresh rotation + blacklist still bound token theft.
+- **JWT TTL 240** — `config/jwt.php` `'ttl' => 240` (Tier B; runtime `setting_config('jwt.ttl')` / Settings → Platform `platform.jwt.ttl`). A 401 refresh round-trip costs 3 invocations; longer TTL makes that rare. Refresh rotation + blacklist still bound token theft.
 - **Polling backoff** — `useListingLiveUpdate` (base 90s) and the `AppNavbar` bell (base 120s) double their interval after 5 unchanged polls (cap 5 min), reset on any change. Echo events remain the primary channel; polling is the degraded fallback.
 - **Per-domain batch hydrate** — Each multi-fetch view has a `use{Domain}Hydrate` composable that fans its reads into one `POST /api/v1/batch` invocation. Shared `bodyOf` / `dataOf` helpers live in `src/api/batch.ts`; every field is `null` on per-entry failure so the view falls back to its individual loader.
 - **Project-wide realtime** — Dedicated `ShouldBroadcastNow` events per domain: Navigation (`menu.tree.changed`), Service (`service.catalog.changed`, `service.purchase.changed`), Inference (`inference.catalog.changed`), Settings (`settings.group.changed`), ErrorLog (`log.error.recorded`), ProductActivation (`product.activation.changed`), DomainAccess (`domain.visibility.changed`), RBAC (`rbac.role.permission.changed`), PaymentGateway admin (`invoice.list.changed`), Microstock billing (`microstock.billing.changed` rides the FH user channel). Each SPA view subscribes via a `use{Domain}Realtime` or `useAdminRealtime` composable; `useListingLiveUpdate` polling stays as the degraded fallback when Echo is not connected.
@@ -124,8 +124,12 @@ TS types in `src/api/types.ts` must match Laravel API Resources exactly. No tran
 - **snake_case everywhere** — Laravel returns snake_case, TS uses snake_case. No camelCase conversion.
 - **API envelope** — every response is `{ status: 'success'|'error', message: string, data: T }`. The `data` field is the payload.
 - **Date triplets** — date fields come as `{ key (ISO string), key_formatted (human-readable), key_human (relative) }`. All three are pre-formatted strings; never call `new Date(apiField)`.
-- **Nullable fields** — Laravel may return `null` where a type expects a string. Use `string | null` in TS types.
+- **Nullable / omitted fields** — Laravel may return `null` where a type expects a string, **or omit the key** when the viewer is not allowed to see it (per-viewer Resources). Use `string | null` and `?` optional keys. Never assume staff-only fields exist on buyer/guest payloads.
 - **UUIDs** — all model IDs are UUID v7 strings (see [platform/identifiers.md](../platform/identifiers.md)). Never type IDs as `number`.
+
+### Per-viewer payloads
+
+API Resources are a **per-viewer** contract, not a dump of the model. Guest/public endpoints use dedicated Resources (`PublicHostedFileResource`). Staff-only fields (`view invoice`, storage topology, claim tokens, member emails, upstream AI cost, FX/settlement) are optional in `src/api/types.ts`. Backend rules: [platform/security.md](../platform/security.md#response-data-minimization-mandatory).
 
 ### Pagination shapes
 
@@ -400,7 +404,6 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 | Var | Purpose |
 |-----|---------|
 | `MONOLITH_API_ORIGIN` | Worker-only. Monolith origin (no `/api/v1` suffix, no trailing slash). Wrangler `vars` + `.dev.vars`. **Not** bundled into the browser. Empty → Worker 503. |
-| `JWT_TTL` (Monolith) | Access-token minutes (default `240`). Longer window = fewer Worker refresh round-trips. |
 | `VITE_API_BASE_URL` | Must stay **empty** so calls stay same-origin `/api/v1` (Worker mask + BFF cookie). `.env.local` wins. An absolute prefix bypasses the Worker — hostname leak **and** no `spa_jwt`. |
 | `VITE_PUSHER_APP_KEY` | Pusher app key (required for Echo — must match Monolith `PUSHER_APP_KEY`) |
 | `VITE_PUSHER_APP_CLUSTER` | Pusher cluster (default `mt1`) |
@@ -611,7 +614,7 @@ CSS for these components is in `src/assets/order-invoice-show.css`, ported from 
 - `PaymentStatusHero` with purchase status and payment status badges
 - `PaymentSteps` indicator (current step based on invoice status)
 - Grace banner alert when entitlement is in grace period
-- Sidebar card with: quantity editor (addon only, same `purchase_max_quantity` cap), change type, list/credit/display/settlement amounts, FX rate, period, entitlement status, stack quantity equation
+- Sidebar card with: quantity editor (addon only, same `purchase_max_quantity` cap), change type, list/credit/display amounts, period, entitlement status, stack quantity equation. Settlement + FX rows only when those keys are present (`view invoice` staff) — buyer JSON omits them; see [Per-viewer payloads](#per-viewer-payloads).
 - `CheckoutPanel` for invoice payment
 
 ## Non-blocking consumer decision findings

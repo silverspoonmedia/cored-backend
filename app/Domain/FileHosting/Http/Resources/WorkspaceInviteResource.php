@@ -12,6 +12,11 @@ class WorkspaceInviteResource extends JsonResource
 {
     use FormatsPresentation;
 
+    public function __construct($resource, private readonly bool $includeToken = false)
+    {
+        parent::__construct($resource);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -23,7 +28,7 @@ class WorkspaceInviteResource extends JsonResource
             'email' => $this->email,
             'role' => $this->role instanceof \BackedEnum ? $this->role->value : $this->role,
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,
-            'token' => $this->token,
+            'token' => $this->when($this->includeToken, $this->token),
             ...$this->dateFields('expires_at', $this->expires_at),
             ...$this->dateFields('accepted_at', $this->accepted_at),
             ...$this->dateFields('created_at', $this->created_at),

@@ -36,7 +36,7 @@ class MidtransInvoiceSynchronizerRealtimeTest extends TestCase
 
     public function test_sync_dispatches_status_changed_on_paid(): void
     {
-        Event::fake([InvoiceStatusChanged::class]);
+        Event::fake();
 
         $purchase = ServicePurchase::factory()->pending()->create([
             'settlement_amount' => 100000,
@@ -73,7 +73,7 @@ class MidtransInvoiceSynchronizerRealtimeTest extends TestCase
 
     public function test_sync_does_not_dispatch_when_status_unchanged(): void
     {
-        Event::fake([InvoiceStatusChanged::class]);
+        Event::fake();
 
         $purchase = ServicePurchase::factory()->pending()->create([
             'settlement_amount' => 100000,

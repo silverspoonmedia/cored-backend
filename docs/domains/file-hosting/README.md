@@ -185,6 +185,7 @@ fileAccessible(file) =
 ```
 
 - Guest public show/download (API + `/s/f` / `/s/d`) uses `fileAccessible` / `folderAccessible`. Free or grace storage owners get **404** `share_not_found` even if DB still says `anyone_with_link` (downgrade kills links without rewriting rows).
+- Guest API payloads are **not** the owner `HostedFileResource` / `FolderResource`. `PublicHostedFileResource` / `PublicFolderResource` expose id, name, mime, size (files) — no `path` / `disk` / `checksum` / `user_id` / `owner_id`. Authenticated `HostedFileResource` gates storage topology (`path`, `disk`, `checksum`, `region`) to the storage owner or staff (`view any` / `manage any` file hosting). Workspace invite `token` is only on the create response (`WorkspaceInviteResource` `includeToken: true`). Member emails are owner/admin/staff only.
 - Enabling `anyone_with_link` (single + bulk file/folder) requires paid owner; free/grace → **422** `public_share_requires_paid`. Setting `private` always allowed.
 - Mutations never public.
 - **Hash blocklist (DMCA):** enabling `anyone_with_link` on a file whose `checksum` is on `file_hosting_hash_blocklist` → **422** `public_share_blocked_hash` (single + bulk; bulk rejected when **any** targeted file is blocked). Guest show/download returns **404** for a blocked checksum even if the file was already public. See [Content checksum (sha256) + hash blocklist (DMCA)](#content-checksum-sha256--hash-blocklist-dmca).

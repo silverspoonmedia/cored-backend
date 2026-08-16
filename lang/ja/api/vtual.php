@@ -54,6 +54,7 @@ return [
         'discord_connections_failed' => 'Discordのリンクアカウントを読み込めませんでした。Discordの再接続をお試しください。',
         'discord_no_match' => 'Discordプロフィールに一致する認証済みYouTubeまたはTwitchアカウントが見つかりませんでした。',
         'discord_verify_unsupported_platform' => 'このプラットフォームではDiscord検証は利用できません。',
+        'channel_missing' => 'クレーム証明チャンネルがありません。',
         'max_pending' => '保留中のクレームが既に :max 件あります。1 件キャンセルするか検証を完了してください。',
         'pending_success' => '保留中のクレームを読み込みました。',
         'superseded' => 'このクリエイターの別クレームが既に完了したため、このクレームは閉じられました。',

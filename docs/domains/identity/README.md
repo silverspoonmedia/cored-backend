@@ -57,7 +57,7 @@ Tier A (env only) vs operational settings: [configuration-policy.md](../../platf
 
 | Registry key | Config path | Notes |
 |--------------|-------------|-------|
-| `platform.jwt.ttl` | `jwt.ttl` | Access token lifetime (minutes). Blade cookie max-age tracks this. Default 60. |
+| `platform.jwt.ttl` | `jwt.ttl` | Access token lifetime (minutes). Blade cookie max-age tracks this. Config literal **240**; a `system_settings` row (Settings → Platform) wins when present. |
 | `platform.jwt.refresh_ttl` | `jwt.refresh_ttl` | Refresh window from `iat`. Default 20160 (~14d). |
 | `platform.jwt.remember_ttl` | `jwt.remember_ttl` | Access TTL when `remember_me=true` on login |
 | `platform.jwt.refresh_skew` | `jwt.refresh_skew` | Minutes before `exp` when Blade proactively refreshes. Default 5. |

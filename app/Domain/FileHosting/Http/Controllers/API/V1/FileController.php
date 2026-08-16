@@ -9,6 +9,7 @@ use App\Domain\FileHosting\Http\Requests\RenameFileRequest;
 use App\Domain\FileHosting\Http\Requests\SearchRequest;
 use App\Domain\FileHosting\Http\Requests\SetVisibilityRequest;
 use App\Domain\FileHosting\Http\Resources\HostedFileResource;
+use App\Domain\FileHosting\Http\Resources\PublicHostedFileResource;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Services\FileService;
 use App\Http\Controllers\Controller;
@@ -80,7 +81,7 @@ class FileController extends Controller
         $model = $this->files->publicShow($file);
 
         return $this->successResponse(
-            $this->resolveResource(new HostedFileResource($model)),
+            $this->resolveResource(new PublicHostedFileResource($model)),
             __('api/file-hosting.file_show_success'),
         );
     }

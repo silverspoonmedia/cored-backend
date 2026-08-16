@@ -91,7 +91,7 @@ class WorkspaceController extends Controller
         );
 
         return $this->successResponse(
-            $this->resolveResource(new WorkspaceInviteResource($invite)),
+            $this->resolveResource(new WorkspaceInviteResource($invite, includeToken: true)),
             __('api/file-hosting.workspace.invite_sent'),
             201,
         );

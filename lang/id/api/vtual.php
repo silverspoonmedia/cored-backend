@@ -54,6 +54,7 @@ return [
         'discord_connections_failed' => 'Tidak dapat memuat akun tertaut Discord. Coba hubungkan ulang Discord.',
         'discord_no_match' => 'Tidak ada akun YouTube atau Twitch terverifikasi yang cocok di profil Discord Anda.',
         'discord_verify_unsupported_platform' => 'Verifikasi Discord tidak tersedia untuk platform ini.',
+        'channel_missing' => 'Channel bukti klaim tidak ada.',
         'max_pending' => 'Anda sudah punya :max claim pending. Batalkan salah satu atau selesaikan verifikasi dulu.',
         'pending_success' => 'Daftar claim pending dimuat.',
         'superseded' => 'Claim lain untuk creator ini sudah selesai. Claim ini ditutup.',

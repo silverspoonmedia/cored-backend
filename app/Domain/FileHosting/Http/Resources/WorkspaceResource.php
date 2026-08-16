@@ -39,11 +39,26 @@ class WorkspaceResource extends JsonResource
             'owner' => $this->whenLoaded('owner', fn () => [
                 'id' => $this->owner->id,
                 'name' => $this->owner->name,
-                'email' => $this->owner->email,
+                'email' => $this->when($this->viewerMaySeeMemberEmail($request), $this->owner->email),
             ]),
             'members' => $this->whenLoaded('activeMembers', fn () => WorkspaceMemberResource::collection($this->activeMembers)),
             ...$this->dateFields('created_at', $this->created_at),
             ...$this->dateFields('updated_at', $this->updated_at),
         ];
+    }
+
+    private function viewerMaySeeMemberEmail(Request $request): bool
+    {
+        $actor = $request->user();
+
+        if ($actor === null) {
+            return false;
+        }
+
+        if ($actor->can('view any file hosting resource') || $actor->can('manage any file hosting resource')) {
+            return true;
+        }
+
+        return app(WorkspaceAccessService::class)->canManageMembers($this->resource, $actor);
     }
 }

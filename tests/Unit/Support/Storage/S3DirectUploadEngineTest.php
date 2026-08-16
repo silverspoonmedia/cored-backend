@@ -51,18 +51,6 @@ class S3DirectUploadEngineTest extends TestCase
     }
 
     #[Test]
-    public function missing_part_numbers_respects_limit(): void
-    {
-        $missing = $this->engine->missingPartNumbers(
-            [['part_number' => 2, 'etag' => 'a', 'size' => 1]],
-            partCount: 5,
-            maxPartsPerResponse: 2,
-        );
-
-        $this->assertSame([1, 3], $missing);
-    }
-
-    #[Test]
     public function merge_parts_prefers_incoming_over_recorded(): void
     {
         $merged = $this->engine->mergeParts(

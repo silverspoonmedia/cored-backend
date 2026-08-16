@@ -65,7 +65,7 @@ Platform settings page shows **read-only secret status** via `php artisan config
 
 | Key | Config fallback | Notes |
 |-----|-----------------|-------|
-| `platform.jwt.ttl` | `jwt.ttl` | New cookies only |
+| `platform.jwt.ttl` | `jwt.ttl` | Default **240** (`config/jwt.php`). New cookies only. |
 | `platform.jwt.refresh_ttl` | `jwt.refresh_ttl` | |
 | `platform.jwt.remember_ttl` | `jwt.remember_ttl` | |
 | `platform.jwt.refresh_skew` | `jwt.refresh_skew` | |

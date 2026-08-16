@@ -152,7 +152,7 @@ See [identity](../domains/identity/README.md#configuration) and [blade-admin sil
 
 ## Testing environment
 
-PHPUnit: `APP_ENV=testing`, sqlite, CSRF bypass for web proxy tests. Prefer `composer test`. See [database-safety.md](database-safety.md).
+PHPUnit: `APP_ENV=testing` (`phpunit.xml` `force="true"`), sqlite, CSRF bypass for web proxy tests. Tests that `putenv` another env (e.g. bootstrapping a second app) must restore process env in `tearDown`. Prefer `composer test`. See [database-safety.md](database-safety.md).
 
 Payment: `checkout_mode` derived from active channels at runtime — see [payment-gateway](../domains/payment-gateway/README.md). After editing `Routing_Price.yaml`, run `php artisan payments:sync-routing-policy` (or use the admin **Sync routing policy** button). Channel fee bearer and reporting timezone are in **Settings → Platform**. Encryption env: [encryption](../domains/payment-gateway/encryption.md).
 

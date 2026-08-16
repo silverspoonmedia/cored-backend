@@ -450,7 +450,7 @@ Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Micros
 | GET | `slots` | Slot status snapshot (`activated`, `used`, `limit`, `can_create`) |
 | GET | `billing` | Prepaid AI credit balance + per-analysis estimate |
 | GET | `billing/ledger` | Paginated prepaid ledger (`BillingLedgerService`) |
-| GET | `billing/usage-events` | Paginated per-HTTP-call usage detail |
+| GET | `billing/usage-events` | Paginated per-HTTP-call usage detail. Customer `BillingUsageEventResource` omits `provider_cost_usd` and `rate_snapshot` (upstream cost). Admin variant keeps them. |
 | POST | `workspaces` | Create an additional Microstock workspace (slot-gated) |
 | POST | `assets/{file}/analyze` | Queue AI metadata analysis (202) |
 | GET | `assets/{file}/metadata` | Read current metadata row |

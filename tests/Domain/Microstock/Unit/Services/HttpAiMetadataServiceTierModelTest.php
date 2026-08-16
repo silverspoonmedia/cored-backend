@@ -7,6 +7,7 @@ use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Models\AiUsageEvent;
 use App\Domain\Microstock\Services\HttpAiMetadataService;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
+use Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -21,6 +22,8 @@ class HttpAiMetadataServiceTierModelTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->seed(InferenceCatalogSeeder::class);
 
         config([
             'microstock.ai.http_retries' => 0,

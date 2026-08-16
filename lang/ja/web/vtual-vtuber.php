@@ -65,6 +65,7 @@ return [
     'claim_discord_verify_button' => 'Discordで検証',
     'claim_discord_verified' => 'Discord検証が完了しました。',
     'claim_discord_verify_failed' => 'Discord検証を完了できませんでした。',
+    'claim_missing_channel' => 'クレームするチャンネルを選択してください。',
     'claim_discord_panel_hint' => 'この vTuber プロフィールの任意のアクティブチャンネルを、Discord にリンクされた認証済み YouTube/Twitch と照合します（バイオ用に選んだ証明チャンネルだけではありません）。',
     'claim_verify_button' => '検証',
     'claim_verify_queued' => '検証をキューに追加しました。結果は後でこのページを再読み込みしてください。',

@@ -189,6 +189,7 @@ return [
         'vtual.claim.accept_anyway_enabled' => '検証が不確実でもユーザーがクレームを承認できるようにします。',
         'vtual.claim.discord_verify_enabled' => 'DiscordにリンクされたYouTube/Twitchアカウントの照合による孤児クレーム検証を許可します。',
         'vtual.channel_claim.discord_verify_enabled' => 'プロフィール所有者がDiscord連携のYouTube/Twitch照合でチャネル追加クレームを検証できるようにします。',
+        'identity.discord.connections_snapshot_max_age_minutes' => '検証ミス時にライブDiscord API更新を行うまで、保存済みDiscord接続スナップショットを信頼する時間。',
     ],
     'options' => [
         'platform' => [

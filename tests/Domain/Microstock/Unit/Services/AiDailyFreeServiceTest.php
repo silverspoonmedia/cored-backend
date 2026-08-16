@@ -14,6 +14,7 @@ use App\Domain\Microstock\Services\AiBillingService;
 use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Microstock\Services\AiDailyFreeService;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
+use Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -33,6 +34,7 @@ class AiDailyFreeServiceTest extends TestCase
     {
         parent::setUp();
         $this->seedRolesAndPermissions();
+        $this->seed(InferenceCatalogSeeder::class);
         $this->user = $this->userWithRole('User', 'daily-free@example.com');
         config([
             'microstock.daily_free.enabled' => true,

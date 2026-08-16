@@ -617,6 +617,7 @@
                 "discord_connections_failed": "Tidak dapat memuat akun tertaut Discord. Coba hubungkan ulang Discord.",
                 "discord_no_match": "Tidak ada akun YouTube atau Twitch terverifikasi yang cocok di profil Discord Anda.",
                 "discord_verify_unsupported_platform": "Verifikasi Discord tidak tersedia untuk platform ini.",
+                "channel_missing": "Channel bukti klaim tidak ada.",
                 "max_pending": "Anda sudah punya :max claim pending. Batalkan salah satu atau selesaikan verifikasi dulu.",
                 "pending_success": "Daftar claim pending dimuat.",
                 "superseded": "Claim lain untuk creator ini sudah selesai. Claim ini ditutup."
@@ -2806,7 +2807,8 @@
                 "vtual.credential.failover.enabled": "Rotasi ke kredensial berikutnya setelah kegagalan auth berulang.",
                 "vtual.claim.accept_anyway_enabled": "Izinkan pengguna menerima klaim meski verifikasi tidak meyakinkan.",
                 "vtual.claim.discord_verify_enabled": "Izinkan verifikasi klaim yatim dengan mencocokkan akun YouTube/Twitch tertaut di Discord.",
-                "vtual.channel_claim.discord_verify_enabled": "Izinkan pemilik profil memverifikasi klaim channel via akun YouTube/Twitch tertaut di Discord."
+                "vtual.channel_claim.discord_verify_enabled": "Izinkan pemilik profil memverifikasi klaim channel via akun YouTube/Twitch tertaut di Discord.",
+                "identity.discord.connections_snapshot_max_age_minutes": "Berapa lama snapshot koneksi Discord dipercaya sebelum kegagalan verifikasi memicu refresh API Discord langsung."
             },
             "options": {
                 "platform": {
@@ -3000,6 +3002,7 @@
             "claim_discord_verify_button": "Verifikasi dengan Discord",
             "claim_discord_verified": "Verifikasi Discord selesai.",
             "claim_discord_verify_failed": "Verifikasi Discord tidak dapat diselesaikan.",
+            "claim_missing_channel": "Pilih channel untuk diklaim.",
             "claim_discord_panel_hint": "Kami mencocokkan channel aktif mana pun di profil vTuber ini dengan akun YouTube/Twitch terverifikasi di profil Discord Anda (bukan hanya channel bukti yang dipilih untuk token bio).",
             "claim_verify_button": "Verifikasi",
             "claim_verify_queued": "Verifikasi diantrekan. Muat ulang halaman ini nanti untuk hasilnya.",

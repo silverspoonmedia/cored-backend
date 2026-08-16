@@ -94,7 +94,7 @@ return [
     |
     */
 
-    'ttl' => (int) env('JWT_TTL', 240),
+    'ttl' => 240,
 
     /*
     |--------------------------------------------------------------------------
@@ -102,8 +102,9 @@ return [
     |--------------------------------------------------------------------------
     |
     | Minutes before access-token `exp` when RefreshJwtCookie proactively issues
-    | a new JWT and rewrites the HttpOnly auth_token cookie. Keeps short JWT_TTL
-    | while active browser sessions slide within JWT_REFRESH_TTL.
+    | a new JWT and rewrites the HttpOnly auth_token cookie. Keeps a short
+    | jwt.ttl (Settings → Platform, platform.jwt.ttl) while active browser
+    | sessions slide within jwt.refresh_ttl.
     |
     */
     'refresh_skew' => 5,

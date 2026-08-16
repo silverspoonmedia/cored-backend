@@ -3,6 +3,7 @@
 namespace App\Domain\ActivityLog\Http\Resources;
 
 use App\Domain\ActivityLog\Support\CryptoActivityPropertyPresenter;
+use App\Domain\ErrorLog\Support\ErrorContextRedactor;
 use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Models\Menu;
 use App\Http\Resources\Concerns\FormatsPresentation;
@@ -33,7 +34,9 @@ class ActivityLogResource extends JsonResource
             'subject_id' => $this->subject_id,
             'subject_label' => $this->resolveSubjectLabel(),
             'causer' => $this->resolveCauser(),
-            'attribute_changes' => $this->attribute_changes?->toArray() ?? [],
+            'attribute_changes' => app(ErrorContextRedactor::class)->redact(
+                $this->arrayValue($this->attribute_changes),
+            ),
             'properties' => $this->resolveProperties(),
             ...$this->dateFields('created_at', $this->created_at),
         ];
@@ -44,7 +47,9 @@ class ActivityLogResource extends JsonResource
      */
     private function resolveProperties(): array
     {
-        $properties = $this->properties?->toArray() ?? [];
+        $properties = app(ErrorContextRedactor::class)->redact(
+            $this->arrayValue($this->properties),
+        );
 
         if ($this->log_name === 'crypto') {
             return CryptoActivityPropertyPresenter::forApi($properties);
@@ -101,5 +106,17 @@ class ActivityLogResource extends JsonResource
             'name' => $causer->name,
             'email' => $causer->email,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function arrayValue(mixed $value): array
+    {
+        if ($value instanceof \Illuminate\Contracts\Support\Arrayable) {
+            return $value->toArray();
+        }
+
+        return is_array($value) ? $value : [];
     }
 }

@@ -250,6 +250,8 @@ class CollectionLifecycleTest extends TestCase
 
     public function test_lock_allows_empty_hint_and_transitions_status(): void
     {
+        config(['microstock.daily_free.enabled' => true]);
+
         $ws = app(MicrostockService::class)->workspaceFor($this->owner);
         $emptyFolder = $this->makeFolder($this->owner, $ws->id);
 

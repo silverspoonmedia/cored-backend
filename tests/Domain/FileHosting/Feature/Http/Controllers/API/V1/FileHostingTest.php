@@ -809,10 +809,15 @@ class FileHostingTest extends TestCase
             ->assertJsonPath('data.visibility', 'anyone_with_link')
             ->assertJsonPath('data.share_url', route('file-hosting.public.files.show', $file->id));
 
-        $this->getJson('/api/v1/file-hosting/public/files/'.$file->id)
+        $public = $this->getJson('/api/v1/file-hosting/public/files/'.$file->id)
             ->assertOk()
             ->assertJsonPath('data.name', 'shared.pdf')
-            ->assertJsonPath('data.view_count', 1);
+            ->json('data');
+
+        $this->assertArrayNotHasKey('path', $public);
+        $this->assertArrayNotHasKey('disk', $public);
+        $this->assertArrayNotHasKey('checksum', $public);
+        $this->assertArrayNotHasKey('user_id', $public);
 
         $download = $this->getJson('/api/v1/file-hosting/public/files/'.$file->id.'/download')
             ->assertOk()
@@ -927,8 +932,12 @@ class FileHostingTest extends TestCase
             ->json('data');
 
         $this->assertSame($folder->id, $browse['folder']['id']);
+        $this->assertArrayNotHasKey('owner_id', $browse);
+        $this->assertArrayNotHasKey('user_id', $browse['folder']);
         $this->assertCount(1, $browse['files']);
         $this->assertSame('inside.txt', $browse['files'][0]['name']);
+        $this->assertArrayNotHasKey('path', $browse['files'][0]);
+        $this->assertArrayNotHasKey('disk', $browse['files'][0]);
 
         $this->getJson('/api/v1/file-hosting/public/files/'.$file->id)
             ->assertOk()

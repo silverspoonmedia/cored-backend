@@ -31,7 +31,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [localization.md](platform/localization.md) | `en` / `id` / `ja` task rules |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |
-| [security.md](platform/security.md) | OWASP audit procedure + auth activity coverage |
+| [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization** |
 | [tooling.md](platform/tooling.md) | Laravel Pint wrapper |
 
 ## Domains (`app/Domain/*`)

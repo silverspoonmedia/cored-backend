@@ -189,6 +189,7 @@ return [
         'vtual.claim.accept_anyway_enabled' => 'Izinkan pengguna menerima klaim meski verifikasi tidak meyakinkan.',
         'vtual.claim.discord_verify_enabled' => 'Izinkan verifikasi klaim yatim dengan mencocokkan akun YouTube/Twitch tertaut di Discord.',
         'vtual.channel_claim.discord_verify_enabled' => 'Izinkan pemilik profil memverifikasi klaim channel via akun YouTube/Twitch tertaut di Discord.',
+        'identity.discord.connections_snapshot_max_age_minutes' => 'Berapa lama snapshot koneksi Discord dipercaya sebelum kegagalan verifikasi memicu refresh API Discord langsung.',
     ],
     'options' => [
         'platform' => [

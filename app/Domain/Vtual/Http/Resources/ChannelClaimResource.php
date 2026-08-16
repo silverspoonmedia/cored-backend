@@ -16,6 +16,8 @@ class ChannelClaimResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $actor = $request->user();
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -26,7 +28,10 @@ class ChannelClaimResource extends JsonResource
             'handle' => $this->handle,
             'display_name' => $this->display_name,
             'url' => $this->url,
-            'token' => $this->token,
+            'token' => $this->when(
+                $actor !== null && (string) $actor->getAuthIdentifier() === (string) $this->user_id,
+                $this->token,
+            ),
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,
             'closed_reason' => $this->closed_reason instanceof \BackedEnum
                 ? $this->closed_reason->value
@@ -46,7 +51,14 @@ class ChannelClaimResource extends JsonResource
             'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user?->id,
                 'name' => $this->user?->name,
-                'email' => $this->user?->email,
+                'email' => $this->when(
+                    $actor !== null && (
+                        (string) $actor->getAuthIdentifier() === (string) $this->user_id
+                        || $actor->can('view any vtual resource')
+                        || $actor->can('manage any vtual resource')
+                    ),
+                    $this->user?->email,
+                ),
             ]),
             ...$this->dateFields('created_at', $this->created_at),
             ...$this->dateFields('updated_at', $this->updated_at),

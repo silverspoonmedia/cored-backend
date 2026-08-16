@@ -40,12 +40,12 @@ class HostedFileResource extends JsonResource
             'created_by' => $this->created_by,
             'folder_id' => $this->folder_id,
             'name' => $this->name,
-            'disk' => $this->disk,
-            'region' => RegionResolver::keyForDisk($this->disk),
-            'path' => $this->path,
+            'disk' => $this->when($this->viewerMaySeeStorage($request), $this->disk),
+            'region' => $this->when($this->viewerMaySeeStorage($request), RegionResolver::keyForDisk($this->disk)),
+            'path' => $this->when($this->viewerMaySeeStorage($request), $this->path),
             ...$this->byteFields('size', $this->size),
             'mime' => $this->mime,
-            'checksum' => $this->checksum,
+            'checksum' => $this->when($this->viewerMaySeeStorage($request), $this->checksum),
             'is_hash_blocked' => app(HashBlocklistService::class)->isFileBlocked($this->resource),
             'visibility' => $visibility,
             'share_url' => $shareUrl,
@@ -77,5 +77,20 @@ class HostedFileResource extends JsonResource
             ...$this->dateFields('created_at', $this->created_at),
             ...$this->dateFields('updated_at', $this->updated_at),
         ];
+    }
+
+    private function viewerMaySeeStorage(Request $request): bool
+    {
+        $actor = $request->user();
+
+        if ($actor === null) {
+            return false;
+        }
+
+        if ($actor->can('view any file hosting resource') || $actor->can('manage any file hosting resource')) {
+            return true;
+        }
+
+        return (string) $actor->getAuthIdentifier() === (string) $this->user_id;
     }
 }

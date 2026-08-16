@@ -23,30 +23,31 @@ class InvoiceResource extends JsonResource
         $this->loadMissing('paymentChannelRouteSnapshot.paymentGateway');
         $feeBasis = app(InvoiceChannelFeeService::class)->feeBasisFields($this->paymentChannelRouteSnapshot);
         $routeSnapshot = $this->paymentChannelRouteSnapshot;
+        $staff = $this->viewerIsInvoiceStaff($request);
 
         return [
             'id' => $this->id,
             'invoiceable_id' => $this->invoiceable_id,
-            'invoiceable_type' => $this->invoiceable_type,
+            'invoiceable_type' => $this->when($staff, $this->invoiceable_type),
             'invoiceable_status' => $this->resolveInvoiceableStatus(),
-            'payment_gateway_id' => $this->payment_gateway_id,
+            'payment_gateway_id' => $this->when($staff, $this->payment_gateway_id),
             'payment_gateway' => $this->whenLoaded('paymentGateway', fn () => [
                 'id' => $this->paymentGateway?->id,
                 'name' => $this->paymentGateway?->name,
                 'display_name' => $this->paymentGateway?->display_name,
             ]),
             'invoice_number' => $this->invoice_number,
-            'external_transaction_id' => $this->external_transaction_id,
+            'external_transaction_id' => $this->when($staff, $this->external_transaction_id),
             'payment_method' => $this->payment_method,
             'payment_channel_code' => $this->payment_channel_code,
-            'payment_channel_route_id' => $this->payment_channel_route_id,
-            'payment_channel_route_snapshot_id' => $this->payment_channel_route_snapshot_id,
-            'payment_channel_route_snapshot' => $this->whenLoaded('paymentChannelRouteSnapshot', fn () => $routeSnapshot
-                ? (new PaymentChannelRouteSnapshotResource($routeSnapshot))->resolve()
-                : null),
-            'payment_channel_route' => $this->whenLoaded('paymentChannelRouteSnapshot', fn () => $routeSnapshot
-                ? (new PaymentChannelRouteSnapshotResource($routeSnapshot))->resolve()
-                : null),
+            'payment_channel_route_id' => $this->when($staff, $this->payment_channel_route_id),
+            'payment_channel_route_snapshot_id' => $this->when($staff, $this->payment_channel_route_snapshot_id),
+            'payment_channel_route' => $this->when(
+                $staff && $this->relationLoaded('paymentChannelRouteSnapshot'),
+                fn () => $routeSnapshot
+                    ? (new PaymentChannelRouteSnapshotResource($routeSnapshot))->resolve()
+                    : null,
+            ),
             ...$this->moneyFields('subtotal', $this->subtotal, $currency),
             ...$this->moneyFields('payment_channel_fee', $this->payment_channel_fee, $currency),
             ...$feeBasis,
@@ -55,13 +56,18 @@ class InvoiceResource extends JsonResource
             'status' => $this->status,
             ...$this->dateFields('paid_at', $this->paid_at),
             ...$this->dateFields('expired_at', $this->expired_at),
-            ...$this->dateFields('withdrawable_at', $this->withdrawable_at),
-            'disbursement_status' => $this->disbursement_status?->value ?? $this->disbursement_status,
-            ...$this->dateFields('disbursed_at', $this->disbursed_at),
+            ...($staff ? $this->dateFields('withdrawable_at', $this->withdrawable_at) : []),
+            'disbursement_status' => $this->when($staff, $this->disbursement_status?->value ?? $this->disbursement_status),
+            ...($staff ? $this->dateFields('disbursed_at', $this->disbursed_at) : []),
             ...$this->dateFields('created_at', $this->created_at),
             ...$this->dateFields('updated_at', $this->updated_at),
             'checkout_session' => app(InvoiceCheckoutInstructionResolver::class)->resolve($this->resource),
         ];
+    }
+
+    private function viewerIsInvoiceStaff(Request $request): bool
+    {
+        return $request->user()?->can('view invoice') ?? false;
     }
 
     /**

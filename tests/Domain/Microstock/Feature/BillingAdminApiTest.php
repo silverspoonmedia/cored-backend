@@ -129,6 +129,11 @@ class BillingAdminApiTest extends TestCase
             ->assertJsonCount(1, 'data.items')
             ->assertJsonPath('data.items.0.user.email', 'owner@example.com')
             ->assertJsonPath('data.items.0.billing_source', 'daily_free');
+
+        $item = $this->actingAsJwt($admin)
+            ->getJson('/api/v1/admin/microstock/billing/usage-events')
+            ->json('data.items.0');
+        $this->assertArrayHasKey('provider_cost_usd', $item);
     }
 
     private function collection(User $user): Folder

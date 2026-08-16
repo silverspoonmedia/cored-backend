@@ -53,6 +53,26 @@ Implementation: `app/Events/Auth/*`, listeners `LogAuthenticationEvents`, `Recor
 
 Never log passwords, TOTP secrets, or recovery codes.
 
+## Response data minimization (mandatory)
+
+An API JSON body is a **per-viewer contract**, not a serialization of the Eloquent model. Two viewers hitting the same URL (or a nested Resource on a different URL) can receive different keys. Precedent: `BillingUsageEventResource` vs `AdminBillingUsageEventResource`; `PublicHostedFileResource` vs `HostedFileResource`.
+
+### Rules
+
+1. Gate sensitive keys with `$this->when($request->user()?->can(...))` **or** split Resources. Do not “hide it in the SPA” while the JSON still contains it.
+2. Guest / unauthenticated endpoints must not reuse owner Resources. Dedicated public variants only.
+3. Never emit:
+   - credential secrets / envelope plaintext
+   - live accept or claim **tokens** to anyone except the token owner (create-invite response is the exception for workspace invites)
+   - upstream provider cost / rate snapshots to customers
+   - FX / settlement internals to buyers (`view invoice` staff only)
+   - other users’ emails except owner/manager/staff (or the member viewing themselves)
+   - storage `path` / `disk` / `checksum` / `region` except storage owner or file-hosting staff
+4. Activity log `properties` / `attribute_changes` go through `ErrorContextRedactor` (same keys as error-log context). Crypto rows still mask `kms_key_id`.
+5. Every new list/show endpoint needs: one **wrong-viewer 403** test and one **sensitive field absent** test. Helpers: `Tests\Concerns\AssertsPayloadHygiene`.
+
+Authz (permission / policy) is the first wall. Field gating is the second — a nested Resource on an owner-scoped URL still leaks if it dumps staff columns.
+
 Historical assessment detail: [archive/auth-activity-assessment.md](../archive/auth-activity-assessment.md).
 
 ## Related

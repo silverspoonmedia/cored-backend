@@ -9,7 +9,8 @@ use App\Domain\FileHosting\Http\Requests\RenameFolderRequest;
 use App\Domain\FileHosting\Http\Requests\SetVisibilityRequest;
 use App\Domain\FileHosting\Http\Requests\StoreFolderRequest;
 use App\Domain\FileHosting\Http\Resources\FolderResource;
-use App\Domain\FileHosting\Http\Resources\HostedFileResource;
+use App\Domain\FileHosting\Http\Resources\PublicFolderResource;
+use App\Domain\FileHosting\Http\Resources\PublicHostedFileResource;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Services\FolderService;
 use App\Http\Controllers\Controller;
@@ -83,11 +84,10 @@ class FolderController extends Controller
         $data = $this->folders->publicBrowse($folder);
 
         return $this->successResponse([
-            'owner_id' => $data['owner_id'],
-            'folder' => $this->resolveResource(new FolderResource($data['folder'])),
+            'folder' => $this->resolveResource(new PublicFolderResource($data['folder'])),
             'breadcrumb' => $data['breadcrumb'],
-            'folders' => $this->resolveResource(FolderResource::collection($data['folders'])),
-            'files' => $this->resolveResource(HostedFileResource::collection($data['files'])),
+            'folders' => $this->resolveResource(PublicFolderResource::collection($data['folders'])),
+            'files' => $this->resolveResource(PublicHostedFileResource::collection($data['files'])),
         ], __('api/file-hosting.browse_success'));
     }
 

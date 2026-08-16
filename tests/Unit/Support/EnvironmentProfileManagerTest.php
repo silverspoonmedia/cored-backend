@@ -19,7 +19,7 @@ class EnvironmentProfileManagerTest extends TestCase
     {
         parent::setUp();
 
-        $this->sandbox = storage_path('framework/testing-env-manager-'.uniqid());
+        $this->sandbox = sys_get_temp_dir().DIRECTORY_SEPARATOR.'testing-env-manager-'.uniqid();
         File::makeDirectory($this->sandbox, recursive: true);
 
         $storage = $this->sandbox.DIRECTORY_SEPARATOR.'storage';

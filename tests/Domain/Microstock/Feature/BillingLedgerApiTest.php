@@ -145,6 +145,13 @@ class BillingLedgerApiTest extends TestCase
             ->assertJsonCount(1, 'data.items')
             ->assertJsonPath('data.items.0.file_name', 'asset.jpg')
             ->assertJsonPath('data.items.0.billing_source', 'prepaid');
+
+        $item = $this->actingAsJwt($this->owner)
+            ->getJson('/api/v1/microstock/billing/usage-events')
+            ->json('data.items.0');
+
+        $this->assertArrayNotHasKey('provider_cost_usd', $item);
+        $this->assertArrayNotHasKey('rate_snapshot', $item);
     }
 
     public function test_usage_events_isolates_users(): void

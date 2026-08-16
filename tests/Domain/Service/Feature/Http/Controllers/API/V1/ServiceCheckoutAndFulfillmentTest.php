@@ -56,7 +56,6 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.display_currency', 'USD')
             ->assertJsonPath('data.display_amount', 24.95)
-            ->assertJsonPath('data.settlement_currency', 'IDR')
             ->assertJsonPath('data.invoice.currency', 'IDR')
             ->assertJsonPath('data.invoice.status', 'pending');
 
@@ -64,6 +63,7 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
             'user_id' => $user->id,
             'service_id' => $service->id,
             'status' => 'pending',
+            'settlement_currency' => 'IDR',
         ]);
     }
 
@@ -79,7 +79,7 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
         $service = Service::factory()->fileHostingAddon100Gb()->create();
         ServicePrice::factory()->usd(5)->create(['service_id' => $service->id]);
 
-        $this->actingAsJwt($user)
+        $payload = $this->actingAsJwt($user)
             ->postJson('/api/v1/services/'.$service->id.'/checkout', [
                 'currency' => 'USD',
                 'quantity' => 3,
@@ -87,7 +87,13 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.quantity', 3)
             ->assertJsonPath('data.display_amount', 15)
-            ->assertJsonPath('data.settlement_amount', 270000);
+            ->json('data');
+
+        $this->assertArrayNotHasKey('settlement_amount', $payload);
+        $this->assertDatabaseHas('service_purchases', [
+            'id' => $payload['id'],
+            'settlement_amount' => 270000,
+        ]);
     }
 
     public function test_main_plan_checkout_rejects_quantity_greater_than_one(): void

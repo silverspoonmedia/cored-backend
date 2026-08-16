@@ -43,6 +43,7 @@ class VtuberProfileApiTest extends TestCase
         parent::setUp();
         $this->seedRolesAndPermissions();
         $this->seed(VtualRoleSeeder::class);
+        config(['vtual.channel_lifecycle.cooldown_seconds' => 0]);
         $this->creators = app(CreatorService::class);
         $this->contents = app(ContentService::class);
         $this->channels = app(ChannelService::class);

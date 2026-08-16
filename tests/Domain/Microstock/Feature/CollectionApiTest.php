@@ -51,6 +51,8 @@ class CollectionApiTest extends TestCase
 
     public function test_lock_endpoint_allows_empty_hint_and_locks(): void
     {
+        config(['microstock.daily_free.enabled' => true]);
+
         $emptyFolder = $this->collection();
         $this->actingAsJwt($this->owner)
             ->postJson("/api/v1/microstock/collections/{$emptyFolder->id}/lock", ['billing_mode' => 'free'])
