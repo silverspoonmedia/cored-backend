@@ -58,9 +58,9 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | API | Same `/api/v1/*` endpoints as Blade — second API client, no business logic in SPA |
 | Auth | HttpOnly `spa_jwt` on the Vue-Workers origin (Worker BFF). JS does not store the JWT. Direct Monolith `/api/v1` hits without the Worker's `X-SPA-Origin` header are audit-logged and rejected with 403 outside local/testing (`RequireSpaOrigin`). Blade uses HttpOnly `auth_token` on `APP_URL`. |
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware (distinct from Blade's web-middleware `/broadcasting/auth` with cookie + CSRF) |
-| Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), Worker cache headers on reference-data GETs, JWT TTL 240 min, polling backoff — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
+| Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), covering shell bootstrap, File Hosting browse/workspace detail, navigation and notification edit, users, services, payments, inference, microstock, and vTual multi-fetch views; Worker cache headers on reference-data GETs, JWT TTL 240 min, polling backoff — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
 | Type alignment | TS types in `src/api/types.ts` match Laravel API Resources exactly — snake_case, no transform layer |
-| i18n | `vue-i18n` (`en` / `id` / `ja`) converted from Laravel PHP lang files |
+| i18n | `vue-i18n` (`en` / `id` / `ja`) JSON locales converted from Laravel PHP lang files; parity and hardcoded-fallback guards run with `npm run check:i18n`; generic API errors use locale keys and server messages remain preferred |
 | UI parity | AdminLTE 4 / Bootstrap 5 / jQuery / Select2 (same libraries as Blade) |
 | Realtime | Laravel Echo + Pusher, with polling fallback on every surface |
 
@@ -106,7 +106,7 @@ Route coverage matches Blade. Product-surface appearance gaps from waves 1–3 p
 - **404:** last-route `/:pathMatch(.*)*` → `NotFoundView` inside `AppLayout` (`requiresAuth`)
 - **Realtime:** bell, file hosting (6 events), payments (invoice + routing), vTual claim — all with polling fallback
 - **Cross-tab:** auth refresh coordination + notification read-state
-- **i18n:** `en` / `id` / `ja`
+- **i18n:** contextual `en` / `id` / `ja` translations, JSON key/placeholder parity, hardcoded fallback detection, reactive runtime switching, localized generic API errors, and locale-aware number/date formatting
 
 ### Accepted divergences (measured against Blade)
 

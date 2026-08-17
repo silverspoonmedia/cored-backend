@@ -9,7 +9,7 @@ return [
     'users' => 'ユーザー管理',
     'navigation' => 'ナビゲーション',
     'menus' => 'メニュー一覧',
-    'menus_trashed' => '削除済みメニュー',
+    'menus_trashed' => 'ゴミ箱のメニュー',
     'notifications' => '通知',
     'profile' => 'プロフィール',
     'password' => 'パスワード変更',

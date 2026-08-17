@@ -66,7 +66,7 @@ All new code must survive long-lived Swoole worker processes, even though Octane
 
 ## 5. Localization (mandatory when touching user-facing copy)
 
-Any change that adds or modifies user-facing text (Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, DB content shown to users) must include translations for **all** supported locales (`en`, `id`, `ja`) in the same task/PR. Use `__('…')` with application-owned files under `lang/{locale}/`, or Spatie translatable fields for DB content. Full checklist: [docs/platform/localization.md](../platform/localization.md#task-rule-required).
+Any change that adds or modifies user-facing text (Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, DB content shown to users) must include translations for **all** supported locales (`en`, `id`, `ja`) in the same task/PR. For SPA-facing copy, update `monolith-vue-workers/src/i18n/locales/{en,id,ja}.json` in the sibling repository and run `npm run check:i18n`. Use `__('…')` with application-owned files under `lang/{locale}/`, or Spatie translatable fields for DB content. Full backend checklist: [docs/platform/localization.md](../platform/localization.md#task-rule-required). SPA runtime, fallback, and `useI18n()` context rules: [vue-workers-spa.md](../integration/vue-workers-spa.md#i18n-porting-notes).
 
 ## 6. Configuration & secrets (mandatory)
 

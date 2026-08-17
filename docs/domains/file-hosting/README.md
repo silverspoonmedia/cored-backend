@@ -552,6 +552,10 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 | GET | `/api/v1/file-hosting/public/files/{id}/download` |
 | GET | `/api/v1/file-hosting/public/folders/{id}` |
 
+## Vue-Workers SPA consumer
+
+The sibling Vue-Workers SPA is separate from the Blade Vue island described below. It consumes `/api/v1/file-hosting/*` through the Worker BFF and uses `useFhHydrate` for initial reads. `hydrateFileHosting()` batches browse, quota, workspaces, and Microstock slots; `hydrateWorkspaceDetail()` batches workspaces plus members and activity for workspace detail. Per-entry failures fall back to the individual loaders. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
+
 ## Web Blade
 
 | Route name | Auth | Purpose |

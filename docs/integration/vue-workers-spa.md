@@ -43,14 +43,14 @@ One browser `fetch` to the SPA origin `/api/*` is **one** invocation. The Worker
 
 Because every `/api/*` call is one Worker invocation, the stack has explicit quota savers:
 
-- **Batch fan-in** — `POST /api/v1/batch` (`routes/api/v1/batch.php`, `BatchController`) dispatches up to **10** read-only (`GET`/`HEAD`) sub-requests through the kernel in one HTTP call, each keeping its own auth/permission middleware. SPA wrapper: `batch()` in `src/api/client.ts`. Throttled `30,1`; mutations are rejected (`422` per entry). Use it for multi-widget hydrates (dashboard) instead of N parallel fetches.
-- **Shell hydrate** — `useShellHydrate.hydrateShell()` (called from `AppLayout` on mount) batches `auth/me` + `navigation/menus`(sidebar+navbar) + `notifications/unread-count` into one invocation, then seeds each store via `setUser` / `seedTree` / `seedUnreadCount`. Per-entry success check; any failure leaves the owning composable's lazy loader as the fallback (`AppNavbar` skips `loadNavigation('navbar')` / `loadBellData()` only when `isTreeLoaded` / `hasSeededUnread`). Dashboard reads `auth/me` from the seeded store — no extra fetch. `resetShellHydration()` exists for re-hydration after logout.
-- **File Hosting hydrate** — `useFhHydrate.hydrateFileHosting()` batches the four independent FH reads (`file-hosting/browse`, `file-hosting/quota`, `file-hosting/workspaces`, `microstock/slots`) into one invocation from `FileHostingView.loadAll()`. Failed subs return `null` and fall back to their own loader (`loadBrowse` toasts; quota/workspaces/slots stay silent). The dependent stage (`microstock/billing`, collection status) still runs after — it gates on `browse.workspace.kind === 'microstock'`. Realtime (`.listing.changed` / `.quota.changed`) and polling fallback are unchanged — batching only trims the initial hydrate.
+- **Batch fan-in** — `POST /api/v1/batch` (`routes/api/v1/batch.php`, `BatchController`) dispatches up to **10** read-only (`GET`/`HEAD`) sub-requests through the kernel in one HTTP call, each keeping its own auth/permission middleware. SPA wrapper: `batch()` in `src/api/client.ts`; `BatchSubRequest` rejects mutation methods at the client type level. Throttled `30,1`; mutations are rejected (`422` per entry). Use it for multi-widget hydrates instead of N parallel fetches.
+- **Shell hydrate** — `useShellHydrate.hydrateShell()` (called from `AppLayout` and awaited by the auth route guard) batches five reads: `auth/me`, sidebar menus, navbar menus, `notifications/unread-count`, and `notifications?display_mode=query&limit=5`. It seeds `setUser`, `seedTree`, `seedUnreadCount`, and `seedList`; `AppNavbar` uses the seeded recent list for its bell dropdown. Each entry is checked independently. A failed entry leaves its owning lazy loader as fallback (`AppNavbar` skips navigation/list/count fetches only when the corresponding seed exists). Dashboard reads `auth/me` from the seeded store — no extra fetch. `resetShellHydration()` exists for re-hydration after logout.
+- **File Hosting hydrate** — `useFhHydrate.hydrateFileHosting()` batches the four independent FH reads (`file-hosting/browse`, `file-hosting/quota`, `file-hosting/workspaces`, `microstock/slots`) into one invocation from `FileHostingView.loadAll()`. `hydrateWorkspaceDetail(null)` batches the workspace list; `hydrateWorkspaceDetail(workspaceId)` batches workspaces, members, and up to 50 activity rows for `FileHostingWorkspacesView`. Failed subs return `null` and fall back to `fetchWorkspaces`, `fetchMembers`, `fetchActivity`, or the owning loader. The dependent stage (`microstock/billing`, collection status) still runs after — it gates on `browse.workspace.kind === 'microstock'`. Realtime (`.listing.changed` / `.quota.changed`) and polling fallback are unchanged — batching only trims initial hydrate.
 - **Worker cache headers** — `server/index.ts` stamps `cache-control` on reference-data GET responses (`navigation/menus`, `services/options`, `currencies*`): `private, max-age=60/300` when a `spa_jwt` session is present, `public` when not. The browser serves repeats from disk cache without touching the Worker.
 - **JWT TTL 240** — `config/jwt.php` `'ttl' => 240` (Tier B; runtime `setting_config('jwt.ttl')` / Settings → Platform `platform.jwt.ttl`). A 401 refresh round-trip costs 3 invocations; longer TTL makes that rare. Refresh rotation + blacklist still bound token theft.
 - **Polling backoff** — `useListingLiveUpdate` (base 90s) and the `AppNavbar` bell (base 120s) double their interval after 5 unchanged polls (cap 5 min), reset on any change. Echo events remain the primary channel; polling is the degraded fallback.
-- **Per-domain batch hydrate** — Each multi-fetch view has a `use{Domain}Hydrate` composable that fans its reads into one `POST /api/v1/batch` invocation. Shared `bodyOf` / `dataOf` helpers live in `src/api/batch.ts`; every field is `null` on per-entry failure so the view falls back to its individual loader.
-- **Project-wide realtime** — Dedicated `ShouldBroadcastNow` events per domain: Navigation (`menu.tree.changed`), Service (`service.catalog.changed`, `service.purchase.changed`), Inference (`inference.catalog.changed`), Settings (`settings.group.changed`), ErrorLog (`log.error.recorded`), ProductActivation (`product.activation.changed`), DomainAccess (`domain.visibility.changed`), RBAC (`rbac.role.permission.changed`), PaymentGateway admin (`invoice.list.changed`), Microstock billing (`microstock.billing.changed` rides the FH user channel). Each SPA view subscribes via a `use{Domain}Realtime` or `useAdminRealtime` composable; `useListingLiveUpdate` polling stays as the degraded fallback when Echo is not connected.
+- **Per-domain batch hydrate** — Current coverage: `useNavigationHydrate` (menu edit plus parent/role/include/exclude lookups), `useNotificationsHydrate` (audience edit plus assignable roles), `useUsersHydrate` (user, assignable roles, activity logs), `useServicesHydrate` (service/purchase plus options), `usePaymentsHydrate` (income overview/invoices), `useInferenceHydrate` (usage overview/events/model cards and provider/card detail), `useMicrostockHydrate` (billing/ledger, usage events, admin overview/events), and `useVtualHydrate` (profile, credentials, orphan edit, claim). Every helper uses `bodyOf()` and returns `null` for a failed entry so callers retain individual-loader fallback. `src/api/batch.ts` owns the unwrap contract: `bodyOf()` accepts only a status-200 `success` envelope; `dataOf()` returns its `data` or `null`. Batch transport failure rejects the call and callers fall back to their normal loaders. Only `GET`/`HEAD` subrequests are supported; maximum remains 10.
+- **Project-wide realtime** — Dedicated `ShouldBroadcastNow` events per domain: Navigation (`menu.tree.changed`), Service (`service.catalog.changed`, `service.purchase.changed`), Inference (`inference.catalog.changed`), Settings (`settings.group.changed`), ErrorLog (`log.error.recorded`), ProductActivation (`product.activation.changed`), DomainAccess (`domain.visibility.changed`), RBAC (`rbac.role.permission.changed`), PaymentGateway admin (`invoice.list.changed`), Microstock billing (`microstock.billing.changed` rides the FH user channel). Each SPA view subscribes via a `use{Domain}Realtime` or `useAdminRealtime` composable; `useListingLiveUpdate` polling stays as degraded fallback when Echo is not connected.
 
 Do **not** add a client fallback that naked-fetches the monolith host when the budget is tight — see the warning above.
 
@@ -154,6 +154,28 @@ Leave specialized chrome alone: `PaymentStatusHero` (`ois-status-*` + `data-paym
 
 The SPA uses `vue-i18n` with JSON locale files converted from Laravel PHP lang files.
 
+### Contextual localization policy
+
+English remains the reference locale. Indonesian and Japanese translations must be contextual and natural for the surface where they appear; literal word-for-word translations are not accepted. Review button labels, headings, table labels, status badges, toasts, validation, errors, explanatory copy, domain terminology, audience, and Japanese/Indonesian register separately. Keep machine-contract prompts and technical identifiers unchanged when they are not user-facing. Split keys when one source phrase serves different contexts.
+
+Translation workflow:
+
+1. Add or adjust the key in all three locale files in one change.
+2. Preserve Vue interpolation tokens, plural behavior, and API/DB identifier semantics.
+3. Use `computed()` or the current i18n translator for labels that must react to runtime locale changes; do not freeze translated arrays at module scope.
+4. Run `npm run check:i18n` after every translation batch. Treat English-duplicate output as review input, not automatic failure; allow technical terms, brands, codes, and machine-contract strings.
+5. Run `npm run type-check` and `npm run build` before handoff.
+
+### SPA localization guards
+
+`npm run check:i18n` checks key parity across `en`, `id`, and `ja`, Vue placeholder shape, malformed interpolation braces, suspicious Indonesian/Japanese values identical to English, and suspicious hardcoded user-facing fallback copy under `src/`. API fallback errors must use locale keys, with server messages preferred when present.
+
+Runtime locale switching updates `document.documentElement[lang]`, persisted preference, reactive labels, and locale-aware number/date formatting. Startup resolution is separate from backend `SetLocale`: the SPA checks supported `localStorage.locale`, then the first two characters of supported `navigator.language`, then falls back to `en`. `setLocale()` persists the choice and applies the HTML `lang` attribute; `window` and `document` access is guarded for SSR/tooling contexts. Backend requests still resolve authenticated user preference, then cookie, then `config('app.locale')`; do not assume both clients choose the same locale before synchronization.
+
+Use `Intl.NumberFormat` / `Intl.DateTimeFormat` with active locale; never call `toLocaleString()` without the application locale for user-facing values. API/DB labels must come from localized backend data or explicit SPA key mappings. Show raw codes only when they are technical identifiers. Machine prompts remain English only when English is part of the provider contract; user-facing labels and messages remain localized.
+
+`src/i18n/fallbacks.ts` owns generic fallback keys for validation failure, request failure, session expiry, confirmation copy, cancel, and save. `src/api/client.ts` calls `translateFallback(i18n.global.t, ...)` only when the API response has no usable message; server-provided messages always win. This module-level path must use the shared `i18n` instance, not `useI18n()`.
+
 ### Conversion rules
 
 | Laravel PHP | vue-i18n JSON |
@@ -183,6 +205,24 @@ All user-visible strings must be wrapped in `t()`. This includes:
 - Placeholders: `:placeholder="t('key')"`
 - Toast/error messages in catch blocks: `showError(t('key'))`
 - `prompt()` / `confirm()` dialog text
+
+## Notifications & confirmations (Sweetalert2)
+
+All user-facing notifications and confirmations go through Sweetalert2 via the shared helper `src/lib/swal.ts`; native `alert()`/`confirm()` and ad-hoc Bootstrap `alert` blocks are not allowed:
+
+- **Notifications** — keep calling `useAlert()` (`success`/`error`/`info`). Internally it renders Swal toasts (`success`/`info`, `top-end`, 4s auto-dismiss) and an error dialog (`error`, `ui.dialog.error_title` title, `ui.swal.ok` button). The API is unchanged so call sites need no updates.
+- **Confirmations** — use `confirmDialog({ title, text | html, confirmText, cancelText, icon, danger })` which resolves `true` on confirm. Never add a `ConfirmModal`-style `v-model` component for simple confirmations; the one remaining `ConfirmModal.vue` usage is the file-hosting rename form (an input form, not a confirmation) and stays until it gets a dedicated dialog.
+- **i18n** — shared labels live at `ui.swal.*` and `ui.dialog.*`; confirm bodies use their domain keys. All three locales must stay in parity.
+- **Layering** — `.swal2-container` is pinned to `z-index: 1090` in `src/assets/monolith-overrides.css`, above Bootstrap modals (1050/1055) and custom layers like `.fh-context-menu` / `.monolith-toast-container` (1080). Never lower it; any new fixed layer must stay below 1090.
+- **Toast/modal serialization** — swal2 removes the `swal2-toast-shown` body class unconditionally when a modal closes, which makes any still-open toast container fall back to full-viewport width. To prevent the race, `showErrorDialog()` and `confirmDialog()` call `closeActiveToast()` first (closes an open toast before firing the modal). Never fire a raw `Swal.fire` modal while a toast may be open — go through `src/lib/swal.ts`.
+- **Body classes** — never assign `document.body.className = ''`. Swal (and Bootstrap/OverlayScrollbars) store runtime classes on `<body>` (`swal2-toast-shown`, `swal2-shown`, `modal-open`). Layout classes (`login-page`, `layout-fixed`, `sidebar-expand-lg`, …) are toggled in `App.vue` via `classList.remove`/`add` only. Toast container sizing is also pinned in CSS (`.swal2-container:has(.swal2-popup.swal2-toast)`) so a missing body class cannot balloon the toast to full viewport.
+- **Redirect safety** — `useAlert().error(...)` returns a Promise. In flows that navigate away (`window.location.href = ...`, e.g. Discord/OAuth connect, file download), always `await showError(...)` inside the `catch` so the error dialog renders and is read before any unload instead of dying with the page.
+
+`useI18n()` is restricted to Vue component `setup()` (including composables called synchronously from setup). Router guards, Pinia-style stores, shell hydration, realtime callbacks, module-level services, and other ordinary functions may run without an active component instance. Those paths must import the shared `src/i18n` instance and call `i18n.global.t(...)`; they must not call `useI18n()`. This prevents `Must be called at the top of a setup function` from aborting initial router navigation. `main.ts` registers `router.onError()` for diagnostic reporting without hiding navigation failures, then mounts only after `router.isReady()` resolves. The auth guard performs shell hydration before protected route components mount.
+
+```ts
+const message = i18n.global.t('web.notifications.load_failed')
+```
 
 Options arrays that contain labels should be `computed()` so they re-render on locale change:
 

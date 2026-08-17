@@ -28,7 +28,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, Tier B settings cache contract, agent checklist |
 | [cache-policy.md](platform/cache-policy.md) | Project-wide forever Cache + invalidate; driver-agnostic; exceptions |
 | [settings.md](platform/settings.md) | Runtime operational settings (Web UI + DB overrides) |
-| [localization.md](platform/localization.md) | `en` / `id` / `ja` task rules |
+| [localization.md](platform/localization.md) | Backend `en` / `id` / `ja` rules, parity, and locale resolution; SPA guard: `monolith-vue-workers/npm run check:i18n` |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |
 | [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization** |
@@ -65,7 +65,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Document | Topic |
 |----------|-------|
 | [project-overview.md](integration/project-overview.md) | Monolith (API-first backend + in-repo Blade, kept until the SPA port succeeds) and Monolith-Vue-Workers (leading SPA frontend, separate project) — architecture, relationship, porting status |
-| [vue-workers-spa.md](integration/vue-workers-spa.md) | Leading Vue 3 SPA frontend (Cloudflare Workers, sibling repo) — API contracts, type alignment, i18n porting, component conventions |
+| [vue-workers-spa.md](integration/vue-workers-spa.md) | Leading Vue 3 SPA frontend (Cloudflare Workers, sibling repo) — API contracts, type alignment, i18n runtime/fallbacks, batch hydration, realtime, component conventions |
 
 ## Archive (not daily reading)
 

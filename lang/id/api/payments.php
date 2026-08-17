@@ -6,30 +6,30 @@ return [
     'pending' => 'Pembayaran sedang diproses.',
 
     'gateways' => [
-        'list' => 'Payment gateway berhasil diambil.',
-        'show' => 'Payment gateway berhasil diambil.',
+        'list' => 'Daftar payment gateway berhasil dimuat.',
+        'show' => 'Detail payment gateway berhasil dimuat.',
         'created' => 'Payment gateway berhasil dibuat.',
         'updated' => 'Payment gateway berhasil diperbarui.',
         'deleted' => 'Payment gateway berhasil dihapus.',
-        'inactive' => 'Payment gateway yang dipilih tidak aktif.',
-        'none_active' => 'Tidak ada payment gateway aktif yang dikonfigurasi.',
+        'inactive' => 'Payment gateway yang dipilih sedang tidak aktif.',
+        'none_active' => 'Belum ada payment gateway aktif yang dikonfigurasi.',
     ],
 
     'invoices' => [
-        'list' => 'Invoice berhasil diambil.',
-        'show' => 'Invoice berhasil diambil.',
-        'checkout_channels' => 'Channel pembayaran checkout dimuat.',
-        'checkout_channels_not_payable' => 'Invoice tidak terbuka untuk pembayaran.',
+        'list' => 'Daftar invoice berhasil dimuat.',
+        'show' => 'Detail invoice berhasil dimuat.',
+        'checkout_channels' => 'Channel pembayaran untuk checkout berhasil dimuat.',
+        'checkout_channels_not_payable' => 'Invoice ini belum dapat dibayar.',
     ],
 
     'income' => [
-        'overview' => 'Ringkasan pendapatan pembayaran dimuat.',
-        'invoices' => 'Invoice pendapatan pembayaran dimuat.',
+        'overview' => 'Ringkasan pendapatan pembayaran berhasil dimuat.',
+        'invoices' => 'Daftar invoice pendapatan pembayaran berhasil dimuat.',
     ],
 
     'subscriptions' => [
-        'list' => 'Langganan berhasil diambil.',
-        'show' => 'Langganan berhasil diambil.',
+        'list' => 'Daftar langganan berhasil dimuat.',
+        'show' => 'Detail langganan berhasil dimuat.',
         'created' => 'Langganan berhasil dibuat.',
         'updated' => 'Langganan berhasil diperbarui.',
         'deleted' => 'Langganan berhasil dihapus.',

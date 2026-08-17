@@ -204,6 +204,10 @@ iPaymu **requires** name + email + phone (`setBuyer`). Midtrans `customer_detail
 
 Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation guards, active-checkout cancellation when switching channels.
 
+## Vue-Workers SPA consumer
+
+The sibling Vue-Workers SPA uses `usePaymentsHydrate` for `PaymentsIncomeView`, batching income overview and invoice reads while retaining individual-loader fallback for failed entries. SPA invoice realtime and polling behavior belongs to [vue-workers-spa.md — Realtime](../../integration/vue-workers-spa.md#realtime-laravel-echo--pusher), not the Blade checkout path below.
+
 ## Blade / assets
 
 **Sidebar:** **Administration → Payments** contains Payment income (`payments.income.index`), Invoices (`invoices.index`), Subscriptions (`subscriptions.index`), Payment channels (`payment-channels.index`), and Payment gateways (`payment-gateways.index`). Parent and children are visible to Root, Admin, Moderator, and Management; endpoint permissions remain authoritative.

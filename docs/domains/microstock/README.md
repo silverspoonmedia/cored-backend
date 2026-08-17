@@ -466,6 +466,10 @@ Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Micros
 
 **Admin API** (`routes/api/v1/admin-microstock.php`): `auth:api` + in-controller `authorizePlatformBilling()` (Root / Admin / Moderator; Management excluded). Endpoints: `GET admin/microstock/billing/overview`, `GET admin/microstock/billing/usage-events`. See [Usage & balance UI](#usage--balance-ui).
 
+## Vue-Workers SPA consumer
+
+The sibling Vue-Workers SPA uses `useMicrostockHydrate` for user billing/ledger, usage events, and admin platform overview/usage events. These batch reads reduce Worker invocations without changing API billing or authorization; failed entries retain each view’s individual-loader fallback. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
+
 ## Web
 
 | Route name | Purpose |

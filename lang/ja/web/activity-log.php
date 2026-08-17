@@ -3,8 +3,8 @@
 return [
     'title' => 'アクティビティログ',
     'breadcrumb' => 'アクティビティログ',
-    'list_title' => '監査トレイル',
-    'show_title' => 'アクティビティ詳細',
+    'list_title' => '監査履歴',
+    'show_title' => 'アクティビティの詳細',
     'show_breadcrumb' => '詳細',
     'show_card_title' => 'エントリ #:id',
     'user_history_title' => '最近のアクティビティ',

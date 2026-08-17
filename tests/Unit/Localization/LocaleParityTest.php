@@ -98,6 +98,44 @@ class LocaleParityTest extends TestCase
         }
     }
 
+    public function test_application_owned_placeholders_match_reference_locale(): void
+    {
+        $locales = $this->supportedLocales();
+        $reference = $locales[0];
+
+        foreach ($this->applicationOwnedFiles($reference) as $relative) {
+            $referenceValues = $this->flattenValues(lang_path($reference.'/'.$relative));
+
+            foreach ($locales as $locale) {
+                if ($locale === $reference) {
+                    continue;
+                }
+
+                $path = lang_path($locale.'/'.$relative);
+                if (! is_file($path)) {
+                    continue;
+                }
+
+                $values = $this->flattenValues($path);
+                foreach ($referenceValues as $key => $referenceValue) {
+                    if (! is_string($referenceValue) || ! array_key_exists($key, $values) || ! is_string($values[$key])) {
+                        continue;
+                    }
+
+                    if (str_ends_with($relative, 'validation.php')) {
+                        continue;
+                    }
+
+                    $this->assertSame(
+                        $this->placeholders($referenceValue),
+                        $this->placeholders($values[$key]),
+                        "[{$locale}/{$relative}.{$key}] placeholders differ from [{$reference}]."
+                    );
+                }
+            }
+        }
+    }
+
     /**
      * @return array<int, string>
      */
@@ -151,6 +189,16 @@ class LocaleParityTest extends TestCase
      */
     private function flattenKeys(string $file): array
     {
+        return array_keys($this->flattenValues($file));
+    }
+
+    /**
+     * Dot-notation values of a PHP array lang file.
+     *
+     * @return array<string, mixed>
+     */
+    private function flattenValues(string $file): array
+    {
         $data = include $file;
 
         if (! is_array($data)) {
@@ -165,11 +213,23 @@ class LocaleParityTest extends TestCase
             for ($depth = 0; $depth <= $iterator->getDepth(); $depth++) {
                 $segments[] = $iterator->getSubIterator($depth)->key();
             }
-            $out[] = implode('.', $segments);
+            $out[implode('.', $segments)] = $value;
         }
 
-        sort($out);
+        ksort($out);
 
         return $out;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function placeholders(string $value): array
+    {
+        preg_match_all('/(?<![A-Za-z0-9_]):[A-Za-z_][A-Za-z0-9_]*/', $value, $matches);
+        $placeholders = array_unique($matches[0]);
+        sort($placeholders);
+
+        return $placeholders;
     }
 }

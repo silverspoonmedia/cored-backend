@@ -141,6 +141,10 @@ The Vue-Workers SPA mirrors this pattern in `src/composables/useNotifications.ts
 
 Forever key `notification_type_settings.snapshot`; seeder / `syncRoles` / `syncUsers` flush it. The snapshot stores **plain primitives** (`type → { notify_subject_user, roles[], users[] }`), **never hydrated Eloquent models**. With `CACHE_STORE=database` (or redis) cached values are serialized; caching model graphs there means a class/relation change or cross-host autoload mismatch deserializes into `__PHP_Incomplete_Class`, violating the `Collection` return type and throwing a `TypeError` on the next emit (observed on `account_updated` during `PUT /api/v1/users/{id}`). Model-returning methods (`findByType`/`read`/`listAll`) query the DB fresh; only `resolveAudience` reads the primitive snapshot.
 
+## Vue-Workers SPA consumer
+
+The sibling Vue-Workers SPA uses `useNotificationsHydrate` for notification-audience edit, batching the audience and assignable-role reads. Shell hydration also seeds the sidebar/navbar-adjacent recent notification list and unread count; failed entries retain the bell’s individual loaders. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
+
 ## API / Web
 
 Viewer API endpoints:

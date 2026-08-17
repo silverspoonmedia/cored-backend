@@ -344,6 +344,10 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 | POST | `/channel-claims/{id}/cancel` | edit creator | Cancel pending channel claim |
 | GET | `/claims/pending` | manage any vtual resource | Staff pending creator claims queue |
 
+## Vue-Workers SPA consumer
+
+The sibling Vue-Workers SPA uses `useVtualHydrate` for profile show, platform credentials, orphan edit, and vTuber claim views. These are client-side batch hydrates over the `/api/v1/vtual/*` contract and are unrelated to backend platform API “hydrate” terminology. Each view preserves individual-loader fallback when a batch entry fails. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
+
 ## Web Blade
 
 > **Archived (2026-08):** legacy hub, standalone claims, and registry Blade UIs are parked under [`ui-archive.md`](ui-archive.md) (`routes/web/_archive/`, `resources/views/_archive/`). **Active below:** orphans, platform credentials, probe, vTuber read/claim, **owned profiles list + manage** (rebuilt — not restored from `_archive/`). Domain API unchanged. Active partial layout and inventory: [partial-manifest.md](../../web/partial-manifest.md) · [blade-admin — Partial layout](../../web/blade-admin.md#partial-and-component-layout).

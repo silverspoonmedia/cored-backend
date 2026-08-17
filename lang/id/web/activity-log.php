@@ -3,7 +3,7 @@
 return [
     'title' => 'Log aktivitas',
     'breadcrumb' => 'Log aktivitas',
-    'list_title' => 'Jejak audit',
+    'list_title' => 'Riwayat audit',
     'show_title' => 'Detail aktivitas',
     'show_breadcrumb' => 'Detail',
     'show_card_title' => 'Entri #:id',

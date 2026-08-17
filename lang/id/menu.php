@@ -6,10 +6,10 @@
  */
 return [
     'dashboard' => 'Dasbor',
-    'users' => 'Manajemen pengguna',
+    'users' => 'Pengelolaan pengguna',
     'navigation' => 'Navigasi',
     'menus' => 'Daftar menu',
-    'menus_trashed' => 'Menu terhapus',
+    'menus_trashed' => 'Menu di sampah',
     'notifications' => 'Notifikasi',
     'profile' => 'Profil',
     'password' => 'Ubah kata sandi',
