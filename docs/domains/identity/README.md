@@ -50,7 +50,7 @@ Tier A (env only) vs operational settings: [configuration-policy.md](../../platf
 |------------------|-------|
 | `JWT_SECRET` | HS256 signing secret (env) |
 | `HCAPTCHA_SITEKEY`, `HCAPTCHA_SECRET` | hCaptcha credentials (env) |
-| `SPA_URL` | Vue-Workers public origin. OAuth return_to allowlist. Empty disables SPA OAuth return. |
+| `SPA_URL` | Vue-Workers public origin. OAuth `return_to` allowlist. Non-empty also mints password-reset, email-verify, File Hosting `share_url`, and iPaymu hosted return/cancel onto that origin (`App\Support\SpaPublicUrl`). Empty keeps Blade / signed-API URLs and disables SPA OAuth return. |
 | `AUTH_GUARD=api` | Default API guard |
 
 **Settings → Platform** (`system_settings`; runtime `setting_config()`):
@@ -85,6 +85,17 @@ Login, 2FA login, and register all inject the `rm` claim via `AuthService::custo
 ### hCaptcha
 
 When enabled: login, register, forgot-password, two-factor login require `h-captcha-response`. Server: `HcaptchaVerifier` + Form Request trait. Blade: `<x-adminlte4::form.hcaptcha />` — see [web/blade-admin](../../web/blade-admin.md).
+
+### Public URLs (`SPA_URL`)
+
+`App\Support\SpaPublicUrl` is the single mint for browser-facing identity links when `config('services.spa.url')` is non-empty:
+
+| Notification | Empty `SPA_URL` | Set `SPA_URL` |
+|--------------|-----------------|---------------|
+| Password reset | Blade `password.reset` (`/reset-password/{token}?email=`) | `{SPA_URL}/reset-password?token=&email=` |
+| Email verify | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — HMAC still generated against the API route on `APP_URL`. The SPA page GETs that signed path through the Worker. Worker `MONOLITH_API_ORIGIN` must equal the `APP_URL` origin. |
+
+CORS `allowed_origins` is `APP_URL` + `SPA_URL` (`config/cors.php`). Same-origin Worker traffic does not use CORS. Details: [vue-workers-spa — Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url).
 
 ## Auth API (`/api/v1/auth/*`)
 
@@ -169,3 +180,4 @@ Feature/unit under `tests/Domain/Identity/`. Prefer `composer test -- --filter=�
 - [platform/identifiers.md](../../platform/identifiers.md)
 - [platform/api-routing.md](../../platform/api-routing.md)
 - [web/blade-admin.md](../../web/blade-admin.md)
+- [integration/vue-workers-spa.md](../../integration/vue-workers-spa.md) — SPA verify hop, `SPA_URL` minting

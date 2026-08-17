@@ -87,13 +87,13 @@ See [vue-workers-spa.md](vue-workers-spa.md) for the full integration contract.
 
 ## Porting status
 
-Route coverage matches Blade. Product-surface appearance gaps from waves 1–3 plus D polish (microstock lifecycle, public share wiring, invoice CSV blob, leftover i18n, FH/inference chrome) are closed. What is left vs Blade is accepted divergence (A/B/C), not missing pages.
+Route coverage matches Blade. Product-surface appearance gaps from waves 1–3 plus D polish (microstock lifecycle, public share wiring, invoice CSV blob, leftover i18n, FH/inference chrome) are closed. Public URL cutover (`SPA_URL` → Vue-Workers) and Worker deploy hardening are in place. What is left vs Blade is accepted divergence (A/B/C), not missing pages. Production still needs ops: set `SPA_URL`, Worker custom domain, hCaptcha pair, Pusher/Sockudo mirrors, FH CORS + `ETag`.
 
 ### What is ported
 
 - Guest + authenticated screens for all 11 domains (identity, navigation, notification, activity/error log, payments, service, inference, file hosting, vTual, product activations, domain access, settings, dashboard)
 - **Chrome:** i18n page titles + `{page} | Monolith` tab title, OverlayScrollbars sidebar, API-driven sidebar/navbar, breadcrumbs, DataTable chrome strings
-- **Auth:** login/register/forgot/reset/2FA with i18n labels; invisible hCaptcha when `VITE_HCAPTCHA_SITE_KEY` is set (`h-captcha-response`)
+- **Auth:** login/register/forgot/reset/2FA with i18n labels; signed email-verify hop at `/verify-email/:id/:hash` (Worker forwards HMAC to `APP_URL`); invisible hCaptcha when `VITE_HCAPTCHA_SITE_KEY` is set (`h-captcha-response`)
 - **File Hosting Drive UX:** `.fh-manager` browse (click=select / dblclick=open / shift-range / context / drag-move / search overlay / `FhIcon`); trash/show chrome; FH composables use the shared cookie client (no JWT in JS)
 - **Microstock lifecycle:** lock/describe chips, analyze/export/download CSV, review curator modal, `POST microstock/workspaces`, slot CTAs from `GET microstock/slots`
 - **Public share:** `/s/d` breadcrumb + file links to `/s/f` (`PublicLayout`)
@@ -102,7 +102,10 @@ Route coverage matches Blade. Product-surface appearance gaps from waves 1–3 p
 - **Admin hygiene:** invoice CSV via `getBlob()` on invoices **and** income (income export sends `status=paid` plus `paid_from`/`paid_to` from the date filters, same as Blade), i18n DataTable labels, 2FA copy keys, payment return stays authenticated at SPA `/payment/return|cancel` (not under `/apps`)
 - **Connected accounts:** `GET/DELETE profile/connections` + `GET auth/discord/authorize-url`; Discord callback stays on Monolith web and returns to the SPA when `SPA_URL` is set
 - **vTual profile Discord verify:** channel-claim Discord button + OAuth hop when Discord is not connected
-- **SPA shell:** authenticated routes under `/apps/*`; auth, `/s/*`, payment bounce at site root; Settings MenuSeeder names registered on the Vue router
+- **SPA shell:** authenticated routes under `/apps/*`; auth (including `/verify-email/:id/:hash`), `/s/*`, payment bounce at site root; Settings MenuSeeder names registered on the Vue router; DMCA blocklist is `file-hosting.blocklist.index.view`
+- **Public URLs:** when Monolith `SPA_URL` is set, reset/verify emails, FH `share_url`, and iPaymu hosted return/cancel mint onto the SPA; CORS allowlist is `APP_URL` + `SPA_URL`
+- **Notification deep links:** SPA resolves Blade `action_route` / `action_params` via `notificationTarget.ts`
+- **CI:** Vue-Workers GitHub Actions `type-check` → `check:i18n` → Vitest (Worker BFF helpers) → `build-only`
 - **404:** last-route `/:pathMatch(.*)*` → `NotFoundView` inside `AppLayout` (`requiresAuth`)
 - **Realtime:** bell, file hosting (6 events), payments (invoice + routing), vTual claim — all with polling fallback
 - **Cross-tab:** auth refresh coordination + notification read-state

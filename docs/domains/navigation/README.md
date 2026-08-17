@@ -163,6 +163,8 @@ Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module regi
 
 The sibling Vue-Workers SPA uses `useNavigationHydrate` in menu edit. It batches the menu record and selected parent, role, included-user, and excluded-user lookups through `/api/v1/batch`; failed entries fall back to the existing individual loaders. Shell sidebar and navbar seeds are documented in [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
 
+`NavTree` resolves `node.route + '.view'`, then `node.route`. MenuSeeder names stay Blade web names — do not rename seed rows to SPA-only aliases. DMCA Blocklist is `file-hosting.blocklist.index`; the SPA registers `file-hosting.blocklist.index.view` so the sidebar click works.
+
 ## Tests
 
 - `tests/Domain/Navigation/Unit/Repositories/Eloquent/MenuRepositoryTest.php` covers CRUD/ordering plus presentational `#` masking, presented-tree cache hits (no `menus` queries), epoch refresh after menu mutation, and per-user `forgetPresentedTreeFor`.

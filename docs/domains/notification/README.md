@@ -145,6 +145,8 @@ Forever key `notification_type_settings.snapshot`; seeder / `syncRoles` / `syncU
 
 The sibling Vue-Workers SPA uses `useNotificationsHydrate` for notification-audience edit, batching the audience and assignable-role reads. Shell hydration also seeds the sidebar/navbar-adjacent recent notification list and unread count; failed entries retain the bell’s individual loaders. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
 
+API payloads keep Blade web `action_route` + `action_params` (`users.edit`, `{ user }`). The SPA does not invent a second action map: `src/utils/notificationTarget.ts` resolves `${route}.view` and remaps `user` / `modelCard` → Vue `:id`. Bell and `/apps/notifications` navigate there; unknown names fall back to the notifications list. See [vue-workers-spa — Notification deep links](../../integration/vue-workers-spa.md#notification-deep-links).
+
 ## API / Web
 
 Viewer API endpoints:

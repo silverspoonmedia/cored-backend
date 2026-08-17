@@ -73,6 +73,10 @@ An API JSON body is a **per-viewer contract**, not a serialization of the Eloque
 
 Authz (permission / policy) is the first wall. Field gating is the second — a nested Resource on an owner-scoped URL still leaks if it dumps staff columns.
 
+## CORS
+
+`config/cors.php` `allowed_origins` is `APP_URL` + `SPA_URL` (trimmed, unique, empty dropped). No `*`. Same-origin Vue-Workers `/api/*` traffic never hits Laravel CORS; this allowlist only matters if a browser talks to the Laravel host directly.
+
 Historical assessment detail: [archive/auth-activity-assessment.md](../archive/auth-activity-assessment.md).
 
 ## Related

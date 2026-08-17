@@ -189,7 +189,7 @@ fileAccessible(file) =
 - Enabling `anyone_with_link` (single + bulk file/folder) requires paid owner; free/grace → **422** `public_share_requires_paid`. Setting `private` always allowed.
 - Mutations never public.
 - **Hash blocklist (DMCA):** enabling `anyone_with_link` on a file whose `checksum` is on `file_hosting_hash_blocklist` → **422** `public_share_blocked_hash` (single + bulk; bulk rejected when **any** targeted file is blocked). Guest show/download returns **404** for a blocked checksum even if the file was already public. See [Content checksum (sha256) + hash blocklist (DMCA)](#content-checksum-sha256--hash-blocklist-dmca).
-- `share_url` only when **this** item is `anyone_with_link` **and** storage owner is paid.
+- `share_url` only when **this** item is `anyone_with_link` **and** storage owner is paid. Minted by `SpaPublicUrl::publicFileShare` / `publicFolderShare`: `{SPA_URL}/s/f/{id}` and `/s/d/{id}` when `SPA_URL` is set; otherwise Blade `route('file-hosting.public.files/folders.show')`. Paths match. Guest pages stay noindex on the SPA (`PublicLayout` + `/s/*` `X-Robots-Tag`).
 - Workspace files: paid check is on **storage `user_id`** (quota pool owner), not the guest member’s plan.
 
 ## Permissions (`domain_kind = product`)
@@ -519,7 +519,7 @@ R2 supports paste-in CORS under the bucket **CORS Policy** setting.
 ]
 ```
 
-Add every origin that performs browser-direct upload (local dev, staging, production). Multiple origins = multiple entries in `AllowedOrigins`.
+Add every origin that performs browser-direct upload (Blade `APP_URL`, Vue-Workers `SPA_URL`, local Vite). Multiple origins = multiple entries in `AllowedOrigins`. Production SPA cutover: the Worker origin must be listed **and** `ETag` must stay in `ExposeHeaders`.
 
 #### Backblaze B2
 
@@ -554,7 +554,7 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 
 ## Vue-Workers SPA consumer
 
-The sibling Vue-Workers SPA is separate from the Blade Vue island described below. It consumes `/api/v1/file-hosting/*` through the Worker BFF and uses `useFhHydrate` for initial reads. `hydrateFileHosting()` batches browse, quota, workspaces, and Microstock slots; `hydrateWorkspaceDetail()` batches workspaces plus members and activity for workspace detail. Per-entry failures fall back to the individual loaders. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
+The sibling Vue-Workers SPA is separate from the Blade Vue island described below. It consumes `/api/v1/file-hosting/*` through the Worker BFF and uses `useFhHydrate` for initial reads. `hydrateFileHosting()` batches browse, quota, workspaces, and Microstock slots; `hydrateWorkspaceDetail()` batches workspaces plus members and activity for workspace detail. Per-entry failures fall back to the individual loaders. Public share routes are `/s/f/:id` and `/s/d/:id` (same as Blade). Admin DMCA blocklist is Vue route `file-hosting.blocklist.index.view` so MenuSeeder `file-hosting.blocklist.index` resolves in `NavTree`. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
 
 ## Web Blade
 

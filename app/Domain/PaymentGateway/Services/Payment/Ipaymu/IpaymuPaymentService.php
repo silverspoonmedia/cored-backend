@@ -9,8 +9,8 @@ use App\Domain\PaymentGateway\Services\Payment\InvoiceCheckoutGatewayResolver;
 use App\Domain\PaymentGateway\Services\Payment\InvoiceCustomerDetailsResolver;
 use App\Domain\PaymentGateway\Services\Payment\InvoicePaymentInitiationGuard;
 use App\Support\Encryption\DecryptSourceContext;
+use App\Support\SpaPublicUrl;
 use iPaymu\iPaymu;
-use Illuminate\Support\Facades\Route;
 
 class IpaymuPaymentService
 {
@@ -443,20 +443,12 @@ class IpaymuPaymentService
 
     public static function defaultReturnUrl(): string
     {
-        if (Route::has('payment.ipaymu.return')) {
-            return route('payment.ipaymu.return', [], true);
-        }
-
-        return rtrim((string) config('app.url'), '/').'/payment/ipaymu/return';
+        return SpaPublicUrl::paymentReturn();
     }
 
     public static function defaultCancelUrl(): string
     {
-        if (Route::has('payment.ipaymu.cancel')) {
-            return route('payment.ipaymu.cancel', [], true);
-        }
-
-        return rtrim((string) config('app.url'), '/').'/payment/ipaymu/cancel';
+        return SpaPublicUrl::paymentCancel();
     }
 
     /**

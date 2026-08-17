@@ -51,7 +51,7 @@ Empty secrets or optional string overrides use `KEY=""`. When adding keys: updat
 |----------|------|
 | `APP_KEY` | Active Laravel encryption key |
 | `APP_PREVIOUS_KEYS` | Retired keys after rotation (decrypt still works) |
-| `SPA_URL` | Public origin of Monolith-Vue-Workers. OAuth `return_to` allowlist (with `APP_URL`). Empty disables SPA OAuth return. |
+| `SPA_URL` | Public origin of Monolith-Vue-Workers (no trailing slash). OAuth `return_to` allowlist (with `APP_URL`). Non-empty mints password-reset, email-verify, File Hosting `share_url`, and iPaymu hosted return/cancel onto that origin (`App\Support\SpaPublicUrl`) and is a CORS origin (`config/cors.php`). Empty keeps Blade / signed-API URLs and disables SPA OAuth return. |
 
 `key:generate --force` appends current key to previous, writes new key. Implementation: `EnvironmentKeyWriter` (file-based, not broken by quoted values).
 

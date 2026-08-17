@@ -94,7 +94,7 @@ Managed files listed in `config/localization.php` → `managed_files`.
 
 - `php artisan lang:add …` / `lang:update` for managed packs
 - `tests/Unit/Localization/LocaleParityTest.php` checks supported locale directories, application-owned file presence, dot-notation key parity, and PHP placeholder parity. It excludes files listed in `config/localization.php` / package-managed basenames, including `validation.php` from placeholder comparison.
-- Vue-Workers `npm run check:i18n` checks JSON key parity, Vue interpolation tokens, malformed braces, suspicious English duplicates, and hardcoded fallback-copy patterns under `src/`. Duplicate warnings are review input; technical terms, brands, codes, and machine-contract strings may remain unchanged.
+- Vue-Workers `npm run check:i18n` checks JSON key parity, Vue interpolation tokens, malformed braces, suspicious English duplicates, and hardcoded fallback-copy patterns under `src/`. Duplicate warnings are review input; technical terms, brands, codes, and machine-contract strings may remain unchanged. SPA CI runs this before `build-only`.
 
 ## Number & date display (not lang files)
 

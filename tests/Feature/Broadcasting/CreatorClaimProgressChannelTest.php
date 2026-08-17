@@ -6,6 +6,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\CreatorClaim;
+use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Services\CreatorService;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Broadcasting\BroadcastManager;
@@ -77,6 +78,26 @@ class CreatorClaimProgressChannelTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_owner_can_subscribe_via_api_broadcasting_auth(): void
+    {
+        [$claim, $owner] = $this->makeClaimPair();
+
+        $this->actingAs($owner, 'api')
+            ->postJson('/api/v1/broadcasting/auth', [
+                'socket_id' => '1.1',
+                'channel_name' => 'private-vtual.claim.'.$claim->id,
+            ])
+            ->assertOk();
+    }
+
+    public function test_guest_cannot_hit_api_broadcasting_auth(): void
+    {
+        $this->postJson('/api/v1/broadcasting/auth', [
+            'socket_id' => '1.1',
+            'channel_name' => 'private-vtual.claim.example',
+        ])->assertUnauthorized();
+    }
+
     /**
      * @return array{0: CreatorClaim, 1: User}
      */
@@ -84,7 +105,7 @@ class CreatorClaimProgressChannelTest extends TestCase
     {
         $admin = $this->userWithRole('Admin');
         $orphan = app(CreatorService::class)->createOrphan($admin, ['display_name' => 'Channel Auth Orphan']);
-        $youtube = \App\Domain\Vtual\Models\Platform::query()->where('key', 'youtube')->firstOrFail();
+        $youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
         $channel = Channel::query()->create([
             'id' => (string) Str::uuid7(),
             'creator_id' => $orphan->id,

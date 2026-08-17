@@ -208,6 +208,8 @@ Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation 
 
 The sibling Vue-Workers SPA uses `usePaymentsHydrate` for `PaymentsIncomeView`, batching income overview and invoice reads while retaining individual-loader fallback for failed entries. SPA invoice realtime and polling behavior belongs to [vue-workers-spa.md — Realtime](../../integration/vue-workers-spa.md#realtime-laravel-echo--pusher), not the Blade checkout path below.
 
+iPaymu hosted redirect defaults (`IpaymuPaymentService::defaultReturnUrl` / `defaultCancelUrl`) use `SpaPublicUrl`: `{SPA_URL}/payment/return` and `/payment/cancel` when `SPA_URL` is set; otherwise Blade `/payment/ipaymu/return|cancel`. Channel checkout still sends empty `ureturn` (on-page QR/VA). SPA bounce views stay authenticated at the site root — [vue-workers-spa — Payment return URLs](../../integration/vue-workers-spa.md#payment-return-urls).
+
 ## Blade / assets
 
 **Sidebar:** **Administration → Payments** contains Payment income (`payments.income.index`), Invoices (`invoices.index`), Subscriptions (`subscriptions.index`), Payment channels (`payment-channels.index`), and Payment gateways (`payment-gateways.index`). Parent and children are visible to Root, Admin, Moderator, and Management; endpoint permissions remain authoritative.

@@ -20,7 +20,7 @@ Base URL: empty `VITE_API_BASE_URL` (required). Composable paths are relative (`
 
 The browser calls **same-origin** `/api/v1/*`. DevTools Network shows the Vue-Workers origin, not the monolith host. `@cloudflare/vite-plugin` runs `server/index.ts` in `npm run dev` **and** on deploy — one proxy, both environments.
 
-This is **hostname masking plus an origin gate.** Paths stay `/api/v1/auth/login`. The Worker **is** the public API and the BFF: it sets HttpOnly `spa_jwt` (not Blade `auth_token`) and never forwards `Cookie` to Laravel. The Worker stamps every brokered request with `X-SPA-Origin: 1`; Monolith's `RequireSpaOrigin` middleware (API group) audits direct hits to the `spa_audit` log channel and, **outside `local`/`testing`, rejects them with 403** (`api/common.spa_origin_required`). Local and testing stay open so PHPUnit, tinker, and tooling keep working; OPTIONS preflights always pass because browsers never attach custom headers there. The `/whatsup` health route is not in the API group and is unaffected. `MONOLITH_API_ORIGIN` lives in Wrangler `vars` / `.dev.vars` (not `VITE_`, not the JS bundle). XSS can still session-ride; it cannot read the JWT. Mutating requests with a cookie require `X-Requested-With: XMLHttpRequest` (`SameSite=Strict` plus that header).
+This is **hostname masking plus an origin gate.** Paths stay `/api/v1/auth/login`. The Worker **is** the public API and the BFF: it sets HttpOnly `spa_jwt` (not Blade `auth_token`) and never forwards `Cookie` to Laravel. The Worker stamps every brokered request with `X-SPA-Origin: 1`; Monolith's `RequireSpaOrigin` middleware (API group) audits direct hits to the `spa_audit` log channel and, **outside `local`/`testing`, rejects them with 403** (`api/common.spa_origin_required`). Local and testing stay open so PHPUnit, tinker, and tooling keep working; OPTIONS preflights always pass because browsers never attach custom headers there. The `/whatsup` health route is not in the API group and is unaffected. `MONOLITH_API_ORIGIN` lives in Wrangler `vars` / `.dev.vars` (not `VITE_`, not the JS bundle). **`MONOLITH_API_ORIGIN` must equal the `APP_URL` origin** — signed email-verify HMAC is bound to the API host. XSS can still session-ride; it cannot read the JWT. Mutating requests with a cookie require `X-Requested-With: XMLHttpRequest` (`SameSite=Strict` plus that header).
 
 Still naked (browser talks to these hosts directly):
 
@@ -37,7 +37,7 @@ HTML, JS, CSS, and SPA fallback do **not** invoke the isolate. Wrangler `assets.
 
 One browser `fetch` to the SPA origin `/api/*` is **one** invocation. The Worker’s `fetch` to Laravel is a subrequest (per-invocation cap), not a second daily request. `npm run dev` runs the same `server/index.ts` locally and is **not** billed. A 401 that refresh-retries can be three invocations (original + `POST auth/refresh` + retry). Pusher, S3/gateway byte URLs, Discord OAuth, and hCaptcha are not Worker requests.
 
-`/api/*` reverse-proxy + HttpOnly `spa_jwt` is **deemed necessary**. Keep that script small (`fetch` only). Do not add cron, queues, Durable Objects, extra `run_worker_first` paths, or domain logic in the Worker without an explicit reason in this guide. Business work stays on Monolith; the SPA fetches and parses.
+`/api/*` reverse-proxy + HttpOnly `spa_jwt` is **deemed necessary**. Keep that script small (`fetch` only). Stamp `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy` on Worker JSON responses (`server/bff.ts`). Static HTML/JS get CSP / frame-deny from `public/_headers` (Cloudflare Assets). Do not add cron, queues, Durable Objects, extra `run_worker_first` paths, or domain logic in the Worker without an explicit reason in this guide. Business work stays on Monolith; the SPA fetches and parses.
 
 ## Invocation budget controls
 
@@ -46,7 +46,7 @@ Because every `/api/*` call is one Worker invocation, the stack has explicit quo
 - **Batch fan-in** — `POST /api/v1/batch` (`routes/api/v1/batch.php`, `BatchController`) dispatches up to **10** read-only (`GET`/`HEAD`) sub-requests through the kernel in one HTTP call, each keeping its own auth/permission middleware. SPA wrapper: `batch()` in `src/api/client.ts`; `BatchSubRequest` rejects mutation methods at the client type level. Throttled `30,1`; mutations are rejected (`422` per entry). Use it for multi-widget hydrates instead of N parallel fetches.
 - **Shell hydrate** — `useShellHydrate.hydrateShell()` (called from `AppLayout` and awaited by the auth route guard) batches five reads: `auth/me`, sidebar menus, navbar menus, `notifications/unread-count`, and `notifications?display_mode=query&limit=5`. It seeds `setUser`, `seedTree`, `seedUnreadCount`, and `seedList`; `AppNavbar` uses the seeded recent list for its bell dropdown. Each entry is checked independently. A failed entry leaves its owning lazy loader as fallback (`AppNavbar` skips navigation/list/count fetches only when the corresponding seed exists). Dashboard reads `auth/me` from the seeded store — no extra fetch. `resetShellHydration()` exists for re-hydration after logout.
 - **File Hosting hydrate** — `useFhHydrate.hydrateFileHosting()` batches the four independent FH reads (`file-hosting/browse`, `file-hosting/quota`, `file-hosting/workspaces`, `microstock/slots`) into one invocation from `FileHostingView.loadAll()`. `hydrateWorkspaceDetail(null)` batches the workspace list; `hydrateWorkspaceDetail(workspaceId)` batches workspaces, members, and up to 50 activity rows for `FileHostingWorkspacesView`. Failed subs return `null` and fall back to `fetchWorkspaces`, `fetchMembers`, `fetchActivity`, or the owning loader. The dependent stage (`microstock/billing`, collection status) still runs after — it gates on `browse.workspace.kind === 'microstock'`. Realtime (`.listing.changed` / `.quota.changed`) and polling fallback are unchanged — batching only trims initial hydrate.
-- **Worker cache headers** — `server/index.ts` stamps `cache-control` on reference-data GET responses (`navigation/menus`, `services/options`, `currencies*`): `private, max-age=60/300` when a `spa_jwt` session is present, `public` when not. The browser serves repeats from disk cache without touching the Worker.
+- **Worker cache headers** — `server/bff.ts` stamps `cache-control` on reference-data GET responses (`navigation/menus`, `services/options`, `currencies*`): `private, max-age=60/300` when a `spa_jwt` session is present, `public` when not. The browser serves repeats from disk cache without touching the Worker.
 - **JWT TTL 240** — `config/jwt.php` `'ttl' => 240` (Tier B; runtime `setting_config('jwt.ttl')` / Settings → Platform `platform.jwt.ttl`). A 401 refresh round-trip costs 3 invocations; longer TTL makes that rare. Refresh rotation + blacklist still bound token theft.
 - **Polling backoff** — `useListingLiveUpdate` (base 90s) and the `AppNavbar` bell (base 120s) double their interval after 5 unchanged polls (cap 5 min), reset on any change. Echo events remain the primary channel; polling is the degraded fallback.
 - **Per-domain batch hydrate** — Current coverage: `useNavigationHydrate` (menu edit plus parent/role/include/exclude lookups), `useNotificationsHydrate` (audience edit plus assignable roles), `useUsersHydrate` (user, assignable roles, activity logs), `useServicesHydrate` (service/purchase plus options), `usePaymentsHydrate` (income overview/invoices), `useInferenceHydrate` (usage overview/events/model cards and provider/card detail), `useMicrostockHydrate` (billing/ledger, usage events, admin overview/events), and `useVtualHydrate` (profile, credentials, orphan edit, claim). Every helper uses `bodyOf()` and returns `null` for a failed entry so callers retain individual-loader fallback. `src/api/batch.ts` owns the unwrap contract: `bodyOf()` accepts only a status-200 `success` envelope; `dataOf()` returns its `data` or `null`. Batch transport failure rejects the call and callers fall back to their normal loaders. Only `GET`/`HEAD` subrequests are supported; maximum remains 10.
@@ -69,6 +69,44 @@ Pass/fail (compare Blade when unsure):
 - Hard refresh still logged in; logout clears the cookie; two tabs, one logout, the other dies on the next API call / `BroadcastChannel` logout.
 - Login / remember / 2FA / refresh near TTL.
 - FH browse + upload, invoice CSV, Discord connect (`SPA_URL`), Echo bell or FH live event (or poll fallback).
+- Sidebar **DMCA Blocklist** (`file-hosting.blocklist.index` → SPA `file-hosting.blocklist.index.view`) navigates.
+
+## Production URL minting (`SPA_URL`)
+
+`App\Support\SpaPublicUrl` prefixes browser-facing links onto `config('services.spa.url')` when that origin is non-empty. Empty `SPA_URL` keeps Blade / signed-API URLs (local Blade dogfood). CORS `allowed_origins` is `APP_URL` + `SPA_URL` (no `*`).
+
+| Surface | Empty `SPA_URL` | Set `SPA_URL` |
+|---------|-----------------|---------------|
+| Password reset email | Blade `password.reset` (`/reset-password/{token}?email=`) | `{SPA_URL}/reset-password?token=&email=` |
+| Email verify email | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — SPA then GETs the signed API path through the Worker. HMAC stays on `APP_URL`. |
+| File Hosting `share_url` | Blade `route()` `/s/f/{id}` / `/s/d/{id}` | Same paths on `SPA_URL` |
+| iPaymu hosted return/cancel defaults | Blade `/payment/ipaymu/return\|cancel` | `{SPA_URL}/payment/return` and `/payment/cancel` |
+
+Channel checkout still sends empty `ureturn` (on-page QR/VA). Guest verify route is **not** `guestOnly` so a logged-in unverified user can land on it.
+
+## Notification deep links
+
+API `action_route` + `action_params` are Blade web names (`users.edit`, `{ user: uuid }`). SPA `src/utils/notificationTarget.ts` resolves `${route}.view` and maps `user` / `modelCard` → Vue `:id`. Bell and `/apps/notifications` navigate there; unknown names fall back to the notifications list.
+
+## Production checklist
+
+Ops after merge (not code):
+
+1. Monolith `SPA_URL` = public Vue-Workers origin (no trailing slash). Empty keeps Blade/API URLs.
+2. Worker `MONOLITH_API_ORIGIN` **equals** Monolith `APP_URL` origin (signed email-verify HMAC).
+3. `VITE_API_BASE_URL` empty in the SPA build. `npm run deploy` from `monolith-vue-workers`.
+4. hCaptcha: Settings on **and** `VITE_HCAPTCHA_SITE_KEY` set, or both off.
+5. File Hosting bucket / Gateway CORS includes the SPA origin and **exposes `ETag`**.
+6. Pusher or Sockudo: Laravel `PUSHER_*` + matching `VITE_PUSHER_*` in the SPA build.
+7. Cloudflare custom domain on the Worker. Do not invent a second Wrangler env unless a second API origin exists.
+
+`X-SPA-Origin` is an audit stamp, not auth. JWT is auth. Do not widen `run_worker_first` past `/api/*`.
+
+Fonts and Bootstrap Icons are self-hosted (`@fontsource/source-sans-3`, `bootstrap-icons`). `public/robots.txt` disallows `/apps` and auth paths; `/s/*` is `noindex`. Vue DevTools is Vite `serve` only.
+
+## CI
+
+`monolith-vue-workers/.github/workflows/ci.yml`: `npm ci` → `type-check` → `check:i18n` → `vitest` (`tests/bff.test.ts`, `tests/notificationTarget.test.ts`) → `build-only`. No Playwright / ESLint-everywhere in this gate.
 
 ## API contract reference
 
@@ -212,11 +250,13 @@ All user-facing notifications and confirmations go through Sweetalert2 via the s
 
 - **Notifications** — keep calling `useAlert()` (`success`/`error`/`info`). Internally it renders Swal toasts (`success`/`info`, `top-end`, 4s auto-dismiss) and an error dialog (`error`, `ui.dialog.error_title` title, `ui.swal.ok` button). The API is unchanged so call sites need no updates.
 - **Confirmations** — use `confirmDialog({ title, text | html, confirmText, cancelText, icon, danger })` which resolves `true` on confirm. Never add a `ConfirmModal`-style `v-model` component for simple confirmations; the one remaining `ConfirmModal.vue` usage is the file-hosting rename form (an input form, not a confirmation) and stays until it gets a dedicated dialog.
+- **Text input prompts** — use `inputDialog({ title, required?, confirmText?, danger? })` (resolves the trimmed string or `null` on cancel; `required: true` blocks an empty confirm). Native `prompt()` is forbidden; the product-activation reject/suspend reason prompts use this helper.
 - **i18n** — shared labels live at `ui.swal.*` and `ui.dialog.*`; confirm bodies use their domain keys. All three locales must stay in parity.
 - **Layering** — `.swal2-container` is pinned to `z-index: 1090` in `src/assets/monolith-overrides.css`, above Bootstrap modals (1050/1055) and custom layers like `.fh-context-menu` / `.monolith-toast-container` (1080). Never lower it; any new fixed layer must stay below 1090.
 - **Toast/modal serialization** — swal2 removes the `swal2-toast-shown` body class unconditionally when a modal closes, which makes any still-open toast container fall back to full-viewport width. To prevent the race, `showErrorDialog()` and `confirmDialog()` call `closeActiveToast()` first (closes an open toast before firing the modal). Never fire a raw `Swal.fire` modal while a toast may be open — go through `src/lib/swal.ts`.
 - **Body classes** — never assign `document.body.className = ''`. Swal (and Bootstrap/OverlayScrollbars) store runtime classes on `<body>` (`swal2-toast-shown`, `swal2-shown`, `modal-open`). Layout classes (`login-page`, `layout-fixed`, `sidebar-expand-lg`, …) are toggled in `App.vue` via `classList.remove`/`add` only. Toast container sizing is also pinned in CSS (`.swal2-container:has(.swal2-popup.swal2-toast)`) so a missing body class cannot balloon the toast to full viewport.
 - **Redirect safety** — `useAlert().error(...)` returns a Promise. In flows that navigate away (`window.location.href = ...`, e.g. Discord/OAuth connect, file download), always `await showError(...)` inside the `catch` so the error dialog renders and is read before any unload instead of dying with the page.
+- **Uncaught errors** — `app.config.errorHandler`, `unhandledrejection`, and `router.onError` in `main.ts` call `showErrorDialog(i18n.global.t('ui.ajax.unexpected_error'))`. No Sentry unless a DSN is added later (Cloudflare `observability.enabled` is already on in wrangler).
 
 `useI18n()` is restricted to Vue component `setup()` (including composables called synchronously from setup). Router guards, Pinia-style stores, shell hydration, realtime callbacks, module-level services, and other ordinary functions may run without an active component instance. Those paths must import the shared `src/i18n` instance and call `i18n.global.t(...)`; they must not call `useI18n()`. This prevents `Must be called at the top of a setup function` from aborting initial router navigation. `main.ts` registers `router.onError()` for diagnostic reporting without hiding navigation failures, then mounts only after `router.isReady()` resolves. The auth guard performs shell hydration before protected route components mount.
 
@@ -365,13 +405,13 @@ View mode persists in `localStorage` key `fh-view-mode` (default table).
 
 ### Payment return URLs
 
-SPA routes: `/payment/return` and `/payment/cancel` (`PaymentReturnView`, `requiresAuth`). Blade uses `/payment/ipaymu/return|cancel`. Paths do **not** need to match Blade — configure the payment gateway (and any SPA-origin env the API uses for return URLs) to the Vue-Workers origin. HttpOnly `spa_jwt` survives the gateway bounce (`SameSite=Strict` still sends the cookie on same-origin XHR after the SPA loads); `beforeEach` hydrates via `GET auth/me` and keeps `redirect=fullPath`. Do not reopen these as guest routes unless a real gateway hit arrives without a session. These stay at the **site root**, not under `/apps`.
+SPA routes: `/payment/return` and `/payment/cancel` (`PaymentReturnView`, `requiresAuth`). Blade uses `/payment/ipaymu/return|cancel`. When `SPA_URL` is set, `SpaPublicUrl::paymentReturn/Cancel` mints the SPA paths as iPaymu hosted redirect defaults; empty `SPA_URL` keeps Blade. Channel checkout still sends empty `ureturn` (on-page QR/VA). HttpOnly `spa_jwt` survives the gateway bounce (`SameSite=Strict` still sends the cookie on same-origin XHR after the SPA loads); `beforeEach` hydrates via `GET auth/me` and keeps `redirect=fullPath`. Do not reopen these as guest routes unless a real gateway hit arrives without a session. These stay at the **site root**, not under `/apps`.
 
 ### `/apps` shell
 
 Authenticated `AppLayout` routes are prefixed `/apps/*` (dashboard, users, settings, file-hosting, vtual, invoices, …). `/` redirects to `/apps/dashboard`. Route **names** stay unprefixed — sidebar `NavTree` / `AppNavbar` already `push` by name.
 
-**Not prefixed** (same exceptions as Blade): auth (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/two-factor-challenge`), public share (`/s/f/:id`, `/s/d/:id`), payment bounce (`/payment/return`, `/payment/cancel`).
+**Not prefixed** (same exceptions as Blade, plus the verify hop): auth (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/two-factor-challenge`, `/verify-email/:id/:hash`), public share (`/s/f/:id`, `/s/d/:id`), payment bounce (`/payment/return`, `/payment/cancel`). Verify-email uses `meta.authChrome` (not `guestOnly`) so a logged-in unverified user can land.
 
 Legacy bare paths (`/users` → `/apps/users`, …) redirect so bookmarks do not 404. Catch-all 404 stays last, inside `AppLayout`.
 
@@ -383,7 +423,7 @@ Static vTual credential probe (`/apps/vtual/platform-credentials/probe`) is regi
 
 ### 404 catch-all
 
-Last route: `path: '/:pathMatch(.*)*'` → `NotFoundView` inside `AppLayout`, `meta: { requiresAuth: true, titleKey: 'errors.not_found' }`. This is an admin SPA — unknown URLs for guests already hit `beforeEach` → login with `redirect`. After login they see 404 **inside** the sidebar, not a naked page. Catch-all stays below `/s/f/:id`, `/payment/return`, and the legacy `/users` → `/apps/users` redirects.
+Last route: `path: '/:pathMatch(.*)*'` → `NotFoundView` inside `AppLayout`, `meta: { requiresAuth: true, titleKey: 'errors.not_found' }`. This is an admin SPA — unknown URLs for guests already hit `beforeEach` → login with `redirect`. After login they see 404 **inside** the sidebar, not a naked page. Catch-all stays below `/s/f/:id`, `/verify-email/:id/:hash`, `/payment/return`, and the legacy `/users` → `/apps/users` redirects.
 
 ### Mimic doctrine
 
@@ -437,7 +477,7 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 
 | Var | Purpose |
 |-----|---------|
-| `MONOLITH_API_ORIGIN` | Worker-only. Monolith origin (no `/api/v1` suffix, no trailing slash). Wrangler `vars` + `.dev.vars`. **Not** bundled into the browser. Empty → Worker 503. |
+| `MONOLITH_API_ORIGIN` | Worker-only. Monolith origin (no `/api/v1` suffix, no trailing slash). Wrangler `vars` + `.dev.vars`. **Not** bundled into the browser. Empty → Worker 503. Must equal `APP_URL` origin or signed email-verify HMAC fails. |
 | `VITE_API_BASE_URL` | Must stay **empty** so calls stay same-origin `/api/v1` (Worker mask + BFF cookie). `.env.local` wins. An absolute prefix bypasses the Worker — hostname leak **and** no `spa_jwt`. |
 | `VITE_PUSHER_APP_KEY` | Pusher app key (required for Echo — must match Monolith `PUSHER_APP_KEY`) |
 | `VITE_PUSHER_APP_CLUSTER` | Pusher cluster (default `mt1`) |

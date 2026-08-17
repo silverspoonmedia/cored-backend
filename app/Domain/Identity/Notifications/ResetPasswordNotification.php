@@ -3,6 +3,7 @@
 namespace App\Domain\Identity\Notifications;
 
 use App\Domain\Identity\Models\User;
+use App\Support\SpaPublicUrl;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Lang;
@@ -10,8 +11,9 @@ use Illuminate\Support\Facades\Lang;
 class ResetPasswordNotification extends ResetPassword
 {
     /**
-     * Mirrors the framework's password-reset email but points the action at our
-     * versioned API endpoint and adds an API-usage hint.
+     * Mirrors the framework's password-reset email but points the action at the
+     * Vue-Workers reset page when SPA_URL is set, otherwise the Blade reset
+     * form. The API hint stays for clients that POST the token directly.
      *
      * All copy goes through the translator so the recipient's locale (see
      * {@see User::preferredLocale()}) is honoured: the shared lines
@@ -22,10 +24,10 @@ class ResetPasswordNotification extends ResetPassword
      */
     public function toMail($notifiable): MailMessage
     {
-        $resetUrl = url('/api/v1/auth/reset-password').'?'.http_build_query([
-            'token' => $this->token,
-            'email' => $notifiable->getEmailForPasswordReset(),
-        ]);
+        $resetUrl = SpaPublicUrl::passwordReset(
+            $this->token,
+            $notifiable->getEmailForPasswordReset(),
+        );
 
         $expireMinutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
 

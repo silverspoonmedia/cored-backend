@@ -7,6 +7,7 @@ use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Models\Folder;
 use App\Domain\FileHosting\Models\HostedFile;
 use App\Domain\FileHosting\Models\Workspace;
+use App\Support\SpaPublicUrl;
 
 /**
  * Drive-lite link sharing: private | anyone_with_link.
@@ -124,7 +125,7 @@ class VisibilityService
             return null;
         }
 
-        return route('file-hosting.public.files.show', ['file' => $file->id]);
+        return SpaPublicUrl::publicFileShare((string) $file->id);
     }
 
     public function folderShareUrl(Folder $folder): ?string
@@ -137,7 +138,7 @@ class VisibilityService
             return null;
         }
 
-        return route('file-hosting.public.folders.show', ['folder' => $folder->id]);
+        return SpaPublicUrl::publicFolderShare((string) $folder->id);
     }
 
     /**

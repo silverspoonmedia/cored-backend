@@ -828,6 +828,31 @@ class FileHostingTest extends TestCase
         $this->assertSame(1, $file->fresh()->download_count);
     }
 
+    public function test_anyone_with_link_share_url_uses_spa_origin_when_configured(): void
+    {
+        config(['services.spa.url' => 'https://spa.test']);
+
+        $user = $this->userWithRole('User');
+        $this->grantPaidMain($user);
+        $file = HostedFile::query()->create([
+            'user_id' => $user->id,
+            'folder_id' => null,
+            'name' => 'spa-shared.pdf',
+            'disk' => 'local',
+            'path' => 'c37d56f8fe251b3a5587944f08e9b8fea2fc47e7',
+            'size' => 10,
+            'mime' => 'application/pdf',
+            'visibility' => 'private',
+        ]);
+
+        $this->actingAsJwt($user)
+            ->patchJson('/api/v1/file-hosting/files/'.$file->id.'/visibility', [
+                'visibility' => 'anyone_with_link',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.share_url', 'https://spa.test/s/f/'.$file->id);
+    }
+
     public function test_free_owner_cannot_enable_anyone_with_link(): void
     {
         $user = $this->userWithRole('User');
