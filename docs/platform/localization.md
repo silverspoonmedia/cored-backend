@@ -88,6 +88,7 @@ Managed files listed in `config/localization.php` → `managed_files`.
 | API domain | `__('api/navigation.created')` |
 | Static nav labels | `__('menu.dashboard')` |
 | DB menus | `$menu->name` (Spatie) |
+| SPA JSON | `t('ui.swal.ok')`, `t('ui.dialog.error_title')` — Swal chrome in `monolith-vue-workers/src/i18n/locales/*.json`; domain confirm bodies stay on their domain keys. Contract: [vue-workers-spa.md — Notifications & confirmations](../integration/vue-workers-spa.md#notifications--confirmations-sweetalert2) |
 
 ## Packages & parity
 
@@ -106,5 +107,5 @@ Blade must not reformat API values — consume Resource companions (`*_formatted
 ## Related
 
 - [web/blade-admin.md](../web/blade-admin.md)
-- [integration/vue-workers-spa.md](../integration/vue-workers-spa.md) — SPA JSON locales, runtime switching, fallback translation, hydration, and `useI18n()` context rule
+- [integration/vue-workers-spa.md](../integration/vue-workers-spa.md) — SPA JSON locales, runtime switching, fallback translation, hydration, `useI18n()` context rule, and Sweetalert2 chrome keys (`ui.swal.*`, `ui.dialog.*`)
 - [domains/navigation/README.md](../domains/navigation/README.md) — Spatie menu fields

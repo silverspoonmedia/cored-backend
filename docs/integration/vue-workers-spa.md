@@ -204,7 +204,7 @@ All user-visible strings must be wrapped in `t()`. This includes:
 - Component prop labels: `:title="t('key')"` not `title="Hardcoded"`
 - Placeholders: `:placeholder="t('key')"`
 - Toast/error messages in catch blocks: `showError(t('key'))`
-- `prompt()` / `confirm()` dialog text
+- `confirmDialog()` / Swal dialog copy (native `alert()` / `confirm()` are forbidden)
 
 ## Notifications & confirmations (Sweetalert2)
 
@@ -244,31 +244,25 @@ Locale parity: all three files must have the same key set. Laravel `:variable` p
 
 ## Component conventions
 
-### ConfirmModal
+### confirmDialog
 
-```vue
-<ConfirmModal
-  v-model="showConfirm"
-  :title="t('title_key')"
-  :confirm-label="t('confirm_key')"
-  :confirm-variant="'danger'"
-  @confirm="handleConfirm"
-  @cancel="showConfirm = false"
->
-  <p>{{ t('message_key') }}</p>
-</ConfirmModal>
+```ts
+import { confirmDialog } from '@/lib/swal'
+
+async function onDelete(): Promise<void> {
+  const confirmed = await confirmDialog({
+    title: t('ui.datatable.delete'),
+    text: t('web.payments.gateways.confirm_delete'),
+    confirmText: t('ui.actions.delete'),
+  })
+  if (!confirmed) return
+  await destroy()
+}
 ```
 
-| Prop | Type | Notes |
-|------|------|-------|
-| `v-model` | `boolean` | Controls visibility. NOT `:show`. |
-| `title` | `string` | |
-| `message` | `string` | Rendered in `<p>` when no slot content |
-| `confirm-label` | `string` | NOT `confirm-text` |
-| `cancel-label` | `string` | |
-| `confirm-variant` | `string` | Bare name: `'danger'`, `'success'`, `'primary'`, `'warning'`. NOT `'btn-danger'` — component prepends `btn-`. |
+Custom bodies that used to be ConfirmModal slots go in `html:` (escape any interpolated user data). `danger` defaults to true (red confirm); pass `danger: false` for a primary confirm button.
 
-Default slot overrides `<p>` message when slot content is provided.
+`ConfirmModal.vue` is **not** the confirmation API. The only remaining use is the file-hosting rename form on `FileHostingShowView` (an input dialog, not a yes/no confirm). Do not add new `v-model` confirm components.
 
 ### SubmitButton
 
