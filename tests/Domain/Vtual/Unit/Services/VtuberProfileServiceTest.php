@@ -82,8 +82,9 @@ class VtuberProfileServiceTest extends TestCase
         $this->assertSame('Profile Fox', $loaded->display_name);
         $this->assertCount(1, $loaded->channels);
         $this->assertSame(ChannelStatus::Active, $loaded->channels->first()?->status);
-        $this->assertCount(1, $loaded->getRelation('profileContents'));
-        $this->assertSame('Hello VOD', $loaded->getRelation('profileContents')->first()?->title);
+        $profileContents = $loaded->getRelation('profileContents');
+        $this->assertCount(1, $profileContents->items());
+        $this->assertSame('Hello VOD', $profileContents->items()[0]?->title);
     }
 
     #[Test]
@@ -168,8 +169,9 @@ class VtuberProfileServiceTest extends TestCase
         $loaded = $this->profiles->show((string) $creator->slug);
 
         $this->assertCount(1, $loaded->channels);
-        $this->assertCount(1, $loaded->getRelation('profileContents'));
-        $this->assertSame('Visible VOD', $loaded->getRelation('profileContents')->first()?->title);
+        $visibleContents = $loaded->getRelation('profileContents');
+        $this->assertCount(1, $visibleContents->items());
+        $this->assertSame('Visible VOD', $visibleContents->items()[0]?->title);
     }
 
     #[Test]
@@ -196,7 +198,7 @@ class VtuberProfileServiceTest extends TestCase
         $loaded = $this->profiles->show((string) $creator->slug);
 
         $this->assertCount(0, $loaded->channels);
-        $this->assertCount(0, $loaded->getRelation('profileContents'));
+        $this->assertCount(0, $loaded->getRelation('profileContents')->items());
     }
 
     #[Test]

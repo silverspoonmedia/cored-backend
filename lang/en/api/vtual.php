@@ -21,6 +21,15 @@ return [
         'show_success' => 'vTuber profile loaded.',
         'not_found' => 'vTuber profile not found or not available.',
     ],
+    'public' => [
+        'directory_success' => 'Public vTuber directory loaded.',
+        'show_success' => 'Public vTuber profile loaded.',
+        'contents_success' => 'Public content feed loaded.',
+        'landing_success' => 'Public landing payload loaded.',
+        'stats_success' => 'Public platform stats loaded.',
+        'live_success' => 'Public live-now list loaded.',
+        'schedule_success' => 'Public upcoming schedule loaded.',
+    ],
     'merge' => [
         'success' => 'Profile merged. Source was archived; data now lives on the destination profile.',
         'self' => 'Cannot merge a profile into itself.',

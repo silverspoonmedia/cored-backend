@@ -263,4 +263,22 @@ return [
         'max_per_minute' => 10,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Public landing page (/vtual SPA home)
+    |--------------------------------------------------------------------------
+    |
+    | Tier B — Settings → vTual (vtual.landing.event.*). Featured event drives
+    | the countdown banner + events section. Empty starts_at hides the banner.
+    |
+    */
+    'landing' => [
+        'event' => [
+            'title' => '',
+            // ISO 8601 datetime, e.g. '2026-09-01T20:00:00+09:00'. Empty = hidden.
+            'starts_at' => '',
+            'body' => '',
+        ],
+    ],
+
 ];

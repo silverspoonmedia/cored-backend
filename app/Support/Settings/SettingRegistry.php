@@ -186,6 +186,11 @@ final class SettingRegistry
             'vtual.websub.lease_seconds' => self::def('vtual', SettingType::Int, 'vtual.websub.lease_seconds'),
             'vtual.websub.renew_before_hours' => self::def('vtual', SettingType::Int, 'vtual.websub.renew_before_hours'),
             'vtual.websub.max_body_bytes' => self::def('vtual', SettingType::Int, 'vtual.websub.max_body_bytes'),
+
+            // vTual — public landing page (/vtual SPA)
+            'vtual.landing.event.title' => self::def('vtual', SettingType::String, 'vtual.landing.event.title'),
+            'vtual.landing.event.starts_at' => self::def('vtual', SettingType::String, 'vtual.landing.event.starts_at'),
+            'vtual.landing.event.body' => self::def('vtual', SettingType::String, 'vtual.landing.event.body'),
         ];
     }
 

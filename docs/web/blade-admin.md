@@ -88,7 +88,7 @@ Domain files under `routes/web/*.php` loaded from `routes/web.php`. API still au
 | Logout | `web.auth` | site root | `POST /logout` (`routes/web/identity-logout.php`) — **not** under `/apps` |
 | Authenticated app shell | `web.auth` + `prefix('apps')` | **`/apps/*`** | `/apps/dashboard`, `/apps/users`, `/apps/file-hosting`, `/apps/vtual`, … |
 
-**Why `/apps`:** free product root paths (`/file-hosting`, `/vtual`, …) for future public landings. Authenticated product UI lives at `/apps/{product}`. No legacy redirects from old bare paths (bookmarks to `/dashboard` 404).
+**Why `/apps`:** free product root paths. `/vtual` is the Vue-Workers public landing; `/file-hosting` stays reserved empty. Authenticated product UI lives at `/apps/{product}`. No legacy redirects from old bare paths (bookmarks to `/dashboard` 404).
 
 Menus store **route names** only (`MenuSeeder`); sidebar resolves via `route()`. Prefer `route()` over hard-coded paths in Blade/JS.
 
@@ -115,7 +115,8 @@ Placeholder tokens (`__KEY__`, `__CODE__`, `__ROUTE__`, `__UPLOAD__`) are fine i
 | Intentionally not done | Why |
 |------------------------|-----|
 | Full FH per-action `route()` URL map in JS | SPA size; name-derived base + segment is accepted; segment rename still needs care |
-| Product landings on `/file-hosting`, `/vtual`, … | Product work; roots reserved empty |
+| Product landing on `/file-hosting` | Product work; root still reserved empty |
+| Blade `/vtual` landing | Out of scope — Vue-Workers owns `/vtual` + `/vtual/vtubers/:slug` |
 | Legacy 301/302 bare → `/apps/*` | 301 caches lock product roots; bare product paths reserved for landings |
 | Move `POST /logout` under `/apps` | Dual `web.auth` group by design (logout stays at site root) |
 | Hard-coded `/apps/…` JS fallbacks | Dual source of truth; regresses path harden |

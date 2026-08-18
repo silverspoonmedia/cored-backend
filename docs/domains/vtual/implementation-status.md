@@ -64,9 +64,9 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Staff orphan + pending claims (API)** | Orphan seed via `/apps/vtual/orphans`; pending claims via API `GET claims/pending` (legacy registry web archived) | `OrphanVtuberController`, `GET /api/v1/vtual/claims/pending`, `AdminRegistryController` in `_archive/` |
 | **User claim UX (API only)** | Claimable list + my claims + verify/cancel | `/api/v1/vtual/claims/*` (web `/apps/vtual/claims` archived) |
 | **Channel dual path** | Staff POST channel: deferred `registerPendingForStaff` (pending + batch resolve). Owner: `ChannelClaim` + bio / Accept Anyway → `activateFromDto`. `seedForStaff` kept for instant bind paths. | `ChannelClaimService`, `ChannelService`, `ChannelRegistrationFlushService`, tests |
-| **Orphan admin UX** | `/apps/vtual/orphans`: minimal create (prefixed slug), redirect to edit, channel registration on edit; edit channels table shows per-channel avatar when resolved (`avatar_url`) | `OrphanVtuberController`, `vtual-orphans` views, `OrphanVtuberWebTest` |
-| **YouTube content fetch POC** | Manual `vtual:fetch-channel-content` (last frontier) | `ChannelContentFetchService`, `FetchChannelContentCommand` |
-| **YouTube initial content backfill** | Auto on YouTube activate (async job); manual `vtual:backfill-initial-content` for existing rows | `ChannelInitialContentBackfillService`, `RunChannelInitialContentBackfillJob`, `ChannelActivationService`, `content_initial_backfill_at` |
+| **Orphan admin UX** | Blade **and** SPA `/apps/vtual/orphans`: minimal create (prefixed slug), redirect to edit, archive confirm, pending channel queue on edit; channels table shows per-channel avatar when resolved (`avatar_url`). SPA uses Vue `DataTable` (`display_mode=query`), not Yajra. | `OrphanVtuberController`, `vtual-orphans` views, `VtualOrphansView.vue`, `VtualOrphanEditView.vue`, `OrphanVtuberWebTest` |
+| **YouTube content fetch POC** | Manual `vtual:fetch-channel-content {channel-uuid}`; `--limit`, `--video`, `--discover-live` options; upserts into `vtual_contents` | `ChannelContentFetchService`, `FetchChannelContentCommand` |
+| **YouTube initial content backfill** | Auto on YouTube activate (async job); manual `vtual:backfill-initial-content` for existing rows; demo probe fetched 50 videos into public profile | `ChannelInitialContentBackfillService`, `RunChannelInitialContentBackfillJob`, `ChannelActivationService`, `content_initial_backfill_at` |
 | **Channel activation hooks** | Single entry: WebSub + backfill job on all YouTube activate paths (including registration flush) | `ChannelActivationService` |
 | **Feed poll ingestion** | Scheduled `vtual:poll-channel-feeds` + `vtual:flush-content-pool`; polls **active + archived** public channels; archived → inline **stub** upsert (no content-pool enqueue for hydrate); skips until initial backfill done | `YoutubeChannelVideoFeedClient`, `ChannelFeedPollService`, `ContentFetchPoolService` |
 | **Live CCV poll** | Scheduled `vtual:poll-live-contents` | `LiveContentPollService` |
@@ -141,8 +141,8 @@ Mapped to original TASK / product vision. **Do not treat as bugs** unless a mile
 | Theme | Status | Notes |
 |-------|--------|--------|
 | **Claim Add New** | Not implemented | Survey + staff approval + appeal / permanent reject |
-| **Public homepage** | Not implemented | Live / archive / VOD sections, SEO creator & management profiles |
-| **Public read surfaces** | Partial | Per-creator profile at `/apps/vtual/vtuber/{slug}` (login required; slug canonical; guest SEO pending) |
+| **Public homepage** | Implemented | SPA `/vtual` (Valkivid3): hero, sponsors, countdown, live directory, all-creator `#contents` feed (`GET /api/v1/vtual/public/contents`), about, events; en/id/ja localized. Header switcher owns `html.dark` (class `dark:` variant). Tailwind utilities nested under `.vk3-root` so AdminLTE is not restyled after visiting `/vtual`. OG/SEO still pending. |
+| **Public read surfaces** | Implemented | Guest profile `/vtual/vtubers/{slug}` (`GET /api/v1/vtual/public/vtubers/{slug}`): banner, two-column sidebar (avatar, live badge, bio, follower/channel stats, channels, links, claim CTA) + featured live card and **paginated** video grid (`contents: { items, pagination }`, Prev/Next pager; `?page` + `?per_page` default 12 max 24; live-first ordering; `is_live` from a whole-catalogue check, not the current page). Authenticated AdminLTE read/claim stays `/apps/vtual/vtuber/{slug}`. Management public profiles still pending. |
 | **Twitch EventSub** | Not implemented | YouTube WebSub done; Twitch push deferred |
 | **Multi-stream session correlation** | Not implemented | `fetchStreamsByUserIds` exists for future workers; live CCV poll (`vtual:poll-live-contents`) is done |
 | **WebSub tombstone / deleted video** | Not implemented | Mark content unavailable when `videos.list` returns 404 during content pool flush |
@@ -172,7 +172,7 @@ Not a commitment — default backlog for the next sessions:
 
 1. **Claim Add New** — form + staff queue + reject/appeal (closes chicken-egg for unknown profiles).
 2. **Restore archived user web** — standalone claims hub (or rebuild on orphans pattern); API already complete.
-3. **Public read surfaces** — homepage live/archive sections + guest/SEO creator profile (read-only).
+3. **Public surface follow-ups** — OG/SEO tags, management public profiles, Twitch player/chat on the public profile, public events data source. Guest landing (directory + content feed) + two-column public profile already ship.
 4. **YouTube hardening (assessment-driven)** — feed poll deadlock fix; pool `done` retention job; WebSub tombstone / deleted-video 404; staging WebSub push validation; strip casual `POST creators` for non-staff.
 5. **Twitch EventSub** — push notifications after YouTube path is stable (explicitly deferred).
 
@@ -199,6 +199,8 @@ Not a commitment — default backlog for the next sessions:
 | Schedule | `routes/console.php`: every minute `vtual:flush-channel-pool` + `vtual:flush-claim-verify-pool`; hourly channel `--resync` (needs `schedule:work` / cron) |
 | Admin probe | `/apps/vtual/platform-credentials/probe` (Root/Admin) |
 | Credentials UI | `/apps/vtual/platform-credentials` |
+| Public landing (SPA) | `/vtual` (guest, Valkivid3) |
+| Public vTuber profile (SPA) | `/vtual/vtubers/{slug}` (guest; claim CTA → auth wizard) |
 | vTuber profile (read) | `/apps/vtual/vtuber/{slug}` (any logged-in user) |
 | Claim process (interactive) | `/apps/vtual/vtuber/{slug}/claim` (orphan / `is_claimable`) |
 | vTual product hub (placeholder) | `/apps/vtual/vtuber` |

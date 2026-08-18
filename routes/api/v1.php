@@ -28,6 +28,7 @@ require __DIR__.'/v1/batch.php';
 // Product domains (kind=product). domain:make appends here; keep product requires last.
 require __DIR__.'/v1/file-hosting.php';
 require __DIR__.'/v1/vtual-webhooks.php';
+require __DIR__.'/v1/vtual-public.php';
 require __DIR__.'/v1/vtual.php';
 require __DIR__.'/v1/microstock.php';
 require __DIR__.'/v1/admin-microstock.php';

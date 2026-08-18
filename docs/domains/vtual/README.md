@@ -1,13 +1,13 @@
 # vTual — product domain
 
-Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Active web (2026-08):** staff **orphan** admin (`/apps/vtual/orphans`), **platform credentials** (`/apps/vtual/platform-credentials`, Root/Admin), **owned profiles list + manage** (`/apps/vtual/profiles`, Products menu under File Hosting), **read-only vTuber profile** + interactive claim (`/apps/vtual/vtuber/{slug}`, login required). Legacy hub, standalone claims, and registry Blade UIs remain [archived](ui-archive.md) (`_archive/` paths only — rebuilt profiles/manage are **not** archive). **Scheduled content ingestion** (feed poll, content pool, live CCV) and **YouTube WebSub push** are implemented; **Twitch EventSub** remains deferred — see [implementation-status.md](implementation-status.md).
+Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Active web (2026-08):** staff **orphan** admin (`/apps/vtual/orphans`), **platform credentials** (`/apps/vtual/platform-credentials`, Root/Admin), **owned profiles list + manage** (`/apps/vtual/profiles`, Products menu under File Hosting), **read-only vTuber profile** + interactive claim (`/apps/vtual/vtuber/{slug}`, login required). **Public SPA:** guest landing `/vtual` (directory + content feed) + two-column public profile `/vtual/vtubers/{slug}` (Valkivid3; claim still behind login). Legacy hub, standalone claims, and registry Blade UIs remain [archived](ui-archive.md) (`_archive/` paths only — rebuilt profiles/manage are **not** archive). **Scheduled content ingestion** (feed poll, content pool, live CCV) and **YouTube WebSub push** are implemented; **Twitch EventSub** remains deferred — see [implementation-status.md](implementation-status.md).
 
 | | |
 |--|--|
 | Code | `app/Domain/Vtual/` |
 | Config | [`config/products.php`](../../../config/products.php) key `Vtual` · [`config/vtual.php`](../../../config/vtual.php) |
 | Registry | [`config/domains.php`](../../../config/domains.php) `Vtual` product locked |
-| API | `routes/api/v1/vtual.php` |
+| API | `routes/api/v1/vtual.php` (auth) · `routes/api/v1/vtual-public.php` (guest directory + contents feed + profile) |
 | Web | `routes/web/vtual-orphans.php` → **`/apps/vtual/orphans`** (`vtual.orphans.*`); `routes/web/vtual-platform-credentials.php` → **`/apps/vtual/platform-credentials`** (`vtual.platform-credentials.*`, Root/Admin); `routes/web/vtual-profiles.php` → **`/apps/vtual/profiles`** (owned list + **`/apps/vtual/profiles/{slug}`** manage; Products sidebar); `routes/web/vtual-vtuber.php` → **`/apps/vtual/vtuber`** (`vtual.vtuber.index`, product hub placeholder) + **`/apps/vtual/vtuber/{slug}`** (`vtual.vtuber.show`, read-only profile; UUID legacy → 301 slug). Archived: [ui-archive.md](ui-archive.md) |
 | Naming (Management disambiguation) | [naming-conventions.md](naming-conventions.md) — core role `Management` vs `vtual_managements` talent org |
 | Seeder | `VtualRoleSeeder` (after core `RoleSeeder`; also seeds platforms) |
@@ -87,6 +87,8 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 
 | Surface | Route | Audience |
 |---------|-------|----------|
+| Public landing (SPA) | `/vtual` | Guests — Valkivid3 `str1` one-pager (hero with API-driven spotlight + sponsors + live-now strip + countdown event from `vtual.landing.event.*` + platform stats + directory `#vtubers` + all-creator content feed `#contents` + about + upcoming-schedule events + claim banner). Header switcher owns `html.dark` (class `dark:` variant, `str1-color-theme` localStorage, inline FOUC-prevention script). |
+| Public vTuber profile (SPA) | `/vtual/vtubers/{slug}` | Guests — two-column profile from `GET /api/v1/vtual/public/vtubers/{slug}` (banner, sidebar stats/channels/links, featured live + **paginated** video grid with Prev/Next pager; `contents: { items, pagination }`, `?page`/`?per_page`). Claim CTA is advertising only; wizard stays at `/apps/vtual/vtubers/{slug}/claim`. |
 | Orphan vTubers (staff) | `/apps/vtual/orphans` | Internal (Root/Admin/Moderator) — claimable profiles only; users-pattern DataTable + CRUD |
 | vTual product hub (placeholder) | `/apps/vtual/vtuber` | Any logged-in user — blank AdminLTE shell for upcoming product surfaces |
 | Owned vTuber profiles | `/apps/vtual/profiles` | `Vtual vTuber` / Editor / Admin with active Vtual activation — owned list (`GET api/v1/vtual/creators/owned`); Products sidebar under File Hosting |
@@ -307,6 +309,26 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 
 ## API (`/api/v1/vtual/*`)
 
+### Public (guest-safe) — `routes/api/v1/vtual-public.php`
+
+No auth, no `domain.access`, no `product.active` — the SPA `/vtual` landing and `/vtual/vtubers/{slug}` profile are guest-accessible. Throttled `60,1`. Slug-addressed (show also accepts UUID). Never exposes claim tokens, `claim_process_url`, or `blocked_until`. `is_claimable` is a public directory fact (orphan vs owned), not a secret.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/vtual/public/vtubers` | Directory of active creators having ≥1 active+public channel. Query: `search` (display_name like), `per_page` (max 24), `page`. Sorted **live first**, then `display_name`. Returns `items` + `pagination`. Item fields include `bio_snippet` (`Str::limit` 140), `is_live`, `total_subscribers` / `total_subscribers_formatted`. |
+| GET | `/vtual/public/contents` | All-creator content feed. Query: `page`, `per_page` (default 12, max 24). Same public listing contract as the directory (active creator with ≥1 active+public channel; primary channel active+public). Hides stub rows with empty `title`/`url`. Sorted **live first**, then `published_at` desc. Guest-safe card: `type`, `status`, `title`, `thumbnail_url`, `url`, `published_at`, `platform_key`, `creator: {slug, display_name, avatar_url}` — **no** UUID. |
+| GET | `/vtual/public/vtubers/{creator}` | Public profile: bio, `total_subscribers` / `total_subscribers_formatted`, active+public channels (includes `banner_url`), `links[]` `{kind,label,url}` (no id), `contents` as `{ items, pagination }` (paginated; query `page` + `per_page` default 12, max 24; live rows first then `published_at` desc; each item has `status` + `platform_key`; `is_live` reflects the whole catalogue, not just the current page), `is_claimable` (boolean only). **404** unless the creator is active **and** has ≥1 active+public channel. |
+| GET | `/vtual/public/landing` | One-shot `/vtual` home payload: `{ event, live_now[], schedule[], stats }`. `event` = Tier B `vtual.landing.event.*` settings (null when `starts_at` empty/invalid); `live_now` = up to 8 live contents; `schedule` = up to 6 future `scheduled_at` streams; `stats` = aggregate counts. Forever-cached via `PublicLandingCache` (`vtual.public.landing`), flushed on Content/Creator/Channel writes and on `vtual.landing.*` settings upsert. |
+| GET | `/vtual/public/stats` | Aggregate counts: `creators`, `channels`, `contents`, `subscribers_total`, `subscribers_total_formatted`. Same visibility contract as the directory (active creators with ≥1 active+public channel). |
+| GET | `/vtual/public/live` | `items[]` of live contents (`type=live`, `status=live`), newest first, cap 8. Same card shape as the contents feed, plus `scheduled_at`. |
+| GET | `/vtual/public/schedule` | `items[]` of upcoming streams (`scheduled_at >= now`, `status` in scheduled/live/unknown), soonest first, cap 6. SPA events section falls back to the settings event / i18n copy when empty. |
+
+Service: `VtuberProfileService::directory()` + `paginatePublicContents()` (`ContentService::paginateForPublicDirectory`) + `show()` (`resolvePubliclyListed`) + `liveNow()` / `upcomingSchedule()` / `publicStats()` / `landingEvent()`. Resources: `PublicVtuberResource` (directory) / `PublicContentResource` (feed, live, schedule — now also exposes `scheduled_at`) / `PublicVtuberProfileResource` (profile) — all strip `id`; profile also strips `claim_process_url` / `claim_blocked_until`. Worker BFF stamps `Cache-Control: public, max-age=60` on these GETs. There is **no** guest `POST /claims`.
+
+**Landing settings (Tier B — Settings → vTual, config `vtual.landing.*`):** `event.title`, `event.starts_at` (ISO 8601; empty hides the SPA countdown banner), `event.body`. Seeded via `SettingsSeeder`; editable in the Settings UI; read at runtime via `setting()` (never `config()`/`env()`).
+
+### Authenticated
+
 | Method | Path | Permission | Purpose |
 |--------|------|------------|---------|
 | GET | `/platforms` | view vtual creator | Platform catalog (includes disabled Kick) — **no credentials** |
@@ -346,7 +368,11 @@ See also [payment-gateway/encryption.md](../payment-gateway/encryption.md).
 
 ## Vue-Workers SPA consumer
 
-The sibling Vue-Workers SPA uses `useVtualHydrate` for profile show, platform credentials, orphan edit, and vTuber claim views. These are client-side batch hydrates over the `/api/v1/vtual/*` contract and are unrelated to backend platform API “hydrate” terminology. Each view preserves individual-loader fallback when a batch entry fails. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
+**Public SPA (`/vtual`, `/vtual/vtubers/:slug`)**: guest-facing Valkivid3 `str1` under `src/valkivid3/` (route names `vtual.public` / `vtual.public.vtuber`, `meta.template: 'valkivid3'`, `public: true`). Layout `VkStr1Layout.vue` (Tailwind v4 under `.vk3-root`: no preflight, `@tailwind utilities` nested so they compile as `.vk3-root .mb-3`, class `dark:` variant on `html.dark`, lazy CSS chunk). Directory + content feed + profile via `useVtualPublic` → `vtual/public/vtubers`, `vtual/public/contents`, `vtual/public/vtubers/{slug}`; the home view also fetches `vtual/public/landing` once (`fetchLanding`) for the hero spotlight, live-now strip, countdown event, stats strip, and events schedule. Guest claim CTA is `/login?redirect=/apps/vtual/vtubers/{slug}/claim` (register uses the same `redirect` query; `safeInternalRedirect` rejects `//`, `://`, off-origin). Authed + `is_claimable` goes straight to the existing claim wizard. Public 404 stays **inside** `VkStr1Layout` — do not dump guests into `AppLayout`. Source template: `HTML/str1/index.html` (Valkivid 3.1.1). Isolation contract: SPA README "Template namespaces".
+
+**Public SPA theme (dark/light)**: class-based (`html.dark`), `localStorage['str1-color-theme']`, default **dark** (original template behavior; OS preference intentionally ignored). `index.html` carries an inline head script that restores the class before first paint — prevents the light-mode FOUC flash; inert for `/apps/*` since valkivid3 utilities are `.vk3-root`-scoped. Composable `useVkStr1Theme` (read/apply/toggle), switcher with sun/moon sprite icons in `VkStr1Header` + `VkStr1MobileMenu`. Hero slider `VkStr1HeroSlider` is a Swiper fade carousel (3 slides, staggered entrance animations gated by `group-[.swiper-slide-active]` + `vv-slide-played` replay, vertical bar pagination `.vv-hero-swiper-pagination`, prev/next); slide 2 spotlight is API-driven from `landing.live_now[0]` with i18n fallback.
+
+**Authenticated app**: staff orphan CRUD lives at SPA `/apps/vtual/orphans` (list + create + **create→edit** + archive confirm + pending channels) — same staff seed workflow as Blade, Vue `DataTable` + `display_mode=query` (not Yajra). Create `POST vtual/creators/orphan` lands on `/orphans/:id/edit` so staff can register YouTube/Twitch; save stays on edit; `DELETE vtual/creators/{id}` archives (confirm copy `web.vtual-orphans.datatable.confirm_delete`). Staff `POST vtual/creators/{id}/channels` is `registerPendingForStaff` (pending channel row, in-place append) — not a channel claim. Create and edit share `VtualOrphanEditView`; `AppLayout` has no `router-view` `:key`, so the view watches `route.params.id` and reloads. `useVtualHydrate.hydrateOrphanEdit` batches orphan + channels + platforms on edit (individual-loader fallback). Same hydrate helper covers profile show, platform credentials, and vTuber claim. Authenticated vTuber read/claim is canonical **plural** `/apps/vtual/vtubers/:slug` (+ `/claim`) so it does not collide with the hub `/apps/vtual/vtuber`. Blade/API singular `/apps/vtual/vtuber/:slug` (and `/vtual/vtuber/:slug` with no `/apps`) redirect onto that plural auth pair — they must not render Valkivid. Claim CTA is a named SPA route, not `claim_process_url`. UUID in the path is replaced with the slug after fetch. Client-side `/api/v1/batch` is unrelated to backend platform API “hydrate” terminology. See [vue-workers-spa.md — vTual public surface](../../integration/vue-workers-spa.md#vtual-public-surface) and [vTual orphan staff admin](../../integration/vue-workers-spa.md#vtual-orphan-staff-admin).
 
 ## Web Blade
 
@@ -709,7 +735,7 @@ Web UI: link from credentials index → **API probe**.
 | Claim Add New + survey + appeal | Not implemented (phase 2+) |
 | Profile merge (absorb) | **Implemented** (same-owner or staff; source archived) |
 | Ideal Viewer-only until claim (strip User create creator) | Follow-up; not in phase 1 |
-| Public homepage / SEO creator & management profiles | Partial — per-creator read profile at `/apps/vtual/vtuber/{slug}` (login only; slug canonical + UUID 301; guest/SEO still pending) |
+| Public homepage / SEO creator & management profiles | Partial — guest landing `/vtual` (directory + `#contents` feed) + two-column public profile `/vtual/vtubers/{slug}` (Valkivid3). Authenticated read/claim remains `/apps/vtual/vtuber/{slug}` (Blade) and `/apps/vtual/vtubers/{slug}` (SPA; singular Blade path is an alias onto plural). No OG campaign this wave. Management public profiles still pending. |
 | Paid Service catalog SKUs for Vtual | Not implemented |
 | Data migration from broadercastv2 | Not planned in foundation |
 | Pool `done` row retention | Not implemented — `vtual_*_fetch_pool` processed rows accumulate |
@@ -749,6 +775,7 @@ composer test -- --filter=AccessibilityBlade
 | `VtuberProfileWebTest` | Profile layout, canonical, UUID 301, uniform card slots, subscriber display |
 | `ChannelStubContentBackfillServiceTest` | Stub hydrate on restore; skip paths |
 | `VtuberProfileApiTest` | Public profile API; archived channel hides contents; restore + backfill shows contents |
+| `VtualPublicApiTest` | Guest directory / contents feed / profile: archived+private hidden, live-first sort, pagination, no UUID, channel `banner_url`, subscriber totals |
 | `VtuberProfileServiceTest` | `show` excludes archived-channel content; all-archived → 0 contents |
 | `ChannelFeedPollServiceTest` | Watermark enqueue, initial backfill guard; archived channel stub upsert (no pool enqueue); archived included in due poll |
 | `PlatformCredentialWebTest` | Active credentials CRUD web |

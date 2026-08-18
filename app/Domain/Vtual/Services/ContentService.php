@@ -3,13 +3,16 @@
 namespace App\Domain\Vtual\Services;
 
 use App\Domain\Vtual\Enums\ChannelStatus;
+use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\ContentAppearanceRole;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
+use App\Domain\Vtual\Enums\EntityStatus;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Content;
 use App\Domain\Vtual\Models\ContentAppearance;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -328,10 +331,11 @@ class ContentService
 
     /**
      * Public vTuber profile: exclude content whose primary channel is archived.
+     * Live rows first, then newest published. Hard cap keeps the guest payload bounded.
      *
      * @return Collection<int, Content>
      */
-    public function listForPublicProfile(string $creatorId): Collection
+    public function listForPublicProfile(string $creatorId, int $limit = 12): Collection
     {
         return Content::query()
             ->where(function ($q) use ($creatorId): void {
@@ -340,9 +344,73 @@ class ContentService
             })
             ->whereDoesntHave('channel', fn ($q) => $q->where('status', ChannelStatus::Archived))
             ->with(['channel', 'creator', 'platform', 'appearances'])
+            ->orderByRaw(
+                'CASE WHEN type = ? AND status = ? THEN 0 ELSE 1 END',
+                [ContentType::Live->value, ContentStatus::Live->value],
+            )
             ->orderByDesc('published_at')
             ->orderByDesc('created_at')
+            ->limit(max(1, $limit))
             ->get();
+    }
+
+    /**
+     * Public vTuber profile contents, paginated. Same visibility + live-first
+     * ordering as listForPublicProfile, but as a paginator so the SPA can page
+     * through a creator's full catalogue instead of a hard-capped slice.
+     *
+     * @return LengthAwarePaginator<int, Content>
+     */
+    public function paginateForPublicProfile(string $creatorId, int $perPage = 12): LengthAwarePaginator
+    {
+        return Content::query()
+            ->where(function ($q) use ($creatorId): void {
+                $q->where('creator_id', $creatorId)
+                    ->orWhereHas('appearances', fn ($a) => $a->where('creator_id', $creatorId));
+            })
+            ->whereDoesntHave('channel', fn ($q) => $q->where('status', ChannelStatus::Archived))
+            ->with(['channel', 'creator', 'platform', 'appearances'])
+            ->orderByRaw(
+                'CASE WHEN type = ? AND status = ? THEN 0 ELSE 1 END',
+                [ContentType::Live->value, ContentStatus::Live->value],
+            )
+            ->orderByDesc('published_at')
+            ->orderByDesc('created_at')
+            ->paginate(max(1, $perPage));
+    }
+
+    /**
+     * Guest landing feed: contents from every publicly listed creator.
+     * Live rows first, then newest published. Stubs without title/url are hidden.
+     *
+     * @return LengthAwarePaginator<int, Content>
+     */
+    public function paginateForPublicDirectory(int $perPage = 12): LengthAwarePaginator
+    {
+        return Content::query()
+            ->whereNotNull('title')
+            ->where('title', '!=', '')
+            ->whereNotNull('url')
+            ->where('url', '!=', '')
+            ->whereHas('creator', function ($query): void {
+                $query->where('status', EntityStatus::Active)
+                    ->whereHas('channels', function ($channels): void {
+                        $channels->where('status', ChannelStatus::Active)
+                            ->where('visibility', ChannelVisibility::Public);
+                    });
+            })
+            ->whereHas('channel', function ($query): void {
+                $query->where('status', ChannelStatus::Active)
+                    ->where('visibility', ChannelVisibility::Public);
+            })
+            ->with(['creator', 'platform'])
+            ->orderByRaw(
+                'CASE WHEN type = ? AND status = ? THEN 0 ELSE 1 END',
+                [ContentType::Live->value, ContentStatus::Live->value],
+            )
+            ->orderByDesc('published_at')
+            ->orderByDesc('created_at')
+            ->paginate(max(1, $perPage));
     }
 
     private function syncPrimaryAppearance(Content $content, Channel $primaryChannel): void

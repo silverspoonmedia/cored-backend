@@ -21,6 +21,15 @@ return [
         'show_success' => 'vTuber プロフィールを読み込みました。',
         'not_found' => 'vTuber プロフィールが見つからないか、利用できません。',
     ],
+    'public' => [
+        'directory_success' => '公開 vTuber ディレクトリを読み込みました。',
+        'show_success' => '公開 vTuber プロフィールを読み込みました。',
+        'contents_success' => '公開コンテンツフィードを読み込みました。',
+        'landing_success' => '公開ランディングペイロードを読み込みました。',
+        'stats_success' => '公開プラットフォーム統計を読み込みました。',
+        'live_success' => '現在ライブ中の一覧を読み込みました。',
+        'schedule_success' => '公開の今後のスケジュールを読み込みました。',
+    ],
     'merge' => [
         'success' => 'プロフィールをマージしました。ソースはアーカイブされ、データは宛先に移りました。',
         'self' => '同じプロフィール同士はマージできません。',

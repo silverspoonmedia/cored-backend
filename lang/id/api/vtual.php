@@ -21,6 +21,15 @@ return [
         'show_success' => 'Profil vTuber dimuat.',
         'not_found' => 'Profil vTuber tidak ditemukan atau tidak tersedia.',
     ],
+    'public' => [
+        'directory_success' => 'Direktori vTuber publik berhasil dimuat.',
+        'show_success' => 'Profil vTuber publik berhasil dimuat.',
+        'contents_success' => 'Umpan konten publik berhasil dimuat.',
+        'landing_success' => 'Payload landing publik berhasil dimuat.',
+        'stats_success' => 'Statistik platform publik berhasil dimuat.',
+        'live_success' => 'Daftar live saat ini berhasil dimuat.',
+        'schedule_success' => 'Jadwal mendatang publik berhasil dimuat.',
+    ],
     'merge' => [
         'success' => 'Profil digabung. Source diarsipkan; data sekarang di profil destination.',
         'self' => 'Tidak bisa merge profil ke dirinya sendiri.',
