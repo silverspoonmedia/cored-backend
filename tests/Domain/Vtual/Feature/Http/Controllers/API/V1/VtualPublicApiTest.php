@@ -332,12 +332,18 @@ class VtualPublicApiTest extends TestCase
             ->assertJsonPath('data.items.0.title', 'First upload')
             ->assertJsonPath('data.items.0.platform_key', 'youtube')
             ->assertJsonPath('data.items.0.creator.slug', 'neon-fox')
-            ->assertJsonPath('data.items.0.creator.display_name', 'Neon Fox');
+            ->assertJsonPath('data.items.0.creator.display_name', 'Neon Fox')
+            ->assertJsonPath('data.items.0.channel.display_name', 'Neon Fox');
 
         $item = $response->json('data.items.0');
         $this->assertArrayNotHasKey('id', $item);
         $this->assertArrayNotHasKey('external_id', $item);
         $this->assertArrayNotHasKey('creator_id', $item);
+
+        $channel = $response->json('data.items.0.channel');
+        $this->assertIsArray($channel);
+        $this->assertArrayHasKey('avatar_url', $channel);
+        $this->assertArrayNotHasKey('id', $channel);
     }
 
     #[Test]

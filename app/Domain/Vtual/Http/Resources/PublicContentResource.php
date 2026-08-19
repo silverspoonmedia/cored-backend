@@ -33,6 +33,10 @@ class PublicContentResource extends JsonResource
                 'display_name' => $this->creator->display_name,
                 'avatar_url' => $this->creator->avatar_url,
             ]),
+            'channel' => $this->whenLoaded('channel', fn (): array => [
+                'display_name' => $this->channel->display_name,
+                'avatar_url' => $this->channel->avatar_url,
+            ]),
         ];
     }
 }

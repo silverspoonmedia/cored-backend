@@ -403,7 +403,7 @@ class ContentService
                 $query->where('status', ChannelStatus::Active)
                     ->where('visibility', ChannelVisibility::Public);
             })
-            ->with(['creator', 'platform'])
+            ->with(['channel', 'creator', 'platform'])
             ->orderByRaw(
                 'CASE WHEN type = ? AND status = ? THEN 0 ELSE 1 END',
                 [ContentType::Live->value, ContentStatus::Live->value],

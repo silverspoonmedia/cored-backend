@@ -146,7 +146,7 @@ class VtuberProfileService
                 $query->where('status', ChannelStatus::Active)
                     ->where('visibility', ChannelVisibility::Public);
             })
-            ->with(['creator', 'platform'])
+            ->with(['channel', 'creator', 'platform'])
             ->orderByDesc('started_at')
             ->orderByDesc('published_at')
             ->limit(max(1, $limit))
@@ -178,7 +178,7 @@ class VtuberProfileService
                 $query->where('status', ChannelStatus::Active)
                     ->where('visibility', ChannelVisibility::Public);
             })
-            ->with(['creator', 'platform'])
+            ->with(['channel', 'creator', 'platform'])
             ->orderBy('scheduled_at')
             ->limit(max(1, $limit))
             ->get();
