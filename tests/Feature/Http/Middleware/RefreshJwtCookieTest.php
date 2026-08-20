@@ -151,12 +151,20 @@ class RefreshJwtCookieTest extends TestCase
             'Authorization' => 'Bearer '.$token,
         ]);
 
+        // Cookie-mode refresh strips the JWT from the body (HttpOnly-only); the
+        // rotated token arrives on the __Host-spa_jwt Set-Cookie instead.
         $response->assertOk()
             ->assertJsonStructure([
-                'data' => ['token', 'token_type', 'expires_in'],
-            ]);
+                'data' => ['token_type', 'expires_in'],
+            ])
+            ->assertJsonMissingPath('data.token');
 
-        $this->assertNotSame($token, $response->json('data.token'));
+        $newToken = collect($response->headers->getCookies())
+            ->firstWhere(fn ($cookie) => $cookie->getName() === \App\Support\Auth\SpaAuthCookie::NAME)
+            ?->getValue();
+
+        $this->assertNotNull($newToken);
+        $this->assertNotSame($token, $newToken);
     }
 
     public function test_old_token_accepted_within_blacklist_grace_after_refresh(): void

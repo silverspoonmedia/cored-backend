@@ -74,10 +74,13 @@ class AuthFlowTest extends TestCase
             ->assertJsonStructure([
                 'status',
                 'message',
-                'data' => ['user', 'token', 'token_type', 'expires_in'],
-            ]);
+                'data' => ['user', 'token_type', 'expires_in'],
+            ])
+            ->assertJsonMissingPath('data.token');
 
-        $token = $register->json('data.token');
+        // Cookie-mode keeps the JWT HttpOnly-only (stripped from the body). Mint a
+        // Bearer token directly for the follow-up calls.
+        $token = auth('api')->login(User::query()->where('email', 'auth@example.com')->firstOrFail());
 
         $this->getJson('/api/v1/auth/me', [
             'Authorization' => 'Bearer '.$token,
@@ -128,6 +131,34 @@ class AuthFlowTest extends TestCase
             ]);
     }
 
+    public function test_login_sets_spa_auth_cookie(): void
+    {
+        User::factory()->create([
+            'email' => 'spa-cookie@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => 'spa-cookie@example.com',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $response->assertCookie(\App\Support\Auth\SpaAuthCookie::NAME);
+    }
+
+    public function test_logout_clears_spa_auth_cookie(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('User');
+        $token = auth('api')->login($user);
+
+        $response = $this->postJson('/api/v1/auth/logout', [], [
+            'Authorization' => 'Bearer '.$token,
+        ])->assertOk();
+
+        $response->assertCookieExpired(\App\Support\Auth\SpaAuthCookie::NAME);
+    }
+
     public function test_forgot_and_reset_password_flow(): void
     {
         Notification::fake();
@@ -175,12 +206,17 @@ class AuthFlowTest extends TestCase
                 'message' => __('api/auth.email_verified'),
             ]);
 
-        $login = $this->postJson('/api/v1/auth/login', [
+        $user->refresh();
+
+        $this->postJson('/api/v1/auth/login', [
             'email' => $user->email,
             'password' => 'password',
-        ]);
+        ])->assertOk()->assertJsonMissingPath('data.token');
 
-        $token = $login->json('data.token');
+        // Body token is stripped in cookie mode; mint a Bearer token directly.
+        auth()->forgetGuards();
+        $token = auth('api')->login($user);
+        auth()->forgetGuards();
 
         $this->postJson('/api/v1/auth/email/verification-notification', [], [
             'Authorization' => 'Bearer '.$token,
@@ -304,7 +340,9 @@ class AuthFlowTest extends TestCase
             'two_factor_token' => $challenge->json('data.two_factor_token'),
             'code' => $loginCode,
         ])->assertOk()
-            ->assertJsonStructure(['data' => ['token', 'token_type', 'expires_in']]);
+            ->assertJsonStructure(['data' => ['token_type', 'expires_in']])
+            ->assertJsonMissingPath('data.token')
+            ->assertCookie(\App\Support\Auth\SpaAuthCookie::NAME);
     }
 
     public function test_two_factor_login_rejects_invalid_code(): void

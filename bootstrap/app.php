@@ -4,6 +4,7 @@ use App\Domain\ErrorLog\Support\ErrorLogRecorder;
 use App\Domain\Identity\Models\User;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Middleware\AuthenticateWithJwtCookie;
+use App\Http\Middleware\AuthenticateWithSpaCookie;
 use App\Http\Middleware\EnsureWebAuthenticated;
 use App\Http\Middleware\OptionalJwtAuthenticate;
 use App\Http\Middleware\RedirectIfWebAuthenticated;
@@ -11,6 +12,7 @@ use App\Http\Middleware\RefreshJwtCookie;
 use App\Http\Middleware\RequireSpaOrigin;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
+use App\Http\Middleware\VerifySpaCsrf;
 use App\Support\ApiResponder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -108,8 +110,28 @@ $app = Application::configure(basePath: dirname(__DIR__))
             SecurityHeaders::class,
         ]);
 
+        $middleware->api(prepend: [
+            // Decrypt the SPA's cross-site cookies (auth + CSRF nonce) before the
+            // auth/CSRF middleware read them. The api group has no EncryptCookies
+            // by default, and the SPA cookie is minted encrypted like the Blade one.
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+        ]);
+
+        // The SPA's double-submit CSRF nonce must stay readable by JS, so it is
+        // excluded from encryption (both directions). It is a random, privilege-free
+        // value; plaintext is safe by design. The auth cookie (__Host-spa_jwt) stays
+        // encrypted — only the API ever reads it.
+        $middleware->encryptCookies(except: [
+            \App\Support\Auth\SpaCsrf::COOKIE_NAME,
+        ]);
+
         $middleware->api(append: [
             RequireSpaOrigin::class,
+            // Bind the SPA's cross-site HttpOnly JWT cookie to the api guard so
+            // direct (Worker-less) data requests authenticate, then enforce the
+            // double-submit CSRF token on cookie-authenticated mutations.
+            AuthenticateWithSpaCookie::class,
+            VerifySpaCsrf::class,
             SetLocale::class,
         ]);
 

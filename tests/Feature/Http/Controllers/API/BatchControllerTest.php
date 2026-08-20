@@ -128,5 +128,31 @@ class BatchControllerTest extends TestCase
         // The navigation endpoint resolves only when the layout query survives dispatch.
         $response->assertJsonPath('data.0.status', 200);
         $response->assertJsonPath('data.0.body.status', 'success');
+
+        // meta counts every entry; none failed here.
+        $response->assertJsonPath('meta.failed', 0);
+        $response->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_batch_meta_counts_failed_entries(): void
+    {
+        $token = $this->tokenFor($this->makeUser());
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/v1/batch', [
+                'requests' => [
+                    ['method' => 'GET', 'path' => '/api/v1/auth/me'],
+                    ['method' => 'GET', 'path' => '/api/v1/nonexistent-endpoint'],
+                ],
+            ])
+            ->assertOk();
+
+        // Outer status stays 200; meta.failed exposes the one dead entry so the
+        // caller can tell partial failure without parsing each body.
+        $response->assertJsonPath('status', 'success');
+        $response->assertJsonPath('data.0.status', 200);
+        $response->assertJsonPath('data.1.status', 404);
+        $response->assertJsonPath('meta.failed', 1);
+        $response->assertJsonPath('meta.total', 2);
     }
 }

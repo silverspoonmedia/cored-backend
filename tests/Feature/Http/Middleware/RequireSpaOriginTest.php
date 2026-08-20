@@ -4,18 +4,22 @@ namespace Tests\Feature\Http\Middleware;
 
 use Tests\TestCase;
 
+/**
+ * RequireSpaOrigin is audit-only: direct (Worker-less) traffic is the
+ * sanctioned data path and must never be blocked, regardless of environment.
+ */
 class RequireSpaOriginTest extends TestCase
 {
-    public function test_direct_api_hit_is_blocked_outside_local_and_testing(): void
+    public function test_direct_api_hit_is_allowed_outside_local(): void
     {
         $this->app->detectEnvironment(fn () => 'staging');
 
         $this->getJson('/api/ping')
-            ->assertForbidden()
-            ->assertJsonPath('message', __('api/common.spa_origin_required'));
+            ->assertOk()
+            ->assertJsonPath('message', __('api/common.pong'));
     }
 
-    public function test_worker_brokered_hit_passes_outside_local_and_testing(): void
+    public function test_worker_brokered_hit_passes_outside_local(): void
     {
         $this->app->detectEnvironment(fn () => 'staging');
 
@@ -31,7 +35,7 @@ class RequireSpaOriginTest extends TestCase
             ->assertJsonPath('message', __('api/common.pong'));
     }
 
-    public function test_options_preflight_passes_without_header_outside_local(): void
+    public function test_options_preflight_passes_without_header(): void
     {
         $this->app->detectEnvironment(fn () => 'staging');
 

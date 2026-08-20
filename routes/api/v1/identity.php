@@ -7,6 +7,7 @@ use App\Domain\Identity\Http\Controllers\API\V1\Auth\EmailVerificationController
 use App\Domain\Identity\Http\Controllers\API\V1\Auth\LocaleController;
 use App\Domain\Identity\Http\Controllers\API\V1\Auth\PasswordController;
 use App\Domain\Identity\Http\Controllers\API\V1\Auth\ProfileConnectionsController;
+use App\Domain\Identity\Http\Controllers\API\V1\Auth\SpaCsrfController;
 use App\Domain\Identity\Http\Controllers\API\V1\Auth\TwoFactorController;
 use App\Domain\Identity\Http\Controllers\API\V1\LookupController;
 use App\Domain\Identity\Http\Controllers\API\V1\UserController;
@@ -61,6 +62,12 @@ Route::prefix('auth')->name('auth.')->group(function (): void {
         ->middleware('throttle:30,1')
         ->name('refresh');
 });
+
+// Double-submit CSRF nonce for the SPA's cross-site cookie auth. Public GET;
+// the token carries no privilege and is verified by VerifySpaCsrf on mutation.
+Route::get('csrf', [SpaCsrfController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('csrf.show');
 
 Route::middleware('auth:api')->group(function (): void {
     Route::get('profile/connections', [ProfileConnectionsController::class, 'show'])

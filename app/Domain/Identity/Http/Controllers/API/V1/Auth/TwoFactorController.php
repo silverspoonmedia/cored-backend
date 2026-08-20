@@ -7,6 +7,7 @@ use App\Domain\Identity\Http\Requests\Auth\TwoFactorCodeRequest;
 use App\Domain\Identity\Http\Requests\Auth\TwoFactorLoginRequest;
 use App\Domain\Identity\Services\Auth\AuthService;
 use App\Domain\Identity\Services\Auth\TwoFactorService;
+use App\Support\Auth\SpaAuthCookie;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -61,6 +62,21 @@ class TwoFactorController extends Controller
             (string) $request->validated('code'),
         );
 
-        return $this->successResponse($payload, __('api/auth.login_success'));
+        $response = $this->successResponse($payload, __('api/auth.login_success'));
+
+        $token = $payload['token'] ?? null;
+        $expiresIn = $payload['expires_in'] ?? null;
+        if (is_string($token) && $token !== '' && is_int($expiresIn) && $expiresIn > 0) {
+            $response->cookie(SpaAuthCookie::make($token, $expiresIn));
+
+            // Cookie-mode keeps the JWT HttpOnly-only (see AuthController::withSpaCookie).
+            $body = $response->getData(true);
+            if (isset($body['data']['token'])) {
+                unset($body['data']['token']);
+                $response->setData($body);
+            }
+        }
+
+        return $response;
     }
 }

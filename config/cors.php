@@ -4,11 +4,13 @@ return [
 
     'paths' => ['api/*'],
 
-    'allowed_methods' => ['*'],
+    // Explicit verbs only: the API uses GET/POST/PUT/PATCH/DELETE; OPTIONS is the
+    // CORS preflight. A wildcard would advertise methods the API never serves.
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    // Browser Origin allowlist: Blade (APP_URL) + Vue-Workers (SPA_URL).
-    // Same-origin Worker traffic never hits this; it only matters if a browser
-    // talks to the Laravel host directly. Empty SPA_URL is dropped.
+    // Browser Origin allowlist: Blade (APP_URL) + Vue-Workers (SPA_URL). The
+    // SPA now calls the API directly with credentials, so this list must stay
+    // explicit — a wildcard origin cannot be combined with credentials below.
     'allowed_origins' => array_values(array_unique(array_filter([
         rtrim((string) env('APP_URL', 'http://localhost'), '/'),
         rtrim((string) env('SPA_URL', ''), '/'),
@@ -16,12 +18,24 @@ return [
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['*'],
+    // Explicit header list: the SPA's direct requests carry Authorization
+    // (Fase 2 bearer mode), the double-submit CSRF header, and the legacy
+    // Worker CSRF marker.
+    'allowed_headers' => [
+        'Authorization',
+        'Content-Type',
+        'Accept',
+        'Accept-Language',
+        'X-Requested-With',
+        'X-CSRF-Token',
+    ],
 
     'exposed_headers' => [],
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    // The SPA authenticates cross-site via the HttpOnly __Host-spa_jwt cookie
+    // (credentials: 'include'), so the API must allow credentialed requests.
+    'supports_credentials' => true,
 
 ];

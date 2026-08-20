@@ -11,6 +11,7 @@ use App\Domain\Identity\Exceptions\Auth\InvalidCredentialsException;
 use App\Domain\Identity\Exceptions\Auth\InvalidTwoFactorCodeException;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface;
+use App\Support\Auth\SpaAuthCookie;
 use App\Support\Auth\UserPresenter;
 use App\Support\Encryption\Cache\SensitiveCacheValue;
 use App\Support\Product\Exceptions\ProductActivationException;
@@ -142,7 +143,12 @@ class AuthService
      */
     public function refresh(): array
     {
+        // Cookie-mode SPA sends no Bearer: fall back to the HttpOnly JWT cookie.
         $tokenString = request()->bearerToken();
+
+        if (! is_string($tokenString) || $tokenString === '') {
+            $tokenString = request()->cookie(SpaAuthCookie::NAME);
+        }
 
         if (! is_string($tokenString) || $tokenString === '') {
             throw new \PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException('Token not provided');

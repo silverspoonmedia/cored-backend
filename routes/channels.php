@@ -52,7 +52,7 @@ Broadcast::channel('vtual.claim.{claimId}', function (User $user, string $claimI
 });
 
 Broadcast::channel('navigation.menus', function (User $user): bool {
-    return $user->can('view navigation menu');
+    return $user->can('view menu');
 });
 
 Broadcast::channel('services.catalog', function (User $user): bool {

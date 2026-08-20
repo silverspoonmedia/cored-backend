@@ -27,6 +27,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [environment.md](platform/environment.md) | `.env` profiles, typed quoting, assignment-key parity, `env:curate`, config cache |
 | [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, Tier B settings cache contract, agent checklist |
 | [cache-policy.md](platform/cache-policy.md) | Project-wide forever Cache + invalidate; driver-agnostic; exceptions |
+| [api-aggregation.md](platform/api-aggregation.md) | Aggregation rules: standalone-first, SPA-only, backend fan-in via `/batch`; gate condition |
 | [settings.md](platform/settings.md) | Runtime operational settings (Web UI + DB overrides) |
 | [localization.md](platform/localization.md) | Backend `en` / `id` / `ja` rules, parity, and locale resolution; SPA guard: `monolith-vue-workers/npm run check:i18n` |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |

@@ -9,11 +9,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Tags API requests brokered by the Vue-Workers BFF (header `X-SPA-Origin`)
- * and audits the ones that were not. On non-local environments the header is
- * enforced: the SPA is the only sanctioned consumer of the public API, so a
- * direct hit to the origin (tunnel hostname in hand) gets a 403 instead of
- * raw JSON. Local and testing stay open for PHPUnit, tinker, and tooling.
- * OPTIONS preflights always pass — browsers never send custom headers there.
+ * and audits the ones that were not.
+ *
+ * Audit-only. Direct browser-to-API traffic is now the sanctioned data path
+ * (the Worker only brokers auth), so a missing header is no longer a violation
+ * — it is simply logged for observability. The header is trivially spoofable
+ * and was never an auth control; real protection lives in JWT auth, RBAC,
+ * throttling, and the WAF. OPTIONS preflights always pass.
  */
 class RequireSpaOrigin
 {
@@ -25,17 +27,13 @@ class RequireSpaOrigin
 
         $request->attributes->set(self::ATTRIBUTE, $viaWorker);
 
-        if (! $viaWorker) {
+        if (! $viaWorker && $request->method() !== 'OPTIONS') {
             Log::channel('spa_audit')->info('api.direct', [
                 'method' => $request->method(),
                 'path' => $request->path(),
                 'ip' => $request->ip(),
                 'user_id' => $request->user()?->getAuthIdentifier(),
             ]);
-
-            if ($request->method() !== 'OPTIONS' && ! app()->environment(['local', 'testing'])) {
-                abort(403, __('api/common.spa_origin_required'));
-            }
         }
 
         return $next($request);

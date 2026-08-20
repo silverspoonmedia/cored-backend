@@ -72,6 +72,10 @@ Tier A (env only) vs operational settings: [configuration-policy.md](../../platf
 
 Blade does **not** use the Laravel session guard for identity. After login, `auth_token` is the only identity cookie. `RefreshJwtCookie` + `AuthService::refreshFromToken` slide access tokens within `setting_config('jwt.refresh_ttl')` so admins are not hard-kicked at `setting_config('jwt.ttl')`. API: `POST /api/v1/auth/refresh` (Bearer; single refresh inside `AuthService` — no double `jwt.refresh` middleware). Details: [web/blade-admin](../../web/blade-admin.md#silent-refresh-sliding-access).
 
+### SPA cookie-mode refresh & token strip
+
+The SPA authenticates cross-site with the HttpOnly `__Host-spa_jwt` cookie instead of a Bearer header, so `AuthService::refresh()` falls back to that cookie when no `Authorization` header is present — a cookie-mode session refreshes the same way (otherwise it would hard-expire at `jwt.ttl`). On login/register/refresh/2FA-login the raw JWT is set as the `__Host-spa_jwt` cookie and **stripped from the JSON body** (`data.token` removed) so SPA JS never reads it and an XSS payload cannot exfiltrate it; `TwoFactorController` applies the same strip. The `__Host-` prefix enforces `Secure`, `Path=/`, and no `Domain`. Full contract: [../../integration/vue-workers-spa.md](../../integration/vue-workers-spa.md).
+
 ### Remember-flag preservation across refresh
 
 `AuthService::refreshFromToken` preserves the `remember` flag across token refresh so a remember-me session does not silently downgrade to a short-TTL session. The flag is resolved with priority:
@@ -84,7 +88,7 @@ Login, 2FA login, and register all inject the `rm` claim via `AuthService::custo
 
 ### hCaptcha
 
-When enabled: login, register, forgot-password, two-factor login require `h-captcha-response`. Server: `HcaptchaVerifier` + Form Request trait. Blade: `<x-adminlte4::form.hcaptcha />` — see [web/blade-admin](../../web/blade-admin.md).
+When enabled: login, register, forgot-password, reset-password, and two-factor login require `h-captcha-response`. Server: `HcaptchaVerifier` + Form Request trait (`ValidatesHcaptcha`, merged into `ResetPasswordRequest` for parity with forgot-password). Blade: `<x-adminlte4::form.hcaptcha />` — see [web/blade-admin](../../web/blade-admin.md).
 
 ### Public URLs (`SPA_URL`)
 

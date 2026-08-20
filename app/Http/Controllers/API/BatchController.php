@@ -25,6 +25,13 @@ class BatchController extends Controller
 
     private const ALLOWED_METHODS = ['GET', 'HEAD'];
 
+    /**
+     * Hard wall-clock budget for one batch. Sub-requests run sequentially
+     * in-process; without a cap a slow fan-in can pin a PHP worker far longer
+     * than any single endpoint would. Entries past the budget return 504.
+     */
+    private const WALL_CLOCK_SECONDS = 10;
+
     public function __invoke(Request $request): JsonResponse
     {
         $payloads = $request->input('requests');
@@ -37,13 +44,51 @@ class BatchController extends Controller
             return ApiResponder::error(__('api/common.batch_too_many'), 422);
         }
 
+        // One batch multiplies into N sub-requests but the outer route only
+        // consumes one throttle token (throttle:30,1). Charge the real cost to
+        // the shared 'api' limiter so a batch cannot bypass the global budget.
+        $this->chargeApiLimiter($request, count($payloads));
+
         $responses = [];
+        $startedAt = microtime(true);
 
         foreach ($payloads as $index => $payload) {
+            if ((microtime(true) - $startedAt) >= self::WALL_CLOCK_SECONDS) {
+                // Budget exhausted: fail this and every remaining entry fast.
+                $responses[] = $this->subError(504, __('api/common.batch_timeout'));
+                continue;
+            }
+
             $responses[] = $this->dispatchSubRequest($request, $payload, (int) $index);
         }
 
-        return ApiResponder::success($responses, __('api/common.batch_ok'));
+        $failed = count(array_filter(
+            $responses,
+            static fn (array $entry): bool => ($entry['status'] ?? 500) >= 400,
+        ));
+
+        // The outer status stays 200 even on partial/total sub-request failure;
+        // expose a meta.failed count so callers can distinguish without parsing
+        // every entry.
+        $response = ApiResponder::success($responses, __('api/common.batch_ok'));
+        $envelope = $response->getData(true);
+        $envelope['meta'] = ['failed' => $failed, 'total' => count($responses)];
+        $response->setData($envelope);
+
+        return $response;
+    }
+
+    /**
+     * Charge each sub-request to the global 'api' limiter so a batch cannot
+     * smuggle N reads into one throttle token.
+     */
+    private function chargeApiLimiter(Request $request, int $subRequests): void
+    {
+        $key = 'api:'.($request->user()?->getAuthIdentifier() ?: $request->ip());
+
+        for ($i = 0; $i < $subRequests; $i++) {
+            \Illuminate\Support\Facades\RateLimiter::hit($key, 60);
+        }
     }
 
     /**

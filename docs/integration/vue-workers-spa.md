@@ -9,18 +9,27 @@ The Blade admin in Monolith stays as the in-repo frontend **until this port actu
 | Piece | Role |
 |-------|------|
 | Vue 3 + Vite + TypeScript | SPA runtime, SFC components, type safety |
-| Cloudflare Workers | Deployment target (`@cloudflare/vite-plugin`). Also the `/api/v1` reverse proxy (hostname mask) and BFF: HttpOnly `spa_jwt` cookie → `Authorization: Bearer` to Laravel; strips `data.token` from login/register/refresh/2FA-login JSON. |
-| Session auth | HttpOnly `spa_jwt` on the Vue-Workers origin. JS never stores the JWT. `GET auth/me` hydrates `user`. Cross-tab: the cookie is shared; `BroadcastChannel` only coordinates refresh/logout (no token in the messages). `remember` affects cookie `Max-Age` via API `expires_in`. |
-| `fetch` wrapper (`src/api/client.ts`) | Same-origin `/api/v1/...` via `src/api/baseUrl.ts` (`credentials: 'same-origin'`, `X-Requested-With: XMLHttpRequest`). No `Authorization` header — the Worker attaches Bearer from the cookie. 401 refresh + retry. `getBlob()` is the non-JSON path (CSV / file download). |
+| Cloudflare Workers | Deployment target (`@cloudflare/vite-plugin`). Now a **narrow auth-only BFF**: it brokers only `/api/v1/auth/{login,register,refresh,logout,two-factor/login}` - strips `data.token` from those JSON bodies, forwards Laravel's `__Host-spa_jwt` `Set-Cookie`, and keeps a first-party CSRF gate on cookie mutations. Data traffic no longer touches the Worker. |
+| Session auth | Cross-site HttpOnly `__Host-spa_jwt` on the **API origin** (minted by Laravel, `SameSite=None; Secure`). JS never reads it; the browser attaches it to direct API calls via `credentials: 'include'`. `GET auth/me` hydrates `user`. Cross-tab: `BroadcastChannel` only coordinates refresh/logout (no token in the messages). `remember` affects cookie `Max-Age` via API `expires_in`. |
+| `fetch` wrapper (`src/api/client.ts`) | Data calls go **direct to the Laravel API origin** (`VITE_API_BASE_URL`) with `credentials: 'include'`; auth session calls stay same-origin (Worker BFF). Cross-origin mutations send the double-submit `X-CSRF-Token` nonce (`src/api/csrf.ts`). 401 refresh + retry; 419 CSRF refresh + retry. `getBlob()` is the non-JSON path (CSV / file download). |
 | `vue-i18n` | Full locale system (`en`, `id`, `ja`) converted from Laravel PHP lang files |
 
-Base URL: empty `VITE_API_BASE_URL` (required). Composable paths are relative (`auth/me`); the client prefixes `/api/v1`. The Worker forwards that to `{MONOLITH_API_ORIGIN}/api/v1/...` and owns the session cookie. An absolute `VITE_API_BASE_URL` bypasses the Worker — DevTools shows the monolith host **and** the HttpOnly BFF cookie never reaches Laravel. Leave it empty.
+Base URL: set `VITE_API_BASE_URL` to the Laravel API origin (e.g. `https://monolith-ph24.spnd.uk/api/v1`). Composable paths are relative (`auth/me`); `src/api/baseUrl.ts` sends **auth session paths** (`auth/login|register|refresh|logout|two-factor/login`) same-origin through the Worker BFF and **all data paths** direct to the API origin. Leave it empty only for local `wrangler dev` against a same-origin API.
 
-## API hostname mask
+## Direct API + narrow auth BFF
 
-The browser calls **same-origin** `/api/v1/*`. DevTools Network shows the Vue-Workers origin, not the monolith host. `@cloudflare/vite-plugin` runs `server/index.ts` in `npm run dev` **and** on deploy — one proxy, both environments.
+The browser now talks to the Laravel API in **two** ways:
 
-This is **hostname masking plus an origin gate.** Paths stay `/api/v1/auth/login`. The Worker **is** the public API and the BFF: it sets HttpOnly `spa_jwt` (not Blade `auth_token`) and never forwards `Cookie` to Laravel. The Worker stamps every brokered request with `X-SPA-Origin: 1`; Monolith's `RequireSpaOrigin` middleware (API group) audits direct hits to the `spa_audit` log channel and, **outside `local`/`testing`, rejects them with 403** (`api/common.spa_origin_required`). Local and testing stay open so PHPUnit, tinker, and tooling keep working; OPTIONS preflights always pass because browsers never attach custom headers there. The `/whatsup` health route is not in the API group and is unaffected. `MONOLITH_API_ORIGIN` lives in Wrangler `vars` / `.dev.vars` (not `VITE_`, not the JS bundle). **`MONOLITH_API_ORIGIN` must equal the `APP_URL` origin** — signed email-verify HMAC is bound to the API host. XSS can still session-ride; it cannot read the JWT. Mutating requests with a cookie require `X-Requested-With: XMLHttpRequest` (`SameSite=Strict` plus that header).
+- **Auth session endpoints** (`auth/login`, `auth/register`, `auth/refresh`, `auth/logout`, `auth/two-factor/login`) go **same-origin** through the Worker BFF. The Worker strips `data.token` from those JSON bodies (the raw JWT never reaches JS), forwards Laravel's `__Host-spa_jwt` `Set-Cookie`, and expires the session cookie on logout. It keeps a first-party CSRF gate (`X-Requested-With`) on cookie-bearing mutations.
+- **All data traffic** goes **direct from the browser to the API origin** (`VITE_API_BASE_URL`). No Worker, no hostname mask — backend masking is not a security control, and the API is already protected by JWT auth, RBAC, throttling, and the WAF.
+
+The direct data path authenticates with the **cross-site HttpOnly `__Host-spa_jwt` cookie** that Laravel mints on the API origin (`SameSite=None; Secure`, `__Host-` prefix). JS never reads it; the browser attaches it via `credentials: 'include'`. `App\Http\Middleware\AuthenticateWithSpaCookie` (API group) binds it to the `api` guard, so `auth:api` routes, Spatie RBAC, and policies work unchanged. Because a cross-site cookie can be CSRF'd, mutations additionally send a **double-submit nonce**: `GET /api/v1/csrf` mints a random token on a NON-HttpOnly `__Host-spa_csrf` cookie, the SPA echoes it in the `X-CSRF-Token` header, and `App\Http\Middleware\VerifySpaCsrf` (API group) accepts only when header and cookie match (`419` on mismatch). Bearer requests skip the CSRF check (not cookie-ridable).
+
+CORS: `config/cors.php` has `supports_credentials => true` with an explicit origin allowlist (`APP_URL` + `SPA_URL`) — a wildcard origin cannot be combined with credentials. `RequireSpaOrigin` is now **audit-only** everywhere: direct hits are logged to `spa_audit` but never 403'd, because direct is the sanctioned data path. `X-SPA-Origin` remains an observability stamp, not auth. OPTIONS preflights always pass.
+
+`MONOLITH_API_ORIGIN` (Wrangler `vars` / `.dev.vars`) is still where the Worker forwards auth calls and **must equal the `APP_URL` origin** — signed email-verify HMAC is bound to the API host.
+
+> **Verify before production cutover.** The direct data path depends on browsers accepting the cross-site `SameSite=None; Secure` cookie. Confirm on the deployed HTTPS origin that `__Host-spa_jwt` is set after login and attached to a direct data call in Chrome/Edge/Firefox/Safari. If a target browser blocks third-party cookies (ITP/ETP strict), switch the SPA to the Bearer fallback (token in JS memory, `Authorization: Bearer` direct) — that path needs no cross-site cookie and `VerifySpaCsrf` skips Bearer requests.
 
 Still naked (browser talks to these hosts directly):
 
@@ -29,46 +38,42 @@ Still naked (browser talks to these hosts directly):
 - File Hosting presigned / gateway byte URLs
 - hCaptcha JS
 
-Local gotcha: Vite env files stack — `.env.local` **overrides** `.env` (gitignored via `*.local`). Restarting `npm run dev` does nothing if `.env.local` still has `VITE_API_BASE_URL=https://…/api/v1`. Leave that key **empty in both files** (required for hostname mask **and** the BFF cookie). Put `MONOLITH_API_ORIGIN` in `.dev.vars` (copy `.dev.vars.example`). An absolute Vite API URL means the browser talks to the monolith host directly; the Worker never sees the request. After changing env files, restart Vite and hard-refresh the browser (env is baked at compile).
+Local gotcha: Vite env files stack — `.env.local` **overrides** `.env` (gitignored via `*.local`). For local `npm run dev` against a same-origin API, leave `VITE_API_BASE_URL` empty; for the deployed direct path, set it to the API origin. Put `MONOLITH_API_ORIGIN` in `.dev.vars` (copy `.dev.vars.example`). After changing env files, restart Vite and hard-refresh the browser (env is baked at compile).
 
 ## Worker invocation vs static assets
 
-HTML, JS, CSS, and SPA fallback do **not** invoke the isolate. Wrangler `assets.run_worker_first` is only `["/api/*"]` — see `monolith-vue-workers/wrangler.jsonc`. Cloudflare’s free-tier **100,000 requests/day** is function invocations, not static views.
+HTML, JS, CSS, and SPA fallback do **not** invoke the isolate. Wrangler `assets.run_worker_first` is now **only the five auth session paths** (`/api/v1/auth/login`, `.../register`, `.../refresh`, `.../logout`, `.../two-factor/login`) — see `monolith-vue-workers/wrangler.jsonc`. Cloudflare's free-tier **100,000 requests/day** is function invocations, not static views.
 
-One browser `fetch` to the SPA origin `/api/*` is **one** invocation. The Worker’s `fetch` to Laravel is a subrequest (per-invocation cap), not a second daily request. `npm run dev` runs the same `server/index.ts` locally and is **not** billed. A 401 that refresh-retries can be three invocations (original + `POST auth/refresh` + retry). Pusher, S3/gateway byte URLs, Discord OAuth, and hCaptcha are not Worker requests.
+**Data traffic costs zero invocations** because it goes straight from the browser to the Laravel API origin. Only login/register/refresh/logout/2FA-login touch the Worker — roughly 1–2 invocations per session instead of one per user action. That is the >95% reduction this architecture exists for. `npm run dev` runs the same `server/index.ts` locally and is **not** billed. Pusher, S3/gateway byte URLs, Discord OAuth, and hCaptcha are not Worker requests.
 
-`/api/*` reverse-proxy + HttpOnly `spa_jwt` is **deemed necessary**. Keep that script small (`fetch` only). Stamp `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy` on Worker JSON responses (`server/bff.ts`). Static HTML/JS get CSP / frame-deny from `public/_headers` (Cloudflare Assets). Do not add cron, queues, Durable Objects, extra `run_worker_first` paths, or domain logic in the Worker without an explicit reason in this guide. Business work stays on Monolith; the SPA fetches and parses.
+Keep the Worker small (`fetch` only, auth session brokering). Stamp `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy` on Worker JSON responses (`server/bff.ts`). Static HTML/JS get CSP / frame-deny from `public/_headers` (Cloudflare Assets). Do not add cron, queues, Durable Objects, extra `run_worker_first` paths, or domain logic in the Worker without an explicit reason in this guide. Business work stays on Monolith; the SPA fetches and parses.
 
 ## Invocation budget controls
 
-Because every `/api/*` call is one Worker invocation, the stack has explicit quota savers:
+Data traffic no longer costs Worker invocations at all (direct to the API). The remaining cost levers still matter for responsiveness and for trimming API load:
 
-- **Batch fan-in** — `POST /api/v1/batch` (`routes/api/v1/batch.php`, `BatchController`) dispatches up to **10** read-only (`GET`/`HEAD`) sub-requests through the kernel in one HTTP call, each keeping its own auth/permission middleware. SPA wrapper: `batch()` in `src/api/client.ts`; `BatchSubRequest` rejects mutation methods at the client type level. Throttled `30,1`; mutations are rejected (`422` per entry). Use it for multi-widget hydrates instead of N parallel fetches.
+- **Batch fan-in** — `POST /api/v1/batch` (`routes/api/v1/batch.php`, `BatchController`) dispatches up to **10** read-only (`GET`/`HEAD`) sub-requests through the kernel in one HTTP call, each keeping its own auth/permission middleware. SPA wrapper: `batch()` in `src/api/client.ts`; `BatchSubRequest` rejects mutation methods at the client type level. Throttled `30,1`; mutations are rejected (`422` per entry). Use it for multi-widget hydrates instead of N parallel fetches. Aggregation rules (standalone-first, SPA-only, backend fan-in, gate condition): [api-aggregation.md](../platform/api-aggregation.md).
 - **Shell hydrate** — `useShellHydrate.hydrateShell()` (called from `AppLayout` and awaited by the auth route guard) batches five reads: `auth/me`, sidebar menus, navbar menus, `notifications/unread-count`, and `notifications?display_mode=query&limit=5`. It seeds `setUser`, `seedTree`, `seedUnreadCount`, and `seedList`; `AppNavbar` uses the seeded recent list for its bell dropdown. Each entry is checked independently. A failed entry leaves its owning lazy loader as fallback (`AppNavbar` skips navigation/list/count fetches only when the corresponding seed exists). Dashboard reads `auth/me` from the seeded store — no extra fetch. `resetShellHydration()` exists for re-hydration after logout.
-- **File Hosting hydrate** — `useFhHydrate.hydrateFileHosting()` batches the four independent FH reads (`file-hosting/browse`, `file-hosting/quota`, `file-hosting/workspaces`, `microstock/slots`) into one invocation from `FileHostingView.loadAll()`. `hydrateWorkspaceDetail(null)` batches the workspace list; `hydrateWorkspaceDetail(workspaceId)` batches workspaces, members, and up to 50 activity rows for `FileHostingWorkspacesView`. Failed subs return `null` and fall back to `fetchWorkspaces`, `fetchMembers`, `fetchActivity`, or the owning loader. The dependent stage (`microstock/billing`, collection status) still runs after — it gates on `browse.workspace.kind === 'microstock'`. Realtime (`.listing.changed` / `.quota.changed`) and polling fallback are unchanged — batching only trims initial hydrate.
-- **Worker cache headers** — `server/bff.ts` stamps `cache-control` on reference-data GET responses (`navigation/menus`, `services/options`, `currencies*`): `private, max-age=60/300` when a `spa_jwt` session is present, `public` when not. The guest-safe vTual public API (`/api/v1/vtual/public/*` — directory, contents, profile, plus `landing`/`stats`/`live`/`schedule`) is also `public, max-age=60` so landing-page repeats skip the Worker. The browser serves repeats from disk cache without touching the Worker.
+- **File Hosting hydrate** -- `useFhHydrate.hydrateFileHosting()` batches the four independent FH reads (`file-hosting/browse`, `file-hosting/quota`, `file-hosting/workspaces`, `microstock/slots`) into one invocation from `FileHostingView.loadAll()`. `hydrateWorkspaceDetail(null)` batches the workspace list; `hydrateWorkspaceDetail(workspaceId)` batches workspaces, members, and up to 50 activity rows for `FileHostingWorkspacesView`. Failed subs return `null` and fall back to `fetchWorkspaces`, `fetchMembers`, `fetchActivity`, or the owning loader. The dependent stage (`microstock/billing`, collection status) still runs after -- it gates on `browse.workspace.kind === 'microstock'`. Realtime (`.listing.changed` / `.quota.changed`) is unchanged -- batching only trims initial hydrate.
 - **JWT TTL 240** — `config/jwt.php` `'ttl' => 240` (Tier B; runtime `setting_config('jwt.ttl')` / Settings → Platform `platform.jwt.ttl`). A 401 refresh round-trip costs 3 invocations; longer TTL makes that rare. Refresh rotation + blacklist still bound token theft.
-- **Polling backoff** — `useListingLiveUpdate` (base 90s) and the `AppNavbar` bell (base 120s) double their interval after 5 unchanged polls (cap 5 min), reset on any change. Echo events remain the primary channel; polling is the degraded fallback.
-- **Per-domain batch hydrate** — Current coverage: `useNavigationHydrate` (menu edit plus parent/role/include/exclude lookups), `useNotificationsHydrate` (audience edit plus assignable roles), `useUsersHydrate` (user, assignable roles, activity logs), `useServicesHydrate` (service/purchase plus options), `usePaymentsHydrate` (income overview/invoices), `useInferenceHydrate` (usage overview/events/model cards and provider/card detail), `useMicrostockHydrate` (billing/ledger, usage events, admin overview/events), and `useVtualHydrate` (profile, credentials, orphan edit, claim). Every helper uses `bodyOf()` and returns `null` for a failed entry so callers retain individual-loader fallback. `src/api/batch.ts` owns the unwrap contract: `bodyOf()` accepts only a status-200 `success` envelope; `dataOf()` returns its `data` or `null`. Batch transport failure rejects the call and callers fall back to their normal loaders. Only `GET`/`HEAD` subrequests are supported; maximum remains 10.
-- **Project-wide realtime** — Dedicated `ShouldBroadcastNow` events per domain: Navigation (`menu.tree.changed`), Service (`service.catalog.changed`, `service.purchase.changed`), Inference (`inference.catalog.changed`), Settings (`settings.group.changed`), ErrorLog (`log.error.recorded`), ProductActivation (`product.activation.changed`), DomainAccess (`domain.visibility.changed`), RBAC (`rbac.role.permission.changed`), PaymentGateway admin (`invoice.list.changed`), Microstock billing (`microstock.billing.changed` rides the FH user channel). Each SPA view subscribes via a `use{Domain}Realtime` or `useAdminRealtime` composable; `useListingLiveUpdate` polling stays as degraded fallback when Echo is not connected.
+- **Realtime only (no polling)** -- the SPA relies on Echo/Pusher alone for live updates. Pusher auto-reconnect is the recovery path; there is no timer-based polling fallback anywhere. On reconnect after an outage the SPA fires a **resync bus** (`onEchoResync` in `useEcho.ts`): `AppNavbar` re-pulls the unread count + recent list and reloads every registered listing (`triggerAllListingsReload`), because events during the gap are lost. A "reconnecting" indicator shows in the navbar while the socket is down.
+- **Per-domain batch hydrate** -- Current coverage: `useNavigationHydrate` (menu edit plus parent/role/include/exclude lookups), `useNotificationsHydrate` (audience edit plus assignable roles), `useUsersHydrate` (user, assignable roles, activity logs), `useServicesHydrate` (service show, purchase show, and service edit -- each with options), `usePaymentsHydrate` (income overview/invoices), `useInferenceHydrate` (usage overview/events/model cards and provider/card detail), `useMicrostockHydrate` (billing/ledger, admin overview/events, microstock review asset metadata + preview download), and `useVtualHydrate` (profile, credentials, orphan edit, claim). Every helper unwraps via `bodyOfOrThrow()` and returns `null` for a transient entry failure so callers retain individual-loader fallback. `src/api/batch.ts` owns the unwrap contract: `bodyOf()` accepts only a status-200 `success` envelope; `dataOf()` returns its `data` or `null`. A **terminal** entry (`401`/`403`/`429`) makes `bodyOfOrThrow()` throw `TerminalBatchError` instead of returning `null`, so callers skip the standalone fallback for that entry (re-firing would repeat the rejection, and a 401 would trip the global force-logout). Batch transport failure rejects the call and callers fall back to their normal loaders. Only `GET`/`HEAD` subrequests are supported; the server cap is 10 per call, and the client **chunks** a larger fan-out into sequential 10-entry calls (positional results re-joined, nothing dropped). Aggregation rules: [api-aggregation.md](../platform/api-aggregation.md).
+- **Project-wide realtime** -- Dedicated `ShouldBroadcastNow` events per domain: Navigation (`menu.tree.changed`), Service (`service.catalog.changed`, `service.purchase.changed`), Inference (`inference.catalog.changed`), Settings (`settings.group.changed`), ErrorLog (`log.error.recorded`), ProductActivation (`product.activation.changed`), DomainAccess (`domain.visibility.changed`), RBAC (`rbac.role.permission.changed`), PaymentGateway admin (`invoice.list.changed`), Microstock billing (`microstock.billing.changed` rides the FH user channel). Each SPA view subscribes via a `use{Domain}Realtime` or `useAdminRealtime` composable; `useListingLiveUpdate` only registers the listing's reload fn on the Echo bus (no polling).
 
-Do **not** add a client fallback that naked-fetches the monolith host when the budget is tight — see the warning above.
 
-Vite `server.proxy` is a **local Node** reverse proxy. It does not run on Cloudflare Static Assets. It can mask a host in `npm run dev` when nothing else intercepts `/api`, but it cannot mint `spa_jwt` or replace this Worker while BFF is deemed necessary (`SameSite=Strict` on the SPA origin — every authenticated call must hit that origin). `@cloudflare/vite-plugin` already sends `/api/*` through `server/index.ts` in `npm run dev`; a second Vite proxy for the same path is dead or breaks login. Do not treat Vite proxy as a production “no-function mask.”
 
-Do not add a client fallback that naked-fetches the monolith host when the function cap is hit: the cookie would not be sent (different origin), JS has no JWT, and locking Laravel to the Worker would block that path anyway. The Worker **is** the public API; hostname masking is not a control.
 
 ## Local dogfood checklist
 
-Daily driver is `npm run dev` at `http://localhost:5173`. Blade stays at `APP_URL` as the reference. Set Monolith `SPA_URL="http://localhost:5173"`. Empty `VITE_API_BASE_URL` in `.env` and `.env.local`.
+Daily driver is `npm run dev` at `http://localhost:5173`. Blade stays at `APP_URL` as the reference. Daily driver is `npm run dev` at `http://localhost:5173`. Blade stays at `APP_URL` as the reference. Set Monolith `SPA_URL="http://localhost:5173"`. For local same-origin dev leave `VITE_API_BASE_URL` empty; for the deployed direct path set it to the API origin.
 
 Pass/fail (compare Blade when unsure):
 
-- Network: `/api/v1/...` on `localhost:5173`, not `monolith-ph24`. Login JSON has **no** `token`. Request has Cookie `spa_jwt` + `X-Requested-With`, not `Authorization`.
-- Application: `spa_jwt` HttpOnly; no `mw_auth` in localStorage.
+- Network: data calls go direct to the API origin; auth session calls hit `/api/v1/auth/*` on `localhost:5173`. Login JSON has **no** `token`. Data requests carry the `__Host-spa_jwt` cookie + `X-CSRF-Token`, not `Authorization`.
+- Application: `__Host-spa_jwt` HttpOnly on the API origin; no `mw_auth` in localStorage.
 - Hard refresh still logged in; logout clears the cookie; two tabs, one logout, the other dies on the next API call / `BroadcastChannel` logout.
 - Login / remember / 2FA / refresh near TTL.
-- FH browse + upload, invoice CSV, Discord connect (`SPA_URL`), Echo bell or FH live event (or poll fallback).
+- FH browse + upload, invoice CSV, Discord connect (`SPA_URL`), Echo bell or FH live event.
 - Sidebar **DMCA Blocklist** (`file-hosting.blocklist.index` → SPA `file-hosting.blocklist.index.view`) navigates.
 
 ## Production URL minting (`SPA_URL`)
@@ -94,13 +99,13 @@ Ops after merge (not code):
 
 1. Monolith `SPA_URL` = public Vue-Workers origin (no trailing slash). Empty keeps Blade/API URLs.
 2. Worker `MONOLITH_API_ORIGIN` **equals** Monolith `APP_URL` origin (signed email-verify HMAC).
-3. `VITE_API_BASE_URL` empty in the SPA build. `npm run deploy` from `monolith-vue-workers`.
+3. `VITE_API_BASE_URL` set to the Laravel API origin in the SPA build. `npm run deploy` from `monolith-vue-workers`.
 4. hCaptcha: Settings on **and** `VITE_HCAPTCHA_SITE_KEY` set, or both off.
 5. File Hosting bucket / Gateway CORS includes the SPA origin and **exposes `ETag`**.
 6. Pusher or Sockudo: Laravel `PUSHER_*` + matching `VITE_PUSHER_*` in the SPA build.
 7. Cloudflare custom domain on the Worker. Do not invent a second Wrangler env unless a second API origin exists.
 
-`X-SPA-Origin` is an audit stamp, not auth. JWT is auth. Do not widen `run_worker_first` past `/api/*`.
+`X-SPA-Origin` is an audit stamp, not auth. JWT is auth. Do not widen `run_worker_first` past the five auth session paths.
 
 Fonts and Bootstrap Icons are self-hosted (`@fontsource/source-sans-3`, `bootstrap-icons`). `public/robots.txt` disallows `/apps` and auth paths; `/s/*` is `noindex`. Vue DevTools is Vite `serve` only.
 
@@ -484,7 +489,7 @@ The SPA fetches and parses **as-is**. Do not port Yajra JS. Do not invent a seco
 
 These are the safe zone. Keep the current approaches.
 
-**A — Platform.** HttpOnly `spa_jwt` on the Vue-Workers origin (Worker BFF; JS does not store the JWT). Blade remains HttpOnly `auth_token` on `APP_URL`. Direct Monolith `/api/v1` still returns Bearer JSON. `POST /api/v1/broadcasting/auth` (cookie → Worker Bearer), Worker CSRF header on mutating cookie requests, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`, invocation budget controls (`/api/v1/batch`, Worker cache headers, JWT TTL 240, polling backoff). Mimic the session and realtime intent; two cookies, two origins.
+**A - Platform.** Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted; JS does not store the JWT). Blade remains HttpOnly `auth_token` on `APP_URL`. Direct Monolith `/api/v1` data traffic uses the cross-site cookie (or Bearer); `POST /api/v1/broadcasting/auth` goes direct, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, narrow auth-only Worker BFF, breadcrumb config map, guest cannot read `system_settings`, budget controls (`/api/v1/batch`, JWT TTL 240). Mimic the session and realtime intent; two cookies, two origins.
 
 **B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout=sidebar`. File Hosting three Vue routes vs Blade island; team as a page vs offcanvas; listing-only move picker; rate editor re-fetch instead of full reload. Mimic intent, not Blade DOM ids (`#fhTeamOffcanvas`, `#fhCreateWorkspaceModal`, `#fhMicrostockPanel`).
 
@@ -494,13 +499,13 @@ Do not treat a read-only show-page microstock card as “review is done.” Revi
 
 ## Realtime (Laravel Echo + Pusher)
 
-The SPA supports realtime updates via Laravel Echo and Pusher, with polling fallback.
+The SPA supports realtime updates via Laravel Echo and Pusher. There is no polling fallback -- Echo/Pusher auto-reconnect is the recovery path.
 
 - **Composable**: `src/composables/useEcho.ts` — singleton `Echo<'pusher'>` (`EchoOptions<'pusher'>`), reads Pusher config from `VITE_PUSHER_*` env vars. Authorizer `fetch` is same-origin + `X-Requested-With` (no Bearer); the Worker attaches JWT from `spa_jwt`. Connection flag uses `connector.onConnectionChange` / `connectionStatus()`. Subscribe via `getEcho()`; `useEcho()` exposes `init` / `disconnect` / `connected` only.
-- **Notification bell**: `src/components/AppNavbar.vue` — inits Echo on mount, subscribes to `App.Models.User.{id}` private channel for `.activity-notification.received` events. Polling (60s) starts as fallback if Echo fails to connect within 30s grace window. On each WS event, the bell also calls `fetchList(5)` to refresh its own recent-notification dropdown content (capped at 5 — the full list is fetched on dropdown open or navigation to `/notifications`).
+- **Notification bell**: `src/components/AppNavbar.vue` -- inits Echo on mount, subscribes to `App.Models.User.{id}` private channel for `.activity-notification.received` events. On each WS event, the bell also calls `fetchList(5)` to refresh its own recent-notification dropdown content (capped at 5 -- the full list is fetched on dropdown open or navigation to `/notifications`).
 - **File Hosting**: `src/composables/useFileHostingRealtime.ts` — singleton channel manager for `file-hosting.user.{userId}` (`.listing.changed`, `.quota.changed`, `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress`). Multiple views register handlers; the channel is subscribed once and torn down when the last handler unregisters. See [Pattern B](#pattern-b-direct-channel-subscription) below.
 - **Microstock**: collection mutations (`lockCollection`, `analyzeCollection`, `fetchCollectionStatus`, `exportCollection`, `downloadCollectionCsv`, asset metadata GET/PATCH, `analyzeAsset`, `fetchSlots`, `createWorkspace`) live in `useMicrostock.ts` and are wired from `FileHostingView` / `FhMicrostockReviewModal`. Realtime subscriptions go through `useFileHostingRealtime.ts` (same channel, Microstock events).
-- **vTual claim**: `src/views/VtualVtuberClaimView.vue` — subscribes to `vtual.claim.{claimId}` private channel for `.claim.progress` events. Polling (5s) stays active as fallback alongside Echo.
+- **vTual claim**: `src/views/VtualVtuberClaimView.vue` -- subscribes to `vtual.claim.{claimId}` private channel for `.claim.progress` events. If Echo is unavailable, a pending claim gets no live update until manual reload.
 
 #### Cross-tab notification read-state sync
 
@@ -513,7 +518,7 @@ Messages:
 | `{ type: 'read-all' }` | `markAllRead()` | Zero `unreadCount`, mark all `items` as read |
 | `{ type: 'read', id }` | `markAsRead(id)` | Decrement `unreadCount`, mark matching item as read |
 
-If `BroadcastChannel` is unavailable, the acting tab still updates immediately; other tabs reconcile on their next WS event, reconnect, or fallback poll.
+If `BroadcastChannel` is unavailable, the acting tab still updates immediately; other tabs reconcile on their next WS event or reconnect.
 
 ### Env vars
 
@@ -522,7 +527,7 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 | Var | Purpose |
 |-----|---------|
 | `MONOLITH_API_ORIGIN` | Worker-only. Monolith origin (no `/api/v1` suffix, no trailing slash). Wrangler `vars` + `.dev.vars`. **Not** bundled into the browser. Empty → Worker 503. Must equal `APP_URL` origin or signed email-verify HMAC fails. |
-| `VITE_API_BASE_URL` | Must stay **empty** so calls stay same-origin `/api/v1` (Worker mask + BFF cookie). `.env.local` wins. An absolute prefix bypasses the Worker — hostname leak **and** no `spa_jwt`. |
+| `VITE_API_BASE_URL` | Set to the **Laravel API origin** so data calls go direct; auth session paths stay same-origin (Worker BFF). `.env.local` wins. Empty only for local same-origin `wrangler dev`. |
 | `VITE_PUSHER_APP_KEY` | Pusher app key (required for Echo — must match Monolith `PUSHER_APP_KEY`) |
 | `VITE_PUSHER_APP_CLUSTER` | Pusher cluster (default `mt1`) |
 | `VITE_PUSHER_HOST` | Self-hosted/Reverb host (omit for Pusher-hosted) |
@@ -534,7 +539,7 @@ Discord OAuth return is **not** a Vite var. Set `SPA_URL` on the Monolith API ho
 
 Values must mirror Monolith's `.env` `PUSHER_*` literals (and `HCAPTCHA_SITEKEY` when hCaptcha is on). `.env.local` overrides `.env` for every `VITE_*` key (that is why an old absolute `VITE_API_BASE_URL` survived Vite restarts). Worker origin is `.dev.vars` `MONOLITH_API_ORIGIN`, not a `VITE_` var.
 
-When `VITE_PUSHER_APP_KEY` is unset, Echo is not initialized and all realtime-dependent features fall back to polling.
+When `VITE_PUSHER_APP_KEY` is unset, Echo is not initialized and realtime-dependent features simply receive no live updates (manual reload required).
 
 ### Self-hosted websocket (Sockudo)
 
@@ -542,7 +547,7 @@ Production realtime targets **Sockudo** (Pusher-compatible WS). No code change i
 
 ### Auth
 
-Echo private channel auth uses a dedicated API broadcast auth endpoint: `POST /api/v1/broadcasting/auth` (same-origin Worker proxy). The SPA sends cookies + `X-Requested-With`; the Worker attaches `Authorization: Bearer` from `spa_jwt`. Empty `VITE_API_BASE_URL` is required — an absolute override skips the BFF.
+Echo private channel auth uses a dedicated API broadcast auth endpoint: `POST /api/v1/broadcasting/auth` (direct to the API origin, cross-site cookie + `X-CSRF-Token`).
 
 **Why a dedicated API route?** Laravel's default `/broadcasting/auth` (auto-registered by `withRouting(channels:...)` in `bootstrap/app.php`) lives under the `web` middleware group — it requires CSRF + session, which is incompatible with a Bearer-token SPA. The API route (`routes/api/v1/broadcasting.php`) mirrors the same `Broadcast::auth($request)` call but under `api` middleware (JWT guard):
 
@@ -558,11 +563,21 @@ This delegates to the same channel authorization callbacks in `routes/channels.p
 
 The SPA keeps a logged-in session alive across browser tabs without forcing re-login.
 
-1. **HttpOnly `spa_jwt`** — the browser shares the cookie across tabs on the Vue-Workers origin. JS does not persist the JWT (`mw_auth` leftover keys are cleared on hydrate). `remember` only affects `Max-Age` via API `expires_in`.
+1. **HttpOnly `__Host-spa_jwt`** - the browser shares the cookie across tabs on the API origin. JS does not persist the JWT (`mw_auth` leftover keys are cleared on hydrate). `remember` only affects `Max-Age` via API `expires_in`.
 2. **`GET auth/me` on hydrate** — each tab learns `user` from the cookie, not from `localStorage`.
 3. **`BroadcastChannel('monolith-auth')` coordinated refresh** — when multiple tabs' refresh timers fire near-simultaneously, only one tab performs `POST auth/refresh`; the others wait for `refresh-done`. This prevents the refresh race where two tabs each call refresh, one blacklists the other's token, and both tabs lose. Messages: `refresh-request`, `refresh-response`, `refresh-done` (`ok` + `user` / expiry — **no JWT**), `logout`.
 
-`clearAuth()` broadcasts `logout` so other tabs drop in-memory `user`. The Worker expires `spa_jwt` on `POST auth/logout`.
+`clearAuth()` broadcasts `logout` so other tabs drop in-memory `user`. It also resets the full shell state for a clean re-login cycle: `resetShellHydration()` (via dynamic import) plus `resetRouterHydration()` (the route guard's one-shot cold-boot flag), so the next login re-bootstraps instead of reusing a stale `hydrated` flag. The Worker expires the session cookie on `POST auth/logout`; Laravel also clears `__Host-spa_jwt`.
+
+**Post-login cookie-settle serialization.** After a successful login the SPA awaits one `auth/me` round-trip (`fetchMe()`) before navigating to the redirect target (`LoginView.handleSubmit`). This guarantees the cross-site `SameSite=None; Secure` session cookie is committed by the browser before the destination route's shell hydrate fires its batch — otherwise the first post-login API call can race ahead of the cookie and fail. The route guard adds a matching re-validation: on a `requiresAuth` navigation where in-memory `user` is null, it awaits one `fetchMe()` before redirecting to login, so a valid-but-not-yet-settled session is not mistaken for a guest (a real guest's `fetchMe()` resolves to null after the client's refresh attempt fails).
+
+### Cross-tab CSRF nonce sync
+
+The double-submit `__Host-spa_csrf` nonce has the same shared-cookie / per-tab-memory split as the JWT, and needs its own sync. Each tab caches the nonce in module memory (`src/api/csrf.ts`), but the cookie is shared per origin. Without coordination, a tab that fetches a fresh nonce rotates the shared cookie and strands every other tab on its stale in-memory value — their next mutation sends `header=old` vs `cookie=new` and gets a `419`.
+
+`src/api/csrf.ts` therefore mirrors the JWT pattern with a `BroadcastChannel('monolith-csrf')`: whichever tab fetches a nonce (`ensureCsrf` / `refreshCsrf`) broadcasts it (`{ type: 'csrf', token }`); every other tab adopts it on `onmessage`. All CSRF consumers (`client.ts` mutations, `useEcho.ts` broadcast authorizer) read through `csrf.ts`, so one channel keeps every tab on the same nonce. Covered by `tests/csrf.test.ts` (fetch+broadcast, adoption, malformed-message guard, single-flight, header application).
+
+On logout the nonce dies with the session. `clearCsrf()` drops the in-memory copy and broadcasts `{ type: 'csrf-clear' }` so every tab stops sending the dead nonce; `useAuth.clearAuth()` calls it, and each tab also clears on the `monolith-auth` `logout` message.
 
 ### Backend `remember` preservation
 
@@ -602,7 +617,7 @@ Backend mutations (user create/update/delete, inference model unregistered, etc.
 
 **Registry:** `src/composables/useListingReload.ts` — module-level singleton mapping `tableId -> Set<() => void>`. No reactive state.
 
-**Reusable hook:** `src/composables/useListingLiveUpdate.ts` — encapsulates registration + polling fallback in one call:
+**Reusable hook:** `src/composables/useListingLiveUpdate.ts` -- registers a listing's reload fn on the Echo bus in one call:
 
 ```ts
 import { useListingLiveUpdate } from '@/composables/useListingLiveUpdate'
@@ -611,7 +626,7 @@ import { useListingLiveUpdate } from '@/composables/useListingLiveUpdate'
 useListingLiveUpdate('users-table', () => fetchList())
 ```
 
-This registers on mount, unregisters on unmount, and starts a 60s visibility-gated polling fallback when Echo is not connected. The poll self-stops once Echo connects.
+This registers the listing's reload fn on mount and unregisters on unmount. Live updates arrive only over the websocket; there is no polling fallback.
 
 **Active listing views with bell-driven live-update:**
 
@@ -684,11 +699,11 @@ onUnmounted(() => {
 | `private-payments.invoice.{invoiceId}` | `.invoice.status.changed` | Patch status badge, steps, sidebar; emit `status-updated` + `invoice-updated` |
 | `private-payments.routing` | `.routing.catalog.changed` | Re-fetch checkout channels, update picker |
 
-Wired into `CheckoutPanel.vue` with 15s polling fallback (down from previous 60s). Sync-status provider is parsed from `checkoutResult.gateway` or `invoice.payment_gateway.name`. If neither is present, skip the call — do **not** default to `midtrans`. Blade resolves the provider in the web hop (`InvoiceCheckoutGatewayResolver`); the SPA has no `defaultForInvoice()` equivalent.
+Wired into `CheckoutPanel.vue` (Echo-driven, no polling). Sync-status provider is parsed from `checkoutResult.gateway` or `invoice.payment_gateway.name`. If neither is present, skip the call -- do **not** default to `midtrans`. Blade resolves the provider in the web hop (`InvoiceCheckoutGatewayResolver`); the SPA has no `defaultForInvoice()` equivalent.
 
 #### vTual claim — inline in `VtualVtuberClaimView.vue`
 
-Subscribes to `private-vtual.claim.{claimId}` for `.claim.progress` events. Handles phase transitions (`started`, `verify_queued`, `verify_processing`, `verify_failed`, `verified`, `cancelled`, `max_attempts_blocked`). 5s polling stays active as fallback alongside Echo.
+Subscribes to `private-vtual.claim.{claimId}` for `.claim.progress` events. Handles phase transitions (`started`, `verify_queued`, `verify_processing`, `verify_failed`, `verified`, `cancelled`, `max_attempts_blocked`). No polling fallback; Echo only.
 
 ### Channel/event reference
 
@@ -700,14 +715,13 @@ Subscribes to `private-vtual.claim.{claimId}` for `.claim.progress` events. Hand
 | Payments routing | `payments.routing` | `.routing.catalog.changed` | `usePaymentRealtime.ts` |
 | vTual claim | `vtual.claim.{claimId}` | `.claim.progress` | `VtualVtuberClaimView.vue` (inline) |
 
-### Polling fallback convention
+### Realtime connection convention
 
-All realtime surfaces follow the same degraded-mode pattern:
+All realtime surfaces follow the same websocket-only pattern:
 
 1. On mount, attempt Echo subscription.
-2. If Echo not connected (`echoConnected === false`), start visibility-gated polling (interval varies: 15s for payments, 30s for file hosting, 60s for bell-driven listings).
-3. Poll callback checks `echoConnected` — if Echo connects mid-poll, the poll self-stops.
-4. On unmount, unsubscribe from Echo + clear poll timer.
+2. Live updates arrive only over the websocket. Echo/Pusher auto-reconnect is the recovery path; there is no timer-based polling fallback.
+3. On unmount, unsubscribe from Echo.
 
 ## Payment UI components
 
@@ -755,7 +769,7 @@ Assessment of whether Vue-Workers invents business rules that belong in Monolith
 | Local `formatBytes` vs `*_human` | Presentation | Prefer API fields later |
 | Payment channel client search; menus client DataTable | Accepted B | |
 | Blade JS `purchase-pricing-preview.js` fee re-quote | Blade also does this | Baseline mimic, not a new SPA crime |
-| SPA cannot call `PaymentGateway::defaultForInvoice()` | Blade web hop resolves a missing gateway; SPA skips sync when provider is unknown | Skip is safe; poll resumes after checkout returns `gateway` |
+| SPA cannot call `PaymentGateway::defaultForInvoice()` | Blade web hop resolves a missing gateway; SPA skips sync when provider is unknown | Skip is safe; sync resumes after checkout returns `gateway` |
 
 **Correct consumer pattern (keep):** `quota.can_create_workspace`, `slots.can_create`, `claim.can_verify`, flattened channel quotes, invoice fee snapshots, `*_formatted`.
 

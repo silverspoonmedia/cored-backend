@@ -14,9 +14,9 @@ flowchart TB
         API --> Blade
     end
     subgraph VueWorkers["Monolith-Vue-Workers (Vue 3 + CF Workers)"]
-        SPA["SPA<br>API-consumer<br>HttpOnly spa_jwt"]
+        SPA["SPA<br>API-consumer<br>HttpOnly __Host-spa_jwt"]
     end
-    API -->|"Worker BFF cookie to Bearer"| SPA
+    API -->|"auth via Worker BFF; data direct"| SPA
     API -->|"Pusher WS"| Blade
     API -->|"Pusher WS"| SPA
 ```
@@ -54,19 +54,19 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | Aspect | Detail |
 |--------|--------|
 | Framework | Vue 3 + Vite 8 + TypeScript |
-| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Static SPA assets do not invoke the isolate; only `/api/*` is the Worker function (`run_worker_first`). That function reverse-proxies same-origin `/api/v1/*` to `MONOLITH_API_ORIGIN` (hostname mask + `spa_jwt` BFF). Do not add more Worker logic unless deemed necessary — see [vue-workers-spa.md — Worker invocation vs static assets](vue-workers-spa.md#worker-invocation-vs-static-assets). |
+| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Static SPA assets do not invoke the isolate; `run_worker_first` is only the five auth session paths (`/api/v1/auth/login|register|refresh|logout|two-factor/login`). That narrow BFF strips `data.token` and forwards Laravel's `__Host-spa_jwt` cookie. **Data traffic goes direct from the browser to the API origin** (cross-site cookie + CSRF nonce) and costs zero invocations. Do not add more Worker logic unless deemed necessary — see [vue-workers-spa.md — Worker invocation vs static assets](vue-workers-spa.md#worker-invocation-vs-static-assets). |
 | API | Same `/api/v1/*` endpoints as Blade — second API client, no business logic in SPA |
-| Auth | HttpOnly `spa_jwt` on the Vue-Workers origin (Worker BFF). JS does not store the JWT. Direct Monolith `/api/v1` hits without the Worker's `X-SPA-Origin` header are audit-logged and rejected with 403 outside local/testing (`RequireSpaOrigin`). Blade uses HttpOnly `auth_token` on `APP_URL`. |
+| Auth | Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted). JS does not store the JWT; direct data calls use `credentials: 'include'` + double-submit `X-CSRF-Token`. `RequireSpaOrigin` is audit-only (direct hits logged, never 403). Blade uses HttpOnly `auth_token` on `APP_URL`. |
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware (distinct from Blade's web-middleware `/broadcasting/auth` with cookie + CSRF) |
-| Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), covering shell bootstrap, File Hosting browse/workspace detail, navigation and notification edit, users, services, payments, inference, microstock, and vTual multi-fetch views; Worker cache headers on reference-data GETs, JWT TTL 240 min, polling backoff — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
+| Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), covering shell bootstrap, File Hosting browse/workspace detail, navigation and notification edit, users, services, payments, inference, microstock, and vTual multi-fetch views; Worker cache headers on reference-data GETs, JWT TTL 240 min — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
 | Type alignment | TS types in `src/api/types.ts` match Laravel API Resources exactly — snake_case, no transform layer |
 | i18n | `vue-i18n` (`en` / `id` / `ja`) JSON locales converted from Laravel PHP lang files; parity and hardcoded-fallback guards run with `npm run check:i18n`; generic API errors use locale keys and server messages remain preferred |
 | UI parity | AdminLTE 4 / Bootstrap 5 / jQuery / Select2 (same libraries as Blade) |
-| Realtime | Laravel Echo + Pusher, with polling fallback on every surface |
+| Realtime | Laravel Echo + Pusher only — no polling fallback. Echo auto-reconnect is the recovery path; on reconnect the SPA fires a resync bus (re-pulls unread count + registered listings) |
 
 ### Auth divergence from Blade
 
-Blade stores the JWT in an HttpOnly `auth_token` cookie on `APP_URL` and the web layer forwards it as Bearer. The SPA uses a **second** HttpOnly cookie, `spa_jwt`, on the Vue-Workers origin. The Worker strips `data.token` from login/register/refresh/2FA-login JSON, sets the cookie, and on later requests copies it to `Authorization: Bearer` toward Laravel (never forwards `Cookie`). XSS cannot read the JWT; it can still session-ride. Mutating cookie requests need `X-Requested-With: XMLHttpRequest`.
+Blade stores the JWT in an HttpOnly `auth_token` cookie on `APP_URL` and the web layer forwards it as Bearer. The SPA uses a **second** HttpOnly cookie, `__Host-spa_jwt`, minted by Laravel on the API origin (`SameSite=None; Secure`). The Worker BFF brokers only the auth session endpoints (strips `data.token`, forwards the cookie). Direct data requests authenticate via the cookie and pass a double-submit CSRF nonce. XSS cannot read the JWT; it can still session-ride.
 
 Multi-tab: the cookie is shared. `BroadcastChannel('monolith-auth')` only coordinates refresh so one tab calls `auth/refresh` (blacklist race) and broadcasts `logout` — messages do **not** carry the JWT. Hydrate is `GET auth/me`.
 
@@ -79,7 +79,7 @@ Two live-update patterns, mirroring Blade:
 - **Pattern A — Bell-driven listing reload:** `UserActivityNotificationReceived` on `App.Models.User.{id}` carries a `table_id`; the bell forwards it to `useListingReload` registry; registered listing views refetch. Active on `UsersView` (`users-table`), `InferenceModelCardsView` (`inference-model-cards-table`).
 - **Pattern B — Direct channel subscription:** domain-specific private channels via singleton composables — `useFileHostingRealtime.ts` (6 events on `file-hosting.user.{userId}`), `usePaymentRealtime.ts` (invoice status + routing catalog), vTual claim inline.
 
-All surfaces have visibility-gated polling fallback that self-stops when Echo connects.
+Live updates arrive only over the websocket; Echo auto-reconnect is the recovery path (no timer-based polling anywhere). After an outage the SPA resyncs via the Echo resync bus.
 
 Cross-tab notification read-state sync: `BroadcastChannel('activity-notifications.{userId}')` mirrors `read-all` / `read` messages across tabs — same pattern as Blade's `bell.js`.
 
@@ -108,7 +108,7 @@ Route coverage matches Blade. Product-surface appearance gaps from waves 1–3 p
 - **Notification deep links:** SPA resolves Blade `action_route` / `action_params` via `notificationTarget.ts`
 - **CI:** Vue-Workers GitHub Actions `type-check` → `check:i18n` → Vitest (Worker BFF helpers) → `build-only`
 - **404:** last-route `/:pathMatch(.*)*` → `NotFoundView` inside `AppLayout` (`requiresAuth`)
-- **Realtime:** bell, file hosting (6 events), payments (invoice + routing), vTual claim — all with polling fallback
+- **Realtime:** bell, file hosting (6 events), payments (invoice + routing), vTual claim — all Echo-only (no polling fallback)
 - **Cross-tab:** auth refresh coordination + notification read-state
 - **i18n:** contextual `en` / `id` / `ja` translations, JSON key/placeholder parity, hardcoded fallback detection, reactive runtime switching, localized generic API errors, and locale-aware number/date formatting
 
@@ -116,7 +116,7 @@ Route coverage matches Blade. Product-surface appearance gaps from waves 1–3 p
 
 Mimic is appearance + behavior + intent, not a pixel clone. One list API, two presentations (`display_mode=query` for the SPA DataTable, `display_mode=datatable` for Blade Yajra). Query mode is a flat `T[]` unless `page` / `per_page` / `search` are present, then `{ items, pagination }` (default 10). Parse as-is. Row actions are icon-only.
 
-**A — Platform:** HttpOnly `spa_jwt` (Worker BFF; JS does not store the JWT), SPA broadcasting auth via Worker cookie→Bearer, Worker CSRF header, hCaptcha Vite gate, duplicate vue-i18n JSON, CF Workers origin, Worker `/api/v1` hostname mask, breadcrumb config map, guest cannot read `system_settings`, invocation budget controls (`/api/v1/batch`, Worker cache headers, JWT TTL 240, polling backoff).
+**A — Platform:** Cross-site HttpOnly `__Host-spa_jwt` (Laravel-minted; JS does not store the JWT), direct SPA broadcasting auth, double-submit CSRF nonce, hCaptcha Vite gate, duplicate vue-i18n JSON, CF Workers origin, narrow auth-only Worker BFF, breadcrumb config map, guest cannot read `system_settings`, budget controls (`/api/v1/batch`, JWT TTL 240, reference-GET cache headers).
 
 **B — Intentional:** Vue `DataTable` (not Yajra JS), Select2 only for server-side lookup, navigation from `GET navigation/menus?layout=sidebar`, FH three Vue routes vs Blade island, team as a page vs offcanvas, listing-only move picker, rate save re-fetch (no full reload).
 

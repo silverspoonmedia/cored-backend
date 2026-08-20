@@ -788,6 +788,10 @@ class FileHostingTest extends TestCase
 
     public function test_anyone_with_link_file_is_publicly_readable_and_downloadable(): void
     {
+        // No SPA origin: share_url falls back to the signed API route. The local
+        // .env sets SPA_URL, which would otherwise make the URL SPA-relative.
+        config(['services.spa.url' => '']);
+
         $user = $this->userWithRole('User');
         $this->grantPaidMain($user);
         $file = HostedFile::query()->create([
