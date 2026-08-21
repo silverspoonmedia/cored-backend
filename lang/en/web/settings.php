@@ -165,6 +165,9 @@ return [
         'vtual.websub.lease_seconds' => 'WebSub lease (seconds)',
         'vtual.websub.renew_before_hours' => 'WebSub renew before expiry (hours)',
         'vtual.websub.max_body_bytes' => 'WebSub max notification body (bytes)',
+        'vtual.landing.event.title' => 'Landing event title',
+        'vtual.landing.event.starts_at' => 'Landing event start time',
+        'vtual.landing.event.body' => 'Landing event body',
     ],
     'hints' => [
         'platform.mail.from_address' => 'Global From address for outbound mail (transport credentials stay in .env).',

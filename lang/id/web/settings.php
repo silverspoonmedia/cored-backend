@@ -165,6 +165,9 @@ return [
         'vtual.websub.lease_seconds' => 'Lease WebSub (detik)',
         'vtual.websub.renew_before_hours' => 'Perpanjang WebSub sebelum kedaluwarsa (jam)',
         'vtual.websub.max_body_bytes' => 'Ukuran maks body notifikasi WebSub (byte)',
+        'vtual.landing.event.title' => 'Judul event landing',
+        'vtual.landing.event.starts_at' => 'Waktu mulai event landing',
+        'vtual.landing.event.body' => 'Isi event landing',
     ],
     'hints' => [
         'platform.mail.from_address' => 'Alamat From global untuk email keluar (kredensial transport tetap di .env).',

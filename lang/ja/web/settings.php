@@ -165,6 +165,9 @@ return [
         'vtual.websub.lease_seconds' => 'WebSub リース（秒）',
         'vtual.websub.renew_before_hours' => 'WebSub 期限前更新（時間）',
         'vtual.websub.max_body_bytes' => 'WebSub 通知本文の最大サイズ（バイト）',
+        'vtual.landing.event.title' => 'ランディングイベントのタイトル',
+        'vtual.landing.event.starts_at' => 'ランディングイベントの開始日時',
+        'vtual.landing.event.body' => 'ランディングイベントの本文',
     ],
     'hints' => [
         'platform.mail.from_address' => '送信メールのグローバルFromアドレス（輸送資格情報は.envのまま）。',
