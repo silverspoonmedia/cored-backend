@@ -17,7 +17,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
 | Menu visibility | Administration → **vTual** → Orphan vTubers (`vtual.orphans.index`, Root/Admin/Moderator) + Platform credentials (`vtual.platform-credentials.index`, Root/Admin). Mapped in `config/products.php` `menu_routes` |
 | Progress tracker | [implementation-status.md](implementation-status.md) — done / not done / next |
-| Vue island assessment | [vue-island-assessment.md](vue-island-assessment.md) — claim wizard promoted to Vue island (2026-08-09) |
+| Vue island assessment | [vue-island-assessment.md](vue-island-assessment.md) — archived 2026-08 assessment (historical; all surfaces are SPA now) |
 | Ops assessments | [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md) |
 | Legacy audit | [archive/vtual-legacy-audit.md](../../archive/vtual-legacy-audit.md) |
 

@@ -95,22 +95,14 @@ the File Hosting workspace model. A system workspace:
 > team workspace slots. See [Microstock](../microstock/README.md).
 
 **Provisioning trigger:** the Microstock system workspace is **not**
-auto-provisioned on File Hosting first paint. It is created on demand —
-`GET /apps/microstock` (redirects to `/apps/services` when the user has no Microstock
-entitlement) or via the switcher/API — and is gated by
+auto-provisioned on File Hosting first paint. It is created on demand via
+the SPA services card or workspace switcher (`POST /api/v1/microstock/workspaces`) when the user has a Microstock
+entitlement — and is gated by
 `WorkspaceAccessService::assertCanProvisionMicrostockWorkspace` (slot limit from
 the Microstock entitlements). Until entitlement and on-demand provisioning it
 simply does not appear in the switcher.
 
-**Switcher UX (SPA):** `WorkspaceResource` exposes `kind`; workspace items are
-rendered **client-side** by the Vue island (`App.vue` workspace dropdown from
-bootstrap + soft-refetch of `GET file-hosting/workspaces`). Blade supplies modal
-shells (`#fhCreateWorkspaceModal`, Microstock create modal) and JSON bootstrap —
-legacy vanilla shell is retired — auth browse is Vue-only. Soft-nav workspace
-changes rebind Echo and refresh members/activity. The **Microstock** create flow
-still uses Blade `#fhCreateMicrostockModal` opened via `window.bootstrap`. Creating a Microstock workspace
-opens `#fhCreateMicrostockModal` (name input) → POSTs, and the new workspace
-appears in its group immediately.
+**Switcher UX (SPA):** `WorkspaceResource` exposes `kind`; `FileHostingView.vue` renders workspace items client-side from `GET /api/v1/file-hosting/workspaces` (refetched after create/switch). Team and Microstock workspace creation use SPA modals (`FhCreateWorkspaceModal`, Microstock create modal) that POST directly to `/api/v1/file-hosting/workspaces` or `/api/v1/microstock/workspaces`. Switching workspaces rebinds Echo and refreshes members/activity.
 
 ## Collaborative Works (team storage)
 
@@ -481,7 +473,7 @@ Gateway Uploader changes go live after `wrangler deploy` on the `gateway` Worker
 
 ### S3 provider CORS (browser-direct multipart)
 
-When proxy is **off**, browser uploads **directly** to the S3-compatible endpoint (presigned PUT / UploadPart). That is a cross-origin request from the app origin (Blade admin or SPA) to the bucket host. Without bucket CORS, the browser blocks the PUT and may hide `ETag` — multipart **complete** then cannot send part ETags.
+When proxy is **off**, browser uploads **directly** to the S3-compatible endpoint (presigned PUT / UploadPart). That is a cross-origin request from the SPA origin (or server public-share endpoints) to the bucket host. Without bucket CORS, the browser blocks the PUT and may hide `ETag` — multipart **complete** then cannot send part ETags.
 
 When proxy is **on**, browser upload PUTs talk to the **Worker** origin — Worker CORS must allow app origin(s) and **expose `ETag`**. Full-page download navigation does not need CORS (302 → Worker GET with HMAC). Bucket CORS is still needed for **direct** mode (upload + download) and any client that talks to B2 without the Worker.
 
@@ -864,7 +856,7 @@ npm run test:js
 | Suite | What it covers |
 |-------|----------------|
 | PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 25 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest` — HTML + SPA JSON contracts for index/trash/show/workspaces + mutation `data` forward), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302, public show JSON + paid gate 404). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
-| Vitest `npm run test:js` | Pure client helpers: `resources/js/file-hosting/upload-progress.test.js`, `direct-upload-*.test.js`, `selection.test.js` (Drive click/range), `vue/islands/file-hosting/fh-shell.test.js` (`hasBrowseChrome`, router helpers), plus microstock/upload helpers. Pattern: `resources/js/**/*.test.js`. |
+| Vitest `npm test` (SPA) | Client-side helpers and composables under `monolith-vue-workers/src/` (e.g. `utils/fhCollectionDescribe.ts`, `utils/fhMicrostockBadge.ts`, BFF helpers in `tests/`). The removed Monolith `resources/js/**/*.test.js` island tests are historical only — see [UI architecture / SPA shell](#ui-architecture--spa-shell). |
 | CORS / quota probes | `QuotaThrottleProbeTest` + `QuotaPreflightProbeTest` (`tests/Domain/FileHosting/.../API/V1/`) — regression guards confirming `file-hosting/quota` responses (throttled 429 and `OPTIONS` preflight) carry the correct CORS headers. Added after a transient browser "CORS error" report that traced to infra, not Laravel. |
 | Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Gateway uploader tests: `c:\laragon\www\gateway` (`npm test`). |
 | Qualification | `composer test -- --filter=FileHostingQualification` — 50 IDs (Low/Normal/Medium/Hard/Anomaly) |

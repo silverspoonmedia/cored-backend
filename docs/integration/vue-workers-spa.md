@@ -115,7 +115,7 @@ Fonts and Bootstrap Icons are self-hosted (`@fontsource/source-sans-3`, `bootstr
 
 ## API contract reference
 
-The SPA consumes the same `/api/v1/*` endpoints as the Blade admin. Per-domain API docs:
+The SPA consumes the same `/api/v1/*` endpoints Monolith exposes. Per-domain API docs:
 
 - [payment-gateway](../domains/payment-gateway/README.md)
 - [microstock](../domains/microstock/README.md)
@@ -339,7 +339,7 @@ To add a new route's breadcrumb, add an entry to `BREADCRUMB_MAP` in `useBreadcr
 
 ## Page titles and admin chrome
 
-Authenticated routes set `meta.titleKey` (and guest auth routes also `meta.headingKey`) to the same i18n keys Blade uses on `layouts.app` / `layouts.auth`. Do **not** hardcode English in router `props.title`.
+Authenticated routes set `meta.titleKey` (and guest auth routes also `meta.headingKey`) to the same key names ported from the former Blade layouts. Do **not** hardcode English in router `props.title`.
 
 - **Composable**: `src/composables/usePageTitle.ts` — resolves the title from `route.matched` meta; special-cases settings groups (`web.settings.groups.*` from `route.params.group` **or** MenuSeeder names `settings.platform.view` / `settings.file-hosting.view` / `settings.microstock.view` / `settings.vtual.view`) and product-activation show (`product-activations.product_title` with `{product}`).
 - **Content header**: `AppLayout.vue` renders `pageTitle` in the `h3`.
@@ -447,7 +447,7 @@ See SPA README.
 
 Claim stays authenticated at `/apps/vtual/vtubers/:slug/claim`. Public page only advertises it: guest + `is_claimable` → `/login?redirect=/apps/vtual/vtubers/{slug}/claim`; authed + `is_claimable` → the claim route. No guest `POST /claims`. Tokens stay auth-only.
 
-Blade and API `profile_url` / `claim_process_url` mint **singular** `/apps/vtual/vtuber/{slug}` (hub is the param-less `/apps/vtual/vtuber`). SPA canonical show/claim stay **plural** `/apps/vtual/vtubers/:slug` so they do not collide with that hub. Singular `/apps/vtual/vtuber/:slug` and `/claim` redirect onto the plural named routes. Singular `/vtual/vtuber/:slug` (no `/apps`) also redirects into `/apps` — it must not sit in `VkStr1Layout`. Public guest profile remains `/vtual/vtubers/:slug` only. Claim CTA on the auth show page is a named `router-link`, not the Blade `claim_process_url`. UUID in the path is replaced with the canonical slug after fetch (Blade 301 equivalent, client-side).
+API / `SpaPublicUrl` `profile_url` / `claim_process_url` mint **singular** `/apps/vtual/vtuber/{slug}` (hub is the param-less `/apps/vtual/vtuber`). SPA canonical show/claim stay **plural** `/apps/vtual/vtubers/:slug` so they do not collide with that hub. Singular `/apps/vtual/vtuber/:slug` and `/claim` redirect onto the plural named routes. Singular `/vtual/vtuber/:slug` (no `/apps`) also redirects into `/apps` — it must not sit in `VkStr1Layout`. Public guest profile remains `/vtual/vtubers/:slug` only. Claim CTA on the auth show page is a named `router-link`. UUID in the path is replaced with the canonical slug after fetch (server 301 equivalent, client-side).
 
 Login **and** register honor `?redirect=` through `src/lib/safeRedirect.ts` (`safeInternalRedirect`): must start with `/`, reject `//`, `\`, `://`, `/http:`. Cross-links between login and register preserve the query. Default fallback `/apps/dashboard`.
 
@@ -589,7 +589,7 @@ On logout the nonce dies with the session. `clearCsrf()` drops the in-memory cop
 
 ## Live-update patterns
 
-The SPA uses two distinct live-update mechanisms, mirroring Monolith Blade's architecture:
+The SPA uses two distinct live-update mechanisms, implementing the same backend broadcast/API contract:
 
 ```mermaid
 flowchart TB
@@ -725,7 +725,7 @@ All realtime surfaces follow the same websocket-only pattern:
 
 ## Payment UI components
 
-The SPA ports Monolith's payment Blade components to Vue:
+Checkout UI in the SPA (`CheckoutPanel.vue`, `PaymentStatusHero.vue`, etc.) implements the same backend invoice/realtime contract:
 
 - **PaymentStatusHero** (`src/components/PaymentStatusHero.vue`) — hero banner with eyebrow, title, amount, and status badges. Uses `ois-hero` CSS classes.
 - **PaymentSteps** (`src/components/PaymentSteps.vue`) — 3-step progress indicator (Choose method → Pay → Confirmation). Uses `ois-steps` CSS classes.

@@ -49,7 +49,7 @@ Microstock assets live in `file_hosting_workspaces.kind = 'microstock'` rows —
 
 ### No auto-provision on File Hosting
 
-`FileManagerController@index` does **not** create the Microstock workspace. It appears in the FH switcher only after workspace entitlement and on-demand provisioning via `/apps/services` or Microstock entry points. `GET /apps/microstock` (`microstock.index`) redirects to `/apps/services` with an error flash when the entitlement is missing, even though the Product Activation registry row is already active.
+The Microstock system workspace is **not** auto-provisioned on File Hosting first paint. It appears in the FH switcher only after workspace entitlement and on-demand provisioning via `/apps/services` or the switcher/API (`POST /api/v1/microstock/workspaces`). The SPA services card and File Hosting workspace switcher gate entry on `WorkspaceAccessService::assertCanProvisionMicrostockWorkspace` (slot limit from Microstock entitlements). Until entitlement and provisioning, the workspace simply does not appear in the switcher.
 
 ## Usage & limits
 
@@ -126,14 +126,14 @@ Services: `AiBillingService`, `AiCreditService`, `UnknownModelBillingConsolidati
 
 Transparent prepaid balance and AI usage history for the billing subject (the user who triggered analyze).
 
-`GET /api/v1/microstock/billing` returns `balance_micro_usd` (signed integer source), `balance_usd` (display string, `$49.91` or `-$0.12` when negative), `estimated_per_analysis_micro_usd`, `estimated_per_analysis_usd`, and `daily_free` snapshot from `AiDailyFreeService::snapshot()`: `{ enabled: bool, limit: int, used: int, remaining: int, resets_at: string|null }`. UI (`microstock-usage.js` `formatUsdDisplay()`) prefers the string when present, else formats from micro-USD.
+`GET /api/v1/microstock/billing` returns `balance_micro_usd` (signed integer source), `balance_usd` (display string, `$49.91` or `-$0.12` when negative), `estimated_per_analysis_micro_usd`, `estimated_per_analysis_usd`, and `daily_free` snapshot from `AiDailyFreeService::snapshot()`: `{ enabled: bool, limit: int, used: int, remaining: int, resets_at: string|null }`. The SPA prefers the formatted string when present, else formats from micro-USD.
 
 | Surface | Route / endpoint |
 |---------|------------------|
-| **Usage page** (web) | `GET /apps/file-hosting/microstock/usage` (`file-hosting.microstock.usage`) — summary cards + tabs |
-| Summary (JSON hop) | `GET /apps/file-hosting/microstock/billing` → `GET /api/v1/microstock/billing` |
-| Ledger mutations | `GET /apps/file-hosting/microstock/billing/ledger` → `GET /api/v1/microstock/billing/ledger` |
-| Usage detail | `GET /apps/file-hosting/microstock/billing/usage-events` → `GET /api/v1/microstock/billing/usage-events` |
+| **Usage page** (SPA) | Vue Router `file-hosting.microstock-usage` → `/apps/file-hosting/microstock/usage` — summary cards + tabs |
+| Summary | `GET /api/v1/microstock/billing` |
+| Ledger mutations | `GET /api/v1/microstock/billing/ledger` |
+| Usage detail | `GET /api/v1/microstock/billing/usage-events` |
 
 **Page layout**
 
@@ -149,17 +149,17 @@ Transparent prepaid balance and AI usage history for the billing subject (the us
 | `GET` | `/api/v1/admin/microstock/billing/overview` |
 | `GET` | `/api/v1/admin/microstock/billing/usage-events` |
 
-Web hops: `GET /apps/file-hosting/microstock/billing/admin/overview`, `…/admin/usage-events`. Gated by `hasAnyRole(['Root', 'Admin', 'Moderator'])` — Management excluded.
+Consumed directly by the SPA (`FileHostingMicrostockUsageView.vue`, `useMicrostockBilling.ts`). Gated by `hasAnyRole(['Root', 'Admin', 'Moderator'])` — Management excluded.
 
 **Navigation**
 
 | Location | Link |
 |----------|------|
-| File Hosting toolbar (Microstock workspace) | **AI Balance** → primary UX is SPA offcanvas (`#fhMicrostockUsagePanel`, `createMicrostockUsagePanel` with `isReady`); if bind fails, navigates to standalone usage URL with `workspace_id` |
-| Collection describe modal footer | Billing line + **View balance & history** |
+| File Hosting toolbar (Microstock workspace) | **AI Balance** → navigates to `file-hosting.microstock-usage` or opens inline billing summary from `GET /api/v1/microstock/billing` |
+| Collection describe modal footer | Billing line + **View balance & history** → usage route |
 | `/apps/services` Microstock card | **Usage & balance** next to balance line |
 
-Implementation: `BillingLedgerService`, `AdminBillingAnalyticsService`, `AdminBillingController`, `BillingLedgerEntryResource`, `BillingUsageEventResource`, `AdminBillingUsageEventResource`. Live UI is the SPA (`file-hosting.microstock-usage`, File Hosting workspace switcher). Blade `microstock-usage.blade.php` / island offcanvas are removed — see [blade-admin.md](../../web/blade-admin.md). Daily-free behaviour: [daily-free-trial.md](daily-free-trial.md).
+Implementation: `BillingLedgerService`, `AdminBillingAnalyticsService`, `AdminBillingController`, `BillingLedgerEntryResource`, `BillingUsageEventResource`, `AdminBillingUsageEventResource`. Batch hydrate: `useMicrostockHydrate` — see [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls). Daily-free behaviour: [daily-free-trial.md](daily-free-trial.md).
 
 ## Collections (folder-as-collection lifecycle)
 
@@ -177,7 +177,7 @@ flowchart LR
 | Step | Behavior |
 |----|----------|
 | Upload gate | `DirectUploadService::initiate` rejects (422) a Microstock workspace upload with no `folder_id` (`microstock.error_requires_folder`) or into a locked collection (`microstock.error_collection_locked`). Client mirrors this via dropzone `data-workspace-kind` / `data-collection-locked` |
-| Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` (single text field, max 2000, nullable) + `collection_billing_mode` (`free`/`paid`) + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here. **Web UI:** the Lock & Describe modal collects structured sections (Primary concept, Visible subjects, Buyer intent, Style & mood, Additional notes). All sections are optional; they compose into a multi-line hint before lock. A mandatory **Free / Paid** billing-mode selector appears when `microstock.daily_free.enabled` is on; when Free is disabled the selector is hidden and every analysis is forced to `paid`. Submitting with no content warns that blind locking usually produces poor, inconsistent AI metadata: Vue-Workers SPA uses `confirmDialog()` (`FhCollectionDescribeModal`); the Blade Vue island uses `MonolithSwal.confirm` with a `window.confirm` fallback. |
+| Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` (single text field, max 2000, nullable) + `collection_billing_mode` (`free`/`paid`) + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here. **SPA UI:** `FhCollectionDescribeModal.vue` collects structured sections (Primary concept, Visible subjects, Buyer intent, Style & mood, Additional notes). All sections are optional; they compose into a multi-line hint before lock. A mandatory **Free / Paid** billing-mode selector appears when `microstock.daily_free.enabled` is on; when Free is disabled the selector is hidden and every analysis is forced to `paid`. Submitting with no content warns via `confirmDialog()` that blind locking usually produces poor, inconsistent AI metadata. |
 | Analyze | `POST collections/{folder}/analyze` (requires `locked`, non-empty) sets `processing` and dispatches `ProcessCollection` |
 | Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)** with decoupled stage columns (`ai_vision`, `ai_thinking`, `ai_result`), then dispatches one `AnalyzeAssetVision` job per file on the **collection vision** queue (FIFO by file name). Each vision persists `ai_vision` and dispatches `AnalyzeAssetThinking` on the **collection thinking** queue. **Dual-lane pipeline:** configurable concurrent vision + thinking jobs per folder (default **3+3**), capped globally by upstream limits (see [Upstream limits](#upstream-limits)); vision file N+1 may run while thinking file N runs. Collection `review` when **all** assets are terminal (watchdog / thinking completion). Sub-folders are separate collections and are NOT processed |
 | Curate | Per-file manual edit via `PATCH assets/{file}/metadata` (existing finalize) while in `review` |
@@ -394,7 +394,7 @@ Images reach the vision stage via `VisionImageResolver` — **signed HTTPS URL**
 5. Collection hint overfitting (invented soccer/swim gear) — both stages forbid equipment not visible; thinking VERIFY should drop invented terms when the model cooperates.
 6. Thinking multimodal fallback — if the gateway rejects images on the `thinking` combo, `HttpAiMetadataService` retries text-only then keeps the vision draft (`raw.thinking = null`).
 
-The review panel surfaces per-file `error` when status is `failed` (`AssetMetadataResource` + `#fhMicrostockPanel`).
+The review panel surfaces per-file `error` when status is `failed` (`AssetMetadataResource` + `FhMicrostockReviewModal.vue`).
 
 ### Adaptive timeout & watchdog
 
@@ -472,45 +472,46 @@ Middleware: `auth:api` → `domain.access:Microstock` → `product.active:Micros
 
 The sibling Vue-Workers SPA uses `useMicrostockHydrate` for user billing/ledger, usage events, and admin platform overview/usage events. These batch reads reduce Worker invocations without changing API billing or authorization; failed entries retain each view’s individual-loader fallback. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
 
-## Web
+## SPA routes
+
+Symbolic Vue Router names (registered in [`config/spa-routes.php`](../../../config/spa-routes.php)). All data calls go **direct to `/api/v1/*`** — there are no Monolith `web` proxies for Microstock.
 
 | Route name | Purpose |
 |----------|---------|
-| `microstock.index` | Redirects into the File Hosting SPA pinned to the Microstock system workspace (`/apps/file-hosting?workspace_id=…`); redirects to `/apps/services` when not activated |
-| `microstock.export.csv` | Stream-download the finalized metadata CSV |
-| `file-hosting.microstock.slots` | Thin web hop → `GET /api/v1/microstock/slots` (for the switcher UI) |
-| `file-hosting.microstock.billing` | Thin web hop → `GET /api/v1/microstock/billing` (collection modal + credit pre-flight) |
-| `file-hosting.microstock.billing.ledger` | Thin web hop → `GET /api/v1/microstock/billing/ledger` |
-| `file-hosting.microstock.billing.usage-events` | Thin web hop → `GET /api/v1/microstock/billing/usage-events` |
-| `file-hosting.microstock.billing.admin.overview` / `.admin.usage-events` | Thin web hops → admin billing API (Root / Admin / Moderator) |
-| `file-hosting.microstock.usage` | Usage & balance page (`microstock-usage.blade.php` + `microstock-usage.js`) |
-| `file-hosting.microstock.workspaces.store` | Thin web hop → `POST /api/v1/microstock/workspaces` (switcher "New Microstock workspace") |
-| `file-hosting.microstock.collections.lock` / `.analyze` / `.status` / `.export` | Thin web hops → the matching collection API endpoints (SPA collection toolbar) |
-| `file-hosting.microstock.collections.download` | Direct service download of the exported collection CSV |
-| `file-hosting.microstock.assets.preview` | Signed inline preview URL `{url}` for the review panel (`SignedDownloadService::resolve($file, inline: true)` after `MicrostockService::resolveAsset`) |
-| `file-hosting.microstock.assets.metadata.show` / `.update` / `.analyze` | Thin web hops → `GET`/`PATCH` `assets/{file}/metadata` + `POST assets/{file}/analyze` (review panel) |
+| `file-hosting.microstock-credentials` | Marketplace credential CRUD (`MicrostockCredentialsView.vue`) |
+| `file-hosting.microstock-usage` | Usage & balance page (`FileHostingMicrostockUsageView.vue`) |
+| `settings.microstock` | Operational knobs (Settings → Microstock tab) |
 
-### Collection UI (Vue island)
+Collection toolbar, workspace switcher, Lock & Describe, and Review panel live inside **`file-hosting.index`** / folder routes (`FileHostingView.vue`) — not separate named routes. API surface:
 
-Auth File Hosting browse is the **Vue FH island** (`App.vue`) — not the retired vanilla `file-manager` / `updateCollectionUi` path. There is **no** visual stepper (`data-fh-collection-stepper` is gone).
+| API prefix | Purpose |
+|------------|---------|
+| `GET/POST /api/v1/microstock/slots` | Slot entitlement for switcher |
+| `GET /api/v1/microstock/billing*` | Balance, ledger, usage events (+ admin overview paths) |
+| `POST /api/v1/microstock/workspaces` | Create Microstock workspace from switcher |
+| `POST/PATCH/GET …/collections/*` | Lock, analyze, status, export, download |
+| `GET/PATCH/POST …/assets/{file}/metadata` + `POST …/analyze` | Review panel CRUD + re-analyze |
+| Signed preview | Inline preview URL from `SignedDownloadService` after `MicrostockService::resolveAsset` |
 
-Inside a Microstock collection folder the toolbar exposes **Lock & Describe** and **Review** (when `isMicrostock` + `currentFolderId`). Collection progress text under the quota bar comes from browse folder fields via `formatCollectionProgress` (`microstock-ui.js`) — processed/total/failed counts, not a 5-step CSS stepper. Lifecycle still lives on the folder (`collection_status` / lock / analyze / export APIs); the island opens Blade shells (`#fhCollectionDescribeModal`, `#fhMicrostockPanel`) rather than morphing a single status button.
+Removed Blade island history: [file-hosting README — UI architecture / SPA shell](../file-hosting/README.md#ui-architecture--spa-shell).
 
-The Lock & Describe modal (`#fhCollectionDescribeModal`) uses a compact 2-column grid for the visible-subjects and buyer-intent sections (reducing vertical clutter), with the char count and billing line moved to the modal footer. The structured describe form (`collection-describe.js`) makes all describe sections optional; only a too-short primary concept or hint length over 2000 chars is a hard validation error. A mandatory **Free / Paid** billing-mode radio group is shown when daily free is enabled; the modal resets the selection to empty on open so the user must explicitly choose. Paid mode bypasses the daily-free quota entirely (all slots prepaid), while Free mode uses the daily quota first and falls back to prepaid for any remainder. The billing line in the footer updates live as the user toggles the mode. Re-lock from `failed` pre-fills from `folder.collection_hint`. Upload into a locked collection / workspace root is blocked client-side (`FhDropzone` / `collectionLocked`) and server-side (`DirectUploadService`).
+### Collection UI (SPA)
 
-### Switcher multi-workspace UI
+Auth File Hosting browse is **`FileHostingView.vue`** — three Vue Router routes (index, folder, show), not the removed single-island soft-nav shell.
 
-The workspace switcher is painted by Vue (`App.vue`): reactive `workspaces` from island bootstrap, refreshed via `softRefetchWorkspaces` (`GET file-hosting/workspaces`). Microstock workspaces appear as `kind === 'microstock'` rows in that same list (stars icon). Team create uses `#fhCreateWorkspaceModal` when `ui.planState` / `ui.canCreateWorkspace` allow; free/grace CTAs point at Services. Legacy vanilla rebuilds (`renderWorkspaceMenuItems`, `refreshMicrostockSlotSection`, `data-fh-microstock-slot`) are **not** on the live island path — the Vue index does not include the archived `workspace-switcher` Blade partial.
+Inside a Microstock collection folder the toolbar exposes **Lock & Describe** and **Review** when the workspace `kind` is `microstock` and a folder is selected. Collection progress text under the quota bar comes from browse folder fields via `formatCollectionProgress` in `useMicrostock.ts` — processed/total/failed counts, not a stepper widget. Lifecycle lives on the folder (`collection_status` / lock / analyze / export APIs).
+
+**Lock & Describe** — `FhCollectionDescribeModal.vue` + `utils/fhCollectionDescribe.ts`. Compact 2-column grid for visible-subjects and buyer-intent sections; char count and billing line in the modal footer. All describe sections optional; only a too-short primary concept or hint over 2000 chars is a hard validation error. Mandatory **Free / Paid** billing-mode radio when daily free is enabled; modal resets selection on open. Paid mode bypasses daily-free quota; Free mode uses daily quota first then prepaid. Re-lock from `failed` pre-fills from `folder.collection_hint`. Upload into a locked collection / workspace root blocked client-side and server-side.
+
+**Workspace switcher** — reactive workspace list from `GET /api/v1/file-hosting/workspaces`; Microstock rows show `kind === 'microstock'`. Team create gated by plan state; Microstock create POSTs `/api/v1/microstock/workspaces`.
 
 ### Review UI (curate metadata)
 
-The curate step of the collection lifecycle lives directly in the file-hosting listing:
-
-- **Per-file metadata status** — `FolderService::browse` eager-loads `HostedFile::microstockMetadata` when the workspace `kind` is `microstock`, and `HostedFileResource` exposes a `microstock` key (`{title, keywords, status, phase, stages}`, `null` = no row yet). `stages` mirrors decoupled vision/thinking/result (`pending`/`running`/`ok`/`failed`/`skipped`). The Vue listing paints stage-aware badges via `resolveMicrostockBadge` (`microstock-ui.js`) and a Review control that opens `#fhMicrostockPanel`.
-- **Side panel** — clicking Review opens a Bootstrap offcanvas (`#fhMicrostockPanel`) driven by `microstock-panel.js`. Compact layout: status badge + stage strip (Vision → Thinking → Result) in the header row, rendered with an icon dot plus a visible text label for each stage; tooltips and `aria-label` remain for accessibility. signed preview image; editable title; keyword chips with a count badge and a **Clear all** button; description/category collapsed under an **AI details** toggle (Bootstrap collapse with chevron rotation). WebSocket-first metadata updates; fallback HTTP poll every 30 s when broadcast is off or degraded. Saves via `PATCH assets/{file}/metadata`; **Re-analyze** POSTs `assets/{file}/analyze` on the solo queue.
-- **Progress realtime** — while `collection_status === 'processing'`, the SPA listens on the File Hosting websocket channel for `collection.analysis.progress` (banner counts + phase) and `asset.metadata.progress` (per-file badge/stage patch). Requires broadcast credentials (`BROADCAST_CONNECTION=pusher` or `reverb` + `PUSHER_*`). When broadcast is off or the socket is degraded, fallback HTTP poll runs every 60 s (collection) / 30 s (review panel) instead of the former 3 s burst (`status` + full listing refetch).
-- **Collection billing** — `GET file-hosting/microstock/billing` (web hop → `GET /api/v1/microstock/billing`) shows balance + per-file estimate in the Lock & Describe modal footer; submit blocks when balance &lt; `fileCount × estimate`. **View balance & history** opens the SPA usage offcanvas (`#fhMicrostockUsagePanel`). Locked collections expose an enabled **Start analysis** button (`POST …/analyze` without re-lock).
-- **Review shortcut** — in `review` state a secondary **Review files** toolbar button opens the panel for the first listed file.
+- **Per-file metadata status** — `FolderService::browse` eager-loads `HostedFile::microstockMetadata` when workspace `kind` is `microstock`; `HostedFileResource` exposes a `microstock` key (`{title, keywords, status, phase, stages}`). SPA listing paints stage-aware badges via `resolveMicrostockBadge` (`utils/fhMicrostockBadge.ts`) and a Review control opening `FhMicrostockReviewModal.vue`.
+- **Review modal** — editable title, keyword chips, description/category under an **AI details** toggle; signed preview image. Echo-first metadata updates via File Hosting websocket; fallback HTTP poll every 30 s when broadcast is off. Saves via `PATCH /api/v1/microstock/assets/{file}/metadata`; **Re-analyze** via `POST …/analyze`.
+- **Progress realtime** — while `collection_status === 'processing'`, `useFileHostingRealtime` listens for `collection.analysis.progress` and `asset.metadata.progress`. Fallback poll every 60 s (collection banner) / 30 s (review modal) when broadcast unconfigured.
+- **Collection billing** — `GET /api/v1/microstock/billing` pre-flight in the Lock & Describe footer; submit blocks when balance &lt; `fileCount × estimate`. **View balance & history** navigates to `file-hosting.microstock-usage`. Locked collections expose **Start analysis** (`POST …/analyze`).
+- **Review shortcut** — in `review` state, toolbar **Review files** opens the modal for the first listed file.
 
 ## Tests
 
@@ -518,7 +519,7 @@ The curate step of the collection lifecycle lives directly in the file-hosting l
 - `MicrostockTest`: provisioning gated by entitlement (403 without), slot-limit multi-workspace create, public-share block, analyze → generate (stub AI, asserts `title`/`description`/`category`/`keywords`), finalize curation, CSV export finalized-only, credential encrypt/decrypt roundtrip, invite paid-gate. Checkout coverage in `ServiceCheckoutZeroChargeTest`.
 - `CollectionLifecycleTest`: root-upload blocked (422), locked-collection upload blocked, lock requires hint + transitions + rejects re-lock + rejects non-microstock folder, analyze requires lock/files + dispatches `ProcessCollection`, non-recursive batching (sub-folder untouched), empty→failed, **multi-file dual-lane pipeline** (all files → `review`), prompt hint threading (`Prompts::visionUser`/`thinkingUser` + the `COLLECTION CONTEXT` block), status progress counts, per-collection CSV filter (incl. `description`/`category` columns), export persists CSV + marks exported.
 - `CollectionPipelineTest`: per-file vision dispatch count, solo vs collection queue routing, thinking idempotency, watchdog thinking backlog recovery.
-- `CollectionApiTest`: HTTP lock/analyze/status/export/download endpoints (auth, validation, transitions, foreign-collection 403), browse exposes `microstock` key per file in a Microstock workspace (omitted in personal), per-file metadata show/finalize/re-analyze + signed preview web hops (`FileManagerControllerTest`).
+- `CollectionApiTest`: HTTP lock/analyze/status/export/download endpoints (auth, validation, transitions, foreign-collection 403), browse exposes `microstock` key per file in a Microstock workspace (omitted in personal), per-file metadata show/finalize/re-analyze + signed preview API responses.
 - `AnalysisWatchdogTest`: pending metadata past grace → `failed`; recent pending untouched; `processing` folder with all-failed metadata → `failed`; folder with some `generated` → `review`; zombie pending reaped; watchdog self-dispatches only while a collection is `processing`; `status()` returns derived `phase` (`analyzing`/`degraded`/echo).
 - `HttpAiMetadataServiceThinkingFallbackTest`: thinking happy path uses curated result; system-prompt hang retries with fused user message; both attempts failing falls back to the vision draft (`raw.thinking = null`) — all asserting `description`/`category` are carried through.
 - `HttpAiMetadataServiceResponseParsingTest`: SSE `data: [DONE]` trailer stripping, full SSE delta stream aggregation, `stream: false` on requests, markdown-fenced JSON, Anthropic content blocks, batch `assets` wrapper, unparseable body → `ai_invalid_response`.
@@ -533,9 +534,7 @@ The curate step of the collection lifecycle lives directly in the file-hosting l
 - `BillingLedgerApiTest`: user `GET billing/ledger` + `GET billing/usage-events` (auth, pagination, daily-free vs prepaid rows).
 - `BillingAdminApiTest`: platform overview aggregates, cross-user usage events, role gate (Root/Admin/Moderator vs Management).
 - `KeywordNormalizerTest`: dedupe + cap at 60 keywords.
-- `FileManagerControllerTest::test_microstock_usage_page_renders`: usage page Blade smoke.
-
-Upload client unit tests (Vitest): `direct-upload-mime.test.js`, `direct-upload-context.test.js`, `direct-upload-dismiss.test.js` — see [File Hosting — UI architecture / SPA shell](../file-hosting/README.md#ui-architecture--spa-shell).
+- Client-side upload helpers are covered by SPA Vitest (`monolith-vue-workers/tests/` and composable unit tests) — see [File Hosting — UI architecture / SPA shell](../file-hosting/README.md#ui-architecture--spa-shell).
 
 ## Operations: queue worker
 

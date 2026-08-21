@@ -111,4 +111,4 @@ The checklist gates promotion on (A) all required — interactive subtree is pro
 | orphans/* (staff CRUD) | No | Classic admin CRUD |
 | platform-credentials/* | No | Classic admin CRUD |
 
-**Status (2026-08-09):** The claim wizard at `vtuber/claim.blade.php` has been promoted to a Vue island (`resources/js/vue/islands/vtual-claim/`). `claim-realtime.js` and `claim-active-panel.blade.php` are superseded. All other surfaces remain on Blade.
+**Status (2026-08-09, superseded):** The claim wizard was promoted to a Vue island inside Blade at that time. The entire Blade stack — including that island — was removed with the in-repo frontend. All vTual surfaces listed above now live in **Monolith-Vue-Workers**; see the [vTual README](README.md) SPA route table.

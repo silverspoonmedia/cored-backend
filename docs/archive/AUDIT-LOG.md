@@ -18,3 +18,5 @@ Verification of README and `docs/` against the codebase. **Code is the source of
 | Other `docs/*` | Spot-checked jwt, notifications, auth-activity, localization, uuid, octane, pint | **Verified accurate** — no changes |
 
 **Tests added:** `PlaygroundProductionGuardTest`, `ApiRoutingRegistrationTest`, `WebApprovalWorkflowRoleMiddlewareTest` (333 tests passing).
+
+> **Note (2026-08):** The live list-display contract moved from `docs/list-display-modes.md` to [`docs/platform/list-display-modes.md`](../platform/list-display-modes.md) during Blade removal. This log entry is unchanged as a historical snapshot.

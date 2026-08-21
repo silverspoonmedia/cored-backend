@@ -1,6 +1,6 @@
 # Domain Access — Public/Private product-domain gate
 
-Kernel feature (`App\Support\DomainAccess`, mirrors `App\Support\Product`) that gates each **product** domain by a global `public` | `private` flag, configurable from the Blade admin by Root/Admin only. It is a **fourth axis**, distinct from module taxonomy (`config/domains.php`), the RBAC catalog (`domain_kind`), and per-user product activation (`product_activations`).
+Kernel feature (`App\Support\DomainAccess`, mirrors `App\Support\Product`) that gates each **product** domain by a global `public` | `private` flag, configurable from the SPA (**Administration → Domain Access**, route `domain-access.index`) by Root/Admin only. It is a **fourth axis**, distinct from module taxonomy (`config/domains.php`), the RBAC catalog (`domain_kind`), and per-user product activation (`product_activations`).
 
 ## Concept
 
@@ -21,8 +21,8 @@ Root/Admin always bypass. Default is `public`, so enabling the feature does not 
 | Service | `App\Support\DomainAccess\DomainAccessService` — `visibilityFor`, `setVisibility`, `canAccess`, request-scoped cache |
 | Naming | `App\Support\DomainAccess\ProductNames` — `label`, `betaRole`, `accessPermission` |
 | Middleware | `domain.access:{Domain}` → `DomainAccessGate` (alias in `DomainAccessServiceProvider`) |
-| Admin API | `GET admin/domain-access`, `PUT admin/domain-access/{key}` (`view`/`manage domain access` perms) |
-| Admin web | `App\Support\DomainAccess\Http\Controllers\Web\DomainAccessController` + `adminlte4/domain-access/index.blade.php` + `resources/js/domain-access/toggle.js` |
+| Admin SPA | Vue Router `domain-access.index` → `/apps/domain-access` (toggle visibility per product key) |
+| Admin API | `GET /api/v1/admin/domain-access`, `PUT /api/v1/admin/domain-access/{key}` (`view`/`manage domain access` perms) — consumed directly by the SPA; no server `web` route |
 | Beta role seeding | `Database\Seeders\Concerns\SeedsBetaTesterRole` + `DomainAccessSeeder` (built-ins) |
 
 ## Naming derivation

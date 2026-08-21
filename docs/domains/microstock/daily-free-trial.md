@@ -4,7 +4,7 @@ Optional per-user daily free AI analyses for product discovery. Enabled via **Se
 
 ## Configuration
 
-**Settings → Microstock** (`/apps/microstock/settings`):
+**Settings → Microstock** (SPA route `settings.microstock` → `/apps/settings/microstock`):
 
 | Registry key | Config path | Default | Purpose |
 |--------------|-------------|---------|---------|

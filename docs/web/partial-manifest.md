@@ -70,7 +70,7 @@ The Blade admin rendered from `resources/views/{layout}/` where `{layout}` came 
 
 ## Related
 
-- [blade-admin.md](blade-admin.md) — include contract, `WebLayout::partial()`
-- [ui-patterns.md](ui-patterns.md) — shared UX patterns referencing partials
-- [domains/vtual/README.md](../domains/vtual/README.md) — vTual web surfaces
-- [domains/file-hosting/README.md](../domains/file-hosting/README.md) — Vue island vs archived Blade
+- [blade-admin.md](blade-admin.md) — what remains on the `web` stack after removal
+- [ui-patterns.md](ui-patterns.md) — **archived** UX patterns referencing these partials
+- [domains/vtual/README.md](../domains/vtual/README.md) — live vTual SPA surfaces
+- [domains/file-hosting/README.md](../domains/file-hosting/README.md) — removed Blade island history
