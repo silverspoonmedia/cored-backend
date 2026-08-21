@@ -93,8 +93,8 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Channel registration pool** | Staff pending channel adds; same 50 / 15m gate per platform; flush delegates activate to `ChannelActivationService` | `ChannelRegistrationFlushService`, `ChannelActivationService`, `ChannelRegistrationFlushServiceTest` |
 | **Content model foundation** | Primary host + appearances; explicit attach; no auto collab from API; **`hydrated_at`** null = stub, full hydrate sets timestamp | `ContentService`, appearances migration, README content section |
 | **Error logging** | Platform HTTP failures can log to ErrorLog | platform client / gateway error path + docs |
-| **i18n** | en / id / ja for API + web vtual strings | `lang/*/api/vtual.php`, `lang/*/web/vtual.php` |
-| **Web UI/UX overhaul (archived suite)** | Full-suite Blade polish from 2026-07: AJAX forms, modal confirmations, WCAG 2.1 AA, Vite JS — **archived** with hub/profiles/claims/registry; patterns reused in orphans + credentials + vtuber profile | `resources/views/_archive/adminlte4/vtual/**`, `tests/_archive/Feature/Http/Controllers/Web/VtualBladeWebTest.php` |
+| **i18n** | en / id / ja for API strings; UI strings live in the SPA JSON locales | `lang/*/api/vtual.php`, `monolith-vue-workers/src/i18n/locales/*.json` |
+| **Web UI/UX overhaul (removed)** | Full-suite Blade polish from 2026-07 (AJAX forms, modal confirmations, WCAG 2.1 AA, Vite JS). Deleted with the in-repo frontend; the SPA carries the equivalent screens | [ui-archive.md](ui-archive.md) |
 
 ### Tests (unit / feature present)
 

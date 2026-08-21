@@ -1,60 +1,26 @@
-# UI patterns — selects & list modes
+# Blade UI patterns (archived)
+
+> **Archived — nothing here is live.** The in-repo Blade + AdminLTE 4 admin was removed; see [blade-admin.md](blade-admin.md). Every file path, asset, component tag, and JS module below is deleted. This document is kept as the record of what the Blade admin did and which conventions the SPA inherited or deliberately dropped. Do **not** follow it as a spec, and do **not** recreate these patterns in Monolith — UI belongs in `monolith-vue-workers`.
+>
+> **The live parts moved out.** The `display_mode` list contract, the row-action payload, and the `/api/v1/lookups/*` API are all API-layer concerns and now live in **[platform/list-display-modes.md](../platform/list-display-modes.md)**. Cite that file, not this one.
 
 ## Form selects (Select2 + lookups)
 
-Searchable Select2 (Bootstrap 5 theme). Large sets via paginated lookups, not bulk dumps.
+Searchable Select2 (Bootstrap 5 theme), large sets via paginated lookups. The lookup API survived and is specified in [list-display-modes.md](../platform/list-display-modes.md); the Blade side did not.
 
-### Lookup API (`/api/v1/lookups/*`)
+Blade components were `form.select` / `multiselect` (`ajaxUrl`, `select2`), with jQuery **3.7.1** + Select2 **4.0.13** pinned exactly in `app.js`. The pin mattered: Select2 4.1 under Vite ESM maps AJAX results through unbound `AjaxAdapter.prototype._normalizeItem`, and strict-mode `this` is `undefined` → `Cannot read properties of undefined (reading 'container')`. `select2-init.js` owned the factory and deferred `initAll` via `queueMicrotask` so attach never raced. AJAX fields used Select2's default jQuery.ajax transport, never a custom `fetch` transport — Select2's `$.ajax` aborts prior requests with `status === 0` silently, which a hand-rolled abortable controller turns into visible errors. The attribute was `data-monolith-select2`, not `data-select2` (jQuery collision).
 
-| Route | Permission | Params |
-|-------|------------|--------|
-| `GET …/users` | User `viewAny` (H-RBAC) | `q`, `page`, `per_page`, `ids[]` |
-| `GET …/menus` | `view menu` | + `layout`, `exclude` |
-| `GET …/roles` | `view menu` | `q`, `page`, `per_page`, `ids[]` |
+**Inherited by the SPA:** the exact-pin rule and the no-custom-transport rule still apply to `FormSelect2.vue`, which wraps the same jQuery Select2 build. The dark-mode caveat also carried over — Select2 dark overrides must stay **unlayered** and match `select2-bootstrap-5-theme` specificity, because a short `.select2-selection__rendered` rule loses to the theme's hardcoded `color: #212529`.
 
-Response `data`: `{ results: [{id,text}], pagination: { more } }`.  
-`ids[]` without `q` hydrates edit labels. Empty `q` → first page only (`config/lookup.php`).
+## List display modes
 
-Implementation: Identity `LookupService` / `LookupController`. Blade proxies (auth shell): `GET /apps/lookups/{users,menus,roles}` (route names `lookups.*`).
+Moved to [platform/list-display-modes.md](../platform/list-display-modes.md), including the note that `display_mode=datatable` now has no consumer.
 
-Components: `form.select` / `multiselect` (`ajaxUrl`, `select2`). Assets: jQuery **3.7.1** + Select2 **4.0.13** (exact pin) bundled in `app.js` (Vite, npm). Do **not** bump to Select2 4.1 under Vite ESM — 4.1 maps AJAX results through unbound `AjaxAdapter.prototype._normalizeItem`, and strict-mode `this` is `undefined` → `Cannot read properties of undefined (reading 'container')`. `select2-init.js` owns the Select2 factory (`select2($)`) then defers `initAll` via `queueMicrotask` so attach never races. AJAX fields use Select2’s default **jQuery.ajax** transport (`url` + `data` + `processResults`); `processLookupResults` in `select2-lookup.js` unwraps the Monolith `{ data: { results, pagination } }` envelope. Attribute: `data-monolith-select2` (**not** `data-select2` — jQuery collision).
-
-### Troubleshooting
-
-- Native select still showing → `npm run build` / `dev`; ensure `app.js` loaded via `@vite` in `assets-scripts.blade.php`
-- "The results could not be loaded" / Deferred `container` on `_normalizeItem` → confirm Select2 is **4.0.13** (not 4.1); hard-refresh after `npm run build`. Lookup AJAX 4xx/5xx/non-JSON also surfaces errorLoading. Do **not** reintroduce a custom `fetch` transport / abortable controller — Select2’s default `$.ajax` aborts prior requests with `status === 0` (silent). Chrome extension noise (`message channel closed before a response was received`) is unrelated.
-- Page jumps up on Select2 open/close → `select2-init.js` locks `window.scrollY` around `select2:opening|closing` / `open|close` and refocuses the search field with `{ preventScroll: true }` (Select2 focuses without preventScroll and the browser scrolls the clipped original `<select>` into view).
-- Dark-mode styles ignored → Select2 dark overrides in `resources/css/monolith-overrides.css` MUST stay **unlayered**. Match select2-bootstrap-5-theme specificity (e.g. `[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered`) — a short `.select2-selection__rendered` rule loses to the theme’s hardcoded `color: #212529`. Do NOT wrap these rules in `@layer`.
-
-## List display modes (query & DataTables)
-
-Tabular index endpoints support:
-
-| Signal | Response |
-|--------|----------|
-| default / `display_mode=query` (no paging params) | `{ status, message, data }` where `data` is a flat `T[]` |
-| `display_mode=query` **and** `page` / `per_page` / `search` | `{ status, message, data: { items, pagination } }` — `pagination` is `{ current_page, last_page, per_page, total, has_more }`. Default `per_page` 10, max 100. In-memory search + slice (`ListQueryPaginator`); SQL `LIMIT` per domain is a later wave. |
-| `display_mode=datatable` or `draw` present | Yajra JSON + per-row `actions[]` (unchanged) |
-
-Covered query-paging lists: users, invoices, payment-gateways, subscriptions, services, inference providers, inference model-cards, vtual orphans, activity logs, error logs. Navigation **tree** / menus list excluded (still a full dump). Helper: `RespondsWithListDisplayMode::respondToQueryList`.
-
-### DataTable init
-
-Shared factory: `initDataTable({ tableId, ajaxUrl, columns, order, language, exposeForReload, onReady })` in `resources/js/datatable-init.js` (Vite entry). Six index views (users, invoices, subscriptions, payment-gateways, inference providers, inference model-cards) load it via `@vite` inside `x-slot:scripts` (after `app.js`) and call `window.initDataTable(...)` — no ESM import (Vite 8/Rolldown tree-shakes named exports from entry modules). jQuery + DataTables core binding (`window.jQuery`, `DataTable.use(jQuery)`) lives in `resources/js/infra/jquery-init.js` and runs before any consumer — DataTables 3 does not auto-detect `window.jQuery` for `.fn.DataTable` attachment. **Always set `exposeForReload: true`** on these admin lists so `bell.js` can soft-reload via `window.dataTables[tableId]` without a hard page refresh.
-
-### Actions contract
-
-Each action: `key`, `label`, `method`, `url`, `style`, `icon`, optional `confirm`. RBAC filters which keys appear; Blade datatable proxies **rewrite URLs** to web routes only.
-
-### Web datatable routes
-
-e.g. `GET /apps/users/datatable` (route `users.datatable`) → API `?display_mode=datatable` + Bearer from cookie. No list logic in web layer. Authenticated Blade lives under `/apps/*` — see [blade-admin — Routes](blade-admin.md#routes).
-
-Implementation helpers under `App\Support\DataTable\*`; domain row action resolvers per list.
+The Blade side of it — `initDataTable({ tableId, ajaxUrl, columns, order, language, exposeForReload, onReady })` in `resources/js/datatable-init.js`, the `resources/js/infra/jquery-init.js` core binding, the `exposeForReload: true` convention that let `bell.js` soft-reload a table, and the `GET /apps/{resource}/datatable` web proxies that rewrote action URLs onto web routes — is all gone.
 
 ## Accessibility (ARIA)
 
-The Blade admin follows WCAG 2.1 AA. Guards live in `tests/Feature/Http/Controllers/Web/AccessibilityBladeTest.php`.
+The Blade admin targeted WCAG 2.1 AA, guarded by a Blade-specific test that no longer exists. The invariants below are worth honoring in the SPA even though the file paths are dead.
 
 ### Required invariants
 
@@ -65,26 +31,19 @@ The Blade admin follows WCAG 2.1 AA. Guards live in `tests/Feature/Http/Controll
 | Icon-only buttons | `aria-label` + `title` | `menus/index.blade.php`, navbar toggles |
 | Navbar dropdowns | `aria-expanded="false"` initial (Bootstrap updates dynamically) | `navbar.blade.php` |
 | Active nav | `aria-current="page"` | `nav/tree.blade.php`, `nav/bar-tree.blade.php`, `sidebar-nav-search.blade.php` JS |
-| Breadcrumbs | `<nav aria-label="breadcrumb">`; every parent must expose a clickable `route()` URL (no plain-text parents) | `partials/breadcrumbs.blade.php`, `routes/breadcrumbs.php` |
+| Breadcrumbs | `<nav aria-label="breadcrumb">`; every parent must expose a clickable URL (no plain-text parents) | `partials/breadcrumbs.blade.php` + the former `routes/breadcrumbs.php` registry |
 | DataTables | `aria-label` on `<table>`; `<caption>` where helpful | `users/index.blade.php`, `invoices/index.blade.php`, `payment-gateways/index.blade.php` |
 | Status regions | `role="status"` + `aria-live="polite"` | `payment-status-hero.blade.php`, bell badge (`bell.js`), toasts (checkout / FH island) |
 | Toggle buttons | `aria-pressed` | `checkout.js` channel buttons |
 | Interactive divs | `role="button"` + `tabindex="0"` + Enter/Space handler | file-hosting dropzone (`FhDropzone.vue`), move-tree items |
 
-File Hosting authenticated browse is a **domain-local Vue island SPA** (soft-nav, listing, bulk, upload dropzone, Microstock chrome) — not a global AdminLTE SPA. Public `/s/*` stays vanilla. Full behavior and asset map: [domains/file-hosting/README.md — UI architecture / SPA shell](../domains/file-hosting/README.md#ui-architecture--spa-shell).
+File Hosting authenticated browse was a **domain-local Vue island** (soft-nav, listing, bulk, upload dropzone, Microstock chrome) rather than a global AdminLTE SPA. Historical asset map: [domains/file-hosting/README.md — UI architecture / SPA shell](../domains/file-hosting/README.md#ui-architecture--spa-shell).
 
-## Vue islands
+## Vue islands (obsolete concept)
 
-When a page needs richer client UI than vanilla ESM + jQuery plugins, mount a **Vite Vue 3 island** inside Blade — only after the dual-path checklist passes. Conventions, identification rules, mount contract, `useApi` / `MonolithApi` alignment, and anti-Inertia/CDN rules: [blade-admin — Dual-path / Vue islands](blade-admin.md#dual-path--when-to-use-which).
+The "Vue island inside Blade" pattern existed because Blade owned first paint. With Blade gone the whole dual-path question is moot — the SPA is one Vue application. The old house rules (SFC under `resources/js/vue/islands/{name}/` with a Vite entry, bootstrap URLs minted by `route()` into a Blade JSON block, fetch through `apiFetch` → web JSON proxy, no CDN Vue, no runtime `template:` strings) applied to a build that no longer exists.
 
-| Do | Don't |
-|----|--------|
-| SFC under `resources/js/vue/islands/{name}/` + Vite entry | Inline CDN Vue or runtime `template:` strings as house style |
-| Bootstrap URLs via `route()` in Blade JSON | Hard-code `/apps/…` in SFCs |
-| Fetch via `apiFetch` → web JSON proxy | Re-implement 401/419/422 toast logic outside `MonolithApi` |
-| Keep DataTables/Select2 pages on existing stack until they truly hurt | Big-bang rewrite of all Blade CRUD to Vue |
-
-Reference islands: dashboard live-session; File Hosting auth browse (XOR — no `file-manager.js`).
+The two islands that shipped were the dashboard live-session widget and File Hosting auth browse.
 
 ### Lang keys
 
@@ -198,7 +157,7 @@ The shared DataTable renderer `window.renderDatatableActions` (in `components/pa
 
 Manual Blade row-action clusters (e.g. `services/index`, `product-activations/show`) follow the same contract: wrap the per-row actions in `<div class="btn-group btn-group-sm" role="group">` (Bootstrap rows). File Hosting auth browse row actions live in the Vue island (`App.vue` / `.fh-action-group` in `file-hosting.css`) — not archived `resources/views/_archive/adminlte4/file-hosting/partials/browse-views`. Every icon-only button must carry `aria-label` + `title`.
 
-Forms carrying destructive actions use `class="d-inline-block"` (not `d-inline`) so they sit cleanly as a direct child of the `btn-group`; the submit button inside carries `[data-form-submit-spinner]` (see [blade-admin — UX patterns](blade-admin.md#ux-patterns)).
+Forms carrying destructive actions used `class="d-inline-block"` (not `d-inline`) so they sat cleanly as a direct child of the `btn-group`; the submit button inside carried `[data-form-submit-spinner]`.
 
 ### Destructive cascade pattern
 
@@ -218,9 +177,9 @@ Reference: `users/partials/activity-history.blade.php`.
 
 ## Related
 
-- [blade-admin.md](blade-admin.md)
-- [domains/identity](../domains/identity/README.md)
-- [domains/navigation](../domains/navigation/README.md)
+- [platform/list-display-modes.md](../platform/list-display-modes.md) — the live contract extracted from this file
+- [blade-admin.md](blade-admin.md) — what remains on the `web` stack
+- [integration/vue-workers-spa.md](../integration/vue-workers-spa.md) — the SPA that replaced all of the above
 
 ## Known bridge gaps (realtime)
 

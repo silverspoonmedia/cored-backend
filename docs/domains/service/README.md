@@ -7,7 +7,7 @@
 | Code | `app/Domain/Service/` |
 | Registry | `kind => core` in [`config/domains.php`](../../../config/domains.php); listed in `DomainManager::PLATFORM_CORE` |
 | API | `routes/api/v1/service.php` → `/api/v1/services`, `/api/v1/service-purchases` |
-| Web | `routes/web/service.php` → `services.*`, `service-purchases.*` |
+| SPA | Vue Router names `services.*` and `service-purchases.show` in [`config/spa-routes.php`](../../../config/spa-routes.php). No server `web` route |
 | FX | Frankfurter → **DB** `exchange_rate_snapshots` + L1 cache; settle **IDR** |
 | Config | `config/service.php` (`grace_days`, `settlement_currency`) |
 | Seeder | `CurrencySeeder` then `ServiceCatalogSeeder` |

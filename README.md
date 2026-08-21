@@ -213,7 +213,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [Payment gateways](docs/domains/payment-gateway/README.md) | Midtrans/iPaymu, invoices, channel checkout, subscriptions, webhooks |
 | [File Hosting](docs/domains/file-hosting/README.md) | Product domain: nested folders, chunk S3 upload, link share |
 | [Database safety](docs/platform/database-safety.md) | Prevent dev DB wipe; test vs MySQL; `composer test`; recovery |
-| [List display modes (query & DataTables)](docs/web/ui-patterns.md) | Dual-mode list/index responses, Yajra DataTables integration, RBAC action buttons for Bootstrap 5 / jQuery 3.7 |
+| [List display modes & lookups](docs/platform/list-display-modes.md) | `display_mode=query` list/pagination contract, paginated `/api/v1/lookups/*`, and the retained-but-unused Yajra `datatable` mode |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/domains/navigation/README.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
 | [Activity notifications (per role + per user)](docs/domains/notification/README.md) | Generic event-driven notification engine: per-type audiences in **DB via seeder** (hybrid with code catalogue), per-user read state, navbar bell with polling or realtime websocket |
 | [Activity notifications — role vs user handling](docs/domains/notification/README.md) | Reference for broadcast (per role) vs personal (per user) targeting, lifecycle, pitfalls, and flow-change decisions |
@@ -254,7 +254,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 - User CRUD and hierarchy rules → [user-management-hrbac.md](docs/domains/identity/README.md) (builds on JWT doc)
 - Route placement for new features → [api-routing.md](docs/platform/api-routing.md)
 - Simple CRUD scaffolding (`Route::apiResource` + repository pattern) → [crud-architecture.md](docs/platform/crud.md)
-- Dual-mode list/index (query JSON vs DataTables + RBAC actions) → [list-display-modes.md](docs/web/ui-patterns.md)
+- Dual-mode list/index (query JSON vs DataTables + RBAC actions) → [list-display-modes.md](docs/platform/list-display-modes.md)
 - Hierarchical, RBAC-filtered navigation → [navigation-menu.md](docs/domains/navigation/README.md)
 - Role-targeted + personal activity notifications (events → roles/users) → [notifications.md](docs/domains/notification/README.md)
 - Broadcast vs personal targeting (role vs user lifecycle reference) → [notifications-role-vs-user.md](docs/domains/notification/README.md)

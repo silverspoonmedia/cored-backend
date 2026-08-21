@@ -1,6 +1,6 @@
 # Identity — JWT, 2FA, H-RBAC, users
 
-Auth, roles/permissions, user management, and lookups. Code: `app/Domain/Identity/`. Routes: `routes/api/v1/identity.php`, `routes/web/identity*.php`.
+Auth, roles/permissions, user management, and lookups. Code: `app/Domain/Identity/`. Routes: `routes/api/v1/identity.php` plus one server endpoint, `routes/web/identity-oauth-callback.php` (Discord provider callback — no UI).
 
 Auth is **not** on global `/api/*` — only versioned v1.
 
@@ -159,7 +159,7 @@ Notifications on create/update: [notification domain](../notification/README.md)
 
 ## Lookups
 
-Paginated select options: `GET /api/v1/lookups/*` — [web/ui-patterns](../../web/ui-patterns.md).
+Paginated select options: `GET /api/v1/lookups/*` — [platform/list-display-modes.md](../../platform/list-display-modes.md).
 
 ## Connected accounts (Discord)
 

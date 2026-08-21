@@ -12,7 +12,7 @@ Laravel loads **one** `.env` at boot. Monolith adds profile snapshots for local 
 | `.env.profile` | Active profile name |
 | `.env.{local,staging,production}` | Machine snapshots (gitignored) |
 
-All four committed templates share the **same section layout** (Application → locale → auth → encryption → logging → database → infrastructure → mail → File Hosting → hCaptcha → notifications/Vite → payments → Microstock). Subsections use `# · …` markers. See [`.env.example`](../../.env.example) for the canonical order and comments.
+All four committed templates share the **same section layout** (Application → locale → auth → encryption → logging → database → infrastructure → mail → File Hosting → hCaptcha → notifications & realtime → payments → Microstock). Subsections use `# · …` markers. See [`.env.example`](../../.env.example) for the canonical order and comments.
 
 **Assignment key parity (mandatory):** master, all three profile templates, and `EnvironmentVariableCatalog::types()` must expose the **same set of live `KEY=` assignments**. A commented `# KEY=…` line does **not** count — `env:curate` only sees real assignments in the active profile template, so a key that exists only as a comment (or only in master) becomes an orphan in `.env`. Lock: `EnvProfileSyncTest` + `EnvironmentTemplateQuotingTest`. Values may still differ per profile (`APP_DEBUG`, drivers, proxy URLs, etc.).
 
@@ -139,13 +139,13 @@ Blade identity is the HttpOnly `auth_token` cookie (JWT), **not** the Laravel se
 
 Operational JWT knobs (TTL, refresh skew, blacklist grace) live in **Settings → Platform** (`system_settings`). See [settings.md](settings.md) and [configuration-policy.md](configuration-policy.md).
 
-See [identity](../domains/identity/README.md#configuration) and [blade-admin silent refresh](../web/blade-admin.md#silent-refresh-sliding-access).
+See [identity](../domains/identity/README.md#configuration). The Blade-era silent-refresh cookie bridge is gone; the SPA refreshes the `__Host-spa_jwt` cookie through `/api/v1/auth/refresh` — [vue-workers-spa.md](../integration/vue-workers-spa.md).
 
 ## Production checklist
 
 - `APP_ENV=production`, `APP_DEBUG=false`
 - Secure session cookies; `JWT_SECRET` set
-- Prefer non-zero **Settings → Platform** `platform.jwt.blacklist_grace_period` when Blade silent refresh is enabled
+- Prefer non-zero **Settings → Platform** `platform.jwt.blacklist_grace_period` so concurrent SPA requests survive a token refresh
 - `config:rebuild`; `oci:kms-verify` if OCI
 - Liveness: `route:list --path=api/ping` shows `GET /api/ping`
 - Network exposure: firewall / reverse proxy as needed (no in-app shared-secret API perimeter)
@@ -164,7 +164,7 @@ Retention and enable/disable are in **Settings → Platform** (`errorlog.*` regi
 
 Operational knobs (JWT TTLs, upload limits, notification delivery, etc.) live in **`system_settings`** and are edited via **Administration → Settings**. They are **not** `.env` variables — see [configuration-policy.md](configuration-policy.md). Runtime reads use a forever-cached snapshot (`setting_config()`). Full inventory: [settings.md](settings.md).
 
-`VITE_PUSHER_*` in the active `.env` must be **literals** matching `PUSHER_*` (Vite does not expand `${PUSHER_*}` at build time). Blade still injects the runtime Pusher key when notification delivery is realtime; the Vite vars are the JS fallback for Echo construction.
+Monolith no longer carries any `VITE_*` keys. Vite belongs to the SPA build, so `VITE_PUSHER_*` / `VITE_API_BASE_URL` / `VITE_HCAPTCHA_SITE_KEY` live in `monolith-vue-workers/.env` — see [vue-workers-spa.md](../integration/vue-workers-spa.md#env-vars). They must still be **literals** mirroring Monolith's `PUSHER_*` values, because Vite does not expand `${PUSHER_*}` at build time. If an old `.env` still has them, `env:curate` will surface them under `Extra keys (not in template)`; delete them.
 
 After the env→settings migration, `php artisan env:curate` may leave **orphan** operational keys in a local `.env` (moved to the orphans section) when `.env` still contains Tier B vars removed from templates. Safe to delete them — live values are in `system_settings`. After template sync (`env:curate --sync-snapshot`), a clean local `.env` should show **0 orphans**; do not re-add Tier B keys. Upload proxy vars (`FILE_HOSTING_UPLOAD_PROXY_*`) are **Tier A** and belong as live assignments in the File Hosting env section of **all** templates (empty URL = browser-direct; local profile may ship gateway defaults).
 

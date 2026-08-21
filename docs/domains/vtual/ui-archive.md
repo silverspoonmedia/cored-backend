@@ -1,63 +1,41 @@
-# vTual Web UI Archive
+# vTual Web UI — historical record
 
-**Archived:** 2026-08-05  
-**Reason:** UI/UX restart — staff work began with orphan vTuber CRUD only. External product surfaces and legacy admin Blade UIs are parked under `_archive/` paths, not deleted. **Subsequent rebuilds (2026-08):** platform credentials, probe, vTuber read/claim profile, and **owned profiles list + manage** were added as **new** active surfaces (not restored from `_archive/`).
+**Status:** the entire Blade surface described here is **deleted**, not parked. This file is kept only to explain why certain vTual features exist in the API but had no UI for a while, and which patterns were deliberately abandoned. Nothing below is a live path — do not follow it as a spec.
 
-## What was archived
+**Timeline**
 
-| Bucket | Location |
-|--------|----------|
-| External web routes | [`routes/web/_archive/vtual.php`](../../routes/web/_archive/vtual.php) |
-| Internal admin web routes | [`routes/web/_archive/vtual-admin.php`](../../routes/web/_archive/vtual-admin.php) |
-| Blade views | [`resources/views/_archive/adminlte4/vtual/`](../../resources/views/_archive/adminlte4/vtual/) |
-| Status badge component | [`resources/views/_archive/adminlte4/components/vtual/`](../../resources/views/_archive/adminlte4/components/vtual/) |
-| Web controllers | [`app/Domain/Vtual/Http/Controllers/Web/_archive/`](../../app/Domain/Vtual/Http/Controllers/Web/_archive/) |
-| Blade web tests | [`tests/_archive/Feature/Http/Controllers/Web/VtualBladeWebTest.php`](../../tests/_archive/Feature/Http/Controllers/Web/VtualBladeWebTest.php) |
-| Platform API probe web test | [`tests/_archive/Domain/Vtual/Feature/Http/Controllers/Web/PlatformApiProbeWebTest.php`](../../tests/_archive/Domain/Vtual/Feature/Http/Controllers/Web/PlatformApiProbeWebTest.php) |
+| Date | Event |
+|------|-------|
+| 2026-08-05 | UI/UX restart. External product surfaces and legacy admin Blade UIs were parked under `_archive/` paths |
+| 2026-08 | Platform credentials, API probe, vTuber read/claim profile, and owned profiles list + manage were rebuilt as new Blade surfaces |
+| 2026-08 (Blade removal) | Both the archived and the rebuilt Blade surfaces were removed with the rest of the in-repo frontend. `resources/`, `routes/web/vtual-*.php`, and the vTual `Web` controllers no longer exist |
 
-### Vite entries
+## What the Blade era contained
 
-Active build ([`vite.config.js`](../../vite.config.js)) registers:
+Archived at the 2026-08-05 restart (paths since deleted): external web routes and legacy admin web routes under `routes/web/_archive/`, Blade views and the status-badge component under `resources/views/_archive/adminlte4/vtual/`, web controllers under `app/Domain/Vtual/Http/Controllers/Web/_archive/`, and two Blade web tests under `tests/_archive/`. Vite registered `vtual/admin.css`, `confirm-modal.js`, `credential-form.js`, and `credentials-platform.js`; `registry-admin.js` was legacy-only and never in the active build.
 
-- `resources/css/vtual/admin.css`
-- `resources/js/vtual/confirm-modal.js`
-- `resources/js/vtual/credential-form.js`
-- `resources/js/vtual/credentials-platform.js`
+By surface: **external (user)** was the legacy hub, standalone claims UI, and channel/link management; **internal (staff)** was the registry and pending-claims admin.
 
-**Not** in active build: `resources/js/vtual/registry-admin.js` (legacy registry admin only).
+## Where those surfaces live now
 
-### Archived surfaces (summary)
+All of it is SPA (`monolith-vue-workers`). Route names are registered in [`config/spa-routes.php`](../../../config/spa-routes.php) and resolved by the SPA router — see the [vTual README](README.md) for the full table.
 
-**External (user):** legacy hub, standalone claims UI, channel/link management from old `_archive/` routes  
-**Internal (staff):** registry & pending claims web UI from `_archive/vtual-admin.php`
+| Surface | SPA route name |
+|---------|----------------|
+| Orphan admin (staff CRUD) | `vtual.orphans.index` / `.create` / `.edit` |
+| Owned profiles (list + manage, promote discovered channels) | `vtual.profiles.index` / `vtual.profiles.show` |
+| Platform credentials (Root/Admin) | `vtual.platform-credentials.index` / `.create` / `.edit` / `.platform` |
+| API probe | `vtual.platform-credentials.probe` |
+| vTuber profile (read + claim, login required) | `vtual.vtuber.index` / `.show` / `.claim` |
+| Public directory + profile (guest) | `vtual.public` / `vtual.public.vtuber` |
 
-**Not archived:** `/apps/vtual/profiles` (owned list + manage, including promote discovered channels) — rebuilt at `routes/web/vtual-profiles.php`, not served from `_archive/`.
+The API ([`routes/api/v1/vtual.php`](../../../routes/api/v1/vtual.php), [`routes/api/v1/vtual-public.php`](../../../routes/api/v1/vtual-public.php)) and every domain service were never archived and are unchanged. The `settings.vtual` menu entry (operational knobs) is likewise unrelated to the removed product UI.
 
-Platform credentials and API probe were **rebuilt** at new routes (see active list below) — they are not served from `_archive/` paths.
+## Patterns deliberately abandoned
 
-## What stays active
+Do **not** reintroduce these in Monolith; the SPA has its own equivalents.
 
-- **API** — [`routes/api/v1/vtual.php`](../../routes/api/v1/vtual.php) and all domain services unchanged
-- **Settings** — `settings.vtual` menu entry (operational knobs, not archived Blade product UI)
-- **Orphan admin** — [`/apps/vtual/orphans`](../../routes/web/vtual-orphans.php) (staff CRUD)
-- **Owned profiles** — [`/apps/vtual/profiles`](../../routes/web/vtual-profiles.php) (list + manage; promote private discovered channels via `POST …/channels/{id}/promote` → API)
-- **Platform credentials** — [`/apps/vtual/platform-credentials`](../../routes/web/vtual-platform-credentials.php) (Root/Admin); views in `resources/views/adminlte4/vtual/platform-credentials/` (new, not restored from archive)
-- **API probe** — `/apps/vtual/platform-credentials/probe` (same route file)
-- **vTuber profile (read + claim)** — [`/apps/vtual/vtuber`](../../routes/web/vtual-vtuber.php) (login required); views in `resources/views/adminlte4/vtual/vtuber/`
-
-## Restoring archived UI
-
-1. Re-register route files in [`routes/web.php`](../../routes/web.php)
-2. Move views/controllers back from `_archive/` paths
-3. Re-add Vite entries and run `npm run build`
-4. Restore MenuSeeder product/admin vTual branches and `config/products.php` `menu_routes`
-5. Re-enable archived tests or port assertions to new surfaces
-
-## Reusable patterns from archive
-
-- `ConsumesApi` + `respondFromApi` web proxy pattern
-- `x-adminlte4::form.ajax` + Bootstrap confirm modal (`confirm-modal.js`). **Active** shared modal: `resources/views/adminlte4/vtual/partials/confirm-modal.blade.php`; archived copy remains under `resources/views/_archive/adminlte4/vtual/partials/`.
-- `x-adminlte4::vtual.status-badge` component (in archive)
-- Client-side DataTables for small queues (registry/credentials admin)
-
-The new orphan admin intentionally follows the **`/apps/users` server-side DataTable** pattern instead.
+- `ConsumesApi` + `respondFromApi` web proxy — the SPA calls `/api/v1/*` directly
+- `x-adminlte4::form.ajax` + Bootstrap confirm modal (`confirm-modal.js`) — SPA components handle confirmation
+- `x-adminlte4::vtual.status-badge` — domain-local status styling lives in the SPA; see the anti-pattern note in [vue-workers-spa.md](../../integration/vue-workers-spa.md)
+- Client-side DataTables for small queues — server-side list modes are the contract, see [list-display-modes.md](../../platform/list-display-modes.md)

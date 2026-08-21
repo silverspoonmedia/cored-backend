@@ -19,7 +19,7 @@ Registry: **`kind => core`** in [`config/domains.php`](../../../config/domains.p
 
 ## API surface (`/api/v1/*`)
 
-Relative prefixes below mount under **`/api/v1`** (not the Blade `/apps` shell).
+Relative prefixes below mount under **`/api/v1`** (not the SPA `/apps` paths).
 
 | Area | API prefix | Auth |
 |------|------------|------|
@@ -47,7 +47,7 @@ Primary sell path: [Service](../service/README.md) checkout → `ServicePurchase
 
 **IDR amounts:** Service FX settlement rounds to **whole rupiah** (`ExchangeRateService`). Invoice `subtotal` / initial `customer_gross_total` are whole IDR before channel fee.
 
-**API display companions:** `InvoiceResource` / `SubscriptionResource` keep raw money + ISO timestamps and add `*_formatted` (money with currency code) and `*_formatted` / `*_human` (dates). Blade and DataTables bind companions only — see [platform/crud presentation](../../platform/crud.md#api-resource-presentation-dual-fields).
+**API display companions:** `InvoiceResource` / `SubscriptionResource` keep raw money + ISO timestamps and add `*_formatted` (money with currency code) and `*_formatted` / `*_human` (dates). Clients bind companions only, never reformat raw values — see [platform/crud presentation](../../platform/crud.md#api-resource-presentation-dual-fields).
 
 **InvoiceResource (per-viewer):** nested under `ServicePurchaseResource` for buyers. Staff (`view invoice`) also get `invoiceable_type`, `external_transaction_id`, route snapshot id + `payment_channel_route` (snapshot shape; the old duplicate `payment_channel_route_snapshot` key is gone), disbursement timestamps. Buyers keep amounts, status, `checkout_session`, and fee-basis labels they already paid. Post-checkout policy fields (`invoiceable_status`, fee basis companions) stay on the shared shape; snapshot internals are staff-only.
 
@@ -86,16 +86,16 @@ Policy default: `platform.payment.channel_fee_bearer` = `buyer` (Settings → Pl
 
 Checkout UI shows subtotal / payment fee / total due. `GET /api/v1/payment-channels?subtotal=` returns per-channel estimates. Abandoning checkout resets fee/gross to pre-checkout values.
 
-**Reconciliation:** invoice list shows subtotal + fee + gross; `GET /api/v1/invoices/export` (and `/apps/invoices/export`) streams CSV for bookkeeping. `InvoiceService::list()` / `get()` eager-load `paymentGateway`, `paymentChannelRouteSnapshot.paymentGateway`, and `invoiceable` up front to avoid N+1 on the `/apps/invoices` list (consumed by `InvoiceResource` / `PaymentIncomeInvoiceResource`).
+**Reconciliation:** invoice list shows subtotal + fee + gross; `GET /api/v1/invoices/export` streams CSV for bookkeeping. `InvoiceService::list()` / `get()` eager-load `paymentGateway`, `paymentChannelRouteSnapshot.paymentGateway`, and `invoiceable` up front to avoid N+1 on the invoice list (consumed by `InvoiceResource` / `PaymentIncomeInvoiceResource`).
 
-**Blade payment surface:** For `invoiceable_type = service_purchase`, `/apps/invoices` datatable **View** links and `GET /apps/invoices/{id}` redirect to the [Service purchase hub](../service/README.md) (`/apps/service-purchases/{id}`) — one combined payment + purchase page. Subscription and other morph types still use `/apps/invoices/{id}`. Helper: `InvoiceWebDestination::showUrl()`.
+**Purchase-hub redirect:** For `invoiceable_type = service_purchase`, invoice list **View** targets and invoice show resolve to the [Service purchase hub](../service/README.md) (`/apps/service-purchases/{id}`) — one combined payment + purchase page. Subscription and other morph types stay on `/apps/invoices/{id}`. Helper: `InvoiceWebDestination::showUrl()`.
 
 | Surface | Channel mode | Snap/redirect fallback |
 |---------|--------------|------------------------|
 | **API** | Channel picker + instructions | Yes (`snap_fallback` when no active channels) |
-| **Blade** | Channel only | **No** Snap UI — message when no channels |
+| **SPA checkout** | Channel only | **No** Snap UI — message when no channels |
 
-`checkout_mode` = `channel` when active channels exist; else `snap_fallback` (API clients may use hosted Snap; Blade stays channel-only).
+`checkout_mode` = `channel` when active channels exist; else `snap_fallback`. Non-SPA API clients may drive hosted Snap; the SPA checkout stays channel-only.
 
 ### Channel checkout
 
@@ -121,7 +121,7 @@ Parallels [Service FX snapshots](../service/README.md) (`exchange_rate_snapshots
 | Channel checkout (`InvoiceChannelCheckoutService`) | Insert row in `payment_channel_route_snapshots`; FK on invoice |
 | Midtrans pre-charge (`InvoiceChannelFeeService::applyBeforeCharge`) | Same snapshot reused for fee estimate + gross before charge |
 
-`InvoiceResource` (staff viewers), the [Service purchase hub](../service/README.md) (invoice nested in purchase API — buyers do **not** receive the snapshot object), CSV export (`InvoiceCsvExportService`), and Blade invoice show read **`payment_channel_route`** (snapshot shape, staff-only on the Resource) — not live route rows. Standalone `/apps/invoices/{id}` Blade applies only to non-`service_purchase` morphs (service purchases redirect per **Blade payment surface** above). Abandoning checkout clears `payment_channel_route_snapshot_id` with the route FK. Pre-production: no backfill for invoices created before this feature.
+`InvoiceResource` (staff viewers), the [Service purchase hub](../service/README.md) (invoice nested in purchase API — buyers do **not** receive the snapshot object), and CSV export (`InvoiceCsvExportService`) read **`payment_channel_route`** (snapshot shape, staff-only on the Resource) — not live route rows. Standalone `/apps/invoices/{id}` applies only to non-`service_purchase` morphs (service purchases redirect per **Purchase-hub redirect** above). Abandoning checkout clears `payment_channel_route_snapshot_id` with the route FK. Pre-production: no backfill for invoices created before this feature.
 
 **Snapshot columns:** `payment_channel_code`, `payment_gateway_id`, `route_role`, `settlement_days`, `fee_flat`, `fee_percent`, `fee_vat_inclusive`, `policy_tag`, `provider_payment_*`, `captured_at` (+ `captured_at_formatted` / `captured_at_human` companions via `DatePresenter`).
 
@@ -136,7 +136,7 @@ Parallels [Service FX snapshots](../service/README.md) (`exchange_rate_snapshots
 | `policy_tag` | YAML tag (e.g. `ipaymu_h0`) — resolver skips tags in policy `avoid` |
 | `is_policy_managed` | When true, priority/fee/settlement are owned by YAML sync — admin cannot edit priority |
 
-Shared sort helper: `PaymentRouteSort` (resolver, `PaymentChannelService::listAll`, admin Blade/JS).
+Shared sort helper: `PaymentRouteSort` (resolver, `PaymentChannelService::listAll`, admin list responses).
 
 ### VA bank catalog (`VaBankCatalog`)
 
@@ -200,45 +200,33 @@ Response: normalized instructions (VA numbers, QR, expiry, etc.). All routes fai
 | 3 | Authenticated user profile |
 | 4 | Phone: request → invoiceable → `setting_config('payment.default_buyer_phone')` (User has no phone column yet) |
 
-iPaymu **requires** name + email + phone (`setBuyer`). Midtrans `customer_details` optional but always sent when resolvable (helps VA / Akulaku). Blade `checkout.js` does not send `buyer` — server fills from profile.
+iPaymu **requires** name + email + phone (`setBuyer`). Midtrans `customer_details` optional but always sent when resolvable (helps VA / Akulaku). The SPA checkout does not send `buyer` — the server fills it from the profile.
 
 Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation guards, active-checkout cancellation when switching channels.
 
 ## Vue-Workers SPA consumer
 
-The sibling Vue-Workers SPA uses `usePaymentsHydrate` for `PaymentsIncomeView`, batching income overview and invoice reads while retaining individual-loader fallback for failed entries. SPA invoice realtime and polling behavior belongs to [vue-workers-spa.md — Realtime](../../integration/vue-workers-spa.md#realtime-laravel-echo--pusher), not the Blade checkout path below.
+The SPA uses `usePaymentsHydrate` for `PaymentsIncomeView`, batching income overview and invoice reads while retaining individual-loader fallback for failed entries. SPA-side realtime wiring is documented in [vue-workers-spa.md — Realtime](../../integration/vue-workers-spa.md#realtime-laravel-echo--pusher); the backend broadcast contract is below.
 
-iPaymu hosted redirect defaults (`IpaymuPaymentService::defaultReturnUrl` / `defaultCancelUrl`) use `SpaPublicUrl`: `{SPA_URL}/payment/return` and `/payment/cancel` when `SPA_URL` is set; otherwise Blade `/payment/ipaymu/return|cancel`. Channel checkout still sends empty `ureturn` (on-page QR/VA). SPA bounce views stay authenticated at the site root — [vue-workers-spa — Payment return URLs](../../integration/vue-workers-spa.md#payment-return-urls).
+iPaymu hosted redirect defaults (`IpaymuPaymentService::defaultReturnUrl` / `defaultCancelUrl`) use `SpaPublicUrl`: `{SPA_URL}/payment/return` and `/payment/cancel` when `SPA_URL` is set; otherwise the server endpoints `/payment/ipaymu/return|cancel` ([`routes/web/payment-ipaymu-return.php`](../../../routes/web/payment-ipaymu-return.php)), which redirect onward. Channel checkout still sends empty `ureturn` (on-page QR/VA). SPA bounce views stay authenticated at the site root — [vue-workers-spa — Payment return URLs](../../integration/vue-workers-spa.md#payment-return-urls).
 
-## Blade / assets
+## UI surfaces (SPA)
 
 **Sidebar:** **Administration → Payments** contains Payment income (`payments.income.index`), Invoices (`invoices.index`), Subscriptions (`subscriptions.index`), Payment channels (`payment-channels.index`), and Payment gateways (`payment-gateways.index`). Parent and children are visible to Root, Admin, Moderator, and Management; endpoint permissions remain authoritative.
 
-Authenticated admin/checkout UI under `/apps/*` (route names unprefixed): e.g. `/apps/payment-channels`, `/apps/payment-gateways`, `/apps/service-purchases/{id}` (primary payment surface for service sales), `/apps/invoices` (list **View** uses `InvoiceWebDestination`). QR image base is injected via `route('qr.show')` (`window.monolithQrBaseUrl`) — no hard-coded `/apps/qr` in JS. See [blade-admin — URL helpers](../../web/blade-admin.md#url-helpers-auth-shell).
+All authenticated admin/checkout UI is Monolith-Vue-Workers under `/apps/*` — Vue Router names registered in [`config/spa-routes.php`](../../../config/spa-routes.php): `payment-channels.index`, `payment-gateways.*`, `subscriptions.*`, `invoices.index` / `invoices.show`, `payments.income.index`, and `service-purchases.show` (primary payment surface for service sales). Invoice list **View** targets resolve through `InvoiceWebDestination`, which points service-purchase morphs at the purchase hub. Breadcrumbs are SPA-side (`src/composables/useBreadcrumbs.ts`), not a Laravel breadcrumb registry. The QR helper route and its `window.monolithQrBaseUrl` injection were deleted with Blade — the SPA renders provider QR payloads from the invoice response.
 
-**Breadcrumbs:** every payment web route has a trail in `routes/breadcrumbs.php` (invoices, payments.income, payment-channels, payment-gateways, subscriptions) — same coverage as users/services/menus. Param routes (`invoices.show`, `subscriptions.show/edit`) call `Breadcrumbs::setCurrentRoute()` in their Blade `@php` block.
+### Checkout UI architecture
 
-Payment-first purchase hub / subscription invoice show: hero, steps, `checkout-panel`, `checkout.js`. Fee breakdown shows **0** until the buyer selects a payment method (restored from active `checkout_session` when instructions exist). Web proxies: channel-checkout, sync-status, snap-token (API). Checkout UX: channel picker buttons carry `aria-pressed` on first paint; sync-status button shows a loading state (disabled + text) during the request; both purchase hub and invoice show use the same mobile column ordering (sidebar first on mobile). Message placeholders use Laravel `:name` convention throughout (e.g. `Pay before :time`).
+Primary buyer surface: `/apps/service-purchases/{uuid}` (`service-purchases.show`). Shared checkout chrome also mounts on invoice show for non–service-purchase morphs.
 
-### Checkout UI architecture (vanilla soft-update — not a Vue island)
+Fee breakdown shows **0** until the buyer selects a payment method (restored from the active `checkout_session` when instructions exist). The SPA calls the API directly: channel checkout, sync-status, and snap-token are all `/api/v1/*` — there are no web proxies. Message placeholders keep the Laravel `:name` convention on the API side (e.g. `Pay before :time`).
 
-Primary buyer surface: `/apps/service-purchases/{uuid}` (`service-purchases.show`). Shared checkout chrome also mounts on invoice show for non–service-purchase morphs; service purchases redirect to the hub via `InvoiceWebDestination`.
-
-| Asset | Role |
-|-------|------|
-| `resources/js/payments/checkout.js` | Channel picker, instructions, Echo + poll soft status/routing updates |
-| `resources/js/services/purchase-quantity.js` | Qty controls on purchase hub |
-| `resources/js/services/purchase-pricing-preview.js` | Pure pricing preview math |
-
-**Fair Vue boundary:** this page does **not** earn a page-level Vue island under the [dual-path checklist](../../web/blade-admin.md#dual-path--when-to-use-which). Soft-SPA here means Echo + poll + DOM patch on one detail URL until terminal — already implemented in vanilla. Contrast File Hosting auth browse (soft-nav + Drive gestures + upload queue), which earns one island. Do **not** Vue-wash pricing math, Echo subscribe, sync-status poll, or spawn widget islands for channel picker / QR / qty.
-
-**Triggers for Vue later (not now):** (1) channel/instruction templates become unmaintainable → small Blade-mounted Vue **components** driven by the same vanilla orchestrator, not a page island; (2) true multi-view soft-nav on one document; (3) dual Blade+JS ownership war on the same nodes.
-
-Admin siblings (`channels-admin.js`, `income.js`, invoice DataTables) stay vanilla for the same reason. Invoice/gateway DataTables use `exposeForReload: true` so bell-driven soft reload works without hard refresh.
+Realtime + poll behavior lives in `src/composables/usePaymentRealtime.ts` and `src/composables/useInvoices.ts`; the backend contract is unchanged and documented below.
 
 ### Realtime invoice status (no hard reload)
 
-Checkout pages soft-update hero / steps / panel / sidebar when invoice status changes. **No visual redesign** — same Blade chrome, client patches `data-payment-*` hooks (hero badges, steps, panel body, sidebar status). Entitlement/period sidebar fields are **not** live-refetched (known non-goal; payment progress is the target).
+Checkout pages soft-update hero / steps / panel / sidebar when invoice status changes, driven by reactive state rather than a page reload. Entitlement/period sidebar fields are **not** live-refetched (known non-goal; payment progress is the target).
 
 | Layer | Behavior |
 |-------|----------|
@@ -247,7 +235,7 @@ Checkout pages soft-update hero / steps / panel / sidebar when invoice status ch
 | Channel | Private `payments.invoice.{invoiceId}` — auth via `InvoiceChannelAuthorizer`: `view invoice` **or** invoiceable owner (`ServicePurchase` / `ServiceAddonRenewal` `user_id`; Subscription matches `subscriber_email`) |
 | Event name | `invoice.status.changed` (client: `.invoice.status.changed`) |
 | Emit | Both Midtrans + iPaymu synchronizers after save + fulfillment, **only when status string actually changed** (webhook, sync-status, Midtrans reconcile cron all converge here) |
-| Client | `checkout.js` reuses `createNotificationEcho` + `window.__monolithEcho`; injects `data-broadcast` from `PaymentRealtime::clientConfig()` |
+| Client | `usePaymentRealtime.ts` subscribes through the shared `useEcho()` singleton |
 | Soft updates | Channel checkout success → `showInstructions()` (no reload); terminal `paid` / `expired` / `cancelled` / `failed` → badge/steps/panel/sidebar patch, stop poll |
 | Fallback | 15s `sync-status` poll while instructions active (and when broadcast unconfigured). Confirm-paid button kept; loading state while syncing. Poll response carries `invoiceable_status` so the purchase badge soft-updates without a reload. |
 
@@ -262,8 +250,8 @@ When admins toggle payment channels/routes or run `payments:sync-routing-policy`
 | Event | `PaymentRoutingCatalogChanged` → `routing.catalog.changed` |
 | Channel | Private `payments.routing` — auth: `initiate payment` or `view invoice` |
 | Emit | `PaymentChannelService` (channel/route update), `PaymentRouteMaterializer::sync` (non-dry-run) |
-| Refresh API | `GET /api/v1/invoices/{invoice}/checkout-channels` (invoice subtotal quotes); web proxy `GET /apps/invoices/{invoice}/checkout/channels` |
-| Client | `checkout.js` listens on routing channel, refetches channels, re-quotes fees via `quoteChannelForSubtotal` (current invoice/preview subtotal + `formatMoney`), re-renders picker, toasts fee/removal changes; **60s poll** fallback when broadcast unconfigured |
+| Refresh API | `GET /api/v1/invoices/{invoice}/checkout-channels` (invoice subtotal quotes) — no web proxy |
+| Client | `usePaymentRealtime.ts` listens on the routing channel; `useInvoices.fetchCheckoutChannels` refetches and re-quotes fees, re-renders the picker, and toasts fee/removal changes; **60s poll** fallback when broadcast unconfigured |
 
 Payload: `revision`, `reason` (`channel_updated` | `route_updated` | `policy_synced`), optional `channel_code`.
 

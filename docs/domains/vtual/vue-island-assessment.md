@@ -1,11 +1,13 @@
-# vTual Vue Island Assessment
+# vTual Vue Island Assessment (archived)
 
-**Date:** 2026-08-09  
-**Scope:** Evaluate every vTual Blade view against the [dual-path Vue island checklist](../../web/blade-admin.md#dual-path--when-to-use-which) to determine which (if any) surfaces qualify for promotion.
+> **Archived — the question this document answers no longer exists.** Blade is gone and vTual is fully SPA, so there is nothing left to "promote to a Vue island". Kept because the reasoning explains why certain vTual surfaces are shaped the way they are in `monolith-vue-workers`. Every file path below is deleted.
+
+**Date:** 2026-08-09
+**Scope (as of that date):** Evaluate every vTual Blade view against the dual-path Vue island checklist to determine which (if any) surfaces qualified for promotion.
 
 ## Background
 
-Vue islands are the project's progressive enhancement strategy: mount Vue 3 SFCs inside Blade when a subtree needs richer client UI than vanilla ESM + jQuery plugins, but only after the dual-path checklist passes. Two islands exist today: `dashboard-session` (simple) and `file-hosting` (SPA). vTual is purely Blade + vanilla JS (`claim-realtime.js`, `credentials-platform.js`, `confirm-modal.js`, `registry-admin.js`, `credential-form.js`).
+Vue islands were the project's progressive enhancement strategy: mount Vue 3 SFCs inside Blade when a subtree needed richer client UI than vanilla ESM + jQuery plugins, but only after the dual-path checklist passed. Two islands existed at the time: `dashboard-session` (simple) and `file-hosting` (SPA). vTual was purely Blade + vanilla JS (`claim-realtime.js`, `credentials-platform.js`, `confirm-modal.js`, `registry-admin.js`, `credential-form.js`).
 
 The checklist gates promotion on (A) all required — interactive subtree is product-scoped and XOR cutover is clean — and (B) at least two of four signals: rich client state, frequent Echo/mutation-driven partial updates, manual DOM patching >= 1k LOC, or declarative rendering being cheaper than DOM sync.
 

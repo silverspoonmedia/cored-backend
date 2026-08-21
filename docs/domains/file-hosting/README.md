@@ -9,7 +9,7 @@ Product domain (`kind => product`, `locked => true`) for personal nested folders
 | Code | `app/Domain/FileHosting/` |
 | Config | [`config/file-hosting.php`](../../../config/file-hosting.php) |
 | API | `routes/api/v1/file-hosting.php` (`/api/v1/file-hosting/*` — unchanged) |
-| Web (auth) | `routes/web/file-hosting.php` under `/apps/*` → **`/apps/file-hosting`** (route names `file-hosting.*`) |
+| SPA (auth) | Vue Router names `file-hosting.*` in [`config/spa-routes.php`](../../../config/spa-routes.php) → **`/apps/file-hosting`** (index, folder, show, trash, blocklist, workspaces, microstock credentials/usage). No server `web` route for the authenticated app |
 | Web (guest) | `routes/web/file-hosting-public.php` → **`/s/f/{uuid}`**, **`/s/d/{uuid}`** (site root, not under `/apps`) |
 | Public landing | Root **`/file-hosting`** reserved for future promo landing (not the logged-in app) |
 | Seeder | `FileHostingRoleSeeder` (after core `RoleSeeder`) |
@@ -596,11 +596,13 @@ The tables and Vue-island notes below describe the **deleted** in-repo Blade + V
 
 The in-repo Vite Vue 3 island (`#vue-file-hosting`, `FileManagerController` BFF) has been **removed**. The notes below are archive-only; the live shell is `monolith-vue-workers`.
 
-**Fair Vue boundary:** a *Vue island* is a page-level mount with its own lifecycle — not every helper. Auth browse is one island. Pure helpers (`router`, upload math, `moveItemsRequest`, Echo glue, selection helpers) stay JS. Interactive leftovers that belong under auth browse become **components/composables on that island** (`useFhUpload`, `useFhDragMove`). Public `/s/*` stays vanilla [`public-app.js`](../../resources/js/file-hosting/public-app.js) unless deliberately invested as a second island. Standalone Microstock usage page is not an island by default.
+**Fair Vue boundary (as reasoned then):** a *Vue island* was a page-level mount with its own lifecycle — not every helper. Auth browse was one island; pure helpers (router, upload math, `moveItemsRequest`, Echo glue, selection helpers) stayed plain JS, and interactive leftovers under auth browse became components/composables on that island (`useFhUpload`, `useFhDragMove`). Public `/s/*` stayed vanilla. The standalone Microstock usage page was never an island.
 
-**First paint:** Blade supplies AdminLTE chrome + empty `#vue-file-hosting` + `<script type="application/json" data-vue-file-hosting>` bootstrap (and sibling modal/offcanvas shells on index). Listing/toolbar/upload are **client Vue** — not SSR HTML rows. Invalid/missing bootstrap shows an alert via `data-vue-mount-failed` / `web/file-hosting.vue_mount_failed` (see island `main.js`). Archived Blade partials `toolbar-zone` / `browse-views` / `trash-show-panels` live under `resources/views/_archive/adminlte4/file-hosting/partials/` — **not** the live paint path (do not `@include` them on the Vue index).
+**First paint (Blade era):** Blade supplied AdminLTE chrome plus an empty `#vue-file-hosting` mount and a JSON bootstrap script; listing/toolbar/upload were client Vue, not SSR rows. All of that is gone — the SPA owns first paint now.
 
-| Asset | Role |
+The asset table below records what the removed island was made of. **None of these paths exist**; they are here only to explain how behavior migrated.
+
+| Asset (deleted) | Role |
 |-------|------|
 | `resources/css/file-hosting/file-hosting.css` | BEM-scoped styles (`.fh-*`), theme-aware via `--fh-*` tokens + `[data-bs-theme="dark"]` |
 | `resources/js/file-hosting/router.js` | Client router: parse auth FH paths via `/file-hosting` segment (prefix-agnostic, works under `/apps/…`) + public `/s/*`; `resolveFhBase()` (Blade `fhBase` → `browseUrl` → location → `''`); `joinFhPath()` fail-closed joins; intercept in-app links; **pending-nav queue** while busy (latest intent wins — rapid clicks / back-forward are not swallowed) |
@@ -616,7 +618,7 @@ The in-repo Vite Vue 3 island (`#vue-file-hosting`, `FileManagerController` BFF)
 | `resources/js/file-hosting/microstock-panel.js` / `microstock-usage.js` / `microstock-ui.js` / `collection-describe.js` | Microstock review/usage/helpers — wired from Vue when DOM present (Blade offcanvas factories OK; not separate islands) |
 | `resources/js/file-hosting/public-app.js` | Public soft SPA for `/s/f/{id}` + `/s/d/{id}` (vanilla; optional future island only if deliberately invested) |
 | `resources/js/file-hosting/upload-progress.js` / `upload-queue.js` / `part-uploader.js` | Pure upload helpers — stay JS |
-| `resources/views/adminlte4/file-hosting/partials/` | Live shells: `workspace-modals`, `microstock-review-panel`, `usage-offcanvas`, `file-folder-modals`, `team-offcanvas`, `move-modal`, `file-icon`, `visibility-badge`, `microstock-badge`, `quota-bar`, `workspace-switcher`. Listing/toolbar/upload painted by Vue. Archived orphans: `resources/views/_archive/adminlte4/file-hosting/partials/` (`toolbar-zone`, `browse-views`, `trash-show-panels`). Full inventory: [partial-manifest.md](../../web/partial-manifest.md) |
+| `resources/views/adminlte4/file-hosting/partials/` | Blade shells that surrounded the island: `workspace-modals`, `microstock-review-panel`, `usage-offcanvas`, `file-folder-modals`, `team-offcanvas`, `move-modal`, `file-icon`, `visibility-badge`, `microstock-badge`, `quota-bar`, `workspace-switcher`. Inventory of the whole removed set: [partial-manifest.md](../../web/partial-manifest.md) |
 
 #### Soft-nav rules (auth)
 
@@ -873,7 +875,7 @@ npm run test:js
 - [microstock/README.md](../microstock/README.md) — first system-workspace consumer (`kind='microstock'`)
 - [identity/README.md](../identity/README.md) — H-RBAC / `domain_kind`
 - [notification/README.md](../notification/README.md) — bell + DataTable `table_id` (FH listing does **not** use this bus)
-- [web/ui-patterns.md](../../web/ui-patterns.md) — admin a11y / responsive patterns (FH dropzone, modals); full browse SPA is domain-local — see [UI architecture / SPA shell](#ui-architecture--spa-shell)
+- [web/ui-patterns.md](../../web/ui-patterns.md) — **archived** Blade a11y / responsive notes (FH dropzone, modals); the removed island is recorded under [UI architecture / SPA shell](#ui-architecture--spa-shell)
 - [platform/architecture.md](../../platform/architecture.md)
 
 FH SPA shell is **product-scoped** (this domain only). It is not a monorepo-wide AdminLTE SPA migration.

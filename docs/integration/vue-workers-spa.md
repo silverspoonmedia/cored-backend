@@ -78,26 +78,26 @@ Pass/fail:
 
 ## Production URL minting (`SPA_URL`)
 
-`App\Support\SpaPublicUrl` prefixes browser-facing links onto `config('services.spa.url')` when that origin is non-empty. Empty `SPA_URL` keeps Blade / signed-API URLs (local Blade dogfood). CORS `allowed_origins` is `APP_URL` + `SPA_URL` (no `*`).
+`App\Support\SpaPublicUrl` prefixes browser-facing links onto `config('services.spa.url')` when that origin is non-empty; otherwise it falls back to `APP_URL` and the surviving server endpoints. CORS `allowed_origins` is `APP_URL` + `SPA_URL` (no `*`).
 
 | Surface | Empty `SPA_URL` | Set `SPA_URL` |
 |---------|-----------------|---------------|
-| Password reset email | Blade `password.reset` (`/reset-password/{token}?email=`) | `{SPA_URL}/reset-password?token=&email=` |
+| Password reset email | `{APP_URL}/reset-password?token=&email=` — same SPA query shape, Monolith origin (there is no server reset screen any more) | `{SPA_URL}/reset-password?token=&email=` |
 | Email verify email | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — SPA then GETs the signed API path through the Worker. HMAC stays on `APP_URL`. |
-| File Hosting `share_url` | Blade `route()` `/s/f/{id}` / `/s/d/{id}` | Same paths on `SPA_URL` |
-| iPaymu hosted return/cancel defaults | Blade `/payment/ipaymu/return\|cancel` | `{SPA_URL}/payment/return` and `/payment/cancel` |
+| File Hosting `share_url` | Server public-share endpoints `{APP_URL}/s/f/{id}` / `/s/d/{id}` ([`routes/web/file-hosting-public.php`](../../routes/web/file-hosting-public.php)) | Same paths on `SPA_URL` |
+| iPaymu hosted return/cancel defaults | Server endpoints `{APP_URL}/payment/ipaymu/return\|cancel` | `{SPA_URL}/payment/return` and `/payment/cancel` |
 
 Channel checkout still sends empty `ureturn` (on-page QR/VA). Guest verify route is **not** `guestOnly` so a logged-in unverified user can land on it.
 
 ## Notification deep links
 
-API `action_route` + `action_params` are Blade web names (`users.edit`, `{ user: uuid }`). SPA `src/utils/notificationTarget.ts` resolves `${route}.view` and maps `user` / `modelCard` → Vue `:id`. Bell and `/apps/notifications` navigate there; unknown names fall back to the notifications list.
+API `action_route` + `action_params` carry symbolic route names inherited from the Blade era (`users.edit`, `{ user: uuid }`) — the same vocabulary as `config/spa-routes.php`, not registered Laravel routes. SPA `src/utils/notificationTarget.ts` resolves `${route}.view` and maps `user` / `modelCard` → Vue `:id`. Bell and `/apps/notifications` navigate there; unknown names fall back to the notifications list.
 
 ## Production checklist
 
 Ops after merge (not code):
 
-1. Monolith `SPA_URL` = public Vue-Workers origin (no trailing slash). Empty keeps Blade/API URLs.
+1. Monolith `SPA_URL` = public Vue-Workers origin (no trailing slash). Empty falls back to `APP_URL` + server endpoints.
 2. Worker `MONOLITH_API_ORIGIN` **equals** Monolith `APP_URL` origin (signed email-verify HMAC).
 3. `VITE_API_BASE_URL` set to the Laravel API origin in the SPA build. `npm run deploy` from `monolith-vue-workers`.
 4. hCaptcha: Settings on **and** `VITE_HCAPTCHA_SITE_KEY` set, or both off.
@@ -188,8 +188,8 @@ Lifecycle status in the SPA is one renderer, many maps — not one semantic mega
 
 - Component: `src/components/StatusBadge.vue` (`status`, optional `label`, `mapping`, `fallback`, `extraClass`).
 - Maps: `src/utils/statusBadge.ts` (`INVOICE_STATUS_BADGE`, `SERVICE_STATUS_BADGE`, `SUBSCRIPTION_STATUS_BADGE`, `ERROR_LOG_STATUS_BADGE`, `ERROR_LOG_LEVEL_BADGE`, `PRODUCT_ACTIVATION_STATE_BADGE`, `VTUAL_STATUS_BADGE`). Domain maps **merge over** defaults. `expired` is secondary on invoices and danger on product activations — that is why a single default map is forbidden.
-- Empty / null status → label `—`, color = `fallback` (default `secondary`). Mapped color `light` also gets `border` (Blade vTual unknown/disconnected).
-- Do **not** add a per-view `statusClass()`. Do **not** add a generic Blade `x-adminlte4::status-badge` — [blade-admin.md](../web/blade-admin.md) anti-pattern “cross-domain status badges”. Blade keeps `x-adminlte4::vtual.status-badge`.
+- Empty / null status → label `—`, color = `fallback` (default `secondary`). Mapped color `light` also gets `border` (vTual unknown/disconnected).
+- Do **not** add a per-view `statusClass()`, and do **not** collapse the domain maps into one generic cross-domain badge. That was the Blade era's mistake and the reason `VTUAL_STATUS_BADGE` stays a separate map.
 
 Leave specialized chrome alone: `PaymentStatusHero` (`ois-status-*` + `data-payment-badge`), FH `fh-badge` / `fh-ms-badge`, keyword chips, navbar unread count, product-activation count chips, type/kind/role/code chips.
 
@@ -223,9 +223,9 @@ Use `Intl.NumberFormat` / `Intl.DateTimeFormat` with active locale; never call `
 
 | Laravel PHP | vue-i18n JSON |
 |-------------|---------------|
-| `lang/en/web/auth.php` | `src/i18n/locales/en.json` under `web.auth.*` |
+| `lang/en/web/settings.php` | `src/i18n/locales/en.json` under `web.settings.*` |
 | `lang/en/ui.php` | `src/i18n/locales/en.json` under `ui.*` |
-| `trans('web/auth.title')` | `t('web.auth.title')` — use `.` separator, not `/` |
+| `trans('web/settings.title')` | `t('web.settings.title')` — use `.` separator, not `/` |
 | `:variable` placeholder | `{variable}` placeholder |
 | `trans_choice('key', count)` | `t('key', { count })` or custom pluralization helper |
 
@@ -323,17 +323,17 @@ Supports `maxlength?: number` prop, passed through to underlying `<input>`.
 
 ### FormSelect2
 
-Wraps jQuery Select2. Handles plain and AJAX modes. See [web/ui-patterns.md](../web/ui-patterns.md) for Select2 usage patterns.
+Wraps jQuery Select2 (`src/utils/jquery-setup`, `src/utils/select2-lookup`). Handles plain and AJAX modes; the AJAX mode consumes the paginated `GET /api/v1/lookups/*` contract — see [platform/list-display-modes.md](../platform/list-display-modes.md).
 
 ## Breadcrumb system
 
-The SPA mirrors Monolith's `diglactic/laravel-breadcrumbs` trail system via a config-based composable.
+Breadcrumbs are entirely SPA-side via a config-based composable. Monolith's `diglactic/laravel-breadcrumbs` trails were removed with Blade; there is no server breadcrumb registry to mirror any more.
 
 - **Composable**: `src/composables/useBreadcrumbs.ts` — config-based breadcrumb map keyed by Vue Router route name.
 - **Consumer**: `src/layouts/AppLayout.vue` — renders breadcrumb trail in the content header.
 - **Config shape**: each entry has `labelKey` (i18n key), optional `parent` (route name chain), and optional `routeName` (for clickable links).
 
-The map mirrors `routes/breadcrumbs.php` from Monolith. Parent chains resolve recursively: e.g. `users.edit.view` → `users.index.view` → `dashboard.view`. The last item in the trail is always non-clickable (active).
+The map was ported from Monolith's former `routes/breadcrumbs.php` and is now the only definition. Parent chains resolve recursively: e.g. `users.edit.view` → `users.index.view` → `dashboard.view`. The last item in the trail is always non-clickable (active).
 
 To add a new route's breadcrumb, add an entry to `BREADCRUMB_MAP` in `useBreadcrumbs.ts` with the correct `parent` chain and `labelKey` (must exist in locale JSON files).
 
@@ -410,7 +410,7 @@ View mode persists in `localStorage` key `fh-view-mode` (default table).
 
 ### Payment return URLs
 
-SPA routes: `/payment/return` and `/payment/cancel` (`PaymentReturnView`, `requiresAuth`). Blade uses `/payment/ipaymu/return|cancel`. When `SPA_URL` is set, `SpaPublicUrl::paymentReturn/Cancel` mints the SPA paths as iPaymu hosted redirect defaults; empty `SPA_URL` keeps Blade. Channel checkout still sends empty `ureturn` (on-page QR/VA). HttpOnly `spa_jwt` survives the gateway bounce (`SameSite=Strict` still sends the cookie on same-origin XHR after the SPA loads); `beforeEach` hydrates via `GET auth/me` and keeps `redirect=fullPath`. Do not reopen these as guest routes unless a real gateway hit arrives without a session. These stay at the **site root**, not under `/apps`.
+SPA routes: `/payment/return` and `/payment/cancel` (`PaymentReturnView`, `requiresAuth`). Monolith keeps `/payment/ipaymu/return|cancel` as **server endpoints** that redirect onward. When `SPA_URL` is set, `SpaPublicUrl::paymentReturn/Cancel` mints the SPA paths as iPaymu hosted redirect defaults; empty `SPA_URL` keeps those server endpoints on `APP_URL`. Channel checkout still sends empty `ureturn` (on-page QR/VA). HttpOnly `spa_jwt` survives the gateway bounce (`SameSite=Strict` still sends the cookie on same-origin XHR after the SPA loads); `beforeEach` hydrates via `GET auth/me` and keeps `redirect=fullPath`. Do not reopen these as guest routes unless a real gateway hit arrives without a session. These stay at the **site root**, not under `/apps`.
 
 ### `/apps` shell
 
@@ -481,17 +481,17 @@ Mimic is **appearance + behavior + intent**, done well and safely — not a pixe
 Monolith is API-first. One list endpoint, two presentations via `display_mode`:
 
 - `query` — Eloquent-shaped JSON (SPA `DataTable.vue` / `useResource.ts`). Optional `page` / `per_page` / `search` → `{ items, pagination }`; omit them → legacy flat `T[]`.
-- `datatable` — same rows, Yajra-shaped for Blade DataTables
+- `datatable` — same rows, Yajra-shaped. Built for the removed Blade DataTables and **currently unused by any client** — see [platform/list-display-modes.md](../platform/list-display-modes.md).
 
-The SPA fetches and parses **as-is**. Do not port Yajra JS. Do not invent a second list API.
+The SPA fetches and parses **as-is**, always with `display_mode=query`. Do not port Yajra JS. Do not invent a second list API.
 
 ### Accepted divergences (A / B / C)
 
 These are the safe zone. Keep the current approaches.
 
-**A - Platform.** Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted; JS does not store the JWT). Blade remains HttpOnly `auth_token` on `APP_URL`. Direct Monolith `/api/v1` data traffic uses the cross-site cookie (or Bearer); `POST /api/v1/broadcasting/auth` goes direct, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, narrow auth-only Worker BFF, breadcrumb config map, guest cannot read `system_settings`, budget controls (`/api/v1/batch`, JWT TTL 240). Mimic the session and realtime intent; two cookies, two origins.
+**A - Platform.** Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted; JS does not store the JWT). The Blade-era `auth_token` cookie bridge on `APP_URL` is gone — there is one browser session cookie now. Direct Monolith `/api/v1` data traffic uses the cross-site cookie (or Bearer); `POST /api/v1/broadcasting/auth` goes direct, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, narrow auth-only Worker BFF, breadcrumb config map, guest cannot read `system_settings`, budget controls (`/api/v1/batch`, JWT TTL 240).
 
-**B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout=sidebar`. File Hosting three Vue routes vs Blade island; team as a page vs offcanvas; listing-only move picker; rate editor re-fetch instead of full reload. Mimic intent, not Blade DOM ids (`#fhTeamOffcanvas`, `#fhCreateWorkspaceModal`, `#fhMicrostockPanel`).
+**B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout=sidebar`. File Hosting three Vue routes instead of the removed single-island shell; team as a page rather than an offcanvas; listing-only move picker; rate editor re-fetch instead of full reload.
 
 **C — Gray (optional later, not a product blocker).** Live-reload on 2 of 7 catalogs (`NotificationType::tableId()` only emits those two), local row-action chrome vs query-mode `actions[]` (deletes on users / inference / gateways / services are wired locally with Blade-equivalent permission + confirm; hierarchy still 403s from the API), Laravel plural pipe hack.
 
@@ -557,7 +557,7 @@ Route::post('broadcasting/auth', function (Request $request) {
 })->middleware(['auth:api'])->name('api.broadcasting.auth');
 ```
 
-This delegates to the same channel authorization callbacks in `routes/channels.php` — no duplication of channel logic. Blade continues using the web-middleware `/broadcasting/auth` with cookie + CSRF; the API route is additive and does not affect Blade.
+This delegates to the same channel authorization callbacks in `routes/channels.php` — no duplication of channel logic. Laravel's framework-registered web `/broadcasting/auth` route still exists but has no browser client; the SPA uses the API route above.
 
 ## Cross-tab auth (multi-tab session sync)
 
@@ -699,7 +699,7 @@ onUnmounted(() => {
 | `private-payments.invoice.{invoiceId}` | `.invoice.status.changed` | Patch status badge, steps, sidebar; emit `status-updated` + `invoice-updated` |
 | `private-payments.routing` | `.routing.catalog.changed` | Re-fetch checkout channels, update picker |
 
-Wired into `CheckoutPanel.vue` (Echo-driven, no polling). Sync-status provider is parsed from `checkoutResult.gateway` or `invoice.payment_gateway.name`. If neither is present, skip the call -- do **not** default to `midtrans`. Blade resolves the provider in the web hop (`InvoiceCheckoutGatewayResolver`); the SPA has no `defaultForInvoice()` equivalent.
+Wired into `CheckoutPanel.vue` (Echo-driven, no polling). Sync-status provider is parsed from `checkoutResult.gateway` or `invoice.payment_gateway.name`. If neither is present, skip the call -- do **not** default to `midtrans`. Server-side, `InvoiceCheckoutGatewayResolver` can fall back to `PaymentGateway::defaultForInvoice()`; the SPA has no equivalent and must not guess.
 
 #### vTual claim — inline in `VtualVtuberClaimView.vue`
 
@@ -769,7 +769,7 @@ Assessment of whether Vue-Workers invents business rules that belong in Monolith
 | Local `formatBytes` vs `*_human` | Presentation | Prefer API fields later |
 | Payment channel client search; menus client DataTable | Accepted B | |
 | Blade JS `purchase-pricing-preview.js` fee re-quote | Blade also does this | Baseline mimic, not a new SPA crime |
-| SPA cannot call `PaymentGateway::defaultForInvoice()` | Blade web hop resolves a missing gateway; SPA skips sync when provider is unknown | Skip is safe; sync resumes after checkout returns `gateway` |
+| SPA cannot call `PaymentGateway::defaultForInvoice()` | The server resolver can fall back to a default gateway; the SPA skips sync when the provider is unknown | Skip is safe; sync resumes after checkout returns `gateway` |
 
 **Correct consumer pattern (keep):** `quota.can_create_workspace`, `slots.can_create`, `claim.can_verify`, flattened channel quotes, invoice fee snapshots, `*_formatted`.
 

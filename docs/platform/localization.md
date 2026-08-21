@@ -80,12 +80,14 @@ lang/{en,id,ja}/
 
 Managed files listed in `config/localization.php` → `managed_files`.
 
+`web/*.php` shrank with the Blade removal — it now holds only strings that surviving **server-side PHP** still resolves: `session`, `identity-connections`, `vtual-vtuber` (Discord callback flash), `payments`, `file-hosting` (direct-upload errors), `settings` (registry labels), and `vtual-orphans` (row-action confirm on the retained datatable path — see [list-display-modes.md](list-display-modes.md)). Browser UI strings live in the SPA's JSON locales, not here. Do not add a `web/*.php` file for a screen; if only the SPA reads it, it belongs in `monolith-vue-workers/src/i18n/locales/*.json`.
+
 ## Key conventions
 
 | Context | Example |
 |---------|---------|
 | Shared UI | `__('ui.actions.save')` |
-| Blade area | `__('web/navbar.home')` |
+| Server `web` strings | `__('web/session.expired')` — only the handful of files still reached by server endpoints (see below) |
 | API domain | `__('api/navigation.created')` |
 | Static nav labels | `__('menu.dashboard')` |
 | DB menus | `$menu->name` (Spatie) |
@@ -99,11 +101,11 @@ Managed files listed in `config/localization.php` → `managed_files`.
 
 ## Number & date display (not lang files)
 
-User-facing **numbers and datetimes** (money separators, absolute dates, relative “2 hours ago”) follow `app()->getLocale()` via `App\Support\Presentation\{Date,Money,Byte}Presenter` at the API Resource layer. They are **not** translated through `lang/{locale}/*` string keys. API `*_formatted` and `*_human` companions remain authoritative for API resources and Blade.
+User-facing **numbers and datetimes** (money separators, absolute dates, relative “2 hours ago”) follow `app()->getLocale()` via `App\Support\Presentation\{Date,Money,Byte}Presenter` at the API Resource layer. They are **not** translated through `lang/{locale}/*` string keys. API `*_formatted` and `*_human` companions remain authoritative for every API consumer.
 
 SPA-native values that are not already formatted by the API use `Intl.NumberFormat(locale.value)` and `Intl.DateTimeFormat(locale.value, …)` with the active Vue locale. Do not call unqualified `toLocaleString()` for user-facing values.
 
-Blade must not reformat API values — consume Resource companions (`*_formatted`, `*_human`). Contract: [platform/crud.md — API Resource presentation](crud.md#api-resource-presentation-dual-fields).
+Clients must not reformat API values — consume Resource companions (`*_formatted`, `*_human`). Contract: [platform/crud.md — API Resource presentation](crud.md#api-resource-presentation-dual-fields).
 
 ## Related
 

@@ -2,7 +2,7 @@
 
 > **UI:** Admin screens live in **Monolith-Vue-Workers** (`/apps/vtual/*`). Blade web controllers and views are removed — see [web/blade-admin.md](../../web/blade-admin.md) and [ui-archive.md](ui-archive.md).
 
-Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Active web (2026-08):** staff **orphan** admin (`/apps/vtual/orphans`), **platform credentials** (`/apps/vtual/platform-credentials`, Root/Admin), **owned profiles list + manage** (`/apps/vtual/profiles`, Products menu under File Hosting), **read-only vTuber profile** + interactive claim (`/apps/vtual/vtuber/{slug}`, login required). **Public SPA:** guest landing `/vtual` (directory + content feed) + two-column public profile `/vtual/vtubers/{slug}` (Valkivid3; claim still behind login). Legacy hub, standalone claims, and registry Blade UIs remain [archived](ui-archive.md) (`_archive/` paths only — rebuilt profiles/manage are **not** archive). **Scheduled content ingestion** (feed poll, content pool, live CCV) and **YouTube WebSub push** are implemented; **Twitch EventSub** remains deferred — see [implementation-status.md](implementation-status.md).
+Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Active SPA screens (authenticated):** staff **orphan** admin (`/apps/vtual/orphans`), **platform credentials** (`/apps/vtual/platform-credentials`, Root/Admin), **owned profiles list + manage** (`/apps/vtual/profiles`, Products menu under File Hosting), **read-only vTuber profile** + interactive claim (`/apps/vtual/vtuber/{slug}`, login required). **Public SPA:** guest landing `/vtual` (directory + content feed) + two-column public profile `/vtual/vtubers/{slug}` (Valkivid3; claim still behind login). The former Blade hub, standalone claims, and registry UIs are gone — history in [ui-archive.md](ui-archive.md). **Scheduled content ingestion** (feed poll, content pool, live CCV) and **YouTube WebSub push** are implemented; **Twitch EventSub** remains deferred — see [implementation-status.md](implementation-status.md).
 
 | | |
 |--|--|
@@ -10,7 +10,8 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Config | [`config/products.php`](../../../config/products.php) key `Vtual` · [`config/vtual.php`](../../../config/vtual.php) |
 | Registry | [`config/domains.php`](../../../config/domains.php) `Vtual` product locked |
 | API | `routes/api/v1/vtual.php` (auth) · `routes/api/v1/vtual-public.php` (guest directory + contents feed + profile) |
-| Web | `routes/web/vtual-orphans.php` → **`/apps/vtual/orphans`** (`vtual.orphans.*`); `routes/web/vtual-platform-credentials.php` → **`/apps/vtual/platform-credentials`** (`vtual.platform-credentials.*`, Root/Admin); `routes/web/vtual-profiles.php` → **`/apps/vtual/profiles`** (owned list + **`/apps/vtual/profiles/{slug}`** manage; Products sidebar); `routes/web/vtual-vtuber.php` → **`/apps/vtual/vtuber`** (`vtual.vtuber.index`, product hub placeholder) + **`/apps/vtual/vtuber/{slug}`** (`vtual.vtuber.show`, read-only profile; UUID legacy → 301 slug). Archived: [ui-archive.md](ui-archive.md) |
+| Web | None. vTual has no server `web` routes; all UI is SPA. |
+| SPA routes | Vue Router names in [`config/spa-routes.php`](../../../config/spa-routes.php): `vtual.orphans.*` → **`/apps/vtual/orphans`**; `vtual.platform-credentials.*` → **`/apps/vtual/platform-credentials`** (Root/Admin); `vtual.profiles.index` / `vtual.profiles.show` → **`/apps/vtual/profiles`** + **`/apps/vtual/profiles/{slug}`** manage (Products sidebar); `vtual.vtuber.index` → **`/apps/vtual/vtuber`** (product hub) + `vtual.vtuber.show` → **`/apps/vtual/vtuber/{slug}`** (read-only profile); public `vtual.public` / `vtual.public.vtuber` → **`/vtual`**, **`/vtual/vtubers/{slug}`**. Removed Blade history: [ui-archive.md](ui-archive.md) |
 | Naming (Management disambiguation) | [naming-conventions.md](naming-conventions.md) — core role `Management` vs `vtual_managements` talent org |
 | Seeder | `VtualRoleSeeder` (after core `RoleSeeder`; also seeds platforms) |
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
@@ -442,8 +443,8 @@ Live UI: SPA `vtual.platform-credentials.*` (index, platform, create, edit, prob
 - **Content filter**: `VtuberProfileService` → `ContentService::listForPublicProfile` — excludes rows whose **primary channel** is `archived` (read profile shows 0 contents when all channels archived; manage surfaces may still list archived channels separately).
 - **Auth**: any logged-in user; guest → login redirect; UUID path → **301** to canonical slug (web).
 
-### Archived UI patterns (2026-07 overhaul, see ui-archive.md)
-- **i18n**: all user-facing strings via `__('web/vtual.*')` (en/id/ja); `ajax.*`, `confirm.*`, `table.*` keys added.
+### Removed Blade UI patterns (2026-07 overhaul, see ui-archive.md)
+- **i18n**: the Blade era kept every user-facing string in a per-locale `web/vtual` PHP file (`ajax.*`, `confirm.*`, `table.*`). That file is deleted; SPA strings live in `monolith-vue-workers/src/i18n/locales/*.json`. Surviving server-side vTual PHP strings are only `web/vtual-vtuber.php` (Discord claim flash) and `web/vtual-orphans.php` (datatable row-action confirm).
 
 ## Seeders
 
@@ -667,8 +668,8 @@ When **adding, removing, or renaming** a worker-facing gateway method that shoul
 
 1. `PlatformApiProbeService::METHODS` + `run()` match arm
 2. `PlatformApiProbeRequest` validation (`Rule::in`)
-3. Web labels/help in `lang/{en,id,ja}/web/vtual.php` (`probe.method_*`, `ids_help`)
-4. Feature tests (`PlatformApiProbeApiTest`; web probe test archived as `PlatformApiProbeWebTest` in `tests/_archive/`)
+3. Probe labels/help in the SPA (`monolith-vue-workers/src/i18n/locales/*.json` under `web.vtual.probe.*`) — the old Blade-era `probe.method_*` / `ids_help` PHP keys were deleted with the frontend
+4. Feature tests (`PlatformApiProbeApiTest`; the Blade probe web test was deleted, not archived)
 5. This README section (methods table + notes)
 
 Video/VOD ids stay raw (no profile resolve). Channel/stream profile normalize is the shared production resolver used by channel register — not probe-only logic.

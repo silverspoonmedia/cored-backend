@@ -178,5 +178,5 @@ The sibling Vue-Workers SPA uses `useNavigationHydrate` in menu edit. It batches
 ## Related
 
 - [platform/crud.md](../../platform/crud.md)
-- [web/ui-patterns.md](../../web/ui-patterns.md)
+- [platform/list-display-modes.md](../../platform/list-display-modes.md) — why the menu tree opts out of query paging
 - [web/blade-admin.md](../../web/blade-admin.md)

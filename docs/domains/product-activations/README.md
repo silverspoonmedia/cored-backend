@@ -9,7 +9,7 @@ Cross-domain **runtime access** registry for Product domains. Tracks per-user pr
 | Table | `product_activations` |
 | API (self) | `routes/api/v1/product-activations.php` |
 | API (admin) | `routes/api/v1/product-activations.php` (`/admin/*`) |
-| Web (admin) | `routes/web/product-activations.php` |
+| SPA (admin) | Vue Router names `product-activations.index` / `product-activations.show` in [`config/spa-routes.php`](../../../config/spa-routes.php). No server `web` route |
 | Middleware alias | `product.active` |
 | Tests | `tests/Domain/Product/` (PHPUnit suite `Domain`) |
 

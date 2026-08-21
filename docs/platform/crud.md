@@ -32,7 +32,7 @@ Route::apiResource('users', UserController::class)->except(['create', 'edit']);
 
 **References:** v1 users (`routes/api/v1/identity.php`); File Hosting folders/files under `routes/api/v1/file-hosting.php`.
 
-**Not** `apiResource` when you need extra actions, dual list/DataTable modes, per-verb permissions, or optional-auth reads — see [Navigation](../domains/navigation/README.md), [ui-patterns](../web/ui-patterns.md).
+**Not** `apiResource` when you need extra actions, dual list/DataTable modes, per-verb permissions, or optional-auth reads — see [Navigation](../domains/navigation/README.md), [list-display-modes](list-display-modes.md).
 
 ## Layer responsibilities
 
@@ -69,7 +69,7 @@ HTTP → Form Request → Controller → Service → Repository → Model
 
 Reference for shared-repo CRUD: Identity `UserController` → user services/repos under `app/Domain/Identity/`, routes in `routes/api/v1/identity.php`.
 
-API envelope: `ApiResponse` (`status`, `message`, optional `data`). List/show use Eloquent API Resources under `App\Domain\{Domain}\Http\Resources\…`. Tabular indexes that support `display_mode` may return a flat `T[]` or, when `page` / `per_page` / `search` are present on `display_mode=query`, `{ items, pagination }` — [ui-patterns — List display modes](../web/ui-patterns.md#list-display-modes-query--datatables).
+API envelope: `ApiResponse` (`status`, `message`, optional `data`). List/show use Eloquent API Resources under `App\Domain\{Domain}\Http\Resources\…`. Tabular indexes that support `display_mode` may return a flat `T[]` or, when `page` / `per_page` / `search` are present on `display_mode=query`, `{ items, pagination }` — [list-display-modes.md](list-display-modes.md).
 
 ## API Resource presentation (dual fields)
 

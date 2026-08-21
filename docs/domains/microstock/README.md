@@ -9,7 +9,7 @@ Product domain (`kind => product`, `locked => true`) for microstock asset manage
 | Code | `app/Domain/Microstock/` |
 | Config | [`config/microstock.php`](../../../config/microstock.php) |
 | API | `routes/api/v1/microstock.php` |
-| Web | `routes/web/microstock.php` under `/apps/*` → **`/apps/microstock`** (`microstock.index`, export); FH-mounted UI under **`/apps/file-hosting/microstock/*`** |
+| SPA | Vue Router names `file-hosting.microstock-credentials` / `file-hosting.microstock-usage` in [`config/spa-routes.php`](../../../config/spa-routes.php), plus the File Hosting workspace switcher. No server `web` route and no standalone `/apps/microstock` screen |
 | Seeder | `MicrostockRoleSeeder` (Beta tester role + Public visibility) |
 | Product registry | `activation_type = implicit`; registration creates an active registry row |
 | Workspace gate | Active `microstock_workspace_slots` entitlement; `product.active:Microstock` remains middleware defense |

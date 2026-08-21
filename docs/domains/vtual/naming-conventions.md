@@ -68,8 +68,8 @@ Use this table when adding code, migrations, routes, lang keys, or docs.
 |-------|----------------|--------------------------|-----------------|
 | **Prose / docs** | talent management, management org, `vtual_managements` | core role Management, platform staff | creator, vTuber profile, `vtual_creators` |
 | **PHP class** | `Management`, `ManagementMember`, `ManagementService` | `Role` name check `'Management'` | `Creator`, `CreatorMember` |
-| **Route name** | `vtual.managements.*` (future web) | — (use `role:Root|Admin|…`) | `vtual.vtuber.show`, `vtual.orphans.*` |
-| **Lang file** | `web/vtual-talent-management.php` (future) | reuse Identity / platform strings | `web/vtual-vtuber.php`, `web/vtual-orphans.php` |
+| **Route name** (SPA) | `vtual.managements.*` | — (use `role:Root|Admin|…`) | `vtual.vtuber.show`, `vtual.orphans.*` |
+| **Lang file** | SPA JSON `web.vtual-managements.*` | reuse Identity / platform strings | server-side leftovers only: `web/vtual-vtuber.php`, `web/vtual-orphans.php` |
 | **Permission prefix** | `… vtual management` | `manage any vtual resource` (staff override) | `… vtual creator`, `… vtual channel` |
 | **API JSON key** | `management` (resource), `management_id` | — | `creator`, `creator_id` |
 | **Forbidden alone** | “Management” in UI without “talent”/“org” context | calling talent org “the Management role” | “User profile” when meaning creator |

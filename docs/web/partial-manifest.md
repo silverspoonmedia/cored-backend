@@ -1,8 +1,8 @@
-# Blade partial manifest (active surface)
+# Blade partial manifest (archived)
 
-Inventory for active admin Blade under `resources/views/{layout}/` where `{layout}` is `config('web.layout')` (default `adminlte4`). Includes use `config('web.layout')` or `WebLayout::partial()` — never hard-code `adminlte4.` in domain views.
+> **Archived — nothing here exists.** The whole `resources/` tree was deleted with the Blade admin; see [blade-admin.md](blade-admin.md). This is a post-mortem inventory of what the Blade admin was made of, useful only for tracing where a behavior came from when porting or auditing the SPA. Do not treat any path, component tag, or composer binding below as live, and do not recreate them.
 
-**Archive vs active:** views under `resources/views/_archive/` keep historical paths and includes for reference only — not relocated with active code. Active surface follows [blade-admin — Partial layout](blade-admin.md#partial-and-component-layout).
+The Blade admin rendered from `resources/views/{layout}/` where `{layout}` came from `config('web.layout')` (default `adminlte4`); includes resolved it through `config('web.layout')` or `WebLayout::partial()` rather than hard-coding `adminlte4.`. Views under `resources/views/_archive/` were an earlier round of parked work — also deleted.
 
 ## Layout shell (composer-bound — do not move)
 
