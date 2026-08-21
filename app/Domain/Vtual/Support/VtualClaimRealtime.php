@@ -59,7 +59,7 @@ class VtualClaimRealtime
         $snapshot = (new CreatorClaimResource($claim))->resolve($request);
 
         if ($claim->creator !== null && ! empty($claim->creator->slug)) {
-            $snapshot['profile_url'] = route('vtual.vtuber.show', $claim->creator->slug);
+            $snapshot['profile_url'] = \App\Support\SpaPublicUrl::vtuberProfile($claim->creator->slug);
         }
 
         return $snapshot;

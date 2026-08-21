@@ -1,5 +1,7 @@
 # Notification — activity bell (role + user)
 
+> **UI:** Notification bell and `/apps/notifications` live in **Monolith-Vue-Workers**. Blade web proxies are removed — see [web/blade-admin.md](../../web/blade-admin.md).
+
 Hybrid engine: **types/triggers in code**, **audience in DB** (`notification_type_settings` + seeder). Not Laravel’s `notifications` table.
 
 Code: `app/Domain/Notification/`.
@@ -145,9 +147,9 @@ Forever key `notification_type_settings.snapshot`; seeder / `syncRoles` / `syncU
 
 The sibling Vue-Workers SPA uses `useNotificationsHydrate` for notification-audience edit, batching the audience and assignable-role reads. Shell hydration also seeds the sidebar/navbar-adjacent recent notification list and unread count; failed entries retain the bell’s individual loaders. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
 
-API payloads keep Blade web `action_route` + `action_params` (`users.edit`, `{ user }`). The SPA does not invent a second action map: `src/utils/notificationTarget.ts` resolves `${route}.view` and remaps `user` / `modelCard` → Vue `:id`. Bell and `/apps/notifications` navigate there; unknown names fall back to the notifications list. See [vue-workers-spa — Notification deep links](../../integration/vue-workers-spa.md#notification-deep-links).
+API payloads keep `action_route` + `action_params` (`users.edit`, `{ user }`). The SPA does not invent a second action map: `src/utils/notificationTarget.ts` resolves `${route}.view` and remaps `user` / `modelCard` → Vue `:id`. Bell and `/apps/notifications` navigate there; unknown names fall back to the notifications list. See [vue-workers-spa — Notification deep links](../../integration/vue-workers-spa.md#notification-deep-links).
 
-## API / Web
+## API
 
 Viewer API endpoints:
 
@@ -158,7 +160,7 @@ Viewer API endpoints:
 | `POST /api/v1/notifications/{id}/read` | Idempotent single-read |
 | `POST /api/v1/notifications/read-all` | Returns `{ marked, unread: 0 }` |
 
-Web routes proxy the API through `ConsumesApi` under `/apps/*`. `NotificationBellComposer` injects URLs, labels, delivery config, safe Pusher client config, viewer ID, and `initialUnreadCount` into `data-notification-config`. The `/apps/notifications` page renders up to 100 visible items and mutates read-state markup in place after mark-all.
+Bell UI, inbox (`/apps/notifications`), and audience admin live in Monolith-Vue-Workers. Blade `NotificationBellComposer` and web proxies are removed — see [blade-admin.md](../../web/blade-admin.md).
 
 ## Implementation map
 
@@ -168,12 +170,8 @@ Web routes proxy the API through `ConsumesApi` under `/apps/*`. `NotificationBel
 | Emit service | `app/Domain/Notification/Services/NotificationService.php` | Persist audience, calculate per-recipient unread count, dispatch realtime event |
 | Realtime event | `app/Domain/Notification/Events/UserActivityNotificationReceived.php` | Private channel/name and `type`/`table_id`/`unread_count` payload |
 | Audience settings | `NotificationTypeSettingRepository` + seeder | Resolve role/user/subject audience; primitive cached snapshot |
-| Browser config | `NotificationBellComposer` | Initial count, URLs, labels, delivery mode, safe Pusher config |
-| Echo client | `resources/js/notifications/echo.js` | Pusher client, private-channel authorizer, hosted/self-hosted endpoint selection |
-| Bell state | `resources/js/notifications/bell.js` | Badge/list UI, WS health state machine, fallback polling, DataTable reload, tab sync |
-| Users list | `resources/views/adminlte4/users/index.blade.php` | Register `users-table`; health-gated fallback reload |
-| Inbox UI | `resources/views/adminlte4/notifications/index.blade.php` | In-place read-all row/status mutation |
-| AJAX infrastructure | `resources/js/infra/api-response-handler.js` (via `app.js`) | Emit `ajax-form:success` after successful no-redirect mutation |
+| SPA bell / inbox | `monolith-vue-workers` (`useNotificationsHydrate`, Echo) | Badge, list, WS, mark-read |
+| Users list live reload | SPA `UsersView` | Register `users-table` via Pattern A |
 
 ## Workflows (agents)
 
@@ -184,7 +182,7 @@ Web routes proxy the API through `ConsumesApi` under `/apps/*`. `NotificationBel
 3. `NotificationTypeSettingSeeder` row + roles  
 4. `ActivityNotificationEvent::dispatch` from owning **service**  
 5. Tests  
-6. Optional DataTable live reload (`tableId` + blade/controller)
+6. Optional DataTable live reload (`tableId` + SPA listing registry)
 
 ### B — Audience only
 

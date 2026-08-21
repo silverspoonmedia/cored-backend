@@ -1,5 +1,7 @@
 # Microstock — product domain
 
+> **UI:** Microstock admin surfaces live in **Monolith-Vue-Workers** (File Hosting workspace switcher + settings). Blade references below are historical — see [web/blade-admin.md](../../web/blade-admin.md).
+
 Product domain (`kind => product`, `locked => true`) for microstock asset management on top of the File Hosting base storage layer. Assets live in built-in **system workspaces** (`file_hosting_workspaces.kind = 'microstock'`, standalone slots) and reuse the entire FH upload/browse/quota/download pipeline. Microstock adds AI metadata (title/description/category/keywords), CSV metadata export, and envelope-encrypted marketplace credentials.
 
 | | |
@@ -157,7 +159,7 @@ Web hops: `GET /apps/file-hosting/microstock/billing/admin/overview`, `…/admin
 | Collection describe modal footer | Billing line + **View balance & history** |
 | `/apps/services` Microstock card | **Usage & balance** next to balance line |
 
-Implementation: `BillingLedgerService`, `AdminBillingAnalyticsService`, `AdminBillingController`, `BillingLedgerEntryResource`, `BillingUsageEventResource`, `AdminBillingUsageEventResource`, `resources/views/adminlte4/file-hosting/microstock-usage.blade.php` (standalone fallback page; inline `@vite` like other FH pages), `resources/js/file-hosting/microstock-usage.js` (exports `createMicrostockUsagePanel` factory for SPA offcanvas + standalone bootstrap). The SPA offcanvas is injected into `index.blade.php` and wired from the Vue FH island; standalone page remains for direct access/bookmarks and offcanvas fallback. Collection modal **View balance & history** opens the same offcanvas or navigates to the standalone URL. Daily-free behaviour: [daily-free-trial.md](daily-free-trial.md).
+Implementation: `BillingLedgerService`, `AdminBillingAnalyticsService`, `AdminBillingController`, `BillingLedgerEntryResource`, `BillingUsageEventResource`, `AdminBillingUsageEventResource`. Live UI is the SPA (`file-hosting.microstock-usage`, File Hosting workspace switcher). Blade `microstock-usage.blade.php` / island offcanvas are removed — see [blade-admin.md](../../web/blade-admin.md). Daily-free behaviour: [daily-free-trial.md](daily-free-trial.md).
 
 ## Collections (folder-as-collection lifecycle)
 

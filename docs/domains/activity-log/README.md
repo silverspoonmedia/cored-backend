@@ -51,11 +51,11 @@ Requires `auth:api` + `permission:view activity log` (Root/Admin).
 | GET | `/activity-logs/{activity}` |
 | GET | `/users/{user}/activity-logs` |
 
-Resource: event, labels, causer, attribute_changes, properties. **Properties and attribute_changes are redacted** with the same key list as error-log context (`ErrorContextRedactor` / `config/errorlog.php` `redact_keys`) for every log name; crypto rows still mask `kms_key_id` after that. Web list/show proxy API; user edit shows recent activity card.
+Resource: event, labels, causer, attribute_changes, properties. **Properties and attribute_changes are redacted** with the same key list as error-log context (`ErrorContextRedactor` / `config/errorlog.php` `redact_keys`) for every log name; crypto rows still mask `kms_key_id` after that.
 
-## Web (Blade)
+## SPA UI
 
-Authenticated UI under `/apps/*` (route names unprefixed): `/apps/activity-logs` (`activity-logs.index`), `/apps/activity-logs/{activity}` (`activity-logs.show`). See [blade-admin — Routes](../../web/blade-admin.md#routes).
+Authenticated screens live in Monolith-Vue-Workers: `/apps/activity-logs` (`activity-logs.index`), `/apps/activity-logs/{activity}` (`activity-logs.show`). Blade web proxies are removed — see [blade-admin.md](../../web/blade-admin.md).
 
 **Sidebar:** **Administration → Monitoring → Activity log** (`activity-logs.index`), visible to Root and Admin.
 

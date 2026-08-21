@@ -98,12 +98,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Silent refresh skew (Blade admin)
+    | Silent refresh skew (SPA / API clients)
     |--------------------------------------------------------------------------
     |
-    | Minutes before access-token `exp` when RefreshJwtCookie proactively issues
-    | a new JWT and rewrites the HttpOnly auth_token cookie. Keeps a short
-    | jwt.ttl (Settings → Platform, platform.jwt.ttl) while active browser
+    | Minutes before access-token `exp` when clients may proactively refresh.
+    | Keeps a short jwt.ttl (Settings → Platform, platform.jwt.ttl) while active
     | sessions slide within jwt.refresh_ttl.
     |
     */
@@ -263,7 +262,7 @@ return [
     */
 
     // Seconds the predecessor JWT stays acceptable after refresh (parallel tabs /
-    // in-flight ApiClient calls). Zero caused random multi-tab 401 after silent refresh.
+    // in-flight API calls). Zero caused random multi-tab 401 after silent refresh.
     'blacklist_grace_period' => 30,
 
     /*

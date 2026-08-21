@@ -102,18 +102,16 @@ Resource fields: fingerprint, type, level, exception_class, message, file, line,
 
 i18n: `lang/{en,id,ja}/api/error-log.php`.
 
-## Web (Blade)
+## SPA UI
 
-Authenticated UI under `/apps/*` (route names unprefixed). See [blade-admin — Routes](../../web/blade-admin.md#routes).
+Authenticated screens live in Monolith-Vue-Workers under `/apps/*` (Vue Router names unprefixed). Blade web controllers and views are removed — see [blade-admin.md](../../web/blade-admin.md).
 
 | Piece | Detail |
 |-------|--------|
-| URI | `/apps/error-logs`, `/apps/error-logs/{errorLog}`, `PATCH …/status` |
-| Routes | `error-logs.index`, `error-logs.show`, `error-logs.status` |
-| Controller | `Http/Controllers/Web/ErrorLogController` — pure `ConsumesApi` |
-| Views | `resources/views/adminlte4/error-logs/{index,show}.blade.php` |
+| URI | `/apps/error-logs`, `/apps/error-logs/{errorLog}` |
+| SPA routes | `error-logs.index`, `error-logs.show` |
+| Status | `PATCH /api/v1/error-logs/{errorLog}/status` |
 | Menu | Administration → Monitoring → Error log (Root/Admin), `MenuSeeder` |
-| i18n | `lang/{en,id,ja}/web/error-log.php` |
 
 ## Maintenance
 

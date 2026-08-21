@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\Cookie;
 /**
  * HttpOnly cookie that carries the stateless JWT for the Vue-Workers SPA.
  *
- * Unlike {@see AuthCookie} (Blade, first-party `lax` on APP_URL), this cookie is
+ * Unlike the removed Blade first-party JWT cookie (`lax` on APP_URL), this cookie is
  * minted on the API origin and consumed cross-site by the SPA via
  * `fetch(..., { credentials: 'include' })`. It therefore needs `SameSite=None;
  * Secure` so browsers attach it to cross-origin requests, and the `__Host-`

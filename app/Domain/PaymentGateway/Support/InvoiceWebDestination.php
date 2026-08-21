@@ -16,10 +16,10 @@ final class InvoiceWebDestination
         $invoiceId = self::invoiceId($invoice);
 
         if ($type === 'service_purchase' && $invoiceableId !== null) {
-            return route('service-purchases.show', $invoiceableId);
+            return \App\Support\SpaPublicUrl::to('/apps/service-purchases/'.$invoiceableId);
         }
 
-        return route('invoices.show', $invoiceId);
+        return \App\Support\SpaPublicUrl::to('/apps/invoices/'.$invoiceId);
     }
 
     /**
@@ -40,7 +40,7 @@ final class InvoiceWebDestination
             return null;
         }
 
-        return route('service-purchases.show', self::invoiceableId($invoice));
+        return \App\Support\SpaPublicUrl::to('/apps/service-purchases/'.self::invoiceableId($invoice));
     }
 
     /**

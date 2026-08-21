@@ -27,10 +27,10 @@ class VtuberProfileResource extends JsonResource
         return [
             'id' => $this->id,
             'slug' => $this->slug,
-            'profile_url' => route('vtual.vtuber.show', $this->slug),
+            'profile_url' => \App\Support\SpaPublicUrl::vtuberProfile($this->slug),
             'is_claimable' => $isClaimable,
             'claim_process_url' => $isClaimable
-                ? route('vtual.vtuber.claim', $this->slug)
+                ? \App\Support\SpaPublicUrl::vtuberClaim($this->slug)
                 : null,
             ...$this->dateFields('claim_blocked_until', $blockedUntil),
             'display_name' => $this->display_name,

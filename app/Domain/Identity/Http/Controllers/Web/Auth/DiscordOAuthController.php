@@ -12,7 +12,7 @@ use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Services\ChannelClaimService;
 use App\Domain\Vtual\Services\CreatorClaimService;
-use App\Http\Controllers\Web\Controller;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -143,8 +143,7 @@ class DiscordOAuthController extends Controller
                     'connected',
                     'success',
                     __('web/vtual-vtuber.claim_progress_verified'),
-                    'vtual.vtuber.show',
-                    $slug,
+                    '/apps/vtual/vtubers/'.$slug,
                 );
             }
 
@@ -153,8 +152,7 @@ class DiscordOAuthController extends Controller
                 'error',
                 'warning',
                 __('web/vtual-vtuber.claim_progress_failed'),
-                'vtual.vtuber.claim',
-                $slug,
+                '/apps/vtual/vtubers/'.$slug.'/claim',
             );
         } catch (\Throwable) {
             return $this->redirectAfterCallback(
@@ -162,8 +160,7 @@ class DiscordOAuthController extends Controller
                 'error',
                 'error',
                 __('web/vtual-vtuber.claim_discord_verify_failed'),
-                'vtual.vtuber.claim',
-                $slug,
+                '/apps/vtual/vtubers/'.$slug.'/claim',
             );
         }
     }
@@ -185,8 +182,7 @@ class DiscordOAuthController extends Controller
                     'connected',
                     'success',
                     __('web/vtual-vtuber.claim_progress_verified'),
-                    'vtual.vtuber.show',
-                    $slug,
+                    '/apps/vtual/vtubers/'.$slug,
                 );
             }
 
@@ -195,8 +191,7 @@ class DiscordOAuthController extends Controller
                 'error',
                 'warning',
                 __('web/vtual-vtuber.claim_progress_failed'),
-                'vtual.vtuber.claim',
-                $slug,
+                '/apps/vtual/vtubers/'.$slug.'/claim',
             );
         } catch (\Throwable) {
             return $this->redirectAfterCallback(
@@ -204,8 +199,7 @@ class DiscordOAuthController extends Controller
                 'error',
                 'error',
                 __('web/vtual-vtuber.claim_discord_verify_failed'),
-                'vtual.vtuber.claim',
-                $slug,
+                '/apps/vtual/vtubers/'.$slug.'/claim',
             );
         }
     }
@@ -227,8 +221,7 @@ class DiscordOAuthController extends Controller
                     'connected',
                     'success',
                     __('web/vtual-vtuber.claim_progress_verified'),
-                    'vtual.profiles.show',
-                    $slug,
+                    '/apps/vtual/vtubers/'.$slug,
                 );
             }
 
@@ -237,8 +230,7 @@ class DiscordOAuthController extends Controller
                 'error',
                 'warning',
                 __('web/vtual-vtuber.claim_progress_failed'),
-                'vtual.profiles.show',
-                $slug,
+                '/apps/vtual/vtubers/'.$slug,
             );
         } catch (\Throwable) {
             return $this->redirectAfterCallback(
@@ -246,8 +238,7 @@ class DiscordOAuthController extends Controller
                 'error',
                 'error',
                 __('web/vtual-vtuber.claim_discord_verify_failed'),
-                'vtual.profiles.show',
-                $slug,
+                '/apps/vtual/vtubers/'.$slug,
             );
         }
     }
@@ -260,8 +251,7 @@ class DiscordOAuthController extends Controller
         string $spaStatus,
         string $flashType,
         string $flashMessage,
-        ?string $bladeRoute = null,
-        ?string $bladeParam = null,
+        ?string $spaPath = null,
     ): RedirectResponse {
         $returnTo = is_string($payload['return_to'] ?? null)
             ? OAuthReturnUrl::sanitize((string) $payload['return_to'])
@@ -271,18 +261,19 @@ class DiscordOAuthController extends Controller
             return redirect()->away(OAuthReturnUrl::withDiscordStatus($returnTo, $spaStatus));
         }
 
-        if ($bladeRoute !== null && $bladeParam !== null) {
-            return redirect()->route($bladeRoute, $bladeParam)->with($flashType, $flashMessage);
+        // Blade is gone: every fallback lands on an SPA path, still carrying the status.
+        if ($spaPath !== null) {
+            return redirect()->away(OAuthReturnUrl::withDiscordStatus(OAuthReturnUrl::fromSpaPath($spaPath), $spaStatus));
         }
 
         if (is_array($payload) && ($payload['intent'] ?? '') === 'channel_claim_verify' && ($payload['slug'] ?? null)) {
-            return redirect()->route('vtual.profiles.show', $payload['slug'])->with($flashType, $flashMessage);
+            return redirect()->away(OAuthReturnUrl::withDiscordStatus(OAuthReturnUrl::fromSpaPath('/apps/vtual/vtubers/'.$payload['slug']), $spaStatus));
         }
 
         if (is_array($payload) && ($payload['slug'] ?? null)) {
-            return redirect()->route('vtual.vtuber.claim', $payload['slug'])->with($flashType, $flashMessage);
+            return redirect()->away(OAuthReturnUrl::withDiscordStatus(OAuthReturnUrl::fromSpaPath('/apps/vtual/vtubers/'.$payload['slug'].'/claim'), $spaStatus));
         }
 
-        return redirect()->route('profile.connections.edit')->with($flashType, $flashMessage);
+        return redirect()->away(OAuthReturnUrl::withDiscordStatus(OAuthReturnUrl::fromSpaPath('/apps/profile/connections'), $spaStatus));
     }
 }

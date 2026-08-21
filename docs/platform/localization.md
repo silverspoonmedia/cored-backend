@@ -1,6 +1,6 @@
 # Localization (multi-language)
 
-Cookie- or user-preference-driven locale for API, Blade, and DB content. **No route prefix** (`/en/...`). The sibling Vue-Workers SPA has its own JSON locale runtime and startup resolution; its contract lives in [../integration/vue-workers-spa.md](../integration/vue-workers-spa.md).
+Cookie- or user-preference-driven locale for API and DB content. **No route prefix** (`/en/...`). The sibling Vue-Workers SPA has its own JSON locale runtime and startup resolution; its contract lives in [../integration/vue-workers-spa.md](../integration/vue-workers-spa.md).
 
 ## Architecture
 
@@ -13,7 +13,7 @@ Cookie- or user-preference-driven locale for API, Blade, and DB content. **No ro
 
 **Never** put app strings in package-managed files (`lang:update` overwrites them).
 
-`localization.md` owns Laravel PHP locale files, API/Blade resolution, and parity rules. [`vue-workers-spa.md`](../integration/vue-workers-spa.md) owns SPA JSON keys, runtime switching, module-level fallback translation, and Worker hydration. Keep those contracts linked instead of duplicating them.
+`localization.md` owns Laravel PHP locale files, API resolution, and parity rules. [`vue-workers-spa.md`](../integration/vue-workers-spa.md) owns SPA JSON keys, runtime switching, module-level fallback translation, and Worker hydration. Keep those contracts linked instead of duplicating them.
 
 ### Task rule (required)
 
@@ -31,7 +31,8 @@ Translation workflow:
 
 | Touch | Translate in |
 |-------|----------------|
-| Blade / UI | `lang/{locale}/ui.php`, `web/*`, `menu.php` |
+| Remaining PHP `web/*` strings (Discord callback, CSRF, FH errors) | `lang/{locale}/web/*` |
+| SPA labels | sibling `monolith-vue-workers` JSON locales |
 | API messages / policy / business exceptions | `lang/{locale}/api/*` |
 | FormRequest messages | `forms/*` or `__()` in request |
 | Translatable DB fields | Spatie + admin input per locale |
@@ -47,13 +48,13 @@ Emails follow recipient `users.locale` (`HasLocalePreference` on `User`).
 2. `locale` cookie
 3. `config('app.locale')`
 
-Switch (Blade): `GET /locale/{locale}` — cookie; authenticated also updates `users.locale`.
+Switch: `POST /api/v1/auth/locale` — authenticated users persist to `users.locale`; SPA also stores preference client-side.
 
-Both Blade (`Web\LocaleController`) and API (`POST /api/v1/auth/locale`) call `App\Support\Localization\LocalePreference::apply()` so cookie + user-column persist stay one implementation.
+Both API (`POST /api/v1/auth/locale`) calls `App\Support\Localization\LocalePreference::apply()` so cookie + user-column persist stay one implementation.
 
 ### Web ↔ API sync
 
-Blade proxies via real HTTP (`ApiClient`). Web resolves locale first; `ApiClient` forwards it as the `locale` cookie so the API request does not fall back to English.
+The SPA sends the active locale via the `locale` cookie on cross-origin API requests so the API does not fall back to English.
 
 Authenticated clients may also call `POST /api/v1/auth/locale`. Resolution order remains db → cookie → default (**not** `Accept-Language` alone).
 

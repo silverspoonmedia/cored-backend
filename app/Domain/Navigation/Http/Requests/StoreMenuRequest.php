@@ -5,11 +5,11 @@ namespace App\Domain\Navigation\Http\Requests;
 use App\Domain\Navigation\Http\Requests\Concerns\NormalizesMenuPlacementFields;
 use App\Domain\Navigation\Http\Requests\Concerns\ValidatesMenuStructure;
 use App\Support\Localization\Concerns\ValidatesTranslatableInput;
+use App\Support\Navigation\SpaRouteRegistry;
 use App\Domain\Navigation\Support\MenuLayout;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -97,7 +97,7 @@ class StoreMenuRequest extends FormRequest
     }
 
     /**
-     * The `route` column stores a registered Laravel route name, not a URL.
+     * The `route` column stores a SPA Vue Router symbolic name, not a URL.
      */
     private function namedRouteRule(): Closure
     {
@@ -106,7 +106,7 @@ class StoreMenuRequest extends FormRequest
                 return;
             }
 
-            if (! is_string($value) || ! Route::has($value)) {
+            if (! is_string($value) || ! SpaRouteRegistry::isValidMenuRoute($value)) {
                 $fail(__('api/navigation.invalid_route'));
             }
         };

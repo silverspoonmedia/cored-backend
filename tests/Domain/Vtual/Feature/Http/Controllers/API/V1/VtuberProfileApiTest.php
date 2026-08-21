@@ -15,6 +15,7 @@ use App\Domain\Vtual\Services\ChannelStubContentBackfillService;
 use App\Domain\Vtual\Services\ContentService;
 use App\Domain\Vtual\Services\CreatorService;
 use App\Support\Product\Services\ProductActivationService;
+use App\Support\SpaPublicUrl;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -88,9 +89,9 @@ class VtuberProfileApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.display_name', 'Aizawa Ema')
             ->assertJsonPath('data.slug', $creator->slug)
-            ->assertJsonPath('data.profile_url', route('vtual.vtuber.show', $creator->slug))
+            ->assertJsonPath('data.profile_url', SpaPublicUrl::vtuberProfile($creator->slug))
             ->assertJsonPath('data.is_claimable', true)
-            ->assertJsonPath('data.claim_process_url', route('vtual.vtuber.claim', $creator->slug))
+            ->assertJsonPath('data.claim_process_url', SpaPublicUrl::vtuberClaim($creator->slug))
             ->assertJsonPath('data.channels.0.handle', 'aizawaema')
             ->assertJsonPath('data.channels.0.subscriber_count', 125000)
             ->assertJsonPath('data.contents.0.title', 'Archive Stream 1')

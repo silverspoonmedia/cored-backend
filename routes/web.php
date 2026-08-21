@@ -1,76 +1,40 @@
 <?php
 
-use App\Domain\Identity\Http\Controllers\Web\LocaleController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Web (Blade) frontend
+| Web surface (server-side only)
 |--------------------------------------------------------------------------
-| The Blade frontend is a pure CONSUMER of the versioned API: every controller
-| forwards to `/api/v1/*` (see App\Support\Api\ApiClient) and only renders the
-| JSON it gets back. Business logic — validation, CRUD, RBAC — lives solely in
-| the API, so these routes carry NO `permission:` gate on most paths: the API
-| authorizes each forwarded call.
-| Web middleware here is transport-only: `web.guest`/`web.auth`
-| (who is logged in, where to redirect) and the JWT-cookie bridge that lets the
-| browser carry the same stateless token the API issues.
+| The Blade app frontend has been removed. The SPA (monolith-vue-workers)
+| is the sole frontend and talks to the versioned API (/api/v1/*) using the
+| cross-site __Host-spa_jwt cookie + VerifySpaCsrf double-submit nonce.
 |
-| Domain route files live under routes/web/*.php (loaded below).
-| Authenticated domain requires: core first, product last (see config/domains.php).
-| Guest/public specials are auth-surface groups, not kind taxonomy.
+| What remains here are SERVER endpoints, not UI:
+|  - `/`            -> redirect to the SPA origin
+|  - public share   -> JSON/redirect for /s/f, /s/d guest links
+|  - iPaymu return  -> provider browser return/cancel
+|  - Discord OAuth  -> provider callback (state-carried identity)
+|
+| No Blade views are rendered anywhere below.
 */
 
-Route::get('/', fn () => redirect()->route(Auth::guard('api')->check() ? 'dashboard' : 'login'));
+Route::get('/', fn () => redirect()->to(config('services.spa.url') ?: '/'));
 
-Route::get('locale/{locale}', LocaleController::class)->name('locale.switch');
-
-// Public / provider return (no web.auth) — not ordered by domain kind.
+// Public / provider return (no auth) - server endpoints, not UI.
 require __DIR__.'/web/payment-ipaymu-return.php';
 require __DIR__.'/web/identity-oauth-callback.php';
 require __DIR__.'/web/file-hosting-public.php';
 
-Route::middleware('web.guest')->group(function (): void {
-    require __DIR__.'/web/identity-guest.php';
-});
+// Product domain web routes (optional server endpoints; appended by domain:make).
 
-// Authenticated auth-surface at site root (not under /apps).
-Route::middleware('web.auth')->group(function (): void {
-    require __DIR__.'/web/identity-logout.php';
-});
 
-/*
-| Authenticated app shell under /apps/* so product root paths
-| (/file-hosting, /vtual, …) stay free for public landings.
-| Route names stay unprefixed (dashboard, file-hosting.index, …).
-| domain:make injects product requires into this group (product last).
-*/
-Route::middleware('web.auth')->prefix('apps')->group(function (): void {
-    // Core domains
-    require __DIR__.'/web/identity.php';
-    require __DIR__.'/web/navigation.php';
-    require __DIR__.'/web/notification.php';
-    require __DIR__.'/web/activity-log.php';
-    require __DIR__.'/web/error-log.php';
-    require __DIR__.'/web/inference.php';
-    require __DIR__.'/web/payment-gateway.php';
-    require __DIR__.'/web/service.php';
 
-    // Kernel product registry (App\Support\Product)
-    require __DIR__.'/web/product-activations.php';
 
-    // Kernel domain-access registry (App\Support\DomainAccess)
-    require __DIR__.'/web/domain-access.php';
 
-    // Kernel settings registry (App\Support\Settings)
-    require __DIR__.'/web/settings.php';
 
-    // Product domains (domain:make injects into this group; keep product last)
-    require __DIR__.'/web/file-hosting.php';
-    require __DIR__.'/web/vtual-orphans.php';
-    require __DIR__.'/web/vtual-platform-credentials.php';
-    require __DIR__.'/web/vtual-profiles.php';
-    require __DIR__.'/web/vtual-vtuber.php';
-    require __DIR__.'/web/microstock.php';
-});
+
+
+
+
+

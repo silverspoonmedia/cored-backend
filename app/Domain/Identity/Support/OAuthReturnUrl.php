@@ -5,7 +5,7 @@ namespace App\Domain\Identity\Support;
 use App\Domain\Identity\Exceptions\IdentityOAuthException;
 
 /**
- * Allowlisted post-OAuth browser return. Origins: APP_URL (Blade) and SPA_URL (Vue-Workers).
+ * Allowlisted post-OAuth browser return. Origins: APP_URL and SPA_URL.
  * Paths must stay under /apps/.
  */
 final class OAuthReturnUrl

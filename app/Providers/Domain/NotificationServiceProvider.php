@@ -6,9 +6,6 @@ use App\Domain\Notification\Repositories\Contracts\NotificationRepositoryInterfa
 use App\Domain\Notification\Repositories\Contracts\NotificationTypeSettingRepositoryInterface;
 use App\Domain\Notification\Repositories\Eloquent\NotificationRepository;
 use App\Domain\Notification\Repositories\Eloquent\NotificationTypeSettingRepository;
-use App\Domain\Notification\View\Composers\NotificationBellComposer;
-use App\Support\Web\WebLayout;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class NotificationServiceProvider extends ServiceProvider
@@ -21,9 +18,7 @@ class NotificationServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Chained onto the same hashed navbar view as NavigationComposer.
-        View::composer(WebLayout::navbarComposerView(), function (\Illuminate\View\View $view): void {
-            app(NotificationBellComposer::class)->compose($view);
-        });
+        // The Blade navbar bell composer is gone with the Blade app; the SPA
+        // renders notifications from the API.
     }
 }

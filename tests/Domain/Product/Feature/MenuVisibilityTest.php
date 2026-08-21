@@ -4,7 +4,6 @@ namespace Tests\Domain\Product\Feature;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
-use App\Support\Auth\AuthCookie;
 use App\Support\Product\Services\ProductActivationService;
 use Database\Seeders\FileHostingRoleSeeder;
 use Database\Seeders\MenuSeeder;
@@ -13,9 +12,10 @@ use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
 /**
- * Verifies the MenuRepository product-activation visibility filter:
- * menu nodes bound to a product via config/products.php menu_routes are
- * hidden when the authenticated user is not Active on that product.
+ * Verifies the MenuRepository product-activation visibility filter via the
+ * navigation API: menu nodes bound to a product via config/products.php
+ * menu_routes are hidden when the authenticated user is not Active on that
+ * product. (The Blade app is gone; the tree is now served as JSON.)
  */
 class MenuVisibilityTest extends TestCase
 {
@@ -42,10 +42,9 @@ class MenuVisibilityTest extends TestCase
         $user->assignRole('User');
         $this->activations->activateImplicit($user, 'FileHosting');
 
-        $response = $this->actingWithJwtCookie($user)->get(route('users.index'));
+        $names = $this->sidebarMenuNames($user);
 
-        $response->assertOk();
-        $response->assertSee(route('file-hosting.index'), false);
+        $this->assertContains('File Hosting', $names);
     }
 
     public function test_file_hosting_menu_hidden_when_user_suspended(): void
@@ -55,10 +54,9 @@ class MenuVisibilityTest extends TestCase
         $activation = $this->activations->activateImplicit($user, 'FileHosting');
         $this->activations->suspend($activation);
 
-        $response = $this->actingWithJwtCookie($user)->get(route('users.index'));
+        $names = $this->sidebarMenuNames($user);
 
-        $response->assertOk();
-        $response->assertDontSee(route('file-hosting.index'), false);
+        $this->assertNotContains('File Hosting', $names);
     }
 
     public function test_file_hosting_menu_hidden_when_user_expired(): void
@@ -68,10 +66,9 @@ class MenuVisibilityTest extends TestCase
         $activation = $this->activations->activateImplicit($user, 'FileHosting');
         $this->activations->markExpired($activation);
 
-        $response = $this->actingWithJwtCookie($user)->get(route('users.index'));
+        $names = $this->sidebarMenuNames($user);
 
-        $response->assertOk();
-        $response->assertDontSee(route('file-hosting.index'), false);
+        $this->assertNotContains('File Hosting', $names);
     }
 
     public function test_non_product_menu_unaffected_by_activation_state(): void
@@ -81,26 +78,45 @@ class MenuVisibilityTest extends TestCase
         $activation = $this->activations->activateImplicit($user, 'FileHosting');
         $this->activations->suspend($activation);
 
-        $response = $this->actingWithJwtCookie($user)->get(route('users.index'));
+        $names = $this->sidebarMenuNames($user);
 
-        // Users menu is not bound to any product — must remain visible.
-        $response->assertSee(route('users.index'), false);
+        // Dashboard is not bound to any product - must remain visible.
+        $this->assertContains('Dashboard', $names);
     }
 
-    public function test_guest_sees_file_hosting_menu_when_no_auth_gate(): void
+    /**
+     * Fetch the presented sidebar tree and flatten every node name (parents +
+     * children) so product-bound parents and their leaves are both observed.
+     *
+     * @return array<int, string>
+     */
+    private function sidebarMenuNames(User $user): array
     {
-        // Guests skip the product-activation check (no user). Menu visibility
-        // for guests is governed by is_authenticate / is_guest_only flags.
-        // We assert no exception is thrown and the page renders.
-        $response = $this->get('/login');
+        $tree = $this->actingAsJwt($user)
+            ->getJson('/api/v1/navigation/menus?layout=sidebar')
+            ->assertOk()
+            ->json('data');
 
-        $response->assertOk();
+        $names = [];
+        $walk = function (array $nodes) use (&$walk, &$names): void {
+            foreach ($nodes as $node) {
+                if (isset($node['name'])) {
+                    $names[] = $node['name'];
+                }
+                if (! empty($node['children']) && is_array($node['children'])) {
+                    $walk($node['children']);
+                }
+            }
+        };
+        $walk(is_array($tree) ? $tree : []);
+
+        return $names;
     }
 
-    private function actingWithJwtCookie(User $user): static
+    private function actingAsJwt(User $user): static
     {
         $token = auth('api')->login($user);
 
-        return $this->withCookie(AuthCookie::NAME, $token);
+        return $this->withHeader('Authorization', 'Bearer '.$token);
     }
 }

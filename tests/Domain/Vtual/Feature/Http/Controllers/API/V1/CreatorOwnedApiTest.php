@@ -5,6 +5,7 @@ namespace Tests\Domain\Vtual\Feature\Http\Controllers\API\V1;
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Services\CreatorService;
 use App\Support\Product\Services\ProductActivationService;
+use App\Support\SpaPublicUrl;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -40,7 +41,7 @@ class CreatorOwnedApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.id', (string) $owned->id)
             ->assertJsonPath('data.0.display_name', 'Owned One')
-            ->assertJsonPath('data.0.profile_url', route('vtual.vtuber.show', $owned->slug));
+            ->assertJsonPath('data.0.profile_url', SpaPublicUrl::vtuberProfile($owned->slug));
     }
 
     #[Test]

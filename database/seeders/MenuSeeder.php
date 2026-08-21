@@ -309,6 +309,13 @@ class MenuSeeder extends Seeder
                                 'roles' => $internalStaffRoles,
                             ],
                             [
+                                'name' => $this->translations('Managements', 'Manajemen', 'マネジメント'),
+                                'icon' => 'bi bi-people',
+                                'route' => 'vtual.managements.index',
+                                'type' => 'c',
+                                'roles' => $adminRoles,
+                            ],
+                            [
                                 'name' => $this->translations('Platform credentials', 'Kredensial platform', 'プラットフォーム認証情報'),
                                 'icon' => 'bi bi-key',
                                 'route' => 'vtual.platform-credentials.index',

@@ -14,7 +14,6 @@
     "require": {
         "php": "^8.3",
         "chillerlan/php-qrcode": "^4.4",
-        "diglactic/laravel-breadcrumbs": "^10.1",
         "intervention/image": "^4.2",
         "ipaymu/ipaymu-php-api": "^3.0",
         "laravel-lang/common": "^6.8",
@@ -62,13 +61,11 @@
         "setup": [
             "composer install",
             "@php -r \"if (!file_exists('.env')) { passthru(PHP_BINARY.' artisan env:install local'); }\"",
-            "@php artisan migrate --force",
-            "npm install --ignore-scripts",
-            "npm run build"
+            "@php artisan migrate --force"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" --names=server,queue,logs --kill-others"
         ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",

@@ -5,18 +5,18 @@ namespace App\Domain\FileHosting\Http\Controllers\Web;
 use App\Domain\FileHosting\Exceptions\FileHostingException;
 use App\Domain\FileHosting\Services\FileService;
 use App\Domain\FileHosting\Services\FolderService;
-use App\Http\Controllers\Web\Controller;
+use App\Http\Controllers\Controller;
 use App\Support\Presentation\BytePresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
-use Illuminate\View\View;
 
 /**
  * Guest "anyone with the link" pages.
  * Download hop requires a Laravel temporary signed URL, then 302 to S3 (no byte proxy).
- * Dual JSON responses power the public soft SPA shell (`Accept: application/json`).
+ * JSON responses power the SPA shell (`Accept: application/json`); non-JSON
+ * requests are redirected to the SPA origin so the SPA router can take over.
  */
 class PublicShareController extends Controller
 {
@@ -25,19 +25,19 @@ class PublicShareController extends Controller
         private readonly FolderService $folders,
     ) {}
 
-    public function showFile(Request $request, string $file): View|RedirectResponse|JsonResponse
+    public function showFile(Request $request, string $file): RedirectResponse|JsonResponse
     {
+        if (! $request->expectsJson()) {
+            return $this->redirectToSpa("/s/f/{$file}");
+        }
+
         try {
             $model = $this->files->publicShow($file);
         } catch (FileHostingException $e) {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => $e->getMessage()], $e->statusCode());
-            }
-
-            abort($e->statusCode(), $e->getMessage());
+            return response()->json(['message' => $e->getMessage()], $e->statusCode());
         }
 
-        $payload = [
+        return response()->json(['data' => [
             'file' => [
                 'id' => $model->id,
                 'name' => $model->name,
@@ -46,13 +46,7 @@ class PublicShareController extends Controller
                 'size_human' => BytePresenter::human((int) $model->size),
             ],
             'downloadUrl' => $this->temporaryPublicDownloadUrl($file),
-        ];
-
-        if ($request->expectsJson()) {
-            return response()->json(['data' => $payload]);
-        }
-
-        return $this->webView('file-hosting.public-file', $payload);
+        ]]);
     }
 
     public function downloadFile(Request $request, string $file): RedirectResponse
@@ -66,16 +60,16 @@ class PublicShareController extends Controller
         return redirect()->away($payload['url']);
     }
 
-    public function showFolder(Request $request, string $folder): View|RedirectResponse|JsonResponse
+    public function showFolder(Request $request, string $folder): RedirectResponse|JsonResponse
     {
+        if (! $request->expectsJson()) {
+            return $this->redirectToSpa("/s/d/{$folder}");
+        }
+
         try {
             $data = $this->folders->publicBrowse($folder);
         } catch (FileHostingException $e) {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => $e->getMessage()], $e->statusCode());
-            }
-
-            abort($e->statusCode(), $e->getMessage());
+            return response()->json(['message' => $e->getMessage()], $e->statusCode());
         }
 
         $browse = [
@@ -98,13 +92,14 @@ class PublicShareController extends Controller
             ])->values()->all(),
         ];
 
-        if ($request->expectsJson()) {
-            return response()->json(['data' => ['browse' => $browse]]);
-        }
+        return response()->json(['data' => ['browse' => $browse]]);
+    }
 
-        return $this->webView('file-hosting.public-folder', [
-            'browse' => $browse,
-        ]);
+    private function redirectToSpa(string $path): RedirectResponse
+    {
+        $base = rtrim((string) config('services.spa.url'), '/');
+
+        return redirect()->away($base.$path);
     }
 
     private function temporaryPublicDownloadUrl(string $fileId): string

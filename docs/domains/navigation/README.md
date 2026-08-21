@@ -9,7 +9,7 @@ Self-referential, orderable menus with RBAC, domain-access, product-activation, 
 | `Menu` model | `HasUuids`, Spatie translatable name/description, tree relations |
 | `MenuRepository` | Tree build, visibility + `#` mask, two-tier forever cache (snapshot + presented) |
 | `MenuService` | Field map, orchestration |
-| `MenuController` API/Web | Thin HTTP; web proxies API |
+| `MenuController` API | Thin HTTP under `/api/v1/navigation/menus` |
 | `jwt.optional` | Guest or authenticated tree on `index` |
 
 Bound in `NavigationServiceProvider`.
@@ -21,7 +21,7 @@ Bound in `NavigationServiceProvider`.
 | `id`, `parent_id` | UUID; self-FK cascade |
 | `layout` | Shell region: `sidebar`, `navbar` (config `navigation.layouts`) |
 | `name`, `description` | JSON translatable |
-| `icon`, `route` | Full icon class; **named web route**, never a URL |
+| `icon`, `route` | Full icon class; **SPA Vue Router symbolic name** (or remaining Laravel web route name), never a URL |
 | `type` | `h` header, `p` parent, `c` child |
 | `order` | Contiguous within `(layout, parent_id, type)`; NULL for soft-deleted |
 | `is_authenticate`, `is_guest_only` | Audience flags |
@@ -30,6 +30,8 @@ Bound in `NavigationServiceProvider`.
 Pivots: `menu_roles`, `menu_user_includes`, `menu_user_excludes`. Unique index on `(layout, parent_id, type, order)`.
 
 **Layouts:** independent trees; parent/child must share layout; layout fixed after create.
+
+**Menu route validation:** `StoreMenuRequest` / `UpdateMenuRequest` validate `route` via `App\Support\Navigation\SpaRouteRegistry`. Allowed SPA Vue Router names (not `*.view`) live in `config/spa-routes.php` `menu`; `deny` rejects auth/public-utility names even if Laravel `Route::has()` would pass. Remaining Laravel web route names (share, iPaymu, Discord callback) still pass via `Route::has()` unless denied. Keep the allowlist in sync with `monolith-vue-workers/src/router/index.ts`.
 
 ## Visibility (navigation tree)
 
@@ -62,7 +64,7 @@ A node is visible only if **it and every ancestor** pass these rules in order:
 
 Permissions come from `RoleSeeder`: `view menu`, `manage menu`, `restore menu`.
 
-**Blade:** web `MenuController` forwards mutations to the API. Sidebar/navbar composers call `MenuService::navigationTree` directly, avoiding self-HTTP. Form option lookups use `/api/v1/lookups/*`.
+SPA menus admin consumes this API directly. Sidebar/navbar trees come from `GET /api/v1/navigation/menus`. Form option lookups use `/api/v1/lookups/*`.
 
 ### Request fields (store/update)
 
@@ -163,13 +165,13 @@ Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module regi
 
 The sibling Vue-Workers SPA uses `useNavigationHydrate` in menu edit. It batches the menu record and selected parent, role, included-user, and excluded-user lookups through `/api/v1/batch`; failed entries fall back to the existing individual loaders. Shell sidebar and navbar seeds are documented in [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
 
-`NavTree` resolves `node.route + '.view'`, then `node.route`. MenuSeeder names stay Blade web names — do not rename seed rows to SPA-only aliases. DMCA Blocklist is `file-hosting.blocklist.index`; the SPA registers `file-hosting.blocklist.index.view` so the sidebar click works.
+`NavTree` resolves `node.route + '.view'`, then `node.route`. Menu CRUD validates `route` via `SpaRouteRegistry` against `config/spa-routes.php` (plus any remaining Laravel `Route::has` names). Keep the config list in sync with `MenuSeeder` and `monolith-vue-workers/src/router/index.ts`. DMCA Blocklist is `file-hosting.blocklist.index`; the SPA registers `file-hosting.blocklist.index.view` so the sidebar click works.
 
 ## Tests
 
 - `tests/Domain/Navigation/Unit/Repositories/Eloquent/MenuRepositoryTest.php` covers CRUD/ordering plus presentational `#` masking, presented-tree cache hits (no `menus` queries), epoch refresh after menu mutation, and per-user `forgetPresentedTreeFor`.
 - `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 44-row sidebar/navbar tree, `en`/`id`/`ja` translations, selected role pivots, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
-- `tests/Domain/Navigation/Feature/Http/Controllers/Web/SidebarNavigationWebTest.php` covers sidebar/navbar composer registration and shell rendering.
+- `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuTest.php` covers menu CRUD including SPA symbolic route acceptance and garbage route rejection.
 - `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php` covers public/private product visibility, guests, privileged access, and empty-branch pruning.
 - `tests/Domain/Product/Feature/MenuVisibilityTest.php` covers authenticated product-activation visibility; its guest case is a rendering smoke test, not a guest tree assertion.
 

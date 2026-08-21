@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\Route;
 use InvalidArgumentException;
 
 /**
- * Browser-facing URLs for the Vue-Workers SPA when {@see config('services.spa.url')}
- * is set. Empty SPA_URL keeps Blade / signed-API URLs so local Blade dogfood
- * still works. Paths are origin-prefixed only — never mint a foreign host.
+ * Browser-facing URLs for the Vue-Workers SPA. Paths are origin-prefixed using
+ * {@see config('services.spa.url')} when set, otherwise {@see config('app.url')}.
+ * Never mint a foreign host.
  */
 final class SpaPublicUrl
 {
@@ -33,16 +33,12 @@ final class SpaPublicUrl
 
     public static function passwordReset(string $token, string $email): string
     {
-        if (self::origin() !== null) {
-            return self::to('/reset-password', [
-                'token' => $token,
-                'email' => $email,
-            ]);
-        }
-
-        $url = route('password.reset', ['token' => $token], true);
-
-        return $url.(str_contains($url, '?') ? '&' : '?').http_build_query(['email' => $email]);
+        // The Blade `password.reset` screen is gone; the SPA owns the form.
+        // Always emit the SPA query shape regardless of configured origin.
+        return self::to('/reset-password', [
+            'token' => $token,
+            'email' => $email,
+        ]);
     }
 
     public static function emailVerification(string $id, string $hash, string $signedApiUrl): string
@@ -80,6 +76,16 @@ final class SpaPublicUrl
         }
 
         return self::to('/s/d/'.self::assertSafeSegment($folderId));
+    }
+
+    public static function vtuberProfile(string $slug): string
+    {
+        return self::to('/vtual/vtubers/'.self::assertSafeSegment($slug));
+    }
+
+    public static function vtuberClaim(string $slug): string
+    {
+        return self::to('/apps/vtual/vtubers/'.self::assertSafeSegment($slug).'/claim');
     }
 
     public static function paymentReturn(): string

@@ -64,7 +64,7 @@ class AddLocaleCommandTest extends TestCase
         $this->assertFileExists(lang_path(self::TEST_LOCALE.'/ui.php'));
         $this->assertFileExists(lang_path(self::TEST_LOCALE.'/mail.php'));
         $this->assertFileExists(lang_path(self::TEST_LOCALE.'/api/users.php'));
-        $this->assertFileExists(lang_path(self::TEST_LOCALE.'/web/auth.php'));
+        $this->assertFileExists(lang_path(self::TEST_LOCALE.'/web/session.php'));
 
         // 3. Managed laravel-lang files are NOT copied (the package owns them).
         $this->assertFileDoesNotExist(lang_path(self::TEST_LOCALE.'/validation.php'));

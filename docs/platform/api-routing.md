@@ -23,7 +23,7 @@ Do not mirror the same endpoints on both layers. Breaking changes → new versio
 ```
 routes/
 ├── api.php             # GET /api/ping only
-├── web.php             # loader: guest/public specials + web.auth (core then product)
+├── web.php             # loader: server endpoints only (share, payment return, OAuth)
 ├── api/
 │   └── v1.php          # loader — // Core requires, then // Product
 │       ├── identity.php          # core
@@ -36,17 +36,9 @@ routes/
 │       ├── broadcasting.php      # core — broadcast auth for JWT clients (api middleware)
 │       └── file-hosting.php      # product
 └── web/
-    ├── identity-guest.php        # web.guest (auth surface, not kind)
-    ├── identity.php              # core
-    ├── navigation.php            # core
-    ├── notification.php          # core
-    ├── activity-log.php          # core
-    ├── error-log.php             # core
-    ├── payment-gateway.php       # core
-    ├── service.php               # core
-    ├── file-hosting.php          # product (web.auth)
     ├── file-hosting-public.php   # public share
-    └── payment-ipaymu-return.php # provider return
+    ├── payment-ipaymu-return.php # provider return
+    └── identity-oauth-callback.php # Discord OAuth callback
 ```
 
 Paths inside version files are relative to the version prefix.
@@ -77,7 +69,7 @@ JSON errors for `api/*` via `$exceptions->shouldRenderJsonWhen(...)`.
 
 ## Versioned routes
 
-Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, error-logs, payments, services, file-hosting. Also includes `POST /api/v1/broadcasting/auth` — broadcast channel auth for cross-origin JWT clients (Vue-Workers SPA) under `auth:api` middleware, distinct from Laravel's default web-middleware `/broadcasting/auth` used by Blade.
+Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, error-logs, payments, services, file-hosting. Also includes `POST /api/v1/broadcasting/auth` — broadcast channel auth for cross-origin JWT clients (Vue-Workers SPA) under `auth:api` middleware.
 
 ## Adding a new API version
 

@@ -161,43 +161,6 @@ class FileHostingQualificationLowTest extends TestCase
             ->assertJsonFragment(['name' => 'restore-me.pdf']);
     }
 
-    public function test_f_h_l09_blade_index_renders(): void
-    {
-        $user = $this->userWithRole('User');
-
-        Http::fake([
-            '*/api/v1/file-hosting/browse*' => Http::response([
-                'data' => [
-                    'owner_id' => $user->id,
-                    'folder' => null,
-                    'breadcrumb' => [['id' => null, 'name' => 'Home']],
-                    'folders' => [],
-                    'files' => [],
-                ],
-            ], 200),
-            '*/api/v1/file-hosting/quota*' => Http::response([
-                'data' => [
-                    'used_bytes' => 0,
-                    'pending_bytes' => 0,
-                    'reserved_bytes' => 0,
-                    'quota_bytes' => 10 * 1024 * 1024,
-                    'remaining_bytes' => 10 * 1024 * 1024,
-                    'state' => 'free',
-                    'collaborative_works' => false,
-                    'can_create_workspace' => false,
-                    'owned_workspace_used' => 0,
-                    'owned_workspace_limit' => 0,
-                ],
-            ], 200),
-            '*/api/v1/file-hosting/workspaces*' => Http::response(['data' => []], 200),
-        ]);
-
-        $this->actingAs($user, 'api')
-            ->get(route('file-hosting.index'))
-            ->assertOk()
-            ->assertViewIs('adminlte4.file-hosting.index');
-    }
-
     public function test_f_h_l10_free_user_workspace_list_empty(): void
     {
         $user = $this->userWithRole('User');

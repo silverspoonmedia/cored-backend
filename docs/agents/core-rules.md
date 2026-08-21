@@ -4,12 +4,13 @@ Canonical, single-source mandatory rules for AI coding agents. Read this once pe
 
 ## Scope
 
-Daily work stays in **this repository** — Laravel 13 API + in-repo Blade admin. Domain logic, DB, JWT/RBAC, and versioned routes (`/api/v1/*`) live here. This repository is the source of truth: business rules, validation, Spatie RBAC, persistence, and API contracts all live here. **Do not strip Blade** — it stays until the Vue-Workers port actually succeeds; it is the reference for appearance and behavior.
+Daily work stays in **this repository** — Laravel 13 API + minimal server `web` endpoints. Domain logic, DB, JWT/RBAC, and versioned routes (`/api/v1/*`) live here. This repository is the source of truth: business rules, validation, Spatie RBAC, persistence, and API contracts all live here. **The in-repo Blade admin has been removed** — see [blade-admin.md](../web/blade-admin.md).
 
-The **leading SPA frontend** is the sibling `monolith-vue-workers` repository ([vue-workers-spa.md](../integration/vue-workers-spa.md)). Backend and that SPA are separate projects; that split is the intended end state. SPA changes belong in that sibling. The `[frontend]` tag in this repo still means Blade/web, not that SPA.
+The **sole browser UI** is the sibling `monolith-vue-workers` repository ([vue-workers-spa.md](../integration/vue-workers-spa.md)). Backend and that SPA are separate projects; that split is the intended architecture. SPA changes belong in that sibling. The `[frontend]` tag in this repo means **SPA contract work** (types, menu route registry parity, docs) — not Blade.
 
 ```
-Browser → Blade admin (AdminLTE) → same-host /api/v1/* (JWT cookie → Bearer)
+Browser → Monolith-Vue-Workers SPA → /api/v1/* (cross-site __Host-spa_jwt + CSRF)
+Monolith web stack → server-only redirects (share, payment return, OAuth callback)
 ```
 
 API auth is JWT + Spatie RBAC. There is no shared-secret API perimeter middleware; protect network exposure with firewall / reverse proxy as needed.
@@ -24,31 +25,30 @@ Prefix the task instruction with one of these tags to declare intended scope. On
 
 | Tag | Default? | Touch |
 |-----|----------|-------|
-| `[fullstack]` | **Yes — assumed when no tag is given** | API + Web + Blade + translations, per table below |
-| `[backend]` | No | API layer only — Web/Blade/translation layers are out of scope for rule 1 |
-| `[frontend]` | No | Web + Blade layer only (assumes the API being consumed already exists) — API/migration layers are out of scope for rule 1 |
-
-Omitting the tag is identical to `[fullstack]` — untagged tasks keep today's behavior.
+| `[fullstack]` | **Yes — assumed when no tag is given** | API + SPA (sibling repo) + translations + menu route registry parity, per table below |
+| `[backend]` | No | API layer only — SPA/UI layers are out of scope for rule 1 |
+| `[frontend]` | No | SPA layer in `monolith-vue-workers` (assumes the API being consumed already exists) — API/migration layers are out of scope for rule 1 |
 
 ### `[fullstack]` layer table
 
 | Layer | What to touch |
 |-------|----------------|
 | **API** | Versioned routes (`/api/v1/*`), controllers, form requests, policies, repositories, API responses |
-| **Web** | Web controllers consuming the API (`ConsumesApi` / `ApiClient`), `routes/web.php` / `routes/web/*.php`, request forwarding |
-| **Blade views** | Screens, forms, list tables, partials under `resources/views/{layout}/` (default `adminlte4` via `WEB_LAYOUT` / `config/web.php`) — see [blade-admin.md](../web/blade-admin.md#layout-namespace-and-configwebphp). Progressive Vue islands may mount inside Blade when the dual-path checklist says so (does not replace API-first / Blade-as-API-consumer). |
+| **Web (server)** | `routes/web.php` / `routes/web/*.php` — server endpoints only (public share, payment return, OAuth callback); no Blade views |
+| **SPA** | Screens, forms, listings in `monolith-vue-workers` — see [vue-workers-spa.md](../integration/vue-workers-spa.md) |
+| **Navigation** | Menu `route` column = SPA Vue Router symbolic name; keep `config/spa-routes.php` in sync with MenuSeeder and SPA router |
 | **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (`en`, `id`, `ja`) |
 | **Other (as applicable)** | Migrations, seeders, models, events/listeners, notifications, navigation menu entries, tests, and the relevant `docs/` guide |
 
 ### `[backend]` scope
 
-API routes/controllers/form requests/policies/repositories/responses, plus migrations/models/tests for that layer. No Web controller, Blade view, or translation changes required by this rule (rule 5 still applies if the backend change happens to add user-facing text, e.g. a new validation message).
+API routes/controllers/form requests/policies/repositories/responses, plus migrations/models/tests for that layer. No SPA view or translation changes required by this rule (rule 5 still applies if the backend change happens to add user-facing text, e.g. a new validation message).
 
 ### `[frontend]` scope
 
-Web controllers consuming the existing API (`ConsumesApi` / `ApiClient`), Blade views, and translations for any new copy. No API/migration changes required by this rule.
+SPA views/composables/routes in `monolith-vue-workers`, plus translations for any new copy. No API/migration changes required by this rule.
 
-An API-only or Blade-only change without its counterpart layers is **incomplete** — unless explicitly scoped via `[backend]` or `[frontend]`. See [CRUD architecture](../platform/crud.md), [Web frontend](../web/blade-admin.md), [Localization](../platform/localization.md#task-rule-required) for layer-specific conventions.
+An API-only or SPA-only change without its counterpart layers is **incomplete** — unless explicitly scoped via `[backend]` or `[frontend]`. See [CRUD architecture](../platform/crud.md), [vue-workers-spa.md](../integration/vue-workers-spa.md), [Localization](../platform/localization.md#task-rule-required) for layer-specific conventions.
 
 ## 2. Living documentation (mandatory)
 
@@ -66,7 +66,7 @@ All new code must survive long-lived Swoole worker processes, even though Octane
 
 ## 5. Localization (mandatory when touching user-facing copy)
 
-Any change that adds or modifies user-facing text (Blade labels, API `message` strings, validation/policy errors, flash/AJAX copy, DB content shown to users) must include translations for **all** supported locales (`en`, `id`, `ja`) in the same task/PR. For SPA-facing copy, update `monolith-vue-workers/src/i18n/locales/{en,id,ja}.json` in the sibling repository and run `npm run check:i18n`. Use `__('…')` with application-owned files under `lang/{locale}/`, or Spatie translatable fields for DB content. Full backend checklist: [docs/platform/localization.md](../platform/localization.md#task-rule-required). SPA runtime, fallback, and `useI18n()` context rules: [vue-workers-spa.md](../integration/vue-workers-spa.md#i18n-porting-notes).
+Any change that adds or modifies user-facing text (API `message` strings, validation/policy errors, flash/AJAX copy, DB content shown to users) must include translations for **all** supported locales (`en`, `id`, `ja`) in the same task/PR. For SPA-facing copy, update `monolith-vue-workers/src/i18n/locales/{en,id,ja}.json` in the sibling repository and run `npm run check:i18n`. Use `__('…')` with application-owned files under `lang/{locale}/`, or Spatie translatable fields for DB content. Full backend checklist: [docs/platform/localization.md](../platform/localization.md#task-rule-required). SPA runtime, fallback, and `useI18n()` context rules: [vue-workers-spa.md](../integration/vue-workers-spa.md#i18n-porting-notes).
 
 ## 6. Configuration & secrets (mandatory)
 
@@ -95,8 +95,8 @@ Every JSON Resource is a **per-viewer** contract, not a dump of the Eloquent mod
 ## What not to do
 
 - `migrate:fresh` / `db:wipe` on non-sqlite without `ALLOW_DESTRUCTIVE_DB=true`.
-- Assume Blade has hosted Snap checkout UI — channel-only on Blade; see [payment-gateway](../domains/payment-gateway/README.md).
+- Assume hosted Snap checkout UI exists in Monolith — channel-only; checkout UI lives in the SPA; see [payment-gateway](../domains/payment-gateway/README.md).
 - Create new documentation as a subject file at `docs/*.md` root — place under `domains/`, `platform/`, `web/`, `integration/`, `agents/`, or `archive/` per [docs/README.md](../README.md#rules-for-new-documentation-mandatory).
-- Ship a change touching only one of API / Web / Blade / translations when the others are affected, without an explicit `[backend]`/`[frontend]` scope tag (rule 1).
+- Ship a change touching only one of API / SPA / translations when the others are affected, without an explicit `[backend]`/`[frontend]` scope tag (rule 1).
 - Change vTual `PlatformApiGateway` surface without updating the admin platform-api-probe in the same PR — probe must mirror production methods; see [vTual README — Admin probe](../domains/vtual/README.md#admin-probe-permanent-rootadmin-debug).
 - Dump Eloquent models into JSON Resources without per-viewer gating — see rule 9.

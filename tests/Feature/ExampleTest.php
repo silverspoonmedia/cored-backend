@@ -2,18 +2,17 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
     /**
-     * The root path routes guests to the web login screen.
+     * The root path redirects guests to the SPA origin (or `/` when SPA_URL is unset).
      */
-    public function test_the_application_redirects_guests_to_login(): void
+    public function test_the_application_redirects_guests_to_spa(): void
     {
-        $response = $this->get('/');
+        config(['services.spa.url' => 'https://spa.test']);
 
-        $response->assertRedirect(route('login'));
+        $this->get('/')->assertRedirect('https://spa.test');
     }
 }

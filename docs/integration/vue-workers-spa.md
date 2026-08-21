@@ -1,8 +1,8 @@
 # Leading SPA frontend — Monolith-Vue-Workers
 
-Monolith-Vue-Workers (`monolith-vue-workers` sibling) is the **leading SPA frontend**. Backend (the Laravel repo) and this SPA are separate projects; that split is the intended end state. It consumes the Monolith `/api/v1/*` API. This doc is the integration contract between the SPA and the API.
+Monolith-Vue-Workers (`monolith-vue-workers` sibling) is the **sole browser UI**. Backend (the Laravel repo) and this SPA are separate projects; that split is the intended end state. It consumes the Monolith `/api/v1/*` API. This doc is the integration contract between the SPA and the API.
 
-The Blade admin in Monolith stays as the in-repo frontend **until this port actually succeeds** — do not remove it; it is the reference for appearance and behavior. See [web/blade-admin.md](../web/blade-admin.md).
+The in-repo Blade admin has been **removed** from Monolith; `docs/web/blade-admin.md` records what server `web` routes remain.
 
 ## Architecture
 
@@ -65,9 +65,9 @@ Data traffic no longer costs Worker invocations at all (direct to the API). The 
 
 ## Local dogfood checklist
 
-Daily driver is `npm run dev` at `http://localhost:5173`. Blade stays at `APP_URL` as the reference. Daily driver is `npm run dev` at `http://localhost:5173`. Blade stays at `APP_URL` as the reference. Set Monolith `SPA_URL="http://localhost:5173"`. For local same-origin dev leave `VITE_API_BASE_URL` empty; for the deployed direct path set it to the API origin.
+Daily driver is `npm run dev` at `http://localhost:5173`. Set Monolith `SPA_URL="http://localhost:5173"`. For local same-origin dev leave `VITE_API_BASE_URL` empty; for the deployed direct path set it to the API origin.
 
-Pass/fail (compare Blade when unsure):
+Pass/fail:
 
 - Network: data calls go direct to the API origin; auth session calls hit `/api/v1/auth/*` on `localhost:5173`. Login JSON has **no** `token`. Data requests carry the `__Host-spa_jwt` cookie + `X-CSRF-Token`, not `Authorization`.
 - Application: `__Host-spa_jwt` HttpOnly on the API origin; no `mw_auth` in localStorage.

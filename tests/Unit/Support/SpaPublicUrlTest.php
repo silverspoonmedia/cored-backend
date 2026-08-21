@@ -28,13 +28,14 @@ class SpaPublicUrlTest extends TestCase
     }
 
     #[Test]
-    public function password_reset_falls_back_to_blade_route(): void
+    public function password_reset_uses_app_url_when_spa_url_empty(): void
     {
         $url = SpaPublicUrl::passwordReset('reset-token', 'user@example.com');
 
-        $this->assertStringContainsString('/reset-password/reset-token', $url);
-        $this->assertStringContainsString('email=user%40example.com', $url);
-        $this->assertStringNotContainsString('https://spa.test', $url);
+        $this->assertSame(
+            rtrim((string) config('app.url'), '/').'/reset-password?token=reset-token&email=user%40example.com',
+            $url,
+        );
     }
 
     #[Test]

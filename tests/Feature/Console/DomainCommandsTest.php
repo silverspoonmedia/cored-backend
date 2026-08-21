@@ -273,18 +273,6 @@ class DomainCommandsTest extends TestCase
             'API loader: core service must appear before product file-hosting'
         );
 
-        $web = File::get($this->webPath);
-        $this->assertLessThan(
-            strpos($web, "require __DIR__.'/web/file-hosting.php';"),
-            strpos($web, "require __DIR__.'/web/identity.php';"),
-            'Web loader: core identity must appear before product file-hosting'
-        );
-        $this->assertLessThan(
-            strpos($web, "require __DIR__.'/web/file-hosting.php';"),
-            strpos($web, "require __DIR__.'/web/service.php';"),
-            'Web loader: core service must appear before product file-hosting'
-        );
-
         $providers = File::get($this->providersPath);
         $this->assertLessThan(
             strpos($providers, 'FileHostingServiceProvider::class'),

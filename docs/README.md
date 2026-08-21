@@ -11,10 +11,10 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Agent scope | [agents/core-rules.md](agents/core-rules.md) · root [AGENTS.md](../AGENTS.md) |
 | Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
 | Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [configuration-policy.md](platform/configuration-policy.md) |
-| Blade admin (in-repo frontend; keep until SPA port succeeds) | [web/blade-admin.md](web/blade-admin.md) |
+| Blade admin (removed — SPA is sole UI) | [web/blade-admin.md](web/blade-admin.md) |
 | Project overview (Monolith + Vue-Workers) | [integration/project-overview.md](integration/project-overview.md) |
-| Leading SPA frontend (Vue-Workers; separate project) | [integration/vue-workers-spa.md](integration/vue-workers-spa.md) |
-| Auth web URI layout | Authenticated Blade **and** Vue-Workers SPA under **`/apps/*`** (route names unprefixed); guest/public + verify-email + `POST /logout` at site root; product roots (`/file-hosting`, …) reserved empty; API `/api/v1/*` unchanged — [blade-admin — Routes](web/blade-admin.md#routes) · [architecture — Routes](platform/architecture.md#routes) · [vue-workers-spa — `/apps` shell](integration/vue-workers-spa.md) |
+| SPA frontend (Vue-Workers; separate project) | [integration/vue-workers-spa.md](integration/vue-workers-spa.md) |
+| Auth URI layout | Authenticated SPA under **`/apps/*`** (Vue Router names unprefixed); guest/public at site root; API `/api/v1/*` unchanged — [vue-workers-spa — `/apps` shell](integration/vue-workers-spa.md) · [architecture — Routes](platform/architecture.md#routes) |
 
 ## Platform (kernel / cross-cutting)
 
@@ -57,15 +57,15 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 | Document | Topic |
 |----------|-------|
-| [blade-admin.md](web/blade-admin.md) | JWT cookie, ApiClient, auth shell `/apps`, URL helpers, theming, [partial layout conventions](web/blade-admin.md#partial-and-component-layout), [dual-path JS vs Vue islands](web/blade-admin.md#dual-path--when-to-use-which) |
-| [partial-manifest.md](web/partial-manifest.md) | Active Blade partial inventory (callers, contracts) |
-| [ui-patterns.md](web/ui-patterns.md) | Select2 lookups, list/DataTable modes, Vue island pointers |
+| [blade-admin.md](web/blade-admin.md) | Blade removal stub — what remains on the `web` stack |
+| [partial-manifest.md](web/partial-manifest.md) | Historical Blade partial inventory (archived reference) |
+| [ui-patterns.md](web/ui-patterns.md) | Historical UI patterns — port to SPA instead |
 
 ## Integration
 
 | Document | Topic |
 |----------|-------|
-| [project-overview.md](integration/project-overview.md) | Monolith (API-first backend + in-repo Blade, kept until the SPA port succeeds) and Monolith-Vue-Workers (leading SPA frontend, separate project) — architecture, relationship, porting status |
+| [project-overview.md](integration/project-overview.md) | Monolith (API-first backend + server web endpoints) and Monolith-Vue-Workers (sole SPA frontend, separate project) — architecture and relationship |
 | [vue-workers-spa.md](integration/vue-workers-spa.md) | Leading Vue 3 SPA frontend (Cloudflare Workers, sibling repo) — API contracts, `SPA_URL` minting, type alignment, i18n runtime/fallbacks, batch hydration, realtime, CI, production checklist |
 
 ## Archive (not daily reading)
@@ -82,7 +82,7 @@ Historical assessments and one-shot audits: [archive/](archive/). Prefer living 
 |------------------|-------------|--------------|
 | A business domain under `app/Domain/{Name}/` | `docs/domains/{kebab-name}/` | Prefer `README.md`; split only when a subtopic is large (e.g. `encryption.md`) |
 | Kernel / cross-cutting (routes, CRUD pattern, UUID, env, i18n, DB safety, Octane, security process, tooling) | `docs/platform/` | One concern per file; extend existing when possible |
-| Blade admin only (cookie bridge, ApiClient, layout, pure UI widgets shared across domains) | `docs/web/` | e.g. `blade-admin.md`, `ui-patterns.md` |
+| Blade admin only (removed — historical reference) | `docs/web/` | e.g. `blade-admin.md` stub, archived `partial-manifest.md` |
 | External clients / third-party integration wiring | `docs/integration/` | Prefer one concern per file; only when not domain-owned |
 | Agent scope | `docs/agents/` | `core-rules.md` only unless a dedicated agent ops page is justified |
 | One-shot assessment, migration narrative, audit snapshot, design dump | `docs/archive/` | Not linked from daily learning paths except as “historical” |

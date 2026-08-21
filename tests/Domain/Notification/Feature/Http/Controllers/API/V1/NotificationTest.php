@@ -12,14 +12,11 @@ use App\Domain\Identity\Services\User\UserManagementService;
 use Illuminate\Broadcasting\BroadcastManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Http;
-use Tests\Concerns\InteractsWithWebAuth;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
 class NotificationTest extends TestCase
 {
-    use InteractsWithWebAuth;
     use RefreshDatabase;
     use SeedsRolesAndPermissions;
 
@@ -230,28 +227,6 @@ class NotificationTest extends TestCase
 
         $this->actingAsJwt($admin)
             ->getJson('/api/v1/notifications/unread-count')
-            ->assertJsonPath('data.unread', 0);
-    }
-
-    public function test_web_mark_all_ajax_returns_inline_state_without_redirect(): void
-    {
-        $admin = $this->userWithRole('Admin');
-
-        Http::fake([
-            '*/api/v1/notifications/read-all' => Http::response([
-                'status' => 'success',
-                'message' => 'All notifications marked as read.',
-                'data' => ['marked' => 2, 'unread' => 0],
-            ]),
-        ]);
-
-        $this->actingWithJwtCookie($admin)
-            ->withHeader('X-Requested-With', 'XMLHttpRequest')
-            ->postJson(route('notifications.read-all'))
-            ->assertOk()
-            ->assertJsonMissingPath('redirect')
-            ->assertJsonPath('status', 'success')
-            ->assertJsonPath('data.marked', 2)
             ->assertJsonPath('data.unread', 0);
     }
 

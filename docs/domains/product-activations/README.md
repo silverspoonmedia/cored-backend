@@ -263,12 +263,12 @@ Helpers on `ProductRegistry`:
 - `menuRoutesFor(string $productKey): array` — routes bound to a product.
 - `productKeyByMenuRoute(string $route): ?string` — reverse lookup.
 
-## Web Blade
+## SPA UI
 
-Two-level UI:
+Two-level admin in Monolith-Vue-Workers:
 
-- **Index** (`resources/views/adminlte4/product-activations/index.blade.php`) — product cards grid. Each card: product key, type badge, state count chips, product metric summary, "View Insights" link. Consumes `GET /api/v1/admin/product-activations/products`.
-- **Show** (`resources/views/adminlte4/product-activations/show.blade.php`) — per-product dashboard: insight cards (state distribution + product metrics), state filter, per-user activations table with action buttons (suspend/reactivate/approve/reject). Mutations redirect back to the show page.
+- **Index** (`product-activations.index`, `/apps/product-activations`) — product cards grid. Each card: product key, type badge, state count chips, product metric summary, "View Insights" link. Consumes `GET /api/v1/admin/product-activations/products`.
+- **Show** (`product-activations.show`) — per-product dashboard: insight cards, state filter, per-user activations table with action buttons (suspend/reactivate/approve/reject).
 
 Menu entry: **Administration → Access control → Product activations**, gated to Root / Admin / Moderator / Management roles.
 

@@ -7,8 +7,8 @@ use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
 use App\Domain\Service\Models\ServicePurchase;
+use App\Http\Controllers\Controller;
 use App\Support\Encryption\DecryptSourceContext;
-use App\Http\Controllers\Web\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -17,7 +17,10 @@ use Illuminate\Support\Str;
  * Browser return/cancel landing after iPaymu hosted checkout.
  *
  * iPaymu redirects the payer here (ureturn / ucancel). This is UX-only; invoice
- * status is primarily updated by the server-to-server webhook (unotify).
+ * status is primarily updated by the server-to-server webhook (unotify). The
+ * Blade app is gone, so after resolving/syncing the invoice we hand the browser
+ * to the SPA `/payment/return|cancel` page, which owns status display and the
+ * onward redirect (invoice / subscription / service-purchase).
  */
 class IpaymuReturnController extends Controller
 {
@@ -40,18 +43,12 @@ class IpaymuReturnController extends Controller
     {
         $invoice = $this->resolveInvoice($request);
 
-        if ($invoice === null) {
-            return redirect()
-                ->route('invoices.index')
-                ->with('warning', __('web/payments.ipaymu_return.invoice_not_found'));
-        }
-
-        if (! $cancelled) {
+        if ($invoice !== null && ! $cancelled) {
             $this->attemptSync($invoice);
             $invoice = $invoice->fresh() ?? $invoice;
         }
 
-        return $this->redirectForInvoice($invoice, $request, $cancelled);
+        return redirect()->away($this->spaReturnUrl($request, $invoice, $cancelled));
     }
 
     private function attemptSync(Invoice $invoice): void
@@ -63,6 +60,59 @@ class IpaymuReturnController extends Controller
         DecryptSourceContext::run('payment.ipaymu.return_url', function () use ($invoice): void {
             $this->payments->syncInvoiceStatus($invoice);
         });
+    }
+
+    private function spaReturnUrl(Request $request, ?Invoice $invoice, bool $cancelled): string
+    {
+        $base = rtrim((string) config('services.spa.url'), '/');
+        $path = $cancelled ? '/payment/cancel' : '/payment/return';
+
+        $query = [];
+
+        if ($invoice !== null) {
+            $invoice->loadMissing('invoiceable');
+            $query['invoice_id'] = $invoice->id;
+
+            if ($invoice->invoiceable instanceof ServicePurchase) {
+                $query['type'] = 'service_purchase';
+                $query['reference_id'] = $invoice->invoiceable_id;
+            } elseif ($invoice->invoiceable instanceof Subscription) {
+                $query['type'] = 'subscription';
+                $query['reference_id'] = $invoice->invoiceable_id;
+            }
+        }
+
+        // Preserve explicit hints from the checkout return query when present.
+        if (! isset($query['type']) && is_string($request->query('redirect'))) {
+            $hint = $request->query('redirect');
+            if ($hint === 'service_purchase' || $hint === 'subscription') {
+                $query['type'] = $hint;
+                $idKey = $hint === 'service_purchase' ? 'purchase' : 'subscription';
+                $id = $request->query($idKey);
+                if (is_string($id) && Str::isUuid($id)) {
+                    $query['reference_id'] = $id;
+                }
+            }
+        }
+
+        $trxId = $request->query('trx_id');
+        if (is_numeric($trxId)) {
+            $query['trx_id'] = (string) $trxId;
+        }
+
+        if (! isset($query['reference_id'])) {
+            foreach (['reference_id', 'referenceId', 'ReferenceId'] as $key) {
+                $referenceId = $request->query($key);
+                if (is_string($referenceId) && $referenceId !== '') {
+                    $query['reference_id'] = $referenceId;
+                    break;
+                }
+            }
+        }
+
+        $qs = $query === [] ? '' : '?'.http_build_query($query);
+
+        return $base.$path.$qs;
     }
 
     private function resolveInvoice(Request $request): ?Invoice
@@ -102,67 +152,5 @@ class IpaymuReturnController extends Controller
         }
 
         return null;
-    }
-
-    private function redirectForInvoice(Invoice $invoice, Request $request, bool $cancelled): RedirectResponse
-    {
-        $invoice->loadMissing('invoiceable');
-
-        $flashKey = $cancelled ? 'warning' : $this->flashKeyForStatus((string) $invoice->status);
-        $flashMessage = $cancelled
-            ? __('web/payments.ipaymu_return.cancelled')
-            : $this->messageForStatus((string) $invoice->status);
-
-        if ($request->query('redirect') === 'service_purchase'
-            && is_string($request->query('purchase'))
-            && Str::isUuid($request->query('purchase'))) {
-            return redirect()
-                ->route('service-purchases.show', $request->query('purchase'))
-                ->with($flashKey, $flashMessage);
-        }
-
-        if ($request->query('redirect') === 'subscription'
-            && is_string($request->query('subscription'))
-            && Str::isUuid($request->query('subscription'))) {
-            return redirect()
-                ->route('subscriptions.show', $request->query('subscription'))
-                ->with($flashKey, $flashMessage);
-        }
-
-        if ($invoice->invoiceable instanceof ServicePurchase) {
-            return redirect()
-                ->route('service-purchases.show', $invoice->invoiceable_id)
-                ->with($flashKey, $flashMessage);
-        }
-
-        if ($invoice->invoiceable instanceof Subscription) {
-            return redirect()
-                ->route('subscriptions.show', $invoice->invoiceable_id)
-                ->with($flashKey, $flashMessage);
-        }
-
-        return redirect()
-            ->route('invoices.show', $invoice->id)
-            ->with($flashKey, $flashMessage);
-    }
-
-    private function flashKeyForStatus(string $status): string
-    {
-        return match ($status) {
-            'paid', 'partially_refunded' => 'success',
-            'failed', 'cancelled', 'expired' => 'error',
-            default => 'info',
-        };
-    }
-
-    private function messageForStatus(string $status): string
-    {
-        return match ($status) {
-            'paid', 'partially_refunded' => __('web/payments.ipaymu_return.paid'),
-            'failed' => __('web/payments.ipaymu_return.failed'),
-            'cancelled' => __('web/payments.ipaymu_return.cancelled'),
-            'expired' => __('web/payments.ipaymu_return.expired'),
-            default => __('web/payments.ipaymu_return.pending'),
-        };
     }
 }

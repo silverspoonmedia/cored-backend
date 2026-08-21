@@ -50,17 +50,17 @@ Tier A (env only) vs operational settings: [configuration-policy.md](../../platf
 |------------------|-------|
 | `JWT_SECRET` | HS256 signing secret (env) |
 | `HCAPTCHA_SITEKEY`, `HCAPTCHA_SECRET` | hCaptcha credentials (env) |
-| `SPA_URL` | Vue-Workers public origin. OAuth `return_to` allowlist. Non-empty also mints password-reset, email-verify, File Hosting `share_url`, and iPaymu hosted return/cancel onto that origin (`App\Support\SpaPublicUrl`). Empty keeps Blade / signed-API URLs and disables SPA OAuth return. |
+| `SPA_URL` | Vue-Workers public origin. OAuth `return_to` allowlist. Non-empty also mints password-reset, email-verify, File Hosting `share_url`, and iPaymu hosted return/cancel onto that origin (`App\Support\SpaPublicUrl`). Empty falls back to API-signed URLs and disables SPA OAuth return. |
 | `AUTH_GUARD=api` | Default API guard |
 
 **Settings → Platform** (`system_settings`; runtime `setting_config()`):
 
 | Registry key | Config path | Notes |
 |--------------|-------------|-------|
-| `platform.jwt.ttl` | `jwt.ttl` | Access token lifetime (minutes). Blade cookie max-age tracks this. Config literal **240**; a `system_settings` row (Settings → Platform) wins when present. |
+| `platform.jwt.ttl` | `jwt.ttl` | Access token lifetime (minutes). SPA cookie max-age tracks this. Config literal **240**; a `system_settings` row (Settings → Platform) wins when present. |
 | `platform.jwt.refresh_ttl` | `jwt.refresh_ttl` | Refresh window from `iat`. Default 20160 (~14d). |
 | `platform.jwt.remember_ttl` | `jwt.remember_ttl` | Access TTL when `remember_me=true` on login |
-| `platform.jwt.refresh_skew` | `jwt.refresh_skew` | Minutes before `exp` when Blade proactively refreshes. Default 5. |
+| `platform.jwt.refresh_skew` | `jwt.refresh_skew` | Minutes before `exp` when clients may proactively refresh. Default 5. |
 | `platform.jwt.blacklist_grace_period` | `jwt.blacklist_grace_period` | Seconds predecessor JWT stays valid after refresh (parallel tabs). Default **30**. |
 | `platform.auth.default_role` | `auth.default_role` | Role assigned on registration. Default `User`. |
 | `platform.auth.verification_expire` | `auth.verification.expire` | Email verification link TTL |
@@ -68,13 +68,11 @@ Tier A (env only) vs operational settings: [configuration-policy.md](../../platf
 | `platform.two_factor.issuer` | `auth.two_factor.issuer` | QR label issuer |
 | `platform.hcaptcha.enabled` | `hcaptcha.enabled` | Master switch (sitekey/secret stay env) |
 
-### Blade silent refresh
-
-Blade does **not** use the Laravel session guard for identity. After login, `auth_token` is the only identity cookie. `RefreshJwtCookie` + `AuthService::refreshFromToken` slide access tokens within `setting_config('jwt.refresh_ttl')` so admins are not hard-kicked at `setting_config('jwt.ttl')`. API: `POST /api/v1/auth/refresh` (Bearer; single refresh inside `AuthService` — no double `jwt.refresh` middleware). Details: [web/blade-admin](../../web/blade-admin.md#silent-refresh-sliding-access).
-
 ### SPA cookie-mode refresh & token strip
 
 The SPA authenticates cross-site with the HttpOnly `__Host-spa_jwt` cookie instead of a Bearer header, so `AuthService::refresh()` falls back to that cookie when no `Authorization` header is present — a cookie-mode session refreshes the same way (otherwise it would hard-expire at `jwt.ttl`). On login/register/refresh/2FA-login the raw JWT is set as the `__Host-spa_jwt` cookie and **stripped from the JSON body** (`data.token` removed) so SPA JS never reads it and an XSS payload cannot exfiltrate it; `TwoFactorController` applies the same strip. The `__Host-` prefix enforces `Secure`, `Path=/`, and no `Domain`. Full contract: [../../integration/vue-workers-spa.md](../../integration/vue-workers-spa.md).
+
+The removed Blade admin used a separate first-party JWT cookie bridge; that middleware is gone — see [web/blade-admin.md](../../web/blade-admin.md).
 
 ### Remember-flag preservation across refresh
 
@@ -88,7 +86,7 @@ Login, 2FA login, and register all inject the `rm` claim via `AuthService::custo
 
 ### hCaptcha
 
-When enabled: login, register, forgot-password, reset-password, and two-factor login require `h-captcha-response`. Server: `HcaptchaVerifier` + Form Request trait (`ValidatesHcaptcha`, merged into `ResetPasswordRequest` for parity with forgot-password). Blade: `<x-adminlte4::form.hcaptcha />` — see [web/blade-admin](../../web/blade-admin.md).
+When enabled: login, register, forgot-password, reset-password, and two-factor login require `h-captcha-response`. Server: `HcaptchaVerifier` + Form Request trait (`ValidatesHcaptcha`, merged into `ResetPasswordRequest` for parity with forgot-password). SPA: hCaptcha widget on auth views in `monolith-vue-workers`.
 
 ### Public URLs (`SPA_URL`)
 
@@ -96,7 +94,7 @@ When enabled: login, register, forgot-password, reset-password, and two-factor l
 
 | Notification | Empty `SPA_URL` | Set `SPA_URL` |
 |--------------|-----------------|---------------|
-| Password reset | Blade `password.reset` (`/reset-password/{token}?email=`) | `{SPA_URL}/reset-password?token=&email=` |
+| Password reset | Signed API fallback | `{SPA_URL}/reset-password?token=&email=` |
 | Email verify | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — HMAC still generated against the API route on `APP_URL`. The SPA page GETs that signed path through the Worker. Worker `MONOLITH_API_ORIGIN` must equal the `APP_URL` origin. |
 
 CORS `allowed_origins` is `APP_URL` + `SPA_URL` (`config/cors.php`). Same-origin Worker traffic does not use CORS. Details: [vue-workers-spa — Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url).
@@ -112,7 +110,7 @@ Typical surface (all under `auth:api` where noted):
 | Email | verify, resend |
 | 2FA setup | start, confirm, disable, QR |
 
-JWT: Bearer header (API) or HttpOnly cookie on Blade (`auth_token` → Bearer via `AuthenticateWithJwtCookie` + silent `RefreshJwtCookie`). Octane: no sticky claims; cleanup guards after token ops — [platform/octane](../../platform/octane.md).
+JWT: Bearer header (API) or HttpOnly `__Host-spa_jwt` cookie (SPA via `AuthenticateWithSpaCookie`). Octane: no sticky claims; cleanup guards after token ops — [platform/octane](../../platform/octane.md).
 
 **Register side-effect:** `AuthService::register` auto-activates every implicit Product domain declared in [`config/products.php`](../../../config/products.php) (e.g. FileHosting) by inserting a `product_activations` row with `state = active` and `source = register_hook`. Failures are logged but do not abort registration — the `product.active` middleware lazy-creates a missing implicit activation on first product endpoint hit. See [Product Activations](../product-activations/README.md).
 
@@ -153,7 +151,7 @@ Permissions: `view/create/edit/delete user` (space-separated names). Soft delete
 | GET/PUT/DELETE | `/api/v1/users/{user}` |
 | GET | `/api/v1/users/assignable-roles` |
 
-`{user}` = UUID. Blade web controllers **only** proxy these APIs via `ApiClient` — no second RBAC path.
+`{user}` = UUID. SPA views call these API endpoints directly — no second RBAC path.
 
 **Sidebar:** **Administration → Access control → User management** (`users.index`), visible to Root, Admin, Moderator, and Management. Menu visibility is presentation only; API policy and H-RBAC remain authoritative.
 
@@ -165,11 +163,11 @@ Paginated select options: `GET /api/v1/lookups/*` — [web/ui-patterns](../../we
 
 ## Connected accounts (Discord)
 
-Web: `/apps/profile/connections`. API (SPA): `GET /api/v1/profile/connections`, `DELETE /api/v1/profile/connections/discord`, `GET /api/v1/auth/discord/authorize-url` (Bearer). OAuth **callback** stays Monolith web (`auth.discord.callback` at `/apps/auth/discord/callback`) and is **not** behind `web.auth` — identity is the encrypted state, not the Blade cookie. Blade still starts OAuth via `auth.discord.redirect` (`web.auth`). SPA starts OAuth via the authorize-url endpoint, then `window.location` to Discord.
+SPA: `/apps/profile/connections`. API: `GET /api/v1/profile/connections`, `DELETE /api/v1/profile/connections/discord`, `GET /api/v1/auth/discord/authorize-url` (Bearer). OAuth **callback** stays Monolith web (`auth.discord.callback` at `/apps/auth/discord/callback`) — identity is the encrypted state, not a session cookie. SPA starts OAuth via the authorize-url endpoint, then `window.location` to Discord.
 
-Scopes: `identify` + `connections`. Table `identity_oauth_accounts` stores envelope-encrypted tokens + **full** Discord connection snapshot (`connections_snapshot` JSON: all connection types, documented safe fields — no secrets). TTL setting `identity.discord.connections_snapshot_max_age_minutes` (default 60): stale snapshot refreshes on profile connections page load (Blade and `GET profile/connections`) and on vTual verify miss.
+Scopes: `identify` + `connections`. Table `identity_oauth_accounts` stores envelope-encrypted tokens + **full** Discord connection snapshot (`connections_snapshot` JSON: all connection types, documented safe fields — no secrets). TTL setting `identity.discord.connections_snapshot_max_age_minutes` (default 60): stale snapshot refreshes on profile connections page load (`GET profile/connections`) and on vTual verify miss.
 
-Post-OAuth browser return: encrypted state may carry `return_to`. Allowlisted origins are `APP_URL` (Blade) and `SPA_URL` (Vue-Workers). Paths must start with `/apps/`. SPA passes `return_path` only; the API prefixes `SPA_URL`. Empty `SPA_URL` → authorize-url 503.
+Post-OAuth browser return: encrypted state may carry `return_to`. Allowlisted origins are `APP_URL` and `SPA_URL`. Paths must start with `/apps/`. SPA passes `return_path` only; the API prefixes `SPA_URL`. Empty `SPA_URL` → authorize-url 503.
 
 vTual consumes the snapshot in two ways: **`ownershipEligible()`** (YouTube/Twitch verified subset) for claim verify paths; other connection types map to creator external links via `DiscordConnectionExternalLinkMapper`. Private discovered YouTube/Twitch channels bind on orphan Discord claim until owner promote — see [vTual README — Creator claim](../vtual/README.md#creator-claim-phase-1---binding).
 

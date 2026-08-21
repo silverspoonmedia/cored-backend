@@ -1,5 +1,7 @@
 # File Hosting — product domain
 
+> **UI:** The in-repo Blade + Vue island admin is **removed**. File Hosting UI lives in **Monolith-Vue-Workers** (`FileHostingView` and related routes). This guide documents API behavior and historical Blade notes where still relevant — see [web/blade-admin.md](../../web/blade-admin.md).
+
 Product domain (`kind => product`, `locked => true`) for personal nested folders, S3-compatible chunk upload, Drive-lite link sharing, and **Collaborative Works** (paid team workspaces).
 
 | | |
@@ -21,7 +23,7 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 
 | Surface | Behavior |
 |---------|----------|
-| Auth UI | Blade AdminLTE shell + **Vite Vue 3 island SPA** (`resources/js/vue/islands/file-hosting/`) — soft-nav client router, same web BFF JSON contracts. **Not** Inertia / CDN Vue / monorepo-wide SPA. See [UI architecture / SPA shell](#ui-architecture--spa-shell). |
+| Auth UI | **Monolith-Vue-Workers SPA** — consumes `/api/v1/file-hosting/*` directly. See [vue-workers-spa.md](../../integration/vue-workers-spa.md). Historical Blade island notes below are archived reference only. |
 | Browse gestures | Drive-like select / context menu / drag-move; bulk bar **Move / share / unshare / delete**. Single and bulk stay in lockstep — [Drive-like listing](#drive-like-listing-interactions-browse-only), [Action surface parity](#action-surface-parity-single--bulk). |
 | Nested folders | Virtual first row/card **`...`** (parent) + breadcrumb chips as drop targets (`data-fh-drop-folder`). Root has no `...`. |
 | Live listing | Dedicated private Echo channels + soft-refetch (listing/quota/trash/show). **Not** the notification bell bus. See [Realtime / live listing](#realtime--live-listing). |
@@ -252,7 +254,7 @@ Shared kernel pieces (not duplicated per domain):
 
 **Download edge caching (Worker):** object keys are random and immutable, so after the HMAC is verified the Worker caches object bytes at the Cloudflare edge keyed on bucket+object (never the signed query). Repeat downloads of a hot object in the same region are served from edge (`X-Cache: HIT`) instead of a fresh B2 stream. Auth is never bypassed — every request is HMAC-checked first. Range requests bypass the cache (no 206 poisoning); objects >512 MB stream from origin (`X-Cache: SKIP`).
 
-**Download hot path (Monolith):** `FileManagerController@download` calls `FileService::download` directly (no internal HTTP loopback). `issueDownload` increments `download_count` atomically and skips the redundant `refresh()`. Signed download URLs default to **60 min** TTL (`signed_download_ttl_minutes`) to cut remints on repeat downloads.
+**Download hot path (Monolith):** `GET /api/v1/file-hosting/files/{file}/download` calls `FileService::download` directly. `issueDownload` increments `download_count` atomically and skips the redundant `refresh()`. Signed download URLs default to **60 min** TTL (`signed_download_ttl_minutes`) to cut remints on repeat downloads.
 
 **Preview (`?preview=1`):** download endpoints (auth API, guest `/s/f/{id}/download`) accept `preview=1`. For in-browser-safe MIME (`image/*`, `application/pdf`, `audio/*`, `video/*`, `text/*`) the Content-Disposition becomes `inline` so the browser previews instead of downloading; other types stay `attachment`. Preview URLs are minted on demand (not written to the cache columns). The HMAC payload already covers `disp`/`ctype`, so a tampered disposition fails signature verification.
 
@@ -554,9 +556,11 @@ Other S3-compatible vendors (Wasabi, MinIO, custom): same idea — allow origin 
 
 ## Vue-Workers SPA consumer
 
-The sibling Vue-Workers SPA is separate from the Blade Vue island described below. It consumes `/api/v1/file-hosting/*` through the Worker BFF and uses `useFhHydrate` for initial reads. `hydrateFileHosting()` batches browse, quota, workspaces, and Microstock slots; `hydrateWorkspaceDetail()` batches workspaces plus members and activity for workspace detail. Per-entry failures fall back to the individual loaders. Public share routes are `/s/f/:id` and `/s/d/:id` (same as Blade). Admin DMCA blocklist is Vue route `file-hosting.blocklist.index.view` so MenuSeeder `file-hosting.blocklist.index` resolves in `NavTree`. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
+The sibling Vue-Workers SPA **is** the File Hosting UI. It consumes `/api/v1/file-hosting/*` and uses `useFhHydrate` for initial reads. `hydrateFileHosting()` batches browse, quota, workspaces, and Microstock slots; `hydrateWorkspaceDetail()` batches workspaces plus members and activity for workspace detail. Per-entry failures fall back to the individual loaders. Public share routes are `/s/f/:id` and `/s/d/:id`. Admin DMCA blocklist is Vue route `file-hosting.blocklist.index.view` so MenuSeeder `file-hosting.blocklist.index` resolves in `NavTree`. See [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
 
-## Web Blade
+## Historical Blade web (removed)
+
+The tables and Vue-island notes below describe the **deleted** in-repo Blade + Vite island. Do not recreate them in Monolith. Live browse/trash/show/workspaces are SPA routes (`file-hosting.index`, `.trash`, `.show`, `.workspaces`, `.blocklist.index`). Guest share stays on Laravel `web`: `/s/f/{uuid}`, `/s/d/{uuid}`.
 
 | Route name | Auth | Purpose |
 |------------|------|---------|
@@ -588,9 +592,9 @@ The sibling Vue-Workers SPA is separate from the Blade Vue island described belo
 
 | `public_download_signature_ttl_minutes` | Laravel signed hop for `/s/f/.../download` (Monolith hop only; storage URL has its own TTL) |
 
-### UI architecture / SPA shell
+### UI architecture / SPA shell (historical)
 
-Authenticated File Hosting browse is a **single Vite Vue 3 island** mounted on Blade (`#vue-file-hosting` + `data-vue-file-hosting` bootstrap). Soft-nav still uses the shared FH client router (`history.pushState` / `popstate`). Browser talks to **web BFF** JSON (`FileManagerController`), not `/api/v1` directly. **Not** Inertia / CDN Vue / monorepo-wide AdminLTE SPA.
+The in-repo Vite Vue 3 island (`#vue-file-hosting`, `FileManagerController` BFF) has been **removed**. The notes below are archive-only; the live shell is `monolith-vue-workers`.
 
 **Fair Vue boundary:** a *Vue island* is a page-level mount with its own lifecycle — not every helper. Auth browse is one island. Pure helpers (`router`, upload math, `moveItemsRequest`, Echo glue, selection helpers) stay JS. Interactive leftovers that belong under auth browse become **components/composables on that island** (`useFhUpload`, `useFhDragMove`). Public `/s/*` stays vanilla [`public-app.js`](../../resources/js/file-hosting/public-app.js) unless deliberately invested as a second island. Standalone Microstock usage page is not an island by default.
 
@@ -625,7 +629,7 @@ Authenticated File Hosting browse is a **single Vite Vue 3 island** mounted on B
 
 **Always full navigation:** file download hops (`…/download` → signed storage URL: Worker HMAC or S3), non-FH routes, plans/services links, and **cold trash/show → browse** when `hasBrowseChrome(config)` is false — gate is **non-empty `config.workspacesUrl` only** (`useFhShell`). Cold trash/show bootstraps omit that URL (and strip upload/ui chrome); soft-nav to browse would keep stripped config, so the island forces a full document load. Warm path (land on index first — index injects `workspacesUrl` — then soft-nav trash/show and back) keeps soft-nav.
 
-**Mutations:** all FH forms/buttons use `fetch` + `Accept: application/json`. `ConsumesApi::jsonFromApi` forwards API `data` entity so the shell can soft-update. Shell **ignores** `redirect` for same-shell actions. Success path for in-shell FH actions **never depends on** `window.location.reload` — soft-refetch listing/quota/trash/show or soft-nav instead. Post-mutation soft-refetch and [Realtime / live listing](#realtime--live-listing) Echo invalidation share the same Vue shell paint path (`useFhShell` soft-refetch helpers).
+**Mutations (historical Blade island):** all FH forms/buttons used `fetch` + `Accept: application/json`. The island forwarded API `data` so the shell could soft-update. Live mutations hit `/api/v1/file-hosting/*` from the SPA.
 
 
 #### Drive-like listing interactions (browse only)
@@ -691,7 +695,7 @@ Auth index/trash/show Blade injects JSON bootstrap (`data-vue-file-hosting`) wit
 
 **Upload progress UI (client-only):** Monolith never sees PUT body bytes (direct S3 or Worker). Progress % = `uploadedBytes / file.size` where `uploadedBytes` is the **sum of per-part loaded bytes** (a Map keyed by part number, so parallel re-PUTs and out-of-order completion never double-count). Speed = a **sliding-window (5s) instantaneous rate** via `createRateSampler` — not a cumulative average — so it recovers after a stall instead of drifting down for the rest of the upload. Multipart parts upload **in parallel** (`max_concurrent_parts`, default 3 XHR streams via `uploadPartsParallel` + `runWithConcurrency`) — a strictly sequential single stream collapses to per-connection throughput on long files (the 20→10→1 MB/s decay). Init presigns **every** part upfront (`presign_ttl_minutes`, default 60); a PUT that returns **403 (expired URL)** is re-signed and retried once per part. After the last part PUT, the row shows **Finalizing…** (`upload.completing`) at 100% with speed cleared while the client calls `POST …/complete` (merge parts / promote `HostedFile`) — then **Done**. Successful rows stay ~**5s** (`DONE_ROW_DISMISS_MS` via `scheduleDoneRowDismiss`) with a short fade (`.is-dismissing`), then leave the queue and free the `active` slot so the list stays uncluttered; **failed** rows stay so the user can see what went wrong. Ongoing (pending / uploading / finalizing) rows always stay. API session payloads do not include progress or speed fields.
 
-All mutations go through `FileManagerController` web routes via `fetch`; the controller forwards to the API via `ConsumesApi`. AJAX responses use the standard JSON envelope (`status`, `message`, `data?`, `redirect?`). Successful mutations **do not** hard-reload the page when the SPA shell is bound — they soft-refetch browse/quota/trash/show (and peers update via WebSocket or poll fallback).
+Live mutations go through `/api/v1/file-hosting/*`. The historical Blade island used `FileManagerController` + `ConsumesApi` as a web BFF — that path is gone.
 
 File type icons map MIME -> Bootstrap Icons via `file-icon.blade.php` partial: image, PDF, video, audio, archive, spreadsheet, document, code, fallback — each with a color modifier (`.fh-icon--*`).
 

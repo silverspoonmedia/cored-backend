@@ -193,6 +193,46 @@ class NavigationMenuTest extends TestCase
             ->assertJsonValidationErrors(['route']);
     }
 
+    public function test_store_accepts_spa_symbolic_route_name(): void
+    {
+        $this->actingAsJwt($this->userWithRole('Admin'))
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => 'Dashboard link',
+                'type' => 'h',
+                'route' => 'dashboard',
+                'position' => '',
+                'reference_id' => '',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.route', 'dashboard');
+    }
+
+    public function test_store_accepts_spa_app_route_not_in_menu_seeder(): void
+    {
+        $this->actingAsJwt($this->userWithRole('Admin'))
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => 'Create user',
+                'type' => 'h',
+                'route' => 'users.create',
+                'position' => '',
+                'reference_id' => '',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.route', 'users.create');
+    }
+
+    public function test_store_rejects_denied_spa_auth_route_name(): void
+    {
+        $this->actingAsJwt($this->userWithRole('Admin'))
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => 'Login',
+                'type' => 'h',
+                'route' => 'login',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['route']);
+    }
+
     public function test_update_without_placement_keeps_order(): void
     {
         $admin = $this->userWithRole('Admin');

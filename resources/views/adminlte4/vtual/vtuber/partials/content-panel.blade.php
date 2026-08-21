@@ -1,8 +1,0 @@
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title mb-0">{{ __('web/vtual-vtuber.section_contents') }}</h3>
-    </div>
-    <div class="card-body">
-        @include(config('web.layout').'.vtual.vtuber.partials.contents', ['profile' => $profile])
-    </div>
-</div>

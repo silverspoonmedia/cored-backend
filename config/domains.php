@@ -24,8 +24,8 @@
  * commands keep this file and providers/routes in sync.
  *
  * Convention: list core entries first, product entries last. Loaders
- * (routes/api/v1.php, routes/web.php web.auth, bootstrap/providers.php) follow
- * the same core → product order with comment sections — presentation only.
+ * (routes/api/v1.php, routes/web.php server endpoints, bootstrap/providers.php)
+ * follow the same core → product order with comment sections — presentation only.
  */
 
 return [

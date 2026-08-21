@@ -205,14 +205,11 @@ Catalog resource fields of note: `plan_kind`, `storage_bytes` (+ `storage_bytes_
 
 Purchase resource fields of note: `quantity` (addon: set at catalog `POST /services/{id}/checkout`; hub stepper is local preview until `channel-checkout.quantity` commits again; main plan always `1`), `unit_list_amount`, `unit_charge_amount`, `change_type`, raw money (`list_amount`, `credit_amount`, `charge_amount`, `display_amount`) each with `*_formatted`. **Settlement/FX internals** (`settlement_currency`, `settlement_amount`, `fx_rate` + formatted companions, `fx_provider`, `fx_rate_snapshot_id`) are **staff-only** (`view invoice`) — buyers see display/charge amounts, not treasury FX. Also `storage_gain_human` (addon storage preview), `surplus_days`, period timestamps with `*_formatted` / `*_human`, `entitlement.{status,quantity,ends_at,grace_ends_at,is_permanent}` (dates dual-field). Fulfillment adds `purchase.quantity` to entitlement stack (not always +1). Display contract: [platform/crud presentation](../../platform/crud.md#api-resource-presentation-dual-fields). Per-viewer rules: [platform/security.md](../../platform/security.md#response-data-minimization-mandatory).
 
-## Web (Blade)
+## SPA UI
 
 **Sidebar:** **Workspace → Services** (`services.index`) has no menu-role pivot; service permissions/policies remain authoritative. Microstock intentionally has no dedicated dynamic-menu node and stays discoverable through this catalog plus the File Hosting workspace switcher.
 
-- Catalog index/create/edit/show (API consumer); form fields `plan_kind` + `storage_bytes`
-- Catalog show (`/apps/services/{id}`): addon **quantity** input on checkout form (committed at `POST /services/{id}/checkout`; main plans implicit qty 1). Checkout visibility gate uses `Gate::any(['purchase service', 'initiate payment'])` — do **not** inline `@php(...)` with nested parens inside `@can/@else/@endcan` (Blade's inline `@php()` matcher chokes on the inner `Gate::allows('initiate payment')` parens and corrupts compilation of everything after `@endcan`, leaving `$isAddonPlan` undefined); use a block `@php … @endphp` instead
-- Purchase hub: payment panel + quote breakdown (list/credit/charge/surplus) + **addon quantity stepper** (local preview; committed on Continue to payment via `channel-checkout.quantity`; stepper locks read-only on `paid` via WebSocket/sync without full reload) + addon **stack equation** (`14 + 1 = 15`) when an entitlement stack exists; local qty preview updates list/display/settlement/FX sidebar fields using `MoneyPresenter` / `FxPresenter` rules in `purchase-pricing-preview.js`; FX rate shows `fx_rate_label`; dates use `*_formatted`; grace banner when `status=grace`. Layout uses sidebar-first-on-mobile column ordering (`order-2 order-lg-1` / `order-1 order-lg-2`) matching the invoice show page — see [ui-patterns — Sidebar-first column ordering](../../web/ui-patterns.md#sidebar-first-column-ordering)
-- **Not** product UI on PG `/subscriptions`
+Catalog, checkout, and purchase hub live in Monolith-Vue-Workers (`/apps/services`, `/apps/service-purchases/{id}`). Blade views and `purchase-pricing-preview.js` are removed — see [blade-admin.md](../../web/blade-admin.md). Checkout visibility stays API/`Gate` (`purchase service` / `initiate payment`). Purchase hub quantity stepper and stack equation are SPA; paid lock via WebSocket/sync. iPaymu return can redirect to SPA `service-purchases.show`.
 
 ## PaymentGateway integration
 
@@ -224,7 +221,7 @@ Morph aliases:
 - `InvoiceAttachableService::createPendingInvoiceForServicePurchase` / `…ForServiceAddonRenewal`
 - Midtrans/iPaymu synchronizers fulfill purchase or addon renewal on paid
 - iPaymu return can redirect to `service-purchases.show`
-- Blade `/apps/invoices` list + show redirect to purchase hub for `service_purchase` (`InvoiceWebDestination::showUrl()`)
+- Invoice list/show in the SPA redirect to the purchase hub for `service_purchase` (`InvoiceWebDestination::showUrl()`)
 - Purchase hub sidebar shows invoice number as display-only (no duplicate link to `/apps/invoices/{id}`)
 - Product SaaS ≠ PG `Subscription` model
 

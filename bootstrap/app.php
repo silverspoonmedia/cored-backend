@@ -3,12 +3,8 @@
 use App\Domain\ErrorLog\Support\ErrorLogRecorder;
 use App\Domain\Identity\Models\User;
 use App\Exceptions\BusinessRuleException;
-use App\Http\Middleware\AuthenticateWithJwtCookie;
 use App\Http\Middleware\AuthenticateWithSpaCookie;
-use App\Http\Middleware\EnsureWebAuthenticated;
 use App\Http\Middleware\OptionalJwtAuthenticate;
-use App\Http\Middleware\RedirectIfWebAuthenticated;
-use App\Http\Middleware\RefreshJwtCookie;
 use App\Http\Middleware\RequireSpaOrigin;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
@@ -94,18 +90,14 @@ $app = Application::configure(basePath: dirname(__DIR__))
         );
 
         // Laravel defaults to route('login') for guests; this API has no web login route.
-        // Never redirect unauthenticated API clients—return JSON 401 instead. Web guests
-        // are redirected to login by the `web.auth` middleware, not here.
+        // Never redirect unauthenticated API clients — return JSON 401 instead. Login
+        // lives on the SPA origin.
         $middleware->redirectGuestsTo(fn (Request $request) => null);
 
-        // The Blade frontend authenticates with the same stateless JWT as the
-        // API, carried in an HttpOnly cookie. Reading it on every web request
-        // lets `permission:`/`role:` middleware and policies work unchanged.
-        // RefreshJwtCookie silently extends access tokens within refresh_ttl so
-        // active admins are not hard-kicked at jwt.ttl.
+        // The Blade app is gone; the only remaining web routes are server-side
+        // endpoints (guest share, iPaymu return, Discord OAuth callback). No JWT
+        // cookie bridge runs here any more - locale + security headers only.
         $middleware->web(append: [
-            AuthenticateWithJwtCookie::class,
-            RefreshJwtCookie::class,
             SetLocale::class,
             SecurityHeaders::class,
         ]);
@@ -113,7 +105,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             // Decrypt the SPA's cross-site cookies (auth + CSRF nonce) before the
             // auth/CSRF middleware read them. The api group has no EncryptCookies
-            // by default, and the SPA cookie is minted encrypted like the Blade one.
+            // by default; Laravel encrypts __Host-spa_jwt the same way as other cookies.
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
         ]);
 
@@ -136,10 +128,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Resolve locale after auth middleware so users.locale wins over cookie.
-        // Refresh must run after cookie→guard bind and before route `web.auth`.
         $middleware->priority([
-            AuthenticateWithJwtCookie::class,
-            RefreshJwtCookie::class,
             OptionalJwtAuthenticate::class,
             Authenticate::class,
             SetLocale::class,
@@ -150,8 +139,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'jwt.optional' => OptionalJwtAuthenticate::class,
-            'web.auth' => EnsureWebAuthenticated::class,
-            'web.guest' => RedirectIfWebAuthenticated::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

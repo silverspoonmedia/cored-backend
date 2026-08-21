@@ -486,21 +486,21 @@ class DomainManager
     {
         $slug = $this->slug($name);
         $path = base_path('routes/web.php');
-        $line = "    require __DIR__.'/web/{$slug}.php';";
+        $line = "require __DIR__.'/web/{$slug}.php';";
         $contents = File::get($path);
 
-        if (str_contains($contents, "require __DIR__.'/web/{$slug}.php';")) {
+        if (str_contains($contents, $line)) {
             return;
         }
 
-        $updated = preg_replace(
-            "/(Route::middleware\\('web\\.auth'\\)->group\\(function \\(\\): void \\{[\\s\\S]*?)(\\n\\}\\);)/",
-            "$1\n{$line}$2",
-            $contents,
-            1
-        );
+        $anchor = '// Product domain web routes (optional server endpoints; appended by domain:make).';
+        if (str_contains($contents, $anchor)) {
+            $updated = str_replace($anchor, $anchor."\n{$line}", $contents);
+        } else {
+            $updated = rtrim($contents)."\n\n{$line}\n";
+        }
 
-        if ($updated === null || $updated === $contents) {
+        if ($updated === $contents) {
             throw new RuntimeException('Could not register web route require in routes/web.php.');
         }
 

@@ -31,7 +31,7 @@ final class PaymentGatewayRowActionResolver implements RowActionResolverInterfac
                 key: 'edit',
                 label: __('ui.datatable.edit'),
                 method: 'GET',
-                url: route('payment-gateways.edit', $model),
+                url: \App\Support\SpaPublicUrl::to('/apps/payment-gateways/'.$model->getKey().'/edit'),
                 style: 'primary',
                 icon: 'fas fa-edit',
             ),

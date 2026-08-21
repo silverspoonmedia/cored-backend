@@ -14,6 +14,15 @@ class IpaymuReturnWebTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const SPA = 'http://spa.test';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['services.spa.url' => self::SPA]);
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();
@@ -21,7 +30,7 @@ class IpaymuReturnWebTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_return_redirects_to_service_purchase_and_attempts_sync(): void
+    public function test_return_redirects_to_spa_payment_return_and_attempts_sync(): void
     {
         $purchase = ServicePurchase::factory()->pending()->create();
         $gateway = $this->ipaymuGateway();
@@ -40,16 +49,21 @@ class IpaymuReturnWebTest extends TestCase
             ]);
         $this->app->instance(IpaymuPaymentService::class, $payments);
 
-        $this->get('/payment/ipaymu/return?trx_id=217387&status=berhasil')
-            ->assertRedirect(route('service-purchases.show', $purchase->id))
-            ->assertSessionHas('info');
+        $response = $this->get('/payment/ipaymu/return?trx_id=217387&status=berhasil');
+
+        $response->assertRedirect($this->spaReturnUrl('/payment/return', [
+            'invoice_id' => $invoice->id,
+            'type' => 'service_purchase',
+            'reference_id' => $purchase->id,
+            'trx_id' => '217387',
+        ]));
     }
 
     public function test_return_honours_explicit_service_purchase_redirect_query(): void
     {
         $purchase = ServicePurchase::factory()->pending()->create();
         $gateway = $this->ipaymuGateway();
-        $this->createIpaymuInvoice($purchase, $gateway, [
+        $invoice = $this->createIpaymuInvoice($purchase, $gateway, [
             'external_transaction_id' => '999001',
         ]);
 
@@ -61,23 +75,26 @@ class IpaymuReturnWebTest extends TestCase
         ]);
         $this->app->instance(IpaymuPaymentService::class, $payments);
 
-        $url = route('payment.ipaymu.return', [
+        $response = $this->get('/payment/ipaymu/return?'.http_build_query([
             'redirect' => 'service_purchase',
             'purchase' => $purchase->id,
-            'invoice_id' => Invoice::query()->first()->id,
+            'invoice_id' => $invoice->id,
             'trx_id' => '999001',
-        ]);
+        ]));
 
-        $this->get($url)
-            ->assertRedirect(route('service-purchases.show', $purchase->id))
-            ->assertSessionHas('info');
+        $response->assertRedirect($this->spaReturnUrl('/payment/return', [
+            'invoice_id' => $invoice->id,
+            'type' => 'service_purchase',
+            'reference_id' => $purchase->id,
+            'trx_id' => '999001',
+        ]));
     }
 
-    public function test_cancel_redirects_without_sync(): void
+    public function test_cancel_redirects_to_spa_payment_cancel_without_sync(): void
     {
         $purchase = ServicePurchase::factory()->pending()->create();
         $gateway = $this->ipaymuGateway();
-        $this->createIpaymuInvoice($purchase, $gateway, [
+        $invoice = $this->createIpaymuInvoice($purchase, $gateway, [
             'external_transaction_id' => '888001',
         ]);
 
@@ -85,16 +102,31 @@ class IpaymuReturnWebTest extends TestCase
         $payments->shouldNotReceive('syncInvoiceStatus');
         $this->app->instance(IpaymuPaymentService::class, $payments);
 
-        $this->get('/payment/ipaymu/cancel?trx_id=888001')
-            ->assertRedirect(route('service-purchases.show', $purchase->id))
-            ->assertSessionHas('warning');
+        $response = $this->get('/payment/ipaymu/cancel?trx_id=888001');
+
+        $response->assertRedirect($this->spaReturnUrl('/payment/cancel', [
+            'invoice_id' => $invoice->id,
+            'type' => 'service_purchase',
+            'reference_id' => $purchase->id,
+            'trx_id' => '888001',
+        ]));
     }
 
-    public function test_return_without_matching_invoice_redirects_to_invoice_index(): void
+    public function test_return_without_matching_invoice_redirects_to_spa_payment_return_without_ids(): void
     {
-        $this->get('/payment/ipaymu/return?trx_id=000000')
-            ->assertRedirect(route('invoices.index'))
-            ->assertSessionHas('warning');
+        $response = $this->get('/payment/ipaymu/return?trx_id=000000');
+
+        $response->assertRedirect(self::SPA.'/payment/return?trx_id=000000');
+    }
+
+    /**
+     * @param  array<string, string>  $query
+     */
+    private function spaReturnUrl(string $path, array $query): string
+    {
+        // The controller preserves the resolved invoice id + type first; match
+        // http_build_query ordering by building from the same insertion order.
+        return self::SPA.$path.'?'.http_build_query($query);
     }
 
     private function ipaymuGateway(): PaymentGateway
