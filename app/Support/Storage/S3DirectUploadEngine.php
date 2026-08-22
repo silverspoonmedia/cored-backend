@@ -252,6 +252,26 @@ class S3DirectUploadEngine
             return $e;
         }
 
+        if (config('file-hosting.debug_log_requests')) {
+            $context = ['exception' => $e::class, 'message' => $e->getMessage()];
+
+            if ($e instanceof AwsException) {
+                $context['aws_code'] = $e->getAwsErrorCode();
+                $context['aws_message'] = $e->getAwsErrorMessage();
+                $command = $e->getCommand();
+                if ($command) {
+                    $context['command'] = $command->getName();
+                    $context['command_params'] = $command->toArray();
+                }
+                $response = $e->getResponse();
+                if ($response) {
+                    $context['response_headers'] = $response->getHeaders();
+                }
+            }
+
+            \Illuminate\Support\Facades\Log::channel('single')->warning('file-hosting upstream_failed', $context);
+        }
+
         $message = $e instanceof AwsException
             ? (string) ($e->getAwsErrorMessage() ?: $e->getAwsErrorCode() ?: $e->getMessage())
             : $e->getMessage();

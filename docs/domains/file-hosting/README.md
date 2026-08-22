@@ -41,7 +41,7 @@ What FH is **today** (auth browse + guest share). Deep dives live in sections be
 | Nested folders | `parent_id` tree per owner; breadcrumb via `FolderAncestorChain` |
 | Files | `file_hosting_files` — denormalized `user_id`, optional `folder_id` |
 | Upload sessions | `file_hosting_uploads` — init -> browser PUT (direct S3 **or** CF Worker proxy) -> complete promotes row. **Control plane** (init / sign-parts / complete / abort) always Monolith->S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. **No resume**: a dead upload restarts from scratch. Chunk/part layout frozen at init (`chunk_size`/`part_count`). **Prune scheduler** aborts orphaned **multipart** sessions past grace or with no recent S3 part activity (Backblaze has no S3 lifecycle for incomplete multiparts). |
-| Part size | Default **25 MB** chunk + multipart threshold (`file-hosting.chunk_size_bytes` in **Settings → File Hosting**); on the Worker proxy keep it **≤ 32 MB** — the Gateway buffers each UploadPart (cap 32 MB) so it can retry transient upstream 5xx instead of returning a raw 500. See Gateway [upload-performance.md](../../../gateway/docs/upload-performance.md) for A/B tuning. |
+| Part size | Default **8 MB** chunk + multipart threshold (`file-hosting.chunk_size_bytes` in **Settings → File Hosting**). 8 MB is a precaution for ISP-shaped consumer links: a stalled 8 MB part recovers ~3× faster than a stalled 25 MB part. On the Worker proxy keep it **≤ 32 MB** — the Gateway buffers each UploadPart (cap 32 MB) so it can retry transient upstream 5xx instead of returning a raw 500. See Gateway [upload-performance.md](../../../gateway/docs/upload-performance.md) for A/B tuning and RTT analysis. |
 | DB `path` | Object id only: 40 lowercase alnum chars (`Str::random(40)`). **Not** a full S3 key. |
 | S3 object key | `file-hosting/{user_id}/{objectId}` — resolved at runtime via `ObjectKeyResolver` from `user_id` + `path` + config `directory`. No `folder_id`, no extension, no upload session id in the key. |
 | Display name | Preferred name kept if free in that owner+folder/parent (soft-deleted ignored). If taken on **upload complete** or **file/folder move** → auto DB rename to `{stem} ({maxN+1}).{ext}` (`A.zip` = 1, `A (3).zip` = 3 → next `A (4).zip`; folders without ext → `Docs (2)`). Shared allocator: `UniqueDisplayNameAllocator`. **Manual rename** still rejects exact sibling collisions (user chose the name). S3 object key stays random and is never renamed. Move/rename are **DB-only**. |
@@ -290,7 +290,7 @@ S3 object keys stay unique (`file-hosting/{user_id}/{objectId}`) and are never r
 | Item | Value |
 |------|-------|
 | Production URL | `https://gateway.silverspoon.me` — upload **and** vault download on one domain |
-| Part size / concurrency | 25 MB (`file-hosting.chunk_size_bytes`), 3 parallel parts (`file-hosting.max_concurrent_parts`) — **Settings → File Hosting** |
+| Part size / concurrency | 8 MB (`file-hosting.chunk_size_bytes`), 3 parallel parts (`file-hosting.max_concurrent_parts`) — **Settings → File Hosting** |
 | Gateway Smart Placement | **Must stay off** — enabling `placement.mode: smart` roughly doubles upload latency per part |
 | Dual-host workaround | **Not needed** — pointing upload at `s3.silverspoon.me` while Gateway handles vault was a fallback only; automated benchmark passed with Smart Placement disabled |
 | Benchmark / tuning | [gateway/docs/upload-performance.md](../../../gateway/docs/upload-performance.md) |
@@ -324,6 +324,8 @@ Shorter **download** URLs are supported via Vault `keyPrefix` remapping (`/vault
 The alias is not the B2 bucket name and **not** part of the S3 key; it only selects credentials/endpoint inside the Worker. The browser never receives B2 application keys or the raw upload token on download links.
 
 **Fail closed:** if base URL is set but token or disk alias is missing -> init/sign-parts error (`proxy_misconfigured`), not silent fall-back to direct S3. Upstream S3 failures map to `upstream_failed` where applicable.
+
+**Debug upstream failures:** set `FILE_HOSTING_DEBUG_LOG_REQUESTS=true` to log the full AWS command name, params, and response headers to `storage/logs/laravel.log` when an `upstream_failed` exception fires. Never enable in production — headers may contain sensitive values.
 
 **B2 / path-style:** Monolith FH disk `s3FileHostingCe` must use path-style endpoints (`FILE_HOSTING_S3_CE_USE_PATH_STYLE`, default true in `config/filesystems.php`) so CreateMultipart / Complete on the server hit the same path-style host as the Worker (`forcePathStyle: true` in `S3_TARGETS`). Virtual-hosted Create + path-style UploadPart can look fine until complete fails with `NoSuchUpload`.
 
@@ -465,7 +467,7 @@ Why a large upload used to start ~20 MB/s then sag to 10 then ~1 MB/s, and why ~
 | Cause | Fix |
 |-------|-----|
 | **Sequential single-stream parts** — one XHR at a time, no pipelining, collapses to per-connection throughput | Parts upload **in parallel** (`max_concurrent_parts`, default 3) via `uploadPartsParallel` |
-| **Presigned URL expired mid-upload** — init signs every part upfront with `presign_ttl_minutes`; a slow upload outlived the TTL and late parts 403'd with no recovery | TTL raised to **60 min**; a **403** PUT is re-signed via `sign-parts` and retried once per part |
+| **Presigned URL expired mid-upload** — init signs every part upfront with `presign_ttl_minutes`; a slow upload outlived the TTL and late parts 403'd with no recovery | TTL raised to **60 min**; a **403** PUT is re-signed via `sign-parts` and retried once per part. **Single-PUT sessions skip the re-sign** — `sign-parts` is multipart-only (`multipart_only`), so the SPA surfaces the original 403 instead of retrying. Each part PUT has a **90s XHR timeout** (fail-fast; the Worker's own UploadPart deadline is 60s, so it retries first) |
 | **Worker had no error-handling/timeout/retry on the streamed fetch** — a mid-transfer B2 reset / edge timeout tore the response into a Cloudflare **520** with no log | `signedFetchToS3` now retries transient 5xx/network errors on **bodyless** requests (GetObject/create/complete/abort) and returns a **graceful 502 + `upstream_error` log** instead of throwing; **UploadPart stream is not retried** (single-use body) — the client re-PUTs the part |
 | **Speed meter was a cumulative average** — one stall dragged the displayed rate down for the rest of the upload | Speed is now a **sliding-window (5s) instantaneous rate** (`createRateSampler`) |
 
@@ -793,7 +795,7 @@ Edit via `/apps/file-hosting/settings`; runtime reads `setting_config()`. See [s
 | Registry key | Default | Role |
 |--------------|---------|------|
 | `file-hosting.disabled_regions` | `[]` | Region keys blocked for new uploads only (downloads still served) |
-| `file-hosting.chunk_size_bytes` / `file-hosting.multipart_threshold_bytes` | 25 MiB each | Upload strategy |
+| `file-hosting.chunk_size_bytes` / `file-hosting.multipart_threshold_bytes` | 8 MiB each | Upload strategy |
 | `file-hosting.max_file_size_bytes` | 5 GiB | Per-file upload cap |
 | `file-hosting.max_files_per_batch` | 20 | Batch upload cap |
 | `file-hosting.default_quota_bytes` | 5 GiB | Free-tier base always stacked; also used when no `UserQuota` denorm row |
@@ -855,7 +857,7 @@ npm run test:js
 
 | Suite | What it covers |
 |-------|----------------|
-| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 25 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest` — HTML + SPA JSON contracts for index/trash/show/workspaces + mutation `data` forward), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302, public show JSON + paid gate 404). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
+| PHPUnit `--filter=FileHosting` | API feature tests (`FileHostingTest` — object-id `path`, resolved S3 key on complete/delete, display-name auto-rename), unit tests for `ObjectKeyResolver`, `S3DirectUploadEngine` proxy rewrite + 8 MiB defaults, `AllocateUniqueDisplayNameTest`, web controller tests (`FileManagerControllerTest` — HTML + SPA JSON contracts for index/trash/show/workspaces + mutation `data` forward), `PublicDownloadSignedRouteTest` (unsigned 403, signed 302, public show JSON + paid gate 404). Web controller tests mock API responses via `Http::fake()`. Collab: `WorkspaceCollaborativeWorksTest` (multi-own slots, join, activity). Realtime: `FileHostingRealtimeEventsTest`, `FileHostingRealtimeTest`, `FileHostingRealtimeEmitTest`, `FileHostingChannelAuthTest` (channel routing, gate off when unconfigured, service emit after mutations). |
 | Vitest `npm test` (SPA) | Client-side helpers and composables under `monolith-vue-workers/src/` (e.g. `utils/fhCollectionDescribe.ts`, `utils/fhMicrostockBadge.ts`, BFF helpers in `tests/`). The removed Monolith `resources/js/**/*.test.js` island tests are historical only — see [UI architecture / SPA shell](#ui-architecture--spa-shell). |
 | CORS / quota probes | `QuotaThrottleProbeTest` + `QuotaPreflightProbeTest` (`tests/Domain/FileHosting/.../API/V1/`) — regression guards confirming `file-hosting/quota` responses (throttled 429 and `OPTIONS` preflight) carry the correct CORS headers. Added after a transient browser "CORS error" report that traced to infra, not Laravel. |
 | Service / Worker | Paid / grace / purge: `composer test -- --filter=Service` and `--filter=EnforceFreeTierQuota`. Gateway uploader tests: `c:\laragon\www\gateway` (`npm test`). |

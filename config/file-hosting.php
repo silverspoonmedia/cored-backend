@@ -44,13 +44,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Browser part size (recommended 10 MB for CF Worker Free body limits).
+    | Browser part size. 8 MB is a precaution for ISP-shaped consumer links:
+    | a stalled 8 MB part recovers ~3× faster than a stalled 25 MB part.
     | multipart_threshold_bytes: size < threshold → single PUT; else multipart.
+    | Keep threshold == chunk_size so files 8-25 MB use multipart parallel parts.
     |--------------------------------------------------------------------------
     */
-    'chunk_size_bytes' => 25 * 1024 * 1024,
+    'chunk_size_bytes' => 8 * 1024 * 1024,
 
-    'multipart_threshold_bytes' => 25 * 1024 * 1024,
+    'multipart_threshold_bytes' => 8 * 1024 * 1024,
 
     'max_file_size_bytes' => 5 * 1024 * 1024 * 1024,
 
@@ -178,5 +180,14 @@ return [
     'download_vault' => [
         'enabled' => false,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Debug logging — log upstream S3 exception detail (headers, command params)
+    | when an upload fails. Never enable in production: headers may contain
+    | sensitive values.
+    |--------------------------------------------------------------------------
+    */
+    'debug_log_requests' => (bool) env('FILE_HOSTING_DEBUG_LOG_REQUESTS', false),
 
 ];
