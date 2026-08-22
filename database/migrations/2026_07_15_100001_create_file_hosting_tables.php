@@ -11,17 +11,22 @@ return new class extends Migration
         Schema::create('file_hosting_folders', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignUuid('parent_id')
-                ->nullable()
-                ->constrained('file_hosting_folders')
-                ->cascadeOnDelete();
+            $table->uuid('parent_id')->nullable();
             $table->string('name');
             $table->unsignedInteger('order')->nullable();
             $table->softDeletes();
             $table->timestamps();
 
             $table->index(['user_id', 'parent_id']);
+            $table->index('parent_id', 'file_hosting_folders_parent_id_index');
             $table->unique(['user_id', 'parent_id', 'order']);
+        });
+
+        Schema::table('file_hosting_folders', function (Blueprint $table): void {
+            $table->foreign('parent_id', 'file_hosting_folders_parent_id_foreign')
+                ->references('id')
+                ->on('file_hosting_folders')
+                ->cascadeOnDelete();
         });
 
         Schema::create('file_hosting_files', function (Blueprint $table): void {

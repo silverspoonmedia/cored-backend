@@ -18,10 +18,7 @@ return new class extends Migration
     {
         Schema::create('menus', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('parent_id')
-                ->nullable()
-                ->constrained('menus')
-                ->cascadeOnDelete();
+            $table->uuid('parent_id')->nullable();
             $table->string('name');
             $table->string('icon')->nullable();
             $table->string('route')->nullable();
@@ -39,7 +36,15 @@ return new class extends Migration
             $table->timestamps();
 
             // Enforce the ordering invariant at the database level for active rows.
+            $table->index('parent_id', 'menus_parent_id_index');
             $table->unique(['parent_id', 'type', 'order']);
+        });
+
+        Schema::table('menus', function (Blueprint $table): void {
+            $table->foreign('parent_id', 'menus_parent_id_foreign')
+                ->references('id')
+                ->on('menus')
+                ->cascadeOnDelete();
         });
 
         Schema::create('menu_roles', function (Blueprint $table) {

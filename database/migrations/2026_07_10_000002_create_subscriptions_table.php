@@ -16,10 +16,10 @@ return new class extends Migration
             $table->string('subscriber_phone')->nullable();
             $table->string('plan_name');
             $table->text('plan_description')->nullable();
-            $table->enum('billing_cycle', ['daily', 'weekly', 'monthly', 'quarterly', 'yearly']);
+            $table->string('billing_cycle', 16);
             $table->decimal('amount', 15, 2);
             $table->string('currency', 3)->default('IDR');
-            $table->enum('status', ['trial', 'active', 'expired', 'cancelled', 'suspended'])->default('trial');
+            $table->string('status', 16)->default('trial');
             $table->timestamp('trial_ends_at')->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('expires_at')->nullable();

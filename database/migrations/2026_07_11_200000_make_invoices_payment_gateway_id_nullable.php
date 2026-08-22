@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -26,6 +27,16 @@ return new class extends Migration
         Schema::table('invoices', function (Blueprint $table) {
             $table->dropForeign(['payment_gateway_id']);
         });
+
+        $hasNulls = DB::table('invoices')
+            ->whereNull('payment_gateway_id')
+            ->exists();
+
+        if ($hasNulls) {
+            throw new \RuntimeException(
+                'Cannot roll back payment_gateway_id nullability while invoices contain NULL values.'
+            );
+        }
 
         Schema::table('invoices', function (Blueprint $table) {
             $table->uuid('payment_gateway_id')->nullable(false)->change();

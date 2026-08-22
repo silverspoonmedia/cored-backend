@@ -21,9 +21,7 @@ return new class extends Migration
             $table->bigInteger('consolidation_adjustment_micro_usd')->nullable()->after('consolidated_at');
         });
 
-        Schema::table('microstock_ai_balances', function (Blueprint $table): void {
-            $table->bigInteger('balance_micro_usd')->default(0)->change();
-        });
+        $this->normalizeBalanceColumn();
     }
 
     public function down(): void
@@ -39,6 +37,25 @@ return new class extends Migration
         Schema::table('microstock_ai_usage_events', function (Blueprint $table): void {
             $table->dropColumn(['consolidated_at', 'consolidation_adjustment_micro_usd']);
         });
+
+        $this->normalizeBalanceColumn();
+    }
+
+    private function normalizeBalanceColumn(): void
+    {
+        $driver = Schema::getConnection()->getDriverName();
+
+        if (! Schema::hasColumn('microstock_ai_balances', 'balance_micro_usd')) {
+            return;
+        }
+
+        if ($driver === 'pgsql') {
+            Schema::table('microstock_ai_balances', function (Blueprint $table): void {
+                $table->bigInteger('balance_micro_usd')->default(0)->change();
+            });
+
+            return;
+        }
 
         Schema::table('microstock_ai_balances', function (Blueprint $table): void {
             $table->unsignedBigInteger('balance_micro_usd')->default(0)->change();

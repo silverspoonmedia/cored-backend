@@ -18,8 +18,6 @@ return new class extends Migration
 
         if (! $indexNames->contains('menus_parent_id_index')) {
             Schema::table('menus', function (Blueprint $table) {
-                // MySQL uses the composite unique index to satisfy the self-referential
-                // parent_id FK. Add a dedicated parent_id index before dropping it.
                 $table->index('parent_id', 'menus_parent_id_index');
             });
         }
