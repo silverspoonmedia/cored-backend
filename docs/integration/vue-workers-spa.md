@@ -9,25 +9,22 @@ The in-repo Blade admin has been **removed** from Monolith; `docs/web/blade-admi
 | Piece | Role |
 |-------|------|
 | Vue 3 + Vite + TypeScript | SPA runtime, SFC components, type safety |
-| Cloudflare Workers | Deployment target (`@cloudflare/vite-plugin`). Now a **narrow auth-only BFF**: it brokers only `/api/v1/auth/{login,register,refresh,logout,two-factor/login}` - strips `data.token` from those JSON bodies, forwards Laravel's `__Host-spa_jwt` `Set-Cookie`, and keeps a first-party CSRF gate on cookie mutations. Data traffic no longer touches the Worker. |
+| Cloudflare Workers | Deployment target (`@cloudflare/vite-plugin`). Static assets plus SPA fallback only; current Worker does not proxy API or auth requests. All browser API traffic goes direct to Laravel. |
 | Session auth | Cross-site HttpOnly `__Host-spa_jwt` on the **API origin** (minted by Laravel, `SameSite=None; Secure`). JS never reads it; the browser attaches it to direct API calls via `credentials: 'include'`. `GET auth/me` hydrates `user`. Cross-tab: `BroadcastChannel` only coordinates refresh/logout (no token in the messages). `remember` affects cookie `Max-Age` via API `expires_in`. |
-| `fetch` wrapper (`src/api/client.ts`) | Data calls go **direct to the Laravel API origin** (`VITE_API_BASE_URL`) with `credentials: 'include'`; auth session calls stay same-origin (Worker BFF). Cross-origin mutations send the double-submit `X-CSRF-Token` nonce (`src/api/csrf.ts`). 401 refresh + retry; 419 CSRF refresh + retry. `getBlob()` is the non-JSON path (CSV / file download). |
-| `vue-i18n` | Full locale system (`en`, `id`, `ja`) converted from Laravel PHP lang files |
+| `fetch` wrapper (`src/api/client.ts`) | All calls go **direct to the Laravel API origin** (`VITE_API_BASE_URL`) with `credentials: 'include'`; cross-origin mutations send the double-submit `X-CSRF-Token` nonce (`src/api/csrf.ts`). 401 refresh + retry; 419 CSRF refresh + retry. `getBlob()` is the non-JSON path (CSV / file download). |
+| `vue-i18n` | Full locale system (`en`, `id`, `ja`) converted from Laravel PHP lang files. `vue-i18n` and `@intlify/unplugin-vue-i18n` must stay on the **same major** (both v11): the unplugin precompiles locale JSON to a minified AST whose node-type enum is read by the `vue-i18n` runtime formatter. A major mismatch (e.g. unplugin v11 emitting linked-modifier node type 9 + runtime v9) makes `t()` throw `SyntaxError: unhandled minifier node type` for every message that uses that node, which previously blanked page titles and the error dialog. |
 
-Base URL: set `VITE_API_BASE_URL` to the Laravel API origin (e.g. `https://monolith-ph24.spnd.uk/api/v1`). Composable paths are relative (`auth/me`); `src/api/baseUrl.ts` sends **auth session paths** (`auth/login|register|refresh|logout|two-factor/login`) same-origin through the Worker BFF and **all data paths** direct to the API origin. Leave it empty only for local `wrangler dev` against a same-origin API.
+Base URL: set `VITE_API_BASE_URL` to the Laravel API origin (e.g. `https://api.example.com/api/v1`). Composable paths are relative (`auth/me`); `src/api/baseUrl.ts` sends every path direct to that origin. Leave it empty only for local same-origin development.
 
-## Direct API + narrow auth BFF
+## Direct API
 
-The browser now talks to the Laravel API in **two** ways:
+The browser sends every `/api/v1/*` request directly to the Laravel API origin (`VITE_API_BASE_URL`). The Cloudflare Worker serves static assets and SPA fallback only; it is not an auth or data proxy. This removes a proxy trust boundary and keeps API behavior visible in browser network diagnostics.
 
-- **Auth session endpoints** (`auth/login`, `auth/register`, `auth/refresh`, `auth/logout`, `auth/two-factor/login`) go **same-origin** through the Worker BFF. The Worker strips `data.token` from those JSON bodies (the raw JWT never reaches JS), forwards Laravel's `__Host-spa_jwt` `Set-Cookie`, and expires the session cookie on logout. It keeps a first-party CSRF gate (`X-Requested-With`) on cookie-bearing mutations.
-- **All data traffic** goes **direct from the browser to the API origin** (`VITE_API_BASE_URL`). No Worker, no hostname mask — backend masking is not a security control, and the API is already protected by JWT auth, RBAC, throttling, and the WAF.
-
-The direct data path authenticates with the **cross-site HttpOnly `__Host-spa_jwt` cookie** that Laravel mints on the API origin (`SameSite=None; Secure`, `__Host-` prefix). JS never reads it; the browser attaches it via `credentials: 'include'`. `App\Http\Middleware\AuthenticateWithSpaCookie` (API group) binds it to the `api` guard, so `auth:api` routes, Spatie RBAC, and policies work unchanged. Because a cross-site cookie can be CSRF'd, mutations additionally send a **double-submit nonce**: `GET /api/v1/csrf` mints a random token on a NON-HttpOnly `__Host-spa_csrf` cookie, the SPA echoes it in the `X-CSRF-Token` header, and `App\Http\Middleware\VerifySpaCsrf` (API group) accepts only when header and cookie match (`419` on mismatch). Bearer requests skip the CSRF check (not cookie-ridable).
+The direct path authenticates with the **cross-site HttpOnly `__Host-spa_jwt` cookie** that Laravel mints on the API origin (`SameSite=None; Secure`, `__Host-` prefix). JS never reads it; the browser attaches it via `credentials: 'include'`. Static assets receive `public/_headers` CSP with no `unsafe-eval`, `object-src 'none'`, frame denial, HSTS, and restricted feature policy; dynamic URLs from API payloads pass through `src/utils/safeUrl.ts` before navigation or rendering. `App\Http\Middleware\AuthenticateWithSpaCookie` (API group) binds it to the `api` guard, so `auth:api` routes, Spatie RBAC, and policies work unchanged. Because a cross-origin cookie can be CSRF'd, mutations additionally send a **double-submit nonce**: `GET /api/v1/csrf` mints a random token on a NON-HttpOnly `__Host-spa_csrf` cookie, the SPA echoes it in the `X-CSRF-Token` header, and `App\Http\Middleware\VerifySpaCsrf` (API group) accepts only when header and cookie match (`419` on mismatch). Bearer requests skip the CSRF check (not cookie-ridable).
 
 CORS: `config/cors.php` has `supports_credentials => true` with an explicit origin allowlist (`APP_URL` + `SPA_URL`) — a wildcard origin cannot be combined with credentials. `RequireSpaOrigin` is now **audit-only** everywhere: direct hits are logged to `spa_audit` but never 403'd, because direct is the sanctioned data path. `X-SPA-Origin` remains an observability stamp, not auth. OPTIONS preflights always pass.
 
-`MONOLITH_API_ORIGIN` (Wrangler `vars` / `.dev.vars`) is still where the Worker forwards auth calls and **must equal the `APP_URL` origin** — signed email-verify HMAC is bound to the API host.
+`MONOLITH_API_ORIGIN` is legacy local configuration and is not read by the current Worker. `VITE_API_BASE_URL` is validated at runtime before URL construction: production builds accept only credential-free `https:` API bases without query strings or fragments; development builds also accept `http:` for localhost workflows. Invalid or unsafe values fall back to same-origin `/api/v1`. Signed email-verify HMAC remains bound to the Laravel `APP_URL` origin.
 
 > **Verify before production cutover.** The direct data path depends on browsers accepting the cross-site `SameSite=None; Secure` cookie. Confirm on the deployed HTTPS origin that `__Host-spa_jwt` is set after login and attached to a direct data call in Chrome/Edge/Firefox/Safari. If a target browser blocks third-party cookies (ITP/ETP strict), switch the SPA to the Bearer fallback (token in JS memory, `Authorization: Bearer` direct) — that path needs no cross-site cookie and `VerifySpaCsrf` skips Bearer requests.
 
@@ -38,15 +35,13 @@ Still naked (browser talks to these hosts directly):
 - File Hosting presigned / gateway byte URLs
 - hCaptcha JS
 
-Local gotcha: Vite env files stack — `.env.local` **overrides** `.env` (gitignored via `*.local`). For local `npm run dev` against a same-origin API, leave `VITE_API_BASE_URL` empty; for the deployed direct path, set it to the API origin. Put `MONOLITH_API_ORIGIN` in `.dev.vars` (copy `.dev.vars.example`). After changing env files, restart Vite and hard-refresh the browser (env is baked at compile).
+Local gotcha: Vite env files stack — `.env.local` **overrides** `.env` (gitignored via `*.local`). For local `npm run dev` against a same-origin API, leave `VITE_API_BASE_URL` empty; for deployed direct traffic, set it to the Laravel API origin plus `/api/v1`. `MONOLITH_API_ORIGIN` is legacy and is not needed by the current Worker. After changing env files, restart Vite and hard-refresh the browser (env is baked at compile).
 
 ## Worker invocation vs static assets
 
-HTML, JS, CSS, and SPA fallback do **not** invoke the isolate. Wrangler `assets.run_worker_first` is now **only the five auth session paths** (`/api/v1/auth/login`, `.../register`, `.../refresh`, `.../logout`, `.../two-factor/login`) — see `monolith-vue-workers/wrangler.jsonc`. Cloudflare's free-tier **100,000 requests/day** is function invocations, not static views.
+HTML, JS, CSS, and SPA fallback are served as static assets. The current Worker handler only returns hardened 404 responses for stray `/api/*` requests; it does not proxy auth or data. Cloudflare's free-tier invocation budget therefore is not consumed by SPA API traffic.
 
-**Data traffic costs zero invocations** because it goes straight from the browser to the Laravel API origin. Only login/register/refresh/logout/2FA-login touch the Worker — roughly 1–2 invocations per session instead of one per user action. That is the >95% reduction this architecture exists for. `npm run dev` runs the same `server/index.ts` locally and is **not** billed. Pusher, S3/gateway byte URLs, Discord OAuth, and hCaptcha are not Worker requests.
-
-Keep the Worker small (`fetch` only, auth session brokering). Stamp `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy` on Worker JSON responses (`server/bff.ts`). Static HTML/JS get CSP / frame-deny from `public/_headers` (Cloudflare Assets). Do not add cron, queues, Durable Objects, extra `run_worker_first` paths, or domain logic in the Worker without an explicit reason in this guide. Business work stays on Monolith; the SPA fetches and parses.
+The Worker stays small (`fetch` guard only). It stamps `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`, `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy` on its own JSON/404 responses (`server/index.ts`). Static HTML/JS get CSP / frame-deny / HSTS from `public/_headers` (Cloudflare Assets). External API-provided URLs rendered by the SPA pass through `src/utils/safeUrl.ts`; production HTTP navigation/download/payment URLs require HTTPS, unsafe schemes, credential-bearing URLs, arbitrary image data, executable SVG markup, and untrusted OAuth destinations are rejected. Presigned upload PUT URLs are validated separately before `XMLHttpRequest` opens. Do not add cron, queues, Durable Objects, API proxy paths, or domain logic in the Worker without an explicit reason in this guide. Business work stays on Monolith; the SPA fetches and parses.
 
 ## Invocation budget controls
 
@@ -65,11 +60,11 @@ Data traffic no longer costs Worker invocations at all (direct to the API). The 
 
 ## Local dogfood checklist
 
-Daily driver is `npm run dev` at `http://localhost:5173`. Set Monolith `SPA_URL="http://localhost:5173"`. For local same-origin dev leave `VITE_API_BASE_URL` empty; for the deployed direct path set it to the API origin.
+Daily driver is `npm run dev` at `http://localhost:5173`. Set Monolith `SPA_URL="http://localhost:5173"`. For local same-origin dev leave `VITE_API_BASE_URL` empty; for deployed direct API traffic set it to the Laravel API origin plus `/api/v1`.
 
 Pass/fail:
 
-- Network: data calls go direct to the API origin; auth session calls hit `/api/v1/auth/*` on `localhost:5173`. Login JSON has **no** `token`. Data requests carry the `__Host-spa_jwt` cookie + `X-CSRF-Token`, not `Authorization`.
+- Network: every API call goes direct to the configured API origin. Login JSON has **no** `token`. Cookie-authenticated mutations carry the `__Host-spa_jwt` cookie + `X-CSRF-Token`, not `Authorization`.
 - Application: `__Host-spa_jwt` HttpOnly on the API origin; no `mw_auth` in localStorage.
 - Hard refresh still logged in; logout clears the cookie; two tabs, one logout, the other dies on the next API call / `BroadcastChannel` logout.
 - Login / remember / 2FA / refresh near TTL.
@@ -83,7 +78,7 @@ Pass/fail:
 | Surface | Empty `SPA_URL` | Set `SPA_URL` |
 |---------|-----------------|---------------|
 | Password reset email | `{APP_URL}/reset-password?token=&email=` — same SPA query shape, Monolith origin (there is no server reset screen any more) | `{SPA_URL}/reset-password?token=&email=` |
-| Email verify email | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — SPA then GETs the signed API path through the Worker. HMAC stays on `APP_URL`. |
+| Email verify email | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — SPA then GETs the signed API path directly from the API origin. HMAC stays on `APP_URL`. |
 | File Hosting `share_url` | Server public-share endpoints `{APP_URL}/s/f/{id}` / `/s/d/{id}` ([`routes/web/file-hosting-public.php`](../../routes/web/file-hosting-public.php)) | Same paths on `SPA_URL` |
 | iPaymu hosted return/cancel defaults | Server endpoints `{APP_URL}/payment/ipaymu/return\|cancel` | `{SPA_URL}/payment/return` and `/payment/cancel` |
 
@@ -98,20 +93,19 @@ API `action_route` + `action_params` carry symbolic route names inherited from t
 Ops after merge (not code):
 
 1. Monolith `SPA_URL` = public Vue-Workers origin (no trailing slash). Empty falls back to `APP_URL` + server endpoints.
-2. Worker `MONOLITH_API_ORIGIN` **equals** Monolith `APP_URL` origin (signed email-verify HMAC).
-3. `VITE_API_BASE_URL` set to the Laravel API origin in the SPA build. `npm run deploy` from `monolith-vue-workers`.
+2. `VITE_API_BASE_URL` set to the Laravel API origin plus `/api/v1` in the SPA build. This value must live in the **tracked** `monolith-vue-workers/.env.production` (Vite auto-loads it for `vite build`; `.env.local` does not override it). `wrangler.jsonc` `vars` are runtime isolate env and never reach the browser bundle — putting `VITE_*` there silently produces a same-origin-fallback build that 404s every API call. `npm run deploy` from `monolith-vue-workers`.
 4. hCaptcha: Settings on **and** `VITE_HCAPTCHA_SITE_KEY` set, or both off.
 5. File Hosting bucket / Gateway CORS includes the SPA origin and **exposes `ETag`**.
 6. Pusher or Sockudo: Laravel `PUSHER_*` + matching `VITE_PUSHER_*` in the SPA build.
 7. Cloudflare custom domain on the Worker. Do not invent a second Wrangler env unless a second API origin exists.
 
-`X-SPA-Origin` is an audit stamp, not auth. JWT is auth. Do not widen `run_worker_first` past the five auth session paths.
+`X-SPA-Origin` is an audit stamp, not auth. JWT is auth. Keep API traffic direct; do not turn the static Worker into an API proxy.
 
 Fonts and Bootstrap Icons are self-hosted (`@fontsource/source-sans-3`, `bootstrap-icons`). `public/robots.txt` disallows `/apps` and auth paths; `/s/*` is `noindex`. Vue DevTools is Vite `serve` only.
 
 ## CI
 
-`monolith-vue-workers/.github/workflows/ci.yml`: `npm ci` → `type-check` → `check:i18n` → `vitest` (`tests/bff.test.ts`, `tests/notificationTarget.test.ts`) → `build-only`. No Playwright / ESLint-everywhere in this gate.
+`monolith-vue-workers/.github/workflows/ci.yml`: `npm ci` → `type-check` → `check:i18n` → `vitest` (`tests/baseUrl.test.ts`, `tests/csrf.test.ts`, `tests/notificationTarget.test.ts`, `tests/safeRedirect.test.ts`, `tests/safeUrl.test.ts`, `tests/vkStr1Theme.test.ts`) → `build-only`. No Playwright / ESLint-everywhere in this gate.
 
 ## API contract reference
 
@@ -263,7 +257,7 @@ All user-facing notifications and confirmations go through Sweetalert2 via the s
 - **Redirect safety** — `useAlert().error(...)` returns a Promise. In flows that navigate away (`window.location.href = ...`, e.g. Discord/OAuth connect, file download), always `await showError(...)` inside the `catch` so the error dialog renders and is read before any unload instead of dying with the page.
 - **Uncaught errors** — `app.config.errorHandler`, `unhandledrejection`, and `router.onError` in `main.ts` call `showErrorDialog(i18n.global.t('ui.ajax.unexpected_error'))`. No Sentry unless a DSN is added later (Cloudflare `observability.enabled` is already on in wrangler).
 
-`useI18n()` is restricted to Vue component `setup()` (including composables called synchronously from setup). Router guards, Pinia-style stores, shell hydration, realtime callbacks, module-level services, and other ordinary functions may run without an active component instance. Those paths must import the shared `src/i18n` instance and call `i18n.global.t(...)`; they must not call `useI18n()`. This prevents `Must be called at the top of a setup function` from aborting initial router navigation. `main.ts` registers `router.onError()` for diagnostic reporting without hiding navigation failures, then mounts only after `router.isReady()` resolves. The auth guard performs shell hydration before protected route components mount.
+`useI18n()` is restricted to Vue component `setup()` (including composables called synchronously from setup). Router guards, Pinia-style stores, shell hydration, realtime callbacks, module-level services, and other ordinary functions may run without an active component instance. Those paths must import the shared `src/i18n` instance and call `i18n.global.t(...)`; they must not call `useI18n()`. This prevents `Must be called at the top of a setup function` from aborting initial router navigation. `main.ts` registers `router.onError()` for diagnostic reporting and mounts the app immediately, so a failed initial navigation cannot leave a blank document. The auth guard still performs shell hydration before protected route components mount.
 
 ```ts
 const message = i18n.global.t('web.notifications.load_failed')
@@ -429,7 +423,7 @@ Registered **before** `LEGACY_APP_ROOTS` (`vtual` is in that set — unmatched `
 | `/vtual` | `vtual.public` | Landing: Swiper hero slider (`VkStr1HeroSlider`, 3 static promo slides: hub intro `hero.one.*`, claim profile `hero.two.*`, events `hero.three.*` — no live data) + post-hero band (`pt-12 md:pt-16`: platform stats `VkStr1PlatformStats`) + unified live directory (`#vtubers`, `VkStr1VtuberLiveDirectory` — self-fetching directory grid with search/pagination/skeleton/hover-prefetch plus a `liveItems` prop fed from `landing.live_now`; live cards show a danger-ringed avatar, LIVE badge, up to 3 stream rows + `+N more`) + content feed (`#contents`) + upcoming schedule events (`landing.schedule`, i18n fallback) + claim banner (`VkStr1ChannelBanner`). One `fetchLanding` call feeds the live directory/stats/events. `VkStr1LiveNow` / `VkStr1VtuberDirectory` are kept unchanged as references. Content cards (`VkStr1VideoCard`) carry a channel-avatar left column, a `:title` tooltip on the truncated title, an aspect-ratio thumbnail container with `absolute inset-0 object-cover`, and a permanent underlay placeholder on thumbnail error/null. |
 | `/vtual/vtubers/:slug` | `vtual.public.vtuber` | Two-column guest profile via `useVtualPublic().fetchProfile(slug, page)` (banner overlay + gradient fallback, `VkStr1ProfileSidebar` with `VkStr1DetailsList` + `VkStr1ChannelCard`, featured live, **paginated** video grid with Prev/Next pager — `contents: { items, pagination }`, featured live only on page 1, styled empty-state). 404 renders **inside** the Valkivid3 layout, not `AppLayout`. |
 
-`meta.public` + `meta.template: 'valkivid3'`. Isolation: `body.vk3-page`; `html.dark` via `str1-color-theme` (class `dark:` variant, not `prefers-color-scheme`), restored pre-paint by an inline `index.html` head script so dark-mode guests never see a light FOUC; Tailwind utilities nested under `.vk3-root` (`@tailwind utilities` inside that selector — not `important(.vk3-root)`, which Tailwind 4.3 leaves as invalid `@media important(...)`); no preflight. **Scoping caveat:** nesting `@tailwind utilities` under `.vk3-root` makes every utility a descendant selector (`.vk3-root .bg-white`). Utilities placed ON the `.vk3-root` element itself never match — page background, root text color, and min-height must live in `@layer base` on `.vk3-root` / `.dark .vk3-root`, not as utility classes on the layout div. Leaving `/vtual` still `classList.remove('dark')`. AdminLTE keeps `data-bs-theme` / `lte-theme`. Theme toggle (sun/moon sprite icons, `fill-accent stroke-accent`) lives in `VkStr1Header` + `VkStr1MobileMenu`; track has explicit `bg-gray-150 border-gray-500/60 dark:bg-white/10 dark:border-white/50` so the pill stays visible on the always-dark header.
+`meta.public` + `meta.template: 'valkivid3'`. Isolation: `body.vk3-page`; `html.dark` via `str1-color-theme` (class `dark:` variant, not `prefers-color-scheme`), restored before app mount by `initTheme()` so dark-mode guests avoid a light FOUC; Tailwind utilities nested under `.vk3-root` (`@tailwind utilities` inside that selector — not `important(.vk3-root)`, which Tailwind 4.3 leaves as invalid `@media important(...)`); no preflight. **Scoping caveat:** nesting `@tailwind utilities` under `.vk3-root` makes every utility a descendant selector (`.vk3-root .bg-white`). Utilities placed ON the `.vk3-root` element itself never match — page background, root text color, and min-height must live in `@layer base` on `.vk3-root` / `.dark .vk3-root`, not as utility classes on the layout div. Leaving `/vtual` still `classList.remove('dark')`. AdminLTE keeps `data-bs-theme` / `lte-theme`. Theme toggle (sun/moon sprite icons, `fill-accent stroke-accent`) lives in `VkStr1Header` + `VkStr1MobileMenu`; track has explicit `bg-gray-150 border-gray-500/60 dark:bg-white/10 dark:border-white/50` so the pill stays visible on the always-dark header.
 
 **Forked steel-slate palette (light/dark).** The str1 skin uses a steel-slate silver identity (not the original Valkivid violet/cyan). One accent value cannot serve both backgrounds, so every brand var forks per mode in `@layer base`: `--color-primary` / `--color-accent` are `#475569` (slate-600) light / `#94a3b8` (slate-400) dark; `--color-primary-500` (hover) is `#334155` (slate-700) light / `#cbd5e1` (slate-300) dark; root body text forks `#7a809b` (gray-500) light / `#a3a9c1` (gray) dark. A dedicated `--color-accent-500` (slate-700 light / slate-200 dark) backs accent hover because dark `--color-primary-500` == dark `--color-accent` (both slate-300), so `hover:bg-primary-500` on an accent button would be a no-op in dark mode. Do NOT collapse these to a single value — light mode reusing the dark accent/body gray was the 2.3:1 washout bug.
 
@@ -489,7 +483,7 @@ The SPA fetches and parses **as-is**, always with `display_mode=query`. Do not p
 
 These are the safe zone. Keep the current approaches.
 
-**A - Platform.** Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted; JS does not store the JWT). The Blade-era `auth_token` cookie bridge on `APP_URL` is gone — there is one browser session cookie now. Direct Monolith `/api/v1` data traffic uses the cross-site cookie (or Bearer); `POST /api/v1/broadcasting/auth` goes direct, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers origin, narrow auth-only Worker BFF, breadcrumb config map, guest cannot read `system_settings`, budget controls (`/api/v1/batch`, JWT TTL 240).
+**A - Platform.** Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted; JS does not store the JWT). The Blade-era `auth_token` cookie bridge on `APP_URL` is gone — there is one browser session cookie now. Direct Monolith `/api/v1` traffic uses the cross-site cookie (or Bearer); `POST /api/v1/broadcasting/auth` goes direct, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers static origin, breadcrumb config map, guest cannot read `system_settings`, budget controls (`/api/v1/batch`, JWT TTL 240).
 
 **B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout=sidebar`. File Hosting three Vue routes instead of the removed single-island shell; team as a page rather than an offcanvas; listing-only move picker; rate editor re-fetch instead of full reload.
 
@@ -526,8 +520,8 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 
 | Var | Purpose |
 |-----|---------|
-| `MONOLITH_API_ORIGIN` | Worker-only. Monolith origin (no `/api/v1` suffix, no trailing slash). Wrangler `vars` + `.dev.vars`. **Not** bundled into the browser. Empty → Worker 503. Must equal `APP_URL` origin or signed email-verify HMAC fails. |
-| `VITE_API_BASE_URL` | Set to the **Laravel API origin** so data calls go direct; auth session paths stay same-origin (Worker BFF). `.env.local` wins. Empty only for local same-origin `wrangler dev`. |
+| `MONOLITH_API_ORIGIN` | Legacy local compatibility variable. Current Worker does not read it. **Not** bundled into the browser. |
+| `VITE_API_BASE_URL` | Set to the **Laravel API origin plus `/api/v1`**; every SPA API call goes direct. Local: `.env.local` wins over `.env`. Production builds: the tracked `.env.production` is authoritative (`.env.local` is ignored) so any machine running `npm run deploy` bakes the same origin. Empty only for local same-origin development. |
 | `VITE_PUSHER_APP_KEY` | Pusher app key (required for Echo — must match Monolith `PUSHER_APP_KEY`) |
 | `VITE_PUSHER_APP_CLUSTER` | Pusher cluster (default `mt1`) |
 | `VITE_PUSHER_HOST` | Self-hosted/Reverb host (omit for Pusher-hosted) |
@@ -537,7 +531,7 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 
 Discord OAuth return is **not** a Vite var. Set `SPA_URL` on the Monolith API host to this SPA's public origin (Vite/Workers URL). Empty `SPA_URL` → `GET auth/discord/authorize-url` 503.
 
-Values must mirror Monolith's `.env` `PUSHER_*` literals (and `HCAPTCHA_SITEKEY` when hCaptcha is on). `.env.local` overrides `.env` for every `VITE_*` key (that is why an old absolute `VITE_API_BASE_URL` survived Vite restarts). Worker origin is `.dev.vars` `MONOLITH_API_ORIGIN`, not a `VITE_` var.
+Values must mirror Monolith's `.env` `PUSHER_*` literals (and `HCAPTCHA_SITEKEY` when hCaptcha is on). `.env.local` overrides `.env` for every `VITE_*` key in local dev (that is why an old absolute `VITE_API_BASE_URL` survived Vite restarts); production builds read the tracked `.env.production` (`.env.local` does not override it) so `npm run deploy` bakes the correct origin on any machine. Worker origin serves static assets only; API origin is the bundled `VITE_API_BASE_URL`.
 
 When `VITE_PUSHER_APP_KEY` is unset, Echo is not initialized and realtime-dependent features simply receive no live updates (manual reload required).
 

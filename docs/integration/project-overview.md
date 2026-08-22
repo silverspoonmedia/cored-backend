@@ -48,7 +48,7 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | Aspect | Detail |
 |--------|--------|
 | Framework | Vue 3 + Vite 8 + TypeScript |
-| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Static SPA assets do not invoke the isolate; `run_worker_first` is only the five auth session paths (`/api/v1/auth/login|register|refresh|logout|two-factor/login`). That narrow BFF strips `data.token` and forwards Laravel's `__Host-spa_jwt` cookie. **Data traffic goes direct from the browser to the API origin** (cross-site cookie + CSRF nonce) and costs zero invocations. Do not add more Worker logic unless deemed necessary — see [vue-workers-spa.md — Worker invocation vs static assets](vue-workers-spa.md#worker-invocation-vs-static-assets). |
+| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Static SPA assets do not invoke the isolate; current Worker code does not proxy API or auth. **All traffic goes direct from the browser to the API origin** (cross-site cookie + CSRF nonce) and costs zero Worker invocations. Do not add API proxy logic — see [vue-workers-spa.md — Worker invocation vs static assets](vue-workers-spa.md#worker-invocation-vs-static-assets). |
 | API | Same `/api/v1/*` endpoints — no business logic in SPA |
 | Auth | Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted). JS does not store the JWT; direct data calls use `credentials: 'include'` + double-submit `X-CSRF-Token`. `RequireSpaOrigin` is audit-only (direct hits logged, never 403). |
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware |
@@ -60,7 +60,7 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 
 ### Auth model
 
-The SPA uses HttpOnly `__Host-spa_jwt`, minted by Laravel on the API origin (`SameSite=None; Secure`). The Worker BFF brokers only the auth session endpoints (strips `data.token`, forwards the cookie). Direct data requests authenticate via the cookie and pass a double-submit CSRF nonce. XSS cannot read the JWT; it can still session-ride.
+The SPA uses HttpOnly `__Host-spa_jwt`, minted by Laravel on the API origin (`SameSite=None; Secure`). All API requests go direct from the browser to Laravel. Direct requests authenticate via the cookie and pass a double-submit CSRF nonce on mutations. XSS cannot read the JWT; it can still session-ride.
 
 Multi-tab: the cookie is shared. `BroadcastChannel('monolith-auth')` only coordinates refresh so one tab calls `auth/refresh` (blacklist race) and broadcasts `logout` — messages do **not** carry the JWT. Hydrate is `GET auth/me`.
 
