@@ -95,7 +95,7 @@ When enabled: login, register, forgot-password, reset-password, and two-factor l
 | Notification | Empty `SPA_URL` | Set `SPA_URL` |
 |--------------|-----------------|---------------|
 | Password reset | Signed API fallback | `{SPA_URL}/reset-password?token=&email=` |
-| Email verify | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — HMAC still generated against the API route on `APP_URL`. The SPA page GETs that signed path through the Worker. Worker `MONOLITH_API_ORIGIN` must equal the `APP_URL` origin. |
+| Email verify | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — HMAC still generated against the API route on `APP_URL`. The SPA page GETs that signed path direct from the API origin (`VITE_API_BASE_URL`). |
 
 CORS `allowed_origins` is `APP_URL` + `SPA_URL` (`config/cors.php`). Same-origin Worker traffic does not use CORS. Details: [vue-workers-spa — Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url).
 

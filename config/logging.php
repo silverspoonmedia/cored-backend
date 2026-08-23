@@ -81,8 +81,8 @@ return [
             'replace_placeholders' => true,
         ],
 
-        // Direct API hits that bypass the Vue-Workers BFF — kept separate so
-        // the main log is not flooded with per-request audit lines.
+        // API hits that arrive without the X-SPA-Origin stamp — kept separate
+        // so the main log is not flooded with per-request audit lines.
         'spa_audit' => [
             'driver' => 'daily',
             'path' => storage_path('logs/spa-audit.log'),

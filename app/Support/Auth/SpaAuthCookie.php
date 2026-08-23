@@ -14,9 +14,9 @@ use Symfony\Component\HttpFoundation\Cookie;
  * prefix so only this host could have set it (no Domain attribute, Path=/).
  *
  * JavaScript never reads it: `httpOnly` stays true. The SPA authenticates data
- * requests purely by the browser attaching this cookie, keeping the BFF's
- * "token never touches JS" guarantee while removing the Worker from the hot
- * data path.
+ * requests purely by the browser attaching this cookie, keeping the
+ * token-never-touches-JS guarantee while removing the Worker from the hot data
+ * path.
  */
 class SpaAuthCookie
 {

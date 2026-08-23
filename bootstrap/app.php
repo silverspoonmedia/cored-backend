@@ -52,10 +52,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         api: __DIR__.'/../routes/api.php',
         then: function (): void {
-            // Global API throttle: the Vue-Workers BFF concentrates every
-            // browser tab onto one origin, so per-user/IP limits keep a single
-            // abusive session from starving the rest. Stricter per-route
-            // throttles (login, 2FA, batch) still win where defined.
+            // Global API throttle: browser tabs hit the API directly, so
+            // per-user/IP limits keep a single abusive session from starving
+            // the rest. Stricter per-route throttles (login, 2FA, batch)
+            // still win where defined.
             RateLimiter::for('api', fn (Request $request) => [
                 Limit::perMinute(60)->by($request->user()?->getAuthIdentifier() ?: $request->ip()),
             ]);

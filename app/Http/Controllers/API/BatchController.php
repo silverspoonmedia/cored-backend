@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
- * Dispatches several read-only API calls in one HTTP request so the SPA BFF
- * (Cloudflare Worker) spends one invocation per hydrate instead of one per
- * widget. GET/HEAD only — mutations must stay one-request-per-action so
- * throttles, audit logs, and idempotency semantics keep working.
+ * Dispatches several read-only API calls in one HTTP request so the SPA
+ * spends one round-trip (and one auth + throttle charge) per hydrate instead
+ * of one per widget. GET/HEAD only — mutations must stay one-request-per-action
+ * so throttles, audit logs, and idempotency semantics keep working.
  *
  * Every sub-request is re-dispatched through the HTTP kernel, so each target
  * route keeps its own auth and permission middleware.
