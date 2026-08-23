@@ -6,7 +6,7 @@ Canonical rules for where values live and how runtime settings are read. Agent p
 
 | Tier | Storage | Examples | Runtime read |
 |------|---------|----------|--------------|
-| **A — env only** | `.env` + `config/*.php` `env()` bindings | `APP_KEY`, `JWT_SECRET`, `DB_*`, `REDIS_*`, `OCI_*`, mail/broadcast secrets, S3/upload-proxy credentials, payment gateway keys, AI provider API keys, `CF_ACCESS_*` (Cloudflare Zero Trust Access in-app JWT verify) | `config()` at bootstrap only |
+| **A — env only** | `.env` + `config/*.php` `env()` bindings | `APP_KEY`, `JWT_SECRET`, `DB_*`, `REDIS_*`, `OCI_*`, mail/broadcast secrets, S3/upload-proxy credentials, payment gateway keys, AI provider API keys | `config()` at bootstrap only |
 | **B — DB plaintext** | `system_settings` via Settings UI | JWT TTLs, upload limits, notification delivery, claim TTLs, timezone knobs | `setting()` / `setting_config()` → **cached snapshot** |
 | **C — DB envelope** | Dedicated credential tables | YouTube/Twitch keys (`vtual_platform_credentials`), marketplace FTP (`microstock_marketplace_credentials`) | Model cast → `EnvelopeEncryptionService` |
 

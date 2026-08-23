@@ -67,25 +67,4 @@ return [
         'url' => env('SPA_URL', ''),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Cloudflare Zero Trust Access (optional, OFF by default)
-    |--------------------------------------------------------------------------
-    | Zero Trust enforces access at the Cloudflare edge, before traffic reaches
-    | this host — so no code change is required to be protected. This config
-    | only powers the optional App\Http\Middleware\VerifyCfAccessJwt, which can
-    | additionally verify the `Cf-Access-Jwt-Assertion` header in-app.
-    |
-    |   CF_ACCESS_ENABLED     bool   default false (middleware passes through)
-    |   CF_ACCESS_TEAM_DOMAIN e.g. https://<team>.cloudflareaccess.com
-    |   CF_ACCESS_AUD         the application's AUD tag from the Access dashboard
-    |
-    | Tier A (infra binding) — keep in .env, not system_settings.
-    */
-    'cloudflare_access' => [
-        'enabled' => env('CF_ACCESS_ENABLED', false),
-        'team_domain' => rtrim((string) env('CF_ACCESS_TEAM_DOMAIN', ''), '/'),
-        'aud' => env('CF_ACCESS_AUD', ''),
-    ],
-
 ];
