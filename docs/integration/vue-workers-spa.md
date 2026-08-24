@@ -723,7 +723,7 @@ Checkout UI in the SPA (`CheckoutPanel.vue`, `PaymentStatusHero.vue`, etc.) impl
 
 - **PaymentStatusHero** (`src/components/PaymentStatusHero.vue`) — hero banner with eyebrow, title, amount, and status badges. Uses `ois-hero` CSS classes.
 - **PaymentSteps** (`src/components/PaymentSteps.vue`) — 3-step progress indicator (Choose method → Pay → Confirmation). Uses `ois-steps` CSS classes.
-- **CheckoutPanel** (`src/components/CheckoutPanel.vue`) — invoice checkout with payment channel selection. Sync-status uses the gateway from the checkout payload or the invoice resource; unknown provider → skip.
+- **CheckoutPanel** (`src/components/CheckoutPanel.vue`) — invoice checkout with payment channel selection. Sync-status uses the gateway from the checkout payload or the invoice resource; unknown provider → skip. On mount the panel restores an in-flight checkout from `invoice.checkout_session` (typed `CheckoutResult` in `src/api/types.ts`) into its local `checkoutResult` — instructions and the Confirm-paid button render only from that state — so a hard reload keeps the chosen method's VA/QRIS/ewallet instructions on screen; without a session it falls back to the plain channel picker.
 
 CSS for these components is in `src/assets/order-invoice-show.css`, ported from Monolith's `resources/css/payments/order-invoice-show.css`. Uses Bootstrap 5 CSS variables for dark mode compatibility.
 

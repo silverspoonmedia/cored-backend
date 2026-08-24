@@ -222,6 +222,8 @@ Primary buyer surface: `/apps/service-purchases/{uuid}` (`service-purchases.show
 
 Fee breakdown shows **0** until the buyer selects a payment method (restored from the active `checkout_session` when instructions exist). The SPA calls the API directly: channel checkout, sync-status, and snap-token are all `/api/v1/*` — there are no web proxies. Message placeholders keep the Laravel `:name` convention on the API side (e.g. `Pay before :time`).
 
+`CheckoutPanel.vue` renders payment instructions (VA number, QRIS, ewallet deeplink) **only** from its local `checkoutResult` state, which is filled two ways: a successful `channelCheckout()` response, or — on mount — by restoring `invoice.checkout_session` (when `instructions.type` is present) into `checkoutResult` and syncing `selectedChannel` from the session's `channel_code`. Without that restore a hard reload after channel-checkout would drop back to the bare channel picker as if no method was ever chosen, and the Confirm-paid button (`v-if="checkoutResult"`) would vanish with it.
+
 Realtime + poll behavior lives in `src/composables/usePaymentRealtime.ts` and `src/composables/useInvoices.ts`; the backend contract is unchanged and documented below.
 
 ### Realtime invoice status (no hard reload)
