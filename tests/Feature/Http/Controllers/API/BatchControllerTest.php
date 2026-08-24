@@ -28,19 +28,31 @@ class BatchControllerTest extends TestCase
         ]);
     }
 
+    public function test_batch_requires_spa_request_marker(): void
+    {
+        $this->withoutHeader('X-SPA-Origin')
+            ->postJson('/api/v1/batch', [
+                'requests' => [['method' => 'GET', 'path' => '/api/v1/auth/me']],
+            ])->assertForbidden()
+            ->assertJsonPath('message', __('api/common.spa_origin_required'));
+    }
+
     public function test_batch_requires_authentication(): void
     {
-        $this->postJson('/api/v1/batch', [
-            'requests' => [['method' => 'GET', 'path' => '/api/v1/auth/me']],
-        ])->assertStatus(401);
+        $this->withHeader('X-SPA-Origin', '1')
+            ->postJson('/api/v1/batch', [
+                'requests' => [['method' => 'GET', 'path' => '/api/v1/auth/me']],
+            ])->assertStatus(401);
     }
 
     public function test_batch_rejects_empty_payload(): void
     {
         $token = $this->tokenFor($this->makeUser());
 
-        $this->withHeader('Authorization', "Bearer {$token}")
-            ->postJson('/api/v1/batch', ['requests' => []])
+        $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+            'X-SPA-Origin' => '1',
+        ])->postJson('/api/v1/batch', ['requests' => []])
             ->assertStatus(422);
     }
 
@@ -50,8 +62,10 @@ class BatchControllerTest extends TestCase
 
         $requests = array_fill(0, 11, ['method' => 'GET', 'path' => '/api/v1/auth/me']);
 
-        $this->withHeader('Authorization', "Bearer {$token}")
-            ->postJson('/api/v1/batch', ['requests' => $requests])
+        $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+            'X-SPA-Origin' => '1',
+        ])->postJson('/api/v1/batch', ['requests' => $requests])
             ->assertStatus(422);
     }
 

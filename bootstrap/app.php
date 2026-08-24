@@ -3,17 +3,21 @@
 use App\Domain\ErrorLog\Support\ErrorLogRecorder;
 use App\Domain\Identity\Models\User;
 use App\Exceptions\BusinessRuleException;
+use App\Http\Kernel;
 use App\Http\Middleware\AuthenticateWithSpaCookie;
 use App\Http\Middleware\OptionalJwtAuthenticate;
 use App\Http\Middleware\RequireSpaOrigin;
+use App\Http\Middleware\RequireSpaRequestHeader;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\VerifySpaCsrf;
 use App\Support\ApiResponder;
+use App\Support\Auth\SpaCsrf;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -106,7 +110,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
             // Decrypt the SPA's cross-site cookies (auth + CSRF nonce) before the
             // auth/CSRF middleware read them. The api group has no EncryptCookies
             // by default; Laravel encrypts __Host-spa_jwt the same way as other cookies.
-            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            EncryptCookies::class,
+            RequireSpaRequestHeader::class,
         ]);
 
         // The SPA's double-submit CSRF nonce must stay readable by JS, so it is
@@ -114,7 +119,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // value; plaintext is safe by design. The auth cookie (__Host-spa_jwt) stays
         // encrypted — only the API ever reads it.
         $middleware->encryptCookies(except: [
-            \App\Support\Auth\SpaCsrf::COOKIE_NAME,
+            SpaCsrf::COOKIE_NAME,
         ]);
 
         $middleware->api(append: [
@@ -150,7 +155,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             BusinessRuleException::class,
         ]);
 
-        $exceptions->reportable(function (\Throwable $e): void {
+        $exceptions->reportable(function (Throwable $e): void {
             app(ErrorLogRecorder::class)->recordException($e);
         });
 
@@ -273,7 +278,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         });
     })->create();
 
-$app->singleton(\Illuminate\Contracts\Http\Kernel::class, \App\Http\Kernel::class);
-$app->singleton(\Illuminate\Contracts\Console\Kernel::class, \App\Console\Kernel::class);
+$app->singleton(Illuminate\Contracts\Http\Kernel::class, Kernel::class);
+$app->singleton(Illuminate\Contracts\Console\Kernel::class, App\Console\Kernel::class);
 
 return $app;

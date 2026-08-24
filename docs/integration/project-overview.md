@@ -15,7 +15,7 @@ flowchart TB
     subgraph VueWorkers["Monolith-Vue-Workers (Vue 3 + CF Workers)"]
         SPA["SPA<br>All admin + product UI<br>HttpOnly __Host-spa_jwt"]
     end
-    SPA -->|"credentials + CSRF"| API
+    SPA -->|"X-SPA-Origin + credentials + CSRF"| API
     Browser --> Web
     Web -->|"redirect"| SPA
     API -->|"Pusher WS"| SPA
@@ -50,7 +50,7 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | Framework | Vue 3 + Vite 8 + TypeScript |
 | Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Static SPA assets do not invoke the isolate; current Worker code does not proxy API or auth. **All traffic goes direct from the browser to the API origin** (cross-site cookie + CSRF nonce) and costs zero Worker invocations. Do not add API proxy logic — see [vue-workers-spa.md — Worker invocation vs static assets](vue-workers-spa.md#worker-invocation-vs-static-assets). |
 | API | Same `/api/v1/*` endpoints — no business logic in SPA |
-| Auth | Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted). JS does not store the JWT; direct data calls use `credentials: 'include'` + double-submit `X-CSRF-Token`. `RequireSpaOrigin` is audit-only (direct hits logged, never 403). |
+| Auth | Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted). JS does not store the JWT; direct data calls use `credentials: 'include'` + double-submit `X-CSRF-Token`. Versioned API calls also carry public `X-SPA-Origin: 1`; `RequireSpaRequestHeader` rejects missing/invalid markers while `OPTIONS` and provider webhooks stay reachable. `RequireSpaOrigin` remains audit-only. |
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware |
 | Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), covering shell bootstrap, File Hosting browse/workspace detail, navigation and notification edit, users, services, payments, inference, microstock, and vTual multi-fetch views; Worker cache headers on reference-data GETs, JWT TTL 240 min — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
 | Type alignment | TS types in `src/api/types.ts` match Laravel API Resources exactly — snake_case, no transform layer |

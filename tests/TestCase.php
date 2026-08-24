@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Http\Middleware\RequireSpaRequestHeader;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
@@ -18,6 +19,10 @@ abstract class TestCase extends BaseTestCase
         ]);
 
         $this->withoutMiddleware(PreventRequestForgery::class);
+
+        // API feature tests model the sanctioned SPA caller by default. Tests
+        // covering the perimeter explicitly remove this marker.
+        $this->withHeader(RequireSpaRequestHeader::HEADER, RequireSpaRequestHeader::VALUE);
 
         if (config('database.default') !== 'sqlite') {
             $this->fail(

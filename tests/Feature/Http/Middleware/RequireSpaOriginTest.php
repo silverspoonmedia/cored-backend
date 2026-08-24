@@ -14,7 +14,8 @@ class RequireSpaOriginTest extends TestCase
     {
         $this->app->detectEnvironment(fn () => 'staging');
 
-        $this->getJson('/api/ping')
+        $this->withoutHeader('X-SPA-Origin')
+            ->getJson('/api/ping')
             ->assertOk()
             ->assertJsonPath('message', __('api/common.pong'));
     }
@@ -30,7 +31,8 @@ class RequireSpaOriginTest extends TestCase
 
     public function test_direct_api_hit_passes_in_testing(): void
     {
-        $this->getJson('/api/ping')
+        $this->withoutHeader('X-SPA-Origin')
+            ->getJson('/api/ping')
             ->assertOk()
             ->assertJsonPath('message', __('api/common.pong'));
     }

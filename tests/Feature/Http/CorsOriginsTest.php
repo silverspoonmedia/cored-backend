@@ -23,4 +23,22 @@ class CorsOriginsTest extends TestCase
             ->assertOk()
             ->assertHeaderMissing('Access-Control-Allow-Origin');
     }
+
+    public function test_spa_marker_is_allowed_by_preflight(): void
+    {
+        $origin = rtrim((string) config('app.url'), '/');
+
+        $this->call(
+            'OPTIONS',
+            '/api/v1/csrf',
+            server: [
+                'HTTP_ORIGIN' => $origin,
+                'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'GET',
+                'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'x-spa-origin',
+            ],
+        )
+            ->assertSuccessful()
+            ->assertHeader('Access-Control-Allow-Origin', $origin)
+            ->assertHeader('Access-Control-Allow-Credentials', 'true');
+    }
 }

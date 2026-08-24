@@ -18,9 +18,8 @@ return [
 
     'allowed_origins_patterns' => [],
 
-    // Explicit header list: the SPA's direct requests carry Authorization
-    // (Fase 2 bearer mode), the double-submit CSRF header, and the legacy
-    // Worker CSRF marker.
+    // Explicit header list: the SPA's direct requests carry Authorization,
+    // the double-submit CSRF header, and the public SPA request marker.
     'allowed_headers' => [
         'Authorization',
         'Content-Type',
@@ -28,6 +27,7 @@ return [
         'Accept-Language',
         'X-Requested-With',
         'X-CSRF-Token',
+        'X-SPA-Origin',
     ],
 
     'exposed_headers' => [],
