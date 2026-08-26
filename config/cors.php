@@ -8,9 +8,9 @@ return [
     // CORS preflight. A wildcard would advertise methods the API never serves.
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    // Browser Origin allowlist: Blade (APP_URL) + Vue-Workers (SPA_URL). The
-    // SPA now calls the API directly with credentials, so this list must stay
-    // explicit — a wildcard origin cannot be combined with credentials below.
+    // Browser Origin allowlist: Laravel API origin (APP_URL) + Vue-Workers
+    // (SPA_URL). The SPA calls the API directly with credentials, so this list
+    // must stay explicit — a wildcard origin cannot be combined with credentials.
     'allowed_origins' => array_values(array_unique(array_filter([
         rtrim((string) env('APP_URL', 'http://localhost'), '/'),
         rtrim((string) env('SPA_URL', ''), '/'),

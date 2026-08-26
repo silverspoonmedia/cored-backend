@@ -46,8 +46,9 @@ When you add a table that belongs to a user or another UUID-backed model, use `f
 |------|---------|
 | PHP | ^8.3 (extensions: `mbstring`, `openssl`, `pdo`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`) |
 | Composer | 2.x |
-| Node.js & npm | For Vite frontend assets (optional if you only use the API) |
 | Database | MySQL (default in profile templates), or PostgreSQL |
+
+No Node.js toolchain is needed here: this repo has no frontend stack or `package.json`. The browser UI is the sibling `monolith-vue-workers` project.
 
 On **Laragon** (Windows), enable PHP 8.3+ and create a MySQL database named `monolith` (or adjust `DB_DATABASE` in `.env`).
 
@@ -124,22 +125,9 @@ php artisan migrate:fresh --seed
 
 **Database safety:** Tests use SQLite; dev uses MySQL. Prefer `composer test` (runs `config:clear` first). Bare `php artisan test` is guarded on current code — see [docs/platform/database-safety.md](docs/platform/database-safety.md).
 
-### 4. Frontend assets
+### 4. Frontend
 
-AdminLTE / Bootstrap / jQuery / Select2 / DataTables / OverlayScrollbars ship from **npm via Vite** (`resources/css/vendor.css` + `resources/js/app.js`). Source Sans + Bootstrap Icons remain on CDN. `bell.js` loads from `assets-scripts` immediately after `app.js` (gated by `@can('view notification')`). Other page modules (file-hosting, checkout, DataTables factory, …) load after that via `x-slot:scripts` / `@stack('scripts')`.
-
-```bash
-npm install
-npm run build
-```
-
-`package.json` pins jQuery **3.7.1**, Select2 **4.0.13** (do not bump to 4.1 under Vite ESM), and DataTables **3** (with `DataTable.use(jQuery)` in `infra/jquery-init.js`). Vite entries are declared in `vite.config.js`.
-
-For local development with hot reload:
-
-```bash
-npm run dev
-```
+None in this repo - the Blade admin and Vite asset pipeline were removed. The sole browser UI is the sibling `monolith-vue-workers` SPA, which consumes the `/api/v1/*` API directly. See [docs/integration/vue-workers-spa.md](docs/integration/vue-workers-spa.md).
 
 ### 5. Run the application
 
@@ -149,7 +137,7 @@ npm run dev
 php artisan serve
 ```
 
-**Full stack** (HTTP server, queue worker, log tail, Vite):
+**Full stack** (HTTP server, queue worker, log tail):
 
 ```bash
 composer run dev
@@ -157,7 +145,7 @@ composer run dev
 
 ### One-shot setup (Composer script)
 
-`composer.json` defines a `setup` script that installs PHP deps, runs `env:install local` when `.env` is missing, runs migrations, and builds frontend assets. It does **not** run seeders—run those after `composer run setup`:
+`composer.json` defines a `setup` script that installs PHP deps, runs `env:install local` when `.env` is missing, runs migrations. It does **not** run seeders—run those after `composer run setup`:
 
 ```bash
 composer run setup
@@ -287,8 +275,6 @@ php artisan lang:update          # Refresh laravel-lang package files (also runs
 php artisan locale:add <locale>  # Onboard a new locale (managed files + config + app-owned scaffolding)
 php artisan pint                 # Format PHP code
 composer test                    # PHPUnit (clears config cache first)
-npm run test:js                  # Vitest — JS unit tests (upload-queue scheduler)
-npm run build                    # Vite production bundle (direct-upload.js, bell.js, app.css)
 ```
 
 ---

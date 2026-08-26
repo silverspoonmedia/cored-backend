@@ -16,11 +16,10 @@ use Symfony\Component\HttpFoundation\Response;
  * - Unwanted browser features (Permissions-Policy)
  * - Script exfiltration (Content-Security-Policy)
  *
- * CSP stays on the Blade admin only (this middleware runs in the `web` group);
- * the Vue-Workers SPA sets its own policy at the edge. 'unsafe-inline' styles
- * remain because AdminLTE/jQuery plugins inject inline style attributes; a
- * nonce-based policy belongs to the SPA, not this legacy stack. hCaptcha is
- * whitelisted for the auth forms.
+ * CSP applies to the surviving server-side `web` routes this middleware runs
+ * on (OAuth callbacks, payment returns, public share); the Vue-Workers SPA
+ * sets its own policy at the edge. hCaptcha is whitelisted for server-rendered
+ * challenge forms.
  */
 class SecurityHeaders
 {
@@ -31,7 +30,7 @@ class SecurityHeaders
         "img-src 'self' data: https:",
         "font-src 'self' data:",
         "connect-src 'self' https://*.pusher.com wss://*.pusher.com https://hcaptcha.com https://*.hcaptcha.com",
-        "frame-src https://hcaptcha.com https://*.hcaptcha.com",
+        'frame-src https://hcaptcha.com https://*.hcaptcha.com',
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",

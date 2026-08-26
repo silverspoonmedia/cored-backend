@@ -8,20 +8,24 @@ High-level summary of the two projects and their relationship. For the detailed 
 
 ```mermaid
 flowchart TB
+    Browser["Browser"] --> Edge["Cloudflare Edge"]
+    Edge --> Tunnel["Cloudflare Tunnel<br>outbound-only connector"]
     subgraph Monolith["Monolith (Laravel 13)"]
         API["REST API /api/v1/*<br>Business logic, RBAC, audit, JWT"]
         Web["Web stack (server only)<br>share / payment / OAuth"]
     end
+    Tunnel --> API
+    Tunnel --> Web
     subgraph VueWorkers["Monolith-Vue-Workers (Vue 3 + CF Workers)"]
-        SPA["SPA<br>All admin + product UI<br>HttpOnly __Host-spa_jwt"]
+        SPA["SPA<br>Static assets only<br>HttpOnly __Host-spa_jwt"]
     end
-    SPA -->|"X-SPA-Origin + credentials + CSRF"| API
+    SPA -->|"direct browser API: credentials + CSRF + public marker"| Edge
     Browser --> Web
     Web -->|"redirect"| SPA
     API -->|"Pusher WS"| SPA
 ```
 
-The SPA is an **API-consumer** — no business logic lives in the frontend. All validation, CRUD, RBAC, and audit run once in the API.
+The SPA is an **API-consumer** — no business logic lives in the frontend. All validation, CRUD, RBAC, and audit run once in the API. The SPA Worker serves static assets and is not an API proxy. The intended API perimeter is Cloudflare Tunnel with closed VM/OCI inbound ports — an external deployment dependency, not configured in either repo. The public marker is replayable metadata, not an authentication boundary.
 
 ## Monolith — API-First backend
 
@@ -48,9 +52,9 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | Aspect | Detail |
 |--------|--------|
 | Framework | Vue 3 + Vite 8 + TypeScript |
-| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Static SPA assets do not invoke the isolate; current Worker code does not proxy API or auth. **All traffic goes direct from the browser to the API origin** (cross-site cookie + CSRF nonce) and costs zero Worker invocations. Do not add API proxy logic — see [vue-workers-spa.md — Worker invocation vs static assets](vue-workers-spa.md#worker-invocation-vs-static-assets). |
+| Deploy | Cloudflare Workers (`@cloudflare/vite-plugin` + `wrangler`). Static SPA assets do not invoke the isolate; current Worker code does not proxy API or auth. **All API traffic goes direct from the browser through the API hostname and Cloudflare Tunnel** (cross-site cookie + CSRF nonce) and does not target this Worker route. Do not add API proxy logic — see [vue-workers-spa.md — Worker invocation vs static assets](vue-workers-spa.md#worker-invocation-vs-static-assets). |
 | API | Same `/api/v1/*` endpoints — no business logic in SPA |
-| Auth | Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted). JS does not store the JWT; direct data calls use `credentials: 'include'` + double-submit `X-CSRF-Token`. Versioned API calls also carry public `X-SPA-Origin: 1`; `RequireSpaRequestHeader` rejects missing/invalid markers while `OPTIONS` and provider webhooks stay reachable. `RequireSpaOrigin` remains audit-only. |
+| Auth | Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted). JS does not store the JWT; direct data calls use `credentials: 'include'` + double-submit `X-CSRF-Token`. Versioned API calls also carry public `X-SPA-Origin: 1`; `RequireSpaRequestHeader` rejects missing/invalid markers while `OPTIONS` and provider webhooks stay reachable. `RequireSpaOrigin` remains audit-only. Cloudflare Tunnel (external config) protects origin reachability; it does not prove that a request came from the official SPA. |
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware |
 | Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), covering shell bootstrap, File Hosting browse/workspace detail, navigation and notification edit, users, services, payments, inference, microstock, and vTual multi-fetch views; Worker cache headers on reference-data GETs, JWT TTL 240 min — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
 | Type alignment | TS types in `src/api/types.ts` match Laravel API Resources exactly — snake_case, no transform layer |

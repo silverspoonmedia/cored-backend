@@ -1,5 +1,7 @@
 # Security Audit Report - OWASP Top 10:2025
 
+> **HISTORICAL SNAPSHOT — READ WITH CARE.** Dated 2026-06-16, written against the Blade/AdminLTE stack. Since then the Blade admin, Playground routes, and the Blade JWT session bridge were removed; the sole UI is the Vue-Workers SPA over the direct `/api/v1/*` API with `__Host-spa_jwt` cookie auth. Sections about the Blade frontend, Playground attack surface, `HCAPTCHA_ENABLED` (now the `platform.hcaptcha.enabled` setting), missing security headers (now shipped by `App\Http\Middleware\SecurityHeaders`), and the findings summary describe that old state, not the current code. Current posture: [docs/platform/security.md](docs/platform/security.md) + [docs/integration/vue-workers-spa.md](docs/integration/vue-workers-spa.md).
+
 **Project:** Monolith Laravel Application  
 **Date:** 2026-06-16  
 **Auditor:** Security Engineering Team  
