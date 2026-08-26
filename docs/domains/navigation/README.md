@@ -19,9 +19,9 @@ Bound in `NavigationServiceProvider`.
 | Column | Notes |
 |--------|-------|
 | `id`, `parent_id` | UUID; self-FK cascade |
-| `layout` | Shell region: `sidebar`, `navbar` (config `navigation.layouts`) |
+| `layout` | Shell region: `sidebar`, `navbar`, `vtual` (config `navigation.layouts`) |
 | `name`, `description` | JSON translatable |
-| `icon`, `route` | Full icon class; **SPA Vue Router symbolic name** (or remaining Laravel web route name), never a URL |
+| `icon`, `route`, `hash` | Full icon class; **SPA Vue Router symbolic name** (or remaining Laravel web route name), never a URL; `hash` optional in-page anchor (e.g. `#vtubers`) appended client-side |
 | `type` | `h` header, `p` parent, `c` child |
 | `order` | Contiguous within `(layout, parent_id, type)`; NULL for soft-deleted |
 | `is_authenticate`, `is_guest_only` | Audience flags |
@@ -54,7 +54,8 @@ A node is visible only if **it and every ancestor** pass these rules in order:
 | Method | Path | Middleware | Purpose |
 |--------|------|------------|---------|
 | GET | `/` | `jwt.optional` | Visible tree (`?layout=`, `?q=`) |
-| GET | `/list` | `auth:api`, `view menu` | Admin flat list / DataTable |
+| GET | `/layouts` | `jwt.optional` | Configured layout identifiers (config-driven) |
+| GET | `/list` | `auth:api`, `view menu` | Admin flat list / plain table |
 | GET | `/trashed` | `auth:api`, `view menu` | Soft-deleted rows |
 | POST | `/` | `auth:api`, `manage menu` | Create menu |
 | GET | `/{menu}` | `auth:api`, `view menu` | Show menu |
@@ -64,7 +65,7 @@ A node is visible only if **it and every ancestor** pass these rules in order:
 
 Permissions come from `RoleSeeder`: `view menu`, `manage menu`, `restore menu`.
 
-SPA menus admin consumes this API directly. Sidebar/navbar trees come from `GET /api/v1/navigation/menus`. Form option lookups use `/api/v1/lookups/*`.
+SPA menus admin consumes this API directly. Sidebar/navbar trees come from `GET /api/v1/navigation/menus`; the Valkivid3 public template fetches its `vtual` tree from the same endpoint (`?layout=vtual`) and renders it via `useVkNavigation`. Admin layout select options are populated dynamically from `GET /api/v1/navigation/menus/layouts`. Form option lookups use `/api/v1/lookups/*`.
 
 ### Request fields (store/update)
 
@@ -99,7 +100,7 @@ On miss, `navigationTree` loads the snapshot (DB only if snapshot also misses), 
 
 ## Authoritative seeding
 
-`MenuSeeder` is the sole canonical navigation definition. Every run force-deletes all active and trashed menu rows; FK cascades remove their pivot rows. It rebuilds both layouts inside one DB transaction and intentionally removes admin-created/custom menus. A failure inside that transaction restores the prior DB tree. After commit, the seeder flushes the navigation snapshot and bumps the presented-tree epoch; no separate cache command is needed.
+`MenuSeeder` is the sole canonical navigation definition. Every run force-deletes all active and trashed menu rows; FK cascades remove their pivot rows. It rebuilds the sidebar, navbar, and vtual layouts inside one DB transaction and intentionally removes admin-created/custom menus. A failure inside that transaction restores the prior DB tree. After commit, the seeder flushes the navigation snapshot and bumps the presented-tree epoch; no separate cache command is needed. The `vtual` tree seeds guest-visible public nodes (Home/Directory/Contents) with `is_authenticate => false`; Directory and Contents use the `hash` column (`#vtubers` / `#contents`) for in-page anchors.
 
 `MenuSeeder` assumes these role catalogs already exist, in order:
 
@@ -157,6 +158,16 @@ php artisan db:seed --class=MenuSeeder
 
 Navbar contains one **Home** shortcut using `dashboard`. File Hosting and vTual parent routes stack Domain Access and activation gates across their branches. Microstock remains discoverable through Services and the File Hosting workspace switcher, with no dynamic-menu node.
 
+### Canonical vtual tree (Valkivid3 public template)
+
+Guest-visible nodes, `is_authenticate => false`, no roles — visible to everyone including unauthenticated visitors:
+
+- **Home** — `vtual.public`
+- **Directory** — `vtual.public` + `hash: #vtubers`
+- **Contents** — `vtual.public` + `hash: #contents`
+
+`hash` is a nullable column appended client-side by the SPA router (`router-link` `:to` includes `hash`), and `router.scrollBehavior` handles the in-page anchor. `hash` also discriminates the active-state marker in the Valkivid3 nav (`isVkNavActive`): because Home/Directory/Contents share the `vtual.public` route, a node with a `hash` is marked active only when `route.hash` matches, and a node without one only when the route has no hash. This keeps the public nav fully dynamic (managed via Menu CRUD) without hardcoding links in the Valkivid3 layout.
+
 No Debug fixture, Microstock node, or vTual Platform API Probe menu node is seeded. Platform API Probe is linked from Platform credentials index (`vtual.platform-credentials.probe`); probe is excluded from dynamic navigation.
 
 Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module registry stays in [`config/domains.php`](../../../config/domains.php); RBAC catalog ownership remains separate (`domain_kind` on roles/permissions). Do not add menu schema merely to mirror those axes.
@@ -165,13 +176,15 @@ Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module regi
 
 The sibling Vue-Workers SPA uses `useNavigationHydrate` in menu edit. It batches the menu record and selected parent, role, included-user, and excluded-user lookups through `/api/v1/batch`; failed entries fall back to the existing individual loaders. Shell sidebar and navbar seeds are documented in [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
 
-`NavTree` resolves `node.route + '.view'`, then `node.route`. Menu CRUD validates `route` via `SpaRouteRegistry` against `config/spa-routes.php` (plus any remaining Laravel `Route::has` names). Keep the config list in sync with `MenuSeeder` and `monolith-vue-workers/src/router/index.ts`. DMCA Blocklist is `file-hosting.blocklist.index`; the SPA registers `file-hosting.blocklist.index.view` so the sidebar click works.
+`NavTree` resolves `node.route + '.view'`, then `node.route`. Leaf nodes render the resolved `href` via `router.resolve` so the destination URL is visible on hover; parent nodes stay `#` while they have visible children (expand-only). Menu CRUD validates `route` via `SpaRouteRegistry` against `config/spa-routes.php` (plus any remaining Laravel `Route::has` names). Keep the config list in sync with `MenuSeeder` and `monolith-vue-workers/src/router/index.ts`. DMCA Blocklist is `file-hosting.blocklist.index`; the SPA registers `file-hosting.blocklist.index.view` so the sidebar click works.
 
 ## Tests
 
 - `tests/Domain/Navigation/Unit/Repositories/Eloquent/MenuRepositoryTest.php` covers CRUD/ordering plus presentational `#` masking, presented-tree cache hits (no `menus` queries), epoch refresh after menu mutation, and per-user `forgetPresentedTreeFor`.
-- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 44-row sidebar/navbar tree, `en`/`id`/`ja` translations, selected role pivots, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
+- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 47-row sidebar/navbar/vtual tree, `en`/`id`/`ja` translations, selected role pivots, vtual `hash` anchors, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
 - `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuTest.php` covers menu CRUD including SPA symbolic route acceptance and garbage route rejection.
+- `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuLayoutTest.php` covers layout scoping (sidebar/navbar/vtual), parent-layout mismatch rejection, guest fetch of the vtual tree, and the `layouts` endpoint exposing the configured identifiers.
+- `tests/Domain/Navigation/Unit/Support/MenuLayoutTest.php` asserts the three configured layouts (`sidebar`/`navbar`/`vtual`) and the default.
 - `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php` covers public/private product visibility, guests, privileged access, and empty-branch pruning.
 - `tests/Domain/Product/Feature/MenuVisibilityTest.php` covers authenticated product-activation visibility; its guest case is a rendering smoke test, not a guest tree assertion.
 

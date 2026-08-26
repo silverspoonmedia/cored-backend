@@ -45,6 +45,7 @@ class StoreMenuRequest extends FormRequest
             'layout' => ['required', 'string', Rule::in(MenuLayout::all())],
             'icon' => ['nullable', 'string', 'max:255'],
             'route' => ['nullable', 'string', 'max:255', $this->namedRouteRule()],
+            'hash' => ['nullable', 'string', 'max:64'],
             'parent' => ['nullable', 'string', Rule::exists('menus', 'id')->whereNull('deleted_at')],
             'authenticate' => ['sometimes', 'boolean'],
             'guest_only' => ['sometimes', 'boolean'],

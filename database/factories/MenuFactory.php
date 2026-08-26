@@ -23,6 +23,7 @@ class MenuFactory extends Factory
             'name' => fake()->unique()->words(2, true),
             'icon' => null,
             'route' => null,
+            'hash' => null,
             'type' => 'c',
             // Parked at NULL by default so multiple factory rows in the same
             // (parent_id, type) group never collide with the unique index.

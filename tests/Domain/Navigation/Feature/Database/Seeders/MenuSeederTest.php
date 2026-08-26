@@ -187,6 +187,21 @@ class MenuSeederTest extends TestCase
             ['name' => 'Home', 'route' => 'dashboard', 'type' => 'p', 'children' => []],
         ], $this->databaseTree(MenuLayout::NAVBAR));
 
+        $this->assertSame([
+            ['name' => 'Home', 'route' => 'vtual.public', 'type' => 'p', 'children' => []],
+            ['name' => 'Directory', 'route' => 'vtual.public', 'type' => 'p', 'children' => []],
+            ['name' => 'Contents', 'route' => 'vtual.public', 'type' => 'p', 'children' => []],
+        ], $this->databaseTree(MenuLayout::VTUAL));
+
+        $this->assertSame(
+            '#vtubers',
+            Menu::query()->where('name->en', 'Directory')->value('hash'),
+        );
+        $this->assertSame(
+            '#contents',
+            Menu::query()->where('name->en', 'Contents')->value('hash'),
+        );
+
         $this->assertFalse(Menu::withTrashed()->where('name->en', 'Debug')->exists());
         $this->assertFalse(Menu::withTrashed()->where('route', 'vtual.admin.platform-api-probe')->exists());
         $this->assertFalse(Menu::withTrashed()->where('route', 'microstock.index')->exists());
@@ -197,6 +212,7 @@ class MenuSeederTest extends TestCase
         $initialTree = [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
+            'vtual' => $this->databaseTree(MenuLayout::VTUAL),
         ];
 
         $custom = Menu::query()->create([
@@ -220,18 +236,20 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(44, Menu::query()->count());
+        $this->assertSame(47, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
+            'vtual' => $this->databaseTree(MenuLayout::VTUAL),
         ]);
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(44, Menu::query()->count());
+        $this->assertSame(47, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
+            'vtual' => $this->databaseTree(MenuLayout::VTUAL),
         ]);
     }
 

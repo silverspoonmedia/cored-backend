@@ -28,12 +28,11 @@ return [
         'payment.cancel',
         'public.file',
         'public.folder',
-        'vtual.public',
-        'vtual.public.vtuber',
     ],
 
     'menu' => [
         'dashboard',
+        'vtual.public',
         'profile.password.edit',
         'profile.two-factor.edit',
         'profile.connections',
@@ -81,6 +80,8 @@ return [
         'services.show',
         'invoices.index',
         'invoices.show',
+        'vtual.public',
+        'vtual.public.vtuber',
         'vtual.profiles.index',
         'vtual.profiles.show',
         'vtual.vtuber.index',

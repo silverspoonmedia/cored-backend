@@ -11,6 +11,7 @@ class MenuLayoutTest extends TestCase
     {
         $this->assertContains(MenuLayout::SIDEBAR, MenuLayout::all());
         $this->assertContains(MenuLayout::NAVBAR, MenuLayout::all());
+        $this->assertContains(MenuLayout::VTUAL, MenuLayout::all());
         $this->assertSame('sidebar', MenuLayout::default());
     }
 }

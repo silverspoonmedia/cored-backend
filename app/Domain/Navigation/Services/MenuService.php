@@ -162,6 +162,9 @@ class MenuService
         if ($isCreate || array_key_exists('route', $data)) {
             $attributes['route'] = $data['route'] ?? null;
         }
+        if ($isCreate || array_key_exists('hash', $data)) {
+            $attributes['hash'] = $data['hash'] ?? null;
+        }
         if ($isCreate || array_key_exists('parent', $data)) {
             $attributes['parent_id'] = $data['parent'] ?? null;
         }

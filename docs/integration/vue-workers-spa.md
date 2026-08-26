@@ -325,6 +325,19 @@ Supports `maxlength?: number` prop, passed through to underlying `<input>`.
 
 Wraps jQuery Select2 (`src/utils/jquery-setup`, `src/utils/select2-lookup`). Handles plain and AJAX modes; the AJAX mode consumes the paginated `GET /api/v1/lookups/*` contract — see [platform/list-display-modes.md](../platform/list-display-modes.md).
 
+### Loading & error states (skeleton + retry)
+
+Every data-loading view renders three explicit states in priority order: skeleton while loading → error with retry on failure → empty/data. No view goes blank on fetch failure. Bootstrap 5 classes only (no Tailwind in the AdminLTE namespace).
+
+- `src/components/SkeletonBlock.vue` — placeholder block; props `variant` (`line|block|avatar|button`), `width`, `height`, `lines`. Compose into layout-shaped skeletons per view.
+- `src/components/ErrorState.vue` — sibling of `EmptyState.vue`; props `icon` (default `bi-exclamation-triangle`), `title`, `message`, `retryLabel`; emits `retry` (retry button always renders). i18n keys `ui.error_state.{title,message,retry}`.
+- `src/composables/useDetailLoader.ts` — standardizes detail/show views: `{ data, loading, error, load }`, auto-loads on mount, `load()` is the retry handler.
+- `DataTable.vue` — `error?: string | null` prop + `retry` emit; body order is loading skeleton rows → error (ErrorState full-colspan) → empty (EmptyState) → rows. List views pass `useResource.error` and `@retry="fetchList()"`.
+- Router chunk-load failures (`router.onError` in `main.ts`) flip a global `chunkLoadFailed` flag (`src/composables/useChunkLoadError.ts`); `App.vue` renders a full-page `ErrorState` + reload button instead of a blank document.
+- `showError` (SweetAlert2) remains the surface for action failures (create/delete/checkout), not initial load.
+
+The valkivid3 public template keeps its own retry-panel pattern and is intentionally untouched.
+
 ## Breadcrumb system
 
 Breadcrumbs are entirely SPA-side via a config-based composable. Monolith's `diglactic/laravel-breadcrumbs` trails were removed with Blade; there is no server breadcrumb registry to mirror any more.
@@ -345,8 +358,9 @@ Authenticated routes set `meta.titleKey` (and guest auth routes also `meta.headi
 - **Content header**: `AppLayout.vue` renders `pageTitle` in the `h3`.
 - **Auth heading**: `AuthLayout.vue` renders `heading` as `login-box-msg`.
 - **Tab title**: `App.vue` watches `documentTitle` and sets `document.title` to `{page} | Monolith` (or `Monolith` when there is no title). Recomputes on locale change.
-- **DataTable chrome**: `DataTable.vue` uses `ui.datatable.*` (`search_placeholder`, `empty_title`, `info`, `per_page`) and `ui.labels.actions`. Catalog dumps (`useResource` + DataTable) send `display_mode=query&page&per_page=10` (and `search` when the box is used) and parse `{ items, pagination }` **or** a legacy flat `T[]`. Default page size is **10** (Blade DataTables). Menus tree stays a full dump + client slice. Do not port Yajra JS. Do not invent a second list URL.
-- **Row actions**: icon-only (`RowActions.vue`) — `aria-label` + `title` from the label, icon `aria-hidden`, `btn-group btn-group-sm`. Toolbar primaries stay icon + text (`Add user`). File Hosting `.fh-action-group` is already icon-only — leave it.
+- **DataTable chrome**: `DataTable.vue` uses `ui.datatable.*` (`search_placeholder`, `empty_title`, `info`, `per_page`) and `ui.labels.actions`. Catalog dumps (`useResource` + DataTable) send `display_mode=query&page&per_page=10` (and `search` when the box is used) and parse `{ items, pagination }` **or** a legacy flat `T[]`. Default page size is **10** (Blade DataTables). Menus tree stays a full dump + client slice (no server paging). Do not port Yajra JS. Do not invent a second list URL. `MenusView` opts out of `DataTable.vue` for a plain `<table>` + client-side `searchQuery` filter (no pagination, no sort) so the `h`/`p`/`c` hierarchy is never split across pages; `MenusTrashedView` still uses `DataTable.vue`.
+- **Row actions**: icon-only (`RowActions.vue`) — `aria-label` + `title` from the label, icon `aria-hidden`, `btn-group btn-group-sm`. Each `RowAction` is either a navigation (`to: RouteLocationRaw` → rendered as `<router-link>` so the browser shows the URL on hover) or a real action (`onClick` → `<button>`). Toolbar primaries stay icon + text (`Add user`). File Hosting `.fh-action-group` is already icon-only — leave it.
+- **Navigation buttons vs action buttons**: Any button whose only effect is `router.push(...)` MUST be a `<router-link :to="...">` so the destination URL is visible on hover (browser status bar / address bar tooltip). Real actions (delete, save, export, probe, restore) stay `<button>` — they have side effects and no meaningful URL. `router.back()` buttons stay `<button>` too (destination is history-dependent, not resolvable). Disabled nav (e.g. cancel while saving) uses `<router-link>` + Bootstrap `disabled` class + `aria-disabled` + `tabindex="-1"` instead of the native `:disabled` attribute (which only works on `<button>`).
 
 ### Blob / CSV downloads
 
@@ -414,7 +428,7 @@ SPA routes: `/payment/return` and `/payment/cancel` (`PaymentReturnView`, `requi
 
 ### `/apps` shell
 
-Authenticated `AppLayout` routes are prefixed `/apps/*` (dashboard, users, settings, file-hosting, vtual, invoices, …). `/` redirects to `/apps/dashboard`. Route **names** stay unprefixed — sidebar `NavTree` / `AppNavbar` already `push` by name.
+Authenticated `AppLayout` routes are prefixed `/apps/*` (dashboard, users, settings, file-hosting, vtual, invoices, …). `/` redirects to `/apps/dashboard`. Route **names** stay unprefixed — sidebar `NavTree` / `AppNavbar` `push` by name on click; `NavTree` leaf `href` is resolved via `router.resolve` so the URL is visible on hover (parent `href` stays `#` while it has visible children).
 
 **Not prefixed** (same exceptions as Blade, plus the verify hop): auth (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/two-factor-challenge`, `/verify-email/:id/:hash`), public share (`/s/f/:id`, `/s/d/:id`), payment bounce (`/payment/return`, `/payment/cancel`), **vTual public** (`/vtual`, `/vtual/vtubers/:slug`). Verify-email uses `meta.authChrome` (not `guestOnly`) so a logged-in unverified user can land.
 
@@ -474,6 +488,10 @@ Static vTual credential probe (`/apps/vtual/platform-credentials/probe`) is regi
 
 Last route: `path: '/:pathMatch(.*)*'` → `NotFoundView` inside `AppLayout`, `meta: { requiresAuth: true, titleKey: 'errors.not_found' }`. This is an admin SPA — unknown URLs for guests already hit `beforeEach` → login with `redirect`. After login they see 404 **inside** the sidebar, not a naked page. Catch-all stays below `/s/f/:id`, `/verify-email/:id/:hash`, `/payment/return`, `/vtual`, `/vtual/vtubers/:slug`, Blade-compat `/vtual/vtuber/:slug` (redirects into `/apps`), and the legacy `/users` → `/apps/users` redirects. A missing public vTuber slug is **not** this catch-all — `VkStr1VtuberShowView` renders an in-layout 404.
 
+### Valkivid3 dynamic navigation
+
+The Valkivid3 public template renders a **dynamic** navigation tree (no hardcoded links) sourced from the same backend as the admin shell. `useVkNavigation` (`src/valkivid3/composables/useVkNavigation.ts`) fetches `GET navigation/menus?layout=vtual` with a 60s SWR-style in-tab cache (stale data renders instantly, background revalidate on miss). `VkStr1Header` renders flat top-level nodes as `router-link`s; a parent with children becomes a dropdown. `VkStr1MobileMenu` renders the same tree with recursive expand/collapse accordions. `VkStr1Footer` renders the leaf nodes as a flat link list. `resolveRoute(node)` maps `node.route` (`vtual.public` → `vtual.public.view`) and appends `node.hash` (`#vtubers` / `#contents`) so in-page anchors ride on `router.scrollBehavior`. Active-state marking uses the hash-aware `isVkNavActive` helper: because Home/Directory/Contents share the `vtual.public` route, a node with a `hash` is marked active only when `route.hash` matches, and a node without one only when the route has no hash — so the marker bar (`after:scale-x-100`) + `text-accent` + `aria-current="page"` lands on exactly one top-level item at a time. Guest access works because the index endpoint is `jwt.optional`. The admin shell (`useNavigation`) was refactored from hardcoded `sidebar`/`navbar` refs to a map-based generic (`Record<string, NavigationTreeNode[]>`) so the same composable backs any layout; `sidebarTree`/`navbarTree` remain as computed aliases for existing consumers.
+
 ### Mimic doctrine
 
 Mimic is **appearance + behavior + intent**, done well and safely — not a pixel clone of Blade DOM, routes, or libraries.
@@ -491,7 +509,7 @@ These are the safe zone. Keep the current approaches.
 
 **A - Platform.** Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted; JS does not store the JWT). The Blade-era `auth_token` cookie bridge on `APP_URL` is gone — there is one browser session cookie now. Direct Monolith `/api/v1` traffic uses the cross-site cookie (or Bearer); `POST /api/v1/broadcasting/auth` goes direct, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers static origin, breadcrumb config map, guest cannot read `system_settings`, budget controls (`/api/v1/batch`, JWT TTL 240).
 
-**B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout=sidebar`. File Hosting three Vue routes instead of the removed single-island shell; team as a page rather than an offcanvas; listing-only move picker; rate editor re-fetch instead of full reload.
+**B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout={sidebar|navbar|vtual}`; admin layout select options come from `GET navigation/menus/layouts`. File Hosting three Vue routes instead of the removed single-island shell; team as a page rather than an offcanvas; listing-only move picker; rate editor re-fetch instead of full reload.
 
 **C — Gray (optional later, not a product blocker).** Live-reload on 2 of 7 catalogs (`NotificationType::tableId()` only emits those two), local row-action chrome vs query-mode `actions[]` (deletes on users / inference / gateways / services are wired locally with Blade-equivalent permission + confirm; hierarchy still 403s from the API), Laravel plural pipe hack.
 
@@ -767,7 +785,7 @@ Assessment of whether Vue-Workers invents business rules that belong in Monolith
 | `ROLE_RANK`, kind icons, chip catalogs, settings slug list, invite roles, subscription cycle literals | Presentation / form enums | Wrong sort or extra option; API validates |
 | `projectedStackQuantity` | Display preview | Not sent as the charge |
 | Local `formatBytes` vs `*_human` | Presentation | Prefer API fields later |
-| Payment channel client search; menus client DataTable | Accepted B | |
+| Payment channel client search; menus client plain table (no pagination) | Accepted B | |
 | Blade JS `purchase-pricing-preview.js` fee re-quote | Blade also does this | Baseline mimic, not a new SPA crime |
 | SPA cannot call `PaymentGateway::defaultForInvoice()` | The server resolver can fall back to a default gateway; the SPA skips sync when the provider is unknown | Skip is safe; sync resumes after checkout returns `gateway` |
 

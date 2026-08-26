@@ -35,6 +35,7 @@ class MenuSeeder extends Seeder
 
             $this->seedTree($this->sidebarTree(), MenuLayout::SIDEBAR);
             $this->seedTree($this->navbarTree(), MenuLayout::NAVBAR);
+            $this->seedTree($this->vtualTree(), MenuLayout::VTUAL);
         });
 
         app(MenuRepositoryInterface::class)->flushNavigationCache();
@@ -56,6 +57,7 @@ class MenuSeeder extends Seeder
                 'description' => $node['description'] ?? null,
                 'icon' => $node['icon'] ?? null,
                 'route' => $node['route'] ?? null,
+                'hash' => $node['hash'] ?? null,
                 'type' => $node['type'],
                 'order' => $index + 1,
                 'is_authenticate' => $node['is_authenticate'] ?? true,
@@ -412,6 +414,41 @@ class MenuSeeder extends Seeder
                 'icon' => 'bi bi-house',
                 'route' => 'dashboard',
                 'type' => 'p',
+            ],
+        ];
+    }
+
+    /**
+     * Public vTual navigation tree (Valkivid3 template).
+     *
+     * Guest-visible nodes rendered by the SPA's VkStr1Layout header/mobile/footer.
+     * No roles, not authenticate-only — visible to everyone including guests.
+     */
+    private function vtualTree(): array
+    {
+        return [
+            [
+                'name' => $this->translations('Home', 'Beranda', 'ホーム'),
+                'icon' => 'bi bi-house',
+                'route' => 'vtual.public',
+                'type' => 'p',
+                'is_authenticate' => false,
+            ],
+            [
+                'name' => $this->translations('Directory', 'Direktori', 'ディレクトリ'),
+                'icon' => 'bi bi-people',
+                'route' => 'vtual.public',
+                'hash' => '#vtubers',
+                'type' => 'p',
+                'is_authenticate' => false,
+            ],
+            [
+                'name' => $this->translations('Contents', 'Konten', 'コンテンツ'),
+                'icon' => 'bi bi-play-btn',
+                'route' => 'vtual.public',
+                'hash' => '#contents',
+                'type' => 'p',
+                'is_authenticate' => false,
             ],
         ];
     }

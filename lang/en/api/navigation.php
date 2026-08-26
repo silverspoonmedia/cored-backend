@@ -2,6 +2,7 @@
 
 return [
     'tree_success' => 'Navigation tree retrieved successfully.',
+    'layouts_success' => 'Navigation layouts retrieved successfully.',
     'list_success' => 'Menus retrieved successfully.',
     'show_success' => 'Menu retrieved successfully.',
     'trashed_success' => 'Trashed menus retrieved successfully.',

@@ -2,6 +2,7 @@
 
 return [
     'tree_success' => 'ナビゲーションツリーを取得しました。',
+    'layouts_success' => 'ナビゲーションレイアウトを取得しました。',
     'list_success' => 'メニューを取得しました。',
     'show_success' => 'メニューを取得しました。',
     'trashed_success' => '削除済みメニューを取得しました。',

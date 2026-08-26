@@ -92,6 +92,7 @@ Managed files listed in `config/localization.php` → `managed_files`.
 | Static nav labels | `__('menu.dashboard')` |
 | DB menus | `$menu->name` (Spatie) |
 | SPA JSON | `t('ui.swal.ok')`, `t('ui.dialog.error_title')` — Swal chrome in `monolith-vue-workers/src/i18n/locales/*.json`; domain confirm bodies stay on their domain keys. Contract: [vue-workers-spa.md — Notifications & confirmations](../integration/vue-workers-spa.md#notifications--confirmations-sweetalert2) |
+| SPA chrome (nav) | `t('ui.navigation.load_failed')` — Valkivid3 nav-load fallback used by `useVkNavigation`. Catalog: `ui.error_state.*`, `ui.empty_state.*`, `ui.datatable.*`, `ui.navigation.*` live in the SPA JSON; full enumeration in [vue-workers-spa.md](../integration/vue-workers-spa.md) |
 
 ## Packages & parity
 

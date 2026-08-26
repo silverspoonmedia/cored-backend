@@ -11,6 +11,8 @@ class MenuLayout
 
     public const NAVBAR = 'navbar';
 
+    public const VTUAL = 'vtual';
+
     /**
      * @return list<string>
      */

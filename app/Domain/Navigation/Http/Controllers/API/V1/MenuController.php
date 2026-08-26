@@ -55,6 +55,18 @@ class MenuController extends Controller
     }
 
     /**
+     * Expose the configured menu layout identifiers so SPA admin screens can
+     * render layout select options dynamically without hardcoding.
+     */
+    public function layouts(): JsonResponse
+    {
+        return $this->successResponse(
+            ['layouts' => MenuLayout::all()],
+            __('api/navigation.layouts_success'),
+        );
+    }
+
+    /**
      * Hierarchically sorted flat list for management screens.
      */
     public function list(IndexMenuListRequest $request): JsonResponse

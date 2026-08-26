@@ -16,6 +16,7 @@ return [
     'layouts' => [
         'sidebar',
         'navbar',
+        'vtual',
     ],
 
     'default_layout' => 'sidebar',

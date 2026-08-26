@@ -26,6 +26,7 @@ class MenuListResource extends JsonResource
             'description_translations' => $this->getTranslations('description'),
             'icon' => $this->icon,
             'route' => $this->route,
+            'hash' => $this->hash,
             'type' => $this->type,
             'order' => $this->order,
             'is_authenticate' => $this->is_authenticate,

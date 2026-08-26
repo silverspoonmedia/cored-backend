@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('navigation/menus')->name('navigation.menus.')->group(function (): void {
     Route::middleware('jwt.optional')->get('/', [MenuController::class, 'index'])->name('index');
+    Route::middleware('jwt.optional')->get('layouts', [MenuController::class, 'layouts'])->name('layouts');
 
     Route::middleware('auth:api')->group(function (): void {
         Route::middleware('permission:view menu')->group(function (): void {

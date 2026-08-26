@@ -43,6 +43,7 @@ class UpdateMenuRequest extends FormRequest
             'type' => ['sometimes', 'string', 'size:1', Rule::in(['h', 'p', 'c'])],
             'icon' => ['sometimes', 'nullable', 'string', 'max:255'],
             'route' => ['sometimes', 'nullable', 'string', 'max:255', $this->namedRouteRule()],
+            'hash' => ['sometimes', 'nullable', 'string', 'max:64'],
             'parent' => ['sometimes', 'nullable', 'string', Rule::exists('menus', 'id')->whereNull('deleted_at'), Rule::notIn([$menuId])],
             'authenticate' => ['sometimes', 'boolean'],
             'guest_only' => ['sometimes', 'boolean'],

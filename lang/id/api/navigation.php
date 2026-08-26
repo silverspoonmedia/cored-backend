@@ -2,6 +2,7 @@
 
 return [
     'tree_success' => 'Pohon navigasi berhasil diambil.',
+    'layouts_success' => 'Tata letak navigasi berhasil diambil.',
     'list_success' => 'Daftar menu berhasil diambil.',
     'show_success' => 'Detail menu berhasil diambil.',
     'trashed_success' => 'Menu terhapus berhasil diambil.',
