@@ -148,4 +148,23 @@ return [
         'issuer' => 'Monolith',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Credential login throttle (identity-scoped)
+    |--------------------------------------------------------------------------
+    |
+    | Consumed by App\Domain\Identity\Support\AuthLoginThrottle for the
+    | login / two-factor-login endpoints. Identity scope = email + client IP,
+    | so users sharing an IP (NAT/CGNAT) never share quota. The counter only
+    | increments on credential failure. ip_backstop_max contains cross-email
+    | brute force from a single IP.
+    |
+    */
+
+    'login_throttle' => [
+        'max_attempts' => 5,
+        'decay_seconds' => 60,
+        'ip_backstop_max' => 20,
+    ],
+
 ];

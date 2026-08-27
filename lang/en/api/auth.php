@@ -28,4 +28,5 @@ return [
     'two_factor_already_enabled' => 'Two-factor authentication is already enabled.',
     'two_factor_not_enabled' => 'Two-factor authentication is not enabled.',
     'invalid_two_factor_code' => 'The two-factor authentication code is invalid.',
+    'login_throttled' => 'Too many login attempts. Please try again in :seconds seconds.',
 ];

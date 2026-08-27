@@ -28,4 +28,5 @@ return [
     'two_factor_already_enabled' => '二要素認証はすでに有効です。',
     'two_factor_not_enabled' => '二要素認証は有効ではありません。',
     'invalid_two_factor_code' => '二要素認証コードが無効です。',
+    'login_throttled' => 'ログイン試行回数が多すぎます。:seconds 秒後に再試行してください。',
 ];

@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\RateLimiter;
@@ -250,6 +251,25 @@ $app = Application::configure(basePath: dirname(__DIR__))
                 $e->getMessage() ?: __('api/common.unauthorized'),
                 403,
             );
+        });
+
+        // Keep the API error envelope for rate-limit rejections (login throttle
+        // throws ThrottleRequestsException; route middleware throws it too).
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            $response = ApiResponder::error(
+                $e->getMessage() ?: __('api/common.too_many_requests'),
+                429,
+            );
+
+            foreach ($e->getHeaders() as $name => $value) {
+                $response->headers->set($name, $value);
+            }
+
+            return $response;
         });
 
         $exceptions->render(function (HttpException $e, Request $request) {

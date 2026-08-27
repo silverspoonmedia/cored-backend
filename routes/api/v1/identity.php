@@ -15,13 +15,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->name('auth.')->group(function (): void {
     Route::post('register', [AuthController::class, 'register'])
-        ->middleware('throttle:5,1')
+        ->middleware('throttle:5,1,auth-register')
         ->name('register');
+    // Login throttling is identity-scoped and failure-only, enforced inside
+    // AuthService via AuthLoginThrottle — see config/auth.php login_throttle.
     Route::post('login', [AuthController::class, 'login'])
-        ->middleware('throttle:5,1')
         ->name('login');
     Route::post('two-factor/login', [TwoFactorController::class, 'login'])
-        ->middleware('throttle:5,1')
         ->name('two-factor.login');
     Route::post('forgot-password', [PasswordController::class, 'forgot'])
         ->middleware('throttle:3,1')

@@ -17,4 +17,5 @@ return [
     'spa_origin_required' => 'API ini hanya dapat diakses melalui aplikasi resmi.',
     'spa_csrf_issued' => 'Token CSRF diterbitkan.',
     'spa_csrf_mismatch' => 'Token CSRF tidak cocok.',
+    'too_many_requests' => 'Terlalu banyak permintaan. Mohon perlambat dan coba lagi.',
 ];

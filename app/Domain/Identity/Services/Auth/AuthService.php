@@ -11,6 +11,7 @@ use App\Domain\Identity\Exceptions\Auth\InvalidCredentialsException;
 use App\Domain\Identity\Exceptions\Auth\InvalidTwoFactorCodeException;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface;
+use App\Domain\Identity\Support\AuthLoginThrottle;
 use App\Support\Auth\SpaAuthCookie;
 use App\Support\Auth\UserPresenter;
 use App\Support\Encryption\Cache\SensitiveCacheValue;
@@ -36,6 +37,7 @@ class AuthService
         private readonly TwoFactorService $twoFactor,
         private readonly SensitiveCacheValue $sensitiveCache,
         private readonly ProductActivationService $productActivations,
+        private readonly AuthLoginThrottle $loginThrottle,
     ) {}
 
     /**
@@ -90,6 +92,8 @@ class AuthService
         $remember = (bool) ($credentials['remember_me'] ?? false);
         $credentials = Arr::only($credentials, ['email', 'password']);
 
+        $this->loginThrottle->ensureNotLocked((string) $credentials['email']);
+
         try {
             return $this->withTokenLifetime($remember, function (int $ttlMinutes) use ($credentials, $remember) {
                 Auth::forgetGuards();
@@ -100,6 +104,10 @@ class AuthService
                 if (! $token = $guard->attempt($credentials)) {
                     throw new InvalidCredentialsException;
                 }
+
+                // Valid credentials: reset any quota burned by earlier wrong
+                // passwords so a recovered user is never locked out.
+                $this->loginThrottle->clear((string) $credentials['email']);
 
                 /** @var User $user */
                 $user = $guard->user();
@@ -125,6 +133,8 @@ class AuthService
                 return $this->buildAuthPayload($user, $token, $ttlMinutes, $remember);
             });
         } catch (InvalidCredentialsException $e) {
+            $this->loginThrottle->recordFailure((string) ($credentials['email'] ?? ''));
+
             LoginFailed::dispatch(
                 $credentials['email'] ?? 'unknown',
                 request()->ip() ?? 'unknown',
@@ -225,6 +235,10 @@ class AuthService
 
     public function loginWithTwoFactorToken(string $twoFactorToken, string $code): array
     {
+        $scope = '2fa:'.sha1($twoFactorToken);
+
+        $this->loginThrottle->ensureNotLocked($scope);
+
         $cacheKey = $this->twoFactorCacheKey($twoFactorToken);
         $stored = Cache::pull($cacheKey);
         $challenge = is_string($stored)
@@ -232,6 +246,8 @@ class AuthService
             : $stored;
 
         if (! is_array($challenge) || ! isset($challenge['user_id'], $challenge['remember'])) {
+            $this->loginThrottle->recordFailure($scope);
+
             TwoFactorLoginFailed::dispatch(
                 request()->ip() ?? 'unknown',
                 'invalid_token',
@@ -244,6 +260,8 @@ class AuthService
         $user = User::query()->find((string) $challenge['user_id']);
 
         if (! $user || ! $this->twoFactor->verifyLogin($user, $code)) {
+            $this->loginThrottle->recordFailure($scope);
+
             TwoFactorLoginFailed::dispatch(
                 request()->ip() ?? 'unknown',
                 'invalid_code',

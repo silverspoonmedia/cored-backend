@@ -28,4 +28,5 @@ return [
     'two_factor_already_enabled' => 'Autentikasi dua faktor sudah diaktifkan.',
     'two_factor_not_enabled' => 'Autentikasi dua faktor belum diaktifkan.',
     'invalid_two_factor_code' => 'Kode autentikasi dua faktor tidak valid.',
+    'login_throttled' => 'Terlalu banyak percobaan login. Silakan coba lagi dalam :seconds detik.',
 ];

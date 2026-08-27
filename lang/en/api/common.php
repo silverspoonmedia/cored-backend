@@ -17,4 +17,5 @@ return [
     'spa_origin_required' => 'This API is only reachable through the application.',
     'spa_csrf_issued' => 'CSRF token issued.',
     'spa_csrf_mismatch' => 'CSRF token mismatch.',
+    'too_many_requests' => 'Too many requests. Please slow down and try again.',
 ];

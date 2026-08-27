@@ -72,6 +72,7 @@ Pass/fail:
 - Application: `__Host-spa_jwt` HttpOnly on the API origin; no `mw_auth` in localStorage.
 - Hard refresh still logged in; logout clears the cookie; two tabs, one logout, the other dies on the next API call / `BroadcastChannel` logout.
 - Login / remember / 2FA / refresh near TTL.
+- Login lockout: credential endpoints (`auth/login`, `auth/two-factor/login`) reject with a **429 envelope** (`{status: "error", message}`) plus `Retry-After` when the identity (email+IP) exhausts its failure quota — identity-scoped and failure-only, enforced server-side in `AuthLoginThrottle`, so shared-IP users are never cross-locked and validation/hCaptcha rejects never consume quota. Surface `message` directly; do not auto-retry before `Retry-After`. Backend contract: [domains/identity/README.md — Login throttle](../domains/identity/README.md#login-throttle-identity-scoped-failure-only).
 - FH browse + upload, invoice CSV, Discord connect (`SPA_URL`), Echo bell or FH live event.
 - Sidebar **DMCA Blocklist** (`file-hosting.blocklist.index` → SPA `file-hosting.blocklist.index.view`) navigates.
 

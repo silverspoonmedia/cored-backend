@@ -17,4 +17,5 @@ return [
     'spa_origin_required' => 'このAPIには公式アプリケーション経由でのみアクセスできます。',
     'spa_csrf_issued' => 'CSRFトークンを発行しました。',
     'spa_csrf_mismatch' => 'CSRFトークンが一致しません。',
+    'too_many_requests' => 'リクエストが多すぎます。間隔を空けて再試行してください。',
 ];

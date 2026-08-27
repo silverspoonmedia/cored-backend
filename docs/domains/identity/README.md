@@ -88,6 +88,19 @@ Login, 2FA login, and register all inject the `rm` claim via `AuthService::custo
 
 When enabled: login, register, forgot-password, reset-password, and two-factor login require `h-captcha-response`. Server: `HcaptchaVerifier` + Form Request trait (`ValidatesHcaptcha`, merged into `ResetPasswordRequest` for parity with forgot-password). SPA: hCaptcha widget on auth views in `monolith-vue-workers`.
 
+### Login throttle (identity-scoped, failure-only)
+
+`POST /api/v1/auth/login` and `POST /api/v1/auth/two-factor/login` do **not** use route middleware `throttle:*` — enforcement lives in `App\Domain\Identity\Support\AuthLoginThrottle`, called from `AuthService::login()` and `AuthService::loginWithTwoFactorToken()`. Limits: `config/auth.php` → `login_throttle` (`max_attempts` 5, `decay_seconds` 60, `ip_backstop_max` 20).
+
+Behavior contract:
+
+- **Identity scope = email + client IP** (2FA scope = `2fa:` + sha1 of the challenge token). One user failing on a shared IP (NAT/CGNAT/office) never locks out other users on that IP — the previous `throttle:5,1` keyed every guest on `domain|IP` and caused exactly that false-positive.
+- **Failure-only counting.** `RateLimiter::hit()` runs only after `InvalidCredentialsException` / `InvalidTwoFactorCodeException`. Validation rejects (422), CSRF failures, hCaptcha failures, and successful logins never consume quota.
+- **Success resets.** Valid credentials clear the identity counter so a user who recovers the right password is not kept out by earlier typos.
+- **IP backstop** (`ip_backstop_max`, default 20/min) still contains cross-email brute force from one address; it is never cleared by a successful login.
+- **Locked response**: 429 JSON envelope with `Retry-After` / `X-RateLimit-*` headers (rendered in `bootstrap/app.php` `ThrottleRequestsException` handler).
+- Register keeps middleware `throttle:5,1,auth-register` — its own key prefix, so registrations never share a counter with logins.
+
 ### Public URLs (`SPA_URL`)
 
 `App\Support\SpaPublicUrl` is the single mint for browser-facing identity links when `config('services.spa.url')` is non-empty:
