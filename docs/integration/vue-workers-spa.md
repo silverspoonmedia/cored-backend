@@ -78,7 +78,7 @@ Pass/fail:
 
 ## Production URL minting (`SPA_URL`)
 
-`App\Support\SpaPublicUrl` prefixes browser-facing links onto `config('services.spa.url')` when that origin is non-empty; otherwise it falls back to `APP_URL` and the surviving server endpoints. CORS `allowed_origins` is `APP_URL` + `SPA_URL` (no `*`).
+`App\Support\SpaPublicUrl` prefixes browser-facing links onto `config('services.spa.url')` when that origin is non-empty; otherwise it falls back to `APP_URL` and the surviving server endpoints. CORS `allowed_origins` is `APP_URL` + `SPA_URL` + `CORS_EXTRA_ORIGINS` (no `*`).
 
 | Surface | Empty `SPA_URL` | Set `SPA_URL` |
 |---------|-----------------|---------------|
