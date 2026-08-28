@@ -97,12 +97,13 @@ API `action_route` + `action_params` carry symbolic route names inherited from t
 
 Ops after merge (not code):
 
-1. Monolith `SPA_URL` = public Vue-Workers origin (no trailing slash). Empty falls back to `APP_URL` + server endpoints.
-2. `VITE_API_BASE_URL` set to the Laravel API origin plus `/api/v1` in the SPA build. This value must live in the **tracked** `monolith-vue-workers/.env.production` (Vite auto-loads it for `vite build`; `.env.local` does not override it). `wrangler.jsonc` `vars` are runtime isolate env and never reach the browser bundle — putting `VITE_*` there silently produces a same-origin-fallback build that 404s every API call. `npm run deploy` from `monolith-vue-workers`.
+1. Monolith `SPA_URL` = public Vue-Workers origin for that backend environment (production `SPA_URL` → `monolith-spa-prod` origin, sandbox `SPA_URL` → `monolith-spa-sandbox` origin; no trailing slash). Empty falls back to `APP_URL` + server endpoints.
+2. `VITE_API_BASE_URL` set to the matching Laravel API origin plus `/api/v1` in the SPA build. This value lives in the **tracked** per-environment env files: `monolith-vue-workers/.env.production` and `.env.sandbox` (loaded via `vite build --mode <env>`; the mode file wins over `.env.local` during builds — verified on Vite 8). `wrangler.jsonc` `vars` are runtime isolate env and never reach the browser bundle — putting `VITE_*` there silently produces a same-origin-fallback build that 404s every API call.
+3. Deploy: `npm run deploy:production` or `npm run deploy:sandbox` from `monolith-vue-workers` — or push to `main` / `sandbox`, which auto-deploys the same environments through GitHub Actions (`.github/workflows/deploy.yml`; operational guide: `monolith-vue-workers/docs/deployment.md`). Each path pairs `vite build --mode <env>` with `wrangler deploy --env <env>` — never mix a mode with a different Wrangler env.
 4. hCaptcha: Settings on **and** `VITE_HCAPTCHA_SITE_KEY` set, or both off.
 5. File Hosting bucket / Gateway CORS includes the SPA origin and **exposes `ETag`**.
 6. Pusher or Sockudo: Laravel `PUSHER_*` + matching `VITE_PUSHER_*` in the SPA build.
-7. Cloudflare custom domain on the Worker. Do not invent a second Wrangler env unless a second API origin exists.
+7. Two official Wrangler environments exist: `production` → worker `monolith-spa-prod`, `sandbox` → worker `monolith-spa-sandbox`. Both publish a default `<name>.<account>.workers.dev` URL; attach Cloudflare custom domains per Worker when domains are decided. Do not add further Wrangler envs unless another API origin exists.
 8. API hostname is served through Cloudflare Tunnel with inbound VM/OCI ports closed. Verify tunnel ingress is an explicit allowlist with a final `http_status:404` catch-all; verify direct origin IPv4/IPv6 access fails.
 9. If Cloudflare Access is used, reserve it for internal/admin/debug surfaces unless an intentional user-facing Access login and CORS/preflight design exists. Never put Access service-token credentials in the SPA bundle.
 
@@ -546,7 +547,7 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 | Var | Purpose |
 |-----|---------|
 | `MONOLITH_API_ORIGIN` | Legacy local compatibility variable. Current Worker does not read it. **Not** bundled into the browser. |
-| `VITE_API_BASE_URL` | Set to the **Laravel API origin plus `/api/v1`**; every SPA API call goes direct. Local: `.env.local` wins over `.env`. Production builds: the tracked `.env.production` is authoritative (`.env.local` is ignored) so any machine running `npm run deploy` bakes the same origin. Empty only for local same-origin development. |
+| `VITE_API_BASE_URL` | Set to the **Laravel API origin plus `/api/v1`**; every SPA API call goes direct. Local: `.env.local` wins over `.env`. Deployed builds: the tracked `.env.production` / `.env.sandbox` are authoritative — during `vite build --mode <env>` the mode file wins over `.env.local` (verified on Vite 8), so any machine bakes the same origin. Empty only for local same-origin development. |
 | `VITE_PUSHER_APP_KEY` | Pusher app key (required for Echo — must match Monolith `PUSHER_APP_KEY`) |
 | `VITE_PUSHER_APP_CLUSTER` | Pusher cluster (default `mt1`) |
 | `VITE_PUSHER_HOST` | Self-hosted/Reverb host (omit for Pusher-hosted) |
@@ -556,7 +557,7 @@ Echo reads Pusher config from Vite env vars. The SPA **requires a `.env` file** 
 
 Discord OAuth return is **not** a Vite var. Set `SPA_URL` on the Monolith API host to this SPA's public origin (Vite/Workers URL). Empty `SPA_URL` → `GET auth/discord/authorize-url` 503.
 
-Values must mirror Monolith's `.env` `PUSHER_*` literals (and `HCAPTCHA_SITEKEY` when hCaptcha is on). `.env.local` overrides `.env` for every `VITE_*` key in local dev (that is why an old absolute `VITE_API_BASE_URL` survived Vite restarts); production builds read the tracked `.env.production` (`.env.local` does not override it) so `npm run deploy` bakes the correct origin on any machine. Worker origin serves static assets only; API origin is the bundled `VITE_API_BASE_URL`.
+Values must mirror Monolith's `.env` `PUSHER_*` literals (and `HCAPTCHA_SITEKEY` when hCaptcha is on). `.env.local` overrides `.env` for every `VITE_*` key in local dev (that is why an old absolute `VITE_API_BASE_URL` survived Vite restarts); during `vite build --mode production|sandbox` the tracked mode file wins over `.env.local` (verified on Vite 8), so deploy builds stay reproducible. Worker origin serves static assets only; API origin is the bundled `VITE_API_BASE_URL`.
 
 When `VITE_PUSHER_APP_KEY` is unset, Echo is not initialized and realtime-dependent features simply receive no live updates (manual reload required).
 
