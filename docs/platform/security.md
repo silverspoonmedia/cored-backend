@@ -75,7 +75,7 @@ Authz (permission / policy) is the first wall. Field gating is the second — a 
 
 ## CORS
 
-`config/cors.php` `allowed_origins` is `APP_URL` + `SPA_URL` (trimmed, unique, empty dropped). No `*`. Same-origin Vue-Workers `/api/*` traffic never hits Laravel CORS; this allowlist only matters if a browser talks to the Laravel host directly.
+`config/cors.php` `allowed_origins` is `APP_URL` + `SPA_URL` + any comma-separated origins in `CORS_EXTRA_ORIGINS` (all trimmed, trailing-slash-normalized, unique, empty dropped). No `*`. Same-origin Vue-Workers `/api/*` traffic never hits Laravel CORS; this allowlist only matters if a browser talks to the Laravel host directly. `CORS_EXTRA_ORIGINS` covers Cloudflare Workers preview URLs, localhost dev, or any additional SPA origin without loosening the credential rule below.
 
 `allowed_methods` is an explicit verb list (`GET, POST, PUT, PATCH, DELETE, OPTIONS`), not `*` — the API never serves other verbs, so they are not advertised to preflights. `allowed_headers` includes public `X-SPA-Origin`, which the SPA sends on direct versioned API calls. `supports_credentials = true` because the SPA authenticates cross-site with the HttpOnly `__Host-spa_jwt` cookie (`credentials: 'include'`). Credentialed CORS forbids a wildcard origin, which is why the origin list stays explicit. `Access-Control-Allow-Credentials: true` and the matched `Access-Control-Allow-Origin` are emitted on auth-error (401) responses too, so the browser surfaces the real 401 instead of a generic CORS error (probe: `tests/Feature/Http/CorsOnAuthErrorProbeTest.php`).
 

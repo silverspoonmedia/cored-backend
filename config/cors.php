@@ -9,11 +9,17 @@ return [
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
     // Browser Origin allowlist: Laravel API origin (APP_URL) + Vue-Workers
-    // (SPA_URL). The SPA calls the API directly with credentials, so this list
-    // must stay explicit — a wildcard origin cannot be combined with credentials.
+    // (SPA_URL), plus any extra origins via CORS_EXTRA_ORIGINS (comma-separated;
+    // preview URLs, localhost dev). The SPA calls the API directly with
+    // credentials, so this list must stay explicit — a wildcard origin cannot
+    // be combined with credentials. Empty CORS_EXTRA_ORIGINS = no extras.
     'allowed_origins' => array_values(array_unique(array_filter([
         rtrim((string) env('APP_URL', 'http://localhost'), '/'),
         rtrim((string) env('SPA_URL', ''), '/'),
+        ...array_map(
+            static fn (string $origin) => rtrim(trim($origin), '/'),
+            array_filter(array_map('trim', explode(',', (string) env('CORS_EXTRA_ORIGINS', '')))),
+        ),
     ]))),
 
     'allowed_origins_patterns' => [],
