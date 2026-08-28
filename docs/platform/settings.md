@@ -57,7 +57,7 @@ Enum-like string keys may declare an optional `options` list on the registry def
 | S3 / proxy | `FILE_HOSTING_S3_*`, `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Cloud credentials |
 | AI API keys | `MICROSTOCK_AI_*_API_KEY` | Provider secrets |
 | Mail / broadcast secrets | `MAIL_PASSWORD`, `PUSHER_APP_SECRET` | Standard secret hygiene |
-| Public origins | `APP_URL`, `SPA_URL` | Laravel API origin + Vue-Workers origin. `SPA_URL` is OAuth `return_to` allowlist, `SpaPublicUrl` mint origin, and CORS allowlist with `APP_URL`. Empty `SPA_URL` falls back to `APP_URL` + server endpoints and disables SPA OAuth return. |
+| Public origins | `APP_URL`, `SPA_URL`, `CORS_EXTRA_ORIGINS` | Laravel API origin + Vue-Workers origin + extra comma-separated origins (preview URLs, localhost dev). `SPA_URL` is OAuth `return_to` allowlist, `SpaPublicUrl` mint origin, and CORS allowlist with `APP_URL` (+ `CORS_EXTRA_ORIGINS` for extras). Empty `SPA_URL` falls back to `APP_URL` + server endpoints and disables SPA OAuth return. |
 
 Platform settings page shows **read-only secret status** via `php artisan config:verify-secrets` metadata — no edit fields.
 

@@ -110,7 +110,7 @@ Behavior contract:
 | Password reset | Signed API fallback | `{SPA_URL}/reset-password?token=&email=` |
 | Email verify | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — HMAC still generated against the API route on `APP_URL`. The SPA page GETs that signed path direct from the API origin (`VITE_API_BASE_URL`). |
 
-CORS `allowed_origins` is `APP_URL` + `SPA_URL` (`config/cors.php`). Same-origin Worker traffic does not use CORS. Details: [vue-workers-spa — Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url).
+CORS `allowed_origins` is `APP_URL` + `SPA_URL` + `CORS_EXTRA_ORIGINS` (`config/cors.php`). Same-origin Worker traffic does not use CORS. Details: [vue-workers-spa — Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url).
 
 ## Auth API (`/api/v1/auth/*`)
 

@@ -36,6 +36,7 @@ final class EnvironmentVariableCatalog
             'APP_DEBUG' => self::TYPE_BOOL,
             'APP_URL' => self::TYPE_STRING,
             'SPA_URL' => self::TYPE_STRING,
+            'CORS_EXTRA_ORIGINS' => self::TYPE_STRING,
             'APP_LOCALE' => self::TYPE_STRING,
             'APP_FALLBACK_LOCALE' => self::TYPE_STRING,
             'APP_FAKER_LOCALE' => self::TYPE_STRING,
