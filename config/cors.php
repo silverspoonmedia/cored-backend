@@ -38,7 +38,9 @@ return [
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    // Cache preflights so post-login credentialed GETs do not OPTIONS every
+    // call. Not a substitute for the SPA cookie-write gate / settle retry.
+    'max_age' => 600,
 
     // The SPA authenticates cross-site via the HttpOnly __Host-spa_jwt cookie
     // (credentials: 'include'), so the API must allow credentialed requests.

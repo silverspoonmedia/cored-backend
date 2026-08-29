@@ -13,6 +13,7 @@ use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\VerifySpaCsrf;
 use App\Support\ApiResponder;
 use App\Support\Auth\SpaCsrf;
+use App\Support\Http\StampApiCors;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Middleware\Authenticate;
@@ -35,6 +36,7 @@ use Spatie\Permission\Exceptions\UnauthorizedException as PermissionUnauthorized
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -295,6 +297,22 @@ $app = Application::configure(basePath: dirname(__DIR__))
             return back()
                 ->withInput()
                 ->with('error', $message);
+        });
+
+        // Exception / abort() responses skip HandleCors's $next wrap. Stamp the
+        // same credentialed allowlist so the SPA reads 401/403/419 instead of a
+        // browser CORS TypeError. No-ops when HandleCors already set the header.
+        $exceptions->respond(function (mixed $response, mixed $exception = null, mixed $request = null) {
+            if (! $response instanceof SymfonyResponse) {
+                return $response;
+            }
+
+            $req = $request instanceof Request ? $request : request();
+            if (! $req instanceof Request) {
+                return $response;
+            }
+
+            return StampApiCors::apply($response, $req);
         });
     })->create();
 
