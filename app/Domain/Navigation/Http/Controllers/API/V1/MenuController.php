@@ -2,25 +2,27 @@
 
 namespace App\Domain\Navigation\Http\Controllers\API\V1;
 
-use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
-use App\Http\Controllers\Controller;
+use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Http\Requests\IndexMenuListRequest;
 use App\Domain\Navigation\Http\Requests\IndexNavigationMenuRequest;
 use App\Domain\Navigation\Http\Requests\StoreMenuRequest;
 use App\Domain\Navigation\Http\Requests\UpdateMenuRequest;
-use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Domain\Navigation\Http\Resources\MenuDetailResource;
 use App\Domain\Navigation\Http\Resources\MenuListResource;
 use App\Domain\Navigation\Http\Resources\MenuTrashedResource;
 use App\Domain\Navigation\Models\Menu;
-use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Services\MenuService;
-use App\Support\DataTable\DataTableResponseFactory;
 use App\Domain\Navigation\Support\DataTable\MenuRowActionResolver;
 use App\Domain\Navigation\Support\DataTable\MenuTrashedRowActionResolver;
 use App\Domain\Navigation\Support\MenuLayout;
 use App\Domain\Navigation\Support\MenuPresenter;
+use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ApiResponder;
+use App\Support\DataTable\DataTableResponseFactory;
 use App\Traits\ApiResponse;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -180,7 +182,9 @@ class MenuController extends Controller
         $user = Auth::guard('api')->user();
 
         if (! $user instanceof User) {
-            abort(401);
+            throw new HttpResponseException(
+                ApiResponder::error(__('api/auth.bearer_required'), 401),
+            );
         }
 
         return $user;

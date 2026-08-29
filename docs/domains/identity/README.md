@@ -10,7 +10,7 @@ Auth is **not** on global `/api/*` — only versioned v1.
 |---------|----------------|
 | Guard | `api` (JWT driver) |
 | PK | UUID v7 (`HasUuids`) |
-| Token | Bearer JWT |
+| Token | SPA: HttpOnly `__Host-spa_jwt` cookie. Machine clients: `Authorization: Bearer`. |
 | Authorization | Spatie roles/permissions (`guard_name: api`, `domain_kind: core\|product`) |
 | Auth persistence | Dedicated `UserRepository` |
 | User admin | `UserManagementService` + `UserPolicy` + `RoleService` |
@@ -70,7 +70,7 @@ Tier A (env only) vs operational settings: [configuration-policy.md](../../platf
 
 ### SPA cookie-mode refresh & token strip
 
-The SPA authenticates cross-site with the HttpOnly `__Host-spa_jwt` cookie instead of a Bearer header, so `AuthService::refresh()` falls back to that cookie when no `Authorization` header is present — a cookie-mode session refreshes the same way (otherwise it would hard-expire at `jwt.ttl`). On login/register/refresh/2FA-login the raw JWT is set as the `__Host-spa_jwt` cookie and **stripped from the JSON body** (`data.token` removed) so SPA JS never reads it and an XSS payload cannot exfiltrate it; `TwoFactorController` applies the same strip. The `__Host-` prefix enforces `Secure`, `Path=/`, and no `Domain`. Full contract: [../../integration/vue-workers-spa.md](../../integration/vue-workers-spa.md).
+The SPA authenticates cross-site with the HttpOnly `__Host-spa_jwt` cookie instead of a Bearer header, so `AuthService::refresh()` falls back to that cookie when no `Authorization` header is present — a cookie-mode session refreshes the same way (otherwise it would hard-expire at `jwt.ttl`). On login/register/refresh/2FA-login the raw JWT is set as the `__Host-spa_jwt` cookie and **stripped from the JSON body** (`data.token` removed) so SPA JS never reads it and an XSS payload cannot exfiltrate it; `TwoFactorController` applies the same strip. The `__Host-` prefix enforces `Secure`, `Path=/`, and no `Domain`. After login the SPA confirms the cookie (`confirmSession` / `markSessionIssued`) before navigating — [vue-workers-spa.md — Post-login cookie-settle](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync). Full contract: [../../integration/vue-workers-spa.md](../../integration/vue-workers-spa.md).
 
 The removed Blade admin used a separate first-party JWT cookie bridge; that middleware is gone — see [web/blade-admin.md](../../web/blade-admin.md).
 
