@@ -373,7 +373,7 @@ Authenticated routes set `meta.titleKey` (and guest auth routes also `meta.headi
 - **Auth heading**: `AuthLayout.vue` renders `heading` as `login-box-msg`.
 - **Tab title**: `App.vue` watches `documentTitle` and sets `document.title` to `{page} | Monolith` (or `Monolith` when there is no title). Recomputes on locale change.
 - **DataTable chrome**: `DataTable.vue` uses `ui.datatable.*` (`search_placeholder`, `empty_title`, `info`, `per_page`) and `ui.labels.actions`. Catalog dumps (`useResource` + DataTable) send `display_mode=query&page&per_page=10` (and `search` when the box is used) and parse `{ items, pagination }` **or** a legacy flat `T[]`. Default page size is **10** (Blade DataTables). Menus tree stays a full dump + client slice (no server paging). Do not port Yajra JS. Do not invent a second list URL. `MenusView` opts out of `DataTable.vue` for a plain `<table>` + client-side `searchQuery` filter (no pagination, no sort) so the `h`/`p`/`c` hierarchy is never split across pages; empty still uses in-table `TableEmptyRow` (`bi-list-nested`). `MenusTrashedView` still uses `DataTable.vue`. Card grids, file-hosting browsers, and overview mini-tables are not datatables — they keep their own empty UI.
-- **Row actions**: icon-only (`RowActions.vue`) — `aria-label` + `title` from the label, icon `aria-hidden`, `btn-group btn-group-sm`. Each `RowAction` is either a navigation (`to: RouteLocationRaw` → rendered as `<router-link>` so the browser shows the URL on hover) or a real action (`onClick` → `<button>`). Toolbar primaries stay icon + text (`Add user`). File Hosting `.fh-action-group` is already icon-only — leave it.
+- **Row actions**: Monolith query-mode `row.actions[]` is the source of keys, destinations, RBAC visibility, and mutate confirm copy. SPA `mapQueryRowActions` / `findQueryRowAction` in `src/utils/mapQueryRowActions.ts` only maps and executes — views must not invent keys. Icon-only lists keep `RowActions.vue` (`aria-label` + `title` from the API label, icon `aria-hidden`, `btn-group btn-group-sm`). Nav → `route` + `.view`; external → `href`/`target` (sanitized with `safeHttpUrl`); mutate → existing composable + `confirmDialog` using API `confirm`. Labeled columns (currencies activate/settlement, audiences Edit, vTual platform Manage, blocklist remove) stay labeled and still read `row.actions`. `@row-click` uses the same nav action already on the row. Toolbar primaries stay icon + text (`Add user`). File Hosting browse `.fh-action-group` is out of scope. Yajra `display_mode=datatable` `actions[]` has no SPA consumer — do not extend it.
 - **Navigation buttons vs action buttons**: Any button whose only effect is `router.push(...)` MUST be a `<router-link :to="...">` so the destination URL is visible on hover (browser status bar / address bar tooltip). Real actions (delete, save, export, probe, restore) stay `<button>` — they have side effects and no meaningful URL. `router.back()` buttons stay `<button>` too (destination is history-dependent, not resolvable). Disabled nav (e.g. cancel while saving) uses `<router-link>` + Bootstrap `disabled` class + `aria-disabled` + `tabindex="-1"` instead of the native `:disabled` attribute (which only works on `<button>`).
 
 ### AdminLTE page grid
@@ -495,12 +495,18 @@ Authenticated `/apps/vtual/orphans` mimics Blade staff seed (appearance + behavi
 
 | Step | SPA contract |
 |------|----------------|
-| List | Subtitle `web.vtual-orphans.subtitle`. Row actions: edit + archive. Archive is `DELETE /api/v1/vtual/creators/{id}` after `confirmDialog` (`datatable.confirm_delete`); refetch the list. Claimed rows already omitted by `GET creators/orphans`. |
+| List | Subtitle `web.vtual-orphans.subtitle`. Query-mode `actions[]`: `edit` → `vtual.orphans.edit`; `delete` archive → `DELETE /api/v1/vtual/creators/{id}` after `confirmDialog` using API confirm (`web/vtual-orphans.datatable.confirm_delete`). SPA maps keys; refetch the list. Claimed rows already omitted by `GET creators/orphans`. |
 | Create | `POST /api/v1/vtual/creators/orphan` → `vtual.orphans.edit.view` with the new `id`. An orphan without channels is not claimable in practice. |
 | Save | `PATCH /api/v1/vtual/creators/{id}` stays on edit. Cancel/back go to index. |
 | Channels | Staff `POST /api/v1/vtual/creators/{id}/channels` is `registerPendingForStaff` (pending channel, in-place append, skip duplicate `id`). Not a claim — do not treat `attempt_count` as `channel_claim_started` on this page. YouTube/Twitch placeholders + 5-col table (avatar / platform / profile_input\|\|external_id / handle / status). |
 
 Create and edit share `VtualOrphanEditView`. `AppLayout` is a bare `<router-view />` (no `:key`), so create→edit does **not** remount. Watch `route.params.id` / `isEdit`: reset the form, hydrate on edit, skip hydrate on create.
+
+### vTual owned profile manage
+
+Authenticated `/apps/vtual/profiles` (`VtualProfilesView`) lists owned creators. Query-mode `actions[]`: `edit` → SPA `vtual.profiles.show` + `id`; `view` → `href` `profile_url`, `_blank`. SPA maps those keys into `RowActions`. Row-click follows the `edit` nav action (`/apps/vtual/profiles/:id`).
+
+Authenticated `/apps/vtual/profiles/:id` (`VtualProfileShowView`). Active-channel actions are promote (private Discord-discovered → public) and archive. There is **no** per-channel snapshot Refresh button. Display name, avatar, banner, description, and YouTube subscriber count update via scheduled `vtual:flush-channel-pool --resync` (hourly; flush also runs every minute when the pool already has pending ids). `POST /api/v1/vtual/channels/{id}/refresh` remains for ops/API only — `useVtual` does not wrap it.
 
 ### Settings menu names
 
@@ -535,7 +541,7 @@ These are the safe zone. Keep the current approaches.
 
 **B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout={sidebar|navbar|vtual}`; admin layout select options come from `GET navigation/menus/layouts`. File Hosting three Vue routes instead of the removed single-island shell; team as a page rather than an offcanvas; listing-only move picker; rate editor re-fetch instead of full reload.
 
-**C — Gray (optional later, not a product blocker).** Live-reload on 2 of 7 catalogs (`NotificationType::tableId()` only emits those two), local row-action chrome vs query-mode `actions[]` (deletes on users / inference / gateways / services are wired locally with Blade-equivalent permission + confirm; hierarchy still 403s from the API), Laravel plural pipe hack.
+**C — Gray (optional later, not a product blocker).** Live-reload on 2 of 7 catalogs (`NotificationType::tableId()` only emits those two), Laravel plural pipe hack. Query-mode `actions[]` is the live row-button source — closed (see [list-display-modes.md](../platform/list-display-modes.md#query-mode-actions-live-spa-contract)). Hierarchy still 403s from the API on mutate.
 
 Do not treat a read-only show-page microstock card as “review is done.” Review is `FhMicrostockReviewModal` consuming `GET|PATCH microstock/assets/{file}/metadata`.
 

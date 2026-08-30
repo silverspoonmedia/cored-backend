@@ -6,6 +6,9 @@ use App\Domain\FileHosting\Http\Resources\HashBlocklistResource;
 use App\Domain\FileHosting\Models\FileHostingHashBlocklist;
 use App\Domain\FileHosting\Services\HashBlocklistService;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ListActions\Builders\HashBlocklistQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,12 +16,14 @@ use Illuminate\Http\Request;
 class HashBlocklistController extends Controller
 {
     use ApiResponse;
+    use ResolvesResourceArray;
 
     public function __construct(
         private readonly HashBlocklistService $blocklist,
+        private readonly HashBlocklistQueryRowActions $queryRowActions,
     ) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $entries = FileHostingHashBlocklist::query()
             ->with('creator')
@@ -26,7 +31,12 @@ class HashBlocklistController extends Controller
             ->get();
 
         return $this->successResponse(
-            HashBlocklistResource::collection($entries),
+            QueryRowActionAttacher::attach(
+                $this->resolveResource(HashBlocklistResource::collection($entries)),
+                $entries,
+                $this->queryRowActions,
+                $request->user(),
+            ),
             __('api/file-hosting.blocklist_loaded'),
         );
     }

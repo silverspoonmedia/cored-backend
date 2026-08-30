@@ -55,8 +55,8 @@ A node is visible only if **it and every ancestor** pass these rules in order:
 |--------|------|------------|---------|
 | GET | `/` | `jwt.optional` | Visible tree (`?layout=`, `?q=`) |
 | GET | `/layouts` | `jwt.optional` | Configured layout identifiers (config-driven) |
-| GET | `/list` | `auth:api`, `view menu` | Admin flat list / plain table |
-| GET | `/trashed` | `auth:api`, `view menu` | Soft-deleted rows |
+| GET | `/list` | `auth:api`, `view menu` | Admin flat list / plain table. Rows include query-mode `actions[]` (`edit` / `delete` with layout query; SPA `MenusView` maps them — does not invent keys) |
+| GET | `/trashed` | `auth:api`, `view menu` | Soft-deleted rows. Same `actions[]` contract (`restore` / `force-delete`) for `MenusTrashedView` |
 | POST | `/` | `auth:api`, `manage menu` | Create menu |
 | GET | `/{menu}` | `auth:api`, `view menu` | Show menu |
 | PUT/PATCH | `/{menu}` | `auth:api`, `manage menu` | Update menu |

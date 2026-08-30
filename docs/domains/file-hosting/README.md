@@ -443,7 +443,7 @@ Resume upload was removed — its client-side fingerprint was a major throughput
 
 - Table `file_hosting_hash_blocklist`: `id` uuid, `sha256` (64) unique-indexed, `reason` nullable, `created_by` uuid nullable, timestamps. Model `FileHostingHashBlocklist`; `HashBlocklistService` exposes `isBlocked` / `isFileBlocked` / `block` / `unblock` (queries the DB directly — Octane-safe).
 - **Enforcement:** `VisibilityService::assertCanEnableLinkShare` / `assertVisibilityChangeAllowed` (via `FileService::setVisibility` and `bulkSetVisibility`) reject enabling `anyone_with_link` for a blocked checksum with **422 `public_share_blocked_hash`**; bulk share is rejected when **any** targeted file is blocked. Guest show/download (`fileAccessible`) returns **404** for a blocked checksum even if the file was already public.
-- **Manage:** Artisan `file-hosting:blocklist-hash {sha256} {--reason=} {--remove}` and an admin page (`file-hosting.blocklist.*` routes, gated by `manage any file hosting resource`) to list/add/remove entries.
+- **Manage:** Artisan `file-hosting:blocklist-hash {sha256} {--reason=} {--remove}` and an admin page (`file-hosting.blocklist.*` routes, gated by `manage any file hosting resource`) to list/add/remove entries. Query-mode list rows emit `actions[]` (`remove`); the labeled trash control maps that key.
 - `HostedFileResource` exposes `is_hash_blocked` so the UI can badge blocked files.
 
 **Background processes (must be running):**

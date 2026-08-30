@@ -21,6 +21,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\ApiResponder;
 use App\Support\DataTable\DataTableResponseFactory;
+use App\Support\ListActions\Builders\MenuQueryRowActions;
+use App\Support\ListActions\Builders\MenuTrashedQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
@@ -82,7 +85,12 @@ class MenuController extends Controller
         return $this->respondToListDisplayMode(
             $request,
             fn (): JsonResponse => $this->successResponse(
-                $this->resolveResource(MenuListResource::collection($menus)),
+                QueryRowActionAttacher::attach(
+                    $this->resolveResource(MenuListResource::collection($menus)),
+                    $menus,
+                    new MenuQueryRowActions($layout),
+                    $actor,
+                ),
                 __('api/navigation.list_success'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(
@@ -144,7 +152,12 @@ class MenuController extends Controller
         return $this->respondToListDisplayMode(
             $request,
             fn (): JsonResponse => $this->successResponse(
-                $this->resolveResource(MenuTrashedResource::collection($menus)),
+                QueryRowActionAttacher::attach(
+                    $this->resolveResource(MenuTrashedResource::collection($menus)),
+                    $menus,
+                    new MenuTrashedQueryRowActions,
+                    $actor,
+                ),
                 __('api/navigation.trashed_success'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

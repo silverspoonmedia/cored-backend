@@ -14,6 +14,8 @@ use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\DataTable\DataTableResponseFactory;
+use App\Support\ListActions\Builders\InferenceProviderQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
@@ -27,6 +29,7 @@ class InferenceProviderController extends Controller
         private readonly InferenceCatalogService $catalog,
         private readonly DataTableResponseFactory $dataTables,
         private readonly InferenceProviderRowActionResolver $rowActions,
+        private readonly InferenceProviderQueryRowActions $queryRowActions,
     ) {}
 
     public function index(IndexInferenceProviderRequest $request): JsonResponse
@@ -38,7 +41,12 @@ class InferenceProviderController extends Controller
             fn (): JsonResponse => $this->respondToQueryList(
                 $request,
                 $providers,
-                fn ($list) => $this->resolveResource(InferenceProviderResource::collection($list)),
+                fn ($list) => QueryRowActionAttacher::attach(
+                    $this->resolveResource(InferenceProviderResource::collection($list)),
+                    $list,
+                    $this->queryRowActions,
+                    $request->user(),
+                ),
                 __('api/inference.providers.list'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

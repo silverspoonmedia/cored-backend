@@ -2,6 +2,7 @@
 
 namespace App\Domain\Vtual\Http\Controllers\API\V1;
 
+use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Http\Requests\StorePlatformCredentialRequest;
 use App\Domain\Vtual\Http\Requests\UpdatePlatformCredentialRequest;
 use App\Domain\Vtual\Http\Resources\PlatformCredentialResource;
@@ -10,8 +11,11 @@ use App\Domain\Vtual\Models\PlatformCredential;
 use App\Domain\Vtual\Services\PlatformCredentialService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ListActions\Builders\PlatformCredentialQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class PlatformCredentialController extends Controller
 {
@@ -20,16 +24,22 @@ class PlatformCredentialController extends Controller
 
     public function __construct(
         private readonly PlatformCredentialService $credentials,
+        private readonly PlatformCredentialQueryRowActions $queryRowActions,
     ) {}
 
-    public function index(Platform $platform): JsonResponse
+    public function index(Request $request, Platform $platform): JsonResponse
     {
         $this->authorize('viewAny', PlatformCredential::class);
 
+        $list = $this->credentials->listForPlatform($platform);
+
         return $this->successResponse(
-            $this->resolveResource(PlatformCredentialResource::collection(
-                $this->credentials->listForPlatform($platform)
-            )),
+            QueryRowActionAttacher::attach(
+                $this->resolveResource(PlatformCredentialResource::collection($list)),
+                $list,
+                $this->queryRowActions,
+                $request->user(),
+            ),
             __('api/vtual.credential.list_success'),
         );
     }
@@ -41,20 +51,20 @@ class PlatformCredentialController extends Controller
         $credential = $this->credentials->create($request->user(), $platform, $request->validated());
 
         return $this->successResponse(
-            $this->resolveResource(new PlatformCredentialResource($credential)),
+            $this->presentCredential($credential, $request->user()),
             __('api/vtual.credential.created'),
             201,
         );
     }
 
-    public function show(PlatformCredential $credential): JsonResponse
+    public function show(Request $request, PlatformCredential $credential): JsonResponse
     {
         $this->authorize('view', $credential);
 
         $loaded = $this->credentials->findOrFail($credential->id);
 
         return $this->successResponse(
-            $this->resolveResource(new PlatformCredentialResource($loaded)),
+            $this->presentCredential($loaded, $request->user()),
             __('api/vtual.credential.show_success'),
         );
     }
@@ -64,14 +74,14 @@ class PlatformCredentialController extends Controller
         $this->authorize('update', $credential);
 
         $data = $request->validated();
-        if (array_key_exists('secret', $data) && ( ! is_array($data['secret']) || $data['secret'] === [])) {
+        if (array_key_exists('secret', $data) && (! is_array($data['secret']) || $data['secret'] === [])) {
             unset($data['secret']);
         }
 
         $updated = $this->credentials->update($credential, $data);
 
         return $this->successResponse(
-            $this->resolveResource(new PlatformCredentialResource($updated)),
+            $this->presentCredential($updated, $request->user()),
             __('api/vtual.credential.updated'),
         );
     }
@@ -88,19 +98,19 @@ class PlatformCredentialController extends Controller
         );
     }
 
-    public function revoke(PlatformCredential $credential): JsonResponse
+    public function revoke(Request $request, PlatformCredential $credential): JsonResponse
     {
         $this->authorize('update', $credential);
 
         $updated = $this->credentials->revoke($credential);
 
         return $this->successResponse(
-            $this->resolveResource(new PlatformCredentialResource($updated)),
+            $this->presentCredential($updated, $request->user()),
             __('api/vtual.credential.revoked'),
         );
     }
 
-    public function test(PlatformCredential $credential): JsonResponse
+    public function test(Request $request, PlatformCredential $credential): JsonResponse
     {
         $this->authorize('update', $credential);
 
@@ -108,7 +118,7 @@ class PlatformCredentialController extends Controller
         $loaded = $result->credential ?? $this->credentials->findOrFail($credential->id);
 
         $payload = [
-            'credential' => $this->resolveResource(new PlatformCredentialResource($loaded)),
+            'credential' => $this->presentCredential($loaded, $request->user()),
             'test' => $result->toPublicArray(),
         ];
 
@@ -120,5 +130,18 @@ class PlatformCredentialController extends Controller
             $payload,
             __('api/vtual.credential.test_success'),
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function presentCredential(PlatformCredential $credential, mixed $actor): array
+    {
+        return QueryRowActionAttacher::attach(
+            [$this->resolveResource(new PlatformCredentialResource($credential))],
+            [$credential],
+            $this->queryRowActions,
+            $actor instanceof User ? $actor : null,
+        )[0];
     }
 }

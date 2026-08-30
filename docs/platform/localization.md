@@ -33,6 +33,7 @@ Translation workflow:
 |-------|----------------|
 | Remaining PHP `web/*` strings (Discord callback, CSRF, FH errors) | `lang/{locale}/web/*` |
 | SPA labels | sibling `monolith-vue-workers` JSON locales |
+| Query-mode row-action labels / confirms | `lang/{locale}/list_actions.php` (plus reused `ui.*` / `web/*`) |
 | API messages / policy / business exceptions | `lang/{locale}/api/*` |
 | FormRequest messages | `forms/*` or `__()` in request |
 | Translatable DB fields | Spatie + admin input per locale |
@@ -72,7 +73,7 @@ Runtime `setLocale()` persists the SPA choice and updates the HTML `lang` attrib
 
 ```
 lang/{en,id,ja}/
-  ui.php, menu.php, notifications.php, mail.php
+  ui.php, menu.php, notifications.php, mail.php, list_actions.php
   web/*.php
   api/*.php
   forms/*.php
@@ -80,13 +81,14 @@ lang/{en,id,ja}/
 
 Managed files listed in `config/localization.php` → `managed_files`.
 
-`web/*.php` shrank with the Blade removal — it now holds only strings that surviving **server-side PHP** still resolves: `session`, `identity-connections`, `vtual-vtuber` (Discord callback flash), `payments`, `file-hosting` (direct-upload errors), `settings` (registry labels), and `vtual-orphans` (row-action confirm on the retained datatable path — see [list-display-modes.md](list-display-modes.md)). Browser UI strings live in the SPA's JSON locales, not here. Do not add a `web/*.php` file for a screen; if only the SPA reads it, it belongs in `monolith-vue-workers/src/i18n/locales/*.json`.
+`web/*.php` shrank with the Blade removal — it now holds only strings that surviving **server-side PHP** still resolves: `session`, `identity-connections`, `vtual-vtuber` (Discord callback flash), `payments`, `file-hosting` (direct-upload errors), `settings` (registry labels), and `vtual-orphans` (orphan archive confirm, reused by query-mode `OrphanCreatorQueryRowActions` and the unused Yajra resolver — see [list-display-modes.md](list-display-modes.md)). Query-mode row-action labels and mutate confirms that are not already in `ui.php` / `web/*` live in `list_actions.php` (API-emitted; the SPA displays them, it does not re-translate). Browser UI strings live in the SPA's JSON locales, not here. Do not add a `web/*.php` file for a screen; if only the SPA reads it, it belongs in `monolith-vue-workers/src/i18n/locales/*.json`.
 
 ## Key conventions
 
 | Context | Example |
 |---------|---------|
 | Shared UI | `__('ui.actions.save')` |
+| Query-mode row actions | `__('list_actions.manage')` — labels/confirms emitted on `actions[]` |
 | Server `web` strings | `__('web/session.expired')` — only the handful of files still reached by server endpoints (see below) |
 | API domain | `__('api/navigation.created')` |
 | Static nav labels | `__('menu.dashboard')` |

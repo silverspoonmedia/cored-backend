@@ -69,7 +69,7 @@ HTTP → Form Request → Controller → Service → Repository → Model
 
 Reference for shared-repo CRUD: Identity `UserController` → user services/repos under `app/Domain/Identity/`, routes in `routes/api/v1/identity.php`.
 
-API envelope: `ApiResponse` (`status`, `message`, optional `data`). List/show use Eloquent API Resources under `App\Domain\{Domain}\Http\Resources\…`. Tabular indexes that support `display_mode` may return a flat `T[]` or, when `page` / `per_page` / `search` are present on `display_mode=query`, `{ items, pagination }` — [list-display-modes.md](list-display-modes.md).
+API envelope: `ApiResponse` (`status`, `message`, optional `data`). List/show use Eloquent API Resources under `App\Domain\{Domain}\Http\Resources\…`. Tabular indexes that support `display_mode` may return a flat `T[]` or, when `page` / `per_page` / `search` are present on `display_mode=query`, `{ items, pagination }` — [list-display-modes.md](list-display-modes.md). Query and flat list rows carry `actions[]` (`QueryRowAction`); that is the live SPA row-button source.
 
 ## API Resource presentation (dual fields)
 

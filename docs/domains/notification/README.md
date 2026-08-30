@@ -158,7 +158,7 @@ Bell UI, inbox (`/apps/notifications`), and audience admin live in Monolith-Vue-
 
 ### B — Audience only
 
-Edit **Administration → Settings → Notification audiences** (`/apps/notification-audiences`) or seeder pivots. Seeder remains the bootstrap baseline.
+Edit **Administration → Settings → Notification audiences** (`/apps/notification-audiences`) or seeder pivots. Seeder remains the bootstrap baseline. List `items[]` emit query-mode `actions[]` (`edit` → `notification-audiences.edit` when the actor can `manage settings`); the labeled Edit column maps that key.
 
 ### C — Copy only
 

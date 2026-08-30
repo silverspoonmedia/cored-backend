@@ -110,6 +110,7 @@ Authenticated screens live in Monolith-Vue-Workers under `/apps/*` (Vue Router n
 |-------|--------|
 | URI | `/apps/error-logs`, `/apps/error-logs/{errorLog}` |
 | SPA routes | `error-logs.index`, `error-logs.show` |
+| List `actions[]` | Query-mode `view` → `error-logs.show`; SPA maps into `RowActions` |
 | Status | `PATCH /api/v1/error-logs/{errorLog}/status` |
 | Menu | Administration → Monitoring → Error log (Root/Admin), `MenuSeeder` |
 

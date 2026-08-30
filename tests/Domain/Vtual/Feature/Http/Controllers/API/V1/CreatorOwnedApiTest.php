@@ -42,6 +42,14 @@ class CreatorOwnedApiTest extends TestCase
             ->assertJsonPath('data.0.id', (string) $owned->id)
             ->assertJsonPath('data.0.display_name', 'Owned One')
             ->assertJsonPath('data.0.profile_url', SpaPublicUrl::vtuberProfile($owned->slug));
+
+        $actions = collect($this->actingAsJwt($user)
+            ->getJson('/api/v1/vtual/creators/owned')
+            ->json('data.0.actions'));
+        $this->assertSame(['edit', 'view'], $actions->pluck('key')->all());
+        $this->assertSame('vtual.profiles.show', $actions->firstWhere('key', 'edit')['route']);
+        $this->assertSame(SpaPublicUrl::vtuberProfile($owned->slug), $actions->firstWhere('key', 'view')['href']);
+        $this->assertSame('_blank', $actions->firstWhere('key', 'view')['target']);
     }
 
     #[Test]

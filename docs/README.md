@@ -23,7 +23,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [architecture.md](platform/architecture.md) | Logical monorepo, kind core\|product + locked lifecycle, routes, namespaces |
 | [api-routing.md](platform/api-routing.md) | Global vs versioned API |
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
-| [list-display-modes.md](platform/list-display-modes.md) | `display_mode` list contract, `/api/v1/lookups/*`, retained-but-unused Yajra datatable mode |
+| [list-display-modes.md](platform/list-display-modes.md) | `display_mode` list contract, query-mode `actions[]` (live SPA row buttons), `/api/v1/lookups/*`, retained-but-unused Yajra datatable mode |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
 | [environment.md](platform/environment.md) | `.env` profiles, typed quoting, assignment-key parity, `env:curate`, config cache |
 | [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, Tier B settings cache contract, agent checklist |

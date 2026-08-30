@@ -10,6 +10,8 @@ use App\Domain\Vtual\Models\Management;
 use App\Domain\Vtual\Services\ManagementService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ListActions\Builders\ManagementQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,14 +23,22 @@ class ManagementController extends Controller
 
     public function __construct(
         private readonly ManagementService $managements,
+        private readonly ManagementQueryRowActions $queryRowActions,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Management::class);
 
+        $list = $this->managements->listForUser($request->user());
+
         return $this->successResponse(
-            $this->resolveResource(ManagementResource::collection($this->managements->listForUser($request->user()))),
+            QueryRowActionAttacher::attach(
+                $this->resolveResource(ManagementResource::collection($list)),
+                $list,
+                $this->queryRowActions,
+                $request->user(),
+            ),
             __('api/vtual.management.list_success'),
         );
     }

@@ -13,6 +13,8 @@ use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\DataTable\DataTableResponseFactory;
+use App\Support\ListActions\Builders\InvoiceQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -28,6 +30,7 @@ class InvoiceController extends Controller
         private readonly InvoiceCsvExportService $csvExport,
         private readonly DataTableResponseFactory $dataTables,
         private readonly InvoiceRowActionResolver $rowActions,
+        private readonly InvoiceQueryRowActions $queryRowActions,
     ) {}
 
     public function index(IndexInvoiceRequest $request): JsonResponse
@@ -39,7 +42,12 @@ class InvoiceController extends Controller
             fn (): JsonResponse => $this->respondToQueryList(
                 $request,
                 $invoices,
-                fn ($list) => $this->resolveResource(InvoiceResource::collection($list)),
+                fn ($list) => QueryRowActionAttacher::attach(
+                    $this->resolveResource(InvoiceResource::collection($list)),
+                    $list,
+                    $this->queryRowActions,
+                    $request->user(),
+                ),
                 __('api/payments.invoices.list'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

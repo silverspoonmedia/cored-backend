@@ -11,6 +11,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\DataTable\DataTableResponseFactory;
 use App\Support\DataTable\Resolvers\OrphanCreatorRowActionResolver;
+use App\Support\ListActions\Builders\OrphanCreatorQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,6 +27,7 @@ class OrphanCreatorController extends Controller
         private readonly CreatorService $creators,
         private readonly DataTableResponseFactory $dataTables,
         private readonly OrphanCreatorRowActionResolver $rowActions,
+        private readonly OrphanCreatorQueryRowActions $queryRowActions,
     ) {}
 
     public function index(IndexOrphanCreatorRequest $request): JsonResponse
@@ -37,7 +40,12 @@ class OrphanCreatorController extends Controller
             fn (): JsonResponse => $this->respondToQueryList(
                 $request,
                 $orphans,
-                fn ($list) => $this->resolveResource(CreatorResource::collection($list)),
+                fn ($list) => QueryRowActionAttacher::attach(
+                    $this->resolveResource(CreatorResource::collection($list)),
+                    $list,
+                    $this->queryRowActions,
+                    $actor,
+                ),
                 __('api/vtual.orphan.list_success'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

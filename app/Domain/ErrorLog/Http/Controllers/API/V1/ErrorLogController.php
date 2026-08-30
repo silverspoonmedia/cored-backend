@@ -11,6 +11,8 @@ use App\Domain\ErrorLog\Services\ErrorLogService;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ListActions\Builders\ErrorLogQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
@@ -28,6 +30,7 @@ class ErrorLogController extends Controller
 
     public function __construct(
         private readonly ErrorLogService $errorLogs,
+        private readonly ErrorLogQueryRowActions $queryRowActions,
     ) {}
 
     public function index(IndexErrorLogRequest $request): JsonResponse
@@ -41,7 +44,12 @@ class ErrorLogController extends Controller
         return $this->respondToQueryList(
             $request,
             $items,
-            fn ($list) => $this->resolveResource(ErrorLogResource::collection($list)),
+            fn ($list) => QueryRowActionAttacher::attach(
+                $this->resolveResource(ErrorLogResource::collection($list)),
+                $list,
+                $this->queryRowActions,
+                $request->user(),
+            ),
             __('api/error-log.list_success'),
         );
     }

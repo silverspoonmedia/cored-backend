@@ -11,6 +11,8 @@ use App\Domain\Vtual\Services\CreatorMergeService;
 use App\Domain\Vtual\Services\CreatorService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ListActions\Builders\OwnedCreatorQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +25,7 @@ class CreatorController extends Controller
     public function __construct(
         private readonly CreatorService $creators,
         private readonly CreatorMergeService $merge,
+        private readonly OwnedCreatorQueryRowActions $ownedQueryRowActions,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -39,8 +42,15 @@ class CreatorController extends Controller
     {
         $this->authorize('viewAny', Creator::class);
 
+        $list = $this->creators->listOwnedForUser($request->user());
+
         return $this->successResponse(
-            $this->resolveResource(CreatorResource::collection($this->creators->listOwnedForUser($request->user()))),
+            QueryRowActionAttacher::attach(
+                $this->resolveResource(CreatorResource::collection($list)),
+                $list,
+                $this->ownedQueryRowActions,
+                $request->user(),
+            ),
             __('api/vtual.creator.owned_list_success'),
         );
     }

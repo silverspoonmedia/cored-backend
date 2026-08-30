@@ -6,6 +6,8 @@ use App\Domain\Microstock\Http\Resources\MarketplaceCredentialResource;
 use App\Domain\Microstock\Services\CredentialService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ListActions\Builders\MicrostockCredentialQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +19,7 @@ class CredentialController extends Controller
 
     public function __construct(
         private readonly CredentialService $credentials,
+        private readonly MicrostockCredentialQueryRowActions $queryRowActions,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -24,7 +27,12 @@ class CredentialController extends Controller
         $list = $this->credentials->list($request->user());
 
         return $this->successResponse(
-            $this->resolveResource(MarketplaceCredentialResource::collection($list)),
+            QueryRowActionAttacher::attach(
+                $this->resolveResource(MarketplaceCredentialResource::collection($list)),
+                $list,
+                $this->queryRowActions,
+                $request->user(),
+            ),
             __('api/microstock.credentials_loaded'),
         );
     }

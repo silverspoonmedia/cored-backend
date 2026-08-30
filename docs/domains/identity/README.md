@@ -166,6 +166,8 @@ Permissions: `view/create/edit/delete user` (space-separated names). Soft delete
 
 `{user}` = UUID. SPA views call these API endpoints directly — no second RBAC path.
 
+Query-mode `GET /api/v1/users` rows include `actions[]` (`App\Support\ListActions\Builders\UserQueryRowActions`): always `edit` → SPA `users.edit`; `delete` only when the actor has `delete user` and the row is not self. That matches the SPA list, not Yajra `UserRowActionResolver` hierarchy. Contract: [list-display-modes.md](../../platform/list-display-modes.md#query-mode-actions-live-spa-contract).
+
 **Sidebar:** **Administration → Access control → User management** (`users.index`), visible to Root, Admin, Moderator, and Management. Menu visibility is presentation only; API policy and H-RBAC remain authoritative.
 
 Notifications on create/update: [notification domain](../notification/README.md).

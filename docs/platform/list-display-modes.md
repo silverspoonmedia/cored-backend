@@ -16,6 +16,24 @@ One list endpoint, two presentations. Mode selection lives in `App\Http\Requests
 
 Query-paging lists: users, invoices, payment-gateways, subscriptions, services, inference providers, inference model-cards, vtual orphans, activity logs, error logs. The navigation **tree** and menus list are excluded — they stay a full dump and are sliced client-side. Helper: `RespondsWithListDisplayMode::respondToQueryList`.
 
+## Query-mode `actions[]` (live SPA contract)
+
+**Source of truth for which row buttons exist.** Query and flat list rows carry `actions[]`. The SPA maps and executes; views must not invent keys. This is **not** Yajra `ActionButton` (`method` + `/api/v1/*` URL + Font Awesome).
+
+DTO: `App\Support\ListActions\QueryRowAction`. Builders live under `App\Support\ListActions\Builders\`. Attach with `QueryRowActionAttacher` on resolved Resource arrays (zip with models). Do **not** use `DataTableResponseFactory` for this path.
+
+Each item: `key`, `label` (`__()` `en`/`id`/`ja` via `lang/*/list_actions.php` plus existing `ui.*` / `web/*` confirms), `icon` (Bootstrap Icons, no `bi-` prefix), `variant`, plus **exactly one** of:
+
+| Kind | Fields | SPA mapping |
+|------|--------|-------------|
+| Nav | `route` (Vue parent name from `config/spa-routes.php`, no `.view`) + `params` + optional `query` | `{ name: route + '.view', params, query }` |
+| External | `href` + `target` | `<a href>` (`rel="noopener noreferrer"` when `_blank`) |
+| Mutate | `method` + `path` (API path the SPA client already calls, not a full `route()` URL) + optional `confirm` `{ title, text }` | existing composable + `confirmDialog` |
+
+Visibility copies **current SPA rules**, not Yajra Gate hierarchy (example: users always `edit`; `delete` only with `delete user` and not self). `@row-click` uses the same nav action already on the row. Lists that used labeled chrome (currencies, notification audiences, vTual platform “Manage”, hash blocklist) stay labeled — still driven by `row.actions`.
+
+Out of scope: Card header toolbars, File Hosting browse `.fh-action-group`, new keys, `display_mode=datatable`.
+
 ## `datatable` mode has no consumer
 
 **Read this before extending anything below.** The SPA sends **only** `display_mode=query`. `src/composables/useServerDataTable.ts` sends `page` / `per_page` / `search`, and every SPA call site passes `display_mode: 'query'` explicitly. Nothing in `monolith-vue-workers` ever requests `datatable`.
@@ -32,7 +50,7 @@ That makes the following a **retained compatibility surface with no current cons
 
 Rules:
 
-- **Do not extend it.** New list screens use query mode only. Do not add a row-action resolver for a new domain.
+- **Do not extend it.** New list screens use query mode only. Do not add a Yajra row-action resolver for a new domain. Live row buttons use query-mode `QueryRowAction` (section above).
 - **Do not treat it as dead-and-safe-to-strip on a whim** either — removing it is a deliberate task that touches every controller listed above, the resolvers, the Composer deps, the orphan lang file, and three feature tests (`UserManagementDatatableTest`, `NavigationMenuDatatableTest`, `OrphanCreatorApiTest`).
 - If you are auditing "why does Monolith still depend on Yajra", this section is the answer.
 
@@ -59,6 +77,7 @@ Consumer: the SPA `FormSelect2` component wraps jQuery Select2 and unwraps this 
 ## Related
 
 - [crud.md](crud.md) — controller/response conventions and API Resource presentation
-- [domains/identity/README.md](../domains/identity/README.md) — lookup permissions
-- [domains/navigation/README.md](../domains/navigation/README.md) — why the menu tree opts out of query paging
+- [integration/vue-workers-spa.md](../integration/vue-workers-spa.md) — SPA mapper (`mapQueryRowActions`); views must not invent keys
+- [domains/identity/README.md](../domains/identity/README.md) — lookup permissions; users query-mode `actions[]`
+- [domains/navigation/README.md](../domains/navigation/README.md) — why the menu tree opts out of query paging; menus list `actions[]`
 - [web/ui-patterns.md](../web/ui-patterns.md) — archived Blade UI notes these sections were extracted from
