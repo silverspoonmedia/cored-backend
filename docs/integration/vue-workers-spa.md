@@ -822,7 +822,7 @@ Assessment of whether Vue-Workers invents business rules that belong in Monolith
 | Finding | Why it is decision-making | Why not blocking |
 |---------|---------------------------|------------------|
 | Accept Anyway always painted on the claim page | SPA cannot read `vtual.claim.accept_anyway_enabled` | Blade claim page also shows it to any logged-in user when the setting is on; API 422s when off. Profile-page staff-gate is a **different** surface (channel claims). Extra button ≠ blocked verify. |
-| Discord verify on the **creator claim** page is always painted | SPA cannot read `vtual.claim` Discord-verify settings | API 422s; bio verify still works. Profile manage **does** hide Kick and shows Connect vs Verify from `GET profile/connections` (`providerByKey(..., 'discord')?.connected`). |
+| Discord verify settings on the **creator claim** page are not read | SPA cannot read `vtual.claim` Discord-verify flags | Connect hint vs **Verify with Discord** is gated by `GET profile/connections` (`providerByKey(..., 'discord')?.connected`). The verify button can still 422 when those settings are off; bio verify still works. |
 | `collection_status` → CTA map | Local state machine in `FileHostingView` | API rejects illegal transitions; documented mimic of Blade toolbar |
 | Invoice/purchase `status` → PaymentSteps / hero | Chrome | Display only |
 | `plan_kind === 'addon'` qty editor | Chrome from a field | API rejects non-addon qty |
