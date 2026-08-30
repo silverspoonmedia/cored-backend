@@ -327,6 +327,8 @@ Custom bodies that used to be ConfirmModal slots go in `html:` (escape any inter
 
 Uses `variant` prop (not `confirm-class`). Values: `'primary'`, `'danger'`, `'success'`, `'warning'`.
 
+A submit that sits in the last column of a labeled form row (same height as `FormInput` / `FormSelect`) uses a spacer `form-label` plus `d-grid` so the button fills the column on every breakpoint — see `VtualOrphanEditView` channel add and `VtualProfileShowView` merge / links.
+
 ### FormInput
 
 Supports `maxlength?: number` prop, passed through to underlying `<input>`.
