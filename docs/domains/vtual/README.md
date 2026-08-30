@@ -389,7 +389,7 @@ Legacy hub/claims/registry Blade UIs are archived under [`ui-archive.md`](ui-arc
 | Route | View |
 |-------|------|
 | `GET vtual/profiles` (`vtual.profiles.index`) | Owned profiles list → `GET api/v1/vtual/creators/owned` |
-| `GET vtual/profiles/{slug}` (`vtual.profiles.show`) | Manage profile: meta, links, merge, channels (bio + Discord verify), promote private discovered |
+| `GET vtual/profiles/{slug}` (`vtual.profiles.show`) | Manage profile: stacked meta card; separate channels card (orphan-style table, claims above table, Delete pending / Archive / Promote); links; merge |
 | `POST vtual/profiles/{slug}/channels/{id}/promote` (`vtual.profiles.channels.promote`) | → `POST api/v1/vtual/channels/{id}/promote` (private discovered → public + fetch pool + backfill) |
 
 **Profiles manage** is SPA (`vtual.profiles.show`). Full-width cards: stacked meta; a separate channels card (orphan-style 3-col add form + table; member add starts a **claim** with verify above the table). Leftover pending channel rows use **Delete**, bound channels use Archive. Links and merge are separate cards. Live updates go through API + Echo, not Blade `profiles-live.js`.
@@ -736,11 +736,11 @@ Web UI: link from credentials index → **API probe**.
 | Multi-stream session correlation | Not implemented |
 | Auto collab/network appearance discovery | **Cancelled** (no platform partner list; explicit `attachAppearance` only) |
 | Creator claim Existing (bio token) | **Phase 1 implemented** (orphan seed + verify + Accept Anyway) |
-| Channel claim (attach channel) | **Implemented** dual path: staff seed instant active; non-staff pending claim + bio / Discord (`POST channel-claims/{id}/verify-discord`) / Accept Anyway |
+| Channel claim (attach channel) | **Implemented** dual path (membership first): owner/editor **member** → pending claim + bio / Discord (`POST channel-claims/{id}/verify-discord`) / Accept Anyway; else staff `manage any` → pending channel row (batch resolve). Pending rows are **deleted** (`DELETE /channels/{id}`), not archived. |
 | Claim Add New + survey + appeal | Not implemented (phase 2+) |
 | Profile merge (absorb) | **Implemented** (same-owner or staff; source archived) |
 | Ideal Viewer-only until claim (strip User create creator) | Follow-up; not in phase 1 |
-| Public homepage / SEO creator & management profiles | Partial — guest landing `/vtual` (directory + `#contents` feed) + two-column public profile `/vtual/vtubers/{slug}` (Valkivid3). Authenticated read/claim remains `/apps/vtual/vtuber/{slug}` (Blade) and `/apps/vtual/vtubers/{slug}` (SPA; singular Blade path is an alias onto plural). No OG campaign this wave. Management public profiles still pending. |
+| Public homepage / SEO creator & management profiles | Partial — guest landing `/vtual` (directory + `#contents` feed) + two-column public profile `/vtual/vtubers/{slug}` (Valkivid3). Authenticated read/claim is SPA `/apps/vtual/vtubers/{slug}` (canonical plural); `/apps/vtual/vtuber/{slug}` aliases onto it. No OG campaign this wave. Management public profiles still pending. |
 | Paid Service catalog SKUs for Vtual | Not implemented |
 | Data migration from broadercastv2 | Not planned in foundation |
 | Pool `done` row retention | Not implemented — `vtual_*_fetch_pool` processed rows accumulate |
