@@ -3,6 +3,7 @@
 namespace Tests\Domain\Vtual\Unit\Services;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Vtual\Enums\ChannelFetchPoolStatus;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
@@ -13,6 +14,9 @@ use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
 use App\Domain\Vtual\Jobs\RunChannelInitialContentBackfillJob;
 use App\Domain\Vtual\Jobs\RunChannelStubContentBackfillJob;
+use App\Domain\Vtual\Models\Channel;
+use App\Domain\Vtual\Models\ChannelClaim;
+use App\Domain\Vtual\Models\ChannelFetchPoolItem;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Models\WebsubSubscription;
 use App\Domain\Vtual\Services\ChannelService;
@@ -31,8 +35,8 @@ use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
 /**
- * ChannelService: seedForStaff (manage any), activateFromDto, refresh, archive, restore.
- * Non-staff add-channel is ChannelClaimService (see ChannelClaimServiceTest).
+ * ChannelService: seedForStaff (manage any), activateFromDto, refresh, archive, restore, deletePending.
+ * Owner/editor add-channel is ChannelClaimService (see ChannelClaimServiceTest).
  */
 class ChannelServiceTest extends TestCase
 {
@@ -186,7 +190,7 @@ class ChannelServiceTest extends TestCase
         $this->assertSame('stream', $channel->handle);
         $this->assertSame('Stream Channel', $channel->display_name);
         $this->assertSame((string) $orphan->id, (string) $channel->creator_id);
-        $this->assertSame(0, \App\Domain\Vtual\Models\ChannelClaim::query()->count());
+        $this->assertSame(0, ChannelClaim::query()->count());
     }
 
     #[Test]
@@ -362,10 +366,10 @@ class ChannelServiceTest extends TestCase
         $result = $this->channels->refresh($user, $channel->id);
 
         $this->assertSame((string) $channel->id, (string) $result->id);
-        $this->assertSame(1, \App\Domain\Vtual\Models\ChannelFetchPoolItem::query()
+        $this->assertSame(1, ChannelFetchPoolItem::query()
             ->where('platform_id', $this->youtube->id)
             ->where('external_id', self::YT_ID)
-            ->where('status', \App\Domain\Vtual\Enums\ChannelFetchPoolStatus::Pending->value)
+            ->where('status', ChannelFetchPoolStatus::Pending->value)
             ->count());
     }
 
@@ -391,6 +395,65 @@ class ChannelServiceTest extends TestCase
         $this->assertSame(ChannelStatus::Archived, $archived->status);
         $this->assertCount(0, $this->channels->listForCreator($user, $creator->id));
         $this->assertCount(1, $this->channels->listArchivedForCreator($user, $creator->id));
+    }
+
+    #[Test]
+    public function archive_rejects_pending_channel(): void
+    {
+        Http::fake(fn () => Http::response([], 404));
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Pending Archive']);
+        $channel = $this->channels->registerPendingForStaff($this->admin, $orphan->id, [
+            'platform_key' => 'youtube',
+            'profile' => '@pending-archive',
+        ]);
+
+        $this->expectException(VtualException::class);
+        $this->channels->archive($this->admin, $channel->id);
+    }
+
+    #[Test]
+    public function delete_pending_force_deletes_and_frees_fingerprint(): void
+    {
+        Http::fake(fn () => Http::response([], 404));
+
+        $orphan = $this->creators->createOrphan($this->admin, ['display_name' => 'Pending Delete']);
+        $channel = $this->channels->registerPendingForStaff($this->admin, $orphan->id, [
+            'platform_key' => 'youtube',
+            'profile' => '@pending-delete',
+        ]);
+        $channelId = (string) $channel->id;
+
+        $this->channels->deletePending($this->admin, $channelId);
+
+        $this->assertSame(0, Channel::withTrashed()->whereKey($channelId)->count());
+
+        $again = $this->channels->registerPendingForStaff($this->admin, $orphan->id, [
+            'platform_key' => 'youtube',
+            'profile' => '@pending-delete',
+        ]);
+        $this->assertSame(ChannelStatus::Pending, $again->status);
+    }
+
+    #[Test]
+    public function delete_pending_rejects_active_channel(): void
+    {
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Bound']);
+
+        $dto = new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: self::YT_ID,
+            handle: 'bound',
+            displayName: 'Bound Channel',
+            description: 'bio',
+            thumbnailUrl: null,
+            url: null,
+        );
+        $channel = $this->channels->activateFromDto($creator->id, $this->youtube, $dto);
+
+        $this->expectException(VtualException::class);
+        $this->channels->deletePending($user, $channel->id);
     }
 
     #[Test]

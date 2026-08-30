@@ -15,12 +15,11 @@ class CreatorAccessService
         return Creator::query()->findOrFail($creatorId);
     }
 
-    public function roleFor(Creator $creator, User $actor): ?CreatorMemberRole
+    /**
+     * Membership row only — does not treat staff as Owner.
+     */
+    public function memberRoleFor(Creator $creator, User $actor): ?CreatorMemberRole
     {
-        if ($actor->can('manage any vtual resource')) {
-            return CreatorMemberRole::Owner;
-        }
-
         /** @var CreatorMember|null $member */
         $member = CreatorMember::query()
             ->where('creator_id', $creator->id)
@@ -28,6 +27,15 @@ class CreatorAccessService
             ->first();
 
         return $member?->role;
+    }
+
+    public function roleFor(Creator $creator, User $actor): ?CreatorMemberRole
+    {
+        if ($actor->can('manage any vtual resource')) {
+            return CreatorMemberRole::Owner;
+        }
+
+        return $this->memberRoleFor($creator, $actor);
     }
 
     public function canView(Creator $creator, User $actor): bool

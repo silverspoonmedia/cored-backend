@@ -85,7 +85,7 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
         Route::post('creators/{creator}/merge', [CreatorController::class, 'merge'])
             ->whereUuid('creator')
             ->name('creators.merge');
-        // POST channels: staff seed active / owner starts bio claim.
+        // POST channels: owner/editor member starts bio claim; staff without membership queues pending.
         Route::post('creators/{creator}/channels', [ChannelClaimController::class, 'store'])
             ->whereUuid('creator')
             ->name('creators.channels.store');
@@ -104,6 +104,9 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
         Route::post('channels/{channel}/archive', [ChannelController::class, 'archive'])
             ->whereUuid('channel')
             ->name('channels.archive');
+        Route::delete('channels/{channel}', [ChannelController::class, 'destroy'])
+            ->whereUuid('channel')
+            ->name('channels.destroy');
         Route::post('channels/{channel}/restore', [ChannelController::class, 'restore'])
             ->whereUuid('channel')
             ->name('channels.restore');

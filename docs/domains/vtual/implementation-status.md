@@ -63,7 +63,7 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Creator claim Existing** | Orphan claim via bio token; Accept Anyway; race → `superseded`; audit rows kept | `CreatorClaimService`, `vtual_creator_claims`, `CreatorClaimServiceTest` |
 | **Staff orphan + pending claims (API)** | Orphan seed via `/apps/vtual/orphans`; pending claims via API `GET claims/pending` (legacy registry web archived) | `OrphanVtuberController`, `GET /api/v1/vtual/claims/pending`, `AdminRegistryController` in `_archive/` |
 | **User claim UX (API only)** | Claimable list + my claims + verify/cancel | `/api/v1/vtual/claims/*` (web `/apps/vtual/claims` archived) |
-| **Channel dual path** | Staff POST channel: deferred `registerPendingForStaff` (pending + batch resolve). Owner: `ChannelClaim` + bio / Accept Anyway → `activateFromDto`. `seedForStaff` kept for instant bind paths. | `ChannelClaimService`, `ChannelService`, `ChannelRegistrationFlushService`, tests |
+| **Channel dual path** | Membership first: owner/editor member POST → `ChannelClaim` + bio / Accept Anyway → `activateFromDto`. Else staff `manage any` (no mutate membership) → deferred `registerPendingForStaff` (pending + batch resolve). Pending deleted (`DELETE channels/{id}`), not archived. `seedForStaff` kept for instant bind paths. | `ChannelClaimService`, `ChannelService`, `CreatorAccessService::memberRoleFor`, `ChannelRegistrationFlushService`, tests |
 | **Orphan admin UX** | Blade **and** SPA `/apps/vtual/orphans`: minimal create (prefixed slug), redirect to edit, archive confirm, pending channel queue on edit; channels table shows per-channel avatar when resolved (`avatar_url`). SPA uses Vue `DataTable` (`display_mode=query`), not Yajra. | `OrphanVtuberController`, `vtual-orphans` views, `VtualOrphansView.vue`, `VtualOrphanEditView.vue`, `OrphanVtuberWebTest` |
 | **YouTube content fetch POC** | Manual `vtual:fetch-channel-content {channel-uuid}`; `--limit`, `--video`, `--discover-live` options; upserts into `vtual_contents` | `ChannelContentFetchService`, `FetchChannelContentCommand` |
 | **YouTube initial content backfill** | Auto on YouTube activate (async job); manual `vtual:backfill-initial-content` for existing rows; demo probe fetched 50 videos into public profile | `ChannelInitialContentBackfillService`, `RunChannelInitialContentBackfillJob`, `ChannelActivationService`, `content_initial_backfill_at` |
@@ -83,7 +83,7 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Platform credentials UI** | `/apps/vtual/platform-credentials`: platform index table + per-platform CRUD + probe at `/probe` | `PlatformCredentialController`, `PlatformApiProbeController`, `vtual-platform-credentials` views, `PlatformCredentialWebTest` |
 | **My profiles manage (API only)** | List bound profiles; edit meta; external links CRUD; channel claims + active/archived channels | API `/creators/*`, `ExternalLinkService`; web manage restored at `/apps/vtual/profiles/{slug}` |
 | **Profile merge (absorb)** | Same-owner or manage-any; move channels/links/contents/appearances; cancel pendings `merged`; archive source + slug mangle | `CreatorMergeService`, `POST creators/{id}/merge`, `CreatorMergeServiceTest` |
-| **Channel archive / restore** | Soft hide `archived`; list archived; restore → `active` + **WebSub resubscribe** + stub backfill job; **public profile hides all content** from archived primary channels; **lifecycle rate limit** (per-channel cooldown + per-user burst) | `ChannelService::archive` / `restore`, `YoutubeWebSubSubscriptionService::resubscribe`, `ChannelServiceTest` |
+| **Channel archive / restore** | Soft hide `archived` (bound channels only; pending → 422); list archived; restore → `active` + **WebSub resubscribe** + stub backfill job; **public profile hides all content** from archived primary channels; **lifecycle rate limit** (per-channel cooldown + per-user burst) | `ChannelService::archive` / `restore` / `deletePending`, `YoutubeWebSubSubscriptionService::resubscribe`, `ChannelServiceTest` |
 | **Archived channel stub ingest** | While archived: feed poll + WebSub/content pool persist **stubs** (`hydrated_at` null) only; WebSub stays subscribed; API hydrate blocked | `ContentService::upsertStubFromPrimary`, `ChannelFeedPollService`, `ContentFetchPoolService`, `hydrated_at` migration |
 | **Stub restore backfill** | On restore: `RunChannelStubContentBackfillJob` batch-hydrates stubs via API | `ChannelStubContentBackfillService`, `ChannelStubContentBackfillServiceTest` |
 | **Archived WebSub legacy repair** | One-shot `vtual:repair-archived-websub` for pre-policy archived channels missing active/pending subscription | `RepairArchivedWebsubCommand`, `YoutubeWebSubSubscriptionService::subscribeMissingArchivedChannels` |
@@ -109,7 +109,7 @@ Representative suite under `tests/Domain/Vtual/`:
 | `YoutubeWebSubNotificationServiceTest` | sha1/sha256 signature, bad signature + `last_error`, topic fallback |
 | `YoutubeAtomFeedParserTest` / `YoutubeFeedTopicParserTest` | Shared Atom parse + topic URL `channel_id` extraction |
 | `YoutubeWebSubWebhookTest` | GET verify echo, invalid mode 403, POST valid/invalid signature 204 |
-| `ChannelServiceTest` | Staff pending register, seedForStaff, activate, backfill job dispatch, refresh enqueues pool, archive/restore, WebSub kept on archive, restore resub from unsubscribed, lifecycle rate limits |
+| `ChannelServiceTest` | Staff pending register, seedForStaff, activate, backfill job dispatch, refresh enqueues pool, archive/restore, pending not archivable, deletePending, WebSub kept on archive, restore resub from unsubscribed, lifecycle rate limits |
 | `ChannelStubContentBackfillServiceTest` | Stub hydrate on restore; skip paths |
 | `VtuberProfileApiTest` | Public profile API; archived channel hides contents; restore + backfill shows contents |
 | `VtuberProfileServiceTest` | `show` excludes archived-channel content; all-archived → 0 contents |
@@ -123,7 +123,8 @@ Representative suite under `tests/Domain/Vtual/`:
 | `CreatorMergeServiceTest` | Absorb, clash, staff orphans |
 | `PlatformApiGatewayTest` / client tests | Batch + ops |
 | `PlatformCredentialServiceTest` | Test gate, tokens, failover knobs |
-| `VtualApiTest` / `PlatformApiProbeApiTest` | HTTP surface smoke; admin probe gate |
+| `VtualApiTest` / `PlatformApiProbeApiTest` | HTTP surface smoke; staff-as-owner claim vs orphan pending; delete pending; archive pending 422; admin probe gate |
+| `CreatorAccessServiceTest` | `memberRoleFor` vs staff `roleFor` override |
 | `VtuberProfileWebTest` | Profile layout, canonical, UUID 301, claim button, interactive claim page |
 | `PlatformCredentialWebTest` | Active credentials CRUD web |
 | `ContentIngestionPoolTest` | Feed poll + content pool + live CCV integration; content pool flush upserts stubs for archived channel |
