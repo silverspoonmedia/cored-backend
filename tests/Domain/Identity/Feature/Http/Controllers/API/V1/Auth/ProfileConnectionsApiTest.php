@@ -29,7 +29,6 @@ class ProfileConnectionsApiTest extends TestCase
             'services.spa.url' => 'https://spa.test',
             'app.url' => 'https://monolith.test',
         ]);
-        Http::fake();
     }
 
     #[Test]
@@ -46,9 +45,11 @@ class ProfileConnectionsApiTest extends TestCase
         $this->actingAsJwt($user)
             ->getJson('/api/v1/profile/connections')
             ->assertOk()
-            ->assertJsonPath('data.discord_connected', false)
-            ->assertJsonPath('data.discord_oauth_configured', true)
-            ->assertJsonPath('data.connections', []);
+            ->assertJsonPath('data.providers.0.key', 'discord')
+            ->assertJsonPath('data.providers.0.connected', false)
+            ->assertJsonPath('data.providers.0.oauth_configured', true)
+            ->assertJsonPath('data.providers.0.supports_sync', true)
+            ->assertJsonPath('data.providers.0.connections', []);
     }
 
     #[Test]
@@ -68,12 +69,18 @@ class ProfileConnectionsApiTest extends TestCase
             'connections_synced_at' => now(),
         ])->save();
 
+        Http::fake();
+
         $this->actingAsJwt($user)
             ->getJson('/api/v1/profile/connections')
             ->assertOk()
-            ->assertJsonPath('data.discord_connected', true)
-            ->assertJsonPath('data.connections.0.name', 'Test')
-            ->assertJsonPath('data.connections.0.verified', true);
+            ->assertJsonPath('data.providers.0.key', 'discord')
+            ->assertJsonPath('data.providers.0.connected', true)
+            ->assertJsonPath('data.providers.0.supports_sync', true)
+            ->assertJsonPath('data.providers.0.connections.0.name', 'Test')
+            ->assertJsonPath('data.providers.0.connections.0.verified', true);
+
+        Http::assertNothingSent();
     }
 
     #[Test]
@@ -90,9 +97,12 @@ class ProfileConnectionsApiTest extends TestCase
             'connections_synced_at' => now(),
         ])->save();
 
+        Http::fake();
+
         $this->actingAsJwt($user)
             ->deleteJson('/api/v1/profile/connections/discord')
-            ->assertOk();
+            ->assertOk()
+            ->assertJsonPath('message', __('api/identity.connections.disconnected'));
 
         $this->assertDatabaseMissing('identity_oauth_accounts', [
             'user_id' => $user->id,
@@ -139,6 +149,66 @@ class ProfileConnectionsApiTest extends TestCase
         $this->assertSame((string) $user->id, $payload['user_id']);
         $this->assertSame('profile', $payload['intent']);
         $this->assertSame('https://spa.test/apps/profile/connections', $payload['return_to']);
+    }
+
+    #[Test]
+    public function sync_without_account_returns_not_connected(): void
+    {
+        $user = $this->makeUser();
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/profile/connections/discord/sync')
+            ->assertStatus(422)
+            ->assertJsonPath('message', __('api/identity.oauth.discord_not_connected'));
+    }
+
+    #[Test]
+    public function sync_refreshes_discord_snapshot(): void
+    {
+        $user = $this->makeUser();
+        $account = new IdentityOAuthAccount;
+        $account->user_id = $user->id;
+        $account->provider = OAuthProvider::Discord;
+        $account->provider_user_id = '999';
+        $account->forceFill([
+            'access_token' => 'test-access',
+            'refresh_token' => 'test-refresh',
+            'connections_snapshot' => [],
+            'connections_synced_at' => now()->subHours(2),
+        ])->save();
+
+        Http::fake([
+            'discord.com/api/users/@me/connections' => Http::response([
+                [
+                    'type' => 'youtube',
+                    'id' => 'UC999',
+                    'name' => 'Synced Channel',
+                    'verified' => true,
+                ],
+            ]),
+        ]);
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/profile/connections/discord/sync')
+            ->assertOk()
+            ->assertJsonPath('message', __('api/identity.connections.synced'))
+            ->assertJsonPath('data.providers.0.connected', true)
+            ->assertJsonPath('data.providers.0.connections.0.id', 'UC999')
+            ->assertJsonPath('data.providers.0.connections.0.name', 'Synced Channel');
+
+        $account->refresh();
+        $this->assertNotNull($account->connections_synced_at);
+        $this->assertTrue($account->connections_synced_at->greaterThan(now()->subMinute()));
+    }
+
+    #[Test]
+    public function sync_unknown_provider_returns_not_found(): void
+    {
+        $user = $this->makeUser();
+
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/profile/connections/google/sync')
+            ->assertNotFound();
     }
 
     private function makeUser(): User

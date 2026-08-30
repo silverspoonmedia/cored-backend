@@ -61,7 +61,7 @@ Data traffic does not target this Worker because SPA API calls go direct to the 
 - **JWT TTL 240** — `config/jwt.php` `'ttl' => 240` (Tier B; runtime `setting_config('jwt.ttl')` / Settings → Platform `platform.jwt.ttl`). A 401 refresh round-trip costs 3 invocations; longer TTL makes that rare. Refresh rotation + blacklist still bound token theft.
 - **Realtime only (no polling)** -- the SPA relies on Echo/Pusher alone for live updates. Pusher auto-reconnect is the recovery path; there is no timer-based polling fallback anywhere. On reconnect after an outage the SPA fires a **resync bus** (`onEchoResync` in `useEcho.ts`): `AppNavbar` re-pulls the unread count + recent list and reloads every registered listing (`triggerAllListingsReload`), because events during the gap are lost. A "reconnecting" indicator shows in the navbar while the socket is down.
 - **Per-domain batch hydrate** -- Current coverage: `useNavigationHydrate` (menu edit plus parent/role/include/exclude lookups), `useNotificationsHydrate` (audience edit plus assignable roles), `useUsersHydrate` (user, assignable roles, activity logs), `useServicesHydrate` (service show, purchase show, and service edit -- each with options), `usePaymentsHydrate` (income overview/invoices), `useInferenceHydrate` (usage overview/events/model cards and provider/card detail), `useMicrostockHydrate` (billing/ledger, admin overview/events, microstock review asset metadata + preview download), and `useVtualHydrate` (profile, credentials, orphan edit, claim). Every helper unwraps via `bodyOfOrThrow()` and returns `null` for a transient entry failure so callers retain individual-loader fallback. `src/api/batch.ts` owns the unwrap contract: `bodyOf()` accepts only a status-200 `success` envelope; `dataOf()` returns its `data` or `null`. A **terminal** entry (`401`/`403`/`429`) makes `bodyOfOrThrow()` throw `TerminalBatchError` instead of returning `null`, so callers skip the standalone fallback for that entry (re-firing would repeat the rejection, and a 401 would trip the global force-logout). Batch transport failure rejects the call and callers fall back to their normal loaders. Only `GET`/`HEAD` subrequests are supported; the server cap is 10 per call, and the client **chunks** a larger fan-out into sequential 10-entry calls (positional results re-joined, nothing dropped). Aggregation rules: [api-aggregation.md](../platform/api-aggregation.md).
-- **Project-wide realtime** -- Dedicated `ShouldBroadcastNow` events per domain: Navigation (`menu.tree.changed`), Service (`service.catalog.changed`, `service.purchase.changed`), Inference (`inference.catalog.changed`), Settings (`settings.group.changed`), ErrorLog (`log.error.recorded`), ProductActivation (`product.activation.changed`), DomainAccess (`domain.visibility.changed`), RBAC (`rbac.role.permission.changed`), PaymentGateway admin (`invoice.list.changed`), Microstock billing (`microstock.billing.changed` rides the FH user channel). Each SPA view subscribes via a `use{Domain}Realtime` or `useAdminRealtime` composable; `useListingLiveUpdate` only registers the listing's reload fn on the Echo bus (no polling).
+- **Project-wide realtime** -- Dedicated `ShouldBroadcastNow` events per domain: Navigation (`menu.tree.changed`), Service (`service.catalog.changed`, `service.purchase.changed`), Inference (`inference.catalog.changed`), Settings (`settings.group.changed`), ErrorLog (`log.error.recorded`), ProductActivation (`product.activation.changed`), DomainAccess (`domain.visibility.changed`), RBAC (`rbac.role.permission.changed`), PaymentGateway admin (`invoice.list.changed`), Microstock billing (`microstock.billing.changed` rides the FH user channel), vTual platform credentials (`platform.credential.changed`). Each SPA view subscribes via a `use{Domain}Realtime` or `useAdminRealtime` composable; `useListingLiveUpdate` only registers the listing's reload fn on the Echo bus (no polling).
 
 
 
@@ -148,8 +148,10 @@ These paths tripped up the SPA port — documented here to prevent regression:
 | `useMicrostockBilling.fetchAdminUsageEvents` | `GET admin/microstock/billing/usage-events` | `file-hosting/microstock/billing/admin/usage-events` |
 | `usePaymentChannels.syncPolicy` | `POST payment-channels/sync-policy` | No API route existed previously; added in `routes/api/v1/payment-gateway.php` |
 | `useRatePlanAdmin.saveRates` | `PUT inference/providers/{id}/rates` | Body `{ rates: [...] }` is a **full replace** (same as Blade). Gated by `manage inference catalog`. |
-| `useConnections.fetchConnections` | `GET profile/connections` | Not under `auth/`. Any authenticated user. |
-| `useConnections.authorizeUrl` | `GET auth/discord/authorize-url` | Query `intent` + `return_path` (must start `/apps/`). Returns `{ url }` — navigate the browser there. Discord still callbacks to Monolith web. |
+| `useConnections.fetchConnections` | `GET profile/connections` | Not under `auth/`. Any authenticated user. Returns `{ providers: [...] }`. |
+| `useConnections.syncProvider` | `POST profile/connections/{oauth_provider}/sync` | Force-refresh; returns the same `{ providers }` payload as GET. Path param is `{oauth_provider}` (not `{provider}` — Inference binds that name). |
+| `useConnections.disconnectProvider` | `DELETE profile/connections/{oauth_provider}` | Same `{oauth_provider}` constraint as sync. |
+| `useConnections.authorizeUrl` | `GET auth/discord/authorize-url` | Query `intent` + `return_path` (must start `/apps/`). Returns `{ url }` — navigate the browser there. Discord still callbacks to Monolith web. Discord-only until a second vendor exists. |
 
 ### Response shape gotchas
 
@@ -161,12 +163,14 @@ These paths tripped up the SPA port — documented here to prevent regression:
 | `GET admin/product-activations/products/{productKey}` | `{ summary, activations, pagination }` in `data` | This one DOES have a wrapper — opposite of index |
 | `GET payment-channels?subtotal=` | `PaymentChannelResource[]` with flattened quote fields | Quote fields (`estimated_channel_fee`, `estimated_channel_fee_formatted`, `fee_label`, etc.) are at top level, NOT nested under `checkout_quote`. See [payment-gateway](../domains/payment-gateway/README.md#paymentchannelresource-checkout-quote-flattening). |
 | `GET services/options` | `{ billing_intervals, plan_kinds, statuses, purchase_max_quantity }` | `purchase_max_quantity` is the live `platform.service.purchase_max_quantity` cap. SPA checkout/purchase steppers parse it. Fallback `99` only when the call fails (options requires `view service`; purchase owners may lack it). |
-| `GET profile/connections` | `{ discord_connected, discord_oauth_configured, discord_synced_at, discord_synced_at_formatted, discord_synced_at_human, connections[] }` | `connections[]` items are `{ type, id, name, verified, revoked }`. Stale Discord snapshots refresh on this GET (same as Blade). |
+| `GET profile/connections` | `{ providers: [{ key, connected, oauth_configured, supports_sync, synced_at, synced_at_formatted, synced_at_human, connections[] }] }` | One row per `OAuthProvider`. `connections[]` items are `{ type, id, name, verified, revoked }` (empty when disconnected). Stale Discord snapshots still TTL-refresh on this GET. No top-level `discord_*` fields. |
+| `POST profile/connections/{oauth_provider}/sync` | Same `{ providers }` as GET | Always hits Discord for `discord` (bypasses TTL). Unknown provider 404. Parameter name is `oauth_provider`. |
+| `DELETE profile/connections/{oauth_provider}` | `null` data | Disconnect. Replaces `DELETE …/discord`. |
 | `GET auth/discord/authorize-url` | `{ url }` | Requires `SPA_URL` on the API host. `return_path` is a path, not an origin — the API prefixes `SPA_URL`. |
 
 ## Type alignment
 
-TS types in `src/api/types.ts` must match Laravel API Resources exactly. No transformation layer. `DiscordConnection` / `ProfileConnections` match `GET /api/v1/profile/connections`: `connections[]` with nullable `id` / `name` (see `ProfileConnectionsController::presentConnections`). One interface — do not redeclare `DiscordConnection`.
+TS types in `src/api/types.ts` must match Laravel API Resources exactly. No transformation layer. `ProfileConnections.providers` is `OAuthProviderConnection[]` (`key`, `connected`, `oauth_configured`, `supports_sync`, synced-at triplet, `connections[]`). Linked-platform rows stay `DiscordConnection` (`type`, nullable `id` / `name`, `verified`, `revoked`) — see `ProfileConnectionsController::presentConnections`. Use `providerByKey(snapshot, 'discord')` instead of a flat `discord_connected` field. One interface — do not redeclare `DiscordConnection`.
 
 ### Conventions
 
@@ -243,8 +247,8 @@ Every `.vue` file using translations must have:
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-// or for message arrays (settings fields/hints):
-// const { t, tm } = useI18n()
+// or for settings fields/hints (literal dotted JSON keys):
+// const { t, tm, rt } = useI18n()
 </script>
 ```
 
@@ -337,8 +341,10 @@ Every data-loading view renders three explicit states in priority order: skeleto
 
 - `src/components/SkeletonBlock.vue` — placeholder block; props `variant` (`line|block|avatar|button`), `width`, `height`, `lines`. Compose into layout-shaped skeletons per view.
 - `src/components/ErrorState.vue` — sibling of `EmptyState.vue`; props `icon` (default `bi-exclamation-triangle`), `title`, `message`, `retryLabel`; emits `retry` (retry button always renders). i18n keys `ui.error_state.{title,message,retry}`.
+- `src/components/EmptyState.vue` — icon + title (+ optional message). Default icon `bi-inbox`. Tabular lists pass a domain-relatable Bootstrap icon (orphans: `bi-person-plus`).
+- `src/components/TableEmptyRow.vue` — one `<tr>` / colspan `<td>` wrapping `EmptyState`. Use this whenever a custom `<table>` cannot use `DataTable.vue` (keep `<thead>` visible).
 - `src/composables/useDetailLoader.ts` — standardizes detail/show views: `{ data, loading, error, load }`, auto-loads on mount, `load()` is the retry handler.
-- `DataTable.vue` — `error?: string | null` prop + `retry` emit; body order is loading skeleton rows → error (ErrorState full-colspan) → empty (EmptyState) → rows. List views pass `useResource.error` and `@retry="fetchList()"`.
+- `DataTable.vue` — `error?: string | null` prop + `retry` emit; body order is loading skeleton rows → error (ErrorState full-colspan) → empty (`EmptyState` with `empty-icon` / `empty-title`, default icon `bi-inbox`) → rows. List views pass `useResource.error` and `@retry="fetchList()"` plus a domain `empty-icon`. Card + dump lists that used a raw table now use `DataTable` the same way. Custom tables that must stay raw (Menus hierarchy, load-more event/ledger tables, inline-edit nested tables) use `TableEmptyRow` instead of plain text.
 - Router chunk-load failures (`router.onError` in `main.ts`) flip a global `chunkLoadFailed` flag (`src/composables/useChunkLoadError.ts`); `App.vue` renders a full-page `ErrorState` + reload button instead of a blank document.
 - `showError` (SweetAlert2) remains the surface for action failures (create/delete/checkout), not initial load.
 
@@ -364,9 +370,19 @@ Authenticated routes set `meta.titleKey` (and guest auth routes also `meta.headi
 - **Content header**: `AppLayout.vue` renders `pageTitle` in the `h3`.
 - **Auth heading**: `AuthLayout.vue` renders `heading` as `login-box-msg`.
 - **Tab title**: `App.vue` watches `documentTitle` and sets `document.title` to `{page} | Monolith` (or `Monolith` when there is no title). Recomputes on locale change.
-- **DataTable chrome**: `DataTable.vue` uses `ui.datatable.*` (`search_placeholder`, `empty_title`, `info`, `per_page`) and `ui.labels.actions`. Catalog dumps (`useResource` + DataTable) send `display_mode=query&page&per_page=10` (and `search` when the box is used) and parse `{ items, pagination }` **or** a legacy flat `T[]`. Default page size is **10** (Blade DataTables). Menus tree stays a full dump + client slice (no server paging). Do not port Yajra JS. Do not invent a second list URL. `MenusView` opts out of `DataTable.vue` for a plain `<table>` + client-side `searchQuery` filter (no pagination, no sort) so the `h`/`p`/`c` hierarchy is never split across pages; `MenusTrashedView` still uses `DataTable.vue`.
+- **DataTable chrome**: `DataTable.vue` uses `ui.datatable.*` (`search_placeholder`, `empty_title`, `info`, `per_page`) and `ui.labels.actions`. Catalog dumps (`useResource` + DataTable) send `display_mode=query&page&per_page=10` (and `search` when the box is used) and parse `{ items, pagination }` **or** a legacy flat `T[]`. Default page size is **10** (Blade DataTables). Menus tree stays a full dump + client slice (no server paging). Do not port Yajra JS. Do not invent a second list URL. `MenusView` opts out of `DataTable.vue` for a plain `<table>` + client-side `searchQuery` filter (no pagination, no sort) so the `h`/`p`/`c` hierarchy is never split across pages; empty still uses in-table `TableEmptyRow` (`bi-list-nested`). `MenusTrashedView` still uses `DataTable.vue`. Card grids, file-hosting browsers, and overview mini-tables are not datatables — they keep their own empty UI.
 - **Row actions**: icon-only (`RowActions.vue`) — `aria-label` + `title` from the label, icon `aria-hidden`, `btn-group btn-group-sm`. Each `RowAction` is either a navigation (`to: RouteLocationRaw` → rendered as `<router-link>` so the browser shows the URL on hover) or a real action (`onClick` → `<button>`). Toolbar primaries stay icon + text (`Add user`). File Hosting `.fh-action-group` is already icon-only — leave it.
 - **Navigation buttons vs action buttons**: Any button whose only effect is `router.push(...)` MUST be a `<router-link :to="...">` so the destination URL is visible on hover (browser status bar / address bar tooltip). Real actions (delete, save, export, probe, restore) stay `<button>` — they have side effects and no meaningful URL. `router.back()` buttons stay `<button>` too (destination is history-dependent, not resolvable). Disabled nav (e.g. cancel while saving) uses `<router-link>` + Bootstrap `disabled` class + `aria-disabled` + `tabindex="-1"` instead of the native `:disabled` attribute (which only works on `<button>`).
+
+### AdminLTE page grid
+
+Authenticated `AppLayout` content already sits in `container-fluid`. A lone `col-lg-8` / `col-lg-6` therefore leaves a hole on the right. Page-level Bootstrap columns (not nested form/dl/KPI tiles) follow:
+
+1. **One page-level card** — put `Card` at the content root (same as Settings / Menu edit). Do not wrap it in a partial column. A `.row > .col-12` wrapper is redundant; skip it.
+2. **Two page-level cards** — use a `.row` and a split that matches content. Default **`col-lg-8` + `col-lg-4`** (main + sidebar). Use **`col-md-8` + `col-md-4`** when both columns should sit side by side earlier (claim steps, vTuber profile). Pair both sides on the **same** breakpoint. Optional `order-*` for sidebar-first on mobile stays allowed (purchase/invoice show).
+3. **Conditional sibling** — the main cell is `col-12` when the counterpart is not rendered, and gains the split class only while the sibling exists (`:class="isEdit ? 'col-lg-8' : 'col-12'"`). Do not leave `col-lg-8` standing alone on create. This applies to **main + sidebar shells**, not to equal-width KPI/card tiles that drop one tile.
+
+Valkivid3 public layouts are out of scope. Nested field grids (`col-md-6` form pairs, `col-sm-3`/`col-sm-9` definition lists) are not page shell.
 
 ### Blob / CSV downloads
 
@@ -486,7 +502,7 @@ Create and edit share `VtualOrphanEditView`. `AppLayout` is a bare `<router-view
 
 ### Settings menu names
 
-Every Settings screen is ported (`SettingsFormView` on `/apps/settings/:group`). MenuSeeder children are `settings.platform`, `settings.file-hosting`, `settings.microstock`, `settings.vtual`. The SPA registers those **as named routes** (`settings.platform.view`, …) pointing at the same SFC, **before** the parameterized `settings.group.view` (used for `identity` and any future registry group). Sidebar `hasRoute(node.route + '.view')` is what makes the click work — a redirect-only alias would lose `isActive`. Do **not** add `identity` to MenuSeeder.
+Every Settings screen is ported (`SettingsFormView` on `/apps/settings/:group`). Fields use `FormInput` / `FormSelect` / `FormTextarea` / `FormCheckbox` (`switch`); registry key and source sit in the field hint, not inside `form-check`. `PUT admin/settings/{group}` sends **underscore** field names (`platform_jwt_ttl`), not the dotted GET keys — Laravel treats dots as nested paths, which used to 422 `settings.empty_payload` for every save. The FormRequest aliases a dotted body onto the underscore names when needed. MenuSeeder children are `settings.platform`, `settings.file-hosting`, `settings.microstock`, `settings.vtual`. The SPA registers those **as named routes** (`settings.platform.view`, …) pointing at the same SFC, **before** the parameterized `settings.group.view` (used for `identity` and any future registry group). Sidebar `hasRoute(node.route + '.view')` is what makes the click work — a redirect-only alias would lose `isActive`. Do **not** add `identity` to MenuSeeder.
 
 Static vTual credential probe (`/apps/vtual/platform-credentials/probe`) is registered **before** `/apps/vtual/platform-credentials/:platformId` so `/probe` is not captured as a platform id.
 
@@ -530,6 +546,7 @@ The SPA supports realtime updates via Laravel Echo and Pusher. There is no polli
 - **File Hosting**: `src/composables/file-hosting/useFileHostingRealtime.ts` — singleton channel manager for `file-hosting.user.{userId}` (`.listing.changed`, `.quota.changed`, `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress`). Multiple views register handlers; the channel is subscribed once and torn down when the last handler unregisters. See [Pattern B](#pattern-b-direct-channel-subscription) below.
 - **Microstock**: collection mutations (`lockCollection`, `analyzeCollection`, `fetchCollectionStatus`, `exportCollection`, `downloadCollectionCsv`, asset metadata GET/PATCH, `analyzeAsset`, `fetchSlots`, `createWorkspace`) live in `useMicrostock.ts` and are wired from `FileHostingView` / `FhMicrostockReviewModal`. Realtime subscriptions go through `useFileHostingRealtime.ts` (same channel, Microstock events).
 - **vTual claim**: `src/views/vtual/VtualVtuberClaimView.vue` -- subscribes to `vtual.claim.{claimId}` private channel for `.claim.progress` events. If Echo is unavailable, a pending claim gets no live update until manual reload.
+- **vTual platform credentials**: `useVtualRealtime.ts` -- `private-vtual.platform-credentials` / `.platform.credential.changed`. Platform list silent-refetches when `platform_id` matches; index view refreshes active/pending counts. Acting tab still applies `data.credential` from `POST .../test` so status updates without waiting on the socket.
 
 #### Cross-tab notification read-state sync
 
@@ -729,6 +746,30 @@ Wired into `CheckoutPanel.vue` (Echo-driven, no polling). Sync-status provider i
 
 Subscribes to `private-vtual.claim.{claimId}` for `.claim.progress` events. Handles phase transitions (`started`, `verify_queued`, `verify_processing`, `verify_failed`, `verified`, `cancelled`, `max_attempts_blocked`). No polling fallback; Echo only.
 
+#### vTual platform credentials — `useVtualRealtime.ts`
+
+Staff catalog channel for platform-credential status. Same singleton pattern as Inference (`handlerSet` + one `private` subscribe).
+
+```ts
+import { useVtualRealtime } from '@/composables/vtual/useVtualRealtime'
+
+const { subscribe, unsubscribe } = useVtualRealtime()
+const handlers = {
+  onCredentialChanged: (payload) => {
+    if (payload.platform_id === platformId) void loadCredentials(true)
+  },
+}
+
+onMounted(() => subscribe(handlers))
+onUnmounted(() => unsubscribe(handlers))
+```
+
+| Event | UI update |
+|------|-----------|
+| `.platform.credential.changed` | Silent refetch of the matching platform credential list; index view refreshes active/pending counts |
+
+**Views wired:** `VtualPlatformCredentialPlatformView.vue`, `VtualPlatformCredentialsView.vue`. Both also register `useListingLiveUpdate` for Echo reconnect catch-up. Payload is `platform_id`, `credential_id`, `action` (`created` \| `updated` \| `tested` \| `test_failed` \| `revoked` \| `deleted`), `status` (null on delete). No secrets on the wire.
+
 ### Channel/event reference
 
 | Domain | Channel | Event | Composable |
@@ -738,6 +779,7 @@ Subscribes to `private-vtual.claim.{claimId}` for `.claim.progress` events. Hand
 | Payments invoice | `payments.invoice.{invoiceId}` | `.invoice.status.changed` | `usePaymentRealtime.ts` |
 | Payments routing | `payments.routing` | `.routing.catalog.changed` | `usePaymentRealtime.ts` |
 | vTual claim | `vtual.claim.{claimId}` | `.claim.progress` | `VtualVtuberClaimView.vue` (inline) |
+| vTual credentials | `vtual.platform-credentials` | `.platform.credential.changed` | `useVtualRealtime.ts` |
 
 ### Realtime connection convention
 
@@ -780,7 +822,7 @@ Assessment of whether Vue-Workers invents business rules that belong in Monolith
 | Finding | Why it is decision-making | Why not blocking |
 |---------|---------------------------|------------------|
 | Accept Anyway always painted on the claim page | SPA cannot read `vtual.claim.accept_anyway_enabled` | Blade claim page also shows it to any logged-in user when the setting is on; API 422s when off. Profile-page staff-gate is a **different** surface (channel claims). Extra button ≠ blocked verify. |
-| Discord verify on the **creator claim** page is always painted | SPA cannot read `vtual.claim` Discord-verify settings | API 422s; bio verify still works. Profile manage **does** hide Kick and shows Connect vs Verify from `GET profile/connections`. |
+| Discord verify on the **creator claim** page is always painted | SPA cannot read `vtual.claim` Discord-verify settings | API 422s; bio verify still works. Profile manage **does** hide Kick and shows Connect vs Verify from `GET profile/connections` (`providerByKey(..., 'discord')?.connected`). |
 | `collection_status` → CTA map | Local state machine in `FileHostingView` | API rejects illegal transitions; documented mimic of Blade toolbar |
 | Invoice/purchase `status` → PaymentSteps / hero | Chrome | Display only |
 | `plan_kind === 'addon'` qty editor | Chrome from a field | API rejects non-addon qty |

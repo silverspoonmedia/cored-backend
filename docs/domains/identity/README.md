@@ -174,11 +174,26 @@ Notifications on create/update: [notification domain](../notification/README.md)
 
 Paginated select options: `GET /api/v1/lookups/*` — [platform/list-display-modes.md](../../platform/list-display-modes.md).
 
-## Connected accounts (Discord)
+## Connected accounts (OAuth providers)
 
-SPA: `/apps/profile/connections`. API: `GET /api/v1/profile/connections`, `DELETE /api/v1/profile/connections/discord`, `GET /api/v1/auth/discord/authorize-url` (Bearer). OAuth **callback** stays Monolith web (`auth.discord.callback` at `/apps/auth/discord/callback`) — identity is the encrypted state, not a session cookie. SPA starts OAuth via the authorize-url endpoint, then `window.location` to Discord.
+SPA: `/apps/profile/connections` (`ConnectionsView` — one card section per `providers[]` row, with Connect / Sync / Disconnect on that section). Discord is the only `OAuthProvider` case today; the contract and UI do not assume it is the last.
 
-Scopes: `identify` + `connections`. Table `identity_oauth_accounts` stores envelope-encrypted tokens + **full** Discord connection snapshot (`connections_snapshot` JSON: all connection types, documented safe fields — no secrets). TTL setting `identity.discord.connections_snapshot_max_age_minutes` (default 60): stale snapshot refreshes on profile connections page load (`GET profile/connections`) and on vTual verify miss.
+API (Bearer, any authenticated user):
+
+| Method | URI | Behavior |
+|--------|-----|----------|
+| GET | `/api/v1/profile/connections` | `{ providers: [...] }` — one row per `OAuthProvider` case. Stale Discord snapshots still auto-refresh here (`identity.discord.connections_snapshot_max_age_minutes`, default 60) and on vTual verify miss. |
+| POST | `/api/v1/profile/connections/{oauth_provider}/sync` | Force-refresh that provider’s snapshot (bypasses TTL). Discord is the only case with `supports_sync: true`. Throttled `throttle:10,1`. Returns the same `{ providers }` payload as GET. Not connected / token refresh failed → existing `IdentityOAuthException` (422 / 401). |
+| DELETE | `/api/v1/profile/connections/{oauth_provider}` | Disconnect that provider. |
+| GET | `/api/v1/auth/discord/authorize-url` | Discord connect URL. |
+
+The path parameter is `{oauth_provider}` constrained with `whereIn` `OAuthProvider::values()` (unknown values 404). Do **not** name it `{provider}` — Inference globally binds `{provider}` to `InferenceProvider` (`InferenceServiceProvider`), which would 404 `"Data not found."` for `discord`.
+
+Each `providers[]` row: `key` (enum value), `connected`, `oauth_configured`, `supports_sync`, `synced_at` / `synced_at_formatted` / `synced_at_human`, `connections[]` (`type`, `id`, `name`, `verified`, `revoked`). `connections` is empty when disconnected.
+
+OAuth **callback** stays Monolith web (`auth.discord.callback` at `/apps/auth/discord/callback`) — identity is the encrypted state, not a session cookie. SPA starts OAuth via the authorize-url endpoint, then `window.location` to Discord.
+
+Scopes: `identify` + `connections`. Table `identity_oauth_accounts` stores envelope-encrypted tokens + **full** Discord connection snapshot (`connections_snapshot` JSON: all connection types, documented safe fields — no secrets).
 
 Post-OAuth browser return: encrypted state may carry `return_to`. Allowlisted origins are `APP_URL` and `SPA_URL`. Paths must start with `/apps/`. SPA passes `return_path` only; the API prefixes `SPA_URL`. Empty `SPA_URL` → authorize-url 503.
 

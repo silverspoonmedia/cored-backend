@@ -2,6 +2,7 @@
 
 namespace App\Domain\Identity\Http\Controllers\API\V1\Auth;
 
+use App\Domain\Identity\Enums\OAuthProvider;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\DiscordOAuthService;
 use App\Domain\Identity\Services\UserOAuthAccountService;
@@ -22,35 +23,108 @@ class ProfileConnectionsController extends Controller
 
     public function show(): JsonResponse
     {
-        $user = $this->actor();
-        $account = $this->oauthAccounts->discordAccountFor($user);
+        $this->refreshStaleDiscordSnapshot($this->actor());
 
-        if ($account !== null && ! $this->oauthAccounts->isConnectionsSnapshotFresh($user)) {
-            try {
-                $this->oauthAccounts->syncDiscordConnections($user);
-                $account = $this->oauthAccounts->discordAccountFor($user);
-            } catch (\Throwable) {
-                // Keep stale snapshot when Discord API is unavailable.
-            }
-        }
-
-        [$syncedAt, $syncedAtFormatted, $syncedAtHuman] = DatePresenter::pack($account?->connections_synced_at);
-
-        return $this->successResponse([
-            'discord_connected' => $account !== null,
-            'discord_oauth_configured' => $this->discordOAuth->isConfigured(),
-            'discord_synced_at' => $syncedAt,
-            'discord_synced_at_formatted' => $syncedAtFormatted,
-            'discord_synced_at_human' => $syncedAtHuman,
-            'connections' => $this->presentConnections($this->oauthAccounts->connectionsSnapshotFor($user)),
-        ], __('api/identity.connections.show'));
+        return $this->successResponse(
+            $this->presentProviders($this->actor()),
+            __('api/identity.connections.show'),
+        );
     }
 
-    public function disconnectDiscord(): JsonResponse
+    public function sync(string $oauth_provider): JsonResponse
     {
-        $this->oauthAccounts->disconnectDiscord($this->actor());
+        $resolved = $this->resolveProvider($oauth_provider);
 
-        return $this->successResponse(null, __('api/identity.connections.discord_disconnected'));
+        match ($resolved) {
+            OAuthProvider::Discord => $this->oauthAccounts->syncDiscordConnections($this->actor()),
+        };
+
+        return $this->successResponse(
+            $this->presentProviders($this->actor()),
+            __('api/identity.connections.synced'),
+        );
+    }
+
+    public function disconnect(string $oauth_provider): JsonResponse
+    {
+        $resolved = $this->resolveProvider($oauth_provider);
+
+        match ($resolved) {
+            OAuthProvider::Discord => $this->oauthAccounts->disconnectDiscord($this->actor()),
+        };
+
+        return $this->successResponse(null, __('api/identity.connections.disconnected'));
+    }
+
+    private function resolveProvider(string $provider): OAuthProvider
+    {
+        $resolved = OAuthProvider::tryFrom($provider);
+        if ($resolved === null) {
+            abort(404);
+        }
+
+        return $resolved;
+    }
+
+    private function refreshStaleDiscordSnapshot(User $user): void
+    {
+        $account = $this->oauthAccounts->discordAccountFor($user);
+        if ($account === null || $this->oauthAccounts->isConnectionsSnapshotFresh($user)) {
+            return;
+        }
+
+        try {
+            $this->oauthAccounts->syncDiscordConnections($user);
+        } catch (\Throwable) {
+            // Keep stale snapshot when Discord API is unavailable.
+        }
+    }
+
+    /**
+     * @return array{providers: list<array<string, mixed>>}
+     */
+    private function presentProviders(User $user): array
+    {
+        $providers = [];
+
+        foreach (OAuthProvider::cases() as $provider) {
+            $providers[] = match ($provider) {
+                OAuthProvider::Discord => $this->presentDiscord($user),
+            };
+        }
+
+        return ['providers' => $providers];
+    }
+
+    /**
+     * @return array{
+     *     key: string,
+     *     connected: bool,
+     *     oauth_configured: bool,
+     *     supports_sync: bool,
+     *     synced_at: string|null,
+     *     synced_at_formatted: string|null,
+     *     synced_at_human: string|null,
+     *     connections: list<array{type: string, id: string|null, name: string|null, verified: bool, revoked: bool}>
+     * }
+     */
+    private function presentDiscord(User $user): array
+    {
+        $account = $this->oauthAccounts->discordAccountFor($user);
+        [$syncedAt, $syncedAtFormatted, $syncedAtHuman] = DatePresenter::pack($account?->connections_synced_at);
+
+        return [
+            'key' => OAuthProvider::Discord->value,
+            'connected' => $account !== null,
+            'oauth_configured' => $this->discordOAuth->isConfigured(),
+            'supports_sync' => OAuthProvider::Discord->supportsSync(),
+            'synced_at' => $syncedAt,
+            'synced_at_formatted' => $syncedAtFormatted,
+            'synced_at_human' => $syncedAtHuman,
+            'connections' => $account === null
+                ? []
+                : $this->presentConnections($this->oauthAccounts->connectionsSnapshotFor($user)),
+        ];
     }
 
     /**

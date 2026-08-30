@@ -14,6 +14,8 @@ return [
     ],
     'connections' => [
         'show' => 'Akun terhubung dimuat.',
+        'synced' => 'Akun tertaut diperbarui.',
+        'disconnected' => 'Akun diputus.',
         'discord_disconnected' => 'Discord diputus.',
     ],
 ];

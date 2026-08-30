@@ -97,7 +97,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 | Owned vTuber profiles | `/apps/vtual/profiles` | `Vtual vTuber` / Editor / Admin with active Vtual activation — owned list (`GET api/v1/vtual/creators/owned`); Products sidebar under File Hosting |
 | Manage claimed profile | `/apps/vtual/profiles/{slug}` | Owner/editor — meta, links, merge, channel add (bio token + Discord verify on `channel-claims`), active/archived channels |
 | vTuber profile (read) | `/apps/vtual/vtuber/{slug}` | Any logged-in user — AdminLTE profile layout; **Claim** button when `is_claimable` (orphan) |
-| Claim process (interactive) | `/apps/vtual/vtuber/{slug}/claim` | Any logged-in user — channel pick → token → queued verify; start claim is AJAX with in-place active panel (no full reload); active claim shows proof channel; Echo `claim.progress` realtime when `BROADCAST_CONNECTION` + Pusher configured (reuses `window.__monolithEcho` when the navbar bell already opened Pusher); `verify_failed` snapshots clear queue status (pool finalized before broadcast) + inline failed banner; degraded AJAX-only + reload notice otherwise; orphan only; owned → redirect to profile |
+| Claim process (interactive) | `/apps/vtual/vtuber/{slug}/claim` | Any logged-in user — channel pick → token → queued verify; **one proof channel owns the whole orphan profile** (SPA copy: do not claim every listed channel); start claim is AJAX with in-place active panel (no full reload); active claim shows proof channel; Echo `claim.progress` realtime when `BROADCAST_CONNECTION` + Pusher configured (reuses `window.__monolithEcho` when the navbar bell already opened Pusher); `verify_failed` snapshots clear queue status (pool finalized before broadcast) + inline failed banner; degraded AJAX-only + reload notice otherwise; orphan only; owned → redirect to profile |
 | Platform credentials | `/apps/vtual/platform-credentials` | Root/Admin — platform index table + per-platform credential CRUD; API probe at `/probe` |
 | *Archived* | hub, standalone claims, registry (`_archive/` Blade only) | See [ui-archive.md](ui-archive.md) — **not** `/apps/vtual/profiles` (rebuilt active) |
 
@@ -239,6 +239,10 @@ Multi-credential child of `vtual_platforms` for future YouTube/Twitch sync rotat
 7. **Revoke** (`POST .../revoke`) on `active` → `revoked` (workers stop; row kept for audit).
 8. **Delete** hard-removes `pending` or `revoked` rows; `active` must be revoked first.
 9. Status is not editable via form — only Test / Revoke / Delete buttons change lifecycle (except edit demotes to pending).
+
+**SPA acting tab:** `POST .../test` returns `{ credential, test }`. The Vue client unwraps `data.credential` and patches the row by `id` (status + `verified_at`) without a full reload. SweetAlert uses the local `web.vtual.credentials.test_passed` key and is independent of that unwrap.
+
+**Staff realtime:** after successful create / update / test / test_failed / revoke / delete, `PlatformCredentialService` fires `PlatformCredentialChanged` (`ShouldBroadcastNow`) when `BroadcastConnection::isConfigured()`. Channel `private-vtual.platform-credentials`, event `.platform.credential.changed`. Payload is ids + `action` + `status` only (no secrets / runtime tokens). Channel auth requires `view vtual platform credentials`. SPA `useVtualRealtime.ts` silent-refetches the matching platform list and index counts; `useListingLiveUpdate` catches Echo reconnect. Empty Pusher key leaves the HTTP unwrap as the only acting-tab update (no polling).
 
 ```mermaid
 flowchart TD
@@ -426,13 +430,13 @@ Live UI: SPA `vtual.platform-credentials.*` (index, platform, create, edit, prob
 
 - **SPA DataTable**: Vue `DataTable` + API `display_mode=query`.
 - **Create slug**: auto `{random6}-{slugified-display-name}` when slug omitted (orphan only); create form is display-name minimal.
-- **Deferred channels**: edit page registers platform profile without API call; scheduler resolves in batch (50/platform or 15 min). Form resets after add; pending rows append inline from nested AJAX `data` channel entity (no websocket). Duplicate profiles per creator+platform rejected via parser-based `profile_fingerprint` (`@handle` vs profile URL normalize to same key). **Platform URL guard:** profile URLs with a recognizable YouTube/Twitch host must match the platform dropdown; bare handles/ids follow the selected platform.
+- **Deferred channels**: edit page registers platform profile without API call; scheduler resolves in batch (50/platform or 15 min). Form resets after add; pending rows append inline from nested AJAX `data` channel entity (no websocket). Duplicate profiles per creator+platform rejected via parser-based `profile_fingerprint` (`@handle` vs profile URL normalize to same key). **Platform URL guard:** profile URLs with a recognizable YouTube/Twitch host must match the platform dropdown; bare handles/ids follow the selected platform. The add-channel row is `align-items-start` so the submit button stays on the control baseline when `FormField` shows `invalid-feedback`.
 - **Claimed profiles excluded**: list uses `CreatorService::listClaimable()` — active creators with no owner member.
 
 ### UI/UX patterns (platform credentials)
 
 - **Row actions**: Edit / Test / Revoke (active) / Delete (pending & revoked) in a horizontal flex bar (`platform-credentials/partials/credential-actions`); AJAX forms use `:showAlert="false"` so success/error uses toast (not inline alert inside the table). Action buttons disable for the duration of each request.
-- **Status refresh**: after Test or Revoke (success or failed Test), the credential row updates in place from the AJAX response; Delete removes the row — no full page reload.
+- **Status refresh**: after Test or Revoke, the acting tab patches the row from `data.credential` (Test) / the resource (Revoke). Other staff viewers of `/apps/vtual/platform-credentials` (index counts) and `/apps/vtual/platform-credentials/{id}` (row list) silent-refetch on Echo `.platform.credential.changed`. Delete removes the acting-tab row immediately; other tabs catch up via Echo. No polling.
 
 ### UI/UX patterns (vTuber profile read)
 

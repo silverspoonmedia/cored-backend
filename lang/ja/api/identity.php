@@ -14,6 +14,8 @@ return [
     ],
     'connections' => [
         'show' => '連携アカウントを読み込みました。',
+        'synced' => 'リンクアカウントを更新しました。',
+        'disconnected' => 'アカウントの連携を解除しました。',
         'discord_disconnected' => 'Discord連携を解除しました。',
     ],
 ];

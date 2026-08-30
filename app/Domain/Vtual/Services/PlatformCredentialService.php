@@ -13,6 +13,7 @@ use App\Domain\Vtual\Models\PlatformCredential;
 use App\Domain\Vtual\Services\Probes\TwitchOauthAppProbe;
 use App\Domain\Vtual\Support\PlatformCredentialSecrets;
 use App\Domain\Vtual\Support\PlatformCredentialTestResult;
+use App\Domain\Vtual\Support\VtualPlatformCredentialRealtime;
 use App\Support\Encryption\EnvelopeEncryptionService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -25,6 +26,7 @@ class PlatformCredentialService
     public function __construct(
         private readonly EnvelopeEncryptionService $encryption,
         private readonly PlatformCredentialProbeRegistry $probes,
+        private readonly VtualPlatformCredentialRealtime $realtime,
     ) {}
 
     /**
@@ -66,7 +68,7 @@ class PlatformCredentialService
         // Always pending until manual Test succeeds (ignore client status).
         $status = PlatformCredentialStatus::Pending;
 
-        return DB::transaction(function () use ($actor, $platform, $type, $payload, $label, $priority, $status): PlatformCredential {
+        $credential = DB::transaction(function () use ($actor, $platform, $type, $payload, $label, $priority, $status): PlatformCredential {
             $this->assertLabelUnique($platform->id, $label);
 
             $credential = new PlatformCredential([
@@ -87,6 +89,10 @@ class PlatformCredentialService
 
             return $credential->load('platform');
         });
+
+        $this->realtime->fromCredential($credential, 'created');
+
+        return $credential;
     }
 
     /**
@@ -98,7 +104,7 @@ class PlatformCredentialService
      */
     public function update(PlatformCredential $credential, array $data): PlatformCredential
     {
-        return DB::transaction(function () use ($credential, $data): PlatformCredential {
+        $updated = DB::transaction(function () use ($credential, $data): PlatformCredential {
             $locked = PlatformCredential::query()->whereKey($credential->id)->lockForUpdate()->firstOrFail();
 
             if (array_key_exists('label', $data) && $data['label'] !== null) {
@@ -128,6 +134,10 @@ class PlatformCredentialService
 
             return $locked->load('platform');
         });
+
+        $this->realtime->fromCredential($updated, 'updated');
+
+        return $updated;
     }
 
     public function revoke(PlatformCredential $credential): PlatformCredential
@@ -136,7 +146,7 @@ class PlatformCredentialService
             throw new VtualException(__('api/vtual.credential.revoke_requires_active'), 422);
         }
 
-        return DB::transaction(function () use ($credential): PlatformCredential {
+        $updated = DB::transaction(function () use ($credential): PlatformCredential {
             $locked = PlatformCredential::query()->whereKey($credential->id)->lockForUpdate()->firstOrFail();
 
             $locked->status = PlatformCredentialStatus::Revoked;
@@ -149,6 +159,10 @@ class PlatformCredentialService
 
             return $locked->load('platform');
         });
+
+        $this->realtime->fromCredential($updated, 'revoked');
+
+        return $updated;
     }
 
     public function delete(PlatformCredential $credential): void
@@ -157,8 +171,14 @@ class PlatformCredentialService
             throw new VtualException(__('api/vtual.credential.delete_requires_revoke'), 422);
         }
 
+        $platformId = (string) $credential->platform_id;
+        $credentialId = (string) $credential->id;
+        $status = $credential->status;
+
         $this->invalidateDecryptCache($credential);
         $credential->delete();
+
+        $this->realtime->changed($platformId, $credentialId, 'deleted', $status);
     }
 
     /**
@@ -204,12 +224,15 @@ class PlatformCredentialService
         if (! $result->ok) {
             $this->markFailed($credential, $result->message);
 
+            $failed = $credential->fresh(['platform']) ?? $credential;
+            $this->realtime->fromCredential($failed, 'test_failed');
+
             return new PlatformCredentialTestResult(
                 ok: false,
                 message: $result->message,
                 platformKey: $result->platformKey,
                 runtime: null,
-                credential: $credential->fresh(['platform']),
+                credential: $failed,
             );
         }
 
@@ -231,6 +254,8 @@ class PlatformCredentialService
 
             return $locked->load('platform');
         });
+
+        $this->realtime->fromCredential($updated, 'tested');
 
         return new PlatformCredentialTestResult(
             ok: true,
