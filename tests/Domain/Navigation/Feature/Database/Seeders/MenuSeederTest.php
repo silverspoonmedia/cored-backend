@@ -156,6 +156,10 @@ class MenuSeederTest extends TestCase
             'en' => 'Workspace',
             'id' => 'Ruang Kerja',
             'ja' => 'ワークスペース',
+            'ko' => '작업 공간',
+            'zh_CN' => '工作区',
+            'ar' => 'مساحة العمل',
+            'ru' => 'Рабочая область',
         ], $workspace->getTranslations('name'));
 
         $this->assertSame(

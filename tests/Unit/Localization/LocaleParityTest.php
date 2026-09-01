@@ -141,7 +141,7 @@ class LocaleParityTest extends TestCase
      */
     private function supportedLocales(): array
     {
-        return array_values((array) config('localization.supported_locales', ['en', 'id']));
+        return \App\Support\Localization\LocalePreference::supported();
     }
 
     /**
@@ -170,7 +170,7 @@ class LocaleParityTest extends TestCase
 
             $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($base) + 1));
 
-            if (in_array(basename($relative), self::MANAGED_FILES, true)) {
+            if (! str_contains($relative, '/') && in_array($relative, self::MANAGED_FILES, true)) {
                 continue;
             }
 

@@ -38,7 +38,7 @@ The SPA is an **API-consumer** — no business logic lives in the frontend. All 
 | Auth | JWT (`php-open-source-saver/jwt-auth`), TOTP 2FA (`pragmarx/google2fa-laravel`), Spatie RBAC with hierarchical roles (H-RBAC) |
 | Realtime | Pusher (`pusher/pusher-php-server`) + Laravel Echo |
 | Config | `.env` for secrets/infra, `system_settings` (plaintext) for operational knobs, envelope encryption for product-domain secrets |
-| i18n | `en` / `id` / `ja` |
+| i18n | `en` / `id` / `ja` / `ko` / `zh_CN` / `ar` / `ru` |
 | Storage | MySQL/PostgreSQL, S3-compatible via Flysystem |
 
 ### Web stack (server endpoints only)
@@ -58,7 +58,7 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware |
 | Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), covering shell bootstrap, File Hosting browse/workspace detail, navigation and notification edit, users, services, payments, inference, microstock, and vTual multi-fetch views; Worker cache headers on reference-data GETs, JWT TTL 240 min — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
 | Type alignment | TS types in `src/api/types.ts` match Laravel API Resources exactly — snake_case, no transform layer |
-| i18n | `vue-i18n` (`en` / `id` / `ja`) JSON locales converted from Laravel PHP lang files; parity and hardcoded-fallback guards run with `npm run check:i18n`; generic API errors use locale keys and server messages remain preferred |
+| i18n | `vue-i18n` (`en` / `id` / `ja` / `ko` / `zh-CN` / `ar` / `ru`) JSON locales converted from Laravel PHP lang files; parity and hardcoded-fallback guards run with `npm run check:i18n`; native locale labels come from `LOCALE_LABELS`; SPA `zh-CN` maps to backend `zh_CN`; Arabic sets `html[dir="rtl"]` and other locales force `ltr` (direction-split vendor CSS `main-rtl.css`/`vendor-rtl.css` + reload-on-direction-change, see [vue-workers-spa.md](vue-workers-spa.md)); generic API errors use locale keys and server messages remain preferred |
 | UI | AdminLTE 4 / Bootstrap 5 / jQuery / Select2 (ported from former Blade admin) |
 | Realtime | Laravel Echo + Pusher only — no polling fallback. Echo auto-reconnect is the recovery path; on reconnect the SPA fires a resync bus (re-pulls unread count + registered listings) |
 

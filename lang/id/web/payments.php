@@ -1,58 +1,328 @@
 <?php
 
-$payments = require __DIR__.'/../../en/web/payments.php';
+return [
+    'gateways' => [
+        'title' => 'Payment gateway',
+        'list_title' => 'Daftar payment gateway',
+        'create' => 'Tambah gateway',
+        'create_title' => 'Buat payment gateway',
+        'edit_title' => 'Ubah payment gateway',
+        'form' => [
+            'name' => 'Nama sistem',
+            'display_name' => 'Nama tampilan',
+            'priority' => 'Prioritas',
+            'is_active' => 'Aktif',
+        ],
+        'confirm_delete' => 'Hapus payment gateway ini?',
+        'datatable' => [
+            'empty' => 'Belum ada payment gateway yang dikonfigurasi.',
+            'zero_records' => 'Tidak ada payment gateway yang cocok dengan pencarian Anda.',
+            'columns' => [
+                'name' => 'Nama',
+                'display_name' => 'Nama tampilan',
+                'is_active' => 'Aktif',
+                'priority' => 'Prioritas',
+            ],
+        ],
+    ],
 
-$payments['checkout']['select_channel'] = 'Metode pembayaran';
-$payments['checkout']['pay_with_channel'] = 'Lanjut ke pembayaran';
-$payments['checkout']['change_channel'] = 'Ganti channel pembayaran';
-$payments['checkout']['confirm_paid'] = 'Saya sudah bayar';
-$payments['checkout']['confirm_paid_help'] = 'Jika Anda sudah menyelesaikan pembayaran di luar layar ini (mis. tunai atau transfer bank), klik di sini untuk memeriksa ulang status invoice.';
-$payments['checkout']['no_channels'] = 'Belum ada metode pembayaran yang tersedia untuk invoice ini.';
-$payments['checkout']['cheap_alt_hint'] = 'Bayar pakai :channel untuk biaya lebih murah (scan QR saat checkout).';
-$payments['checkout']['subtotal'] = 'Harga layanan';
-$payments['checkout']['payment_fee'] = 'Biaya pembayaran';
-$payments['checkout']['payment_fee_note'] = 'Dibayarkan ke penyedia pembayaran dan ditambahkan ke total Anda.';
-$payments['checkout']['total_due'] = 'Total dibayar';
-$payments['checkout']['fee_estimate_hint'] = 'Estimasi biaya — jumlah final dikonfirmasi saat Anda lanjut ke pembayaran.';
-$payments['checkout']['fee_percent_basis'] = ':percent dari harga layanan';
-$payments['checkout']['routing_updated'] = 'Metode pembayaran diperbarui. Biaya mungkin berubah.';
-$payments['checkout']['channel_unavailable'] = ':channel tidak lagi tersedia.';
-$payments['checkout']['fee_updated'] = 'Biaya :channel diperbarui dari :old menjadi :new.';
-$payments['checkout']['selected_channel_unavailable'] = 'Metode pembayaran yang dipilih tidak lagi tersedia. Silakan pilih yang lain.';
-$payments['checkout']['fee_at_checkout_hint'] = 'Biaya penyedia pembayaran ditambahkan saat Anda memilih metode pembayaran.';
-$payments['checkout']['syncing'] = 'Menyinkronkan…';
-$payments['gateways']['confirm_delete'] = 'Hapus payment gateway ini?';
-$payments['invoices']['export_csv'] = 'Ekspor CSV';
-$payments['invoices']['datatable']['columns']['subtotal'] = 'Harga layanan';
-$payments['invoices']['datatable']['columns']['fee'] = 'Biaya pembayaran';
-$payments['invoices']['datatable']['columns']['total'] = 'Total pelanggan';
-$payments['invoices']['fields']['fee'] = 'Biaya pembayaran (pembeli)';
-$payments['channels']['routes_lead'] = 'Checkout mencoba rute primary/only dulu, lalu fallback. Dalam peran yang sama, angka priority lebih kecil dicoba lebih dulu. Rute nonaktif atau kredensial PG kosong dilewati.';
-$payments['channels']['empty'] = 'Belum ada payment channel. Jalankan php artisan payments:sync-routing-policy setelah PaymentGatewaySeeder.';
-$payments['channels']['priority_hint'] = 'Angka lebih kecil = prioritas lebih tinggi dalam peran rute yang sama. Priority policy-managed tidak bisa diedit di sini.';
-$payments['channels']['priority_autosave_hint'] = 'tersimpan otomatis';
-$payments['channels']['intro']['lead'] = 'Pelanggan memilih channel logis (QRIS, VA bank, e-wallet). Monolith mencoba rute gateway sesuai policy (peran rute, lalu priority) sampai instruksi pembayaran terbentuk.';
-$payments['channels']['intro']['steps'][1]['title'] = 'Pahami peran rute';
-$payments['channels']['intro']['steps'][1]['body'] = 'Rute primary atau only dicoba sebelum fallback. Priority (10 sebelum 20) berlaku dalam peran yang sama. Fee dan settlement dari Routing_Price.yaml.';
-$payments['channels']['intro']['steps'][2]['body'] = 'Jika semua rute gagal atau kredensial kosong, checkout dapat menawarkan Snap atau redirect iPaymu.';
-$payments['channels']['route_columns']['route_role'] = 'Peran';
-$payments['channels']['route_columns']['settlement'] = 'Settlement';
-$payments['channels']['route_columns']['fee'] = 'Biaya';
-$payments['channels']['route_columns']['policy_managed'] = 'Dikelola policy';
-$payments['channels']['route_roles']['primary'] = 'Utama';
-$payments['channels']['route_roles']['fallback'] = 'Cadangan';
-$payments['channels']['route_roles']['only'] = 'Tunggal';
-$payments['channels']['sync_policy'] = 'Sinkronkan routing policy';
-$payments['channels']['sync_policy_hint'] = 'Muat ulang channel dan rute dari Routing_Price.yaml.';
-$payments['channels']['sync_policy_done'] = 'Routing policy disinkronkan (:channels channel, :routes rute). Memuat ulang…';
-$payments['invoices']['fields']['payment_route'] = 'Rute checkout';
-$payments['income']['title'] = 'Pendapatan pembayaran';
-$payments['income']['subtitle'] = 'Ringkasan pendapatan dan kas masuk dari invoice lunas. Harga layanan = pendapatan produk; biaya pembayaran = surcharge pembeli ke penyedia PG.';
-$payments['income']['filters']['basis_paid_at'] = 'Tanggal bayar (paid_at)';
-$payments['income']['filters']['basis_withdrawable_at'] = 'Tanggal siap cair (withdrawable_at)';
-$payments['income']['summary']['service_revenue'] = 'Pendapatan layanan';
-$payments['income']['summary']['buyer_fees'] = 'Biaya pembayaran pembeli';
-$payments['income']['summary']['cash_collected'] = 'Kas masuk';
-$payments['income']['pipeline']['title'] = 'Alur dana';
+    'show' => [
+        'payment_not_started' => 'Metode pembayaran belum dipilih',
+        'payment_pending' => 'Menunggu pembayaran',
+        'status' => [
+            'paid' => 'Lunas',
+            'expired' => 'Kedaluwarsa',
+            'cancelled' => 'Dibatalkan',
+            'failed' => 'Gagal',
+        ],
+        'payment_steps' => [
+            'aria' => 'Langkah pembayaran',
+            'choose_channel' => 'Pilih metode',
+            'choose_channel_hint' => 'Pilih QRIS, transfer bank, atau e-wallet.',
+            'pay' => 'Bayar',
+            'pay_hint' => 'Selesaikan pembayaran sesuai instruksi yang ditampilkan.',
+            'confirm' => 'Konfirmasi',
+            'confirm_hint' => 'Status diperbarui setelah penyedia pembayaran mengonfirmasi.',
+        ],
+    ],
 
-return $payments;
+    'invoices' => [
+        'title' => 'Invoice',
+        'list_title' => 'Daftar invoice',
+        'show_title' => 'Detail invoice',
+        'show_card_title' => 'Invoice No. :number',
+        'view_order' => 'Lihat pesanan',
+        'view_purchase' => 'Lihat pembelian layanan',
+        'back_to_list' => 'Kembali ke daftar invoice',
+        'datatable' => [
+            'empty' => 'Belum ada invoice.',
+            'zero_records' => 'Tidak ada invoice yang cocok dengan pencarian Anda.',
+            'columns' => [
+                'invoice_number' => 'No. invoice',
+                'status' => 'Status',
+                'subtotal' => 'Subtotal',
+                'fee' => 'Biaya pembayaran',
+                'total' => 'Total pelanggan',
+                'created_at' => 'Dibuat',
+                'actions' => 'Aksi',
+            ],
+        ],
+        'export_csv' => 'Ekspor CSV',
+        'fields' => [
+            'invoice_number' => 'Nomor invoice',
+            'status' => 'Status',
+            'payment_method' => 'Metode pembayaran',
+            'gateway' => 'Gateway',
+            'subtotal' => 'Harga layanan',
+            'fee' => 'Biaya pembayaran (pembeli)',
+            'total' => 'Total pelanggan',
+            'currency' => 'Mata uang',
+            'paid_at' => 'Dibayar pada',
+            'expired_at' => 'Kedaluwarsa pada',
+            'created_at' => 'Dibuat pada',
+            'payment_route' => 'Rute checkout',
+        ],
+    ],
+
+    'income' => [
+        'title' => 'Pendapatan pembayaran',
+        'subtitle' => 'Ringkasan pendapatan dan kas masuk dari invoice lunas. Harga layanan = pendapatan produk; biaya pembayaran = surcharge pembeli yang diteruskan ke penyedia pembayaran.',
+        'loading' => 'Memuat…',
+        'load_failed' => 'Tidak dapat memuat data pendapatan.',
+        'empty_invoices' => 'Tidak ada invoice lunas pada periode ini.',
+        'empty_breakdown' => 'Tidak ada data untuk periode ini.',
+        'invoices_title' => 'Invoice lunas',
+        'pagination' => 'Halaman :page dari :total',
+        'filters' => [
+            'from' => 'Dari',
+            'to' => 'Sampai',
+            'basis' => 'Dasar tanggal',
+            'basis_paid_at' => 'Tanggal bayar (paid_at)',
+            'basis_withdrawable_at' => 'Tanggal siap cair (withdrawable_at)',
+            'gateway' => 'Gateway',
+            'all_gateways' => 'Semua gateway',
+            'apply' => 'Terapkan',
+        ],
+        'summary' => [
+            'service_revenue' => 'Pendapatan layanan',
+            'service_revenue_hint' => 'Jumlah subtotal invoice (penjualan produk Anda).',
+            'buyer_fees' => 'Biaya pembayaran pembeli',
+            'buyer_fees_hint' => 'Surcharge channel yang dipungut dari pelanggan.',
+            'cash_collected' => 'Kas masuk',
+            'cash_collected_hint' => 'Total yang dibayar pelanggan (subtotal + biaya).',
+            'invoice_count' => 'Invoice lunas',
+            'avg_order_value' => 'Rata-rata nilai pesanan',
+        ],
+        'pipeline' => [
+            'title' => 'Alur dana',
+            'invoices' => 'invoice',
+            'awaiting_settlement' => 'Menunggu settlement PG',
+            'ready_to_disburse' => 'Siap dicairkan',
+            'in_payout' => 'Dalam pencairan',
+            'disbursed' => 'Sudah dicairkan ke bank',
+            'failed_payout' => 'Pencairan gagal',
+        ],
+        'breakdown' => [
+            'gateway' => 'Per gateway',
+            'channel' => 'Per channel',
+            'product' => 'Per jenis produk',
+            'label' => 'Label',
+            'invoices' => 'Invoice',
+            'service_revenue' => 'Pendapatan layanan',
+            'cash_collected' => 'Kas masuk',
+        ],
+        'daily' => [
+            'title' => 'Tren harian',
+            'date' => 'Tanggal',
+            'invoices' => 'Invoice',
+            'service_revenue' => 'Pendapatan layanan',
+            'cash_collected' => 'Kas masuk',
+        ],
+    ],
+
+    'subscriptions' => [
+        'title' => 'Langganan',
+        'list_title' => 'Daftar langganan',
+        'create_title' => 'Tambah langganan',
+        'edit_title' => 'Edit langganan',
+        'show_title' => 'Detail langganan',
+        'show_card_title' => 'Langganan :number',
+        'add_button' => 'Tambah langganan',
+        'new_card_title' => 'Langganan baru',
+        'edit_card_title' => 'Edit langganan: :number',
+        'back_to_list' => 'Kembali ke daftar langganan',
+        'datatable' => [
+            'empty' => 'Belum ada langganan.',
+            'zero_records' => 'Tidak ada langganan yang cocok dengan pencarian Anda.',
+            'columns' => [
+                'subscription_number' => 'No. langganan',
+                'subscriber_name' => 'Pelanggan',
+                'plan_name' => 'Plan',
+                'status' => 'Status',
+                'amount' => 'Jumlah',
+                'actions' => 'Aksi',
+            ],
+        ],
+        'fields' => [
+            'subscriber_name' => 'Nama pelanggan',
+            'subscriber_email' => 'Email pelanggan',
+            'subscriber_phone' => 'Telepon pelanggan',
+            'plan_name' => 'Nama plan',
+            'plan_description' => 'Deskripsi plan',
+            'billing_cycle' => 'Siklus penagihan',
+            'amount' => 'Jumlah',
+            'currency' => 'Mata uang',
+            'status' => 'Status',
+            'auto_renew' => 'Perpanjangan otomatis',
+            'started_at' => 'Dimulai pada',
+            'expires_at' => 'Berakhir pada',
+            'trial_ends_at' => 'Trial berakhir pada',
+            'created_at' => 'Dibuat pada',
+        ],
+    ],
+
+    'confirm' => [
+        'delete_subscription' => 'Hapus langganan ini?',
+    ],
+
+    'ipaymu_return' => [
+        'invoice_not_found' => 'Pembayaran ini tidak dapat dicocokkan dengan invoice mana pun.',
+        'paid' => 'Pembayaran diterima. Invoice Anda ditandai lunas.',
+        'pending' => 'Pembayaran sedang diproses. Muat ulang halaman beberapa saat lagi jika status belum berubah.',
+        'failed' => 'Pembayaran gagal atau ditolak.',
+        'cancelled' => 'Pembayaran dibatalkan.',
+        'expired' => 'Sesi pembayaran kedaluwarsa.',
+    ],
+
+    'checkout' => [
+        'title' => 'Pembayaran',
+        'invoice_summary' => 'Invoice No. :number',
+        'amount' => 'Jumlah tagihan',
+        'subtotal' => 'Harga layanan',
+        'payment_fee' => 'Biaya pembayaran',
+        'payment_fee_note' => 'Dibayarkan ke penyedia pembayaran dan ditambahkan ke total Anda.',
+        'total_due' => 'Total dibayar',
+        'fee_estimate_hint' => 'Estimasi biaya — jumlah final dikonfirmasi saat Anda lanjut ke pembayaran.',
+        'fee_percent_basis' => ':percent dari harga layanan',
+        'fee_at_checkout_hint' => 'Biaya penyedia pembayaran ditambahkan saat Anda memilih metode pembayaran.',
+        'routing_updated' => 'Metode pembayaran diperbarui. Biaya mungkin berubah.',
+        'channel_unavailable' => ':channel tidak lagi tersedia.',
+        'fee_updated' => 'Biaya :channel diperbarui dari :old menjadi :new.',
+        'selected_channel_unavailable' => 'Metode pembayaran yang dipilih tidak lagi tersedia. Silakan pilih yang lain.',
+        'pay_now' => 'Bayar sekarang',
+        'snap_loading' => 'Membuka pembayaran…',
+        'snap_failed' => 'Tidak dapat memulai checkout',
+        'started' => 'Sesi checkout dibuat.',
+        'paid' => 'Invoice ini sudah lunas.',
+        'not_payable' => 'Invoice ini tidak dapat dibayar dalam status saat ini.',
+        'unsupported_gateway' => 'Payment gateway invoice ini tidak mendukung hosted checkout.',
+        'select_channel' => 'Metode pembayaran',
+        'cheap_alt_hint' => 'Bayar pakai :channel untuk biaya lebih murah (scan QR saat checkout).',
+        'pay_with_channel' => 'Lanjut ke pembayaran',
+        'channel_loading' => 'Membuat pembayaran…',
+        'channel_ready' => 'Selesaikan pembayaran sesuai instruksi di bawah.',
+        'channel_failed' => 'Tidak dapat memulai checkout channel',
+        'confirm_paid' => 'Saya sudah bayar',
+        'confirm_paid_help' => 'Jika Anda sudah menyelesaikan pembayaran di luar layar ini (mis. tunai atau transfer bank), klik di sini untuk memeriksa ulang status invoice.',
+        'change_channel' => 'Ganti channel pembayaran',
+        'no_channels' => 'Belum ada metode pembayaran yang tersedia untuk invoice ini.',
+        'permission_required' => 'Anda tidak punya izin untuk memulai pembayaran. Minta izin “initiate payment” ke administrator.',
+        'synced' => 'Status pembayaran disinkronkan.',
+        'syncing' => 'Menyinkronkan…',
+        'sync_pending' => 'Pembayaran masih pending.',
+        'sync_failed' => 'Tidak dapat menyinkronkan status pembayaran.',
+    ],
+
+    'instructions' => [
+        'title' => 'Instruksi pembayaran',
+        'expires_at' => 'Bayar sebelum :time',
+        'qr_string' => 'Payload QR',
+        'bank' => 'Bank',
+        'va_number' => 'Nomor virtual account',
+        'account_name' => 'Nama pemilik rekening',
+        'open_ewallet' => 'Buka aplikasi e-wallet',
+        'copy' => 'Salin',
+        'copied' => 'Tersalin ke clipboard',
+        'copy_failed' => 'Tidak dapat menyalin',
+        'pending_hint' => 'Status diperbarui otomatis setelah penyedia pembayaran mengonfirmasi pembayaran Anda.',
+    ],
+
+    'channels' => [
+        'title' => 'Payment channel',
+        'list_title' => 'Daftar payment channel',
+        'updated' => 'Payment channel diperbarui.',
+        'route_updated' => 'Rute payment channel diperbarui.',
+        'routes_title' => 'Rute gateway',
+        'routes_lead' => 'Checkout mencoba rute primary/only dulu, lalu fallback. Dalam peran yang sama, angka priority lebih kecil dicoba lebih dulu. Rute nonaktif atau kredensial PG kosong dilewati.',
+        'empty' => 'Belum ada payment channel. Jalankan php artisan payments:sync-routing-policy setelah PaymentGatewaySeeder.',
+        'no_routes' => 'Belum ada rute gateway yang terikat ke channel ini.',
+        'no_results' => 'Tidak ada channel yang cocok dengan pencarian Anda.',
+        'search_label' => 'Cari channel',
+        'search_placeholder' => 'Cari berdasarkan nama, kode, atau jenis…',
+        'inactive_channel' => 'Disembunyikan dari checkout',
+        'primary_route' => 'Dicoba lebih dulu',
+        'priority_hint' => 'Angka lebih kecil = prioritas lebih tinggi dalam peran rute yang sama. Priority policy-managed tidak bisa diedit di sini.',
+        'priority_autosave_hint' => 'tersimpan otomatis',
+        'visible_count' => '{0} Tidak ada channel|{1} :count channel tampil|[2,*] :count channel tampil',
+        'route_count' => '{0} Tidak ada rute|{1} :count rute|[2,*] :count rute',
+        'status' => [
+            'active' => 'Aktif',
+            'inactive' => 'Nonaktif',
+        ],
+        'kinds' => [
+            'qris' => 'QRIS',
+            'va' => 'Virtual Account (VA)',
+            'ewallet' => 'E-wallet',
+        ],
+        'intro' => [
+            'title' => 'Cara kerja routing channel checkout',
+            'lead' => 'Pelanggan memilih channel logis (QRIS, VA bank, e-wallet). Monolith mencoba rute gateway sesuai policy (peran rute, lalu priority) sampai instruksi pembayaran terbentuk.',
+            'steps' => [
+                [
+                    'title' => 'Aktifkan channel',
+                    'body' => 'Channel nonaktif disembunyikan dari checkout. Rute tetap terkonfigurasi saat channel mati.',
+                ],
+                [
+                    'title' => 'Pahami peran rute',
+                    'body' => 'Rute primary atau only dicoba sebelum fallback. Priority (10 sebelum 20) berlaku dalam peran yang sama. Fee dan settlement dari Routing_Price.yaml.',
+                ],
+                [
+                    'title' => 'Fallback saat checkout',
+                    'body' => 'Jika semua rute gagal atau kredensial kosong, checkout dapat menawarkan Snap atau redirect iPaymu.',
+                ],
+            ],
+        ],
+        'stats' => [
+            'channels_active' => 'Channel aktif',
+            'routes_active' => 'Rute aktif',
+            'checkout_hint' => 'Perilaku checkout',
+            'checkout_body' => 'Hanya channel aktif dengan minimal satu rute yang layak yang tampil ke pembayar.',
+        ],
+        'columns' => [
+            'code' => 'Kode',
+            'display_name' => 'Nama tampilan',
+            'kind' => 'Jenis',
+            'sort_order' => 'Urutan',
+            'is_active' => 'Aktif',
+        ],
+        'route_columns' => [
+            'gateway' => 'Gateway',
+            'provider_type' => 'Jenis provider',
+            'provider_channel' => 'Channel provider',
+            'priority' => 'Prioritas',
+            'is_active' => 'Aktif',
+            'route_role' => 'Peran',
+            'settlement' => 'Settlement',
+            'fee' => 'Biaya',
+            'policy_managed' => 'Dikelola policy',
+        ],
+        'route_roles' => [
+            'primary' => 'Utama',
+            'fallback' => 'Cadangan',
+            'only' => 'Tunggal',
+        ],
+        'sync_policy' => 'Sinkronkan routing policy',
+        'sync_policy_hint' => 'Muat ulang channel dan rute dari Routing_Price.yaml.',
+        'sync_policy_done' => 'Routing policy disinkronkan (:channels channel, :routes rute). Memuat ulang…',
+    ],
+];

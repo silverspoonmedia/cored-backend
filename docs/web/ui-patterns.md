@@ -47,7 +47,7 @@ The two islands that shipped were the dashboard live-session widget and File Hos
 
 ### Lang keys
 
-Added under `lang/{en,id,ja}/ui.php`: `skip_to_content`, `labels.actions`, `labels.main_navigation`, `labels.breadcrumb`, `labels.users_table`, `labels.user_menu`, `actions.reset`.
+Added under `lang/{en,id,ja,ko,zh_CN,ar,ru}/ui.php`: `skip_to_content`, `labels.actions`, `labels.main_navigation`, `labels.breadcrumb`, `labels.users_table`, `labels.user_menu`, `actions.reset`.
 
 ## Responsive
 
@@ -136,7 +136,7 @@ Button labels are injected via a JSON blob in `assets-scripts.blade.php`:
 </script>
 ```
 
-Keys live under `swal.*` in `lang/{en,id,ja}/ui.php`. The wrapper reads them at boot; missing keys fall back to English literals.
+Keys live under `swal.*` in `lang/{en,id,ja,ko,zh_CN,ar,ru}/ui.php`. The SPA reads equivalent `ui.swal.*` keys from all seven JSON locales; missing keys fail parity checks rather than silently falling back to English literals.
 
 ### Adoption
 

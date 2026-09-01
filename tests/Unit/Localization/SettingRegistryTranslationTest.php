@@ -15,7 +15,7 @@ class SettingRegistryTranslationTest extends TestCase
 {
     public function test_every_registry_key_has_field_translation_in_all_locales(): void
     {
-        $locales = array_values((array) config('localization.supported_locales', ['en', 'id', 'ja']));
+        $locales = \App\Support\Localization\LocalePreference::supported();
 
         foreach (array_keys(SettingRegistry::definitions()) as $key) {
             foreach ($locales as $locale) {
@@ -40,7 +40,7 @@ class SettingRegistryTranslationTest extends TestCase
 
     public function test_every_registry_option_value_has_translation_in_all_locales(): void
     {
-        $locales = array_values((array) config('localization.supported_locales', ['en', 'id', 'ja']));
+        $locales = \App\Support\Localization\LocalePreference::supported();
 
         foreach (SettingRegistry::definitions() as $key => $definition) {
             $options = $definition['options'] ?? [];

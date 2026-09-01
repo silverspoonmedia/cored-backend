@@ -69,7 +69,7 @@ class LookupService
         if ($search !== null) {
             $like = '%'.addcslashes($search, '%_\\').'%';
             $query->where(function (Builder $builder) use ($like): void {
-                foreach (config('localization.supported_locales', ['en', 'id', 'ja']) as $locale) {
+                foreach (\App\Support\Localization\LocalePreference::supported() as $locale) {
                     $builder->orWhere("name->{$locale}", 'like', $like);
                 }
                 $builder->orWhere('type', 'like', $like);

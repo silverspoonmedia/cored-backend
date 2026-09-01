@@ -18,7 +18,7 @@ return [
         rtrim((string) env('SPA_URL', ''), '/'),
         ...array_map(
             static fn (string $origin) => rtrim(trim($origin), '/'),
-            array_filter(array_map('trim', explode(',', (string) env('CORS_EXTRA_ORIGINS', '')))),
+            array_filter(array_map('trim', explode(',', (string) getenv('CORS_EXTRA_ORIGINS')))),
         ),
     ]))),
 
@@ -34,6 +34,7 @@ return [
         'X-Requested-With',
         'X-CSRF-Token',
         'X-SPA-Origin',
+        'X-SPA-Locale',
     ],
 
     'exposed_headers' => [],

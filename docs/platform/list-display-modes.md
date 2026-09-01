@@ -46,7 +46,7 @@ That makes the following a **retained compatibility surface with no current cons
 | Row-action contract | `App\Support\DataTable\Contracts\RowActionResolverInterface`, `App\Support\DataTable\ActionButton` |
 | Row-action resolvers | `UserRowActionResolver`, `OrphanCreatorRowActionResolver`, `MenuRowActionResolver`, `MenuTrashedRowActionResolver`, `InvoiceRowActionResolver`, `SubscriptionRowActionResolver`, `PaymentGatewayRowActionResolver`, `AiModelCardRowActionResolver`, `InferenceProviderRowActionResolver` |
 | Composer dependencies | `yajra/laravel-datatables-oracle`, `yajra/laravel-datatables-fractal` |
-| Translations | `lang/{en,id,ja}/web/vtual-orphans.php` exists only because `OrphanCreatorRowActionResolver` reads `datatable.confirm_delete` |
+| Translations | `lang/{en,id,ja,ko,zh_CN,ar,ru}/web/vtual-orphans.php` exists only because `OrphanCreatorRowActionResolver` reads `datatable.confirm_delete` |
 
 Rules:
 

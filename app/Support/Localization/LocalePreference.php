@@ -9,17 +9,70 @@ use App\Domain\Identity\Models\User;
  */
 final class LocalePreference
 {
+    private const SPA_TO_BACKEND = [
+        'zh-CN' => 'zh_CN',
+    ];
+
     /**
      * @return list<string>
      */
     public static function supported(): array
     {
-        $supported = config('localization.supported_locales', ['en', 'id', 'ja']);
+        $supported = config('localization.supported_locales', ['en']);
 
-        return is_array($supported) ? array_values(array_filter($supported, 'is_string')) : ['en', 'id', 'ja'];
+        if (! is_array($supported)) {
+            return ['en'];
+        }
+
+        $supported = array_values(array_filter($supported, 'is_string'));
+
+        return $supported !== [] ? $supported : ['en'];
+    }
+
+    /**
+     * Normalize SPA aliases to the canonical Laravel locale code.
+     */
+    public static function normalize(string $locale): ?string
+    {
+        $locale = trim($locale);
+        $canonical = self::SPA_TO_BACKEND[$locale] ?? $locale;
+
+        return self::isCanonicalSupported($canonical) ? $canonical : null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function accepted(): array
+    {
+        $accepted = self::supported();
+
+        foreach (self::SPA_TO_BACKEND as $spa => $backend) {
+            if (in_array($backend, $accepted, true)) {
+                $accepted[] = $spa;
+            }
+        }
+
+        return array_values(array_unique($accepted));
+    }
+
+    public static function toSpa(string $locale): ?string
+    {
+        $canonical = self::normalize($locale);
+
+        if ($canonical === null) {
+            return null;
+        }
+
+        return array_search($canonical, self::SPA_TO_BACKEND, true) ?: $canonical;
     }
 
     public static function isSupported(string $locale): bool
+    {
+        return self::normalize($locale) !== null;
+    }
+
+    private static function isCanonicalSupported(string $locale): bool
     {
         return in_array($locale, self::supported(), true);
     }

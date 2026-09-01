@@ -130,6 +130,93 @@ class NavigationMenuTest extends TestCase
         );
     }
 
+    public function test_navigation_tree_resolves_chinese_translation_for_zh_cn_request(): void
+    {
+        $this->makeMenu([
+            'name' => ['en' => 'English label', 'zh_CN' => '简体中文标签'],
+            'type' => 'c',
+        ]);
+
+        app()->setLocale('zh_CN');
+
+        $response = $this->getJson('/api/v1/navigation/menus')->assertOk();
+
+        $this->assertTrue(
+            collect($response->json('data'))->pluck('name')->contains('简体中文标签'),
+        );
+    }
+
+    public function test_spa_locale_header_wins_over_stale_cookie(): void
+    {
+        $this->makeMenu([
+            'name' => ['en' => 'English label', 'id' => 'Label Indonesia', 'ar' => 'تسمية عربية'],
+            'type' => 'c',
+        ]);
+
+        // Stale cookie says id, but the SPA's current header says ar. The header
+        // must win so a direction-swap reload (which can abort the auth/locale
+        // persist that refreshes the cookie) still resolves Arabic.
+        $response = $this
+            ->withUnencryptedCookie('locale', 'id')
+            ->withHeader('X-SPA-Locale', 'ar')
+            ->getJson('/api/v1/navigation/menus')
+            ->assertOk();
+
+        $this->assertSame('تسمية عربية', $this->findMenuNode($response->json('data'), 'تسمية عربية')['name']);
+    }
+
+    public function test_user_db_locale_still_wins_over_header_and_cookie(): void
+    {
+        $this->makeMenu([
+            'name' => ['en' => 'English label', 'id' => 'Label Indonesia', 'ar' => 'تسمية عربية'],
+            'type' => 'c',
+        ]);
+
+        $user = $this->userWithRole('User');
+        $user->forceFill(['locale' => 'id'])->save();
+
+        // DB preference is authoritative: even with a conflicting header+cookie,
+        // the authenticated user's stored locale wins.
+        $response = $this->actingAsJwt($user)
+            ->withUnencryptedCookie('locale', 'ar')
+            ->withHeader('X-SPA-Locale', 'ar')
+            ->getJson('/api/v1/navigation/menus')
+            ->assertOk();
+
+        $this->assertSame('Label Indonesia', $this->findMenuNode($response->json('data'), 'Label Indonesia')['name']);
+    }
+
+    public function test_navigation_tree_cache_isolated_by_locale(): void
+    {        $this->makeMenu([
+            'name' => [
+                'en' => 'English label',
+                'id' => 'Label Indonesia',
+                'ja' => '日本語ラベル',
+            ],
+            'description' => [
+                'en' => 'English description',
+                'id' => 'Deskripsi Indonesia',
+                'ja' => '日本語の説明',
+            ],
+            'type' => 'c',
+        ]);
+
+        app()->setLocale('en');
+        $english = $this->getJson('/api/v1/navigation/menus')->assertOk()->json('data');
+
+        app()->setLocale('id');
+        $indonesian = $this->getJson('/api/v1/navigation/menus')->assertOk()->json('data');
+
+        app()->setLocale('ja');
+        $japanese = $this->getJson('/api/v1/navigation/menus')->assertOk()->json('data');
+
+        $this->assertSame('English label', $this->findMenuNode($english, 'English label')['name']);
+        $this->assertSame('Label Indonesia', $this->findMenuNode($indonesian, 'Label Indonesia')['name']);
+        $this->assertSame('Deskripsi Indonesia', $this->findMenuNode($indonesian, 'Label Indonesia')['description']);
+        $this->assertSame('日本語ラベル', $this->findMenuNode($japanese, '日本語ラベル')['name']);
+        $this->assertSame('日本語の説明', $this->findMenuNode($japanese, '日本語ラベル')['description']);
+    }
+
     public function test_navigation_tree_filters_by_query_and_keeps_ancestors(): void
     {
         $admin = $this->userWithRole('Admin');
@@ -509,6 +596,26 @@ class NavigationMenuTest extends TestCase
      *
      * @param  array<string, mixed>  $attributes
      */
+    /**
+     * @param  list<array<string, mixed>>  $nodes
+     * @return array<string, mixed>
+     */
+    private function findMenuNode(array $nodes, string $name): array
+    {
+        foreach ($nodes as $node) {
+            if (($node['name'] ?? null) === $name) {
+                return $node;
+            }
+
+            $found = $this->findMenuNode($node['children'] ?? [], $name);
+            if ($found !== []) {
+                return $found;
+            }
+        }
+
+        return [];
+    }
+
     private function makeMenu(array $attributes): Menu
     {
         return $this->repo()->createMenu(

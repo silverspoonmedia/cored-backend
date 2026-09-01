@@ -18,10 +18,13 @@ class LocaleController extends Controller
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'locale' => ['required', 'string', Rule::in(LocalePreference::supported())],
+            'locale' => ['required', 'string', Rule::in(LocalePreference::accepted())],
         ]);
 
-        $locale = $validated['locale'];
+        $locale = LocalePreference::normalize((string) $validated['locale']);
+        if ($locale === null) {
+            abort(422, __('validation.in', ['attribute' => 'locale']));
+        }
         $user = Auth::guard('api')->user();
         LocalePreference::apply($locale, $user instanceof User ? $user : null);
 

@@ -85,9 +85,9 @@ Two forever tiers — hot path must not query the `menus` table on a presented-t
 |-----|----------|
 | `menus.navigation.snapshot` | All active menu primitives (translations, stored routes, layout/order, role names, include/exclude user IDs). Never hydrated Eloquent. |
 | `menus.navigation.tree_epoch` | Integer generation bumped on structural invalidation. |
-| `menus.navigation.presented.{epoch}.{layout}.{viewer}` | Final filtered + `#`-masked tree for `guest` or `u:{userId}`. |
+| `menus.navigation.presented.{epoch}.{locale}.{layout}.{viewer}` | Final filtered + `#`-masked tree for `guest` or `u:{userId}`, keyed per locale. |
 
-On miss, `navigationTree` loads the snapshot (DB only if snapshot also misses), runs visibility + presentation mask, then stores the presented tree.
+On miss, `navigationTree` loads the snapshot (DB only if snapshot also misses), runs visibility + presentation mask, then stores the presented tree. Node labels resolve via `TranslationResolver::resolve()`, which reads `app()->getLocale()` set by the `SetLocale` middleware — so each locale gets its own presented tree under the same epoch. Resolution chain is `users.locale → X-SPA-Locale header → locale cookie → default`; see [docs/platform/localization.md](../../platform/localization.md).
 
 | Event | Action |
 |-------|--------|
@@ -181,7 +181,7 @@ The sibling Vue-Workers SPA uses `useNavigationHydrate` in menu edit. It batches
 ## Tests
 
 - `tests/Domain/Navigation/Unit/Repositories/Eloquent/MenuRepositoryTest.php` covers CRUD/ordering plus presentational `#` masking, presented-tree cache hits (no `menus` queries), epoch refresh after menu mutation, and per-user `forgetPresentedTreeFor`.
-- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 47-row sidebar/navbar/vtual tree, `en`/`id`/`ja` translations, selected role pivots, vtual `hash` anchors, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
+- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 47-row sidebar/navbar/vtual tree, all-seven-locale (`en`/`id`/`ja`/`ko`/`zh_CN`/`ar`/`ru`) `name` translations, selected role pivots, vtual `hash` anchors, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
 - `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuTest.php` covers menu CRUD including SPA symbolic route acceptance and garbage route rejection.
 - `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuLayoutTest.php` covers layout scoping (sidebar/navbar/vtual), parent-layout mismatch rejection, guest fetch of the vtual tree, and the `layouts` endpoint exposing the configured identifiers.
 - `tests/Domain/Navigation/Unit/Support/MenuLayoutTest.php` asserts the three configured layouts (`sidebar`/`navbar`/`vtual`) and the default.

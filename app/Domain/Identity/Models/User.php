@@ -75,10 +75,9 @@ class User extends Authenticatable implements HasLocalePreference, JWTSubject, M
         }
 
         $locale = $this->{$column} ?? null;
-        $supported = config('localization.supported_locales', ['en', 'id']);
 
-        return is_string($locale) && in_array($locale, $supported, true)
-            ? $locale
+        return is_string($locale)
+            ? \App\Support\Localization\LocalePreference::normalize($locale)
             : null;
     }
 

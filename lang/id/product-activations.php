@@ -62,7 +62,7 @@ return [
     'product_title' => 'Produk: :product',
     'view_product' => 'Lihat Insight',
     'back_to_products' => 'Kembali ke Produk',
-    'fulfillment_target' => 'Fulfillment target',
+    'fulfillment_target' => 'Target fulfillment',
     'no_activations' => 'Tidak ada aktivasi untuk produk ini.',
     'pagination' => 'Paginasi aktivasi',
 

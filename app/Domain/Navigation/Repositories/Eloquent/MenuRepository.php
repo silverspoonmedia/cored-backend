@@ -430,9 +430,11 @@ class MenuRepository implements MenuRepositoryInterface
         return $this->presentedCacheKeyFor($this->treeEpoch(), $layout, $this->viewerKey($user));
     }
 
-    private function presentedCacheKeyFor(int $epoch, string $layout, string $viewer): string
+    private function presentedCacheKeyFor(int $epoch, string $layout, string $viewer, ?string $locale = null): string
     {
-        return 'menus.navigation.presented.'.$epoch.'.'.$layout.'.'.$viewer;
+        $locale ??= app()->getLocale();
+
+        return 'menus.navigation.presented.'.$epoch.'.'.$locale.'.'.$layout.'.'.$viewer;
     }
 
     private function viewerKey(?User $user): string

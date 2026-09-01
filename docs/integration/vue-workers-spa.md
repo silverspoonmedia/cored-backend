@@ -12,7 +12,7 @@ The in-repo Blade admin has been **removed** from Monolith; `docs/web/blade-admi
 | Cloudflare Workers | Deployment target (`@cloudflare/vite-plugin`). Static assets plus SPA fallback only; current Worker does not proxy API or auth requests. All browser API traffic goes direct to Laravel. |
 | Session auth | Cross-site HttpOnly `__Host-spa_jwt` on the **API origin** (minted by Laravel, `SameSite=None; Secure`). JS never reads it; the browser attaches it to direct API calls via `credentials: 'include'`. `GET auth/me` hydrates `user`. Cross-tab: `BroadcastChannel` only coordinates refresh/logout (no token in the messages). `remember` affects cookie `Max-Age` via API `expires_in`. |
 | `fetch` wrapper (`src/api/client.ts`) | All calls go **direct to the Laravel API origin** (`VITE_API_BASE_URL`) with `credentials: 'include'`; each request carries public `X-SPA-Origin: 1` for Laravel's anti-noise gate, and cross-origin mutations send the double-submit `X-CSRF-Token` nonce (`src/api/csrf.ts`) except auth-session paths (login/register/refresh/logout/forgot-reset/2FA login), which skip `ensureCsrf()` to match the server skip. Other credentialed fetches wait until an in-flight CSRF nonce `Set-Cookie` settles (`whenCsrfCookieQuiet`). 401: `GET auth/me` and `GET navigation/menus` do **not** `POST /auth/refresh`. For a few seconds after `applyAuth` (`markSessionIssued`), a 401 **or** browser TypeError (`Failed to fetch` / `Load failed` / `NetworkError` — DevTools often labels this CORS) retries the original URI with backoff (50/150/400ms) until the settle window ends; it does **not** refresh. Later 401s refresh + retry. 419 CSRF refresh + retry. `getBlob()` uses the same gate and settle retries. |
-| `vue-i18n` | Full locale system (`en`, `id`, `ja`) converted from Laravel PHP lang files. `vue-i18n` and `@intlify/unplugin-vue-i18n` must stay on the **same major** (both v11): the unplugin precompiles locale JSON to a minified AST whose node-type enum is read by the `vue-i18n` runtime formatter. A major mismatch (e.g. unplugin v11 emitting linked-modifier node type 9 + runtime v9) makes `t()` throw `SyntaxError: unhandled minifier node type` for every message that uses that node, which previously blanked page titles and the error dialog. |
+| `vue-i18n` | Full locale system (`en`, `id`, `ja`, `ko`, `zh-CN`, `ar`, `ru`) converted from Laravel PHP lang files. Arabic sets `html[dir="rtl"]`; other supported locales use `ltr`. `vue-i18n` and `@intlify/unplugin-vue-i18n` must stay on the **same major** (both v11): the unplugin precompiles locale JSON to a minified AST whose node-type enum is read by the `vue-i18n` runtime formatter. A major mismatch (e.g. unplugin v11 emitting linked-modifier node type 9 + runtime v9) makes `t()` throw `SyntaxError: unhandled minifier node type` for every message that uses that node, which previously blanked page titles and the error dialog. |
 
 ### Source layout
 
@@ -213,15 +213,16 @@ English remains the reference locale. Indonesian and Japanese translations must 
 
 Translation workflow:
 
-1. Add or adjust the key in all three locale files in one change.
+1. Add or adjust the key in all supported locale files in one change.
 2. Preserve Vue interpolation tokens, plural behavior, and API/DB identifier semantics.
 3. Use `computed()` or the current i18n translator for labels that must react to runtime locale changes; do not freeze translated arrays at module scope.
-4. Run `npm run check:i18n` after every translation batch. Treat English-duplicate output as review input, not automatic failure; allow technical terms, brands, codes, and machine-contract strings.
-5. Run `npm run type-check` and `npm run build` before handoff.
+4. Run `npm run check:i18n` after every translation batch. Exact English duplicates fail unless key appears in explicit `scripts/check-i18n.mjs` allowlist. Allowlist is key-specific and limited to brands, provider/code identifiers, `QRIS`, `Discord`, `vTual`, `Microstock`, machine-contract text, and **locale loanwords** — keys whose accepted term in the locale IS the English word (Indonesian IT vocabulary like `Status`, `Filter`, `Model`, `Slug`, `Avatar`, `Channel`; Chinese tech convention `Slug`). Prefer translating when a natural native term exists; allowlist only when the loanword is what a native user would read in a real product. `node scripts/i18n-duplicate-report.mjs` writes `i18n-duplicate-report.json` with locale/namespace/key-level inventory, classifications, placeholder tokens, actionable totals, and stale-allowlist detection. The checker prints per-locale/two-segment-namespace duplicate counts for file-by-file translation waves; generated inventory never authorizes untranslated user-facing copy.
+5. Keep layout direction logical and scope RTL-only rules to `html[dir="rtl"]`; use explicit RTL icon transforms when an arrow's meaning changes. RTL vendor setup: `src/main.ts` awaits either `src/assets/main-ltr.css` or `src/assets/main-rtl.css` (chosen from `isRtl()` before mount). `main-rtl.css` imports `src/assets/vendor-rtl.css`, a sibling of `vendor.css` whose only difference is the two vendor lines use the official RTL dist builds (`bootstrap.rtl.min.css`, `adminlte.rtl.min.css`); keep both vendor files' import lists in sync. The swap is a separate CSS entry — NOT a Vite `resolveId` alias — because Vite processes CSS `@import` via postcss, not the JS resolve pipeline, so a resolver-based swap silently no-ops in production builds. `setLocale()` triggers a full `location.reload()` when the direction changes so the other stylesheet loads — never try to hot-swap direction without reload. The reload must run only AFTER `auth/locale` persists: `setLocale(locale, { reload: false })` skips the reload, and `AppNavbar.switchLocale()` captures the prior locale, awaits `switchLocaleApi()` + `refetchNavigation()`, then calls `reloadForDirection(prev, next)` last. Reloading synchronously inside `setLocale()` aborts the in-flight `POST auth/locale`, leaving `users.locale` and the `locale` cookie stale — the dynamic menu then stays on the old locale (this was the Arabic menu-stale bug). On the backend, `SetLocale` resolves `users.locale` → `X-SPA-Locale` header → `locale` cookie → default, so the always-sent header beats a stale cookie even if a persist is interrupted. Directional icon convention: back-arrow semantics use the `html[dir='rtl'] .bi-arrow-left::before` glyph swap in `monolith-overrides.css`; the custom `.fh-breadcrumb__sep` separator uses `transform: scaleX(-1)`; list-movement chevrons (pagination, modal prev/next) bind via `isRtl()` from `src/i18n/index.ts` so "previous" always moves backward in the list. Do NOT add a custom transform for AdminLTE's `.nav-arrow` — the vendor RTL build already mirrors it with `translateY(-50%) rotate(180deg)` and a custom `scaleX(-1)` would clobber that vertical centering (this was the sidebar icon/text collision bug).
+6. Run `npm run type-check` and `npm run build` before handoff.
 
 ### SPA localization guards
 
-`npm run check:i18n` checks key parity across `en`, `id`, and `ja`, Vue placeholder shape, malformed interpolation braces, suspicious Indonesian/Japanese values identical to English, and suspicious hardcoded user-facing fallback copy under `src/`. API fallback errors must use locale keys, with server messages preferred when present.
+`npm run check:i18n` checks key parity across `en`, `id`, `ja`, `ko`, `zh-CN`, `ar`, and `ru`, Vue placeholder shape, malformed interpolation braces, suspicious values identical to English, and suspicious hardcoded user-facing fallback copy under `src/`. API fallback errors must use locale keys, with server messages preferred when present.
 
 Runtime locale switching updates `document.documentElement[lang]`, persisted preference, reactive labels, and locale-aware number/date formatting. Startup resolution is separate from backend `SetLocale`: the SPA checks supported `localStorage.locale`, then the first two characters of supported `navigator.language`, then falls back to `en`. `setLocale()` persists the choice and applies the HTML `lang` attribute; `window` and `document` access is guarded for SSR/tooling contexts. Backend requests still resolve authenticated user preference, then cookie, then `config('app.locale')`; do not assume both clients choose the same locale before synchronization.
 
@@ -233,8 +234,8 @@ Use `Intl.NumberFormat` / `Intl.DateTimeFormat` with active locale; never call `
 
 | Laravel PHP | vue-i18n JSON |
 |-------------|---------------|
-| `lang/en/web/settings.php` | `src/i18n/locales/en.json` under `web.settings.*` |
-| `lang/en/ui.php` | `src/i18n/locales/en.json` under `ui.*` |
+| `lang/{locale}/web/settings.php` | `src/i18n/locales/{en,id,ja,ko,zh-CN,ar,ru}.json` under `web.settings.*` (`zh_CN` ↔ `zh-CN` at API/browser boundary) |
+| `lang/{locale}/ui.php` | `src/i18n/locales/{en,id,ja,ko,zh-CN,ar,ru}.json` under `ui.*` |
 | `trans('web/settings.title')` | `t('web.settings.title')` — use `.` separator, not `/` |
 | `:variable` placeholder | `{variable}` placeholder |
 | `trans_choice('key', count)` | `t('key', { count })` or custom pluralization helper |
@@ -266,7 +267,7 @@ All user-facing notifications and confirmations go through Sweetalert2 via the s
 - **Notifications** — keep calling `useAlert()` (`success`/`error`/`info`). Internally it renders Swal toasts (`success`/`info`, `top-end`, 4s auto-dismiss) and an error dialog (`error`, `ui.dialog.error_title` title, `ui.swal.ok` button). The API is unchanged so call sites need no updates.
 - **Confirmations** — use `confirmDialog({ title, text | html, confirmText, cancelText, icon, danger })` which resolves `true` on confirm. Never add a `ConfirmModal`-style `v-model` component for simple confirmations; the one remaining `ConfirmModal.vue` usage is the file-hosting rename form (an input form, not a confirmation) and stays until it gets a dedicated dialog.
 - **Text input prompts** — use `inputDialog({ title, required?, confirmText?, danger? })` (resolves the trimmed string or `null` on cancel; `required: true` blocks an empty confirm). Native `prompt()` is forbidden; the product-activation reject/suspend reason prompts use this helper.
-- **i18n** — shared labels live at `ui.swal.*` and `ui.dialog.*`; confirm bodies use their domain keys. All three locales must stay in parity.
+- **i18n** — shared labels live at `ui.swal.*` and `ui.dialog.*`; confirm bodies use their domain keys. All supported locales (`en`, `id`, `ja`, `ko`, `zh-CN`, `ar`, `ru`) must stay in parity. Arabic sets `html[dir="rtl"]`; other locales use `ltr`.
 - **Layering** — `.swal2-container` is pinned to `z-index: 1090` in `src/assets/monolith-overrides.css`, above Bootstrap modals (1050/1055) and custom layers like `.fh-context-menu` / `.monolith-toast-container` (1080). Never lower it; any new fixed layer must stay below 1090.
 - **Toast/modal serialization** — swal2 removes the `swal2-toast-shown` body class unconditionally when a modal closes, which makes any still-open toast container fall back to full-viewport width. To prevent the race, `showErrorDialog()` and `confirmDialog()` call `closeActiveToast()` first (closes an open toast before firing the modal). Never fire a raw `Swal.fire` modal while a toast may be open — go through `src/lib/swal.ts`.
 - **Body classes** — never assign `document.body.className = ''`. Swal (and Bootstrap/OverlayScrollbars) store runtime classes on `<body>` (`swal2-toast-shown`, `swal2-shown`, `modal-open`). Layout classes (`login-page`, `layout-fixed`, `sidebar-expand-lg`, …) are toggled in `App.vue` via `classList.remove`/`add` only. Toast container sizing is also pinned in CSS (`.swal2-container:has(.swal2-popup.swal2-toast)`) so a missing body class cannot balloon the toast to full viewport.
@@ -293,9 +294,13 @@ const basisOptions = computed(() => [
 - `src/i18n/locales/en.json` — reference locale
 - `src/i18n/locales/id.json` — Indonesian
 - `src/i18n/locales/ja.json` — Japanese
+- `src/i18n/locales/ko.json` — Korean
+- `src/i18n/locales/zh-CN.json` — Simplified Chinese (browser code)
+- `src/i18n/locales/ar.json` — Arabic (RTL)
+- `src/i18n/locales/ru.json` — Russian
 - `src/i18n/index.ts` — `createI18n()` instance, `setLocale()` helper, `applyHtmlLang()`
 
-Locale parity: all three files must have the same key set. Laravel `:variable` placeholders must be converted to `{variable}` in all locales (not just `en`).
+Locale parity: all seven files must have the same key set. Laravel `:variable` placeholders must be converted to `{variable}` in all locales (not just `en`). `zh_CN` remains backend-only; SPA storage, `html[lang]`, and browser `Intl` use `zh-CN`.
 
 ## Component conventions
 

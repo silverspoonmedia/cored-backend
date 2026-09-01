@@ -20,7 +20,7 @@ Write → forget / bump epoch → next read rebuilds
 | Cache | Keys | Invalidation |
 |-------|------|--------------|
 | Settings snapshot | `system_settings.snapshot` | `rebuildCache()` on upsert/seed; `settings:rebuild-cache` |
-| Navigation snapshot + presented trees | `menus.navigation.snapshot`, `tree_epoch`, `presented.{epoch}.{layout}.{viewer}` | Menu CRUD/seeder flush + epoch; role update/delete; Domain Access upsert → epoch; activation / user role sync → per-user forget; `menu:flush-cache` |
+| Navigation snapshot + presented trees | `menus.navigation.snapshot`, `tree_epoch`, `presented.{epoch}.{locale}.{layout}.{viewer}` | Menu CRUD/seeder flush + epoch; role update/delete; Domain Access upsert → epoch; activation / user role sync → per-user forget; `menu:flush-cache` |
 | Notification audiences | `notification_type_settings.snapshot` | `flushCache()` on sync / seeder |
 | Product insight aggregates | `product_insights.{productKey}.metrics` | `ProductAnalyticsService` forget on every analytics write |
 | Spatie RBAC catalog | `spatie.permission.cache` (config) | Package `forgetCachedPermissions()` on role/permission mutation; expiration set to century-scale (Spatie API has no forever) |

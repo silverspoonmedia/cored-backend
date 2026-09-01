@@ -68,13 +68,14 @@ class StoreMenuRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $supportedLocales = config('localization.supported_locales', ['en', 'id']);
+            $supportedLocales = \App\Support\Localization\LocalePreference::supported();
 
             $this->validateTranslatableString($validator, 'name', $supportedLocales);
             $this->validateTranslatableAllLocales($validator, 'name', $supportedLocales);
 
             if ($this->has('description')) {
                 $this->validateTranslatableString($validator, 'description', $supportedLocales);
+                $this->validateTranslatableAllLocales($validator, 'description', $supportedLocales);
             }
 
             $type = $this->input('type');
