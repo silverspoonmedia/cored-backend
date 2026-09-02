@@ -296,6 +296,7 @@ class AuthService
         $user = Auth::guard('api')->user();
 
         Auth::guard('api')->logout();
+        Auth::forgetGuards();
 
         if ($user) {
             UserLoggedOut::dispatch(

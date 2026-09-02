@@ -161,6 +161,23 @@ class CreatorClaimServiceTest extends TestCase
     }
 
     #[Test]
+    public function completed_claim_refreshes_menu_visibility_for_claimant(): void
+    {
+        [$orphan, $channel] = $this->seedOrphanWithChannel();
+        $user = $this->userWithRole('User');
+        $claim = $this->claims->start($user, $orphan->id, $channel->id);
+
+        $this->claims->acceptAnyway($user, $claim->id);
+
+        $this->assertTrue($user->fresh()->hasRole('Vtual vTuber'));
+        $this->assertDatabaseHas('product_activations', [
+            'user_id' => $user->id,
+            'product_key' => 'Vtual',
+            'state' => 'active',
+        ]);
+    }
+
+    #[Test]
     public function verify_success_when_description_contains_token(): void
     {
         $this->activateYoutubeCredential();

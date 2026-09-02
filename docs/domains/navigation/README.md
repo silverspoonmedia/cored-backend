@@ -95,6 +95,7 @@ On miss, `navigationTree` loads the snapshot (DB only if snapshot also misses), 
 | Domain Access visibility upsert | Bump epoch |
 | Product activation state change for user U | Forget presented keys for U under the current epoch (both layouts) |
 | User role sync that affects menu RBAC (`UserManagementService`, claim assignRole) | Forget presented keys for that user |
+| Claim completion in SPA | SPA refreshes `auth/me`, then refetches sidebar/navbar before opening claimed profile; claim route rejects non-claimable profiles back to read-only profile |
 
 `php artisan menu:flush-cache` remains available for manual recovery.
 

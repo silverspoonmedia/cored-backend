@@ -159,6 +159,43 @@ class AuthFlowTest extends TestCase
         $response->assertCookieExpired(\App\Support\Auth\SpaAuthCookie::NAME);
     }
 
+    public function test_logout_blacklists_the_bearer_token_for_follow_up_requests(): void
+    {
+        config(['jwt.blacklist_grace_period' => 0]);
+
+        $user = User::factory()->create();
+        $user->assignRole('User');
+        $token = auth('api')->login($user);
+
+        $this->postJson('/api/v1/auth/logout', [], [
+            'Authorization' => 'Bearer '.$token,
+        ])->assertOk();
+
+        auth()->forgetGuards();
+
+        $this->getJson('/api/v1/auth/me', [
+            'Authorization' => 'Bearer '.$token,
+        ])->assertUnauthorized();
+    }
+
+    public function test_logout_cookie_cannot_authenticate_a_follow_up_request(): void
+    {
+        config(['jwt.blacklist_grace_period' => 0]);
+
+        $user = User::factory()->create();
+        $user->assignRole('User');
+        $token = auth('api')->login($user);
+
+        $this->withCookie(\App\Support\Auth\SpaAuthCookie::NAME, $token)
+            ->postJson('/api/v1/auth/logout')
+            ->assertOk()
+            ->assertCookieExpired(\App\Support\Auth\SpaAuthCookie::NAME);
+
+        $this->withCookie(\App\Support\Auth\SpaAuthCookie::NAME, $token)
+            ->getJson('/api/v1/auth/me')
+            ->assertUnauthorized();
+    }
+
     public function test_forgot_and_reset_password_flow(): void
     {
         Notification::fake();
