@@ -93,6 +93,44 @@ class ManagementService
     }
 
     /**
+     * Guest-safe public profile: active management, roster limited to
+     * publicly listed creators (active + at least one active public channel).
+     */
+    public function showForPublic(string $slugOrUuid): Management
+    {
+        $query = Management::query()->where('status', EntityStatus::Active);
+
+        if (\Illuminate\Support\Str::isUuid($slugOrUuid)) {
+            $query->whereKey($slugOrUuid);
+        } else {
+            $query->where('slug', $slugOrUuid);
+        }
+
+        $management = $query->first();
+
+        if ($management === null) {
+            throw new VtualException(__('api/vtual.management.not_found'), 404);
+        }
+
+        return $management->load([
+            'externalLinks' => fn ($q) => $q->orderBy('sort_order'),
+            'creatorAssignments' => fn ($q) => $q->whereNull('left_at')
+                ->with(['creator' => fn ($cq) => $cq
+                    ->where('status', EntityStatus::Active)
+                    ->whereHas('channels', function ($chq): void {
+                        $chq->where('status', \App\Domain\Vtual\Enums\ChannelStatus::Active)
+                            ->where('visibility', \App\Domain\Vtual\Enums\ChannelVisibility::Public);
+                    })
+                    ->with(['channels' => fn ($chq) => $chq
+                        ->where('status', \App\Domain\Vtual\Enums\ChannelStatus::Active)
+                        ->where('visibility', \App\Domain\Vtual\Enums\ChannelVisibility::Public)
+                        ->with('platform'),
+                    ]),
+                ]),
+        ]);
+    }
+
+    /**
      * @param  array{name?: string, slug?: string, description?: string|null, logo_url?: string|null, status?: string}  $data
      */
     public function update(User $actor, string $managementId, array $data): Management

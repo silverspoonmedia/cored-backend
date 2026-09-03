@@ -82,6 +82,7 @@ return [
         'invoices.show',
         'vtual.public',
         'vtual.public.vtuber',
+        'vtual.public.management',
         'vtual.profiles.index',
         'vtual.profiles.show',
         'vtual.vtuber.index',

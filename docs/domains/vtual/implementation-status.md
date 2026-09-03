@@ -7,7 +7,7 @@ Tracks what the **vTual product domain** has shipped in Monolith versus the orig
 | Domain guide (behavior detail) | [README.md](README.md) |
 | Code | `app/Domain/Vtual/` |
 | Config | [`config/vtual.php`](../../../config/vtual.php), product key `Vtual` in [`config/products.php`](../../../config/products.php) |
-| Last reviewed | 2026-08-09 |
+| Last reviewed | 2026-09-03 |
 
 ---
 
@@ -71,7 +71,11 @@ Full glossary and relations: [README Concepts](README.md#concepts).
 | **Feed poll ingestion** | Scheduled `vtual:poll-channel-feeds` + `vtual:flush-content-pool`; polls **active + archived** public channels; archived → inline **stub** upsert (no content-pool enqueue for hydrate); skips until initial backfill done | `YoutubeChannelVideoFeedClient`, `ChannelFeedPollService`, `ContentFetchPoolService` |
 | **Live CCV poll** | Scheduled `vtual:poll-live-contents` | `LiveContentPollService` |
 | **YouTube WebSub** | Push trigger + `vtual:renew-websub-subscriptions` (`--repair-missing`); archive **keeps** subscription; restore calls **`resubscribe()`**; ops `vtual:repair-archived-websub` for legacy rows | `YoutubeWebSubSubscriptionService`, `YoutubeWebSubNotificationService`, webhook route; subscribe on `ChannelActivationService` |
-| **YouTube WebSub hardening** | Strict hub verify, dual sha1/sha256 signature, resilient topic lookup, body cap, structured logging + `last_error`, shared Atom parser | `YoutubeAtomFeedParser`, `YoutubeWebSubWebhookController`, `config/vtual.php` `websub.max_body_bytes`, registry `vtual.websub.max_body_bytes` |
+| **YouTube WebSub hardening** | Strict hub verify, dual sha1/sha256 signature (hex **and** base64 digests), resilient topic lookup, body cap, structured logging + `last_error`, shared Atom parser (incl. `at:deleted-entry` tombstones) | `YoutubeAtomFeedParser`, `YoutubeWebSubWebhookController`, `config/vtual.php` `websub.max_body_bytes`, registry `vtual.websub.max_body_bytes` |
+| **Deleted-video tombstones** | `ContentStatus::Unavailable` + `first_unavailable_at`; set when `videos.list` omits an id during pool flush or WebSub pushes `at:deleted-entry`; successful hydrate clears the marker; public profile/directory queries exclude unavailable rows | `ContentService::markUnavailable`, `ChannelContentFetchService::persistVideos`, `YoutubeWebSubNotificationService`, migration `2026_09_03_100001` |
+| **Ingestion deadlock mitigation** | All hot-path `DB::transaction` calls run with 3 attempts (MySQL 1213 retry); feed poll wraps stub/enqueue + watermark update in one transaction so channel-row lock order matches `ContentService` upserts | `ContentService`, `ContentFetchPoolService`, `ChannelFetchPoolService`, `ChannelFeedPollService` |
+| **Fetch pool retention** | `vtual:prune-fetch-pools {--days=}` (config `pool_retention.days` default 7) deletes old done/failed rows from both pool tables; scheduled daily | `PruneFetchPoolsCommand`, `routes/console.php`, `PruneFetchPoolsCommandTest` |
+| **WebSub ops tooling** | `vtual:websub-status {--channel=}` per-channel report incl. `active_never_notified` summary for staging push validation; `vtual:repair-archived-websub` now scheduled weekly | `WebsubStatusCommand`, `routes/console.php`, `WebsubStatusCommandTest` |
 | **vTuber profile (read)** | `/apps/vtual/vtuber/{slug}` — col-4/8 AdminLTE layout; Claim button when orphan (`is_claimable`); uniform content cards; public contents via **`listForPublicProfile`** (hides primary-channel-archived rows); any logged-in user; UUID → 301 slug (web) | `VtuberProfileService`, `VtuberProfileController`, `VtuberProfileResource`, `VtuberProfileWebTest` |
 | **Claim process (interactive)** | `/apps/vtual/vtuber/{slug}/claim` — channel pick → token → queued verify (POST start/verify/cancel); WebSocket `claim.progress` on `private-vtual.claim.{id}` (`VtualClaimRealtime`); no polling; `claim_blocked_until` on profile API | `VtuberProfileController`, `claim.blade.php`, `claim-realtime.js`, `CreatorClaimVerifyPoolService`, `VtuberProfileWebTest`, `VtualClaimRealtimeTest`, `CreatorClaimProgressChannelTest` |
 | **Owned profiles list** | `/apps/vtual/profiles` — owner membership table; `GET api/v1/vtual/creators/owned` emits query-mode `actions[]` (`edit` → `vtual.profiles.show`, `view` → public `profile_url`); Products menu (`Vtual vTuber`+); claim success assigns role + `activateImplicit(Vtual)` | `CreatorProfilesController`, `CreatorService::listOwnedForUser`, `OwnedCreatorQueryRowActions`, `MenuSeeder`, `CreatorProfilesWebTest` |
@@ -142,28 +146,26 @@ Mapped to original TASK / product vision. **Do not treat as bugs** unless a mile
 | Theme | Status | Notes |
 |-------|--------|--------|
 | **Claim Add New** | Not implemented | Survey + staff approval + appeal / permanent reject |
-| **Public homepage** | Implemented | SPA `/vtual` (Valkivid3): hero, sponsors, countdown, live directory, all-creator `#contents` feed (`GET /api/v1/vtual/public/contents`), about, events; en/id/ja localized. Header switcher owns `html.dark` (class `dark:` variant). Tailwind utilities nested under `.vk3-root` so AdminLTE is not restyled after visiting `/vtual`. OG/SEO still pending. |
-| **Public read surfaces** | Implemented | Guest profile `/vtual/vtubers/{slug}` (`GET /api/v1/vtual/public/vtubers/{slug}`): banner, two-column sidebar (avatar, live badge, bio, follower/channel stats, channels, links, claim CTA) + featured live card and **paginated** video grid (`contents: { items, pagination }`, Prev/Next pager; `?page` + `?per_page` default 12 max 24; live-first ordering; `is_live` from a whole-catalogue check, not the current page). Authenticated AdminLTE read/claim stays `/apps/vtual/vtuber/{slug}`. Management public profiles still pending. |
+| **Public homepage** | Implemented | SPA `/vtual` (Valkivid3): hero, sponsors, countdown, live directory, all-creator `#contents` feed (`GET /api/v1/vtual/public/contents`), about, events; en/id/ja localized. Header switcher owns `html.dark` (class `dark:` variant). Tailwind utilities nested under `.vk3-root` so AdminLTE is not restyled after visiting `/vtual`. OG/SEO runtime meta via `useHeadMeta` (SPA-side, client-only DOM; no Worker function). |
+| **Public read surfaces** | Implemented | Guest profile `/vtual/vtubers/{slug}` (`GET /api/v1/vtual/public/vtubers/{slug}`): banner, two-column sidebar (avatar, live badge, bio, follower/channel stats, channels, links, claim CTA gated to authenticated viewers) + featured live card and **paginated** video grid (`contents: { items, pagination }`, Prev/Next pager; `?page` + `?per_page` default 12 max 24; live-first ordering; `is_live` from a whole-catalogue check, not the current page). OG/SEO runtime meta via `useHeadMeta`. Authenticated AdminLTE read/claim stays `/apps/vtual/vtuber/{slug}`. Guest management profile `/vtual/managements/{slug}` (`GET /api/v1/vtual/public/managements/{slug}`): logo header, description, links, public roster grid; `useHeadMeta` (type `profile`). |
 | **Twitch EventSub** | Not implemented | YouTube WebSub done; Twitch push deferred |
 | **Multi-stream session correlation** | Not implemented | `fetchStreamsByUserIds` exists for future workers; live CCV poll (`vtual:poll-live-contents`) is done |
-| **WebSub tombstone / deleted video** | Not implemented | Mark content unavailable when `videos.list` returns 404 during content pool flush |
-| **Pool `done` row retention** | Not implemented | `vtual_channel_fetch_pool` / `vtual_content_fetch_pool` processed rows grow without prune |
-| **Feed poll vs content pool deadlock** | Fix backlog | MySQL 1213 observed under concurrent feed poll + content pool insert; retry works |
-| **WebSub push E2E validation** | Partial | Hub verify OK; `last_notify_at` may stay null until real publish in staging |
+| **WebSub push E2E validation** | Tooling shipped | `vtual:websub-status` reports `active_never_notified`; publish on staging + re-run to close the loop |
 | **Private discovered channels** | By design | Excluded from feed/WebSub until `POST channels/{id}/promote` |
-| **`verified_channel_id` API exposure** | Not implemented | Stored on `vtual_creator_claims`; not in API resources or claim UI |
+| **`verified_channel_id` API exposure** | Implemented | `CreatorClaimResource` exposes `verified_channel_id` + nested `verified_channel` (platform eager-loaded) on list/show/realtime; claim wizard renders the Discord contract channel |
 | **`promoteDiscoveredChannel` dedicated test** | Gap | Behavior covered indirectly; no isolated feature test |
+| **Management product UI** | Partial | SPA org CRUD + creator assignment shipped (`/apps/vtual/managements*`); public management profile `/vtual/managements/{slug}` ships (guest, roster of publicly listed creators). Org **member** management still pending |
 | **Archived user web UI** | Web archived, API live | Profiles, claims, registry hub — restore or rebuild is backlog; see [ui-archive.md](ui-archive.md) |
 | **Pool interactive paths** | Partial by design | Creator **profile** claim verify is **queued** (`claim_verify_pool`); Accept Anyway stays sync; staff channel POST remains **deferred** |
 | **Auto appearance discovery** | Cancelled by design | Platform APIs lack safe multi-channel collab list |
-| **Management product UI** | Not implemented | Schema/API skeleton only; no staff talent-org UI |
-| **Viewer-only until claim** | Partial | Ideal: User cannot self-create creator until claim; API `POST creators` still exists for legacy |
+| **Management product UI** | Partial | SPA org CRUD + creator assignment shipped (`/apps/vtual/managements*`); public management profile `/vtual/managements/{slug}` ships (guest, roster of publicly listed creators). Org **member** management still pending |
+| **Viewer-only until claim** | Implemented | `CreatorPolicy::create` is staff-gated (`manage any vtual resource`); non-staff `POST /creators` → 403 `creator.self_create_disabled` (legacy `create vtual creator` permission retained on roles but insufficient). Non-staff path = orphan claim. Staff keeps `creators.store` (owner-bound) + `creators/orphan` |
 | **Kick** | Catalog only | `enabled = false` until official API strategy |
 | **Paid Service SKUs for vTual** | Not implemented | Product activations gate product; no vTual catalog SKUs |
 | **OAuth login as ownership proof** | Partial | Discord **connected accounts** implemented for orphan claim + channel attach (`verify-discord`, discovery bind); bio token + Accept Anyway remain; not Discord login-as-auth |
 | **Undo merge / field-pick merge** | Not implemented | Absorb is one-way; destination meta kept |
 | **E2E / full TASK test matrix** | Not implemented | Unit + API feature tests only |
-| **Realtime “pool flush done” push** | Not implemented | Snapshots land via hourly `--resync`; manage page has no refresh button. Reload to see updated avatar/name/subs. |
+| **Realtime “pool flush done” push** | Implemented | `ChannelSnapshotUpdated` (`.channel.snapshot.updated` on `private-vtual.creator.{id}`, one aggregated event per creator per flush) + manage-page auto-refetch toast and manual **Refresh** button on the channels card |
 
 ---
 
@@ -173,9 +175,8 @@ Not a commitment — default backlog for the next sessions:
 
 1. **Claim Add New** — form + staff queue + reject/appeal (closes chicken-egg for unknown profiles).
 2. **Restore archived user web** — standalone claims hub (or rebuild on orphans pattern); API already complete.
-3. **Public surface follow-ups** — OG/SEO tags, management public profiles, Twitch player/chat on the public profile, public events data source. Guest landing (directory + content feed) + two-column public profile already ship.
-4. **YouTube hardening (assessment-driven)** — feed poll deadlock fix; pool `done` retention job; WebSub tombstone / deleted-video 404; staging WebSub push validation; strip casual `POST creators` for non-staff.
-5. **Twitch EventSub** — push notifications after YouTube path is stable (explicitly deferred).
+3. **Public surface follow-ups** — Twitch player/chat on the public profile, public events data source. Guest landing (directory + content feed) + two-column public profile + guest management profile + OG/SEO runtime meta already ship.
+4. **Twitch EventSub** — push notifications now that the YouTube ingestion path (deadlock retry, retention, tombstones, WebSub validation tooling) is stable. Small gaps from prior #4 all shipped (verified_channel_id exposure, realtime pool-flush push + manage-page refresh, staff-gated `POST creators`).
 
 ---
 
@@ -192,7 +193,9 @@ Not a commitment — default backlog for the next sessions:
 | Flush content pool | `php artisan vtual:flush-content-pool` (`--force`) |
 | Poll live CCV | `php artisan vtual:poll-live-contents` |
 | Renew / repair WebSub | `php artisan vtual:renew-websub-subscriptions` (`--repair-missing` for channels without a row) |
-| Repair archived WebSub | `php artisan vtual:repair-archived-websub` — re-subscribe archived channels missing active/pending subscription (legacy pre-policy rows) |
+| WebSub status report | `php artisan vtual:websub-status` (`--channel=`) — per-channel state + `active_never_notified` count for staging push validation |
+| Repair archived WebSub | `php artisan vtual:repair-archived-websub` — re-subscribe archived channels missing active/pending subscription (legacy pre-policy rows); also scheduled weekly |
+| Prune fetch pools | `php artisan vtual:prune-fetch-pools` (`--days=`, default config `pool_retention.days` = 7) — delete old done/failed rows; scheduled daily |
 | Manual content recovery | `php artisan vtual:fetch-channel-content {channel}` (`--video`, `--discover-live`) |
 | Force flush (ignore 50/15m gate) | `php artisan vtual:flush-channel-pool --force` |
 | Enqueue stale actives then flush | `php artisan vtual:flush-channel-pool --resync` / `--resync --force` |
@@ -224,6 +227,7 @@ Not a commitment — default backlog for the next sessions:
 | `claim_verify_pool.*` | Claim bio verify batch gate (50 / 15m) |
 | `channel_lifecycle.cooldown_seconds` | Per-channel archive/restore cooldown (default 30) |
 | `channel_lifecycle.max_per_minute` | Per-user archive/restore burst (default 10/min) |
+| `pool_retention.days` | Prune window for done/failed pool rows (default 7) |
 | `credential.failover.*` | Soft demote on 401/403 (default OFF) |
 
 ---
@@ -265,6 +269,10 @@ High-level order of work that landed in this long implementation arc (not exhaus
 31. **WebSub resub on restore** + channel lifecycle rate limits (`channel_lifecycle` config, 429 on archive/restore)  
 32. **Test coverage** — profile API/service archived content; feed poll archived stub; content pool stub flush  
 33. **Membership-first channel POST** — owner/editor member → claim; else staff pending; pending **DELETE** (not archive); owned-profile manage is full-width stacked cards (separate Profile vs Channels) + orphan-style table  
+34. **Ingestion hardening (Tier 1)** — deadlock retry (3 attempts on hot-path transactions + single tx per feed poll), `vtual:prune-fetch-pools` retention (daily), deleted-video tombstones (`ContentStatus::Unavailable` + `first_unavailable_at` + Atom `at:deleted-entry`), WebSub hex signature fix + `vtual:websub-status` + weekly `vtual:repair-archived-websub` schedule
+35. **Public surface polish (Tier 2)** — claim CTA on guest profile gated to authenticated viewers (`VkStr1ProfileSidebar`); OG/SEO runtime meta via SPA `useHeadMeta` composable (client-only DOM, no Worker function) on `/vtual` landing + `/vtual/vtubers/{slug}` profile; `web.vtual.public.meta.*` i18n keys across 7 locales
+36. **Tier 3 gaps + management public profile** — `verified_channel_id` + nested `verified_channel` on `CreatorClaimResource` (list/show/realtime, platform eager-loaded) + claim wizard block; guest management profile `GET /api/v1/vtual/public/managements/{slug}` (`showForPublic` active-only, roster = publicly listed creators) + SPA `/vtual/managements/{slug}` (logo header, links, roster grid, `useHeadMeta`); realtime `ChannelSnapshotUpdated` (`.channel.snapshot.updated`, one event per creator per flush) + manage-page auto-refetch + Refresh button
+37. **Viewer-only until claim (Tier 4)** — `CreatorPolicy::create` staff-gated (`manage any vtual resource`); non-staff `POST /creators` → 403 `creator.self_create_disabled` (7 locales); legacy `create vtual creator` permission kept on roles but no longer sufficient; tests updated (`VtualApiTest` — 403 for User/vTuber/Editor, 201 for staff)
 
 ---
 

@@ -11,6 +11,7 @@ return [
         'archived' => '创作者已归档。',
         'name_required' => '显示名称为必填项。',
         'slug_taken' => '此创作者 slug 已被占用。',
+        'self_create_disabled' => '直接创建主页已停用。请认领现有主页，或联系工作人员代为创建。',
     ],
     'orphan' => [
         'list_success' => '孤立创作者列表已加载。',
@@ -29,6 +30,7 @@ return [
         'stats_success' => '公开平台统计已加载。',
         'live_success' => '公开直播列表已加载。',
         'schedule_success' => '公开即将开始的日程已加载。',
+        'management_show_success' => '公开管理机构资料已加载。',
     ],
     'merge' => [
         'success' => '资料已合并。源资料已归档，数据现位于目标资料中。',
@@ -78,6 +80,7 @@ return [
         'creator_assigned' => '创作者已分配到管理项。',
         'creator_unassigned' => '创作者已从管理项取消分配。',
         'assignment_not_found' => '未找到有效的管理项分配。',
+        'not_found' => '未找到管理机构资料或不可用。',
     ],
     'channel' => [
         'list_success' => '频道列表已加载。',

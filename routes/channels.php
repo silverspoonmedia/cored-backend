@@ -56,6 +56,13 @@ Broadcast::channel('vtual.platform-credentials', function (User $user): bool {
     return $user->can('view vtual platform credentials');
 });
 
+Broadcast::channel('vtual.creator.{creatorId}', function (User $user, string $creatorId): bool {
+    $creator = \App\Domain\Vtual\Models\Creator::query()->find($creatorId);
+
+    return $creator !== null
+        && app(\App\Domain\Vtual\Services\CreatorAccessService::class)->canView($creator, $user);
+});
+
 Broadcast::channel('navigation.menus', function (User $user): bool {
     return $user->can('view menu');
 });

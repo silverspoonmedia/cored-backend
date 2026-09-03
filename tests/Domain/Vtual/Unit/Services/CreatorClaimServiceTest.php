@@ -322,6 +322,51 @@ class CreatorClaimServiceTest extends TestCase
     }
 
     #[Test]
+    public function claim_resource_exposes_verified_channel_after_discord_verify(): void
+    {
+        config([
+            'vtual.claim.discord_verify_enabled' => true,
+            'vtual.claim.verify_cooldown_seconds' => 0,
+        ]);
+
+        [$orphan, $channel] = $this->seedOrphanWithChannel();
+        $channel->forceFill(['status' => ChannelStatus::Active])->save();
+        $user = $this->userWithRole('User');
+        $claim = $this->claims->start($user, $orphan->id, $channel->id);
+
+        $account = new IdentityOAuthAccount();
+        $account->user_id = $user->id;
+        $account->provider = OAuthProvider::Discord;
+        $account->provider_user_id = 'discord-user';
+        $account->forceFill([
+            'access_token' => 'discord-access',
+            'refresh_token' => 'discord-refresh',
+        ])->save();
+
+        Http::fake([
+            'discord.com/api/users/@me/connections' => Http::response([
+                [
+                    'type' => 'youtube',
+                    'id' => self::YT_ID,
+                    'name' => 'neuron',
+                    'verified' => true,
+                ],
+            ], 200),
+        ]);
+
+        $verified = $this->claims->verifyViaDiscord($user, $claim->id);
+
+        $shown = $this->claims->show($user, (string) $verified->id);
+        $request = \Illuminate\Http\Request::create('/');
+        $request->setUserResolver(static fn () => $user);
+        $payload = (new \App\Domain\Vtual\Http\Resources\CreatorClaimResource($shown))->resolve($request);
+
+        $this->assertSame((string) $verified->verified_channel_id, $payload['verified_channel_id']);
+        $this->assertNotNull($payload['verified_channel']);
+        $this->assertSame(self::YT_ID, $payload['verified_channel']->external_id ?? null);
+    }
+
+    #[Test]
     public function verify_via_discord_closes_curation_gap_with_discord_only_channel(): void
     {
         config([

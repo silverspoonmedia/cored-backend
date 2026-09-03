@@ -236,6 +236,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Fetch pool retention (processed rows)
+    |--------------------------------------------------------------------------
+    |
+    | done/failed rows in vtual_channel_fetch_pool + vtual_content_fetch_pool
+    | are audit only; prune after this many days via vtual:prune-fetch-pools.
+    |
+    */
+    'pool_retention' => [
+        'days' => 7,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Feed poll + live CCV + WebSub lease
     |--------------------------------------------------------------------------
     */

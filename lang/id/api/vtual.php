@@ -11,6 +11,7 @@ return [
         'archived' => 'Kreator berhasil diarsipkan.',
         'name_required' => 'Nama tampilan wajib diisi.',
         'slug_taken' => 'Slug creator ini sudah digunakan.',
+        'self_create_disabled' => 'Pembuatan profil langsung dinonaktifkan. Klaim profil yang sudah ada atau minta staff untuk menyiapkannya.',
     ],
     'orphan' => [
         'list_success' => 'Daftar kreator tanpa pemilik berhasil dimuat.',
@@ -29,6 +30,7 @@ return [
         'stats_success' => 'Statistik platform publik berhasil dimuat.',
         'live_success' => 'Daftar live saat ini berhasil dimuat.',
         'schedule_success' => 'Jadwal mendatang publik berhasil dimuat.',
+        'management_show_success' => 'Profil management publik berhasil dimuat.',
     ],
     'merge' => [
         'success' => 'Profil digabung. Source diarsipkan; data sekarang di profil destination.',
@@ -78,6 +80,7 @@ return [
         'creator_assigned' => 'Creator ditugaskan ke management.',
         'creator_unassigned' => 'Creator dilepas dari management.',
         'assignment_not_found' => 'Penugasan management aktif tidak ditemukan.',
+        'not_found' => 'Profil management tidak ditemukan atau tidak tersedia.',
     ],
     'channel' => [
         'list_success' => 'Daftar channel berhasil dimuat.',

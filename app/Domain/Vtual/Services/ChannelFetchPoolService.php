@@ -27,6 +27,7 @@ class ChannelFetchPoolService
 {
     public function __construct(
         private readonly PlatformApiGateway $gateway,
+        private readonly \App\Domain\Vtual\Support\VtualChannelRealtime $realtime,
     ) {}
 
     /**
@@ -74,7 +75,7 @@ class ChannelFetchPoolService
                 'status' => ChannelFetchPoolStatus::Pending,
                 'requested_at' => now(),
             ]);
-        });
+        }, 3);
 
         $threshold = max(1, (int) setting_config('vtual.channel_pool.threshold', 50));
         $pending = ChannelFetchPoolItem::query()
@@ -211,6 +212,8 @@ class ChannelFetchPoolService
             $byExternal = $dtos->keyBy(fn (PlatformChannelDto $dto) => $dto->externalId);
             $applied = 0;
             $failed = 0;
+            /** @var array<string, array<int, string>> $updatedByCreator */
+            $updatedByCreator = [];
 
             foreach ($claimed as $item) {
                 $dto = $byExternal->get($item->external_id);
@@ -225,13 +228,19 @@ class ChannelFetchPoolService
                     continue;
                 }
 
-                $this->applyDtoToChannels($platform, $dto);
+                foreach ($this->applyDtoToChannels($platform, $dto) as $updatedChannel) {
+                    $updatedByCreator[(string) $updatedChannel->creator_id][] = (string) $updatedChannel->id;
+                }
                 $item->forceFill([
                     'status' => ChannelFetchPoolStatus::Done,
                     'processed_at' => now(),
                     'error' => null,
                 ])->save();
                 $applied++;
+            }
+
+            foreach ($updatedByCreator as $creatorId => $channelIds) {
+                $this->realtime->snapshotsUpdated($creatorId, $channelIds);
             }
 
             return [
@@ -295,7 +304,7 @@ class ChannelFetchPoolService
             return ChannelFetchPoolItem::query()
                 ->whereIn('id', $ids)
                 ->get();
-        });
+        }, 3);
     }
 
     /**
@@ -313,12 +322,17 @@ class ChannelFetchPoolService
         }
     }
 
-    private function applyDtoToChannels(Platform $platform, PlatformChannelDto $dto): void
+    /**
+     * @return array<int, Channel> channels actually updated (archived skipped)
+     */
+    private function applyDtoToChannels(Platform $platform, PlatformChannelDto $dto): array
     {
         $channels = Channel::query()
             ->where('platform_id', $platform->id)
             ->where('external_id', $dto->externalId)
             ->get();
+
+        $updated = [];
 
         foreach ($channels as $channel) {
             if ($channel->status === ChannelStatus::Archived) {
@@ -326,6 +340,7 @@ class ChannelFetchPoolService
             }
 
             $channel->forceFill($this->snapshotAttributesFromDto($dto))->save();
+            $updated[] = $channel;
 
             if ($channel->visibility === ChannelVisibility::Public
                 && $channel->discovery_source === ChannelDiscoverySource::DiscordConnection
@@ -333,6 +348,8 @@ class ChannelFetchPoolService
                 app(ChannelActivationService::class)->applyYoutubeActivationHooks($channel->refresh());
             }
         }
+
+        return $updated;
     }
 
     /**

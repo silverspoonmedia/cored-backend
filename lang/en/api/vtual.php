@@ -11,6 +11,7 @@ return [
         'archived' => 'Creator archived.',
         'name_required' => 'Display name is required.',
         'slug_taken' => 'This creator slug is already taken.',
+        'self_create_disabled' => 'Direct profile creation is disabled. Claim an existing profile or ask staff to seed one.',
     ],
     'orphan' => [
         'list_success' => 'Orphan creators loaded.',
@@ -29,6 +30,7 @@ return [
         'stats_success' => 'Public platform stats loaded.',
         'live_success' => 'Public live-now list loaded.',
         'schedule_success' => 'Public upcoming schedule loaded.',
+        'management_show_success' => 'Public management profile loaded.',
     ],
     'merge' => [
         'success' => 'Profile merged. Source was archived; data now lives on the destination profile.',
@@ -78,6 +80,7 @@ return [
         'creator_assigned' => 'Creator assigned to management.',
         'creator_unassigned' => 'Creator unassigned from management.',
         'assignment_not_found' => 'Active management assignment not found.',
+        'not_found' => 'Management profile not found or not available.',
     ],
     'channel' => [
         'list_success' => 'Channels loaded.',

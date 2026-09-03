@@ -203,6 +203,86 @@ class ChannelContentFetchServiceTest extends TestCase
         $this->assertDatabaseCount('vtual_contents', 0);
     }
 
+    #[Test]
+    public function missing_ids_from_api_mark_existing_content_unavailable(): void
+    {
+        $channel = $this->seedActiveYoutubeChannel('UCPkKpOHxEDcwmUAnRpIu-Ng');
+
+        // Pre-existing row for the soon-to-be-deleted video.
+        app(\App\Domain\Vtual\Services\ContentService::class)->upsertFromPrimary($channel, [
+            'external_id' => 'goneVid',
+            'title' => 'Old Title',
+            'status' => 'uploaded',
+        ]);
+
+        $gateway = Mockery::mock(PlatformApiGateway::class);
+        $gateway->shouldReceive('fetchVideos')
+            ->once()
+            ->with(PlatformKey::Youtube, ['vid1', 'goneVid'])
+            ->andReturn(collect([$this->videoDto('vid1', 'Still Here')]));
+
+        $this->fetch = app(ChannelContentFetchService::class, ['gateway' => $gateway]);
+
+        $summary = $this->fetch->fetchVideosAndPersist($channel, ['vid1', 'goneVid']);
+
+        $this->assertSame(['requested' => 2, 'fetched' => 1, 'upserted' => 1], $summary);
+        $this->assertDatabaseHas('vtual_contents', [
+            'channel_id' => $channel->id,
+            'external_id' => 'goneVid',
+            'status' => ContentStatus::Unavailable->value,
+        ]);
+        $this->assertNotNull(
+            \App\Domain\Vtual\Models\Content::query()
+                ->where('external_id', 'goneVid')
+                ->value('first_unavailable_at'),
+        );
+    }
+
+    #[Test]
+    public function successful_hydrate_clears_unavailable_tombstone(): void
+    {
+        $channel = $this->seedActiveYoutubeChannel('UCPkKpOHxEDcwmUAnRpIu-Ng');
+
+        $contents = app(\App\Domain\Vtual\Services\ContentService::class);
+        $contents->upsertFromPrimary($channel, [
+            'external_id' => 'revivedVid',
+            'title' => 'Before',
+            'status' => 'uploaded',
+        ]);
+        $contents->markUnavailable($channel, 'revivedVid');
+
+        $gateway = Mockery::mock(PlatformApiGateway::class);
+        $gateway->shouldReceive('fetchVideos')
+            ->once()
+            ->andReturn(collect([$this->videoDto('revivedVid', 'Back Again')]));
+
+        $this->fetch = app(ChannelContentFetchService::class, ['gateway' => $gateway]);
+        $this->fetch->fetchVideosAndPersist($channel, ['revivedVid']);
+
+        $this->assertDatabaseHas('vtual_contents', [
+            'external_id' => 'revivedVid',
+            'status' => ContentStatus::Uploaded->value,
+            'first_unavailable_at' => null,
+        ]);
+    }
+
+    #[Test]
+    public function unavailable_content_hidden_from_public_profile_listing(): void
+    {
+        $channel = $this->seedActiveYoutubeChannel('UCPkKpOHxEDcwmUAnRpIu-Ng');
+
+        $contents = app(\App\Domain\Vtual\Services\ContentService::class);
+        $contents->upsertFromPrimary($channel, ['external_id' => 'okVid', 'title' => 'OK', 'status' => 'uploaded']);
+        $contents->upsertFromPrimary($channel, ['external_id' => 'badVid', 'title' => 'Bad', 'status' => 'uploaded']);
+        $contents->markUnavailable($channel, 'badVid');
+
+        $list = $contents->listForPublicProfile((string) $channel->creator_id);
+        $ids = $list->pluck('external_id')->all();
+
+        $this->assertContains('okVid', $ids);
+        $this->assertNotContains('badVid', $ids);
+    }
+
     private function seedActiveYoutubeChannel(string $externalId): Channel
     {
         $user = $this->userWithRole('User');

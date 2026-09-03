@@ -11,6 +11,7 @@ return [
         'archived' => '크리에이터가 보관 처리되었습니다.',
         'name_required' => '표시 이름은 필수입니다.',
         'slug_taken' => '이 크리에이터 slug는 이미 사용 중입니다.',
+        'self_create_disabled' => '직접 프로필 생성이 비활성화되었습니다. 기존 프로필을 클레임하거나 스태프에게 생성을 요청하세요.',
     ],
     'orphan' => [
         'list_success' => '고아 크리에이터 목록을 불러왔습니다.',
@@ -29,6 +30,7 @@ return [
         'stats_success' => '공개 플랫폼 통계를 불러왔습니다.',
         'live_success' => '공개 라이브 목록을 불러왔습니다.',
         'schedule_success' => '공개 예정 일정을 불러왔습니다.',
+        'management_show_success' => '공개 매니지먼트 프로필을 불러왔습니다.',
     ],
     'merge' => [
         'success' => '프로필이 병합되었습니다. 원본은 보관 처리되었으며 데이터는 대상 프로필에 있습니다.',
@@ -78,6 +80,7 @@ return [
         'creator_assigned' => '크리에이터가 매니지먼트에 배정되었습니다.',
         'creator_unassigned' => '크리에이터가 매니지먼트에서 배정 해제되었습니다.',
         'assignment_not_found' => '활성 매니지먼트 배정을 찾을 수 없습니다.',
+        'not_found' => '매니지먼트 프로필을 찾을 수 없거나 사용할 수 없습니다.',
     ],
     'channel' => [
         'list_success' => '채널 목록을 불러왔습니다.',

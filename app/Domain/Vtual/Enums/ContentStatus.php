@@ -9,6 +9,7 @@ enum ContentStatus: string
     case Ended = 'ended';
     case Archived = 'archived';
     case Uploaded = 'uploaded';
+    case Unavailable = 'unavailable';
     case Unknown = 'unknown';
 
     /**

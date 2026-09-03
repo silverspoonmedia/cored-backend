@@ -249,7 +249,7 @@ class CreatorClaimVerifyPoolService
             /** @var Collection<int, CreatorClaimVerifyPoolItem> $pending */
             $pending = CreatorClaimVerifyPoolItem::query()
                 ->where('status', CreatorClaimVerifyPoolStatus::Pending)
-                ->with(['claim.channel.platform'])
+                ->with(['claim.channel.platform', 'claim.verifiedChannel.platform'])
                 ->orderBy('requested_at')
                 ->limit($batchMax)
                 ->lockForUpdate()
@@ -280,7 +280,7 @@ class CreatorClaimVerifyPoolService
 
             return CreatorClaimVerifyPoolItem::query()
                 ->whereIn('id', $ids)
-                ->with(['claim.channel.platform'])
+                ->with(['claim.channel.platform', 'claim.verifiedChannel.platform'])
                 ->get();
         });
     }

@@ -50,6 +50,40 @@ class YoutubeAtomFeedParser
             ->values();
     }
 
+    /**
+     * Deleted-entry tombstones: <at:deleted-entry ref="yt:video:ID"/> pushed when
+     * a video is removed upstream. Returns bare video ids.
+     *
+     * @return Collection<int, string>
+     */
+    public function extractDeletedVideoIds(string $xml): Collection
+    {
+        $root = $this->loadRoot($xml);
+        if (! $root instanceof SimpleXMLElement) {
+            return collect();
+        }
+
+        $root->registerXPathNamespace('at', 'http://www.youtube.com/xml/schemas/2015');
+
+        /** @var list<SimpleXMLElement> $deleted */
+        $deleted = $root->xpath('//at:deleted-entry') ?: [];
+
+        return collect($deleted)
+            ->map(function (SimpleXMLElement $entry): ?string {
+                $ref = trim((string) ($entry['ref'] ?? ''));
+                if (! str_starts_with($ref, 'yt:video:')) {
+                    return null;
+                }
+
+                $id = trim(substr($ref, strlen('yt:video:')));
+
+                return $id !== '' ? $id : null;
+            })
+            ->filter()
+            ->unique()
+            ->values();
+    }
+
     private function loadRoot(string $xml): ?SimpleXMLElement
     {
         $previous = libxml_use_internal_errors(true);

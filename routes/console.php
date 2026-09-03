@@ -43,3 +43,9 @@ Schedule::command('vtual:poll-live-contents')
 Schedule::command('vtual:renew-websub-subscriptions')
     ->daily()
     ->withoutOverlapping();
+Schedule::command('vtual:repair-archived-websub')
+    ->weekly()
+    ->withoutOverlapping();
+Schedule::command('vtual:prune-fetch-pools')
+    ->daily()
+    ->withoutOverlapping();

@@ -34,7 +34,16 @@ class CreatorPolicy
 
     public function create(User $actor): Response
     {
-        return $this->perm($actor, 'create vtual creator');
+        if (! $actor->can('create vtual creator')) {
+            return $this->deny(__('api/vtual.policy.denied'));
+        }
+
+        // Casual self-create is disabled: non-staff get creators via orphan claim.
+        if (! $actor->can('manage any vtual resource')) {
+            return $this->deny(__('api/vtual.creator.self_create_disabled'));
+        }
+
+        return $this->allow();
     }
 
     public function update(User $actor, Creator $creator): Response

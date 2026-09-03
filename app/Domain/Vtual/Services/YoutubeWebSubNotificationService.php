@@ -19,6 +19,7 @@ class YoutubeWebSubNotificationService
         private readonly ContentFetchPoolService $contentPool,
         private readonly YoutubeWebSubSubscriptionService $subscriptions,
         private readonly YoutubeAtomFeedParser $parser,
+        private readonly ContentService $contents,
     ) {}
 
     public function verifySignature(string $body, ?string $signatureHeader, string $secret): bool
@@ -36,15 +37,19 @@ class YoutubeWebSubNotificationService
             }
 
             if (str_starts_with($part, 'sha256=')) {
-                $expected = 'sha256='.base64_encode(hash_hmac('sha256', $body, $secret, true));
-                if (hash_equals($expected, $part)) {
+                $digest = substr($part, strlen('sha256='));
+                $expectedHex = hash_hmac('sha256', $body, $secret);
+                $expectedBase64 = base64_encode(hash_hmac('sha256', $body, $secret, true));
+                if (hash_equals($expectedHex, $digest) || hash_equals($expectedBase64, $digest)) {
                     $sha256Valid = true;
                 }
             }
 
             if (str_starts_with($part, 'sha1=')) {
-                $expected = 'sha1='.base64_encode(hash_hmac('sha1', $body, $secret, true));
-                if (hash_equals($expected, $part)) {
+                $digest = substr($part, strlen('sha1='));
+                $expectedHex = hash_hmac('sha1', $body, $secret);
+                $expectedBase64 = base64_encode(hash_hmac('sha1', $body, $secret, true));
+                if (hash_equals($expectedHex, $digest) || hash_equals($expectedBase64, $digest)) {
                     $sha1Valid = true;
                 }
             }
@@ -78,7 +83,9 @@ class YoutubeWebSubNotificationService
         }
 
         $videoIds = $this->parser->extractVideoIds($body)->all();
-        if ($videoIds === [] && trim($body) !== '') {
+        $deletedVideoIds = $this->parser->extractDeletedVideoIds($body)->all();
+
+        if ($videoIds === [] && $deletedVideoIds === [] && trim($body) !== '') {
             $this->logSkip(
                 YoutubeWebSubSkipReason::ParseFailed,
                 $topic,
@@ -97,6 +104,10 @@ class YoutubeWebSubNotificationService
         foreach ($videoIds as $videoId) {
             $this->contentPool->enqueue($channel, $videoId, ContentFetchPoolSource::Websub);
             $enqueued++;
+        }
+
+        foreach ($deletedVideoIds as $deletedId) {
+            $this->contents->markUnavailable($channel, $deletedId);
         }
 
         return new YoutubeWebSubHandleResult(

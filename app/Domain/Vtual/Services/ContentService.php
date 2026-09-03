@@ -75,6 +75,8 @@ class ContentService
                 'ended_at' => $data['ended_at'] ?? null,
                 'published_at' => $data['published_at'] ?? null,
                 'hydrated_at' => now(),
+                // Re-available: a successful hydrate clears any tombstone.
+                'first_unavailable_at' => null,
             ];
 
             if ($content === null) {
@@ -89,7 +91,7 @@ class ContentService
             $this->syncPrimaryAppearance($content, $lockedChannel);
 
             return $content->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $content;
-        });
+        }, 3);
     }
 
     /**
@@ -152,7 +154,36 @@ class ContentService
             $this->syncPrimaryAppearance($content, $lockedChannel);
 
             return $content->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $content;
-        });
+        }, 3);
+    }
+
+    /**
+     * Tombstone: platform no longer returns this id (deleted / private).
+     * Idempotent — first_unavailable_at is set only on the first mark.
+     */
+    public function markUnavailable(Channel $primaryChannel, string $externalId): void
+    {
+        $externalId = trim($externalId);
+        if ($externalId === '') {
+            return;
+        }
+
+        DB::transaction(function () use ($primaryChannel, $externalId): void {
+            $content = Content::query()
+                ->where('platform_id', $primaryChannel->platform_id)
+                ->where('external_id', $externalId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($content === null) {
+                return;
+            }
+
+            $content->forceFill([
+                'status' => ContentStatus::Unavailable,
+                'first_unavailable_at' => $content->first_unavailable_at ?? now(),
+            ])->save();
+        }, 3);
     }
 
     /**
@@ -343,6 +374,7 @@ class ContentService
                     ->orWhereHas('appearances', fn ($a) => $a->where('creator_id', $creatorId));
             })
             ->whereDoesntHave('channel', fn ($q) => $q->where('status', ChannelStatus::Archived))
+            ->where('status', '!=', ContentStatus::Unavailable)
             ->with(['channel', 'creator', 'platform', 'appearances'])
             ->orderByRaw(
                 'CASE WHEN type = ? AND status = ? THEN 0 ELSE 1 END',
@@ -369,6 +401,7 @@ class ContentService
                     ->orWhereHas('appearances', fn ($a) => $a->where('creator_id', $creatorId));
             })
             ->whereDoesntHave('channel', fn ($q) => $q->where('status', ChannelStatus::Archived))
+            ->where('status', '!=', ContentStatus::Unavailable)
             ->with(['channel', 'creator', 'platform', 'appearances'])
             ->orderByRaw(
                 'CASE WHEN type = ? AND status = ? THEN 0 ELSE 1 END',
