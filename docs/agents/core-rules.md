@@ -37,7 +37,8 @@ Prefix the task instruction with one of these tags to declare intended scope. On
 | **Web (server)** | `routes/web.php` / `routes/web/*.php` — server endpoints only (public share, payment return, OAuth callback); no Blade views |
 | **SPA** | Screens, forms, listings in `monolith-vue-workers` — see [vue-workers-spa.md](../integration/vue-workers-spa.md) |
 | **Navigation** | Menu `route` column = SPA Vue Router symbolic name; keep `config/spa-routes.php` in sync with MenuSeeder and SPA router |
-| **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (`en`, `id`, `ja`, `ko`, `zh_CN`, `ar`, `ru`) |
+| **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (canonical list: [platform/localization.md](../platform/localization.md)) |
+| **API shape** | Responses follow the canonical envelope — [platform/api-envelope.md](../platform/api-envelope.md). Never hand-assemble a different shape. |
 | **Other (as applicable)** | Migrations, seeders, models, events/listeners, notifications, navigation menu entries, tests, and the relevant `docs/` guide |
 
 ### `[backend]` scope

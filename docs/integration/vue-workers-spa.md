@@ -4,6 +4,8 @@ Monolith-Vue-Workers (`monolith-vue-workers` sibling) is the **sole browser UI**
 
 The in-repo Blade admin has been **removed** from Monolith; `docs/web/blade-admin.md` records what server `web` routes remain.
 
+SPA-side docs (project layout, auth-session lifecycle, i18n workflow, UI conventions, route registry, testing) live in the sibling repo: `monolith-vue-workers/docs/README.md` (doc map). This file stays the backend-side contract owner.
+
 ## Architecture
 
 | Piece | Role |
@@ -87,9 +89,11 @@ Pass/fail:
 | Surface | Empty `SPA_URL` | Set `SPA_URL` |
 |---------|-----------------|---------------|
 | Password reset email | `{APP_URL}/reset-password?token=&email=` — same SPA query shape, Monolith origin (there is no server reset screen any more) | `{SPA_URL}/reset-password?token=&email=` |
-| Email verify email | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — SPA then GETs the signed API path directly from the API origin. HMAC stays on `APP_URL`. |
+| Email verify email | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — SPA then GETs the signed API path directly from the API origin. HMAC stays on `APP_URL`; the signed URL is still generated against the API route on `APP_URL` (`VerifyEmailNotification`). |
 | File Hosting `share_url` | Server public-share endpoints `{APP_URL}/s/f/{id}` / `/s/d/{id}` ([`routes/web/file-hosting-public.php`](../../routes/web/file-hosting-public.php)) | Same paths on `SPA_URL` |
 | iPaymu hosted return/cancel defaults | Server endpoints `{APP_URL}/payment/ipaymu/return\|cancel` | `{SPA_URL}/payment/return` and `/payment/cancel` |
+
+The same origin is the OAuth `return_to` allowlist (with `APP_URL`; `App\Domain\Identity\Support\OAuthReturnUrl`); an empty `SPA_URL` disables SPA OAuth return. CORS: [security.md — CORS](../platform/security.md).
 
 Channel checkout still sends empty `ureturn` (on-page QR/VA). Guest verify route is **not** `guestOnly` so a logged-in unverified user can land on it.
 
@@ -154,6 +158,8 @@ These paths tripped up the SPA port — documented here to prevent regression:
 | `useConnections.authorizeUrl` | `GET auth/discord/authorize-url` | Query `intent` + `return_path` (must start `/apps/`). Returns `{ url }` — navigate the browser there. Discord still callbacks to Monolith web. Discord-only until a second vendor exists. |
 
 ### Response shape gotchas
+
+Canonical envelope + error mapping: [platform/api-envelope.md](../platform/api-envelope.md). Endpoint-specific deviations:
 
 | Endpoint | Returns | Gotcha |
 |----------|---------|--------|

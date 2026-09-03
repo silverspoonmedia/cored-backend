@@ -90,5 +90,5 @@ Alias models:
 
 ## Related
 
-- Provider-first inference billing: [`../../inference/README.md`](../../inference/README.md)
+- Provider-first inference billing: [`../../domains/inference/README.md`](../../domains/inference/README.md)
 - Decoupled stage E2E baseline: [`decoupled_stages_collection_summary.md`](decoupled_stages_collection_summary.md)

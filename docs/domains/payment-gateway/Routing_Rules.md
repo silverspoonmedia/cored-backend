@@ -1,66 +1,66 @@
-# Definisi Routing Config untuk AI Agent
+# Routing Config Definition for AI Agent
 
-## Implementasi runtime (Monolith)
+## Runtime implementation (Monolith)
 
-YAML di [Routing_Price.yaml](Routing_Price.yaml) adalah **source of truth**. Kode memuatnya lewat `App\Domain\PaymentGateway\Support\Routing\RoutingPolicyLoader`, memvalidasi dengan `RoutingPolicyValidator`, lalu menulis ke DB via `PaymentRouteMaterializer` (`php artisan payments:sync-routing-policy`). Resolver checkout: `PaymentChannelResolver` + `PaymentChannelFeeCalculator`.
+The YAML in [Routing_Price.yaml](Routing_Price.yaml) is the **source of truth**. Code loads it via `App\Domain\PaymentGateway\Support\Routing\RoutingPolicyLoader`, validates it with `RoutingPolicyValidator`, then writes it to the DB via `PaymentRouteMaterializer` (`php artisan payments:sync-routing-policy`). Checkout resolver: `PaymentChannelResolver` + `PaymentChannelFeeCalculator`.
 
-## Bagaimana config ini didefinisikan
+## How this config is defined
 
-Routing config ini adalah **kontrak deklaratif** antara sistem pembayaran kamu dan AI Agent (atau service router). YAML mendefinisikan policy (channel, PG, settlement, fee); **eksekusi runtime** di Monolith lewat materializer → DB → `PaymentChannelResolver` (lihat bagian "Implementasi runtime" di atas). Agent atau operator mengedit YAML, lalu `php artisan payments:sync-routing-policy` menulis ulang baris `payment_channels` / `payment_channel_routes`. Resolver checkout tidak membaca YAML langsung — ia membaca DB yang sudah disinkronkan, dengan urutan `route_role` lalu `priority`.
+This routing config is a **declarative contract** between your payment system and the AI Agent (or router service). The YAML defines the policy (channel, PG, settlement, fee); **runtime execution** in Monolith goes through materializer → DB → `PaymentChannelResolver` (see the "Runtime implementation" section above). An agent or operator edits the YAML, then `php artisan payments:sync-routing-policy` rewrites the `payment_channels` / `payment_channel_routes` rows. The checkout resolver never reads the YAML directly — it reads the synced DB, ordered by `route_role` then `priority`.
 
-Cara Agent menafsirkannya mengikuti alur tetap. Pertama, Agent memetakan intent pembayaran (misalnya “bayar pakai BCA VA” atau “bayar pakai GoPay”) ke **channel enum** internal. Kedua, ia melihat `type`: jika `single`, hanya satu `pg` yang sah dan tidak ada pilihan routing; jika `dual`, Agent wajib mencoba `primary` dulu, lalu `fallback` jika primary gagal, down, atau bank/channel tidak tersedia di PG itu. Ketiga, field `settlement` mengikat **tier waktu pencairan** yang sudah dipilih karena fee lebih kecil pada settlement lebih lama—Agent tidak boleh menaikkan ke H+0 hanya demi cepat cair, kecuali ada override eksplisit di request. Keempat, field `fee` adalah model biaya yang harus dipakai saat estimasi cost, ranking PG, atau menampilkan breakdown ke merchant/user. Field tambahan seperti `single_overrides`, `avoid`, dan `cheap_alt` adalah **aturan khusus**: override memaksa PG tertentu untuk sub-kasus (mis. SeaBank hanya Midtrans), `avoid` adalah larangan keras (mis. iPaymu QRIS H+0), dan `cheap_alt` adalah jalur opsional lebih murah jika UX mengizinkan (mis. GoPay direct 2% bisa diganti QRIS 0,7% bila scan QR acceptable).
+The Agent interprets it through a fixed flow. First, the Agent maps the payment intent (e.g. "pay with BCA VA" or "pay with GoPay") to the internal **channel enum**. Second, it looks at `type`: if `single`, only one `pg` is valid and there is no routing choice; if `dual`, the Agent must try `primary` first, then `fallback` if primary fails, is down, or the bank/channel is unavailable at that PG. Third, the `settlement` field binds a **payout-time tier** already chosen because fees are lower on longer settlements — the Agent must not upgrade to H+0 just for faster payout, unless the request carries an explicit override. Fourth, the `fee` field is the cost model that must be used when estimating cost, ranking PGs, or showing a breakdown to the merchant/user. Additional fields such as `single_overrides`, `avoid`, and `cheap_alt` are **special rules**: overrides force a specific PG for a sub-case (e.g. SeaBank only via Midtrans), `avoid` is a hard ban (e.g. iPaymu QRIS H+0), and `cheap_alt` is an optional cheaper path when UX allows it (e.g. GoPay direct 2% may be replaced by QRIS 0.7% when QR scanning is acceptable).
 
-Agar Agent konsisten, config harus diperlakukan sebagai **policy immutable per environment** (staging/production), di-versioning, dan dilengkapi skema validasi (tipe `fee` string vs number, enum `pg`, enum `settlement`). Agent tidak “menebak” fee di luar config; ia hanya mengeksekusi policy ini, lalu memanggil API Midtrans atau iPaymu sesuai `pg` terpilih. Jika suatu field tidak ada (mis. channel tidak terdaftar), Agent harus gagal dengan jelas atau minta klarifikasi—bukan mengarang route.
+To keep the Agent consistent, the config must be treated as an **immutable policy per environment** (staging/production), versioned, and equipped with a validation schema (`fee` type string vs number, `pg` enum, `settlement` enum). The Agent does not "guess" fees outside the config; it only executes this policy, then calls the Midtrans or iPaymu API for the chosen `pg`. If a field is missing (e.g. channel not registered), the Agent must fail clearly or ask for clarification — never invent a route.
 
 ***
 
-## Arti field `fee`
+## Meaning of the `fee` field
 
-Field `fee` menjawab satu pertanyaan: **berapa yang dipotong PG dari transaksi sukses**, dalam model apa. Ada dua bentuk utama di config ini, dan keduanya **tidak dicampur dalam satu nilai**.
+The `fee` field answers one question: **how much the PG deducts from a successful transaction**, in which model. There are two main forms in this config, and they are **never mixed in a single value**.
 
-### 1. Fee flat (angka absolut)
+### 1. Flat fee (absolute number)
 
-Contoh: `fee: 3500` atau `fee: 4000`.
+Example: `fee: 3500` or `fee: 4000`.
 
-Artinya biaya **tetap per transaksi berhasil**, tidak bergantung pada nominal bayar. Satuan adalah **Rupiah (IDR)**.  
+Means a **fixed charge per successful transaction**, independent of the payment amount. The unit is **Rupiah (IDR)**.
 
-- Transaksi Rp 50.000 → fee Rp 3.500  
-- Transaksi Rp 500.000 → fee tetap Rp 3.500  
-- Transaksi Rp 5.000.000 → fee tetap Rp 3.500  
+- Transaction Rp 50,000 → fee Rp 3,500
+- Transaction Rp 500,000 → fee still Rp 3,500
+- Transaction Rp 5,000,000 → fee still Rp 3,500
 
-Dipakai untuk channel seperti **Virtual Account**, di mana PG/bank mengenakan charge per VA payment, bukan persentase MDR. Di config, `3500` = iPaymu VA pada settlement panjang (H+4); `4000` = Midtrans VA.
+Used for channels such as **Virtual Account**, where the PG/bank charges per VA payment, not an MDR percentage. In the config, `3500` = iPaymu VA on long settlement (H+4); `4000` = Midtrans VA.
 
-**Cara Agent menghitung:**
+**How the Agent computes:**
 
 ```text
-biaya_layanan = fee                    # sudah dalam IDR
-nilai_diterima_merchant ≈ total_bayar - biaya_layanan (- PPN bila berlaku)
+service_fee = fee                      # already in IDR
+merchant_net ≈ payment_total - service_fee (- VAT where applicable)
 ```
 
-### 2. Fee persentase (MDR)
+### 2. Percentage fee (MDR)
 
-Contoh: `fee: "2%"`, `fee: "1.5%"`, `fee: "0.7%"`.
+Example: `fee: "2%"`, `fee: "1.5%"`, `fee: "0.7%"`.
 
-Artinya biaya **proporsional terhadap total transaksi sukses**. String berakhiran `%` = Agent harus parse sebagai desimal (`2%` → `0.02`) lalu dikalikan nominal.  
+Means a charge **proportional to the successful transaction total**. A string ending in `%` must be parsed as a decimal (`2%` → `0.02`) then multiplied by the amount.
 
-- `2%` pada Rp 100.000 → fee Rp 2.000  
-- `2%` pada Rp 500.000 → fee Rp 10.000  
-- `0.7%` pada Rp 100.000 → fee Rp 700  
-- `1.5%` pada Rp 200.000 → fee Rp 3.000  
+- `2%` on Rp 100,000 → fee Rp 2,000
+- `2%` on Rp 500,000 → fee Rp 10,000
+- `0.7%` on Rp 100,000 → fee Rp 700
+- `1.5%` on Rp 200,000 → fee Rp 3,000
 
-Dipakai untuk **QRIS** dan **e-wallet direct** (GoPay, OVO, DANA, ShopeePay), mengikuti skema MDR.
+Used for **QRIS** and **direct e-wallets** (GoPay, OVO, DANA, ShopeePay), following the MDR scheme.
 
-**Cara Agent menghitung:**
+**How the Agent computes:**
 
 ```text
 rate = parse_percent(fee)              # "2%" → 0.02
-biaya_layanan = total_bayar × rate
-nilai_diterima_merchant ≈ total_bayar - biaya_layanan (- PPN bila berlaku)
+service_fee = payment_total × rate
+merchant_net ≈ payment_total - service_fee (- VAT where applicable)
 ```
 
-### 3. Yang tidak ada di config ini (tapi perlu diketahui Agent)
+### 3. What is absent from this config (but the Agent should know)
 
-Beberapa PG memakai **hybrid** `persentase + flat` (contoh klasik kartu kredit: `2,9% + Rp 2.000`). Channel itu sudah dikurasi keluar dari config ini, jadi Agent **tidak** perlu parser hybrid untuk file routing saat ini. Jika nanti ditambah, konvensinya sebaiknya eksplisit, misalnya:
+Some PGs use a **hybrid** `percentage + flat` model (classic credit-card example: `2.9% + Rp 2,000`). Those channels have been curated out of this config, so the Agent does **not** need a hybrid parser for the current routing file. If added later, the convention should be explicit, e.g.:
 
 ```yaml
 fee:
@@ -68,46 +68,46 @@ fee:
   flat: 2000
 ```
 
-bukan string ambigu seperti `"2.9%+2000"` tanpa skema.
+not an ambiguous string like `"2.9%+2000"` without a schema.
 
-### 4. Aturan interpretasi untuk Agent (ringkas)
+### 4. Interpretation rules for the Agent (summary)
 
-| Bentuk di YAML | Tipe | Makna | Rumus |
+| YAML form | Type | Meaning | Formula |
 |---|---|---|---|
-| `3500` / `4000` (number) | **Flat** | Potongan tetap IDR per trx sukses | `fee` |
-| `"0.7%"` / `"1.5%"` / `"2%"` (string `%`) | **Persentase** | Potongan dari **total bayar** | `total × rate` |
-| (tidak dipakai di config ini) | Hybrid | % dari total **plus** flat | `(total × rate) + flat` |
+| `3500` / `4000` (number) | **Flat** | Fixed IDR deduction per successful trx | `fee` |
+| `"0.7%"` / `"1.5%"` / `"2%"` (string `%`) | **Percentage** | Deduction from the **payment total** | `total × rate` |
+| (not used in this config) | Hybrid | % of total **plus** flat | `(total × rate) + flat` |
 
-Konvensi penting agar Agent tidak salah:
+Important conventions so the Agent does not misread:
 
-- **Number tanpa `%`** → selalu flat IDR.  
-- **String dengan `%`** → selalu fraction of total.  
-- Fee dihitung hanya pada **transaksi sukses** (bukan pending/expire/cancel), sesuai model Midtrans/iPaymu.
-- `fee` di config adalah **biaya channel yang dibebankan ke pembeli** pada checkout. Nilai ini dimaterialisasi ke `payment_channel_routes.fee_*`, diestimasi di UI/API (`?subtotal=`), dan dicatat pada invoice sebagai `payment_channel_fee`. Midtrans memakai estimasi policy saat charge; iPaymu memakai angka aktual dari provider setelah charge. Saat channel checkout berhasil, policy yang berlaku **disalin immutable** ke `payment_channel_route_snapshots` (baris `payment_channel_routes` tetap mutable setelah YAML sync) — lihat [Route policy snapshot](README.md#route-policy-snapshot) di payment-gateway README.
-- **PPN** (mis. 11% atas fee Midtrans pada banyak channel) **belum** digabung ke angka `fee` kecuali channel yang sudah VAT-inclusive di list price (contoh QRIS Midtrans 0,7%). Agent yang butuh net cost harus punya flag terpisah `vat_inclusive: true/false` atau layer kalkulasi pajak di atas config ini.
-- Settlement (`H+2`, `H+4`) **bukan fee**, tapi menentukan **tier harga** mana yang sah; mengganti settlement bisa mengganti `fee` (contoh iPaymu QRIS H+0 jauh lebih mahal dari H+2). Itu sebabnya `settlement` dan `fee` selalu dipasangkan di `primary` / `fallback`.
+- **Number without `%`** → always flat IDR.
+- **String with `%`** → always a fraction of the total.
+- Fees are charged only on **successful transactions** (not pending/expired/cancelled), matching the Midtrans/iPaymu model.
+- `fee` in the config is the **channel cost charged to the buyer** at checkout. The value is materialized into `payment_channel_routes.fee_*`, estimated in the UI/API (`?subtotal=`), and recorded on the invoice as `payment_channel_fee`. Midtrans uses the policy estimate at charge time; iPaymu uses the actual provider figure after the charge. When a checkout channel succeeds, the applicable policy is **copied immutably** into `payment_channel_route_snapshots` (the `payment_channel_routes` rows stay mutable after a YAML sync) — see [Route policy snapshot](README.md#route-policy-snapshot) in the payment-gateway README.
+- **VAT** (e.g. 11% on the Midtrans fee for many channels) is **not** folded into the `fee` figure unless the channel is already VAT-inclusive in its list price (e.g. Midtrans QRIS 0.7%). An Agent needing net cost must have a separate `vat_inclusive: true/false` flag or a tax-calculation layer on top of this config.
+- Settlement (`H+2`, `H+4`) is **not a fee**, but determines which **price tier** is valid; changing settlement can change `fee` (e.g. iPaymu QRIS H+0 is far more expensive than H+2). That is why `settlement` and `fee` are always paired under `primary` / `fallback`.
 
-### 5. Contoh bacaan Agent end-to-end
+### 5. End-to-end Agent reading examples
 
-**Kasus A — VA BCA Rp 250.000**
+**Case A — BCA VA Rp 250,000**
 
-1. Channel = `va` → `type: dual`  
-2. Bank dual → `primary.pg = ipaymu`, `settlement = H+4`, `fee = 3500`  
-3. Fee flat → biaya = **Rp 3.500** (bukan 1,4% dari 250rb)  
-4. Jika iPaymu gagal → `fallback` Midtrans, fee flat **Rp 4.000**
+1. Channel = `va` → `type: dual`
+2. Dual bank → `primary.pg = ipaymu`, `settlement = H+4`, `fee = 3500`
+3. Flat fee → cost = **Rp 3,500** (not 1.4% of 250k)
+4. If iPaymu fails → `fallback` Midtrans, flat fee **Rp 4,000**
 
-**Kasus B — GoPay direct Rp 250.000**
+**Case B — GoPay direct Rp 250,000**
 
-1. Channel = `gopay` → `type: single`, `pg = midtrans`  
-2. `fee = "2%"` → biaya = 250.000 × 0,02 = **Rp 5.000**  
-3. Jika user/policy mengizinkan UX QR → `cheap_alt: qris` dengan `fee = "0.7%"` → biaya = **Rp 1.750**
+1. Channel = `gopay` → `type: single`, `pg = midtrans`
+2. `fee = "2%"` → cost = 250,000 × 0.02 = **Rp 5,000**
+3. If user/policy allows QR UX → `cheap_alt: qris` with `fee = "0.7%"` → cost = **Rp 1,750**
 
-**Kasus C — QRIS Rp 250.000**
+**Case C — QRIS Rp 250,000**
 
-1. Channel = `qris` → dual, primary Midtrans H+2, `fee = "0.7%"`  
-2. Biaya = **Rp 1.750**  
-3. Jangan pernah pilih path di `avoid` (iPaymu H+0), meski settlement lebih cepat.
+1. Channel = `qris` → dual, primary Midtrans H+2, `fee = "0.7%"`
+2. Cost = **Rp 1,750**
+3. Never pick a path listed in `avoid` (iPaymu H+0), even though settlement is faster.
 
 ***
 
-Dengan pemisahan ini, AI Agent punya tiga jaminan: **(1)** tahu channel mana dual vs single, **(2)** tahu PG + settlement mana yang diizinkan agar fee kecil, **(3)** tahu apakah angka fee itu flat Rupiah atau persentase dari total—tanpa ambigu saat menghitung cost atau men-dispatch pembayaran.
+With this separation, the AI Agent has three guarantees: **(1)** it knows which channels are dual vs single, **(2)** it knows which PG + settlement pairs are allowed so the fee stays low, **(3)** it knows whether a fee figure is flat Rupiah or a percentage of the total — with no ambiguity when computing cost or dispatching a payment.

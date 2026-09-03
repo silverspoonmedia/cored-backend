@@ -50,7 +50,7 @@ Tier A (env only) vs operational settings: [configuration-policy.md](../../platf
 |------------------|-------|
 | `JWT_SECRET` | HS256 signing secret (env) |
 | `HCAPTCHA_SITEKEY`, `HCAPTCHA_SECRET` | hCaptcha credentials (env) |
-| `SPA_URL` | Vue-Workers public origin. OAuth `return_to` allowlist. Non-empty also mints password-reset, email-verify, File Hosting `share_url`, and iPaymu hosted return/cancel onto that origin (`App\Support\SpaPublicUrl`). Empty falls back to API-signed URLs and disables SPA OAuth return. |
+| `SPA_URL` | Vue-Workers public origin. OAuth `return_to` allowlist. Non-empty also mints password-reset, email-verify, File Hosting `share_url`, and iPaymu hosted return/cancel onto that origin (`App\Support\SpaPublicUrl`); empty falls back to API-signed URLs and disables SPA OAuth return. Matrix: [Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url). Env semantics: [environment.md](../../platform/environment.md). |
 | `AUTH_GUARD=api` | Default API guard |
 
 **Settings → Platform** (`system_settings`; runtime `setting_config()`):
@@ -70,9 +70,9 @@ Tier A (env only) vs operational settings: [configuration-policy.md](../../platf
 
 Logout sets persistent barrier before API call. Subsequent cold-boot `auth/me` cannot restore authenticated state, including direct `/apps/dashboard`, until `applyAuth()` handles a successful login, registration, or 2FA session. Logout cookie deletion uses same `__Host-`, `Path=/`, `Secure`, `SameSite=None`, host-only attributes Laravel used at issuance.
 
-The SPA authenticates cross-site with HttpOnly `__Host-spa_jwt` cookie instead of Bearer header, so `AuthService::refresh()` falls back to cookie when no `Authorization` header exists — cookie-mode session refreshes same way (otherwise hard-expires at `jwt.ttl`). On login/register/refresh/2FA-login raw JWT is set as `__Host-spa_jwt` cookie and **stripped from JSON body** (`data.token` removed), so SPA JS never reads it and XSS cannot exfiltrate it; `TwoFactorController` applies same strip. Logout blacklists current JWT and expires `__Host-spa_jwt`; later `auth/me` carrying same Bearer token or stale cookie must return `401`.
+The SPA authenticates cross-site with HttpOnly `__Host-spa_jwt` cookie instead of Bearer header, so `AuthService::refresh()` falls back to cookie when no `Authorization` header exists — cookie-mode session refreshes same way (otherwise hard-expires at `jwt.ttl`). On login/register/refresh/2FA-login raw JWT is set as `__Host-spa_jwt` cookie and **stripped from JSON body** (`data.token` removed), so SPA JS never reads it and XSS cannot exfiltrate it; `TwoFactorController` applies same strip. Logout blacklists current JWT and expires `__Host-spa_jwt`; later `auth/me` carrying same Bearer token or stale cookie must return `401`. The `__Host-` prefix enforces `Secure`, `Path=/`, and no `Domain`.
 
-SPA logout is idempotent. It sets persistent barrier before request, and clears auth, CSRF, shell hydration, navigation, notifications, timers, and refresh waiters even if request fails. Local teardown broadcasts token-free `{ type: 'logout', epoch }` through `BroadcastChannel('monolith-auth')`, then emits same epoch through `localStorage` `storage` event for environments without BroadcastChannel. Receiver tabs preserve barrier, null reactive `user`, reset same state, revoke `requiresAuth` route to `login.view`, and never rebroadcast. Session epoch plus barrier rejects delayed hydrate, refresh, and shell-batch responses after either local or received logout. Only `applyAuth()` on successful login, registration, or 2FA clears barrier and restores authenticated session. The `__Host-` prefix enforces `Secure`, `Path=/`, and no `Domain`. After login SPA confirms cookie (`confirmSession` / `markSessionIssued`) before navigation. Guest cold-boot is **single** `GET auth/me` (`useAuth.hydrateShell` in `beforeEach`); guard does not `fetchMe()` again on that navigation. Re-probe only on later protected route if in-memory `user` remains null (for example cookie from another tab) — [vue-workers-spa.md — Post-login cookie-settle](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync). Full contract: [../../integration/vue-workers-spa.md](../../integration/vue-workers-spa.md).
+The SPA-side session lifecycle (logout barrier/epoch, `BroadcastChannel` cross-tab sync, post-login cookie-settle serialization, guest cold-boot single `auth/me` probe) is owned by [vue-workers-spa.md — Cross-tab auth](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
 
 The removed Blade admin used a separate first-party JWT cookie bridge; that middleware is gone — see [web/blade-admin.md](../../web/blade-admin.md).
 
@@ -105,14 +105,7 @@ Behavior contract:
 
 ### Public URLs (`SPA_URL`)
 
-`App\Support\SpaPublicUrl` is the single mint for browser-facing identity links when `config('services.spa.url')` is non-empty:
-
-| Notification | Empty `SPA_URL` | Set `SPA_URL` |
-|--------------|-----------------|---------------|
-| Password reset | Signed API fallback | `{SPA_URL}/reset-password?token=&email=` |
-| Email verify | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — HMAC still generated against the API route on `APP_URL`. The SPA page GETs that signed path direct from the API origin (`VITE_API_BASE_URL`). |
-
-CORS `allowed_origins` is `APP_URL` + `SPA_URL` + `CORS_EXTRA_ORIGINS` (`config/cors.php`). Same-origin Worker traffic does not use CORS. Details: [vue-workers-spa — Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url).
+`App\Support\SpaPublicUrl` is the single mint for browser-facing identity links when `config('services.spa.url')` is non-empty. Full minting matrix (password reset, email verify, File Hosting `share_url`, iPaymu hosted return/cancel): [vue-workers-spa — Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url).
 
 ## Auth API (`/api/v1/auth/*`)
 

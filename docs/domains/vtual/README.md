@@ -17,8 +17,8 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
 | Menu visibility | Administration → **vTual** → Orphan vTubers (`vtual.orphans.index`, Root/Admin/Moderator) + Platform credentials (`vtual.platform-credentials.index`, Root/Admin). Mapped in `config/products.php` `menu_routes` |
 | Progress tracker | [implementation-status.md](implementation-status.md) — done / not done / next |
-| Vue island assessment | [vue-island-assessment.md](vue-island-assessment.md) — archived 2026-08 assessment (historical; all surfaces are SPA now) |
-| Ops assessments | [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md) |
+| Vue island assessment | [archive/vtual-vue-island-assessment.md](../../archive/vtual-vue-island-assessment.md) — archived 2026-08 assessment (historical; all surfaces are SPA now) |
+| Ops assessments | [archive/vtual-youtube-stability-assessment-2026-08-07.md](../../archive/vtual-youtube-stability-assessment-2026-08-07.md) |
 | Legacy audit | [archive/vtual-legacy-audit.md](../../archive/vtual-legacy-audit.md) |
 
 ## Concepts
@@ -535,7 +535,7 @@ Flow: **onboarding** (WebSub + backfill job on activate via `ChannelActivationSe
 
 ### YouTube operational stability (ops)
 
-Live probe rubric and results: [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md).
+Live probe rubric and results: [archive/vtual-youtube-stability-assessment-2026-08-07.md](../../archive/vtual-youtube-stability-assessment-2026-08-07.md).
 
 | Requirement | Why |
 |-------------|-----|
@@ -817,9 +817,9 @@ Not implemented: field pick from source, cross-user merge without dual ownership
 
 ## Related
 
-- [vue-island-assessment.md](vue-island-assessment.md) — Vue island promotion analysis (2026-08-09)
+- [archive/vtual-vue-island-assessment.md](../../archive/vtual-vue-island-assessment.md) — Vue island promotion analysis (2026-08-09)
 - [implementation-status.md](implementation-status.md) — done / not done / next (living progress tracker)
-- [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md) — YouTube ops probe rubric (2026-08-07)
+- [archive/vtual-youtube-stability-assessment-2026-08-07.md](../../archive/vtual-youtube-stability-assessment-2026-08-07.md) — YouTube ops probe rubric (2026-08-07)
 - [naming-conventions.md](naming-conventions.md) — core `Management` vs talent org (`vtual_managements`)
 - [product-activations/README.md](../product-activations/README.md) — runtime gate
 - [file-hosting/README.md](../file-hosting/README.md) — sibling product domain pattern

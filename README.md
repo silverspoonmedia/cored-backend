@@ -197,6 +197,8 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [Internal monorepo assessment](docs/archive/internal-monorepo-assessment.md) | Historical: why logical monorepo, domain map, phases (archive only) |
 | [Internal monorepo porting](docs/archive/internal-monorepo-porting.md) | Implementation reference: migration order, scripts, gotchas, verification |
 | [API routing](docs/platform/api-routing.md) | Global (`/api/*`) vs versioned (`/api/v1/*`) routes, conventions, and where to add endpoints |
+| [API response envelope](docs/platform/api-envelope.md) | Canonical JSON envelope, error mapping (401/403/404/419/422/429), `/batch` partial-failure contract |
+| [Artisan commands](docs/platform/commands.md) | Project command index (env, domains, payments, vtual, microstock, cache, i18n) |
 | [CRUD architecture & repository pattern](docs/platform/crud.md) | Layered CRUD flow, `EloquentCrudRepository` vs dedicated repositories, `Route::apiResource` for simple resources |
 | [Payment gateways](docs/domains/payment-gateway/README.md) | Midtrans/iPaymu, invoices, channel checkout, subscriptions, webhooks |
 | [File Hosting](docs/domains/file-hosting/README.md) | Product domain: nested folders, chunk S3 upload, link share |

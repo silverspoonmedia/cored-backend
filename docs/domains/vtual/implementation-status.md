@@ -209,7 +209,7 @@ Not a commitment — default backlog for the next sessions:
 | Pending claims (API) | `GET /api/v1/vtual/claims/pending` (registry web archived) |
 | My profiles (API) | `/api/v1/vtual/creators` etc. (web `/apps/vtual/profiles` archived) |
 | Build Vite assets (after JS/CSS change) | `npm run build` |
-| **YouTube ops stability assessment** | [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md) — live probe rubric (credentials, gateway, DB, quota, scheduler); re-run after major ingestion changes |
+| **YouTube ops stability assessment** | [archive/vtual-youtube-stability-assessment-2026-08-07.md](../../archive/vtual-youtube-stability-assessment-2026-08-07.md) — live probe rubric (credentials, gateway, DB, quota, scheduler); re-run after major ingestion changes |
 
 ### Config knobs (`config/vtual.php`)
 
@@ -259,7 +259,7 @@ High-level order of work that landed in this long implementation arc (not exhaus
 25. **Claim verify hardening** — bio proof-channel-only; Discord contract `verified_channel_id`  
 26. **Discord connection discovery** — private YT/Twitch bind, external links, promote → public + backfill  
 27. **Channel visibility / discovery columns** — migration `2026_08_07_200001`  
-28. **YouTube ops stability assessment** — [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md)  
+28. **YouTube ops stability assessment** — [archive/vtual-youtube-stability-assessment-2026-08-07.md](../../archive/vtual-youtube-stability-assessment-2026-08-07.md)  
 29. **Archived channel content policy** — `hydrated_at`, stub ingest while archived, public profile hide via `listForPublicProfile`  
 30. **Stub restore backfill job** + `vtual:repair-archived-websub` for legacy archived WebSub rows  
 31. **WebSub resub on restore** + channel lifecycle rate limits (`channel_lifecycle` config, 429 on archive/restore)  
@@ -271,7 +271,7 @@ High-level order of work that landed in this long implementation arc (not exhaus
 ## Related
 
 - [README.md](README.md) — full domain guide  
-- [ops/youtube-stability-assessment-2026-08-07.md](ops/youtube-stability-assessment-2026-08-07.md) — YouTube ops probe rubric  
+- [archive/vtual-youtube-stability-assessment-2026-08-07.md](../../archive/vtual-youtube-stability-assessment-2026-08-07.md) — YouTube ops probe rubric  
 - [archive/vtual-legacy-audit.md](../../archive/vtual-legacy-audit.md) — broadercastv2 reference  
 - [product-activations/README.md](../product-activations/README.md) — product gate  
 - Root [`TASK.md`](../../../TASK.md) — original discovery/implementation brief  

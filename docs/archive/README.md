@@ -12,5 +12,8 @@ Some archive files describe a former three-repo workspace (Monolith + Gateway + 
 | [crypto-activity-assessment.md](crypto-activity-assessment.md) | Envelope decrypt audit deep dive (living: [payment-gateway/encryption.md](../domains/payment-gateway/encryption.md)) |
 | [AUDIT-LOG.md](AUDIT-LOG.md) | 2026-06-27 docs vs code audit notes |
 | [vtual-legacy-audit.md](vtual-legacy-audit.md) | broadercastv2 claim ledger + gap analysis before Vtual product domain |
+| [vtual-vue-island-assessment.md](vtual-vue-island-assessment.md) | Vue island promotion analysis (2026-08); all surfaces are SPA now |
+| [vtual-youtube-stability-assessment-2026-08-07.md](vtual-youtube-stability-assessment-2026-08-07.md) | YouTube ops probe rubric (credentials, gateway, DB, quota, scheduler) |
+| [microstock-probes/](microstock-probes/) | One-shot AI probe summaries (2026-07/08); living summary in [domains/microstock/README.md](../domains/microstock/README.md) |
 
 Living architecture: [platform/architecture.md](../platform/architecture.md).
