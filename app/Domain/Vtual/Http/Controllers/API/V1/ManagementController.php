@@ -162,13 +162,9 @@ class ManagementController extends Controller
 
         $invite = $this->managements->cancelInvite($request->user(), $management->id, $invite);
 
-        $message = $invite->status instanceof \BackedEnum && $invite->status->value === 'revoked'
-            ? __('api/vtual.management.invite_revoked')
-            : __('api/vtual.management.invite_cancelled');
-
         return $this->successResponse(
             $this->resolveResource(new ManagementInviteResource($invite)),
-            $message,
+            __('api/vtual.management.invite_cancelled'),
         );
     }
 

@@ -93,7 +93,6 @@ return [
         'invites_list_success' => 'تم تحميل دعوات الإدارة.',
         'invite_sent' => 'تم إرسال الدعوة.',
         'invite_cancelled' => 'تم إلغاء الدعوة.',
-        'invite_revoked' => 'تم إلغاء الدعوة وإزالة العضوية.',
         'invite_accepted' => 'تم قبول الدعوة. مرحبًا بك في الإدارة.',
         'invite_declined' => 'تم رفض الدعوة.',
         'invite_already_pending' => 'توجد دعوة معلقة بالفعل لهذا البريد الإلكتروني.',

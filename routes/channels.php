@@ -63,6 +63,13 @@ Broadcast::channel('vtual.creator.{creatorId}', function (User $user, string $cr
         && app(\App\Domain\Vtual\Services\CreatorAccessService::class)->canView($creator, $user);
 });
 
+Broadcast::channel('vtual.management.{managementId}', function (User $user, string $managementId): bool {
+    $management = \App\Domain\Vtual\Models\Management::query()->find($managementId);
+
+    return $management !== null
+        && app(\App\Domain\Vtual\Services\ManagementAccessService::class)->canView($management, $user);
+});
+
 Broadcast::channel('navigation.menus', function (User $user): bool {
     return $user->can('view menu');
 });

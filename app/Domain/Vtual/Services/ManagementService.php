@@ -16,6 +16,7 @@ use App\Domain\Vtual\Models\ManagementInvite;
 use App\Domain\Vtual\Models\ManagementMember;
 use App\Domain\Vtual\Notifications\ManagementMemberInvited;
 use App\Domain\Vtual\Support\SlugGenerator;
+use App\Domain\Vtual\Support\VtualManagementRealtime;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -26,6 +27,7 @@ class ManagementService
         private readonly ManagementAccessService $access,
         private readonly CreatorAccessService $creatorAccess,
         private readonly NotificationService $notifications,
+        private readonly VtualManagementRealtime $realtime,
     ) {}
 
     /**
@@ -65,7 +67,7 @@ class ManagementService
             ? trim($data['slug'])
             : $name;
 
-        return DB::transaction(function () use ($actor, $data, $name, $baseSlug): Management {
+        $created = DB::transaction(function () use ($actor, $data, $name, $baseSlug): Management {
             $slug = SlugGenerator::unique($baseSlug, fn (string $s): bool => Management::query()
                 ->where('slug', $s)
                 ->exists());
@@ -86,6 +88,10 @@ class ManagementService
 
             return $management->load('members.user');
         });
+
+        $this->realtime->changed($created->id, 'management', null, 'created');
+
+        return $created;
     }
 
     public function show(User $actor, string $managementId): Management
@@ -179,6 +185,8 @@ class ManagementService
 
         $management->save();
 
+        $this->realtime->changed($management->id, 'management', null, 'updated');
+
         return $management->refresh()->load('members.user');
     }
 
@@ -207,6 +215,8 @@ class ManagementService
         $assignment->left_at = null;
         $assignment->save();
 
+        $this->realtime->changed($management->id, 'creator', (string) $creator->id, 'assigned');
+
         return $assignment->load('creator');
     }
 
@@ -228,6 +238,8 @@ class ManagementService
 
         $assignment->left_at = now();
         $assignment->save();
+
+        $this->realtime->changed($management->id, 'creator', (string) $creatorId, 'unassigned');
 
         return $assignment->load('creator');
     }
@@ -317,6 +329,8 @@ class ManagementService
             ['token' => $invite->token],
         );
 
+        $this->realtime->changed($management->id, 'invite', (string) $invite->id, 'created');
+
         return $invite->load('inviter');
     }
 
@@ -358,6 +372,8 @@ class ManagementService
             $invite->responded_at = now();
             $invite->save();
 
+            $this->realtime->changed($management->id, 'invite', (string) $invite->id, 'cancelled');
+
             return $invite->load('inviter');
         }
 
@@ -378,6 +394,8 @@ class ManagementService
                 $invite->save();
             });
 
+            $this->realtime->changed($management->id, 'invite', (string) $invite->id, 'cancelled');
+
             return $invite->refresh()->load('inviter');
         }
 
@@ -388,7 +406,7 @@ class ManagementService
     {
         $invite = $this->findActionableInviteOrFail($actor, $token);
 
-        return DB::transaction(function () use ($invite, $actor): ManagementInvite {
+        $accepted = DB::transaction(function () use ($invite, $actor): ManagementInvite {
             $memberExists = ManagementMember::query()
                 ->where('management_id', $invite->management_id)
                 ->where('user_id', $actor->id)
@@ -408,6 +426,10 @@ class ManagementService
 
             return $invite->load('management');
         });
+
+        $this->realtime->changed((string) $accepted->management_id, 'invite', (string) $accepted->id, 'accepted');
+
+        return $accepted;
     }
 
     public function declineInvite(User $actor, string $token): ManagementInvite
@@ -417,6 +439,8 @@ class ManagementService
         $invite->status = ManagementInviteStatus::Declined;
         $invite->responded_at = now();
         $invite->save();
+
+        $this->realtime->changed((string) $invite->management_id, 'invite', (string) $invite->id, 'declined');
 
         return $invite->load('management');
     }
@@ -479,6 +503,8 @@ class ManagementService
         $member->role = $role;
         $member->save();
 
+        $this->realtime->changed($management->id, 'member', (string) $member->id, 'updated');
+
         return $member->load('user');
     }
 
@@ -498,6 +524,8 @@ class ManagementService
         }
 
         $member->delete();
+
+        $this->realtime->changed($management->id, 'member', (string) $memberId, 'deleted');
     }
 
     private function findMemberOrFail(Management $management, string $memberId): ManagementMember

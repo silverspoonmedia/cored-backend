@@ -247,6 +247,8 @@ Multi-credential child of `vtual_platforms` for future YouTube/Twitch sync rotat
 
 **Creator snapshot realtime:** `ChannelFetchPoolService::flushPlatform` aggregates updated channels per creator and fires one `ChannelSnapshotUpdated` per creator (`ShouldBroadcastNow`, gated by `BroadcastConnection::isConfigured()`). Channel `private-vtual.creator.{creatorId}`, event `.channel.snapshot.updated`, payload ids-only `{creator_id, channel_ids[]}`. Channel auth via `CreatorAccessService::canView` (members + staff). SPA `useVtualRealtime.ts` `subscribeCreatorSnapshots` wires the manage page: on push it shows an info toast and refetches active + archived channels; a manual **Refresh** button on the channels card does the same refetch on demand.
 
+**Management realtime:** `ManagementService` fires `ManagementUpdated` (`ShouldBroadcastNow`, gated by `BroadcastConnection::isConfigured()`) after successful create / update / creator assign+unassign / member role update+remove / invite create+cancel+accept+decline. Channel `private-vtual.management.{managementId}`, event `.management.updated`, payload ids-only `{management_id, kind (management|member|invite|creator), ref_id, action}`. Channel auth via `ManagementAccessService::canView` (members + `* any vtual resource` staff). SPA `useVtualRealtime.ts` `subscribeManagement` wires `VtualManagementEditView`: on push it silent-refetches `fetchOne` + `listInvites` and applies only `creators` / `members` / `my_role` / `invites` — form fields are never overwritten while the actor may be typing. The management list view is not subscribed (multi-viewer need is rare; manual reload suffices).
+
 ```mermaid
 flowchart TD
   create[Admin create] --> pending[status pending]
@@ -365,7 +367,7 @@ Service: `VtuberProfileService::directory()` + `paginatePublicContents()` (`Cont
 | DELETE | `/managements/{id}/members/{memberId}` | manage vtual management members + owner/admin membership | Remove member (no self-remove, last-owner guard) |
 | GET | `/managements/{id}/invites` | view management | List invites (token never exposed) |
 | POST | `/managements/{id}/invites` | manage vtual management members + owner/admin membership | Send email invite (registered users only; role `admin`/`staff`) |
-| DELETE | `/managements/{id}/invites/{inviteId}` | manage vtual management members + owner/admin membership | Cancel pending invite / revoke accepted (removes membership) |
+| DELETE | `/managements/{id}/invites/{inviteId}` | manage vtual management members + owner/admin membership | Cancel invite — pending → cancelled; accepted → revoked (removes membership). UI uses a single Cancel term |
 | GET | `/vtual/invites/respond/{token}` | any authenticated (email match) | Prefill invite (org, role, expiry) |
 | POST | `/vtual/invites/respond/{token}/accept` | any authenticated (email match) | Accept → creates membership (idempotent) |
 | POST | `/vtual/invites/respond/{token}/decline` | any authenticated (email match) | Decline invite |

@@ -93,7 +93,6 @@ return [
         'invites_list_success' => 'Undangan management dimuat.',
         'invite_sent' => 'Undangan terkirim.',
         'invite_cancelled' => 'Undangan dibatalkan.',
-        'invite_revoked' => 'Undangan dicabut; keanggotaan dihapus.',
         'invite_accepted' => 'Undangan diterima. Selamat bergabung di management.',
         'invite_declined' => 'Undangan ditolak.',
         'invite_already_pending' => 'Sudah ada undangan pending untuk email ini.',

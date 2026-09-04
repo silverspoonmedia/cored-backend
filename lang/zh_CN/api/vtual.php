@@ -93,7 +93,6 @@ return [
         'invites_list_success' => '管理机构邀请已加载。',
         'invite_sent' => '邀请已发送。',
         'invite_cancelled' => '邀请已取消。',
-        'invite_revoked' => '邀请已撤销，成员身份已移除。',
         'invite_accepted' => '邀请已接受。欢迎加入管理机构。',
         'invite_declined' => '邀请已拒绝。',
         'invite_already_pending' => '该邮箱已有待处理的邀请。',

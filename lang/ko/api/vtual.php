@@ -93,7 +93,6 @@ return [
         'invites_list_success' => '매니지먼트 초대 목록을 불러왔습니다.',
         'invite_sent' => '초대를 보냈습니다.',
         'invite_cancelled' => '초대가 취소되었습니다.',
-        'invite_revoked' => '초대가 취소되었으며 멤버십이 제거되었습니다.',
         'invite_accepted' => '초대를 수락했습니다. 매니지먼트에 오신 것을 환영합니다.',
         'invite_declined' => '초대를 거절했습니다.',
         'invite_already_pending' => '이 이메일에 대한 대기 중인 초대가 이미 있습니다.',

@@ -93,7 +93,6 @@ return [
         'invites_list_success' => 'Management invitations loaded.',
         'invite_sent' => 'Invitation sent.',
         'invite_cancelled' => 'Invitation cancelled.',
-        'invite_revoked' => 'Invitation revoked; membership removed.',
         'invite_accepted' => 'Invitation accepted. Welcome to the management.',
         'invite_declined' => 'Invitation declined.',
         'invite_already_pending' => 'A pending invitation already exists for this email.',

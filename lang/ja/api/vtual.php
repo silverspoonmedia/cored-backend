@@ -93,7 +93,6 @@ return [
         'invites_list_success' => 'マネジメント招待を読み込みました。',
         'invite_sent' => '招待を送信しました。',
         'invite_cancelled' => '招待をキャンセルしました。',
-        'invite_revoked' => '招待を取り消し、メンバーシップを削除しました。',
         'invite_accepted' => '招待を承認しました。マネジメントへようこそ。',
         'invite_declined' => '招待を辞退しました。',
         'invite_already_pending' => 'このメールアドレスへの保留中の招待が既にあります。',
