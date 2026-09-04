@@ -16,6 +16,7 @@ return [
         'service_subscription_grace' => 'Langganan :service Anda berakhir. Perpanjang dalam :grace_days hari (hingga :grace_ends_at) atau file berlebih akan dihapus ke batas free tier.',
         'service_subscription_expired' => 'Masa grace langganan :service berakhir. Kuota free tier diberlakukan (:deleted file dihapus).',
         'inference_unregistered_model' => 'Model tidak terdaftar :resolved_model di :provider_slug ditagih dengan tarif sementara ($:input_per_million_usd / $:output_per_million_usd per 1M). Klasifikasikan di katalog model untuk menyelesaikan penagihan.',
+        'vtual_management_invite_received' => ':inviter mengundang Anda untuk bergabung ke :management sebagai :role.',
     ],
     'audiences' => [
         'list_success' => 'Audiens notifikasi dimuat.',

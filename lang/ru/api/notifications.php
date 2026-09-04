@@ -16,6 +16,7 @@ return [
         'service_subscription_grace' => 'Ваша подписка на :service закончилась. Продлите её в течение :grace_days дн. (до :grace_ends_at), иначе избыточные файлы будут удалены до лимитов бесплатного тарифа.',
         'service_subscription_expired' => 'Льготный период вашей подписки на :service истёк. Применяются лимиты бесплатного тарифа (удалено файлов: :deleted).',
         'inference_unregistered_model' => 'Незарегистрированная модель :resolved_model у :provider_slug тарифицирована по предварительным ставкам ($:input_per_million_usd / $:output_per_million_usd за 1M). Классифицируйте её в каталоге моделей для окончательного расчёта.',
+        'vtual_management_invite_received' => ':inviter пригласил вас присоединиться к :management в роли :role.',
     ],
     'audiences' => [
         'list_success' => 'Аудитории уведомлений загружены.',

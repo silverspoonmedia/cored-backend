@@ -16,6 +16,7 @@ return [
         'service_subscription_grace' => 'Your :service subscription has ended. Renew within :grace_days days (by :grace_ends_at) or excess files will be removed to free-tier limits.',
         'service_subscription_expired' => 'Your :service subscription grace period ended. Free-tier storage is enforced (:deleted file(s) removed).',
         'inference_unregistered_model' => 'Unregistered model :resolved_model on :provider_slug billed at provisional rates ($:input_per_million_usd / $:output_per_million_usd per 1M). Classify in model catalog to finalize billing.',
+        'vtual_management_invite_received' => ':inviter invited you to join :management as :role.',
     ],
     'audiences' => [
         'list_success' => 'Notification audiences loaded.',

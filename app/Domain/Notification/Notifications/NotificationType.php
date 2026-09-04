@@ -38,6 +38,9 @@ enum NotificationType: string
     // Broadcast: unregistered inference model billed at provisional rates — classify in catalog.
     case InferenceUnregisteredModel = 'inference_unregistered_model';
 
+    // Personal: invited to join a vTual management org (deep-link to accept/decline).
+    case VtualManagementInviteReceived = 'vtual_management_invite_received';
+
     /**
      * Bootstrap icon class rendered by the web bell.
      */
@@ -51,6 +54,7 @@ enum NotificationType: string
             self::ServiceSubscriptionGrace => 'bi bi-hourglass-split',
             self::ServiceSubscriptionExpired => 'bi bi-exclamation-triangle',
             self::InferenceUnregisteredModel => 'bi bi-cpu',
+            self::VtualManagementInviteReceived => 'bi bi-envelope-paper',
         };
     }
 
@@ -69,6 +73,7 @@ enum NotificationType: string
             self::AccountUpdated,
             self::ServiceSubscriptionGrace,
             self::ServiceSubscriptionExpired => [],
+            self::VtualManagementInviteReceived => [],
         };
     }
 
@@ -94,6 +99,7 @@ enum NotificationType: string
             self::ServiceSubscriptionGrace,
             self::ServiceSubscriptionExpired => null,
             self::InferenceUnregisteredModel => 'inference-model-cards-table',
+            self::VtualManagementInviteReceived => null,
         };
     }
 }

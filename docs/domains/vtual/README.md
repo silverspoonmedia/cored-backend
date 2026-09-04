@@ -30,7 +30,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Creator claim (phase 1) | `vtual_creator_claims`: claim **orphan** (no owner member) via channel bio token or staff **Accept Anyway**. On success: `CreatorMember` owner + Spatie product role `Vtual vTuber`. Losing pendings stay as audit log (`cancelled` + `closed_reason=superseded`). |
 | Channel claim | **Owner/editor members** (including staff who also have membership): `vtual_channel_claims` attach via bio token (`vtual-ch-…`) or staff **Accept Anyway** on a pending claim. Channel row only after success. Config: `config/vtual.php` `channel_claim.*`. **API:** live `token` is claim-owner only (`CreatorClaimResource` / `ChannelClaimResource`). Member emails (`CreatorMemberResource` / `ManagementMemberResource`) are owner/manager/staff (`view any` / `manage any` vtual) or the member viewing themselves. |
 | Management | Talent org (`vtual_managements`), not core Spatie role `Management`. See [naming-conventions.md](naming-conventions.md). |
-| Management staff | `vtual_management_members` (`owner` \| `admin` \| `staff`). |
+| Management staff | `vtual_management_members` (`owner` \| `admin` \| `staff`). Member list/update/remove: `GET/PATCH/DELETE /managements/{id}/members[/{memberId}]` — gated by Spatie perm `manage vtual management members` **plus** org role Owner/Admin (`ManagementMemberRole::canManageMembers`); `manage any vtual resource` staff bypass. Rules: roles assignable via endpoint = `admin`/`staff` only (owner comes from org create), no self edit/remove, last-owner guard (422 `last_owner`). **Onboarding is invite-only** (privacy: no user-listing endpoint): owner/admin types an email → `POST /managements/{id}/invites` creates a `pending` `vtual_management_invites` row (48-char token, 7-day expiry, statuses `pending/accepted/declined/cancelled/revoked/expired`) and notifies the invitee twice — `ManagementMemberInvited` mail (SPA link `/apps/vtual/invites/respond?token=…`) + in-app `ActivityNotification` (`vtual_management_invite_received`, `action_route=vtual.invites.respond`). MVP is registered-only: unknown email 404 `invite_user_not_found`; self-invite 422; existing member 422; duplicate pending 422. Invitee responds at `GET/POST /vtual/invites/respond/{token}[/accept|/decline]` (any authenticated user; gated by case-insensitive email match — wrong account 403). Accept creates the `ManagementMember` (idempotent); decline marks `declined`. Management cancel: pending → `cancelled`; **accepted → `revoked`** (membership removed in the same transaction, last-owner guard still applies). Token never appears in API listings. |
 | Creator assignment | `vtual_management_creators` with `joined_at` / `left_at` (historical leave without hard delete). |
 | Platform | Seeded catalog: youtube, twitch, **kick** (kick `enabled = false`). |
 | Platform credential | Child table `vtual_platform_credentials`: multi-key per platform, envelope-encrypted `secret_payload`, mask-only API. |
@@ -360,6 +360,15 @@ Service: `VtuberProfileService::directory()` + `paginatePublicContents()` (`Cont
 | GET/PATCH | `/managements/{id}` | view / edit | Show / update |
 | POST | `/managements/{id}/creators` | edit management | Assign creator |
 | DELETE | `/managements/{id}/creators/{creatorId}` | edit management | Unassign (`left_at`) |
+| GET | `/managements/{id}/members` | view management | List members (with user) |
+| PATCH | `/managements/{id}/members/{memberId}` | manage vtual management members + owner/admin membership | Change member role (no self-edit, no owner target, last-owner guard) |
+| DELETE | `/managements/{id}/members/{memberId}` | manage vtual management members + owner/admin membership | Remove member (no self-remove, last-owner guard) |
+| GET | `/managements/{id}/invites` | view management | List invites (token never exposed) |
+| POST | `/managements/{id}/invites` | manage vtual management members + owner/admin membership | Send email invite (registered users only; role `admin`/`staff`) |
+| DELETE | `/managements/{id}/invites/{inviteId}` | manage vtual management members + owner/admin membership | Cancel pending invite / revoke accepted (removes membership) |
+| GET | `/vtual/invites/respond/{token}` | any authenticated (email match) | Prefill invite (org, role, expiry) |
+| POST | `/vtual/invites/respond/{token}/accept` | any authenticated (email match) | Accept → creates membership (idempotent) |
+| POST | `/vtual/invites/respond/{token}/decline` | any authenticated (email match) | Decline invite |
 | GET | `/admin/platforms/{id}/credentials` | view vtual platform credentials | List credentials (masked) |
 | POST | `/admin/platforms/{id}/credentials` | manage vtual platform credentials | Create credential (`pending`) |
 | GET/PATCH/DELETE | `/admin/credentials/{id}` | view / manage | Show / update / delete (`active` delete blocked until revoked) |

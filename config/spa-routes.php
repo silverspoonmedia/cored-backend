@@ -28,6 +28,7 @@ return [
         'payment.cancel',
         'public.file',
         'public.folder',
+        'vtual.invites.respond',
     ],
 
     'menu' => [

@@ -6,6 +6,7 @@ use App\Domain\Vtual\Http\Controllers\API\V1\CreatorClaimController;
 use App\Domain\Vtual\Http\Controllers\API\V1\CreatorController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ExternalLinkController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ManagementController;
+use App\Domain\Vtual\Http\Controllers\API\V1\ManagementInviteRespondController;
 use App\Domain\Vtual\Http\Controllers\API\V1\OrphanCreatorController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformApiProbeController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformController;
@@ -150,6 +151,38 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
             ->whereUuid(['management', 'creator'])
             ->name('managements.creators.unassign');
     });
+
+    Route::middleware('permission:view vtual management')->group(function (): void {
+        Route::get('managements/{management}/members', [ManagementController::class, 'members'])
+            ->whereUuid('management')
+            ->name('managements.members.index');
+        Route::get('managements/{management}/invites', [ManagementController::class, 'invites'])
+            ->whereUuid('management')
+            ->name('managements.invites.index');
+    });
+
+    Route::middleware('permission:manage vtual management members')->group(function (): void {
+        Route::post('managements/{management}/invites', [ManagementController::class, 'addMember'])
+            ->whereUuid('management')
+            ->name('managements.invites.store');
+        Route::delete('managements/{management}/invites/{invite}', [ManagementController::class, 'cancelInvite'])
+            ->whereUuid(['management', 'invite'])
+            ->name('managements.invites.destroy');
+        Route::patch('managements/{management}/members/{member}', [ManagementController::class, 'updateMember'])
+            ->whereUuid(['management', 'member'])
+            ->name('managements.members.update');
+        Route::delete('managements/{management}/members/{member}', [ManagementController::class, 'removeMember'])
+            ->whereUuid(['management', 'member'])
+            ->name('managements.members.destroy');
+    });
+
+    // Invite respond (any authenticated user; gated by email match in the service).
+    Route::get('invites/respond/{token}', [ManagementInviteRespondController::class, 'show'])
+        ->name('invites.respond.show');
+    Route::post('invites/respond/{token}/accept', [ManagementInviteRespondController::class, 'accept'])
+        ->name('invites.respond.accept');
+    Route::post('invites/respond/{token}/decline', [ManagementInviteRespondController::class, 'decline'])
+        ->name('invites.respond.decline');
 
     // Admin: platform integration credentials (Root/Admin core perms only).
     Route::prefix('admin')->name('admin.')->group(function (): void {

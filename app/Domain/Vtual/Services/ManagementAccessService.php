@@ -63,6 +63,17 @@ class ManagementAccessService
         return $role !== null && $role->canAssignCreators();
     }
 
+    public function canManageMembers(Management $management, User $actor): bool
+    {
+        if ($actor->can('manage any vtual resource')) {
+            return true;
+        }
+
+        $role = $this->roleFor($management, $actor);
+
+        return $role !== null && $role->canManageMembers();
+    }
+
     public function assertCanView(Management $management, User $actor): void
     {
         if (! $this->canView($management, $actor)) {
@@ -81,6 +92,13 @@ class ManagementAccessService
     {
         if (! $this->canAssignCreators($management, $actor)) {
             throw new VtualException(__('api/vtual.policy.assign_denied'), 403);
+        }
+    }
+
+    public function assertCanManageMembers(Management $management, User $actor): void
+    {
+        if (! $this->canManageMembers($management, $actor)) {
+            throw new VtualException(__('api/vtual.policy.members_denied'), 403);
         }
     }
 }

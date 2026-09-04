@@ -44,6 +44,7 @@ class VtualRoleSeeder extends Seeder
             'view vtual management',
             'create vtual management',
             'edit vtual management',
+            'manage vtual management members',
             'view vtual channel',
             'create vtual channel',
             'claim vtual creator',
