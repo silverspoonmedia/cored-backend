@@ -67,7 +67,7 @@ class ManagementMembersApiTest extends TestCase
     }
 
     #[Test]
-    public function owner_can_update_and_remove_member(): void
+    public function owner_can_update_member_role(): void
     {
         $owner = $this->userWithRole('User');
         $this->activations->activateImplicit($owner, 'Vtual');
@@ -86,12 +86,6 @@ class ManagementMembersApiTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('data.role', 'admin');
-
-        $this->actingAsJwt($owner)
-            ->deleteJson('/api/v1/vtual/managements/'.$management->id.'/members/'.$member->id)
-            ->assertOk();
-
-        $this->assertDatabaseMissing('vtual_management_members', ['id' => $member->id]);
     }
 
     #[Test]
@@ -123,8 +117,8 @@ class ManagementMembersApiTest extends TestCase
             ->assertForbidden();
 
         $this->actingAsJwt($staff)
-            ->deleteJson('/api/v1/vtual/managements/'.$management->id.'/members/'.$targetMember->id)
-            ->assertForbidden();
+            ->deleteJson('/api/v1/vtual/managements/'.$management->id.'/invites/not-an-invite')
+            ->assertNotFound();
     }
 
     #[Test]
@@ -197,14 +191,10 @@ class ManagementMembersApiTest extends TestCase
                 'role' => 'staff',
             ])
             ->assertUnprocessable();
-
-        $this->actingAsJwt($admin)
-            ->deleteJson('/api/v1/vtual/managements/'.$management->id.'/members/'.$adminMember->id)
-            ->assertUnprocessable();
     }
 
     #[Test]
-    public function last_owner_cannot_be_demoted_or_removed(): void
+    public function last_owner_cannot_be_demoted(): void
     {
         $owner = $this->userWithRole('User');
         $this->activations->activateImplicit($owner, 'Vtual');
@@ -227,10 +217,6 @@ class ManagementMembersApiTest extends TestCase
             ->patchJson('/api/v1/vtual/managements/'.$management->id.'/members/'.$ownerMember->id, [
                 'role' => 'staff',
             ])
-            ->assertUnprocessable();
-
-        $this->actingAsJwt($admin)
-            ->deleteJson('/api/v1/vtual/managements/'.$management->id.'/members/'.$ownerMember->id)
             ->assertUnprocessable();
     }
 

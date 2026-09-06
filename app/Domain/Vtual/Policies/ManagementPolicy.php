@@ -37,6 +37,14 @@ class ManagementPolicy
         return $this->perm($actor, 'create vtual management');
     }
 
+    public function createOrphan(User $actor): Response
+    {
+        // Orphan seed is staff-only, mirroring CreatorService::createOrphan.
+        return $actor->can('manage any vtual resource')
+            ? $this->allow()
+            : $this->deny(__('api/vtual.policy.denied'));
+    }
+
     public function update(User $actor, Management $management): Response
     {
         if (! $actor->can('edit vtual management')) {
@@ -46,6 +54,15 @@ class ManagementPolicy
         return $this->access->canMutate($management, $actor)
             ? $this->allow()
             : $this->deny(__('api/vtual.policy.mutate_denied'));
+    }
+
+    public function delete(User $actor, Management $management): Response
+    {
+        // Archiving is reserved to org Owner/Admin via real membership rows;
+        // internal staff without membership never gets this power.
+        return $this->access->canArchive($management, $actor)
+            ? $this->allow()
+            : $this->deny(__('api/vtual.policy.archive_denied'));
     }
 
     private function perm(User $actor, string $permission): Response

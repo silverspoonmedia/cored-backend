@@ -60,6 +60,19 @@ class ManagementController extends Controller
         );
     }
 
+    public function storeOrphan(StoreManagementRequest $request): JsonResponse
+    {
+        $this->authorize('createOrphan', Management::class);
+
+        $management = $this->managements->createOrphan($request->user(), $request->validated());
+
+        return $this->successResponse(
+            $this->resolveResource(new ManagementResource($management)),
+            __('api/vtual.management.created'),
+            201,
+        );
+    }
+
     public function show(Request $request, Management $management): JsonResponse
     {
         $this->authorize('view', $management);
@@ -81,6 +94,18 @@ class ManagementController extends Controller
         return $this->successResponse(
             $this->resolveResource(new ManagementResource($updated)),
             __('api/vtual.management.updated'),
+        );
+    }
+
+    public function destroy(Request $request, Management $management): JsonResponse
+    {
+        $this->authorize('delete', $management);
+
+        $this->managements->destroy($request->user(), $management->id);
+
+        return $this->successResponse(
+            null,
+            __('api/vtual.management.deleted'),
         );
     }
 
@@ -177,18 +202,6 @@ class ManagementController extends Controller
         return $this->successResponse(
             $this->resolveResource(new ManagementMemberResource($updated)),
             __('api/vtual.management.member_updated'),
-        );
-    }
-
-    public function removeMember(Request $request, Management $management, string $member): JsonResponse
-    {
-        $this->authorize('update', $management);
-
-        $this->managements->removeMember($request->user(), $management->id, $member);
-
-        return $this->successResponse(
-            null,
-            __('api/vtual.management.member_removed'),
         );
     }
 }

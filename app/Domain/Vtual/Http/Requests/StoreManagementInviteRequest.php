@@ -18,11 +18,18 @@ class StoreManagementInviteRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Owner is included here for the staff handover path; the service
+        // narrows it further (only while the org is claimable, staff-only).
+        $roles = [
+            ManagementMemberRole::Owner,
+            ...ManagementMemberRole::assignable(),
+        ];
+
         return [
             'email' => ['required', 'string', 'email:rfc', 'max:255'],
             'role' => ['required', 'string', Rule::in(array_map(
                 fn (ManagementMemberRole $r): string => $r->value,
-                ManagementMemberRole::assignable(),
+                $roles,
             ))],
         ];
     }

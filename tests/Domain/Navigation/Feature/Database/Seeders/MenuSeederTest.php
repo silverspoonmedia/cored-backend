@@ -62,6 +62,7 @@ class MenuSeederTest extends TestCase
                         'type' => 'p',
                         'children' => [
                             ['name' => 'My vTuber profiles', 'route' => 'vtual.profiles.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Managements', 'route' => 'vtual.managements.index', 'type' => 'c', 'children' => []],
                         ],
                     ],
                 ],
@@ -174,6 +175,16 @@ class MenuSeederTest extends TestCase
             ['Vtual Admin', 'Vtual Editor', 'Vtual vTuber'],
             $this->roleNamesForRoute('vtual.profiles.index'),
         );
+        // Two menus share vtual.managements.index: the Products child is
+        // member-only (empty stored roles; rule 7 grants via membership) and
+        // the Administration child is Root/Admin.
+        $this->assertSame(
+            [
+                ['layout' => MenuLayout::SIDEBAR, 'roles' => []],
+                ['layout' => MenuLayout::SIDEBAR, 'roles' => ['Admin', 'Root']],
+            ],
+            $this->managementsNodeRoles(),
+        );
         $this->assertSame(
             ['Admin', 'Root'],
             $this->roleNamesForRoute('settings.file-hosting'),
@@ -240,7 +251,7 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(47, Menu::query()->count());
+        $this->assertSame(48, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -249,7 +260,7 @@ class MenuSeederTest extends TestCase
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(47, Menu::query()->count());
+        $this->assertSame(48, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -340,6 +351,33 @@ class MenuSeederTest extends TestCase
             ->roles
             ->pluck('name')
             ->sort()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Both "Managements" nodes share the `vtual.managements.index` route.
+     * Returns each row's layout plus sorted role names so the test can pin
+     * the dual placement: member-only (empty roles) vs staff (Root/Admin).
+     *
+     * @return list<array{layout: string, roles: list<string>}>
+     */
+    private function managementsNodeRoles(): array
+    {
+        return Menu::query()
+            ->where('route', 'vtual.managements.index')
+            ->orderBy('name->en')
+            ->get()
+            ->map(fn (Menu $menu): array => [
+                'layout' => $menu->layout,
+                'roles' => $menu->roles
+                    ->where('guard_name', 'api')
+                    ->pluck('name')
+                    ->sort()
+                    ->values()
+                    ->all(),
+            ])
+            ->sortBy(fn (array $row): int => $row['roles'] === [] ? 0 : 1)
             ->values()
             ->all();
     }

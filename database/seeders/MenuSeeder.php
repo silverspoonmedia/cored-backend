@@ -165,6 +165,20 @@ class MenuSeeder extends Seeder
                                 'type' => 'c',
                                 'roles' => ['Vtual vTuber', 'Vtual Editor', 'Vtual Admin'],
                             ],
+                            [
+                                'name' => $this->translations('Managements', 'Manajemen', 'マネジメント'),
+                                'icon' => 'bi bi-people',
+                                'route' => 'vtual.managements.index',
+                                'type' => 'c',
+                                // Empty stored roles are intentional and ONLY safe
+                                // because this route is in MenuRepository's
+                                // MANAGEMENT_MEMBER_ROUTES: rule 7 falls through
+                                // hasAnyRole([]) to the org-membership check, so
+                                // only vTual management members see this node.
+                                // Removing the route from that constant would turn
+                                // this into an open node — do not do that.
+                                'roles' => [],
+                            ],
                         ],
                     ],
                 ],
@@ -315,6 +329,12 @@ class MenuSeeder extends Seeder
                                 'icon' => 'bi bi-people',
                                 'route' => 'vtual.managements.index',
                                 'type' => 'c',
+                                // Staff-facing management administration (orgs are
+                                // created here, then claimed by companies /
+                                // agencies). Membership members never see this
+                                // branch: the parent route is NOT in
+                                // MANAGEMENT_MEMBER_ROUTES, so rule 7 fails on
+                                // the ancestor chain.
                                 'roles' => $adminRoles,
                             ],
                             [

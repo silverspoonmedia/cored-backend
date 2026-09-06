@@ -17,6 +17,7 @@ return [
         'service_subscription_expired' => 'Masa grace langganan :service berakhir. Kuota free tier diberlakukan (:deleted file dihapus).',
         'inference_unregistered_model' => 'Model tidak terdaftar :resolved_model di :provider_slug ditagih dengan tarif sementara ($:input_per_million_usd / $:output_per_million_usd per 1M). Klasifikasikan di katalog model untuk menyelesaikan penagihan.',
         'vtual_management_invite_received' => ':inviter mengundang Anda untuk bergabung ke :management sebagai :role.',
+        'vtual_management_creator_invite_received' => ':inviter mengundang Anda menautkan profil vTuber Anda ke :management.',
     ],
     'audiences' => [
         'list_success' => 'Audiens notifikasi dimuat.',

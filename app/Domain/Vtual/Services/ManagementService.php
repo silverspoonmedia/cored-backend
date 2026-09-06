@@ -17,6 +17,8 @@ use App\Domain\Vtual\Models\ManagementMember;
 use App\Domain\Vtual\Notifications\ManagementMemberInvited;
 use App\Domain\Vtual\Support\SlugGenerator;
 use App\Domain\Vtual\Support\VtualManagementRealtime;
+use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
+use App\Domain\Navigation\Support\NavigationRealtime;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -28,7 +30,20 @@ class ManagementService
         private readonly CreatorAccessService $creatorAccess,
         private readonly NotificationService $notifications,
         private readonly VtualManagementRealtime $realtime,
+        private readonly MenuRepositoryInterface $menus,
+        private readonly NavigationRealtime $navigationRealtime,
     ) {}
+
+    /**
+     * A management member may not hold a staff role, so their presented
+     * navigation tree (menu grant via the membership-based visibility rule)
+     * changes whenever membership is created or removed.
+     */
+    private function invalidateNavigationFor(string $userId): void
+    {
+        $this->menus->forgetPresentedTreeForUserId($userId);
+        $this->navigationRealtime->userTreeChanged($userId);
+    }
 
     /**
      * @return Collection<int, Management>
@@ -92,6 +107,59 @@ class ManagementService
         $this->realtime->changed($created->id, 'management', null, 'created');
 
         return $created;
+    }
+
+    /**
+     * Staff seed: active management with no Owner member (claimable orphan).
+     * Handover to an external owner happens via an Owner-role invite.
+     *
+     * @param  array{name: string, slug?: string|null, description?: string|null, logo_url?: string|null}  $data
+     */
+    public function createOrphan(User $actor, array $data): Management
+    {
+        if (! $actor->can('manage any vtual resource')) {
+            throw new VtualException(__('api/vtual.policy.denied'), 403);
+        }
+
+        return DB::transaction(function () use ($actor, $data): Management {
+            $name = trim((string) $data['name']);
+            if ($name === '') {
+                throw new VtualException(__('api/vtual.management.name_required'), 422);
+            }
+
+            $baseSlug = isset($data['slug']) && is_string($data['slug']) && trim($data['slug']) !== ''
+                ? trim($data['slug'])
+                : $name;
+
+            $slug = SlugGenerator::unique($baseSlug, fn (string $s): bool => Management::query()
+                ->where('slug', $s)
+                ->exists());
+
+            $management = Management::query()->create([
+                'slug' => $slug,
+                'name' => $name,
+                'description' => $data['description'] ?? null,
+                'logo_url' => $data['logo_url'] ?? null,
+                'status' => EntityStatus::Active,
+            ]);
+
+            return $management->load('members.user');
+        });
+    }
+
+    /**
+     * Claimable = active + no Owner membership (admin-seeded orphan).
+     */
+    public function isClaimable(Management $management): bool
+    {
+        if ($management->status !== EntityStatus::Active) {
+            return false;
+        }
+
+        return ! ManagementMember::query()
+            ->where('management_id', $management->id)
+            ->where('role', ManagementMemberRole::Owner)
+            ->exists();
     }
 
     public function show(User $actor, string $managementId): Management
@@ -191,6 +259,20 @@ class ManagementService
     }
 
     /**
+     * Soft-delete a management org. Actor must be an org Owner/Admin
+     * (enforced by the policy via ManagementAccessService::canArchive).
+     */
+    public function destroy(User $actor, string $managementId): void
+    {
+        $management = $this->access->findOrFail($managementId);
+        $this->access->assertCanArchive($management, $actor);
+
+        $management->delete();
+
+        $this->realtime->changed($management->id, 'management', null, 'deleted');
+    }
+
+    /**
      * Attach a creator to this management. Actor must manage the org and mutate the creator.
      */
     public function assignCreator(User $actor, string $managementId, string $creatorId): ManagementCreator
@@ -271,7 +353,22 @@ class ManagementService
         $email = strtolower(trim((string) ($data['email'] ?? '')));
         $role = ManagementMemberRole::tryFrom((string) ($data['role'] ?? ''));
 
-        if ($role === null || ! in_array($role, ManagementMemberRole::assignable(), true)) {
+        if ($role === null) {
+            throw new VtualException(__('api/vtual.management.role_invalid'), 422);
+        }
+
+        $isOwnerInvite = $role === ManagementMemberRole::Owner;
+
+        if ($isOwnerInvite) {
+            // Handover invite: only for a claimable org, only by staff.
+            if (! $this->isClaimable($management)) {
+                throw new VtualException(__('api/vtual.management.owner_invite_not_claimable'), 422);
+            }
+
+            if (! $actor->can('manage any vtual resource')) {
+                throw new VtualException(__('api/vtual.policy.members_denied'), 403);
+            }
+        } elseif (! in_array($role, ManagementMemberRole::assignable(), true)) {
             throw new VtualException(__('api/vtual.management.role_invalid'), 422);
         }
 
@@ -395,6 +492,7 @@ class ManagementService
             });
 
             $this->realtime->changed($management->id, 'invite', (string) $invite->id, 'cancelled');
+            $this->invalidateNavigationFor((string) $invite->user_id);
 
             return $invite->refresh()->load('inviter');
         }
@@ -428,6 +526,7 @@ class ManagementService
         });
 
         $this->realtime->changed((string) $accepted->management_id, 'invite', (string) $accepted->id, 'accepted');
+        $this->invalidateNavigationFor((string) $actor->id);
 
         return $accepted;
     }
@@ -508,25 +607,8 @@ class ManagementService
         return $member->load('user');
     }
 
-    public function removeMember(User $actor, string $managementId, string $memberId): void
-    {
-        $management = $this->access->findOrFail($managementId);
-        $this->access->assertCanManageMembers($management, $actor);
-
-        $member = $this->findMemberOrFail($management, $memberId);
-
-        if ((string) $member->user_id === (string) $actor->id) {
-            throw new VtualException(__('api/vtual.management.cannot_edit_self'), 422);
-        }
-
-        if ($member->role === ManagementMemberRole::Owner) {
-            $this->assertNotLastOwner($management, $member);
-        }
-
-        $member->delete();
-
-        $this->realtime->changed($management->id, 'member', (string) $memberId, 'deleted');
-    }
+    // Member removal is unified through cancelInvite (accepted → revoked):
+    // it deletes the membership AND flips the invite status in one transaction.
 
     private function findMemberOrFail(Management $management, string $memberId): ManagementMember
     {

@@ -33,6 +33,7 @@ class ManagementResource extends JsonResource
             'logo_url' => $this->logo_url,
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,
             'my_role' => $myRole,
+            'is_claimable' => app(\App\Domain\Vtual\Services\ManagementService::class)->isClaimable($this->resource),
             'members' => $this->whenLoaded('members', fn () => ManagementMemberResource::collection($this->members)),
             'creators' => $this->whenLoaded('creatorAssignments', function () {
                 return $this->creatorAssignments

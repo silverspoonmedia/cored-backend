@@ -23,6 +23,14 @@ class CreatorPolicy
 
     public function view(User $actor, Creator $creator): Response
     {
+        // Management members over a linked creator bypass the Spatie creator
+        // permission — their authority comes from the management membership.
+        if ($this->access->managementRoleForCreator($creator, $actor) !== null) {
+            return $this->access->canView($creator, $actor)
+                ? $this->allow()
+                : $this->deny(__('api/vtual.policy.access_denied'));
+        }
+
         if (! $actor->can('view vtual creator')) {
             return $this->deny(__('api/vtual.policy.denied'));
         }
@@ -48,6 +56,14 @@ class CreatorPolicy
 
     public function update(User $actor, Creator $creator): Response
     {
+        // Management Owner/Admin over a linked creator may edit without the
+        // Spatie creator permission; Staff role is view-only (canMutate false).
+        if ($this->access->managementRoleForCreator($creator, $actor) !== null) {
+            return $this->access->canMutate($creator, $actor)
+                ? $this->allow()
+                : $this->deny(__('api/vtual.policy.mutate_denied'));
+        }
+
         if (! $actor->can('edit vtual creator')) {
             return $this->deny(__('api/vtual.policy.denied'));
         }

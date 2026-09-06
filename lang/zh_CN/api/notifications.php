@@ -17,6 +17,7 @@ return [
         'service_subscription_expired' => '你的 :service 订阅宽限期已结束。现已执行免费层级存储限制（已删除 :deleted 个文件）。',
         'inference_unregistered_model' => '未注册模型 :resolved_model 在 :provider_slug 上按临时费率计费（每 1M 输入 $:input_per_million_usd / 输出 $:output_per_million_usd）。请在模型目录中分类，以完成计费。',
         'vtual_management_invite_received' => ':inviter 邀请你以 :role 身份加入 :management。',
+        'vtual_management_creator_invite_received' => ':inviter 邀请你将你的 vTuber 资料关联到 :management。',
     ],
     'audiences' => [
         'list_success' => '通知受众已加载。',

@@ -17,6 +17,7 @@ return [
         'service_subscription_expired' => 'انتهت فترة السماح لاشتراكك في :service. فُرض حد التخزين المجاني (تمت إزالة :deleted ملف/ملفات).',
         'inference_unregistered_model' => 'تمت فوترة النموذج غير المسجل :resolved_model على :provider_slug بأسعار مؤقتة ($:input_per_million_usd / $:output_per_million_usd لكل مليون رمز). صنّفه في كتالوج النماذج لإتمام الفوترة.',
         'vtual_management_invite_received' => 'دعاك :inviter للانضمام إلى :management بدور :role.',
+        'vtual_management_creator_invite_received' => 'دعاك :inviter لربط ملفك الشخصي لـ vTuber بـ :management.',
     ],
     'audiences' => [
         'list_success' => 'تم تحميل جماهير الإشعارات.',

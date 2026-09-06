@@ -25,4 +25,17 @@ class NavigationRealtime
 
         event(new MenuTreeChanged($layout, $action));
     }
+
+    /**
+     * Targeted tree refresh for one viewer (e.g. vTual management membership
+     * changed). Shared channel; the SPA filters by target_user_id.
+     */
+    public function userTreeChanged(string $userId, string $action = 'membership'): void
+    {
+        if (! $this->enabled()) {
+            return;
+        }
+
+        event(new MenuTreeChanged('', $action, $userId));
+    }
 }

@@ -17,6 +17,7 @@ return [
         'service_subscription_expired' => ':service 구독 유예 기간이 종료되었습니다. 무료 등급 저장 용량이 적용됩니다(파일 :deleted개 삭제됨).',
         'inference_unregistered_model' => ':provider_slug의 미등록 모델 :resolved_model이(가) 임시 요금으로 청구되었습니다(1M당 입력 $:input_per_million_usd / 출력 $:output_per_million_usd). 모델 카탈로그에서 분류하여 청구를 확정하십시오.',
         'vtual_management_invite_received' => ':inviter 님이 :management에 :role(으)로 초대했습니다.',
+        'vtual_management_creator_invite_received' => ':inviter 님이 vTuber 프로필을 :management에 연결하도록 초대했습니다.',
     ],
     'audiences' => [
         'list_success' => '알림 대상 목록을 불러왔습니다.',

@@ -4,8 +4,10 @@ use App\Domain\Vtual\Http\Controllers\API\V1\ChannelClaimController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ChannelController;
 use App\Domain\Vtual\Http\Controllers\API\V1\CreatorClaimController;
 use App\Domain\Vtual\Http\Controllers\API\V1\CreatorController;
+use App\Domain\Vtual\Http\Controllers\API\V1\CreatorInviteRespondController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ExternalLinkController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ManagementController;
+use App\Domain\Vtual\Http\Controllers\API\V1\ManagementCreatorInviteController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ManagementInviteRespondController;
 use App\Domain\Vtual\Http\Controllers\API\V1\OrphanCreatorController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformApiProbeController;
@@ -18,11 +20,17 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
     Route::get('vtubers/{creator}', [VtuberProfileController::class, 'show'])
         ->name('vtubers.show');
 
+    // Management members over a linked creator also reach the profile here:
+    // Spatie permission middleware supports pipe-OR, and the policy narrows
+    // the management path (Staff view-only, Owner/Admin mutate).
+    Route::middleware('permission:view vtual creator|view vtual management')->group(function (): void {
+        Route::get('creators/{creator}', [CreatorController::class, 'show'])->whereUuid('creator')->name('creators.show');
+    });
+
     Route::middleware('permission:view vtual creator')->group(function (): void {
         Route::get('platforms', [PlatformController::class, 'index'])->name('platforms.index');
         Route::get('creators/owned', [CreatorController::class, 'owned'])->name('creators.owned');
         Route::get('creators', [CreatorController::class, 'index'])->name('creators.index');
-        Route::get('creators/{creator}', [CreatorController::class, 'show'])->whereUuid('creator')->name('creators.show');
         Route::get('creators/{creator}/channels', [ChannelController::class, 'index'])
             ->whereUuid('creator')
             ->name('creators.channels.index');
@@ -80,8 +88,13 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
             ->name('channel-claims.accept-anyway');
     });
 
-    Route::middleware('permission:edit vtual creator')->group(function (): void {
+    // Same OR-gate as show: management Owner/Admin may PATCH the linked
+    // profile without the Spatie creator permission (policy enforces role).
+    Route::middleware('permission:edit vtual creator|view vtual management')->group(function (): void {
         Route::patch('creators/{creator}', [CreatorController::class, 'update'])->whereUuid('creator')->name('creators.update');
+    });
+
+    Route::middleware('permission:edit vtual creator')->group(function (): void {
         // Absorb source into destination (owner on both or manage any).
         Route::post('creators/{creator}/merge', [CreatorController::class, 'merge'])
             ->whereUuid('creator')
@@ -140,6 +153,12 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
         Route::post('managements', [ManagementController::class, 'store'])->name('managements.store');
     });
 
+    // Staff orphan seed: no Owner member — claimable via an Owner-role invite.
+    Route::middleware('permission:manage any vtual resource')->group(function (): void {
+        Route::post('managements/orphan', [ManagementController::class, 'storeOrphan'])
+            ->name('managements.storeOrphan');
+    });
+
     Route::middleware('permission:edit vtual management')->group(function (): void {
         Route::patch('managements/{management}', [ManagementController::class, 'update'])
             ->whereUuid('management')
@@ -150,6 +169,14 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
         Route::delete('managements/{management}/creators/{creator}', [ManagementController::class, 'unassignCreator'])
             ->whereUuid(['management', 'creator'])
             ->name('managements.creators.unassign');
+    });
+
+    // Archive: the real gate is the policy (org Owner/Admin membership), not
+    // a Spatie permission — internal staff without membership must be denied.
+    Route::middleware('permission:view vtual management')->group(function (): void {
+        Route::delete('managements/{management}', [ManagementController::class, 'destroy'])
+            ->whereUuid('management')
+            ->name('managements.destroy');
     });
 
     Route::middleware('permission:view vtual management')->group(function (): void {
@@ -171,10 +198,36 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
         Route::patch('managements/{management}/members/{member}', [ManagementController::class, 'updateMember'])
             ->whereUuid(['management', 'member'])
             ->name('managements.members.update');
-        Route::delete('managements/{management}/members/{member}', [ManagementController::class, 'removeMember'])
-            ->whereUuid(['management', 'member'])
-            ->name('managements.members.destroy');
+        // Member removal is unified through invite cancel (accepted → revoked).
     });
+
+    // Creator-invite management (vTuber profile linking). Same gates as
+    // member invites: read via view, mutate via members permission.
+    Route::middleware('permission:view vtual management')->group(function (): void {
+        Route::get('managements/{management}/creator-invites', [ManagementCreatorInviteController::class, 'index'])
+            ->whereUuid('management')
+            ->name('managements.creatorInvites.index');
+        Route::get('managements/{management}/creator-invite-candidates', [ManagementCreatorInviteController::class, 'candidates'])
+            ->whereUuid('management')
+            ->name('managements.creatorInvites.candidates');
+    });
+
+    Route::middleware('permission:manage vtual management members')->group(function (): void {
+        Route::post('managements/{management}/creator-invites', [ManagementCreatorInviteController::class, 'store'])
+            ->whereUuid('management')
+            ->name('managements.creatorInvites.store');
+        Route::delete('managements/{management}/creator-invites/{invite}', [ManagementCreatorInviteController::class, 'destroy'])
+            ->whereUuid(['management', 'invite'])
+            ->name('managements.creatorInvites.destroy');
+    });
+
+    // Creator invite respond (any authenticated user; gated by email match in the service).
+    Route::get('creator-invites/respond/{token}', [CreatorInviteRespondController::class, 'show'])
+        ->name('creatorInvites.respond.show');
+    Route::post('creator-invites/respond/{token}/accept', [CreatorInviteRespondController::class, 'accept'])
+        ->name('creatorInvites.respond.accept');
+    Route::post('creator-invites/respond/{token}/decline', [CreatorInviteRespondController::class, 'decline'])
+        ->name('creatorInvites.respond.decline');
 
     // Invite respond (any authenticated user; gated by email match in the service).
     Route::get('invites/respond/{token}', [ManagementInviteRespondController::class, 'show'])

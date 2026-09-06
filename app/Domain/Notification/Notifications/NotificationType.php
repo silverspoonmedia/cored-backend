@@ -41,6 +41,10 @@ enum NotificationType: string
     // Personal: invited to join a vTual management org (deep-link to accept/decline).
     case VtualManagementInviteReceived = 'vtual_management_invite_received';
 
+    // Personal: invited to link/create a vTuber profile under a management org
+    // (deep-link to accept/decline, kind=creator).
+    case VtualManagementCreatorInviteReceived = 'vtual_management_creator_invite_received';
+
     /**
      * Bootstrap icon class rendered by the web bell.
      */
@@ -55,6 +59,7 @@ enum NotificationType: string
             self::ServiceSubscriptionExpired => 'bi bi-exclamation-triangle',
             self::InferenceUnregisteredModel => 'bi bi-cpu',
             self::VtualManagementInviteReceived => 'bi bi-envelope-paper',
+            self::VtualManagementCreatorInviteReceived => 'bi bi-envelope-paper-heart',
         };
     }
 
@@ -74,6 +79,7 @@ enum NotificationType: string
             self::ServiceSubscriptionGrace,
             self::ServiceSubscriptionExpired => [],
             self::VtualManagementInviteReceived => [],
+            self::VtualManagementCreatorInviteReceived => [],
         };
     }
 
@@ -100,6 +106,7 @@ enum NotificationType: string
             self::ServiceSubscriptionExpired => null,
             self::InferenceUnregisteredModel => 'inference-model-cards-table',
             self::VtualManagementInviteReceived => null,
+            self::VtualManagementCreatorInviteReceived => null,
         };
     }
 }

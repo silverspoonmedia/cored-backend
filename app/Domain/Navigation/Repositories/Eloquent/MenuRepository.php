@@ -14,6 +14,7 @@ use App\Domain\Navigation\Support\MenuLayout;
 use App\Support\DomainAccess\DomainAccessService;
 use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;
+use App\Domain\Vtual\Models\ManagementMember;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -40,6 +41,19 @@ class MenuRepository implements MenuRepositoryInterface
      * Sentinel for grouping root-level menus (parent_id === null).
      */
     private const ROOT = '__root__';
+
+    /**
+     * Menu routes whose visibility is granted to vTual management members
+     * (any org membership) in addition to the node's stored role gate.
+     * Used by the membership-based visibility rule so an org member who is
+     * not Root/Admin still sees the vTual Management menu entry.
+     *
+     * @var list<string>
+     */
+    private const MANAGEMENT_MEMBER_ROUTES = [
+        'vtual.profiles.index',    // parent "vTual" (workspace sidebar)
+        'vtual.managements.index', // child "Managements" under that parent
+    ];
 
     public function __construct(
         private readonly ProductActivationService $productActivations,
@@ -666,6 +680,23 @@ class MenuRepository implements MenuRepositoryInterface
                     return false;
                 }
             }
+        }
+
+        // vTual management membership gate: management members may not hold a
+        // staff role, so nodes in MANAGEMENT_MEMBER_ROUTES (including their
+        // ancestors) are also granted to any user with an org membership.
+        if ($node['route'] !== null && in_array($node['route'], self::MANAGEMENT_MEMBER_ROUTES, true)) {
+            if ($user === null) {
+                return false;
+            }
+
+            if ($user->hasAnyRole($node['role_names'])) {
+                return true;
+            }
+
+            return ManagementMember::query()
+                ->where('user_id', $user->id)
+                ->exists();
         }
 
         if ($node['role_names'] === []) {
