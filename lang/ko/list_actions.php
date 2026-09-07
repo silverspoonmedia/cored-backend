@@ -12,6 +12,7 @@ return [
     'remove' => '제거',
     'confirm' => [
         'archive_management' => '이 매니지먼트를 보관 처리하시겠습니까?',
+        'cancel_event' => '이 이벤트를 취소하시겠습니까?',
         'delete_service' => '이 서비스를 삭제하시겠습니까?',
         'delete_inference' => '이 레코드를 삭제하시겠습니까? 되돌릴 수 없습니다.',
         'delete_named_title' => '":name" 삭제',

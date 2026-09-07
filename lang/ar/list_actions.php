@@ -12,6 +12,7 @@ return [
     'remove' => 'إزالة',
     'confirm' => [
         'archive_management' => 'هل تريد أرشفة هذه الإدارة؟',
+        'cancel_event' => 'هل تريد إلغاء هذه الفعالية؟',
         'delete_service' => 'هل تريد حذف هذه الخدمة؟',
         'delete_inference' => 'هل تريد حذف هذا السجل؟ لا يمكن التراجع عن ذلك.',
         'delete_named_title' => 'حذف ":name"',

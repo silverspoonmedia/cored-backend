@@ -12,6 +12,7 @@ return [
     'remove' => 'Убрать',
     'confirm' => [
         'archive_management' => 'Архивировать этот менеджмент?',
+        'cancel_event' => 'Отменить это событие?',
         'delete_service' => 'Удалить этот сервис?',
         'delete_inference' => 'Удалить эту запись? Это действие нельзя отменить.',
         'delete_named_title' => 'Удалить «:name»',

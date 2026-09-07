@@ -12,6 +12,7 @@ return [
     'remove' => '削除',
     'confirm' => [
         'archive_management' => 'このマネジメントをアーカイブしますか？',
+        'cancel_event' => 'このイベントを中止しますか？',
         'delete_service' => 'このサービスを削除しますか？',
         'delete_inference' => 'このレコードを削除しますか？元に戻せません。',
         'delete_named_title' => '「:name」を削除',

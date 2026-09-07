@@ -31,6 +31,7 @@ return [
         'stats_success' => '公开平台统计已加载。',
         'live_success' => '公开直播列表已加载。',
         'schedule_success' => '公开即将开始的日程已加载。',
+        'events_success' => '公开即将开始的活动已加载。',
         'management_show_success' => '公开管理机构资料已加载。',
     ],
     'merge' => [
@@ -106,6 +107,11 @@ return [
         'creator_invite_not_owner' => '被邀请的账号不是所选 vTuber 资料的所有者。',
         'creator_already_linked' => '该 vTuber 资料已关联到此管理项。',
         'creator_invite_name_required' => '新 vTuber 资料的显示名称为必填项。',
+        'events_list_success' => '管理机构活动已加载。',
+        'event_created' => '活动已创建。',
+        'event_cancelled' => '活动已取消。',
+        'event_not_found' => '未找到该管理机构的活动。',
+        'event_not_actionable' => '此活动已无法更改。',
     ],
     'mail' => [
         'invite_subject' => '邀请加入 :management',

@@ -63,6 +63,7 @@ class MenuSeederTest extends TestCase
                         'children' => [
                             ['name' => 'My vTuber profiles', 'route' => 'vtual.profiles.index', 'type' => 'c', 'children' => []],
                             ['name' => 'Managements', 'route' => 'vtual.managements.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Events', 'route' => 'vtual.events.index', 'type' => 'c', 'children' => []],
                         ],
                     ],
                 ],
@@ -251,7 +252,7 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(48, Menu::query()->count());
+        $this->assertSame(49, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -260,7 +261,7 @@ class MenuSeederTest extends TestCase
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(48, Menu::query()->count());
+        $this->assertSame(49, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),

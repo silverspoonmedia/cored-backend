@@ -72,6 +72,10 @@ class ChannelServiceTest extends TestCase
         $this->youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
         $this->twitch = Platform::query()->where('key', 'twitch')->firstOrFail();
         Bus::fake();
+
+        // Activation hooks fire before per-test Http::fake() registration —
+        // fake the WebSub hub up front so no test ever reaches the real hub.
+        Http::fake(['pubsubhubbub.appspot.com/*' => Http::response('', 202)]);
     }
 
     #[Test]

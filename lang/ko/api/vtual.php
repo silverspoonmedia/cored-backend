@@ -31,6 +31,7 @@ return [
         'stats_success' => '공개 플랫폼 통계를 불러왔습니다.',
         'live_success' => '공개 라이브 목록을 불러왔습니다.',
         'schedule_success' => '공개 예정 일정을 불러왔습니다.',
+        'events_success' => '공개 예정 이벤트를 불러왔습니다.',
         'management_show_success' => '공개 매니지먼트 프로필을 불러왔습니다.',
     ],
     'merge' => [
@@ -106,6 +107,11 @@ return [
         'creator_invite_not_owner' => '초대된 계정은 선택한 vTuber 프로필의 소유자가 아닙니다.',
         'creator_already_linked' => '해당 vTuber 프로필은 이미 이 매니지먼트에 연결되어 있습니다.',
         'creator_invite_name_required' => '새 vTuber 프로필의 표시 이름은 필수입니다.',
+        'events_list_success' => '매니지먼트 이벤트를 불러왔습니다.',
+        'event_created' => '이벤트가 생성되었습니다.',
+        'event_cancelled' => '이벤트가 취소되었습니다.',
+        'event_not_found' => '이 매니지먼트에서 이벤트를 찾을 수 없습니다.',
+        'event_not_actionable' => '이 이벤트는 더 이상 변경할 수 없습니다.',
     ],
     'mail' => [
         'invite_subject' => ':management 참여 초대',

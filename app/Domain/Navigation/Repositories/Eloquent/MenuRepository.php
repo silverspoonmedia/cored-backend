@@ -53,6 +53,7 @@ class MenuRepository implements MenuRepositoryInterface
     private const MANAGEMENT_MEMBER_ROUTES = [
         'vtual.profiles.index',    // parent "vTual" (workspace sidebar)
         'vtual.managements.index', // child "Managements" under that parent
+        'vtual.events.index',      // child "Events" under that parent
     ];
 
     public function __construct(

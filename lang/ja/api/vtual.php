@@ -31,6 +31,7 @@ return [
         'stats_success' => '公開プラットフォーム統計を読み込みました。',
         'live_success' => '現在ライブ中の一覧を読み込みました。',
         'schedule_success' => '公開の今後のスケジュールを読み込みました。',
+        'events_success' => '公開の今後のイベントを読み込みました。',
         'management_show_success' => '公開マネジメントプロフィールを読み込みました。',
     ],
     'merge' => [
@@ -106,6 +107,11 @@ return [
         'creator_invite_not_owner' => '招待されたアカウントは選択された vTuber プロフィールの所有者ではありません。',
         'creator_already_linked' => 'その vTuber プロフィールは既にこのマネジメントに紐付いています。',
         'creator_invite_name_required' => '新しい vTuber プロフィールの表示名は必須です。',
+        'events_list_success' => 'マネジメントイベントを読み込みました。',
+        'event_created' => 'イベントを作成しました。',
+        'event_cancelled' => 'イベントを中止しました。',
+        'event_not_found' => 'このマネジメントのイベントが見つかりません。',
+        'event_not_actionable' => 'このイベントはこれ以上変更できません。',
     ],
     'mail' => [
         'invite_subject' => ':management への招待',

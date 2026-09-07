@@ -187,6 +187,34 @@ class ContentService
     }
 
     /**
+     * End every live content row of a channel (Twitch stream.offline / poll
+     * backstop). Idempotent — already-ended rows are not touched and never
+     * overwrite an existing ended_at.
+     */
+    public function endLiveStreamsForChannel(Channel $primaryChannel): int
+    {
+        return (int) DB::transaction(function () use ($primaryChannel): int {
+            $liveRows = Content::query()
+                ->where('platform_id', $primaryChannel->platform_id)
+                ->where('channel_id', $primaryChannel->id)
+                ->where('type', ContentType::Live)
+                ->where('status', ContentStatus::Live)
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($liveRows as $content) {
+                $content->forceFill([
+                    'type' => ContentType::Archive,
+                    'status' => ContentStatus::Ended,
+                    'ended_at' => $content->ended_at ?? now(),
+                ])->save();
+            }
+
+            return $liveRows->count();
+        }, 3);
+    }
+
+    /**
      * Link an additional registered channel as an appearance (collaborator or network).
      * Cannot attach role=primary — use setPrimary.
      */

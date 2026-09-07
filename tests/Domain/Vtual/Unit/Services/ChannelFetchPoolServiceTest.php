@@ -57,6 +57,10 @@ class ChannelFetchPoolServiceTest extends TestCase
             'vtual.channel_pool.max_wait_minutes' => 15,
             'vtual.http.batch.channels' => 50,
         ]);
+
+        // Activation hooks fire before per-test Http::fake() registration —
+        // fake the WebSub hub up front so no test ever reaches the real hub.
+        Http::fake(['pubsubhubbub.appspot.com/*' => Http::response('', 202)]);
     }
 
     #[Test]

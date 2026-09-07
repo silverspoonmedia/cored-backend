@@ -76,6 +76,9 @@ class ChannelClaimVerifyDiscordApiTest extends TestCase
                     'verified' => true,
                 ],
             ], 200),
+            // Channel activation subscribes the channel to YouTube WebSub;
+            // never hit the real hub in tests.
+            'pubsubhubbub.appspot.com/*' => Http::response('', 202),
         ]);
 
         $this->activateYoutubeCredential($owner);

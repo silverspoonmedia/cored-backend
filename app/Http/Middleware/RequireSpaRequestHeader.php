@@ -26,6 +26,7 @@ class RequireSpaRequestHeader
         'api/v1/payments/providers/midtrans/webhook',
         'api/v1/payments/providers/ipaymu/webhook',
         'api/v1/vtual/webhooks/youtube-websub',
+        'api/v1/vtual/webhooks/twitch-eventsub',
     ];
 
     public function handle(Request $request, Closure $next): SymfonyResponse

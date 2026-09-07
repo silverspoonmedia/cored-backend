@@ -3,6 +3,7 @@
 namespace App\Domain\Vtual\Http\Controllers\API\V1;
 
 use App\Domain\Vtual\Http\Resources\PublicContentResource;
+use App\Domain\Vtual\Http\Resources\PublicEventResource;
 use App\Domain\Vtual\Http\Resources\PublicVtuberProfileResource;
 use App\Domain\Vtual\Http\Resources\PublicVtuberResource;
 use App\Domain\Vtual\Services\VtuberProfileService;
@@ -97,6 +98,9 @@ class PublicVtuberController extends Controller
             'schedule' => $this->resolveResource(
                 PublicContentResource::collection($this->profiles->upcomingSchedule())
             ),
+            'events' => $this->resolveResource(
+                PublicEventResource::collection($this->profiles->upcomingEvents())
+            ),
             'stats' => $this->profiles->publicStats(),
         ]);
 
@@ -127,5 +131,14 @@ class PublicVtuberController extends Controller
                 PublicContentResource::collection($this->profiles->upcomingSchedule())
             ),
         ], __('api/vtual.public.schedule_success'));
+    }
+
+    public function events(): JsonResponse
+    {
+        return $this->successResponse([
+            'items' => $this->resolveResource(
+                PublicEventResource::collection($this->profiles->upcomingEvents())
+            ),
+        ], __('api/vtual.public.events_success'));
     }
 }

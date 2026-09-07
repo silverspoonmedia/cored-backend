@@ -7,10 +7,12 @@ use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Enums\EntityStatus;
+use App\Domain\Vtual\Enums\VtualEventStatus;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Content;
 use App\Domain\Vtual\Models\Creator;
+use App\Domain\Vtual\Models\VtualEvent;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Number;
@@ -180,6 +182,25 @@ class VtuberProfileService
             })
             ->with(['channel', 'creator', 'platform'])
             ->orderBy('scheduled_at')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /**
+     * Upcoming management-submitted events (scheduled/live, starts_at in the
+     * future), soonest first. Powers the landing events section; empty → SPA
+     * falls back to the derived scheduled-streams view.
+     *
+     * @return Collection<int, VtualEvent>
+     */
+    public function upcomingEvents(int $limit = 6): Collection
+    {
+        return VtualEvent::query()
+            ->whereIn('status', VtualEventStatus::publicVisible())
+            ->where('starts_at', '>=', now())
+            ->with(['management', 'creator'])
+            ->orderBy('starts_at')
+            ->orderBy('is_featured', 'desc')
             ->limit(max(1, $limit))
             ->get();
     }

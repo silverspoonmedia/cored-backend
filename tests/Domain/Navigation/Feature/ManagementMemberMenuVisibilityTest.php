@@ -71,6 +71,14 @@ class ManagementMemberMenuVisibilityTest extends TestCase
         ], 'append', null);
         $repository->syncRoles($productsManagements, []);
 
+        $productsEvents = $repository->createMenu([
+            'name' => 'Events',
+            'type' => 'c',
+            'route' => 'vtual.events.index',
+            'parent_id' => $productsParent->id,
+        ], 'append', null);
+        $repository->syncRoles($productsEvents, []);
+
         // Administration branch: staff-only, untouched by rule 7.
         $adminHeader = $repository->createMenu([
             'name' => 'Administration',
@@ -153,6 +161,19 @@ class ManagementMemberMenuVisibilityTest extends TestCase
         $this->assertFalse($this->hasProductsManagements($user->fresh()));
     }
 
+    public function test_member_sees_products_events_and_plain_user_does_not(): void
+    {
+        $member = $this->userWithMembership();
+
+        $this->assertTrue($this->hasProductsEvents($member));
+
+        $plain = User::factory()->create();
+        $plain->assignRole('User');
+        app(ProductActivationService::class)->activateImplicit($plain, 'Vtual');
+
+        $this->assertFalse($this->hasProductsEvents($plain->fresh()));
+    }
+
     private function userWithMembership(string $role = 'User'): User
     {
         $user = User::factory()->create();
@@ -194,6 +215,33 @@ class ManagementMemberMenuVisibilityTest extends TestCase
 
                 foreach ($product['children'] as $child) {
                     if (($child['name'] ?? null) === 'Managements') {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * True when the viewer sees the member-only Products "Events" node
+     * (Products → vTual → Events, rule 7 membership grant).
+     */
+    private function hasProductsEvents(User $user): bool
+    {
+        foreach ($this->tree($user) as $group) {
+            if (($group['name'] ?? null) !== 'Products') {
+                continue;
+            }
+
+            foreach ($group['children'] as $product) {
+                if (($product['name'] ?? null) !== 'vTual') {
+                    continue;
+                }
+
+                foreach ($product['children'] as $child) {
+                    if (($child['name'] ?? null) === 'Events') {
                         return true;
                     }
                 }

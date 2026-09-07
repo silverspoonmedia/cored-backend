@@ -18,6 +18,7 @@ use App\Support\Product\Services\ProductActivationService;
 use App\Support\SpaPublicUrl;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
@@ -50,6 +51,10 @@ class VtuberProfileApiTest extends TestCase
         $this->channels = app(ChannelService::class);
         $this->activations = app(ProductActivationService::class);
         $this->youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
+
+        // Activation hooks fire before per-test Http::fake() registration —
+        // fake the WebSub hub up front so no test ever reaches the real hub.
+        Http::fake(['pubsubhubbub.appspot.com/*' => Http::response('', 202)]);
     }
 
     #[Test]

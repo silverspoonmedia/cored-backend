@@ -7,6 +7,7 @@ use App\Domain\Vtual\Models\Content;
 use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Models\Management;
 use App\Domain\Vtual\Models\PlatformCredential;
+use App\Domain\Vtual\Models\VtualEvent;
 use App\Domain\Vtual\Policies\ChannelPolicy;
 use App\Domain\Vtual\Policies\CreatorPolicy;
 use App\Domain\Vtual\Policies\ManagementPolicy;
@@ -32,7 +33,7 @@ class VtualServiceProvider extends ServiceProvider
         // Forever landing cache: flush on any write that can change the payload
         // (cache policy §3 — invalidate on data change, rebuild on next read).
         $flushLanding = static fn () => PublicLandingCache::flush();
-        foreach ([Content::class, Creator::class, Channel::class] as $model) {
+        foreach ([Content::class, Creator::class, Channel::class, VtualEvent::class] as $model) {
             $model::saved($flushLanding);
             $model::deleted($flushLanding);
         }

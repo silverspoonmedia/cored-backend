@@ -519,6 +519,77 @@ class VtualPublicApiTest extends TestCase
         $this->assertSame(['Future stream'], collect($titles)->pluck('title')->all());
     }
 
+    #[Test]
+    public function guest_can_load_public_events(): void
+    {
+        $management = \App\Domain\Vtual\Models\Management::query()->create([
+            'slug' => 'org-alpha',
+            'name' => 'Org Alpha',
+            'status' => EntityStatus::Active,
+        ]);
+
+        \App\Domain\Vtual\Models\VtualEvent::query()->create([
+            'management_id' => $management->id,
+            'slug' => 'anniversary-live',
+            'title' => 'Anniversary Live',
+            'starts_at' => now()->addDays(2),
+            'status' => \App\Domain\Vtual\Enums\VtualEventStatus::Scheduled->value,
+        ]);
+        \App\Domain\Vtual\Models\VtualEvent::query()->create([
+            'management_id' => $management->id,
+            'slug' => 'past-event',
+            'title' => 'Past event',
+            'starts_at' => now()->subDay(),
+            'status' => \App\Domain\Vtual\Enums\VtualEventStatus::Ended->value,
+        ]);
+        \App\Domain\Vtual\Models\VtualEvent::query()->create([
+            'management_id' => $management->id,
+            'slug' => 'cancelled-event',
+            'title' => 'Cancelled event',
+            'starts_at' => now()->addDay(),
+            'status' => \App\Domain\Vtual\Enums\VtualEventStatus::Cancelled->value,
+        ]);
+
+        $items = $this->getJson('/api/v1/vtual/public/events')
+            ->assertOk()
+            ->json('data.items');
+
+        $this->assertSame(['Anniversary Live'], collect($items)->pluck('title')->all());
+        $this->assertSame('Org Alpha', $items[0]['management']['name']);
+        $this->assertSame('scheduled', $items[0]['status']);
+        $this->assertArrayNotHasKey('id', $items[0]);
+    }
+
+    #[Test]
+    public function landing_exposes_events_key_and_flushes_on_event_save(): void
+    {
+        \App\Domain\Vtual\Support\PublicLandingCache::flush();
+
+        $this->getJson('/api/v1/vtual/public/landing')
+            ->assertOk()
+            ->assertJsonPath('data.events', []);
+
+        $management = \App\Domain\Vtual\Models\Management::query()->create([
+            'slug' => 'org-beta',
+            'name' => 'Org Beta',
+            'status' => EntityStatus::Active,
+        ]);
+
+        \App\Domain\Vtual\Models\VtualEvent::query()->create([
+            'management_id' => $management->id,
+            'slug' => 'debut-showcase',
+            'title' => 'Debut Showcase',
+            'starts_at' => now()->addDays(5),
+            'status' => \App\Domain\Vtual\Enums\VtualEventStatus::Scheduled->value,
+        ]);
+
+        $payload = $this->getJson('/api/v1/vtual/public/landing')
+            ->assertOk()
+            ->json('data.events');
+
+        $this->assertSame('Debut Showcase', $payload[0]['title']);
+    }
+
     private function activeCreatorWithPublicChannel(string $name, int $subscribers): Creator
     {
         $creator = Creator::query()->create([

@@ -12,6 +12,7 @@ return [
     'remove' => '移除',
     'confirm' => [
         'archive_management' => '归档此管理项？',
+        'cancel_event' => '取消此活动？',
         'delete_service' => '删除此服务？',
         'delete_inference' => '删除此记录？此操作无法撤销。',
         'delete_named_title' => '删除“:name”',

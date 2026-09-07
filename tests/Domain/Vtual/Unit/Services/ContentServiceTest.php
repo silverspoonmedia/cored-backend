@@ -400,4 +400,39 @@ class ContentServiceTest extends TestCase
 
         return $user;
     }
+
+    #[Test]
+    public function end_live_streams_for_channel_flips_only_live_rows_and_is_idempotent(): void
+    {
+        $channel = $this->seedChannel('UCENDCHECK1', 'endcheck', 'End Check');
+
+        $live = $this->contents->upsertFromPrimary($channel, [
+            'external_id' => 'live-session-1',
+            'type' => ContentType::Live->value,
+            'status' => ContentStatus::Live->value,
+            'title' => 'Live now',
+        ]);
+        $alreadyEnded = $this->contents->upsertFromPrimary($channel, [
+            'external_id' => 'ended-session-0',
+            'type' => ContentType::Archive->value,
+            'status' => ContentStatus::Ended->value,
+            'ended_at' => now()->subHour(),
+        ]);
+
+        $ended = $this->contents->endLiveStreamsForChannel($channel);
+        $this->assertSame(1, $ended);
+
+        $live->refresh();
+        $this->assertSame(ContentType::Archive, $live->type);
+        $this->assertSame(ContentStatus::Ended, $live->status);
+        $this->assertNotNull($live->ended_at);
+
+        // Already-ended rows untouched (no overwrite of ended_at).
+        $alreadyEnded->refresh();
+        $this->assertSame(ContentStatus::Ended, $alreadyEnded->status);
+        $this->assertTrue($alreadyEnded->ended_at->lt(now()->subMinutes(30)));
+
+        // Idempotent second run.
+        $this->assertSame(0, $this->contents->endLiveStreamsForChannel($channel));
+    }
 }

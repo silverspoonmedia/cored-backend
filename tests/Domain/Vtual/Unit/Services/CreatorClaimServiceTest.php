@@ -12,6 +12,7 @@ use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Enums\CreatorClaimVerifiedVia;
 use App\Domain\Vtual\Enums\CreatorMemberRole;
 use App\Domain\Vtual\Events\CreatorClaimProgressChanged;
+use App\Domain\Vtual\Events\PlatformCredentialChanged;
 use App\Domain\Vtual\Models\CreatorClaim;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
@@ -72,6 +73,10 @@ class CreatorClaimServiceTest extends TestCase
             'vtual.claim.ttl_hours' => 24,
             'vtual.claim.max_pending_per_user' => 5,
         ]);
+
+        // Activation hooks fire before per-test Http::fake() registration —
+        // fake the WebSub hub up front so no test ever reaches the real hub.
+        Http::fake(['pubsubhubbub.appspot.com/*' => Http::response('', 202)]);
     }
 
     #[Test]
@@ -508,7 +513,9 @@ class CreatorClaimServiceTest extends TestCase
             ],
             'vtual.claim.verify_cooldown_seconds' => 0,
         ]);
-        Event::fake([CreatorClaimProgressChanged::class]);
+        // PlatformCredentialChanged fires from activateYoutubeCredential()
+        // below (broadcast-gated only) — fake it so Pusher is never hit.
+        Event::fake([CreatorClaimProgressChanged::class, PlatformCredentialChanged::class]);
 
         $this->activateYoutubeCredential();
         [$orphan, $channel] = $this->seedOrphanWithChannel();

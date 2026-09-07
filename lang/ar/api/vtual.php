@@ -31,6 +31,7 @@ return [
         'stats_success' => 'تم تحميل إحصاءات المنصة العامة.',
         'live_success' => 'تم تحميل قائمة البثوث المباشرة الآن.',
         'schedule_success' => 'تم تحميل جدول البثوث القادمة.',
+        'events_success' => 'تم تحميل الفعاليات القادمة العامة.',
         'management_show_success' => 'تم تحميل الملف العام لجهة الإدارة.',
     ],
     'merge' => [
@@ -106,6 +107,11 @@ return [
         'creator_invite_not_owner' => 'الحساب المدعو ليس مالك ملف vTuber المحدد.',
         'creator_already_linked' => 'ملف vTuber هذا مرتبط بالفعل بهذه الإدارة.',
         'creator_invite_name_required' => 'اسم العرض لملف vTuber الجديد مطلوب.',
+        'events_list_success' => 'تم تحميل فعاليات الإدارة.',
+        'event_created' => 'تم إنشاء الفعالية.',
+        'event_cancelled' => 'تم إلغاء الفعالية.',
+        'event_not_found' => 'لم يتم العثور على الفعالية لهذه الإدارة.',
+        'event_not_actionable' => 'لا يمكن تغيير هذه الفعالية بعد الآن.',
     ],
     'mail' => [
         'invite_subject' => 'دعوة للانضمام إلى :management',

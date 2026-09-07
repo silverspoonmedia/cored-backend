@@ -57,6 +57,10 @@ class ChannelClaimServiceTest extends TestCase
             'vtual.channel_claim.ttl_hours' => 24,
             'vtual.channel_claim.token_prefix' => 'vtual-ch-',
         ]);
+
+        // Activation hooks fire before per-test Http::fake() registration —
+        // fake the WebSub hub up front so no test ever reaches the real hub.
+        Http::fake(['pubsubhubbub.appspot.com/*' => Http::response('', 202)]);
     }
 
     #[Test]

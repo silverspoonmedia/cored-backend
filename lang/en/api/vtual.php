@@ -31,6 +31,7 @@ return [
         'stats_success' => 'Public platform stats loaded.',
         'live_success' => 'Public live-now list loaded.',
         'schedule_success' => 'Public upcoming schedule loaded.',
+        'events_success' => 'Public upcoming events loaded.',
         'management_show_success' => 'Public management profile loaded.',
     ],
     'merge' => [
@@ -106,6 +107,11 @@ return [
         'creator_invite_not_owner' => 'The invited account does not own the selected vTuber profile.',
         'creator_already_linked' => 'That vTuber profile is already linked to this management.',
         'creator_invite_name_required' => 'Display name for the new vTuber profile is required.',
+        'events_list_success' => 'Management events loaded.',
+        'event_created' => 'Event created.',
+        'event_cancelled' => 'Event cancelled.',
+        'event_not_found' => 'Event not found for this management.',
+        'event_not_actionable' => 'This event can no longer be changed.',
     ],
     'mail' => [
         'invite_subject' => 'Invitation to join :management',

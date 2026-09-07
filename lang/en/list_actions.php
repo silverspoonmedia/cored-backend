@@ -12,6 +12,7 @@ return [
     'remove' => 'Remove',
     'confirm' => [
         'archive_management' => 'Archive this management?',
+        'cancel_event' => 'Cancel this event?',
         'delete_service' => 'Delete this service?',
         'delete_inference' => 'Delete this record? This cannot be undone.',
         'delete_named_title' => 'Delete ":name"',

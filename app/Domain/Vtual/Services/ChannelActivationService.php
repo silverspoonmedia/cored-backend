@@ -11,12 +11,14 @@ use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
 
 /**
- * Single entry for pending → active promotion and YouTube post-activation hooks.
+ * Single entry for pending → active promotion and platform post-activation hooks
+ * (YouTube WebSub + content backfill, Twitch EventSub).
  */
 class ChannelActivationService
 {
     public function __construct(
         private readonly YoutubeWebSubSubscriptionService $websub,
+        private readonly TwitchEventSubSubscriptionService $eventsub,
     ) {}
 
     /**
@@ -53,7 +55,8 @@ class ChannelActivationService
     }
 
     /**
-     * WebSub subscribe + initial content backfill job for active YouTube channels.
+     * Platform post-activation hooks: YouTube WebSub subscribe + initial
+     * content backfill job; Twitch EventSub subscribe.
      */
     public function applyYoutubeActivationHooks(Channel $channel): void
     {
@@ -63,12 +66,18 @@ class ChannelActivationService
             return;
         }
 
-        if ($this->platformKey($platform) !== PlatformKey::Youtube) {
+        $key = $this->platformKey($platform);
+
+        if ($key === PlatformKey::Youtube) {
+            $this->websub->subscribe($channel);
+            RunChannelInitialContentBackfillJob::dispatch((string) $channel->id);
+
             return;
         }
 
-        $this->websub->subscribe($channel);
-        RunChannelInitialContentBackfillJob::dispatch((string) $channel->id);
+        if ($key === PlatformKey::Twitch) {
+            $this->eventsub->subscribe($channel);
+        }
     }
 
     /**

@@ -266,6 +266,13 @@ return [
         'max_body_bytes' => 1_048_576,
     ],
 
+    'eventsub' => [
+        'renew_before_hours' => 24,
+        'max_body_bytes' => 1_048_576,
+        'dedupe_ttl_hours' => 6,
+        'repair_limit' => 50,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Channel archive / restore rate limits

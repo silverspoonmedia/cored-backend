@@ -8,6 +8,7 @@ use App\Domain\Vtual\Http\Controllers\API\V1\CreatorInviteRespondController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ExternalLinkController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ManagementController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ManagementCreatorInviteController;
+use App\Domain\Vtual\Http\Controllers\API\V1\ManagementEventController;
 use App\Domain\Vtual\Http\Controllers\API\V1\ManagementInviteRespondController;
 use App\Domain\Vtual\Http\Controllers\API\V1\OrphanCreatorController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PlatformApiProbeController;
@@ -219,6 +220,24 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
         Route::delete('managements/{management}/creator-invites/{invite}', [ManagementCreatorInviteController::class, 'destroy'])
             ->whereUuid(['management', 'invite'])
             ->name('managements.creatorInvites.destroy');
+    });
+
+    // Management-submitted events. Mutations reuse the members permission +
+    // org Owner/Admin policy gate (same chain as member/creator invites).
+    Route::get('events', [ManagementEventController::class, 'index'])
+        ->middleware('permission:view vtual management')
+        ->name('events.index');
+    Route::get('managements/{management}/events', [ManagementEventController::class, 'managementIndex'])
+        ->middleware('permission:view vtual management')
+        ->whereUuid('management')
+        ->name('managements.events.index');
+    Route::middleware('permission:manage vtual management members')->group(function (): void {
+        Route::post('managements/{management}/events', [ManagementEventController::class, 'store'])
+            ->whereUuid('management')
+            ->name('managements.events.store');
+        Route::delete('managements/{management}/events/{event}', [ManagementEventController::class, 'destroy'])
+            ->whereUuid(['management', 'event'])
+            ->name('managements.events.destroy');
     });
 
     // Creator invite respond (any authenticated user; gated by email match in the service).

@@ -31,6 +31,7 @@ return [
         'stats_success' => 'Публичная статистика платформы загружена.',
         'live_success' => 'Публичный список трансляций загружен.',
         'schedule_success' => 'Публичное расписание загружено.',
+        'events_success' => 'Публичные предстоящие события загружены.',
         'management_show_success' => 'Публичный профиль менеджмента загружен.',
     ],
     'merge' => [
@@ -106,6 +107,11 @@ return [
         'creator_invite_not_owner' => 'Приглашённый аккаунт не является владельцем выбранного профиля vTuber.',
         'creator_already_linked' => 'Этот профиль vTuber уже привязан к этому менеджменту.',
         'creator_invite_name_required' => 'Требуется отображаемое имя для нового профиля vTuber.',
+        'events_list_success' => 'События менеджмента загружены.',
+        'event_created' => 'Событие создано.',
+        'event_cancelled' => 'Событие отменено.',
+        'event_not_found' => 'Событие для этого менеджмента не найдено.',
+        'event_not_actionable' => 'Это событие больше нельзя изменить.',
     ],
     'mail' => [
         'invite_subject' => 'Приглашение в :management',

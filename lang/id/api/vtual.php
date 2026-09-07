@@ -31,6 +31,7 @@ return [
         'stats_success' => 'Statistik platform publik berhasil dimuat.',
         'live_success' => 'Daftar live saat ini berhasil dimuat.',
         'schedule_success' => 'Jadwal mendatang publik berhasil dimuat.',
+        'events_success' => 'Acara mendatang publik berhasil dimuat.',
         'management_show_success' => 'Profil management publik berhasil dimuat.',
     ],
     'merge' => [
@@ -106,6 +107,11 @@ return [
         'creator_invite_not_owner' => 'Akun yang diundang bukan pemilik profil vTuber yang dipilih.',
         'creator_already_linked' => 'Profil vTuber tersebut sudah tertaut ke management ini.',
         'creator_invite_name_required' => 'Nama tampilan profil vTuber baru wajib diisi.',
+        'events_list_success' => 'Acara management berhasil dimuat.',
+        'event_created' => 'Acara berhasil dibuat.',
+        'event_cancelled' => 'Acara berhasil dibatalkan.',
+        'event_not_found' => 'Acara tidak ditemukan untuk management ini.',
+        'event_not_actionable' => 'Acara ini tidak dapat diubah lagi.',
     ],
     'mail' => [
         'invite_subject' => 'Undangan bergabung ke :management',

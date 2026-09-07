@@ -12,6 +12,7 @@ return [
     'remove' => 'Hapus',
     'confirm' => [
         'archive_management' => 'Arsipkan manajemen ini?',
+        'cancel_event' => 'Batalkan acara ini?',
         'delete_service' => 'Hapus layanan ini?',
         'delete_inference' => 'Hapus data ini? Tindakan ini tidak dapat dibatalkan.',
         'delete_named_title' => 'Hapus ":name"',

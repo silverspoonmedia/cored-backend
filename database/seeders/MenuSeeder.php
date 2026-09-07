@@ -179,6 +179,19 @@ class MenuSeeder extends Seeder
                                 // this into an open node — do not do that.
                                 'roles' => [],
                             ],
+                            [
+                                'name' => $this->translations('Events', 'Acara', 'イベント'),
+                                'icon' => 'bi bi-calendar-event',
+                                'route' => 'vtual.events.index',
+                                'type' => 'c',
+                                // Duplicate of the Managements node's rule-7
+                                // pattern: empty stored roles + the route in
+                                // MANAGEMENT_MEMBER_ROUTES scope visibility to
+                                // org members (event submission is an org
+                                // Owner/Admin power). Do not remove the route
+                                // from that constant — that would open the node.
+                                'roles' => [],
+                            ],
                         ],
                     ],
                 ],
@@ -664,6 +677,12 @@ class MenuSeeder extends Seeder
                 'zh_CN' => '管理机构',
                 'ar' => 'جهات الإدارة',
                 'ru' => 'Управляющие команды',
+            ],
+            'Events' => [
+                'ko' => '이벤트',
+                'zh_CN' => '活动',
+                'ar' => 'الفعاليات',
+                'ru' => 'События',
             ],
             'Platform credentials' => [
                 'ko' => '플랫폼 자격 증명',
