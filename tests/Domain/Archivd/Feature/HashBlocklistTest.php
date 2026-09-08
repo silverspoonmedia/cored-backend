@@ -10,6 +10,7 @@ use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -127,6 +128,40 @@ class HashBlocklistTest extends TestCase
             ->assertJsonPath('data.is_hash_blocked', true);
     }
 
+    public function test_browse_batches_hash_blocklist_into_one_query(): void
+    {
+        $user = $this->userWithRole('User');
+        $blockedChecksum = hash('sha256', 'browse-blocked');
+        $cleanA = hash('sha256', 'browse-clean-a');
+        $cleanB = hash('sha256', 'browse-clean-b');
+
+        app(HashBlocklistService::class)->block($blockedChecksum);
+
+        $blocked = $this->makeFile($user, $blockedChecksum);
+        $okA = $this->makeFile($user, $cleanA);
+        $okB = $this->makeFile($user, $cleanB);
+
+        $blocklistQueries = 0;
+        DB::listen(function ($query) use (&$blocklistQueries): void {
+            if (str_contains((string) $query->sql, 'archivd_hash_blocklist')) {
+                $blocklistQueries++;
+            }
+        });
+
+        $files = collect(
+            $this->actingAsJwt($user)
+                ->getJson('/api/v1/archivd/browse')
+                ->assertOk()
+                ->json('data.files'),
+        )->keyBy('id');
+
+        $this->assertCount(3, $files);
+        $this->assertTrue($files[$blocked->id]['is_hash_blocked']);
+        $this->assertFalse($files[$okA->id]['is_hash_blocked']);
+        $this->assertFalse($files[$okB->id]['is_hash_blocked']);
+        $this->assertSame(1, $blocklistQueries);
+    }
+
     public function test_artisan_blocklist_add_and_remove(): void
     {
         $checksum = hash('sha256', 'cli');
@@ -140,6 +175,41 @@ class HashBlocklistTest extends TestCase
             ->assertSuccessful();
 
         $this->assertFalse(app(HashBlocklistService::class)->isBlocked($checksum));
+    }
+
+    public function test_store_normalizes_uppercase_sha256(): void
+    {
+        $admin = $this->userWithRole('Root');
+        $checksum = hash('sha256', 'uppercase-api');
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/archivd/blocklist', [
+                'sha256' => strtoupper($checksum),
+                'reason' => 'DMCA',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.sha256', $checksum)
+            ->assertJsonPath('status', 'success');
+
+        $this->assertTrue(app(HashBlocklistService::class)->isBlocked($checksum));
+    }
+
+    public function test_store_rejects_invalid_sha256(): void
+    {
+        $admin = $this->userWithRole('Root');
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/archivd/blocklist', [
+                'sha256' => 'not-a-hash',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['sha256']);
+    }
+
+    public function test_artisan_rejects_invalid_sha256(): void
+    {
+        $this->artisan('archivd:blocklist-hash', ['sha256' => 'nope'])
+            ->assertFailed();
     }
 
     private function makeFile(User $user, string $checksum, string $visibility = 'private'): HostedFile

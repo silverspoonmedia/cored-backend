@@ -9,8 +9,6 @@ use App\Domain\Vtual\Services\CreatorService;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
-use App\Support\DataTable\DataTableResponseFactory;
-use App\Support\DataTable\Resolvers\OrphanCreatorRowActionResolver;
 use App\Support\ListActions\Builders\OrphanCreatorQueryRowActions;
 use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
@@ -25,8 +23,6 @@ class OrphanCreatorController extends Controller
 
     public function __construct(
         private readonly CreatorService $creators,
-        private readonly DataTableResponseFactory $dataTables,
-        private readonly OrphanCreatorRowActionResolver $rowActions,
         private readonly OrphanCreatorQueryRowActions $queryRowActions,
     ) {}
 
@@ -35,25 +31,16 @@ class OrphanCreatorController extends Controller
         $actor = $request->user();
         $orphans = $this->creators->listClaimable();
 
-        return $this->respondToListDisplayMode(
+        return $this->respondToQueryList(
             $request,
-            fn (): JsonResponse => $this->respondToQueryList(
-                $request,
-                $orphans,
-                fn ($list) => QueryRowActionAttacher::attach(
-                    $this->resolveResource(CreatorResource::collection($list)),
-                    $list,
-                    $this->queryRowActions,
-                    $actor,
-                ),
-                __('api/vtual.orphan.list_success'),
-            ),
-            fn (): JsonResponse => $this->dataTables->respond(
-                $orphans,
-                fn (Creator $creator) => $this->resolveResource(new CreatorResource($creator)),
-                $this->rowActions,
+            $orphans,
+            fn ($list) => QueryRowActionAttacher::attach(
+                $this->resolveResource(CreatorResource::collection($list)),
+                $list,
+                $this->queryRowActions,
                 $actor,
             ),
+            __('api/vtual.orphan.list_success'),
         );
     }
 

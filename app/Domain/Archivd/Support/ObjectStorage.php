@@ -21,6 +21,18 @@ class ObjectStorage
         return Storage::disk($disk)->readStream($path);
     }
 
+    public function get(string $path, string $disk): ?string
+    {
+        $bytes = Storage::disk($disk)->get($path);
+
+        return is_string($bytes) ? $bytes : null;
+    }
+
+    public function put(string $path, string $contents, string $disk): void
+    {
+        Storage::disk($disk)->put($path, $contents);
+    }
+
     /**
      * @param  iterable<array{path?: string|null, disk?: string|null}>  $objects
      */

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -9,8 +10,9 @@ use Illuminate\Support\Collection;
 /**
  * In-memory search + page slice for query-mode list indexes.
  *
- * First cut matches Blade Yajra honesty: PHP may still load the catalog;
- * the HTTP body is one page (default 10). SQL LIMIT per domain is a later wave.
+ * PHP may still load the catalog; the HTTP body is one page (default 10).
+ * Users query-paging without `search` is SQL `LIMIT` (see list-display-modes.md);
+ * other domains remain in-memory.
  */
 final class ListQueryPaginator
 {
@@ -45,7 +47,7 @@ final class ListQueryPaginator
     /**
      * @return array{current_page: int, last_page: int, per_page: int, total: int, has_more: bool}
      */
-    public static function meta(LengthAwarePaginator $paginator): array
+    public static function meta(LengthAwarePaginatorContract $paginator): array
     {
         return [
             'current_page' => $paginator->currentPage(),

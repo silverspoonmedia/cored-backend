@@ -4,7 +4,6 @@ namespace App\Domain\Vtual\Services;
 
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\PlatformKey;
-use App\Domain\Vtual\Integrations\Youtube\YoutubeChannelVideoFeedClient;
 use App\Domain\Vtual\Models\Channel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +16,6 @@ class ChannelInitialContentBackfillService
 {
     public function __construct(
         private readonly ChannelContentFetchService $contentFetch,
-        private readonly YoutubeChannelVideoFeedClient $feedClient,
     ) {}
 
     /**
@@ -27,6 +25,7 @@ class ChannelInitialContentBackfillService
      *     listed?: int,
      *     fetched?: int,
      *     upserted?: int,
+     *     feed_watermark?: ?Carbon,
      * }
      */
     public function run(Channel $channel): array
@@ -42,7 +41,7 @@ class ChannelInitialContentBackfillService
             return ['status' => 'skipped', 'reason' => 'channel_not_active'];
         }
 
-        $platformKey = $this->platformKey($channel);
+        $platformKey = $channel->toPlatformKey();
         if ($platformKey !== PlatformKey::Youtube) {
             return ['status' => 'skipped', 'reason' => 'platform_not_youtube'];
         }
@@ -66,7 +65,10 @@ class ChannelInitialContentBackfillService
             return ['status' => 'failed', 'reason' => $e->getMessage()];
         }
 
-        $maxUpdated = $this->resolveFeedWatermark($externalId);
+        $maxUpdated = $result['feed_watermark'] ?? null;
+        if (! $maxUpdated instanceof Carbon) {
+            $maxUpdated = now();
+        }
 
         $channel->forceFill([
             'content_initial_backfill_at' => now(),
@@ -75,38 +77,5 @@ class ChannelInitialContentBackfillService
         ])->save();
 
         return array_merge(['status' => 'completed'], $result);
-    }
-
-    private function resolveFeedWatermark(string $channelExternalId): Carbon
-    {
-        try {
-            $entries = $this->feedClient->listVideos($channelExternalId);
-            $maxUpdated = null;
-
-            foreach ($entries as $entry) {
-                if ($entry->updatedAt !== null && ($maxUpdated === null || $entry->updatedAt->gt($maxUpdated))) {
-                    $maxUpdated = $entry->updatedAt;
-                }
-            }
-
-            return $maxUpdated ?? now();
-        } catch (Throwable $e) {
-            Log::warning('vtual.channel_initial_backfill_feed_watermark_failed', [
-                'external_id' => $channelExternalId,
-                'message' => $e->getMessage(),
-            ]);
-
-            return now();
-        }
-    }
-
-    private function platformKey(Channel $channel): PlatformKey
-    {
-        $key = $channel->platform?->key;
-        if ($key instanceof PlatformKey) {
-            return $key;
-        }
-
-        return PlatformKey::from((string) $key);
     }
 }

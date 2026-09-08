@@ -15,6 +15,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Service\Services\ServiceEntitlementService;
 use App\Domain\Service\Support\ArchivdCatalog;
 use App\Domain\Service\Support\MicrostockCatalog;
+use Illuminate\Http\Request;
 
 /**
  * Workspace membership + paid collab gate (separate from platform H-RBAC).
@@ -24,6 +25,7 @@ class WorkspaceAccessService
     public function __construct(
         private readonly AccessService $access,
         private readonly ServiceEntitlementService $entitlements,
+        private readonly QuotaService $quota,
     ) {}
 
     /**
@@ -109,9 +111,8 @@ class WorkspaceAccessService
     public function ownedSlotLimit(string $ownerUserId): int
     {
         $base = 0;
-        if ($this->entitlements->hasActivePaidArchivd($ownerUserId)
-            || $this->entitlements->hasGraceArchivd($ownerUserId)
-        ) {
+        $state = $this->quota->storageStateFor($ownerUserId);
+        if ($state === 'paid' || $state === 'grace') {
             $base = max(0, (int) config(
                 'archivd.base_owned_workspace_slots',
                 ArchivdCatalog::BASE_OWNED_WORKSPACE_SLOTS,
@@ -123,11 +124,7 @@ class WorkspaceAccessService
 
     public function canCreateOwnedWorkspace(string $ownerUserId): bool
     {
-        if ($this->entitlements->hasGraceArchivd($ownerUserId)) {
-            return false;
-        }
-
-        if (! $this->entitlements->hasActivePaidArchivd($ownerUserId)) {
+        if ($this->quota->storageStateFor($ownerUserId) !== 'paid') {
             return false;
         }
 
@@ -181,6 +178,71 @@ class WorkspaceAccessService
         $member = $this->activeMember($workspace, $actor->id);
 
         return $member?->role;
+    }
+
+    public const REQUEST_ROLES = 'archivd.workspace.roles';
+
+    /**
+     * @param  iterable<mixed>  $workspaces
+     */
+    public function primeRequestLookup(Request $request, iterable $workspaces, User $actor): void
+    {
+        $items = [];
+        foreach ($workspaces as $workspace) {
+            if ($workspace instanceof Workspace) {
+                $items[(string) $workspace->id] = $workspace;
+            }
+        }
+
+        if ($items === []) {
+            return;
+        }
+
+        /** @var array<string, WorkspaceRole|null> $roles */
+        $roles = $request->attributes->get(self::REQUEST_ROLES, []);
+        $new = array_diff_key($items, $roles);
+
+        if ($new === []) {
+            return;
+        }
+
+        foreach ($new as $id => $workspace) {
+            $roles[$id] = $workspace->owner_user_id === $actor->id ? WorkspaceRole::Owner : null;
+        }
+
+        $memberIds = [];
+        foreach ($new as $id => $workspace) {
+            if ($roles[$id] === null) {
+                $memberIds[] = $id;
+            }
+        }
+
+        if ($memberIds !== []) {
+            $members = WorkspaceMember::query()
+                ->where('user_id', $actor->id)
+                ->where('status', WorkspaceMemberStatus::Active)
+                ->whereIn('workspace_id', $memberIds)
+                ->get(['workspace_id', 'role']);
+
+            foreach ($members as $member) {
+                $roles[(string) $member->workspace_id] = $member->role;
+            }
+        }
+
+        $request->attributes->set(self::REQUEST_ROLES, $roles);
+    }
+
+    public function roleForRequest(Workspace $workspace, User $actor, Request $request): ?WorkspaceRole
+    {
+        /** @var array<string, WorkspaceRole|null> $roles */
+        $roles = $request->attributes->get(self::REQUEST_ROLES, []);
+        $id = (string) $workspace->id;
+
+        if (array_key_exists($id, $roles)) {
+            return $roles[$id];
+        }
+
+        return $this->roleFor($workspace, $actor);
     }
 
     public function canView(Workspace $workspace, User $actor): bool
@@ -256,11 +318,13 @@ class WorkspaceAccessService
      */
     public function assertOwnerEligibleForCollab(string $ownerUserId): void
     {
-        if ($this->entitlements->hasGraceArchivd($ownerUserId)) {
+        $state = $this->quota->storageStateFor($ownerUserId);
+
+        if ($state === 'grace') {
             throw new ArchivdException(__('api/archivd.workspace.owner_in_grace'), 422);
         }
 
-        if (! $this->entitlements->hasActivePaidArchivd($ownerUserId)) {
+        if ($state !== 'paid') {
             throw new ArchivdException(__('api/archivd.workspace.requires_paid'), 422);
         }
     }

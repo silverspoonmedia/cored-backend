@@ -2,11 +2,10 @@
 
 namespace App\Providers;
 
-use App\Console\ConsoleSafetyServiceProvider;
 use App\Console\Commands\MonolithConfigCacheCommand;
+use App\Console\ConsoleSafetyServiceProvider;
 use App\Repositories\Contracts\EloquentCrudRepositoryInterface;
 use App\Repositories\Eloquent\EloquentCrudRepository;
-use App\Support\DataTable\DataTableResponseFactory;
 use Illuminate\Foundation\Console\ConfigCacheCommand;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,7 +17,6 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(EloquentCrudRepositoryInterface::class, EloquentCrudRepository::class);
-        $this->app->singleton(DataTableResponseFactory::class);
 
         $this->app->singleton(ConfigCacheCommand::class, MonolithConfigCacheCommand::class);
     }

@@ -8,12 +8,14 @@ use App\Domain\PaymentGateway\Http\Resources\PaymentChannelResource;
 use App\Domain\PaymentGateway\Services\PaymentChannelService;
 use App\Domain\PaymentGateway\Support\Routing\PaymentRouteMaterializer;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class PaymentChannelController extends Controller
 {
     use ApiResponse;
+    use ResolvesResourceArray;
 
     public function __construct(
         private PaymentChannelService $service,
@@ -29,7 +31,7 @@ class PaymentChannelController extends Controller
             : $this->service->listAvailable($subtotalValue);
 
         return $this->successResponse(
-            PaymentChannelResource::collection($channels)->resolve($request),
+            $this->resolveResource(PaymentChannelResource::collection($channels)),
             __('api/payments.channels.list'),
         );
     }
@@ -43,7 +45,7 @@ class PaymentChannelController extends Controller
         }
 
         return $this->successResponse(
-            (new PaymentChannelResource($channel))->resolve(),
+            $this->resolveResource(new PaymentChannelResource($channel)),
             __('api/payments.channels.show'),
         );
     }
@@ -53,7 +55,7 @@ class PaymentChannelController extends Controller
         $channel = $this->service->update($code, $request->validated());
 
         return $this->successResponse(
-            (new PaymentChannelResource($channel))->resolve(),
+            $this->resolveResource(new PaymentChannelResource($channel)),
             __('api/payments.channels.updated'),
         );
     }

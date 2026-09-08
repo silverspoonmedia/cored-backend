@@ -54,4 +54,14 @@ class Platform extends Model
     {
         return $this->enabled === true;
     }
+
+    public function toPlatformKey(): PlatformKey
+    {
+        $key = $this->key;
+        if ($key instanceof PlatformKey) {
+            return $key;
+        }
+
+        return PlatformKey::from((string) $key);
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Service\Services;
 
+use App\Domain\Archivd\Services\QuotaService;
 use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PlanKind;
@@ -18,6 +19,16 @@ use Illuminate\Support\Carbon;
 
 class ServiceEntitlementService
 {
+    /**
+     * @var array<string, bool>
+     */
+    private array $hasPaidMemo = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    private array $hasGraceMemo = [];
+
     public function __construct(
         private readonly MainPlanChangeCalculator $planChange,
         private readonly ProductAnalyticsService $analytics,
@@ -78,6 +89,7 @@ class ServiceEntitlementService
             ]);
             $entitlement->save();
 
+            $this->forgetArchivdProbeMemo($purchase->user_id);
             $this->syncArchivdTier($purchase->user_id, $service, $oldTier);
 
             return [
@@ -89,12 +101,14 @@ class ServiceEntitlementService
 
         if ($isAddon) {
             $result = $this->activateAddon($entitlement, $purchase, $interval, $now, $quantity);
+            $this->forgetArchivdProbeMemo($purchase->user_id);
             $this->syncArchivdTier($purchase->user_id, $service, $oldTier);
 
             return $result;
         }
 
         $result = $this->activateMain($entitlement, $purchase, $interval, $now, $changeType);
+        $this->forgetArchivdProbeMemo($purchase->user_id);
         $this->syncArchivdTier($purchase->user_id, $service, $oldTier);
 
         return $result;
@@ -250,6 +264,8 @@ class ServiceEntitlementService
             $count++;
         }
 
+        $this->forgetArchivdProbeMemo($userId);
+
         return ['extended' => $count, 'period_end' => $periodEnd];
     }
 
@@ -334,25 +350,12 @@ class ServiceEntitlementService
      */
     public function workspaceSlotExtraQuantity(string $userId): int
     {
-        $rows = ServiceEntitlement::query()
-            ->where('user_id', $userId)
-            ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
-            ->whereHas('service', function ($q): void {
-                $q->where('fulfillment_target', ArchivdCatalog::FULFILLMENT_TARGET)
-                    ->where('plan_kind', PlanKind::Addon)
-                    ->where(function ($inner): void {
-                        $inner->where('code', ArchivdCatalog::CODE_ADDON_WORKSPACE_SLOT)
-                            ->orWhere('entitlement', ArchivdCatalog::ENTITLEMENT_WORKSPACE_SLOTS);
-                    });
-            })
-            ->get();
-
-        $total = 0;
-        foreach ($rows as $row) {
-            $total += max(0, (int) $row->quantity);
-        }
-
-        return $total;
+        return $this->addonSlotExtraQuantity(
+            $userId,
+            ArchivdCatalog::FULFILLMENT_TARGET,
+            ArchivdCatalog::CODE_ADDON_WORKSPACE_SLOT,
+            ArchivdCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+        );
     }
 
     /**
@@ -361,15 +364,29 @@ class ServiceEntitlementService
      */
     public function microstockWorkspaceSlotExtraQuantity(string $userId): int
     {
+        return $this->addonSlotExtraQuantity(
+            $userId,
+            MicrostockCatalog::FULFILLMENT_TARGET,
+            MicrostockCatalog::CODE_ADDON_WORKSPACE_SLOT,
+            MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+        );
+    }
+
+    private function addonSlotExtraQuantity(
+        string $userId,
+        string $fulfillmentTarget,
+        string $code,
+        string $entitlement,
+    ): int {
         $rows = ServiceEntitlement::query()
             ->where('user_id', $userId)
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
-            ->whereHas('service', function ($q): void {
-                $q->where('fulfillment_target', MicrostockCatalog::FULFILLMENT_TARGET)
+            ->whereHas('service', function ($q) use ($fulfillmentTarget, $code, $entitlement): void {
+                $q->where('fulfillment_target', $fulfillmentTarget)
                     ->where('plan_kind', PlanKind::Addon)
-                    ->where(function ($inner): void {
-                        $inner->where('code', MicrostockCatalog::CODE_ADDON_WORKSPACE_SLOT)
-                            ->orWhere('entitlement', MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS);
+                    ->where(function ($inner) use ($code, $entitlement): void {
+                        $inner->where('code', $code)
+                            ->orWhere('entitlement', $entitlement);
                     });
             })
             ->get();
@@ -400,24 +417,46 @@ class ServiceEntitlementService
 
     public function hasActivePaidArchivd(string $userId): bool
     {
-        return $this->activePaidArchivdEntitlements($userId)->isNotEmpty();
+        return $this->hasPaidMemo[$userId] ??= $this->paidArchivdExists($userId);
     }
 
     public function hasGraceArchivd(string $userId): bool
     {
-        return $this->graceArchivdEntitlements($userId)->isNotEmpty();
+        return $this->hasGraceMemo[$userId] ??= $this->graceArchivdExists($userId);
     }
 
-    /** @deprecated Use hasGraceArchivd */
-    public function graceArchivdFor(string $userId): ?ServiceEntitlement
+    private function paidArchivdExists(string $userId): bool
     {
-        return $this->graceArchivdEntitlements($userId)->first();
+        return ServiceEntitlement::query()
+            ->where('user_id', $userId)
+            ->where('status', EntitlementStatus::Active)
+            ->whereHas('service', function ($q): void {
+                $q->where('fulfillment_target', ArchivdCatalog::FULFILLMENT_TARGET)
+                    ->whereIn('plan_kind', [PlanKind::Main, PlanKind::Addon])
+                    ->where('code', '!=', ArchivdCatalog::CODE_FREE)
+                    ->where('storage_bytes', '>', 0);
+            })
+            ->exists();
     }
 
-    /** @deprecated Unlimited removed; use hasActivePaidArchivd */
-    public function activeUnlimitedArchivdFor(string $userId): ?ServiceEntitlement
+    private function graceArchivdExists(string $userId): bool
     {
-        return $this->activePaidArchivdEntitlements($userId)->first();
+        return ServiceEntitlement::query()
+            ->where('user_id', $userId)
+            ->where('status', EntitlementStatus::Grace)
+            ->whereHas('service', function ($q): void {
+                $q->where('fulfillment_target', ArchivdCatalog::FULFILLMENT_TARGET)
+                    ->whereIn('plan_kind', [PlanKind::Main, PlanKind::Addon])
+                    ->where('code', '!=', ArchivdCatalog::CODE_FREE)
+                    ->where('storage_bytes', '>', 0);
+            })
+            ->exists();
+    }
+
+    private function forgetArchivdProbeMemo(string $userId): void
+    {
+        unset($this->hasPaidMemo[$userId], $this->hasGraceMemo[$userId]);
+        app(QuotaService::class)->forgetStorageState($userId);
     }
 
     public function enterGrace(ServiceEntitlement $entitlement): ServiceEntitlement
@@ -434,6 +473,7 @@ class ServiceEntitlementService
         $entitlement->grace_ends_at = $endsAt->copy()->addDays($graceDays);
         $entitlement->save();
 
+        $this->forgetArchivdProbeMemo($entitlement->user_id);
         $this->syncArchivdTierFromEntitlement($entitlement, 'grace', $oldTier);
 
         return $entitlement->refresh();
@@ -449,6 +489,7 @@ class ServiceEntitlementService
         $entitlement->status = EntitlementStatus::Expired;
         $entitlement->save();
 
+        $this->forgetArchivdProbeMemo($entitlement->user_id);
         $this->syncArchivdTierAfterExpiry($entitlement, $oldTier);
 
         return $entitlement->refresh();

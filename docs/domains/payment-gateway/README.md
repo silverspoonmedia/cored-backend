@@ -86,7 +86,7 @@ Policy default: `platform.payment.channel_fee_bearer` = `buyer` (Settings → Pl
 
 Checkout UI shows subtotal / payment fee / total due. `GET /api/v1/payment-channels?subtotal=` returns per-channel estimates. Abandoning checkout resets fee/gross to pre-checkout values.
 
-**Reconciliation:** invoice list shows subtotal + fee + gross; `GET /api/v1/invoices/export` streams CSV for bookkeeping. `InvoiceService::list()` / `get()` eager-load `paymentGateway`, `paymentChannelRouteSnapshot.paymentGateway`, and `invoiceable` up front to avoid N+1 on the invoice list (consumed by `InvoiceResource` / `PaymentIncomeInvoiceResource`).
+**Reconciliation:** invoice list shows subtotal + fee + gross; `GET /api/v1/invoices/export` streams CSV for bookkeeping. `InvoiceService::list()` / `get()` eager-load `paymentGateway`, `paymentChannelRouteSnapshot.paymentGateway`, and `invoiceable` up front to avoid N+1 on the invoice list (consumed by `InvoiceResource` / `PaymentIncomeInvoiceResource`). List collections prefetch `PaymentChannel` by code for `checkout_session`.
 
 **Purchase-hub redirect:** For `invoiceable_type = service_purchase`, invoice list **View** targets and invoice show resolve to the [Service purchase hub](../service/README.md) (`/apps/service-purchases/{id}`) — one combined payment + purchase page. Subscription and other morph types stay on `/apps/invoices/{id}`. Helper: `InvoiceWebDestination::showUrl()`.
 

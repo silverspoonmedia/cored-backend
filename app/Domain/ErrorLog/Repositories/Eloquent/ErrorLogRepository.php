@@ -47,29 +47,7 @@ class ErrorLogRepository implements ErrorLogRepositoryInterface
                 ]);
             }
 
-            $existing->fill([
-                'type' => $attributes['type'],
-                'level' => $attributes['level'],
-                'exception_class' => $attributes['exception_class'],
-                'message' => $attributes['message'],
-                'file' => $attributes['file'],
-                'line' => $attributes['line'],
-                'trace' => $attributes['trace'],
-                'context' => $attributes['context'],
-                'last_seen_at' => $now,
-                'occurrence_count' => $existing->occurrence_count + 1,
-            ]);
-
-            // Re-open ignored/resolved groups when the error fires again.
-            if ($existing->status !== ErrorLog::STATUS_OPEN) {
-                $existing->status = ErrorLog::STATUS_OPEN;
-                $existing->resolved_at = null;
-                $existing->resolved_by = null;
-            }
-
-            $existing->save();
-
-            return $existing->refresh();
+            return $this->recordOccurrence($existing, $attributes, $now);
         } catch (QueryException $e) {
             // Race on unique fingerprint: retry as update.
             $existing = ErrorLog::query()->where('fingerprint', $fingerprint)->first();
@@ -78,29 +56,47 @@ class ErrorLogRepository implements ErrorLogRepositoryInterface
                 throw $e;
             }
 
-            $existing->fill([
-                'type' => $attributes['type'],
-                'level' => $attributes['level'],
-                'exception_class' => $attributes['exception_class'],
-                'message' => $attributes['message'],
-                'file' => $attributes['file'],
-                'line' => $attributes['line'],
-                'trace' => $attributes['trace'],
-                'context' => $attributes['context'],
-                'last_seen_at' => $now,
-                'occurrence_count' => $existing->occurrence_count + 1,
-            ]);
-
-            if ($existing->status !== ErrorLog::STATUS_OPEN) {
-                $existing->status = ErrorLog::STATUS_OPEN;
-                $existing->resolved_at = null;
-                $existing->resolved_by = null;
-            }
-
-            $existing->save();
-
-            return $existing->refresh();
+            return $this->recordOccurrence($existing, $attributes, $now);
         }
+    }
+
+    /**
+     * @param  array{
+     *     type: string,
+     *     level: string,
+     *     exception_class: ?string,
+     *     message: string,
+     *     file: ?string,
+     *     line: ?int,
+     *     trace: ?string,
+     *     context: array<string, mixed>|null
+     * }  $attributes
+     */
+    private function recordOccurrence(ErrorLog $existing, array $attributes, Carbon $now): ErrorLog
+    {
+        $existing->fill([
+            'type' => $attributes['type'],
+            'level' => $attributes['level'],
+            'exception_class' => $attributes['exception_class'],
+            'message' => $attributes['message'],
+            'file' => $attributes['file'],
+            'line' => $attributes['line'],
+            'trace' => $attributes['trace'],
+            'context' => $attributes['context'],
+            'last_seen_at' => $now,
+            'occurrence_count' => $existing->occurrence_count + 1,
+        ]);
+
+        // Re-open ignored/resolved groups when the error fires again.
+        if ($existing->status !== ErrorLog::STATUS_OPEN) {
+            $existing->status = ErrorLog::STATUS_OPEN;
+            $existing->resolved_at = null;
+            $existing->resolved_by = null;
+        }
+
+        $existing->save();
+
+        return $existing->refresh();
     }
 
     /**

@@ -98,7 +98,7 @@ class ChannelService
             throw new VtualException(__('api/vtual.channel.profile_required'), 422);
         }
 
-        $platformKey = $this->platformKey($platform);
+        $platformKey = $platform->toPlatformKey();
         ChannelProfilePlatformGuard::assertMatchesPlatform($platformKey, $profile);
 
         $dto = $this->profiles->resolve($platformKey, $profile);
@@ -133,7 +133,7 @@ class ChannelService
             throw new VtualException(__('api/vtual.channel.profile_required'), 422);
         }
 
-        $platformKey = $this->platformKey($platform);
+        $platformKey = $platform->toPlatformKey();
         ChannelProfilePlatformGuard::assertMatchesPlatform($platformKey, $profile);
 
         try {
@@ -177,7 +177,7 @@ class ChannelService
             ->count();
 
         if ($pending >= $threshold) {
-            $this->registrationFlush->flush($this->platformKey($platform), force: false);
+            $this->registrationFlush->flush($platform->toPlatformKey(), force: false);
         }
 
         return $channel->load('platform');
@@ -344,7 +344,7 @@ class ChannelService
             throw new VtualException(__('api/vtual.channel.platform_disabled'), 422);
         }
 
-        if ($this->platformKey($platform) === PlatformKey::Kick) {
+        if ($platform->toPlatformKey() === PlatformKey::Kick) {
             throw new VtualException(__('api/vtual.channel.promote_unsupported_platform'), 422);
         }
 
@@ -370,16 +370,6 @@ class ChannelService
         return $channel;
     }
 
-    private function platformKey(Platform $platform): PlatformKey
-    {
-        $key = $platform->key;
-        if ($key instanceof PlatformKey) {
-            return $key;
-        }
-
-        return PlatformKey::from((string) $key);
-    }
-
     private function resubscribeWebsubIfYoutube(Channel $channel): void
     {
         $channel->loadMissing('platform');
@@ -388,7 +378,7 @@ class ChannelService
             return;
         }
 
-        if ($this->platformKey($platform) !== PlatformKey::Youtube) {
+        if ($platform->toPlatformKey() !== PlatformKey::Youtube) {
             return;
         }
 

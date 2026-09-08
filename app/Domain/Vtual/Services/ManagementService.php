@@ -3,8 +3,12 @@
 namespace App\Domain\Vtual\Services;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
+use App\Domain\Navigation\Support\NavigationRealtime;
 use App\Domain\Notification\Notifications\NotificationType;
 use App\Domain\Notification\Services\NotificationService;
+use App\Domain\Vtual\Enums\ChannelStatus;
+use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\EntityStatus;
 use App\Domain\Vtual\Enums\ManagementInviteStatus;
 use App\Domain\Vtual\Enums\ManagementMemberRole;
@@ -17,9 +21,8 @@ use App\Domain\Vtual\Models\ManagementMember;
 use App\Domain\Vtual\Notifications\ManagementMemberInvited;
 use App\Domain\Vtual\Support\SlugGenerator;
 use App\Domain\Vtual\Support\VtualManagementRealtime;
-use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
-use App\Domain\Navigation\Support\NavigationRealtime;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -121,7 +124,7 @@ class ManagementService
             throw new VtualException(__('api/vtual.policy.denied'), 403);
         }
 
-        return DB::transaction(function () use ($actor, $data): Management {
+        return DB::transaction(function () use ($data): Management {
             $name = trim((string) $data['name']);
             if ($name === '') {
                 throw new VtualException(__('api/vtual.management.name_required'), 422);
@@ -162,6 +165,59 @@ class ManagementService
             ->exists();
     }
 
+    public const REQUEST_CLAIMABLE = 'vtual.management.claimable';
+
+    /**
+     * @param  iterable<mixed>  $managements
+     */
+    public function primeClaimableLookup(Request $request, iterable $managements): void
+    {
+        $items = [];
+        foreach ($managements as $management) {
+            if ($management instanceof Management) {
+                $items[(string) $management->id] = $management;
+            }
+        }
+
+        if ($items === []) {
+            return;
+        }
+
+        /** @var array<string, bool> $map */
+        $map = $request->attributes->get(self::REQUEST_CLAIMABLE, []);
+        $new = array_diff_key($items, $map);
+
+        if ($new === []) {
+            return;
+        }
+
+        $ownerIds = ManagementMember::query()
+            ->whereIn('management_id', array_keys($new))
+            ->where('role', ManagementMemberRole::Owner)
+            ->pluck('management_id')
+            ->all();
+        $hasOwner = array_fill_keys(array_map('strval', $ownerIds), true);
+
+        foreach ($new as $id => $management) {
+            $map[$id] = $management->status === EntityStatus::Active && ! isset($hasOwner[$id]);
+        }
+
+        $request->attributes->set(self::REQUEST_CLAIMABLE, $map);
+    }
+
+    public function isClaimableForRequest(Management $management, Request $request): bool
+    {
+        /** @var array<string, bool> $map */
+        $map = $request->attributes->get(self::REQUEST_CLAIMABLE, []);
+        $id = (string) $management->id;
+
+        if (array_key_exists($id, $map)) {
+            return $map[$id];
+        }
+
+        return $this->isClaimable($management);
+    }
+
     public function show(User $actor, string $managementId): Management
     {
         $management = $this->access->findOrFail($managementId);
@@ -181,7 +237,7 @@ class ManagementService
     {
         $query = Management::query()->where('status', EntityStatus::Active);
 
-        if (\Illuminate\Support\Str::isUuid($slugOrUuid)) {
+        if (Str::isUuid($slugOrUuid)) {
             $query->whereKey($slugOrUuid);
         } else {
             $query->where('slug', $slugOrUuid);
@@ -199,12 +255,12 @@ class ManagementService
                 ->with(['creator' => fn ($cq) => $cq
                     ->where('status', EntityStatus::Active)
                     ->whereHas('channels', function ($chq): void {
-                        $chq->where('status', \App\Domain\Vtual\Enums\ChannelStatus::Active)
-                            ->where('visibility', \App\Domain\Vtual\Enums\ChannelVisibility::Public);
+                        $chq->where('status', ChannelStatus::Active)
+                            ->where('visibility', ChannelVisibility::Public);
                     })
                     ->with(['channels' => fn ($chq) => $chq
-                        ->where('status', \App\Domain\Vtual\Enums\ChannelStatus::Active)
-                        ->where('visibility', \App\Domain\Vtual\Enums\ChannelVisibility::Public)
+                        ->where('status', ChannelStatus::Active)
+                        ->where('visibility', ChannelVisibility::Public)
                         ->with('platform'),
                     ]),
                 ]),

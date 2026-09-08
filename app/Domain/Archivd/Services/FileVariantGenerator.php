@@ -4,7 +4,7 @@ namespace App\Domain\Archivd\Services;
 
 use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Archivd\Support\ObjectKeyResolver;
-use Illuminate\Support\Facades\Storage;
+use App\Domain\Archivd\Support\ObjectStorage;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\Encoders\JpegEncoder;
 use Intervention\Image\ImageManager;
@@ -17,6 +17,7 @@ class FileVariantGenerator
 {
     public function __construct(
         private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
+        private readonly ObjectStorage $storage = new ObjectStorage,
     ) {}
 
     /**
@@ -52,9 +53,9 @@ class FileVariantGenerator
     public function readOriginalBytes(HostedFile $file): string
     {
         $key = $this->objectKeys->objectKey((string) $file->user_id, (string) $file->path);
-        $bytes = Storage::disk($file->disk)->get($key);
+        $bytes = $this->storage->get($key, (string) $file->disk);
 
-        if (! is_string($bytes) || $bytes === '') {
+        if ($bytes === null || $bytes === '') {
             throw new \RuntimeException('Unable to read asset bytes for resize.');
         }
 

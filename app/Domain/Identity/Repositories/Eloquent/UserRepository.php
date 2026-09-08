@@ -4,6 +4,8 @@ namespace App\Domain\Identity\Repositories\Eloquent;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface;
+use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 class UserRepository implements UserRepositoryInterface
@@ -45,25 +47,42 @@ class UserRepository implements UserRepositoryInterface
 
     public function listVisibleToActorLevel(int $actorLevel): Collection
     {
+        return User::query()
+            ->with('roles')
+            ->whereIn('id', $this->visibleUserIdsSubquery($actorLevel))
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * @return LengthAwarePaginator<int, User>
+     */
+    public function paginateVisibleToActorLevel(int $actorLevel, int $perPage, int $page): LengthAwarePaginator
+    {
+        return User::query()
+            ->with('roles')
+            ->whereIn('id', $this->visibleUserIdsSubquery($actorLevel))
+            ->orderBy('name')
+            ->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    private function visibleUserIdsSubquery(int $actorLevel): Closure
+    {
         $userModel = new User;
         $morphKey = config('permission.column_names.model_morph_key', 'model_id');
         $rolesTable = config('permission.table_names.roles', 'roles');
         $pivotTable = config('permission.table_names.model_has_roles', 'model_has_roles');
 
-        return User::query()
-            ->with('roles')
-            ->whereIn('id', function ($query) use ($actorLevel, $userModel, $morphKey, $rolesTable, $pivotTable): void {
-                $query->select($pivotTable.'.'.$morphKey)
-                    ->from($pivotTable)
-                    ->join($rolesTable, "{$rolesTable}.id", '=', "{$pivotTable}.role_id")
-                    ->where("{$pivotTable}.model_type", $userModel->getMorphClass())
-                    ->where("{$rolesTable}.domain_kind", 'core')
-                    ->whereNotNull("{$rolesTable}.level")
-                    ->groupBy("{$pivotTable}.{$morphKey}")
-                    ->havingRaw('MIN('.$rolesTable.'.level) >= ?', [$actorLevel]);
-            })
-            ->orderBy('name')
-            ->get();
+        return function ($query) use ($actorLevel, $userModel, $morphKey, $rolesTable, $pivotTable): void {
+            $query->select($pivotTable.'.'.$morphKey)
+                ->from($pivotTable)
+                ->join($rolesTable, "{$rolesTable}.id", '=', "{$pivotTable}.role_id")
+                ->where("{$pivotTable}.model_type", $userModel->getMorphClass())
+                ->where("{$rolesTable}.domain_kind", 'core')
+                ->whereNotNull("{$rolesTable}.level")
+                ->groupBy($pivotTable.'.'.$morphKey)
+                ->havingRaw('MIN('.$rolesTable.'.level) >= ?', [$actorLevel]);
+        };
     }
 
     public function findByIdOrFailWithRoles(string $id): User

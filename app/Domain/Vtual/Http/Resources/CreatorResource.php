@@ -2,15 +2,25 @@
 
 namespace App\Domain\Vtual\Http\Resources;
 
+use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Services\CreatorAccessService;
 use App\Http\Resources\Concerns\FormatsPresentation;
+use App\Support\SpaPublicUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Domain\Vtual\Models\Creator */
+/** @mixin Creator */
 class CreatorResource extends JsonResource
 {
     use FormatsPresentation;
+
+    /**
+     * @param  mixed  $resource
+     */
+    protected static function newCollection($resource): CreatorResourceCollection
+    {
+        return new CreatorResourceCollection($resource);
+    }
 
     /**
      * @return array<string, mixed>
@@ -23,15 +33,15 @@ class CreatorResource extends JsonResource
 
         if ($actor !== null) {
             $access = app(CreatorAccessService::class);
-            $myRole = $access->roleFor($this->resource, $actor)?->value;
-            $myManagementRole = $access->managementRoleForCreator($this->resource, $actor)?->value;
+            $myRole = $access->roleForRequest($this->resource, $actor, $request)?->value;
+            $myManagementRole = $access->managementRoleForCreatorRequest($this->resource, $actor, $request)?->value;
         }
 
         return [
             'id' => $this->id,
             'slug' => $this->slug,
             'display_name' => $this->display_name,
-            'profile_url' => \App\Support\SpaPublicUrl::vtuberProfile($this->slug),
+            'profile_url' => SpaPublicUrl::vtuberProfile($this->slug),
             'bio' => $this->bio,
             'avatar_url' => $this->avatar_url,
             'status' => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,

@@ -3,11 +3,14 @@
 namespace App\Domain\Vtual\Http\Requests;
 
 use App\Domain\Vtual\Enums\ManagementMemberRole;
+use App\Domain\Vtual\Http\Requests\Concerns\VtualRequestRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreManagementInviteRequest extends FormRequest
 {
+    use VtualRequestRules;
+
     public function authorize(): bool
     {
         return true;
@@ -26,7 +29,7 @@ class StoreManagementInviteRequest extends FormRequest
         ];
 
         return [
-            'email' => ['required', 'string', 'email:rfc', 'max:255'],
+            'email' => $this->inviteEmailRules(),
             'role' => ['required', 'string', Rule::in(array_map(
                 fn (ManagementMemberRole $r): string => $r->value,
                 $roles,

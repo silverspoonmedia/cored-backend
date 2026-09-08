@@ -8,11 +8,9 @@ use App\Domain\PaymentGateway\Http\Requests\UpdateSubscriptionRequest;
 use App\Domain\PaymentGateway\Http\Resources\SubscriptionResource;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Services\SubscriptionService;
-use App\Domain\PaymentGateway\Support\DataTable\SubscriptionRowActionResolver;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
-use App\Support\DataTable\DataTableResponseFactory;
 use App\Support\ListActions\Builders\SubscriptionQueryRowActions;
 use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
@@ -26,8 +24,6 @@ class SubscriptionController extends Controller
 
     public function __construct(
         private readonly SubscriptionService $service,
-        private readonly DataTableResponseFactory $dataTables,
-        private readonly SubscriptionRowActionResolver $rowActions,
         private readonly SubscriptionQueryRowActions $queryRowActions,
     ) {}
 
@@ -35,24 +31,16 @@ class SubscriptionController extends Controller
     {
         $subscriptions = $this->service->list();
 
-        return $this->respondToListDisplayMode(
+        return $this->respondToQueryList(
             $request,
-            fn (): JsonResponse => $this->respondToQueryList(
-                $request,
-                $subscriptions,
-                fn ($list) => QueryRowActionAttacher::attach(
-                    $this->resolveResource(SubscriptionResource::collection($list)),
-                    $list,
-                    $this->queryRowActions,
-                    $request->user(),
-                ),
-                __('api/payments.subscriptions.list'),
+            $subscriptions,
+            fn ($list) => QueryRowActionAttacher::attach(
+                $this->resolveResource(SubscriptionResource::collection($list)),
+                $list,
+                $this->queryRowActions,
+                $request->user(),
             ),
-            fn (): JsonResponse => $this->dataTables->respond(
-                $subscriptions,
-                fn (Subscription $subscription) => $this->resolveResource(new SubscriptionResource($subscription)),
-                $this->rowActions,
-            ),
+            __('api/payments.subscriptions.list'),
         );
     }
 

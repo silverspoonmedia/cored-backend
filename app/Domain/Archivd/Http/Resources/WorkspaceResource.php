@@ -14,6 +14,14 @@ class WorkspaceResource extends JsonResource
     use FormatsPresentation;
 
     /**
+     * @param  mixed  $resource
+     */
+    protected static function newCollection($resource): WorkspaceResourceCollection
+    {
+        return new WorkspaceResourceCollection($resource);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -24,7 +32,7 @@ class WorkspaceResource extends JsonResource
 
         if ($actor !== null) {
             $isOwner = $this->owner_user_id === $actor->id;
-            $role = app(WorkspaceAccessService::class)->roleFor($this->resource, $actor);
+            $role = app(WorkspaceAccessService::class)->roleForRequest($this->resource, $actor, $request);
             $myRole = $role?->value;
         }
 
@@ -59,6 +67,8 @@ class WorkspaceResource extends JsonResource
             return true;
         }
 
-        return app(WorkspaceAccessService::class)->canManageMembers($this->resource, $actor);
+        return app(WorkspaceAccessService::class)
+            ->roleForRequest($this->resource, $actor, $request)
+            ?->canManageMembers() ?? false;
     }
 }

@@ -9,11 +9,9 @@ use App\Domain\Inference\Http\Requests\UpdateInferenceProviderRequest;
 use App\Domain\Inference\Http\Resources\InferenceProviderResource;
 use App\Domain\Inference\Models\InferenceProvider;
 use App\Domain\Inference\Services\InferenceCatalogService;
-use App\Domain\Inference\Support\DataTable\InferenceProviderRowActionResolver;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
-use App\Support\DataTable\DataTableResponseFactory;
 use App\Support\ListActions\Builders\InferenceProviderQueryRowActions;
 use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
@@ -27,8 +25,6 @@ class InferenceProviderController extends Controller
 
     public function __construct(
         private readonly InferenceCatalogService $catalog,
-        private readonly DataTableResponseFactory $dataTables,
-        private readonly InferenceProviderRowActionResolver $rowActions,
         private readonly InferenceProviderQueryRowActions $queryRowActions,
     ) {}
 
@@ -36,24 +32,16 @@ class InferenceProviderController extends Controller
     {
         $providers = $this->catalog->listProviders();
 
-        return $this->respondToListDisplayMode(
+        return $this->respondToQueryList(
             $request,
-            fn (): JsonResponse => $this->respondToQueryList(
-                $request,
-                $providers,
-                fn ($list) => QueryRowActionAttacher::attach(
-                    $this->resolveResource(InferenceProviderResource::collection($list)),
-                    $list,
-                    $this->queryRowActions,
-                    $request->user(),
-                ),
-                __('api/inference.providers.list'),
+            $providers,
+            fn ($list) => QueryRowActionAttacher::attach(
+                $this->resolveResource(InferenceProviderResource::collection($list)),
+                $list,
+                $this->queryRowActions,
+                $request->user(),
             ),
-            fn (): JsonResponse => $this->dataTables->respond(
-                $providers,
-                fn (InferenceProvider $provider) => $this->resolveResource(new InferenceProviderResource($provider)),
-                $this->rowActions,
-            ),
+            __('api/inference.providers.list'),
         );
     }
 

@@ -8,7 +8,9 @@ use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Archivd\Services\HashBlocklistService;
 use App\Domain\Archivd\Services\VisibilityService;
 use App\Domain\Archivd\Support\RegionResolver;
+use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Services\AnalysisStageService;
+use App\Domain\Microstock\Services\CollectionService;
 use App\Http\Resources\Concerns\FormatsPresentation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -17,6 +19,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class HostedFileResource extends JsonResource
 {
     use FormatsPresentation;
+
+    /**
+     * @param  mixed  $resource
+     */
+    protected static function newCollection($resource): HostedFileResourceCollection
+    {
+        return new HostedFileResourceCollection($resource);
+    }
 
     /**
      * @return array<string, mixed>
@@ -46,7 +56,7 @@ class HostedFileResource extends JsonResource
             ...$this->byteFields('size', $this->size),
             'mime' => $this->mime,
             'checksum' => $this->when($this->viewerMaySeeStorage($request), $this->checksum),
-            'is_hash_blocked' => app(HashBlocklistService::class)->isFileBlocked($this->resource),
+            'is_hash_blocked' => app(HashBlocklistService::class)->isFileBlockedForRequest($this->resource, $request),
             'visibility' => $visibility,
             'share_url' => $shareUrl,
             'microstock' => $this->when(
@@ -63,8 +73,8 @@ class HostedFileResource extends JsonResource
                         'keywords' => $this->microstockMetadata->keywords ?? [],
                         'status' => $this->microstockMetadata->status?->value,
                         'stages' => $stages,
-                        'phase' => $this->microstockMetadata->status === \App\Domain\Microstock\Enums\MetadataStatus::Pending && $this->microstockMetadata->created_at !== null
-                            ? \App\Domain\Microstock\Services\CollectionService::phaseFor($this->microstockMetadata->created_at)
+                        'phase' => $this->microstockMetadata->status === MetadataStatus::Pending && $this->microstockMetadata->created_at !== null
+                            ? CollectionService::phaseFor($this->microstockMetadata->created_at)
                             : $this->microstockMetadata->status?->value,
                     ];
                 }),

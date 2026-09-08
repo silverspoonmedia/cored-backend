@@ -2,6 +2,7 @@
 
 namespace App\Domain\Archivd\Http\Controllers\API\V1;
 
+use App\Domain\Archivd\Http\Requests\StoreHashBlocklistRequest;
 use App\Domain\Archivd\Http\Resources\HashBlocklistResource;
 use App\Domain\Archivd\Models\ArchivdHashBlocklist;
 use App\Domain\Archivd\Services\HashBlocklistService;
@@ -41,23 +42,18 @@ class HashBlocklistController extends Controller
         );
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreHashBlocklistRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'sha256' => ['required', 'string', 'size:64', 'regex:/^[0-9a-f]{64}$/'],
-            'reason' => ['nullable', 'string', 'max:255'],
-        ]);
-
         $entry = $this->blocklist->block(
-            $validated['sha256'],
-            $validated['reason'] ?? null,
+            $request->validated('sha256'),
+            $request->validated('reason'),
             $request->user()?->id,
         );
 
         $entry->load('creator');
 
         return $this->successResponse(
-            new HashBlocklistResource($entry),
+            $this->resolveResource(new HashBlocklistResource($entry)),
             __('api/archivd.blocklist_saved'),
             201,
         );

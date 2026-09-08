@@ -10,21 +10,6 @@ use Illuminate\Support\Collection;
 trait RespondsWithListDisplayMode
 {
     /**
-     * Return either the standard query JSON envelope or a DataTables payload.
-     */
-    protected function respondToListDisplayMode(
-        object $request,
-        callable $queryResponse,
-        callable $datatableResponse,
-    ): JsonResponse {
-        if (method_exists($request, 'wantsDatatable') && $request->wantsDatatable()) {
-            return $datatableResponse();
-        }
-
-        return $queryResponse();
-    }
-
-    /**
      * Query-mode list body: legacy flat `T[]` unless page/per_page/search are present,
      * then `{ items, pagination }` (same shape as inference/microstock usage events).
      *

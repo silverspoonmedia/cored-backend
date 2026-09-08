@@ -2,6 +2,7 @@
 
 namespace App\Domain\Microstock\Http\Controllers\API\V1;
 
+use App\Domain\Microstock\Http\Requests\UpdateAssetMetadataRequest;
 use App\Domain\Microstock\Http\Resources\AssetMetadataResource;
 use App\Domain\Microstock\Services\MicrostockService;
 use App\Http\Controllers\Controller;
@@ -40,13 +41,9 @@ class MetadataController extends Controller
         );
     }
 
-    public function update(Request $request, string $file): JsonResponse
+    public function update(UpdateAssetMetadataRequest $request, string $file): JsonResponse
     {
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'keywords' => ['required', 'array'],
-            'keywords.*' => ['string', 'max:100'],
-        ]);
+        $data = $request->validated();
 
         $metadata = $this->microstock->finalize(
             $request->user(),

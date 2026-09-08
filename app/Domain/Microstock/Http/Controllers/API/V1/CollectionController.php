@@ -3,6 +3,7 @@
 namespace App\Domain\Microstock\Http\Controllers\API\V1;
 
 use App\Domain\Archivd\Models\Folder;
+use App\Domain\Microstock\Http\Requests\LockCollectionRequest;
 use App\Domain\Microstock\Services\CollectionService;
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
@@ -18,12 +19,9 @@ class CollectionController extends Controller
         private readonly CollectionService $collections,
     ) {}
 
-    public function lock(Request $request, string $folder): JsonResponse
+    public function lock(LockCollectionRequest $request, string $folder): JsonResponse
     {
-        $data = $request->validate([
-            'hint' => ['nullable', 'string', 'max:2000'],
-            'billing_mode' => ['nullable', 'string', 'in:free,paid'],
-        ]);
+        $data = $request->validated();
 
         $collection = $this->collections->lock(
             $request->user(),

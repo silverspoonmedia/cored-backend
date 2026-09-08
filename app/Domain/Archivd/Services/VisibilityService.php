@@ -7,6 +7,7 @@ use App\Domain\Archivd\Exceptions\ArchivdException;
 use App\Domain\Archivd\Models\Folder;
 use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Archivd\Models\Workspace;
+use App\Domain\Archivd\Support\FolderAncestorChain;
 use App\Support\SpaPublicUrl;
 
 /**
@@ -150,14 +151,12 @@ class VisibilityService
             return true;
         }
 
+        $byId = FolderAncestorChain::indexForOwner((string) $folder->user_id);
         $parentId = $folder->parent_id;
         $guard = 0;
 
         while ($parentId !== null && $guard < 1000) {
-            $parent = Folder::query()
-                ->whereKey($parentId)
-                ->where('user_id', $folder->user_id)
-                ->first(['id', 'parent_id', 'visibility']);
+            $parent = $byId->get($parentId);
 
             if ($parent === null) {
                 break;

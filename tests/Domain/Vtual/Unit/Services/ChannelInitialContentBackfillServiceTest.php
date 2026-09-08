@@ -4,8 +4,6 @@ namespace Tests\Domain\Vtual\Unit\Services;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\ChannelStatus;
-use App\Domain\Vtual\Integrations\Dto\YoutubeFeedVideoEntryDto;
-use App\Domain\Vtual\Integrations\Youtube\YoutubeChannelVideoFeedClient;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Services\ChannelContentFetchService;
@@ -56,10 +54,7 @@ class ChannelInitialContentBackfillServiceTest extends TestCase
         $contentFetch = Mockery::mock(ChannelContentFetchService::class);
         $contentFetch->shouldNotReceive('fetchAndPersist');
 
-        $feed = Mockery::mock(YoutubeChannelVideoFeedClient::class);
-        $feed->shouldNotReceive('listVideos');
-
-        $service = new ChannelInitialContentBackfillService($contentFetch, $feed);
+        $service = new ChannelInitialContentBackfillService($contentFetch);
         $result = $service->run($channel);
 
         $this->assertSame('skipped', $result['status']);
@@ -75,18 +70,14 @@ class ChannelInitialContentBackfillServiceTest extends TestCase
         $contentFetch->shouldReceive('fetchAndPersist')
             ->once()
             ->with(Mockery::type(Channel::class), 50)
-            ->andReturn(['listed' => 2, 'fetched' => 2, 'upserted' => 2]);
+            ->andReturn([
+                'listed' => 2,
+                'fetched' => 2,
+                'upserted' => 2,
+                'feed_watermark' => Carbon::parse('2026-08-06T08:30:00Z'),
+            ]);
 
-        $feed = Mockery::mock(YoutubeChannelVideoFeedClient::class);
-        $feed->shouldReceive('listVideos')
-            ->once()
-            ->with('UCPkKpOHxEDcwmUAnRpIu-Ng')
-            ->andReturn(collect([
-                new YoutubeFeedVideoEntryDto('vid-a', null, Carbon::parse('2026-08-06T08:30:00Z'), 'A', null),
-                new YoutubeFeedVideoEntryDto('vid-b', null, Carbon::parse('2026-08-06T07:30:00Z'), 'B', null),
-            ]));
-
-        $service = new ChannelInitialContentBackfillService($contentFetch, $feed);
+        $service = new ChannelInitialContentBackfillService($contentFetch);
         $result = $service->run($channel);
 
         $this->assertSame('completed', $result['status']);
@@ -111,10 +102,7 @@ class ChannelInitialContentBackfillServiceTest extends TestCase
             ->once()
             ->andThrow(new \RuntimeException('quota exceeded'));
 
-        $feed = Mockery::mock(YoutubeChannelVideoFeedClient::class);
-        $feed->shouldNotReceive('listVideos');
-
-        $service = new ChannelInitialContentBackfillService($contentFetch, $feed);
+        $service = new ChannelInitialContentBackfillService($contentFetch);
         $result = $service->run($channel);
 
         $this->assertSame('failed', $result['status']);

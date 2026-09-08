@@ -9,6 +9,8 @@ use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Microstock\Services\AiDailyFreeService;
 use App\Domain\Microstock\Services\BillingLedgerService;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ListQueryPaginator;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +18,7 @@ use Illuminate\Http\Request;
 class BillingController extends Controller
 {
     use ApiResponse;
+    use ResolvesResourceArray;
 
     public function __construct(
         private readonly AiCreditService $credits,
@@ -52,8 +55,8 @@ class BillingController extends Controller
         );
 
         return $this->successResponse([
-            'items' => BillingLedgerEntryResource::collection($paginator->getCollection()),
-            'pagination' => $this->paginationMeta($paginator),
+            'items' => $this->resolveResource(BillingLedgerEntryResource::collection($paginator->getCollection())),
+            'pagination' => ListQueryPaginator::meta($paginator),
         ], __('api/microstock.ledger_loaded'));
     }
 
@@ -68,22 +71,8 @@ class BillingController extends Controller
         );
 
         return $this->successResponse([
-            'items' => BillingUsageEventResource::collection($paginator->getCollection()),
-            'pagination' => $this->paginationMeta($paginator),
+            'items' => $this->resolveResource(BillingUsageEventResource::collection($paginator->getCollection())),
+            'pagination' => ListQueryPaginator::meta($paginator),
         ], __('api/microstock.usage_events_loaded'));
-    }
-
-    /**
-     * @return array<string, int|bool>
-     */
-    private function paginationMeta(\Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator): array
-    {
-        return [
-            'current_page' => $paginator->currentPage(),
-            'last_page' => $paginator->lastPage(),
-            'per_page' => $paginator->perPage(),
-            'total' => $paginator->total(),
-            'has_more' => $paginator->hasMorePages(),
-        ];
     }
 }

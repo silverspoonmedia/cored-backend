@@ -15,6 +15,7 @@ use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Activitylog\Models\Activity;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -446,6 +447,50 @@ class WorkspaceCollaborativeWorksTest extends TestCase
         $this->assertCount(1, $list);
         $this->assertFalse($list[0]['is_owner']);
         $this->assertSame('editor', $list[0]['my_role']);
+    }
+
+    public function test_workspace_list_batches_member_role_lookup(): void
+    {
+        $this->grantPaidMain($this->owner);
+
+        $ids = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $created = $this->actingAsJwt($this->owner)
+                ->postJson('/api/v1/archivd/workspaces', ['name' => 'Batch '.$i])
+                ->assertCreated()
+                ->json('data');
+            $ids[] = $created['id'];
+
+            $invite = $this->actingAsJwt($this->owner)
+                ->postJson('/api/v1/archivd/workspaces/'.$created['id'].'/invites', [
+                    'email' => $this->editor->email,
+                    'role' => 'editor',
+                ])
+                ->assertCreated()
+                ->json('data');
+
+            $this->actingAsJwt($this->editor)
+                ->postJson('/api/v1/archivd/workspaces/invites/accept', [
+                    'token' => $invite['token'],
+                ])
+                ->assertOk();
+        }
+
+        $memberQueries = 0;
+        DB::listen(function ($query) use (&$memberQueries): void {
+            if (str_contains((string) $query->sql, 'archivd_workspace_members')) {
+                $memberQueries++;
+            }
+        });
+
+        $list = $this->actingAsJwt($this->editor)
+            ->getJson('/api/v1/archivd/workspaces')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertCount(3, $list);
+        $this->assertSame(['editor', 'editor', 'editor'], collect($list)->pluck('my_role')->all());
+        $this->assertLessThanOrEqual(2, $memberQueries);
     }
 
     public function test_rename_and_delete_log_activity(): void

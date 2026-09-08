@@ -8,11 +8,9 @@ use App\Domain\PaymentGateway\Http\Requests\UpdatePaymentGatewayRequest;
 use App\Domain\PaymentGateway\Http\Resources\PaymentGatewayResource;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\PaymentGatewayService;
-use App\Domain\PaymentGateway\Support\DataTable\PaymentGatewayRowActionResolver;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
-use App\Support\DataTable\DataTableResponseFactory;
 use App\Support\ListActions\Builders\PaymentGatewayQueryRowActions;
 use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
@@ -26,8 +24,6 @@ class PaymentGatewayController extends Controller
 
     public function __construct(
         private readonly PaymentGatewayService $service,
-        private readonly DataTableResponseFactory $dataTables,
-        private readonly PaymentGatewayRowActionResolver $rowActions,
         private readonly PaymentGatewayQueryRowActions $queryRowActions,
     ) {}
 
@@ -35,24 +31,16 @@ class PaymentGatewayController extends Controller
     {
         $gateways = $this->service->list();
 
-        return $this->respondToListDisplayMode(
+        return $this->respondToQueryList(
             $request,
-            fn (): JsonResponse => $this->respondToQueryList(
-                $request,
-                $gateways,
-                fn ($list) => QueryRowActionAttacher::attach(
-                    $this->resolveResource(PaymentGatewayResource::collection($list)),
-                    $list,
-                    $this->queryRowActions,
-                    $request->user(),
-                ),
-                __('api/payments.gateways.list'),
+            $gateways,
+            fn ($list) => QueryRowActionAttacher::attach(
+                $this->resolveResource(PaymentGatewayResource::collection($list)),
+                $list,
+                $this->queryRowActions,
+                $request->user(),
             ),
-            fn (): JsonResponse => $this->dataTables->respond(
-                $gateways,
-                fn (PaymentGateway $gateway) => $this->resolveResource(new PaymentGatewayResource($gateway)),
-                $this->rowActions,
-            ),
+            __('api/payments.gateways.list'),
         );
     }
 

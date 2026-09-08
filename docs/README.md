@@ -26,7 +26,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [api-envelope.md](platform/api-envelope.md) | Canonical JSON envelope (`status`/`message`/`data`), error mapping (401/403/404/419/422/429), `/batch` partial-failure contract |
 | [commands.md](platform/commands.md) | Artisan command index (env, domains, payments, vtual, microstock, cache, i18n) |
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
-| [list-display-modes.md](platform/list-display-modes.md) | `display_mode` list contract, query-mode `actions[]` (live SPA row buttons), `/api/v1/lookups/*`, retained-but-unused Yajra datatable mode |
+| [list-display-modes.md](platform/list-display-modes.md) | `display_mode=query` list contract, query-mode `actions[]` (live SPA row buttons), `/api/v1/lookups/*` |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
 | [environment.md](platform/environment.md) | `.env` profiles, typed quoting, assignment-key parity, `env:curate`, config cache |
 | [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, Tier B settings cache contract, agent checklist |

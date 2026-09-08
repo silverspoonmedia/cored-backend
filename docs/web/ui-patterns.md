@@ -14,7 +14,7 @@ Blade components were `form.select` / `multiselect` (`ajaxUrl`, `select2`), with
 
 ## List display modes
 
-Moved to [platform/list-display-modes.md](../platform/list-display-modes.md), including the note that `display_mode=datatable` now has no consumer.
+Moved to [platform/list-display-modes.md](../platform/list-display-modes.md). Live lists are query-mode only; `display_mode=datatable` is rejected (422).
 
 The Blade side of it — `initDataTable({ tableId, ajaxUrl, columns, order, language, exposeForReload, onReady })` in `resources/js/datatable-init.js`, the `resources/js/infra/jquery-init.js` core binding, the `exposeForReload: true` convention that let `bell.js` soft-reload a table, and the `GET /apps/{resource}/datatable` web proxies that rewrote action URLs onto web routes — is all gone.
 

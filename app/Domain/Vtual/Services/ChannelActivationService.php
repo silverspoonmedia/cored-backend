@@ -66,7 +66,7 @@ class ChannelActivationService
             return;
         }
 
-        $key = $this->platformKey($platform);
+        $key = $platform->toPlatformKey();
 
         if ($key === PlatformKey::Youtube) {
             $this->websub->subscribe($channel);
@@ -97,15 +97,5 @@ class ChannelActivationService
             'status' => ChannelStatus::Active,
             'last_synced_at' => now(),
         ];
-    }
-
-    private function platformKey(Platform $platform): PlatformKey
-    {
-        $key = $platform->key;
-        if ($key instanceof PlatformKey) {
-            return $key;
-        }
-
-        return PlatformKey::from((string) $key);
     }
 }

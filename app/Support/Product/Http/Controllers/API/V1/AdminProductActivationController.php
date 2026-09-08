@@ -3,18 +3,27 @@
 namespace App\Support\Product\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
-use App\Support\ApiResponder;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\Product\Enums\ProductActivationState;
+use App\Support\Product\Http\Requests\ApproveProductActivationRequest;
+use App\Support\Product\Http\Requests\IndexProductActivationRequest;
+use App\Support\Product\Http\Requests\RejectProductActivationRequest;
+use App\Support\Product\Http\Requests\ShowProductActivationRequest;
+use App\Support\Product\Http\Requests\StatsProductActivationRequest;
+use App\Support\Product\Http\Requests\SuspendProductActivationRequest;
 use App\Support\Product\Http\Resources\ProductActivationResource;
 use App\Support\Product\Models\ProductActivation;
 use App\Support\Product\ProductRegistry;
 use App\Support\Product\Services\ProductActivationService;
 use App\Support\Product\Services\ProductInsightService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class AdminProductActivationController extends Controller
 {
+    use ApiResponse;
+    use ResolvesResourceArray;
+
     public function __construct(
         private readonly ProductActivationService $activations,
         private readonly ProductInsightService $insights,
@@ -32,7 +41,7 @@ class AdminProductActivationController extends Controller
             ->map(fn (array $config, string $key): array => $this->insights->productSummary($key))
             ->values();
 
-        return ApiResponder::success(
+        return $this->successResponse(
             $products->all(),
             __('product-activations.products_list_success'),
         );
@@ -42,20 +51,18 @@ class AdminProductActivationController extends Controller
      * Full per-product dashboard: summary + product metrics + paginated
      * activations with filter by state.
      */
-    public function productShow(Request $request, string $productKey): JsonResponse
+    public function productShow(ShowProductActivationRequest $request, string $productKey): JsonResponse
     {
         $this->authorize('viewAny', ProductActivation::class);
 
         if (! ProductRegistry::has($productKey)) {
-            return ApiResponder::error(
+            return $this->errorResponse(
                 __('product-activations.unknown_product', ['product' => $productKey]),
                 404,
             );
         }
 
-        $validated = $request->validate([
-            'state' => ['nullable', 'string', 'in:pending,active,suspended,expired'],
-        ]);
+        $validated = $request->validated();
 
         $query = ProductActivation::query()
             ->with('user')
@@ -67,10 +74,10 @@ class AdminProductActivationController extends Controller
 
         $activations = $query->orderBy('updated_at', 'desc')->paginate(50);
 
-        return ApiResponder::success(
+        return $this->successResponse(
             [
                 'summary' => $this->insights->productSummary($productKey),
-                'activations' => ProductActivationResource::collection($activations->items()),
+                'activations' => $this->resolveResource(ProductActivationResource::collection($activations->items())),
                 'pagination' => [
                     'current_page' => $activations->currentPage(),
                     'last_page' => $activations->lastPage(),
@@ -90,27 +97,23 @@ class AdminProductActivationController extends Controller
         $this->authorize('viewAny', ProductActivation::class);
 
         if (! ProductRegistry::has($productKey)) {
-            return ApiResponder::error(
+            return $this->errorResponse(
                 __('product-activations.unknown_product', ['product' => $productKey]),
                 404,
             );
         }
 
-        return ApiResponder::success(
+        return $this->successResponse(
             $this->insights->userDetailInProduct($userId, $productKey),
             __('product-activations.user_detail_success'),
         );
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(IndexProductActivationRequest $request): JsonResponse
     {
         $this->authorize('viewAny', ProductActivation::class);
 
-        $validated = $request->validate([
-            'product_key' => ['nullable', 'string'],
-            'state' => ['nullable', 'string', 'in:pending,active,suspended,expired'],
-            'user_id' => ['nullable', 'uuid'],
-        ]);
+        $validated = $request->validated();
 
         $query = ProductActivation::query()->with('user');
 
@@ -128,8 +131,8 @@ class AdminProductActivationController extends Controller
 
         $activations = $query->orderBy('updated_at', 'desc')->paginate(50);
 
-        return ApiResponder::success(
-            ProductActivationResource::collection($activations->items()),
+        return $this->successResponse(
+            $this->resolveResource(ProductActivationResource::collection($activations->items())),
             __('product-activations.admin_list_success'),
         );
     }
@@ -138,28 +141,24 @@ class AdminProductActivationController extends Controller
     {
         $this->authorize('view', $productActivation);
 
-        return ApiResponder::success(
-            new ProductActivationResource($productActivation->load('user')),
+        return $this->successResponse(
+            $this->resolveResource(new ProductActivationResource($productActivation->load('user'))),
             __('product-activations.show_success'),
         );
     }
 
-    public function suspend(Request $request, ProductActivation $productActivation): JsonResponse
+    public function suspend(SuspendProductActivationRequest $request, ProductActivation $productActivation): JsonResponse
     {
         $this->authorize('update', $productActivation);
 
-        $validated = $request->validate([
-            'reason' => ['nullable', 'string', 'max:500'],
-        ]);
-
         $updated = $this->activations->suspend(
             $productActivation,
-            $validated['reason'] ?? null,
+            $request->validated('reason'),
             'admin',
         );
 
-        return ApiResponder::success(
-            new ProductActivationResource($updated),
+        return $this->successResponse(
+            $this->resolveResource(new ProductActivationResource($updated)),
             __('product-activations.suspended'),
         );
     }
@@ -170,57 +169,45 @@ class AdminProductActivationController extends Controller
 
         $updated = $this->activations->reactivate($productActivation, 'admin');
 
-        return ApiResponder::success(
-            new ProductActivationResource($updated),
+        return $this->successResponse(
+            $this->resolveResource(new ProductActivationResource($updated)),
             __('product-activations.reactivated'),
         );
     }
 
-    public function approve(Request $request, ProductActivation $productActivation): JsonResponse
+    public function approve(ApproveProductActivationRequest $request, ProductActivation $productActivation): JsonResponse
     {
         $this->authorize('update', $productActivation);
 
-        $validated = $request->validate([
-            'payload' => ['nullable', 'array'],
-        ]);
-
         $updated = $this->activations->approve(
             $productActivation,
-            $validated['payload'] ?? [],
+            $request->validated('payload') ?? [],
             'admin',
         );
 
-        return ApiResponder::success(
-            new ProductActivationResource($updated),
+        return $this->successResponse(
+            $this->resolveResource(new ProductActivationResource($updated)),
             __('product-activations.approved'),
         );
     }
 
-    public function reject(Request $request, ProductActivation $productActivation): JsonResponse
+    public function reject(RejectProductActivationRequest $request, ProductActivation $productActivation): JsonResponse
     {
         $this->authorize('update', $productActivation);
 
-        $validated = $request->validate([
-            'reason' => ['required', 'string', 'max:500'],
-        ]);
+        $updated = $this->activations->reject($productActivation, $request->validated('reason'), 'admin');
 
-        $updated = $this->activations->reject($productActivation, $validated['reason'], 'admin');
-
-        return ApiResponder::success(
-            new ProductActivationResource($updated),
+        return $this->successResponse(
+            $this->resolveResource(new ProductActivationResource($updated)),
             __('product-activations.rejected'),
         );
     }
 
-    public function stats(Request $request): JsonResponse
+    public function stats(StatsProductActivationRequest $request): JsonResponse
     {
         $this->authorize('viewAny', ProductActivation::class);
 
-        $validated = $request->validate([
-            'product_key' => ['nullable', 'string'],
-        ]);
-
-        $productKey = $validated['product_key'] ?? null;
+        $productKey = $request->validated('product_key');
 
         $stats = collect(ProductActivationState::cases())->map(function (ProductActivationState $state) use ($productKey): array {
             $query = ProductActivation::query()->where('state', $state->value);
@@ -235,7 +222,7 @@ class AdminProductActivationController extends Controller
             ];
         });
 
-        return ApiResponder::success(
+        return $this->successResponse(
             $stats->all(),
             __('product-activations.stats_success'),
         );

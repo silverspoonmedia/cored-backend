@@ -32,7 +32,7 @@ Route::apiResource('users', UserController::class)->except(['create', 'edit']);
 
 **References:** v1 users (`routes/api/v1/identity.php`); Archivd folders/files under `routes/api/v1/archivd.php`.
 
-**Not** `apiResource` when you need extra actions, dual list/DataTable modes, per-verb permissions, or optional-auth reads — see [Navigation](../domains/navigation/README.md), [list-display-modes](list-display-modes.md).
+**Not** `apiResource` when you need extra actions, query-mode paging, per-verb permissions, or optional-auth reads — see [Navigation](../domains/navigation/README.md), [list-display-modes](list-display-modes.md).
 
 ## Layer responsibilities
 
@@ -54,10 +54,24 @@ Do **not** copy-paste full rule arrays between Store/Update. Prefer domain `Http
 |---------|---------|
 | Shared field map + modality | `App\Support\Http\Requests\Concerns\ModalFieldRules` (`storeRules` / `updateRules`) |
 | Domain catalog | Service `ServiceCatalogRules`, PaymentGateway gateway/subscription concerns |
-| Micro-rules | Archivd `ArchivdRequestRules` (rename/move/bulk/visibility via `Visibility::values()`) |
+| Micro-rules | Archivd `ArchivdRequestRules` (rename/move/bulk/visibility via `Visibility::values()`, workspace, sha256 blocklist) |
 | Identity users | `UserMutationRules` (assignable roles + password once) |
+| Microstock | `MicrostockRequestRules` (collection lock, metadata, workspace, credentials) |
+| Product activations | `ProductActivationRequestRules` (admin filters, suspend/approve/reject) |
+| Vtual | `VtualRequestRules` (external links, creator/management store vs update, credential secrets, invite email) |
+| Inference | `InferenceCatalogRules` (provider/model-card slug uniqueness, store vs update `display_name`) |
 
-Keep separate Store/Update classes for route binding; only the **rules body** is shared. Input normalization (e.g. service `prices[]` currency uppercasing) belongs in FormRequest `prepareForValidation`, not the web proxy.
+Keep separate Store/Update classes for route binding; only the **rules body** is shared. Input normalization (e.g. service `prices[]` currency uppercasing, Archivd sha256 lowercasing) belongs in FormRequest `prepareForValidation`, not the web proxy.
+
+API mutations use FormRequests — do **not** `$request->validate()` in controllers.
+
+### Envelope wiring
+
+Controllers return the canonical `{ status, message, data }` envelope via `App\Traits\ApiResponse` (`successResponse` / `errorResponse`). Direct `ApiResponder` stays for exception renderers and special cases that mutate `meta` (e.g. `BatchController`).
+
+Always `resolveResource()` before `successResponse()` so `data` is a plain array — never pass a raw `JsonResource` into the envelope.
+
+Query-mode `{ items, pagination }` that already emits the five-key meta (`current_page`, `last_page`, `per_page`, `total`, `has_more`) should call `ListQueryPaginator::meta()`. Do **not** add `has_more` to endpoints that do not already emit it.
 
 ## Request flow
 

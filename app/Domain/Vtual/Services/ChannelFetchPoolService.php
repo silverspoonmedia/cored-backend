@@ -2,8 +2,8 @@
 
 namespace App\Domain\Vtual\Services;
 
-use App\Domain\Vtual\Enums\ChannelFetchPoolReason;
 use App\Domain\Vtual\Enums\ChannelDiscoverySource;
+use App\Domain\Vtual\Enums\ChannelFetchPoolReason;
 use App\Domain\Vtual\Enums\ChannelFetchPoolStatus;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ChannelVisibility;
@@ -13,6 +13,7 @@ use App\Domain\Vtual\Integrations\PlatformApiGateway;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\ChannelFetchPoolItem;
 use App\Domain\Vtual\Models\Platform;
+use App\Domain\Vtual\Support\VtualChannelRealtime;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,7 @@ class ChannelFetchPoolService
 {
     public function __construct(
         private readonly PlatformApiGateway $gateway,
-        private readonly \App\Domain\Vtual\Support\VtualChannelRealtime $realtime,
+        private readonly VtualChannelRealtime $realtime,
     ) {}
 
     /**
@@ -84,7 +85,7 @@ class ChannelFetchPoolService
             ->count();
 
         if ($pending >= $threshold) {
-            $this->flush($this->platformKey($platformModel), force: false);
+            $this->flush($platformModel->toPlatformKey(), force: false);
         }
 
         return $item;
@@ -155,7 +156,7 @@ class ChannelFetchPoolService
         $summary = ['platforms' => []];
 
         foreach ($platforms as $platform) {
-            $key = $this->platformKey($platform);
+            $key = $platform->toPlatformKey();
             $summary['platforms'][$key->value] = $this->flushPlatform($platform, $key, $force);
         }
 
@@ -384,15 +385,5 @@ class ChannelFetchPoolService
         }
 
         return $model;
-    }
-
-    private function platformKey(Platform $platform): PlatformKey
-    {
-        $key = $platform->key;
-        if ($key instanceof PlatformKey) {
-            return $key;
-        }
-
-        return PlatformKey::from((string) $key);
     }
 }

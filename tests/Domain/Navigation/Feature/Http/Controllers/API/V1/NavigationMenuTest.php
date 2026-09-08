@@ -2,9 +2,9 @@
 
 namespace Tests\Domain\Navigation\Feature\Http\Controllers\API\V1;
 
-use App\Domain\Navigation\Models\Menu;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Navigation\Models\Menu;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -57,6 +57,22 @@ class NavigationMenuTest extends TestCase
         $this->actingAsJwt($this->userWithRole('Admin'))
             ->getJson('/api/v1/navigation/menus/list')
             ->assertOk();
+    }
+
+    public function test_list_query_rows_include_edit_and_delete_actions(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $menu = $this->makeMenu(['name' => 'QueryActionsMenu', 'type' => 'h']);
+
+        $row = collect(
+            $this->actingAsJwt($admin)
+                ->getJson('/api/v1/navigation/menus/list')
+                ->assertOk()
+                ->json('data'),
+        )->firstWhere('id', $menu->id);
+
+        $this->assertNotNull($row);
+        $this->assertSame(['edit', 'delete'], collect($row['actions'])->pluck('key')->all());
     }
 
     public function test_admin_can_create_menu_with_role_assignment(): void
@@ -187,7 +203,8 @@ class NavigationMenuTest extends TestCase
     }
 
     public function test_navigation_tree_cache_isolated_by_locale(): void
-    {        $this->makeMenu([
+    {
+        $this->makeMenu([
             'name' => [
                 'en' => 'English label',
                 'id' => 'Label Indonesia',
@@ -492,6 +509,23 @@ class NavigationMenuTest extends TestCase
             ->assertOk();
 
         $this->assertTrue(collect($response->json('data'))->pluck('name')->contains('Gone'));
+    }
+
+    public function test_trashed_list_query_rows_include_restore_action(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $menu = $this->makeMenu(['name' => 'Gone', 'type' => 'c']);
+        $this->repo()->deleteMenu($menu);
+
+        $row = collect(
+            $this->actingAsJwt($admin)
+                ->getJson('/api/v1/navigation/menus/trashed')
+                ->assertOk()
+                ->json('data'),
+        )->firstWhere('id', $menu->id);
+
+        $this->assertNotNull($row);
+        $this->assertSame(['restore'], collect($row['actions'])->pluck('key')->all());
     }
 
     public function test_restore_requires_restore_permission(): void

@@ -8,6 +8,7 @@ use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\Dto\PlatformVideoDto;
 use App\Domain\Vtual\Integrations\PlatformApiGateway;
 use App\Domain\Vtual\Models\Channel;
+use Illuminate\Support\Carbon;
 
 /**
  * Pull recent YouTube uploads for a channel and persist to vtual_contents.
@@ -21,7 +22,7 @@ class ChannelContentFetchService
     ) {}
 
     /**
-     * @return array{listed: int, fetched: int, upserted: int}
+     * @return array{listed: int, fetched: int, upserted: int, feed_watermark?: ?Carbon}
      */
     public function fetchAndPersist(Channel $channel, int $limit = 50): array
     {
@@ -93,7 +94,7 @@ class ChannelContentFetchService
     {
         $channel->loadMissing('platform');
 
-        $platformKey = $this->resolvePlatformKey($channel);
+        $platformKey = $channel->toPlatformKey();
         if ($platformKey !== PlatformKey::Youtube) {
             throw new VtualException(__('api/vtual.content.fetch_platform_unsupported', [
                 'platform' => $platformKey->value,
@@ -114,7 +115,7 @@ class ChannelContentFetchService
 
     /**
      * @param  list<string>  $videoIds
-     * @return array{fetched: int, upserted: int}
+     * @return array{fetched: int, upserted: int, feed_watermark: ?Carbon}
      */
     private function persistVideos(Channel $channel, array $videoIds): array
     {
@@ -123,10 +124,17 @@ class ChannelContentFetchService
         $channelExternalId = trim((string) $channel->external_id);
 
         $upserted = 0;
+        $feedWatermark = null;
         foreach ($videos as $video) {
             $this->assertVideoBelongsToChannel($video, $channelExternalId);
             $this->contents->upsertFromPrimary($channel, $this->mapper->toUpsertPayload($video));
             $upserted++;
+
+            foreach ([$video->publishedAt, $video->startedAt, $video->endedAt] as $stamp) {
+                if ($stamp !== null && ($feedWatermark === null || $stamp->gt($feedWatermark))) {
+                    $feedWatermark = $stamp;
+                }
+            }
         }
 
         // Ids the API did not return are deleted/private upstream — tombstone them
@@ -138,6 +146,7 @@ class ChannelContentFetchService
         return [
             'fetched' => $fetched,
             'upserted' => $upserted,
+            'feed_watermark' => $feedWatermark,
         ];
     }
 
@@ -151,15 +160,5 @@ class ChannelContentFetchService
             'video' => $video->externalId,
             'channel' => $channelExternalId,
         ]), 422);
-    }
-
-    private function resolvePlatformKey(Channel $channel): PlatformKey
-    {
-        $key = $channel->platform?->key;
-        if ($key instanceof PlatformKey) {
-            return $key;
-        }
-
-        return PlatformKey::from((string) $key);
     }
 }

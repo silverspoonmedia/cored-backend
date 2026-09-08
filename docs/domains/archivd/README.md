@@ -11,10 +11,12 @@ Open the rest of this README only when changing Archivd **behavior**. For a one-
 | Code | `app/Domain/Archivd/` |
 | Config | [`config/archivd.php`](../../../config/archivd.php) |
 | API | `routes/api/v1/archivd.php` |
-| Quota / public share | `QuotaService`, `WorkspaceAccessService` |
+| Quota / public share | `QuotaService` (container-scoped; `storageStateFor` memo per owner per request). `ServiceEntitlementService` scoped `exists()` probes for paid/grace; `WorkspaceAccessService` slot gates reuse `storageStateFor`. Variant committed bytes use a files join (soft-deleted files excluded). |
+| Workspaces list | `WorkspaceResourceCollection` primes `my_role` membership once per request |
 | Upload control plane | init / sign-parts / complete / abort (SDK); data plane is Gateway or direct S3 |
 | SPA | sibling `src/views/archivd/`, `src/composables/archivd/` |
 | Tests | `tests/Domain/Archivd/` |
+| sha256 / object I/O | `Sha256Checksum`, `ObjectStorage` (`get` / `put` / `exists` / `readStream` / `deleteMany`) |
 | Do not | `Read` this whole guide, all 7 locale JSON files, or `storage/logs` |
 
 Realtime: private `archivd.user.{id}` — [vue-workers-spa.md — Channel/event reference](../../integration/vue-workers-spa.md#channel-event-reference). Contract: [vue-workers-spa.md](../../integration/vue-workers-spa.md) only if the API shape moves.
@@ -55,7 +57,7 @@ What Archivd is **today** (auth browse + guest share). Deep dives live in sectio
 | Concept | Behavior |
 |---------|----------|
 | Virtual root | `folder_id = null` = “My Files” (no auto DB folder row) |
-| Nested folders | `parent_id` tree per owner; breadcrumb via `FolderAncestorChain` |
+| Nested folders | `parent_id` tree per owner; breadcrumb via `FolderAncestorChain` (one owner-folder query, walk in memory) |
 | Files | `ARCHIVD_files` — denormalized `user_id`, optional `folder_id` |
 | Upload sessions | `ARCHIVD_uploads` — init -> browser PUT (direct S3 **or** CF Worker proxy) -> complete promotes row. **Control plane** (init / sign-parts / complete / abort) always Monolith->S3 SDK; **data plane** (part bytes) only is Worker or direct. Seeing B2 host on Create/Complete is expected even when proxy is on. Complete uses row lock (`lockForUpdate`); pending non-expired sizes **reserve** owner quota; `max_concurrent_uploads` enforced server-side on pending owner sessions. Archive aborts pending team uploads. **No resume**: a dead upload restarts from scratch. Chunk/part layout frozen at init (`chunk_size`/`part_count`). **Prune scheduler** aborts orphaned **multipart** sessions past grace or with no recent S3 part activity (Backblaze has no S3 lifecycle for incomplete multiparts). |
 | Part size | Default **8 MB** chunk + multipart threshold (`archivd.chunk_size_bytes` in **Settings → Archivd**). 8 MB is a precaution for ISP-shaped consumer links: a stalled 8 MB part recovers ~3× faster than a stalled 25 MB part. On the Worker proxy keep it **≤ 32 MB** — the Gateway buffers each UploadPart (cap 32 MB) so it can retry transient upstream 5xx instead of returning a raw 500. See Gateway [upload-performance.md](../../../gateway/docs/upload-performance.md) for A/B tuning and RTT analysis. |
@@ -460,7 +462,7 @@ Resume upload was removed — its client-side fingerprint was a major throughput
 
 **Hash blocklist (DMCA):**
 
-- Table `ARCHIVD_hash_blocklist`: `id` uuid, `sha256` (64) unique-indexed, `reason` nullable, `created_by` uuid nullable, timestamps. Model `ArchivdHashBlocklist`; `HashBlocklistService` exposes `isBlocked` / `isFileBlocked` / `block` / `unblock` (queries the DB directly — Octane-safe).
+- Table `ARCHIVD_hash_blocklist`: `id` uuid, `sha256` (64) unique-indexed, `reason` nullable, `created_by` uuid nullable, timestamps. Model `ArchivdHashBlocklist`; `HashBlocklistService` exposes `isBlocked` / `isFileBlocked` / `blockedSet` / `block` / `unblock`. Single-file paths (`isBlocked`) query the unique index directly — no `Cache`, no service-instance or static memo (Octane-safe). Browse / trash / search prime a **request-attribute** lookup via `blockedSet` (`whereIn` once per page) through `HostedFileResourceCollection`.
 - **Enforcement:** `VisibilityService::assertCanEnableLinkShare` / `assertVisibilityChangeAllowed` (via `FileService::setVisibility` and `bulkSetVisibility`) reject enabling `anyone_with_link` for a blocked checksum with **422 `public_share_blocked_hash`**; bulk share is rejected when **any** targeted file is blocked. Guest show/download (`fileAccessible`) returns **404** for a blocked checksum even if the file was already public.
 - **Manage:** Artisan `archivd:blocklist-hash {sha256} {--reason=} {--remove}` and an admin page (`archivd.blocklist.*` routes, gated by `manage any Archivd resource`) to list/add/remove entries. Query-mode list rows emit `actions[]` (`remove`); the labeled trash control maps that key.
 - `HostedFileResource` exposes `is_hash_blocked` so the UI can badge blocked files.

@@ -186,7 +186,7 @@ Do not load this contract for screen-level UX. Use the domain README (Agent entr
 
 ## Mimic doctrine
 
-Mimic is **appearance + behavior + intent**, not a pixel clone of Blade. One list endpoint, two presentations via `display_mode`: `query` (SPA) vs unused `datatable` — [list-display-modes.md](../platform/list-display-modes.md). Parse as-is. Do not invent a second list API or client-side money/lifecycle math. Historical non-blocking SPA decisions: [archive/spa-consumer-decision-findings.md](../archive/spa-consumer-decision-findings.md).
+Mimic is **appearance + behavior + intent**, not a pixel clone of Blade. List endpoints use `display_mode=query` — [list-display-modes.md](../platform/list-display-modes.md). Parse as-is. Do not invent a second list API or client-side money/lifecycle math. Historical non-blocking SPA decisions: [archive/spa-consumer-decision-findings.md](../archive/spa-consumer-decision-findings.md).
 
 ## Realtime
 

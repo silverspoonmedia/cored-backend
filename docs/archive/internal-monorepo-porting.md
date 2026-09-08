@@ -97,7 +97,7 @@ For each domain, in one PR:
 | `App\Http\Requests\Concerns\InteractsWithListDisplayMode` | Shared request trait |
 | `App\Http\Resources\Concerns\ResolvesResourceArray` | Shared resource trait |
 | `App\Console\Commands/*` | Env/locale/key artisan commands |
-| `App\Providers\AppServiceProvider` | Kernel bindings only (`EloquentCrudRepositoryInterface`, `DataTableResponseFactory`, Blade component path) |
+| `App\Providers\AppServiceProvider` | Kernel bindings only (`EloquentCrudRepositoryInterface`, `DataTableResponseFactory`, Blade component path). Historical snapshot — `DataTableResponseFactory` was later removed; lists are query-mode only. |
 | `App\Providers\Domain\*ServiceProvider` | Per-domain bindings, policies, event listeners, view composers (registered in `bootstrap/providers.php`) |
 
 Domain controllers **extend** kernel base classes and **import** kernel concerns — they do not duplicate them.

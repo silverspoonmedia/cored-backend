@@ -3,6 +3,7 @@
 namespace App\Domain\Archivd\Http\Requests\Concerns;
 
 use App\Domain\Archivd\Enums\Visibility;
+use App\Domain\Archivd\Support\Sha256Checksum;
 use Illuminate\Validation\Rule;
 
 trait ArchivdRequestRules
@@ -50,6 +51,58 @@ trait ArchivdRequestRules
 
         return [
             'visibility' => [$mod, 'string', Rule::in(Visibility::values())],
+        ];
+    }
+
+    /**
+     * @return array<string, list<mixed>>
+     */
+    protected function storeWorkspaceRules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+        ];
+    }
+
+    /**
+     * @return array<string, list<mixed>>
+     */
+    protected function workspaceRoleRules(): array
+    {
+        return [
+            'role' => ['required', 'string', 'in:admin,editor,viewer'],
+        ];
+    }
+
+    /**
+     * @return array<string, list<mixed>>
+     */
+    protected function inviteWorkspaceMemberRules(): array
+    {
+        return [
+            'email' => ['required', 'email', 'max:255'],
+            ...$this->workspaceRoleRules(),
+        ];
+    }
+
+    /**
+     * @return array<string, list<mixed>>
+     */
+    protected function acceptWorkspaceInviteRules(): array
+    {
+        return [
+            'token' => ['required', 'string', 'max:64'],
+        ];
+    }
+
+    /**
+     * @return array<string, list<mixed>>
+     */
+    protected function sha256BlocklistRules(): array
+    {
+        return [
+            'sha256' => ['required', 'string', 'size:64', 'regex:'.Sha256Checksum::PATTERN],
+            'reason' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

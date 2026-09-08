@@ -96,7 +96,7 @@ lang/{en,id,ja,ko,zh_CN,ar,ru}/
 
 Managed files listed in `config/localization.php` → `managed_files`.
 
-`web/*.php` shrank with the Blade removal — it now holds only strings that surviving **server-side PHP** still resolves: `session`, `identity-connections`, `vtual-vtuber` (Discord callback flash), `payments`, `archivd` (direct-upload errors), `settings` (registry labels), and `vtual-orphans` (orphan archive confirm, reused by query-mode `OrphanCreatorQueryRowActions` and the unused Yajra resolver — see [list-display-modes.md](list-display-modes.md)). Query-mode row-action labels and mutate confirms that are not already in `ui.php` / `web/*` live in `list_actions.php` (API-emitted; the SPA displays them, it does not re-translate). Browser UI strings live in the SPA's JSON locales, not here. Do not add a `web/*.php` file for a screen; if only the SPA reads it, it belongs in `monolith-vue-workers/src/i18n/locales/*.json`.
+`web/*.php` shrank with the Blade removal — it now holds only strings that surviving **server-side PHP** still resolves: `session`, `identity-connections`, `vtual-vtuber` (Discord callback flash), `payments`, `archivd` (direct-upload errors), `settings` (registry labels), and `vtual-orphans` (orphan archive confirm, reused by query-mode `OrphanCreatorQueryRowActions` — see [list-display-modes.md](list-display-modes.md)). Query-mode row-action labels and mutate confirms that are not already in `ui.php` / `web/*` live in `list_actions.php` (API-emitted; the SPA displays them, it does not re-translate). Browser UI strings live in the SPA's JSON locales, not here. Do not add a `web/*.php` file for a screen; if only the SPA reads it, it belongs in `monolith-vue-workers/src/i18n/locales/*.json`.
 
 ## Key conventions
 

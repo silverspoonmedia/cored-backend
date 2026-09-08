@@ -39,7 +39,7 @@ class ChannelRegistrationFlushService
         $summary = ['platforms' => []];
 
         foreach ($platforms as $platform) {
-            $key = $this->platformKey($platform);
+            $key = $platform->toPlatformKey();
             if ($key === PlatformKey::Kick) {
                 continue;
             }
@@ -155,15 +155,5 @@ class ChannelRegistrationFlushService
 
             return $pending;
         });
-    }
-
-    private function platformKey(Platform $platform): PlatformKey
-    {
-        $key = $platform->key;
-        if ($key instanceof PlatformKey) {
-            return $key;
-        }
-
-        return PlatformKey::from((string) $key);
     }
 }

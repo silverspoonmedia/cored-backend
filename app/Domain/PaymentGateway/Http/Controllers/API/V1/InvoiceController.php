@@ -8,11 +8,9 @@ use App\Domain\PaymentGateway\Http\Resources\InvoiceResource;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Services\InvoiceCsvExportService;
 use App\Domain\PaymentGateway\Services\InvoiceService;
-use App\Domain\PaymentGateway\Support\DataTable\InvoiceRowActionResolver;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
-use App\Support\DataTable\DataTableResponseFactory;
 use App\Support\ListActions\Builders\InvoiceQueryRowActions;
 use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
@@ -28,8 +26,6 @@ class InvoiceController extends Controller
     public function __construct(
         private readonly InvoiceService $service,
         private readonly InvoiceCsvExportService $csvExport,
-        private readonly DataTableResponseFactory $dataTables,
-        private readonly InvoiceRowActionResolver $rowActions,
         private readonly InvoiceQueryRowActions $queryRowActions,
     ) {}
 
@@ -37,24 +33,16 @@ class InvoiceController extends Controller
     {
         $invoices = $this->service->list();
 
-        return $this->respondToListDisplayMode(
+        return $this->respondToQueryList(
             $request,
-            fn (): JsonResponse => $this->respondToQueryList(
-                $request,
-                $invoices,
-                fn ($list) => QueryRowActionAttacher::attach(
-                    $this->resolveResource(InvoiceResource::collection($list)),
-                    $list,
-                    $this->queryRowActions,
-                    $request->user(),
-                ),
-                __('api/payments.invoices.list'),
+            $invoices,
+            fn ($list) => QueryRowActionAttacher::attach(
+                $this->resolveResource(InvoiceResource::collection($list)),
+                $list,
+                $this->queryRowActions,
+                $request->user(),
             ),
-            fn (): JsonResponse => $this->dataTables->respond(
-                $invoices,
-                fn (Invoice $invoice) => $this->resolveResource(new InvoiceResource($invoice)),
-                $this->rowActions,
-            ),
+            __('api/payments.invoices.list'),
         );
     }
 

@@ -2,13 +2,12 @@
 
 namespace App\Domain\Inference\Http\Requests;
 
-use App\Domain\Inference\Http\Requests\Concerns\AuthorizesInferenceCatalog;
+use App\Domain\Inference\Http\Requests\Concerns\InferenceCatalogRules;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreInferenceProviderRequest extends FormRequest
 {
-    use AuthorizesInferenceCatalog;
+    use InferenceCatalogRules;
 
     public function authorize(): bool
     {
@@ -20,10 +19,6 @@ class StoreInferenceProviderRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'slug' => ['required', 'string', 'max:64', Rule::unique('ai_inference_providers', 'slug')],
-            'name' => ['required', 'string', 'max:128'],
-            'is_active' => ['sometimes', 'boolean'],
-        ];
+        return $this->inferenceProviderRules(forUpdate: false);
     }
 }

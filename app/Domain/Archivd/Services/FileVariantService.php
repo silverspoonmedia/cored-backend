@@ -8,8 +8,8 @@ use App\Domain\Archivd\Exceptions\ArchivdException;
 use App\Domain\Archivd\Models\FileVariant;
 use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Archivd\Support\ObjectKeyResolver;
+use App\Domain\Archivd\Support\ObjectStorage;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class FileVariantService
 {
@@ -17,6 +17,7 @@ class FileVariantService
         private readonly FileVariantGenerator $generator,
         private readonly QuotaService $quota,
         private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
+        private readonly ObjectStorage $storage = new ObjectStorage,
     ) {}
 
     public function findReady(HostedFile $file, FileVariantKind|string $kind): ?FileVariant
@@ -38,9 +39,9 @@ class FileVariantService
         }
 
         $key = $this->objectKeys->objectKey((string) $variant->file->user_id, (string) $variant->path);
-        $bytes = Storage::disk($variant->disk)->get($key);
+        $bytes = $this->storage->get($key, (string) $variant->disk);
 
-        if (! is_string($bytes) || $bytes === '') {
+        if ($bytes === null || $bytes === '') {
             throw new \RuntimeException('Unable to read variant bytes.');
         }
 
@@ -100,7 +101,7 @@ class FileVariantService
             $encoded = $this->generator->encodeJpeg($source, $maxPx);
             $objectKey = $this->objectKeys->objectKey((string) $file->user_id, (string) $variant->path);
 
-            Storage::disk($file->disk)->put($objectKey, $encoded['bytes']);
+            $this->storage->put($objectKey, $encoded['bytes'], (string) $file->disk);
 
             $variant->forceFill([
                 'disk' => $file->disk,

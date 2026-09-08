@@ -3,12 +3,15 @@
 namespace Tests\Domain\Vtual\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Vtual\Enums\EntityStatus;
 use App\Domain\Vtual\Enums\ManagementMemberRole;
+use App\Domain\Vtual\Events\ManagementUpdated;
 use App\Domain\Vtual\Models\Management;
 use App\Domain\Vtual\Models\ManagementMember;
 use App\Support\Product\Services\ProductActivationService;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -63,7 +66,7 @@ class ManagementListActionsTest extends TestCase
             'id' => (string) Str::uuid7(),
             'slug' => 'org-'.Str::random(8),
             'name' => 'Org '.Str::random(6),
-            'status' => \App\Domain\Vtual\Enums\EntityStatus::Active,
+            'status' => EntityStatus::Active,
         ]);
 
         ManagementMember::query()->create([
@@ -180,9 +183,35 @@ class ManagementListActionsTest extends TestCase
     }
 
     #[Test]
+    public function management_list_batches_membership_and_claimable_lookups(): void
+    {
+        $owner = $this->userWithRole('User');
+        $this->activations->activateImplicit($owner, 'Vtual');
+        $this->makeManagement($owner);
+        $this->makeManagement($owner);
+        $this->makeManagement($owner);
+
+        $memberQueries = 0;
+        DB::listen(function ($query) use (&$memberQueries): void {
+            if (str_contains((string) $query->sql, 'vtual_management_members')) {
+                $memberQueries++;
+            }
+        });
+
+        $rows = $this->actingAsJwt($owner)
+            ->getJson('/api/v1/vtual/managements')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertCount(3, $rows);
+        $this->assertSame(['owner', 'owner', 'owner'], collect($rows)->pluck('my_role')->all());
+        $this->assertLessThanOrEqual(3, $memberQueries);
+    }
+
+    #[Test]
     public function owner_can_archive_management(): void
     {
-        Event::fake([\App\Domain\Vtual\Events\ManagementUpdated::class]);
+        Event::fake([ManagementUpdated::class]);
 
         $owner = $this->userWithRole('User');
         $this->activations->activateImplicit($owner, 'Vtual');

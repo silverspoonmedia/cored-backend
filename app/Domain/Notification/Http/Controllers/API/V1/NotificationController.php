@@ -9,7 +9,6 @@ use App\Domain\Notification\Models\ActivityNotification;
 use App\Domain\Notification\Services\NotificationService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
-use App\Support\ApiResponder;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
@@ -68,7 +67,7 @@ class NotificationController extends Controller
 
         if (! $this->notifications->isVisibleTo($notification, $viewer)) {
             throw new HttpResponseException(
-                ApiResponder::error(__('api/notifications.not_visible'), 403),
+                $this->errorResponse(__('api/notifications.not_visible'), 403),
             );
         }
 

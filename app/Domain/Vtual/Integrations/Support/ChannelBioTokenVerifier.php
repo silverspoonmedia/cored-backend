@@ -32,12 +32,7 @@ class ChannelBioTokenVerifier
 
     public function platformKeyFromModel(Platform $platform): PlatformKey
     {
-        $key = $platform->key;
-        if ($key instanceof PlatformKey) {
-            return $key;
-        }
-
-        return PlatformKey::from((string) $key);
+        return $platform->toPlatformKey();
     }
 
     public function mintToken(string $configKeyPrefix = 'vtual.channel_claim'): string
