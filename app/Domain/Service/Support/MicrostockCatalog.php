@@ -7,7 +7,7 @@ namespace App\Domain\Service\Support;
  *
  * Microstock workspace slots are standalone: they do NOT overlap with the
  * Archivd team workspace slots (`ArchivdCatalog`). Storage still
- * meters into the shared FH quota pool, but slot accounting is separate.
+ * meters into the shared Archivd quota pool, but slot accounting is separate.
  */
 final class MicrostockCatalog
 {

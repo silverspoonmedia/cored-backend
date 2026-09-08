@@ -28,7 +28,7 @@ use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
 /**
- * Assert service mutations dispatch FH realtime events when broadcast is configured.
+ * Assert service mutations dispatch Archivd realtime events when broadcast is configured.
  */
 class ArchivdRealtimeEmitTest extends TestCase
 {
@@ -155,7 +155,7 @@ class ArchivdRealtimeEmitTest extends TestCase
 
     public function test_remove_member_dispatches_members_changed(): void
     {
-        // Fake all FH realtime events so create/invite/accept never hit real Pusher.
+        // Fake all Archivd realtime events so create/invite/accept never hit real Pusher.
         Event::fake([
             WorkspaceMembersChanged::class,
             WorkspaceActivityAppended::class,

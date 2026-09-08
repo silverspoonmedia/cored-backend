@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => 'Файловый хостинг',
+    'title' => 'Archivd',
     'blocklist_title' => 'Чёрный список хэшей (DMCA)',
     'blocklist_add' => 'Заблокировать хэш',
     'blocklist_sha256' => 'sha256',
@@ -293,7 +293,7 @@ return [
     'quota_remaining' => 'осталось',
     'quota_unlimited' => 'Безлимитно',
     'load_failed' => 'Не удалось загрузить.',
-    'vue_mount_failed' => 'Не удалось загрузить интерфейс файлового хостинга. Обновите страницу.',
+    'vue_mount_failed' => 'Не удалось загрузить интерфейс Archivd. Обновите страницу.',
     'link_copied' => 'Ссылка скопирована в буфер обмена.',
     'ajax_success' => 'Действие выполнено.',
     'ajax_error' => 'Действие не удалось.',

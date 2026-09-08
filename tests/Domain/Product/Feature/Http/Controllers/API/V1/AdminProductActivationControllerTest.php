@@ -147,12 +147,12 @@ class AdminProductActivationControllerTest extends TestCase
             ->json('data');
 
         $this->assertGreaterThanOrEqual(1, count($products));
-        $fh = collect($products)->firstWhere('product_key', 'Archivd');
-        $this->assertNotNull($fh);
-        $this->assertSame('implicit', $fh['activation_type']);
-        $this->assertSame('archivd', $fh['fulfillment_target']);
-        $this->assertArrayHasKey('counts', $fh);
-        $this->assertArrayHasKey('product_metrics', $fh);
+        $product = collect($products)->firstWhere('product_key', 'Archivd');
+        $this->assertNotNull($product);
+        $this->assertSame('implicit', $product['activation_type']);
+        $this->assertSame('archivd', $product['fulfillment_target']);
+        $this->assertArrayHasKey('counts', $product);
+        $this->assertArrayHasKey('product_metrics', $product);
     }
 
     public function test_product_show_returns_summary_and_activations(): void

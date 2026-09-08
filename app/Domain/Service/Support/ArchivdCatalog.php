@@ -3,7 +3,7 @@
 namespace App\Domain\Service\Support;
 
 /**
- * Archivd catalog codes and size constants for Service × FH integration.
+ * Archivd catalog codes and size constants for Service × Archivd integration.
  */
 final class ArchivdCatalog
 {
@@ -24,7 +24,7 @@ final class ArchivdCatalog
 
     public const ENTITLEMENT_WORKSPACE_SLOTS = 'workspace_slots';
 
-    /** Base owned active workspaces included with any paid FH storage plan. */
+    /** Base owned active workspaces included with any paid Archivd storage plan. */
     public const BASE_OWNED_WORKSPACE_SLOTS = 10;
 
     /** Legacy unlimited POC — retired. */

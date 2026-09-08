@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => 'ファイルホスティング',
+    'title' => 'Archivd',
     'blocklist_title' => 'ハッシュブロックリスト (DMCA)',
     'blocklist_add' => 'ハッシュをブロック',
     'blocklist_sha256' => 'sha256',
@@ -293,7 +293,7 @@ return [
     'quota_remaining' => '残り',
     'quota_unlimited' => '無制限',
     'load_failed' => '読み込みに失敗しました。',
-    'vue_mount_failed' => 'ファイルホスティング UI の読み込みに失敗しました。ページを再読み込みしてください。',
+    'vue_mount_failed' => 'Archivd UI の読み込みに失敗しました。ページを再読み込みしてください。',
     'link_copied' => 'リンクをクリップボードにコピーしました。',
     'ajax_success' => '操作が完了しました。',
     'ajax_error' => '操作に失敗しました。',

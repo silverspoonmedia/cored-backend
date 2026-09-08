@@ -117,7 +117,7 @@ class ProductInsightService
     }
 
     /**
-     * Aggregate FH metrics read directly from the per-(tier, metric) bucket
+     * Aggregate Archivd metrics read directly from the per-(tier, metric) bucket
      * rows. User counts per tier come from QuotaService::userIdsForTier —
      * analytics rows hold sums, not user membership.
      *
@@ -174,7 +174,7 @@ class ProductInsightService
     }
 
     /**
-     * Per-user FH detail. Reads source tables directly (single-user indexed
+     * Per-user Archivd detail. Reads source tables directly (single-user indexed
      * queries) — the data already lives there, so no need to duplicate into
      * analytics rows just for the drill-down view.
      *

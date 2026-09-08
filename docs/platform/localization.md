@@ -126,7 +126,7 @@ Clients must not reformat API values — consume Resource companions (`*_formatt
 
 ## Domain glossary
 
-Canonical term choices across locales. Use these for every translation wave; do not vary per file. Brands and product names (`vTual`, `Microstock`, `Discord`, `QRIS`, `YouTube`, `Twitch`, `hCaptcha`) are never translated. Machine/contract text (enum values, probe method names, `sha256`, URL placeholders) stays English.
+Canonical term choices across locales. Use these for every translation wave; do not vary per file. Brands and product names (`Archivd`, `vTual`, `Microstock`, `Discord`, `QRIS`, `YouTube`, `Twitch`, `hCaptcha`) are never translated. Machine/contract text (enum values, probe method names, `sha256`, URL placeholders) stays English.
 
 | English | id | ja | ko | zh_CN | ar | ru |
 |---------|----|----|----|-------|----|----|
@@ -141,7 +141,7 @@ Canonical term choices across locales. Use these for every translation wave; do 
 | payment gateway | gateway pembayaran | 決済ゲートウェイ | 결제 게이트웨이 | 支付网关 | بوابة الدفع | платёжный шлюз |
 | settlement | settlement | 精算 | 정산 | 结算 | تسوية | расчёт (сеттлемент) |
 | upload batch | batch unggahan | アップロードバッチ | 업로드 배치 | 上传批次 | دفعة الرفع | пакет загрузки |
-| Archivd | Archivd | ファイルホスティング | 파일 호스팅 | 文件托管 | استضافة الملفات | файловый хостинг |
+| Archivd | Archivd | Archivd | Archivd | Archivd | Archivd | Archivd |
 | persona | persona | ペルソナ | 페르소나 | 形象 | شخصية | персона |
 | role / permission | peran / izin | ロール / 権限 | 역할 / 권한 | 角色 / 权限 | الدور / الصلاحيات | роль / разрешение |
 | staff | staf | スタッフ | 스태프 | 工作人员 | فريق العمل | сотрудники |

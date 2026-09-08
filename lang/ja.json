@@ -2063,7 +2063,7 @@
                 "last_viewed": "最終閲覧",
                 "views": "閲覧数"
             },
-            "title": "ファイルホスティング",
+            "title": "Archivd",
             "trash": "ゴミ箱",
             "trash_empty": "ゴミ箱は空です。",
             "trash_title": "ゴミ箱",
@@ -2103,7 +2103,7 @@
                 "label": "公開設定",
                 "private": "制限付き"
             },
-            "vue_mount_failed": "ファイルホスティング UI の読み込みに失敗しました。ページを再読み込みしてください。",
+            "vue_mount_failed": "Archivd UI の読み込みに失敗しました。ページを再読み込みしてください。",
             "workspace_activity": "チームアクティビティ",
             "workspace_personal": "個人",
             "workspace_team": "チームワークスペース"

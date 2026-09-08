@@ -118,7 +118,7 @@ class Service extends Model
     }
 
     /**
-     * Any FH catalog SKU (storage main/addon or non-storage slot addon).
+     * Any Archivd catalog SKU (storage main/addon or non-storage slot addon).
      */
     public function isArchivdCatalogPlan(): bool
     {
@@ -155,7 +155,7 @@ class Service extends Model
     }
 
     /**
-     * Stackable addon (FH storage/workspace slots or Microstock workspace slots).
+     * Stackable addon (Archivd storage/workspace slots or Microstock workspace slots).
      * Not mains. Drives quantity compounding + shared addon anniversary.
      */
     public function isAddonPlan(): bool

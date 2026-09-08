@@ -53,7 +53,7 @@ class ServiceEntitlementService
 
         // Capture the user's Archivd tier BEFORE the entitlement mutation —
         // needed by moveUserTier to transfer the contribution between buckets.
-        // Only relevant when this purchase is a paid FH storage plan; otherwise
+        // Only relevant when this purchase is a paid Archivd storage plan; otherwise
         // the value is unused.
         $oldTier = $this->archivdTierForUser($purchase->user_id);
 
@@ -210,7 +210,7 @@ class ServiceEntitlementService
             ->where('user_id', $userId)
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
             ->whereHas('service', function ($q): void {
-                // Storage + workspace-slot addons (FH and Microstock) share the
+                // Storage + workspace-slot addons (Archivd and Microstock) share the
                 // stack anniversary.
                 $q->whereIn('fulfillment_target', [
                     ArchivdCatalog::FULFILLMENT_TARGET,
@@ -357,7 +357,7 @@ class ServiceEntitlementService
 
     /**
      * Active/grace Microstock workspace-slot addon quantity sum (extra slots).
-     * Standalone from FH team workspace slots (MicrostockCatalog).
+     * Standalone from Archivd team workspace slots (MicrostockCatalog).
      */
     public function microstockWorkspaceSlotExtraQuantity(string $userId): int
     {
@@ -473,7 +473,7 @@ class ServiceEntitlementService
 
     /**
      * Move the user's Archivd contribution to the paid bucket after an
-     * entitlement activation. Only fires for paid FH storage plans.
+     * entitlement activation. Only fires for paid Archivd storage plans.
      */
     private function syncArchivdTier(string $userId, ?Service $service, string $oldTier): void
     {
@@ -499,7 +499,7 @@ class ServiceEntitlementService
 
     /**
      * After expiry, resolve the new tier: if the user still has any active or
-     * grace paid FH storage entitlement, keep that label; otherwise fall to free.
+     * grace paid Archivd storage entitlement, keep that label; otherwise fall to free.
      */
     private function syncArchivdTierAfterExpiry(ServiceEntitlement $entitlement, string $oldTier): void
     {
@@ -551,7 +551,7 @@ class ServiceEntitlementService
     }
 
     /**
-     * FH storage plans use fixed 30-day periods (aligned with credit math).
+     * Archivd storage plans use fixed 30-day periods (aligned with credit math).
      * Other services keep calendar interval via {@see BillingInterval::addPeriod}.
      */
     private function addPeriod(BillingInterval $interval, Carbon $from, ?Service $service): Carbon

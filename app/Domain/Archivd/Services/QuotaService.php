@@ -172,7 +172,7 @@ class QuotaService
     }
 
     /**
-     * Guest public links and enabling anyone_with_link require active paid FH storage.
+     * Guest public links and enabling anyone_with_link require active paid Archivd storage.
      * Free and grace owners cannot expose files/folders publicly (grace = renew first).
      */
     public function ownerCanPublicShare(string $userId): bool

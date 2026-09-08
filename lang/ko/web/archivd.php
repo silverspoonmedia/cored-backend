@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => '파일 호스팅',
+    'title' => 'Archivd',
     'blocklist_title' => '해시 차단 목록 (DMCA)',
     'blocklist_add' => '해시 차단',
     'blocklist_sha256' => 'sha256',
@@ -293,7 +293,7 @@ return [
     'quota_remaining' => '남음',
     'quota_unlimited' => '무제한',
     'load_failed' => '불러오지 못했습니다.',
-    'vue_mount_failed' => '파일 호스팅 UI를 불러오지 못했습니다. 페이지를 새로 고치십시오.',
+    'vue_mount_failed' => 'Archivd UI를 불러오지 못했습니다. 페이지를 새로 고치십시오.',
     'link_copied' => '링크가 클립보드에 복사되었습니다.',
     'ajax_success' => '작업이 완료되었습니다.',
     'ajax_error' => '작업에 실패했습니다.',

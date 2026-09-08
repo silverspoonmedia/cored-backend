@@ -64,7 +64,7 @@ class WorkspaceAccessService
     /**
      * Standalone Microstock workspace slot limit: base (1) once the free
      * registration is active, plus compounding slot-addon quantity. 0 when the
-     * user never activated Microstock. Does NOT overlap with FH team slots.
+     * user never activated Microstock. Does NOT overlap with Archivd team slots.
      */
     public function microstockSlotLimit(string $ownerUserId): int
     {
@@ -252,7 +252,7 @@ class WorkspaceAccessService
     }
 
     /**
-     * Owner must have active paid FH (main or addon). Free-only blocked.
+     * Owner must have active paid Archivd (main or addon). Free-only blocked.
      */
     public function assertOwnerEligibleForCollab(string $ownerUserId): void
     {

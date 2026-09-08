@@ -7,7 +7,7 @@ return [
     'source' => '現在のソース: :source',
     'groups' => [
         'platform' => 'プラットフォーム',
-        'archivd' => 'ファイルホスティング',
+        'archivd' => 'Archivd',
         'microstock' => 'Microstock',
         'vtual' => 'vTual',
         'notification_audiences' => '通知オーディエンス',
