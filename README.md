@@ -2,15 +2,15 @@
 
 Laravel 13 API application with **JWT authentication**, **TOTP two-factor authentication (2FA)**, **Spatie RBAC**, **hierarchical user management (H-RBAC)**, and a **versioned API** under `/api/v1`. Business endpoints live on versioned routes; a small global surface exists for health checks (`GET /api/ping`).
 
-It also serves as the **API backend** for the sibling **Monolith-Vue-Workers** SPA ó the sole browser UI. The SPA consumes `/api/v1/*` via cross-site HttpOnly cookies and CSRF double-submit. Minimal server `web` routes remain for public share, payment return, and OAuth callbacks. See **[Web frontend (removed)](docs/web/blade-admin.md)** and **[Vue-Workers SPA](docs/integration/vue-workers-spa.md)**.
+It also serves as the **API backend** for the sibling **Monolith-Vue-Workers** SPA ù the sole browser UI. The SPA consumes `/api/v1/*` via cross-site HttpOnly cookies and CSRF double-submit. Minimal server `web` routes remain for public share, payment return, and OAuth callbacks. See **[Web frontend (removed)](docs/web/blade-admin.md)** and **[Vue-Workers SPA](docs/integration/vue-workers-spa.md)**.
 
-**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,Archivd,Ö}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)).
+**Internal code layout:** Domain logic is grouped under `app/Domain/{Identity,Navigation,Notification,ActivityLog,PaymentGateway,Service,Archivd,ù}/` (logical monorepo inside this repository). See [Domain modules](docs/platform/architecture.md) (historical: [archive](docs/archive/)).
 
 ### Living documentation (required)
 
-**This documentation is referenced on every task.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing code, adding features, or completing work.
+**This documentation is referenced when the matching area is in play.** Use `README.md` and the guides under [`docs/`](docs/) as the primary reference before changing that area. Do not load the entire `docs/` tree on every task.
 
-**AI agents:** read [docs/agents/core-rules.md](docs/agents/core-rules.md) and root [AGENTS.md](AGENTS.md) on every task ó mandatory full-stack, living-docs, database-safety, Octane, and localization rules live there, in one place. Work stays in this repository.
+**AI agents:** [AGENTS.md](AGENTS.md) is the always-on index. Open [docs/agents/core-rules.md](docs/agents/core-rules.md) and the owning platform/domain guide only when that rule is in play. Context budget: [docs/agents/context-budget.md](docs/agents/context-budget.md). Prefer [Monolith-Backend.code-workspace](Monolith-Backend.code-workspace); use [Monolith-Fullstack.code-workspace](Monolith-Fullstack.code-workspace) only when the API?SPA contract moves. Work stays in this repository (or the loaded workspace subset).
 
 **All project documentation must be written in English** (README, `docs/`, and any new guides or sections you add).
 
@@ -23,8 +23,8 @@ This project does **not** use auto-increment integer primary keys for domain mod
 | Rule | Practice |
 |------|----------|
 | Primary key | `$table->uuid('id')->primary()` in migrations |
-| Foreign key | `$table->foreignUuid('Ö_id')->constrained(Ö)` (or `uuid` + explicit FK) |
-| Model | `Illuminate\Database\Eloquent\Concerns\HasUuids` ó Laravel 13 generates **UUID v7** on create |
+| Foreign key | `$table->foreignUuid('ù_id')->constrained(ù)` (or `uuid` + explicit FK) |
+| Model | `Illuminate\Database\Eloquent\Concerns\HasUuids` ù Laravel 13 generates **UUID v7** on create |
 | API / JWT | Route parameters, JSON `id` fields, and JWT `sub` are UUID strings |
 
 **Already on UUID today**
@@ -56,7 +56,7 @@ On **Laragon** (Windows), enable PHP 8.3+ and create a MySQL database named `mon
 
 **Active development targets Windows** (PowerShell / cmd). Shell examples in this repo assume a Windows environment unless noted otherwise.
 
-**AI IDE / agent shells:** when chaining multiple commands in one line, use **`;`** as the separatorónot **`&&`**. On Windows, `&&` often fails or behaves differently than on Unix shells, which wastes tokens on retries and error output. Prefer separate commands when clarity matters; when you must chain, use semicolons:
+**AI IDE / agent shells:** when chaining multiple commands in one line, use **`;`** as the separatorùnot **`&&`**. On Windows, `&&` often fails or behaves differently than on Unix shells, which wastes tokens on retries and error output. Prefer separate commands when clarity matters; when you must chain, use semicolons:
 
 ```powershell
 cd monolith; php artisan migrate; php artisan db:seed
@@ -83,7 +83,7 @@ php artisan env:install local
 
 This copies `.env.local.example` ? `.env`, seeds a matching snapshot (`.env.local`), sets `.env.profile`, and generates `APP_KEY` and `JWT_SECRET` when empty. See [Environment configuration](docs/platform/environment.md) for staging/production profiles.
 
-To swap between saved profiles later without losing values, use `php artisan env:switch {profile}` ó see [Switching profiles](docs/platform/environment.md#switching-profiles-local-dev).
+To swap between saved profiles later without losing values, use `php artisan env:switch {profile}` ù see [Switching profiles](docs/platform/environment.md#switching-profiles-local-dev).
 
 Adjust at least:
 
@@ -93,8 +93,8 @@ Adjust at least:
 | `DB_*` | MySQL connection (`DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) |
 | `JWT_*` | `JWT_SECRET` is generated by `env:install`; re-run `php artisan jwt:secret` to rotate |
 | `MAIL_*` | Required for email verification and password reset in real use (tests use `array` driver) |
-| `BROADCAST_CONNECTION` / `PUSHER_*` | Optional locally. After `LocalSettingsSeeder`, local delivery defaults to `realtime` when Pusher is configured; otherwise the bell polls. Set **Settings ? Platform** `platform.notifications.delivery` plus credentials ó see [Activity notifications](docs/domains/notification/README.md#delivery) |
-| `HCAPTCHA_*` | Optional locally (leave `HCAPTCHA_SECRET` / `HCAPTCHA_SITEKEY` empty). Enable via **Settings ? Platform** `platform.hcaptcha.enabled` and set keys from the [hCaptcha dashboard](https://dashboard.hcaptcha.com/) ó API: [JWT Authentication](docs/domains/identity/README.md#hcaptcha-defense-in-depth); SPA widget in `monolith-vue-workers` |
+| `BROADCAST_CONNECTION` / `PUSHER_*` | Optional locally. After `LocalSettingsSeeder`, local delivery defaults to `realtime` when Pusher is configured; otherwise the bell polls. Set **Settings ? Platform** `platform.notifications.delivery` plus credentials ù see [Activity notifications](docs/domains/notification/README.md#delivery) |
+| `HCAPTCHA_*` | Optional locally (leave `HCAPTCHA_SECRET` / `HCAPTCHA_SITEKEY` empty). Enable via **Settings ? Platform** `platform.hcaptcha.enabled` and set keys from the [hCaptcha dashboard](https://dashboard.hcaptcha.com/) ù API: [JWT Authentication](docs/domains/identity/README.md#hcaptcha-defense-in-depth); SPA widget in `monolith-vue-workers` |
 
 ### 3. Database migrations and seeders
 
@@ -103,7 +103,7 @@ php artisan migrate
 php artisan db:seed
 ```
 
-`DatabaseSeeder` runs core/product role seeders, domain and notification settings, sample users/product activations, then the authoritative `MenuSeeder`. Every menu seed replaces all active and trashed menu rows and removes admin-created/custom menus; do not run `db:seed` merely to patch one menu entry. See [Navigation ó Authoritative seeding](docs/domains/navigation/README.md#authoritative-seeding).
+`DatabaseSeeder` runs core/product role seeders, domain and notification settings, sample users/product activations, then the authoritative `MenuSeeder`. Every menu seed replaces all active and trashed menu rows and removes admin-created/custom menus; do not run `db:seed` merely to patch one menu entry. See [Navigation ù Authoritative seeding](docs/domains/navigation/README.md#authoritative-seeding).
 
 Seeded sample users:
 
@@ -119,11 +119,11 @@ Seeded sample users:
 To reset and reseed during development:
 
 ```bash
-# Requires ALLOW_DESTRUCTIVE_DB=true in .env ó see docs/platform/database-safety.md
+# Requires ALLOW_DESTRUCTIVE_DB=true in .env ù see docs/platform/database-safety.md
 php artisan migrate:fresh --seed
 ```
 
-**Database safety:** Tests use SQLite; dev uses MySQL. Prefer `composer test` (runs `config:clear` first). Bare `php artisan test` is guarded on current code ó see [docs/platform/database-safety.md](docs/platform/database-safety.md).
+**Database safety:** Tests use SQLite; dev uses MySQL. Prefer `composer test` (runs `config:clear` first). Bare `php artisan test` is guarded on current code ù see [docs/platform/database-safety.md](docs/platform/database-safety.md).
 
 ### 4. Frontend
 
@@ -145,7 +145,7 @@ composer run dev
 
 ### One-shot setup (Composer script)
 
-`composer.json` defines a `setup` script that installs PHP deps, runs `env:install local` when `.env` is missing, runs migrations. It does **not** run seedersórun those after `composer run setup`:
+`composer.json` defines a `setup` script that installs PHP deps, runs `env:install local` when `.env` is missing, runs migrations. It does **not** run seedersùrun those after `composer run setup`:
 
 ```bash
 composer run setup
@@ -162,9 +162,9 @@ php artisan db:seed
 | Login | `POST /api/v1/auth/login` with `admin@example.com` / `123456789` |
 | Authenticated profile | `GET /api/v1/auth/me` with `Authorization: Bearer <token>` |
 | Tests | `composer test` (preferred; clears config cache first) |
-| Notification bell (polling) | Sign in, open dashboard ó badge polls on load and every `platform.notifications.polling_interval` s (default 60; Settings delivery = `polling` or missing Pusher credentials) |
-| Notification bell (realtime) | Set **Settings ? Platform** `platform.notifications.delivery` = `realtime` + `PUSHER_*`, run `npm run build`, trigger a notification (e.g. create user) ó badge updates without reload; see [Activity notifications](docs/domains/notification/README.md#delivery) |
-| Code style | `php artisan pint` ó see [Laravel Pint](docs/platform/tooling.md) |
+| Notification bell (polling) | Sign in, open dashboard ù badge polls on load and every `platform.notifications.polling_interval` s (default 60; Settings delivery = `polling` or missing Pusher credentials) |
+| Notification bell (realtime) | Set **Settings ? Platform** `platform.notifications.delivery` = `realtime` + `PUSHER_*`, run `npm run build`, trigger a notification (e.g. create user) ù badge updates without reload; see [Activity notifications](docs/domains/notification/README.md#delivery) |
+| Code style | `php artisan pint` ù see [Laravel Pint](docs/platform/tooling.md) |
 
 ---
 
@@ -206,11 +206,11 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 | [List display modes & lookups](docs/platform/list-display-modes.md) | `display_mode=query` list/pagination contract, paginated `/api/v1/lookups/*`, and the retained-but-unused Yajra `datatable` mode |
 | [Dynamic navigation menu (hierarchy + RBAC)](docs/domains/navigation/README.md) | Self-referential menu tree, per-viewer visibility, ordering, and the dedicated `MenuRepository` |
 | [Activity notifications (per role + per user)](docs/domains/notification/README.md) | Generic event-driven notification engine: per-type audiences in **DB via seeder** (hybrid with code catalogue), per-user read state, navbar bell with polling or realtime websocket |
-| [Activity notifications ó role vs user handling](docs/domains/notification/README.md) | Reference for broadcast (per role) vs personal (per user) targeting, lifecycle, pitfalls, and flow-change decisions |
-| [Activity notifications ó implementation guide](docs/domains/notification/README.md) | **AI-agent playbook:** step-by-step checklists to add types, wire dispatch, change audience, translations, tests, and DataTable reload (hybrid enum + dynamic audience) |
+| [Activity notifications ù role vs user handling](docs/domains/notification/README.md) | Reference for broadcast (per role) vs personal (per user) targeting, lifecycle, pitfalls, and flow-change decisions |
+| [Activity notifications ù implementation guide](docs/domains/notification/README.md) | **AI-agent playbook:** step-by-step checklists to add types, wire dispatch, change audience, translations, tests, and DataTable reload (hybrid enum + dynamic audience) |
 | [Activity log (audit trail)](docs/domains/activity-log/README.md) | Spatie laravel-activitylog v5: immutable mutation audit (`activity_log`), automatic model logging, role-assignment events, API viewer + SPA screens |
 | [Authentication activity assessment](docs/archive/auth-activity-assessment.md) | Auth event coverage matrix: login/logout/2FA/password ? activity log vs file log, gaps and security notes |
-| [Web frontend (removed)](docs/web/blade-admin.md) | Blade admin removed; Monolith-Vue-Workers SPA is sole UI ó stub documents remaining server `web` endpoints |
+| [Web frontend (removed)](docs/web/blade-admin.md) | Blade admin removed; Monolith-Vue-Workers SPA is sole UI ù stub documents remaining server `web` endpoints |
 
 ### Authentication and authorization
 

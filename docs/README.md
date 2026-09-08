@@ -8,7 +8,8 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 | Need | Open |
 |------|------|
-| Agent scope | [agents/core-rules.md](agents/core-rules.md) · root [AGENTS.md](../AGENTS.md) |
+| Agent scope | [agents/core-rules.md](agents/core-rules.md) · root [AGENTS.md](../AGENTS.md) · [agents/context-budget.md](agents/context-budget.md) |
+| IDE workspace | [Monolith-Backend.code-workspace](../Monolith-Backend.code-workspace) · sibling `Monolith-SPA.code-workspace` · [Monolith-Fullstack.code-workspace](../Monolith-Fullstack.code-workspace) for contract work |
 | Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
 | Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [configuration-policy.md](platform/configuration-policy.md) |
 | Blade admin (removed — SPA is sole UI) | [web/blade-admin.md](web/blade-admin.md) |
@@ -89,7 +90,7 @@ Historical assessments and one-shot audits: [archive/](archive/) — includes [a
 | Kernel / cross-cutting (routes, CRUD pattern, UUID, env, i18n, DB safety, Octane, security process, tooling) | `docs/platform/` | One concern per file; extend existing when possible |
 | Blade admin only (removed — historical reference) | `docs/web/` | e.g. `blade-admin.md` stub, archived `partial-manifest.md` |
 | External clients / third-party integration wiring | `docs/integration/` | Prefer one concern per file; only when not domain-owned |
-| Agent scope | `docs/agents/` | `core-rules.md` only unless a dedicated agent ops page is justified |
+| Agent scope | `docs/agents/` | `core-rules.md` + [context-budget.md](agents/context-budget.md); further agent ops pages only when justified |
 | One-shot assessment, migration narrative, audit snapshot, design dump | `docs/archive/` | Not linked from daily learning paths except as “historical” |
 
 ### Decision checklist (before writing a new file)

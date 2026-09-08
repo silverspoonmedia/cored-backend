@@ -2,6 +2,23 @@
 
 > **UI:** The in-repo Blade + Vue island admin is **removed**. Archivd UI lives in **Monolith-Vue-Workers** (`ArchivdView` and related routes). This guide documents API behavior and historical Blade notes where still relevant — see [web/blade-admin.md](../../web/blade-admin.md).
 
+## Agent entry
+
+Open the rest of this README only when changing Archivd **behavior**. For a one-file fix, read the file under edit plus its test.
+
+| Need | Path |
+|------|------|
+| Code | `app/Domain/Archivd/` |
+| Config | [`config/archivd.php`](../../../config/archivd.php) |
+| API | `routes/api/v1/archivd.php` |
+| Quota / public share | `QuotaService`, `WorkspaceAccessService` |
+| Upload control plane | init / sign-parts / complete / abort (SDK); data plane is Gateway or direct S3 |
+| SPA | sibling `src/views/archivd/`, `src/composables/archivd/` |
+| Tests | `tests/Domain/Archivd/` |
+| Do not | `Read` this whole guide, all 7 locale JSON files, or `storage/logs` |
+
+Realtime: private `archivd.user.{id}` — [vue-workers-spa.md — Channel/event reference](../../integration/vue-workers-spa.md#channel-event-reference). Contract: [vue-workers-spa.md](../../integration/vue-workers-spa.md) only if the API shape moves.
+
 Product domain (`kind => product`, `locked => true`) for personal nested folders, S3-compatible chunk upload, Drive-lite link sharing, and **Collaborative Works** (paid team workspaces).
 
 | | |

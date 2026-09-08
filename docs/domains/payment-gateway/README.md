@@ -206,7 +206,7 @@ Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation 
 
 ## Vue-Workers SPA consumer
 
-The SPA uses `usePaymentsHydrate` for `PaymentsIncomeView`, batching income overview and invoice reads while retaining individual-loader fallback for failed entries. SPA-side realtime wiring is documented in [vue-workers-spa.md — Realtime](../../integration/vue-workers-spa.md#realtime-laravel-echo--pusher); the backend broadcast contract is below.
+The SPA uses `usePaymentsHydrate` for `PaymentsIncomeView`, batching income overview and invoice reads while retaining individual-loader fallback for failed entries. SPA-side realtime wiring is documented in [vue-workers-spa.md — Realtime](../../integration/vue-workers-spa.md#realtime); the backend broadcast contract is below.
 
 iPaymu hosted redirect defaults (`IpaymuPaymentService::defaultReturnUrl` / `defaultCancelUrl`) use `SpaPublicUrl`: `{SPA_URL}/payment/return` and `/payment/cancel` when `SPA_URL` is set; otherwise the server endpoints `/payment/ipaymu/return|cancel` ([`routes/web/payment-ipaymu-return.php`](../../../routes/web/payment-ipaymu-return.php)), which redirect onward. Channel checkout still sends empty `ureturn` (on-page QR/VA). SPA bounce views stay authenticated at the site root — [vue-workers-spa — Payment return URLs](../../integration/vue-workers-spa.md#payment-return-urls).
 

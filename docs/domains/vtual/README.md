@@ -2,6 +2,24 @@
 
 > **UI:** Admin screens live in **Monolith-Vue-Workers** (`/apps/vtual/*`). Blade web controllers and views are removed — see [web/blade-admin.md](../../web/blade-admin.md) and [ui-archive.md](ui-archive.md).
 
+## Agent entry
+
+Open the rest of this README only when changing vTual **behavior**. For a one-file fix, read the file under edit plus its test. Do not load [implementation-status.md](implementation-status.md) unless tracking progress.
+
+| Need | Path |
+|------|------|
+| Code | `app/Domain/Vtual/` |
+| Config | [`config/vtual.php`](../../../config/vtual.php), [`config/products.php`](../../../config/products.php) key `Vtual` |
+| API (auth) | `routes/api/v1/vtual.php` |
+| API (guest) | `routes/api/v1/vtual-public.php` |
+| SPA auth | `/apps/vtual/*` (`config/spa-routes.php` `vtual.*`) |
+| SPA public | `/vtual`, `/vtual/vtubers/:slug` — landing is **FROZEN** |
+| Naming | [naming-conventions.md](naming-conventions.md) |
+| Tests | `tests/Domain/Vtual/` |
+| Do not | `Read` this whole guide, archive assessments, all locale JSON files, or FROZEN `VkStr1*` components without explicit user permission |
+
+Realtime channels: [vue-workers-spa.md — Channel/event reference](../../integration/vue-workers-spa.md#channel-event-reference). Menu dual-placement: [navigation README](../navigation/README.md).
+
 Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Active SPA screens (authenticated):** staff **orphan** admin (`/apps/vtual/orphans`), **platform credentials** (`/apps/vtual/platform-credentials`, Root/Admin), **owned profiles list + manage** (`/apps/vtual/profiles`, Products menu under Archivd), **read-only vTuber profile** + interactive claim (`/apps/vtual/vtuber/{slug}`, login required). **Public SPA:** guest landing `/vtual` (directory + content feed) + two-column public profile `/vtual/vtubers/{slug}` (Valkivid3; claim CTA on guest profile visible to authenticated viewers only; OG/SEO meta injected client-side via SPA `useHeadMeta` composable — no Worker function). The former Blade hub, standalone claims, and registry UIs are gone — history in [ui-archive.md](ui-archive.md). **Scheduled content ingestion** (feed poll, content pool, live CCV), **YouTube WebSub push**, and **Twitch EventSub push** (webhook + live marking) are implemented — see [implementation-status.md](implementation-status.md).
 
 | | |

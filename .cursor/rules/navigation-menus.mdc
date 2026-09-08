@@ -1,0 +1,18 @@
+---
+description: Dynamic menu construction — MenuSeeder, spa-routes, RBAC, cache
+globs: app/Domain/Navigation/**,database/seeders/MenuSeeder.php,config/spa-routes.php,config/products.php
+alwaysApply: false
+---
+
+# Navigation / menus
+
+Before creating or changing dynamic menus, read [docs/domains/navigation/README.md](../../docs/domains/navigation/README.md).
+
+- Every menu `route` is a SPA Vue Router **symbolic name** listed in `config/spa-routes.php` (and present in `monolith-vue-workers/src/router`). Never a URL.
+- Each product parent route appears in `config/products.php` `menu_routes`.
+- Every referenced role must already be seeded. `MenuSeeder` is the sole authoritative tree.
+- Group under Workspace / Products / Administration; submenus instead of duplicate hubs; contiguous sibling `order`; `en`/`id`/`ja` (and remaining locales) on names; exact RBAC.
+- Product-bound routes on product parents so Domain Access + activation gates protect children.
+- Parents may store a real product route in the DB; `navigationTree` masks a parent’s `route` to `#` while it has visible children, and restores the stored route when children are all pruned.
+- Two-tier forever cache (snapshot + presented). Rebuild active and trashed rows transactionally; flush navigation cache only after commit. Never seed debug/test/probe nodes.
+- Lock tree + rebuild/visibility with tests. Update the Navigation guide and every affected domain guide in the same task.

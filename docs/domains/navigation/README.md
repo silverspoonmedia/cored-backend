@@ -2,6 +2,18 @@
 
 Self-referential, orderable menus with RBAC, domain-access, product-activation, and per-user visibility. Dedicated repository (not generic CRUD). Code: `app/Domain/Navigation/`.
 
+## Agent: constructing menus
+
+Open this guide when creating or changing dynamic menus (including `MenuSeeder`). Glob rule: `.cursor/rules/navigation-menus.mdc`.
+
+- Every menu `route` is a SPA Vue Router **symbolic name** in `config/spa-routes.php` (and the SPA router). Never a URL.
+- Each product parent route appears in `config/products.php` `menu_routes`. Referenced roles must already be seeded.
+- `MenuSeeder` is the sole authoritative tree: Workspace / Products / Administration; submenus not duplicate hubs; contiguous sibling `order`; translations; exact RBAC.
+- Product-bound routes on product parents so Domain Access + activation gates protect children.
+- Parents may store a real product route; `navigationTree` masks `route` to `#` while children are visible, and restores the stored route when children are all pruned.
+- Two-tier forever cache (snapshot + presented). Rebuild active and trashed rows in one transaction; flush cache only after commit. Never seed debug/test/probe nodes.
+- Update this guide and every affected domain guide in the same task. Tests lock the tree.
+
 ## Layers
 
 | Piece | Role |

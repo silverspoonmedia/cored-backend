@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "monolith",
+      "path": "."
+    },
+    {
+      "name": "monolith-vue-workers",
+      "path": "../monolith-vue-workers"
+    }
+  ],
+  "settings": {}
+}

@@ -72,7 +72,7 @@ Logout sets persistent barrier before API call. Subsequent cold-boot `auth/me` c
 
 The SPA authenticates cross-site with HttpOnly `__Host-spa_jwt` cookie instead of Bearer header, so `AuthService::refresh()` falls back to cookie when no `Authorization` header exists — cookie-mode session refreshes same way (otherwise hard-expires at `jwt.ttl`). On login/register/refresh/2FA-login raw JWT is set as `__Host-spa_jwt` cookie and **stripped from JSON body** (`data.token` removed), so SPA JS never reads it and XSS cannot exfiltrate it; `TwoFactorController` applies same strip. Logout blacklists current JWT and expires `__Host-spa_jwt`; later `auth/me` carrying same Bearer token or stale cookie must return `401`. The `__Host-` prefix enforces `Secure`, `Path=/`, and no `Domain`.
 
-The SPA-side session lifecycle (logout barrier/epoch, `BroadcastChannel` cross-tab sync, post-login cookie-settle serialization, guest cold-boot single `auth/me` probe) is owned by [vue-workers-spa.md — Cross-tab auth](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
+The SPA-side session lifecycle (logout barrier/epoch, `BroadcastChannel` cross-tab sync, post-login cookie-settle serialization, guest cold-boot single `auth/me` probe) is owned by sibling [auth-session.md](../../../../monolith-vue-workers/docs/auth-session.md). Contract pointer: [vue-workers-spa.md — Cross-tab auth](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
 
 The removed Blade admin used a separate first-party JWT cookie bridge; that middleware is gone — see [web/blade-admin.md](../../web/blade-admin.md).
 
@@ -84,7 +84,7 @@ The removed Blade admin used a separate first-party JWT cookie bridge; that midd
 2. `rm` custom claim on the original token (set at login: `1` = remember, `0` = normal; persisted across refreshes via `jwt.persistent_claims`).
 3. Fallback `false`.
 
-Login, 2FA login, and register all inject the `rm` claim via `AuthService::customClaims()`. The Vue SPA cross-tab auth layer relies on this — see [vue-workers-spa — Cross-tab auth](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
+Login, 2FA login, and register all inject the `rm` claim via `AuthService::customClaims()`. The Vue SPA cross-tab auth layer relies on this — sibling [auth-session.md](../../../../monolith-vue-workers/docs/auth-session.md); contract [vue-workers-spa — Cross-tab auth](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
 
 ### hCaptcha
 

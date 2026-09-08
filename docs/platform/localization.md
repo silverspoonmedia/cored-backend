@@ -1,6 +1,6 @@
 # Localization (multi-language)
 
-Cookie- or user-preference-driven locale for API and DB content. **No route prefix** (`/en/...`). The sibling Vue-Workers SPA has its own JSON locale runtime and startup resolution; its contract lives in [../integration/vue-workers-spa.md](../integration/vue-workers-spa.md).
+Cookie- or user-preference-driven locale for API and DB content. **No route prefix** (`/en/...`). The sibling Vue-Workers SPA has its own JSON locale runtime; see sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md). Cross-repo pointer: [vue-workers-spa.md](../integration/vue-workers-spa.md#i18n-porting-notes).
 
 **Canonical supported locales:** backend codes `en`, `id`, `ja`, `ko`, `zh_CN`, `ar`, `ru` (SPA/browser: `zh-CN` ↔ backend `zh_CN`). All other docs link here instead of restating the list.
 
@@ -15,7 +15,11 @@ Cookie- or user-preference-driven locale for API and DB content. **No route pref
 
 **Never** put app strings in package-managed files (`lang:update` overwrites them).
 
-`localization.md` owns Laravel PHP locale files, API resolution, and parity rules. [`vue-workers-spa.md`](../integration/vue-workers-spa.md) owns SPA JSON keys, runtime switching, module-level fallback translation, and Worker hydration. Keep those contracts linked instead of duplicating them.
+`localization.md` owns Laravel PHP locale files, API resolution, and parity rules. Sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md) owns SPA JSON keys, runtime switching, and `useI18n()` context. Cross-repo pointer: [`vue-workers-spa.md` — i18n](../integration/vue-workers-spa.md#i18n-porting-notes). Keep those contracts linked instead of duplicating them.
+
+### Agent: do not dump locale files
+
+Never `Read` an entire `lang/{locale}.json` or SPA `src/i18n/locales/*.json` (thousands of lines each). Find keys with Grep, apply the same targeted patch across all seven locales, then run `tests/Unit/Localization/LocaleParityTest.php` and sibling `npm run check:i18n`. English is the source locale; other locales are patched, not loaded wholesale. Root `lang/*.json` nested groups in `en`/`id`/`ja` duplicate PHP namespaces — prefer `lang/{locale}/*.php` for application strings.
 
 ### Task rule (required)
 
@@ -74,9 +78,9 @@ Vue-Workers resolves its initial locale independently of Laravel middleware:
 2. First matching supported `navigator.language` / `navigator.languages` alias.
 3. `en`.
 
-Only `en.json` ships in the SPA's eager bundle; the other six locales load as dynamic-import chunks on first `setLocale()` (`LAZY_LOCALES` in `monolith-vue-workers/src/i18n/index.ts`), with eager `en` covering missing keys until the chunk resolves. Details: [vue-workers-spa.md](../integration/vue-workers-spa.md).
+Only `en.json` ships in the SPA's eager bundle; the other six locales load as dynamic-import chunks on first `setLocale()` (`LAZY_LOCALES` in `monolith-vue-workers/src/i18n/index.ts`), with eager `en` covering missing keys until the chunk resolves. Details: sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md).
 
-`html[lang]` uses the SPA code (`zh-CN`, not `zh_CN`), while browser `Intl` APIs receive the SPA code. Arabic also sets `html[dir="rtl"]`; all other supported locales set `ltr`. The SPA loads a direction-split global CSS entry (`main-ltr.css` / `main-rtl.css`, resolved before mount from the detected locale); the RTL entry imports `vendor-rtl.css`, a sibling of `vendor.css` that swaps Bootstrap/AdminLTE for their official `.rtl` dist builds (a separate CSS entry, not a Vite `resolveId` alias, because Vite runs CSS `@import` through postcss rather than the JS resolve pipeline). Switching locale across directions (Arabic ↔ any other) therefore triggers a full page reload from `setLocale()` so the other stylesheet loads. Directional icons follow a fixed convention: glyph swap for `bi-arrow-left` back buttons, `scaleX(-1)` for the custom `.ar-breadcrumb__sep` separator, and `isRtl()`-bound classes for list-movement prev/next — AdminLTE's own `.nav-arrow` is mirrored by the vendor RTL build and must NOT get a custom transform (details in [docs/integration/vue-workers-spa.md](../integration/vue-workers-spa.md)).
+`html[lang]` uses the SPA code (`zh-CN`, not `zh_CN`), while browser `Intl` APIs receive the SPA code. Arabic also sets `html[dir="rtl"]`; all other supported locales set `ltr`. The SPA loads a direction-split global CSS entry (`main-ltr.css` / `main-rtl.css`, resolved before mount from the detected locale); the RTL entry imports `vendor-rtl.css`, a sibling of `vendor.css` that swaps Bootstrap/AdminLTE for their official `.rtl` dist builds (a separate CSS entry, not a Vite `resolveId` alias, because Vite runs CSS `@import` through postcss rather than the JS resolve pipeline). Switching locale across directions (Arabic ↔ any other) therefore triggers a full page reload from `setLocale()` so the other stylesheet loads. Directional icons follow a fixed convention: glyph swap for `bi-arrow-left` back buttons, `scaleX(-1)` for the custom `.ar-breadcrumb__sep` separator, and `isRtl()`-bound classes for list-movement prev/next — AdminLTE's own `.nav-arrow` is mirrored by the vendor RTL build and must NOT get a custom transform (details in sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md)).
 
 Runtime `setLocale()` persists the SPA choice and updates the HTML `lang` attribute. `window` and `document` access is guarded for SSR and tooling contexts. Authenticated SPA flows may synchronize the choice through `POST /api/v1/auth/locale`, but backend resolution remains user preference → header → cookie → app default. Do not document the two startup paths as one shared precedence chain. On an Arabic direction swap the reload must happen only AFTER `auth/locale` persists — `setLocale()` accepts `reload:false` and `AppNavbar.switchLocale()` calls `reloadForDirection()` last, otherwise the hard reload aborts the persist fetch and the dynamic menu stays on the old locale.
 
@@ -104,8 +108,8 @@ Managed files listed in `config/localization.php` → `managed_files`.
 | API domain | `__('api/navigation.created')` |
 | Static nav labels | `__('menu.dashboard')` |
 | DB menus | `$menu->name` (Spatie) |
-| SPA JSON | `t('ui.swal.ok')`, `t('ui.dialog.error_title')` — Swal chrome in `monolith-vue-workers/src/i18n/locales/*.json`; domain confirm bodies stay on their domain keys. Contract: [vue-workers-spa.md — Notifications & confirmations](../integration/vue-workers-spa.md#notifications--confirmations-sweetalert2) |
-| SPA chrome (nav) | `t('ui.navigation.load_failed')` — Valkivid3 nav-load fallback used by `useVkNavigation`. Catalog: `ui.error_state.*`, `ui.empty_state.*`, `ui.datatable.*`, `ui.navigation.*` live in the SPA JSON; full enumeration in [vue-workers-spa.md](../integration/vue-workers-spa.md) |
+| SPA JSON | `t('ui.swal.ok')`, `t('ui.dialog.error_title')` — Swal chrome in `monolith-vue-workers/src/i18n/locales/*.json`; domain confirm bodies stay on their domain keys. Contract: sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md) |
+| SPA chrome (nav) | `t('ui.navigation.load_failed')` — Valkivid3 nav-load fallback used by `useVkNavigation`. Catalog: `ui.error_state.*`, `ui.empty_state.*`, `ui.datatable.*`, `ui.navigation.*` live in the SPA JSON; enumeration in sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md) |
 
 ## Packages & parity
 
@@ -162,5 +166,6 @@ Register: id (Anda, formal netral), ja (です/ます), ko (합쇼체), zh-CN (�
 ## Related
 
 - [web/blade-admin.md](../web/blade-admin.md)
-- [integration/vue-workers-spa.md](../integration/vue-workers-spa.md) — SPA JSON locales, runtime switching, fallback translation, hydration, `useI18n()` context rule, and Sweetalert2 chrome keys (`ui.swal.*`, `ui.dialog.*`)
+- sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md) — SPA JSON locales, runtime switching, fallback translation, `useI18n()` context, Sweetalert2 chrome keys (`ui.swal.*`, `ui.dialog.*`)
+- [integration/vue-workers-spa.md](../integration/vue-workers-spa.md) — cross-repo contract pointer
 - [domains/navigation/README.md](../domains/navigation/README.md) — Spatie menu fields

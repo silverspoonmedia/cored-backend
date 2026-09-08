@@ -1,0 +1,27 @@
+# Dependencies & build artefacts
+/vendor
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/bootstrap/cache/*.php
+
+# Logs, runtime cache, generated
+*.log
+/storage/logs/
+/storage/framework/
+/storage/pail
+/storage/*.key
+.phpunit.result.cache
+.phpunit.cache
+/_ide_helper.php
+
+# Secrets (committed templates stay visible)
+.env
+.env.backup
+.env.profile
+.env.local
+.env.staging
+.env.production
+.env.*.local
+/auth.json

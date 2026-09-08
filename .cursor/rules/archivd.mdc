@@ -1,0 +1,14 @@
+---
+description: Archivd domain — API, quota, upload, workspaces
+globs: app/Domain/Archivd/**,routes/api/v1/archivd.php,config/archivd.php,docs/domains/archivd/**
+alwaysApply: false
+---
+
+# Archivd
+
+Read the **Agent entry** at the top of [docs/domains/archivd/README.md](../../docs/domains/archivd/README.md) before the rest of that guide.
+
+- Code: `app/Domain/Archivd/`. API: `routes/api/v1/archivd.php`.
+- Do not read the entire domain README for a one-file fix — open the file under edit plus its test.
+- SPA screens live in the sibling repo (`src/views/archivd/`, `src/composables/archivd/`). Touch them only in a `[fullstack]` / `[frontend]` task.
+- Never `Read` all locale JSON files; patch keys via Grep.
