@@ -30,7 +30,7 @@ Never put business logic in the generic repository. Standard five-action CRUD �
 Route::apiResource('users', UserController::class)->except(['create', 'edit']);
 ```
 
-**References:** v1 users (`routes/api/v1/identity.php`); File Hosting folders/files under `routes/api/v1/file-hosting.php`.
+**References:** v1 users (`routes/api/v1/identity.php`); Archivd folders/files under `routes/api/v1/archivd.php`.
 
 **Not** `apiResource` when you need extra actions, dual list/DataTable modes, per-verb permissions, or optional-auth reads — see [Navigation](../domains/navigation/README.md), [list-display-modes](list-display-modes.md).
 
@@ -54,7 +54,7 @@ Do **not** copy-paste full rule arrays between Store/Update. Prefer domain `Http
 |---------|---------|
 | Shared field map + modality | `App\Support\Http\Requests\Concerns\ModalFieldRules` (`storeRules` / `updateRules`) |
 | Domain catalog | Service `ServiceCatalogRules`, PaymentGateway gateway/subscription concerns |
-| Micro-rules | FileHosting `FileHostingRequestRules` (rename/move/bulk/visibility via `Visibility::values()`) |
+| Micro-rules | Archivd `ArchivdRequestRules` (rename/move/bulk/visibility via `Visibility::values()`) |
 | Identity users | `UserMutationRules` (assignable roles + password once) |
 
 Keep separate Store/Update classes for route binding; only the **rules body** is shared. Input normalization (e.g. service `prices[]` currency uppercasing) belongs in FormRequest `prepareForValidation`, not the web proxy.
@@ -110,7 +110,7 @@ Tests: `tests/Unit/Support/Presentation/*`, `tests/Unit/Http/Resources/Presentat
 
 Multi-table atomic writes → **dedicated repository** + `DB::transaction()`.
 
-Domain-specific examples: Service catalog prices, File Hosting folder trees + upload sessions. Prefer domain READMEs over inventing a global demo surface.
+Domain-specific examples: Service catalog prices, Archivd folder trees + upload sessions. Prefer domain READMEs over inventing a global demo surface.
 
 ## Evolving to a dedicated repository
 

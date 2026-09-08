@@ -24,9 +24,29 @@ Route::get('/', fn () => redirect()->to(config('services.spa.url') ?: '/'));
 // Public / provider return (no auth) - server endpoints, not UI.
 require __DIR__.'/web/payment-ipaymu-return.php';
 require __DIR__.'/web/identity-oauth-callback.php';
-require __DIR__.'/web/file-hosting-public.php';
+require __DIR__.'/web/archivd-public.php';
 
 // Product domain web routes (optional server endpoints; appended by domain:make).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

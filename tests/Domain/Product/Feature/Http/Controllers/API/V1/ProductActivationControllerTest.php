@@ -28,7 +28,7 @@ class ProductActivationControllerTest extends TestCase
     public function test_index_returns_own_activations(): void
     {
         $user = $this->userWithRole('User');
-        $this->service->activateImplicit($user, 'FileHosting');
+        $this->service->activateImplicit($user, 'Archivd');
 
         $response = $this->actingAsJwt($user)
             ->getJson('/api/v1/product-activations')
@@ -36,19 +36,19 @@ class ProductActivationControllerTest extends TestCase
             ->json('data');
 
         $this->assertCount(1, $response);
-        $this->assertSame('FileHosting', $response[0]['product_key']);
+        $this->assertSame('Archivd', $response[0]['product_key']);
         $this->assertSame(ProductActivationState::Active->value, $response[0]['state']);
     }
 
     public function test_show_returns_own_activation(): void
     {
         $user = $this->userWithRole('User');
-        $this->service->activateImplicit($user, 'FileHosting');
+        $this->service->activateImplicit($user, 'Archivd');
 
         $this->actingAsJwt($user)
-            ->getJson('/api/v1/product-activations/FileHosting')
+            ->getJson('/api/v1/product-activations/Archivd')
             ->assertOk()
-            ->assertJsonPath('data.product_key', 'FileHosting');
+            ->assertJsonPath('data.product_key', 'Archivd');
     }
 
     public function test_show_returns_404_when_missing(): void
@@ -56,7 +56,7 @@ class ProductActivationControllerTest extends TestCase
         $user = $this->userWithRole('User');
 
         $this->actingAsJwt($user)
-            ->getJson('/api/v1/product-activations/FileHosting')
+            ->getJson('/api/v1/product-activations/Archivd')
             ->assertNotFound();
     }
 

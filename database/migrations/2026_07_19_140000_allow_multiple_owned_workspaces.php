@@ -16,7 +16,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $indexes = collect(Schema::getIndexes('file_hosting_workspaces'));
+        $indexes = collect(Schema::getIndexes('archivd_workspaces'));
 
         $uniqueOwner = $indexes->first(
             fn (array $index): bool => ($index['unique'] ?? false)
@@ -29,15 +29,15 @@ return new class extends Migration
         );
 
         if ($uniqueOwner !== null) {
-            Schema::table('file_hosting_workspaces', function (Blueprint $table): void {
+            Schema::table('archivd_workspaces', function (Blueprint $table): void {
                 $table->dropForeign(['owner_user_id']);
             });
 
-            Schema::table('file_hosting_workspaces', function (Blueprint $table) use ($uniqueOwner): void {
+            Schema::table('archivd_workspaces', function (Blueprint $table) use ($uniqueOwner): void {
                 $table->dropUnique($uniqueOwner['name'] ?? ['owner_user_id']);
             });
 
-            Schema::table('file_hosting_workspaces', function (Blueprint $table): void {
+            Schema::table('archivd_workspaces', function (Blueprint $table): void {
                 $table->foreign('owner_user_id')
                     ->references('id')
                     ->on('users')
@@ -46,7 +46,7 @@ return new class extends Migration
         }
 
         if (! $hasOwnerStatus) {
-            Schema::table('file_hosting_workspaces', function (Blueprint $table): void {
+            Schema::table('archivd_workspaces', function (Blueprint $table): void {
                 $table->index(['owner_user_id', 'status'], 'fh_workspaces_owner_status_idx');
             });
         }
@@ -54,7 +54,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $indexes = collect(Schema::getIndexes('file_hosting_workspaces'));
+        $indexes = collect(Schema::getIndexes('archivd_workspaces'));
 
         $hasOwnerStatus = $indexes->contains(
             fn (array $index): bool => ($index['name'] ?? '') === 'fh_workspaces_owner_status_idx'
@@ -67,17 +67,17 @@ return new class extends Migration
         );
 
         if ($hasOwnerStatus) {
-            Schema::table('file_hosting_workspaces', function (Blueprint $table): void {
+            Schema::table('archivd_workspaces', function (Blueprint $table): void {
                 $table->dropIndex('fh_workspaces_owner_status_idx');
             });
         }
 
         if (! $hasUniqueOwner) {
-            Schema::table('file_hosting_workspaces', function (Blueprint $table): void {
+            Schema::table('archivd_workspaces', function (Blueprint $table): void {
                 $table->dropForeign(['owner_user_id']);
             });
 
-            Schema::table('file_hosting_workspaces', function (Blueprint $table): void {
+            Schema::table('archivd_workspaces', function (Blueprint $table): void {
                 $table->unique('owner_user_id');
                 $table->foreign('owner_user_id')
                     ->references('id')

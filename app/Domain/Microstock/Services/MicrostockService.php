@@ -2,11 +2,11 @@
 
 namespace App\Domain\Microstock\Services;
 
-use App\Domain\FileHosting\Enums\WorkspaceKind;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Models\Workspace;
-use App\Domain\FileHosting\Services\WorkspaceAccessService;
-use App\Domain\FileHosting\Services\WorkspaceService;
+use App\Domain\Archivd\Enums\WorkspaceKind;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Models\Workspace;
+use App\Domain\Archivd\Services\WorkspaceAccessService;
+use App\Domain\Archivd\Services\WorkspaceService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\MetadataStatus;
@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
 
 /**
  * Microstock core: system workspace resolution + asset metadata lifecycle.
- * Storage/upload/browse reuse File Hosting; this layer owns the
+ * Storage/upload/browse reuse Archivd; this layer owns the
  * product-specific metadata (AI title/keywords) on top of hosted files.
  */
 class MicrostockService

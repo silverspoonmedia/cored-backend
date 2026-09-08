@@ -44,7 +44,7 @@ class ProductActivationRealtimeTest extends TestCase
         Event::fake([ProductActivationChanged::class]);
         $this->disableBroadcast();
 
-        app(ProductActivationRealtime::class)->activationChanged('file-hosting', 'active', 'user-1');
+        app(ProductActivationRealtime::class)->activationChanged('archivd', 'active', 'user-1');
 
         Event::assertNotDispatched(ProductActivationChanged::class);
     }
@@ -54,10 +54,10 @@ class ProductActivationRealtimeTest extends TestCase
         Event::fake([ProductActivationChanged::class]);
         $this->enableBroadcast();
 
-        app(ProductActivationRealtime::class)->activationChanged('file-hosting', 'active', 'user-1');
+        app(ProductActivationRealtime::class)->activationChanged('archivd', 'active', 'user-1');
 
         Event::assertDispatched(ProductActivationChanged::class, function (ProductActivationChanged $e): bool {
-            return $e->productKey === 'file-hosting'
+            return $e->productKey === 'archivd'
                 && $e->action === 'active'
                 && $e->userId === 'user-1';
         });

@@ -2,11 +2,11 @@
 
 namespace Tests\Domain\Microstock\Feature;
 
-use App\Domain\FileHosting\Enums\CollectionStatus;
-use App\Domain\FileHosting\Enums\WorkspaceKind;
-use App\Domain\FileHosting\Models\Folder;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Models\Workspace;
+use App\Domain\Archivd\Enums\CollectionStatus;
+use App\Domain\Archivd\Enums\WorkspaceKind;
+use App\Domain\Archivd\Models\Folder;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Models\Workspace;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\AnalysisPipeline;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
@@ -21,7 +21,7 @@ use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Support\MicrostockCatalog;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -43,11 +43,11 @@ class CollectionPipelineTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->seed(MicrostockRoleSeeder::class);
 
         config([
-            'file-hosting.disk' => 'local',
+            'archivd.disk' => 'local',
             'activitylog.enabled' => false,
             'microstock.daily_free.enabled' => false,
             'microstock.queues.collection_vision' => 'microstock-collection-vision',

@@ -184,7 +184,7 @@ Not a commitment — default backlog for the next sessions:
 |--------|----------------|
 | Migrate | `php artisan migrate` (includes `vtual_channel_fetch_pool`, claims, appearances, …) |
 | Roles / platforms | `php artisan db:seed --class=VtualRoleSeeder` |
-| Menus | Seed `RoleSeeder`, `FileHostingRoleSeeder`, and `VtualRoleSeeder`, then `php artisan db:seed --class=MenuSeeder` (authoritative rebuild + post-commit cache flush) |
+| Menus | Seed `RoleSeeder`, `ArchivdRoleSeeder`, and `VtualRoleSeeder`, then `php artisan db:seed --class=MenuSeeder` (authoritative rebuild + post-commit cache flush) |
 | Flush claim verify pool | `php artisan vtual:flush-claim-verify-pool` (`--force`) |
 | Flush channel pool (on demand) | `php artisan vtual:flush-channel-pool` |
 | Poll channel feeds | `php artisan vtual:poll-channel-feeds` (`--channel=`, `--force`) |

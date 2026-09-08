@@ -2,9 +2,9 @@
 
 namespace Tests\Domain\Microstock\Feature;
 
-use App\Domain\FileHosting\Enums\CollectionStatus;
-use App\Domain\FileHosting\Models\Folder;
-use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Archivd\Enums\CollectionStatus;
+use App\Domain\Archivd\Models\Folder;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;
@@ -13,7 +13,7 @@ use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Support\MicrostockCatalog;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
@@ -36,11 +36,11 @@ class CollectionApiTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->seed(MicrostockRoleSeeder::class);
 
         config([
-            'file-hosting.disk' => 'local',
+            'archivd.disk' => 'local',
             'activitylog.enabled' => false,
             'microstock.csv_disk' => 'local',
         ]);
@@ -177,7 +177,7 @@ class CollectionApiTest extends TestCase
         $ws = app(MicrostockService::class)->workspaceFor($this->owner);
 
         $this->actingAsJwt($this->owner)
-            ->getJson("/api/v1/file-hosting/browse?workspace_id={$ws->id}&folder_id={$folder->id}")
+            ->getJson("/api/v1/archivd/browse?workspace_id={$ws->id}&folder_id={$folder->id}")
             ->assertOk()
             ->assertJsonPath('data.files.0.microstock.title', 'Meta title')
             ->assertJsonPath('data.files.0.microstock.status', MetadataStatus::Generated->value);
@@ -186,7 +186,7 @@ class CollectionApiTest extends TestCase
     public function test_browse_personal_workspace_omits_microstock_key(): void
     {
         $this->actingAsJwt($this->owner)
-            ->getJson('/api/v1/file-hosting/browse')
+            ->getJson('/api/v1/archivd/browse')
             ->assertOk()
             ->assertJsonMissingPath('data.files.0.microstock');
     }

@@ -2,8 +2,8 @@
 
 namespace Tests\Fakes;
 
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Services\SignedDownloadService;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Services\SignedDownloadService;
 use Illuminate\Support\Carbon;
 
 /**
@@ -16,7 +16,7 @@ class FakeSignedDownloadService extends SignedDownloadService
      */
     public function mintAndCache(HostedFile $file, bool $inline = false): array
     {
-        $ttlMinutes = (int) config('file-hosting.signed_download_ttl_minutes', 60);
+        $ttlMinutes = (int) config('archivd.signed_download_ttl_minutes', 60);
         $expiresAt = Carbon::now()->addMinutes($ttlMinutes);
         $url = 'https://fake-storage.test/download/'.$file->id.'?exp='.$expiresAt->getTimestamp();
 

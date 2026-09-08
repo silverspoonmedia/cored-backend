@@ -2,7 +2,7 @@
 
 namespace App\Domain\Microstock\Http\Controllers\API\V1;
 
-use App\Domain\FileHosting\Models\Folder;
+use App\Domain\Archivd\Models\Folder;
 use App\Domain\Microstock\Services\CollectionService;
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;

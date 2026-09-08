@@ -2,9 +2,9 @@
 
 namespace Tests\Domain\Microstock\Feature;
 
-use App\Domain\FileHosting\Enums\CollectionStatus;
-use App\Domain\FileHosting\Models\Folder;
-use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Archivd\Enums\CollectionStatus;
+use App\Domain\Archivd\Models\Folder;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Jobs\AnalysisWatchdog;
@@ -16,7 +16,7 @@ use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Support\MicrostockCatalog;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
@@ -38,12 +38,12 @@ class AnalysisWatchdogTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->seed(MicrostockRoleSeeder::class);
 
         config([
-            'file-hosting.disk' => 'local',
-            'file-hosting.default_quota_bytes' => 50 * 1024 * 1024,
+            'archivd.disk' => 'local',
+            'archivd.default_quota_bytes' => 50 * 1024 * 1024,
             'activitylog.enabled' => false,
             'microstock.csv_disk' => 'local',
             'microstock.ai.phase.normal_after' => 600,

@@ -18,16 +18,16 @@ use Tests\TestCase;
  * visibility is Private and the viewer lacks access. Public visibility keeps
  * the existing per-user activation gate intact.
  *
- * Menu route file-hosting.index is bound to the FileHosting product via
+ * Menu route archivd.index is bound to the Archivd product via
  * config/products.php menu_routes.
  */
 class PrivateDomainMenuVisibilityTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const PRODUCT_KEY = 'FileHosting';
+    private const PRODUCT_KEY = 'Archivd';
 
-    private const ROUTE = 'file-hosting.index';
+    private const ROUTE = 'archivd.index';
 
     protected function setUp(): void
     {

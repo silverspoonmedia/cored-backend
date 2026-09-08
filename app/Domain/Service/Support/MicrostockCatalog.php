@@ -6,7 +6,7 @@ namespace App\Domain\Service\Support;
  * Microstock catalog codes and slot constants for Service × Microstock integration.
  *
  * Microstock workspace slots are standalone: they do NOT overlap with the
- * File Hosting team workspace slots (`FileHostingCatalog`). Storage still
+ * Archivd team workspace slots (`ArchivdCatalog`). Storage still
  * meters into the shared FH quota pool, but slot accounting is separate.
  */
 final class MicrostockCatalog

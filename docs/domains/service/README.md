@@ -18,8 +18,8 @@
 1. **Catalog** of sellable services with multi-currency list prices (codes in `currencies`)
 2. **Checkout** that settles to **IDR** for Midtrans/iPaymu (rate history in DB)
 3. **Entitlements** with period (subscription) or permanent (one-time), plus **quantity** for stackable addons
-4. **Fulfillment** into product domains (File Hosting **main + stackable addons**, free 5 GiB always stacked)
-5. **Paid perk gate** for File Hosting Collaborative Works (workspace create/invite/team upload) via `hasActivePaidFileHosting` (storage main/addon only). Extra owned team slots via catalog SKU `file-hosting.addon.workspace-slot.monthly`
+4. **Fulfillment** into product domains (Archivd **main + stackable addons**, free 5 GiB always stacked)
+5. **Paid perk gate** for Archivd Collaborative Works (workspace create/invite/team upload) via `hasActivePaidArchivd` (storage main/addon only). Extra owned team slots via catalog SKU `archivd.addon.workspace-slot.monthly`
 
 **Not** PaymentGateway `Subscription` (free-text demo morph). Product lifecycle lives here.
 
@@ -47,21 +47,21 @@ Money convention: **decimal(15,2)** (same as invoices).
 | `service_purchases` | Invoiceable money event: display/list/credit/charge, `change_type`, `surplus_days`, settlement + FX + `period_*` |
 | `service_entitlements` | One row per user+service: `active` / `grace` / `expired` / `cancelled` + **`quantity`** |
 
-### File Hosting catalog (seed)
+### Archivd catalog (seed)
 
 | Code | Name | Kind | Storage | USD/mo | Notes |
 |------|------|------|---------|--------|-------|
-| `file-hosting.plan.1tb.monthly` | Standard 1 TB | main | 1 TiB | 24.95 | Exclusive paid main |
-| `file-hosting.plan.2tb.monthly` | Standard 2 TB | main | 2 TiB | 54.95 | Exclusive paid main |
-| `file-hosting.addon.100gb.monthly` | Standard +100 GB | addon | 100 GiB | 2.95 | Stackable qty; fixed anniversary |
-| `file-hosting.addon.500gb.monthly` | Standard +500 GB | addon | 500 GiB | 14.50 | Stackable qty; fixed anniversary |
-| `file-hosting.addon.workspace-slot.monthly` | Team Workspace Slot | addon | 0 | 1.00 | +1 owned team slot per qty; not storage; stack anniversary with storage addons |
+| `archivd.plan.1tb.monthly` | Standard 1 TB | main | 1 TiB | 24.95 | Exclusive paid main |
+| `archivd.plan.2tb.monthly` | Standard 2 TB | main | 2 TiB | 54.95 | Exclusive paid main |
+| `archivd.addon.100gb.monthly` | Standard +100 GB | addon | 100 GiB | 2.95 | Stackable qty; fixed anniversary |
+| `archivd.addon.500gb.monthly` | Standard +500 GB | addon | 500 GiB | 14.50 | Stackable qty; fixed anniversary |
+| `archivd.addon.workspace-slot.monthly` | Team Workspace Slot | addon | 0 | 1.00 | +1 owned team slot per qty; not storage; stack anniversary with storage addons |
 
-**Free tier is not a catalog SKU.** Runtime free always from `config('file-hosting.default_quota_bytes')` (5 GiB), always stacked. Seeder deletes any legacy `file-hosting.plan.free` row. Legacy `file-hosting.subscription.monthly` (unlimited POC) is archived on seed.
+**Free tier is not a catalog SKU.** Runtime free always from `config('archivd.default_quota_bytes')` (5 GiB), always stacked. Seeder deletes any legacy `archivd.plan.free` row. Legacy `archivd.subscription.monthly` (unlimited POC) is archived on seed.
 
-**Helpers:** `Service::isFileHostingStoragePlan()` requires `storage_bytes > 0` (excludes slot SKU). `Service::isAddonPlan()` includes storage **and** slot addons. `Service::isWorkspaceSlotAddon()` for slot-only checks. Paid collab gate queries still use `storage_bytes > 0`.
+**Helpers:** `Service::isArchivdStoragePlan()` requires `storage_bytes > 0` (excludes slot SKU). `Service::isAddonPlan()` includes storage **and** slot addons. `Service::isWorkspaceSlotAddon()` for slot-only checks. Paid collab gate queries still use `storage_bytes > 0`.
 
-**Effective FH quota:**
+**Effective Archivd quota:**
 
 ```
 effective_bytes =
@@ -71,15 +71,15 @@ effective_bytes =
   # workspace-slot addon: storage_bytes = 0 → no GiB contribution
 ```
 
-**Owned team slots (File Hosting):**
+**Owned team slots (Archivd):**
 
 ```
 owned_limit =
-  (hasActivePaidFileHosting ? base_owned_workspace_slots : 0)   # default 10
+  (hasActivePaidArchivd ? base_owned_workspace_slots : 0)   # default 10
   + sum(active_or_grace workspace_slot.quantity)
 ```
 
-Constants / codes: `App\Domain\Service\Support\FileHostingCatalog`.
+Constants / codes: `App\Domain\Service\Support\ArchivdCatalog`.
 
 ### Main plan change (renew / upgrade / downgrade)
 
@@ -92,7 +92,7 @@ Checkout classifies via `MainPlanChangeCalculator` (compare current active/grace
 | `upgrade` | Target storage > current | `max(0, list − unused_credit)` |
 | `downgrade` | Target storage < current | same; surplus credit → **extra days** on new plan |
 
-**Billing period (FH storage plans):** fixed **+30 days** (`FileHostingBillingPeriod`), not calendar `addMonth`. Credit divisor uses the same 30 days.
+**Billing period (Archivd storage plans):** fixed **+30 days** (`ArchivdBillingPeriod`), not calendar `addMonth`. Credit divisor uses the same 30 days.
 
 **Unused gap:**
 
@@ -155,19 +155,19 @@ Checkout → MainPlanChangeCalculator quote
        activate/extend entitlement
          main renew: stack ends_at; up/down: now+period+surplus; expire other mains
          addon unit: qty++; ends_at frozen / shared
-       FileHostingQuotaRecomputeService
+       ArchivdQuotaRecomputeService
        ensureProductActive (fulfillment_target → product_activations row kept Active)
        microstock_ai_credits → AiCreditService::creditFromPurchase (prepaid analysis balance)
 ```
 
-Fulfillment hook: `ServiceFulfillmentService::ensureProductActive` maps the Service catalog `fulfillment_target` (e.g. `file_hosting`) to a product key via `ProductRegistry::productKeyByFulfillmentTarget` and keeps the implicit product activation Active when an entitlement activates. Explicit products are **not** auto-activated here — admin approval remains the gate. See [Product Activations](../product-activations/README.md).
+Fulfillment hook: `ServiceFulfillmentService::ensureProductActive` maps the Service catalog `fulfillment_target` (e.g. `archivd`) to a product key via `ProductRegistry::productKeyByFulfillmentTarget` and keeps the implicit product activation Active when an entitlement activates. Explicit products are **not** auto-activated here — admin approval remains the gate. See [Product Activations](../product-activations/README.md).
 
-## Subscription lifecycle (File Hosting main + addons)
+## Subscription lifecycle (Archivd main + addons)
 
 | State | Upload | Quota |
 |-------|--------|-------|
 | **active** paid main and/or addons | OK | free + main + Σ(addon×qty) |
-| **grace** (any paid FH line; ends_at passed, ≤7d) | **blocked** | effective bytes still from recompute (files kept); notify once |
+| **grace** (any paid Archivd line; ends_at passed, ≤7d) | **blocked** | effective bytes still from recompute (files kept); notify once |
 | **expired** (grace_ends_at passed on a line) | recompute remaining lines | `enforceToLimit(effective)`; if no paid left → free 5 GiB |
 
 Commands (also scheduled hourly):
@@ -175,11 +175,11 @@ Commands (also scheduled hourly):
 - `service:process-entitlements` → enter grace for due actives; expire grace → recompute → purge to **effective** limit
 - `service:process-addon-renewals` → pending full-stack addon invoices when anniversary due
 
-Purge rule: sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + hard-delete S3 for overflow. See [file-hosting](../file-hosting/README.md).
+Purge rule: sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + hard-delete S3 for overflow. See [archivd](../archivd/README.md).
 
 * limit (not always free-only)
 
-Purge rule: sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + hard-delete S3 for overflow. See [file-hosting](../file-hosting/README.md).
+Purge rule: sort `created_at ASC, id ASC`; accumulate sizes; soft-delete DB + hard-delete S3 for overflow. See [archivd](../archivd/README.md).
 
 ## Permissions (core RBAC)
 
@@ -207,7 +207,7 @@ Purchase resource fields of note: `quantity` (addon: set at catalog `POST /servi
 
 ## SPA UI
 
-**Sidebar:** **Workspace → Services** (`services.index`) has no menu-role pivot; service permissions/policies remain authoritative. Microstock intentionally has no dedicated dynamic-menu node and stays discoverable through this catalog plus the File Hosting workspace switcher.
+**Sidebar:** **Workspace → Services** (`services.index`) has no menu-role pivot; service permissions/policies remain authoritative. Microstock intentionally has no dedicated dynamic-menu node and stays discoverable through this catalog plus the Archivd workspace switcher.
 
 Catalog, checkout, and purchase hub live in Monolith-Vue-Workers (`/apps/services`, `/apps/service-purchases/{id}`). Query-mode catalog rows emit `actions[]` (`view`; `edit`/`delete` when `manage service`). Currencies list (`/apps/currencies`) emits labeled `toggle` / `set_settlement` on the same contract. Blade views and `purchase-pricing-preview.js` are removed — see [blade-admin.md](../../web/blade-admin.md). Checkout visibility stays API/`Gate` (`purchase service` / `initiate payment`). Purchase hub quantity stepper and stack equation are SPA; paid lock via WebSocket/sync. iPaymu return can redirect to SPA `service-purchases.show`.
 
@@ -258,16 +258,16 @@ Frankfurter base URL stays in `.env.example`; timeout/freshness window and servi
 ```powershell
 composer test -- --filter=Service
 composer test -- --filter=EnforceFreeTierQuota
-composer test -- --filter=FileHostingBilling
+composer test -- --filter=ArchivdBilling
 ```
 
-Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main renew/up/down, fixed 30-day FH periods, addon fixed anniversary, block unit buy when stack due/pending, addon stack renewal invoice, quota matrix, grace/expire, collaborative works paid gate. Key tests: `MainPlanChangeCalculatorTest`, `MainPlanFairnessFulfillmentTest`, `AddonAnniversaryTest`, `ServiceCheckoutZeroChargeTest`, `FileHostingPlanQuotaMatrixTest`, `FileHostingAdminJourneyScenarioTest`, `WorkspaceCollaborativeWorksTest`. Catalog show Blade render (main hides qty input, addon shows it): `ServiceShowPageTest`.
+Coverage: unused-gap calculator (list-based credit), zero-charge fulfill, main renew/up/down, fixed 30-day Archivd periods, addon fixed anniversary, block unit buy when stack due/pending, addon stack renewal invoice, quota matrix, grace/expire, collaborative works paid gate. Key tests: `MainPlanChangeCalculatorTest`, `MainPlanFairnessFulfillmentTest`, `AddonAnniversaryTest`, `ServiceCheckoutZeroChargeTest`, `ArchivdPlanQuotaMatrixTest`, `ArchivdAdminJourneyScenarioTest`, `WorkspaceCollaborativeWorksTest`. Catalog show Blade render (main hides qty input, addon shows it): `ServiceShowPageTest`.
 
-**Use-case matrix (45):** permanent regression suite — `FileHostingBillingTameUseCasesTest`, `FileHostingBillingNormalUseCasesTest`, `FileHostingBillingAnomalyUseCasesTest` + `FileHostingBillingScenarioHarness`.
+**Use-case matrix (45):** permanent regression suite — `ArchivdBillingTameUseCasesTest`, `ArchivdBillingNormalUseCasesTest`, `ArchivdBillingAnomalyUseCasesTest` + `ArchivdBillingScenarioHarness`.
 
 ## Related
 
 - [payment-gateway](../payment-gateway/README.md) — settle IDR; product sub ≠ PG Subscription
-- [file-hosting](../file-hosting/README.md) — quota recompute + states paid/grace/free
+- [archivd](../archivd/README.md) — quota recompute + states paid/grace/free
 - [notification](../notification/README.md) — grace/expired types
 - [platform/architecture.md](../../platform/architecture.md)

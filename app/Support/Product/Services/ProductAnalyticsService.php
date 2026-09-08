@@ -2,11 +2,11 @@
 
 namespace App\Support\Product\Services;
 
-use App\Domain\FileHosting\Enums\WorkspaceMemberStatus;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Models\Workspace;
-use App\Domain\FileHosting\Models\WorkspaceMember;
-use App\Domain\FileHosting\Services\QuotaService;
+use App\Domain\Archivd\Enums\WorkspaceMemberStatus;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Models\Workspace;
+use App\Domain\Archivd\Models\WorkspaceMember;
+use App\Domain\Archivd\Services\QuotaService;
 use App\Support\Product\Models\ProductAnalytic;
 use App\Support\Product\ProductRegistry;
 use Illuminate\Support\Facades\App;
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
  * Write-side analytics store. Increments/decrements per-(product, tier, metric)
  * aggregate rows on domain mutations and flushes the dashboard read cache.
  *
- * Not per-user: one row per bucket (e.g. FileHosting + paid + storage_used_bytes).
+ * Not per-user: one row per bucket (e.g. Archivd + paid + storage_used_bytes).
  * Tier transitions move a user's contribution between buckets via moveUserTier —
  * source-of-truth is HostedFile/Workspace, so the delta is a single-user indexed
  * query, only on the rare tier-change event (purchase/grace/expiry).
@@ -121,10 +121,10 @@ class ProductAnalyticsService
     }
 
     /**
-     * Recompute FileHosting buckets for a single tier from source tables.
+     * Recompute Archivd buckets for a single tier from source tables.
      * Idempotent: overwrites the tier's rows with fresh absolute values.
      */
-    public function recomputeFileHostingTier(string $tier): void
+    public function recomputeArchivdTier(string $tier): void
     {
         $userIds = $this->quota()->userIdsForTier($tier);
 
@@ -144,13 +144,13 @@ class ProductAnalyticsService
         }
 
         DB::transaction(function () use ($tier, $storage, $files, $workspaces, $workspacesJoined): void {
-            $this->upsertMetricRaw('FileHosting', $tier, 'storage_used_bytes', $storage);
-            $this->upsertMetricRaw('FileHosting', $tier, 'file_count', $files);
-            $this->upsertMetricRaw('FileHosting', $tier, 'workspace_count_owned', $workspaces);
-            $this->upsertMetricRaw('FileHosting', $tier, 'workspace_count_joined', $workspacesJoined);
+            $this->upsertMetricRaw('Archivd', $tier, 'storage_used_bytes', $storage);
+            $this->upsertMetricRaw('Archivd', $tier, 'file_count', $files);
+            $this->upsertMetricRaw('Archivd', $tier, 'workspace_count_owned', $workspaces);
+            $this->upsertMetricRaw('Archivd', $tier, 'workspace_count_joined', $workspacesJoined);
         });
 
-        $this->flushCache('FileHosting');
+        $this->flushCache('Archivd');
     }
 
     /**
@@ -166,8 +166,8 @@ class ProductAnalyticsService
         ProductAnalytic::query()->where('product_key', $productKey)->delete();
 
         match ($productKey) {
-            'FileHosting' => collect(['free', 'paid', 'grace', 'n/a'])
-                ->each(fn (string $tier) => $this->recomputeFileHostingTier($tier)),
+            'Archivd' => collect(['free', 'paid', 'grace', 'n/a'])
+                ->each(fn (string $tier) => $this->recomputeArchivdTier($tier)),
             default => null,
         };
     }
@@ -182,7 +182,7 @@ class ProductAnalyticsService
     private function userContributions(string $productKey, string $userId): array
     {
         return match ($productKey) {
-            'FileHosting' => [
+            'Archivd' => [
                 'storage_used_bytes' => (int) HostedFile::query()->where('user_id', $userId)->sum('size'),
                 'file_count' => HostedFile::query()->where('user_id', $userId)->count(),
                 'workspace_count_owned' => Workspace::query()->where('owner_user_id', $userId)->count(),

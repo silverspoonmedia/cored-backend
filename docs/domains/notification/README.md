@@ -68,7 +68,7 @@ After persistence, `NotificationService` resolves every recipient and broadcasts
 
 **Not this bus:**
 
-- File Hosting live listing uses dedicated private channels (`file-hosting.user.*` / `file-hosting.workspace.*`) and domain events under `App\Domain\FileHosting\Events\` — no `NotificationType`, no `table_id`. See [file-hosting/README.md — Realtime / live listing](../file-hosting/README.md#realtime--live-listing).
+- Archivd live listing uses dedicated private channels (`archivd.user.*` / `archivd.workspace.*`) and domain events under `App\Domain\Archivd\Events\` — no `NotificationType`, no `table_id`. See [archivd/README.md — Realtime / live listing](../archivd/README.md#realtime--live-listing).
 - Payment Gateway invoice checkout uses private `payments.invoice.{invoiceId}` + `InvoiceStatusChanged` / `PaymentRealtime` — no `NotificationType`, independent of platform notification delivery mode. See [payment-gateway/README.md — Realtime invoice status](../payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
 
 Those features share the SPA Echo singleton (`useEcho.ts` / `getEcho()`); they do not ride the activity-notification event.

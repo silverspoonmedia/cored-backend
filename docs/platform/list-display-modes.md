@@ -32,7 +32,7 @@ Each item: `key`, `label` (`__()` `en`/`id`/`ja` via `lang/*/list_actions.php` p
 
 Visibility copies **current SPA rules**, not Yajra Gate hierarchy (example: users always `edit`; `delete` only with `delete user` and not self). `@row-click` uses the same nav action already on the row. Lists that used labeled chrome (currencies, notification audiences, vTual platform “Manage”, hash blocklist) stay labeled — still driven by `row.actions`.
 
-Out of scope: Card header toolbars, File Hosting browse `.fh-action-group`, new keys, `display_mode=datatable`.
+Out of scope: Card header toolbars, Archivd browse `.ar-action-group`, new keys, `display_mode=datatable`.
 
 ## `datatable` mode has no consumer
 

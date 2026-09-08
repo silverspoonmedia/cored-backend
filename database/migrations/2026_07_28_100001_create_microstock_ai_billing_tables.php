@@ -35,8 +35,8 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('microstock_asset_metadata')
                 ->nullOnDelete();
-            $table->foreignUuid('file_id')->nullable()->constrained('file_hosting_files')->nullOnDelete();
-            $table->foreignUuid('folder_id')->nullable()->constrained('file_hosting_folders')->nullOnDelete();
+            $table->foreignUuid('file_id')->nullable()->constrained('archivd_files')->nullOnDelete();
+            $table->foreignUuid('folder_id')->nullable()->constrained('archivd_folders')->nullOnDelete();
             $table->string('stage', 32);
             $table->string('alias_model');
             $table->string('resolved_model');

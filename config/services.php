@@ -59,7 +59,7 @@ return [
 
     /*
     | Vue-Workers SPA public origin. OAuth return_to allowlist (with APP_URL),
-    | password-reset / email-verify mail links, public file-hosting share URLs,
+    | password-reset / email-verify mail links, public archivd share URLs,
     | and iPaymu hosted return/cancel defaults. Empty keeps Blade / signed-API
     | URLs (local Blade dogfood). CORS also allowlists this origin.
     */

@@ -67,7 +67,7 @@ An API JSON body is a **per-viewer contract**, not a serialization of the Eloque
    - upstream provider cost / rate snapshots to customers
    - FX / settlement internals to buyers (`view invoice` staff only)
    - other users’ emails except owner/manager/staff (or the member viewing themselves)
-   - storage `path` / `disk` / `checksum` / `region` except storage owner or file-hosting staff
+   - storage `path` / `disk` / `checksum` / `region` except storage owner or archivd staff
 4. Activity log `properties` / `attribute_changes` go through `ErrorContextRedactor` (same keys as error-log context). Crypto rows still mask `kms_key_id`.
 5. Every new list/show endpoint needs: one **wrong-viewer 403** test and one **sensitive field absent** test. Helpers: `Tests\Concerns\AssertsPayloadHygiene`.
 

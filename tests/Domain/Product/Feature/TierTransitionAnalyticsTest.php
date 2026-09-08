@@ -2,7 +2,7 @@
 
 namespace Tests\Domain\Product\Feature;
 
-use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
@@ -11,7 +11,7 @@ use App\Domain\Service\Services\ServiceFulfillmentService;
 use App\Support\Product\Models\ProductAnalytic;
 use App\Support\Product\Services\ProductActivationService;
 use Database\Factories\ServiceFactory;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -31,12 +31,12 @@ class TierTransitionAnalyticsTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
 
         config([
-            'file-hosting.disk' => 'local',
-            'file-hosting.default_quota_bytes' => 1024 * 1024,
-            'file-hosting.allowed_mime_prefixes' => ['image/', 'application/', 'text/'],
+            'archivd.disk' => 'local',
+            'archivd.default_quota_bytes' => 1024 * 1024,
+            'archivd.allowed_mime_prefixes' => ['image/', 'application/', 'text/'],
             'service.grace_days' => 7,
         ]);
 
@@ -50,7 +50,7 @@ class TierTransitionAnalyticsTest extends TestCase
     public function test_fulfill_paid_main_moves_contribution_to_paid_bucket(): void
     {
         $user = $this->userWithRole('User');
-        $this->activations->activateImplicit($user, 'FileHosting');
+        $this->activations->activateImplicit($user, 'Archivd');
         HostedFile::query()->create([
             'user_id' => $user->id,
             'name' => 'a.txt',
@@ -65,7 +65,7 @@ class TierTransitionAnalyticsTest extends TestCase
         $this->assertSame(1, $this->bucket('free', 'file_count'));
         $this->assertNull($this->bucketRow('paid', 'storage_used_bytes'));
 
-        $service = ServiceFactory::new()->fileHostingMain1Tb()->create();
+        $service = ServiceFactory::new()->ArchivdMain1Tb()->create();
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $service->id,
@@ -83,7 +83,7 @@ class TierTransitionAnalyticsTest extends TestCase
     public function test_enter_grace_moves_contribution_to_grace_bucket(): void
     {
         $user = $this->userWithRole('User');
-        $this->activations->activateImplicit($user, 'FileHosting');
+        $this->activations->activateImplicit($user, 'Archivd');
         HostedFile::query()->create([
             'user_id' => $user->id,
             'name' => 'a.txt',
@@ -93,7 +93,7 @@ class TierTransitionAnalyticsTest extends TestCase
             'mime' => 'text/plain',
         ]);
 
-        $service = ServiceFactory::new()->fileHostingMain1Tb()->create();
+        $service = ServiceFactory::new()->ArchivdMain1Tb()->create();
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $service->id,
@@ -115,7 +115,7 @@ class TierTransitionAnalyticsTest extends TestCase
     public function test_mark_expired_when_no_other_paid_moves_contribution_to_free_bucket(): void
     {
         $user = $this->userWithRole('User');
-        $this->activations->activateImplicit($user, 'FileHosting');
+        $this->activations->activateImplicit($user, 'Archivd');
         HostedFile::query()->create([
             'user_id' => $user->id,
             'name' => 'a.txt',
@@ -125,7 +125,7 @@ class TierTransitionAnalyticsTest extends TestCase
             'mime' => 'text/plain',
         ]);
 
-        $service = ServiceFactory::new()->fileHostingMain1Tb()->create();
+        $service = ServiceFactory::new()->ArchivdMain1Tb()->create();
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $service->id,
@@ -154,7 +154,7 @@ class TierTransitionAnalyticsTest extends TestCase
     private function bucketRow(string $tier, string $metricKey): ?ProductAnalytic
     {
         return ProductAnalytic::query()
-            ->where('product_key', 'FileHosting')
+            ->where('product_key', 'Archivd')
             ->where('tier', $tier)
             ->where('metric_key', $metricKey)
             ->first();

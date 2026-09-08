@@ -2,7 +2,7 @@
 
 namespace Tests\Domain\Microstock\Unit\Services;
 
-use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\BillingSource;

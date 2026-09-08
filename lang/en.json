@@ -204,7 +204,7 @@
                 "resolved": "Resolved"
             }
         },
-        "file-hosting": {
+        "archivd": {
             "blocklist_removed": "Hash removed from the blocklist.",
             "blocklist_saved": "Hash added to the blocklist.",
             "browse_success": "Browse loaded.",
@@ -240,7 +240,7 @@
             },
             "public_share_blocked_hash": "This file cannot be shared publicly (blocked by compliance).",
             "public_share_not_allowed": "Items in this workspace cannot be shared publicly.",
-            "public_share_requires_paid": "Public link sharing requires an active paid File Hosting plan.",
+            "public_share_requires_paid": "Public link sharing requires an active paid Archivd plan.",
             "quota_exceeded": "Storage quota exceeded.",
             "quota_grace_blocked": "Your subscription is in the grace period. Renew to upload files again.",
             "quota_success": "Quota loaded.",
@@ -304,7 +304,7 @@
                 "not_found": "Workspace not found.",
                 "owner_in_grace": "The workspace owner is in the grace period. Renew the plan to use collaborative features.",
                 "owner_only": "Only the workspace owner can perform this action.",
-                "requires_paid": "Collaborative workspaces require an active paid File Hosting plan (main or addon).",
+                "requires_paid": "Collaborative workspaces require an active paid Archivd plan (main or addon).",
                 "role_updated": "Member role updated.",
                 "show_success": "Workspace loaded.",
                 "slot_limit": "Owned team workspace limit reached (:used / :limit). Archive a team or buy a Team Workspace Slot addon."
@@ -1772,7 +1772,7 @@
             },
             "view_detail": "View"
         },
-        "file-hosting": {
+        "archivd": {
             "ajax_error": "Action failed.",
             "ajax_success": "Action completed.",
             "back": "Back to files",
@@ -2063,7 +2063,7 @@
                 "last_viewed": "Last viewed",
                 "views": "Views"
             },
-            "title": "File hosting",
+            "title": "Archivd",
             "trash": "Trash",
             "trash_empty": "Trash is empty.",
             "trash_title": "Trash",
@@ -2103,7 +2103,7 @@
                 "label": "Visibility",
                 "private": "Restricted"
             },
-            "vue_mount_failed": "File Hosting UI failed to load. Refresh the page.",
+            "vue_mount_failed": "Archivd UI failed to load. Refresh the page.",
             "workspace_activity": "Team activity",
             "workspace_personal": "Personal",
             "workspace_team": "Team workspace"
@@ -2817,7 +2817,7 @@
                 "ai_balance": "AI analysis balance: $:balance · ~$:estimate per asset",
                 "buy_ai_credits": "Buy AI credits ($5)",
                 "buy_slot": "Buy slot ($1/mo)",
-                "slot_desc": "Activate the free Microstock workspace, then buy additional workspace slots. Slots are separate from File Hosting team workspaces.",
+                "slot_desc": "Activate the free Microstock workspace, then buy additional workspace slots. Slots are separate from Archivd team workspaces.",
                 "title": "Microstock",
                 "usage_balance": "Usage & balance"
             },
@@ -2860,25 +2860,25 @@
         },
         "settings": {
             "fields": {
-                "file-hosting.allowed_mime_prefixes": "Allowed MIME type prefixes",
-                "file-hosting.base_owned_workspace_slots": "Base owned workspace slots",
-                "file-hosting.chunk_size_bytes": "Upload chunk size (bytes)",
-                "file-hosting.default_quota_bytes": "Default storage quota (bytes)",
-                "file-hosting.disabled_regions": "Disabled storage regions",
-                "file-hosting.download_vault.enabled": "Download vault proxy enabled",
-                "file-hosting.max_concurrent_parts": "Max concurrent multipart parts",
-                "file-hosting.max_concurrent_uploads": "Max concurrent uploads",
-                "file-hosting.max_file_size_bytes": "Max file size (bytes)",
-                "file-hosting.max_files_per_batch": "Max files per batch",
-                "file-hosting.max_presigned_parts_per_response": "Max presigned parts per response",
-                "file-hosting.multipart_threshold_bytes": "Multipart upload threshold (bytes)",
-                "file-hosting.orphan_inactivity_minutes": "Orphan part inactivity timeout (minutes)",
-                "file-hosting.presign_ttl_minutes": "Presigned URL TTL (minutes)",
-                "file-hosting.public_download_signature_ttl_minutes": "Public download signature TTL (minutes)",
-                "file-hosting.session_ttl_hours": "Upload session TTL (hours)",
-                "file-hosting.signed_download_cache_margin_seconds": "Signed download cache margin (seconds)",
-                "file-hosting.signed_download_ttl_minutes": "Signed download URL TTL (minutes)",
-                "file-hosting.stale_upload_grace_hours": "Stale upload grace period (hours)",
+                "archivd.allowed_mime_prefixes": "Allowed MIME type prefixes",
+                "archivd.base_owned_workspace_slots": "Base owned workspace slots",
+                "archivd.chunk_size_bytes": "Upload chunk size (bytes)",
+                "archivd.default_quota_bytes": "Default storage quota (bytes)",
+                "archivd.disabled_regions": "Disabled storage regions",
+                "archivd.download_vault.enabled": "Download vault proxy enabled",
+                "archivd.max_concurrent_parts": "Max concurrent multipart parts",
+                "archivd.max_concurrent_uploads": "Max concurrent uploads",
+                "archivd.max_file_size_bytes": "Max file size (bytes)",
+                "archivd.max_files_per_batch": "Max files per batch",
+                "archivd.max_presigned_parts_per_response": "Max presigned parts per response",
+                "archivd.multipart_threshold_bytes": "Multipart upload threshold (bytes)",
+                "archivd.orphan_inactivity_minutes": "Orphan part inactivity timeout (minutes)",
+                "archivd.presign_ttl_minutes": "Presigned URL TTL (minutes)",
+                "archivd.public_download_signature_ttl_minutes": "Public download signature TTL (minutes)",
+                "archivd.session_ttl_hours": "Upload session TTL (hours)",
+                "archivd.signed_download_cache_margin_seconds": "Signed download cache margin (seconds)",
+                "archivd.signed_download_ttl_minutes": "Signed download URL TTL (minutes)",
+                "archivd.stale_upload_grace_hours": "Stale upload grace period (hours)",
                 "identity.discord.connections_snapshot_max_age_minutes": "Discord connections snapshot max age (minutes)",
                 "microstock.ai.batch_chunk": "AI batch chunk size",
                 "microstock.ai.batch_min_files": "AI batch minimum files",
@@ -2999,7 +2999,7 @@
             },
             "groups": {
                 "currencies": "Currencies",
-                "file_hosting": "File Hosting",
+                "archivd": "Archivd",
                 "microstock": "Microstock",
                 "notification_audiences": "Notification audiences",
                 "platform": "Platform",

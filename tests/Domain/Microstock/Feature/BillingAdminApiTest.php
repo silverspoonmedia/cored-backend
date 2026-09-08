@@ -2,13 +2,13 @@
 
 namespace Tests\Domain\Microstock\Feature;
 
-use App\Domain\FileHosting\Enums\WorkspaceKind;
-use App\Domain\FileHosting\Models\Folder;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Models\Workspace;
+use App\Domain\Archivd\Enums\WorkspaceKind;
+use App\Domain\Archivd\Models\Folder;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Models\Workspace;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Models\AiUsageEvent;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,7 +27,7 @@ class BillingAdminApiTest extends TestCase
 
         $this->seedRolesAndPermissions();
         $this->seed(RoleSeeder::class);
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->seed(MicrostockRoleSeeder::class);
     }
 

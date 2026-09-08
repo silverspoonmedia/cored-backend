@@ -5,7 +5,7 @@ return [
     |--------------------------------------------------------------------------
     | Subscription grace after period end
     |--------------------------------------------------------------------------
-    | During grace: no new uploads for File Hosting unlimited products; files kept.
+    | During grace: no new uploads for Archivd unlimited products; files kept.
     | After grace: free-tier quota enforced; excess files purged (oldest retained).
     */
     'grace_days' => 7,

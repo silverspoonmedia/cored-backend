@@ -2,13 +2,13 @@
 
 namespace Tests\Domain\Microstock\Feature;
 
-use App\Domain\FileHosting\Enums\WorkspaceKind;
-use App\Domain\FileHosting\Enums\WorkspaceRole;
-use App\Domain\FileHosting\Exceptions\FileHostingException;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Services\FileService;
-use App\Domain\FileHosting\Services\QuotaService;
-use App\Domain\FileHosting\Services\WorkspaceService;
+use App\Domain\Archivd\Enums\WorkspaceKind;
+use App\Domain\Archivd\Enums\WorkspaceRole;
+use App\Domain\Archivd\Exceptions\ArchivdException;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Services\FileService;
+use App\Domain\Archivd\Services\QuotaService;
+use App\Domain\Archivd\Services\WorkspaceService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\MetadataStatus;
@@ -26,7 +26,7 @@ use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Support\MicrostockCatalog;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -49,12 +49,12 @@ class MicrostockTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->seed(MicrostockRoleSeeder::class);
 
         config([
-            'file-hosting.disk' => 'local',
-            'file-hosting.default_quota_bytes' => 10 * 1024 * 1024,
+            'archivd.disk' => 'local',
+            'archivd.default_quota_bytes' => 10 * 1024 * 1024,
             'activitylog.enabled' => false,
         ]);
 
@@ -77,7 +77,7 @@ class MicrostockTest extends TestCase
         $this->assertSame($ws->id, $again->id);
 
         // Owner is a member with owner role
-        $this->assertDatabaseHas('file_hosting_workspace_members', [
+        $this->assertDatabaseHas('archivd_workspace_members', [
             'workspace_id' => $ws->id,
             'user_id' => $this->owner->id,
             'role' => WorkspaceRole::Owner->value,
@@ -116,7 +116,7 @@ class MicrostockTest extends TestCase
         try {
             $service->createWorkspace($this->owner);
             $this->fail('Second workspace must be blocked at slot cap');
-        } catch (FileHostingException $e) {
+        } catch (ArchivdException $e) {
             $this->assertSame(422, $e->statusCode());
         }
 
@@ -158,10 +158,10 @@ class MicrostockTest extends TestCase
                 $ws->id,
             );
             $this->fail('System workspace share must be blocked');
-        } catch (FileHostingException $e) {
+        } catch (ArchivdException $e) {
             $this->assertSame(422, $e->statusCode());
             $this->assertStringContainsString(
-                __('api/file-hosting.public_share_not_allowed'),
+                __('api/archivd.public_share_not_allowed'),
                 $e->getMessage(),
             );
         }
@@ -290,7 +290,7 @@ class MicrostockTest extends TestCase
                 WorkspaceRole::Editor->value,
             );
             $this->fail('Free owner must not invite');
-        } catch (FileHostingException $e) {
+        } catch (ArchivdException $e) {
             $this->assertSame(422, $e->statusCode());
         }
 
@@ -392,8 +392,8 @@ class MicrostockTest extends TestCase
 
     private function grantPaidMain(User $user): void
     {
-        $service = Service::query()->where('code', 'file-hosting.plan.1tb.monthly')->first()
-            ?? Service::factory()->fileHostingMain1Tb()->create();
+        $service = Service::query()->where('code', 'archivd.plan.1tb.monthly')->first()
+            ?? Service::factory()->ArchivdMain1Tb()->create();
 
         ServiceEntitlement::query()->updateOrCreate(
             [

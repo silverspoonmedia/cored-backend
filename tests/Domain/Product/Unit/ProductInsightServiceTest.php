@@ -2,15 +2,15 @@
 
 namespace Tests\Domain\Product\Unit;
 
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Models\Workspace;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Models\Workspace;
 use App\Domain\Identity\Models\User;
 use App\Support\Product\Enums\ProductActivationState;
 use App\Support\Product\Exceptions\ProductNotFoundException;
 use App\Support\Product\Services\ProductActivationService;
 use App\Support\Product\Services\ProductAnalyticsService;
 use App\Support\Product\Services\ProductInsightService;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -30,12 +30,12 @@ class ProductInsightServiceTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
 
         config([
-            'file-hosting.disk' => 'local',
-            'file-hosting.default_quota_bytes' => 1024 * 1024,
-            'file-hosting.allowed_mime_prefixes' => ['image/', 'application/', 'text/'],
+            'archivd.disk' => 'local',
+            'archivd.default_quota_bytes' => 1024 * 1024,
+            'archivd.allowed_mime_prefixes' => ['image/', 'application/', 'text/'],
         ]);
 
         Storage::fake('local');
@@ -45,13 +45,13 @@ class ProductInsightServiceTest extends TestCase
         $this->insights = app(ProductInsightService::class);
     }
 
-    public function test_product_summary_shape_for_file_hosting(): void
+    public function test_product_summary_shape_for_archivd(): void
     {
-        $summary = $this->insights->productSummary('FileHosting');
+        $summary = $this->insights->productSummary('Archivd');
 
-        $this->assertSame('FileHosting', $summary['product_key']);
+        $this->assertSame('Archivd', $summary['product_key']);
         $this->assertSame('implicit', $summary['activation_type']);
-        $this->assertSame('file_hosting', $summary['fulfillment_target']);
+        $this->assertSame('archivd', $summary['fulfillment_target']);
         $this->assertArrayHasKey('active', $summary['counts']);
         $this->assertArrayHasKey('suspended', $summary['counts']);
         $this->assertArrayHasKey('pending', $summary['counts']);
@@ -66,13 +66,13 @@ class ProductInsightServiceTest extends TestCase
         $suspended = $this->userWithRole('User', 'suspended@example.com');
         $expired = $this->userWithRole('User', 'expired@example.com');
 
-        $a = $this->activations->activateImplicit($active, 'FileHosting');
-        $b = $this->activations->activateImplicit($suspended, 'FileHosting');
-        $c = $this->activations->activateImplicit($expired, 'FileHosting');
+        $a = $this->activations->activateImplicit($active, 'Archivd');
+        $b = $this->activations->activateImplicit($suspended, 'Archivd');
+        $c = $this->activations->activateImplicit($expired, 'Archivd');
         $this->activations->suspend($b);
         $this->activations->markExpired($c);
 
-        $counts = $this->insights->productSummary('FileHosting')['counts'];
+        $counts = $this->insights->productSummary('Archivd')['counts'];
 
         $this->assertSame(1, $counts['active']);
         $this->assertSame(1, $counts['suspended']);
@@ -81,9 +81,9 @@ class ProductInsightServiceTest extends TestCase
         $this->assertSame(3, $counts['total']);
     }
 
-    public function test_product_metrics_for_file_hosting_returns_expected_keys(): void
+    public function test_product_metrics_for_archivd_returns_expected_keys(): void
     {
-        $metrics = $this->insights->productMetrics('FileHosting');
+        $metrics = $this->insights->productMetrics('Archivd');
 
         $this->assertArrayHasKey('total_storage_used_bytes', $metrics);
         $this->assertArrayHasKey('total_files', $metrics);
@@ -101,10 +101,10 @@ class ProductInsightServiceTest extends TestCase
         $this->assertSame([], $this->insights->productMetrics('Unknown'));
     }
 
-    public function test_file_hosting_metrics_count_files_and_workspaces(): void
+    public function test_archivd_metrics_count_files_and_workspaces(): void
     {
         $user = $this->userWithRole('User');
-        $this->activations->activateImplicit($user, 'FileHosting');
+        $this->activations->activateImplicit($user, 'Archivd');
 
         // Use Eloquent create to trigger the analytics hooks (lands in free bucket).
         HostedFile::query()->create(['user_id' => $user->id, 'name' => 'a.txt', 'disk' => 'local', 'path' => '/a', 'size' => 100, 'mime' => 'text/plain']);
@@ -115,9 +115,9 @@ class ProductInsightServiceTest extends TestCase
             ['id' => (string) \Illuminate\Support\Str::uuid7(), 'owner_user_id' => $user->id, 'name' => 'ws1', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()],
             ['id' => (string) \Illuminate\Support\Str::uuid7(), 'owner_user_id' => $user->id, 'name' => 'ws2', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()],
         ]);
-        app(ProductAnalyticsService::class)->recomputeFileHostingTier('free');
+        app(ProductAnalyticsService::class)->recomputeArchivdTier('free');
 
-        $metrics = $this->insights->productMetrics('FileHosting');
+        $metrics = $this->insights->productMetrics('Archivd');
 
         $this->assertSame(3, $metrics['total_files']);
         $this->assertSame(2, $metrics['total_workspaces']);
@@ -127,7 +127,7 @@ class ProductInsightServiceTest extends TestCase
     public function test_user_detail_in_product_returns_activation_and_quota(): void
     {
         $user = $this->userWithRole('User');
-        $this->activations->activateImplicit($user, 'FileHosting');
+        $this->activations->activateImplicit($user, 'Archivd');
 
         HostedFile::query()->create(['user_id' => $user->id, 'name' => 'a.txt', 'disk' => 'local', 'path' => '/a', 'size' => 50, 'mime' => 'text/plain']);
         HostedFile::query()->create(['user_id' => $user->id, 'name' => 'b.txt', 'disk' => 'local', 'path' => '/b', 'size' => 50, 'mime' => 'text/plain']);
@@ -136,10 +136,10 @@ class ProductInsightServiceTest extends TestCase
         ]);
 
         // Drill-down reads source tables directly — no analytics recompute needed.
-        $detail = $this->insights->userDetailInProduct($user->id, 'FileHosting');
+        $detail = $this->insights->userDetailInProduct($user->id, 'Archivd');
 
         $this->assertSame($user->id, $detail['user_id']);
-        $this->assertSame('FileHosting', $detail['product_key']);
+        $this->assertSame('Archivd', $detail['product_key']);
         $this->assertNotNull($detail['activation']);
         $this->assertSame(ProductActivationState::Active, $detail['activation']['state']);
         $this->assertSame(2, $detail['file_count']);
@@ -152,7 +152,7 @@ class ProductInsightServiceTest extends TestCase
     {
         $user = $this->userWithRole('User');
 
-        $detail = $this->insights->userDetailInProduct($user->id, 'FileHosting');
+        $detail = $this->insights->userDetailInProduct($user->id, 'Archivd');
 
         $this->assertNull($detail['activation']);
         $this->assertSame(0, $detail['file_count']);
@@ -165,21 +165,21 @@ class ProductInsightServiceTest extends TestCase
         $this->insights->productSummary('Nonexistent');
     }
 
-    public function test_file_hosting_metrics_cache_survives_past_former_ttl_until_forget(): void
+    public function test_archivd_metrics_cache_survives_past_former_ttl_until_forget(): void
     {
         \Illuminate\Support\Carbon::setTestNow('2026-01-01 00:00:00');
 
-        $first = $this->insights->productMetrics('FileHosting');
-        $this->assertTrue(Cache::has('product_insights.FileHosting.metrics'));
+        $first = $this->insights->productMetrics('Archivd');
+        $this->assertTrue(Cache::has('product_insights.Archivd.metrics'));
 
         \Illuminate\Support\Carbon::setTestNow('2026-01-01 01:00:00'); // past former 300s TTL
 
-        $second = $this->insights->productMetrics('FileHosting');
+        $second = $this->insights->productMetrics('Archivd');
         $this->assertSame($first, $second);
-        $this->assertTrue(Cache::has('product_insights.FileHosting.metrics'));
+        $this->assertTrue(Cache::has('product_insights.Archivd.metrics'));
 
-        Cache::forget('product_insights.FileHosting.metrics');
-        $this->assertFalse(Cache::has('product_insights.FileHosting.metrics'));
+        Cache::forget('product_insights.Archivd.metrics');
+        $this->assertFalse(Cache::has('product_insights.Archivd.metrics'));
 
         \Illuminate\Support\Carbon::setTestNow();
     }

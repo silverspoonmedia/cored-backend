@@ -6,7 +6,7 @@ use App\Domain\Identity\Models\User;
 use App\Support\Product\Enums\ProductActivationState;
 use App\Support\Product\Models\ProductActivation;
 use App\Support\Product\Services\ProductActivationService;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -24,17 +24,17 @@ class ProductActiveMiddlewareTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->service = app(ProductActivationService::class);
     }
 
     public function test_active_activation_passes(): void
     {
         $user = $this->userWithRole('User');
-        $this->service->activateImplicit($user, 'FileHosting');
+        $this->service->activateImplicit($user, 'Archivd');
 
         $this->actingAsJwt($user)
-            ->getJson('/api/v1/product-activations/FileHosting')
+            ->getJson('/api/v1/product-activations/Archivd')
             ->assertOk();
     }
 
@@ -44,16 +44,16 @@ class ProductActiveMiddlewareTest extends TestCase
 
         $this->assertDatabaseMissing('product_activations', [
             'user_id' => $user->id,
-            'product_key' => 'FileHosting',
+            'product_key' => 'Archivd',
         ]);
 
         $this->actingAsJwt($user)
-            ->getJson('/api/v1/file-hosting/quota')
+            ->getJson('/api/v1/archivd/quota')
             ->assertStatus(200);
 
         $this->assertDatabaseHas('product_activations', [
             'user_id' => $user->id,
-            'product_key' => 'FileHosting',
+            'product_key' => 'Archivd',
             'state' => ProductActivationState::Active->value,
             'source' => 'lazy_create',
         ]);
@@ -62,28 +62,28 @@ class ProductActiveMiddlewareTest extends TestCase
     public function test_suspended_activation_returns_403(): void
     {
         $user = $this->userWithRole('User');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
         $this->service->suspend($activation);
 
         $this->actingAsJwt($user)
-            ->getJson('/api/v1/file-hosting/quota')
+            ->getJson('/api/v1/archivd/quota')
             ->assertForbidden();
     }
 
     public function test_expired_activation_returns_403(): void
     {
         $user = $this->userWithRole('User');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
         $this->service->markExpired($activation);
 
         $this->actingAsJwt($user)
-            ->getJson('/api/v1/file-hosting/quota')
+            ->getJson('/api/v1/archivd/quota')
             ->assertForbidden();
     }
 
     public function test_unauthenticated_returns_401(): void
     {
-        $this->getJson('/api/v1/file-hosting/quota')
+        $this->getJson('/api/v1/archivd/quota')
             ->assertUnauthorized();
     }
 

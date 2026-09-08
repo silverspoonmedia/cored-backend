@@ -7,7 +7,7 @@ use App\Domain\Navigation\Models\Menu;
 use App\Domain\Navigation\Repositories\Eloquent\MenuRepository;
 use App\Domain\Navigation\Support\MenuLayout;
 use App\Support\Product\Services\ProductActivationService;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MenuSeeder;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\VtualRoleSeeder;
@@ -23,7 +23,7 @@ class MenuSeederTest extends TestCase
         parent::setUp();
 
         $this->seed(RoleSeeder::class);
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->seed(VtualRoleSeeder::class);
         $this->seed(MenuSeeder::class);
     }
@@ -47,13 +47,13 @@ class MenuSeederTest extends TestCase
                 'type' => 'h',
                 'children' => [
                     [
-                        'name' => 'File Hosting',
-                        'route' => 'file-hosting.index',
+                        'name' => 'Archivd',
+                        'route' => 'archivd.index',
                         'type' => 'p',
                         'children' => [
-                            ['name' => 'My Files', 'route' => 'file-hosting.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'Trash', 'route' => 'file-hosting.trash', 'type' => 'c', 'children' => []],
-                            ['name' => 'DMCA Blocklist', 'route' => 'file-hosting.blocklist.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'My Files', 'route' => 'archivd.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Trash', 'route' => 'archivd.trash', 'type' => 'c', 'children' => []],
+                            ['name' => 'DMCA Blocklist', 'route' => 'archivd.blocklist.index', 'type' => 'c', 'children' => []],
                         ],
                     ],
                     [
@@ -130,7 +130,7 @@ class MenuSeederTest extends TestCase
                         'type' => 'p',
                         'children' => [
                             ['name' => 'Platform', 'route' => 'settings.platform', 'type' => 'c', 'children' => []],
-                            ['name' => 'File Hosting', 'route' => 'settings.file-hosting', 'type' => 'c', 'children' => []],
+                            ['name' => 'Archivd', 'route' => 'settings.archivd', 'type' => 'c', 'children' => []],
                             ['name' => 'Microstock', 'route' => 'settings.microstock', 'type' => 'c', 'children' => []],
                             ['name' => 'vTual', 'route' => 'settings.vtual', 'type' => 'c', 'children' => []],
                             ['name' => 'Notification audiences', 'route' => 'notification-audiences.index', 'type' => 'c', 'children' => []],
@@ -165,8 +165,8 @@ class MenuSeederTest extends TestCase
         ], $workspace->getTranslations('name'));
 
         $this->assertSame(
-            ['Admin', 'File Hosting Admin', 'Management', 'Moderator', 'Root'],
-            $this->roleNamesForRoute('file-hosting.blocklist.index'),
+            ['Admin', 'Archivd Admin', 'Management', 'Moderator', 'Root'],
+            $this->roleNamesForRoute('archivd.blocklist.index'),
         );
         $this->assertSame(
             ['Admin', 'Moderator', 'Root'],
@@ -188,7 +188,7 @@ class MenuSeederTest extends TestCase
         );
         $this->assertSame(
             ['Admin', 'Root'],
-            $this->roleNamesForRoute('settings.file-hosting'),
+            $this->roleNamesForRoute('settings.archivd'),
         );
         $this->assertSame(
             ['Admin', 'Root'],
@@ -307,7 +307,7 @@ class MenuSeederTest extends TestCase
         $this->assertContains('Monitoring', $adminNames);
         $this->assertContains('Settings', $adminNames);
         $this->assertContains('Platform', $adminNames);
-        $this->assertContains('File Hosting', $adminNames);
+        $this->assertContains('Archivd', $adminNames);
         $this->assertContains('Microstock', $adminNames);
         $this->assertContains('vTual', $adminNames);
     }
@@ -318,7 +318,7 @@ class MenuSeederTest extends TestCase
         $user->assignRole($role);
 
         $activations = app(ProductActivationService::class);
-        $activations->activateImplicit($user, 'FileHosting');
+        $activations->activateImplicit($user, 'Archivd');
         $activations->activateImplicit($user, 'Vtual');
 
         return $user->fresh();

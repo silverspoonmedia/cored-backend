@@ -2,9 +2,9 @@
 
 namespace Tests\Domain\Service\Unit\Services;
 
-use App\Domain\FileHosting\Exceptions\FileHostingException;
-use App\Domain\FileHosting\Models\UserQuota;
-use App\Domain\FileHosting\Services\QuotaService;
+use App\Domain\Archivd\Exceptions\ArchivdException;
+use App\Domain\Archivd\Models\UserQuota;
+use App\Domain\Archivd\Services\QuotaService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PurchaseStatus;
@@ -13,7 +13,7 @@ use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceEntitlementLifecycleService;
 use App\Domain\Service\Services\ServiceFulfillmentService;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -29,10 +29,10 @@ class ServiceEntitlementLifecycleTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->free = FileHostingCatalog::freeBytes();
-        $this->main1Tb = FileHostingCatalog::main1TbBytes();
+        $this->free = ArchivdCatalog::freeBytes();
+        $this->main1Tb = ArchivdCatalog::main1TbBytes();
         config([
-            'file-hosting.default_quota_bytes' => $this->free,
+            'archivd.default_quota_bytes' => $this->free,
             'service.grace_days' => 7,
         ]);
     }
@@ -40,7 +40,7 @@ class ServiceEntitlementLifecycleTest extends TestCase
     public function test_fulfill_grants_active_entitlement_and_paid_quota(): void
     {
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMain1Tb()->create();
+        $catalog = Service::factory()->ArchivdMain1Tb()->create();
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $catalog->id,
@@ -64,7 +64,7 @@ class ServiceEntitlementLifecycleTest extends TestCase
     public function test_grace_blocks_upload(): void
     {
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMain1Tb()->create();
+        $catalog = Service::factory()->ArchivdMain1Tb()->create();
 
         ServiceEntitlement::query()->create([
             'user_id' => $user->id,
@@ -83,8 +83,8 @@ class ServiceEntitlementLifecycleTest extends TestCase
             'source_id' => null,
         ]);
 
-        $this->expectException(FileHostingException::class);
-        $this->expectExceptionMessage(__('api/file-hosting.quota_grace_blocked'));
+        $this->expectException(ArchivdException::class);
+        $this->expectExceptionMessage(__('api/archivd.quota_grace_blocked'));
 
         app(QuotaService::class)->assertCanAccept($user->id, 100);
     }
@@ -94,7 +94,7 @@ class ServiceEntitlementLifecycleTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMain1Tb()->create();
+        $catalog = Service::factory()->ArchivdMain1Tb()->create();
 
         ServiceEntitlement::query()->create([
             'user_id' => $user->id,
@@ -121,7 +121,7 @@ class ServiceEntitlementLifecycleTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMain1Tb()->create();
+        $catalog = Service::factory()->ArchivdMain1Tb()->create();
 
         ServiceEntitlement::query()->create([
             'user_id' => $user->id,
@@ -143,7 +143,7 @@ class ServiceEntitlementLifecycleTest extends TestCase
         $count = app(ServiceEntitlementLifecycleService::class)->expireGraceDue();
 
         $this->assertSame(1, $count);
-        $this->assertDatabaseHas('file_hosting_user_quotas', [
+        $this->assertDatabaseHas('archivd_user_quotas', [
             'user_id' => $user->id,
             'quota_bytes' => $this->free,
             'source' => 'service_recompute',

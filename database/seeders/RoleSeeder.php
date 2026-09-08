@@ -10,7 +10,7 @@ use Illuminate\Database\Seeder;
 /**
  * Seeds platform (core) roles and permissions.
  *
- * Product domains should add their own seeders (e.g. FileHostingRoleSeeder) with
+ * Product domains should add their own seeders (e.g. ArchivdRoleSeeder) with
  * domain_kind = product and their own level ladder. Spatie still requires unique
  * (name, guard_name) across kinds — do not reuse core role names like "Admin".
  */

@@ -125,29 +125,29 @@ class MenuSeeder extends Seeder
                 'type' => 'h',
                 'children' => [
                     [
-                        'name' => $this->translations('File Hosting', 'File Hosting', 'ファイルホスティング'),
+                        'name' => $this->translations('Archivd', 'Archivd', 'Archivd'),
                         'icon' => 'bi bi-cloud',
-                        'route' => 'file-hosting.index',
+                        'route' => 'archivd.index',
                         'type' => 'p',
                         'children' => [
                             [
                                 'name' => $this->translations('My Files', 'File Saya', 'マイファイル'),
                                 'icon' => 'bi bi-folder2-open',
-                                'route' => 'file-hosting.index',
+                                'route' => 'archivd.index',
                                 'type' => 'c',
                             ],
                             [
                                 'name' => $this->translations('Trash', 'Sampah', 'ゴミ箱'),
                                 'icon' => 'bi bi-trash3',
-                                'route' => 'file-hosting.trash',
+                                'route' => 'archivd.trash',
                                 'type' => 'c',
                             ],
                             [
                                 'name' => $this->translations('DMCA Blocklist', 'Daftar Blokir DMCA', 'DMCA ブロックリスト'),
                                 'icon' => 'bi bi-shield-x',
-                                'route' => 'file-hosting.blocklist.index',
+                                'route' => 'archivd.blocklist.index',
                                 'type' => 'c',
-                                'roles' => [...$managementRoles, 'File Hosting Admin'],
+                                'roles' => [...$managementRoles, 'Archivd Admin'],
                             ],
                         ],
                     ],
@@ -373,9 +373,9 @@ class MenuSeeder extends Seeder
                                 'roles' => $adminRoles,
                             ],
                             [
-                                'name' => $this->translations('File Hosting', 'File Hosting', 'ファイルホスティング'),
+                                'name' => $this->translations('Archivd', 'Archivd', 'Archivd'),
                                 'icon' => 'bi bi-cloud',
-                                'route' => 'settings.file-hosting',
+                                'route' => 'settings.archivd',
                                 'type' => 'c',
                                 'roles' => $adminRoles,
                             ],
@@ -522,11 +522,11 @@ class MenuSeeder extends Seeder
                 'ar' => 'المنتجات',
                 'ru' => 'Продукты',
             ],
-            'File Hosting' => [
-                'ko' => '파일 호스팅',
-                'zh_CN' => '文件托管',
-                'ar' => 'استضافة الملفات',
-                'ru' => 'Файловый хостинг',
+            'Archivd' => [
+                'ko' => 'Archivd',
+                'zh_CN' => 'Archivd',
+                'ar' => 'Archivd',
+                'ru' => 'Archivd',
             ],
             'My Files' => [
                 'ko' => '내 파일',

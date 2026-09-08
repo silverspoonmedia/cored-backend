@@ -2,12 +2,12 @@
 
 namespace Tests\Domain\Product\Unit;
 
-use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
 use App\Support\Product\Models\ProductAnalytic;
 use App\Support\Product\Services\ProductActivationService;
 use App\Support\Product\Services\ProductAnalyticsService;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -27,12 +27,12 @@ class ProductAnalyticsServiceTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
 
         config([
-            'file-hosting.disk' => 'local',
-            'file-hosting.default_quota_bytes' => 1024 * 1024,
-            'file-hosting.allowed_mime_prefixes' => ['image/', 'application/', 'text/'],
+            'archivd.disk' => 'local',
+            'archivd.default_quota_bytes' => 1024 * 1024,
+            'archivd.allowed_mime_prefixes' => ['image/', 'application/', 'text/'],
         ]);
 
         Storage::fake('local');
@@ -46,9 +46,9 @@ class ProductAnalyticsServiceTest extends TestCase
     {
         $user = $this->userWithRole('User');
 
-        $this->analytics->increment('FileHosting', $user->id, 'storage_used_bytes', 500);
+        $this->analytics->increment('Archivd', $user->id, 'storage_used_bytes', 500);
 
-        $row = $this->bucketRow('FileHosting', 'free', 'storage_used_bytes');
+        $row = $this->bucketRow('Archivd', 'free', 'storage_used_bytes');
 
         $this->assertNotNull($row);
         $this->assertSame(500, $row->metric_value);
@@ -59,21 +59,21 @@ class ProductAnalyticsServiceTest extends TestCase
         // A user with no entitlement lands in the 'free' bucket.
         $user = $this->userWithRole('User');
 
-        $this->analytics->increment('FileHosting', $user->id, 'file_count', 1);
+        $this->analytics->increment('Archivd', $user->id, 'file_count', 1);
 
-        $this->assertNotNull($this->bucketRow('FileHosting', 'free', 'file_count'));
-        $this->assertNull($this->bucketRow('FileHosting', 'paid', 'file_count'));
+        $this->assertNotNull($this->bucketRow('Archivd', 'free', 'file_count'));
+        $this->assertNull($this->bucketRow('Archivd', 'paid', 'file_count'));
     }
 
     public function test_increment_accumulates_on_existing_bucket(): void
     {
         $user = $this->userWithRole('User');
 
-        $this->analytics->increment('FileHosting', $user->id, 'file_count', 1);
-        $this->analytics->increment('FileHosting', $user->id, 'file_count', 1);
-        $this->analytics->increment('FileHosting', $user->id, 'file_count', 3);
+        $this->analytics->increment('Archivd', $user->id, 'file_count', 1);
+        $this->analytics->increment('Archivd', $user->id, 'file_count', 1);
+        $this->analytics->increment('Archivd', $user->id, 'file_count', 3);
 
-        $row = $this->bucketRow('FileHosting', 'free', 'file_count');
+        $row = $this->bucketRow('Archivd', 'free', 'file_count');
 
         $this->assertSame(5, $row->metric_value);
     }
@@ -82,10 +82,10 @@ class ProductAnalyticsServiceTest extends TestCase
     {
         $user = $this->userWithRole('User');
 
-        $this->analytics->increment('FileHosting', $user->id, 'file_count', 2);
-        $this->analytics->decrement('FileHosting', $user->id, 'file_count', 5);
+        $this->analytics->increment('Archivd', $user->id, 'file_count', 2);
+        $this->analytics->decrement('Archivd', $user->id, 'file_count', 5);
 
-        $row = $this->bucketRow('FileHosting', 'free', 'file_count');
+        $row = $this->bucketRow('Archivd', 'free', 'file_count');
 
         $this->assertSame(0, $row->metric_value);
     }
@@ -93,7 +93,7 @@ class ProductAnalyticsServiceTest extends TestCase
     public function test_move_user_tier_transfers_contribution_between_buckets(): void
     {
         $user = $this->userWithRole('User');
-        $this->activations->activateImplicit($user, 'FileHosting');
+        $this->activations->activateImplicit($user, 'Archivd');
 
         HostedFile::query()->create([
             'user_id' => $user->id,
@@ -105,50 +105,50 @@ class ProductAnalyticsServiceTest extends TestCase
         ]);
 
         // free bucket now holds 500 bytes + 1 file from the HostedFile hook.
-        $this->assertSame(500, $this->bucketRow('FileHosting', 'free', 'storage_used_bytes')->metric_value);
-        $this->assertSame(1, $this->bucketRow('FileHosting', 'free', 'file_count')->metric_value);
+        $this->assertSame(500, $this->bucketRow('Archivd', 'free', 'storage_used_bytes')->metric_value);
+        $this->assertSame(1, $this->bucketRow('Archivd', 'free', 'file_count')->metric_value);
 
-        $this->analytics->moveUserTier('FileHosting', $user->id, 'free', 'paid');
+        $this->analytics->moveUserTier('Archivd', $user->id, 'free', 'paid');
 
-        $this->assertSame(0, $this->bucketRow('FileHosting', 'free', 'storage_used_bytes')->metric_value);
-        $this->assertSame(0, $this->bucketRow('FileHosting', 'free', 'file_count')->metric_value);
-        $this->assertSame(500, $this->bucketRow('FileHosting', 'paid', 'storage_used_bytes')->metric_value);
-        $this->assertSame(1, $this->bucketRow('FileHosting', 'paid', 'file_count')->metric_value);
+        $this->assertSame(0, $this->bucketRow('Archivd', 'free', 'storage_used_bytes')->metric_value);
+        $this->assertSame(0, $this->bucketRow('Archivd', 'free', 'file_count')->metric_value);
+        $this->assertSame(500, $this->bucketRow('Archivd', 'paid', 'storage_used_bytes')->metric_value);
+        $this->assertSame(1, $this->bucketRow('Archivd', 'paid', 'file_count')->metric_value);
     }
 
     public function test_move_user_tier_noop_when_same_tier(): void
     {
         $user = $this->userWithRole('User');
 
-        $this->analytics->increment('FileHosting', $user->id, 'file_count', 3);
-        $this->analytics->moveUserTier('FileHosting', $user->id, 'free', 'free');
+        $this->analytics->increment('Archivd', $user->id, 'file_count', 3);
+        $this->analytics->moveUserTier('Archivd', $user->id, 'free', 'free');
 
-        $this->assertSame(3, $this->bucketRow('FileHosting', 'free', 'file_count')->metric_value);
+        $this->assertSame(3, $this->bucketRow('Archivd', 'free', 'file_count')->metric_value);
     }
 
     public function test_flush_cache_clears_metrics_cache(): void
     {
-        Cache::put('product_insights.FileHosting.metrics', ['stale'], 60);
+        Cache::put('product_insights.Archivd.metrics', ['stale'], 60);
 
-        $this->analytics->flushCache('FileHosting');
+        $this->analytics->flushCache('Archivd');
 
-        $this->assertFalse(Cache::has('product_insights.FileHosting.metrics'));
+        $this->assertFalse(Cache::has('product_insights.Archivd.metrics'));
     }
 
     public function test_increment_flushes_cache(): void
     {
-        Cache::put('product_insights.FileHosting.metrics', ['stale'], 60);
+        Cache::put('product_insights.Archivd.metrics', ['stale'], 60);
         $user = $this->userWithRole('User');
 
-        $this->analytics->increment('FileHosting', $user->id, 'file_count', 1);
+        $this->analytics->increment('Archivd', $user->id, 'file_count', 1);
 
-        $this->assertFalse(Cache::has('product_insights.FileHosting.metrics'));
+        $this->assertFalse(Cache::has('product_insights.Archivd.metrics'));
     }
 
-    public function test_recompute_file_hosting_tier_matches_live_counts(): void
+    public function test_recompute_archivd_tier_matches_live_counts(): void
     {
         $user = $this->userWithRole('User');
-        $this->activations->activateImplicit($user, 'FileHosting');
+        $this->activations->activateImplicit($user, 'Archivd');
 
         HostedFile::query()->insert([
             ['id' => (string) \Illuminate\Support\Str::uuid7(), 'user_id' => $user->id, 'name' => 'a.txt', 'disk' => 'local', 'path' => '/a', 'size' => 150, 'mime' => 'text/plain', 'created_at' => now(), 'updated_at' => now()],
@@ -156,26 +156,26 @@ class ProductAnalyticsServiceTest extends TestCase
         ]);
 
         // Recompute the free tier — the user has no entitlement.
-        $this->analytics->recomputeFileHostingTier('free');
+        $this->analytics->recomputeArchivdTier('free');
 
-        $this->assertSame(400, $this->bucketRow('FileHosting', 'free', 'storage_used_bytes')->metric_value);
-        $this->assertSame(2, $this->bucketRow('FileHosting', 'free', 'file_count')->metric_value);
-        $this->assertSame(0, $this->bucketRow('FileHosting', 'free', 'workspace_count_owned')->metric_value);
+        $this->assertSame(400, $this->bucketRow('Archivd', 'free', 'storage_used_bytes')->metric_value);
+        $this->assertSame(2, $this->bucketRow('Archivd', 'free', 'file_count')->metric_value);
+        $this->assertSame(0, $this->bucketRow('Archivd', 'free', 'workspace_count_owned')->metric_value);
     }
 
     public function test_recompute_product_clears_stale_buckets(): void
     {
         // Seed a stale paid bucket with no contributing users.
         ProductAnalytic::create([
-            'product_key' => 'FileHosting',
+            'product_key' => 'Archivd',
             'tier' => 'paid',
             'metric_key' => 'storage_used_bytes',
             'metric_value' => 999999,
         ]);
 
-        $this->analytics->recomputeProduct('FileHosting');
+        $this->analytics->recomputeProduct('Archivd');
 
-        $this->assertSame(0, $this->bucketRow('FileHosting', 'paid', 'storage_used_bytes')->metric_value);
+        $this->assertSame(0, $this->bucketRow('Archivd', 'paid', 'storage_used_bytes')->metric_value);
     }
 
     private function bucketRow(string $productKey, string $tier, string $metricKey): ?ProductAnalytic

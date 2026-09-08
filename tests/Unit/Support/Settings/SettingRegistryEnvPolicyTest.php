@@ -42,11 +42,11 @@ class SettingRegistryEnvPolicyTest extends TestCase
             'PAYMENT_CHANNEL_FEE_BEARER',
             'PAYMENT_REPORTING_TIMEZONE',
             'FRANKFURTER_CACHE_TTL',
-            'FILE_HOSTING_DISABLED_REGIONS',
-            'FILE_HOSTING_CHUNK_SIZE',
-            'FILE_HOSTING_MULTIPART_THRESHOLD',
-            'FILE_HOSTING_MAX_CONCURRENT_PARTS',
-            'FILE_HOSTING_DOWNLOAD_VAULT_ENABLED',
+            'archivd_DISABLED_REGIONS',
+            'archivd_CHUNK_SIZE',
+            'archivd_MULTIPART_THRESHOLD',
+            'archivd_MAX_CONCURRENT_PARTS',
+            'archivd_DOWNLOAD_VAULT_ENABLED',
             'INFERENCE_DEFAULT_PROVIDER_SLUG',
             'MICROSTOCK_DAILY_FREE_ENABLED',
             'MAIL_FROM_ADDRESS',
@@ -101,7 +101,7 @@ class SettingRegistryEnvPolicyTest extends TestCase
     public function test_registry_config_paths_resolve_via_setting_config(): void
     {
         $this->assertNotNull(setting_config('jwt.ttl'));
-        $this->assertNotNull(setting_config('file-hosting.max_file_size_bytes'));
+        $this->assertNotNull(setting_config('archivd.max_file_size_bytes'));
         $this->assertNotNull(setting_config('microstock.daily_free.enabled'));
         $this->assertNotNull(setting_config('vtual.claim.ttl_hours'));
     }

@@ -2,7 +2,7 @@
 
 namespace Tests\Domain\Service\Unit\Services;
 
-use App\Domain\FileHosting\Services\QuotaService;
+use App\Domain\Archivd\Services\QuotaService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PurchaseChangeType;
@@ -11,7 +11,7 @@ use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceFulfillmentService;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -23,7 +23,7 @@ class MainPlanFairnessFulfillmentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['file-hosting.default_quota_bytes' => FileHostingCatalog::freeBytes()]);
+        config(['archivd.default_quota_bytes' => ArchivdCatalog::freeBytes()]);
     }
 
     public function test_downgrade_zero_charge_sets_period_with_surplus_days(): void
@@ -31,8 +31,8 @@ class MainPlanFairnessFulfillmentTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $main2 = Service::factory()->fileHostingMain2Tb()->create();
-        $main1 = Service::factory()->fileHostingMain1Tb()->create();
+        $main2 = Service::factory()->ArchivdMain2Tb()->create();
+        $main1 = Service::factory()->ArchivdMain1Tb()->create();
 
         ServiceEntitlement::query()->create([
             'user_id' => $user->id,
@@ -78,7 +78,7 @@ class MainPlanFairnessFulfillmentTest extends TestCase
             'status' => EntitlementStatus::Expired->value,
         ]);
 
-        $expectedQuota = FileHostingCatalog::freeBytes() + FileHostingCatalog::main1TbBytes();
+        $expectedQuota = ArchivdCatalog::freeBytes() + ArchivdCatalog::main1TbBytes();
         $this->assertSame($expectedQuota, app(QuotaService::class)->quotaBytesFor($user->id));
 
         Carbon::setTestNow();
@@ -89,7 +89,7 @@ class MainPlanFairnessFulfillmentTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $main = Service::factory()->fileHostingMain1Tb()->create();
+        $main = Service::factory()->ArchivdMain1Tb()->create();
 
         ServiceEntitlement::query()->create([
             'user_id' => $user->id,

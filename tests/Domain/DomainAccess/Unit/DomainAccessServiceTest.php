@@ -33,7 +33,7 @@ class DomainAccessServiceTest extends TestCase
 
         $this->assertSame(
             DomainVisibility::Public,
-            $this->service->visibilityFor('FileHosting'),
+            $this->service->visibilityFor('Archivd'),
         );
     }
 
@@ -41,14 +41,14 @@ class DomainAccessServiceTest extends TestCase
     {
         $this->service->all();
 
-        $this->service->setVisibility('FileHosting', DomainVisibility::Private);
+        $this->service->setVisibility('Archivd', DomainVisibility::Private);
 
         $this->assertSame(
             DomainVisibility::Private,
-            $this->service->visibilityFor('FileHosting'),
+            $this->service->visibilityFor('Archivd'),
         );
         $this->assertDatabaseHas('product_domain_visibilities', [
-            'product_key' => 'FileHosting',
+            'product_key' => 'Archivd',
             'visibility' => 'private',
         ]);
     }
@@ -62,30 +62,30 @@ class DomainAccessServiceTest extends TestCase
 
     public function test_public_domain_grants_access_to_everyone_including_guests(): void
     {
-        $this->service->setVisibility('FileHosting', DomainVisibility::Public);
+        $this->service->setVisibility('Archivd', DomainVisibility::Public);
 
-        $this->assertTrue($this->service->canAccess(null, 'FileHosting'));
-        $this->assertTrue($this->service->canAccess($this->user('User'), 'FileHosting'));
+        $this->assertTrue($this->service->canAccess(null, 'Archivd'));
+        $this->assertTrue($this->service->canAccess($this->user('User'), 'Archivd'));
     }
 
     public function test_private_domain_blocks_guest_and_plain_user(): void
     {
-        $this->service->setVisibility('FileHosting', DomainVisibility::Private);
+        $this->service->setVisibility('Archivd', DomainVisibility::Private);
 
-        $this->assertFalse($this->service->canAccess(null, 'FileHosting'));
-        $this->assertFalse($this->service->canAccess($this->user('User'), 'FileHosting'));
+        $this->assertFalse($this->service->canAccess(null, 'Archivd'));
+        $this->assertFalse($this->service->canAccess($this->user('User'), 'Archivd'));
     }
 
     public function test_private_domain_allows_root_admin_and_beta_tester(): void
     {
-        $this->service->setVisibility('FileHosting', DomainVisibility::Private);
+        $this->service->setVisibility('Archivd', DomainVisibility::Private);
 
-        $this->assertTrue($this->service->canAccess($this->user('Root', 'root@example.com'), 'FileHosting'));
-        $this->assertTrue($this->service->canAccess($this->user('Admin', 'admin@example.com'), 'FileHosting'));
+        $this->assertTrue($this->service->canAccess($this->user('Root', 'root@example.com'), 'Archivd'));
+        $this->assertTrue($this->service->canAccess($this->user('Admin', 'admin@example.com'), 'Archivd'));
 
         $beta = $this->user('User', 'beta@example.com');
-        $beta->assignRole(ProductNames::betaRole('FileHosting'));
-        $this->assertTrue($this->service->canAccess($beta->fresh(), 'FileHosting'));
+        $beta->assignRole(ProductNames::betaRole('Archivd'));
+        $this->assertTrue($this->service->canAccess($beta->fresh(), 'Archivd'));
     }
 
     private function user(string $role, string $email = 'user@example.com'): User

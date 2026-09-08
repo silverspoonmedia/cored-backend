@@ -69,7 +69,7 @@ Mirrors [`config/settings-local.php`](../../config/settings-local.php) — updat
 | `microstock.daily_free.enabled` | `true` | Dev daily free on |
 | `microstock.daily_free.limit_per_user` | `1_000_000` | Generous local limit |
 | `platform.notifications.delivery` | `realtime` | Bell without polling |
-| `file-hosting.download_vault.enabled` | `true` | Vault download path in hybrid proxy |
+| `archivd.download_vault.enabled` | `true` | Vault download path in hybrid proxy |
 | `microstock.ai.http_retries` | `1` | Faster AI failure in dev |
 | `vtual.claim.accept_anyway_enabled` | `true` | Claim dev ergonomics |
 | `vtual.channel_claim.accept_anyway_enabled` | `true` | Channel claim dev ergonomics |

@@ -1,22 +1,22 @@
 # Microstock — product domain
 
-> **UI:** Microstock admin surfaces live in **Monolith-Vue-Workers** (File Hosting workspace switcher + settings). Blade references below are historical — see [web/blade-admin.md](../../web/blade-admin.md).
+> **UI:** Microstock admin surfaces live in **Monolith-Vue-Workers** (Archivd workspace switcher + settings). Blade references below are historical — see [web/blade-admin.md](../../web/blade-admin.md).
 
-Product domain (`kind => product`, `locked => true`) for microstock asset management on top of the File Hosting base storage layer. Assets live in built-in **system workspaces** (`file_hosting_workspaces.kind = 'microstock'`, standalone slots) and reuse the entire FH upload/browse/quota/download pipeline. Microstock adds AI metadata (title/description/category/keywords), CSV metadata export, and envelope-encrypted marketplace credentials.
+Product domain (`kind => product`, `locked => true`) for microstock asset management on top of the Archivd base storage layer. Assets live in built-in **system workspaces** (`ARCHIVD_workspaces.kind = 'microstock'`, standalone slots) and reuse the entire Archivd upload/browse/quota/download pipeline. Microstock adds AI metadata (title/description/category/keywords), CSV metadata export, and envelope-encrypted marketplace credentials.
 
 | | |
 |--|--|
 | Code | `app/Domain/Microstock/` |
 | Config | [`config/microstock.php`](../../../config/microstock.php) |
 | API | `routes/api/v1/microstock.php` |
-| SPA | Vue Router names `file-hosting.microstock-credentials` / `file-hosting.microstock-usage` in [`config/spa-routes.php`](../../../config/spa-routes.php), plus the File Hosting workspace switcher. No server `web` route and no standalone `/apps/microstock` screen |
+| SPA | Vue Router names `archivd.microstock-credentials` / `archivd.microstock-usage` in [`config/spa-routes.php`](../../../config/spa-routes.php), plus the Archivd workspace switcher. No server `web` route and no standalone `/apps/microstock` screen |
 | Seeder | `MicrostockRoleSeeder` (Beta tester role + Public visibility) |
 | Product registry | `activation_type = implicit`; registration creates an active registry row |
 | Workspace gate | Active `microstock_workspace_slots` entitlement; `product.active:Microstock` remains middleware defense |
-| Menu | **No dynamic sidebar menu** (`menu_routes = []`) — reached via `/apps/services` and the File Hosting workspace switcher |
-| Storage class | **Product storage** — consumes the free-tier base (see [File Hosting — Storage classification](../file-hosting/README.md#storage-classification-core-vs-product)) |
-| Quota pool | Shared with File Hosting (one `UserQuota` byte pool) |
-| Fulfillment target | **`microstock`** (standalone — NOT `file_hosting`; see activation below) |
+| Menu | **No dynamic sidebar menu** (`menu_routes = []`) — reached via `/apps/services` and the Archivd workspace switcher |
+| Storage class | **Product storage** — consumes the free-tier base (see [Archivd — Storage classification](../archivd/README.md#storage-classification-core-vs-product)) |
+| Quota pool | Shared with Archivd (one `UserQuota` byte pool) |
+| Fulfillment target | **`microstock`** (standalone — NOT `archivd`; see activation below) |
 
 ## Registry activation vs workspace entitlement
 
@@ -29,14 +29,14 @@ Two SKUs are seeded by `ServiceCatalogSeeder` (codes in `App\Domain\Service\Supp
 | `microstock.plan.free` | Microstock Workspace (Free) | `once` | `main` | `microstock_workspace_slots` | 0 | $0 |
 | `microstock.addon.workspace-slot.monthly` | Microstock Workspace Slot | `monthly` | `addon` | `microstock_workspace_slots` | 0 | $1 |
 
-- **Free workspace entitlement** (`microstock.plan.free`, $0 one-time): the workspace-access gate. Purchasable **once** (`ServiceCheckoutService` throws 422 `api/services.already_activated` on rebuy; unique `(user_id, service_id)` entitlement key is the backstop). Being $0 it is **zero-charge**: `isZeroCharge()` skips the payment gateway, the purchase is immediately `Paid` (`fx_provider = zero_charge`), and fulfillment runs inline. Grants `quantity = 1`, `ends_at = null` (permanent). With `fulfillment_target = 'microstock'`, fulfillment also ensures the already-implicit registry activation remains active; it does not auto-create a workspace and does not recompute File Hosting quota.
-- **Slot addon** (`microstock.addon.workspace-slot.monthly`, $1 monthly): repeatable and **compounding** — each paid unit increments `quantity` on the active entitlement via `activateAddon`. Buying 10 units grants 10 extra Microstock workspace slots. Shares the addon anniversary stack with FH addons (`MainPlanChangeCalculator` / `extendAllAddons` cover both `file_hosting` and `microstock` addon targets).
+- **Free workspace entitlement** (`microstock.plan.free`, $0 one-time): the workspace-access gate. Purchasable **once** (`ServiceCheckoutService` throws 422 `api/services.already_activated` on rebuy; unique `(user_id, service_id)` entitlement key is the backstop). Being $0 it is **zero-charge**: `isZeroCharge()` skips the payment gateway, the purchase is immediately `Paid` (`fx_provider = zero_charge`), and fulfillment runs inline. Grants `quantity = 1`, `ends_at = null` (permanent). With `fulfillment_target = 'microstock'`, fulfillment also ensures the already-implicit registry activation remains active; it does not auto-create a workspace and does not recompute Archivd quota.
+- **Slot addon** (`microstock.addon.workspace-slot.monthly`, $1 monthly): repeatable and **compounding** — each paid unit increments `quantity` on the active entitlement via `activateAddon`. Buying 10 units grants 10 extra Microstock workspace slots. Shares the addon anniversary stack with Archivd addons (`MainPlanChangeCalculator` / `extendAllAddons` cover both `archivd` and `microstock` addon targets).
 - **AI credits** (`microstock.addon.ai-credits.5`, $5 once): prepaid analysis balance (`entitlement = microstock_ai_credits`). Fulfillment calls `AiCreditService::creditFromPurchase` — debited only on successful AI analysis (see [Microstock — AI billing](../microstock/README.md#ai-billing-prepaid-credits)).
 - **UX**: `/apps/services` shows a dedicated Microstock card with an **Activate free** button for the workspace entitlement (disabled + "Active" badge once entitled) and a **Buy slot** button (visible once entitled) posting to the normal `services.checkout` flow. Here “Active” describes workspace entitlement, not creation of the implicit registry row.
 
 ## System workspaces (base storage)
 
-Microstock assets live in `file_hosting_workspaces.kind = 'microstock'` rows — real workspaces, so all FH services (browse, upload, folders, members, activity, realtime) work unchanged. Unlike team workspaces, Microstock slots are **standalone**: they do NOT overlap or interchange with the FH team workspace slots (`file-hosting.addon.workspace-slot.monthly`). Owners may have **multiple** Microstock workspaces when their slot limit allows.
+Microstock assets live in `ARCHIVD_workspaces.kind = 'microstock'` rows — real workspaces, so all Archivd services (browse, upload, folders, members, activity, realtime) work unchanged. Unlike team workspaces, Microstock slots are **standalone**: they do NOT overlap or interchange with the Archivd team workspace slots (`archivd.addon.workspace-slot.monthly`). Owners may have **multiple** Microstock workspaces when their slot limit allows.
 
 | Rule | Behavior |
 |----|----------|
@@ -45,11 +45,11 @@ Microstock assets live in `file_hosting_workspaces.kind = 'microstock'` rows —
 | Activation gate | `MicrostockService::workspaceFor`/`createWorkspace` additionally throw `MicrostockException` 403 `workspace_not_activated` without an active slot entitlement |
 | Slot accounting | `countActiveOwned` counts only `kind = 'team'`; `countActiveOwnedMicrostock` counts `kind = 'microstock'`. Neither pool sees the other, so Microstock never raises `owned_workspace_used` |
 | Multi-workspace | Spare slots allow extra workspaces via `POST /api/v1/microstock/workspaces` or the switcher |
-| Free users | The Microstock slot is independent of the FH paid/free plan; inviting still requires a paid FH main plan |
+| Free users | The Microstock slot is independent of the Archivd paid/free plan; inviting still requires a paid Archivd main plan |
 
-### No auto-provision on File Hosting
+### No auto-provision on Archivd
 
-The Microstock system workspace is **not** auto-provisioned on File Hosting first paint. It appears in the FH switcher only after workspace entitlement and on-demand provisioning via `/apps/services` or the switcher/API (`POST /api/v1/microstock/workspaces`). The SPA services card and File Hosting workspace switcher gate entry on `WorkspaceAccessService::assertCanProvisionMicrostockWorkspace` (slot limit from Microstock entitlements). Until entitlement and provisioning, the workspace simply does not appear in the switcher.
+The Microstock system workspace is **not** auto-provisioned on Archivd first paint. It appears in the Archivd switcher only after workspace entitlement and on-demand provisioning via `/apps/services` or the switcher/API (`POST /api/v1/microstock/workspaces`). The SPA services card and Archivd workspace switcher gate entry on `WorkspaceAccessService::assertCanProvisionMicrostockWorkspace` (slot limit from Microstock entitlements). Until entitlement and provisioning, the workspace simply does not appear in the switcher.
 
 ## Usage & limits
 
@@ -57,16 +57,16 @@ The Microstock system workspace is **not** auto-provisioned on File Hosting firs
 |----|----------|
 | Access | Requires an active Microstock slot entitlement (free registration or slot addon) |
 | Public share | **Blocked** — files/folders in a system workspace can never be `anyone_with_link`. `VisibilityService::assertSystemWorkspaceShareAllowed` rejects enable (422 `public_share_not_allowed`); guest `fileAccessible`/`folderAccessible` return false |
-| Invite | Only a **paid FH** owner may invite (`WorkspaceService::invite` → `assertOwnerEligibleForCollab`); invitees may be free or paid |
-| Upload/browse/download | Reuse File Hosting services as-is. **Content collaboration is NOT paid-gated:** a free Microstock owner can upload into their collections, and an invited member (free or paid) can upload into a shared workspace. Upload only requires mutate access (`assertCanMutate` — owner or active member). The paid gate (`assertOwnerEligibleForCollab`) applies to **sharing** (invite/accept) and **creating workspaces**, never to putting content into one |
+| Invite | Only a **paid Ar** owner may invite (`WorkspaceService::invite` → `assertOwnerEligibleForCollab`); invitees may be free or paid |
+| Upload/browse/download | Reuse Archivd services as-is. **Content collaboration is NOT paid-gated:** a free Microstock owner can upload into their collections, and an invited member (free or paid) can upload into a shared workspace. Upload only requires mutate access (`assertCanMutate` — owner or active member). The paid gate (`assertOwnerEligibleForCollab`) applies to **sharing** (invite/accept) and **creating workspaces**, never to putting content into one |
 
 ## AI billing (prepaid credits)
 
-Upload/storage stays on the shared File Hosting quota. **AI analysis** (vision + thinking metadata) is prepaid and metered per HTTP call.
+Upload/storage stays on the shared Archivd quota. **AI analysis** (vision + thinking metadata) is prepaid and metered per HTTP call.
 
 | Phase | Billable? | Mechanism |
 |-------|-----------|-----------|
-| Upload into collection | No | FH `UserQuota` bytes |
+| Upload into collection | No | Archivd `UserQuota` bytes |
 | `POST …/analyze` / `POST assets/{file}/analyze` | Yes | Prepaid `microstock_ai_balances` |
 
 **Flow:** purchase an AI credit pack via `/apps/services` → `ServiceFulfillmentService` credits `balance_micro_usd` → `AiBillingService::planAnalyze` gates dispatch (daily-free slots first, then prepaid balance for remainder; checks **billing user** = actor who triggered analyze) → each OpenAI-compatible HTTP call records a `microstock_ai_usage_events` row scoped to `analysis_run_id` → `composeResultFromThinking` settles (debit + `ai_billing` snapshot) **before** promoting `status = generated`. Thinking failure after successful vision triggers **partial vision settle**. Full edge-case inventory: [billing-edge-cases.md](billing-edge-cases.md).
@@ -130,7 +130,7 @@ Transparent prepaid balance and AI usage history for the billing subject (the us
 
 | Surface | Route / endpoint |
 |---------|------------------|
-| **Usage page** (SPA) | Vue Router `file-hosting.microstock-usage` → `/apps/file-hosting/microstock/usage` — summary cards + tabs |
+| **Usage page** (SPA) | Vue Router `archivd.microstock-usage` → `/apps/archivd/microstock/usage` — summary cards + tabs |
 | Summary | `GET /api/v1/microstock/billing` |
 | Ledger mutations | `GET /api/v1/microstock/billing/ledger` |
 | Usage detail | `GET /api/v1/microstock/billing/usage-events` |
@@ -149,13 +149,13 @@ Transparent prepaid balance and AI usage history for the billing subject (the us
 | `GET` | `/api/v1/admin/microstock/billing/overview` |
 | `GET` | `/api/v1/admin/microstock/billing/usage-events` |
 
-Consumed directly by the SPA (`FileHostingMicrostockUsageView.vue`, `useMicrostockBilling.ts`). Gated by `hasAnyRole(['Root', 'Admin', 'Moderator'])` — Management excluded.
+Consumed directly by the SPA (`ArchivdMicrostockUsageView.vue`, `useMicrostockBilling.ts`). Gated by `hasAnyRole(['Root', 'Admin', 'Moderator'])` — Management excluded.
 
 **Navigation**
 
 | Location | Link |
 |----------|------|
-| File Hosting toolbar (Microstock workspace) | **AI Balance** → navigates to `file-hosting.microstock-usage` or opens inline billing summary from `GET /api/v1/microstock/billing` |
+| Archivd toolbar (Microstock workspace) | **AI Balance** → navigates to `archivd.microstock-usage` or opens inline billing summary from `GET /api/v1/microstock/billing` |
 | Collection describe modal footer | Billing line + **View balance & history** → usage route |
 | `/apps/services` Microstock card | **Usage & balance** next to balance line |
 
@@ -163,7 +163,7 @@ Implementation: `BillingLedgerService`, `AdminBillingAnalyticsService`, `AdminBi
 
 ## Collections (folder-as-collection lifecycle)
 
-A **folder** inside a Microstock workspace is a **collection** — the unit the AI processes. Uploads must live inside a collection, never the workspace root. Collection state lives directly on `file_hosting_folders` (migration `2026_07_26_100001`), driven by `App\Domain\FileHosting\Enums\CollectionStatus` and `App\Domain\Microstock\Services\CollectionService`.
+A **folder** inside a Microstock workspace is a **collection** — the unit the AI processes. Uploads must live inside a collection, never the workspace root. Collection state lives directly on `ARCHIVD_folders` (migration `2026_07_26_100001`), driven by `App\Domain\Archivd\Enums\CollectionStatus` and `App\Domain\Microstock\Services\CollectionService`.
 
 ```mermaid
 flowchart LR
@@ -177,13 +177,13 @@ flowchart LR
 | Step | Behavior |
 |----|----------|
 | Upload gate | `DirectUploadService::initiate` rejects (422) a Microstock workspace upload with no `folder_id` (`microstock.error_requires_folder`) or into a locked collection (`microstock.error_collection_locked`). Client mirrors this via dropzone `data-workspace-kind` / `data-collection-locked` |
-| Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` (single text field, max 2000, nullable) + `collection_billing_mode` (`free`/`paid`) + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here. **SPA UI:** `FhCollectionDescribeModal.vue` collects structured sections (Primary concept, Visible subjects, Buyer intent, Style & mood, Additional notes). All sections are optional; they compose into a multi-line hint before lock. A mandatory **Free / Paid** billing-mode selector appears when `microstock.daily_free.enabled` is on; when Free is disabled the selector is hidden and every analysis is forced to `paid`. Submitting with no content warns via `confirmDialog()` that blind locking usually produces poor, inconsistent AI metadata. |
+| Lock + describe | `POST collections/{folder}/lock` stores the owner's `collection_hint` (single text field, max 2000, nullable) + `collection_billing_mode` (`free`/`paid`) + sets `locked` + `collection_locked_at`. Allowed from draft/failed (re-lock retries a failed run). Uploads stop here. **SPA UI:** `ArCollectionDescribeModal.vue` collects structured sections (Primary concept, Visible subjects, Buyer intent, Style & mood, Additional notes). All sections are optional; they compose into a multi-line hint before lock. A mandatory **Free / Paid** billing-mode selector appears when `microstock.daily_free.enabled` is on; when Free is disabled the selector is hidden and every analysis is forced to `paid`. Submitting with no content warns via `confirmDialog()` that blind locking usually produces poor, inconsistent AI metadata. |
 | Analyze | `POST collections/{folder}/analyze` (requires `locked`, non-empty) sets `processing` and dispatches `ProcessCollection` |
 | Pipeline | `ProcessCollection` seeds a pending metadata row per file **directly in the folder (non-recursive)** with decoupled stage columns (`ai_vision`, `ai_thinking`, `ai_result`), then dispatches one `AnalyzeAssetVision` job per file on the **collection vision** queue (FIFO by file name). Each vision persists `ai_vision` and dispatches `AnalyzeAssetThinking` on the **collection thinking** queue. **Dual-lane pipeline:** configurable concurrent vision + thinking jobs per folder (default **3+3**), capped globally by upstream limits (see [Upstream limits](#upstream-limits)); vision file N+1 may run while thinking file N runs. Collection `review` when **all** assets are terminal (watchdog / thinking completion). Sub-folders are separate collections and are NOT processed |
 | Curate | Per-file manual edit via `PATCH assets/{file}/metadata` (existing finalize) while in `review` |
 | Export | `POST collections/{folder}/export` (requires `review`) renders a CSV of the folder's finalized metadata, persists it to `microstock.csv_disk`, saves `collection_csv_path`, sets `exported`. `GET collections/{folder}/download` streams it |
 
-`collection_status` is NULL for ordinary File Hosting folders — only Microstock collections use these columns. `Folder::isCollectionLocked()` is true for locked/processing/review/exported.
+`collection_status` is NULL for ordinary Archivd folders — only Microstock collections use these columns. `Folder::isCollectionLocked()` is true for locked/processing/review/exported.
 
 ## Metadata (AI: vision → thinking → manual)
 
@@ -251,14 +251,14 @@ Per-stage watchdog grace: `microstock.ai.stage.vision_grace_after` (default 600s
 
 ### Image variants (persisted derivatives)
 
-Microstock raster uploads in a `kind = microstock` workspace trigger `GenerateFileVariants` after `DirectUploadService::complete`. JPEG sidecars are stored on the same FH disk (`file_hosting_file_variants`):
+Microstock raster uploads in a `kind = microstock` workspace trigger `GenerateFileVariants` after `DirectUploadService::complete`. JPEG sidecars are stored on the same Archivd disk (`ARCHIVD_file_variants`):
 
 | Kind | Longest side | Typical use |
 |------|--------------|-------------|
 | `ai_512` | 512px | Faster vision / lower payload (probe matrix) |
 | `ai_1024` | 1024px | Default vision quality |
 
-**Quota:** ready variant `size` bytes count toward the owner's File Hosting `used_bytes` (byte sum with the original `HostedFile.size`). See [File Hosting — Quota](../file-hosting/README.md#quota).
+**Quota:** ready variant `size` bytes count toward the owner's Archivd `used_bytes` (byte sum with the original `HostedFile.size`). See [Archivd — Quota](../archivd/README.md#quota).
 
 **Vision delivery** — **Settings → Microstock** (`microstock.ai.vision_image.*`):
 
@@ -394,7 +394,7 @@ Images reach the vision stage via `VisionImageResolver` — **signed HTTPS URL**
 5. Collection hint overfitting (invented soccer/swim gear) — both stages forbid equipment not visible; thinking VERIFY should drop invented terms when the model cooperates.
 6. Thinking multimodal fallback — if the gateway rejects images on the `thinking` combo, `HttpAiMetadataService` retries text-only then keeps the vision draft (`raw.thinking = null`).
 
-The review panel surfaces per-file `error` when status is `failed` (`AssetMetadataResource` + `FhMicrostockReviewModal.vue`).
+The review panel surfaces per-file `error` when status is `failed` (`AssetMetadataResource` + `ArMicrostockReviewModal.vue`).
 
 ### Adaptive timeout & watchdog
 
@@ -429,7 +429,7 @@ As a safety net, `HttpAiMetadataService::thinking()` still degrades gracefully i
 
 | Column | Notes |
 |----|-------|
-| `microstock_asset_metadata` | `file_id` (unique FK to `file_hosting_files`), `user_id`, `title`, `keywords` json, `category`, `description`, `status` (`pending`/`generated`/`finalized`/`failed`), `ai_raw` json (`{vision, thinking, stage_metrics?}` — see above), `error` |
+| `microstock_asset_metadata` | `file_id` (unique FK to `ARCHIVD_files`), `user_id`, `title`, `keywords` json, `category`, `description`, `status` (`pending`/`generated`/`finalized`/`failed`), `ai_raw` json (`{vision, thinking, stage_metrics?}` — see above), `error` |
 
 ## CSV export
 
@@ -478,11 +478,11 @@ Symbolic Vue Router names (registered in [`config/spa-routes.php`](../../../conf
 
 | Route name | Purpose |
 |----------|---------|
-| `file-hosting.microstock-credentials` | Marketplace credential CRUD (`MicrostockCredentialsView.vue`) |
-| `file-hosting.microstock-usage` | Usage & balance page (`FileHostingMicrostockUsageView.vue`) |
+| `archivd.microstock-credentials` | Marketplace credential CRUD (`MicrostockCredentialsView.vue`) |
+| `archivd.microstock-usage` | Usage & balance page (`ArchivdMicrostockUsageView.vue`) |
 | `settings.microstock` | Operational knobs (Settings → Microstock tab) |
 
-Collection toolbar, workspace switcher, Lock & Describe, and Review panel live inside **`file-hosting.index`** / folder routes (`FileHostingView.vue`) — not separate named routes. API surface:
+Collection toolbar, workspace switcher, Lock & Describe, and Review panel live inside **`archivd.index`** / folder routes (`ArchivdView.vue`) — not separate named routes. API surface:
 
 | API prefix | Purpose |
 |------------|---------|
@@ -493,24 +493,24 @@ Collection toolbar, workspace switcher, Lock & Describe, and Review panel live i
 | `GET/PATCH/POST …/assets/{file}/metadata` + `POST …/analyze` | Review panel CRUD + re-analyze |
 | Signed preview | Inline preview URL from `SignedDownloadService` after `MicrostockService::resolveAsset` |
 
-Removed Blade island history: [file-hosting README — UI architecture / SPA shell](../file-hosting/README.md#ui-architecture--spa-shell).
+Removed Blade island history: [archivd README — UI architecture / SPA shell](../archivd/README.md#ui-architecture--spa-shell).
 
 ### Collection UI (SPA)
 
-Auth File Hosting browse is **`FileHostingView.vue`** — three Vue Router routes (index, folder, show), not the removed single-island soft-nav shell.
+Auth Archivd browse is **`ArchivdView.vue`** — three Vue Router routes (index, folder, show), not the removed single-island soft-nav shell.
 
 Inside a Microstock collection folder the toolbar exposes **Lock & Describe** and **Review** when the workspace `kind` is `microstock` and a folder is selected. Collection progress text under the quota bar comes from browse folder fields via `formatCollectionProgress` in `useMicrostock.ts` — processed/total/failed counts, not a stepper widget. Lifecycle lives on the folder (`collection_status` / lock / analyze / export APIs).
 
-**Lock & Describe** — `FhCollectionDescribeModal.vue` + `utils/file-hosting/fhCollectionDescribe.ts`. Compact 2-column grid for visible-subjects and buyer-intent sections; char count and billing line in the modal footer. All describe sections optional; only a too-short primary concept or hint over 2000 chars is a hard validation error. Mandatory **Free / Paid** billing-mode radio when daily free is enabled; modal resets selection on open. Paid mode bypasses daily-free quota; Free mode uses daily quota first then prepaid. Re-lock from `failed` pre-fills from `folder.collection_hint`. Upload into a locked collection / workspace root blocked client-side and server-side.
+**Lock & Describe** — `ArCollectionDescribeModal.vue` + `utils/archivd/arCollectionDescribe.ts`. Compact 2-column grid for visible-subjects and buyer-intent sections; char count and billing line in the modal footer. All describe sections optional; only a too-short primary concept or hint over 2000 chars is a hard validation error. Mandatory **Free / Paid** billing-mode radio when daily free is enabled; modal resets selection on open. Paid mode bypasses daily-free quota; Free mode uses daily quota first then prepaid. Re-lock from `failed` pre-fills from `folder.collection_hint`. Upload into a locked collection / workspace root blocked client-side and server-side.
 
-**Workspace switcher** — reactive workspace list from `GET /api/v1/file-hosting/workspaces`; Microstock rows show `kind === 'microstock'`. Team create gated by plan state; Microstock create POSTs `/api/v1/microstock/workspaces`.
+**Workspace switcher** — reactive workspace list from `GET /api/v1/archivd/workspaces`; Microstock rows show `kind === 'microstock'`. Team create gated by plan state; Microstock create POSTs `/api/v1/microstock/workspaces`.
 
 ### Review UI (curate metadata)
 
-- **Per-file metadata status** — `FolderService::browse` eager-loads `HostedFile::microstockMetadata` when workspace `kind` is `microstock`; `HostedFileResource` exposes a `microstock` key (`{title, keywords, status, phase, stages}`). SPA listing paints stage-aware badges via `resolveMicrostockBadge` (`utils/file-hosting/fhMicrostockBadge.ts`) and a Review control opening `FhMicrostockReviewModal.vue`.
-- **Review modal** — editable title, keyword chips, description/category under an **AI details** toggle; signed preview image. Echo-first metadata updates via File Hosting websocket; fallback HTTP poll every 30 s when broadcast is off. Saves via `PATCH /api/v1/microstock/assets/{file}/metadata`; **Re-analyze** via `POST …/analyze`.
-- **Progress realtime** — while `collection_status === 'processing'`, `useFileHostingRealtime` listens for `collection.analysis.progress` and `asset.metadata.progress`. Fallback poll every 60 s (collection banner) / 30 s (review modal) when broadcast unconfigured.
-- **Collection billing** — `GET /api/v1/microstock/billing` pre-flight in the Lock & Describe footer; submit blocks when balance &lt; `fileCount × estimate`. **View balance & history** navigates to `file-hosting.microstock-usage`. Locked collections expose **Start analysis** (`POST …/analyze`).
+- **Per-file metadata status** — `FolderService::browse` eager-loads `HostedFile::microstockMetadata` when workspace `kind` is `microstock`; `HostedFileResource` exposes a `microstock` key (`{title, keywords, status, phase, stages}`). SPA listing paints stage-aware badges via `resolveMicrostockBadge` (`utils/archivd/arMicrostockBadge.ts`) and a Review control opening `ArMicrostockReviewModal.vue`.
+- **Review modal** — editable title, keyword chips, description/category under an **AI details** toggle; signed preview image. Echo-first metadata updates via Archivd websocket; fallback HTTP poll every 30 s when broadcast is off. Saves via `PATCH /api/v1/microstock/assets/{file}/metadata`; **Re-analyze** via `POST …/analyze`.
+- **Progress realtime** — while `collection_status === 'processing'`, `useArchivdRealtime` listens for `collection.analysis.progress` and `asset.metadata.progress`. Fallback poll every 60 s (collection banner) / 30 s (review modal) when broadcast unconfigured.
+- **Collection billing** — `GET /api/v1/microstock/billing` pre-flight in the Lock & Describe footer; submit blocks when balance &lt; `fileCount × estimate`. **View balance & history** navigates to `archivd.microstock-usage`. Locked collections expose **Start analysis** (`POST …/analyze`).
 - **Review shortcut** — in `review` state, toolbar **Review files** opens the modal for the first listed file.
 
 ## Tests
@@ -534,7 +534,7 @@ Inside a Microstock collection folder the toolbar exposes **Lock & Describe** an
 - `BillingLedgerApiTest`: user `GET billing/ledger` + `GET billing/usage-events` (auth, pagination, daily-free vs prepaid rows).
 - `BillingAdminApiTest`: platform overview aggregates, cross-user usage events, role gate (Root/Admin/Moderator vs Management).
 - `KeywordNormalizerTest`: dedupe + cap at 60 keywords.
-- Client-side upload helpers are covered by SPA Vitest (`monolith-vue-workers/tests/` and composable unit tests) — see [File Hosting — UI architecture / SPA shell](../file-hosting/README.md#ui-architecture--spa-shell).
+- Client-side upload helpers are covered by SPA Vitest (`monolith-vue-workers/tests/` and composable unit tests) — see [Archivd — UI architecture / SPA shell](../archivd/README.md#ui-architecture--spa-shell).
 
 ## Operations: queue worker
 
@@ -594,6 +594,6 @@ On Laragon/Windows, `php artisan queue:work` **exits back to the shell prompt ri
 
 ## Related
 
-- [file-hosting/README.md](../file-hosting/README.md) — base storage layer, system workspaces, storage classification
+- [archivd/README.md](../archivd/README.md) — base storage layer, system workspaces, storage classification
 - [payment-gateway/encryption.md](../payment-gateway/encryption.md) — envelope encryption infra
 - [service/README.md](../service/README.md) — entitlements / quota fulfillment

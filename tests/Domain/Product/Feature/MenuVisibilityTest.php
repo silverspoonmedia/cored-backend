@@ -5,7 +5,7 @@ namespace Tests\Domain\Product\Feature;
 use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use App\Support\Product\Services\ProductActivationService;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MenuSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -29,53 +29,53 @@ class MenuVisibilityTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->seed(MenuSeeder::class);
 
         app(MenuRepositoryInterface::class)->flushNavigationCache();
         $this->activations = app(ProductActivationService::class);
     }
 
-    public function test_file_hosting_menu_visible_when_user_active(): void
+    public function test_archivd_menu_visible_when_user_active(): void
     {
         $user = User::factory()->create();
         $user->assignRole('User');
-        $this->activations->activateImplicit($user, 'FileHosting');
+        $this->activations->activateImplicit($user, 'Archivd');
 
         $names = $this->sidebarMenuNames($user);
 
-        $this->assertContains('File Hosting', $names);
+        $this->assertContains('Archivd', $names);
     }
 
-    public function test_file_hosting_menu_hidden_when_user_suspended(): void
+    public function test_archivd_menu_hidden_when_user_suspended(): void
     {
         $user = User::factory()->create();
         $user->assignRole('User');
-        $activation = $this->activations->activateImplicit($user, 'FileHosting');
+        $activation = $this->activations->activateImplicit($user, 'Archivd');
         $this->activations->suspend($activation);
 
         $names = $this->sidebarMenuNames($user);
 
-        $this->assertNotContains('File Hosting', $names);
+        $this->assertNotContains('Archivd', $names);
     }
 
-    public function test_file_hosting_menu_hidden_when_user_expired(): void
+    public function test_archivd_menu_hidden_when_user_expired(): void
     {
         $user = User::factory()->create();
         $user->assignRole('User');
-        $activation = $this->activations->activateImplicit($user, 'FileHosting');
+        $activation = $this->activations->activateImplicit($user, 'Archivd');
         $this->activations->markExpired($activation);
 
         $names = $this->sidebarMenuNames($user);
 
-        $this->assertNotContains('File Hosting', $names);
+        $this->assertNotContains('Archivd', $names);
     }
 
     public function test_non_product_menu_unaffected_by_activation_state(): void
     {
         $user = User::factory()->create();
         $user->assignRole('User');
-        $activation = $this->activations->activateImplicit($user, 'FileHosting');
+        $activation = $this->activations->activateImplicit($user, 'Archivd');
         $this->activations->suspend($activation);
 
         $names = $this->sidebarMenuNames($user);

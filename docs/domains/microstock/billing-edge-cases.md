@@ -2,7 +2,7 @@
 
 Companion to [README § AI billing](README.md#ai-billing-prepaid-credits). Documents usage/billing behavior for the vision → thinking pipeline so successful provider work is recorded, settled, and auditable.
 
-**Operator UI:** reconcile `microstock_ai_usage_events` and `microstock_ai_credit_transactions` against the **Usage & balance** page (`GET /apps/file-hosting/microstock/usage`) — prepaid ledger tab, AI usage detail tab, and (Root / Admin / Moderator) **Platform overview** tab. See [Usage & balance UI](README.md#usage--balance-ui).
+**Operator UI:** reconcile `microstock_ai_usage_events` and `microstock_ai_credit_transactions` against the **Usage & balance** page (`GET /apps/archivd/microstock/usage`) — prepaid ledger tab, AI usage detail tab, and (Root / Admin / Moderator) **Platform overview** tab. See [Usage & balance UI](README.md#usage--balance-ui).
 
 ## Flow (post-hardening)
 

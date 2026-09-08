@@ -77,16 +77,16 @@ class DomainCommandsTest extends TestCase
 
         $this->assertSame('core', $domains->kind('Identity'));
         $this->assertSame('core', $domains->kind('PaymentGateway'));
-        $this->assertSame('product', $domains->kind('FileHosting'));
+        $this->assertSame('product', $domains->kind('Archivd'));
 
         $this->assertSame('never', $domains->removalStatus('Identity'));
-        $this->assertSame('locked', $domains->removalStatus('FileHosting'));
+        $this->assertSame('locked', $domains->removalStatus('Archivd'));
 
         $this->artisan('domain:list')
             ->assertSuccessful()
             ->expectsOutputToContain('Identity')
             ->expectsOutputToContain('PaymentGateway')
-            ->expectsOutputToContain('FileHosting')
+            ->expectsOutputToContain('Archivd')
             ->expectsOutputToContain('foundation (never removable)')
             ->expectsOutputToContain('unlock via config/domains.php');
     }
@@ -263,26 +263,26 @@ class DomainCommandsTest extends TestCase
     {
         $api = File::get($this->apiV1Path);
         $this->assertLessThan(
-            strpos($api, "require __DIR__.'/v1/file-hosting.php';"),
+            strpos($api, "require __DIR__.'/v1/archivd.php';"),
             strpos($api, "require __DIR__.'/v1/identity.php';"),
-            'API loader: core identity must appear before product file-hosting'
+            'API loader: core identity must appear before product archivd'
         );
         $this->assertLessThan(
-            strpos($api, "require __DIR__.'/v1/file-hosting.php';"),
+            strpos($api, "require __DIR__.'/v1/archivd.php';"),
             strpos($api, "require __DIR__.'/v1/service.php';"),
-            'API loader: core service must appear before product file-hosting'
+            'API loader: core service must appear before product archivd'
         );
 
         $providers = File::get($this->providersPath);
         $this->assertLessThan(
-            strpos($providers, 'FileHostingServiceProvider::class'),
+            strpos($providers, 'ArchivdServiceProvider::class'),
             strpos($providers, 'IdentityServiceProvider::class'),
-            'Providers: core Identity must appear before product FileHosting'
+            'Providers: core Identity must appear before product Archivd'
         );
         $this->assertLessThan(
-            strpos($providers, 'FileHostingServiceProvider::class'),
+            strpos($providers, 'ArchivdServiceProvider::class'),
             strpos($providers, 'ServiceServiceProvider::class'),
-            'Providers: core Service must appear before product FileHosting'
+            'Providers: core Service must appear before product Archivd'
         );
     }
 

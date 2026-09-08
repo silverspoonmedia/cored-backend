@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Http\Resources;
 
-use App\Domain\FileHosting\Http\Resources\HostedFileResource;
-use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Archivd\Http\Resources\HostedFileResource;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\PaymentGateway\Http\Resources\InvoiceResource;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\Service\Http\Resources\ServicePurchaseResource;
@@ -124,7 +124,7 @@ class PresentationResourceTest extends TestCase
         $activation = ProductActivation::make([
             'id' => (string) Str::uuid(),
             'user_id' => (string) Str::uuid(),
-            'product_key' => 'file-hosting',
+            'product_key' => 'archivd',
             'state' => ProductActivationState::Active,
             'source' => 'test',
         ]);

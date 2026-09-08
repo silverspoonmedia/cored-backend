@@ -33,17 +33,17 @@ The Blade admin targeted WCAG 2.1 AA, guarded by a Blade-specific test that no l
 | Active nav | `aria-current="page"` | `nav/tree.blade.php`, `nav/bar-tree.blade.php`, `sidebar-nav-search.blade.php` JS |
 | Breadcrumbs | `<nav aria-label="breadcrumb">`; every parent must expose a clickable URL (no plain-text parents) | `partials/breadcrumbs.blade.php` + the former `routes/breadcrumbs.php` registry |
 | DataTables | `aria-label` on `<table>`; `<caption>` where helpful | `users/index.blade.php`, `invoices/index.blade.php`, `payment-gateways/index.blade.php` |
-| Status regions | `role="status"` + `aria-live="polite"` | `payment-status-hero.blade.php`, bell badge (`bell.js`), toasts (checkout / FH island) |
+| Status regions | `role="status"` + `aria-live="polite"` | `payment-status-hero.blade.php`, bell badge (`bell.js`), toasts (checkout / Archivd island) |
 | Toggle buttons | `aria-pressed` | `checkout.js` channel buttons |
-| Interactive divs | `role="button"` + `tabindex="0"` + Enter/Space handler | file-hosting dropzone (`FhDropzone.vue`), move-tree items |
+| Interactive divs | `role="button"` + `tabindex="0"` + Enter/Space handler | archivd dropzone (`ArDropzone.vue`), move-tree items |
 
-File Hosting authenticated browse was a **domain-local Vue island** (soft-nav, listing, bulk, upload dropzone, Microstock chrome) rather than a global AdminLTE SPA. Historical asset map: [domains/file-hosting/README.md — UI architecture / SPA shell](../domains/file-hosting/README.md#ui-architecture--spa-shell).
+Archivd authenticated browse was a **domain-local Vue island** (soft-nav, listing, bulk, upload dropzone, Microstock chrome) rather than a global AdminLTE SPA. Historical asset map: [domains/archivd/README.md — UI architecture / SPA shell](../domains/archivd/README.md#ui-architecture--spa-shell).
 
 ## Vue islands (obsolete concept)
 
 The "Vue island inside Blade" pattern existed because Blade owned first paint. With Blade gone the whole dual-path question is moot — the SPA is one Vue application. The old house rules (SFC under `resources/js/vue/islands/{name}/` with a Vite entry, bootstrap URLs minted by `route()` into a Blade JSON block, fetch through `apiFetch` → web JSON proxy, no CDN Vue, no runtime `template:` strings) applied to a build that no longer exists.
 
-The two islands that shipped were the dashboard live-session widget and File Hosting auth browse.
+The two islands that shipped were the dashboard live-session widget and Archivd auth browse.
 
 ### Lang keys
 
@@ -55,7 +55,7 @@ Mobile-first adjustments live in CSS (not inline Blade styles), guarded by `Them
 
 ### Reduced motion
 
-`monolith-overrides.css`, `file-hosting.css`, `payments/channels-admin.css`, and `payments/order-invoice-show.css` all ship `@media (prefers-reduced-motion: reduce)` blocks that shorten animations/transitions to `0.01ms` (or disable them) and disable card hover lift. Required for WCAG 2.3.3.
+`monolith-overrides.css`, `archivd.css`, `payments/channels-admin.css`, and `payments/order-invoice-show.css` all ship `@media (prefers-reduced-motion: reduce)` blocks that shorten animations/transitions to `0.01ms` (or disable them) and disable card hover lift. Required for WCAG 2.3.3.
 
 ### Mobile navigation fallback
 
@@ -63,7 +63,7 @@ Mobile-first adjustments live in CSS (not inline Blade styles), guarded by `Them
 
 ### Modals
 
-File-hosting modals (`show.blade.php` rename/share, `file-hosting/partials/move-modal.blade.php`) use `modal-fullscreen-sm-down` so they fill the viewport on phones.
+archivd modals (`show.blade.php` rename/share, `archivd/partials/move-modal.blade.php`) use `modal-fullscreen-sm-down` so they fill the viewport on phones.
 
 ### Sidebar-first column ordering
 
@@ -100,11 +100,11 @@ Convention for table empty rows:
 @endforelse
 ```
 
-Adopted in: `notifications/index`, `services/index`, `error-logs/index`, `activity-logs/index`, `menus/index`. File-hosting trash keeps its own `.fh-empty` block (richer icon layout).
+Adopted in: `notifications/index`, `services/index`, `error-logs/index`, `activity-logs/index`, `menus/index`. archivd trash keeps its own `.ar-empty` block (richer icon layout).
 
 ## Toasts (replacing window.alert)
 
-Toast routing goes through `window.MonolithSwal.toastMessage(message, type)` — a SweetAlert2 toast mixin (position `top-end`, 4s timer, progress bar, pause on hover). The legacy `.monolith-toast` CSS component (defined in `monolith-overrides.css`) is retained for domain consumers that build toast elements manually (checkout, channels-admin, domain-access, inference rate-plans) via local `showToast(message, type)` helpers; File Hosting Vue island uses `MonolithSwal` via `useFhApi`. Those containers expose `role="status"` + `aria-live="polite"`. `window.alert` is forbidden — use `MonolithSwal.alert` (modal) or `MonolithSwal.toastMessage` (toast). Status transitions (paid / expired / cancelled / failed) soft-patch the same page chrome without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
+Toast routing goes through `window.MonolithSwal.toastMessage(message, type)` — a SweetAlert2 toast mixin (position `top-end`, 4s timer, progress bar, pause on hover). The legacy `.monolith-toast` CSS component (defined in `monolith-overrides.css`) is retained for domain consumers that build toast elements manually (checkout, channels-admin, domain-access, inference rate-plans) via local `showToast(message, type)` helpers; Archivd Vue island uses `MonolithSwal` via `useArchivd`. Those containers expose `role="status"` + `aria-live="polite"`. `window.alert` is forbidden — use `MonolithSwal.alert` (modal) or `MonolithSwal.toastMessage` (toast). Status transitions (paid / expired / cancelled / failed) soft-patch the same page chrome without hard reload — see [payment-gateway — Realtime invoice status](../domains/payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
 
 ## SweetAlert2 / confirmations
 
@@ -140,8 +140,8 @@ Keys live under `swal.*` in `lang/{en,id,ja,ko,zh_CN,ar,ru}/ui.php`. The SPA rea
 
 ### Adoption
 
-- **`data-swal-confirm` forms**: `file-hosting/blocklist.blade.php`, `product-activations/show.blade.php`, `services/index.blade.php`, `file-hosting/partials/team-offcanvas.blade.php`.
-- **`MonolithSwal.alert` / `confirm` helpers**: `file-hosting/direct-upload.js` (`monolithAlert`), Vue FH `useFhApi` (`fhConfirm` / `toast`). Each helper feature-detects `window.MonolithSwal` and falls back to `window.alert` / `window.confirm` if absent.
+- **`data-swal-confirm` forms**: `archivd/blocklist.blade.php`, `product-activations/show.blade.php`, `services/index.blade.php`, `archivd/partials/team-offcanvas.blade.php`.
+- **`MonolithSwal.alert` / `confirm` helpers**: `archivd/direct-upload.js` (`monolithAlert`), Vue Archivd `useArchivd` (`arConfirm` / `toast`). Each helper feature-detects `window.MonolithSwal` and falls back to `window.alert` / `window.confirm` if absent.
 
 ## Theme-color meta
 
@@ -155,7 +155,7 @@ Row action groups use a single `btn-group` with direct-children buttons only. Ne
 
 The shared DataTable renderer `window.renderDatatableActions` (in `components/partials/datatable-row-actions.blade.php`) wraps every row's action set in `<div class="btn-group btn-group-sm" role="group" aria-label="…">`. Each icon-only button carries both `aria-label` and `title` (set from `action.label`); icons use `aria-hidden="true"`. No `ms-*` margin utilities — spacing comes from `.btn-group`.
 
-Manual Blade row-action clusters (e.g. `services/index`, `product-activations/show`) follow the same contract: wrap the per-row actions in `<div class="btn-group btn-group-sm" role="group">` (Bootstrap rows). File Hosting auth browse row actions live in the Vue island (`App.vue` / `.fh-action-group` in `file-hosting.css`) — not archived `resources/views/_archive/adminlte4/file-hosting/partials/browse-views`. Every icon-only button must carry `aria-label` + `title`.
+Manual Blade row-action clusters (e.g. `services/index`, `product-activations/show`) follow the same contract: wrap the per-row actions in `<div class="btn-group btn-group-sm" role="group">` (Bootstrap rows). Archivd auth browse row actions live in the Vue island (`App.vue` / `.ar-action-group` in `archivd.css`) — not archived `resources/views/_archive/adminlte4/archivd/partials/browse-views`. Every icon-only button must carry `aria-label` + `title`.
 
 Forms carrying destructive actions used `class="d-inline-block"` (not `d-inline`) so they sat cleanly as a direct child of the `btn-group`; the submit button inside carried `[data-form-submit-spinner]`.
 
@@ -171,9 +171,9 @@ When two cards sit in sibling columns (e.g. `users/edit.blade.php` edit form + r
 
 Reference: `users/partials/activity-history.blade.php`.
 
-## File-hosting toolbar
+## archivd toolbar
 
-`.fh-toolbar` declares a full `border: 1px solid var(--fh-border)` and uniform `border-radius: var(--fh-radius)` so the search box reads as a symmetric shell (not a half-open bar). Auth browse listing/toolbar/empty-state colspan are painted by the Vue island (`App.vue`); Blade index only mounts `#vue-file-hosting` + modal/offcanvas shells. Archived `toolbar-zone` / `browse-views` under `resources/views/_archive/adminlte4/file-hosting/partials/` are not the live paint path.
+`.ar-toolbar` declares a full `border: 1px solid var(--ar-border)` and uniform `border-radius: var(--ar-radius)` so the search box reads as a symmetric shell (not a half-open bar). Auth browse listing/toolbar/empty-state colspan are painted by the Vue island (`App.vue`); Blade index only mounts `#vue-archivd` + modal/offcanvas shells. Archived `toolbar-zone` / `browse-views` under `resources/views/_archive/adminlte4/archivd/partials/` are not the live paint path.
 
 ## Related
 
@@ -183,6 +183,6 @@ Reference: `users/partials/activity-history.blade.php`.
 
 ## Known bridge gaps (realtime)
 
-- **`__monolithEcho`**: Pusher/Echo instance exposed on `window.__monolithEcho` by `bell.js` (notifications; loaded from `assets-scripts` after `app.js`, before page `$scripts`). Other domain modules (file-hosting realtime) attach to the same instance if present, but there is no shared "echo registry" — each consumer must feature-detect.
+- **`__monolithEcho`**: Pusher/Echo instance exposed on `window.__monolithEcho` by `bell.js` (notifications; loaded from `assets-scripts` after `app.js`, before page `$scripts`). Other domain modules (archivd realtime) attach to the same instance if present, but there is no shared "echo registry" — each consumer must feature-detect.
 - **Bell → DataTable reload**: `bell.js` reloads DataTables via `window.dataTables[tableId].ajax.reload()` (set by `initDataTable({ exposeForReload: true })`). This bridge is string-keyed by table ID — no type safety, no event contract. A missing table ID silently skips reload.
 - **Polling fallback**: `users/index.blade.php` inline `onReady` polls via `setInterval(60s)` when realtime is degraded (`notification-realtime:degraded`), in pure polling / failed-config mode (`notification-realtime:polling`), or already disabled. The poll is torn down on reconnect (`notification-realtime:connected`). No overlap with WS pushes.

@@ -2,7 +2,7 @@
 
 namespace App\Support\ListActions\Builders;
 
-use App\Domain\FileHosting\Models\FileHostingHashBlocklist;
+use App\Domain\Archivd\Models\ArchivdHashBlocklist;
 use App\Domain\Identity\Models\User;
 use App\Support\ListActions\QueryRowAction;
 use App\Support\ListActions\QueryRowActionBuilder;
@@ -14,7 +14,7 @@ final class HashBlocklistQueryRowActions implements QueryRowActionBuilder
      */
     public function resolve(mixed $model, ?User $actor = null): array
     {
-        if (! $model instanceof FileHostingHashBlocklist) {
+        if (! $model instanceof ArchivdHashBlocklist) {
             return [];
         }
 
@@ -25,7 +25,7 @@ final class HashBlocklistQueryRowActions implements QueryRowActionBuilder
                 icon: 'trash',
                 variant: 'danger',
                 method: 'DELETE',
-                path: 'file-hosting/blocklist/'.$model->id,
+                path: 'archivd/blocklist/'.$model->id,
                 confirm: [
                     'title' => __('list_actions.confirm.remove_blocklist_title'),
                     'text' => __('list_actions.confirm.remove_blocklist'),

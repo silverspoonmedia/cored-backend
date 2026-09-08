@@ -50,7 +50,7 @@ Tier A (env only) vs operational settings: [configuration-policy.md](../../platf
 |------------------|-------|
 | `JWT_SECRET` | HS256 signing secret (env) |
 | `HCAPTCHA_SITEKEY`, `HCAPTCHA_SECRET` | hCaptcha credentials (env) |
-| `SPA_URL` | Vue-Workers public origin. OAuth `return_to` allowlist. Non-empty also mints password-reset, email-verify, File Hosting `share_url`, and iPaymu hosted return/cancel onto that origin (`App\Support\SpaPublicUrl`); empty falls back to API-signed URLs and disables SPA OAuth return. Matrix: [Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url). Env semantics: [environment.md](../../platform/environment.md). |
+| `SPA_URL` | Vue-Workers public origin. OAuth `return_to` allowlist. Non-empty also mints password-reset, email-verify, Archivd `share_url`, and iPaymu hosted return/cancel onto that origin (`App\Support\SpaPublicUrl`); empty falls back to API-signed URLs and disables SPA OAuth return. Matrix: [Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url). Env semantics: [environment.md](../../platform/environment.md). |
 | `AUTH_GUARD=api` | Default API guard |
 
 **Settings → Platform** (`system_settings`; runtime `setting_config()`):
@@ -105,7 +105,7 @@ Behavior contract:
 
 ### Public URLs (`SPA_URL`)
 
-`App\Support\SpaPublicUrl` is the single mint for browser-facing identity links when `config('services.spa.url')` is non-empty. Full minting matrix (password reset, email verify, File Hosting `share_url`, iPaymu hosted return/cancel): [vue-workers-spa — Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url).
+`App\Support\SpaPublicUrl` is the single mint for browser-facing identity links when `config('services.spa.url')` is non-empty. Full minting matrix (password reset, email verify, Archivd `share_url`, iPaymu hosted return/cancel): [vue-workers-spa — Production URL minting](../../integration/vue-workers-spa.md#production-url-minting-spa_url).
 
 ## Auth API (`/api/v1/auth/*`)
 
@@ -120,7 +120,7 @@ Typical surface (all under `auth:api` where noted):
 
 JWT: Bearer header (API) or HttpOnly `__Host-spa_jwt` cookie (SPA via `AuthenticateWithSpaCookie`). Octane: no sticky claims; cleanup guards after token ops — [platform/octane](../../platform/octane.md).
 
-**Register side-effect:** `AuthService::register` auto-activates every implicit Product domain declared in [`config/products.php`](../../../config/products.php) (e.g. FileHosting) by inserting a `product_activations` row with `state = active` and `source = register_hook`. Failures are logged but do not abort registration — the `product.active` middleware lazy-creates a missing implicit activation on first product endpoint hit. See [Product Activations](../product-activations/README.md).
+**Register side-effect:** `AuthService::register` auto-activates every implicit Product domain declared in [`config/products.php`](../../../config/products.php) (e.g. Archivd) by inserting a `product_activations` row with `state = active` and `source = register_hook`. Failures are logged but do not abort registration — the `product.active` middleware lazy-creates a missing implicit activation on first product endpoint hit. See [Product Activations](../product-activations/README.md).
 
 Roles seeded in `RoleSeeder` (Root, Admin, Moderator, Management, User) — all **`domain_kind = core`**. Example protected: `GET /api/v1/admin/ping` with permission middleware.
 
@@ -133,7 +133,7 @@ Roles seeded in `RoleSeeder` (Root, Admin, Moderator, Management, User) — all 
 
 This is **not** the module registry in [`config/domains.php`](../../../config/domains.php) (`kind` + `locked` for `domain:list` / `domain:remove`). Same words (core/product) for taxonomy; different systems. See [platform/architecture.md](../../platform/architecture.md).
 
-- **Spatie names stay globally unique** on `(name, guard_name)`. Product must not reuse core names (`Admin`, `view user`, …). Prefer e.g. `File Hosting Admin`.
+- **Spatie names stay globally unique** on `(name, guard_name)`. Product must not reuse core names (`Admin`, `view user`, …). Prefer e.g. `Archivd Admin`.
 - **H-RBAC user management uses core roles only.** Product role levels never change list/view/edit/delete/assignable for platform users.
 - **Permission checks** (`permission:…`, `$user->can()`) remain **name-based**; `domain_kind` tags seed ownership and future admin filters, not Gate resolution.
 - **Cross-kind pivots OK:** a core role may hold product permissions via `role_has_permissions`.

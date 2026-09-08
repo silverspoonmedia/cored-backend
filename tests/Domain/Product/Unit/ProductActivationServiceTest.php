@@ -35,7 +35,7 @@ class ProductActivationServiceTest extends TestCase
         Event::fake();
         $user = $this->userWithRole('User');
 
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
 
         $this->assertSame(ProductActivationState::Active, $activation->state);
         $this->assertSame(ProductActivationType::Implicit, $activation->activation_type);
@@ -43,7 +43,7 @@ class ProductActivationServiceTest extends TestCase
         $this->assertSame('register_hook', $activation->source);
         $this->assertDatabaseHas('product_activations', [
             'user_id' => $user->id,
-            'product_key' => 'FileHosting',
+            'product_key' => 'Archivd',
             'state' => ProductActivationState::Active->value,
         ]);
     }
@@ -52,8 +52,8 @@ class ProductActivationServiceTest extends TestCase
     {
         $user = $this->userWithRole('User');
 
-        $first = $this->service->activateImplicit($user, 'FileHosting');
-        $second = $this->service->activateImplicit($user, 'FileHosting');
+        $first = $this->service->activateImplicit($user, 'Archivd');
+        $second = $this->service->activateImplicit($user, 'Archivd');
 
         $this->assertSame($first->id, $second->id);
         $this->assertSame(ProductActivationState::Active, $second->state);
@@ -63,10 +63,10 @@ class ProductActivationServiceTest extends TestCase
     public function test_activate_implicit_reactivates_suspended(): void
     {
         $user = $this->userWithRole('User');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
         $this->service->suspend($activation, 'test');
 
-        $reactivated = $this->service->activateImplicit($user, 'FileHosting');
+        $reactivated = $this->service->activateImplicit($user, 'Archivd');
 
         $this->assertSame(ProductActivationState::Active, $reactivated->state);
     }
@@ -123,7 +123,7 @@ class ProductActivationServiceTest extends TestCase
     public function test_suspend_blocks_active(): void
     {
         $user = $this->userWithRole('User');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
 
         $suspended = $this->service->suspend($activation, 'abuse');
 
@@ -135,7 +135,7 @@ class ProductActivationServiceTest extends TestCase
     public function test_suspend_rejects_already_suspended(): void
     {
         $user = $this->userWithRole('User');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
         $this->service->suspend($activation);
 
         $this->expectException(ProductActivationException::class);
@@ -145,7 +145,7 @@ class ProductActivationServiceTest extends TestCase
     public function test_reactivate_transitions_suspended_to_active(): void
     {
         $user = $this->userWithRole('User');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
         $this->service->suspend($activation);
 
         $reactivated = $this->service->reactivate($activation);
@@ -157,7 +157,7 @@ class ProductActivationServiceTest extends TestCase
     public function test_mark_expired_handles_active(): void
     {
         $user = $this->userWithRole('User');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
 
         $expired = $this->service->markExpired($activation);
 
@@ -168,7 +168,7 @@ class ProductActivationServiceTest extends TestCase
     public function test_mark_expired_idempotent_on_expired(): void
     {
         $user = $this->userWithRole('User');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
         $this->service->markExpired($activation);
 
         $result = $this->service->markExpired($activation);
@@ -181,13 +181,13 @@ class ProductActivationServiceTest extends TestCase
     {
         $user = $this->userWithRole('User');
 
-        $this->assertFalse($this->service->isActive($user->id, 'FileHosting'));
+        $this->assertFalse($this->service->isActive($user->id, 'Archivd'));
 
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
-        $this->assertTrue($this->service->isActive($user->id, 'FileHosting'));
+        $activation = $this->service->activateImplicit($user, 'Archivd');
+        $this->assertTrue($this->service->isActive($user->id, 'Archivd'));
 
         $this->service->suspend($activation);
-        $this->assertFalse($this->service->isActive($user->id, 'FileHosting'));
+        $this->assertFalse($this->service->isActive($user->id, 'Archivd'));
     }
 
     public function test_find_or_fail_throws_when_missing(): void
@@ -195,7 +195,7 @@ class ProductActivationServiceTest extends TestCase
         $user = $this->userWithRole('User');
 
         $this->expectException(ProductNotFoundException::class);
-        $this->service->findOrFail($user->id, 'FileHosting');
+        $this->service->findOrFail($user->id, 'Archivd');
     }
 
     public function test_unknown_product_key_throws(): void
@@ -211,13 +211,13 @@ class ProductActivationServiceTest extends TestCase
         $user = $this->userWithRole('User');
 
         $this->expectException(ProductActivationException::class);
-        $this->service->requestExplicit($user, 'FileHosting');
+        $this->service->requestExplicit($user, 'Archivd');
     }
 
     public function test_for_user_returns_all_user_activations(): void
     {
         $user = $this->userWithRole('User');
-        $this->service->activateImplicit($user, 'FileHosting');
+        $this->service->activateImplicit($user, 'Archivd');
 
         config()->set('products.Billing', [
             'activation_type' => 'explicit',
@@ -228,7 +228,7 @@ class ProductActivationServiceTest extends TestCase
         $activations = $this->service->forUser($user);
 
         $this->assertCount(2, $activations);
-        $this->assertTrue($activations->contains('product_key', 'FileHosting'));
+        $this->assertTrue($activations->contains('product_key', 'Archivd'));
         $this->assertTrue($activations->contains('product_key', 'Billing'));
     }
 
@@ -237,12 +237,12 @@ class ProductActivationServiceTest extends TestCase
         $user1 = $this->userWithRole('User');
         $user2 = $this->userWithRole('User', 'second@example.com');
 
-        $this->service->activateImplicit($user1, 'FileHosting');
-        $active2 = $this->service->activateImplicit($user2, 'FileHosting');
+        $this->service->activateImplicit($user1, 'Archivd');
+        $active2 = $this->service->activateImplicit($user2, 'Archivd');
         $this->service->suspend($active2);
 
-        $active = $this->service->forProduct('FileHosting', ProductActivationState::Active);
-        $suspended = $this->service->forProduct('FileHosting', ProductActivationState::Suspended);
+        $active = $this->service->forProduct('Archivd', ProductActivationState::Active);
+        $suspended = $this->service->forProduct('Archivd', ProductActivationState::Suspended);
 
         $this->assertCount(1, $active);
         $this->assertCount(1, $suspended);
@@ -253,20 +253,20 @@ class ProductActivationServiceTest extends TestCase
         $user1 = $this->userWithRole('User');
         $user2 = $this->userWithRole('User', 'second@example.com');
 
-        $this->service->activateImplicit($user1, 'FileHosting');
-        $active2 = $this->service->activateImplicit($user2, 'FileHosting');
+        $this->service->activateImplicit($user1, 'Archivd');
+        $active2 = $this->service->activateImplicit($user2, 'Archivd');
         $this->service->suspend($active2);
 
-        $this->assertSame(1, $this->service->countByProductState('FileHosting', ProductActivationState::Active));
-        $this->assertSame(1, $this->service->countByProductState('FileHosting', ProductActivationState::Suspended));
-        $this->assertSame(0, $this->service->countByProductState('FileHosting', ProductActivationState::Expired));
+        $this->assertSame(1, $this->service->countByProductState('Archivd', ProductActivationState::Active));
+        $this->assertSame(1, $this->service->countByProductState('Archivd', ProductActivationState::Suspended));
+        $this->assertSame(0, $this->service->countByProductState('Archivd', ProductActivationState::Expired));
     }
 
     public function test_ensure_implicit_active_lazy_creates(): void
     {
         $user = $this->userWithRole('User');
 
-        $activation = $this->service->ensureImplicitActive($user, 'FileHosting');
+        $activation = $this->service->ensureImplicitActive($user, 'Archivd');
 
         $this->assertSame(ProductActivationState::Active, $activation->state);
         $this->assertSame('lazy_create', $activation->source);

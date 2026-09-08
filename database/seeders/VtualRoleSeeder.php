@@ -18,7 +18,7 @@ class VtualRoleSeeder extends Seeder
         $guard = 'api';
         $domainKind = DomainKind::Product->value;
 
-        // Levels unique per domain_kind. File Hosting uses 1100–1300; offset Vtual.
+        // Levels unique per domain_kind. Archivd uses 1100–1300; offset Vtual.
         $roles = [
             'Vtual Admin' => 2100,
             'Vtual Editor' => 2200,

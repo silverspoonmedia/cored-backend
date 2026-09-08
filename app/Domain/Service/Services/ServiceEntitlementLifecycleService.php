@@ -2,20 +2,20 @@
 
 namespace App\Domain\Service\Services;
 
-use App\Domain\FileHosting\Services\EnforceFreeTierQuotaService;
-use App\Domain\FileHosting\Services\FileHostingQuotaRecomputeService;
+use App\Domain\Archivd\Services\EnforceFreeTierQuotaService;
+use App\Domain\Archivd\Services\ArchivdQuotaRecomputeService;
 use App\Domain\Notification\Notifications\NotificationType;
 use App\Domain\Notification\Services\NotificationService;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\ServiceEntitlement;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdCatalog;
 use Illuminate\Support\Facades\Log;
 
 class ServiceEntitlementLifecycleService
 {
     public function __construct(
         private readonly ServiceEntitlementService $entitlements,
-        private readonly FileHostingQuotaRecomputeService $quotaRecompute,
+        private readonly ArchivdQuotaRecomputeService $quotaRecompute,
         private readonly EnforceFreeTierQuotaService $purge,
         private readonly NotificationService $notifications,
     ) {}
@@ -69,8 +69,8 @@ class ServiceEntitlementLifecycleService
                     /** @var ServiceEntitlement $entitlement */
                     $this->entitlements->markExpired($entitlement);
 
-                    $isFh = $entitlement->service?->fulfillment_target === FileHostingCatalog::FULFILLMENT_TARGET
-                        || $entitlement->service?->isFileHostingStoragePlan();
+                    $isFh = $entitlement->service?->fulfillment_target === ArchivdCatalog::FULFILLMENT_TARGET
+                        || $entitlement->service?->isArchivdStoragePlan();
 
                     if ($isFh) {
                         $computed = $this->quotaRecompute->recompute($entitlement->user_id);

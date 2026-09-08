@@ -2,7 +2,7 @@
 
 Core domain `App\Domain\PaymentGateway\`. Secrets in env/config, not DB. Polymorphic invoices → **service_purchase** (primary product sell path) / PG `subscription` demo morph. Idempotent webhooks via unique `(payment_gateway_id, external_transaction_id)`.
 
-**Product SaaS subscriptions** (periods, grace, File Hosting quota) live in the [Service](../service/README.md) domain (`ServiceEntitlement`) — **not** the PaymentGateway `Subscription` model.
+**Product SaaS subscriptions** (periods, grace, Archivd quota) live in the [Service](../service/README.md) domain (`ServiceEntitlement`) — **not** the PaymentGateway `Subscription` model.
 
 ## Layout
 
@@ -232,7 +232,7 @@ Checkout pages soft-update hero / steps / panel / sidebar when invoice status ch
 
 | Layer | Behavior |
 |-------|----------|
-| Broadcast gate | `BroadcastConnection::isConfigured()` only — **not** `platform.notifications.delivery` (same independence as File Hosting) |
+| Broadcast gate | `BroadcastConnection::isConfigured()` only — **not** `platform.notifications.delivery` (same independence as Archivd) |
 | Helper | `PaymentRealtime` → `InvoiceStatusChanged` (`ShouldBroadcastNow`) |
 | Channel | Private `payments.invoice.{invoiceId}` — auth via `InvoiceChannelAuthorizer`: `view invoice` **or** invoiceable owner (`ServicePurchase` / `ServiceAddonRenewal` `user_id`; Subscription matches `subscriber_email`) |
 | Event name | `invoice.status.changed` (client: `.invoice.status.changed`) |
@@ -280,6 +280,6 @@ Sensitive invoice payloads, 2FA, etc.: [encryption.md](encryption.md).
 ## Related
 
 - [service](../service/README.md) — catalog + FX + service_purchase invoiceable
-- [file-hosting](../file-hosting/README.md) — primary product domain fulfilled from Service; [realtime / live listing](../file-hosting/README.md#realtime--live-listing) shares `BroadcastConnection` / `window.__monolithEcho` pattern
+- [archivd](../archivd/README.md) — primary product domain fulfilled from Service; [realtime / live listing](../archivd/README.md#realtime--live-listing) shares `BroadcastConnection` / `window.__monolithEcho` pattern
 - [notification](../notification/README.md) — shared Echo factory; payment invoice channel is **not** the bell bus
 - [platform/environment.md](../../platform/environment.md)

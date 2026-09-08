@@ -9,7 +9,7 @@ use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServiceAddonRenewalLine;
 use App\Domain\Service\Models\ServiceEntitlement;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdCatalog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -38,7 +38,7 @@ class ServiceAddonRenewalService
             ->where('ends_at', '<=', now())
             ->whereHas('service', function ($q): void {
                 // Storage + workspace-slot addons share stack renewal.
-                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                $q->where('fulfillment_target', ArchivdCatalog::FULFILLMENT_TARGET)
                     ->where('plan_kind', PlanKind::Addon);
             })
             ->distinct()

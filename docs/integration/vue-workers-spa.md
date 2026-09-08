@@ -18,7 +18,7 @@ SPA-side docs (project layout, auth-session lifecycle, i18n workflow, UI convent
 
 ### Source layout
 
-AdminLTE app code is **type-then-domain**: `src/views/{domain}/`, domain-specific `src/components/{domain}/` and `src/composables/{domain}/`. Shared chrome/forms/infra stay at the type root (`AppNavbar`, `DataTable`, `useEcho`, `useShellHydrate`, …). Domain folder names match backend kebab (`identity`, `file-hosting`, `payment-gateway`, `vtual`, …). Vue Router `path` / `name` are unchanged. `src/router/index.ts` keeps history, scroll, and guards; route records live in `src/router/routes/*.ts` assembled in the original order. **Valkivid3** stays under `src/valkivid3/` (do not mix with AdminLTE folders).
+AdminLTE app code is **type-then-domain**: `src/views/{domain}/`, domain-specific `src/components/{domain}/` and `src/composables/{domain}/`. Shared chrome/forms/infra stay at the type root (`AppNavbar`, `DataTable`, `useEcho`, `useShellHydrate`, …). Domain folder names match backend kebab (`identity`, `archivd`, `payment-gateway`, `vtual`, …). Vue Router `path` / `name` are unchanged. `src/router/index.ts` keeps history, scroll, and guards; route records live in `src/router/routes/*.ts` assembled in the original order. **Valkivid3** stays under `src/valkivid3/` (do not mix with AdminLTE folders).
 
 Base URL: set `VITE_API_BASE_URL` to the Laravel API origin (e.g. `https://api.example.com/api/v1`). Composable paths are relative (`auth/me`); `src/api/baseUrl.ts` sends every path direct to that origin. Leave it empty only for local same-origin development.
 
@@ -40,7 +40,7 @@ Still naked (browser talks to these hosts directly):
 
 - Pusher / Reverb WebSockets (`VITE_PUSHER_*`)
 - Discord OAuth + the Monolith web callback (`SPA_URL` return)
-- File Hosting presigned / gateway byte URLs
+- Archivd presigned / gateway byte URLs
 - hCaptcha JS
 
 Local gotcha: Vite env files stack — `.env.local` **overrides** `.env` (gitignored via `*.local`). For local `npm run dev` against a same-origin API, leave `VITE_API_BASE_URL` empty; for deployed direct traffic, set it to the Laravel API origin plus `/api/v1`. `MONOLITH_API_ORIGIN` is legacy and is not needed by the current Worker. After changing env files, restart Vite and hard-refresh the browser (env is baked at compile).
@@ -59,11 +59,11 @@ Data traffic does not target this Worker because SPA API calls go direct to the 
 
 - **Batch fan-in** — `POST /api/v1/batch` (`routes/api/v1/batch.php`, `BatchController`) dispatches up to **10** read-only (`GET`/`HEAD`) sub-requests through the kernel in one HTTP call, each keeping its own auth/permission middleware. SPA wrapper: `batch()` in `src/api/client.ts`; `BatchSubRequest` rejects mutation methods at the client type level. Throttled `30,1`; mutations are rejected (`422` per entry). Use it for multi-widget hydrates instead of N parallel fetches. Aggregation rules (standalone-first, SPA-only, backend fan-in, gate condition): [api-aggregation.md](../platform/api-aggregation.md).
 - **Shell hydrate** — The route guard's `useAuth.hydrateShell()` cold-boots with **`GET auth/me`** (safe method, no CSRF). Only when that succeeds does it call `useShellHydrate.hydrateShell()`, which batches five reads: `auth/me`, sidebar menus, navbar menus, `notifications/unread-count`, and `notifications?display_mode=query&limit=5`. Guests never `POST /batch` — that mutation would mint `__Host-spa_csrf` before the JWT cookie exists and race the first authenticated batch after login. It seeds `setUser`, `seedTree`, `seedUnreadCount`, and `seedList`; `AppNavbar` uses the seeded recent list for its bell dropdown. `AppNavbar` **awaits** `hydrateShell()` then runs fallbacks and **then** `initEcho()`; `AppLayout` awaits the same inflight and GET-fallbacks sidebar only when it is unseeded **and** the sub-entry was not a terminal 401/403/429 (`isShellFallbackBlocked`). During `markSessionIssued`, a failed batch is retried with settle backoff instead of immediately GET-ing `navigation/menus`. Echo `POST /broadcasting/auth` must not overlap the batch CSRF cookie write — a collision shows in DevTools as CORS on whatever request lost the race (often GET menus). Dashboard reads `auth/me` from the seeded store — no extra fetch. Logout immediately watches `isAuthenticated`; any mounted `requiresAuth` route is replaced with `login.view`, while logout resets auth, CSRF, shell hydration, navigation, and notifications. Concurrent logout calls share one promise, and delayed auth/refresh/shell responses are discarded after session epoch changes. `resetShellHydration()` exists for re-hydration after logout.
-- **File Hosting hydrate** -- `useFhHydrate.hydrateFileHosting()` batches the four independent FH reads (`file-hosting/browse`, `file-hosting/quota`, `file-hosting/workspaces`, `microstock/slots`) into one invocation from `FileHostingView.loadAll()`. `hydrateWorkspaceDetail(null)` batches the workspace list; `hydrateWorkspaceDetail(workspaceId)` batches workspaces, members, and up to 50 activity rows for `FileHostingWorkspacesView`. Failed subs return `null` and fall back to `fetchWorkspaces`, `fetchMembers`, `fetchActivity`, or the owning loader. The dependent stage (`microstock/billing`, collection status) still runs after -- it gates on `browse.workspace.kind === 'microstock'`. Realtime (`.listing.changed` / `.quota.changed`) is unchanged -- batching only trims initial hydrate.
+- **Archivd hydrate** -- `useArchivdHydrate.hydrateArchivd()` batches the four independent Archivd reads (`archivd/browse`, `archivd/quota`, `archivd/workspaces`, `microstock/slots`) into one invocation from `ArchivdView.loadAll()`. `hydrateWorkspaceDetail(null)` batches the workspace list; `hydrateWorkspaceDetail(workspaceId)` batches workspaces, members, and up to 50 activity rows for `ArchivdWorkspacesView`. Failed subs return `null` and fall back to `fetchWorkspaces`, `fetchMembers`, `fetchActivity`, or the owning loader. The dependent stage (`microstock/billing`, collection status) still runs after -- it gates on `browse.workspace.kind === 'microstock'`. Realtime (`.listing.changed` / `.quota.changed`) is unchanged -- batching only trims initial hydrate.
 - **JWT TTL 240** — `config/jwt.php` `'ttl' => 240` (Tier B; runtime `setting_config('jwt.ttl')` / Settings → Platform `platform.jwt.ttl`). A 401 refresh round-trip costs 3 invocations; longer TTL makes that rare. Refresh rotation + blacklist still bound token theft.
 - **Realtime only (no polling)** -- the SPA relies on Echo/Pusher alone for live updates. Pusher auto-reconnect is the recovery path; there is no timer-based polling fallback anywhere. On reconnect after an outage the SPA fires a **resync bus** (`onEchoResync` in `useEcho.ts`): `AppNavbar` re-pulls the unread count + recent list and reloads every registered listing (`triggerAllListingsReload`), because events during the gap are lost. A "reconnecting" indicator shows in the navbar while the socket is down.
 - **Per-domain batch hydrate** -- Current coverage: `useNavigationHydrate` (menu edit plus parent/role/include/exclude lookups), `useNotificationsHydrate` (audience edit plus assignable roles), `useUsersHydrate` (user, assignable roles, activity logs), `useServicesHydrate` (service show, purchase show, and service edit -- each with options), `usePaymentsHydrate` (income overview/invoices), `useInferenceHydrate` (usage overview/events/model cards and provider/card detail), `useMicrostockHydrate` (billing/ledger, admin overview/events, microstock review asset metadata + preview download), and `useVtualHydrate` (profile, credentials, orphan edit, claim). Every helper unwraps via `bodyOfOrThrow()` and returns `null` for a transient entry failure so callers retain individual-loader fallback. `src/api/batch.ts` owns the unwrap contract: `bodyOf()` accepts only a status-200 `success` envelope; `dataOf()` returns its `data` or `null`. A **terminal** entry (`401`/`403`/`429`) makes `bodyOfOrThrow()` throw `TerminalBatchError` instead of returning `null`, so callers skip the standalone fallback for that entry (re-firing would repeat the rejection, and a 401 would trip the global force-logout). Batch transport failure rejects the call and callers fall back to their normal loaders. Only `GET`/`HEAD` subrequests are supported; the server cap is 10 per call, and the client **chunks** a larger fan-out into sequential 10-entry calls (positional results re-joined, nothing dropped). Aggregation rules: [api-aggregation.md](../platform/api-aggregation.md).
-- **Project-wide realtime** -- Dedicated `ShouldBroadcastNow` events per domain: Navigation (`menu.tree.changed`), Service (`service.catalog.changed`, `service.purchase.changed`), Inference (`inference.catalog.changed`), Settings (`settings.group.changed`), ErrorLog (`log.error.recorded`), ProductActivation (`product.activation.changed`), DomainAccess (`domain.visibility.changed`), RBAC (`rbac.role.permission.changed`), PaymentGateway admin (`invoice.list.changed`), Microstock billing (`microstock.billing.changed` rides the FH user channel), vTual platform credentials (`platform.credential.changed`). Each SPA view subscribes via a `use{Domain}Realtime` or `useAdminRealtime` composable; `useListingLiveUpdate` only registers the listing's reload fn on the Echo bus (no polling).
+- **Project-wide realtime** -- Dedicated `ShouldBroadcastNow` events per domain: Navigation (`menu.tree.changed`), Service (`service.catalog.changed`, `service.purchase.changed`), Inference (`inference.catalog.changed`), Settings (`settings.group.changed`), ErrorLog (`log.error.recorded`), ProductActivation (`product.activation.changed`), DomainAccess (`domain.visibility.changed`), RBAC (`rbac.role.permission.changed`), PaymentGateway admin (`invoice.list.changed`), Microstock billing (`microstock.billing.changed` rides the Archivd user channel), vTual platform credentials (`platform.credential.changed`). Each SPA view subscribes via a `use{Domain}Realtime` or `useAdminRealtime` composable; `useListingLiveUpdate` only registers the listing's reload fn on the Echo bus (no polling).
 
 
 
@@ -79,8 +79,8 @@ Pass/fail:
 - Hard refresh still logged in; logout clears the cookie; two tabs, one logout, the other dies on the next API call / `BroadcastChannel` logout.
 - Login / remember / 2FA / refresh near TTL.
 - Login lockout: credential endpoints (`auth/login`, `auth/two-factor/login`) reject with a **429 envelope** (`{status: "error", message}`) plus `Retry-After` when the identity (email+IP) exhausts its failure quota — identity-scoped and failure-only, enforced server-side in `AuthLoginThrottle`, so shared-IP users are never cross-locked and validation/hCaptcha rejects never consume quota. Surface `message` directly; do not auto-retry before `Retry-After`. Backend contract: [domains/identity/README.md — Login throttle](../domains/identity/README.md#login-throttle-identity-scoped-failure-only).
-- FH browse + upload, invoice CSV, Discord connect (`SPA_URL`), Echo bell or FH live event.
-- Sidebar **DMCA Blocklist** (`file-hosting.blocklist.index` → SPA `file-hosting.blocklist.index.view`) navigates.
+- Archivd browse + upload, invoice CSV, Discord connect (`SPA_URL`), Echo bell or Archivd live event.
+- Sidebar **DMCA Blocklist** (`archivd.blocklist.index` → SPA `archivd.blocklist.index.view`) navigates.
 
 ## Production URL minting (`SPA_URL`)
 
@@ -90,7 +90,7 @@ Pass/fail:
 |---------|-----------------|---------------|
 | Password reset email | `{APP_URL}/reset-password?token=&email=` — same SPA query shape, Monolith origin (there is no server reset screen any more) | `{SPA_URL}/reset-password?token=&email=` |
 | Email verify email | Signed `GET /api/v1/auth/email/verify/{id}/{hash}` | `{SPA_URL}/verify-email/{id}/{hash}?expires=&signature=` — SPA then GETs the signed API path directly from the API origin. HMAC stays on `APP_URL`; the signed URL is still generated against the API route on `APP_URL` (`VerifyEmailNotification`). |
-| File Hosting `share_url` | Server public-share endpoints `{APP_URL}/s/f/{id}` / `/s/d/{id}` ([`routes/web/file-hosting-public.php`](../../routes/web/file-hosting-public.php)) | Same paths on `SPA_URL` |
+| Archivd `share_url` | Server public-share endpoints `{APP_URL}/s/f/{id}` / `/s/d/{id}` ([`routes/web/archivd-public.php`](../../routes/web/archivd-public.php)) | Same paths on `SPA_URL` |
 | iPaymu hosted return/cancel defaults | Server endpoints `{APP_URL}/payment/ipaymu/return\|cancel` | `{SPA_URL}/payment/return` and `/payment/cancel` |
 
 The same origin is the OAuth `return_to` allowlist (with `APP_URL`; `App\Domain\Identity\Support\OAuthReturnUrl`); an empty `SPA_URL` disables SPA OAuth return. CORS: [security.md — CORS](../platform/security.md).
@@ -109,7 +109,7 @@ Ops after merge (not code):
 2. `VITE_API_BASE_URL` set to the matching Laravel API origin plus `/api/v1` in the SPA build. This value lives in the **tracked** per-environment env files: `monolith-vue-workers/.env.production` and `.env.sandbox` (loaded via `vite build --mode <env>`; the mode file wins over `.env.local` during builds — verified on Vite 8). `wrangler.jsonc` `vars` are runtime isolate env and never reach the browser bundle — putting `VITE_*` there silently produces a same-origin-fallback build that 404s every API call.
 3. Deploy: `npm run deploy:production` or `npm run deploy:sandbox` from `monolith-vue-workers` — or push to `main` / `sandbox`, which auto-deploys the same environments through GitHub Actions (`.github/workflows/deploy.yml`; operational guide: `monolith-vue-workers/docs/deployment.md`). Each path pairs `vite build --mode <env>` with `wrangler deploy --env <env>` **and sets `CLOUDFLARE_ENV=<env>` on the build** — `@cloudflare/vite-plugin` bakes the environment's worker name into the redirected deploy config; without it a sandbox deploy would silently overwrite the production Worker, and wrangler hard-fails any `--env` that mismatches the built `targetEnvironment`. Never mix a mode with a different Wrangler env.
 4. hCaptcha: Settings on **and** `VITE_HCAPTCHA_SITE_KEY` set, or both off.
-5. File Hosting bucket / Gateway CORS includes the SPA origin and **exposes `ETag`**.
+5. Archivd bucket / Gateway CORS includes the SPA origin and **exposes `ETag`**.
 6. Pusher or Sockudo: Laravel `PUSHER_*` + matching `VITE_PUSHER_*` in the SPA build.
 7. Two official Wrangler environments exist: `production` → worker `monolith-spa-prod`, `sandbox` → worker `monolith-spa-sandbox`. Both publish a default `<name>.<account>.workers.dev` URL; attach Cloudflare custom domains per Worker when domains are decided. Do not add further Wrangler envs unless another API origin exists.
 8. API hostname is served through Cloudflare Tunnel with inbound VM/OCI ports closed. Verify tunnel ingress is an explicit allowlist with a final `http_status:404` catch-all; verify direct origin IPv4/IPv6 access fails.
@@ -133,7 +133,7 @@ The SPA consumes the same `/api/v1/*` endpoints Monolith exposes. Per-domain API
 - [product-activations](../domains/product-activations/README.md)
 - [identity](../domains/identity/README.md)
 - [navigation](../domains/navigation/README.md)
-- [file-hosting](../domains/file-hosting/README.md)
+- [archivd](../domains/archivd/README.md)
 - [inference](../domains/inference/README.md)
 - [service](../domains/service/README.md)
 - [vtual](../domains/vtual/README.md)
@@ -145,11 +145,11 @@ These paths tripped up the SPA port — documented here to prevent regression:
 | SPA composable | Correct API path | Common mistake |
 |----------------|------------------|----------------|
 | `usePaymentsIncome.fetchOverview` | `GET payments/income` | `payments/income/overview` (route name is `payments.income.overview` but URI has no `/overview` suffix) |
-| `useMicrostockBilling.fetchBilling` | `GET microstock/billing` | `file-hosting/microstock/billing` (extra `file-hosting/` prefix — that is the web route, not API) |
-| `useMicrostockBilling.fetchLedger` | `GET microstock/billing/ledger` | `file-hosting/microstock/billing/ledger` |
-| `useMicrostockBilling.fetchUsageEvents` | `GET microstock/billing/usage-events` | `file-hosting/microstock/billing/usage-events` |
-| `useMicrostockBilling.fetchAdminOverview` | `GET admin/microstock/billing/overview` | `file-hosting/microstock/billing/admin/overview` |
-| `useMicrostockBilling.fetchAdminUsageEvents` | `GET admin/microstock/billing/usage-events` | `file-hosting/microstock/billing/admin/usage-events` |
+| `useMicrostockBilling.fetchBilling` | `GET microstock/billing` | `archivd/microstock/billing` (extra `archivd/` prefix — that is the web route, not API) |
+| `useMicrostockBilling.fetchLedger` | `GET microstock/billing/ledger` | `archivd/microstock/billing/ledger` |
+| `useMicrostockBilling.fetchUsageEvents` | `GET microstock/billing/usage-events` | `archivd/microstock/billing/usage-events` |
+| `useMicrostockBilling.fetchAdminOverview` | `GET admin/microstock/billing/overview` | `archivd/microstock/billing/admin/overview` |
+| `useMicrostockBilling.fetchAdminUsageEvents` | `GET admin/microstock/billing/usage-events` | `archivd/microstock/billing/admin/usage-events` |
 | `usePaymentChannels.syncPolicy` | `POST payment-channels/sync-policy` | No API route existed previously; added in `routes/api/v1/payment-gateway.php` |
 | `useRatePlanAdmin.saveRates` | `PUT inference/providers/{id}/rates` | Body `{ rates: [...] }` is a **full replace** (same as Blade). Gated by `manage inference catalog`. |
 | `useConnections.fetchConnections` | `GET profile/connections` | Not under `auth/`. Any authenticated user. Returns `{ providers: [...] }`. |
@@ -207,7 +207,7 @@ Lifecycle status in the SPA is one renderer, many maps — not one semantic mega
 - Empty / null status → label `—`, color = `fallback` (default `secondary`). Mapped color `light` also gets `border` (vTual unknown/disconnected).
 - Do **not** add a per-view `statusClass()`, and do **not** collapse the domain maps into one generic cross-domain badge. That was the Blade era's mistake and the reason `VTUAL_STATUS_BADGE` stays a separate map.
 
-Leave specialized chrome alone: `PaymentStatusHero` (`ois-status-*` + `data-payment-badge`), FH `fh-badge` / `fh-ms-badge`, keyword chips, navbar unread count, product-activation count chips, type/kind/role/code chips.
+Leave specialized chrome alone: `PaymentStatusHero` (`ois-status-*` + `data-payment-badge`), Archivd `ar-badge` / `ar-ms-badge`, keyword chips, navbar unread count, product-activation count chips, type/kind/role/code chips.
 
 ## i18n porting notes
 
@@ -223,7 +223,7 @@ Translation workflow:
 2. Preserve Vue interpolation tokens, plural behavior, and API/DB identifier semantics.
 3. Use `computed()` or the current i18n translator for labels that must react to runtime locale changes; do not freeze translated arrays at module scope.
 4. Run `npm run check:i18n` after every translation batch. Exact English duplicates fail unless key appears in explicit `scripts/check-i18n.mjs` allowlist. Allowlist is key-specific and limited to brands, provider/code identifiers, `QRIS`, `Discord`, `vTual`, `Microstock`, machine-contract text, and **locale loanwords** — keys whose accepted term in the locale IS the English word (Indonesian IT vocabulary like `Status`, `Filter`, `Model`, `Slug`, `Avatar`, `Channel`; Chinese tech convention `Slug`). Prefer translating when a natural native term exists; allowlist only when the loanword is what a native user would read in a real product. `node scripts/i18n-duplicate-report.mjs` writes `i18n-duplicate-report.json` with locale/namespace/key-level inventory, classifications, placeholder tokens, actionable totals, and stale-allowlist detection. The checker prints per-locale/two-segment-namespace duplicate counts for file-by-file translation waves; generated inventory never authorizes untranslated user-facing copy.
-5. Keep layout direction logical and scope RTL-only rules to `html[dir="rtl"]`; use explicit RTL icon transforms when an arrow's meaning changes. RTL vendor setup: `src/main.ts` awaits either `src/assets/main-ltr.css` or `src/assets/main-rtl.css` (chosen from `isRtl()` before mount). `main-rtl.css` imports `src/assets/vendor-rtl.css`, a sibling of `vendor.css` whose only difference is the two vendor lines use the official RTL dist builds (`bootstrap.rtl.min.css`, `adminlte.rtl.min.css`); keep both vendor files' import lists in sync. The swap is a separate CSS entry — NOT a Vite `resolveId` alias — because Vite processes CSS `@import` via postcss, not the JS resolve pipeline, so a resolver-based swap silently no-ops in production builds. `setLocale()` triggers a full `location.reload()` when the direction changes so the other stylesheet loads — never try to hot-swap direction without reload. The reload must run only AFTER `auth/locale` persists: `setLocale(locale, { reload: false })` skips the reload, and `AppNavbar.switchLocale()` captures the prior locale, awaits `switchLocaleApi()` + `refetchNavigation()`, then calls `reloadForDirection(prev, next)` last. Reloading synchronously inside `setLocale()` aborts the in-flight `POST auth/locale`, leaving `users.locale` and the `locale` cookie stale — the dynamic menu then stays on the old locale (this was the Arabic menu-stale bug). On the backend, `SetLocale` resolves `users.locale` → `X-SPA-Locale` header → `locale` cookie → default, so the always-sent header beats a stale cookie even if a persist is interrupted. Directional icon convention: back-arrow semantics use the `html[dir='rtl'] .bi-arrow-left::before` glyph swap in `monolith-overrides.css`; the custom `.fh-breadcrumb__sep` separator uses `transform: scaleX(-1)`; list-movement chevrons (pagination, modal prev/next) bind via `isRtl()` from `src/i18n/index.ts` so "previous" always moves backward in the list. Do NOT add a custom transform for AdminLTE's `.nav-arrow` — the vendor RTL build already mirrors it with `translateY(-50%) rotate(180deg)` and a custom `scaleX(-1)` would clobber that vertical centering (this was the sidebar icon/text collision bug).
+5. Keep layout direction logical and scope RTL-only rules to `html[dir="rtl"]`; use explicit RTL icon transforms when an arrow's meaning changes. RTL vendor setup: `src/main.ts` awaits either `src/assets/main-ltr.css` or `src/assets/main-rtl.css` (chosen from `isRtl()` before mount). `main-rtl.css` imports `src/assets/vendor-rtl.css`, a sibling of `vendor.css` whose only difference is the two vendor lines use the official RTL dist builds (`bootstrap.rtl.min.css`, `adminlte.rtl.min.css`); keep both vendor files' import lists in sync. The swap is a separate CSS entry — NOT a Vite `resolveId` alias — because Vite processes CSS `@import` via postcss, not the JS resolve pipeline, so a resolver-based swap silently no-ops in production builds. `setLocale()` triggers a full `location.reload()` when the direction changes so the other stylesheet loads — never try to hot-swap direction without reload. The reload must run only AFTER `auth/locale` persists: `setLocale(locale, { reload: false })` skips the reload, and `AppNavbar.switchLocale()` captures the prior locale, awaits `switchLocaleApi()` + `refetchNavigation()`, then calls `reloadForDirection(prev, next)` last. Reloading synchronously inside `setLocale()` aborts the in-flight `POST auth/locale`, leaving `users.locale` and the `locale` cookie stale — the dynamic menu then stays on the old locale (this was the Arabic menu-stale bug). On the backend, `SetLocale` resolves `users.locale` → `X-SPA-Locale` header → `locale` cookie → default, so the always-sent header beats a stale cookie even if a persist is interrupted. Directional icon convention: back-arrow semantics use the `html[dir='rtl'] .bi-arrow-left::before` glyph swap in `monolith-overrides.css`; the custom `.ar-breadcrumb__sep` separator uses `transform: scaleX(-1)`; list-movement chevrons (pagination, modal prev/next) bind via `isRtl()` from `src/i18n/index.ts` so "previous" always moves backward in the list. Do NOT add a custom transform for AdminLTE's `.nav-arrow` — the vendor RTL build already mirrors it with `translateY(-50%) rotate(180deg)` and a custom `scaleX(-1)` would clobber that vertical centering (this was the sidebar icon/text collision bug).
 6. Run `npm run type-check` and `npm run build` before handoff.
 
 ### SPA localization guards
@@ -271,10 +271,10 @@ All user-visible strings must be wrapped in `t()`. This includes:
 All user-facing notifications and confirmations go through Sweetalert2 via the shared helper `src/lib/swal.ts`; native `alert()`/`confirm()` and ad-hoc Bootstrap `alert` blocks are not allowed:
 
 - **Notifications** — keep calling `useAlert()` (`success`/`error`/`info`). Internally it renders Swal toasts (`success`/`info`, `top-end`, 4s auto-dismiss) and an error dialog (`error`, `ui.dialog.error_title` title, `ui.swal.ok` button). The API is unchanged so call sites need no updates.
-- **Confirmations** — use `confirmDialog({ title, text | html, confirmText, cancelText, icon, danger })` which resolves `true` on confirm. Never add a `ConfirmModal`-style `v-model` component for simple confirmations; the one remaining `ConfirmModal.vue` usage is the file-hosting rename form (an input form, not a confirmation) and stays until it gets a dedicated dialog.
+- **Confirmations** — use `confirmDialog({ title, text | html, confirmText, cancelText, icon, danger })` which resolves `true` on confirm. Never add a `ConfirmModal`-style `v-model` component for simple confirmations; the one remaining `ConfirmModal.vue` usage is the archivd rename form (an input form, not a confirmation) and stays until it gets a dedicated dialog.
 - **Text input prompts** — use `inputDialog({ title, required?, confirmText?, danger? })` (resolves the trimmed string or `null` on cancel; `required: true` blocks an empty confirm). Native `prompt()` is forbidden; the product-activation reject/suspend reason prompts use this helper.
 - **i18n** — shared labels live at `ui.swal.*` and `ui.dialog.*`; confirm bodies use their domain keys. All supported locales (`en`, `id`, `ja`, `ko`, `zh-CN`, `ar`, `ru`) must stay in parity. Arabic sets `html[dir="rtl"]`; other locales use `ltr`.
-- **Layering** — `.swal2-container` is pinned to `z-index: 1090` in `src/assets/monolith-overrides.css`, above Bootstrap modals (1050/1055) and custom layers like `.fh-context-menu` / `.monolith-toast-container` (1080). Never lower it; any new fixed layer must stay below 1090.
+- **Layering** — `.swal2-container` is pinned to `z-index: 1090` in `src/assets/monolith-overrides.css`, above Bootstrap modals (1050/1055) and custom layers like `.ar-context-menu` / `.monolith-toast-container` (1080). Never lower it; any new fixed layer must stay below 1090.
 - **Toast/modal serialization** — swal2 removes the `swal2-toast-shown` body class unconditionally when a modal closes, which makes any still-open toast container fall back to full-viewport width. To prevent the race, `showErrorDialog()` and `confirmDialog()` call `closeActiveToast()` first (closes an open toast before firing the modal). Never fire a raw `Swal.fire` modal while a toast may be open — go through `src/lib/swal.ts`.
 - **Body classes** — never assign `document.body.className = ''`. Swal (and Bootstrap/OverlayScrollbars) store runtime classes on `<body>` (`swal2-toast-shown`, `swal2-shown`, `modal-open`). Layout classes (`login-page`, `layout-fixed`, `sidebar-expand-lg`, …) are toggled in `App.vue` via `classList.remove`/`add` only. Toast container sizing is also pinned in CSS (`.swal2-container:has(.swal2-popup.swal2-toast)`) so a missing body class cannot balloon the toast to full viewport.
 - **Redirect safety** — `useAlert().error(...)` returns a Promise. In flows that navigate away (`window.location.href = ...`, e.g. Discord/OAuth connect, file download), always `await showError(...)` inside the `catch` so the error dialog renders and is read before any unload instead of dying with the page.
@@ -328,7 +328,7 @@ async function onDelete(): Promise<void> {
 
 Custom bodies that used to be ConfirmModal slots go in `html:` (escape any interpolated user data). `danger` defaults to true (red confirm); pass `danger: false` for a primary confirm button.
 
-`ConfirmModal.vue` is **not** the confirmation API. The only remaining use is the file-hosting rename form on `FileHostingShowView` (an input dialog, not a yes/no confirm). Do not add new `v-model` confirm components.
+`ConfirmModal.vue` is **not** the confirmation API. The only remaining use is the archivd rename form on `ArchivdShowView` (an input dialog, not a yes/no confirm). Do not add new `v-model` confirm components.
 
 ### SubmitButton
 
@@ -379,12 +379,12 @@ To add a new route's breadcrumb, add an entry to `BREADCRUMB_MAP` in `useBreadcr
 
 Authenticated routes set `meta.titleKey` (and guest auth routes also `meta.headingKey`) to the same key names ported from the former Blade layouts. Do **not** hardcode English in router `props.title`.
 
-- **Composable**: `src/composables/usePageTitle.ts` — resolves the title from `route.matched` meta; special-cases settings groups (`web.settings.groups.*` from `route.params.group` **or** MenuSeeder names `settings.platform.view` / `settings.file-hosting.view` / `settings.microstock.view` / `settings.vtual.view`) and product-activation show (`product-activations.product_title` with `{product}`).
+- **Composable**: `src/composables/usePageTitle.ts` — resolves the title from `route.matched` meta; special-cases settings groups (`web.settings.groups.*` from `route.params.group` **or** MenuSeeder names `settings.platform.view` / `settings.archivd.view` / `settings.microstock.view` / `settings.vtual.view`) and product-activation show (`product-activations.product_title` with `{product}`).
 - **Content header**: `AppLayout.vue` renders `pageTitle` in the `h3`.
 - **Auth heading**: `AuthLayout.vue` renders `heading` as `login-box-msg`.
 - **Tab title**: `App.vue` watches `documentTitle` and sets `document.title` to `{page} | Monolith` (or `Monolith` when there is no title). Recomputes on locale change.
-- **DataTable chrome**: `DataTable.vue` uses `ui.datatable.*` (`search_placeholder`, `empty_title`, `info`, `per_page`) and `ui.labels.actions`. Catalog dumps (`useResource` + DataTable) send `display_mode=query&page&per_page=10` (and `search` when the box is used) and parse `{ items, pagination }` **or** a legacy flat `T[]`. Default page size is **10** (Blade DataTables). Menus tree stays a full dump + client slice (no server paging). Do not port Yajra JS. Do not invent a second list URL. `MenusView` opts out of `DataTable.vue` for a plain `<table>` + client-side `searchQuery` filter (no pagination, no sort) so the `h`/`p`/`c` hierarchy is never split across pages; empty still uses in-table `TableEmptyRow` (`bi-list-nested`). `MenusTrashedView` still uses `DataTable.vue`. Card grids, file-hosting browsers, and overview mini-tables are not datatables — they keep their own empty UI.
-- **Row actions**: Monolith query-mode `row.actions[]` is the source of keys, destinations, RBAC visibility, and mutate confirm copy. SPA `mapQueryRowActions` / `findQueryRowAction` in `src/utils/mapQueryRowActions.ts` only maps and executes — views must not invent keys. Icon-only lists keep `RowActions.vue` (`aria-label` + `title` from the API label, icon `aria-hidden`, `btn-group btn-group-sm`). Nav → `route` + `.view`; external → `href`/`target` (sanitized with `safeHttpUrl`); mutate → existing composable + `confirmDialog` using API `confirm`. Labeled columns (currencies activate/settlement, audiences Edit, vTual platform Manage, blocklist remove) stay labeled and still read `row.actions`. `@row-click` uses the same nav action already on the row. Toolbar primaries stay icon + text (`Add user`). File Hosting browse `.fh-action-group` is out of scope. Yajra `display_mode=datatable` `actions[]` has no SPA consumer — do not extend it.
+- **DataTable chrome**: `DataTable.vue` uses `ui.datatable.*` (`search_placeholder`, `empty_title`, `info`, `per_page`) and `ui.labels.actions`. Catalog dumps (`useResource` + DataTable) send `display_mode=query&page&per_page=10` (and `search` when the box is used) and parse `{ items, pagination }` **or** a legacy flat `T[]`. Default page size is **10** (Blade DataTables). Menus tree stays a full dump + client slice (no server paging). Do not port Yajra JS. Do not invent a second list URL. `MenusView` opts out of `DataTable.vue` for a plain `<table>` + client-side `searchQuery` filter (no pagination, no sort) so the `h`/`p`/`c` hierarchy is never split across pages; empty still uses in-table `TableEmptyRow` (`bi-list-nested`). `MenusTrashedView` still uses `DataTable.vue`. Card grids, archivd browsers, and overview mini-tables are not datatables — they keep their own empty UI.
+- **Row actions**: Monolith query-mode `row.actions[]` is the source of keys, destinations, RBAC visibility, and mutate confirm copy. SPA `mapQueryRowActions` / `findQueryRowAction` in `src/utils/mapQueryRowActions.ts` only maps and executes — views must not invent keys. Icon-only lists keep `RowActions.vue` (`aria-label` + `title` from the API label, icon `aria-hidden`, `btn-group btn-group-sm`). Nav → `route` + `.view`; external → `href`/`target` (sanitized with `safeHttpUrl`); mutate → existing composable + `confirmDialog` using API `confirm`. Labeled columns (currencies activate/settlement, audiences Edit, vTual platform Manage, blocklist remove) stay labeled and still read `row.actions`. `@row-click` uses the same nav action already on the row. Toolbar primaries stay icon + text (`Add user`). Archivd browse `.ar-action-group` is out of scope. Yajra `display_mode=datatable` `actions[]` has no SPA consumer — do not extend it.
 - **Navigation buttons vs action buttons**: Any button whose only effect is `router.push(...)` MUST be a `<router-link :to="...">` so the destination URL is visible on hover (browser status bar / address bar tooltip). Real actions (delete, save, export, probe, restore) stay `<button>` — they have side effects and no meaningful URL. `router.back()` buttons stay `<button>` too (destination is history-dependent, not resolvable). Disabled nav (e.g. cancel while saving) uses `<router-link>` + Bootstrap `disabled` class + `aria-disabled` + `tabindex="-1"` instead of the native `:disabled` attribute (which only works on `<button>`).
 
 ### AdminLTE page grid
@@ -411,37 +411,37 @@ Login, register, forgot-password, and 2FA challenge mount `HcaptchaWidget` (invi
 
 The SPA cannot read `system_settings`. Treat `VITE_HCAPTCHA_SITE_KEY` as the enabled gate. If the API has `platform.hcaptcha.enabled` on and the SPA env key is missing, those endpoints 422 — same class of misconfig as Blade missing `HCAPTCHA_SITEKEY`.
 
-### File Hosting Drive UX
+### Archivd Drive UX
 
-Browse/trash/show use `.fh-manager` (CSS: `src/assets/file-hosting.css`, imported from `main.css`). Vue Router stays three routes — this is **not** the Blade single-island soft-nav shell. `useFileHosting` / `useFileHostingRealtime` go through the shared cookie client (`src/api/client.ts`); they do not attach a Bearer token in JS.
+Browse/trash/show use `.ar-manager` (CSS: `src/assets/archivd.css`, imported from `main.css`). Vue Router stays three routes — this is **not** the Blade single-island soft-nav shell. `useArchivd` / `useArchivdRealtime` go through the shared cookie client (`src/api/client.ts`); they do not attach a Bearer token in JS.
 
-**Browse (`FileHostingView.vue`)** matches Blade Drive-lite:
+**Browse (`ArchivdView.vue`)** matches Blade Drive-lite:
 
 | Gesture | Behavior |
 |---------|----------|
 | Click row/card/name/icon | Select only (ignores checkbox/actions) |
 | Ctrl/Cmd+click | Toggle |
-| Shift+click | Inclusive range over visible folder+file order (`useFhSelection.ts`) |
-| Dblclick | Open: folder → `file-hosting.index.folder`; file → `file-hosting.show.view` |
+| Shift+click | Inclusive range over visible folder+file order (`useArchivdSelection.ts`) |
+| Dblclick | Open: folder → `archivd.index.folder`; file → `archivd.show.view` |
 | Right-click | Select if needed + permission-gated context menu |
-| Drag onto folder / breadcrumb / parent `...` | Move (`useFhDragMove.ts`); refuse self-drop |
+| Drag onto folder / breadcrumb / parent `...` | Move (`useArchivdDragMove.ts`); refuse self-drop |
 | Escape | Clear selection + close context + close search |
 
-Search is a **debounced API overlay** (`GET file-hosting/search`). It does **not** filter or hide the listing. Overlay results are files only and navigate to show.
+Search is a **debounced API overlay** (`GET archivd/search`). It does **not** filter or hide the listing. Overlay results are files only and navigate to show.
 
-Folder navigation: root is `file-hosting.index.view`; nested is `file-hosting.index.folder` with `params.folderId`. `workspace_id` / `user_id` stay query params and are watched (reload browse/quota/workspaces). Echo stays user-scoped (`file-hosting.user.{id}`) — do not rebind on workspace switch.
+Folder navigation: root is `archivd.index.view`; nested is `archivd.index.folder` with `params.folderId`. `workspace_id` / `user_id` stay query params and are watched (reload browse/quota/workspaces). Echo stays user-scoped (`archivd.user.{id}`) — do not rebind on workspace switch.
 
-New Folder is gated by `create file hosting folder`. Dropzone still mounts when a microstock collection is locked; add/drop toasts `web.file-hosting.microstock.error_collection_locked` / `error_requires_folder`. Microstock row badges when `browse.workspace.kind === 'microstock'`.
+New Folder is gated by `create Archivd folder`. Dropzone still mounts when a microstock collection is locked; add/drop toasts `web.archivd.microstock.error_collection_locked` / `error_requires_folder`. Microstock row badges when `browse.workspace.kind === 'microstock'`.
 
-**Microstock collection lifecycle** (`FileHostingView` when workspace `kind === 'microstock'`): toolbar follows `collection_status` — draft/failed → Lock & Describe (`FhCollectionDescribeModal`, chip compose in `src/utils/file-hosting/fhCollectionDescribe.ts` → `POST microstock/collections/{folder}/lock`); locked → Start analysis (`POST …/analyze`; API `assertCanAnalyze` is the only gate — toast the API `message` on 422; do **not** invent client credit math); processing → status + progress (`GET …/status` + Echo `.collection.analysis.progress`); review → Review + Export; exported → Download CSV (`getBlob` on `GET …/download`). Review is `FhMicrostockReviewModal` (signed preview from `GET file-hosting/files/{id}/download?preview=1`, stage strip, PATCH title/keywords, solo `POST microstock/assets/{file}/analyze`). Show page opens the same modal. Create system workspace is `POST microstock/workspaces` — not `POST file-hosting/workspaces` (team). Switcher CTAs parse quota (team slots) and `GET microstock/slots` (used/limit/`can_create`); full/unactivated links to Services.
+**Microstock collection lifecycle** (`ArchivdView` when workspace `kind === 'microstock'`): toolbar follows `collection_status` — draft/failed → Lock & Describe (`ArCollectionDescribeModal`, chip compose in `src/utils/archivd/arCollectionDescribe.ts` → `POST microstock/collections/{folder}/lock`); locked → Start analysis (`POST …/analyze`; API `assertCanAnalyze` is the only gate — toast the API `message` on 422; do **not** invent client credit math); processing → status + progress (`GET …/status` + Echo `.collection.analysis.progress`); review → Review + Export; exported → Download CSV (`getBlob` on `GET …/download`). Review is `ArMicrostockReviewModal` (signed preview from `GET archivd/files/{id}/download?preview=1`, stage strip, PATCH title/keywords, solo `POST microstock/assets/{file}/analyze`). Show page opens the same modal. Create system workspace is `POST microstock/workspaces` — not `POST archivd/workspaces` (team). Switcher CTAs parse quota (team slots) and `GET microstock/slots` (used/limit/`can_create`); full/unactivated links to Services.
 
 Share modal: visibility select (`private` / `anyone_with_link`) + readonly URL. Move modal: root + current listing folders (not a tree picker). Bulk bar: Move / share / unshare / delete.
 
-**Trash / show / workspaces / blocklist:** browse Drive gestures stay on the listing only. Workspaces and hash blocklist use `.fh-manager.fh-admin-page` intro chrome (header + lead), not a nested Card dump. Show uses `FhShareModal` and `FhMicrostockReviewModal`.
+**Trash / show / workspaces / blocklist:** browse Drive gestures stay on the listing only. Workspaces and hash blocklist use `.ar-manager.ar-admin-page` intro chrome (header + lead), not a nested Card dump. Show uses `ArShareModal` and `ArMicrostockReviewModal`.
 
 **Public share** (`/s/d/:id`, `/s/f/:id`): `PublicLayout` (no sidebar, no auth Drive gestures). `PublicFolderView` maps `breadcrumb` ids to `public.folder` and file rows to `public.file`. Reloads when `route.params.id` changes.
 
-View mode persists in `localStorage` key `fh-view-mode` (default table).
+View mode persists in `localStorage` key `ar-view-mode` (default table).
 
 ### Inference provider rate editor
 
@@ -463,7 +463,7 @@ SPA routes: `/payment/return` and `/payment/cancel` (`PaymentReturnView`, `requi
 
 ### `/apps` shell
 
-Authenticated `AppLayout` routes are prefixed `/apps/*` (dashboard, users, settings, file-hosting, vtual, invoices, …). `/` redirects to `/apps/dashboard`. Route **names** stay unprefixed — sidebar `NavTree` / `AppNavbar` `push` by name on click; `NavTree` leaf `href` is resolved via `router.resolve` so the URL is visible on hover (parent `href` stays `#` while it has visible children).
+Authenticated `AppLayout` routes are prefixed `/apps/*` (dashboard, users, settings, archivd, vtual, invoices, …). `/` redirects to `/apps/dashboard`. Route **names** stay unprefixed — sidebar `NavTree` / `AppNavbar` `push` by name on click; `NavTree` leaf `href` is resolved via `router.resolve` so the URL is visible on hover (parent `href` stays `#` while it has visible children).
 
 **Not prefixed** (same exceptions as Blade, plus the verify hop): auth (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/two-factor-challenge`, `/verify-email/:id/:hash`), public share (`/s/f/:id`, `/s/d/:id`), payment bounce (`/payment/return`, `/payment/cancel`), **vTual public** (`/vtual`, `/vtual/vtubers/:slug`). Verify-email uses `meta.authChrome` (not `guestOnly`) so a logged-in unverified user can land.
 
@@ -543,7 +543,7 @@ Public landing (frozen `VkStr1SectionEvents` change, shipped with permission): r
 
 ### Settings menu names
 
-Every Settings screen is ported (`SettingsFormView` on `/apps/settings/:group`). Fields use `FormInput` / `FormSelect` / `FormTextarea` / `FormCheckbox` (`switch`); registry key and source sit in the field hint, not inside `form-check`. `PUT admin/settings/{group}` sends **underscore** field names (`platform_jwt_ttl`), not the dotted GET keys — Laravel treats dots as nested paths, which used to 422 `settings.empty_payload` for every save. The FormRequest aliases a dotted body onto the underscore names when needed. MenuSeeder children are `settings.platform`, `settings.file-hosting`, `settings.microstock`, `settings.vtual`. The SPA registers those **as named routes** (`settings.platform.view`, …) pointing at the same SFC, **before** the parameterized `settings.group.view` (used for `identity` and any future registry group). Sidebar `hasRoute(node.route + '.view')` is what makes the click work — a redirect-only alias would lose `isActive`. Do **not** add `identity` to MenuSeeder.
+Every Settings screen is ported (`SettingsFormView` on `/apps/settings/:group`). Fields use `FormInput` / `FormSelect` / `FormTextarea` / `FormCheckbox` (`switch`); registry key and source sit in the field hint, not inside `form-check`. `PUT admin/settings/{group}` sends **underscore** field names (`platform_jwt_ttl`), not the dotted GET keys — Laravel treats dots as nested paths, which used to 422 `settings.empty_payload` for every save. The FormRequest aliases a dotted body onto the underscore names when needed. MenuSeeder children are `settings.platform`, `settings.archivd`, `settings.microstock`, `settings.vtual`. The SPA registers those **as named routes** (`settings.platform.view`, …) pointing at the same SFC, **before** the parameterized `settings.group.view` (used for `identity` and any future registry group). Sidebar `hasRoute(node.route + '.view')` is what makes the click work — a redirect-only alias would lose `isActive`. Do **not** add `identity` to MenuSeeder.
 
 Static vTual credential probe (`/apps/vtual/platform-credentials/probe`) is registered **before** `/apps/vtual/platform-credentials/:platformId` so `/probe` is not captured as a platform id.
 
@@ -572,11 +572,11 @@ These are the safe zone. Keep the current approaches.
 
 **A - Platform.** Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted; JS does not store the JWT). The Blade-era `auth_token` cookie bridge on `APP_URL` is gone — there is one browser session cookie now. Direct Monolith `/api/v1` traffic uses the cross-site cookie (or Bearer); `POST /api/v1/broadcasting/auth` goes direct, hCaptcha gated by `VITE_HCAPTCHA_SITE_KEY`, duplicate vue-i18n JSON, CF Workers static origin, breadcrumb config map, guest cannot read `system_settings`, budget controls (`/api/v1/batch`, JWT TTL 240).
 
-**B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout={sidebar|navbar|vtual}`; admin layout select options come from `GET navigation/menus/layouts`. File Hosting three Vue routes instead of the removed single-island shell; team as a page rather than an offcanvas; listing-only move picker; rate editor re-fetch instead of full reload.
+**B — Intentional consumer choices.** Vue `DataTable` + `display_mode=query` (server page of 10 when paging params are sent). Select2 only for server-side lookup (`MenuEditView` AJAX parent/roles/users). Navigation via `GET navigation/menus?layout={sidebar|navbar|vtual}`; admin layout select options come from `GET navigation/menus/layouts`. Archivd three Vue routes instead of the removed single-island shell; team as a page rather than an offcanvas; listing-only move picker; rate editor re-fetch instead of full reload.
 
 **C — Gray (optional later, not a product blocker).** Live-reload on 2 of 7 catalogs (`NotificationType::tableId()` only emits those two), Laravel plural pipe hack. Query-mode `actions[]` is the live row-button source — closed (see [list-display-modes.md](../platform/list-display-modes.md#query-mode-actions-live-spa-contract)). Hierarchy still 403s from the API on mutate.
 
-Do not treat a read-only show-page microstock card as “review is done.” Review is `FhMicrostockReviewModal` consuming `GET|PATCH microstock/assets/{file}/metadata`.
+Do not treat a read-only show-page microstock card as “review is done.” Review is `ArMicrostockReviewModal` consuming `GET|PATCH microstock/assets/{file}/metadata`.
 
 ## Realtime (Laravel Echo + Pusher)
 
@@ -584,8 +584,8 @@ The SPA supports realtime updates via Laravel Echo and Pusher. There is no polli
 
 - **Composable**: `src/composables/useEcho.ts` — singleton `Echo<'pusher'>` (`EchoOptions<'pusher'>`), reads Pusher config from `VITE_PUSHER_*` env vars. Subscribe via `getEcho()`; `useEcho()` exposes `init` / `disconnect` / `connected` only. Connection flag uses `connector.onConnectionChange` / `connectionStatus()`. Laravel authenticates the API-origin HttpOnly cookie directly; the Worker does not attach JWTs. Private-channel auth, CSRF mint before `initEcho()`, and 419 retry: [Auth](#auth). `AppNavbar` starts Echo **after** `hydrateShell()` so `POST /broadcasting/auth` does not race `POST /batch`. Post-login cookie-settle: [Cross-tab auth](#cross-tab-auth-multi-tab-session-sync).
 - **Notification bell**: `src/components/AppNavbar.vue` -- inits Echo on mount, subscribes to `App.Models.User.{id}` private channel for `.activity-notification.received` events. On each WS event, the bell also calls `fetchList(5)` to refresh its own recent-notification dropdown content (capped at 5 -- the full list is fetched on dropdown open or navigation to `/notifications`).
-- **File Hosting**: `src/composables/file-hosting/useFileHostingRealtime.ts` — singleton channel manager for `file-hosting.user.{userId}` (`.listing.changed`, `.quota.changed`, `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress`). Multiple views register handlers; the channel is subscribed once and torn down when the last handler unregisters. See [Pattern B](#pattern-b-direct-channel-subscription) below.
-- **Microstock**: collection mutations (`lockCollection`, `analyzeCollection`, `fetchCollectionStatus`, `exportCollection`, `downloadCollectionCsv`, asset metadata GET/PATCH, `analyzeAsset`, `fetchSlots`, `createWorkspace`) live in `useMicrostock.ts` and are wired from `FileHostingView` / `FhMicrostockReviewModal`. Realtime subscriptions go through `useFileHostingRealtime.ts` (same channel, Microstock events).
+- **Archivd**: `src/composables/archivd/useArchivdRealtime.ts` — singleton channel manager for `archivd.user.{userId}` (`.listing.changed`, `.quota.changed`, `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress`). Multiple views register handlers; the channel is subscribed once and torn down when the last handler unregisters. See [Pattern B](#pattern-b-direct-channel-subscription) below.
+- **Microstock**: collection mutations (`lockCollection`, `analyzeCollection`, `fetchCollectionStatus`, `exportCollection`, `downloadCollectionCsv`, asset metadata GET/PATCH, `analyzeAsset`, `fetchSlots`, `createWorkspace`) live in `useMicrostock.ts` and are wired from `ArchivdView` / `ArMicrostockReviewModal`. Realtime subscriptions go through `useArchivdRealtime.ts` (same channel, Microstock events).
 - **vTual claim**: `src/views/vtual/VtualVtuberClaimView.vue` -- subscribes to `vtual.claim.{claimId}` private channel for `.claim.progress` events. If Echo is unavailable, a pending claim gets no live update until manual reload.
 - **vTual platform credentials**: `useVtualRealtime.ts` -- `private-vtual.platform-credentials` / `.platform.credential.changed`. Platform list silent-refetches when `platform_id` matches; index view refreshes active/pending counts. Acting tab still applies `data.credential` from `POST .../test` so status updates without waiting on the socket.
 - **vTual management**: `useVtualRealtime.ts` `subscribeManagement` -- `private-vtual.management.{managementId}` / `.management.updated`, payload ids-only `{management_id, kind, ref_id, action}` (`kind`: `management|member|invite|creator`). Channel auth via `ManagementAccessService::canView` (members + `* any vtual resource` staff). `VtualManagementEditView` silent-refetches `fetchOne` + `listInvites` and applies only `creators` / `members` / `my_role` / `invites` — form fields stay untouched so the actor's unsaved edits are never overwritten. The management list view is not subscribed.
@@ -723,14 +723,14 @@ This registers the listing's reload fn on mount and unregisters on unmount. Live
 
 Domain-specific realtime uses dedicated private channels with direct Echo subscriptions. Each domain has its own composable managing the subscription lifecycle.
 
-#### File Hosting — `useFileHostingRealtime.ts`
+#### Archivd — `useArchivdRealtime.ts`
 
-Singleton channel manager for `private-file-hosting.user.{userId}`. Multiple views register handlers with the same singleton; the channel is subscribed once and torn down when the last handler unregisters.
+Singleton channel manager for `private-archivd.user.{userId}`. Multiple views register handlers with the same singleton; the channel is subscribed once and torn down when the last handler unregisters.
 
 ```ts
-import { useFileHostingRealtime } from '@/composables/file-hosting/useFileHostingRealtime'
+import { useArchivdRealtime } from '@/composables/archivd/useArchivdRealtime'
 
-const { subscribe, unsubscribe } = useFileHostingRealtime()
+const { subscribe, unsubscribe } = useArchivdRealtime()
 const handlers = {
   onListingChanged: () => loadBrowse(),
   onQuotaChanged: () => loadQuota(),
@@ -755,9 +755,9 @@ onUnmounted(() => unsubscribe(handlers))
 | `.collection.analysis.progress` | Refetch browse (collection status) |
 | `.asset.metadata.progress` | Refetch browse (metadata status) |
 
-**Views wired:** `FileHostingView.vue`, `FileHostingTrashView.vue`, `FileHostingShowView.vue`, `FileHostingWorkspacesView.vue`, `FileHostingMicrostockUsageView.vue`.
+**Views wired:** `ArchivdView.vue`, `ArchivdTrashView.vue`, `ArchivdShowView.vue`, `ArchivdWorkspacesView.vue`, `ArchivdMicrostockUsageView.vue`.
 
-**Why a singleton?** `useFileHosting.ts` and `useMicrostock.ts` both previously had their own `subscribeRealtime()` methods on the same channel — they would clobber each other's subscription via a shared `activeChannel` variable. The singleton eliminates this: one channel, multiple handler sets, single subscription.
+**Why a singleton?** `useArchivd.ts` and `useMicrostock.ts` both previously had their own `subscribeRealtime()` methods on the same channel — they would clobber each other's subscription via a shared `activeChannel` variable. The singleton eliminates this: one channel, multiple handler sets, single subscription.
 
 #### Payments checkout — `usePaymentRealtime.ts`
 
@@ -818,7 +818,7 @@ onUnmounted(() => unsubscribe(handlers))
 | Domain | Channel | Event | Composable |
 |--------|---------|-------|------------|
 | Notification bell | `App.Models.User.{userId}` | `.activity-notification.received` | `useNotifications.ts` |
-| File Hosting | `file-hosting.user.{userId}` | `.listing.changed`, `.quota.changed`, `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress` | `useFileHostingRealtime.ts` |
+| Archivd | `archivd.user.{userId}` | `.listing.changed`, `.quota.changed`, `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress` | `useArchivdRealtime.ts` |
 | Payments invoice | `payments.invoice.{invoiceId}` | `.invoice.status.changed` | `usePaymentRealtime.ts` |
 | Payments routing | `payments.routing` | `.routing.catalog.changed` | `usePaymentRealtime.ts` |
 | vTual claim | `vtual.claim.{claimId}` | `.claim.progress` | `VtualVtuberClaimView.vue` (inline) |
@@ -866,11 +866,11 @@ Assessment of whether Vue-Workers invents business rules that belong in Monolith
 |---------|---------------------------|------------------|
 | Accept Anyway always painted on the claim page | SPA cannot read `vtual.claim.accept_anyway_enabled` | Blade claim page also shows it to any logged-in user when the setting is on; API 422s when off. Profile-page staff-gate is a **different** surface (channel claims). Extra button ≠ blocked verify. |
 | Discord verify settings on the **creator claim** page are not read | SPA cannot read `vtual.claim` Discord-verify flags | Connect hint vs **Verify with Discord** is gated by `GET profile/connections` (`providerByKey(..., 'discord')?.connected`). The verify button can still 422 when those settings are off; bio verify still works. |
-| `collection_status` → CTA map | Local state machine in `FileHostingView` | API rejects illegal transitions; documented mimic of Blade toolbar |
+| `collection_status` → CTA map | Local state machine in `ArchivdView` | API rejects illegal transitions; documented mimic of Blade toolbar |
 | Invoice/purchase `status` → PaymentSteps / hero | Chrome | Display only |
 | `plan_kind === 'addon'` qty editor | Chrome from a field | API rejects non-addon qty |
 | JWT `hasPermission` hide-buttons | Stale until refresh | API still 403s |
-| `analysisEstimateUsd` display multiply | Preview math in `FhCollectionDescribeModal` | Does not gate analyze (`assertCanAnalyze` is the only gate) |
+| `analysisEstimateUsd` display multiply | Preview math in `ArCollectionDescribeModal` | Does not gate analyze (`assertCanAnalyze` is the only gate) |
 | Describe chips + min-10 | Port of Blade `collection-describe.js` | Mimic, not new money/lifecycle math |
 | `useMicrostock.createWorkspace` invents `is_owner` / `Owner` | Optimistic shape vs resource | Local list until refetch |
 | `ROLE_RANK`, kind icons, chip catalogs, settings slug list, invite roles, subscription cycle literals | Presentation / form enums | Wrong sort or extra option; API validates |

@@ -34,10 +34,10 @@ class AssetMetadataProgress implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         if ($this->workspaceId !== null && $this->workspaceId !== '') {
-            return [new PrivateChannel('file-hosting.workspace.'.$this->workspaceId)];
+            return [new PrivateChannel('archivd.workspace.'.$this->workspaceId)];
         }
 
-        return [new PrivateChannel('file-hosting.user.'.$this->ownerUserId)];
+        return [new PrivateChannel('archivd.user.'.$this->ownerUserId)];
     }
 
     public function broadcastAs(): string

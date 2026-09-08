@@ -23,19 +23,19 @@ After changing `.env` directly (Tier A only), run `php artisan config:rebuild`. 
 | `view settings` | Read settings groups |
 | `manage settings` | Update operational settings |
 
-Root and Admin receive both via `RoleSeeder`. After adding a core permission, re-run `RoleSeeder` **and** `FileHostingRoleSeeder` + `VtualRoleSeeder` (those `givePermissionTo` product perms back onto Admin after the core `syncPermissions`), then `php artisan permission:cache-reset`. Do **not** run full `DatabaseSeeder` on an existing database — it tries to recreate `admin@example.com`. Log out/in so `auth/me` picks up the new list. The SPA manage form is gated on `manage settings` in that payload.
+Root and Admin receive both via `RoleSeeder`. After adding a core permission, re-run `RoleSeeder` **and** `ArchivdRoleSeeder` + `VtualRoleSeeder` (those `givePermissionTo` product perms back onto Admin after the core `syncPermissions`), then `php artisan permission:cache-reset`. Do **not** run full `DatabaseSeeder` on an existing database — it tries to recreate `admin@example.com`. Log out/in so `auth/me` picks up the new list. The SPA manage form is gated on `manage settings` in that payload.
 
 ## Web surface (hybrid)
 
 | Surface | Route | Group key |
 |---------|-------|-----------|
 | Platform hub | `/apps/settings/platform` | `platform` |
-| File Hosting | `/apps/file-hosting/settings` | `file-hosting` |
+| Archivd | `/apps/archivd/settings` | `archivd` |
 | Microstock | `/apps/microstock/settings` | `microstock` |
 | Vtual | `/apps/vtual/settings` | `vtual` |
 | Notification audiences | `/apps/notification-audiences` | (separate table) |
 
-Menu: **Administration → Settings** — single hub for all groups (`settings.platform`, `settings.file-hosting`, `settings.microstock`, `settings.vtual`, plus notification audiences and currencies). Root/Admin via `view settings` / `manage settings`.
+Menu: **Administration → Settings** — single hub for all groups (`settings.platform`, `settings.archivd`, `settings.microstock`, `settings.vtual`, plus notification audiences and currencies). Root/Admin via `view settings` / `manage settings`.
 
 ### Localization
 
@@ -58,7 +58,7 @@ Enum-like string keys may declare an optional `options` list on the registry def
 | Database / Redis | `DB_*`, `REDIS_*` | Infra binding |
 | OCI KMS | `OCI_*` | Cloud credentials |
 | Payment secrets | `MIDTRANS_*`, `IPAYMU_*`, … | PCI-adjacent |
-| S3 / proxy | `FILE_HOSTING_S3_*`, `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Cloud credentials |
+| S3 / proxy | `ARCHIVD_S3_*`, `ARCHIVD_UPLOAD_PROXY_TOKEN` | Cloud credentials |
 | AI API keys | `MICROSTOCK_AI_*_API_KEY` | Provider secrets |
 | Mail / broadcast secrets | `MAIL_PASSWORD`, `PUSHER_APP_SECRET` | Standard secret hygiene |
 | Public origins | `APP_URL`, `SPA_URL`, `CORS_EXTRA_ORIGINS` | Laravel API origin + Vue-Workers origin + extra comma-separated origins (preview URLs, localhost dev). `SPA_URL` is OAuth `return_to` allowlist, `SpaPublicUrl` mint origin, and CORS allowlist with `APP_URL` (+ `CORS_EXTRA_ORIGINS` for extras). Empty `SPA_URL` falls back to `APP_URL` + server endpoints and disables SPA OAuth return. |
@@ -111,11 +111,11 @@ Platform settings page shows **read-only secret status** via `php artisan config
 
 ## Tier C — Domain groups
 
-### File Hosting (`file-hosting.*`)
+### Archivd (`archivd.*`)
 
-Upload limits, multipart tuning, TTL/cleanup, quota defaults, region policy, download TTLs, MIME allowlist, vault download flag. See `config/file-hosting.php` and [file-hosting README](../domains/file-hosting/README.md).
+Upload limits, multipart tuning, TTL/cleanup, quota defaults, region policy, download TTLs, MIME allowlist, vault download flag. See `config/archivd.php` and [archivd README](../domains/archivd/README.md).
 
-SKU codes and free-tier bytes stay in `FileHostingCatalog` (deploy + seeder).
+SKU codes and free-tier bytes stay in `ArchivdCatalog` (deploy + seeder).
 
 ### Microstock (`microstock.*`)
 
@@ -139,7 +139,7 @@ Claim/channel-claim TTLs and bio token mint (`token_prefix` / `token_bytes`), cr
 | Currencies | `currencies.*` |
 | Notification audiences | `notification-audiences.*` |
 | Vtual credentials | `vtual.admin.credentials.*` |
-| FH blocklist | `file-hosting.blocklist.*` |
+| Archivd blocklist | `archivd.blocklist.*` |
 
 Payment routing fees: YAML → `payments:sync-routing-policy` (partial UI toggle on channels).
 

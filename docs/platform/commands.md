@@ -76,12 +76,12 @@ Domain data caches are forever + rebuild-on-miss + invalidate-on-change — [cac
 | `service:process-entitlements` | Enter grace for ended subscriptions; expire grace and purge free-tier excess storage | [domains/service/README.md](../domains/service/README.md) |
 | `service:process-addon-renewals` | Create pending full-stack addon renewal invoices for due anniversaries | [domains/service/README.md](../domains/service/README.md) |
 
-## File Hosting
+## Archivd
 
 | Command | Purpose | Details |
 |---------|---------|---------|
-| `file-hosting:prune-stale-uploads` | Abort expired/S3-inactive pending multipart sessions; reclaim orphaned storage | [domains/file-hosting/README.md](../domains/file-hosting/README.md) |
-| `file-hosting:blocklist-hash` | Add/remove a sha256 from the DMCA hash blocklist | [domains/file-hosting/README.md](../domains/file-hosting/README.md) |
+| `archivd:prune-stale-uploads` | Abort expired/S3-inactive pending multipart sessions; reclaim orphaned storage | [domains/archivd/README.md](../domains/archivd/README.md) |
+| `archivd:blocklist-hash` | Add/remove a sha256 from the DMCA hash blocklist | [domains/archivd/README.md](../domains/archivd/README.md) |
 
 ## vTual (`vtual:*`)
 

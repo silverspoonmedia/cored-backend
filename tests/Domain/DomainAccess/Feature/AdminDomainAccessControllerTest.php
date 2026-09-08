@@ -25,7 +25,7 @@ class AdminDomainAccessControllerTest extends TestCase
         $this->actingAsJwt($this->user('Admin'))
             ->getJson('/api/v1/admin/domain-access')
             ->assertOk()
-            ->assertJsonFragment(['key' => 'FileHosting'])
+            ->assertJsonFragment(['key' => 'Archivd'])
             ->assertJsonFragment(['visibility' => 'public']);
     }
 
@@ -39,12 +39,12 @@ class AdminDomainAccessControllerTest extends TestCase
     public function test_admin_can_set_visibility(): void
     {
         $this->actingAsJwt($this->user('Admin'))
-            ->putJson('/api/v1/admin/domain-access/FileHosting', ['visibility' => 'private'])
+            ->putJson('/api/v1/admin/domain-access/Archivd', ['visibility' => 'private'])
             ->assertOk()
             ->assertJsonFragment(['visibility' => 'private']);
 
         $this->assertDatabaseHas('product_domain_visibilities', [
-            'product_key' => 'FileHosting',
+            'product_key' => 'Archivd',
             'visibility' => 'private',
         ]);
     }
@@ -52,7 +52,7 @@ class AdminDomainAccessControllerTest extends TestCase
     public function test_update_rejects_invalid_visibility(): void
     {
         $this->actingAsJwt($this->user('Admin'))
-            ->putJson('/api/v1/admin/domain-access/FileHosting', ['visibility' => 'bogus'])
+            ->putJson('/api/v1/admin/domain-access/Archivd', ['visibility' => 'bogus'])
             ->assertStatus(422);
     }
 
@@ -66,7 +66,7 @@ class AdminDomainAccessControllerTest extends TestCase
     public function test_regular_user_cannot_update(): void
     {
         $this->actingAsJwt($this->user('User'))
-            ->putJson('/api/v1/admin/domain-access/FileHosting', ['visibility' => 'private'])
+            ->putJson('/api/v1/admin/domain-access/Archivd', ['visibility' => 'private'])
             ->assertForbidden();
     }
 

@@ -27,11 +27,11 @@ Root/Admin always bypass. Default is `public`, so enabling the feature does not 
 
 ## Naming derivation
 
-Product key is StudlyCase (e.g. `FileHosting`). `ProductNames` derives:
+Product key is StudlyCase (e.g. `Archivd`). `ProductNames` derives:
 
-- label: `File Hosting`
-- beta role: `Beta tester File Hosting`
-- access permission: `access file hosting product`
+- label: `Archivd`
+- beta role: `Beta tester Archivd`
+- access permission: `access Archivd product`
 
 ## Beta tester role
 
@@ -43,10 +43,10 @@ Product key is StudlyCase (e.g. `FileHosting`). `ProductNames` derives:
 
 ```php
 // routes/api/v1/{slug}.php
-Route::middleware(['auth:api', 'domain.access:FileHosting', 'product.active:FileHosting'])->group(...);
+Route::middleware(['auth:api', 'domain.access:Archivd', 'product.active:Archivd'])->group(...);
 
 // routes/web/{slug}.php
-Route::middleware('domain.access:FileHosting')->group(...);
+Route::middleware('domain.access:Archivd')->group(...);
 ```
 
 Denials: API → 403 JSON via `ApiResponder::error`; web → `abort(403)`. Unauthenticated on a private domain → 401.

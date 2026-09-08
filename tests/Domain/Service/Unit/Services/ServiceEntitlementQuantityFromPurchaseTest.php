@@ -18,7 +18,7 @@ class ServiceEntitlementQuantityFromPurchaseTest extends TestCase
     public function test_fulfill_addon_purchase_with_quantity_three_increments_entitlement_by_three(): void
     {
         $user = User::factory()->create();
-        $addon = Service::factory()->fileHostingAddon100Gb()->create();
+        $addon = Service::factory()->archivdAddon100Gb()->create();
 
         ServiceEntitlement::query()->create([
             'user_id' => $user->id,

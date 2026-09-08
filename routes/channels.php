@@ -1,6 +1,6 @@
 <?php
 
-use App\Domain\FileHosting\Services\WorkspaceAccessService;
+use App\Domain\Archivd\Services\WorkspaceAccessService;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Support\InvoiceChannelAuthorizer;
@@ -12,11 +12,11 @@ Broadcast::channel('App.Models.User.{id}', function (User $user, string $id): bo
     return $user->id === $id;
 });
 
-Broadcast::channel('file-hosting.user.{userId}', function (User $user, string $userId): bool {
+Broadcast::channel('archivd.user.{userId}', function (User $user, string $userId): bool {
     return $user->id === $userId;
 });
 
-Broadcast::channel('file-hosting.workspace.{workspaceId}', function (User $user, string $workspaceId): bool {
+Broadcast::channel('archivd.workspace.{workspaceId}', function (User $user, string $workspaceId): bool {
     try {
         $access = app(WorkspaceAccessService::class);
         $workspace = $access->findOrFail($workspaceId);

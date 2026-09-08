@@ -2,11 +2,11 @@
 
 namespace Tests\Domain\Product\Feature;
 
-use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
 use App\Support\Product\Models\ProductAnalytic;
 use App\Support\Product\Services\ProductActivationService;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -28,12 +28,12 @@ class HostedFileAnalyticsHookTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
 
         config([
-            'file-hosting.disk' => 'local',
-            'file-hosting.default_quota_bytes' => 1024 * 1024,
-            'file-hosting.allowed_mime_prefixes' => ['image/', 'application/', 'text/'],
+            'archivd.disk' => 'local',
+            'archivd.default_quota_bytes' => 1024 * 1024,
+            'archivd.allowed_mime_prefixes' => ['image/', 'application/', 'text/'],
         ]);
 
         Storage::fake('local');
@@ -115,7 +115,7 @@ class HostedFileAnalyticsHookTest extends TestCase
     private function bucket(string $tier, string $metricKey): int
     {
         $row = ProductAnalytic::query()
-            ->where('product_key', 'FileHosting')
+            ->where('product_key', 'Archivd')
             ->where('tier', $tier)
             ->where('metric_key', $metricKey)
             ->first();

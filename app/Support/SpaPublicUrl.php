@@ -63,7 +63,7 @@ final class SpaPublicUrl
     public static function publicFileShare(string $fileId): string
     {
         if (self::origin() === null) {
-            return route('file-hosting.public.files.show', ['file' => $fileId]);
+            return route('archivd.public.files.show', ['file' => $fileId]);
         }
 
         return self::to('/s/f/'.self::assertSafeSegment($fileId));
@@ -72,7 +72,7 @@ final class SpaPublicUrl
     public static function publicFolderShare(string $folderId): string
     {
         if (self::origin() === null) {
-            return route('file-hosting.public.folders.show', ['folder' => $folderId]);
+            return route('archivd.public.folders.show', ['folder' => $folderId]);
         }
 
         return self::to('/s/d/'.self::assertSafeSegment($folderId));

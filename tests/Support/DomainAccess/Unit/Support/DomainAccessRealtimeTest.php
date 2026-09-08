@@ -44,7 +44,7 @@ class DomainAccessRealtimeTest extends TestCase
         Event::fake([DomainVisibilityChanged::class]);
         $this->disableBroadcast();
 
-        app(DomainAccessRealtime::class)->visibilityChanged('file-hosting', 'private');
+        app(DomainAccessRealtime::class)->visibilityChanged('archivd', 'private');
 
         Event::assertNotDispatched(DomainVisibilityChanged::class);
     }
@@ -54,10 +54,10 @@ class DomainAccessRealtimeTest extends TestCase
         Event::fake([DomainVisibilityChanged::class]);
         $this->enableBroadcast();
 
-        app(DomainAccessRealtime::class)->visibilityChanged('file-hosting', 'private');
+        app(DomainAccessRealtime::class)->visibilityChanged('archivd', 'private');
 
         Event::assertDispatched(DomainVisibilityChanged::class, function (DomainVisibilityChanged $e): bool {
-            return $e->productKey === 'file-hosting'
+            return $e->productKey === 'archivd'
                 && $e->visibility === 'private';
         });
     }

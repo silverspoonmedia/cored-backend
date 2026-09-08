@@ -109,7 +109,7 @@ On miss, `navigationTree` loads the snapshot (DB only if snapshot also misses), 
 
 ```bash
 php artisan db:seed --class=RoleSeeder
-php artisan db:seed --class=FileHostingRoleSeeder
+php artisan db:seed --class=ArchivdRoleSeeder
 php artisan db:seed --class=VtualRoleSeeder
 php artisan db:seed --class=MenuSeeder
 ```
@@ -123,10 +123,10 @@ php artisan db:seed --class=MenuSeeder
   - Notifications — `notifications.index`
   - Services — `services.index`
 - **Products**
-  - **File Hosting** — parent route `file-hosting.index`
-    - My Files — `file-hosting.index`
-    - Trash — `file-hosting.trash`
-    - DMCA Blocklist — `file-hosting.blocklist.index`; Root, Admin, Moderator, Management, File Hosting Admin
+  - **Archivd** — parent route `archivd.index`
+    - My Files — `archivd.index`
+    - Trash — `archivd.trash`
+    - DMCA Blocklist — `archivd.blocklist.index`; Root, Admin, Moderator, Management, Archivd Admin
   - **vTual** — parent route `vtual.profiles.index`; Vtual vTuber, Vtual Editor, Vtual Admin (+ any vTual management member via rule 7)
     - My vTuber profiles — `vtual.profiles.index`
     - Managements — `vtual.managements.index`; **no stored roles** — member-only via rule 7 (safe only while the route stays in `MANAGEMENT_MEMBER_ROUTES`)
@@ -154,7 +154,7 @@ php artisan db:seed --class=MenuSeeder
     - Managements — `vtual.managements.index`; Root, Admin (staff manage orgs; membership never grants this branch because the parent route is not in `MANAGEMENT_MEMBER_ROUTES`)
     - Platform credentials — `vtual.platform-credentials.index` (Root, Admin)  - **Settings** — Root, Admin (single hub for all `settings.*` groups)
     - Platform — `settings.platform`
-    - File Hosting — `settings.file-hosting`
+    - Archivd — `settings.archivd`
     - Microstock — `settings.microstock`
     - vTual — `settings.vtual`
     - Notification audiences — `notification-audiences.index`
@@ -163,7 +163,7 @@ php artisan db:seed --class=MenuSeeder
     - Menu list — `menus.index`
     - Trashed menus — `menus.trashed`
 
-Navbar contains one **Home** shortcut using `dashboard`. File Hosting and vTual parent routes stack Domain Access and activation gates across their branches. Microstock remains discoverable through Services and the File Hosting workspace switcher, with no dynamic-menu node.
+Navbar contains one **Home** shortcut using `dashboard`. Archivd and vTual parent routes stack Domain Access and activation gates across their branches. Microstock remains discoverable through Services and the Archivd workspace switcher, with no dynamic-menu node.
 
 ### Canonical vtual tree (Valkivid3 public template)
 
@@ -183,7 +183,7 @@ Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module regi
 
 The sibling Vue-Workers SPA uses `useNavigationHydrate` in menu edit. It batches the menu record and selected parent, role, included-user, and excluded-user lookups through `/api/v1/batch`; failed entries fall back to the existing individual loaders. Shell sidebar and navbar seeds are documented in [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls). Chrome must not `GET navigation/menus` (or start Echo) in parallel with that shell batch: `AppLayout` / `AppNavbar` join `hydrateShell()`, skip GET when `isTreeLoaded` or `isShellFallbackBlocked`, and start Echo only after the batch settles — a cookie-jar race on this guest-safe `jwt.optional` GET shows in DevTools as CORS and vanishes on hard reload.
 
-`NavTree` resolves `node.route + '.view'`, then `node.route`. Leaf nodes render the resolved `href` via `router.resolve` so the destination URL is visible on hover; parent nodes stay `#` while they have visible children (expand-only). Menu CRUD validates `route` via `SpaRouteRegistry` against `config/spa-routes.php` (plus any remaining Laravel `Route::has` names). Keep the config list in sync with `MenuSeeder` and `monolith-vue-workers/src/router/index.ts`. DMCA Blocklist is `file-hosting.blocklist.index`; the SPA registers `file-hosting.blocklist.index.view` so the sidebar click works.
+`NavTree` resolves `node.route + '.view'`, then `node.route`. Leaf nodes render the resolved `href` via `router.resolve` so the destination URL is visible on hover; parent nodes stay `#` while they have visible children (expand-only). Menu CRUD validates `route` via `SpaRouteRegistry` against `config/spa-routes.php` (plus any remaining Laravel `Route::has` names). Keep the config list in sync with `MenuSeeder` and `monolith-vue-workers/src/router/index.ts`. DMCA Blocklist is `archivd.blocklist.index`; the SPA registers `archivd.blocklist.index.view` so the sidebar click works.
 
 ## Tests
 

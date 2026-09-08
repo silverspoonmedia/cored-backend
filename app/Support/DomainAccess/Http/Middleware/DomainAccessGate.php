@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Gate a product domain route group by its Public/Private visibility.
  *
- * Usage: `domain.access:FileHosting`. Public domains pass for everyone;
+ * Usage: `domain.access:Archivd`. Public domains pass for everyone;
  * Private domains pass only for Root/Admin/beta testers (see
  * DomainAccessService::canAccess). Denials render as JSON 403 for API
  * requests and abort(403) for web requests.

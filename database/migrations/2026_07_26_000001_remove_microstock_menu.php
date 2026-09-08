@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 
 /**
  * Remove the stale dynamic Microstock sidebar menu. Microstock is now reached
- * via /services (activation) and the File Hosting workspace switcher, not a
+ * via /services (activation) and the Archivd workspace switcher, not a
  * dedicated sidebar entry. The seeder is also cleaned so fresh installs never
  * re-create it.
  */

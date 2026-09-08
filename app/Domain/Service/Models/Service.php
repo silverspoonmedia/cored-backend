@@ -5,7 +5,7 @@ namespace App\Domain\Service\Models;
 use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdCatalog;
 use App\Domain\Service\Support\MicrostockCatalog;
 use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -108,9 +108,9 @@ class Service extends Model
     /**
      * Paid main/addon that contributes storage_bytes (excludes workspace-slot SKU).
      */
-    public function isFileHostingStoragePlan(): bool
+    public function isArchivdStoragePlan(): bool
     {
-        if (! $this->isFileHostingCatalogPlan()) {
+        if (! $this->isArchivdCatalogPlan()) {
             return false;
         }
 
@@ -120,13 +120,13 @@ class Service extends Model
     /**
      * Any FH catalog SKU (storage main/addon or non-storage slot addon).
      */
-    public function isFileHostingCatalogPlan(): bool
+    public function isArchivdCatalogPlan(): bool
     {
-        if ($this->fulfillment_target !== FileHostingCatalog::FULFILLMENT_TARGET) {
+        if ($this->fulfillment_target !== ArchivdCatalog::FULFILLMENT_TARGET) {
             return false;
         }
 
-        if (FileHostingCatalog::isFreeCode($this->code)) {
+        if (ArchivdCatalog::isFreeCode($this->code)) {
             return false;
         }
 
@@ -151,7 +151,7 @@ class Service extends Model
 
     public function isPaidMainPlan(): bool
     {
-        return $this->isFileHostingStoragePlan() && $this->plan_kind === PlanKind::Main;
+        return $this->isArchivdStoragePlan() && $this->plan_kind === PlanKind::Main;
     }
 
     /**
@@ -160,7 +160,7 @@ class Service extends Model
      */
     public function isAddonPlan(): bool
     {
-        return ($this->isFileHostingCatalogPlan() || $this->isMicrostockCatalogPlan())
+        return ($this->isArchivdCatalogPlan() || $this->isMicrostockCatalogPlan())
             && $this->plan_kind === PlanKind::Addon;
     }
 
@@ -170,8 +170,8 @@ class Service extends Model
             return false;
         }
 
-        return FileHostingCatalog::isWorkspaceSlotCode($this->code)
-            || $this->entitlement === FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS
+        return ArchivdCatalog::isWorkspaceSlotCode($this->code)
+            || $this->entitlement === ArchivdCatalog::ENTITLEMENT_WORKSPACE_SLOTS
             || MicrostockCatalog::isWorkspaceSlotCode($this->code)
             || $this->entitlement === MicrostockCatalog::ENTITLEMENT_WORKSPACE_SLOTS;
     }

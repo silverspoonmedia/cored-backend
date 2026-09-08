@@ -8,7 +8,7 @@
  * kind  => 'core'    — foundation domain (Identity, Navigation, …). Never removable.
  *                      domain:remove uses hardcoded DomainManager::PLATFORM_CORE;
  *                      flipping kind in this file cannot unlock remove.
- * kind  => 'product' — SaaS / feature surface (FileHosting, …). Extends core.
+ * kind  => 'product' — SaaS / feature surface (Archivd, …). Extends core.
  *
  * locked => true     — product only; domain:remove refuses until you manually set
  *                      locked => false in this file (no artisan unlock command).
@@ -40,7 +40,7 @@ return [
     'Inference' => ['kind' => 'core'],
 
     // Product
-    'FileHosting' => ['kind' => 'product', 'locked' => true],
+    'Archivd' => ['kind' => 'product', 'locked' => true],
     'Vtual' => ['kind' => 'product', 'locked' => true],
     'Microstock' => ['kind' => 'product', 'locked' => true],
 ];

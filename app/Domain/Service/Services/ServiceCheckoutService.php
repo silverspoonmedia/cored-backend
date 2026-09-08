@@ -12,7 +12,7 @@ use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdCatalog;
 use App\Domain\Service\Support\MicrostockCatalog;
 use Illuminate\Support\Facades\DB;
 
@@ -46,7 +46,7 @@ class ServiceCheckoutService
             throw new ServiceException(__('api/services.not_available'), 422);
         }
 
-        if (FileHostingCatalog::isFreeCode($service->code)) {
+        if (ArchivdCatalog::isFreeCode($service->code)) {
             throw new ServiceException(__('api/services.not_available'), 422);
         }
 

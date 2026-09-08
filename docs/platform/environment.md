@@ -12,11 +12,11 @@ Laravel loads **one** `.env` at boot. Monolith adds profile snapshots for local 
 | `.env.profile` | Active profile name |
 | `.env.{local,staging,production}` | Machine snapshots (gitignored) |
 
-All four committed templates share the **same section layout** (Application → locale → auth → encryption → logging → database → infrastructure → mail → File Hosting → hCaptcha → notifications & realtime → payments → Microstock). Subsections use `# · …` markers. See [`.env.example`](../../.env.example) for the canonical order and comments.
+All four committed templates share the **same section layout** (Application → locale → auth → encryption → logging → database → infrastructure → mail → Archivd → hCaptcha → notifications & realtime → payments → Microstock). Subsections use `# · …` markers. See [`.env.example`](../../.env.example) for the canonical order and comments.
 
 **Assignment key parity (mandatory):** master, all three profile templates, and `EnvironmentVariableCatalog::types()` must expose the **same set of live `KEY=` assignments**. A commented `# KEY=…` line does **not** count — `env:curate` only sees real assignments in the active profile template, so a key that exists only as a comment (or only in master) becomes an orphan in `.env`. Lock: `EnvProfileSyncTest` + `EnvironmentTemplateQuotingTest`. Values may still differ per profile (`APP_DEBUG`, drivers, proxy URLs, etc.).
 
-**Storage env:** cloud uploads use `FILE_HOSTING_S3_*` (disk `s3FileHostingCe`). The Laravel default `s3` disk remains in `config/filesystems.php` but `AWS_*` keys are **not** listed in env templates — set them manually only if `FILESYSTEM_DISK=s3`.
+**Storage env:** cloud uploads use `ARCHIVD_S3_*` (disk `s3ArchivdCe`). The Laravel default `s3` disk remains in `config/filesystems.php` but `AWS_*` keys are **not** listed in env templates — set them manually only if `FILESYSTEM_DISK=s3`.
 
 ## Quick start
 
@@ -101,7 +101,7 @@ AI agents: the exact phrase **`curate the env`** must use `env:curate` (dry-run 
 | Snapshot staleness | Editing `.env` does not update `.env.{profile}` until you switch away (save-on-switch) or `env:curate --sync-snapshot` |
 | `APP_ENV` typo | A misspelled `APP_ENV` (e.g. `lcoal`) silently disables `LocalSettingsSeeder` (`environment('local')` guard), so dev-only overrides such as `platform.notifications.delivery=realtime` never apply and the bell falls back to polling. Verify with `php artisan tinker --execute="echo app()->environment().' / '.setting_config('notifications.delivery');"` → expect `local / realtime`; fix by correcting `.env` then `php artisan config:clear && php artisan db:seed --class=LocalSettingsSeeder` |
 | Duplicate keys in `.env` | Curator uses **last assignment wins** when parsing; duplicate keys in the template emit **duplicate lines** |
-| Orphan keys | Keys in `.env` but not in the **active profile template** are appended under `Extra keys (not in template)`. Catalog Tier A keys landing here usually mean **profile template drift** (violates assignment key parity above). Genuine orphans are true extras or retired Tier B leftovers after an env→settings migration (wave 1 JWT/FH/notifications; wave 2 mail-from / Frankfurter timeout / Microstock models+timeouts / Vtual token mint). Drop Extra keys after confirming Settings rows exist (`php artisan db:seed --class=SettingsSeeder` then LocalSettingsSeeder on local) |
+| Orphan keys | Keys in `.env` but not in the **active profile template** are appended under `Extra keys (not in template)`. Catalog Tier A keys landing here usually mean **profile template drift** (violates assignment key parity above). Genuine orphans are true extras or retired Tier B leftovers after an env→settings migration (wave 1 JWT/Ar/notifications; wave 2 mail-from / Frankfurter timeout / Microstock models+timeouts / Vtual token mint). Drop Extra keys after confirming Settings rows exist (`php artisan db:seed --class=SettingsSeeder` then LocalSettingsSeeder on local) |
 | Typed quoting | Curate normalizes catalog keys to typed quoting; unquoted strings become `"…"` |
 | First switch to a profile | If no snapshot exists, bootstraps from `.env.{profile}.example` (fresh secrets, not a copy of current `.env`) |
 | `jwt:secret` standalone | Not wrapped by the mutation guard; writes unquoted values — prefer guarded install/seed or `env:backup:create` then `env:curate` |
@@ -168,7 +168,7 @@ Operational knobs (JWT TTLs, upload limits, notification delivery, etc.) live in
 
 Monolith no longer carries any `VITE_*` keys. Vite belongs to the SPA build, so `VITE_PUSHER_*` / `VITE_API_BASE_URL` / `VITE_HCAPTCHA_SITE_KEY` live in `monolith-vue-workers/.env` — see [vue-workers-spa.md](../integration/vue-workers-spa.md#env-vars). They must still be **literals** mirroring Monolith's `PUSHER_*` values, because Vite does not expand `${PUSHER_*}` at build time. If an old `.env` still has them, `env:curate` will surface them under `Extra keys (not in template)`; delete them.
 
-After the env→settings migration, `php artisan env:curate` may leave **orphan** operational keys in a local `.env` (moved to the orphans section) when `.env` still contains Tier B vars removed from templates. Safe to delete them — live values are in `system_settings`. After template sync (`env:curate --sync-snapshot`), a clean local `.env` should show **0 orphans**; do not re-add Tier B keys. Upload proxy vars (`FILE_HOSTING_UPLOAD_PROXY_*`) are **Tier A** and belong as live assignments in the File Hosting env section of **all** templates (empty URL = browser-direct; local profile may ship gateway defaults).
+After the env→settings migration, `php artisan env:curate` may leave **orphan** operational keys in a local `.env` (moved to the orphans section) when `.env` still contains Tier B vars removed from templates. Safe to delete them — live values are in `system_settings`. After template sync (`env:curate --sync-snapshot`), a clean local `.env` should show **0 orphans**; do not re-add Tier B keys. Upload proxy vars (`ARCHIVD_UPLOAD_PROXY_*`) are **Tier A** and belong as live assignments in the Archivd env section of **all** templates (empty URL = browser-direct; local profile may ship gateway defaults).
 
 ## Related
 

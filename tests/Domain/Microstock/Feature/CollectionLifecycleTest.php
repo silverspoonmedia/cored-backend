@@ -2,11 +2,11 @@
 
 namespace Tests\Domain\Microstock\Feature;
 
-use App\Domain\FileHosting\Enums\CollectionStatus;
-use App\Domain\FileHosting\Exceptions\FileHostingException;
-use App\Domain\FileHosting\Models\Folder;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Services\DirectUploadService;
+use App\Domain\Archivd\Enums\CollectionStatus;
+use App\Domain\Archivd\Exceptions\ArchivdException;
+use App\Domain\Archivd\Models\Folder;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Services\DirectUploadService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Enums\MetadataStatus;
@@ -24,7 +24,7 @@ use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Support\MicrostockCatalog;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\Concerns\GrantsMicrostockAiCredits;
 use Tests\Concerns\SeedsRolesAndPermissions;
-use Tests\Fakes\FakeFileHostingDirectUploadService;
+use Tests\Fakes\FakeArchivdDirectUploadService;
 use Tests\TestCase;
 
 class CollectionLifecycleTest extends TestCase
@@ -48,12 +48,12 @@ class CollectionLifecycleTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->seed(MicrostockRoleSeeder::class);
 
         config([
-            'file-hosting.disk' => 'local',
-            'file-hosting.default_quota_bytes' => 50 * 1024 * 1024,
+            'archivd.disk' => 'local',
+            'archivd.default_quota_bytes' => 50 * 1024 * 1024,
             'activitylog.enabled' => false,
             'microstock.csv_disk' => 'local',
         ]);
@@ -82,10 +82,10 @@ class CollectionLifecycleTest extends TestCase
                 $ws->id,
             );
             $this->fail('Root upload in a microstock workspace must be rejected');
-        } catch (FileHostingException $e) {
+        } catch (ArchivdException $e) {
             $this->assertSame(422, $e->statusCode());
             $this->assertStringContainsString(
-                __('web/file-hosting.microstock.error_requires_folder'),
+                __('web/archivd.microstock.error_requires_folder'),
                 $e->getMessage(),
             );
         }
@@ -111,10 +111,10 @@ class CollectionLifecycleTest extends TestCase
                 $ws->id,
             );
             $this->fail('Upload into a locked collection must be rejected');
-        } catch (FileHostingException $e) {
+        } catch (ArchivdException $e) {
             $this->assertSame(422, $e->statusCode());
             $this->assertStringContainsString(
-                __('web/file-hosting.microstock.error_collection_locked'),
+                __('web/archivd.microstock.error_collection_locked'),
                 $e->getMessage(),
             );
         }
@@ -129,7 +129,7 @@ class CollectionLifecycleTest extends TestCase
         Storage::fake('local');
         $this->app->instance(
             DirectUploadService::class,
-            $this->app->make(FakeFileHostingDirectUploadService::class),
+            $this->app->make(FakeArchivdDirectUploadService::class),
         );
 
         $ws = app(MicrostockService::class)->workspaceFor($this->owner);
@@ -169,9 +169,9 @@ class CollectionLifecycleTest extends TestCase
                 $ws->id,
             );
             $this->fail('Non-image upload into a microstock collection must be rejected');
-        } catch (FileHostingException $e) {
+        } catch (ArchivdException $e) {
             $this->assertSame(422, $e->statusCode());
-            $this->assertSame(__('web/file-hosting.microstock.error_image_only'), $e->getMessage());
+            $this->assertSame(__('web/archivd.microstock.error_image_only'), $e->getMessage());
         }
     }
 
