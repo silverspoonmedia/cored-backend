@@ -23,6 +23,14 @@ class CreatorPolicy
 
     public function view(User $actor, Creator $creator): Response
     {
+        // Management members over a linked creator bypass the Spatie creator
+        // permission — their authority comes from the management membership.
+        if ($this->access->managementRoleForCreator($creator, $actor) !== null) {
+            return $this->access->canView($creator, $actor)
+                ? $this->allow()
+                : $this->deny(__('api/vtual.policy.access_denied'));
+        }
+
         if (! $actor->can('view vtual creator')) {
             return $this->deny(__('api/vtual.policy.denied'));
         }
@@ -34,11 +42,28 @@ class CreatorPolicy
 
     public function create(User $actor): Response
     {
-        return $this->perm($actor, 'create vtual creator');
+        if (! $actor->can('create vtual creator')) {
+            return $this->deny(__('api/vtual.policy.denied'));
+        }
+
+        // Casual self-create is disabled: non-staff get creators via orphan claim.
+        if (! $actor->can('manage any vtual resource')) {
+            return $this->deny(__('api/vtual.creator.self_create_disabled'));
+        }
+
+        return $this->allow();
     }
 
     public function update(User $actor, Creator $creator): Response
     {
+        // Management Owner/Admin over a linked creator may edit without the
+        // Spatie creator permission; Staff role is view-only (canMutate false).
+        if ($this->access->managementRoleForCreator($creator, $actor) !== null) {
+            return $this->access->canMutate($creator, $actor)
+                ? $this->allow()
+                : $this->deny(__('api/vtual.policy.mutate_denied'));
+        }
+
         if (! $actor->can('edit vtual creator')) {
             return $this->deny(__('api/vtual.policy.denied'));
         }

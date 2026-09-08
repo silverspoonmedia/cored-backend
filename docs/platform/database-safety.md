@@ -6,7 +6,7 @@ MySQL 8.x for local development, PostgreSQL 16 for deployment parity; **SQLite i
 
 Migrations target MySQL 8.x and PostgreSQL 16 through Laravel's portable schema builder:
 
-- UUID keys and foreign keys use matching `uuid` columns. Self-references in `menus` and `file_hosting_folders` declare the UUID column, named foreign key, and lookup index explicitly.
+- UUID keys and foreign keys use matching `uuid` columns. Self-references in `menus` and `ARCHIVD_folders` declare the UUID column, named foreign key, and lookup index explicitly.
 - Subscription state values use bounded strings. PHP backed enums and request validation own allowed values; migrations do not depend on driver-specific database enums.
 - PostgreSQL does not have MySQL unsigned integer types. Unsigned declarations are acceptable only where application validation and domain logic enforce non-negative values. Do not use ignored unsigned modifiers as the invariant.
 - PostgreSQL JSON/text conversions require explicit casts. The envelope-encryption migration uses `USING` casts and validates rollback values before converting text back to JSON.

@@ -31,11 +31,11 @@ class ServiceCrudTest extends TestCase
 
         $this->actingAsJwt($admin)
             ->postJson('/api/v1/services', [
-                'code' => 'file-hosting.plan.1tb.monthly',
+                'code' => 'archivd.plan.1tb.monthly',
                 'name' => 'Standard 1 TB',
                 'description' => 'Main plan 1 TB',
                 'billing_interval' => 'monthly',
-                'fulfillment_target' => 'file_hosting',
+                'fulfillment_target' => 'archivd',
                 'entitlement' => 'storage_quota',
                 'plan_kind' => 'main',
                 'storage_bytes' => 1099511627776,
@@ -45,7 +45,7 @@ class ServiceCrudTest extends TestCase
                 ],
             ])
             ->assertCreated()
-            ->assertJsonPath('data.code', 'file-hosting.plan.1tb.monthly')
+            ->assertJsonPath('data.code', 'archivd.plan.1tb.monthly')
             ->assertJsonPath('data.plan_kind', 'main')
             ->assertJsonPath('data.storage_bytes', 1099511627776)
             ->assertJsonPath('data.prices.0.currency', 'USD')
@@ -74,7 +74,7 @@ class ServiceCrudTest extends TestCase
     public function test_user_can_view_catalog(): void
     {
         $user = $this->userWithRole('User');
-        Service::factory()->fileHostingMonthly()->create();
+        Service::factory()->ArchivdMonthly()->create();
 
         $this->actingAsJwt($user)
             ->getJson('/api/v1/services')

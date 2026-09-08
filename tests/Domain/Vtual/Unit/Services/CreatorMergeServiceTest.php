@@ -22,6 +22,7 @@ use App\Domain\Vtual\Services\CreatorService;
 use App\Domain\Vtual\Services\ExternalLinkService;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
@@ -56,6 +57,10 @@ class CreatorMergeServiceTest extends TestCase
         $this->links = app(ExternalLinkService::class);
         $this->youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
         $this->admin = $this->userWithRole('Admin');
+
+        // Activation hooks fire before per-test Http::fake() registration —
+        // fake the WebSub hub up front so no test ever reaches the real hub.
+        Http::fake(['pubsubhubbub.appspot.com/*' => Http::response('', 202)]);
     }
 
     #[Test]

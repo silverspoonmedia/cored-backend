@@ -62,7 +62,7 @@ class BroadcastConnection
 
     /**
      * Client-safe Pusher / Echo options whenever a broadcast driver is configured.
-     * Independent of `platform.notifications.delivery` so other domains (e.g. File Hosting
+     * Independent of `platform.notifications.delivery` so other domains (e.g. Archivd
      * live listing) can use websockets while the bell stays on polling.
      *
      * @return array<string, mixed>|null

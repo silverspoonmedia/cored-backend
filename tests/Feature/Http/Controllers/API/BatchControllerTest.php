@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers\API;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Navigation\Models\Menu;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -146,6 +147,52 @@ class BatchControllerTest extends TestCase
         // meta counts every entry; none failed here.
         $response->assertJsonPath('meta.failed', 0);
         $response->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_batch_sub_request_forwards_spa_locale_to_navigation(): void
+    {
+        $token = $this->tokenFor($this->makeUser());
+        Menu::query()->create([
+            'layout' => 'sidebar',
+            'name' => ['en' => 'English label', 'id' => 'Label Indonesia'],
+            'description' => ['en' => 'English description', 'id' => 'Deskripsi Indonesia'],
+            'type' => 'c',
+            'order' => 1,
+        ]);
+
+        $response = $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+            'X-SPA-Locale' => 'id',
+        ])->postJson('/api/v1/batch', [
+            'requests' => [['method' => 'GET', 'path' => '/api/v1/navigation/menus?layout=sidebar']],
+        ])->assertOk();
+
+        $response->assertJsonPath('data.0.status', 200);
+        $response->assertJsonPath('data.0.body.data.0.name', 'Label Indonesia');
+        $response->assertJsonPath('data.0.body.data.0.description', 'Deskripsi Indonesia');
+    }
+
+    public function test_batch_sub_request_forwards_canonical_chinese_locale_to_navigation(): void
+    {
+        $token = $this->tokenFor($this->makeUser());
+        Menu::query()->create([
+            'layout' => 'sidebar',
+            'name' => ['en' => 'English label', 'zh_CN' => '简体中文标签'],
+            'description' => ['en' => 'English description', 'zh_CN' => '简体中文描述'],
+            'type' => 'c',
+            'order' => 1,
+        ]);
+
+        $response = $this->withHeaders([
+            'Authorization' => "Bearer {$token}",
+            'X-SPA-Locale' => 'zh_CN',
+        ])->postJson('/api/v1/batch', [
+            'requests' => [['method' => 'GET', 'path' => '/api/v1/navigation/menus?layout=sidebar']],
+        ])->assertOk();
+
+        $response->assertJsonPath('data.0.status', 200);
+        $response->assertJsonPath('data.0.body.data.0.name', '简体中文标签');
+        $response->assertJsonPath('data.0.body.data.0.description', '简体中文描述');
     }
 
     public function test_batch_meta_counts_failed_entries(): void

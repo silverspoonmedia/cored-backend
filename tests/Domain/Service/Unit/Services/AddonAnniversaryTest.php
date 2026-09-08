@@ -13,7 +13,7 @@ use App\Domain\Service\Models\ServicePrice;
 use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Service\Services\ServiceAddonRenewalService;
 use App\Domain\Service\Services\ServiceFulfillmentService;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -29,7 +29,7 @@ class AddonAnniversaryTest extends TestCase
     {
         parent::setUp();
         $this->seedCurrencies();
-        config(['file-hosting.default_quota_bytes' => FileHostingCatalog::freeBytes()]);
+        config(['archivd.default_quota_bytes' => ArchivdCatalog::freeBytes()]);
     }
 
     public function test_three_addon_buys_same_day_keep_fixed_ends_at(): void
@@ -37,7 +37,7 @@ class AddonAnniversaryTest extends TestCase
         Carbon::setTestNow('2026-01-01 10:00:00');
 
         $user = User::factory()->create();
-        $addon = Service::factory()->fileHostingAddon100Gb()->create();
+        $addon = Service::factory()->ArchivdAddon100Gb()->create();
 
         $ends = null;
         for ($i = 0; $i < 3; $i++) {
@@ -80,8 +80,8 @@ class AddonAnniversaryTest extends TestCase
         Carbon::setTestNow('2026-01-01 10:00:00');
 
         $user = User::factory()->create();
-        $addon100 = Service::factory()->fileHostingAddon100Gb()->create();
-        $addon500 = Service::factory()->fileHostingAddon500Gb()->create();
+        $addon100 = Service::factory()->ArchivdAddon100Gb()->create();
+        $addon500 = Service::factory()->ArchivdAddon500Gb()->create();
 
         $this->fulfillAddon($user, $addon100);
 
@@ -106,8 +106,8 @@ class AddonAnniversaryTest extends TestCase
         ]);
 
         $user = User::factory()->create();
-        $addon100 = Service::factory()->fileHostingAddon100Gb()->create();
-        $addon500 = Service::factory()->fileHostingAddon500Gb()->create();
+        $addon100 = Service::factory()->ArchivdAddon100Gb()->create();
+        $addon500 = Service::factory()->ArchivdAddon500Gb()->create();
         ServicePrice::factory()->usd(2.95)->create(['service_id' => $addon100->id]);
         ServicePrice::factory()->usd(14.50)->create(['service_id' => $addon500->id]);
 

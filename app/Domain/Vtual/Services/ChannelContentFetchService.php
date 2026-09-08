@@ -129,6 +129,12 @@ class ChannelContentFetchService
             $upserted++;
         }
 
+        // Ids the API did not return are deleted/private upstream — tombstone them
+        // instead of silently dropping, so pool rows do not mark stale data as done.
+        foreach (array_diff($videoIds, $videos->map(fn (PlatformVideoDto $v) => $v->externalId)->all()) as $missingId) {
+            $this->contents->markUnavailable($channel, $missingId);
+        }
+
         return [
             'fetched' => $fetched,
             'upserted' => $upserted,

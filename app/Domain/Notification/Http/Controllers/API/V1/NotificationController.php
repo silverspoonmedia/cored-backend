@@ -2,14 +2,16 @@
 
 namespace App\Domain\Notification\Http\Controllers\API\V1;
 
-use App\Http\Controllers\Controller;
+use App\Domain\Identity\Models\User;
 use App\Domain\Notification\Http\Requests\IndexNotificationRequest;
-use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Domain\Notification\Http\Resources\NotificationResource;
 use App\Domain\Notification\Models\ActivityNotification;
-use App\Domain\Identity\Models\User;
 use App\Domain\Notification\Services\NotificationService;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ApiResponder;
 use App\Traits\ApiResponse;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -65,7 +67,9 @@ class NotificationController extends Controller
         $viewer = $this->actor();
 
         if (! $this->notifications->isVisibleTo($notification, $viewer)) {
-            abort(403, __('api/notifications.not_visible'));
+            throw new HttpResponseException(
+                ApiResponder::error(__('api/notifications.not_visible'), 403),
+            );
         }
 
         $this->notifications->markAsRead($notification, $viewer);

@@ -2,9 +2,9 @@
 
 namespace App\Domain\Microstock\Jobs;
 
-use App\Domain\FileHosting\Enums\CollectionStatus;
-use App\Domain\FileHosting\Models\Folder;
-use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Archivd\Enums\CollectionStatus;
+use App\Domain\Archivd\Models\Folder;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\AnalysisStageService;

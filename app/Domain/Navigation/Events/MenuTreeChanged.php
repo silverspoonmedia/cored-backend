@@ -20,6 +20,7 @@ class MenuTreeChanged implements ShouldBroadcastNow
     public function __construct(
         public readonly string $layout,
         public readonly string $action,
+        public readonly ?string $targetUserId = null,
     ) {}
 
     /**
@@ -43,6 +44,7 @@ class MenuTreeChanged implements ShouldBroadcastNow
         return [
             'layout' => $this->layout,
             'action' => $this->action,
+            'target_user_id' => $this->targetUserId,
         ];
     }
 }

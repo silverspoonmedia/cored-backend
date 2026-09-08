@@ -2,10 +2,10 @@
 
 namespace App\Domain\Microstock\Services;
 
-use App\Domain\FileHosting\Enums\FileVariantKind;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Services\FileVariantGenerator;
-use App\Domain\FileHosting\Services\FileVariantService;
+use App\Domain\Archivd\Enums\FileVariantKind;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Services\FileVariantGenerator;
+use App\Domain\Archivd\Services\FileVariantService;
 use Illuminate\Support\Facades\Log;
 
 /**

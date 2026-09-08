@@ -2,11 +2,11 @@
 
 namespace App\Support\Product\Services;
 
-use App\Domain\FileHosting\Enums\WorkspaceMemberStatus;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Models\Workspace;
-use App\Domain\FileHosting\Models\WorkspaceMember;
-use App\Domain\FileHosting\Services\QuotaService;
+use App\Domain\Archivd\Enums\WorkspaceMemberStatus;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Models\Workspace;
+use App\Domain\Archivd\Models\WorkspaceMember;
+use App\Domain\Archivd\Services\QuotaService;
 use App\Support\Product\Enums\ProductActivationState;
 use App\Support\Product\Exceptions\ProductNotFoundException;
 use App\Support\Product\Models\ProductAnalytic;
@@ -70,7 +70,7 @@ class ProductInsightService
     public function productMetrics(string $productKey): array
     {
         return match ($productKey) {
-            'FileHosting' => $this->fileHostingMetrics(),
+            'Archivd' => $this->archivdMetrics(),
             default => [],
         };
     }
@@ -92,7 +92,7 @@ class ProductInsightService
         ];
 
         return match ($productKey) {
-            'FileHosting' => array_merge($base, $this->fileHostingUserDetail($userId)),
+            'Archivd' => array_merge($base, $this->archivdUserDetail($userId)),
             default => $base,
         };
     }
@@ -131,13 +131,13 @@ class ProductInsightService
      *     by_tier: array<string, array{storage_used_bytes:int, file_count:int, workspaces:int}>
      * }
      */
-    private function fileHostingMetrics(): array
+    private function archivdMetrics(): array
     {
         return Cache::rememberForever(
-            'product_insights.FileHosting.metrics',
+            'product_insights.Archivd.metrics',
             function (): array {
                 $rows = ProductAnalytic::query()
-                    ->where('product_key', 'FileHosting')
+                    ->where('product_key', 'Archivd')
                     ->get();
 
                 $byTier = [];
@@ -187,7 +187,7 @@ class ProductInsightService
      *     last_activity_at: string|null
      * }
      */
-    private function fileHostingUserDetail(string $userId): array
+    private function archivdUserDetail(string $userId): array
     {
         $usage = $this->quota->usage($userId);
 

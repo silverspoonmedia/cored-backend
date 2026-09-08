@@ -57,6 +57,10 @@ class ChannelFetchPoolServiceTest extends TestCase
             'vtual.channel_pool.max_wait_minutes' => 15,
             'vtual.http.batch.channels' => 50,
         ]);
+
+        // Activation hooks fire before per-test Http::fake() registration —
+        // fake the WebSub hub up front so no test ever reaches the real hub.
+        Http::fake(['pubsubhubbub.appspot.com/*' => Http::response('', 202)]);
     }
 
     #[Test]
@@ -351,6 +355,121 @@ class ChannelFetchPoolServiceTest extends TestCase
                 ->where('channel_id', $channel->id)
                 ->where('status', ChannelFetchPoolStatus::Pending)
                 ->exists(),
+        );
+    }
+
+    #[Test]
+    public function flush_broadcasts_one_snapshot_event_per_creator(): void
+    {
+        \Illuminate\Support\Facades\Bus::fake();
+        Http::fake(['pubsubhubbub.appspot.com/*' => Http::response('', 202)]);
+
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'Realtime Owner']);
+
+        $channels = [];
+        foreach (['UCRT001', 'UCRT002'] as $id) {
+            $channels[$id] = $this->channels->activateFromDto($creator->id, $this->youtube, new PlatformChannelDto(
+                platform: PlatformKey::Youtube,
+                externalId: $id,
+                handle: 'h-'.$id,
+                displayName: 'Old '.$id,
+                description: null,
+                thumbnailUrl: null,
+                url: null,
+            ));
+            $this->pool->enqueue($this->youtube, $id, null, ChannelFetchPoolReason::Manual);
+        }
+
+        $gateway = \Mockery::mock(\App\Domain\Vtual\Integrations\PlatformApiGateway::class);
+        $gateway->shouldReceive('fetchChannels')
+            ->once()
+            ->andReturn(collect([
+                new PlatformChannelDto(
+                    platform: PlatformKey::Youtube,
+                    externalId: 'UCRT001',
+                    handle: 'n1',
+                    displayName: 'N1',
+                    description: null,
+                    thumbnailUrl: null,
+                    url: null,
+                ),
+                new PlatformChannelDto(
+                    platform: PlatformKey::Youtube,
+                    externalId: 'UCRT002',
+                    handle: 'n2',
+                    displayName: 'N2',
+                    description: null,
+                    thumbnailUrl: null,
+                    url: null,
+                ),
+            ]));
+        $this->app->instance(\App\Domain\Vtual\Integrations\PlatformApiGateway::class, $gateway);
+        $this->app->instance(\App\Domain\Vtual\Support\VtualChannelRealtime::class, new \App\Domain\Vtual\Support\VtualChannelRealtime(true));
+
+        \Illuminate\Support\Facades\Event::fake([
+            \App\Domain\Vtual\Events\ChannelSnapshotUpdated::class,
+        ]);
+
+        $pool = $this->app->make(ChannelFetchPoolService::class);
+        $pool->flush(PlatformKey::Youtube, force: true);
+
+        \Illuminate\Support\Facades\Event::assertDispatched(
+            \App\Domain\Vtual\Events\ChannelSnapshotUpdated::class,
+            fn (\App\Domain\Vtual\Events\ChannelSnapshotUpdated $event): bool => $event->creatorId === (string) $creator->id
+                && count($event->channelIds) === 2
+                && $event->broadcastAs() === 'channel.snapshot.updated'
+                && $event->broadcastOn()[0]->name === 'private-vtual.creator.'.$creator->id,
+        );
+        \Illuminate\Support\Facades\Event::assertDispatchedTimes(
+            \App\Domain\Vtual\Events\ChannelSnapshotUpdated::class,
+            1,
+        );
+    }
+
+    #[Test]
+    public function flush_does_not_broadcast_when_not_configured(): void
+    {
+        \Illuminate\Support\Facades\Bus::fake();
+        Http::fake(['pubsubhubbub.appspot.com/*' => Http::response('', 202)]);
+        \Illuminate\Support\Facades\Event::fake([
+            \App\Domain\Vtual\Events\ChannelSnapshotUpdated::class,
+        ]);
+
+        $gateway = \Mockery::mock(\App\Domain\Vtual\Integrations\PlatformApiGateway::class);
+        $gateway->shouldReceive('fetchChannels')
+            ->once()
+            ->andReturn(collect([
+                new PlatformChannelDto(
+                    platform: PlatformKey::Youtube,
+                    externalId: 'UCNORT001',
+                    handle: 'n',
+                    displayName: 'N',
+                    description: null,
+                    thumbnailUrl: null,
+                    url: null,
+                ),
+            ]));
+
+        $user = $this->userWithRole('User');
+        $creator = $this->creators->create($user, ['display_name' => 'No Realtime']);
+
+        $this->channels->activateFromDto($creator->id, $this->youtube, new PlatformChannelDto(
+            platform: PlatformKey::Youtube,
+            externalId: 'UCNORT001',
+            handle: 'nort',
+            displayName: 'Old',
+            description: null,
+            thumbnailUrl: null,
+            url: null,
+        ));
+        $this->pool->enqueue($this->youtube, 'UCNORT001', null, ChannelFetchPoolReason::Manual);
+
+        $pool = new ChannelFetchPoolService($gateway, new \App\Domain\Vtual\Support\VtualChannelRealtime(false));
+        $pool->flush(PlatformKey::Youtube, force: true);
+
+        \Illuminate\Support\Facades\Event::assertNotDispatched(
+            \App\Domain\Vtual\Events\ChannelSnapshotUpdated::class,
         );
     }
 

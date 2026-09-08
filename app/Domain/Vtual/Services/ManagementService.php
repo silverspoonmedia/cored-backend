@@ -3,23 +3,47 @@
 namespace App\Domain\Vtual\Services;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Notification\Notifications\NotificationType;
+use App\Domain\Notification\Services\NotificationService;
 use App\Domain\Vtual\Enums\EntityStatus;
+use App\Domain\Vtual\Enums\ManagementInviteStatus;
 use App\Domain\Vtual\Enums\ManagementMemberRole;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Models\Management;
 use App\Domain\Vtual\Models\ManagementCreator;
+use App\Domain\Vtual\Models\ManagementInvite;
 use App\Domain\Vtual\Models\ManagementMember;
+use App\Domain\Vtual\Notifications\ManagementMemberInvited;
 use App\Domain\Vtual\Support\SlugGenerator;
+use App\Domain\Vtual\Support\VtualManagementRealtime;
+use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
+use App\Domain\Navigation\Support\NavigationRealtime;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ManagementService
 {
     public function __construct(
         private readonly ManagementAccessService $access,
         private readonly CreatorAccessService $creatorAccess,
+        private readonly NotificationService $notifications,
+        private readonly VtualManagementRealtime $realtime,
+        private readonly MenuRepositoryInterface $menus,
+        private readonly NavigationRealtime $navigationRealtime,
     ) {}
+
+    /**
+     * A management member may not hold a staff role, so their presented
+     * navigation tree (menu grant via the membership-based visibility rule)
+     * changes whenever membership is created or removed.
+     */
+    private function invalidateNavigationFor(string $userId): void
+    {
+        $this->menus->forgetPresentedTreeForUserId($userId);
+        $this->navigationRealtime->userTreeChanged($userId);
+    }
 
     /**
      * @return Collection<int, Management>
@@ -58,7 +82,7 @@ class ManagementService
             ? trim($data['slug'])
             : $name;
 
-        return DB::transaction(function () use ($actor, $data, $name, $baseSlug): Management {
+        $created = DB::transaction(function () use ($actor, $data, $name, $baseSlug): Management {
             $slug = SlugGenerator::unique($baseSlug, fn (string $s): bool => Management::query()
                 ->where('slug', $s)
                 ->exists());
@@ -79,6 +103,63 @@ class ManagementService
 
             return $management->load('members.user');
         });
+
+        $this->realtime->changed($created->id, 'management', null, 'created');
+
+        return $created;
+    }
+
+    /**
+     * Staff seed: active management with no Owner member (claimable orphan).
+     * Handover to an external owner happens via an Owner-role invite.
+     *
+     * @param  array{name: string, slug?: string|null, description?: string|null, logo_url?: string|null}  $data
+     */
+    public function createOrphan(User $actor, array $data): Management
+    {
+        if (! $actor->can('manage any vtual resource')) {
+            throw new VtualException(__('api/vtual.policy.denied'), 403);
+        }
+
+        return DB::transaction(function () use ($actor, $data): Management {
+            $name = trim((string) $data['name']);
+            if ($name === '') {
+                throw new VtualException(__('api/vtual.management.name_required'), 422);
+            }
+
+            $baseSlug = isset($data['slug']) && is_string($data['slug']) && trim($data['slug']) !== ''
+                ? trim($data['slug'])
+                : $name;
+
+            $slug = SlugGenerator::unique($baseSlug, fn (string $s): bool => Management::query()
+                ->where('slug', $s)
+                ->exists());
+
+            $management = Management::query()->create([
+                'slug' => $slug,
+                'name' => $name,
+                'description' => $data['description'] ?? null,
+                'logo_url' => $data['logo_url'] ?? null,
+                'status' => EntityStatus::Active,
+            ]);
+
+            return $management->load('members.user');
+        });
+    }
+
+    /**
+     * Claimable = active + no Owner membership (admin-seeded orphan).
+     */
+    public function isClaimable(Management $management): bool
+    {
+        if ($management->status !== EntityStatus::Active) {
+            return false;
+        }
+
+        return ! ManagementMember::query()
+            ->where('management_id', $management->id)
+            ->where('role', ManagementMemberRole::Owner)
+            ->exists();
     }
 
     public function show(User $actor, string $managementId): Management
@@ -89,6 +170,44 @@ class ManagementService
         return $management->load([
             'members.user',
             'creatorAssignments' => fn ($q) => $q->whereNull('left_at')->with('creator'),
+        ]);
+    }
+
+    /**
+     * Guest-safe public profile: active management, roster limited to
+     * publicly listed creators (active + at least one active public channel).
+     */
+    public function showForPublic(string $slugOrUuid): Management
+    {
+        $query = Management::query()->where('status', EntityStatus::Active);
+
+        if (\Illuminate\Support\Str::isUuid($slugOrUuid)) {
+            $query->whereKey($slugOrUuid);
+        } else {
+            $query->where('slug', $slugOrUuid);
+        }
+
+        $management = $query->first();
+
+        if ($management === null) {
+            throw new VtualException(__('api/vtual.management.not_found'), 404);
+        }
+
+        return $management->load([
+            'externalLinks' => fn ($q) => $q->orderBy('sort_order'),
+            'creatorAssignments' => fn ($q) => $q->whereNull('left_at')
+                ->with(['creator' => fn ($cq) => $cq
+                    ->where('status', EntityStatus::Active)
+                    ->whereHas('channels', function ($chq): void {
+                        $chq->where('status', \App\Domain\Vtual\Enums\ChannelStatus::Active)
+                            ->where('visibility', \App\Domain\Vtual\Enums\ChannelVisibility::Public);
+                    })
+                    ->with(['channels' => fn ($chq) => $chq
+                        ->where('status', \App\Domain\Vtual\Enums\ChannelStatus::Active)
+                        ->where('visibility', \App\Domain\Vtual\Enums\ChannelVisibility::Public)
+                        ->with('platform'),
+                    ]),
+                ]),
         ]);
     }
 
@@ -134,7 +253,23 @@ class ManagementService
 
         $management->save();
 
+        $this->realtime->changed($management->id, 'management', null, 'updated');
+
         return $management->refresh()->load('members.user');
+    }
+
+    /**
+     * Soft-delete a management org. Actor must be an org Owner/Admin
+     * (enforced by the policy via ManagementAccessService::canArchive).
+     */
+    public function destroy(User $actor, string $managementId): void
+    {
+        $management = $this->access->findOrFail($managementId);
+        $this->access->assertCanArchive($management, $actor);
+
+        $management->delete();
+
+        $this->realtime->changed($management->id, 'management', null, 'deleted');
     }
 
     /**
@@ -162,6 +297,8 @@ class ManagementService
         $assignment->left_at = null;
         $assignment->save();
 
+        $this->realtime->changed($management->id, 'creator', (string) $creator->id, 'assigned');
+
         return $assignment->load('creator');
     }
 
@@ -184,6 +321,319 @@ class ManagementService
         $assignment->left_at = now();
         $assignment->save();
 
+        $this->realtime->changed($management->id, 'creator', (string) $creatorId, 'unassigned');
+
         return $assignment->load('creator');
+    }
+
+    /**
+     * @return Collection<int, ManagementMember>
+     */
+    public function listMembers(User $actor, string $managementId): Collection
+    {
+        $management = $this->access->findOrFail($managementId);
+        $this->access->assertCanView($management, $actor);
+
+        return ManagementMember::query()
+            ->where('management_id', $management->id)
+            ->with('user')
+            ->get();
+    }
+
+    /**
+     * Send an invite-only membership invitation by email (privacy: no user listing).
+     *
+     * @param  array{email: string, role: string}  $data
+     */
+    public function inviteMember(User $actor, string $managementId, array $data): ManagementInvite
+    {
+        $management = $this->access->findOrFail($managementId);
+        $this->access->assertCanManageMembers($management, $actor);
+
+        $email = strtolower(trim((string) ($data['email'] ?? '')));
+        $role = ManagementMemberRole::tryFrom((string) ($data['role'] ?? ''));
+
+        if ($role === null) {
+            throw new VtualException(__('api/vtual.management.role_invalid'), 422);
+        }
+
+        $isOwnerInvite = $role === ManagementMemberRole::Owner;
+
+        if ($isOwnerInvite) {
+            // Handover invite: only for a claimable org, only by staff.
+            if (! $this->isClaimable($management)) {
+                throw new VtualException(__('api/vtual.management.owner_invite_not_claimable'), 422);
+            }
+
+            if (! $actor->can('manage any vtual resource')) {
+                throw new VtualException(__('api/vtual.policy.members_denied'), 403);
+            }
+        } elseif (! in_array($role, ManagementMemberRole::assignable(), true)) {
+            throw new VtualException(__('api/vtual.management.role_invalid'), 422);
+        }
+
+        /** @var User|null $invitee */
+        $invitee = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+        if ($invitee === null) {
+            throw new VtualException(__('api/vtual.management.invite_user_not_found'), 404);
+        }
+
+        if ((string) $invitee->id === (string) $actor->id) {
+            throw new VtualException(__('api/vtual.management.cannot_edit_self'), 422);
+        }
+
+        $memberExists = ManagementMember::query()
+            ->where('management_id', $management->id)
+            ->where('user_id', $invitee->id)
+            ->exists();
+        if ($memberExists) {
+            throw new VtualException(__('api/vtual.management.member_already_exists'), 422);
+        }
+
+        $pendingExists = ManagementInvite::query()
+            ->where('management_id', $management->id)
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->where('status', ManagementInviteStatus::Pending->value)
+            ->exists();
+        if ($pendingExists) {
+            throw new VtualException(__('api/vtual.management.invite_already_pending'), 422);
+        }
+
+        /** @var ManagementInvite $invite */
+        $invite = ManagementInvite::query()->create([
+            'management_id' => $management->id,
+            'email' => $email,
+            'user_id' => $invitee->id,
+            'role' => $role,
+            'token' => Str::random(48),
+            'status' => ManagementInviteStatus::Pending,
+            'invited_by' => $actor->id,
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        $invite->setRelation('management', $management);
+        $invitee->notify(new ManagementMemberInvited($invite));
+
+        $this->notifications->sendToUsers(
+            NotificationType::VtualManagementInviteReceived,
+            [$invitee->id],
+            [
+                'management' => $management->name,
+                'inviter' => $actor->name,
+                'role' => $role->value,
+            ],
+            'vtual.invites.respond',
+            ['token' => $invite->token],
+        );
+
+        $this->realtime->changed($management->id, 'invite', (string) $invite->id, 'created');
+
+        return $invite->load('inviter');
+    }
+
+    /**
+     * @return Collection<int, ManagementInvite>
+     */
+    public function listInvites(User $actor, string $managementId): Collection
+    {
+        $management = $this->access->findOrFail($managementId);
+        $this->access->assertCanView($management, $actor);
+
+        return ManagementInvite::query()
+            ->where('management_id', $management->id)
+            ->with('inviter')
+            ->latest()
+            ->get();
+    }
+
+    /**
+     * Cancel a pending invite, or revoke an accepted one (removes membership).
+     */
+    public function cancelInvite(User $actor, string $managementId, string $inviteId): ManagementInvite
+    {
+        $management = $this->access->findOrFail($managementId);
+        $this->access->assertCanManageMembers($management, $actor);
+
+        /** @var ManagementInvite|null $invite */
+        $invite = ManagementInvite::query()
+            ->where('management_id', $management->id)
+            ->whereKey($inviteId)
+            ->first();
+
+        if ($invite === null) {
+            throw new VtualException(__('api/vtual.management.invite_expired'), 404);
+        }
+
+        if ($invite->isPending()) {
+            $invite->status = ManagementInviteStatus::Cancelled;
+            $invite->responded_at = now();
+            $invite->save();
+
+            $this->realtime->changed($management->id, 'invite', (string) $invite->id, 'cancelled');
+
+            return $invite->load('inviter');
+        }
+
+        if ($invite->status === ManagementInviteStatus::Accepted) {
+            DB::transaction(function () use ($management, $invite): void {
+                /** @var ManagementMember|null $member */
+                $member = ManagementMember::query()
+                    ->where('management_id', $management->id)
+                    ->where('user_id', $invite->user_id)
+                    ->first();
+                if ($member !== null) {
+                    if ($member->role === ManagementMemberRole::Owner) {
+                        $this->assertNotLastOwner($management, $member);
+                    }
+                    $member->delete();
+                }
+                $invite->status = ManagementInviteStatus::Revoked;
+                $invite->save();
+            });
+
+            $this->realtime->changed($management->id, 'invite', (string) $invite->id, 'cancelled');
+            $this->invalidateNavigationFor((string) $invite->user_id);
+
+            return $invite->refresh()->load('inviter');
+        }
+
+        throw new VtualException(__('api/vtual.management.invite_not_actionable'), 422);
+    }
+
+    public function acceptInvite(User $actor, string $token): ManagementInvite
+    {
+        $invite = $this->findActionableInviteOrFail($actor, $token);
+
+        $accepted = DB::transaction(function () use ($invite, $actor): ManagementInvite {
+            $memberExists = ManagementMember::query()
+                ->where('management_id', $invite->management_id)
+                ->where('user_id', $actor->id)
+                ->exists();
+
+            if (! $memberExists) {
+                ManagementMember::query()->create([
+                    'management_id' => $invite->management_id,
+                    'user_id' => $actor->id,
+                    'role' => $invite->role,
+                ]);
+            }
+
+            $invite->status = ManagementInviteStatus::Accepted;
+            $invite->responded_at = now();
+            $invite->save();
+
+            return $invite->load('management');
+        });
+
+        $this->realtime->changed((string) $accepted->management_id, 'invite', (string) $accepted->id, 'accepted');
+        $this->invalidateNavigationFor((string) $actor->id);
+
+        return $accepted;
+    }
+
+    public function declineInvite(User $actor, string $token): ManagementInvite
+    {
+        $invite = $this->findActionableInviteOrFail($actor, $token);
+
+        $invite->status = ManagementInviteStatus::Declined;
+        $invite->responded_at = now();
+        $invite->save();
+
+        $this->realtime->changed((string) $invite->management_id, 'invite', (string) $invite->id, 'declined');
+
+        return $invite->load('management');
+    }
+
+    /**
+     * Prefill for the SPA respond screen — same guards as accept/decline, no mutation.
+     */
+    public function showInviteByToken(User $actor, string $token): ManagementInvite
+    {
+        $invite = $this->findActionableInviteOrFail($actor, $token);
+
+        return $invite->load('management', 'inviter');
+    }
+
+    /**
+     * Resolve invite by token with pending/expiry + account-match guards (no mutation).
+     */
+    private function findActionableInviteOrFail(User $actor, string $token): ManagementInvite
+    {
+        /** @var ManagementInvite|null $invite */
+        $invite = ManagementInvite::query()->where('token', $token)->first();
+        if ($invite === null) {
+            throw new VtualException(__('api/vtual.management.invite_expired'), 404);
+        }
+
+        if (! $invite->isPending() || $invite->isExpired()) {
+            throw new VtualException(__('api/vtual.management.invite_expired'), 422);
+        }
+
+        if (strcasecmp((string) $invite->email, (string) $actor->email) !== 0) {
+            throw new VtualException(__('api/vtual.management.invite_wrong_account'), 403);
+        }
+
+        return $invite;
+    }
+
+    /**
+     * @param  array{role: string}  $data
+     */
+    public function updateMemberRole(User $actor, string $managementId, string $memberId, array $data): ManagementMember
+    {
+        $management = $this->access->findOrFail($managementId);
+        $this->access->assertCanManageMembers($management, $actor);
+
+        $member = $this->findMemberOrFail($management, $memberId);
+
+        if ((string) $member->user_id === (string) $actor->id) {
+            throw new VtualException(__('api/vtual.management.cannot_edit_self'), 422);
+        }
+
+        $role = ManagementMemberRole::tryFrom((string) ($data['role'] ?? ''));
+        if ($role === null || ! in_array($role, ManagementMemberRole::assignable(), true)) {
+            throw new VtualException(__('api/vtual.management.role_invalid'), 422);
+        }
+
+        if ($member->role === ManagementMemberRole::Owner) {
+            $this->assertNotLastOwner($management, $member);
+        }
+
+        $member->role = $role;
+        $member->save();
+
+        $this->realtime->changed($management->id, 'member', (string) $member->id, 'updated');
+
+        return $member->load('user');
+    }
+
+    // Member removal is unified through cancelInvite (accepted → revoked):
+    // it deletes the membership AND flips the invite status in one transaction.
+
+    private function findMemberOrFail(Management $management, string $memberId): ManagementMember
+    {
+        /** @var ManagementMember|null $member */
+        $member = ManagementMember::query()
+            ->where('management_id', $management->id)
+            ->whereKey($memberId)
+            ->first();
+
+        if ($member === null) {
+            throw new VtualException(__('api/vtual.management.member_not_found'), 404);
+        }
+
+        return $member;
+    }
+
+    private function assertNotLastOwner(Management $management, ManagementMember $target): void
+    {
+        $ownerCount = ManagementMember::query()
+            ->where('management_id', $management->id)
+            ->where('role', ManagementMemberRole::Owner)
+            ->count();
+
+        if ($ownerCount <= 1) {
+            throw new VtualException(__('api/vtual.management.last_owner'), 422);
+        }
     }
 }

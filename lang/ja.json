@@ -204,7 +204,7 @@
                 "resolved": "解決済み"
             }
         },
-        "file-hosting": {
+        "archivd": {
             "blocklist_removed": "ハッシュをブロックリストから削除しました。",
             "blocklist_saved": "ハッシュをブロックリストに追加しました。",
             "browse_success": "一覧を読み込みました。",
@@ -240,7 +240,7 @@
             },
             "public_share_blocked_hash": "このファイルは公開共有できません（コンプライアンスによりブロックされています）。",
             "public_share_not_allowed": "このワークスペース内のアイテムは公開共有できません。",
-            "public_share_requires_paid": "公開リンク共有には有効な有料 File Hosting プランが必要です。",
+            "public_share_requires_paid": "公開リンク共有には有効な有料 Archivd プランが必要です。",
             "quota_exceeded": "ストレージ容量を超えています。",
             "quota_grace_blocked": "サブスクリプションは猶予期間中です。再アップロードするには更新してください。",
             "quota_success": "容量情報を読み込みました。",
@@ -304,7 +304,7 @@
                 "not_found": "ワークスペースが見つかりません。",
                 "owner_in_grace": "ワークスペース所有者は猶予期間中です。共同機能を使うにはプランを更新してください。",
                 "owner_only": "この操作はワークスペース所有者のみ可能です。",
-                "requires_paid": "共同作業ワークスペースには有効な有料 File Hosting プラン（メインまたはアドオン）が必要です。",
+                "requires_paid": "共同作業ワークスペースには有効な有料 Archivd プラン（メインまたはアドオン）が必要です。",
                 "role_updated": "メンバーの役割を更新しました。",
                 "show_success": "ワークスペースを読み込みました。",
                 "slot_limit": "所有チームワークスペースの上限に達しました（:used / :limit）。チームをアーカイブするか、Team Workspace Slot アドオンを購入してください。"
@@ -1772,7 +1772,7 @@
             },
             "view_detail": "表示"
         },
-        "file-hosting": {
+        "archivd": {
             "ajax_error": "操作に失敗しました。",
             "ajax_success": "操作が完了しました。",
             "back": "ファイルに戻る",
@@ -2817,7 +2817,7 @@
                 "ai_balance": "AI分析残高: $:balance · 1アセットあたり約 $:estimate",
                 "buy_ai_credits": "AIクレジットを購入（$5）",
                 "buy_slot": "スロット購入（$1/月）",
-                "slot_desc": "無料のMicrostockワークスペースを有効化し、追加のワークスペーススロットを購入できます。スロットはFile Hostingのチームワークスペースとは別枠です。",
+                "slot_desc": "無料のMicrostockワークスペースを有効化し、追加のワークスペーススロットを購入できます。スロットはArchivdのチームワークスペースとは別枠です。",
                 "title": "Microstock",
                 "usage_balance": "利用状況と残高"
             },
@@ -2860,25 +2860,25 @@
         },
         "settings": {
             "fields": {
-                "file-hosting.allowed_mime_prefixes": "許可MIMEタイププレフィックス",
-                "file-hosting.base_owned_workspace_slots": "基本所有ワークスペーススロット数",
-                "file-hosting.chunk_size_bytes": "アップロードチャンクサイズ（バイト）",
-                "file-hosting.default_quota_bytes": "デフォルトストレージクォータ（バイト）",
-                "file-hosting.disabled_regions": "無効化されたストレージリージョン",
-                "file-hosting.download_vault.enabled": "ダウンロードVaultプロキシ有効",
-                "file-hosting.max_concurrent_parts": "最大同時マルチパート数",
-                "file-hosting.max_concurrent_uploads": "最大同時アップロード数",
-                "file-hosting.max_file_size_bytes": "最大ファイルサイズ（バイト）",
-                "file-hosting.max_files_per_batch": "バッチあたり最大ファイル数",
-                "file-hosting.max_presigned_parts_per_response": "レスポンスあたり最大プリサインドパート数",
-                "file-hosting.multipart_threshold_bytes": "マルチパートアップロード閾値（バイト）",
-                "file-hosting.orphan_inactivity_minutes": "孤立パート非アクティブタイムアウト（分）",
-                "file-hosting.presign_ttl_minutes": "プリサインドURL TTL（分）",
-                "file-hosting.public_download_signature_ttl_minutes": "公開ダウンロード署名TTL（分）",
-                "file-hosting.session_ttl_hours": "アップロードセッションTTL（時間）",
-                "file-hosting.signed_download_cache_margin_seconds": "署名付きダウンロードキャッシュ余裕（秒）",
-                "file-hosting.signed_download_ttl_minutes": "署名付きダウンロードURL TTL（分）",
-                "file-hosting.stale_upload_grace_hours": "停滞アップロード猶予期間（時間）",
+                "archivd.allowed_mime_prefixes": "許可MIMEタイププレフィックス",
+                "archivd.base_owned_workspace_slots": "基本所有ワークスペーススロット数",
+                "archivd.chunk_size_bytes": "アップロードチャンクサイズ（バイト）",
+                "archivd.default_quota_bytes": "デフォルトストレージクォータ（バイト）",
+                "archivd.disabled_regions": "無効化されたストレージリージョン",
+                "archivd.download_vault.enabled": "ダウンロードVaultプロキシ有効",
+                "archivd.max_concurrent_parts": "最大同時マルチパート数",
+                "archivd.max_concurrent_uploads": "最大同時アップロード数",
+                "archivd.max_file_size_bytes": "最大ファイルサイズ（バイト）",
+                "archivd.max_files_per_batch": "バッチあたり最大ファイル数",
+                "archivd.max_presigned_parts_per_response": "レスポンスあたり最大プリサインドパート数",
+                "archivd.multipart_threshold_bytes": "マルチパートアップロード閾値（バイト）",
+                "archivd.orphan_inactivity_minutes": "孤立パート非アクティブタイムアウト（分）",
+                "archivd.presign_ttl_minutes": "プリサインドURL TTL（分）",
+                "archivd.public_download_signature_ttl_minutes": "公開ダウンロード署名TTL（分）",
+                "archivd.session_ttl_hours": "アップロードセッションTTL（時間）",
+                "archivd.signed_download_cache_margin_seconds": "署名付きダウンロードキャッシュ余裕（秒）",
+                "archivd.signed_download_ttl_minutes": "署名付きダウンロードURL TTL（分）",
+                "archivd.stale_upload_grace_hours": "停滞アップロード猶予期間（時間）",
                 "identity.discord.connections_snapshot_max_age_minutes": "Discord接続スナップショット最大有効時間（分）",
                 "microstock.ai.batch_chunk": "AIバッチチャンクサイズ",
                 "microstock.ai.batch_min_files": "AIバッチ最小ファイル数",
@@ -2999,7 +2999,7 @@
             },
             "groups": {
                 "currencies": "通貨",
-                "file_hosting": "File Hosting",
+                "archivd": "Archivd",
                 "microstock": "Microstock",
                 "notification_audiences": "通知オーディエンス",
                 "platform": "プラットフォーム",

@@ -2,8 +2,8 @@
 
 namespace App\Domain\Microstock\Jobs;
 
-use App\Domain\FileHosting\Enums\CollectionStatus;
-use App\Domain\FileHosting\Models\Folder;
+use App\Domain\Archivd\Enums\CollectionStatus;
+use App\Domain\Archivd\Models\Folder;
 use App\Domain\Microstock\Enums\AnalysisPipeline;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;

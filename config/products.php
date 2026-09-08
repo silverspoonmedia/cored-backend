@@ -18,7 +18,7 @@
  *
  *   fulfillment_target => string|null
  *     Maps this product to a Service catalog fulfillment_target
- *     (e.g. 'file_hosting'). Wired in ServiceFulfillmentService so
+ *     (e.g. 'archivd'). Wired in ServiceFulfillmentService so
  *     paid entitlement activations can keep the activation row in
  *     sync. Null when the product has no paid SKU backing.
  *
@@ -32,10 +32,10 @@
  */
 
 return [
-    'FileHosting' => [
+    'Archivd' => [
         'activation_type' => 'implicit',
-        'fulfillment_target' => 'file_hosting',
-        'menu_routes' => ['file-hosting.index'],
+        'fulfillment_target' => 'archivd',
+        'menu_routes' => ['archivd.index'],
     ],
     'Vtual' => [
         'activation_type' => 'implicit',
@@ -55,7 +55,7 @@ return [
         // workspace slots are accounted separately (MicrostockCatalog).
         'fulfillment_target' => 'microstock',
         // No dedicated sidebar menu (removed) — reached via /services and the
-        // File Hosting workspace switcher. Empty menu_routes: nothing to hide.
+        // Archivd workspace switcher. Empty menu_routes: nothing to hide.
         'menu_routes' => [],
     ],
 ];

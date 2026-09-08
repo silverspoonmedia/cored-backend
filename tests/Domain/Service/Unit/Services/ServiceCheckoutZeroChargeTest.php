@@ -33,8 +33,8 @@ class ServiceCheckoutZeroChargeTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $main2 = Service::factory()->fileHostingMain2Tb()->create();
-        $main1 = Service::factory()->fileHostingMain1Tb()->create();
+        $main2 = Service::factory()->archivdMain2Tb()->create();
+        $main1 = Service::factory()->archivdMain1Tb()->create();
         ServicePrice::factory()->usd(15)->create(['service_id' => $main1->id]);
 
         $paid = ServicePurchase::factory()->create([

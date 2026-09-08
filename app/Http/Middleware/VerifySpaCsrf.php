@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\ApiResponder;
 use App\Support\Auth\SpaAuthCookie;
 use App\Support\Auth\SpaCsrf;
 use Closure;
@@ -72,7 +73,9 @@ class VerifySpaCsrf
             || ! is_string($headerToken) || $headerToken === ''
             || ! hash_equals($cookieToken, $headerToken)
         ) {
-            abort(419, __('api/common.spa_csrf_mismatch'));
+            // Return a response (do not abort) so HandleCors can still stamp
+            // Access-Control-Allow-* and the SPA can read the 419 and retry.
+            return ApiResponder::error(__('api/common.spa_csrf_mismatch'), 419);
         }
 
         return $next($request);

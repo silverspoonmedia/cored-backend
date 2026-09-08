@@ -39,6 +39,32 @@ class UserManagementTest extends TestCase
         $this->assertFalse($emails->contains('root@example.com'));
     }
 
+    public function test_query_list_actions_match_spa_visibility(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $moderator = User::factory()->create(['email' => 'mod-actions@example.com']);
+        $moderator->assignRole('Moderator');
+
+        $rows = collect(
+            $this->actingAsJwt($admin)
+                ->getJson('/api/v1/users?display_mode=query')
+                ->assertOk()
+                ->json('data'),
+        );
+
+        $self = $rows->firstWhere('id', $admin->id);
+        $other = $rows->firstWhere('id', $moderator->id);
+
+        $this->assertNotNull($other);
+        $this->assertSame(['edit', 'delete'], collect($other['actions'])->pluck('key')->all());
+        $this->assertSame('users.edit', $other['actions'][0]['route']);
+        $this->assertSame('users/'.$moderator->id, $other['actions'][1]['path']);
+
+        if ($self !== null) {
+            $this->assertSame(['edit'], collect($self['actions'])->pluck('key')->all());
+        }
+    }
+
     public function test_admin_can_view_peer_admin_detail(): void
     {
         $admin = $this->userWithRole('Admin');

@@ -118,7 +118,7 @@ class BatchController extends Controller
 
         // Forward the caller identity — never forward Cookie (Blade) so the
         // batch cannot smuggle a second session into an API-only request.
-        foreach (['authorization', 'accept', 'accept-language', 'x-requested-with', 'x-spa-origin', 'x-spa-client-ip', 'x-forwarded-for', 'x-forwarded-proto'] as $header) {
+        foreach (['authorization', 'accept', 'accept-language', 'x-requested-with', 'x-spa-origin', 'x-spa-locale', 'x-spa-client-ip', 'x-forwarded-for', 'x-forwarded-proto'] as $header) {
             $value = $parent->headers->get($header);
             if ($value !== null && $value !== '') {
                 $sub->headers->set($header, $value);

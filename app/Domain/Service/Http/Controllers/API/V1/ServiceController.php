@@ -18,6 +18,8 @@ use App\Domain\Service\Services\ServiceCheckoutService;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ListActions\Builders\ServiceQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
@@ -30,6 +32,7 @@ class ServiceController extends Controller
     public function __construct(
         private readonly ServiceCatalogService $catalog,
         private readonly ServiceCheckoutService $checkout,
+        private readonly ServiceQueryRowActions $queryRowActions,
     ) {}
 
     public function index(IndexServiceRequest $request): JsonResponse
@@ -41,7 +44,12 @@ class ServiceController extends Controller
         return $this->respondToQueryList(
             $request,
             $services,
-            fn ($list) => $this->resolveResource(ServiceResource::collection($list)),
+            fn ($list) => QueryRowActionAttacher::attach(
+                $this->resolveResource(ServiceResource::collection($list)),
+                $list,
+                $this->queryRowActions,
+                $request->user(),
+            ),
             __('api/services.list_success'),
         );
     }

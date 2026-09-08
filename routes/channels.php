@@ -1,9 +1,10 @@
 <?php
 
-use App\Domain\FileHosting\Services\WorkspaceAccessService;
+use App\Domain\Archivd\Services\WorkspaceAccessService;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Support\InvoiceChannelAuthorizer;
+use App\Domain\Service\Models\ServicePurchase;
 use App\Domain\Vtual\Models\CreatorClaim;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -11,17 +12,17 @@ Broadcast::channel('App.Models.User.{id}', function (User $user, string $id): bo
     return $user->id === $id;
 });
 
-Broadcast::channel('file-hosting.user.{userId}', function (User $user, string $userId): bool {
+Broadcast::channel('archivd.user.{userId}', function (User $user, string $userId): bool {
     return $user->id === $userId;
 });
 
-Broadcast::channel('file-hosting.workspace.{workspaceId}', function (User $user, string $workspaceId): bool {
+Broadcast::channel('archivd.workspace.{workspaceId}', function (User $user, string $workspaceId): bool {
     try {
         $access = app(WorkspaceAccessService::class);
         $workspace = $access->findOrFail($workspaceId);
 
         return $access->canView($workspace, $user);
-    } catch (\Throwable) {
+    } catch (Throwable) {
         return false;
     }
 });
@@ -35,7 +36,7 @@ Broadcast::channel('payments.invoice.{invoiceId}', function (User $user, string 
         }
 
         return app(InvoiceChannelAuthorizer::class)->canSubscribe($user, $invoice);
-    } catch (\Throwable) {
+    } catch (Throwable) {
         return false;
     }
 });
@@ -51,6 +52,24 @@ Broadcast::channel('vtual.claim.{claimId}', function (User $user, string $claimI
         ->exists();
 });
 
+Broadcast::channel('vtual.platform-credentials', function (User $user): bool {
+    return $user->can('view vtual platform credentials');
+});
+
+Broadcast::channel('vtual.creator.{creatorId}', function (User $user, string $creatorId): bool {
+    $creator = \App\Domain\Vtual\Models\Creator::query()->find($creatorId);
+
+    return $creator !== null
+        && app(\App\Domain\Vtual\Services\CreatorAccessService::class)->canView($creator, $user);
+});
+
+Broadcast::channel('vtual.management.{managementId}', function (User $user, string $managementId): bool {
+    $management = \App\Domain\Vtual\Models\Management::query()->find($managementId);
+
+    return $management !== null
+        && app(\App\Domain\Vtual\Services\ManagementAccessService::class)->canView($management, $user);
+});
+
 Broadcast::channel('navigation.menus', function (User $user): bool {
     return $user->can('view menu');
 });
@@ -60,7 +79,7 @@ Broadcast::channel('services.catalog', function (User $user): bool {
 });
 
 Broadcast::channel('services.purchase.{purchaseId}', function (User $user, string $purchaseId): bool {
-    return \App\Domain\Service\Models\ServicePurchase::query()
+    return ServicePurchase::query()
         ->whereKey($purchaseId)
         ->where('user_id', $user->id)
         ->exists();

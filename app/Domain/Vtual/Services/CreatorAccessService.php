@@ -2,11 +2,15 @@
 
 namespace App\Domain\Vtual\Services;
 
+
+use Illuminate\Support\Facades\DB;
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\CreatorMemberRole;
+use App\Domain\Vtual\Enums\ManagementMemberRole;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Models\CreatorMember;
+use App\Domain\Vtual\Models\ManagementMember;
 
 class CreatorAccessService
 {
@@ -15,12 +19,11 @@ class CreatorAccessService
         return Creator::query()->findOrFail($creatorId);
     }
 
-    public function roleFor(Creator $creator, User $actor): ?CreatorMemberRole
+    /**
+     * Membership row only — does not treat staff as Owner.
+     */
+    public function memberRoleFor(Creator $creator, User $actor): ?CreatorMemberRole
     {
-        if ($actor->can('manage any vtual resource')) {
-            return CreatorMemberRole::Owner;
-        }
-
         /** @var CreatorMember|null $member */
         $member = CreatorMember::query()
             ->where('creator_id', $creator->id)
@@ -30,6 +33,40 @@ class CreatorAccessService
         return $member?->role;
     }
 
+    /**
+     * Management role over this creator via an ACTIVE assignment
+     * (vtual_management_creators, left_at null) plus membership in that
+     * management (members are removed physically, so any row is live).
+     */
+    public function managementRoleForCreator(Creator $creator, User $actor): ?ManagementMemberRole
+    {
+        $managementIds = DB::table('vtual_management_creators')
+            ->where('creator_id', $creator->id)
+            ->whereNull('left_at')
+            ->pluck('management_id');
+
+        if ($managementIds->isEmpty()) {
+            return null;
+        }
+
+        /** @var ManagementMember|null $member */
+        $member = ManagementMember::query()
+            ->whereIn('management_id', $managementIds)
+            ->where('user_id', $actor->id)
+            ->first();
+
+        return $member?->role;
+    }
+
+    public function roleFor(Creator $creator, User $actor): ?CreatorMemberRole
+    {
+        if ($actor->can('manage any vtual resource')) {
+            return CreatorMemberRole::Owner;
+        }
+
+        return $this->memberRoleFor($creator, $actor);
+    }
+
     public function canView(Creator $creator, User $actor): bool
     {
         if ($actor->can('view any vtual resource') || $actor->can('manage any vtual resource')) {
@@ -37,8 +74,13 @@ class CreatorAccessService
         }
 
         $role = $this->roleFor($creator, $actor);
+        if ($role !== null && $role->canView()) {
+            return true;
+        }
 
-        return $role !== null && $role->canView();
+        // Active management assignment: any member role may view the linked
+        // creator profile (Owner/Admin mutate below, Staff view-only).
+        return $this->managementRoleForCreator($creator, $actor) !== null;
     }
 
     public function canMutate(Creator $creator, User $actor): bool
@@ -48,8 +90,15 @@ class CreatorAccessService
         }
 
         $role = $this->roleFor($creator, $actor);
+        if ($role !== null && $role->canMutate()) {
+            return true;
+        }
 
-        return $role !== null && $role->canMutate();
+        // Management Owner/Admin may edit linked creator profiles; Staff may not.
+        $managementRole = $this->managementRoleForCreator($creator, $actor);
+
+        return $managementRole === ManagementMemberRole::Owner
+            || $managementRole === ManagementMemberRole::Admin;
     }
 
     public function canManageMembers(Creator $creator, User $actor): bool

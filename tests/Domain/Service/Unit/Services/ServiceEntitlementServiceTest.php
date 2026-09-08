@@ -30,7 +30,7 @@ class ServiceEntitlementServiceTest extends TestCase
         $user = User::factory()->create();
         $catalog = Service::factory()->create([
             'billing_interval' => BillingInterval::Once,
-            'fulfillment_target' => 'file_hosting',
+            'fulfillment_target' => 'archivd',
             'entitlement' => 'storage_quota',
         ]);
         $purchase = ServicePurchase::factory()->pending()->create([
@@ -52,7 +52,7 @@ class ServiceEntitlementServiceTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMain1Tb()->create();
+        $catalog = Service::factory()->ArchivdMain1Tb()->create();
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $catalog->id,
@@ -77,7 +77,7 @@ class ServiceEntitlementServiceTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMain1Tb()->create();
+        $catalog = Service::factory()->ArchivdMain1Tb()->create();
         $first = ServicePurchase::factory()->create([
             'user_id' => $user->id,
             'service_id' => $catalog->id,
@@ -109,7 +109,7 @@ class ServiceEntitlementServiceTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $catalog = Service::factory()->fileHostingMain1Tb()->create();
+        $catalog = Service::factory()->ArchivdMain1Tb()->create();
         $first = ServicePurchase::factory()->create([
             'user_id' => $user->id,
             'service_id' => $catalog->id,

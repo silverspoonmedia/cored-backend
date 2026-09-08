@@ -2,13 +2,13 @@
 
 namespace Tests\Domain\Microstock\Unit\Services;
 
-use App\Domain\FileHosting\Enums\FileVariantKind;
-use App\Domain\FileHosting\Enums\FileVariantStatus;
-use App\Domain\FileHosting\Models\FileVariant;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Services\FileVariantGenerator;
-use App\Domain\FileHosting\Services\FileVariantService;
-use App\Domain\FileHosting\Services\SignedDownloadService;
+use App\Domain\Archivd\Enums\FileVariantKind;
+use App\Domain\Archivd\Enums\FileVariantStatus;
+use App\Domain\Archivd\Models\FileVariant;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Services\FileVariantGenerator;
+use App\Domain\Archivd\Services\FileVariantService;
+use App\Domain\Archivd\Services\SignedDownloadService;
 use App\Domain\Microstock\Services\AssetResizeService;
 use App\Domain\Microstock\Services\VisionImageResolver;
 use Illuminate\Support\Str;

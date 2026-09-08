@@ -11,7 +11,7 @@
  * Production stack (probe-verified 2026-07-28) — map aliases in 9Router / Open WebUI:
  *   internal.vision   → anthropic/claude-sonnet-5
  *   internal.thinking → gpt-5.6 (resolves gpt-5.6-luna)
- * Details: docs/domains/microstock/probes/sonnet5_gpt56_combo_summary.md
+ * Details: docs/archive/microstock-probes/sonnet5_gpt56_combo_summary.md
  */
 return [
     // Dual-lane pipeline queues (see docs/domains/microstock/README.md#operations-queue-worker).

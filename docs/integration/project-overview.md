@@ -38,7 +38,7 @@ The SPA is an **API-consumer** — no business logic lives in the frontend. All 
 | Auth | JWT (`php-open-source-saver/jwt-auth`), TOTP 2FA (`pragmarx/google2fa-laravel`), Spatie RBAC with hierarchical roles (H-RBAC) |
 | Realtime | Pusher (`pusher/pusher-php-server`) + Laravel Echo |
 | Config | `.env` for secrets/infra, `system_settings` (plaintext) for operational knobs, envelope encryption for product-domain secrets |
-| i18n | `en` / `id` / `ja` |
+| i18n | Supported locales: [platform/localization.md](../platform/localization.md) |
 | Storage | MySQL/PostgreSQL, S3-compatible via Flysystem |
 
 ### Web stack (server endpoints only)
@@ -56,9 +56,9 @@ Leading Vue 3 SPA frontend. Separate project from this Laravel backend; consumes
 | API | Same `/api/v1/*` endpoints — no business logic in SPA |
 | Auth | Cross-site HttpOnly `__Host-spa_jwt` on the API origin (Laravel-minted). JS does not store the JWT; direct data calls use `credentials: 'include'` + double-submit `X-CSRF-Token`. Versioned API calls also carry public `X-SPA-Origin: 1`; `RequireSpaRequestHeader` rejects missing/invalid markers while `OPTIONS` and provider webhooks stay reachable. `RequireSpaOrigin` remains audit-only. Cloudflare Tunnel (external config) protects origin reachability; it does not prove that a request came from the official SPA. |
 | Broadcast auth | `POST /api/v1/broadcasting/auth` under `auth:api` middleware |
-| Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), covering shell bootstrap, File Hosting browse/workspace detail, navigation and notification edit, users, services, payments, inference, microstock, and vTual multi-fetch views; Worker cache headers on reference-data GETs, JWT TTL 240 min — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
+| Invocation budget | `POST /api/v1/batch` read-only fan-in (≤10 sub-requests), covering shell bootstrap, Archivd browse/workspace detail, navigation and notification edit, users, services, payments, inference, microstock, and vTual multi-fetch views; Worker cache headers on reference-data GETs, JWT TTL 240 min — see [vue-workers-spa.md — Invocation budget controls](vue-workers-spa.md#invocation-budget-controls) |
 | Type alignment | TS types in `src/api/types.ts` match Laravel API Resources exactly — snake_case, no transform layer |
-| i18n | `vue-i18n` (`en` / `id` / `ja`) JSON locales converted from Laravel PHP lang files; parity and hardcoded-fallback guards run with `npm run check:i18n`; generic API errors use locale keys and server messages remain preferred |
+| i18n | `vue-i18n` JSON locales converted from Laravel PHP lang files (locale list: [platform/localization.md](../platform/localization.md)); parity and hardcoded-fallback guards run with `npm run check:i18n`; native locale labels come from `LOCALE_LABELS`; SPA `zh-CN` maps to backend `zh_CN`; Arabic sets `html[dir="rtl"]` and other locales force `ltr` (direction-split vendor CSS `main-rtl.css`/`vendor-rtl.css` + reload-on-direction-change, see [vue-workers-spa.md](vue-workers-spa.md)); generic API errors use locale keys and server messages remain preferred |
 | UI | AdminLTE 4 / Bootstrap 5 / jQuery / Select2 (ported from former Blade admin) |
 | Realtime | Laravel Echo + Pusher only — no polling fallback. Echo auto-reconnect is the recovery path; on reconnect the SPA fires a resync bus (re-pulls unread count + registered listings) |
 
@@ -75,7 +75,7 @@ Backend `AuthService::refreshFromToken` preserves the `remember` flag via the `r
 Two live-update patterns:
 
 - **Pattern A — Bell-driven listing reload:** `UserActivityNotificationReceived` on `App.Models.User.{id}` carries a `table_id`; the bell forwards it to `useListingReload` registry; registered listing views refetch. Active on `UsersView` (`users-table`), `InferenceModelCardsView` (`inference-model-cards-table`).
-- **Pattern B — Direct channel subscription:** domain-specific private channels via singleton composables — `useFileHostingRealtime.ts` (6 events on `file-hosting.user.{userId}`), `usePaymentRealtime.ts` (invoice status + routing catalog), vTual claim inline.
+- **Pattern B — Direct channel subscription:** domain-specific private channels via singleton composables — `useArchivdRealtime.ts` (6 events on `archivd.user.{userId}`), `usePaymentRealtime.ts` (invoice status + routing catalog), vTual claim inline.
 
 See [vue-workers-spa.md — Realtime](vue-workers-spa.md#realtime) for full channel inventory.
 
@@ -87,7 +87,7 @@ Menu rows store **SPA Vue Router symbolic route names** (e.g. `dashboard`, `user
 
 | Variable | Monolith | Vue-Workers |
 |----------|----------|-------------|
-| `SPA_URL` | Redirect target for `/`, share links, payment return, OAuth callback | SPA origin |
+| `SPA_URL` | Redirect target for `/`, share links, payment return, OAuth callback — minting matrix: [vue-workers-spa — Production URL minting](vue-workers-spa.md#production-url-minting-spa_url) | SPA origin |
 | `APP_URL` | API origin (JWT cookie domain) | `VITE_API_BASE_URL` target |
 
 See [vue-workers-spa.md](vue-workers-spa.md) for the full contract.

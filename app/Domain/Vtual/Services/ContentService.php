@@ -75,6 +75,8 @@ class ContentService
                 'ended_at' => $data['ended_at'] ?? null,
                 'published_at' => $data['published_at'] ?? null,
                 'hydrated_at' => now(),
+                // Re-available: a successful hydrate clears any tombstone.
+                'first_unavailable_at' => null,
             ];
 
             if ($content === null) {
@@ -89,7 +91,7 @@ class ContentService
             $this->syncPrimaryAppearance($content, $lockedChannel);
 
             return $content->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $content;
-        });
+        }, 3);
     }
 
     /**
@@ -152,7 +154,64 @@ class ContentService
             $this->syncPrimaryAppearance($content, $lockedChannel);
 
             return $content->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $content;
-        });
+        }, 3);
+    }
+
+    /**
+     * Tombstone: platform no longer returns this id (deleted / private).
+     * Idempotent — first_unavailable_at is set only on the first mark.
+     */
+    public function markUnavailable(Channel $primaryChannel, string $externalId): void
+    {
+        $externalId = trim($externalId);
+        if ($externalId === '') {
+            return;
+        }
+
+        DB::transaction(function () use ($primaryChannel, $externalId): void {
+            $content = Content::query()
+                ->where('platform_id', $primaryChannel->platform_id)
+                ->where('external_id', $externalId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($content === null) {
+                return;
+            }
+
+            $content->forceFill([
+                'status' => ContentStatus::Unavailable,
+                'first_unavailable_at' => $content->first_unavailable_at ?? now(),
+            ])->save();
+        }, 3);
+    }
+
+    /**
+     * End every live content row of a channel (Twitch stream.offline / poll
+     * backstop). Idempotent — already-ended rows are not touched and never
+     * overwrite an existing ended_at.
+     */
+    public function endLiveStreamsForChannel(Channel $primaryChannel): int
+    {
+        return (int) DB::transaction(function () use ($primaryChannel): int {
+            $liveRows = Content::query()
+                ->where('platform_id', $primaryChannel->platform_id)
+                ->where('channel_id', $primaryChannel->id)
+                ->where('type', ContentType::Live)
+                ->where('status', ContentStatus::Live)
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($liveRows as $content) {
+                $content->forceFill([
+                    'type' => ContentType::Archive,
+                    'status' => ContentStatus::Ended,
+                    'ended_at' => $content->ended_at ?? now(),
+                ])->save();
+            }
+
+            return $liveRows->count();
+        }, 3);
     }
 
     /**
@@ -343,6 +402,7 @@ class ContentService
                     ->orWhereHas('appearances', fn ($a) => $a->where('creator_id', $creatorId));
             })
             ->whereDoesntHave('channel', fn ($q) => $q->where('status', ChannelStatus::Archived))
+            ->where('status', '!=', ContentStatus::Unavailable)
             ->with(['channel', 'creator', 'platform', 'appearances'])
             ->orderByRaw(
                 'CASE WHEN type = ? AND status = ? THEN 0 ELSE 1 END',
@@ -369,6 +429,7 @@ class ContentService
                     ->orWhereHas('appearances', fn ($a) => $a->where('creator_id', $creatorId));
             })
             ->whereDoesntHave('channel', fn ($q) => $q->where('status', ChannelStatus::Archived))
+            ->where('status', '!=', ContentStatus::Unavailable)
             ->with(['channel', 'creator', 'platform', 'appearances'])
             ->orderByRaw(
                 'CASE WHEN type = ? AND status = ? THEN 0 ELSE 1 END',

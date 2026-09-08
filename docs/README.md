@@ -22,15 +22,17 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 |----------|-------|
 | [architecture.md](platform/architecture.md) | Logical monorepo, kind core\|product + locked lifecycle, routes, namespaces |
 | [api-routing.md](platform/api-routing.md) | Global vs versioned API |
+| [api-envelope.md](platform/api-envelope.md) | Canonical JSON envelope (`status`/`message`/`data`), error mapping (401/403/404/419/422/429), `/batch` partial-failure contract |
+| [commands.md](platform/commands.md) | Artisan command index (env, domains, payments, vtual, microstock, cache, i18n) |
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
-| [list-display-modes.md](platform/list-display-modes.md) | `display_mode` list contract, `/api/v1/lookups/*`, retained-but-unused Yajra datatable mode |
+| [list-display-modes.md](platform/list-display-modes.md) | `display_mode` list contract, query-mode `actions[]` (live SPA row buttons), `/api/v1/lookups/*`, retained-but-unused Yajra datatable mode |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
 | [environment.md](platform/environment.md) | `.env` profiles, typed quoting, assignment-key parity, `env:curate`, config cache |
 | [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, Tier B settings cache contract, agent checklist |
 | [cache-policy.md](platform/cache-policy.md) | Project-wide forever Cache + invalidate; driver-agnostic; exceptions |
 | [api-aggregation.md](platform/api-aggregation.md) | Aggregation rules: standalone-first, SPA-only, backend fan-in via `/batch`; gate condition |
 | [settings.md](platform/settings.md) | Runtime operational settings (Web UI + DB overrides) |
-| [localization.md](platform/localization.md) | Backend `en` / `id` / `ja` rules, parity, and locale resolution; SPA guard: `monolith-vue-workers/npm run check:i18n` |
+| [localization.md](platform/localization.md) | Backend multi-locale rules (canonical supported-locale list, parity, locale resolution); SPA guard: `monolith-vue-workers/npm run check:i18n` |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |
 | [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization** |
@@ -45,12 +47,12 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Notification | [domains/notification/README.md](domains/notification/README.md) — bell, role vs user |
 | ActivityLog | [domains/activity-log/README.md](domains/activity-log/README.md) — Spatie audit trail |
 | ErrorLog | [domains/error-log/README.md](domains/error-log/README.md) — grouped persistent app errors |
-| PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) |
-| Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, FH grace/purge (core domain) |
+| PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) · routing policy [Routing_Rules.md](domains/payment-gateway/Routing_Rules.md) + [Routing_Price.yaml](domains/payment-gateway/Routing_Price.yaml) |
+| Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, Archivd grace/purge (core domain) |
 | Inference | [domains/inference/README.md](domains/inference/README.md) — AI model catalog, provider model rates, per-usage rate snapshots (core domain) |
-| File Hosting | [domains/file-hosting/README.md](domains/file-hosting/README.md) — nested folders, multi-disk S3, Gateway hybrid upload (25 MB parts, `gateway.silverspoon.me`), paid link share, collab workspaces, live listing via SPA (product, locked) |
-| vTual | [domains/vtual/README.md](domains/vtual/README.md) — creator aggregator (product, locked); public SPA `/vtual` + `/vtual/vtubers/{slug}`; authenticated SPA screens: orphans + platform-credentials + profiles manage + vtuber hub + read profile; naming [naming-conventions.md](domains/vtual/naming-conventions.md); progress [implementation-status.md](domains/vtual/implementation-status.md); ops [youtube-stability-assessment-2026-08-07.md](domains/vtual/ops/youtube-stability-assessment-2026-08-07.md); legacy audit [archive/vtual-legacy-audit.md](archive/vtual-legacy-audit.md) |
-| Microstock | [domains/microstock/README.md](domains/microstock/README.md) — microstock asset mgmt on FH system workspace: AI metadata, prepaid AI billing + usage/balance UI (ledger, usage detail, admin platform tab), CSV export, encrypted marketplace creds (product, locked) |
+| Archivd | [domains/archivd/README.md](domains/archivd/README.md) — nested folders, multi-disk S3, Gateway hybrid upload (25 MB parts, `gateway.silverspoon.me`), paid link share, collab workspaces, live listing via SPA (product, locked) |
+| vTual | [domains/vtual/README.md](domains/vtual/README.md) — creator aggregator (product, locked); public SPA `/vtual` + `/vtual/vtubers/{slug}`; authenticated SPA screens: orphans + platform-credentials + profiles manage + vtuber hub + read profile; naming [naming-conventions.md](domains/vtual/naming-conventions.md); progress [implementation-status.md](domains/vtual/implementation-status.md); ops [archive/vtual-youtube-stability-assessment-2026-08-07.md](archive/vtual-youtube-stability-assessment-2026-08-07.md); legacy audit [archive/vtual-legacy-audit.md](archive/vtual-legacy-audit.md) |
+| Microstock | [domains/microstock/README.md](domains/microstock/README.md) — microstock asset mgmt on Archivd system workspace: AI metadata, prepaid AI billing + usage/balance UI (ledger, usage detail, admin platform tab), CSV export, encrypted marketplace creds (product, locked) |
 | Product Activations | [domains/product-activations/README.md](domains/product-activations/README.md) — kernel runtime-access registry for product domains |
 | Domain Access | [domains/domain-access/README.md](domains/domain-access/README.md) — kernel Public/Private visibility gate + Beta tester roles for product domains |
 
@@ -73,7 +75,7 @@ The browser UI lives in the sibling SPA. These three are kept for history only �
 
 ## Archive (not daily reading)
 
-Historical assessments and one-shot audits: [archive/](archive/). Prefer living docs above. Archive files may mention a former three-repo workflow; that model is dissolved — use living guides for current behavior.
+Historical assessments and one-shot audits: [archive/](archive/) — includes [archive/microstock-probes/](archive/microstock-probes/) (AI probe summaries) and archived vTual assessments. Prefer living docs above. Archive files may mention a former three-repo workflow; that model is dissolved — use living guides for current behavior.
 
 ## Rules for new documentation (mandatory)
 

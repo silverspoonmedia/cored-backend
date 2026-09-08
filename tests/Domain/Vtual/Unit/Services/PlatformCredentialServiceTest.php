@@ -5,6 +5,8 @@ namespace Tests\Domain\Vtual\Unit\Services;
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
+use App\Domain\Vtual\Events\PlatformCredentialChanged;
+use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Services\PlatformCredentialService;
 use App\Domain\Vtual\Services\PlatformService;
@@ -12,6 +14,7 @@ use App\Support\Encryption\EncryptedEnvelope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
@@ -126,7 +129,7 @@ class PlatformCredentialServiceTest extends TestCase
         ]);
         $credential->forceFill(['status' => PlatformCredentialStatus::Active])->save();
 
-        $this->expectException(\App\Domain\Vtual\Exceptions\VtualException::class);
+        $this->expectException(VtualException::class);
         $this->service->delete($credential);
     }
 
@@ -283,6 +286,9 @@ class PlatformCredentialServiceTest extends TestCase
             'secret' => ['api_key' => 'yt-key-test-aaaa'],
         ]);
 
+        Event::fake([PlatformCredentialChanged::class]);
+        $this->enableBroadcast();
+
         $result = $this->service->test($credential);
         $this->assertTrue($result->ok);
         $this->assertSame('youtube', $result->platformKey);
@@ -293,6 +299,12 @@ class PlatformCredentialServiceTest extends TestCase
         $this->assertFalse($fresh->hasRuntimePayload());
         $this->assertNull($fresh->last_error_message);
         $this->assertSame($fresh->id, $this->service->pickActive($this->youtube)?->id);
+
+        Event::assertDispatched(PlatformCredentialChanged::class, function (PlatformCredentialChanged $e) use ($credential): bool {
+            return $e->action === 'tested'
+                && $e->credentialId === (string) $credential->id
+                && $e->status === PlatformCredentialStatus::Active->value;
+        });
     }
 
     #[Test]
@@ -311,6 +323,9 @@ class PlatformCredentialServiceTest extends TestCase
             'secret' => ['api_key' => 'bad-key-zzzz'],
         ]);
 
+        Event::fake([PlatformCredentialChanged::class]);
+        $this->enableBroadcast();
+
         $result = $this->service->test($credential);
         $this->assertFalse($result->ok);
 
@@ -319,6 +334,12 @@ class PlatformCredentialServiceTest extends TestCase
         $this->assertNull($fresh->verified_at);
         $this->assertNotNull($fresh->last_error_at);
         $this->assertStringContainsString('API key not valid', (string) $fresh->last_error_message);
+
+        Event::assertDispatched(PlatformCredentialChanged::class, function (PlatformCredentialChanged $e) use ($credential): bool {
+            return $e->action === 'test_failed'
+                && $e->credentialId === (string) $credential->id
+                && $e->status === PlatformCredentialStatus::Pending->value;
+        });
     }
 
     #[Test]
@@ -424,6 +445,20 @@ class PlatformCredentialServiceTest extends TestCase
             ->get()
             ->filter(fn (Activity $a): bool => ($a->properties['resource_id'] ?? null) === $resourceId)
             ->count();
+    }
+
+    private function enableBroadcast(): void
+    {
+        config([
+            'broadcasting.default' => 'pusher',
+            'broadcasting.connections.pusher' => [
+                'driver' => 'pusher',
+                'key' => 'key',
+                'secret' => 'secret',
+                'app_id' => 'app',
+                'options' => ['cluster' => 'ap1', 'port' => 443, 'scheme' => 'https'],
+            ],
+        ]);
     }
 
     private function userWithRole(string $role): User

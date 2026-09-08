@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Identity\Enums\OAuthProvider;
 use App\Domain\Identity\Http\Controllers\API\V1\AdminController;
 use App\Domain\Identity\Http\Controllers\API\V1\Auth\AuthController;
 use App\Domain\Identity\Http\Controllers\API\V1\Auth\DiscordOAuthController;
@@ -72,8 +73,13 @@ Route::get('csrf', [SpaCsrfController::class, 'show'])
 Route::middleware('auth:api')->group(function (): void {
     Route::get('profile/connections', [ProfileConnectionsController::class, 'show'])
         ->name('profile.connections.show');
-    Route::delete('profile/connections/discord', [ProfileConnectionsController::class, 'disconnectDiscord'])
-        ->name('profile.connections.discord.disconnect');
+    Route::post('profile/connections/{oauth_provider}/sync', [ProfileConnectionsController::class, 'sync'])
+        ->whereIn('oauth_provider', OAuthProvider::values())
+        ->middleware('throttle:10,1')
+        ->name('profile.connections.sync');
+    Route::delete('profile/connections/{oauth_provider}', [ProfileConnectionsController::class, 'disconnect'])
+        ->whereIn('oauth_provider', OAuthProvider::values())
+        ->name('profile.connections.disconnect');
 
     Route::get('users/assignable-roles', [UserController::class, 'assignableRoles'])
         ->name('users.assignable-roles');

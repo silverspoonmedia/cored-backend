@@ -122,19 +122,19 @@ class S3DirectUploadEngineTest extends TestCase
     #[Test]
     public function default_config_chunk_and_threshold_are_eight_mib(): void
     {
-        $this->assertSame(8 * 1024 * 1024, (int) config('file-hosting.chunk_size_bytes'));
-        $this->assertSame(8 * 1024 * 1024, (int) config('file-hosting.multipart_threshold_bytes'));
+        $this->assertSame(8 * 1024 * 1024, (int) config('archivd.chunk_size_bytes'));
+        $this->assertSame(8 * 1024 * 1024, (int) config('archivd.multipart_threshold_bytes'));
     }
 
     #[Test]
     public function upload_proxy_disabled_when_base_url_empty(): void
     {
         config([
-            'file-hosting.upload_proxy.base_url' => '',
-            'file-hosting.upload_proxy.token' => 'token-long-enough',
-            'file-hosting.upload_proxy.disk_targets' => [
-                's3FileHostingCe' => 'b2-main',
-                's3FileHostingCe' => 'b2-main',
+            'archivd.upload_proxy.base_url' => '',
+            'archivd.upload_proxy.token' => 'token-long-enough',
+            'archivd.upload_proxy.disk_targets' => [
+                's3ArchivdCe' => 'b2-main',
+                's3ArchivdCe' => 'b2-main',
             ],
         ]);
 
@@ -145,18 +145,18 @@ class S3DirectUploadEngineTest extends TestCase
     public function proxy_upload_parts_builds_worker_urls_and_auth_headers(): void
     {
         config([
-            'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
-            'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
-            'file-hosting.upload_proxy.disk_targets' => [
-                's3FileHostingCe' => 'b2-main',
+            'archivd.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
+            'archivd.upload_proxy.token' => 'strong-upload-token-16',
+            'archivd.upload_proxy.disk_targets' => [
+                's3ArchivdCe' => 'b2-main',
             ],
         ]);
 
         $this->assertTrue($this->engine->isUploadProxyEnabled());
 
         $parts = $this->engine->proxyUploadParts(
-            's3FileHostingCe',
-            'file-hosting/user-id/upload-id/abc123.bin',
+            's3ArchivdCe',
+            'archivd/user-id/upload-id/abc123.bin',
             S3DirectUploadEngine::STRATEGY_MULTIPART,
             'application/pdf',
             's3-upload-id-xyz',
@@ -166,11 +166,11 @@ class S3DirectUploadEngineTest extends TestCase
         $this->assertCount(2, $parts);
         $this->assertSame(1, $parts[0]['part_number']);
         $this->assertSame(
-            'https://proxy.example.workers.dev/uploader/b2-main/file-hosting/user-id/upload-id/abc123.bin?partNumber=1&uploadId=s3-upload-id-xyz',
+            'https://proxy.example.workers.dev/uploader/b2-main/archivd/user-id/upload-id/abc123.bin?partNumber=1&uploadId=s3-upload-id-xyz',
             $parts[0]['url'],
         );
         $this->assertSame(
-            'https://proxy.example.workers.dev/uploader/b2-main/file-hosting/user-id/upload-id/abc123.bin?partNumber=2&uploadId=s3-upload-id-xyz',
+            'https://proxy.example.workers.dev/uploader/b2-main/archivd/user-id/upload-id/abc123.bin?partNumber=2&uploadId=s3-upload-id-xyz',
             $parts[1]['url'],
         );
         $this->assertSame(['Bearer strong-upload-token-16'], $parts[0]['headers']['Authorization']);
@@ -182,16 +182,16 @@ class S3DirectUploadEngineTest extends TestCase
     public function proxy_upload_parts_single_strategy_omits_multipart_query(): void
     {
         config([
-            'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev/',
-            'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
-            'file-hosting.upload_proxy.disk_targets' => [
-                's3FileHostingCe' => 'b2-main',
+            'archivd.upload_proxy.base_url' => 'https://proxy.example.workers.dev/',
+            'archivd.upload_proxy.token' => 'strong-upload-token-16',
+            'archivd.upload_proxy.disk_targets' => [
+                's3ArchivdCe' => 'b2-main',
             ],
         ]);
 
         $parts = $this->engine->proxyUploadParts(
-            's3FileHostingCe',
-            'file-hosting/u/up/obj.bin',
+            's3ArchivdCe',
+            'archivd/u/up/obj.bin',
             S3DirectUploadEngine::STRATEGY_SINGLE,
             'image/png',
             null,
@@ -200,7 +200,7 @@ class S3DirectUploadEngineTest extends TestCase
 
         $this->assertCount(1, $parts);
         $this->assertSame(
-            'https://proxy.example.workers.dev/uploader/b2-main/file-hosting/u/up/obj.bin',
+            'https://proxy.example.workers.dev/uploader/b2-main/archivd/u/up/obj.bin',
             $parts[0]['url'],
         );
     }
@@ -209,10 +209,10 @@ class S3DirectUploadEngineTest extends TestCase
     public function proxy_upload_parts_fails_closed_when_token_missing(): void
     {
         config([
-            'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
-            'file-hosting.upload_proxy.token' => '',
-            'file-hosting.upload_proxy.disk_targets' => [
-                's3FileHostingCe' => 'b2-main',
+            'archivd.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
+            'archivd.upload_proxy.token' => '',
+            'archivd.upload_proxy.disk_targets' => [
+                's3ArchivdCe' => 'b2-main',
             ],
         ]);
 
@@ -220,8 +220,8 @@ class S3DirectUploadEngineTest extends TestCase
         $this->expectExceptionMessage(S3DirectUploadException::PROXY_MISCONFIGURED);
 
         $this->engine->proxyUploadParts(
-            's3FileHostingCe',
-            'file-hosting/a.bin',
+            's3ArchivdCe',
+            'archivd/a.bin',
             S3DirectUploadEngine::STRATEGY_SINGLE,
             'text/plain',
             null,
@@ -233,17 +233,17 @@ class S3DirectUploadEngineTest extends TestCase
     public function proxy_upload_parts_fails_closed_when_disk_alias_missing(): void
     {
         config([
-            'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
-            'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
-            'file-hosting.upload_proxy.disk_targets' => [],
+            'archivd.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
+            'archivd.upload_proxy.token' => 'strong-upload-token-16',
+            'archivd.upload_proxy.disk_targets' => [],
         ]);
 
         $this->expectException(S3DirectUploadException::class);
         $this->expectExceptionMessage(S3DirectUploadException::PROXY_MISCONFIGURED);
 
         $this->engine->proxyUploadParts(
-            's3FileHostingCe',
-            'file-hosting/a.bin',
+            's3ArchivdCe',
+            'archivd/a.bin',
             S3DirectUploadEngine::STRATEGY_SINGLE,
             'text/plain',
             null,
@@ -255,16 +255,16 @@ class S3DirectUploadEngineTest extends TestCase
     public function presign_parts_uses_proxy_when_enabled_without_s3_disk(): void
     {
         config([
-            'file-hosting.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
-            'file-hosting.upload_proxy.token' => 'strong-upload-token-16',
-            'file-hosting.upload_proxy.disk_targets' => [
-                's3FileHostingCe' => 'b2-main',
+            'archivd.upload_proxy.base_url' => 'https://proxy.example.workers.dev',
+            'archivd.upload_proxy.token' => 'strong-upload-token-16',
+            'archivd.upload_proxy.disk_targets' => [
+                's3ArchivdCe' => 'b2-main',
             ],
         ]);
 
         $parts = $this->engine->presignParts(
-            's3FileHostingCe',
-            'file-hosting/x.bin',
+            's3ArchivdCe',
+            'archivd/x.bin',
             S3DirectUploadEngine::STRATEGY_MULTIPART,
             'application/octet-stream',
             'uid-1',
@@ -273,7 +273,7 @@ class S3DirectUploadEngineTest extends TestCase
         );
 
         $this->assertSame(
-            'https://proxy.example.workers.dev/uploader/b2-main/file-hosting/x.bin?partNumber=3&uploadId=uid-1',
+            'https://proxy.example.workers.dev/uploader/b2-main/archivd/x.bin?partNumber=3&uploadId=uid-1',
             $parts[0]['url'],
         );
     }
@@ -282,8 +282,8 @@ class S3DirectUploadEngineTest extends TestCase
     public function encode_proxy_object_key_encodes_segments(): void
     {
         $this->assertSame(
-            'file-hosting/user%20id/obj.bin',
-            $this->engine->encodeProxyObjectKey('file-hosting/user id/obj.bin'),
+            'archivd/user%20id/obj.bin',
+            $this->engine->encodeProxyObjectKey('archivd/user id/obj.bin'),
         );
     }
 

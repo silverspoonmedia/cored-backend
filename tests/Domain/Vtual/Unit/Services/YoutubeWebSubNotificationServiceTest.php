@@ -114,6 +114,73 @@ class YoutubeWebSubNotificationServiceTest extends TestCase
         $this->assertSame(2, $result->enqueued);
     }
 
+    #[Test]
+    public function verify_signature_accepts_hex_digest(): void
+    {
+        $body = '<xml>payload</xml>';
+        $secret = 's3cr3t';
+        $service = $this->service(Mockery::mock(ContentFetchPoolService::class));
+
+        $this->assertTrue($service->verifySignature($body, 'sha1='.hash_hmac('sha1', $body, $secret), $secret));
+        $this->assertTrue($service->verifySignature($body, 'sha256='.hash_hmac('sha256', $body, $secret), $secret));
+    }
+
+    #[Test]
+    public function verify_signature_accepts_base64_digest(): void
+    {
+        $body = '<xml>payload</xml>';
+        $secret = 's3cr3t';
+        $service = $this->service(Mockery::mock(ContentFetchPoolService::class));
+
+        $this->assertTrue($service->verifySignature(
+            $body,
+            'sha1='.base64_encode(hash_hmac('sha1', $body, $secret, true)),
+            $secret,
+        ));
+    }
+
+    #[Test]
+    public function verify_signature_rejects_mismatch(): void
+    {
+        $service = $this->service(Mockery::mock(ContentFetchPoolService::class));
+
+        $this->assertFalse($service->verifySignature('body', 'sha1=deadbeef', 'secret'));
+        $this->assertFalse($service->verifySignature('body', null, 'secret'));
+    }
+
+    #[Test]
+    public function deleted_entry_notification_marks_content_unavailable(): void
+    {
+        [$channel, $topic, $secret] = $this->seedSubscription();
+
+        $body = '<?xml version="1.0" encoding="UTF-8"?>'
+            .'<feed xmlns:at="http://www.youtube.com/xml/schemas/2015" xmlns="http://www.w3.org/2005/Atom">'
+            .'<at:deleted-entry ref="yt:video:goneVideoId1" when_deleted="2026-09-01T00:00:00+00:00"/>'
+            .'</feed>';
+
+        $signature = 'sha1='.hash_hmac('sha1', $body, $secret);
+
+        $contents = Mockery::mock(\App\Domain\Vtual\Services\ContentService::class);
+        $contents->shouldReceive('markUnavailable')
+            ->once()
+            ->with(Mockery::type(Channel::class), 'goneVideoId1');
+
+        $pool = Mockery::mock(ContentFetchPoolService::class);
+        $pool->shouldNotReceive('enqueue');
+
+        $service = new YoutubeWebSubNotificationService(
+            $pool,
+            app(\App\Domain\Vtual\Services\YoutubeWebSubSubscriptionService::class),
+            app(\App\Domain\Vtual\Integrations\Youtube\YoutubeAtomFeedParser::class),
+            $contents,
+        );
+
+        $result = $service->handleNotification($topic, $body, $signature);
+
+        $this->assertSame(0, $result->enqueued);
+        $this->assertFalse($result->skipped());
+    }
+
     /**
      * @return array{0: Channel, 1: string, 2: string, 3: string}
      */
@@ -157,6 +224,7 @@ class YoutubeWebSubNotificationServiceTest extends TestCase
             $pool,
             app(\App\Domain\Vtual\Services\YoutubeWebSubSubscriptionService::class),
             app(\App\Domain\Vtual\Integrations\Youtube\YoutubeAtomFeedParser::class),
+            Mockery::mock(\App\Domain\Vtual\Services\ContentService::class),
         );
     }
 }

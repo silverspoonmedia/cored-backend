@@ -34,9 +34,9 @@ routes/
 │       ├── payment-gateway.php   # core
 │       ├── service.php           # core
 │       ├── broadcasting.php      # core — broadcast auth for JWT clients (api middleware)
-│       └── file-hosting.php      # product
+│       └── archivd.php      # product
 └── web/
-    ├── file-hosting-public.php   # public share
+    ├── archivd-public.php   # public share
     ├── payment-ipaymu-return.php # provider return
     └── identity-oauth-callback.php # Discord OAuth callback
 ```
@@ -69,7 +69,7 @@ JSON errors for `api/*` via `$exceptions->shouldRenderJsonWhen(...)`.
 
 ## Versioned routes
 
-Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, error-logs, payments, services, file-hosting. Also includes `POST /api/v1/broadcasting/auth` — broadcast channel auth for cross-origin JWT clients (Vue-Workers SPA) under `auth:api` middleware.
+Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, error-logs, payments, services, archivd. Also includes `POST /api/v1/broadcasting/auth` — broadcast channel auth for cross-origin JWT clients (Vue-Workers SPA) under `auth:api` middleware.
 
 ## Adding a new API version
 

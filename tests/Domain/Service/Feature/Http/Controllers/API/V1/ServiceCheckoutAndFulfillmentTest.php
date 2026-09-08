@@ -2,7 +2,7 @@
 
 namespace Tests\Domain\Service\Feature\Http\Controllers\API\V1;
 
-use App\Domain\FileHosting\Services\QuotaService;
+use App\Domain\Archivd\Services\QuotaService;
 use App\Domain\Identity\Models\User;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransInvoiceSynchronizer;
@@ -10,7 +10,7 @@ use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePrice;
 use App\Domain\Service\Models\ServicePurchase;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -34,9 +34,9 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
 
         $this->seedRolesAndPermissions();
         $this->seedCurrencies();
-        $this->free = FileHostingCatalog::freeBytes();
-        $this->main1Tb = FileHostingCatalog::main1TbBytes();
-        config(['file-hosting.default_quota_bytes' => $this->free]);
+        $this->free = ArchivdCatalog::freeBytes();
+        $this->main1Tb = ArchivdCatalog::main1TbBytes();
+        config(['archivd.default_quota_bytes' => $this->free]);
     }
 
     public function test_checkout_endpoint_creates_purchase_and_pending_invoice(): void
@@ -48,7 +48,7 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
         ]);
 
         $user = $this->userWithRole('User');
-        $service = Service::factory()->fileHostingMain1Tb()->create();
+        $service = Service::factory()->ArchivdMain1Tb()->create();
         ServicePrice::factory()->usd(24.95)->create(['service_id' => $service->id]);
 
         $this->actingAsJwt($user)
@@ -76,7 +76,7 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
         ]);
 
         $user = $this->userWithRole('User');
-        $service = Service::factory()->fileHostingAddon100Gb()->create();
+        $service = Service::factory()->ArchivdAddon100Gb()->create();
         ServicePrice::factory()->usd(5)->create(['service_id' => $service->id]);
 
         $payload = $this->actingAsJwt($user)
@@ -99,7 +99,7 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
     public function test_main_plan_checkout_rejects_quantity_greater_than_one(): void
     {
         $user = $this->userWithRole('User');
-        $service = Service::factory()->fileHostingMain1Tb()->create();
+        $service = Service::factory()->ArchivdMain1Tb()->create();
         ServicePrice::factory()->usd(24.95)->create(['service_id' => $service->id]);
 
         $this->actingAsJwt($user)
@@ -113,7 +113,7 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
     public function test_paid_sync_fulfills_main_plan_quota(): void
     {
         $user = $this->userWithRole('User');
-        $service = Service::factory()->fileHostingMain1Tb()->create();
+        $service = Service::factory()->ArchivdMain1Tb()->create();
         ServicePrice::factory()->usd(24.95)->create(['service_id' => $service->id]);
 
         $purchase = ServicePurchase::factory()->pending()->create([
@@ -160,7 +160,7 @@ class ServiceCheckoutAndFulfillmentTest extends TestCase
         $this->assertSame($expected, $quotaAfter['remaining_bytes']);
         $this->assertSame('paid', $quotaAfter['state']);
 
-        $this->assertDatabaseHas('file_hosting_user_quotas', [
+        $this->assertDatabaseHas('archivd_user_quotas', [
             'user_id' => $user->id,
             'quota_bytes' => $expected,
             'source' => 'service_recompute',

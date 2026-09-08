@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Gate product domain routes. Resolves product_key from the middleware
- * argument (e.g. `product.active:FileHosting`). Allows through when an
+ * argument (e.g. `product.active:Archivd`). Allows through when an
  * Active activation exists; lazy-creates implicit activations on first
  * miss for backward-compat; rejects explicit + non-active with 403.
  */

@@ -5,6 +5,7 @@ namespace Tests\Domain\Vtual\Unit\Services;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Enums\PlatformKey;
+use App\Domain\Vtual\Integrations\Dto\PlatformStreamDto;
 use App\Domain\Vtual\Integrations\Dto\PlatformVideoDto;
 use App\Domain\Vtual\Services\PlatformVideoDtoMapper;
 use Illuminate\Support\Carbon;
@@ -56,6 +57,39 @@ class PlatformVideoDtoMapperTest extends TestCase
 
         $this->assertSame(ContentType::Vod->value, $payload['type']);
         $this->assertSame(ContentStatus::Unknown->value, $payload['status']);
+    }
+
+    #[Test]
+    public function maps_stream_to_live_payload(): void
+    {
+        $stream = new PlatformStreamDto(
+            platform: PlatformKey::Twitch,
+            externalId: 'stream-123',
+            userExternalId: '40934651',
+            userLogin: 'ludwig',
+            userName: 'Ludwig',
+            title: 'Twitch live title',
+            gameName: 'Just Chatting',
+            thumbnailUrl: 'https://static-cdn.jtvnw.net/thumb.jpg',
+            url: 'https://www.twitch.tv/ludwig',
+            concurrentViewers: 1234,
+            startedAt: Carbon::parse('2026-01-01T12:00:00Z'),
+            language: 'en',
+        );
+
+        $payload = $this->mapper->toUpsertPayloadFromStream($stream);
+
+        $this->assertSame('stream-123', $payload['external_id']);
+        $this->assertSame(ContentType::Live->value, $payload['type']);
+        $this->assertSame(ContentStatus::Live->value, $payload['status']);
+        $this->assertSame('Twitch live title', $payload['title']);
+        $this->assertSame('Just Chatting', $payload['description']);
+        $this->assertSame('https://www.twitch.tv/ludwig', $payload['url']);
+        $this->assertSame(1234, $payload['concurrent_viewers']);
+        $this->assertSame($stream->startedAt, $payload['started_at']);
+        $this->assertSame($stream->startedAt, $payload['published_at']);
+        $this->assertArrayNotHasKey('ended_at', $payload);
+        $this->assertArrayNotHasKey('scheduled_at', $payload);
     }
 
     private function dto(string $status): PlatformVideoDto

@@ -10,7 +10,7 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * Microstock AI credit balance or usage may have changed for a user.
- * Rides the File Hosting user channel (same private channel as listing/quota).
+ * Rides the Archivd user channel (same private channel as listing/quota).
  */
 class MicrostockBillingChanged implements ShouldBroadcastNow
 {
@@ -28,7 +28,7 @@ class MicrostockBillingChanged implements ShouldBroadcastNow
      */
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('file-hosting.user.'.$this->ownerUserId)];
+        return [new PrivateChannel('archivd.user.'.$this->ownerUserId)];
     }
 
     public function broadcastAs(): string

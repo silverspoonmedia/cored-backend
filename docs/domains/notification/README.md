@@ -43,12 +43,12 @@ Listener auto-discovered — **do not** double-register.
 
 ## Delivery
 
-Tunable in **Administration → Settings → Platform** — see [configuration-policy.md](../../platform/configuration-policy.md).
+Tunable in **Administration → Settings → Platform** — see [configuration-policy.md](../../platform/configuration-policy.md). The backend still stores `polling` vs `realtime`; **the SPA ignores polling**. Browser delivery is Echo/Pusher only. Reconnect recovery is `onEchoResync` (re-pull unread count, recent list, registered listings), not a timer HTTP fallback. Blade `bell.js` polling is gone — [blade-admin.md](../../web/blade-admin.md).
 
-| Mode | Setting | Primary transport | Fallback |
-|------|---------|-------------------|----------|
-| Polling | `platform.notifications.delivery` = `polling` | HTTP every `platform.notifications.polling_interval` seconds | None |
-| Realtime | `platform.notifications.delivery` = `realtime` + valid Pusher/Reverb | Private WebSocket channel | HTTP after 30 seconds degraded |
+| Mode | Setting | SPA transport |
+|------|---------|---------------|
+| Polling | `platform.notifications.delivery` = `polling` | No live updates (manual reload). The SPA does not poll unread-count or listings. |
+| Realtime | `platform.notifications.delivery` = `realtime` + valid Pusher/Sockudo | Private WebSocket via `useEcho.ts`. Empty `VITE_PUSHER_APP_KEY` disables Echo (same as polling: no live updates). |
 
 ### Realtime event contract
 
@@ -63,75 +63,47 @@ After persistence, `NotificationService` resolves every recipient and broadcasts
 ```
 
 - `type` identifies the notification.
-- `table_id` tells a matching list page which registered DataTable to reload; it is `null` for types without a list screen.
+- `table_id` tells a matching list page which registered listing to reload (SPA Pattern A via `useListingReload`); it is `null` for types without a list screen.
 - `unread_count` is the recipient's **absolute** unread count after the new notification is persisted. The bell applies it directly; it does not increment locally and does not call HTTP on each WS event.
 
 **Not this bus:**
 
-- File Hosting live listing uses dedicated private channels (`file-hosting.user.*` / `file-hosting.workspace.*`) and domain events under `App\Domain\FileHosting\Events\` — no `NotificationType`, no `table_id`. See [file-hosting/README.md — Realtime / live listing](../file-hosting/README.md#realtime--live-listing).
+- Archivd live listing uses dedicated private channels (`archivd.user.*` / `archivd.workspace.*`) and domain events under `App\Domain\Archivd\Events\` — no `NotificationType`, no `table_id`. See [archivd/README.md — Realtime / live listing](../archivd/README.md#realtime--live-listing).
 - Payment Gateway invoice checkout uses private `payments.invoice.{invoiceId}` + `InvoiceStatusChanged` / `PaymentRealtime` — no `NotificationType`, independent of platform notification delivery mode. See [payment-gateway/README.md — Realtime invoice status](../payment-gateway/README.md#realtime-invoice-status-no-hard-reload).
 
-Both still may share the browser Echo instance (`window.__monolithEcho` / `createNotificationEcho`) when credentials are configured; they do not ride the activity-notification event.
+Those features share the SPA Echo singleton (`useEcho.ts` / `getEcho()`); they do not ride the activity-notification event.
 
-Initial unread count is server-rendered by `NotificationBellComposer` as `initialUnreadCount`. Recent-list copy still refetches `/apps/notifications/recent` when the dropdown is open so localization and deep links remain server-owned. Web proxies live under `prefix('apps')` (route names unprefixed: `notifications.*`); composer builds URLs via `route()`.
+**SPA client.** `AppNavbar` inits Echo (`useEcho.ts`) **after** `useShellHydrate.hydrateShell()` so `POST /broadcasting/auth` does not race `POST /batch`. Private-channel auth is `POST /api/v1/broadcasting/auth` through `client.post` (`authorizeBroadcastChannel`): cookie + `X-CSRF-Token`, 419 refresh+retry like `/batch`. Fallback `GET /api/v1/notifications` / unread-count / `navigation/menus` run only when the batch did not seed that widget and the sub-entry was not a terminal 401/403/429. Shell batch seeds unread count and the recent list (limit 5); dropdown open or `/apps/notifications` fetches the full list. See [vue-workers-spa.md — Realtime](../../integration/vue-workers-spa.md#realtime-laravel-echo--pusher) and [Post-login cookie-settle](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
 
 **Sidebar:** **Workspace → Notifications** (`notifications.index`) has no menu-role pivot and is available to authenticated viewers who pass the navigation audience rules. API access still requires `view notification`. This page entry is distinct from the navbar activity bell: both use Notification-domain data, but the page is the full history surface while the bell is a compact delivery control.
 
-### Browser health state machine (`bell.js`)
-
-`bell.js` owns the Echo/Pusher connection and exposes current state as:
-
-```js
-window.notificationRealtime = {
-    enabled: true,
-    connected: true,
-    degraded: false,
-};
-```
-
-It also emits window events consumed by list pages:
-
-| Event | Meaning | Client action |
-|-------|---------|---------------|
-| `notification-realtime:connected` | WS connected/reconnected | Stop badge + DataTable polling; one catch-up reload on reconnect |
-| `notification-realtime:degraded` | WS stayed non-connected for 30 seconds | Start badge + registered-page fallback polling every 60 seconds |
-| `notification-realtime:polling` | Pure polling mode or failed realtime config (no WS attempt) | Start DataTable fallback polling immediately (badge already polling) |
-
-`connected: false, degraded: false` means connecting or inside the 30-second grace period — **do not poll yet**. While connected, badge and DataTable polling are both off. Reconnect cancels the grace timer, clears fallback intervals, and restores pure WS delivery.
-
-**Script order:** `bell.js` loads from `assets-scripts.blade.php` immediately after `app.js` (gated by `@can('view notification')`), **before** page `$scripts`. List pages (e.g. `/apps/users`) may snapshot `window.notificationRealtime` on init and also listen for the events above. Do not `@push` `bell.js` onto `@stack('scripts')` — that runs after `$scripts` and breaks the pure-polling DataTable fallback race.
-
 ### Expected Network behavior
 
-| Situation | `/apps/notifications/unread-count` | `/apps/users/datatable` |
-|-----------|---------------------------------|--------------------|
-| Initial page with healthy WS | No request; count came from rendered config | Initial load; one connection catch-up reload is possible depending on init order |
-| Notification arrives over healthy WS | No request; use payload `unread_count` | One reload only when payload `table_id` is `users-table` |
+| Situation | `GET /api/v1/notifications/unread-count` | Listing HTTP (`users-table`, etc.) |
+|-----------|------------------------------------------|-------------------------------------|
+| Shell hydrate | One read inside `POST /api/v1/batch` (or navbar fallback if the batch did not seed) | Initial list load from the view |
+| Notification arrives over healthy WS | No request; use payload `unread_count` | One reload only when payload `table_id` matches a registered listing |
 | Browser focus while WS healthy | No request | No request |
-| WS down for less than 30 seconds | No request | No request |
-| WS degraded for at least 30 seconds | Poll every 60 seconds | Poll every 60 seconds while `/apps/users` is visible |
-| WS reconnect | One count reconciliation | One catch-up reload; polling then stops |
-| Single-read action | One count reconciliation | None |
-| Mark-all action | No count refetch; response already says `unread: 0` | None |
+| WS down | No polling. Navbar shows reconnecting; events in the gap are lost | No polling |
+| WS reconnect | One unread-count + recent-list pull via `onEchoResync` | One catch-up via `triggerAllListingsReload` |
+| Single-read / mark-all | Response updates local badge; no extra unread-count fetch required | None |
 
-Seeing periodic unread-count or DataTable requests while `window.notificationRealtime.connected === true` is a regression.
+Periodic unread-count or listing requests while Echo is connected are a regression. There is no 30-second degraded HTTP fallback.
 
 ### Pusher host rule
 
-For Pusher-hosted WebSockets, `BroadcastConnection::clientConfig()` exposes `cluster` but leaves `host` null. Laravel's server-side Pusher config defaults `host` to `api-{cluster}.pusher.com`, which is the REST API endpoint — passing it to Echo as `wsHost` silently prevents the socket from connecting and leaves the app permanently on polling. `echo.js` also rejects that REST-host pattern defensively. Explicit non-default hosts remain valid for self-hosted/Reverb-compatible sockets.
+For Pusher-hosted WebSockets, `BroadcastConnection::clientConfig()` exposes `cluster` but leaves `host` null. Laravel's server-side Pusher config defaults `host` to `api-{cluster}.pusher.com`, which is the REST API endpoint — passing it to Echo as `wsHost` silently prevents the socket from connecting. SPA `useEcho.ts` `readConfig()` rejects that REST-host pattern. Explicit non-default hosts remain valid for self-hosted/Sockudo sockets.
 
 ### Read-state UI and tab synchronization
 
-`Mark all as read` is an in-place AJAX mutation in both the navbar and `/apps/notifications`. The web response carries `{ marked, unread: 0 }` without a redirect. Shared AJAX infrastructure emits `ajax-form:success`; notification UI then updates the badge, dropdown font weight, page rows/status badges, and button state immediately.
+Mark-all and single-read are in-place API mutations (`POST /api/v1/notifications/read-all` and `…/{id}/read`). The JSON carries `{ marked, unread: 0 }` (or the updated item); the SPA updates badge and list locally with no redirect.
 
-The bell opens a per-user, same-origin `BroadcastChannel` named `activity-notifications.{userId}`:
+`useNotifications.ts` opens a per-user `BroadcastChannel('activity-notifications.{userId}')`:
 
-- `ping` mirrors WS payloads to other tabs so badge and DataTable state stay synchronized without each tab needing an extra HTTP request.
-- `read-all` propagates mark-all state to other tabs.
+- `read-all` propagates mark-all to other tabs.
+- `read` + `id` decrements unread and marks the matching item.
 
-No hard reload, timer hack, or unread-count refetch is required for mark-all. If `BroadcastChannel` is unavailable, the current tab still updates immediately; other tabs reconcile on their next WS event, reconnect, or fallback poll.
-
-The Vue-Workers SPA mirrors this pattern in `src/composables/useNotifications.ts` — same `activity-notifications.{userId}` channel, same `read-all` / `read` messages. See [vue-workers-spa — Realtime](../../integration/vue-workers-spa.md#realtime-laravel-echo--pusher).
+If `BroadcastChannel` is unavailable, the acting tab still updates immediately; other tabs reconcile on their next WS event or Echo reconnect. See [vue-workers-spa — Cross-tab notification read-state sync](../../integration/vue-workers-spa.md#cross-tab-notification-read-state-sync).
 
 ## Schema (essentials)
 
@@ -156,7 +128,7 @@ Viewer API endpoints:
 | API endpoint | Purpose |
 |--------------|---------|
 | `GET /api/v1/notifications` | Visible notifications with viewer-specific `is_read` |
-| `GET /api/v1/notifications/unread-count` | Absolute count (`{ unread: number }`); polling/reconciliation fallback |
+| `GET /api/v1/notifications/unread-count` | Absolute count (`{ unread: number }`). Seeded by shell `POST /api/v1/batch`; otherwise an explicit fetch. Not a polling loop. |
 | `POST /api/v1/notifications/{id}/read` | Idempotent single-read |
 | `POST /api/v1/notifications/read-all` | Returns `{ marked, unread: 0 }` |
 
@@ -186,7 +158,7 @@ Bell UI, inbox (`/apps/notifications`), and audience admin live in Monolith-Vue-
 
 ### B — Audience only
 
-Edit **Administration → Settings → Notification audiences** (`/apps/notification-audiences`) or seeder pivots. Seeder remains the bootstrap baseline.
+Edit **Administration → Settings → Notification audiences** (`/apps/notification-audiences`) or seeder pivots. Seeder remains the bootstrap baseline. List `items[]` emit query-mode `actions[]` (`edit` → `notification-audiences.edit` when the actor can `manage settings`); the labeled Edit column maps that key.
 
 ### C — Copy only
 
@@ -196,11 +168,9 @@ Lang files all locales.
 
 Dispatch only from service.
 
-### E — DataTable reload
+### E — Listing reload (Pattern A)
 
-Map `tableId()` to the key used by `window.dataTables`; `bell.js` calls `ajax.reload(null, false)` to preserve paging. The WS event is **per-recipient** (`recipientUserIds`), so reload only fires for users in that notification's audience. To reload a shared admin list on any row change, the reload signal must be a **role-broadcast** to the watchers (Root+Admin), not a personal note — see `user_created`/`user_updated`/`user_deleted`.
-
-List pages that require resilience subscribe to `notification-realtime:connected` / `notification-realtime:degraded` / `notification-realtime:polling`. `/apps/users` stops its fallback timer while connected, starts a visible-tab-only 60-second `ajax.reload` after degradation or pure polling, and performs one catch-up reload on reconnect. Create/delete flash reload remains a same-tab redirect baseline.
+Map `tableId()` to the SPA listing registry key (`useListingReload`). The bell forwards `.activity-notification.received` `table_id` to registered views. The WS event is **per-recipient**, so reload only fires for users in that notification's audience. To reload a shared admin list on any row change, the reload signal must be a **role-broadcast** to the watchers (Root+Admin), not a personal note — see `user_created`/`user_updated`/`user_deleted`. There is no DataTable `ajax.reload` or `notification-realtime:*` window events; reconnect catch-up is `onEchoResync`.
 
 ## Types used by Service (personal)
 
@@ -229,7 +199,7 @@ Deep link: `inference.model-cards.show`. DataTable reload: `inference-model-card
 | Only specific people | Personal users |
 | Edited user should know | `notify_subject_user` / personal to subject |
 
-**Pitfalls:** dispatch from controller; hardcode audience in code instead of settings; forget seeder; double listener registration; mix up Spatie activitylog vs this bell; **relying on an empty type setting to keep a personal type personal** — a personal dispatch (`account_updated`) MUST pass `roles: []` explicitly. `resolveAudience` only skips the setting's roles when an override is given; a stray role pivot on the setting (data pollution from old manual/admin edits) otherwise broadcasts the personal note to those roles. Symptom: an admin who edits another user sees "Your account was updated" in their own bell (observed with khaled/admin). Fix = force `roles: []` at dispatch **and** `sync([])` in the seeder; in `bell.js`, **using any `config` field (e.g. `labels`) before the `const { ... } = config` destructure** — `const` TDZ throws `ReferenceError`, the caller's `try/catch` swallows it, and the whole bell goes inert (no poll, no websocket, no dropdown fetch). Destructure config first, then use it; caching hydrated Eloquent models in the audience snapshot (persistent store → `__PHP_Incomplete_Class` → `TypeError`) — cache primitives only.
+**Pitfalls:** dispatch from controller; hardcode audience in code instead of settings; forget seeder; double listener registration; mix up Spatie activitylog vs this bell; **relying on an empty type setting to keep a personal type personal** — a personal dispatch (`account_updated`) MUST pass `roles: []` explicitly. `resolveAudience` only skips the setting's roles when an override is given; a stray role pivot on the setting (data pollution from old manual/admin edits) otherwise broadcasts the personal note to those roles. Symptom: an admin who edits another user sees "Your account was updated" in their own bell. Fix = force `roles: []` at dispatch **and** `sync([])` in the seeder; caching hydrated Eloquent models in the audience snapshot (persistent store → `__PHP_Incomplete_Class` → `TypeError`) — cache primitives only.
 
 ## Verification matrix
 
@@ -238,35 +208,31 @@ Run focused backend coverage after changing notification delivery:
 ```bash
 php artisan test tests/Domain/Notification
 php artisan test tests/Unit/Support/Broadcasting/BroadcastConnectionTest.php
-php artisan test --filter=UserDatatable
-npm run build
 ```
+
+SPA: `npm test` in `monolith-vue-workers` (includes `tests/echo.test.ts` and `tests/client.test.ts` CSRF/419/settle cases).
 
 Minimum manual browser verification:
 
-1. Hard-refresh once and confirm a `wss://...pusher.com/...` connection plus successful `/broadcasting/auth`.
-2. Keep Network open for more than 60 seconds. With `connected:true`, there must be no periodic unread-count or DataTable requests.
-3. Create/update/delete a user in another tab. Confirm WS payload, direct badge count update, and one `users-table` reload.
-4. Disable network/WS. Before 30 seconds, confirm no polling; after 30 seconds, confirm 60-second fallback polling.
-5. Restore connection. Confirm one reconciliation/catch-up and no later periodic HTTP.
-6. Trigger mark-all from navbar and `/apps/notifications`; confirm both current and sibling tabs update without redirect/reload.
+1. Logged-out → login → dashboard: `POST /api/v1/broadcasting/auth` 200 (not CORS), `POST /api/v1/batch` 200, no `POST /api/v1/auth/refresh` on that navigation. Hard reload still 200.
+2. Confirm a `wss://...pusher.com/...` (or Sockudo) connection. Keep Network open: no periodic unread-count or listing HTTP while Echo is connected.
+3. Create/update/delete a user in another tab. Confirm WS payload, badge count update, and one `users-table` reload.
+4. Disable network/WS. Confirm no polling. Restore connection: one `onEchoResync` catch-up (unread + listings), then no periodic HTTP.
+5. Trigger mark-all from navbar and `/apps/notifications`; confirm current and sibling tabs update without redirect/reload.
 
 ## Bell not showing — debug checklist
 
-Icon renders from Blade even when the JS never runs, so an empty/stale badge can look like "no notifications". Work top-down:
+Work top-down. Blade composer / `bell-*.js` / `window.notificationRealtime` are gone — [blade-admin.md](../../web/blade-admin.md).
 
-1. **Console** — any `Notification bell failed to initialize:` warn or `ReferenceError` on load? Init died (e.g. TDZ / bad JSON) → nothing polls. Rebuild assets (`npm run build`) if source and `public/build` are out of sync.
-2. **Permission** — viewer holds `view notification`? No permission → no bell markup, API 403.
-3. **Seeder** — `NotificationTypeSettingSeeder` run? Empty audience → row persists but nobody is a recipient.
-4. **API** — `GET /api/v1/notifications` (JWT) returns the row? If not, it's a persistence/visibility issue, not the bell.
-5. **Runtime health** — inspect `window.notificationRealtime` in Console. `connected:true` means periodic HTTP is a bug; `degraded:true` means the 30-second grace expired and polling is expected.
-6. **WebSocket request** — Network should show a live `wss://...pusher.com/...` connection. For hosted Pusher, rendered config must have `cluster` and `host:null`; `api-{cluster}.pusher.com` is REST, never `wsHost`.
-7. **Private-channel auth** — `POST /broadcasting/auth` must return 2xx after socket connect. A 401/403 means channel subscription failed even if the socket itself is open.
-8. **Payload** — inspect `.activity-notification.received`: expected `type`, `table_id`, and numeric `unread_count`. Missing count causes stale badge; wrong/null table ID prevents list reload.
-9. **HTTP fallback** — `/apps/notifications/unread-count` may appear for degraded polling, single-read reconciliation, or reconnect catch-up. `/apps/notifications/recent` is expected when dropdown opens. On API failure the web proxies return `0` / `[]`, which can mask the source error.
-10. **Delivery mode** — compare **Settings → Platform** `platform.notifications.delivery` with `BroadcastConnection::usesRealtimeNotifications()`. If the cache snapshot looks stale, run `php artisan settings:rebuild-cache`.
-11. **Built asset** — manifest must point to the current `bell-*.js`, and that file must exist. Run `npm run build`, then hard-refresh once after the hash changes.
-12. **Personal types** — `subject_user_id` (or explicit `users`) set at emit time? Missing target = nobody sees it.
+1. **Permission** — viewer holds `view notification`? API 403 otherwise.
+2. **Seeder** — `NotificationTypeSettingSeeder` run? Empty audience → row persists but nobody is a recipient.
+3. **API** — `GET /api/v1/notifications` returns the row? If not, persistence/visibility, not the bell.
+4. **Shell hydrate** — `POST /api/v1/batch` should seed unread + recent list. `AppNavbar` awaits that before fallback GETs. A first-login CORS on `/navigation/menus` or a `POST /auth/refresh` 401 is the cookie-settle race, not a missing CORS allowlist — [vue-workers-spa.md](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
+5. **WebSocket** — Network should show a live `wss://...` connection. For hosted Pusher, `VITE_PUSHER_HOST` must be empty; `api-{cluster}.pusher.com` is REST, never `wsHost`.
+6. **Private-channel auth** — `POST /api/v1/broadcasting/auth` must return 2xx (cookie + `X-CSRF-Token` via `client.ts`). A 401/403 means subscribe failed even if the socket is open. A first-login CORS error on this path is a CSRF 419 the authorizer failed to retry.
+7. **Payload** — inspect `.activity-notification.received`: expected `type`, `table_id`, and numeric `unread_count`.
+8. **Delivery setting** — **Settings → Platform** `platform.notifications.delivery` plus `BroadcastConnection::usesRealtimeNotifications()`. Stale cache: `php artisan settings:rebuild-cache`. Empty `VITE_PUSHER_APP_KEY` disables Echo regardless of the setting.
+9. **Personal types** — `subject_user_id` (or explicit `users`) set at emit time? Missing target = nobody sees it.
 
 ## Related
 

@@ -9,8 +9,8 @@ use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
-use App\Domain\Service\Support\FileHostingBillingPeriod;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdBillingPeriod;
+use App\Domain\Service\Support\ArchivdCatalog;
 use App\Domain\Service\Support\MicrostockCatalog;
 use App\Domain\Service\Support\PlanChangeQuote;
 use Illuminate\Support\Carbon;
@@ -19,11 +19,11 @@ use Illuminate\Support\Carbon;
  * Classify main renew/upgrade/downgrade and compute unused-gap credit.
  *
  * Credit base = last paid **list** price of the current plan period (not net charge).
- * Period length fixed at {@see FileHostingBillingPeriod::DAYS} days.
+ * Period length fixed at {@see ArchivdBillingPeriod::DAYS} days.
  */
 class MainPlanChangeCalculator
 {
-    public const PERIOD_DAYS = FileHostingBillingPeriod::DAYS;
+    public const PERIOD_DAYS = ArchivdBillingPeriod::DAYS;
 
     public function quote(Service $target, string $userId, float $listAmount): PlanChangeQuote
     {
@@ -78,9 +78,9 @@ class MainPlanChangeCalculator
             ->where('user_id', $userId)
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
             ->whereHas('service', function ($q): void {
-                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                $q->where('fulfillment_target', ArchivdCatalog::FULFILLMENT_TARGET)
                     ->where('plan_kind', PlanKind::Main)
-                    ->where('code', '!=', FileHostingCatalog::CODE_FREE)
+                    ->where('code', '!=', ArchivdCatalog::CODE_FREE)
                     ->where('storage_bytes', '>', 0);
             })
             ->with('service')
@@ -101,7 +101,7 @@ class MainPlanChangeCalculator
                 // Storage + workspace-slot addons (FH and Microstock) share one
                 // anniversary clock.
                 $q->whereIn('fulfillment_target', [
-                    FileHostingCatalog::FULFILLMENT_TARGET,
+                    ArchivdCatalog::FULFILLMENT_TARGET,
                     MicrostockCatalog::FULFILLMENT_TARGET,
                 ])->where('plan_kind', PlanKind::Addon);
             })
@@ -123,7 +123,7 @@ class MainPlanChangeCalculator
             ->where('ends_at', '<=', now())
             ->whereHas('service', function ($q): void {
                 $q->whereIn('fulfillment_target', [
-                    FileHostingCatalog::FULFILLMENT_TARGET,
+                    ArchivdCatalog::FULFILLMENT_TARGET,
                     MicrostockCatalog::FULFILLMENT_TARGET,
                 ])->where('plan_kind', PlanKind::Addon);
             })

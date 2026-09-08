@@ -9,6 +9,7 @@ use App\Domain\Vtual\Integrations\Dto\YoutubeFeedVideoEntryDto;
 use App\Domain\Vtual\Integrations\Youtube\YoutubeChannelVideoFeedClient;
 use App\Domain\Vtual\Models\Channel;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Poll public YouTube Atom feeds and enqueue new/changed video ids for API hydrate.
@@ -54,40 +55,46 @@ class ChannelFeedPollService
 
         $entries = $this->feedClient->listVideos($externalId);
         $watermark = $channel->feed_last_entry_updated_at;
-        $enqueued = 0;
-        $skipped = 0;
-        $maxUpdated = $watermark;
 
-        foreach ($entries as $entry) {
-            if (! $this->shouldEnqueue($entry, $watermark, $force)) {
-                $skipped++;
+        // One transaction per poll keeps the channel-row lock order (channel first,
+        // then pool/content rows) consistent with ContentService upserts — reduces
+        // MySQL 1213 deadlocks between feed poll and content pool flush.
+        return DB::transaction(function () use ($entries, $channel, $watermark, $force): array {
+            $enqueued = 0;
+            $skipped = 0;
+            $maxUpdated = $watermark;
 
-                continue;
+            foreach ($entries as $entry) {
+                if (! $this->shouldEnqueue($entry, $watermark, $force)) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                if ($channel->status === ChannelStatus::Archived) {
+                    $this->contents->upsertStubFromPrimary($channel, [
+                        'external_id' => $entry->videoId,
+                        'title' => $entry->title,
+                        'url' => $entry->url,
+                        'published_at' => $entry->publishedAt,
+                    ]);
+                } else {
+                    $this->contentPool->enqueue($channel, $entry->videoId, ContentFetchPoolSource::FeedPoll);
+                }
+                $enqueued++;
+
+                if ($entry->updatedAt !== null && ($maxUpdated === null || $entry->updatedAt->gt($maxUpdated))) {
+                    $maxUpdated = $entry->updatedAt;
+                }
             }
 
-            if ($channel->status === ChannelStatus::Archived) {
-                $this->contents->upsertStubFromPrimary($channel, [
-                    'external_id' => $entry->videoId,
-                    'title' => $entry->title,
-                    'url' => $entry->url,
-                    'published_at' => $entry->publishedAt,
-                ]);
-            } else {
-                $this->contentPool->enqueue($channel, $entry->videoId, ContentFetchPoolSource::FeedPoll);
-            }
-            $enqueued++;
+            $channel->forceFill([
+                'feed_last_polled_at' => now(),
+                'feed_last_entry_updated_at' => $maxUpdated ?? $watermark ?? now(),
+            ])->save();
 
-            if ($entry->updatedAt !== null && ($maxUpdated === null || $entry->updatedAt->gt($maxUpdated))) {
-                $maxUpdated = $entry->updatedAt;
-            }
-        }
-
-        $channel->forceFill([
-            'feed_last_polled_at' => now(),
-            'feed_last_entry_updated_at' => $maxUpdated ?? $watermark ?? now(),
-        ])->save();
-
-        return ['enqueued' => $enqueued, 'skipped' => $skipped];
+            return ['enqueued' => $enqueued, 'skipped' => $skipped];
+        }, 3);
     }
 
     /**

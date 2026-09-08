@@ -5,7 +5,7 @@ namespace Tests\Domain\Product\Feature;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\Auth\AuthService;
 use App\Support\Product\Enums\ProductActivationState;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -23,7 +23,7 @@ class RegisterProductActivationTest extends TestCase
         parent::setUp();
 
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->auth = app(AuthService::class);
     }
 
@@ -39,7 +39,7 @@ class RegisterProductActivationTest extends TestCase
 
         $this->assertDatabaseHas('product_activations', [
             'user_id' => $user->id,
-            'product_key' => 'FileHosting',
+            'product_key' => 'Archivd',
             'state' => ProductActivationState::Active->value,
             'source' => 'register_hook',
         ]);
@@ -59,7 +59,7 @@ class RegisterProductActivationTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'jane@example.com']);
     }
 
-    public function test_user_can_use_file_hosting_after_register(): void
+    public function test_user_can_use_archivd_after_register(): void
     {
         $payload = $this->auth->register([
             'name' => 'Jane Doe',
@@ -71,7 +71,7 @@ class RegisterProductActivationTest extends TestCase
         $user->markEmailAsVerified();
 
         $this->withHeader('Authorization', 'Bearer '.$payload['token'])
-            ->getJson('/api/v1/file-hosting/quota')
+            ->getJson('/api/v1/archivd/quota')
             ->assertOk();
     }
 }

@@ -27,16 +27,16 @@ class DomainAccessGateTest extends TestCase
         $this->service = app(DomainAccessService::class);
 
         // Isolated probe routes guarded only by the gate under test.
-        Route::middleware(['api', 'auth:api', 'domain.access:FileHosting'])
+        Route::middleware(['api', 'auth:api', 'domain.access:Archivd'])
             ->get('/api/v1/_probe/domain-access', fn () => response()->json(['ok' => true]));
 
-        Route::middleware(['web', 'domain.access:FileHosting'])
+        Route::middleware(['web', 'domain.access:Archivd'])
             ->get('/_probe/domain-access', fn () => response('ok'));
     }
 
     public function test_public_domain_passes_for_plain_user_api(): void
     {
-        $this->service->setVisibility('FileHosting', DomainVisibility::Public);
+        $this->service->setVisibility('Archivd', DomainVisibility::Public);
 
         $this->actingAsJwt($this->user('User'))
             ->getJson('/api/v1/_probe/domain-access')
@@ -45,7 +45,7 @@ class DomainAccessGateTest extends TestCase
 
     public function test_private_domain_blocks_plain_user_api(): void
     {
-        $this->service->setVisibility('FileHosting', DomainVisibility::Private);
+        $this->service->setVisibility('Archivd', DomainVisibility::Private);
 
         $this->actingAsJwt($this->user('User'))
             ->getJson('/api/v1/_probe/domain-access')
@@ -54,7 +54,7 @@ class DomainAccessGateTest extends TestCase
 
     public function test_private_domain_allows_root_admin_and_beta_api(): void
     {
-        $this->service->setVisibility('FileHosting', DomainVisibility::Private);
+        $this->service->setVisibility('Archivd', DomainVisibility::Private);
 
         $this->actingAsJwt($this->user('Root', 'root@example.com'))
             ->getJson('/api/v1/_probe/domain-access')
@@ -65,7 +65,7 @@ class DomainAccessGateTest extends TestCase
             ->assertOk();
 
         $beta = $this->user('User', 'beta@example.com');
-        $beta->assignRole(ProductNames::betaRole('FileHosting'));
+        $beta->assignRole(ProductNames::betaRole('Archivd'));
 
         $this->actingAsJwt($beta->fresh())
             ->getJson('/api/v1/_probe/domain-access')
@@ -74,7 +74,7 @@ class DomainAccessGateTest extends TestCase
 
     public function test_private_domain_blocks_plain_user_web(): void
     {
-        $this->service->setVisibility('FileHosting', DomainVisibility::Private);
+        $this->service->setVisibility('Archivd', DomainVisibility::Private);
 
         $this->actingAs($this->user('User'))
             ->get('/_probe/domain-access')
@@ -83,7 +83,7 @@ class DomainAccessGateTest extends TestCase
 
     public function test_public_domain_passes_web(): void
     {
-        $this->service->setVisibility('FileHosting', DomainVisibility::Public);
+        $this->service->setVisibility('Archivd', DomainVisibility::Public);
 
         $this->actingAs($this->user('User'))
             ->get('/_probe/domain-access')

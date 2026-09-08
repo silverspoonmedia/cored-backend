@@ -13,6 +13,8 @@ use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\DataTable\DataTableResponseFactory;
+use App\Support\ListActions\Builders\SubscriptionQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
@@ -26,6 +28,7 @@ class SubscriptionController extends Controller
         private readonly SubscriptionService $service,
         private readonly DataTableResponseFactory $dataTables,
         private readonly SubscriptionRowActionResolver $rowActions,
+        private readonly SubscriptionQueryRowActions $queryRowActions,
     ) {}
 
     public function index(IndexSubscriptionRequest $request): JsonResponse
@@ -37,7 +40,12 @@ class SubscriptionController extends Controller
             fn (): JsonResponse => $this->respondToQueryList(
                 $request,
                 $subscriptions,
-                fn ($list) => $this->resolveResource(SubscriptionResource::collection($list)),
+                fn ($list) => QueryRowActionAttacher::attach(
+                    $this->resolveResource(SubscriptionResource::collection($list)),
+                    $list,
+                    $this->queryRowActions,
+                    $request->user(),
+                ),
                 __('api/payments.subscriptions.list'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

@@ -1,0 +1,76 @@
+<?php
+
+return [
+    'yes' => '是',
+    'no' => '否',
+    'loading' => '加载中…',
+    'home' => '首页',
+    'all_rights_reserved' => '版权所有。',
+    'actions' => [
+        'save' => '保存',
+        'cancel' => '取消',
+        'delete' => '删除',
+        'edit' => '编辑',
+        'create' => '创建',
+        'back' => '返回',
+        'search' => '搜索',
+        'logout' => '退出登录',
+        'reset' => '重置',
+    ],
+    'labels' => [
+        'email' => '邮箱地址',
+        'password' => '密码',
+        'name' => '名称',
+        'role' => '角色',
+        'permissions' => '权限',
+        'status' => '状态',
+        'language' => '语言',
+        'actions' => '操作',
+        'main_navigation' => '主导航',
+        'breadcrumb' => '面包屑导航',
+        'users_table' => '用户',
+        'user_menu' => '账户菜单',
+    ],
+    'status' => [
+        'verified' => '已验证',
+        'unverified' => '未验证',
+        'none' => '无',
+    ],
+    'ajax' => [
+        'saved' => '保存成功。',
+        'validation_failed' => '请检查输入内容。',
+        'request_failed' => '无法处理请求。',
+        'server_unreachable' => '无法连接服务器，请检查网络连接。',
+        'datatable_load_failed' => '无法加载表格数据，请重试。',
+    ],
+    'password' => [
+        'show' => '显示密码',
+        'hide' => '隐藏密码',
+    ],
+    'skip_to_content' => '跳转到主要内容',
+    'empty_state' => [
+        'default_title' => '暂无内容',
+        'default_message' => '创建项目后，内容会显示在这里。',
+    ],
+    'breadcrumb' => [
+        'add' => '添加',
+        'edit' => '编辑',
+    ],
+    'datatable' => [
+        'detail' => '详情',
+        'view' => '查看',
+        'edit' => '编辑',
+        'delete' => '删除',
+        'restore' => '恢复',
+        'confirm' => [
+            'delete_user' => '确定要删除此用户吗？',
+            'delete_menu' => '删除此菜单项？',
+            'restore_menu' => '恢复此菜单项及其已删除的子树？',
+        ],
+    ],
+    'swal' => [
+        'ok' => '确定',
+        'confirm' => '确认',
+        'cancel' => '取消',
+    ],
+];

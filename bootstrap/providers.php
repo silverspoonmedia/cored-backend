@@ -3,7 +3,7 @@
 use App\Providers\AppServiceProvider;
 use App\Providers\Domain\ActivityLogServiceProvider;
 use App\Providers\Domain\ErrorLogServiceProvider;
-use App\Providers\Domain\FileHostingServiceProvider;
+use App\Providers\Domain\ArchivdServiceProvider;
 use App\Providers\Domain\InferenceServiceProvider;
 use App\Providers\Domain\IdentityServiceProvider;
 use App\Providers\Domain\MicrostockServiceProvider;
@@ -36,7 +36,7 @@ return [
     InferenceServiceProvider::class,
 
     // Product domains (kind=product). domain:make appends; keep product last.
-    FileHostingServiceProvider::class,
+    ArchivdServiceProvider::class,
     VtualServiceProvider::class,
     MicrostockServiceProvider::class,
 ];

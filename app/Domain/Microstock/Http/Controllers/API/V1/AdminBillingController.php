@@ -6,7 +6,10 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Http\Resources\AdminBillingUsageEventResource;
 use App\Domain\Microstock\Services\AdminBillingAnalyticsService;
 use App\Http\Controllers\Controller;
+use App\Support\ApiResponder;
 use App\Traits\ApiResponse;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -52,14 +55,16 @@ class AdminBillingController extends Controller
     private function authorizePlatformBilling(?User $user): void
     {
         if ($user === null || ! $user->hasAnyRole(['Root', 'Admin', 'Moderator'])) {
-            abort(403, __('api/microstock.admin_billing_forbidden'));
+            throw new HttpResponseException(
+                ApiResponder::error(__('api/microstock.admin_billing_forbidden'), 403),
+            );
         }
     }
 
     /**
      * @return array<string, int|bool>
      */
-    private function paginationMeta(\Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator): array
+    private function paginationMeta(LengthAwarePaginator $paginator): array
     {
         return [
             'current_page' => $paginator->currentPage(),

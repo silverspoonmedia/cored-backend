@@ -3,10 +3,12 @@
 /**
  * Resolve env value by primary key, optional fallback key, then default.
  */
-$envFirst = static function (string $primary, ?string $fallback = null, mixed $default = null): mixed {
-    $value = env($primary);
-    if ($value !== null) {
-        return $value;
+$envFirst = static function (mixed $primary, ?string $fallback = null, mixed $default = null): mixed {
+    if (is_string($primary) && $primary !== '') {
+        $value = env($primary);
+        if ($value !== null) {
+            return $value;
+        }
     }
     if ($fallback !== null && $fallback !== '') {
         $fallbackValue = env($fallback);
@@ -19,7 +21,8 @@ $envFirst = static function (string $primary, ?string $fallback = null, mixed $d
 };
 
 /**
- * Build an S3-compatible disk definition.
+ * Build an S3-compatible disk definition. All credential fields are the NAMES
+ * of env vars (resolved lazily via $envFirst), not their values.
  *
  * @param  array{bucket: string, region: string, key: string, secret: string, endpoint: string, domain: string, path_style: string, path_style_default?: bool}  $primary
  * @param  array{bucket?: string, region?: string, key?: string, secret?: string, endpoint?: string, domain?: string, path_style?: string}  $fallback
@@ -35,7 +38,7 @@ $s3CompatibleDisk = static function (array $primary, array $fallback = []) use (
 
     return [
         'driver' => 's3',
-        'bucket' => $envFirst($primary['bucket'], $fallback['bucket'] ?? null),
+        'bucket' => $envFirst($primary['bucket'], $fallback['bucket'] ?? null, ''),
         'region' => $envFirst($primary['region'], $fallback['region'] ?? null, 'auto'),
         'key' => $envFirst($primary['key'], $fallback['key'] ?? null),
         'secret' => $envFirst($primary['secret'], $fallback['secret'] ?? null),
@@ -49,15 +52,15 @@ $s3CompatibleDisk = static function (array $primary, array $fallback = []) use (
     ];
 };
 
-// File Hosting CE credentials (disk s3FileHostingCe).
-$fhCeDisk = $s3CompatibleDisk([
-    'bucket' => 'FILE_HOSTING_S3_CE_BUCKET',
-    'region' => 'FILE_HOSTING_S3_CE_REGION',
-    'key' => 'FILE_HOSTING_S3_CE_KEY',
-    'secret' => 'FILE_HOSTING_S3_CE_SECRET',
-    'endpoint' => 'FILE_HOSTING_S3_CE_ENDPOINT',
-    'domain' => 'FILE_HOSTING_S3_CE_DOMAIN',
-    'path_style' => 'FILE_HOSTING_S3_CE_USE_PATH_STYLE',
+// Archivd CE credentials (disk s3ArchivdCe).
+$archivdCeDisk = $s3CompatibleDisk([
+    'bucket' => 'ARCHIVD_S3_CE_BUCKET',
+    'region' => 'ARCHIVD_S3_CE_REGION',
+    'key' => 'ARCHIVD_S3_CE_KEY',
+    'secret' => 'ARCHIVD_S3_CE_SECRET',
+    'endpoint' => 'ARCHIVD_S3_CE_ENDPOINT',
+    'domain' => 'ARCHIVD_S3_CE_DOMAIN',
+    'path_style' => 'ARCHIVD_S3_CE_USE_PATH_STYLE',
     'path_style_default' => true,
 ]);
 
@@ -122,21 +125,21 @@ return [
         ],
 
         /*
-        | File Hosting — Central European (primary). Env: FILE_HOSTING_S3_CE_*.
+        | Archivd — Central European (primary). Env: ARCHIVD_S3_CE_*.
         */
-        's3FileHostingCe' => $fhCeDisk,
+        's3ArchivdCe' => $archivdCeDisk,
 
         /*
-        | File Hosting — United States (optional; leave env empty until provisioned).
+        | Archivd — United States (optional; leave env empty until provisioned).
         */
-        's3FileHostingUs' => $s3CompatibleDisk([
-            'bucket' => 'FILE_HOSTING_S3_US_BUCKET',
-            'region' => 'FILE_HOSTING_S3_US_REGION',
-            'key' => 'FILE_HOSTING_S3_US_KEY',
-            'secret' => 'FILE_HOSTING_S3_US_SECRET',
-            'endpoint' => 'FILE_HOSTING_S3_US_ENDPOINT',
-            'domain' => 'FILE_HOSTING_S3_US_DOMAIN',
-            'path_style' => 'FILE_HOSTING_S3_US_USE_PATH_STYLE',
+        's3ArchivdUs' => $s3CompatibleDisk([
+            'bucket' => 'ARCHIVD_S3_US_BUCKET',
+            'region' => 'ARCHIVD_S3_US_REGION',
+            'key' => 'ARCHIVD_S3_US_KEY',
+            'secret' => 'ARCHIVD_S3_US_SECRET',
+            'endpoint' => 'ARCHIVD_S3_US_ENDPOINT',
+            'domain' => 'ARCHIVD_S3_US_DOMAIN',
+            'path_style' => 'ARCHIVD_S3_US_USE_PATH_STYLE',
             'path_style_default' => true,
         ]),
 

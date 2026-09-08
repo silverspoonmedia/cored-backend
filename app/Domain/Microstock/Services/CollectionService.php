@@ -2,11 +2,11 @@
 
 namespace App\Domain\Microstock\Services;
 
-use App\Domain\FileHosting\Enums\CollectionStatus;
-use App\Domain\FileHosting\Enums\WorkspaceKind;
-use App\Domain\FileHosting\Models\Folder;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Services\WorkspaceAccessService;
+use App\Domain\Archivd\Enums\CollectionStatus;
+use App\Domain\Archivd\Enums\WorkspaceKind;
+use App\Domain\Archivd\Models\Folder;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Services\WorkspaceAccessService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\BillingSource;
 use App\Domain\Microstock\Enums\MetadataStatus;
@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Microstock collection lifecycle: a File Hosting folder inside a Microstock
+ * Microstock collection lifecycle: a Archivd folder inside a Microstock
  * workspace is treated as one "collection". Locking it (with a user hint)
  * freezes uploads and kicks off the per-file AI pipeline; curation then CSV
  * export happen per collection.

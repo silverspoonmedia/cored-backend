@@ -30,15 +30,15 @@ The Blade admin rendered from `resources/views/{layout}/` where `{layout}` came 
 | vtual/orphans | `$action`, `$method`, `$isEdit`, creator | create, edit |
 | vtual/platform-credentials | `$credential` | create, edit |
 
-## File Hosting
+## Archivd
 
 ### Live partials (index/public)
 
-`workspace-modals`, `microstock-review-panel`, `usage-offcanvas`, `file-folder-modals`, `team-offcanvas`, `move-modal`, `file-icon`, `visibility-badge`, `microstock-badge`, `quota-bar`, `workspace-switcher` — DOM `data-fh-*` / modal ids are JS API; do not rename without updating `resources/js/file-hosting/*` and Vue island.
+`workspace-modals`, `microstock-review-panel`, `usage-offcanvas`, `file-folder-modals`, `team-offcanvas`, `move-modal`, `file-icon`, `visibility-badge`, `microstock-badge`, `quota-bar`, `workspace-switcher` — DOM `data-ar-*` / modal ids are JS API; do not rename without updating `resources/js/archivd/*` and Vue island.
 
 ### Archived (no active caller)
 
-`toolbar-zone`, `browse-views`, `trash-show-panels` — superseded by Vue island first paint. Location: `resources/views/_archive/adminlte4/file-hosting/partials/`. See [file-hosting README](../domains/file-hosting/README.md).
+`toolbar-zone`, `browse-views`, `trash-show-panels` — superseded by Vue island first paint. Location: `resources/views/_archive/adminlte4/archivd/partials/`. See [archivd README](../domains/archivd/README.md).
 
 ## vTual
 
@@ -73,4 +73,4 @@ The Blade admin rendered from `resources/views/{layout}/` where `{layout}` came 
 - [blade-admin.md](blade-admin.md) — what remains on the `web` stack after removal
 - [ui-patterns.md](ui-patterns.md) — **archived** UX patterns referencing these partials
 - [domains/vtual/README.md](../domains/vtual/README.md) — live vTual SPA surfaces
-- [domains/file-hosting/README.md](../domains/file-hosting/README.md) — removed Blade island history
+- [domains/archivd/README.md](../domains/archivd/README.md) — removed Blade island history

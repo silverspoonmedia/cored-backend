@@ -35,7 +35,7 @@ class VtualClaimRealtime
             return;
         }
 
-        $claim->loadMissing(['creator', 'channel.platform', 'user']);
+        $claim->loadMissing(['creator', 'channel.platform', 'verifiedChannel.platform', 'user']);
 
         event(new CreatorClaimProgressChanged(
             claimId: (string) $claim->id,
@@ -49,7 +49,7 @@ class VtualClaimRealtime
      */
     public function claimSnapshot(CreatorClaim $claim): array
     {
-        $claim->loadMissing(['creator', 'channel.platform', 'user']);
+        $claim->loadMissing(['creator', 'channel.platform', 'verifiedChannel.platform', 'user']);
 
         $request = Request::create('/');
         if ($claim->user !== null) {

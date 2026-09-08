@@ -9,8 +9,8 @@ use App\Domain\Service\Enums\PurchaseChangeType;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use App\Domain\Service\Models\ServicePurchase;
-use App\Domain\Service\Support\FileHostingBillingPeriod;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdBillingPeriod;
+use App\Domain\Service\Support\ArchivdCatalog;
 use App\Domain\Service\Support\MicrostockCatalog;
 use App\Support\Product\Services\ProductAnalyticsService;
 use Illuminate\Database\Eloquent\Collection;
@@ -51,11 +51,11 @@ class ServiceEntitlementService
             'service_id' => $service->id,
         ]);
 
-        // Capture the user's File Hosting tier BEFORE the entitlement mutation —
+        // Capture the user's Archivd tier BEFORE the entitlement mutation —
         // needed by moveUserTier to transfer the contribution between buckets.
         // Only relevant when this purchase is a paid FH storage plan; otherwise
         // the value is unused.
-        $oldTier = $this->fileHostingTierForUser($purchase->user_id);
+        $oldTier = $this->archivdTierForUser($purchase->user_id);
 
         $changeType = $purchase->change_type instanceof PurchaseChangeType
             ? $purchase->change_type
@@ -78,7 +78,7 @@ class ServiceEntitlementService
             ]);
             $entitlement->save();
 
-            $this->syncFileHostingTier($purchase->user_id, $service, $oldTier);
+            $this->syncArchivdTier($purchase->user_id, $service, $oldTier);
 
             return [
                 'entitlement' => $entitlement,
@@ -89,13 +89,13 @@ class ServiceEntitlementService
 
         if ($isAddon) {
             $result = $this->activateAddon($entitlement, $purchase, $interval, $now, $quantity);
-            $this->syncFileHostingTier($purchase->user_id, $service, $oldTier);
+            $this->syncArchivdTier($purchase->user_id, $service, $oldTier);
 
             return $result;
         }
 
         $result = $this->activateMain($entitlement, $purchase, $interval, $now, $changeType);
-        $this->syncFileHostingTier($purchase->user_id, $service, $oldTier);
+        $this->syncArchivdTier($purchase->user_id, $service, $oldTier);
 
         return $result;
     }
@@ -213,7 +213,7 @@ class ServiceEntitlementService
                 // Storage + workspace-slot addons (FH and Microstock) share the
                 // stack anniversary.
                 $q->whereIn('fulfillment_target', [
-                    FileHostingCatalog::FULFILLMENT_TARGET,
+                    ArchivdCatalog::FULFILLMENT_TARGET,
                     MicrostockCatalog::FULFILLMENT_TARGET,
                 ])->where('plan_kind', PlanKind::Addon);
             })
@@ -238,7 +238,7 @@ class ServiceEntitlementService
             ? $sharedEnd
             : now();
 
-        $periodEnd = FileHostingBillingPeriod::add($base);
+        $periodEnd = ArchivdBillingPeriod::add($base);
         $count = 0;
 
         foreach ($rows as $row) {
@@ -262,9 +262,9 @@ class ServiceEntitlementService
             ->where('service_id', '!=', $keepServiceId)
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
             ->whereHas('service', function ($q): void {
-                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                $q->where('fulfillment_target', ArchivdCatalog::FULFILLMENT_TARGET)
                     ->where('plan_kind', PlanKind::Main)
-                    ->where('code', '!=', FileHostingCatalog::CODE_FREE);
+                    ->where('code', '!=', ArchivdCatalog::CODE_FREE);
             })
             ->get();
 
@@ -279,15 +279,15 @@ class ServiceEntitlementService
     /**
      * @return Collection<int, ServiceEntitlement>
      */
-    public function activePaidFileHostingEntitlements(string $userId): Collection
+    public function activePaidArchivdEntitlements(string $userId): Collection
     {
         return ServiceEntitlement::query()
             ->where('user_id', $userId)
             ->where('status', EntitlementStatus::Active)
             ->whereHas('service', function ($q): void {
-                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                $q->where('fulfillment_target', ArchivdCatalog::FULFILLMENT_TARGET)
                     ->whereIn('plan_kind', [PlanKind::Main, PlanKind::Addon])
-                    ->where('code', '!=', FileHostingCatalog::CODE_FREE)
+                    ->where('code', '!=', ArchivdCatalog::CODE_FREE)
                     ->where('storage_bytes', '>', 0);
             })
             ->with('service')
@@ -297,15 +297,15 @@ class ServiceEntitlementService
     /**
      * @return Collection<int, ServiceEntitlement>
      */
-    public function graceFileHostingEntitlements(string $userId): Collection
+    public function graceArchivdEntitlements(string $userId): Collection
     {
         return ServiceEntitlement::query()
             ->where('user_id', $userId)
             ->where('status', EntitlementStatus::Grace)
             ->whereHas('service', function ($q): void {
-                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                $q->where('fulfillment_target', ArchivdCatalog::FULFILLMENT_TARGET)
                     ->whereIn('plan_kind', [PlanKind::Main, PlanKind::Addon])
-                    ->where('code', '!=', FileHostingCatalog::CODE_FREE)
+                    ->where('code', '!=', ArchivdCatalog::CODE_FREE)
                     ->where('storage_bytes', '>', 0);
             })
             ->with('service')
@@ -322,7 +322,7 @@ class ServiceEntitlementService
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
             ->whereHas('service', function ($q): void {
                 // Includes storage addons and workspace-slot SKUs (storage_bytes may be 0).
-                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                $q->where('fulfillment_target', ArchivdCatalog::FULFILLMENT_TARGET)
                     ->where('plan_kind', PlanKind::Addon);
             })
             ->with('service')
@@ -338,11 +338,11 @@ class ServiceEntitlementService
             ->where('user_id', $userId)
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
             ->whereHas('service', function ($q): void {
-                $q->where('fulfillment_target', FileHostingCatalog::FULFILLMENT_TARGET)
+                $q->where('fulfillment_target', ArchivdCatalog::FULFILLMENT_TARGET)
                     ->where('plan_kind', PlanKind::Addon)
                     ->where(function ($inner): void {
-                        $inner->where('code', FileHostingCatalog::CODE_ADDON_WORKSPACE_SLOT)
-                            ->orWhere('entitlement', FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS);
+                        $inner->where('code', ArchivdCatalog::CODE_ADDON_WORKSPACE_SLOT)
+                            ->orWhere('entitlement', ArchivdCatalog::ENTITLEMENT_WORKSPACE_SLOTS);
                     });
             })
             ->get();
@@ -398,33 +398,33 @@ class ServiceEntitlementService
             ->exists();
     }
 
-    public function hasActivePaidFileHosting(string $userId): bool
+    public function hasActivePaidArchivd(string $userId): bool
     {
-        return $this->activePaidFileHostingEntitlements($userId)->isNotEmpty();
+        return $this->activePaidArchivdEntitlements($userId)->isNotEmpty();
     }
 
-    public function hasGraceFileHosting(string $userId): bool
+    public function hasGraceArchivd(string $userId): bool
     {
-        return $this->graceFileHostingEntitlements($userId)->isNotEmpty();
+        return $this->graceArchivdEntitlements($userId)->isNotEmpty();
     }
 
-    /** @deprecated Use hasGraceFileHosting */
-    public function graceFileHostingFor(string $userId): ?ServiceEntitlement
+    /** @deprecated Use hasGraceArchivd */
+    public function graceArchivdFor(string $userId): ?ServiceEntitlement
     {
-        return $this->graceFileHostingEntitlements($userId)->first();
+        return $this->graceArchivdEntitlements($userId)->first();
     }
 
-    /** @deprecated Unlimited removed; use hasActivePaidFileHosting */
-    public function activeUnlimitedFileHostingFor(string $userId): ?ServiceEntitlement
+    /** @deprecated Unlimited removed; use hasActivePaidArchivd */
+    public function activeUnlimitedArchivdFor(string $userId): ?ServiceEntitlement
     {
-        return $this->activePaidFileHostingEntitlements($userId)->first();
+        return $this->activePaidArchivdEntitlements($userId)->first();
     }
 
     public function enterGrace(ServiceEntitlement $entitlement): ServiceEntitlement
     {
         $service = $entitlement->service;
-        $oldTier = $service !== null && $service->isFileHostingStoragePlan()
-            ? $this->fileHostingTierForUser($entitlement->user_id)
+        $oldTier = $service !== null && $service->isArchivdStoragePlan()
+            ? $this->archivdTierForUser($entitlement->user_id)
             : 'free';
 
         $graceDays = max(1, (int) setting_config('service.grace_days', 7));
@@ -434,7 +434,7 @@ class ServiceEntitlementService
         $entitlement->grace_ends_at = $endsAt->copy()->addDays($graceDays);
         $entitlement->save();
 
-        $this->syncFileHostingTierFromEntitlement($entitlement, 'grace', $oldTier);
+        $this->syncArchivdTierFromEntitlement($entitlement, 'grace', $oldTier);
 
         return $entitlement->refresh();
     }
@@ -442,29 +442,29 @@ class ServiceEntitlementService
     public function markExpired(ServiceEntitlement $entitlement): ServiceEntitlement
     {
         $service = $entitlement->service;
-        $oldTier = $service !== null && $service->isFileHostingStoragePlan()
-            ? $this->fileHostingTierForUser($entitlement->user_id)
+        $oldTier = $service !== null && $service->isArchivdStoragePlan()
+            ? $this->archivdTierForUser($entitlement->user_id)
             : 'free';
 
         $entitlement->status = EntitlementStatus::Expired;
         $entitlement->save();
 
-        $this->syncFileHostingTierAfterExpiry($entitlement, $oldTier);
+        $this->syncArchivdTierAfterExpiry($entitlement, $oldTier);
 
         return $entitlement->refresh();
     }
 
     /**
-     * Resolve the user's current File Hosting tier. Used to capture the
+     * Resolve the user's current Archivd tier. Used to capture the
      * "before" tier for moveUserTier on entitlement mutations.
      */
-    private function fileHostingTierForUser(string $userId): string
+    private function archivdTierForUser(string $userId): string
     {
-        if ($this->hasGraceFileHosting($userId)) {
+        if ($this->hasGraceArchivd($userId)) {
             return 'grace';
         }
 
-        if ($this->hasActivePaidFileHosting($userId)) {
+        if ($this->hasActivePaidArchivd($userId)) {
             return 'paid';
         }
 
@@ -472,55 +472,55 @@ class ServiceEntitlementService
     }
 
     /**
-     * Move the user's FileHosting contribution to the paid bucket after an
+     * Move the user's Archivd contribution to the paid bucket after an
      * entitlement activation. Only fires for paid FH storage plans.
      */
-    private function syncFileHostingTier(string $userId, ?Service $service, string $oldTier): void
+    private function syncArchivdTier(string $userId, ?Service $service, string $oldTier): void
     {
-        if ($service === null || ! $service->isFileHostingStoragePlan()) {
+        if ($service === null || ! $service->isArchivdStoragePlan()) {
             return;
         }
 
-        $this->analytics->moveUserTier('FileHosting', $userId, $oldTier, 'paid');
+        $this->analytics->moveUserTier('Archivd', $userId, $oldTier, 'paid');
     }
 
     /**
-     * Move the user's FileHosting contribution to the given tier (grace).
+     * Move the user's Archivd contribution to the given tier (grace).
      */
-    private function syncFileHostingTierFromEntitlement(ServiceEntitlement $entitlement, string $tier, string $oldTier): void
+    private function syncArchivdTierFromEntitlement(ServiceEntitlement $entitlement, string $tier, string $oldTier): void
     {
         $service = $entitlement->service;
-        if ($service === null || ! $service->isFileHostingStoragePlan()) {
+        if ($service === null || ! $service->isArchivdStoragePlan()) {
             return;
         }
 
-        $this->analytics->moveUserTier('FileHosting', $entitlement->user_id, $oldTier, $tier);
+        $this->analytics->moveUserTier('Archivd', $entitlement->user_id, $oldTier, $tier);
     }
 
     /**
      * After expiry, resolve the new tier: if the user still has any active or
      * grace paid FH storage entitlement, keep that label; otherwise fall to free.
      */
-    private function syncFileHostingTierAfterExpiry(ServiceEntitlement $entitlement, string $oldTier): void
+    private function syncArchivdTierAfterExpiry(ServiceEntitlement $entitlement, string $oldTier): void
     {
         $service = $entitlement->service;
-        if ($service === null || ! $service->isFileHostingStoragePlan()) {
+        if ($service === null || ! $service->isArchivdStoragePlan()) {
             return;
         }
 
-        if ($this->hasGraceFileHosting($entitlement->user_id)) {
-            $this->analytics->moveUserTier('FileHosting', $entitlement->user_id, $oldTier, 'grace');
-
-            return;
-        }
-
-        if ($this->hasActivePaidFileHosting($entitlement->user_id)) {
-            $this->analytics->moveUserTier('FileHosting', $entitlement->user_id, $oldTier, 'paid');
+        if ($this->hasGraceArchivd($entitlement->user_id)) {
+            $this->analytics->moveUserTier('Archivd', $entitlement->user_id, $oldTier, 'grace');
 
             return;
         }
 
-        $this->analytics->moveUserTier('FileHosting', $entitlement->user_id, $oldTier, 'free');
+        if ($this->hasActivePaidArchivd($entitlement->user_id)) {
+            $this->analytics->moveUserTier('Archivd', $entitlement->user_id, $oldTier, 'paid');
+
+            return;
+        }
+
+        $this->analytics->moveUserTier('Archivd', $entitlement->user_id, $oldTier, 'free');
     }
 
     private function nextQuantity(ServiceEntitlement $entitlement, bool $isAddon, ServicePurchase $purchase): int
@@ -556,8 +556,8 @@ class ServiceEntitlementService
      */
     private function addPeriod(BillingInterval $interval, Carbon $from, ?Service $service): Carbon
     {
-        if ($service?->isFileHostingStoragePlan()) {
-            return FileHostingBillingPeriod::add($from);
+        if ($service?->isArchivdStoragePlan()) {
+            return ArchivdBillingPeriod::add($from);
         }
 
         return $interval->addPeriod($from);

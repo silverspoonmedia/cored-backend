@@ -2,8 +2,8 @@
 
 namespace App\Domain\Microstock\Models;
 
-use App\Domain\FileHosting\Models\Folder;
-use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Archivd\Models\Folder;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inference\Models\AiModelRateSnapshot;
 use App\Domain\Inference\Models\InferenceProvider;

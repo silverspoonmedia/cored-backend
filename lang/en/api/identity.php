@@ -14,6 +14,8 @@ return [
     ],
     'connections' => [
         'show' => 'Connected accounts loaded.',
+        'synced' => 'Linked accounts updated.',
+        'disconnected' => 'Account disconnected.',
         'discord_disconnected' => 'Discord disconnected.',
     ],
 ];

@@ -48,6 +48,21 @@ class MoneyPresenterTest extends TestCase
         $this->assertNotSame('IDR 10,000.50', $formatted);
     }
 
+    public function test_each_supported_locale_returns_a_formatted_amount(): void
+    {
+        foreach (config('localization.supported_locales') as $locale) {
+            app()->setLocale($locale);
+
+            $formatted = MoneyPresenter::formatted(1234.56, 'USD');
+
+            $this->assertNotNull($formatted);
+            $this->assertStringStartsWith('USD ', $formatted);
+            $this->assertStringContainsString('1', $formatted);
+            $this->assertStringContainsString('234', $formatted);
+            $this->assertStringContainsString('56', $formatted);
+        }
+    }
+
     public function test_non_numeric_is_null(): void
     {
         $this->assertNull(MoneyPresenter::formatted('not-a-number', 'IDR'));

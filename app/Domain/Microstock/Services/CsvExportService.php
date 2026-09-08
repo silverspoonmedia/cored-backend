@@ -2,7 +2,7 @@
 
 namespace App\Domain\Microstock\Services;
 
-use App\Domain\FileHosting\Models\Folder;
+use App\Domain\Archivd\Models\Folder;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Models\AssetMetadata;

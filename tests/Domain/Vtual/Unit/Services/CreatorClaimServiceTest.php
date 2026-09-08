@@ -12,6 +12,7 @@ use App\Domain\Vtual\Enums\CreatorClaimStatus;
 use App\Domain\Vtual\Enums\CreatorClaimVerifiedVia;
 use App\Domain\Vtual\Enums\CreatorMemberRole;
 use App\Domain\Vtual\Events\CreatorClaimProgressChanged;
+use App\Domain\Vtual\Events\PlatformCredentialChanged;
 use App\Domain\Vtual\Models\CreatorClaim;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
@@ -72,6 +73,10 @@ class CreatorClaimServiceTest extends TestCase
             'vtual.claim.ttl_hours' => 24,
             'vtual.claim.max_pending_per_user' => 5,
         ]);
+
+        // Activation hooks fire before per-test Http::fake() registration —
+        // fake the WebSub hub up front so no test ever reaches the real hub.
+        Http::fake(['pubsubhubbub.appspot.com/*' => Http::response('', 202)]);
     }
 
     #[Test]
@@ -158,6 +163,23 @@ class CreatorClaimServiceTest extends TestCase
             return $event->claimId === (string) $claim->id
                 && $event->phase === 'verify_queued';
         });
+    }
+
+    #[Test]
+    public function completed_claim_refreshes_menu_visibility_for_claimant(): void
+    {
+        [$orphan, $channel] = $this->seedOrphanWithChannel();
+        $user = $this->userWithRole('User');
+        $claim = $this->claims->start($user, $orphan->id, $channel->id);
+
+        $this->claims->acceptAnyway($user, $claim->id);
+
+        $this->assertTrue($user->fresh()->hasRole('Vtual vTuber'));
+        $this->assertDatabaseHas('product_activations', [
+            'user_id' => $user->id,
+            'product_key' => 'Vtual',
+            'state' => 'active',
+        ]);
     }
 
     #[Test]
@@ -305,6 +327,51 @@ class CreatorClaimServiceTest extends TestCase
     }
 
     #[Test]
+    public function claim_resource_exposes_verified_channel_after_discord_verify(): void
+    {
+        config([
+            'vtual.claim.discord_verify_enabled' => true,
+            'vtual.claim.verify_cooldown_seconds' => 0,
+        ]);
+
+        [$orphan, $channel] = $this->seedOrphanWithChannel();
+        $channel->forceFill(['status' => ChannelStatus::Active])->save();
+        $user = $this->userWithRole('User');
+        $claim = $this->claims->start($user, $orphan->id, $channel->id);
+
+        $account = new IdentityOAuthAccount();
+        $account->user_id = $user->id;
+        $account->provider = OAuthProvider::Discord;
+        $account->provider_user_id = 'discord-user';
+        $account->forceFill([
+            'access_token' => 'discord-access',
+            'refresh_token' => 'discord-refresh',
+        ])->save();
+
+        Http::fake([
+            'discord.com/api/users/@me/connections' => Http::response([
+                [
+                    'type' => 'youtube',
+                    'id' => self::YT_ID,
+                    'name' => 'neuron',
+                    'verified' => true,
+                ],
+            ], 200),
+        ]);
+
+        $verified = $this->claims->verifyViaDiscord($user, $claim->id);
+
+        $shown = $this->claims->show($user, (string) $verified->id);
+        $request = \Illuminate\Http\Request::create('/');
+        $request->setUserResolver(static fn () => $user);
+        $payload = (new \App\Domain\Vtual\Http\Resources\CreatorClaimResource($shown))->resolve($request);
+
+        $this->assertSame((string) $verified->verified_channel_id, $payload['verified_channel_id']);
+        $this->assertNotNull($payload['verified_channel']);
+        $this->assertSame(self::YT_ID, $payload['verified_channel']->external_id ?? null);
+    }
+
+    #[Test]
     public function verify_via_discord_closes_curation_gap_with_discord_only_channel(): void
     {
         config([
@@ -446,7 +513,9 @@ class CreatorClaimServiceTest extends TestCase
             ],
             'vtual.claim.verify_cooldown_seconds' => 0,
         ]);
-        Event::fake([CreatorClaimProgressChanged::class]);
+        // PlatformCredentialChanged fires from activateYoutubeCredential()
+        // below (broadcast-gated only) — fake it so Pusher is never hit.
+        Event::fake([CreatorClaimProgressChanged::class, PlatformCredentialChanged::class]);
 
         $this->activateYoutubeCredential();
         [$orphan, $channel] = $this->seedOrphanWithChannel();

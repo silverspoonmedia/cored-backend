@@ -17,8 +17,23 @@ class UpdateSettingsGroupRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $group = (string) $this->route('group');
+        $definitions = SettingRegistry::forGroup($group);
+        $all = $this->all();
+        $aliased = [];
 
-        foreach (SettingRegistry::forGroup($group) as $key => $definition) {
+        foreach (array_keys($definitions) as $key) {
+            $field = str_replace('.', '_', $key);
+
+            if (! array_key_exists($field, $all) && array_key_exists($key, $all)) {
+                $aliased[$field] = $all[$key];
+            }
+        }
+
+        if ($aliased !== []) {
+            $this->merge($aliased);
+        }
+
+        foreach ($definitions as $key => $definition) {
             if ($definition['type'] !== SettingType::Array) {
                 continue;
             }

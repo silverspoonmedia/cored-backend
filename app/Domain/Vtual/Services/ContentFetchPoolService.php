@@ -69,7 +69,7 @@ class ContentFetchPoolService
                 'status' => ContentFetchPoolStatus::Pending,
                 'requested_at' => now(),
             ]);
-        });
+        }, 3);
 
         $threshold = max(1, (int) setting_config('vtual.content_pool.threshold', 50));
         $pending = ContentFetchPoolItem::query()
@@ -258,7 +258,7 @@ class ContentFetchPoolService
             return ContentFetchPoolItem::query()
                 ->whereIn('id', $ids)
                 ->get();
-        });
+        }, 3);
     }
 
     /**

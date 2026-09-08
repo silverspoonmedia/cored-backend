@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('microstock_asset_metadata', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('file_id')
-                ->constrained('file_hosting_files')
+                ->constrained('archivd_files')
                 ->cascadeOnDelete();
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('title')->nullable();

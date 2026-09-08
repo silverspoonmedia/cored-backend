@@ -55,7 +55,7 @@ Resource: event, labels, causer, attribute_changes, properties. **Properties and
 
 ## SPA UI
 
-Authenticated screens live in Monolith-Vue-Workers: `/apps/activity-logs` (`activity-logs.index`), `/apps/activity-logs/{activity}` (`activity-logs.show`). Blade web proxies are removed — see [blade-admin.md](../../web/blade-admin.md).
+Authenticated screens live in Monolith-Vue-Workers: `/apps/activity-logs` (`activity-logs.index`), `/apps/activity-logs/{activity}` (`activity-logs.show`). Query-mode list rows emit `actions[]` (`view` → `activity-logs.show`); SPA maps into `RowActions`. Blade web proxies are removed — see [blade-admin.md](../../web/blade-admin.md).
 
 **Sidebar:** **Administration → Monitoring → Activity log** (`activity-logs.index`), visible to Root and Admin.
 

@@ -15,6 +15,8 @@ use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\DataTable\DataTableResponseFactory;
+use App\Support\ListActions\Builders\AiModelCardQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
@@ -29,6 +31,7 @@ class AiModelCardController extends Controller
         private readonly InferenceUsageAnalyticsService $analytics,
         private readonly DataTableResponseFactory $dataTables,
         private readonly AiModelCardRowActionResolver $rowActions,
+        private readonly AiModelCardQueryRowActions $queryRowActions,
     ) {}
 
     public function index(IndexAiModelCardRequest $request): JsonResponse
@@ -40,7 +43,12 @@ class AiModelCardController extends Controller
             fn (): JsonResponse => $this->respondToQueryList(
                 $request,
                 $cards,
-                fn ($list) => $this->resolveResource(AiModelCardResource::collection($list)),
+                fn ($list) => QueryRowActionAttacher::attach(
+                    $this->resolveResource(AiModelCardResource::collection($list)),
+                    $list,
+                    $this->queryRowActions,
+                    $request->user(),
+                ),
                 __('api/inference.model_cards.list'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

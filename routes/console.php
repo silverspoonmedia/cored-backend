@@ -13,9 +13,9 @@ Schedule::command('payments:reconcile-withdrawable-funds')->everyTenMinutes();
 Schedule::command('service:process-entitlements')->hourly();
 Schedule::command('service:process-addon-renewals')->hourly();
 
-// File Hosting: reclaim orphaned multipart storage from abandoned upload sessions
+// Archivd: reclaim orphaned multipart storage from abandoned upload sessions
 // (Backblaze has no S3 lifecycle for incomplete multiparts).
-Schedule::command('file-hosting:prune-stale-uploads')
+Schedule::command('archivd:prune-stale-uploads')
     ->hourly()
     ->withoutOverlapping();
 
@@ -41,5 +41,14 @@ Schedule::command('vtual:poll-live-contents')
     ->everyTwoMinutes()
     ->withoutOverlapping();
 Schedule::command('vtual:renew-websub-subscriptions')
+    ->daily()
+    ->withoutOverlapping();
+Schedule::command('vtual:repair-archived-websub')
+    ->weekly()
+    ->withoutOverlapping();
+Schedule::command('vtual:renew-eventsub-subscriptions')
+    ->daily()
+    ->withoutOverlapping();
+Schedule::command('vtual:prune-fetch-pools')
     ->daily()
     ->withoutOverlapping();

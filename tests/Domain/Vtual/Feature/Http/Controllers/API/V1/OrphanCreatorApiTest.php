@@ -47,6 +47,25 @@ class OrphanCreatorApiTest extends TestCase
     }
 
     #[Test]
+    public function orphans_query_list_actions_require_manage(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        app(ProductActivationService::class)->activateImplicit($admin, 'Vtual');
+        $orphan = $this->creators->createOrphan($admin, ['display_name' => 'Orphan Actions']);
+
+        $row = collect(
+            $this->actingAsJwt($admin)
+                ->getJson('/api/v1/vtual/creators/orphans?display_mode=query')
+                ->assertOk()
+                ->json('data'),
+        )->firstWhere('id', (string) $orphan->id);
+
+        $this->assertNotNull($row);
+        $this->assertSame(['edit', 'delete'], collect($row['actions'])->pluck('key')->all());
+        $this->assertSame('vtual.orphans.edit', $row['actions'][0]['route']);
+    }
+
+    #[Test]
     public function orphans_datatable_returns_actions_column(): void
     {
         $admin = $this->userWithRole('Admin');

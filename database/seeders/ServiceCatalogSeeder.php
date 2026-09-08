@@ -7,12 +7,12 @@ use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServicePrice;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdCatalog;
 use App\Domain\Service\Support\MicrostockCatalog;
 use Illuminate\Database\Seeder;
 
 /**
- * File Hosting catalog: paid mains (exclusive) + stackable addons.
+ * Archivd catalog: paid mains (exclusive) + stackable addons.
  * Free tier is config behaviour only — not a catalog SKU.
  */
 class ServiceCatalogSeeder extends Seeder
@@ -23,49 +23,49 @@ class ServiceCatalogSeeder extends Seeder
         $this->removeFreeCatalogSku();
 
         $this->seedPlan(
-            code: FileHostingCatalog::CODE_MAIN_1TB,
+            code: ArchivdCatalog::CODE_MAIN_1TB,
             name: 'Standard 1 TB',
-            description: 'Main File Hosting plan: 1 TB storage, billed monthly. Not stackable with other mains.',
+            description: 'Main Archivd plan: 1 TB storage, billed monthly. Not stackable with other mains.',
             planKind: PlanKind::Main,
-            storageBytes: FileHostingCatalog::main1TbBytes(),
+            storageBytes: ArchivdCatalog::main1TbBytes(),
             amountUsd: 24.95,
         );
 
         $this->seedPlan(
-            code: FileHostingCatalog::CODE_MAIN_2TB,
+            code: ArchivdCatalog::CODE_MAIN_2TB,
             name: 'Standard 2 TB',
-            description: 'Main File Hosting plan: 2 TB storage, billed monthly. Not stackable with other mains.',
+            description: 'Main Archivd plan: 2 TB storage, billed monthly. Not stackable with other mains.',
             planKind: PlanKind::Main,
-            storageBytes: FileHostingCatalog::main2TbBytes(),
+            storageBytes: ArchivdCatalog::main2TbBytes(),
             amountUsd: 54.95,
         );
 
         $this->seedPlan(
-            code: FileHostingCatalog::CODE_ADDON_100GB,
+            code: ArchivdCatalog::CODE_ADDON_100GB,
             name: 'Standard +100 GB',
             description: 'Stackable storage addon: +100 GB per unit. Anniversary fixed from first buy; stack renews together.',
             planKind: PlanKind::Addon,
-            storageBytes: FileHostingCatalog::addon100GbBytes(),
+            storageBytes: ArchivdCatalog::addon100GbBytes(),
             amountUsd: 2.95,
         );
 
         $this->seedPlan(
-            code: FileHostingCatalog::CODE_ADDON_500GB,
+            code: ArchivdCatalog::CODE_ADDON_500GB,
             name: 'Standard +500 GB',
             description: 'Stackable storage addon: +500 GB per unit. Anniversary fixed from first buy; stack renews together.',
             planKind: PlanKind::Addon,
-            storageBytes: FileHostingCatalog::addon500GbBytes(),
+            storageBytes: ArchivdCatalog::addon500GbBytes(),
             amountUsd: 14.50,
         );
 
         $this->seedPlan(
-            code: FileHostingCatalog::CODE_ADDON_WORKSPACE_SLOT,
+            code: ArchivdCatalog::CODE_ADDON_WORKSPACE_SLOT,
             name: 'Team Workspace Slot',
             description: 'Stackable +1 owned team workspace slot per unit. Does not add storage. Requires paid FH plan for base slots.',
             planKind: PlanKind::Addon,
             storageBytes: 0,
             amountUsd: 1.00,
-            entitlement: FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+            entitlement: ArchivdCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
         );
 
         $this->seedPlan(
@@ -83,7 +83,7 @@ class ServiceCatalogSeeder extends Seeder
         $this->seedPlan(
             code: MicrostockCatalog::CODE_ADDON_WORKSPACE_SLOT,
             name: 'Microstock Workspace Slot',
-            description: 'Stackable +1 Microstock workspace slot per unit, billed monthly. Does not add storage. Slots are standalone from File Hosting team workspace slots.',
+            description: 'Stackable +1 Microstock workspace slot per unit, billed monthly. Does not add storage. Slots are standalone from Archivd team workspace slots.',
             planKind: PlanKind::Addon,
             storageBytes: 0,
             amountUsd: 1.00,
@@ -106,7 +106,7 @@ class ServiceCatalogSeeder extends Seeder
 
     private function removeFreeCatalogSku(): void
     {
-        $free = Service::query()->where('code', FileHostingCatalog::CODE_FREE)->first();
+        $free = Service::query()->where('code', ArchivdCatalog::CODE_FREE)->first();
 
         if ($free === null) {
             return;
@@ -119,7 +119,7 @@ class ServiceCatalogSeeder extends Seeder
     private function retireLegacyUnlimited(): void
     {
         $legacy = Service::query()
-            ->where('code', FileHostingCatalog::CODE_LEGACY_UNLIMITED)
+            ->where('code', ArchivdCatalog::CODE_LEGACY_UNLIMITED)
             ->first();
 
         if ($legacy === null) {
@@ -128,7 +128,7 @@ class ServiceCatalogSeeder extends Seeder
 
         $legacy->forceFill([
             'status' => ServiceStatus::Archived,
-            'name' => 'File Hosting Subscription (retired)',
+            'name' => 'Archivd Subscription (retired)',
             'description' => 'Legacy unlimited POC — replaced by main/addon plans.',
         ])->save();
     }
@@ -141,7 +141,7 @@ class ServiceCatalogSeeder extends Seeder
         int $storageBytes,
         float $amountUsd,
         string $entitlement = 'storage_quota',
-        string $fulfillmentTarget = FileHostingCatalog::FULFILLMENT_TARGET,
+        string $fulfillmentTarget = ArchivdCatalog::FULFILLMENT_TARGET,
         BillingInterval $interval = BillingInterval::Monthly,
     ): void {
         $service = Service::query()->updateOrCreate(

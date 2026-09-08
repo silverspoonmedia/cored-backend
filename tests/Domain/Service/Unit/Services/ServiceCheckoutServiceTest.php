@@ -33,7 +33,7 @@ class ServiceCheckoutServiceTest extends TestCase
         ]);
 
         $user = User::factory()->create();
-        $service = Service::factory()->fileHostingMonthly()->create();
+        $service = Service::factory()->archivdMonthly()->create();
         ServicePrice::factory()->usd(10)->create(['service_id' => $service->id]);
 
         $result = app(ServiceCheckoutService::class)->checkout($service, $user, 'USD');
@@ -71,7 +71,7 @@ class ServiceCheckoutServiceTest extends TestCase
         ]);
 
         $user = User::factory()->create();
-        $service = Service::factory()->fileHostingAddon100Gb()->create();
+        $service = Service::factory()->archivdAddon100Gb()->create();
         ServicePrice::factory()->usd(5)->create(['service_id' => $service->id]);
 
         $result = app(ServiceCheckoutService::class)->checkout($service, $user, 'USD', 3);
@@ -89,7 +89,7 @@ class ServiceCheckoutServiceTest extends TestCase
     public function test_main_plan_checkout_rejects_quantity_greater_than_one(): void
     {
         $user = User::factory()->create();
-        $service = Service::factory()->fileHostingMonthly()->create();
+        $service = Service::factory()->archivdMonthly()->create();
         ServicePrice::factory()->usd(10)->create(['service_id' => $service->id]);
 
         $this->expectException(ServiceException::class);
@@ -114,7 +114,7 @@ class ServiceCheckoutServiceTest extends TestCase
         Http::fake();
 
         $user = User::factory()->create();
-        $service = Service::factory()->fileHostingMonthly()->create();
+        $service = Service::factory()->archivdMonthly()->create();
         ServicePrice::factory()->usd(10)->create(['service_id' => $service->id]);
 
         $this->expectException(ServiceException::class);

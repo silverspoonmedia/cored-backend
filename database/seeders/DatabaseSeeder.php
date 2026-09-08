@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RoleSeeder::class);
-        $this->call(FileHostingRoleSeeder::class);
+        $this->call(ArchivdRoleSeeder::class);
         $this->call(VtualRoleSeeder::class);
         $this->call(MicrostockRoleSeeder::class);
         $this->call(ZzDemoRoleSeeder::class);
@@ -84,6 +84,37 @@ class DatabaseSeeder extends Seeder
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

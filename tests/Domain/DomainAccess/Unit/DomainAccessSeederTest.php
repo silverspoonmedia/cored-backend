@@ -30,7 +30,7 @@ class DomainAccessSeederTest extends TestCase
     public static function productDomainProvider(): array
     {
         return [
-            'FileHosting' => ['FileHosting'],
+            'Archivd' => ['Archivd'],
             'Vtual' => ['Vtual'],
         ];
     }

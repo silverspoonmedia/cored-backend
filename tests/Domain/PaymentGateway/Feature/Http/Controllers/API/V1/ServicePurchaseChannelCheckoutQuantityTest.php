@@ -50,7 +50,7 @@ class ServicePurchaseChannelCheckoutQuantityTest extends TestCase
         ]);
 
         $user = $this->userWithRole('Admin');
-        $service = Service::factory()->fileHostingAddon100Gb()->create();
+        $service = Service::factory()->archivdAddon100Gb()->create();
         ServicePrice::factory()->usd(2.95)->create(['service_id' => $service->id]);
 
         $purchase = ServicePurchase::factory()->pending()->create([

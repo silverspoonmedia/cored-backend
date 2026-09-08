@@ -2,11 +2,11 @@
 
 namespace Tests\Domain\Microstock\Unit\Support;
 
-use App\Domain\FileHosting\Enums\CollectionStatus;
-use App\Domain\FileHosting\Enums\WorkspaceKind;
-use App\Domain\FileHosting\Models\Folder;
-use App\Domain\FileHosting\Models\HostedFile;
-use App\Domain\FileHosting\Models\Workspace;
+use App\Domain\Archivd\Enums\CollectionStatus;
+use App\Domain\Archivd\Enums\WorkspaceKind;
+use App\Domain\Archivd\Models\Folder;
+use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Models\Workspace;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Events\AssetMetadataProgress;
@@ -72,7 +72,7 @@ class MicrostockRealtimeTest extends TestCase
             return $event->folderId === (string) $folder->id
                 && $event->workspaceId === (string) $folder->workspace_id
                 && $event->snapshot['status'] === CollectionStatus::Processing->value
-                && $event->broadcastOn()[0]->name === 'private-file-hosting.workspace.'.$folder->workspace_id;
+                && $event->broadcastOn()[0]->name === 'private-archivd.workspace.'.$folder->workspace_id;
         });
     }
 

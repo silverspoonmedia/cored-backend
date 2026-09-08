@@ -7,7 +7,7 @@ use App\Domain\Navigation\Models\Menu;
 use App\Domain\Navigation\Repositories\Eloquent\MenuRepository;
 use App\Domain\Navigation\Support\MenuLayout;
 use App\Support\Product\Services\ProductActivationService;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MenuSeeder;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\VtualRoleSeeder;
@@ -23,7 +23,7 @@ class MenuSeederTest extends TestCase
         parent::setUp();
 
         $this->seed(RoleSeeder::class);
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->seed(VtualRoleSeeder::class);
         $this->seed(MenuSeeder::class);
     }
@@ -47,13 +47,13 @@ class MenuSeederTest extends TestCase
                 'type' => 'h',
                 'children' => [
                     [
-                        'name' => 'File Hosting',
-                        'route' => 'file-hosting.index',
+                        'name' => 'Archivd',
+                        'route' => 'archivd.index',
                         'type' => 'p',
                         'children' => [
-                            ['name' => 'My Files', 'route' => 'file-hosting.index', 'type' => 'c', 'children' => []],
-                            ['name' => 'Trash', 'route' => 'file-hosting.trash', 'type' => 'c', 'children' => []],
-                            ['name' => 'DMCA Blocklist', 'route' => 'file-hosting.blocklist.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'My Files', 'route' => 'archivd.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Trash', 'route' => 'archivd.trash', 'type' => 'c', 'children' => []],
+                            ['name' => 'DMCA Blocklist', 'route' => 'archivd.blocklist.index', 'type' => 'c', 'children' => []],
                         ],
                     ],
                     [
@@ -62,6 +62,8 @@ class MenuSeederTest extends TestCase
                         'type' => 'p',
                         'children' => [
                             ['name' => 'My vTuber profiles', 'route' => 'vtual.profiles.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Managements', 'route' => 'vtual.managements.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Events', 'route' => 'vtual.events.index', 'type' => 'c', 'children' => []],
                         ],
                     ],
                 ],
@@ -128,7 +130,7 @@ class MenuSeederTest extends TestCase
                         'type' => 'p',
                         'children' => [
                             ['name' => 'Platform', 'route' => 'settings.platform', 'type' => 'c', 'children' => []],
-                            ['name' => 'File Hosting', 'route' => 'settings.file-hosting', 'type' => 'c', 'children' => []],
+                            ['name' => 'Archivd', 'route' => 'settings.archivd', 'type' => 'c', 'children' => []],
                             ['name' => 'Microstock', 'route' => 'settings.microstock', 'type' => 'c', 'children' => []],
                             ['name' => 'vTual', 'route' => 'settings.vtual', 'type' => 'c', 'children' => []],
                             ['name' => 'Notification audiences', 'route' => 'notification-audiences.index', 'type' => 'c', 'children' => []],
@@ -156,11 +158,15 @@ class MenuSeederTest extends TestCase
             'en' => 'Workspace',
             'id' => 'Ruang Kerja',
             'ja' => 'ワークスペース',
+            'ko' => '작업 공간',
+            'zh_CN' => '工作区',
+            'ar' => 'مساحة العمل',
+            'ru' => 'Рабочая область',
         ], $workspace->getTranslations('name'));
 
         $this->assertSame(
-            ['Admin', 'File Hosting Admin', 'Management', 'Moderator', 'Root'],
-            $this->roleNamesForRoute('file-hosting.blocklist.index'),
+            ['Admin', 'Archivd Admin', 'Management', 'Moderator', 'Root'],
+            $this->roleNamesForRoute('archivd.blocklist.index'),
         );
         $this->assertSame(
             ['Admin', 'Moderator', 'Root'],
@@ -170,9 +176,19 @@ class MenuSeederTest extends TestCase
             ['Vtual Admin', 'Vtual Editor', 'Vtual vTuber'],
             $this->roleNamesForRoute('vtual.profiles.index'),
         );
+        // Two menus share vtual.managements.index: the Products child is
+        // member-only (empty stored roles; rule 7 grants via membership) and
+        // the Administration child is Root/Admin.
+        $this->assertSame(
+            [
+                ['layout' => MenuLayout::SIDEBAR, 'roles' => []],
+                ['layout' => MenuLayout::SIDEBAR, 'roles' => ['Admin', 'Root']],
+            ],
+            $this->managementsNodeRoles(),
+        );
         $this->assertSame(
             ['Admin', 'Root'],
-            $this->roleNamesForRoute('settings.file-hosting'),
+            $this->roleNamesForRoute('settings.archivd'),
         );
         $this->assertSame(
             ['Admin', 'Root'],
@@ -236,7 +252,7 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(47, Menu::query()->count());
+        $this->assertSame(49, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -245,7 +261,7 @@ class MenuSeederTest extends TestCase
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(47, Menu::query()->count());
+        $this->assertSame(49, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -291,7 +307,7 @@ class MenuSeederTest extends TestCase
         $this->assertContains('Monitoring', $adminNames);
         $this->assertContains('Settings', $adminNames);
         $this->assertContains('Platform', $adminNames);
-        $this->assertContains('File Hosting', $adminNames);
+        $this->assertContains('Archivd', $adminNames);
         $this->assertContains('Microstock', $adminNames);
         $this->assertContains('vTual', $adminNames);
     }
@@ -302,7 +318,7 @@ class MenuSeederTest extends TestCase
         $user->assignRole($role);
 
         $activations = app(ProductActivationService::class);
-        $activations->activateImplicit($user, 'FileHosting');
+        $activations->activateImplicit($user, 'Archivd');
         $activations->activateImplicit($user, 'Vtual');
 
         return $user->fresh();
@@ -336,6 +352,33 @@ class MenuSeederTest extends TestCase
             ->roles
             ->pluck('name')
             ->sort()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Both "Managements" nodes share the `vtual.managements.index` route.
+     * Returns each row's layout plus sorted role names so the test can pin
+     * the dual placement: member-only (empty roles) vs staff (Root/Admin).
+     *
+     * @return list<array{layout: string, roles: list<string>}>
+     */
+    private function managementsNodeRoles(): array
+    {
+        return Menu::query()
+            ->where('route', 'vtual.managements.index')
+            ->orderBy('name->en')
+            ->get()
+            ->map(fn (Menu $menu): array => [
+                'layout' => $menu->layout,
+                'roles' => $menu->roles
+                    ->where('guard_name', 'api')
+                    ->pluck('name')
+                    ->sort()
+                    ->values()
+                    ->all(),
+            ])
+            ->sortBy(fn (array $row): int => $row['roles'] === [] ? 0 : 1)
             ->values()
             ->all();
     }

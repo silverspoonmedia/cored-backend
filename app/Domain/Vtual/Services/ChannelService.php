@@ -9,11 +9,11 @@ use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
-use App\Domain\Vtual\Jobs\RunChannelStubContentBackfillJob;
 use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileFingerprint;
 use App\Domain\Vtual\Integrations\Support\ChannelProfilePlatformGuard;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
+use App\Domain\Vtual\Jobs\RunChannelStubContentBackfillJob;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
 use Illuminate\Database\Eloquent\Collection;
@@ -260,11 +260,17 @@ class ChannelService
 
     /**
      * Soft-remove channel from manage UI (status archived; row kept).
+     * Pending rows are speculative — delete them instead of archiving.
      */
     public function archive(User $actor, string $channelId): Channel
     {
         $channel = Channel::query()->with(['platform', 'creator'])->findOrFail($channelId);
         $this->creatorAccess->assertCanMutate($channel->creator, $actor);
+
+        if ($channel->status === ChannelStatus::Pending) {
+            throw new VtualException(__('api/vtual.channel.pending_not_archivable'), 422);
+        }
+
         $this->assertLifecycleRateLimit($actor, $channelId);
 
         $channel->forceFill([
@@ -272,6 +278,21 @@ class ChannelService
         ])->save();
 
         return $channel->refresh()->load('platform');
+    }
+
+    /**
+     * Hard-delete a speculative pending registration row (frees fingerprint / pending: id).
+     */
+    public function deletePending(User $actor, string $channelId): void
+    {
+        $channel = Channel::query()->with('creator')->findOrFail($channelId);
+        $this->creatorAccess->assertCanMutate($channel->creator, $actor);
+
+        if ($channel->status !== ChannelStatus::Pending) {
+            throw new VtualException(__('api/vtual.channel.not_pending_delete'), 422);
+        }
+
+        $channel->forceDelete();
     }
 
     /**

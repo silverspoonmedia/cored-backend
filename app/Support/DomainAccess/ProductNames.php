@@ -7,10 +7,10 @@ use Illuminate\Support\Str;
 /**
  * Naming helpers for product-domain access RBAC.
  *
- * A product domain key is StudlyCase (e.g. FileHosting). We derive:
- * - human label:  "File Hosting"
- * - beta role:    "Beta tester File Hosting"
- * - access perm:  "access file hosting product"
+ * A product domain key is StudlyCase (e.g. Archivd). We derive:
+ * - human label:  "Archivd"
+ * - beta role:    "Beta tester Archivd"
+ * - access perm:  "access Archivd product"
  */
 class ProductNames
 {

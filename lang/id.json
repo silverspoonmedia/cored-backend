@@ -204,7 +204,7 @@
                 "resolved": "Selesai"
             }
         },
-        "file-hosting": {
+        "archivd": {
             "blocklist_removed": "Hash dihapus dari daftar blokir.",
             "blocklist_saved": "Hash ditambahkan ke daftar blokir.",
             "browse_success": "Browse dimuat.",
@@ -240,7 +240,7 @@
             },
             "public_share_blocked_hash": "File ini tidak dapat dibagikan secara publik (diblokir oleh kepatuhan).",
             "public_share_not_allowed": "Item di dalam workspace ini tidak dapat dibagikan secara publik.",
-            "public_share_requires_paid": "Berbagi tautan publik membutuhkan paket File Hosting berbayar yang masih aktif.",
+            "public_share_requires_paid": "Berbagi tautan publik membutuhkan paket Archivd berbayar yang masih aktif.",
             "quota_exceeded": "Kuota penyimpanan terlampaui.",
             "quota_grace_blocked": "Langganan Anda dalam masa grace. Perpanjang untuk mengunggah lagi.",
             "quota_success": "Kuota dimuat.",
@@ -304,7 +304,7 @@
                 "not_found": "Workspace tidak ditemukan.",
                 "owner_in_grace": "Pemilik workspace sedang dalam masa grace. Perpanjang paket untuk fitur kolaborasi.",
                 "owner_only": "Hanya pemilik workspace yang dapat melakukan aksi ini.",
-                "requires_paid": "Workspace kolaboratif membutuhkan paket File Hosting berbayar aktif (main atau addon).",
+                "requires_paid": "Workspace kolaboratif membutuhkan paket Archivd berbayar aktif (main atau addon).",
                 "role_updated": "Peran anggota diperbarui.",
                 "show_success": "Workspace dimuat.",
                 "slot_limit": "Batas team workspace milik Anda tercapai (:used / :limit). Arsipkan satu team atau beli addon Team Workspace Slot."
@@ -1772,7 +1772,7 @@
             },
             "view_detail": "Lihat"
         },
-        "file-hosting": {
+        "archivd": {
             "ajax_error": "Aksi gagal.",
             "ajax_success": "Aksi selesai.",
             "back": "Kembali ke file",
@@ -2103,7 +2103,7 @@
                 "label": "Visibilitas",
                 "private": "Terbatas"
             },
-            "vue_mount_failed": "UI File Hosting gagal dimuat. Muat ulang halaman.",
+            "vue_mount_failed": "UI Archivd gagal dimuat. Muat ulang halaman.",
             "workspace_activity": "Aktivitas tim",
             "workspace_personal": "Pribadi",
             "workspace_team": "Workspace tim"
@@ -2817,7 +2817,7 @@
                 "ai_balance": "Saldo analisis AI: $:balance · ~$:estimate per aset",
                 "buy_ai_credits": "Beli kredit AI ($5)",
                 "buy_slot": "Beli slot ($1/bln)",
-                "slot_desc": "Aktifkan workspace Microstock gratis, lalu beli slot workspace tambahan. Slot terpisah dari team workspace File Hosting.",
+                "slot_desc": "Aktifkan workspace Microstock gratis, lalu beli slot workspace tambahan. Slot terpisah dari team workspace Archivd.",
                 "title": "Microstock",
                 "usage_balance": "Penggunaan & saldo"
             },
@@ -2860,25 +2860,25 @@
         },
         "settings": {
             "fields": {
-                "file-hosting.allowed_mime_prefixes": "Awalan tipe MIME yang diizinkan",
-                "file-hosting.base_owned_workspace_slots": "Slot workspace milik dasar",
-                "file-hosting.chunk_size_bytes": "Ukuran chunk upload (byte)",
-                "file-hosting.default_quota_bytes": "Kuota penyimpanan default (byte)",
-                "file-hosting.disabled_regions": "Region penyimpanan dinonaktifkan",
-                "file-hosting.download_vault.enabled": "Proxy unduhan vault aktif",
-                "file-hosting.max_concurrent_parts": "Bagian multipart bersamaan maksimum",
-                "file-hosting.max_concurrent_uploads": "Upload bersamaan maksimum",
-                "file-hosting.max_file_size_bytes": "Ukuran file maksimum (byte)",
-                "file-hosting.max_files_per_batch": "File maksimum per batch",
-                "file-hosting.max_presigned_parts_per_response": "Bagian presigned maksimum per respons",
-                "file-hosting.multipart_threshold_bytes": "Ambang upload multipart (byte)",
-                "file-hosting.orphan_inactivity_minutes": "Timeout inaktivitas bagian yatim (menit)",
-                "file-hosting.presign_ttl_minutes": "TTL URL presigned (menit)",
-                "file-hosting.public_download_signature_ttl_minutes": "TTL tanda tangan unduhan publik (menit)",
-                "file-hosting.session_ttl_hours": "TTL sesi upload (jam)",
-                "file-hosting.signed_download_cache_margin_seconds": "Margin cache unduhan bertanda tangan (detik)",
-                "file-hosting.signed_download_ttl_minutes": "TTL URL unduhan bertanda tangan (menit)",
-                "file-hosting.stale_upload_grace_hours": "Masa tenggang upload tertunda (jam)",
+                "archivd.allowed_mime_prefixes": "Awalan tipe MIME yang diizinkan",
+                "archivd.base_owned_workspace_slots": "Slot workspace milik dasar",
+                "archivd.chunk_size_bytes": "Ukuran chunk upload (byte)",
+                "archivd.default_quota_bytes": "Kuota penyimpanan default (byte)",
+                "archivd.disabled_regions": "Region penyimpanan dinonaktifkan",
+                "archivd.download_vault.enabled": "Proxy unduhan vault aktif",
+                "archivd.max_concurrent_parts": "Bagian multipart bersamaan maksimum",
+                "archivd.max_concurrent_uploads": "Upload bersamaan maksimum",
+                "archivd.max_file_size_bytes": "Ukuran file maksimum (byte)",
+                "archivd.max_files_per_batch": "File maksimum per batch",
+                "archivd.max_presigned_parts_per_response": "Bagian presigned maksimum per respons",
+                "archivd.multipart_threshold_bytes": "Ambang upload multipart (byte)",
+                "archivd.orphan_inactivity_minutes": "Timeout inaktivitas bagian yatim (menit)",
+                "archivd.presign_ttl_minutes": "TTL URL presigned (menit)",
+                "archivd.public_download_signature_ttl_minutes": "TTL tanda tangan unduhan publik (menit)",
+                "archivd.session_ttl_hours": "TTL sesi upload (jam)",
+                "archivd.signed_download_cache_margin_seconds": "Margin cache unduhan bertanda tangan (detik)",
+                "archivd.signed_download_ttl_minutes": "TTL URL unduhan bertanda tangan (menit)",
+                "archivd.stale_upload_grace_hours": "Masa tenggang upload tertunda (jam)",
                 "identity.discord.connections_snapshot_max_age_minutes": "Umur maks snapshot koneksi Discord (menit)",
                 "microstock.ai.batch_chunk": "Ukuran chunk batch AI",
                 "microstock.ai.batch_min_files": "File minimum batch AI",
@@ -2999,7 +2999,7 @@
             },
             "groups": {
                 "currencies": "Mata uang",
-                "file_hosting": "File Hosting",
+                "archivd": "Archivd",
                 "microstock": "Microstock",
                 "notification_audiences": "Audiens notifikasi",
                 "platform": "Platform",

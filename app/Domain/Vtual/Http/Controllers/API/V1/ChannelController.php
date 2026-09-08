@@ -85,6 +85,15 @@ class ChannelController extends Controller
         );
     }
 
+    public function destroy(Request $request, Channel $channel): JsonResponse
+    {
+        $this->authorize('delete', $channel);
+
+        $this->channels->deletePending($request->user(), $channel->id);
+
+        return $this->successResponse(null, __('api/vtual.channel.deleted'));
+    }
+
     public function restore(Request $request, Channel $channel): JsonResponse
     {
         $this->authorize('create', Channel::class);

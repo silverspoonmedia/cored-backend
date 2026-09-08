@@ -6,7 +6,7 @@ use App\Domain\Service\Enums\BillingInterval;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Enums\ServiceStatus;
 use App\Domain\Service\Models\Service;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdCatalog;
 use App\Domain\Service\Support\MicrostockCatalog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -36,75 +36,75 @@ class ServiceFactory extends Factory
         ];
     }
 
-    public function fileHostingMain1Tb(): static
+    public function archivdMain1Tb(): static
     {
         return $this->state(fn (): array => [
-            'code' => FileHostingCatalog::CODE_MAIN_1TB,
+            'code' => ArchivdCatalog::CODE_MAIN_1TB,
             'name' => 'Standard 1 TB',
             'description' => 'Main plan 1 TB monthly.',
             'billing_interval' => BillingInterval::Monthly,
-            'fulfillment_target' => FileHostingCatalog::FULFILLMENT_TARGET,
+            'fulfillment_target' => ArchivdCatalog::FULFILLMENT_TARGET,
             'entitlement' => 'storage_quota',
             'plan_kind' => PlanKind::Main,
-            'storage_bytes' => FileHostingCatalog::main1TbBytes(),
+            'storage_bytes' => ArchivdCatalog::main1TbBytes(),
             'status' => ServiceStatus::Active,
         ]);
     }
 
-    public function fileHostingMain2Tb(): static
+    public function archivdMain2Tb(): static
     {
         return $this->state(fn (): array => [
-            'code' => FileHostingCatalog::CODE_MAIN_2TB,
+            'code' => ArchivdCatalog::CODE_MAIN_2TB,
             'name' => 'Standard 2 TB',
             'description' => 'Main plan 2 TB monthly.',
             'billing_interval' => BillingInterval::Monthly,
-            'fulfillment_target' => FileHostingCatalog::FULFILLMENT_TARGET,
+            'fulfillment_target' => ArchivdCatalog::FULFILLMENT_TARGET,
             'entitlement' => 'storage_quota',
             'plan_kind' => PlanKind::Main,
-            'storage_bytes' => FileHostingCatalog::main2TbBytes(),
+            'storage_bytes' => ArchivdCatalog::main2TbBytes(),
             'status' => ServiceStatus::Active,
         ]);
     }
 
-    public function fileHostingAddon100Gb(): static
+    public function archivdAddon100Gb(): static
     {
         return $this->state(fn (): array => [
-            'code' => FileHostingCatalog::CODE_ADDON_100GB,
+            'code' => ArchivdCatalog::CODE_ADDON_100GB,
             'name' => 'Standard +100 GB',
             'description' => 'Stackable +100 GB addon.',
             'billing_interval' => BillingInterval::Monthly,
-            'fulfillment_target' => FileHostingCatalog::FULFILLMENT_TARGET,
+            'fulfillment_target' => ArchivdCatalog::FULFILLMENT_TARGET,
             'entitlement' => 'storage_quota',
             'plan_kind' => PlanKind::Addon,
-            'storage_bytes' => FileHostingCatalog::addon100GbBytes(),
+            'storage_bytes' => ArchivdCatalog::addon100GbBytes(),
             'status' => ServiceStatus::Active,
         ]);
     }
 
-    public function fileHostingAddon500Gb(): static
+    public function archivdAddon500Gb(): static
     {
         return $this->state(fn (): array => [
-            'code' => FileHostingCatalog::CODE_ADDON_500GB,
+            'code' => ArchivdCatalog::CODE_ADDON_500GB,
             'name' => 'Standard +500 GB',
             'description' => 'Stackable +500 GB addon.',
             'billing_interval' => BillingInterval::Monthly,
-            'fulfillment_target' => FileHostingCatalog::FULFILLMENT_TARGET,
+            'fulfillment_target' => ArchivdCatalog::FULFILLMENT_TARGET,
             'entitlement' => 'storage_quota',
             'plan_kind' => PlanKind::Addon,
-            'storage_bytes' => FileHostingCatalog::addon500GbBytes(),
+            'storage_bytes' => ArchivdCatalog::addon500GbBytes(),
             'status' => ServiceStatus::Active,
         ]);
     }
 
-    public function fileHostingAddonWorkspaceSlot(): static
+    public function archivdAddonWorkspaceSlot(): static
     {
         return $this->state(fn (): array => [
-            'code' => FileHostingCatalog::CODE_ADDON_WORKSPACE_SLOT,
+            'code' => ArchivdCatalog::CODE_ADDON_WORKSPACE_SLOT,
             'name' => 'Team Workspace Slot',
             'description' => 'Stackable +1 owned team workspace slot.',
             'billing_interval' => BillingInterval::Monthly,
-            'fulfillment_target' => FileHostingCatalog::FULFILLMENT_TARGET,
-            'entitlement' => FileHostingCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
+            'fulfillment_target' => ArchivdCatalog::FULFILLMENT_TARGET,
+            'entitlement' => ArchivdCatalog::ENTITLEMENT_WORKSPACE_SLOTS,
             'plan_kind' => PlanKind::Addon,
             'storage_bytes' => 0,
             'status' => ServiceStatus::Active,
@@ -156,10 +156,10 @@ class ServiceFactory extends Factory
         ]);
     }
 
-    /** @deprecated Use fileHostingMain1Tb() — kept name for temporary test greps. */
-    public function fileHostingMonthly(): static
+    /** @deprecated Use archivdMain1Tb() — kept name for temporary test greps. */
+    public function archivdMonthly(): static
     {
-        return $this->fileHostingMain1Tb();
+        return $this->archivdMain1Tb();
     }
 
     public function draft(): static

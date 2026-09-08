@@ -18,20 +18,30 @@ final class TranslationResolver
         $locale ??= app()->getLocale();
         $fallback = (string) config('app.fallback_locale', 'en');
 
-        if (isset($translations[$locale]) && $translations[$locale] !== '') {
-            return $translations[$locale];
+        if (isset($translations[$locale]) && trim((string) $translations[$locale]) !== '') {
+            return (string) $translations[$locale];
         }
 
-        if (isset($translations[$fallback]) && $translations[$fallback] !== '') {
-            return $translations[$fallback];
+        if (self::requiresStrictLocale($locale)) {
+            return '';
+        }
+
+        if (isset($translations[$fallback]) && trim((string) $translations[$fallback]) !== '') {
+            return (string) $translations[$fallback];
         }
 
         foreach ($translations as $value) {
-            if ($value !== '') {
+            if (is_string($value) && trim($value) !== '') {
                 return $value;
             }
         }
 
         return '';
+    }
+
+    private static function requiresStrictLocale(string $locale): bool
+    {
+        return $locale !== (string) config('app.fallback_locale', 'en')
+            && in_array($locale, LocalePreference::supported(), true);
     }
 }

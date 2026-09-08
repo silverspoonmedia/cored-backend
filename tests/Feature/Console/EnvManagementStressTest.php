@@ -537,7 +537,7 @@ class EnvManagementStressTest extends TestCase
             'APP_KEY="base64:'.base64_encode(random_bytes(32)).'"',
             'APP_PREVIOUS_KEYS=""',
             'JWT_SECRET="roundtrip-jwt-secret"',
-            'FILE_HOSTING_UPLOAD_PROXY_URL="http://roundtrip.test"',
+            'ARCHIVD_UPLOAD_PROXY_URL="http://roundtrip.test"',
             'DB_DATABASE="roundtrip_local"',
         ]));
         $this->profiles->saveSnapshot('local');
@@ -559,7 +559,7 @@ class EnvManagementStressTest extends TestCase
 
         $env = File::get($this->profiles->envPath());
         $this->assertStringContainsString('roundtrip-jwt-secret', $env);
-        $this->assertStringContainsString('FILE_HOSTING_UPLOAD_PROXY_URL="http://roundtrip.test"', $env);
+        $this->assertStringContainsString('ARCHIVD_UPLOAD_PROXY_URL="http://roundtrip.test"', $env);
         $this->assertStringContainsString('roundtrip_local', $env);
     }
 

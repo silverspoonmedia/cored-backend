@@ -39,6 +39,19 @@ class ChannelPolicy
         return $this->perm($actor, 'create vtual channel');
     }
 
+    public function delete(User $actor, Channel $channel): Response
+    {
+        if (! $actor->can('create vtual channel')) {
+            return $this->deny(__('api/vtual.policy.denied'));
+        }
+
+        $creator = $channel->creator ?? $this->creatorAccess->findOrFail($channel->creator_id);
+
+        return $this->creatorAccess->canMutate($creator, $actor)
+            ? $this->allow()
+            : $this->deny(__('api/vtual.policy.mutate_denied'));
+    }
+
     private function perm(User $actor, string $permission): Response
     {
         return $actor->can($permission)

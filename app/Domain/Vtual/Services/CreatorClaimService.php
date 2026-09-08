@@ -55,7 +55,7 @@ class CreatorClaimService
         return CreatorClaim::query()
             ->where('user_id', $actor->id)
             ->where('status', CreatorClaimStatus::Pending)
-            ->with(['creator', 'channel.platform'])
+            ->with(['creator', 'channel.platform', 'verifiedChannel.platform'])
             ->orderByDesc('created_at')
             ->get();
     }
@@ -73,7 +73,7 @@ class CreatorClaimService
 
         return CreatorClaim::query()
             ->where('status', CreatorClaimStatus::Pending)
-            ->with(['creator', 'channel.platform', 'user'])
+            ->with(['creator', 'channel.platform', 'verifiedChannel.platform', 'user'])
             ->orderBy('created_at')
             ->get();
     }
@@ -81,7 +81,7 @@ class CreatorClaimService
     public function show(User $actor, string $claimId): CreatorClaim
     {
         $claim = CreatorClaim::query()
-            ->with(['creator', 'channel.platform', 'user'])
+            ->with(['creator', 'channel.platform', 'verifiedChannel.platform', 'user'])
             ->findOrFail($claimId);
 
         if ((string) $claim->user_id !== (string) $actor->id

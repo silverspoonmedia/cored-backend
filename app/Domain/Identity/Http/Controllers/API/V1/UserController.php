@@ -15,6 +15,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\DataTable\DataTableResponseFactory;
 use App\Support\DataTable\Resolvers\UserRowActionResolver;
+use App\Support\ListActions\Builders\UserQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Support\User\UserManagementPresenter;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -31,6 +33,7 @@ class UserController extends Controller
         private readonly RoleService $roleService,
         private readonly DataTableResponseFactory $dataTables,
         private readonly UserRowActionResolver $rowActions,
+        private readonly UserQueryRowActions $queryRowActions,
     ) {}
 
     public function index(IndexUserRequest $request): JsonResponse
@@ -45,7 +48,12 @@ class UserController extends Controller
             fn (): JsonResponse => $this->respondToQueryList(
                 $request,
                 $users,
-                fn ($list) => $this->resolveResource(UserManagementResource::collection($list)),
+                fn ($list) => QueryRowActionAttacher::attach(
+                    $this->resolveResource(UserManagementResource::collection($list)),
+                    $list,
+                    $this->queryRowActions,
+                    $actor,
+                ),
                 __('api/users.list_success'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

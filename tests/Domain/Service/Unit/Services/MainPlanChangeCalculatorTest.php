@@ -29,7 +29,7 @@ class MainPlanChangeCalculatorTest extends TestCase
     public function test_new_main_full_price(): void
     {
         $user = User::factory()->create();
-        $main = Service::factory()->fileHostingMain1Tb()->create();
+        $main = Service::factory()->archivdMain1Tb()->create();
 
         $quote = $this->calc->quote($main, $user->id, 24.95);
 
@@ -43,7 +43,7 @@ class MainPlanChangeCalculatorTest extends TestCase
     public function test_renew_same_main_full_price(): void
     {
         $user = User::factory()->create();
-        $main = Service::factory()->fileHostingMain1Tb()->create();
+        $main = Service::factory()->archivdMain1Tb()->create();
         $this->seedActiveMain($user, $main, 24.95, now()->addDays(10));
 
         $quote = $this->calc->quote($main, $user->id, 24.95);
@@ -58,8 +58,8 @@ class MainPlanChangeCalculatorTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $main30 = Service::factory()->fileHostingMain2Tb()->create();
-        $main15 = Service::factory()->fileHostingMain1Tb()->create();
+        $main30 = Service::factory()->archivdMain2Tb()->create();
+        $main15 = Service::factory()->archivdMain1Tb()->create();
 
         // Paid $30; 15 days remaining of 30 → credit $15; target $15 → charge 0, surplus 0
         // (credit fully pays one period; surplus_days only when credit > list)
@@ -80,8 +80,8 @@ class MainPlanChangeCalculatorTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $main30 = Service::factory()->fileHostingMain2Tb()->create();
-        $main15 = Service::factory()->fileHostingMain1Tb()->create();
+        $main30 = Service::factory()->archivdMain2Tb()->create();
+        $main15 = Service::factory()->archivdMain1Tb()->create();
 
         // Paid $30; 29 days remaining → credit ~$29; target $15 → charge 0, surplus ~$14 → ~28 days
         $this->seedActiveMain($user, $main30, 30.00, now()->addDays(29));
@@ -100,8 +100,8 @@ class MainPlanChangeCalculatorTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $main30 = Service::factory()->fileHostingMain2Tb()->create();
-        $main15 = Service::factory()->fileHostingMain1Tb()->create();
+        $main30 = Service::factory()->archivdMain2Tb()->create();
+        $main15 = Service::factory()->archivdMain1Tb()->create();
 
         // 5 days remaining of 30 on $30 → credit $5; target $15 → charge $10
         $this->seedActiveMain($user, $main30, 30.00, now()->addDays(5));
@@ -121,8 +121,8 @@ class MainPlanChangeCalculatorTest extends TestCase
         Carbon::setTestNow('2026-07-16 12:00:00');
 
         $user = User::factory()->create();
-        $main1 = Service::factory()->fileHostingMain1Tb()->create();
-        $main2 = Service::factory()->fileHostingMain2Tb()->create();
+        $main1 = Service::factory()->archivdMain1Tb()->create();
+        $main2 = Service::factory()->archivdMain2Tb()->create();
 
         // 15 days left on $15 → credit $7.5; target $30 → charge $22.5
         $this->seedActiveMain($user, $main1, 15.00, now()->addDays(15));
@@ -140,7 +140,7 @@ class MainPlanChangeCalculatorTest extends TestCase
     public function test_addon_is_unit_full_price(): void
     {
         $user = User::factory()->create();
-        $addon = Service::factory()->fileHostingAddon100Gb()->create();
+        $addon = Service::factory()->archivdAddon100Gb()->create();
 
         $quote = $this->calc->quote($addon, $user->id, 2.95);
 

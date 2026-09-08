@@ -84,7 +84,7 @@ class ServiceEntitlement extends Model
     {
         $this->loadMissing('service');
 
-        if ($this->service === null || ! $this->service->isFileHostingStoragePlan()) {
+        if ($this->service === null || ! $this->service->isArchivdStoragePlan()) {
             return 0;
         }
 

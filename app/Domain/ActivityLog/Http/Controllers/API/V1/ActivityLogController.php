@@ -9,6 +9,8 @@ use App\Domain\Identity\Models\User;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ListActions\Builders\ActivityLogQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Spatie\Activitylog\Models\Activity;
@@ -26,6 +28,7 @@ class ActivityLogController extends Controller
 
     public function __construct(
         private readonly ActivityLogService $activityLogs,
+        private readonly ActivityLogQueryRowActions $queryRowActions,
     ) {}
 
     public function index(IndexActivityLogRequest $request): JsonResponse
@@ -39,7 +42,12 @@ class ActivityLogController extends Controller
         return $this->respondToQueryList(
             $request,
             $items,
-            fn ($list) => $this->resolveResource(ActivityLogResource::collection($list)),
+            fn ($list) => QueryRowActionAttacher::attach(
+                $this->resolveResource(ActivityLogResource::collection($list)),
+                $list,
+                $this->queryRowActions,
+                $request->user(),
+            ),
             __('api/activity-log.list_success'),
         );
     }

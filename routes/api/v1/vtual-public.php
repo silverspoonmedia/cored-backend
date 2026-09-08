@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Vtual\Http\Controllers\API\V1\PublicManagementController;
 use App\Domain\Vtual\Http\Controllers\API\V1\PublicVtuberController;
 use Illuminate\Support\Facades\Route;
 
@@ -10,7 +11,9 @@ Route::middleware('throttle:60,1')->prefix('vtual/public')->name('vtual.public.'
     Route::get('stats', [PublicVtuberController::class, 'stats'])->name('stats');
     Route::get('live', [PublicVtuberController::class, 'live'])->name('live');
     Route::get('schedule', [PublicVtuberController::class, 'schedule'])->name('schedule');
+    Route::get('events', [PublicVtuberController::class, 'events'])->name('events');
     Route::get('vtubers', [PublicVtuberController::class, 'index'])->name('vtubers.index');
     Route::get('contents', [PublicVtuberController::class, 'contents'])->name('contents.index');
     Route::get('vtubers/{creator}', [PublicVtuberController::class, 'show'])->name('vtubers.show');
+    Route::get('managements/{management}', [PublicManagementController::class, 'show'])->name('managements.show');
 });

@@ -8,6 +8,7 @@ use App\Domain\Vtual\Enums\ContentFetchPoolStatus;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Enums\PlatformKey;
+use App\Domain\Vtual\Integrations\Dto\PlatformStreamDto;
 use App\Domain\Vtual\Integrations\Dto\PlatformVideoDto;
 use App\Domain\Vtual\Integrations\PlatformApiGateway;
 use App\Domain\Vtual\Models\Channel;
@@ -20,6 +21,7 @@ use App\Domain\Vtual\Services\CreatorService;
 use App\Domain\Vtual\Services\LiveContentPollService;
 use App\Domain\Vtual\Services\PlatformVideoDtoMapper;
 use App\Domain\Vtual\Services\ContentService;
+use App\Domain\Vtual\Services\TwitchLiveStateService;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -142,6 +144,7 @@ class ContentIngestionPoolTest extends TestCase
             $gateway,
             app(PlatformVideoDtoMapper::class),
             app(ContentService::class),
+            app(TwitchLiveStateService::class),
         );
 
         $summary = $poll->poll();
@@ -149,6 +152,79 @@ class ContentIngestionPoolTest extends TestCase
         $this->assertSame(1, $summary['ended']);
         $this->assertDatabaseHas('vtual_contents', [
             'external_id' => 'VgdAA0Gdzn0',
+            'type' => ContentType::Archive->value,
+            'status' => ContentStatus::Ended->value,
+        ]);
+    }
+
+    #[Test]
+    public function live_poll_twitch_branch_refreshes_live_and_ends_missing(): void
+    {
+        $liveChannel = $this->seedTwitchChannel('40934651');
+        $deadChannel = $this->seedTwitchChannel('40934652');
+
+        foreach ([$liveChannel, $deadChannel] as $channel) {
+            Content::query()->create([
+                'id' => (string) Str::uuid7(),
+                'creator_id' => $channel->creator_id,
+                'channel_id' => $channel->id,
+                'platform_id' => $channel->platform_id,
+                'external_id' => 'stream-'.$channel->external_id,
+                'type' => ContentType::Live,
+                'status' => ContentStatus::Live,
+                'title' => 'Was Live',
+            ]);
+        }
+
+        $gateway = Mockery::mock(PlatformApiGateway::class);
+        $gateway->shouldReceive('fetchStreamsByUserIds')
+            ->once()
+            ->with(PlatformKey::Twitch, ['40934651', '40934652'])
+            ->andReturn(collect([
+                new PlatformStreamDto(
+                    platform: PlatformKey::Twitch,
+                    externalId: 'stream-session-777',
+                    userExternalId: '40934651',
+                    userLogin: 'stilllive',
+                    userName: 'Still Live',
+                    title: 'Stream title v2',
+                    gameName: 'Games',
+                    thumbnailUrl: null,
+                    url: 'https://www.twitch.tv/stilllive',
+                    concurrentViewers: 555,
+                    startedAt: Carbon::parse('2026-09-07T00:00:00Z'),
+                    language: 'en',
+                ),
+            ]));
+
+        $poll = new LiveContentPollService(
+            $gateway,
+            app(PlatformVideoDtoMapper::class),
+            app(ContentService::class),
+            app(TwitchLiveStateService::class),
+        );
+
+        $summary = $poll->poll();
+
+        // Twitch branch: 2 polled, 1 refreshed, 1 ended.
+        $this->assertSame(2, $summary['polled']);
+        $this->assertSame(1, $summary['updated']);
+        $this->assertSame(1, $summary['ended']);
+
+        // Live stream got a fresh row under the new session id.
+        $this->assertDatabaseHas('vtual_contents', [
+            'channel_id' => $liveChannel->id,
+            'external_id' => 'stream-session-777',
+            'type' => ContentType::Live->value,
+            'status' => ContentStatus::Live->value,
+            'title' => 'Stream title v2',
+            'concurrent_viewers' => 555,
+        ]);
+
+        // Missing stream ended.
+        $this->assertDatabaseHas('vtual_contents', [
+            'channel_id' => $deadChannel->id,
+            'external_id' => 'stream-40934652',
             'type' => ContentType::Archive->value,
             'status' => ContentStatus::Ended->value,
         ]);
@@ -171,6 +247,27 @@ class ContentIngestionPoolTest extends TestCase
             'external_id' => 'UCPkKpOHxEDcwmUAnRpIu-Ng',
             'handle' => 'poolfox',
             'display_name' => 'Pool Fox',
+            'status' => ChannelStatus::Active,
+        ]);
+    }
+
+    private function seedTwitchChannel(string $externalId): Channel
+    {
+        $twitch = Platform::query()->where('key', 'twitch')->firstOrFail();
+        $user = User::query()->create([
+            'name' => 'Twitch Pool User',
+            'email' => 'twitch-pool-'.uniqid().'@example.com',
+            'password' => Hash::make('password'),
+        ]);
+        $user->assignRole('Admin');
+        $creator = app(CreatorService::class)->createOrphan($user, ['display_name' => 'Twitch Pool Fox']);
+
+        return Channel::query()->create([
+            'id' => (string) Str::uuid7(),
+            'creator_id' => $creator->id,
+            'platform_id' => $twitch->id,
+            'external_id' => $externalId,
+            'display_name' => 'Twitch Pool Fox',
             'status' => ChannelStatus::Active,
         ]);
     }

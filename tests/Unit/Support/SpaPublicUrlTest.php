@@ -75,11 +75,11 @@ class SpaPublicUrlTest extends TestCase
         $id = '01900000-0000-7000-8000-000000000001';
 
         $this->assertSame(
-            route('file-hosting.public.files.show', ['file' => $id]),
+            route('archivd.public.files.show', ['file' => $id]),
             SpaPublicUrl::publicFileShare($id),
         );
         $this->assertSame(
-            route('file-hosting.public.folders.show', ['folder' => $id]),
+            route('archivd.public.folders.show', ['folder' => $id]),
             SpaPublicUrl::publicFolderShare($id),
         );
     }

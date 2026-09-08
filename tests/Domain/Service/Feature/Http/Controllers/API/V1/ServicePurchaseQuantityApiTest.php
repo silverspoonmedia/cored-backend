@@ -38,7 +38,7 @@ class ServicePurchaseQuantityApiTest extends TestCase
         ]);
 
         $user = $this->userWithRole('User');
-        $service = Service::factory()->fileHostingAddon100Gb()->create();
+        $service = Service::factory()->archivdAddon100Gb()->create();
         ServicePrice::factory()->usd(2.95)->create(['service_id' => $service->id]);
 
         $purchase = ServicePurchase::factory()->pending()->create([
@@ -89,7 +89,7 @@ class ServicePurchaseQuantityApiTest extends TestCase
     public function test_main_plan_quantity_update_is_rejected(): void
     {
         $user = $this->userWithRole('User');
-        $service = Service::factory()->fileHostingMain1Tb()->create();
+        $service = Service::factory()->archivdMain1Tb()->create();
         $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $user->id,
             'service_id' => $service->id,
@@ -117,7 +117,7 @@ class ServicePurchaseQuantityApiTest extends TestCase
     public function test_paid_purchase_quantity_update_is_rejected(): void
     {
         $user = $this->userWithRole('User');
-        $service = Service::factory()->fileHostingAddon100Gb()->create();
+        $service = Service::factory()->archivdAddon100Gb()->create();
         $purchase = ServicePurchase::factory()->paid()->create([
             'user_id' => $user->id,
             'service_id' => $service->id,
@@ -138,7 +138,7 @@ class ServicePurchaseQuantityApiTest extends TestCase
         ]);
 
         $user = $this->userWithRole('User');
-        $service = Service::factory()->fileHostingAddon100Gb()->create();
+        $service = Service::factory()->archivdAddon100Gb()->create();
         ServicePrice::factory()->usd(2.95)->create(['service_id' => $service->id]);
 
         $purchase = ServicePurchase::factory()->pending()->create([

@@ -4,6 +4,7 @@ namespace App\Domain\Vtual\Services;
 
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
+use App\Domain\Vtual\Integrations\Dto\PlatformStreamDto;
 use App\Domain\Vtual\Integrations\Dto\PlatformVideoDto;
 
 /**
@@ -50,6 +51,40 @@ class PlatformVideoDtoMapper
         }
 
         return $payload;
+    }
+
+    /**
+     * Map a live stream DTO (Twitch /streams) to a live content upsert payload.
+     * The stream session id is the content external_id — each stream session
+     * becomes its own content row, mirroring YouTube live rows.
+     *
+     * @return array{
+     *     external_id: string,
+     *     type: string,
+     *     status: string,
+     *     title?: string|null,
+     *     description?: string|null,
+     *     thumbnail_url?: string|null,
+     *     url?: string|null,
+     *     concurrent_viewers?: int|null,
+     *     started_at?: mixed,
+     *     published_at?: mixed,
+     * }
+     */
+    public function toUpsertPayloadFromStream(PlatformStreamDto $dto): array
+    {
+        return [
+            'external_id' => $dto->externalId,
+            'type' => ContentType::Live->value,
+            'status' => ContentStatus::Live->value,
+            'title' => $dto->title,
+            'description' => $dto->gameName,
+            'thumbnail_url' => $dto->thumbnailUrl,
+            'url' => $dto->url,
+            'concurrent_viewers' => $dto->concurrentViewers,
+            'started_at' => $dto->startedAt,
+            'published_at' => $dto->startedAt,
+        ];
     }
 
     /**

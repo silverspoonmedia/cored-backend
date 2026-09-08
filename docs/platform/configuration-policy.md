@@ -69,7 +69,7 @@ Mirrors [`config/settings-local.php`](../../config/settings-local.php) — updat
 | `microstock.daily_free.enabled` | `true` | Dev daily free on |
 | `microstock.daily_free.limit_per_user` | `1_000_000` | Generous local limit |
 | `platform.notifications.delivery` | `realtime` | Bell without polling |
-| `file-hosting.download_vault.enabled` | `true` | Vault download path in hybrid proxy |
+| `archivd.download_vault.enabled` | `true` | Vault download path in hybrid proxy |
 | `microstock.ai.http_retries` | `1` | Faster AI failure in dev |
 | `vtual.claim.accept_anyway_enabled` | `true` | Claim dev ergonomics |
 | `vtual.channel_claim.accept_anyway_enabled` | `true` | Channel claim dev ergonomics |
@@ -83,7 +83,7 @@ Mirrors [`config/settings-local.php`](../../config/settings-local.php) — updat
 ## Agent checklist — new operational knob
 
 1. Classify tier (A / B / C).
-2. **Tier B:** add `SettingRegistry` entry → `SettingsSeeder` picks it up → translations in `lang/{en,id,ja}/web/settings.php` (`fields` + optional `hints`) → `SettingRegistryTranslationTest` green → **no** new env key. For enum-like strings, declare registry `options`, ship `web/settings.options.{key}.{value}` labels (en/id/ja), and rely on `presentGroup` + `settings/partials/form` native `<select>` (no Select2) — see [settings.md](settings.md). For **local-only** dev defaults, add to `config/settings-local.php` (not config literals).
+2. **Tier B:** add `SettingRegistry` entry → `SettingsSeeder` picks it up → translations in `lang/{en,id,ja,ko,zh_CN,ar,ru}/web/settings.php` (`fields` + optional `hints`) → `SettingRegistryTranslationTest` green → **no** new env key. For enum-like strings, declare registry `options`, ship `web/settings.options.{key}.{value}` labels in all seven locales, and rely on `presentGroup` + SPA `SettingsFormView` `FormSelect` — see [settings.md](settings.md). For **local-only** dev defaults, add to `config/settings-local.php` (not config literals).
 3. **Tier C:** dedicated migration + model with envelope cast; admin UI; never registry.
 4. Domain code reads via `setting_config()` only — never `config()` for registry paths.
 5. Update [settings.md](settings.md) and this doc if tier boundaries change.

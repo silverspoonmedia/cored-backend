@@ -4,7 +4,7 @@ namespace Tests\Domain\Vtual\Feature;
 
 use App\Domain\Identity\Models\User;
 use App\Support\Product\Enums\ProductActivationState;
-use Database\Seeders\FileHostingRoleSeeder;
+use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -20,7 +20,7 @@ class RegisterVtualActivationTest extends TestCase
     {
         parent::setUp();
         $this->seedRolesAndPermissions();
-        $this->seed(FileHostingRoleSeeder::class);
+        $this->seed(ArchivdRoleSeeder::class);
         $this->seed(VtualRoleSeeder::class);
         config(['hcaptcha.enabled' => false]);
     }

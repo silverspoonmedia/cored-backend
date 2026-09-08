@@ -40,6 +40,7 @@ class Content extends Model
         'ended_at',
         'published_at',
         'hydrated_at',
+        'first_unavailable_at',
     ];
 
     /**
@@ -56,6 +57,7 @@ class Content extends Model
             'ended_at' => 'datetime',
             'published_at' => 'datetime',
             'hydrated_at' => 'datetime',
+            'first_unavailable_at' => 'datetime',
         ];
     }
 

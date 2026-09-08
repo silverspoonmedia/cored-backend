@@ -10,6 +10,7 @@ use App\Domain\Vtual\Models\ChannelClaim;
 use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Services\ChannelClaimService;
 use App\Domain\Vtual\Services\ChannelService;
+use App\Domain\Vtual\Services\CreatorAccessService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Traits\ApiResponse;
@@ -24,6 +25,7 @@ class ChannelClaimController extends Controller
     public function __construct(
         private readonly ChannelClaimService $claims,
         private readonly ChannelService $channels,
+        private readonly CreatorAccessService $creatorAccess,
     ) {}
 
     public function index(Request $request, Creator $creator): JsonResponse
@@ -39,9 +41,9 @@ class ChannelClaimController extends Controller
     }
 
     /**
-     * Dual path:
-     * - manage any (staff): resolve + active channel immediately (no claim row).
-     * - owner/editor: start bio-token channel claim (pending only).
+     * Dual path (membership first, then staff pending):
+     * - Actual owner/editor member → bio-token channel claim (pending claim only).
+     * - Else manage any (staff without mutate membership) → pending channel row, no claim.
      */
     public function store(StoreChannelRequest $request, Creator $creator): JsonResponse
     {
@@ -50,6 +52,17 @@ class ChannelClaimController extends Controller
 
         $actor = $request->user();
         $data = $request->validated();
+
+        $memberRole = $this->creatorAccess->memberRoleFor($creator, $actor);
+        if ($memberRole !== null && $memberRole->canMutate()) {
+            $claim = $this->claims->start($actor, $creator->id, $data);
+
+            return $this->successResponse(
+                $this->resolveResource(new ChannelClaimResource($claim)),
+                __('api/vtual.channel_claim.started'),
+                201,
+            );
+        }
 
         if ($actor->can('manage any vtual resource')) {
             $channel = $this->channels->registerPendingForStaff($actor, $creator->id, $data);
@@ -61,13 +74,7 @@ class ChannelClaimController extends Controller
             );
         }
 
-        $claim = $this->claims->start($actor, $creator->id, $data);
-
-        return $this->successResponse(
-            $this->resolveResource(new ChannelClaimResource($claim)),
-            __('api/vtual.channel_claim.started'),
-            201,
-        );
+        abort(403, __('api/vtual.policy.mutate_denied'));
     }
 
     public function show(Request $request, ChannelClaim $channelClaim): JsonResponse

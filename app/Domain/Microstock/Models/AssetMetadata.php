@@ -2,7 +2,7 @@
 
 namespace App\Domain\Microstock\Models;
 
-use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

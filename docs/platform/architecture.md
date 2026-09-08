@@ -9,7 +9,7 @@ Do **not** collapse taxonomy and lifecycle into one label.
 | Term | Axis | Meaning |
 |------|------|---------|
 | **Core domain** | Taxonomy (`kind`) | Foundation. Without it the app does not run well (Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service, Inference). |
-| **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (FileHosting, Vtual, Microstock). Extends core (Identity, H-RBAC, payments, …). |
+| **Product domain** | Taxonomy (`kind`) | SaaS / feature surface sold by the project (Archivd, Vtual, Microstock). Extends core (Identity, H-RBAC, payments, …). |
 | **`locked`** | Lifecycle (product only) | `domain:remove` refuses until you set `'locked' => false` in [`config/domains.php`](../../config/domains.php). |
 | **Removable** | Derived | Product with `locked => false`. Not a config key. |
 | **`DomainManager::PLATFORM_CORE`** | Hard guard | Never-remove list. Config cannot override. |
@@ -23,7 +23,7 @@ Do **not** collapse taxonomy and lifecycle into one label.
 | Kind | Examples | `domain:remove` |
 |------|----------|-----------------|
 | **Core** | Identity, Navigation, Notification, ActivityLog, ErrorLog, PaymentGateway, Service, Inference + Kernel | **Always refused** — `PLATFORM_CORE`; flipping `kind` in config does nothing |
-| **Product + locked** | Default for `domain:make`; FileHosting, Vtual | Refused until `'locked' => false` in config |
+| **Product + locked** | Default for `domain:make`; Archivd, Vtual | Refused until `'locked' => false` in config |
 | **Product + removable** | `domain:make --removable` | Allowed (`--force`) |
 
 There is **no** `domain:unlock` command — unlock is a deliberate config edit.
@@ -33,7 +33,7 @@ There is **no** `domain:unlock` command — unlock is a deliberate config edit.
 ```php
 // config/domains.php
 'Identity' => ['kind' => 'core'],
-'FileHosting' => ['kind' => 'product', 'locked' => true],
+'Archivd' => ['kind' => 'product', 'locked' => true],
 'Vtual' => ['kind' => 'product', 'locked' => true],
 // removable product: ['kind' => 'product', 'locked' => false]
 ```
@@ -68,11 +68,11 @@ app/
 │   ├── Notification/   # Activity notifications (core)
 │   ├── ActivityLog/    # Spatie audit trail (core)
 │   ├── ErrorLog/       # Grouped persistent app errors (core)
-│   ├── FileHosting/    # Nested files, chunk S3 upload, Drive-lite share (product, locked)
+│   ├── Archivd/    # Nested files, chunk S3 upload, Drive-lite share (product, locked)
 │   ├── Vtual/          # Creator aggregator foundation (product, locked)
-│   ├── Microstock/     # Microstock asset mgmt on FH system workspace (product, locked)
+│   ├── Microstock/     # Microstock asset mgmt on Archivd system workspace (product, locked)
 │   ├── PaymentGateway/ # Midtrans, iPaymu, invoices (core)
-│   ├── Service/        # Catalog, entitlements, DB FX→IDR, FH grace/purge (core)
+│   ├── Service/        # Catalog, entitlements, DB FX→IDR, Archivd grace/purge (core)
 │   └── Inference/      # AI model catalog + provider model rates + snapshots (core)
 ├── Http/Middleware/    # Kernel
 ├── Repositories/Eloquent/EloquentCrudRepository.php
@@ -91,7 +91,7 @@ Tests: `tests/Domain/{Domain}/` (PHPUnit suite `Domain`).
 
 API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/web.php` → `routes/web/{domain}.php`.
 
-**Web URI layout:** The Blade admin is removed. Authenticated UI lives in the SPA under `/apps/*` paths (Vue Router symbolic names like `dashboard`, `file-hosting.index` — stored in menu rows, validated via `config/spa-routes.php`). Monolith `web` routes are **server endpoints only**: `GET /` → SPA redirect; public share `/s/*`; iPaymu return; Discord OAuth callback. API paths (`/api/v1/*`) are unchanged. Root product path `/vtual` is the Vue-Workers public landing (plus `/vtual/vtubers/{slug}`). See [blade-admin.md](../web/blade-admin.md) and [vue-workers-spa.md](../integration/vue-workers-spa.md).
+**Web URI layout:** The Blade admin is removed. Authenticated UI lives in the SPA under `/apps/*` paths (Vue Router symbolic names like `dashboard`, `archivd.index` — stored in menu rows, validated via `config/spa-routes.php`). Monolith `web` routes are **server endpoints only**: `GET /` → SPA redirect; public share `/s/*`; iPaymu return; Discord OAuth callback. API paths (`/api/v1/*`) are unchanged. Root product path `/vtual` is the Vue-Workers public landing (plus `/vtual/vtubers/{slug}`). See [blade-admin.md](../web/blade-admin.md) and [vue-workers-spa.md](../integration/vue-workers-spa.md).
 
 **Loader convention (presentation only):** list **core** requires first, **product** last, with short `// Core` / `// Product` comment sections. Same order in `bootstrap/providers.php` and `config/domains.php`. Does **not** change API URL paths or route names. `domain:make` still appends into the `/apps` auth group; re-order once if a new product lands mid-file. Guest/public web specials stay outside kind sections — those groups are auth surface, not taxonomy.
 
@@ -104,9 +104,9 @@ API loaders: `routes/api/v1.php` → `routes/api/v1/{domain}.php`. Web: `routes/
 | `error-log.php` | Grouped persistent app errors | core |
 | `payment-gateway.php` | Gateways, invoices, subscriptions | core |
 | `service.php` | Service catalog, checkout, service purchases | core |
-| `file-hosting.php` | File hosting (auth + public share) folders/files/uploads | product |
+| `archivd.php` | Archivd (auth + public share) folders/files/uploads | product |
 | `vtual.php` | vTual creators, managements, channels (foundation) | product |
-| `microstock.php` | Microstock (API + thin web entry; FH mounts most UI) | product |
+| `microstock.php` | Microstock (API + thin web entry; Archivd mounts most UI) | product |
 
 Kernel product registry (`app/Support/Product`): `product-activations.php` is **not** a domain route file — it mounts the cross-domain Product Activation API (self-service + admin). Loaded from `routes/api/v1.php` between core and product domain requires.
 

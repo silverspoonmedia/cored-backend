@@ -33,7 +33,7 @@ class WebSurfaceRouteListTest extends TestCase
         'login',
         'dashboard',
         'users.index',
-        'file-hosting.index',
+        'archivd.index',
         'menus.index',
         'vtual.orphans.index',
     ];

@@ -43,7 +43,8 @@ A node is visible only if **it and every ancestor** pass these rules in order:
 4. Authenticate-required node is hidden from guests.
 5. **Domain Access gate** — if the node's route maps to a product through `config/products.php` `menu_routes`, `DomainAccessService::canAccess` must allow the viewer. This runs for guests too. Private products allow Root/Admin and holders of the matching `Beta tester {Domain}` role or `access {domain} product` permission. See [Domain Access — Menu visibility](../domain-access/README.md#menu-visibility).
 6. **Product activation gate** — for the same mapped product, an authenticated viewer must have an `active` activation. Suspended, expired, pending, or missing activation hides the node. Guests skip this activation check. See [Product Activations — Menu visibility](../product-activations/README.md#menu-visibility-v2).
-7. If roles are attached, the viewer must have any attached role; no roles means open to viewers who passed prior rules.
+7. **vTual management membership gate** — for nodes whose stored route is in `MenuRepository::MANAGEMENT_MEMBER_ROUTES` (`vtual.profiles.index` — the Workspace vTual parent, `vtual.managements.index` — the Managements children, and `vtual.events.index` — the Events child), a viewer without the attached roles is still granted if they hold any `vtual_management_members` row. Guests are never granted. This gate applies **per node**: the Products "Managements" and "Events" children store **no roles at all** and are therefore visible *only* through membership (rule 8's no-roles-fallback is never reached because rule 7 returns first for non-members too — empty roles + rule 7 route = member-only node). The Administration "Managements" child is NOT effectively granted to members: rule 7's route check would grant the node itself, but the Administration parent (`vtual.orphans.index`) is not in the constant, so the ancestor chain fails and the branch stays hidden. Staff reach Managements only through Administration; members only through Products.
+8. If roles are attached, the viewer must have any attached role; no roles means open to viewers who passed prior rules.
 
 `MenuRepository` evaluates every candidate node and each ancestor in its chain. For each route-bearing node it resolves `ProductRegistry::productKeyByMenuRoute` using the **stored DB route** (never the presentational `#`); product parent routes therefore gate all descendants, including children whose own routes are not mapped. Empty headers and non-navigable parents are pruned; a parent with a route remains a valid leaf when children are all hidden. Validation rejects incompatible audience combinations such as guest-only plus authenticate-required or role restrictions.
 
@@ -55,8 +56,8 @@ A node is visible only if **it and every ancestor** pass these rules in order:
 |--------|------|------------|---------|
 | GET | `/` | `jwt.optional` | Visible tree (`?layout=`, `?q=`) |
 | GET | `/layouts` | `jwt.optional` | Configured layout identifiers (config-driven) |
-| GET | `/list` | `auth:api`, `view menu` | Admin flat list / plain table |
-| GET | `/trashed` | `auth:api`, `view menu` | Soft-deleted rows |
+| GET | `/list` | `auth:api`, `view menu` | Admin flat list / plain table. Rows include query-mode `actions[]` (`edit` / `delete` with layout query; SPA `MenusView` maps them — does not invent keys) |
+| GET | `/trashed` | `auth:api`, `view menu` | Soft-deleted rows. Same `actions[]` contract (`restore` / `force-delete`) for `MenusTrashedView` |
 | POST | `/` | `auth:api`, `manage menu` | Create menu |
 | GET | `/{menu}` | `auth:api`, `view menu` | Show menu |
 | PUT/PATCH | `/{menu}` | `auth:api`, `manage menu` | Update menu |
@@ -85,9 +86,9 @@ Two forever tiers — hot path must not query the `menus` table on a presented-t
 |-----|----------|
 | `menus.navigation.snapshot` | All active menu primitives (translations, stored routes, layout/order, role names, include/exclude user IDs). Never hydrated Eloquent. |
 | `menus.navigation.tree_epoch` | Integer generation bumped on structural invalidation. |
-| `menus.navigation.presented.{epoch}.{layout}.{viewer}` | Final filtered + `#`-masked tree for `guest` or `u:{userId}`. |
+| `menus.navigation.presented.{epoch}.{locale}.{layout}.{viewer}` | Final filtered + `#`-masked tree for `guest` or `u:{userId}`, keyed per locale. |
 
-On miss, `navigationTree` loads the snapshot (DB only if snapshot also misses), runs visibility + presentation mask, then stores the presented tree.
+On miss, `navigationTree` loads the snapshot (DB only if snapshot also misses), runs visibility + presentation mask, then stores the presented tree. Node labels resolve via `TranslationResolver::resolve()`, which reads `app()->getLocale()` set by the `SetLocale` middleware — so each locale gets its own presented tree under the same epoch. Resolution chain is `users.locale → X-SPA-Locale header → locale cookie → default`; see [docs/platform/localization.md](../../platform/localization.md).
 
 | Event | Action |
 |-------|--------|
@@ -95,6 +96,8 @@ On miss, `navigationTree` loads the snapshot (DB only if snapshot also misses), 
 | Domain Access visibility upsert | Bump epoch |
 | Product activation state change for user U | Forget presented keys for U under the current epoch (both layouts) |
 | User role sync that affects menu RBAC (`UserManagementService`, claim assignRole) | Forget presented keys for that user |
+| vTual management membership change for user U (invite accept / cancel-accepted / member remove) | `ManagementService` forgets presented keys for U (`forgetPresentedTreeForUserId`) and fires `NavigationRealtime::userTreeChanged(U, 'membership')` → targeted `.menu.tree.changed` broadcast carrying `target_user_id`; only that viewer's SPA refetches sidebar/navbar. The SPA-side accept flow also calls `refetchNavigation()` directly before redirecting. |
+| Claim completion in SPA | SPA refreshes `auth/me`, then refetches sidebar/navbar before opening claimed profile; claim route rejects non-claimable profiles back to read-only profile |
 
 `php artisan menu:flush-cache` remains available for manual recovery.
 
@@ -106,7 +109,7 @@ On miss, `navigationTree` loads the snapshot (DB only if snapshot also misses), 
 
 ```bash
 php artisan db:seed --class=RoleSeeder
-php artisan db:seed --class=FileHostingRoleSeeder
+php artisan db:seed --class=ArchivdRoleSeeder
 php artisan db:seed --class=VtualRoleSeeder
 php artisan db:seed --class=MenuSeeder
 ```
@@ -120,10 +123,14 @@ php artisan db:seed --class=MenuSeeder
   - Notifications — `notifications.index`
   - Services — `services.index`
 - **Products**
-  - **File Hosting** — parent route `file-hosting.index`
-    - My Files — `file-hosting.index`
-    - Trash — `file-hosting.trash`
-    - DMCA Blocklist — `file-hosting.blocklist.index`; Root, Admin, Moderator, Management, File Hosting Admin
+  - **Archivd** — parent route `archivd.index`
+    - My Files — `archivd.index`
+    - Trash — `archivd.trash`
+    - DMCA Blocklist — `archivd.blocklist.index`; Root, Admin, Moderator, Management, Archivd Admin
+  - **vTual** — parent route `vtual.profiles.index`; Vtual vTuber, Vtual Editor, Vtual Admin (+ any vTual management member via rule 7)
+    - My vTuber profiles — `vtual.profiles.index`
+    - Managements — `vtual.managements.index`; **no stored roles** — member-only via rule 7 (safe only while the route stays in `MANAGEMENT_MEMBER_ROUTES`)
+    - Events — `vtual.events.index`; **no stored roles** — same rule-7 member-only pattern (event submission is an org Owner/Admin power)
 - **Administration**
   - **Access control** — Root, Admin, Moderator, Management
     - User management — `users.index`
@@ -144,10 +151,10 @@ php artisan db:seed --class=MenuSeeder
     - Error log — `error-logs.index`
   - **vTual** — parent route `vtual.orphans.index`; Root, Admin, Moderator
     - Orphan vTubers — `vtual.orphans.index`
-    - Platform credentials — `vtual.platform-credentials.index` (Root, Admin)
-  - **Settings** — Root, Admin (single hub for all `settings.*` groups)
+    - Managements — `vtual.managements.index`; Root, Admin (staff manage orgs; membership never grants this branch because the parent route is not in `MANAGEMENT_MEMBER_ROUTES`)
+    - Platform credentials — `vtual.platform-credentials.index` (Root, Admin)  - **Settings** — Root, Admin (single hub for all `settings.*` groups)
     - Platform — `settings.platform`
-    - File Hosting — `settings.file-hosting`
+    - Archivd — `settings.archivd`
     - Microstock — `settings.microstock`
     - vTual — `settings.vtual`
     - Notification audiences — `notification-audiences.index`
@@ -156,7 +163,7 @@ php artisan db:seed --class=MenuSeeder
     - Menu list — `menus.index`
     - Trashed menus — `menus.trashed`
 
-Navbar contains one **Home** shortcut using `dashboard`. File Hosting and vTual parent routes stack Domain Access and activation gates across their branches. Microstock remains discoverable through Services and the File Hosting workspace switcher, with no dynamic-menu node.
+Navbar contains one **Home** shortcut using `dashboard`. Archivd and vTual parent routes stack Domain Access and activation gates across their branches. Microstock remains discoverable through Services and the Archivd workspace switcher, with no dynamic-menu node.
 
 ### Canonical vtual tree (Valkivid3 public template)
 
@@ -174,19 +181,21 @@ Menus are a **UX tree** only — no `domain` / `domain_kind` column. Module regi
 
 ## Vue-Workers SPA consumer
 
-The sibling Vue-Workers SPA uses `useNavigationHydrate` in menu edit. It batches the menu record and selected parent, role, included-user, and excluded-user lookups through `/api/v1/batch`; failed entries fall back to the existing individual loaders. Shell sidebar and navbar seeds are documented in [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls).
+The sibling Vue-Workers SPA uses `useNavigationHydrate` in menu edit. It batches the menu record and selected parent, role, included-user, and excluded-user lookups through `/api/v1/batch`; failed entries fall back to the existing individual loaders. Shell sidebar and navbar seeds are documented in [vue-workers-spa.md — Invocation budget controls](../../integration/vue-workers-spa.md#invocation-budget-controls). Chrome must not `GET navigation/menus` (or start Echo) in parallel with that shell batch: `AppLayout` / `AppNavbar` join `hydrateShell()`, skip GET when `isTreeLoaded` or `isShellFallbackBlocked`, and start Echo only after the batch settles — a cookie-jar race on this guest-safe `jwt.optional` GET shows in DevTools as CORS and vanishes on hard reload.
 
-`NavTree` resolves `node.route + '.view'`, then `node.route`. Leaf nodes render the resolved `href` via `router.resolve` so the destination URL is visible on hover; parent nodes stay `#` while they have visible children (expand-only). Menu CRUD validates `route` via `SpaRouteRegistry` against `config/spa-routes.php` (plus any remaining Laravel `Route::has` names). Keep the config list in sync with `MenuSeeder` and `monolith-vue-workers/src/router/index.ts`. DMCA Blocklist is `file-hosting.blocklist.index`; the SPA registers `file-hosting.blocklist.index.view` so the sidebar click works.
+`NavTree` resolves `node.route + '.view'`, then `node.route`. Leaf nodes render the resolved `href` via `router.resolve` so the destination URL is visible on hover; parent nodes stay `#` while they have visible children (expand-only). Menu CRUD validates `route` via `SpaRouteRegistry` against `config/spa-routes.php` (plus any remaining Laravel `Route::has` names). Keep the config list in sync with `MenuSeeder` and `monolith-vue-workers/src/router/index.ts`. DMCA Blocklist is `archivd.blocklist.index`; the SPA registers `archivd.blocklist.index.view` so the sidebar click works.
 
 ## Tests
 
 - `tests/Domain/Navigation/Unit/Repositories/Eloquent/MenuRepositoryTest.php` covers CRUD/ordering plus presentational `#` masking, presented-tree cache hits (no `menus` queries), epoch refresh after menu mutation, and per-user `forgetPresentedTreeFor`.
-- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 47-row sidebar/navbar/vtual tree, `en`/`id`/`ja` translations, selected role pivots, vtual `hash` anchors, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
+- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 49-row sidebar/navbar/vtual tree, all-seven-locale (`en`/`id`/`ja`/`ko`/`zh_CN`/`ar`/`ru`) `name` translations, selected role pivots (both `vtual.managements.index` rows: Products member-only `[]`, Administration `['Admin','Root']`; `vtual.events.index` Products `[]`), vtual `hash` anchors, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
 - `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuTest.php` covers menu CRUD including SPA symbolic route acceptance and garbage route rejection.
 - `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuLayoutTest.php` covers layout scoping (sidebar/navbar/vtual), parent-layout mismatch rejection, guest fetch of the vtual tree, and the `layouts` endpoint exposing the configured identifiers.
 - `tests/Domain/Navigation/Unit/Support/MenuLayoutTest.php` asserts the three configured layouts (`sidebar`/`navbar`/`vtual`) and the default.
 - `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php` covers public/private product visibility, guests, privileged access, and empty-branch pruning.
 - `tests/Domain/Product/Feature/MenuVisibilityTest.php` covers authenticated product-activation visibility; its guest case is a rendering smoke test, not a guest tree assertion.
+- `tests/Domain/Navigation/Feature/ManagementMemberMenuVisibilityTest.php` covers the vTual management-membership visibility rule (rule 7) under the dual placement: members see the Products Managements node without staff roles, non-members and guests see neither, staff without membership see only the Administration node, staff with membership see both, and membership loss removes only the Products grant.
+- `tests/Domain/Vtual/Feature/Http/Controllers/API/V1/ManagementMembershipNavigationTest.php` locks `ManagementService` membership mutations (accept invite, cancel accepted invite, remove member): presented-tree invalidation for the affected viewer plus targeted `MenuTreeChanged` broadcast with `target_user_id`.
 
 ## Related
 

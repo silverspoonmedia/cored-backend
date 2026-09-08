@@ -30,7 +30,7 @@ class AdminProductActivationControllerTest extends TestCase
     {
         $admin = $this->userWithRole('Admin');
         $user = $this->userWithRole('User', 'target@example.com');
-        $this->service->activateImplicit($user, 'FileHosting');
+        $this->service->activateImplicit($user, 'Archivd');
 
         $response = $this->actingAsJwt($admin)
             ->getJson('/api/v1/admin/product-activations')
@@ -44,22 +44,22 @@ class AdminProductActivationControllerTest extends TestCase
     {
         $admin = $this->userWithRole('Admin');
         $user = $this->userWithRole('User', 'target@example.com');
-        $this->service->activateImplicit($user, 'FileHosting');
+        $this->service->activateImplicit($user, 'Archivd');
 
         $response = $this->actingAsJwt($admin)
-            ->getJson('/api/v1/admin/product-activations?product_key=FileHosting')
+            ->getJson('/api/v1/admin/product-activations?product_key=Archivd')
             ->assertOk()
             ->json('data');
 
         $this->assertCount(1, $response);
-        $this->assertSame('FileHosting', $response[0]['product_key']);
+        $this->assertSame('Archivd', $response[0]['product_key']);
     }
 
     public function test_admin_can_filter_by_state(): void
     {
         $admin = $this->userWithRole('Admin');
         $user = $this->userWithRole('User', 'target@example.com');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
         $this->service->suspend($activation);
 
         $suspendedResponse = $this->actingAsJwt($admin)
@@ -75,7 +75,7 @@ class AdminProductActivationControllerTest extends TestCase
     {
         $admin = $this->userWithRole('Admin');
         $user = $this->userWithRole('User', 'target@example.com');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
 
         $this->actingAsJwt($admin)
             ->postJson("/api/v1/admin/product-activations/{$activation->id}/suspend", ['reason' => 'abuse'])
@@ -87,7 +87,7 @@ class AdminProductActivationControllerTest extends TestCase
     {
         $admin = $this->userWithRole('Admin');
         $user = $this->userWithRole('User', 'target@example.com');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
         $this->service->suspend($activation);
 
         $this->actingAsJwt($admin)
@@ -109,7 +109,7 @@ class AdminProductActivationControllerTest extends TestCase
     {
         $moderator = $this->userWithRole('Moderator');
         $user = $this->userWithRole('User', 'target@example.com');
-        $activation = $this->service->activateImplicit($user, 'FileHosting');
+        $activation = $this->service->activateImplicit($user, 'Archivd');
 
         $this->actingAsJwt($moderator)
             ->postJson("/api/v1/admin/product-activations/{$activation->id}/suspend")
@@ -122,8 +122,8 @@ class AdminProductActivationControllerTest extends TestCase
         $user1 = $this->userWithRole('User', 'u1@example.com');
         $user2 = $this->userWithRole('User', 'u2@example.com');
 
-        $this->service->activateImplicit($user1, 'FileHosting');
-        $activation2 = $this->service->activateImplicit($user2, 'FileHosting');
+        $this->service->activateImplicit($user1, 'Archivd');
+        $activation2 = $this->service->activateImplicit($user2, 'Archivd');
         $this->service->suspend($activation2);
 
         $stats = $this->actingAsJwt($admin)
@@ -147,10 +147,10 @@ class AdminProductActivationControllerTest extends TestCase
             ->json('data');
 
         $this->assertGreaterThanOrEqual(1, count($products));
-        $fh = collect($products)->firstWhere('product_key', 'FileHosting');
+        $fh = collect($products)->firstWhere('product_key', 'Archivd');
         $this->assertNotNull($fh);
         $this->assertSame('implicit', $fh['activation_type']);
-        $this->assertSame('file_hosting', $fh['fulfillment_target']);
+        $this->assertSame('archivd', $fh['fulfillment_target']);
         $this->assertArrayHasKey('counts', $fh);
         $this->assertArrayHasKey('product_metrics', $fh);
     }
@@ -159,14 +159,14 @@ class AdminProductActivationControllerTest extends TestCase
     {
         $admin = $this->userWithRole('Admin');
         $user = $this->userWithRole('User', 'target@example.com');
-        $this->service->activateImplicit($user, 'FileHosting');
+        $this->service->activateImplicit($user, 'Archivd');
 
         $payload = $this->actingAsJwt($admin)
-            ->getJson('/api/v1/admin/product-activations/products/FileHosting')
+            ->getJson('/api/v1/admin/product-activations/products/Archivd')
             ->assertOk()
             ->json('data');
 
-        $this->assertSame('FileHosting', $payload['summary']['product_key']);
+        $this->assertSame('Archivd', $payload['summary']['product_key']);
         $this->assertGreaterThanOrEqual(1, count($payload['activations']));
         $this->assertArrayHasKey('pagination', $payload);
     }
@@ -177,12 +177,12 @@ class AdminProductActivationControllerTest extends TestCase
         $active = $this->userWithRole('User', 'active@example.com');
         $suspended = $this->userWithRole('User', 'suspended@example.com');
 
-        $a = $this->service->activateImplicit($active, 'FileHosting');
-        $b = $this->service->activateImplicit($suspended, 'FileHosting');
+        $a = $this->service->activateImplicit($active, 'Archivd');
+        $b = $this->service->activateImplicit($suspended, 'Archivd');
         $this->service->suspend($b);
 
         $activations = $this->actingAsJwt($admin)
-            ->getJson('/api/v1/admin/product-activations/products/FileHosting?state=suspended')
+            ->getJson('/api/v1/admin/product-activations/products/Archivd?state=suspended')
             ->assertOk()
             ->json('data.activations');
 
@@ -203,15 +203,15 @@ class AdminProductActivationControllerTest extends TestCase
     {
         $admin = $this->userWithRole('Admin');
         $user = $this->userWithRole('User', 'target@example.com');
-        $this->service->activateImplicit($user, 'FileHosting');
+        $this->service->activateImplicit($user, 'Archivd');
 
         $detail = $this->actingAsJwt($admin)
-            ->getJson("/api/v1/admin/product-activations/products/FileHosting/users/{$user->id}")
+            ->getJson("/api/v1/admin/product-activations/products/Archivd/users/{$user->id}")
             ->assertOk()
             ->json('data');
 
         $this->assertSame($user->id, $detail['user_id']);
-        $this->assertSame('FileHosting', $detail['product_key']);
+        $this->assertSame('Archivd', $detail['product_key']);
         $this->assertNotNull($detail['activation']);
         $this->assertArrayHasKey('quota', $detail);
     }

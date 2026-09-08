@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Denormalized per-(product, tier, metric) aggregate row.
  *
- * One row per bucket — e.g. (FileHosting, paid, storage_used_bytes) holds the
+ * One row per bucket — e.g. (Archivd, paid, storage_used_bytes) holds the
  * summed storage across all paid-tier users. Not per-user: drill-down reads
  * source tables directly (single-user indexed queries are cheap).
  */

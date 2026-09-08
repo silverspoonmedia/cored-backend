@@ -2,10 +2,13 @@
 
 namespace App\Domain\Notification\Http\Controllers\API\V1;
 
+use App\Domain\Identity\Models\User;
 use App\Domain\Notification\Http\Requests\UpdateNotificationAudienceRequest;
 use App\Domain\Notification\Services\NotificationAudienceService;
 use App\Http\Controllers\Controller;
 use App\Support\ApiResponder;
+use App\Support\ListActions\Builders\NotificationAudienceQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,15 +16,24 @@ class AdminNotificationAudienceController extends Controller
 {
     public function __construct(
         private readonly NotificationAudienceService $audiences,
+        private readonly NotificationAudienceQueryRowActions $queryRowActions,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         abort_unless($request->user()?->can('view settings'), 403);
 
+        $items = $this->audiences->listPresented()->values();
+        $actor = $request->user();
+
         return ApiResponder::success(
             [
-                'items' => $this->audiences->listPresented()->values()->all(),
+                'items' => QueryRowActionAttacher::attach(
+                    $items->all(),
+                    $items->all(),
+                    $this->queryRowActions,
+                    $actor instanceof User ? $actor : null,
+                ),
                 'assignable_roles' => $this->audiences->assignableRoles(),
             ],
             __('api/notifications.audiences.list_success'),
@@ -33,7 +45,7 @@ class AdminNotificationAudienceController extends Controller
         abort_unless($request->user()?->can('view settings'), 403);
 
         return ApiResponder::success(
-            $this->audiences->presentType($type),
+            $this->withActions($this->audiences->presentType($type), $request->user()),
             __('api/notifications.audiences.show_success'),
         );
     }
@@ -47,6 +59,23 @@ class AdminNotificationAudienceController extends Controller
             $request->userIds(),
         );
 
-        return ApiResponder::success($updated, __('api/notifications.audiences.updated'));
+        return ApiResponder::success(
+            $this->withActions($updated, $request->user()),
+            __('api/notifications.audiences.updated'),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function withActions(array $row, mixed $actor): array
+    {
+        return QueryRowActionAttacher::attach(
+            [$row],
+            [$row],
+            $this->queryRowActions,
+            $actor instanceof User ? $actor : null,
+        )[0];
     }
 }

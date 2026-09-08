@@ -2,8 +2,8 @@
 
 namespace App\Domain\Microstock\Support;
 
-use App\Domain\FileHosting\Models\Folder;
-use App\Domain\FileHosting\Models\HostedFile;
+use App\Domain\Archivd\Models\Folder;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Microstock\Enums\AnalysisStageStatus;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Events\AssetMetadataProgress;
@@ -15,7 +15,7 @@ use App\Support\Broadcasting\BroadcastConnection;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * Broadcast Microstock AI analysis progress over File Hosting websocket channels.
+ * Broadcast Microstock AI analysis progress over Archivd websocket channels.
  */
 class MicrostockRealtime
 {

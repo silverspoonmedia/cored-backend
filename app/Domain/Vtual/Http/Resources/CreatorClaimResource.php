@@ -51,8 +51,10 @@ class CreatorClaimResource extends JsonResource
                 ? $this->verified_via->value
                 : $this->verified_via,
             'verified_by_user_id' => $this->verified_by_user_id,
+            'verified_channel_id' => $this->verified_channel_id,
             'creator' => $this->whenLoaded('creator', fn () => new CreatorResource($this->creator)),
             'channel' => $this->whenLoaded('channel', fn () => new ChannelResource($this->channel)),
+            'verified_channel' => $this->whenLoaded('verifiedChannel', fn () => $this->verifiedChannel !== null ? new ChannelResource($this->verifiedChannel) : null),
             'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user?->id,
                 'name' => $this->user?->name,

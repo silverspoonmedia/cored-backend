@@ -100,7 +100,7 @@ Requires `auth:api` + `permission:view error log` (Root / Admin via `RoleSeeder`
 
 Resource fields: fingerprint, type, level, exception_class, message, file, line, trace, context, occurrence_count, first/last_seen, status, status_label, resolved_by, timestamps.
 
-i18n: `lang/{en,id,ja}/api/error-log.php`.
+i18n: `lang/{en,id,ja,ko,zh_CN,ar,ru}/api/error-log.php`.
 
 ## SPA UI
 
@@ -110,6 +110,7 @@ Authenticated screens live in Monolith-Vue-Workers under `/apps/*` (Vue Router n
 |-------|--------|
 | URI | `/apps/error-logs`, `/apps/error-logs/{errorLog}` |
 | SPA routes | `error-logs.index`, `error-logs.show` |
+| List `actions[]` | Query-mode `view` → `error-logs.show`; SPA maps into `RowActions` |
 | Status | `PATCH /api/v1/error-logs/{errorLog}/status` |
 | Menu | Administration → Monitoring → Error log (Root/Admin), `MenuSeeder` |
 

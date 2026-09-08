@@ -49,6 +49,16 @@ class SpaAuthCookie
      */
     public static function forget(): Cookie
     {
-        return cookie()->forget(self::NAME, '/');
+        return cookie()->make(
+            name: self::NAME,
+            value: '',
+            minutes: -1,
+            path: '/',
+            domain: null,
+            secure: true,
+            httpOnly: true,
+            raw: false,
+            sameSite: 'none',
+        );
     }
 }

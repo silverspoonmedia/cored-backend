@@ -13,4 +13,11 @@ enum OAuthProvider: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    public function supportsSync(): bool
+    {
+        return match ($this) {
+            self::Discord => true,
+        };
+    }
 }

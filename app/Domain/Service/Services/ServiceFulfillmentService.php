@@ -2,13 +2,13 @@
 
 namespace App\Domain\Service\Services;
 
-use App\Domain\FileHosting\Services\FileHostingQuotaRecomputeService;
+use App\Domain\Archivd\Services\ArchivdQuotaRecomputeService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Services\AiCreditService;
 use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Models\ServiceAddonRenewal;
 use App\Domain\Service\Models\ServicePurchase;
-use App\Domain\Service\Support\FileHostingCatalog;
+use App\Domain\Service\Support\ArchivdCatalog;
 use App\Domain\Service\Support\MicrostockCatalog;
 use App\Domain\Service\Support\ServiceRealtime;
 use App\Support\Product\ProductRegistry;
@@ -19,7 +19,7 @@ class ServiceFulfillmentService
 {
     public function __construct(
         private readonly ServiceEntitlementService $entitlements,
-        private readonly FileHostingQuotaRecomputeService $quotaRecompute,
+        private readonly ArchivdQuotaRecomputeService $quotaRecompute,
         private readonly ProductActivationService $productActivations,
         private readonly AiCreditService $aiCredits,
         private readonly ServiceRealtime $realtime,
@@ -35,7 +35,7 @@ class ServiceFulfillmentService
 
         $service = $purchase->service;
 
-        if ($service !== null && FileHostingCatalog::isFreeCode($service->code)) {
+        if ($service !== null && ArchivdCatalog::isFreeCode($service->code)) {
             Log::info('service.fulfillment.skipped_free_catalog', [
                 'purchase_id' => $purchase->id,
                 'service_code' => $service->code,
@@ -61,7 +61,7 @@ class ServiceFulfillmentService
 
         $target = $service?->fulfillment_target;
 
-        if ($target === FileHostingCatalog::FULFILLMENT_TARGET && $service?->isFileHostingStoragePlan()) {
+        if ($target === ArchivdCatalog::FULFILLMENT_TARGET && $service?->isArchivdStoragePlan()) {
             if ($service->isPaidMainPlan()) {
                 $this->entitlements->expireOtherPaidMains($purchase->user_id, $service->id);
             }
@@ -175,7 +175,7 @@ class ServiceFulfillmentService
     /**
      * @deprecated Prefer recompute after expire.
      */
-    public function revokeFileHostingUnlimited(string $userId): void
+    public function revokeArchivdUnlimited(string $userId): void
     {
         $this->quotaRecompute->recompute($userId);
     }

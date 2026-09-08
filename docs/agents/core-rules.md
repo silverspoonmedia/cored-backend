@@ -37,7 +37,8 @@ Prefix the task instruction with one of these tags to declare intended scope. On
 | **Web (server)** | `routes/web.php` / `routes/web/*.php` — server endpoints only (public share, payment return, OAuth callback); no Blade views |
 | **SPA** | Screens, forms, listings in `monolith-vue-workers` — see [vue-workers-spa.md](../integration/vue-workers-spa.md) |
 | **Navigation** | Menu `route` column = SPA Vue Router symbolic name; keep `config/spa-routes.php` in sync with MenuSeeder and SPA router |
-| **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (`en`, `id`, `ja`) |
+| **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (canonical list: [platform/localization.md](../platform/localization.md)) |
+| **API shape** | Responses follow the canonical envelope — [platform/api-envelope.md](../platform/api-envelope.md). Never hand-assemble a different shape. |
 | **Other (as applicable)** | Migrations, seeders, models, events/listeners, notifications, navigation menu entries, tests, and the relevant `docs/` guide |
 
 ### `[backend]` scope
@@ -66,7 +67,7 @@ All new code must survive long-lived Swoole worker processes, even though Octane
 
 ## 5. Localization (mandatory when touching user-facing copy)
 
-Any change that adds or modifies user-facing text (API `message` strings, validation/policy errors, flash/AJAX copy, DB content shown to users) must include translations for **all** supported locales (`en`, `id`, `ja`) in the same task/PR. For SPA-facing copy, update `monolith-vue-workers/src/i18n/locales/{en,id,ja}.json` in the sibling repository and run `npm run check:i18n`. Use `__('…')` with application-owned files under `lang/{locale}/`, or Spatie translatable fields for DB content. Full backend checklist: [docs/platform/localization.md](../platform/localization.md#task-rule-required). SPA runtime, fallback, and `useI18n()` context rules: [vue-workers-spa.md](../integration/vue-workers-spa.md#i18n-porting-notes).
+Any change that adds or modifies user-facing text (API `message` strings, validation/policy errors, flash/AJAX copy, DB content shown to users) must include translations for **all** supported locales (`en`, `id`, `ja`, `ko`, `zh_CN`, `ar`, `ru`) in the same task/PR. For SPA-facing copy, update `monolith-vue-workers/src/i18n/locales/{en,id,ja,ko,zh-CN,ar,ru}.json` in the sibling repository and run `npm run check:i18n`. Use `__('…')` with application-owned files under `lang/{locale}/`, or Spatie translatable fields for DB content. Full backend checklist: [docs/platform/localization.md](../platform/localization.md#task-rule-required). SPA runtime, fallback, and `useI18n()` context rules: [vue-workers-spa.md](../integration/vue-workers-spa.md#i18n-porting-notes).
 
 ## 6. Configuration & secrets (mandatory)
 

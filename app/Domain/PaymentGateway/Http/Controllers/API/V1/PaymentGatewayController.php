@@ -13,6 +13,8 @@ use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Support\DataTable\DataTableResponseFactory;
+use App\Support\ListActions\Builders\PaymentGatewayQueryRowActions;
+use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
@@ -26,6 +28,7 @@ class PaymentGatewayController extends Controller
         private readonly PaymentGatewayService $service,
         private readonly DataTableResponseFactory $dataTables,
         private readonly PaymentGatewayRowActionResolver $rowActions,
+        private readonly PaymentGatewayQueryRowActions $queryRowActions,
     ) {}
 
     public function index(IndexPaymentGatewayRequest $request): JsonResponse
@@ -37,7 +40,12 @@ class PaymentGatewayController extends Controller
             fn (): JsonResponse => $this->respondToQueryList(
                 $request,
                 $gateways,
-                fn ($list) => $this->resolveResource(PaymentGatewayResource::collection($list)),
+                fn ($list) => QueryRowActionAttacher::attach(
+                    $this->resolveResource(PaymentGatewayResource::collection($list)),
+                    $list,
+                    $this->queryRowActions,
+                    $request->user(),
+                ),
                 __('api/payments.gateways.list'),
             ),
             fn (): JsonResponse => $this->dataTables->respond(

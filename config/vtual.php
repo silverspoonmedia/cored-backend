@@ -236,6 +236,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Fetch pool retention (processed rows)
+    |--------------------------------------------------------------------------
+    |
+    | done/failed rows in vtual_channel_fetch_pool + vtual_content_fetch_pool
+    | are audit only; prune after this many days via vtual:prune-fetch-pools.
+    |
+    */
+    'pool_retention' => [
+        'days' => 7,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Feed poll + live CCV + WebSub lease
     |--------------------------------------------------------------------------
     */
@@ -251,6 +264,13 @@ return [
         'lease_seconds' => 864000,
         'renew_before_hours' => 24,
         'max_body_bytes' => 1_048_576,
+    ],
+
+    'eventsub' => [
+        'renew_before_hours' => 24,
+        'max_body_bytes' => 1_048_576,
+        'dedupe_ttl_hours' => 6,
+        'repair_limit' => 50,
     ],
 
     /*

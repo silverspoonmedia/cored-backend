@@ -23,27 +23,31 @@ After changing `.env` directly (Tier A only), run `php artisan config:rebuild`. 
 | `view settings` | Read settings groups |
 | `manage settings` | Update operational settings |
 
-Root and Admin receive both via `RoleSeeder`.
+Root and Admin receive both via `RoleSeeder`. After adding a core permission, re-run `RoleSeeder` **and** `ArchivdRoleSeeder` + `VtualRoleSeeder` (those `givePermissionTo` product perms back onto Admin after the core `syncPermissions`), then `php artisan permission:cache-reset`. Do **not** run full `DatabaseSeeder` on an existing database — it tries to recreate `admin@example.com`. Log out/in so `auth/me` picks up the new list. The SPA manage form is gated on `manage settings` in that payload.
 
 ## Web surface (hybrid)
 
 | Surface | Route | Group key |
 |---------|-------|-----------|
 | Platform hub | `/apps/settings/platform` | `platform` |
-| File Hosting | `/apps/file-hosting/settings` | `file-hosting` |
+| Archivd | `/apps/archivd/settings` | `archivd` |
 | Microstock | `/apps/microstock/settings` | `microstock` |
 | Vtual | `/apps/vtual/settings` | `vtual` |
 | Notification audiences | `/apps/notification-audiences` | (separate table) |
 
-Menu: **Administration → Settings** — single hub for all groups (`settings.platform`, `settings.file-hosting`, `settings.microstock`, `settings.vtual`, plus notification audiences and currencies). Root/Admin via `view settings` / `manage settings`.
+Menu: **Administration → Settings** — single hub for all groups (`settings.platform`, `settings.archivd`, `settings.microstock`, `settings.vtual`, plus notification audiences and currencies). Root/Admin via `view settings` / `manage settings`.
 
 ### Localization
 
-Field labels resolve dynamically from `SettingRegistry` keys. The settings form loads the full `fields` map via `__('web/settings.fields')` and looks up each registry key by array index (dot-containing keys such as `platform.auth.default_role` are stored as literal PHP keys, not nested paths). Each registry key must exist in `lang/{en,id,ja}/web/settings.php` under `fields`. Optional helper copy lives under `hints` with the same key.
+Field labels resolve dynamically from `SettingRegistry` keys. Backend copy lives in `lang/{en,id,ja,ko,zh_CN,ar,ru}/web/settings.php` under `fields` (dot-containing keys such as `platform.auth.default_role` are literal PHP/JSON keys, not nested paths). Optional helper copy lives under `hints` with the same key. The SPA `SettingsFormView` loads `web.settings.fields` / `hints` via vue-i18n `tm()`, looks up each registry key as that literal dotted key (nested walk if needed), then `rt()` so runtime-compiled message ASTs become text — never `String(object)`. `t('web.settings.fields.' + key)` is the wrong lookup: vue-i18n splits on `.` and misses the literal JSON key. Each registry key must exist in all seven locale files.
 
-When adding a new `SettingRegistry` entry, update all three locale files in the same task and keep `SettingRegistryTranslationTest` green (field labels **and** any registry `options` value labels). API flash messages for settings live in `lang/{locale}/settings.php`.
+The manage form renders each field with the shared `FormInput` / `FormSelect` / `FormTextarea` / `FormCheckbox` (`switch` for bools) stack. The registry key and `web.settings.source` stay a muted identifier under the control (`FormField` / `FormCheckbox` hint) — not inside Bootstrap `form-check` (that class is a flex row for the toggle + label only).
 
-Enum-like string keys may declare an optional `options` list on the registry definition (values only). `SettingsService::presentGroup` exposes those values; the Blade form renders a native `<select>` (no Select2) and labels come from `web/settings.options.{key}.{value}` (nested lang keys). First use: `platform.notifications.delivery` → `polling` \| `realtime`.
+`PUT /api/v1/admin/settings/{group}` field names are **underscore aliases** of the registry key (`platform.jwt.ttl` → `platform_jwt_ttl`). Laravel `Request::input('a.b.c')` is nested-array lookup, so a JSON body that uses the dotted GET keys would validate as empty (`sometimes` rules) and 422 `settings.empty_payload`. `UpdateSettingsGroupRequest` also copies a literal dotted key onto the underscore alias when the alias is absent, so either shape is accepted. GET still returns dotted registry keys. The SPA `SettingsFormView` submits `fieldId(key)` (underscores), matching the HTML `name` attributes.
+
+When adding a new `SettingRegistry` entry, update all seven locale files in the same task and keep `SettingRegistryTranslationTest` green (field labels **and** any registry `options` value labels). API flash messages for settings live in `lang/{locale}/settings.php`.
+
+Enum-like string keys may declare an optional `options` list on the registry definition (values only). `SettingsService::presentGroup` exposes those values; `SettingsFormView` renders `FormSelect` and labels come from `web.settings.options.{key}.{value}` (nested lang keys, same dotted-key walk plus `rt()`). First use: `platform.notifications.delivery` → `polling` \| `realtime`.
 
 ## Tier A — env / artisan only (not in Web UI)
 
@@ -54,7 +58,7 @@ Enum-like string keys may declare an optional `options` list on the registry def
 | Database / Redis | `DB_*`, `REDIS_*` | Infra binding |
 | OCI KMS | `OCI_*` | Cloud credentials |
 | Payment secrets | `MIDTRANS_*`, `IPAYMU_*`, … | PCI-adjacent |
-| S3 / proxy | `FILE_HOSTING_S3_*`, `FILE_HOSTING_UPLOAD_PROXY_TOKEN` | Cloud credentials |
+| S3 / proxy | `ARCHIVD_S3_*`, `ARCHIVD_UPLOAD_PROXY_TOKEN` | Cloud credentials |
 | AI API keys | `MICROSTOCK_AI_*_API_KEY` | Provider secrets |
 | Mail / broadcast secrets | `MAIL_PASSWORD`, `PUSHER_APP_SECRET` | Standard secret hygiene |
 | Public origins | `APP_URL`, `SPA_URL`, `CORS_EXTRA_ORIGINS` | Laravel API origin + Vue-Workers origin + extra comma-separated origins (preview URLs, localhost dev). `SPA_URL` is OAuth `return_to` allowlist, `SpaPublicUrl` mint origin, and CORS allowlist with `APP_URL` (+ `CORS_EXTRA_ORIGINS` for extras). Empty `SPA_URL` falls back to `APP_URL` + server endpoints and disables SPA OAuth return. |
@@ -107,11 +111,11 @@ Platform settings page shows **read-only secret status** via `php artisan config
 
 ## Tier C — Domain groups
 
-### File Hosting (`file-hosting.*`)
+### Archivd (`archivd.*`)
 
-Upload limits, multipart tuning, TTL/cleanup, quota defaults, region policy, download TTLs, MIME allowlist, vault download flag. See `config/file-hosting.php` and [file-hosting README](../domains/file-hosting/README.md).
+Upload limits, multipart tuning, TTL/cleanup, quota defaults, region policy, download TTLs, MIME allowlist, vault download flag. See `config/archivd.php` and [archivd README](../domains/archivd/README.md).
 
-SKU codes and free-tier bytes stay in `FileHostingCatalog` (deploy + seeder).
+SKU codes and free-tier bytes stay in `ArchivdCatalog` (deploy + seeder).
 
 ### Microstock (`microstock.*`)
 
@@ -135,7 +139,7 @@ Claim/channel-claim TTLs and bio token mint (`token_prefix` / `token_bytes`), cr
 | Currencies | `currencies.*` |
 | Notification audiences | `notification-audiences.*` |
 | Vtual credentials | `vtual.admin.credentials.*` |
-| FH blocklist | `file-hosting.blocklist.*` |
+| Archivd blocklist | `archivd.blocklist.*` |
 
 Payment routing fees: YAML → `payments:sync-routing-policy` (partial UI toggle on channels).
 

@@ -5,6 +5,8 @@ namespace Tests\Domain\Vtual\Feature\Http\Controllers\API\V1;
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
+use App\Domain\Vtual\Models\Channel;
+use App\Domain\Vtual\Models\ChannelClaim;
 use App\Domain\Vtual\Models\Platform;
 use App\Domain\Vtual\Services\PlatformCredentialService;
 use App\Support\Product\Enums\ProductActivationState;
@@ -33,12 +35,19 @@ class VtualApiTest extends TestCase
     }
 
     #[Test]
-    public function user_can_create_and_list_creators(): void
+    public function non_staff_cannot_create_creator_staff_can(): void
     {
         $user = $this->userWithRole('User');
         $this->activations->activateImplicit($user, 'Vtual');
 
-        $create = $this->actingAsJwt($user)
+        $this->actingAsJwt($user)
+            ->postJson('/api/v1/vtual/creators', ['display_name' => 'Neon Fox'])
+            ->assertForbidden();
+
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+
+        $create = $this->actingAsJwt($admin)
             ->postJson('/api/v1/vtual/creators', [
                 'display_name' => 'Neon Fox',
             ])
@@ -48,10 +57,25 @@ class VtualApiTest extends TestCase
         $this->assertSame('neon-fox', $create['slug']);
         $this->assertSame('owner', $create['my_role']);
 
-        $this->actingAsJwt($user)
+        $this->actingAsJwt($admin)
             ->getJson('/api/v1/vtual/creators')
             ->assertOk()
             ->assertJsonPath('data.0.display_name', 'Neon Fox');
+    }
+
+    #[Test]
+    public function product_roles_with_create_permission_still_cannot_self_create(): void
+    {
+        foreach (['Vtual vTuber', 'Vtual Editor'] as $roleName) {
+            $user = $this->userWithRole($roleName);
+            $this->activations->activateImplicit($user, 'Vtual');
+
+            $this->assertTrue($user->can('create vtual creator'));
+
+            $this->actingAsJwt($user)
+                ->postJson('/api/v1/vtual/creators', ['display_name' => 'Blocked '.$roleName])
+                ->assertForbidden();
+        }
     }
 
     #[Test]
@@ -108,6 +132,7 @@ class VtualApiTest extends TestCase
 
         $ytId = 'UCPkKpOHxEDcwmUAnRpIu-Ng';
         Http::fake([
+            'pubsubhubbub.appspot.com/*' => Http::response('', 202),
             'www.googleapis.com/youtube/v3/channels*' => Http::response([
                 'items' => [
                     [
@@ -123,10 +148,18 @@ class VtualApiTest extends TestCase
             ], 200),
         ]);
 
-        $creator = $this->actingAsJwt($user)
+        $creator = $this->actingAsJwt($admin)
             ->postJson('/api/v1/vtual/creators', ['display_name' => 'Talent'])
             ->assertCreated()
             ->json('data');
+
+        // Grant the non-staff user owner membership directly (post-claim state)
+        // so the channel-claim path stays exercisable without self-create.
+        \App\Domain\Vtual\Models\CreatorMember::query()->create([
+            'creator_id' => $creator['id'],
+            'user_id' => $user->id,
+            'role' => \App\Domain\Vtual\Enums\CreatorMemberRole::Owner,
+        ]);
 
         // Non-staff POST channels starts a bio-token claim (not an active channel row).
         $claim = $this->actingAsJwt($user)
@@ -205,7 +238,117 @@ class VtualApiTest extends TestCase
         $this->assertSame(0, $httpCalls);
         $this->assertStringStartsWith('pending:', $channel['external_id']);
         $this->assertArrayNotHasKey('token', $channel);
-        $this->assertSame(0, \App\Domain\Vtual\Models\ChannelClaim::query()->count());
+        $this->assertSame(0, ChannelClaim::query()->count());
+    }
+
+    #[Test]
+    public function staff_owner_member_post_channel_starts_claim_not_pending(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+
+        $youtube = Platform::query()->where('key', 'youtube')->firstOrFail();
+        $credential = app(PlatformCredentialService::class)->create($admin, $youtube, [
+            'label' => 'yt-staff-owner-claim',
+            'type' => PlatformCredentialType::ApiKey->value,
+            'secret' => ['api_key' => 'yt-staff-owner-claim-key'],
+        ]);
+        $credential->forceFill([
+            'status' => PlatformCredentialStatus::Active,
+            'verified_at' => now(),
+        ])->save();
+
+        $ytId = 'UCPkKpOHxEDcwmUAnRpIu-Ng';
+        Http::fake([
+            'www.googleapis.com/youtube/v3/channels*' => Http::response([
+                'items' => [
+                    [
+                        'id' => $ytId,
+                        'snippet' => [
+                            'title' => 'Staff Owned YT',
+                            'description' => '',
+                            'customUrl' => '@staffowned',
+                            'thumbnails' => [],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $creator = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators', ['display_name' => 'Staff Owned'])
+            ->assertCreated()
+            ->json('data');
+
+        $claim = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/'.$creator['id'].'/channels', [
+                'platform_key' => 'youtube',
+                'profile' => '@staffowned',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('data.external_id', $ytId)
+            ->json('data');
+
+        $this->assertNotEmpty($claim['token'] ?? null);
+        $this->assertArrayHasKey('attempt_count', $claim);
+        $this->assertSame(0, Channel::query()->count());
+        $this->assertSame(1, ChannelClaim::query()->count());
+    }
+
+    #[Test]
+    public function staff_can_delete_pending_channel(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+
+        Http::fake(fn () => Http::response([], 404));
+
+        $orphan = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/orphan', ['display_name' => 'Delete Pending Orphan'])
+            ->assertCreated()
+            ->json('data');
+
+        $channel = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/'.$orphan['id'].'/channels', [
+                'platform_key' => 'youtube',
+                'profile' => '@delete-me',
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $this->actingAsJwt($admin)
+            ->deleteJson('/api/v1/vtual/channels/'.$channel['id'])
+            ->assertOk();
+
+        $this->assertSame(0, Channel::withTrashed()->whereKey($channel['id'])->count());
+    }
+
+    #[Test]
+    public function archive_rejects_pending_channel(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+
+        Http::fake(fn () => Http::response([], 404));
+
+        $orphan = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/orphan', ['display_name' => 'Archive Pending Orphan'])
+            ->assertCreated()
+            ->json('data');
+
+        $channel = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/creators/'.$orphan['id'].'/channels', [
+                'platform_key' => 'youtube',
+                'profile' => '@no-archive',
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/channels/'.$channel['id'].'/archive')
+            ->assertStatus(422)
+            ->assertJsonPath('message', __('api/vtual.channel.pending_not_archivable'));
     }
 
     #[Test]
@@ -262,12 +405,10 @@ class VtualApiTest extends TestCase
     #[Test]
     public function peer_cannot_view_others_creator_without_any_perm(): void
     {
-        $owner = $this->userWithRole('User');
         $peer = $this->userWithRole('User');
-        $this->activations->activateImplicit($owner, 'Vtual');
         $this->activations->activateImplicit($peer, 'Vtual');
 
-        $creator = $this->actingAsJwt($owner)
+        $creator = $this->actingAsJwt($this->userWithRole('Admin'))
             ->postJson('/api/v1/vtual/creators', ['display_name' => 'Private'])
             ->assertCreated()
             ->json('data');
