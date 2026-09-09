@@ -10,8 +10,8 @@ Core domain `App\Domain\PaymentGateway\`. Secrets in env/config, not DB. Polymor
 Models/     PaymentGateway, Invoice, PaymentChannelRouteSnapshot, Subscription, PaymentChannel
 Services/   Payment/* (channel checkout, Midtrans, iPaymu), Billing/*
 Events/     InvoiceStatusChanged (ShouldBroadcastNow)
-Support/    PaymentRealtime, InvoiceChannelAuthorizer, InvoiceWebDestination, Routing/* (policy loader, materializer), DataTable/*
-Http/       API V1 + Web proxies
+Support/    PaymentRealtime, InvoiceChannelAuthorizer, InvoiceWebDestination, Routing/* (policy loader, materializer)
+Http/       API V1 + iPaymu return/cancel web
 Console/    payments:*
 ```
 
@@ -275,7 +275,7 @@ Sensitive invoice payloads, 2FA, etc.: [encryption.md](encryption.md).
 
 ## Tests
 
-`composer test -- --filter=Payment` (and related Invoice/Channel filters). Realtime-specific: `PaymentRealtime`, `InvoiceChannelAuthorizer`, `InvoiceStatusChanged`, `MidtransInvoiceSynchronizerRealtime`. Route snapshot: `InvoiceChannelCheckoutTest` (snapshot FK + immutable fee basis). Web navigation: `InvoiceWebDestinationTest`, `InvoiceWebNavigationTest` (datatable + show redirect to purchase hub). Snap parameter building + IDR int `gross_amount` convention: `MidtransSnapParameterBuilderTest`.
+`composer test -- --filter=Payment` (and related Invoice/Channel filters). Realtime-specific: `PaymentRealtime`, `InvoiceChannelAuthorizer`, `InvoiceStatusChanged`, `MidtransInvoiceSynchronizerRealtime`. Route snapshot: `InvoiceChannelCheckoutTest` (snapshot FK + immutable fee basis). Snap parameter building + IDR int `gross_amount` convention: `MidtransSnapParameterBuilderTest`.
 
 ## Related
 

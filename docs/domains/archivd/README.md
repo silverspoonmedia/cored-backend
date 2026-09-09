@@ -724,7 +724,7 @@ Sidebar: **Products → Archivd → My Files** (`archivd.index`). The Archivd pa
 
 ## Realtime / live listing
 
-Archivd listing stays live via **dedicated private channels**. It does **not** use the notification bell, `NotificationType`, or DataTable `table_id` (those remain for `/apps/users` and similar admin lists — see [notification/README.md](../notification/README.md)).
+Archivd listing stays live via **dedicated private channels**. It does **not** use the notification bell, `NotificationType`, or listing registry `table_id` (those remain for `/apps/users` and similar admin lists — see [notification/README.md](../notification/README.md)).
 
 **With the SPA shell:** Echo events invalidate the current view; the client soft-refetches JSON and re-paints via the same helpers as post-mutation success ([UI architecture / SPA shell](#ui-architecture--spa-shell)). Router owns in-app navigation; download hops stay full page.
 
@@ -785,7 +785,7 @@ Helper: `App\Domain\Archivd\Support\ArchivdRealtime` — single gate + resource 
 
 - S3 **byte** upload progress (still client-only XHR; peers do not see mid-upload bytes).
 - Public share pages (`/s/f`, `/s/d`) — guest SSR, no authenticated Echo.
-- Notification bell unread / `table_id` DataTables.
+- Notification bell unread / listing registry `table_id`.
 
 ## Config highlights
 
@@ -889,7 +889,7 @@ npm run test:js
 - [service/README.md](../service/README.md) — main/addon catalog, quantity, grace, recompute
 - [microstock/README.md](../microstock/README.md) — first system-workspace consumer (`kind='microstock'`)
 - [identity/README.md](../identity/README.md) — H-RBAC / `domain_kind`
-- [notification/README.md](../notification/README.md) — bell + DataTable `table_id` (Archivd listing does **not** use this bus)
+- [notification/README.md](../notification/README.md) — bell + listing registry `table_id` (Archivd listing does **not** use this bus)
 - [web/ui-patterns.md](../../web/ui-patterns.md) — **archived** Blade a11y / responsive notes (Archivd dropzone, modals); the removed island is recorded under [UI architecture / SPA shell](#ui-architecture--spa-shell)
 - [platform/architecture.md](../../platform/architecture.md)
 

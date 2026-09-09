@@ -138,7 +138,7 @@ Bell UI, inbox (`/apps/notifications`), and audience admin live in Monolith-Vue-
 
 | Layer | File | Responsibility |
 |-------|------|----------------|
-| Type catalogue | `app/Domain/Notification/Notifications/NotificationType.php` | Type value, icon, role fallback, DataTable ID |
+| Type catalogue | `app/Domain/Notification/Notifications/NotificationType.php` | Type value, icon, role fallback, listing registry key |
 | Emit service | `app/Domain/Notification/Services/NotificationService.php` | Persist audience, calculate per-recipient unread count, dispatch realtime event |
 | Realtime event | `app/Domain/Notification/Events/UserActivityNotificationReceived.php` | Private channel/name and `type`/`table_id`/`unread_count` payload |
 | Audience settings | `NotificationTypeSettingRepository` + seeder | Resolve role/user/subject audience; primitive cached snapshot |
@@ -154,7 +154,7 @@ Bell UI, inbox (`/apps/notifications`), and audience admin live in Monolith-Vue-
 3. `NotificationTypeSettingSeeder` row + roles  
 4. `ActivityNotificationEvent::dispatch` from owning **service**  
 5. Tests  
-6. Optional DataTable live reload (`tableId` + SPA listing registry)
+6. Optional listing live reload (`tableId` + SPA listing registry)
 
 ### B — Audience only
 
@@ -189,7 +189,7 @@ Seeder: `NotificationTypeSettingSeeder` (`notify_subject_user` true). Copy under
 |------|----------|------|
 | `inference_unregistered_model` | Root, Admin, Management | First sighting of a resolved model with no provider catalog rate; provisional billing active |
 
-Deep link: `inference.model-cards.show`. DataTable reload: `inference-model-cards-table`. Dedup uses forever key `inference:unregistered_model_notify:{slug}` (`Cache::add` with null TTL); cleared when classification completes. See [cache-policy](../../platform/cache-policy.md).
+Deep link: `inference.model-cards.show`. Listing registry reload: `inference-model-cards-table`. Dedup uses forever key `inference:unregistered_model_notify:{slug}` (`Cache::add` with null TTL); cleared when classification completes. See [cache-policy](../../platform/cache-policy.md).
 
 ## Role vs user (decision)
 

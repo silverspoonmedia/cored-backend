@@ -144,4 +144,4 @@ Do not extend `EloquentCrudRepository` with domain methods.
 5. Thin controller
 6. Tests under `tests/Domain/{Domain}/` (assert companions when display fields matter)
 7. Routes under `routes/api/v1/{slug}.php`
-8. Blade/DataTables consume `*_formatted` / `*_human` only — no view-layer reformatting
+8. SPA/API consumers use `*_formatted` / `*_human` only — no view-layer reformatting

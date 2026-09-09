@@ -124,7 +124,7 @@ Core administration screens under **Administration → Inference** (dynamic menu
 | Providers | `inference.providers.*` | `GET/POST /api/v1/inference/providers`, `PUT /api/v1/inference/providers/{id}/rates` |
 | Usage events | `inference.usage-events.index` | `GET /api/v1/inference/usage/overview`, `GET /api/v1/inference/usage-events` |
 
-Model card **show** includes default-provider rate (`provider_rate`) and 30-day `usage_summary`. Model catalog **datatable** includes a **Needs classification** column/badge when `needs_rate_classification` is true. Query-mode catalog and provider lists emit `actions[]` (`view`; `edit`/`delete` when `manage inference catalog`). Provider **show** supports bulk rate sync via `PUT /api/v1/inference/providers/{id}/rates` (triggers consolidation for flagged cards). Usage reporting reads `microstock_ai_usage_events` with frozen `rate_snapshot` and optional `inference_provider` on each row.
+Model card **show** includes default-provider rate (`provider_rate`) and 30-day `usage_summary`. Query-mode model catalog includes a **Needs classification** column/badge when `needs_rate_classification` is true. Catalog and provider lists emit `actions[]` (`view`; `edit`/`delete` when `manage inference catalog`). Provider **show** supports bulk rate sync via `PUT /api/v1/inference/providers/{id}/rates` (triggers consolidation for flagged cards). Usage reporting reads `microstock_ai_usage_events` with frozen `rate_snapshot` and optional `inference_provider` on each row.
 
 ## Tests
 
