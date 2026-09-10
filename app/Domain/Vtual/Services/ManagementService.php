@@ -148,6 +148,10 @@ class ManagementService
 
             return $management->load('members.user');
         });
+
+        $this->realtime->changed($management->id, 'management', null, 'created');
+
+        return $management;
     }
 
     /**

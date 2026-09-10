@@ -78,6 +78,7 @@ class UserManagementService
         }
 
         $this->realtime->changed('role_assigned', null, (string) $user->id);
+        $this->realtime->userListChanged('created', (string) $user->id);
 
         activity()
             ->useLog('user')
@@ -147,6 +148,8 @@ class UserManagementService
             }
         }
 
+        $this->realtime->userListChanged('updated', (string) $user->id);
+
         if ($actor->id !== $user->id) {
             // Personal notification: tell the affected user their account changed.
             // Force roles: [] so a polluted type-setting can't broadcast this
@@ -187,6 +190,8 @@ class UserManagementService
         $email = $user->email;
 
         $this->users->softDelete($id);
+
+        $this->realtime->userListChanged('deleted', (string) $id);
 
         // Broadcast list-change signal to Root + Admin so open /users tables
         // reload. No action route — the row is gone.

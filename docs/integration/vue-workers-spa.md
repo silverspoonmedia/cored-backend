@@ -233,13 +233,27 @@ SPA implementation: sibling [auth-session.md](../../../monolith-vue-workers/docs
 | Domain | Channel | Event | Composable |
 |--------|---------|-------|------------|
 | Notification bell | `App.Models.User.{userId}` | `.activity-notification.received` | `useNotifications.ts` |
-| Archivd | `archivd.user.{userId}` | `.listing.changed`, `.quota.changed`, `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress` | `useArchivdRealtime.ts` |
+| Auth self | `App.Models.User.{userId}` | `.auth.state.changed`, `.auth.security.changed` | `useAuthSelfRealtime.ts` |
+| RBAC admin lists | `rbac.roles`, `rbac.users` (legacy: `rbac`) | `.rbac.role.list.changed`, `.rbac.user.list.changed`, `.rbac.role.permission.changed` | `useAdminRealtime.ts` |
+| Activity log | `logs.activity` | `.log.activity.appended` | `useActivityLogRealtime.ts` |
+| Error log | `logs.errors` | `.log.error.recorded` | `useLogsRealtime.ts` |
+| Archivd | `archivd.user.{userId}` + `archivd.workspace.{workspaceId}` | `.listing.changed`, `.quota.changed` (user only), `.members.changed`, `.activity.appended`, `.collection.analysis.progress`, `.asset.metadata.progress`, `.microstock.billing.changed`, `.microstock.credentials.changed` | `useArchivdRealtime.ts` — user channel always; workspace channel follows `route.query.workspace_id` |
 | Payments invoice | `payments.invoice.{invoiceId}` | `.invoice.status.changed` | `usePaymentRealtime.ts` |
+| Payments admin | `payments.admin` | `.invoice.list.changed`, `.payments.gateway.changed`, `.payments.channel.changed`, `.payments.subscription.changed` | `usePaymentRealtime.ts` |
 | Payments routing | `payments.routing` | `.routing.catalog.changed` | `usePaymentRealtime.ts` |
-| vTual claim | `vtual.claim.{claimId}` | `.claim.progress` | `VtualVtuberClaimView.vue` |
+| Currencies | `settings.currencies` | `.service.currency.changed` | `useCurrenciesRealtime.ts` |
+| Settings | `settings.{group}` | `.settings.group.changed` | `useSettingsRealtime.ts` |
+| Services catalog | `services.catalog` | `.service.catalog.changed`, `.service.purchase.changed` | `useServicesRealtime.ts` |
+| Inference | `inference.catalog` | `.inference.catalog.changed` | `useInferenceRealtime.ts` |
+| Navigation menus | `navigation.menus` | `.menu.tree.changed` | `useMenusRealtime.ts` |
+| Navigation (targeted) | user channel | `.menu.tree.changed` + `target_user_id` | `useNavigation.ts` |
+| Product activations / domain access | `product-activations`, `domain-access` | `.product.activation.changed`, `.domain.visibility.changed` | `useAdminRealtime.ts` |
+| vTual claim | `vtual.claim.{claimId}` | `.claim.progress` | `useVtulClaimRealtime.ts` (consumed by `VtualVtuberClaimView.vue`) |
+| vTual creator snapshots | `vtual.creator.{creatorId}` | `.channel.snapshot.updated` | `useVtualRealtime.ts` |
 | vTual credentials | `vtual.platform-credentials` | `.platform.credential.changed` | `useVtualRealtime.ts` |
 | vTual management | `vtual.management.{managementId}` | `.management.updated` | `useVtualRealtime.ts` |
-| Navigation (targeted) | user channel | `.menu.tree.changed` + `target_user_id` | `useNavigation.ts` |
+
+All channel callbacks live in `routes/channels.php` (Spatie permission or ownership/access service; admin-facing channels gate on the matching `view *` permission). Payloads are invalidation pings (ids + `action`) — never model snapshots.
 
 ## Payment UI / service checkout
 
@@ -248,3 +262,11 @@ Checkout chrome is SPA-only (`CheckoutPanel`, `PaymentStatusHero`). Parse `invoi
 ## Realtime connection convention
 
 Mount → subscribe; updates websocket-only; unmount → unsubscribe.
+
+**Mandatory SPA patterns** (enforced by shared primitives in `src/composables/useEcho.ts` of the sibling repo — do not reimplement per composable):
+
+1. **Composables subscribe via `subscribeWhenEchoReady(attach)`** — never a bare `if (!getEcho()) return`. Echo initializes asynchronously in `AppNavbar` (after the shell batch), so views mount before it exists; the helper attaches immediately when Echo is ready and defers via the ready bus otherwise.
+2. **Views register outage refetch via `useEchoResync(fn)`** — one line mirroring the view's realtime-handler loader. Websocket-only realtime means events during a disconnect are lost; the resync bus fires once on reconnect. (Exception: `AppNavbar` registers `onEchoResync` manually because it is outside a setup context.)
+3. **Shared channels are ref-counted, never left unilaterally**:
+   - `App.Models.User.{id}` — owned by `listenPersonalChannel` (notification bell + `useAuthSelfRealtime`); the channel leaves only when the last consumer detaches.
+   - `navigation.menus` — owned by `useMenusChannel` (`useNavigation` shell + `useMenusRealtime` admin views); leaving a Menus view must not kill the shell's live nav.

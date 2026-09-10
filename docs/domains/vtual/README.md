@@ -504,6 +504,19 @@ Live UI: SPA `vtual.platform-credentials.*` (index, platform, create, edit, prob
 ### Removed Blade UI patterns (2026-07 overhaul, see ui-archive.md)
 - **i18n**: the Blade era kept every user-facing string in a per-locale `web/vtual` PHP file (`ajax.*`, `confirm.*`, `table.*`). That file is deleted; SPA strings live in `monolith-vue-workers/src/i18n/locales/*.json`. Surviving server-side vTual PHP strings are `web/vtual-vtuber.php` (Discord claim flash), `web/vtual-orphans.php` (orphan archive confirm on query-mode `actions[]`), and `list_actions.php` (owned-profile view, platform credential chrome/confirms, management archive).
 
+## Realtime
+
+vTual pings via dedicated private channels (`routes/channels.php`), events `ShouldBroadcastNow`, payloads ids + `action`:
+
+| Channel | Auth | Event(s) |
+|---------|------|----------|
+| `vtual.claim.{claimId}` | owner only | `.claim.progress` (`VtualClaimRealtime`) |
+| `vtual.creator.{creatorId}` | `CreatorAccessService::canView` | `.channel.snapshot.updated` (`VtualChannelRealtime`, after fetch-pool flush / batch profile resolve) |
+| `vtual.management.{managementId}` | `ManagementAccessService::canView` | `.management.updated` (`VtualManagementRealtime` — member/invite/creator assignment changes) |
+| `vtual.platform-credentials` | `view vtual platform credentials` | `.platform.credential.changed` (`VtualPlatformCredentialRealtime`) |
+
+SPA: `useVtualRealtime.ts` (profiles, show, management views), claim wizard view for `.claim.progress`.
+
 ## Seeders
 
 1. `RoleSeeder` — core permissions `view/manage vtual platform credentials` for Root/Admin.

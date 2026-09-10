@@ -530,6 +530,10 @@ Inside a Microstock collection folder the toolbar exposes **Lock & Describe** an
 - **Collection billing** — `GET /api/v1/microstock/billing` pre-flight in the Lock & Describe footer; submit blocks when balance &lt; `fileCount × estimate`. **View balance & history** navigates to `archivd.microstock-usage`. Locked collections expose **Start analysis** (`POST …/analyze`).
 - **Review shortcut** — in `review` state, toolbar **Review files** opens the modal for the first listed file.
 
+### Realtime
+
+Progress/billing events ride the Archivd channels (see [archivd README — Realtime / live listing](../archivd/README.md#realtime--live-listing)): `.collection.analysis.progress`, `.asset.metadata.progress`, `.microstock.billing.changed` via `MicrostockRealtime`. Credential CRUD additionally pings the owner's `archivd.user.{id}` channel as `.microstock.credentials.changed` (ids + `action`, no secret data) — `MicrostockCredentialsView.vue` refetches on ping.
+
 ## Tests
 
 `php artisan test --filter="MicrostockTest|CollectionLifecycleTest|CollectionApiTest|AnalysisWatchdogTest|AiBillingServiceTest|AiCreditServiceTest|BillingLedgerServiceTest|BillingLedgerApiTest|BillingAdminApiTest|KeywordNormalizerTest|HttpAiMetadataServiceThinkingFallbackTest|HttpAiMetadataServiceResponseParsingTest|HttpAiMetadataServiceCurateDraftTest|HttpAiMetadataServiceVisualThinkingTest|HttpAiMetadataServiceTierModelTest|MicrostockAiConfigTest|PromptsTest"` —

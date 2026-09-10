@@ -2,6 +2,7 @@
 
 namespace App\Domain\Service\Support;
 
+use App\Domain\Service\Events\CurrencyChanged;
 use App\Domain\Service\Events\ServiceCatalogChanged;
 use App\Domain\Service\Events\ServicePurchaseChanged;
 use App\Support\Broadcasting\BroadcastConnection;
@@ -32,5 +33,14 @@ class ServiceRealtime
         }
 
         event(new ServicePurchaseChanged($purchaseId, $action));
+    }
+
+    public function currencyChanged(string $action, ?string $currencyCode = null): void
+    {
+        if (! $this->enabled()) {
+            return;
+        }
+
+        event(new CurrencyChanged($action, $currencyCode));
     }
 }

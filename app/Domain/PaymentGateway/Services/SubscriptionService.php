@@ -6,6 +6,7 @@ use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\PaymentGateway\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Domain\PaymentGateway\Repositories\Contracts\SubscriptionRepositoryInterface;
+use App\Domain\PaymentGateway\Support\PaymentRealtime;
 use Illuminate\Database\Eloquent\Collection;
 
 class SubscriptionService
@@ -13,6 +14,7 @@ class SubscriptionService
     public function __construct(
         private readonly SubscriptionRepositoryInterface $subscriptions,
         private readonly InvoiceRepositoryInterface $invoices,
+        private readonly PaymentRealtime $realtime,
     ) {}
 
     /**
@@ -41,6 +43,8 @@ class SubscriptionService
 
         $this->createPendingInvoice($subscription, $paymentGatewayId);
 
+        $this->realtime->subscriptionChanged('created', (string) $subscription->id);
+
         return $subscription->fresh(['invoice']);
     }
 
@@ -49,7 +53,11 @@ class SubscriptionService
      */
     public function update(string $id, array $data): Subscription
     {
-        return $this->subscriptions->update($id, $data);
+        $subscription = $this->subscriptions->update($id, $data);
+
+        $this->realtime->subscriptionChanged('updated', (string) $subscription->id);
+
+        return $subscription;
     }
 
     public function delete(string $id): void
@@ -62,6 +70,8 @@ class SubscriptionService
         }
 
         $this->subscriptions->delete($id);
+
+        $this->realtime->subscriptionChanged('deleted', (string) $id);
     }
 
     protected function createPendingInvoice(Subscription $subscription, ?string $paymentGatewayId): Invoice

@@ -59,6 +59,10 @@ Authenticated screens live in Monolith-Vue-Workers: `/apps/activity-logs` (`acti
 
 **Sidebar:** **Administration → Monitoring → Activity log** (`activity-logs.index`), visible to Root and Admin.
 
+## Realtime
+
+Every recorded entry pings the `logs.activity` private channel (permission `view activity log`) as `.log.activity.appended` — payload `{ log_name, event }`, no entry content. Emitted by `ActivityLogRealtime` from the auth/crypto recorders, gated on `BroadcastConnection::isConfigured()`. SPA: `useActivityLogRealtime.ts` — `ActivityLogsView` and `ActivityLogShowView` refetch on ping.
+
 ## Maintenance
 
 ```bash

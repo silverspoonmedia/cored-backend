@@ -114,6 +114,10 @@ Authenticated screens live in Monolith-Vue-Workers under `/apps/*` (Vue Router n
 | Status | `PATCH /api/v1/error-logs/{errorLog}/status` |
 | Menu | Administration → Monitoring → Error log (Root/Admin), `MenuSeeder` |
 
+## Realtime
+
+New recorded errors ping the `logs.errors` private channel (permission `view error log`) as `.log.error.recorded` — payload `{ level, type }` via `ErrorLogRealtime`. SPA: `useLogsRealtime.ts` (list + show views refetch).
+
 ## Maintenance
 
 ```bash

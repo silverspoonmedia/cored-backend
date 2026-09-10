@@ -8,9 +8,14 @@ use App\Domain\Identity\Exceptions\Auth\InvalidTwoFactorCodeException;
 use App\Domain\Identity\Exceptions\Auth\TwoFactorAlreadyEnabledException;
 use App\Domain\Identity\Exceptions\Auth\TwoFactorNotEnabledException;
 use App\Domain\Identity\Models\User;
+use App\Domain\Identity\Support\AuthStateBroadcast;
 
 class TwoFactorService
 {
+    public function __construct(
+        private readonly AuthStateBroadcast $broadcast = new AuthStateBroadcast,
+    ) {}
+
     /**
      * @return array<string, string>
      */
@@ -55,6 +60,8 @@ class TwoFactorService
             request()->userAgent(),
         );
 
+        $this->broadcast->security($user, 'two_factor_enabled');
+
         return ['confirmed_at' => $user->two_factor_confirmed_at->toIso8601String()];
     }
 
@@ -80,6 +87,8 @@ class TwoFactorService
             request()->ip() ?? 'unknown',
             request()->userAgent(),
         );
+
+        $this->broadcast->security($user, 'two_factor_disabled');
     }
 
     public function verifyLogin(User $user, string $code): bool

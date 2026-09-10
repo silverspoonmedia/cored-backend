@@ -171,6 +171,19 @@ Notifications on create/update: [notification domain](../notification/README.md)
 
 Paginated select options: `GET /api/v1/lookups/*` — [platform/list-display-modes.md](../../platform/list-display-modes.md).
 
+## Realtime
+
+RBAC and auth mutations ping channels after a successful persist (gated on `BroadcastConnection::isConfigured()`), payloads ids + `action` only:
+
+| Channel (permission) | Event | Fired by |
+|----------------------|-------|----------|
+| `rbac.roles` (`view user`) | `.rbac.role.list.changed`, `.rbac.role.permission.changed` | `RbacRealtime` — role CRUD, grant/revoke, assignment |
+| `rbac.users` (`view user`) | `.rbac.user.list.changed` | `RbacRealtime` — admin user create/update/delete |
+| `rbac` (`view user`, legacy) | `.rbac.role.permission.changed` | kept for older SPA builds |
+| `App.Models.User.{id}` (self-only) | `.auth.state.changed`, `.auth.security.changed` | `AuthStateBroadcast` — login/logout, password change, 2FA enable/disable |
+
+SPA: `useAdminRealtime.ts` (Users/role views refetch), `useAuthSelfRealtime.ts` (Password/TwoFactor views refetch own state).
+
 ## Connected accounts (OAuth providers)
 
 SPA: `/apps/profile/connections` (`ConnectionsView` — one card section per `providers[]` row, with Connect / Sync / Disconnect on that section). Discord is the only `OAuthProvider` case today; the contract and UI do not assume it is the last.

@@ -4,6 +4,7 @@ namespace App\Domain\ActivityLog\Support;
 
 use App\Domain\Identity\Listeners\LogAuthenticationEvents;
 use App\Domain\Identity\Models\User;
+use App\Domain\ActivityLog\Support\ActivityLogRealtime;
 
 /**
  * Writes authentication lifecycle entries to Spatie activitylog (`log_name: auth`).
@@ -13,6 +14,10 @@ use App\Domain\Identity\Models\User;
  */
 class AuthActivityRecorder
 {
+    public function __construct(
+        private readonly ActivityLogRealtime $realtime,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $properties
      */
@@ -36,6 +41,8 @@ class AuthActivityRecorder
         }
 
         $logger->log($event);
+
+        $this->realtime->appended('auth', $event);
     }
 
     public function recordLogin(User $user, string $ipAddress, ?string $userAgent, string $loginMethod): void

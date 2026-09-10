@@ -85,6 +85,7 @@ class PaymentChannelService
         $channel->save();
 
         $this->paymentRealtime->routingCatalogChanged('channel_updated', $channel->code);
+        $this->paymentRealtime->channelChanged('updated', $channel->code);
 
         return $channel;
     }
@@ -110,6 +111,10 @@ class PaymentChannelService
 
         $route->loadMissing('paymentChannel');
         $this->paymentRealtime->routingCatalogChanged(
+            'route_updated',
+            $route->paymentChannel?->code,
+        );
+        $this->paymentRealtime->channelChanged(
             'route_updated',
             $route->paymentChannel?->code,
         );

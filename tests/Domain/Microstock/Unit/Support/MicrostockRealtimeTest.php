@@ -11,6 +11,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Events\AssetMetadataProgress;
 use App\Domain\Microstock\Events\CollectionAnalysisProgress;
+use App\Domain\Microstock\Events\MicrostockCredentialsChanged;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Support\MicrostockRealtime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -105,6 +106,32 @@ class MicrostockRealtimeTest extends TestCase
         $rt->assetProgress($metadata, $file, force: true);
 
         Event::assertNothingDispatched();
+    }
+
+    public function test_credentials_changed_noop_when_unconfigured(): void
+    {
+        Event::fake([MicrostockCredentialsChanged::class]);
+        $this->disableBroadcast();
+
+        app(MicrostockRealtime::class)->credentialsChanged('user-1', 'created', 'cred-1');
+
+        Event::assertNotDispatched(MicrostockCredentialsChanged::class);
+    }
+
+    public function test_credentials_changed_dispatches_owner_personal_event(): void
+    {
+        Event::fake([MicrostockCredentialsChanged::class]);
+        $this->enableBroadcast();
+
+        app(MicrostockRealtime::class)->credentialsChanged('user-1', 'deleted', 'cred-9');
+
+        Event::assertDispatched(MicrostockCredentialsChanged::class, function (MicrostockCredentialsChanged $e): bool {
+            return $e->ownerUserId === 'user-1'
+                && $e->action === 'deleted'
+                && $e->credentialId === 'cred-9'
+                && $e->broadcastAs() === 'microstock.credentials.changed'
+                && $e->broadcastOn()[0]->name === 'private-archivd.user.user-1';
+        });
     }
 
     /**

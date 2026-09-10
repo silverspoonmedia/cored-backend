@@ -9,6 +9,7 @@ use App\Domain\Vtual\Integrations\Dto\PlatformChannelDto;
 use App\Domain\Vtual\Jobs\RunChannelInitialContentBackfillJob;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Platform;
+use App\Domain\Vtual\Support\VtualChannelRealtime;
 
 /**
  * Single entry for pending → active promotion and platform post-activation hooks
@@ -19,6 +20,7 @@ class ChannelActivationService
     public function __construct(
         private readonly YoutubeWebSubSubscriptionService $websub,
         private readonly TwitchEventSubSubscriptionService $eventsub,
+        private readonly VtualChannelRealtime $realtime,
     ) {}
 
     /**
@@ -50,6 +52,12 @@ class ChannelActivationService
 
         $channel = $channel->refresh()->load('platform');
         $this->applyYoutubeActivationHooks($channel);
+
+        // Live update: the deferred registration just resolved — owner's views
+        // must see the channel transition pending → active.
+        if ($channel->creator_id !== null) {
+            $this->realtime->snapshotsUpdated((string) $channel->creator_id, [(string) $channel->id]);
+        }
 
         return $channel;
     }

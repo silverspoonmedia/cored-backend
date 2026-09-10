@@ -281,6 +281,10 @@ Menu entry: **Administration → Access control → Product activations**, gated
 
 Wire listeners here for future analytics / notification hooks.
 
+## Realtime
+
+State transitions also ping the `product-activations` private channel (permission `view product activations`) as `.product.activation.changed` — payload ids + `action` only. SPA: `useAdminRealtime.ts` (`ProductActivationShowView` refetches on ping).
+
 ## Tests
 
 ```bash

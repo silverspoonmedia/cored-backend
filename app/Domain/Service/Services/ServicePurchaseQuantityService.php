@@ -7,6 +7,7 @@ use App\Domain\PaymentGateway\Services\Payment\InvoiceChannelFeeService;
 use App\Domain\Service\Enums\PurchaseStatus;
 use App\Domain\Service\Exceptions\ServiceException;
 use App\Domain\Service\Models\ServicePurchase;
+use App\Domain\Service\Support\ServiceRealtime;
 use Illuminate\Support\Facades\DB;
 
 class ServicePurchaseQuantityService
@@ -17,6 +18,7 @@ class ServicePurchaseQuantityService
         private readonly ExchangeRateService $exchangeRates,
         private readonly InvoiceActiveCheckoutCancellationService $checkoutCancellation,
         private readonly InvoiceChannelFeeService $channelFees,
+        private readonly ServiceRealtime $realtime,
     ) {}
 
     public function updateQuantity(ServicePurchase $purchase, int $quantity): ServicePurchase
@@ -109,5 +111,9 @@ class ServicePurchaseQuantityService
 
             return $purchase->fresh(['service.prices', 'invoice.paymentGateway', 'invoice.paymentChannelRouteSnapshot', 'user']);
         });
+
+        $this->realtime->purchaseChanged($purchase->id, 'quantity_updated');
+
+        return $purchase;
     }
 }

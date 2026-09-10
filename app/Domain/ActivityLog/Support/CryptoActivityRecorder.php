@@ -3,6 +3,7 @@
 namespace App\Domain\ActivityLog\Support;
 
 use App\Support\Encryption\EnvelopeEncryptionService;
+use App\Domain\ActivityLog\Support\ActivityLogRealtime;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,6 +14,10 @@ use Illuminate\Support\Facades\Auth;
  */
 class CryptoActivityRecorder
 {
+    public function __construct(
+        private readonly ActivityLogRealtime $realtime,
+    ) {}
+
     /** @var array<int, string> */
     private const ALLOWED_PROPERTY_KEYS = [
         'resource_type',
@@ -79,6 +84,8 @@ class CryptoActivityRecorder
         }
 
         $logger->log('field_decrypted');
+
+        $this->realtime->appended('crypto', 'field_decrypted');
     }
 
     /**

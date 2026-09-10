@@ -257,6 +257,19 @@ When admins toggle payment channels/routes or run `payments:sync-routing-policy`
 
 Payload: `revision`, `reason` (`channel_updated` | `route_updated` | `policy_synced`), optional `channel_code`.
 
+### Realtime admin lists (`payments.admin`)
+
+Admin CRUD surfaces soft-refetch via the `payments.admin` private channel (permission `view invoice`), all emitted by `PaymentRealtime` after successful persist:
+
+| Event | Payload | Consumer |
+|-------|---------|----------|
+| `invoice.list.changed` | `action` | Admin invoice list count-only signal |
+| `payments.gateway.changed` | `action`, `gateway_id` | `PaymentGatewaysView` |
+| `payments.channel.changed` | `action`, `channel_code` | `PaymentChannelsView` |
+| `payments.subscription.changed` | `action`, `subscription_id` | Subscriptions views (`Service` domain UI) |
+
+SPA composable: `usePaymentRealtime.ts` (admin handler set).
+
 ## Permissions & morph map
 
 Permissions in RoleSeeder (`view invoice`, `initiate payment`, `manage payment gateway`, …). Morph map registers invoiceables (`service_purchase`, `service_addon_renewal`, `subscription`).

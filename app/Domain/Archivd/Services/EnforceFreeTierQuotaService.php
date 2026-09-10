@@ -3,8 +3,10 @@
 namespace App\Domain\Archivd\Services;
 
 use App\Domain\Archivd\Models\HostedFile;
+use App\Domain\Archivd\Support\ArchivdRealtime;
 use App\Domain\Archivd\Support\ObjectKeyResolver;
 use App\Domain\Archivd\Support\ObjectStorage;
+use App\Domain\Identity\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -18,6 +20,7 @@ class EnforceFreeTierQuotaService
     public function __construct(
         private readonly ObjectStorage $storage,
         private readonly QuotaService $quota,
+        private readonly ArchivdRealtime $realtime,
         private readonly ObjectKeyResolver $objectKeys = new ObjectKeyResolver,
     ) {}
 
@@ -83,6 +86,19 @@ class EnforceFreeTierQuotaService
             $freed += (int) $file->size;
         }
 
+        if (count($toDelete) > 0) {
+            // Clients must see the vanished files and the new quota.
+            $this->realtime->bulkListing(
+                'deleted',
+                'file',
+                array_map(fn ($file) => (string) $file->id, $toDelete),
+                $userId,
+                null,
+                $this->systemActor(),
+            );
+            $this->realtime->quotaChanged($userId);
+        }
+
         Log::info('archivd.enforce_to_limit', [
             'user_id' => $userId,
             'limit_bytes' => $limit,
@@ -111,5 +127,16 @@ class EnforceFreeTierQuotaService
                 $file->delete();
             }
         });
+    }
+
+    /**
+     * bulkListing needs an actor id; enforcement runs system-side (CLI/scheduler).
+     */
+    private function systemActor(): User
+    {
+        /** @var User|null $user */
+        $user = User::query()->first();
+
+        return $user ?? new User;
     }
 }

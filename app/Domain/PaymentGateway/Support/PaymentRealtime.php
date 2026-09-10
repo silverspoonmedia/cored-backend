@@ -4,7 +4,10 @@ namespace App\Domain\PaymentGateway\Support;
 
 use App\Domain\PaymentGateway\Events\InvoiceListChanged;
 use App\Domain\PaymentGateway\Events\InvoiceStatusChanged;
+use App\Domain\PaymentGateway\Events\PaymentChannelChanged;
+use App\Domain\PaymentGateway\Events\PaymentGatewayChanged;
 use App\Domain\PaymentGateway\Events\PaymentRoutingCatalogChanged;
+use App\Domain\PaymentGateway\Events\SubscriptionChanged;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\Subscription;
 use App\Domain\Service\Models\ServiceAddonRenewal;
@@ -119,6 +122,46 @@ class PaymentRealtime
             Log::warning('PaymentRealtime routing catalog broadcast failed', [
                 'reason' => $reason,
                 'channel_code' => $channelCode,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Broadcast when an admin CRUDs a payment gateway row.
+     */
+    public function gatewayChanged(string $action, ?string $gatewayId = null): void
+    {
+        $this->fire(fn () => new PaymentGatewayChanged($action, $gatewayId), 'gateway', $action);
+    }
+
+    /**
+     * Broadcast when a payment channel row changes (enable/disable).
+     */
+    public function channelChanged(string $action, ?string $channelCode = null): void
+    {
+        $this->fire(fn () => new PaymentChannelChanged($action, $channelCode), 'channel', $action);
+    }
+
+    /**
+     * Broadcast when a subscription row changes (admin CRUD).
+     */
+    public function subscriptionChanged(string $action, ?string $subscriptionId = null): void
+    {
+        $this->fire(fn () => new SubscriptionChanged($action, $subscriptionId), 'subscription', $action);
+    }
+
+    private function fire(callable $factory, string $subject, string $action): void
+    {
+        if (! $this->enabled()) {
+            return;
+        }
+
+        try {
+            event($factory());
+        } catch (\Throwable $e) {
+            Log::warning("PaymentRealtime {$subject} broadcast failed", [
+                'action' => $action,
                 'error' => $e->getMessage(),
             ]);
         }

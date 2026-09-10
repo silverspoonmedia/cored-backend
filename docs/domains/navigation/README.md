@@ -197,6 +197,10 @@ The sibling Vue-Workers SPA uses `useNavigationHydrate` in menu edit. It batches
 
 `NavTree` resolves `node.route + '.view'`, then `node.route`. Leaf nodes render the resolved `href` via `router.resolve` so the destination URL is visible on hover; parent nodes stay `#` while they have visible children (expand-only). Menu CRUD validates `route` via `SpaRouteRegistry` against `config/spa-routes.php` (plus any remaining Laravel `Route::has` names). Keep the config list in sync with `MenuSeeder` and `monolith-vue-workers/src/router/index.ts`. DMCA Blocklist is `archivd.blocklist.index`; the SPA registers `archivd.blocklist.index.view` so the sidebar click works.
 
+## Realtime
+
+Menu mutations (create/update/delete/trash/restore) ping the `navigation.menus` private channel (permission `view menu`) as `.menu.tree.changed` via `NavigationRealtime`; targeted user-scoped invalidations go to the personal user channel with `target_user_id`. SPA: `useMenusRealtime.ts` + `useNavigation.ts` refetch the tree.
+
 ## Tests
 
 - `tests/Domain/Navigation/Unit/Repositories/Eloquent/MenuRepositoryTest.php` covers CRUD/ordering plus presentational `#` masking, presented-tree cache hits (no `menus` queries), epoch refresh after menu mutation, and per-user `forgetPresentedTreeFor`.

@@ -126,6 +126,10 @@ Core administration screens under **Administration → Inference** (dynamic menu
 
 Model card **show** includes default-provider rate (`provider_rate`) and 30-day `usage_summary`. Query-mode model catalog includes a **Needs classification** column/badge when `needs_rate_classification` is true. Catalog and provider lists emit `actions[]` (`view`; `edit`/`delete` when `manage inference catalog`). Provider **show** supports bulk rate sync via `PUT /api/v1/inference/providers/{id}/rates` (triggers consolidation for flagged cards). Usage reporting reads `microstock_ai_usage_events` with frozen `rate_snapshot` and optional `inference_provider` on each row.
 
+## Realtime
+
+Catalog mutations (model cards, providers, rate sync) and usage events ping the `inference.catalog` private channel (permission `view inference catalog`) as `.inference.catalog.changed` — payload `{ entity, action, entity_id }` via `InferenceRealtime`. SPA: `useInferenceRealtime.ts` (UsageEvents, provider/model-card Show/Edit refetch).
+
 ## Tests
 
 `php artisan test --filter=Inference` — includes `InferenceRateServiceTest` (provisional rates, `isRegisteredOnProvider`), `InferenceCatalogApiTest` (provider rate sync clears classification flag), and Microstock `UnknownModelBillingTest` (consolidation refund/debit, negative balance).
