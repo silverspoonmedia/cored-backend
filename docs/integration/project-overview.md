@@ -75,7 +75,7 @@ Backend `AuthService::refreshFromToken` preserves the `remember` flag via the `r
 Two live-update patterns:
 
 - **Pattern A — Bell-driven listing reload:** `UserActivityNotificationReceived` on `App.Models.User.{id}` carries a `table_id`; the bell forwards it to `useListingReload` registry; registered listing views refetch. Active on `UsersView` (`users-table`), `InferenceModelCardsView` (`inference-model-cards-table`).
-- **Pattern B — Direct channel subscription:** domain-specific private channels via singleton composables — `useArchivdRealtime.ts` (6 events on `archivd.user.{userId}`), `usePaymentRealtime.ts` (invoice status + routing catalog), vTual claim inline.
+- **Pattern B — Direct channel subscription:** domain-specific private channels via singleton composables — `useArchivdRealtime.ts` (7 events on `archivd.user.{userId}`, incl. `.file.stats.changed`), `usePaymentRealtime.ts` (invoice status + routing catalog + `payments.admin` with 4 ref-counted streams), vTual claim via `useVtulClaimRealtime.ts`.
 
 See [vue-workers-spa.md — Realtime](vue-workers-spa.md#realtime) for full channel inventory.
 

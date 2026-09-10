@@ -12,4 +12,4 @@ use Illuminate\Support\Facades\Route;
 // to the same channel authorization callbacks in routes/channels.php.
 Route::post('broadcasting/auth', function (Request $request) {
     return Broadcast::auth($request);
-})->middleware(['auth:api'])->name('api.broadcasting.auth');
+})->middleware(['auth:api', 'throttle:broadcast'])->name('api.broadcasting.auth');

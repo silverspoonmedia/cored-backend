@@ -67,6 +67,15 @@ $app = Application::configure(basePath: dirname(__DIR__))
                 Limit::perMinute(60)->by($request->user()?->getAuthIdentifier() ?: $request->ip()),
             ]);
 
+            // Dedicated broadcast-auth throttle: when Echo connects it authorizes
+            // every subscribed channel (one POST /broadcasting/auth each), which
+            // together with regular traffic can exhaust the global 60/min limiter
+            // and fail channel auth with 429. Higher per-user limit still caps
+            // abuse but leaves headroom for a multi-channel connect burst.
+            RateLimiter::for('broadcast', fn (Request $request) => [
+                Limit::perMinute(120)->by($request->user()?->getAuthIdentifier() ?: $request->ip()),
+            ]);
+
             Route::middleware(['api', 'throttle:api'])
                 ->prefix('api/v1')
                 ->name('api.v1.')

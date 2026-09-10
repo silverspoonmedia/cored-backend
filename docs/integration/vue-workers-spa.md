@@ -209,7 +209,7 @@ Env-only: point `PUSHER_HOST` / `PORT` / `SCHEME` (and `VITE_PUSHER_*`) at Socku
 
 ### Auth
 
-`POST /api/v1/broadcasting/auth` under `auth:api` (not the web `/broadcasting/auth`). SPA authorizer uses `client.post('broadcasting/auth')` so 419 retries. `AppNavbar` awaits `hydrateShell()` before `initEcho()`. Channel callbacks stay in `routes/channels.php`.
+`POST /api/v1/broadcasting/auth` under `auth:api` plus a dedicated `throttle:broadcast` limiter (120/min per user, `bootstrap/app.php`) — one authorize per channel on connect would otherwise compete with regular traffic in the global 60/min limiter. The SPA side holds the burst down too: `useEcho.ts` serializes authorizers (max 1 in-flight) and 419 refreshes are single-flighted (`refreshCsrfOnce()`). SPA authorizer uses `client.post('broadcasting/auth')` so 419 retries. `AppNavbar` awaits `hydrateShell()` before `initEcho()`. Channel callbacks stay in `routes/channels.php`.
 
 ## Cross-tab auth (multi-tab session sync)
 
