@@ -169,7 +169,7 @@ Notifications on create/update: [notification domain](../notification/README.md)
 
 ## Lookups
 
-Paginated select options: `GET /api/v1/lookups/*` — [platform/list-display-modes.md](../../platform/list-display-modes.md).
+Paginated select options: `GET /api/v1/lookups/*` — [platform/list-display-modes.md](../../platform/list-display-modes.md). `users`/`roles` return flat `{id, text}` rows; `menus` returns a nested tree per root group (paginate per root, search keeps ancestors, hydrate `ids[]` stays flat).
 
 ## Realtime
 

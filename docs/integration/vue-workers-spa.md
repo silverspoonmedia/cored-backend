@@ -158,6 +158,8 @@ SPA components (`confirmDialog`, `SubmitButton`, `FormInput`, loading/error/empt
 
 Wraps jQuery Select2 AJAX against paginated `GET /api/v1/lookups/*` — [list-display-modes.md](../platform/list-display-modes.md).
 
+Nested tree selects: ajax `lookups/menus` (Dynamic Menu CRUD — parent & reference in `MenuEditView`) returns **nested trees, one node per top-level root menu**. Roots are paginated (lazy load = next root group; a group is never split across pages); each root carries its entire subtree as recursive `children`, with `level` per node (0 = root) for indentation. Select2 renders only one `<optgroup>` level natively, so the SPA flattens the tree via `flattenTreeForSelect2()` (`src/utils/select2-lookup.ts`): each root becomes an optgroup whose first selectable leaf is the root itself, followed by descendants indented by `level`. Search (`q`) returns matching branches with their ancestors retained. The hydrate path (`ids[]` for pre-selection) still returns flat rows with `group`/`parent_text`/`level` metadata — see [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md).
+
 ### Blob / CSV downloads
 
 `getBlob()` + `src/utils/download.ts` `saveBlob()`. Wired for `GET invoices/export` and `GET microstock/collections/{folder}/download`.

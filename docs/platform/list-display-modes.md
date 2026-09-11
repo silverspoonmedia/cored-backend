@@ -43,11 +43,13 @@ Searchable selects use paginated lookups, never bulk dumps.
 | `GET …/menus` | `view menu` | + `layout`, `exclude` |
 | `GET …/roles` | `view menu` | `q`, `page`, `per_page`, `ids[]` |
 
-Response `data`: `{ results: [{ id, text }], pagination: { more } }`. Passing `ids[]` without `q` hydrates existing edit-form labels. An empty `q` returns the first page only (`config/lookup.php`).
+Response `data` for `users` / `roles`: flat `{ results: [{ id, text }], pagination: { more } }`. Passing `ids[]` without `q` hydrates existing edit-form labels. An empty `q` returns the first page only (`config/lookup.php`).
+
+`menus` search/list response is a **nested tree per root group**: one node per top-level root menu, paginated per root (`pagination.more` = more roots follow), each root carrying its entire subtree as recursive `children` with a `level` per node (0 = root) — `{ results: [{ id, text, level, children: [...] }], pagination: { more } }`. Search (`q`) keeps matching nodes together with their ancestors (a branch shows when it or any descendant matches); `exclude` drops only that root itself. The hydrate path (`ids[]` without `q`) stays flat with `group`/`parent_text`/`level` metadata. Every level is pre-sorted by sibling rank (type h<p<c, then `order` — the Dynamic Menu sidebar comparator).
 
 Implementation: Identity `LookupService` / `LookupController`. There are no web proxies — the SPA calls these directly.
 
-Consumer: the SPA `FormSelect2` component wraps jQuery Select2 and unwraps this envelope in `src/utils/select2-lookup.ts` — see [vue-workers-spa.md](../integration/vue-workers-spa.md#formselect2).
+Consumer: the SPA `FormSelect2` component wraps jQuery Select2 and unwraps this envelope in `src/utils/select2-lookup.ts` — see [vue-workers-spa.md](../integration/vue-workers-spa.md#formselect2) and [ui-patterns.md — Nested selects](../../../monolith-vue-workers/docs/ui-patterns.md) for how the nested `menus` tree is flattened into one-level optgroups.
 
 ## Related
 
