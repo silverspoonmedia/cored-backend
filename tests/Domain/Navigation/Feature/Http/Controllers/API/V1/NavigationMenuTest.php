@@ -624,6 +624,104 @@ class NavigationMenuTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_store_accepts_spa_zh_cn_alias_and_canonicalizes_to_zh_cn_backend(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        // A locale map must cover EVERY supported locale
+        // (validateTranslatableAllLocales), so build the payload from config.
+        // The `zh-CN` key is the SPA alias of `zh_CN` and must be accepted.
+        $name = collect(config('localization.supported_locales'))
+            ->mapWithKeys(fn (string $locale): array => [
+                $locale === 'zh_CN' ? 'zh-CN' : $locale => $locale === 'zh_CN' ? '中文标签' : "Aliased {$locale}",
+            ])
+            ->all();
+
+        $response = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => $name,
+                'type' => 'h',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.name_translations.zh_CN', '中文标签');
+
+        $menu = Menu::query()->findOrFail($response->json('data.id'));
+
+        $this->assertSame('中文标签', $menu->getTranslation('name', 'zh_CN'));
+        $this->assertArrayNotHasKey('zh-CN', $menu->getTranslations('name'));
+    }
+
+    public function test_store_merges_mixed_zh_keys_onto_backend_key(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        // A locale map must cover EVERY supported locale
+        // (validateTranslatableAllLocales), so build the payload from config.
+        // A stale canonical prefill (`zh_CN`) plus an SPA edit (`zh-CN`): the
+        // alias is the most recent write and must win the merge.
+        $name = collect(config('localization.supported_locales'))
+            ->mapWithKeys(fn (string $locale): array => [$locale => "Mixed {$locale}"])
+            ->all();
+
+        // Both keys present, alias last: zh_CN stale value + zh-CN edit.
+        $name['zh_CN'] = '旧标签';
+        $name['zh-CN'] = '新标签';
+
+        $response = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => $name,
+                'type' => 'h',
+            ])
+            ->assertCreated();
+
+        $menu = Menu::query()->findOrFail($response->json('data.id'));
+        $translations = $menu->getTranslations('name');
+
+        $this->assertSame('新标签', $translations['zh_CN']);
+        $this->assertArrayNotHasKey('zh-CN', $translations);
+    }
+
+    public function test_update_accepts_spa_zh_cn_alias_without_validation_error(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $menu = $this->makeMenu(['name' => ['en' => 'Original']]);
+
+        // A locale map must cover EVERY supported locale
+        // (validateTranslatableAllLocales), so build the payload from config.
+        // The `zh-CN` key is the SPA alias of `zh_CN` and must be accepted.
+        $name = collect(config('localization.supported_locales'))
+            ->mapWithKeys(fn (string $locale): array => [
+                $locale === 'zh_CN' ? 'zh-CN' : $locale => $locale === 'zh_CN' ? '中文标签' : "Updated {$locale}",
+            ])
+            ->all();
+
+        $this->actingAsJwt($admin)
+            ->patchJson('/api/v1/navigation/menus/'.$menu->id, [
+                'name' => $name,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.name_translations.zh_CN', '中文标签');
+
+        $fresh = $menu->fresh();
+        $this->assertNotNull($fresh);
+        $this->assertSame('中文标签', $fresh->getTranslation('name', 'zh_CN'));
+        $this->assertArrayNotHasKey('zh-CN', $fresh->getTranslations('name'));
+    }
+
+    public function test_store_still_rejects_unknown_locale_keys(): void
+    {
+        $this->actingAsJwt($this->userWithRole('Admin'))
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => [
+                    'en' => 'Bad locale',
+                    'fr' => 'Clé inconnue',
+                ],
+                'type' => 'h',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
+    }
+
     /**
      * Create a menu through the repository so `order` is assigned the same way
      * the application assigns it (contiguous within the sibling group).

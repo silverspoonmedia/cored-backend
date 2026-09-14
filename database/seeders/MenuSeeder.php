@@ -9,6 +9,7 @@ use App\Domain\Navigation\Support\MenuLayout;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 /**
  * Rebuilds the canonical dynamic navigation tree.
@@ -80,10 +81,22 @@ class MenuSeeder extends Seeder
      */
     private function idsForRoles(array $roleNames): array
     {
-        return array_values(array_filter(array_map(
-            fn (string $roleName): ?string => $this->roleIds[$roleName] ?? null,
+        $missing = array_values(array_filter(
             $roleNames,
-        )));
+            fn (string $roleName): bool => ! isset($this->roleIds[$roleName]),
+        ));
+
+        if ($missing !== []) {
+            throw new RuntimeException(
+                'MenuSeeder references unseeded role(s): '.implode(', ', array_unique($missing))
+                .'. Seed RoleSeeder, ArchivdRoleSeeder, and VtualRoleSeeder before MenuSeeder.'
+            );
+        }
+
+        return array_values(array_map(
+            fn (string $roleName): string => $this->roleIds[$roleName],
+            $roleNames,
+        ));
     }
 
     /**

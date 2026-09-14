@@ -7,6 +7,7 @@ use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use App\Support\Product\Services\ProductActivationService;
 use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MenuSeeder;
+use Database\Seeders\VtualRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
@@ -30,6 +31,7 @@ class MenuVisibilityTest extends TestCase
 
         $this->seedRolesAndPermissions();
         $this->seed(ArchivdRoleSeeder::class);
+        $this->seed(VtualRoleSeeder::class);
         $this->seed(MenuSeeder::class);
 
         app(MenuRepositoryInterface::class)->flushNavigationCache();

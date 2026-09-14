@@ -133,6 +133,8 @@ php artisan db:seed --class=RoleSeeder   # adds view error log + syncs Root/Admi
 php artisan db:seed --class=MenuSeeder   # authoritative rebuild; removes custom menus
 ```
 
+`MenuSeeder` fails fast on missing roles (`RuntimeException` naming them), so seed `RoleSeeder` + `ArchivdRoleSeeder` + `VtualRoleSeeder` first on any database that does not already have the full role catalog.
+
 ## Safety
 
 - Writer never throws into the request / log pipeline

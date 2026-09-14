@@ -108,7 +108,7 @@ class UpdateMenuRequest extends FormRequest
             }
 
             if (is_string($type)) {
-                $this->assertMenuStructure($validator, $type, $parentId);
+                $this->assertMenuStructure($validator, $type, $parentId, $menu->layout);
             }
         });
     }

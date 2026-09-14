@@ -8,6 +8,7 @@ use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use App\Domain\Navigation\Support\MenuLayout;
 use App\Domain\Navigation\Support\NavigationRealtime;
 use App\Domain\Navigation\Support\NavigationTreeFilter;
+use App\Support\Localization\LocalePreference;
 use Illuminate\Support\Facades\DB;
 
 class MenuService
@@ -139,17 +140,31 @@ class MenuService
     {
         $attributes = [];
 
+        // Safety net: the FormRequest trait already canonicalizes translatable
+        // locale keys (`zh-CN` → `zh_CN`); normalize again here so a future
+        // request path that skips the trait can never persist alias keys.
+        if (is_array($data['name'] ?? null)) {
+            $attributes['name'] = $this->canonicalizeLocaleMap($data['name']);
+        }
+
         if ($isCreate) {
-            $attributes['name'] = $data['name'];
+            $attributes['name'] ??= $data['name'];
             $attributes['type'] = $data['type'];
             $attributes['layout'] = $data['layout'] ?? MenuLayout::default();
-            $attributes['description'] = $data['description'] ?? null;
+
+            if (is_array($data['description'] ?? null)) {
+                $attributes['description'] = $this->canonicalizeLocaleMap($data['description']);
+            } else {
+                $attributes['description'] = $data['description'] ?? null;
+            }
         } else {
-            if (array_key_exists('name', $data)) {
+            if (! array_key_exists('name', $attributes) && array_key_exists('name', $data)) {
                 $attributes['name'] = $data['name'];
             }
             if (array_key_exists('description', $data)) {
-                $attributes['description'] = $data['description'];
+                $attributes['description'] = is_array($data['description'])
+                    ? $this->canonicalizeLocaleMap($data['description'])
+                    : $data['description'];
             }
             if (array_key_exists('type', $data)) {
                 $attributes['type'] = $data['type'];
@@ -176,6 +191,33 @@ class MenuService
         }
 
         return $attributes;
+    }
+
+    /**
+     * Rewrite a translatable locale map so every key is the canonical backend
+     * locale code. Later entries win: an SPA edit sent as the `zh-CN` alias
+     * overrides a stale canonical `zh_CN` value for the same locale.
+     *
+     * @param  array<string, mixed>  $map
+     * @return array<string, string>
+     */
+    private function canonicalizeLocaleMap(array $map): array
+    {
+        $canonical = [];
+
+        foreach ($map as $locale => $text) {
+            if (! is_string($locale) || ! is_string($text)) {
+                continue;
+            }
+
+            $backend = LocalePreference::normalize($locale);
+
+            if ($backend !== null) {
+                $canonical[$backend] = $text;
+            }
+        }
+
+        return $canonical;
     }
 
     /**

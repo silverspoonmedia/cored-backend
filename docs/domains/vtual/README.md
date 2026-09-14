@@ -523,7 +523,7 @@ SPA: `useVtulRealtime.ts` (profiles, show, management views), `useVtulClaimRealt
 2. `ArchivdRoleSeeder` — required because authoritative `MenuSeeder` also builds the Archivd branch.
 3. `VtualRoleSeeder` — product roles/permissions + `PlatformService::seedDefaults()`.
 4. `MenuSeeder` — Administration → **vTual** parent (`vtual.orphans.index`) with Orphan vTubers (Root/Admin/Moderator) and Platform credentials (Root/Admin).
-5. `DatabaseSeeder` preserves this order. Running `MenuSeeder` before role seeders can omit expected menu-role pivots.
+5. `DatabaseSeeder` preserves this order. Running `MenuSeeder` before the role seeders now **fails fast** — `idsForRoles()` throws a `RuntimeException` naming the missing roles instead of silently dropping the node's RBAC.
 
 ## Kick strategy (foundation)
 

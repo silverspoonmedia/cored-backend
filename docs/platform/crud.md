@@ -60,8 +60,9 @@ Do **not** copy-paste full rule arrays between Store/Update. Prefer domain `Http
 | Product activations | `ProductActivationRequestRules` (admin filters, suspend/approve/reject) |
 | Vtual | `VtualRequestRules` (external links, creator/management store vs update, credential secrets, invite email) |
 | Inference | `InferenceCatalogRules` (provider/model-card slug uniqueness, store vs update `display_name`) |
+| Translatable locale maps | `App\Support\Localization\Concerns\ValidatesTranslatableInput` (`zh-CN` → `zh_CN` canonicalization, all-locale requirement, empty-map opt-out) — [localization.md](localization.md#translatable-payload-maps) |
 
-Keep separate Store/Update classes for route binding; only the **rules body** is shared. Input normalization (e.g. service `prices[]` currency uppercasing, Archivd sha256 lowercasing) belongs in FormRequest `prepareForValidation`, not the web proxy.
+Keep separate Store/Update classes for route binding; only the **rules body** is shared. Input normalization (e.g. service `prices[]` currency uppercasing, Archivd sha256 lowercasing) belongs in FormRequest `prepareForValidation`, not the web proxy. Translatable locale maps are the exception: `ValidatesTranslatableInput` rewrites the request payload in place (alias → canonical key) because `validated()` and persistence must never see `zh-CN`.
 
 API mutations use FormRequests — do **not** `$request->validate()` in controllers.
 

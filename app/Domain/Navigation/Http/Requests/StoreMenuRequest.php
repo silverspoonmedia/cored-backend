@@ -81,7 +81,6 @@ class StoreMenuRequest extends FormRequest
             $type = $this->input('type');
 
             if (is_string($type)) {
-                $this->assertMenuStructure($validator, $type, $this->input('parent'));
                 $this->assertParentLayoutMatches(
                     $validator,
                     (string) $this->input('layout', MenuLayout::default()),
@@ -94,6 +93,13 @@ class StoreMenuRequest extends FormRequest
                 $this->boolean('guest_only'),
                 $this->boolean('authenticate'),
                 $this->input('roles', []) !== [],
+            );
+
+            $this->assertMenuStructure(
+                $validator,
+                $type,
+                $this->input('parent'),
+                (string) $this->input('layout', MenuLayout::default()),
             );
         });
     }

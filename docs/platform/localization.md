@@ -43,6 +43,7 @@ Translation workflow:
 | API messages / policy / business exceptions | `lang/{locale}/api/*` |
 | FormRequest messages | `forms/*` or `__()` in request |
 | Translatable DB fields | Spatie + admin input per locale |
+| Translatable map locale keys | rewritten in place by `ValidatesTranslatableInput` (SPA alias → canonical code); no locale file |
 | Seed sample content | Locale maps in seed data |
 
 Emails follow recipient `users.locale` (`HasLocalePreference` on `User`).
@@ -63,6 +64,17 @@ The backend stores canonical Laravel codes. SPA `zh-CN` is accepted at API bound
 Switch: `POST /api/v1/auth/locale` — authenticated users persist to `users.locale`; SPA also stores preference client-side.
 
 Both API (`POST /api/v1/auth/locale`) calls `App\Support\Localization\LocalePreference::apply()` so cookie + user-column persist stay one implementation.
+
+### Translatable payload maps
+
+Spatie-translatable request fields (`menus.name`, `menus.description`, …) accept either a plain string (shorthand for the active locale) or a locale map. The shared trait `App\Support\Localization\Concerns\ValidatesTranslatableInput` owns the map rules:
+
+- **Alias canonicalization** — keys are validated through `LocalePreference::normalize()`, so the SPA alias `zh-CN` is accepted alongside `zh_CN`; the map is then rewritten in place with canonical backend keys, so `validated()` data and persistence never see alias keys. When both keys are present the **last** entry wins the merge, so an SPA edit sent as `zh-CN` overrides a stale `zh_CN` prefill value.
+- **All-locale requirement** — a locale map must carry a non-empty value for every supported locale (`validateTranslatableAllLocales`). Plain strings skip the check.
+- **Empty map = leave unset** — an empty map on an optional field (`description`) passes validation instead of demanding every locale. The SPA edit form always posts the field, and menus without a description would otherwise fail update with a false "required" on all locales.
+- **Unknown keys rejected** — anything `LocalePreference::normalize()` does not resolve fails with a `validation.in` error.
+
+`MenuService::mapAttributes()` canonicalizes again as a safety net for request paths that skip the trait. The SPA mirrors the contract: prefill maps come back backend-keyed (`zh_CN`) and `translatableValue()` resolves them for the row rendered under the SPA code (`zh-CN`), while `normalizeTranslatableMap()` emits backend keys on write. Covered by `tests/Unit/Localization/ValidatesTranslatableInputTest.php`, the `NavigationMenuTest` alias tests, and the SPA `tests/translatableLocaleMap.test.ts`.
 
 ### Web ↔ API sync
 

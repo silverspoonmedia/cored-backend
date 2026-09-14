@@ -20,7 +20,7 @@ Open this guide when creating or changing dynamic menus (including `MenuSeeder`)
 |-------|------|
 | `Menu` model | `HasUuids`, Spatie translatable name/description, tree relations |
 | `MenuRepository` | Tree build, visibility + `#` mask, two-tier forever cache (snapshot + presented) |
-| `MenuService` | Field map, orchestration |
+| `MenuService` | Field map (`parent` → `parent_id`, …), locale-map canonicalization (`canonicalizeLocaleMap()`), orchestration |
 | `MenuController` API | Thin HTTP under `/api/v1/navigation/menus` |
 | `jwt.optional` | Guest or authenticated tree on `index` |
 
@@ -41,7 +41,7 @@ Bound in `NavigationServiceProvider`.
 
 Pivots: `menu_roles`, `menu_user_includes`, `menu_user_excludes`. Unique index on `(layout, parent_id, type, order)`.
 
-**Layouts:** independent trees; parent/child must share layout; layout fixed after create.
+**Layouts:** independent trees; parent/child must share layout; layout fixed after create. `sidebar` is the only layout that enforces a header root (`h`); the flat template layouts (`navbar`, `vtual`) also accept parentless `p` roots.
 
 **Menu route validation:** `StoreMenuRequest` / `UpdateMenuRequest` validate `route` via `App\Support\Navigation\SpaRouteRegistry`. Allowed SPA Vue Router names (not `*.view`) live in `config/spa-routes.php` `menu`; `deny` rejects auth/public-utility names even if Laravel `Route::has()` would pass. Remaining Laravel web route names (share, iPaymu, Discord callback) still pass via `Route::has()` unless denied. Keep the allowlist in sync with `monolith-vue-workers/src/router/index.ts`.
 
@@ -82,9 +82,9 @@ SPA menus admin consumes this API directly. Sidebar/navbar trees come from `GET 
 
 ### Request fields (store/update)
 
-Service maps friendly names: `parent` → `parent_id`, `authenticate` → `is_authenticate`, etc. Placement accepts optional `position` + `reference_id` (`before`/`after`/`append`). Structure is `h` root → `p` under `h` → `c` under `p`. Create/update wrap row and pivot synchronization in one transaction.
+Service maps friendly names: `parent` → `parent_id`, `authenticate` → `is_authenticate`, etc. Placement accepts optional `position` + `reference_id` (`before`/`after`/`append`). Structure is `h` root → `p` under `h` → `c` under `p`; flat template layouts (`navbar`, `vtual`) additionally allow parentless `p` roots — no header wrapper. Create/update wrap row and pivot synchronization in one transaction.
 
-Translatable `name`/`description` accepts a string or locale map; see [localization](../../platform/localization.md).
+Translatable `name`/`description` accepts a string or a locale map; locale keys are canonicalized (`zh-CN` → `zh_CN`), every supported locale is required, and an empty map means "leave unset" — full rules in [localization — Translatable payload maps](../../platform/localization.md#translatable-payload-maps). The edit form mirrors the canonical keys: `name_translations`/`description_translations` arrive backend-keyed (`zh_CN`) and the SPA `FormTranslatableInput` resolves them per row through `translatableValue()`, so the `zh-CN` row shows the stored Chinese value instead of a blank input.
 
 ## Ordering
 
@@ -126,7 +126,7 @@ php artisan db:seed --class=VtualRoleSeeder
 php artisan db:seed --class=MenuSeeder
 ```
 
-`DatabaseSeeder` already preserves this order. Running `MenuSeeder` alone before those role seeders can silently omit expected `menu_roles` pivots because unknown role names are filtered out.
+`DatabaseSeeder` already preserves this order. Running `MenuSeeder` alone before those role seeders now **fails fast**: `idsForRoles()` throws a `RuntimeException` naming the missing roles instead of silently dropping the node's RBAC.
 
 ### Canonical sidebar tree
 
@@ -164,7 +164,8 @@ php artisan db:seed --class=MenuSeeder
   - **vTual** — parent route `vtual.orphans.index`; Root, Admin, Moderator
     - Orphan vTubers — `vtual.orphans.index`
     - Managements — `vtual.managements.index`; Root, Admin (staff manage orgs; membership never grants this branch because the parent route is not in `MANAGEMENT_MEMBER_ROUTES`)
-    - Platform credentials — `vtual.platform-credentials.index` (Root, Admin)  - **Settings** — Root, Admin (single hub for all `settings.*` groups)
+    - Platform credentials — `vtual.platform-credentials.index` (Root, Admin)
+  - **Settings** — Root, Admin (single hub for all `settings.*` groups)
     - Platform — `settings.platform`
     - Archivd — `settings.archivd`
     - Microstock — `settings.microstock`
@@ -205,7 +206,8 @@ Menu mutations (create/update/delete/trash/restore) ping the `navigation.menus` 
 
 - `tests/Domain/Navigation/Unit/Repositories/Eloquent/MenuRepositoryTest.php` covers CRUD/ordering plus presentational `#` masking, presented-tree cache hits (no `menus` queries), epoch refresh after menu mutation, and per-user `forgetPresentedTreeFor`.
 - `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederTest.php` locks the exact 49-row sidebar/navbar/vtual tree, all-seven-locale (`en`/`id`/`ja`/`ko`/`zh_CN`/`ar`/`ru`) `name` translations, selected role pivots (both `vtual.managements.index` rows: Products member-only `[]`, Administration `['Admin','Root']`; `vtual.events.index` Products `[]`), vtual `hash` anchors, absence of Debug/probe/Microstock product nodes, authoritative active-and-trashed rebuild, logical idempotence, and representative role visibility.
-- `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuTest.php` covers menu CRUD including SPA symbolic route acceptance and garbage route rejection.
+- `tests/Domain/Navigation/Feature/Database/Seeders/MenuSeederConformanceTest.php` asserts every seeded row satisfies the same rules the Store/Update FormRequests enforce (type enum, layout enum, h→p→c hierarchy with flat-layout `p` roots, parent-layout match, route via `SpaRouteRegistry`, hash/icon/name max lengths, all-locale non-empty `name`, flag compatibility, contiguous sibling order) so editing a seeded node never trips validation.
+- `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuTest.php` covers menu CRUD including SPA symbolic route acceptance and garbage route rejection, plus `zh-CN` alias acceptance on translatable maps (store/update, mixed-key merge, unknown-locale rejection).
 - `tests/Domain/Navigation/Feature/Http/Controllers/API/V1/NavigationMenuLayoutTest.php` covers layout scoping (sidebar/navbar/vtual), parent-layout mismatch rejection, guest fetch of the vtual tree, and the `layouts` endpoint exposing the configured identifiers.
 - `tests/Domain/Navigation/Unit/Support/MenuLayoutTest.php` asserts the three configured layouts (`sidebar`/`navbar`/`vtual`) and the default.
 - `tests/Domain/Navigation/Feature/PrivateDomainMenuVisibilityTest.php` covers public/private product visibility, guests, privileged access, and empty-branch pruning.

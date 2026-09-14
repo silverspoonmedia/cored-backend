@@ -3,22 +3,27 @@
 namespace App\Domain\Navigation\Http\Requests\Concerns;
 
 use App\Domain\Navigation\Models\Menu;
+use App\Domain\Navigation\Support\MenuLayout;
 use Illuminate\Validation\Validator;
 
 /**
  * Shared menu hierarchy rules:
  *  - structural integrity: header(h) is a root, parent(p) sits under a header,
- *    child(c) sits under a parent (strict h -> p -> c nesting);
+ *    child(c) sits under a parent (strict h -> p -> c nesting); flat template
+ *    layouts (navbar, vtual) allow parentless `p` roots;
  *  - cycle safety: a menu may not be re-parented under one of its descendants.
  */
 trait ValidatesMenuStructure
 {
     /**
      * Each type must sit directly under a parent exactly one rank higher.
+     * Exception: navbar and vtual layouts are flat template trees whose roots
+     * are parentless `p` nodes (no headers); only the sidebar enforces a
+     * header root.
      */
     private const EXPECTED_PARENT_TYPE = ['h' => null, 'p' => 'h', 'c' => 'p'];
 
-    protected function assertMenuStructure(Validator $validator, string $type, ?string $parentId): void
+    protected function assertMenuStructure(Validator $validator, string $type, ?string $parentId, ?string $layout = null): void
     {
         if (! array_key_exists($type, self::EXPECTED_PARENT_TYPE)) {
             return;
@@ -35,6 +40,10 @@ trait ValidatesMenuStructure
         }
 
         if ($parentId === null) {
+            if ($type === 'p' && $layout !== null && $layout !== MenuLayout::SIDEBAR) {
+                return;
+            }
+
             $validator->errors()->add('parent', "A menu of type \"{$type}\" requires a parent of type \"{$expected}\".");
 
             return;

@@ -146,6 +146,8 @@ Runtime, RTL, lazy chunks, `useI18n()` vs `i18n.global.t`: sibling [i18n.md](../
 
 Conversion: PHP `trans('web/settings.title')` → `t('web.settings.title')`; `:variable` → `{variable}`. `zh_CN` backend ↔ `zh-CN` SPA.
 
+Translatable **payload** maps (menu `name`/`description`, locale-keyed `Record<string, string>`) must be keyed by the backend code (`zh_CN`), never the SPA code (`zh-CN`) — the backend rejects unknown locale keys. `FormTranslatableInput` converts both directions through `src/i18n`: `translatableValue()` reads a backend-keyed prefill for the row rendered under the SPA code, `normalizeTranslatableMap()` writes backend keys and drops aliases; `MenuEditView` re-normalizes before submit as defense in depth.
+
 ## Notifications & confirmations (Sweetalert2)
 
 Swal-only via SPA `src/lib/swal.ts`. Sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md). Shared keys `ui.swal.*` / `ui.dialog.*`.

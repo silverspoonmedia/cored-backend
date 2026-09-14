@@ -82,7 +82,7 @@ Visibility toggles ping the `domain-access` private channel (permission `view do
 
 ## `domain:make` pipeline
 
-`domain:make {Name}` generates `database/seeders/{Name}RoleSeeder.php` (Beta tester role + permission + Public visibility row via `SeedsBetaTesterRole`) and registers `$this->call({Name}RoleSeeder::class)` in `DatabaseSeeder`. `domain:remove` deletes the seeder and unregisters it. Run `php artisan db:seed --class={Name}RoleSeeder` after scaffolding.
+`domain:make {Name}` generates `database/seeders/{Name}RoleSeeder.php` (Beta tester role + permission + Public visibility row via `SeedsBetaTesterRole`) and registers `$this->call({Name}RoleSeeder::class)` in `DatabaseSeeder`. `domain:remove` deletes the seeder file and unregisters that call line from `DatabaseSeeder`; `DomainCommandsTest` asserts both directions (generated on make, gone after remove) and backs up `DatabaseSeeder.php` so the injected call never leaks into the working tree. Run `php artisan db:seed --class={Name}RoleSeeder` after scaffolding.
 
 ## Tests
 
