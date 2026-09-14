@@ -3,6 +3,7 @@
 namespace Tests\Domain\Navigation\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use App\Domain\Navigation\Support\MenuLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -73,7 +74,7 @@ class NavigationMenuLayoutTest extends TestCase
             'type' => 'p',
             'layout' => MenuLayout::VTUAL,
             'route' => 'vtual.public',
-            'is_authenticate' => false,
+            'audience' => MenuAudience::All,
         ], 'append', null);
 
         $tree = $this->getJson('/api/v1/navigation/menus?layout=vtual')
@@ -198,10 +199,10 @@ class NavigationMenuLayoutTest extends TestCase
 
     public function test_sibling_order_is_independent_per_layout(): void
     {
-        $this->repo()->createMenu(['name' => 'Sidebar A', 'type' => 'p', 'layout' => MenuLayout::SIDEBAR, 'route' => 'dashboard'], 'append', null);
-        $this->repo()->createMenu(['name' => 'Navbar A', 'type' => 'p', 'layout' => MenuLayout::NAVBAR, 'route' => 'users.index'], 'append', null);
-        $this->repo()->createMenu(['name' => 'Sidebar B', 'type' => 'p', 'layout' => MenuLayout::SIDEBAR, 'route' => 'notifications.index'], 'append', null);
-        $this->repo()->createMenu(['name' => 'Navbar B', 'type' => 'p', 'layout' => MenuLayout::NAVBAR, 'route' => 'services.index'], 'append', null);
+        $this->repo()->createMenu(['name' => 'Sidebar A', 'type' => 'p', 'layout' => MenuLayout::SIDEBAR, 'route' => 'dashboard', 'audience' => MenuAudience::All], 'append', null);
+        $this->repo()->createMenu(['name' => 'Navbar A', 'type' => 'p', 'layout' => MenuLayout::NAVBAR, 'route' => 'users.index', 'audience' => MenuAudience::All], 'append', null);
+        $this->repo()->createMenu(['name' => 'Sidebar B', 'type' => 'p', 'layout' => MenuLayout::SIDEBAR, 'route' => 'notifications.index', 'audience' => MenuAudience::All], 'append', null);
+        $this->repo()->createMenu(['name' => 'Navbar B', 'type' => 'p', 'layout' => MenuLayout::NAVBAR, 'route' => 'services.index', 'audience' => MenuAudience::All], 'append', null);
 
         $sidebarNames = collect($this->repo()->navigationTree(null, MenuLayout::SIDEBAR))->pluck('name')->all();
         $navbarNames = collect($this->repo()->navigationTree(null, MenuLayout::NAVBAR))->pluck('name')->all();

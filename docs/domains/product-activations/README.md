@@ -256,7 +256,7 @@ if ($user && $node['route'] !== null) {
 ```
 
 - Non-product routes return `null` from the map → skip the check.
-- Guests skip the check (no auth gate; governed by `is_authenticate` / `is_guest_only`).
+- Guests skip the check (no auth gate; governed by the node's `audience`).
 - Activation outcomes are baked into forever **presented** trees per viewer (built from the global snapshot using **stored** DB routes). `ProductActivationStateChanged` forgets that user’s presented keys under the current epoch; user role sync does the same. Snapshot is unchanged; the next `navigationTree` miss rebuilds. See [Navigation — Caching](../navigation/README.md#caching) and [cache-policy](../../platform/cache-policy.md).
 
 Helpers on `ProductRegistry`:

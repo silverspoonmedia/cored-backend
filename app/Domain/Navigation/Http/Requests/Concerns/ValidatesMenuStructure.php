@@ -2,6 +2,7 @@
 
 namespace App\Domain\Navigation\Http\Requests\Concerns;
 
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Models\Menu;
 use App\Domain\Navigation\Support\MenuLayout;
 use Illuminate\Validation\Validator;
@@ -11,7 +12,8 @@ use Illuminate\Validation\Validator;
  *  - structural integrity: header(h) is a root, parent(p) sits under a header,
  *    child(c) sits under a parent (strict h -> p -> c nesting); flat template
  *    layouts (navbar, vtual) allow parentless `p` roots;
- *  - cycle safety: a menu may not be re-parented under one of its descendants.
+ *  - cycle safety: a menu may not be re-parented under one of its descendants;
+ *  - audience integrity: role restrictions belong to the `role` audience only.
  */
 trait ValidatesMenuStructure
 {
@@ -70,19 +72,40 @@ trait ValidatesMenuStructure
     }
 
     /**
-     * Reject visibility-flag combinations that would make a menu visible to no
-     * one: guest-only + authenticate (mutually exclusive audiences), and
-     * guest-only + roles (roles require an authenticated user).
+     * Reject audience/role combinations that would make the stored audience lie
+     * about the effective visibility. Role restrictions only make sense for the
+     * signed-in-with-roles audience, and that audience needs at least one role.
+     *
+     * A null audience means the submitted value was not a valid case — the
+     * `audience` Enum rule already reports that, so no second error is stacked.
      */
-    protected function assertFlagsCompatible(Validator $validator, bool $guestOnly, bool $authenticate, bool $hasRoles): void
+    protected function assertAudienceCompatible(Validator $validator, ?MenuAudience $audience, bool $hasRoles): void
     {
-        if ($guestOnly && $authenticate) {
-            $validator->errors()->add('guest_only', 'A menu cannot be both guest-only and authenticated; it would be visible to no one.');
+        if ($audience === null) {
+            return;
         }
 
-        if ($guestOnly && $hasRoles) {
-            $validator->errors()->add('guest_only', 'A guest-only menu cannot have role restrictions; roles require an authenticated user.');
+        if ($audience->usesRoles() && ! $hasRoles) {
+            $validator->errors()->add('roles', 'Select at least one role for the signed-in-with-roles audience.');
         }
+
+        if (! $audience->usesRoles() && $hasRoles) {
+            $validator->errors()->add('audience', 'Role restrictions require the signed-in-with-roles audience.');
+        }
+    }
+
+    /**
+     * Audience this request would persist: the submitted value, or `$fallback`
+     * when the key is absent. Null means the submitted value is not a valid
+     * case (already reported by the `audience` Enum rule).
+     */
+    protected function effectiveAudience(MenuAudience $fallback): ?MenuAudience
+    {
+        if (! $this->has('audience')) {
+            return $fallback;
+        }
+
+        return MenuAudience::tryFrom((string) $this->input('audience'));
     }
 
     protected function assertParentIsNotDescendant(Validator $validator, string $menuId, ?string $parentId): void

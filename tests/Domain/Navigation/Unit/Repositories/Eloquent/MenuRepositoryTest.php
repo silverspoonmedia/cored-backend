@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Navigation\Unit\Repositories\Eloquent;
 
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Exceptions\InvalidMenuParentException;
 use App\Domain\Navigation\Exceptions\InvalidMenuPositionException;
 use App\Domain\Navigation\Exceptions\MenuHasChildrenException;
@@ -110,9 +111,9 @@ class MenuRepositoryTest extends TestCase
         $this->assertCount(0, $menu->fresh()->roles);
     }
 
-    public function test_navigation_tree_hides_authenticate_only_from_guest(): void
+    public function test_navigation_tree_hides_authenticated_only_from_guest(): void
     {
-        $this->makeMenu(['name' => 'Members', 'type' => 'c', 'is_authenticate' => true]);
+        $this->makeMenu(['name' => 'Members', 'type' => 'c', 'audience' => MenuAudience::Auth]);
 
         $this->assertNotContains('Members', $this->treeNames(null));
         $this->assertContains('Members', $this->treeNames($this->userWithRole('User')));
@@ -120,15 +121,23 @@ class MenuRepositoryTest extends TestCase
 
     public function test_navigation_tree_hides_guest_only_from_authenticated(): void
     {
-        $this->makeMenu(['name' => 'GuestBanner', 'type' => 'c', 'is_guest_only' => true]);
+        $this->makeMenu(['name' => 'GuestBanner', 'type' => 'c', 'audience' => MenuAudience::Guest]);
 
         $this->assertContains('GuestBanner', $this->treeNames(null));
         $this->assertNotContains('GuestBanner', $this->treeNames($this->userWithRole('User')));
     }
 
+    public function test_navigation_tree_shows_all_audience_to_everyone(): void
+    {
+        $this->makeMenu(['name' => 'OpenItem', 'type' => 'c', 'audience' => MenuAudience::All]);
+
+        $this->assertContains('OpenItem', $this->treeNames(null));
+        $this->assertContains('OpenItem', $this->treeNames($this->userWithRole('User')));
+    }
+
     public function test_navigation_tree_enforces_role_restriction(): void
     {
-        $menu = $this->makeMenu(['name' => 'AdminArea', 'type' => 'c']);
+        $menu = $this->makeMenu(['name' => 'AdminArea', 'type' => 'c', 'audience' => MenuAudience::Role]);
         $this->repository->syncRoles($menu, ['Admin']);
 
         $this->assertNotContains('AdminArea', $this->treeNames(null));
@@ -156,8 +165,8 @@ class MenuRepositoryTest extends TestCase
 
     public function test_navigation_tree_prunes_empty_parents(): void
     {
-        $header = $this->makeMenu(['name' => 'Empty Header', 'type' => 'h']);
-        $this->makeMenu(['name' => 'Empty Parent', 'type' => 'p', 'parent_id' => $header->id]);
+        $header = $this->makeMenu(['name' => 'Empty Header', 'type' => 'h', 'audience' => MenuAudience::All]);
+        $this->makeMenu(['name' => 'Empty Parent', 'type' => 'p', 'parent_id' => $header->id, 'audience' => MenuAudience::All]);
 
         // Header/parent with no visible leaf must not appear.
         $this->assertNotContains('Empty Header', $this->treeNames(null));
@@ -199,7 +208,7 @@ class MenuRepositoryTest extends TestCase
 
     public function test_soft_deleted_menu_is_excluded_from_tree_and_list(): void
     {
-        $menu = $this->makeMenu(['name' => 'Gone', 'type' => 'c']);
+        $menu = $this->makeMenu(['name' => 'Gone', 'type' => 'c', 'audience' => MenuAudience::All]);
 
         $this->repository->deleteMenu($menu);
 
@@ -220,9 +229,9 @@ class MenuRepositoryTest extends TestCase
 
     public function test_delete_with_cascade_soft_deletes_whole_subtree(): void
     {
-        $header = $this->makeMenu(['name' => 'H', 'type' => 'h']);
-        $parent = $this->makeMenu(['name' => 'P', 'type' => 'p', 'parent_id' => $header->id]);
-        $child = $this->makeMenu(['name' => 'C', 'type' => 'c', 'parent_id' => $parent->id]);
+        $header = $this->makeMenu(['name' => 'H', 'type' => 'h', 'audience' => MenuAudience::All]);
+        $parent = $this->makeMenu(['name' => 'P', 'type' => 'p', 'parent_id' => $header->id, 'audience' => MenuAudience::All]);
+        $child = $this->makeMenu(['name' => 'C', 'type' => 'c', 'parent_id' => $parent->id, 'audience' => MenuAudience::All]);
 
         $this->repository->deleteMenu($header, true);
 
@@ -234,10 +243,10 @@ class MenuRepositoryTest extends TestCase
 
     public function test_restore_brings_back_subtree_and_appends_order(): void
     {
-        $header = $this->makeMenu(['name' => 'H', 'type' => 'h']);
-        $parent = $this->makeMenu(['name' => 'P', 'type' => 'p', 'parent_id' => $header->id]);
-        $child = $this->makeMenu(['name' => 'C', 'type' => 'c', 'parent_id' => $parent->id]);
-        $sibling = $this->makeMenu(['name' => 'H2', 'type' => 'h']);
+        $header = $this->makeMenu(['name' => 'H', 'type' => 'h', 'audience' => MenuAudience::All]);
+        $parent = $this->makeMenu(['name' => 'P', 'type' => 'p', 'parent_id' => $header->id, 'audience' => MenuAudience::All]);
+        $child = $this->makeMenu(['name' => 'C', 'type' => 'c', 'parent_id' => $parent->id, 'audience' => MenuAudience::All]);
+        $sibling = $this->makeMenu(['name' => 'H2', 'type' => 'h', 'audience' => MenuAudience::All]);
 
         $this->repository->deleteMenu($header, true);
         $this->assertSame(1, $sibling->fresh()->order);
@@ -280,7 +289,7 @@ class MenuRepositoryTest extends TestCase
     public function test_navigation_cache_is_busted_when_role_is_renamed(): void
     {
         $user = $this->userWithRole('Moderator');
-        $menu = $this->makeMenu(['name' => 'ModOnly', 'type' => 'c', 'is_authenticate' => true]);
+        $menu = $this->makeMenu(['name' => 'ModOnly', 'type' => 'c', 'audience' => MenuAudience::Role]);
         $this->repository->syncRoles($menu, ['Moderator']);
 
         // Populate the cached snapshot with the current role name.

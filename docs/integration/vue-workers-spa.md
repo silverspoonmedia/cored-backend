@@ -160,6 +160,8 @@ SPA components (`confirmDialog`, `SubmitButton`, `FormInput`, loading/error/empt
 
 Wraps jQuery Select2 AJAX against paginated `GET /api/v1/lookups/*` — [list-display-modes.md](../platform/list-display-modes.md).
 
+**Multi-value `ids[]` shape:** the SPA must send repeated params (`ids[]=a&ids[]=b`, i.e. pass the array to `apiUrl()`), not a comma-joined string — `ids.* => uuid` rejects the latter with 422. Batch sub-request failures are silent (`bodyOf()` returns null for non-200), so a malformed query surfaces as an empty pre-selection rather than an error.
+
 Nested tree selects: ajax `lookups/menus` (Dynamic Menu CRUD — parent & reference in `MenuEditView`) returns **nested trees, one node per top-level root menu**. Roots are paginated (lazy load = next root group; a group is never split across pages); each root carries its entire subtree as recursive `children`, with `level` per node (0 = root) for indentation. Select2 renders only one `<optgroup>` level natively, so the SPA flattens the tree via `flattenTreeForSelect2()` (`src/utils/select2-lookup.ts`): each root becomes an optgroup whose first selectable leaf is the root itself, followed by descendants indented by `level`. Search (`q`) returns matching branches with their ancestors retained. The hydrate path (`ids[]` for pre-selection) still returns flat rows with `group`/`parent_text`/`level` metadata — see [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md).
 
 ### Blob / CSV downloads
@@ -187,6 +189,7 @@ Do not load this contract for screen-level UX. Use the domain README (Agent entr
 - vTual public / orphans / profiles / managements / events — [vtual README](../domains/vtual/README.md). Landing HomeView is **FROZEN** (sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md)).
 - Inference rate editor: `PUT inference/providers/{id}/rates` full replace (`manage inference catalog`).
 - Settings: `PUT admin/settings/{group}` sends **underscore** field names (`platform_jwt_ttl`). MenuSeeder children `settings.platform|archivd|microstock|vtual` are named SPA routes **before** parameterized `settings.group.view`.
+- Navigation menus: `POST/PATCH navigation/menus` send `audience` (`all` | `auth` | `role` | `guest`, default `auth` when omitted) and `roles` **only** with `audience=role`; rows return `audience` + `role_ids`. `is_authenticate` / `is_guest_only` were removed — breaking for older SPA builds, so both repos deploy together. Admin surface: [navigation README](../domains/navigation/README.md).
 
 ## Mimic doctrine
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Identity\Feature\Http\Controllers\API\V1;
 
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Models\Menu;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
@@ -314,8 +315,7 @@ class LookupTest extends TestCase
             'route' => null,
             'type' => 'c',
             'order' => 1,
-            'is_authenticate' => false,
-            'is_guest_only' => false,
+            'audience' => MenuAudience::All,
         ], $overrides));
     }
 

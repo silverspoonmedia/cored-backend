@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Domain\Identity\Models\Role;
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Models\Menu;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use App\Domain\Navigation\Support\MenuLayout;
@@ -61,8 +62,9 @@ class MenuSeeder extends Seeder
                 'hash' => $node['hash'] ?? null,
                 'type' => $node['type'],
                 'order' => $index + 1,
-                'is_authenticate' => $node['is_authenticate'] ?? true,
-                'is_guest_only' => $node['is_guest_only'] ?? null,
+                // The audience is derived from the declared roles so a seeded
+                // node can never carry role pivots under a non-role audience.
+                'audience' => $node['audience'] ?? ($roleNames === [] ? MenuAudience::Auth : MenuAudience::Role),
             ]);
 
             if ($roleNames !== []) {
@@ -468,7 +470,7 @@ class MenuSeeder extends Seeder
      * Public vTual navigation tree (Valkivid3 template).
      *
      * Guest-visible nodes rendered by the SPA's VkStr1Layout header/mobile/footer.
-     * No roles, not authenticate-only — visible to everyone including guests.
+     * No roles, audience `all` — visible to everyone including guests.
      */
     private function vtualTree(): array
     {
@@ -478,7 +480,7 @@ class MenuSeeder extends Seeder
                 'icon' => 'bi bi-house',
                 'route' => 'vtual.public',
                 'type' => 'p',
-                'is_authenticate' => false,
+                'audience' => MenuAudience::All,
             ],
             [
                 'name' => $this->translations('Directory', 'Direktori', 'ディレクトリ'),
@@ -486,7 +488,7 @@ class MenuSeeder extends Seeder
                 'route' => 'vtual.public',
                 'hash' => '#vtubers',
                 'type' => 'p',
-                'is_authenticate' => false,
+                'audience' => MenuAudience::All,
             ],
             [
                 'name' => $this->translations('Contents', 'Konten', 'コンテンツ'),
@@ -494,7 +496,7 @@ class MenuSeeder extends Seeder
                 'route' => 'vtual.public',
                 'hash' => '#contents',
                 'type' => 'p',
-                'is_authenticate' => false,
+                'audience' => MenuAudience::All,
             ],
         ];
     }

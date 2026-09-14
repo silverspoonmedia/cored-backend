@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Navigation\Feature\Database\Seeders;
 
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Http\Requests\Concerns\ValidatesMenuStructure;
 use App\Domain\Navigation\Models\Menu;
 use App\Domain\Navigation\Support\MenuLayout;
@@ -126,13 +127,18 @@ class MenuSeederConformanceTest extends TestCase
                 }
             }
 
-            // Flags compatibility: guest-only cannot be authenticate-only or role-restricted.
-            if ($menu->is_guest_only && $menu->is_authenticate) {
-                $violations[] = "{$label}: guest-only and authenticate are mutually exclusive.";
+            // Audience integrity: role pivots belong to the `role` audience only,
+            // and that audience needs at least one pivot to be reachable.
+            if (! in_array($menu->audience->value, MenuAudience::all(), true)) {
+                $violations[] = "{$label}: invalid audience ({$menu->audience->value}).";
             }
 
-            if ($menu->is_guest_only && $menu->roles->isNotEmpty()) {
-                $violations[] = "{$label}: guest-only menu must not have role restrictions.";
+            if ($menu->audience->usesRoles() && $menu->roles->isEmpty()) {
+                $violations[] = "{$label}: role audience needs at least one role.";
+            }
+
+            if (! $menu->audience->usesRoles() && $menu->roles->isNotEmpty()) {
+                $violations[] = "{$label}: role restrictions require the role audience.";
             }
 
             // Contiguous sibling order 1..n within (layout, parent_id, type).

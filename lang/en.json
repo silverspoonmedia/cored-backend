@@ -2281,10 +2281,10 @@
                 "layout_label": "Manage layout"
             },
             "form": {
-                "authenticate": "Authenticated users only",
+                "audience_hint": "Pick \"signed-in users with selected roles\" to restrict the menu to the roles below.",
+                "audience_label": "Who can see this menu?",
                 "description_hint": "Optional helper text per locale.",
                 "description_label": "Description",
-                "guest_only": "Guests only",
                 "icon_hint": "Full icon class, e.g. bi bi-house.",
                 "icon_label": "Icon",
                 "layout_hint": "Which shell region renders this menu tree (sidebar or navbar). Cannot be changed after create.",
@@ -2309,7 +2309,7 @@
                 "reference_hint_edit": "Required when position is set. Clear both to keep order unchanged.",
                 "reference_label": "Reference menu",
                 "reference_placeholder": "Select reference menu",
-                "roles_hint": "Leave empty for everyone who passes other rules. Incompatible with guest only.",
+                "roles_hint": "Only used by the \"signed-in users with selected roles\" audience. Select at least one role there.",
                 "roles_label": "Roles allowed to view",
                 "route_hint": "Registered Laravel route name (e.g. dashboard), not a URL.",
                 "type_hint": "h must be root, p under h, c under p.",

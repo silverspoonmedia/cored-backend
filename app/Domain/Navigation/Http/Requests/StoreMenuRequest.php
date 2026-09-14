@@ -2,6 +2,7 @@
 
 namespace App\Domain\Navigation\Http\Requests;
 
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Http\Requests\Concerns\NormalizesMenuPlacementFields;
 use App\Domain\Navigation\Http\Requests\Concerns\ValidatesMenuStructure;
 use App\Support\Localization\Concerns\ValidatesTranslatableInput;
@@ -11,6 +12,7 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
 
 class StoreMenuRequest extends FormRequest
@@ -47,8 +49,7 @@ class StoreMenuRequest extends FormRequest
             'route' => ['nullable', 'string', 'max:255', $this->namedRouteRule()],
             'hash' => ['nullable', 'string', 'max:64'],
             'parent' => ['nullable', 'string', Rule::exists('menus', 'id')->whereNull('deleted_at')],
-            'authenticate' => ['sometimes', 'boolean'],
-            'guest_only' => ['sometimes', 'boolean'],
+            'audience' => ['sometimes', new Enum(MenuAudience::class)],
             'position' => ['nullable', 'string', Rule::in(['before', 'after', 'append'])],
             'reference_id' => [
                 Rule::excludeIf(fn () => ! in_array($this->input('position'), ['before', 'after'], true)),
@@ -88,10 +89,9 @@ class StoreMenuRequest extends FormRequest
                 );
             }
 
-            $this->assertFlagsCompatible(
+            $this->assertAudienceCompatible(
                 $validator,
-                $this->boolean('guest_only'),
-                $this->boolean('authenticate'),
+                $this->effectiveAudience(MenuAudience::Auth),
                 $this->input('roles', []) !== [],
             );
 

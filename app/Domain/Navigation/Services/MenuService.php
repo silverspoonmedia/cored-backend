@@ -2,6 +2,7 @@
 
 namespace App\Domain\Navigation\Services;
 
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Models\Menu;
 use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
@@ -53,14 +54,17 @@ class MenuService
     public function create(array $data): Menu
     {
         return DB::transaction(function () use ($data) {
+            $audience = $this->resolveAudience($data['audience'] ?? null);
+
             $menu = $this->menus->createMenu(
                 $this->mapAttributes($data, true),
                 $data['position'] ?? 'append',
                 $data['reference_id'] ?? null,
             );
 
-            // On create, relationships are always (re)set so omitted keys clear them.
-            $this->menus->syncRoles($menu, $data['roles'] ?? []);
+            // On create, relationships are always (re)set so omitted keys clear
+            // them. Roles only exist for the signed-in-with-roles audience.
+            $this->menus->syncRoles($menu, $audience->usesRoles() ? ($data['roles'] ?? []) : []);
             $this->menus->syncUserIncludes($menu, $data['user_includes'] ?? []);
             $this->menus->syncUserExcludes($menu, $data['user_excludes'] ?? []);
 
@@ -91,8 +95,15 @@ class MenuService
                 );
             }
 
-            // On update, only touch a relationship when its key was sent.
-            if (array_key_exists('roles', $data)) {
+            // On update, only touch a relationship when its key was sent. Role
+            // pivots are cleared whenever the effective audience is not the
+            // signed-in-with-roles one, so a stale pivot can never contradict
+            // the stored audience.
+            if (! $menu->audience->usesRoles()) {
+                if ($menu->roles()->exists()) {
+                    $this->menus->syncRoles($menu, []);
+                }
+            } elseif (array_key_exists('roles', $data)) {
                 $this->menus->syncRoles($menu, $data['roles']);
             }
             if (array_key_exists('user_includes', $data)) {
@@ -183,14 +194,27 @@ class MenuService
         if ($isCreate || array_key_exists('parent', $data)) {
             $attributes['parent_id'] = $data['parent'] ?? null;
         }
-        if (array_key_exists('authenticate', $data)) {
-            $attributes['is_authenticate'] = (bool) $data['authenticate'];
-        }
-        if (array_key_exists('guest_only', $data)) {
-            $attributes['is_guest_only'] = (bool) $data['guest_only'];
+        if (array_key_exists('audience', $data)) {
+            $attributes['audience'] = $this->resolveAudience($data['audience']);
         }
 
         return $attributes;
+    }
+
+    /**
+     * Normalize a caller-supplied audience (enum from internal callers, string
+     * from validated request data) into the enum, defaulting to `auth` — the
+     * single default shared by the DB column, the repository and the factory.
+     */
+    private function resolveAudience(mixed $audience): MenuAudience
+    {
+        if ($audience instanceof MenuAudience) {
+            return $audience;
+        }
+
+        return is_string($audience)
+            ? (MenuAudience::tryFrom($audience) ?? MenuAudience::Auth)
+            : MenuAudience::Auth;
     }
 
     /**

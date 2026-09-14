@@ -2281,10 +2281,10 @@
                 "layout_label": "管理するレイアウト"
             },
             "form": {
-                "authenticate": "認証済みユーザーのみ",
+                "audience_hint": "「選択したロールを持つログイン済みユーザー」を選ぶと、下のロールに限定できます。",
+                "audience_label": "このメニューを表示する対象",
                 "description_hint": "ロケールごとの任意の補足テキスト。",
                 "description_label": "説明",
-                "guest_only": "ゲストのみ",
                 "icon_hint": "完全なアイコンクラス（例: bi bi-house）。",
                 "icon_label": "アイコン",
                 "layout_hint": "このメニューツリーを描画するシェル領域（sidebar または navbar）。作成後は変更できません。",
@@ -2309,7 +2309,7 @@
                 "reference_hint_edit": "位置を設定する場合は必須です。順序を変更しない場合は両方を空にしてください。",
                 "reference_label": "基準メニュー",
                 "reference_placeholder": "基準メニューを選択",
-                "roles_hint": "他の条件を満たすすべての人に表示する場合は空欄にしてください。ゲストのみとは併用できません。",
+                "roles_hint": "「選択したロールを持つログイン済みユーザー」の対象でのみ使用します。そこで少なくとも1つのロールを選択してください。",
                 "roles_label": "閲覧を許可するロール",
                 "route_hint": "登録済みの Laravel ルート名（例: dashboard）。URL ではありません。",
                 "type_hint": "h はルート、p は h の下、c は p の下に配置する必要があります。",
