@@ -26,7 +26,9 @@ Monolith web stack → server-only redirects (share, payment return, OAuth callb
 
 ## Direct API
 
-`AuthenticateWithSpaCookie` binds the cookie to the `api` guard. `VerifySpaCsrf` accepts header==cookie (`419` JSON envelope on mismatch). Auth-session paths skip CSRF: login, register, refresh, logout, forgot/reset password, two-factor login. Bearer requests skip CSRF. CORS: `config/cors.php` `supports_credentials` + allowlist `APP_URL` + `SPA_URL` + `CORS_EXTRA_ORIGINS` (no `*`). Preflight `max_age` 600. `OPTIONS` and provider webhooks bypass the SPA marker. Auth-error responses still get CORS stamps (`StampApiCors`). Probe: `tests/Feature/Http/CorsOnAuthErrorProbeTest.php`. Full perimeter notes: [security.md — CORS](../platform/security.md).
+`AuthenticateWithSpaCookie` binds the cookie to the `api` guard. `VerifySpaCsrf` accepts header==cookie (`419` JSON envelope on mismatch). Auth-session paths skip CSRF: login, register, refresh, logout, forgot/reset password, two-factor login. Bearer requests skip CSRF. CORS: `config/cors.php` `supports_credentials` + allowlist `APP_URL` + `SPA_URL` + `CORS_EXTRA_ORIGINS` (no `*`); `exposed_headers` is `Content-Disposition` so SPA blob downloads can read the server filename. Preflight `max_age` 600. `OPTIONS` and provider webhooks bypass the SPA marker. Auth-error responses still get CORS stamps (`StampApiCors`). Probe: `tests/Feature/Http/CorsOnAuthErrorProbeTest.php`. Full perimeter notes: [security.md — CORS](../platform/security.md).
+
+Cross-origin requests can also fail client-side with a bare `TypeError` (a cross-tab `Set-Cookie` collision on the shared CSRF nonce, which the browser reports as a CORS error) — that is a SPA retry concern, not a CORS misconfiguration; policy: sibling `monolith-vue-workers/docs/api-client.md#cross-tab-cookie-race-retry`.
 
 Still naked (browser talks to these hosts directly): Pusher/Reverb, Discord OAuth + Monolith web callback, Archivd presigned/gateway URLs, hCaptcha JS.
 

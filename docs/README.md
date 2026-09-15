@@ -36,7 +36,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [localization.md](platform/localization.md) | Backend multi-locale rules (canonical supported-locale list, parity, locale resolution); SPA guard: `monolith-vue-workers/npm run check:i18n` |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |
-| [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization** |
+| [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization**, CORS perimeter |
 | [tooling.md](platform/tooling.md) | Laravel Pint wrapper |
 
 ## Domains (`app/Domain/*`)
