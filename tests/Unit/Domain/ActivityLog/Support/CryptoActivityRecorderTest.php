@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Domain\ActivityLog\Support;
 
+use App\Domain\ActivityLog\Support\ActivityLogRealtime;
 use App\Domain\ActivityLog\Support\CryptoActivityRecorder;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,7 +19,7 @@ class CryptoActivityRecorderTest extends TestCase
 
         $this->actingAs($user, 'api');
 
-        (new CryptoActivityRecorder)->recordFieldDecrypted(
+        (new CryptoActivityRecorder(new ActivityLogRealtime))->recordFieldDecrypted(
             resourceType: 'users',
             resourceId: (string) $user->id,
             field: 'two_factor_secret',
@@ -43,7 +44,7 @@ class CryptoActivityRecorderTest extends TestCase
 
     public function test_extra_properties_allowlist_blocks_secret_keys(): void
     {
-        (new CryptoActivityRecorder)->recordFieldDecrypted(
+        (new CryptoActivityRecorder(new ActivityLogRealtime))->recordFieldDecrypted(
             resourceType: 'users',
             resourceId: 'user-1',
             field: 'two_factor_secret',

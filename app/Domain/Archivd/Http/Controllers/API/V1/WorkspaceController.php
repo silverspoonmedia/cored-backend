@@ -2,6 +2,7 @@
 
 namespace App\Domain\Archivd\Http\Controllers\API\V1;
 
+use App\Domain\ActivityLog\Support\SensitiveActivityPropertyPresenter;
 use App\Domain\Archivd\Http\Requests\AcceptWorkspaceInviteRequest;
 use App\Domain\Archivd\Http\Requests\InviteWorkspaceMemberRequest;
 use App\Domain\Archivd\Http\Requests\StoreWorkspaceRequest;
@@ -143,7 +144,10 @@ class WorkspaceController extends Controller
                 ] : null,
                 'subject_type' => $row->subject_type,
                 'subject_id' => $row->subject_id,
-                'properties' => $row->properties?->toArray() ?? [],
+                'properties' => SensitiveActivityPropertyPresenter::forApi(
+                    $row->properties?->toArray() ?? [],
+                    $row->id !== null ? (string) $row->id : null,
+                ),
                 'created_at' => $row->created_at?->toIso8601String(),
             ];
         })->values()->all();

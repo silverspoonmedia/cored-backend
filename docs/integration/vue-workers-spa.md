@@ -199,7 +199,7 @@ Mimic is **appearance + behavior + intent**, not a pixel clone of Blade. List en
 
 ## Realtime
 
-No polling. Echo auto-reconnect is recovery; reconnect fires a resync bus. SPA composables: sibling [auth-session.md](../../../monolith-vue-workers/docs/auth-session.md) + domain `use*Realtime` files.
+No polling. Echo auto-reconnect is recovery; reconnect fires a resync bus. SPA private channels are owned by `src/composables/echo/channelRegistry.ts` (ref-counted per channel name, attach deferred until Echo exists) through the declarative `createRealtimeChannel` / `createKeyedRealtimeChannel` wrappers — domain `use*Realtime` files are bindings over it, never raw `echo.private()` callers. Outage refetch is `onEchoResync` (one line per view). Sibling [auth-session.md](../../../monolith-vue-workers/docs/auth-session.md), [api-client.md](../../../monolith-vue-workers/docs/api-client.md#channel-lifecycle-goes-through-the-registry).
 
 ### Env vars
 
@@ -218,7 +218,11 @@ Env-only: point `PUSHER_HOST` / `PORT` / `SCHEME` (and `VITE_PUSHER_*`) at Socku
 
 ### Auth
 
-`POST /api/v1/broadcasting/auth` under `auth:api` plus a dedicated `throttle:broadcast` limiter (120/min per user, `bootstrap/app.php`) — one authorize per channel on connect would otherwise compete with regular traffic in the global 60/min limiter. The SPA side holds the burst down too: `useEcho.ts` serializes authorizers (max 1 in-flight) and 419 refreshes are single-flighted (`refreshCsrfOnce()`). SPA authorizer uses `client.post('broadcasting/auth')` so 419 retries. `AppNavbar` awaits `hydrateShell()` before `initEcho()`. Channel callbacks stay in `routes/channels.php`.
+`POST /api/v1/broadcasting/auth` under `auth:api` plus a dedicated `throttle:broadcast` limiter (120/min per user, `bootstrap/app.php`) — one authorize per channel on connect would otherwise compete with regular traffic in the global 60/min limiter. The SPA side holds the burst down too: `useEcho.ts` serializes authorizers (max 1 in-flight) and 419 refreshes are single-flighted (`refreshCsrfOnce()`). SPA authorizer uses `client.post('broadcasting/auth')` so 419 retries. `AppNavbar` awaits `hydrateShell()` **and** the CSRF cookie-settle gate (`whenCsrfCookieQuiet()`) before `initEcho()`; `authorizeBroadcastChannel()` awaits the same gate before each POST, so the first authorize cannot overlap the `__Host-spa_csrf` write from the shell batch. Channel callbacks stay in `routes/channels.php`.
+
+The path is defined once, in `App\Support\Broadcasting\BroadcastAuthEndpoint` (`SUBPATH` for the route file inside the `api/v1` group, `url()` for server-issued client config). `BroadcastConnection::socketClientConfig()` uses it for Echo's `authEndpoint` — a literal `url('/broadcasting/auth')` there pointed at the framework's **web-group twin**, which is CSRF-guarded and (before `config/cors.php` listed `broadcasting/auth`) answered 403 with no CORS headers, i.e. an opaque browser "CORS error". Invariant test: `tests/Feature/Http/CorsBroadcastAuthTest.php`. SPA side: `apiOrigin()` guarantees a `/api/v1` suffix so `resolveApiUrl('broadcasting/auth')` can never fall back to the twin either.
+
+Private-channel lifecycle on the SPA side goes through `src/composables/echo/channelRegistry.ts` (`acquireChannel`, plus the declarative `createRealtimeChannel` / `createKeyedRealtimeChannel`): ref-counted per channel name, attach deferred until Echo exists, dynamic names released on `retarget()`. Composables must not call `echo.private()` / `echo.leave()` directly — `tests/echoConventions.test.ts` enforces it.
 
 ## Cross-tab auth (multi-tab session sync)
 
@@ -272,10 +276,10 @@ Checkout chrome is SPA-only (`CheckoutPanel`, `PaymentStatusHero`). Parse `invoi
 
 Mount → subscribe; updates websocket-only; unmount → unsubscribe.
 
-**Mandatory SPA patterns** (enforced by shared primitives in `src/composables/useEcho.ts` of the sibling repo — do not reimplement per composable):
+**Mandatory SPA patterns** (enforced by shared primitives in the sibling repo — do not reimplement per composable):
 
-1. **Composables subscribe via `subscribeWhenEchoReady(attach)`** — never a bare `if (!getEcho()) return`. Echo initializes asynchronously in `AppNavbar` (after the shell batch), so views mount before it exists; the helper attaches immediately when Echo is ready and defers via the ready bus otherwise.
+1. **Composables acquire channels through `src/composables/echo/channelRegistry.ts`** — never `echo.private()`, `echo.leave()`, or a bare `if (!getEcho()) return`. Echo initializes asynchronously in `AppNavbar` (after the shell batch), so views mount before it exists; the registry attaches immediately when Echo is ready and defers via the ready bus otherwise. Declarative wrappers: `createRealtimeChannel<H>({ channel, events })` for a single (possibly dynamic) name, `createKeyedRealtimeChannel<K, H>({ channel: (key) => name, events })` for per-entity families. Guard: `tests/echoConventions.test.ts` + `tests/channelRegistry.test.ts`.
 2. **Views register outage refetch via `useEchoResync(fn)`** — one line mirroring the view's realtime-handler loader. Websocket-only realtime means events during a disconnect are lost; the resync bus fires once on reconnect. (Exception: `AppNavbar` registers `onEchoResync` manually because it is outside a setup context.)
-3. **Shared channels are ref-counted, never left unilaterally**:
-   - `App.Models.User.{id}` — owned by `listenPersonalChannel` (notification bell + `useAuthSelfRealtime`); the channel leaves only when the last consumer detaches.
-   - `navigation.menus` — owned by `useMenusChannel` (`useNavigation` shell + `useMenusRealtime` admin views); leaving a Menus view must not kill the shell's live nav.
+3. **Shared channels are ref-counted by the registry, never left unilaterally** — `acquireChannel()` counts holders per channel name and the channel leaves only when the last one releases:
+   - `App.Models.User.{id}` — `listenPersonalChannel` (notification bell + `useAuthSelfRealtime`).
+   - `navigation.menus` — `useMenusChannel` (`useNavigation` shell + `useMenusRealtime` admin views); leaving a Menus view must not kill the shell's live nav.

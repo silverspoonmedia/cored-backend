@@ -2,7 +2,7 @@
 
 Security and audit assessment for envelope encryption (OCI KMS) and `log_name: crypto` activity entries. Complements [activity-log.md](../domains/activity-log/README.md) and [envelope-encryption.md](../domains/payment-gateway/encryption.md).
 
-**Last reviewed:** 2026-07-12
+**Last reviewed:** 2026-09-15
 
 ---
 
@@ -14,6 +14,7 @@ Security and audit assessment for envelope encryption (OCI KMS) and `log_name: c
 | Is the crypto audit trail complete? | **Partial** — decrypt metadata is recorded; encrypt/migrate events are not. Repeat decrypts after cache invalidation are invisible unless `ENCRYPTION_AUDIT_DECRYPTS=always`. |
 | Is envelope encryption secure? | **Sound design** (KEK/DEK, AES-256-GCM, blind index, single decrypt choke point). **Not fully production-hardened** without ops checklist below. |
 | Is caching implemented? | **Yes** — invalidate-on-change plaintext decrypt cache (24h safety cap, ciphertext fingerprint) and envelope-at-rest for `2fa_token:` cache keys. |
+| Is audit-trail PII encrypted at rest? | **Yes (2026-09-15)** — `activity_log.properties` `ip_address` / `user_agent` / `email` are envelopes; other keys stay plaintext for queryability. Costs one extra DEK wrap per audited decrypt — see [Audit-trail PII](#audit-trail-pii-2026-09-15). |
 | Production ready? | **Production-ready** — deploy after checklist; monitor KMS billing and cache security. |
 
 ---
@@ -62,7 +63,7 @@ The value logged is the **OCID of the KMS master key** copied into envelope JSON
 | **WHO** | `causer` (JWT user when present) | Missing on CLI, queue, or unauthenticated decrypts |
 | **WHAT** | `resource_type`, `resource_id`, `field` | No Spatie `subject` morph (flat properties only) |
 | **WHEN** | `created_at` | — |
-| **WHERE** | `ip_address` | No `user_agent` / request id |
+| **WHERE** | `ip_address` (envelope since 2026-09-15) | No `user_agent` / request id on crypto rows |
 | **WHY** | `purpose` | — |
 | **HOW (key)** | `kms_key_id` (full in DB, masked in API) | — |
 | **Envelope context** | `envelope_version`, `legacy_ciphertext`, `cache_hit` (when applicable) | Encrypt events not logged |
@@ -105,6 +106,21 @@ The value logged is the **OCID of the KMS master key** copied into envelope JSON
 
 ---
 
+## Audit-trail PII (2026-09-15)
+
+`activity_log.properties` keys `ip_address`, `user_agent`, `email` are now envelope-encrypted at rest for **every** log name (`auth`, `user`, `crypto`, `archivd.workspace`). Write choke point `LogActivityAction::beforeLogging()` → `SensitiveActivityProperties::encryptInPlace()`; read choke point `SensitiveActivityPropertyPresenter::forApi()`. Non-PII keys stay plaintext so `properties->key` JSON queries keep working. Full detail: [activity-log](../domains/activity-log/README.md#pii-at-rest-envelope-encryption).
+
+Consequences for the crypto trail:
+
+| Item | Effect |
+|------|--------|
+| KMS calls | Each audited decrypt also writes a `crypto` row whose own `ip_address` is encrypted → **one extra DEK wrap per audited decrypt**. Keep `ENCRYPTION_AUDIT_DECRYPTS=cache_miss`; `always` makes the decrypt cache stop avoiding KMS. |
+| Recursion | `activity_log` is in `audit_excluded_resource_types` — reading the trail does not append `crypto` rows to itself. |
+| Availability | If the DEK wrap fails, the PII key is dropped and the exception reported — an audit write never breaks the request being audited. |
+| Backfill | `php artisan encryption:migrate-activity-log` (idempotent; `--dry-run` first). |
+
+---
+
 ## Production readiness checklist
 
 Before enabling envelope encryption in production:
@@ -130,7 +146,7 @@ Before enabling envelope encryption in production:
 | No encrypt audit | Writes and `encryption:migrate-p0` do not create crypto log rows |
 | `decryptWithoutCache()` | Public, unaudited — only safe when called from audited paths |
 | Legacy pass-through | Non-envelope values may return as-is during migration |
-| P1 PII columns | Blind-index infrastructure only; column migrations deferred |
+| P1 PII columns | Blind-index infrastructure only; column migrations deferred. **Audit-trail PII done:** `activity_log.properties` `ip_address` / `user_agent` / `email` are envelope-encrypted (2026-09-15) — [activity-log](../domains/activity-log/README.md#pii-at-rest-envelope-encryption) |
 
 ---
 

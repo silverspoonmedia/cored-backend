@@ -56,6 +56,7 @@ Domain data caches are forever + rebuild-on-miss + invalidate-on-change — [cac
 | Command | Purpose | Details |
 |---------|---------|---------|
 | `encryption:migrate-p0` | Migrate P0 sensitive columns from plaintext/legacy Crypt values to OCI envelopes | [domains/payment-gateway/encryption.md](../domains/payment-gateway/encryption.md) |
+| `encryption:migrate-activity-log` | Encrypt PII in `activity_log.properties` (`ip_address`, `user_agent`, `email`) to envelopes; idempotent, `--dry-run` | [domains/activity-log/README.md](../domains/activity-log/README.md) |
 | `oci:kms-verify` | Verify Oracle Cloud KMS connectivity via `generateDataEncryptionKey` | [domains/payment-gateway/encryption.md](../domains/payment-gateway/encryption.md) |
 
 ## Payments (`payments:*`)

@@ -36,7 +36,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [localization.md](platform/localization.md) | Backend multi-locale rules (canonical supported-locale list, parity, locale resolution); SPA guard: `monolith-vue-workers/npm run check:i18n` |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |
-| [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization**, CORS perimeter |
+| [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization**, CORS perimeter incl. the `broadcasting/auth` invariant |
 | [tooling.md](platform/tooling.md) | Laravel Pint wrapper |
 
 ## Domains (`app/Domain/*`)
@@ -46,7 +46,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Identity | [domains/identity/README.md](domains/identity/README.md) — JWT, 2FA, H-RBAC, users |
 | Navigation | [domains/navigation/README.md](domains/navigation/README.md) — menu tree |
 | Notification | [domains/notification/README.md](domains/notification/README.md) — bell, role vs user |
-| ActivityLog | [domains/activity-log/README.md](domains/activity-log/README.md) — Spatie audit trail |
+| ActivityLog | [domains/activity-log/README.md](domains/activity-log/README.md) — Spatie audit trail, PII (`ip_address` / `user_agent` / `email`) envelope-encrypted at rest |
 | ErrorLog | [domains/error-log/README.md](domains/error-log/README.md) — grouped persistent app errors |
 | PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) · routing policy [Routing_Rules.md](domains/payment-gateway/Routing_Rules.md) + [Routing_Price.yaml](domains/payment-gateway/Routing_Price.yaml) |
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, Archivd grace/purge (core domain) |
@@ -72,7 +72,7 @@ The browser UI lives in the sibling SPA. These three are kept for history only �
 | Document | Topic |
 |----------|-------|
 | [project-overview.md](integration/project-overview.md) | Monolith (API-first backend + server web endpoints) and Monolith-Vue-Workers (sole SPA frontend, separate project) — architecture and relationship |
-| [vue-workers-spa.md](integration/vue-workers-spa.md) | Leading Vue 3 SPA frontend (Cloudflare Workers, sibling repo) — API contracts, `SPA_URL` minting, type alignment, i18n runtime/fallbacks, batch hydration, realtime, CI, production checklist |
+| [vue-workers-spa.md](integration/vue-workers-spa.md) | Leading Vue 3 SPA frontend (Cloudflare Workers, sibling repo) — API contracts, `SPA_URL` minting, type alignment, i18n runtime/fallbacks, batch hydration, realtime (channel registry + `broadcasting/auth` endpoint SoT), CI, production checklist |
 
 ## Archive (not daily reading)
 

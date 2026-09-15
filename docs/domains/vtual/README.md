@@ -515,7 +515,7 @@ vTual pings via dedicated private channels (`routes/channels.php`), events `Shou
 | `vtual.management.{managementId}` | `ManagementAccessService::canView` | `.management.updated` (`VtualManagementRealtime` — member/invite/creator assignment changes) |
 | `vtual.platform-credentials` | `view vtual platform credentials` | `.platform.credential.changed` (`VtualPlatformCredentialRealtime`) |
 
-SPA: `useVtulRealtime.ts` (profiles, show, management views), `useVtulClaimRealtime.ts` for `.claim.progress` (consumed by the claim view).
+SPA: `useVtualRealtime.ts` (`subscribeCreatorSnapshots` / `subscribePlatformCredentials` / `subscribeManagement`), `useVtulClaimRealtime.ts` for `.claim.progress` (consumed by the claim view). Both are `createKeyedRealtimeChannel` / `createRealtimeChannel` bindings on `src/composables/echo/channelRegistry.ts` — one ref-counted channel per entity id.
 
 ## Seeders
 

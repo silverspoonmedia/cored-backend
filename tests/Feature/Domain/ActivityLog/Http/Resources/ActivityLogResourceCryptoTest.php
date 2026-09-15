@@ -3,6 +3,7 @@
 namespace Tests\Feature\Domain\ActivityLog\Http\Resources;
 
 use App\Domain\ActivityLog\Http\Resources\ActivityLogResource;
+use App\Domain\ActivityLog\Support\ActivityLogRealtime;
 use App\Domain\ActivityLog\Support\CryptoActivityRecorder;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,7 +22,7 @@ class ActivityLogResourceCryptoTest extends TestCase
 
         $this->actingAs($user, 'api');
 
-        (new CryptoActivityRecorder)->recordFieldDecrypted(
+        (new CryptoActivityRecorder(new ActivityLogRealtime))->recordFieldDecrypted(
             resourceType: 'users',
             resourceId: (string) $user->id,
             field: 'two_factor_secret',

@@ -94,7 +94,10 @@ class BroadcastConnection
             'host' => $host,
             'port' => (int) ($options['port'] ?? 443),
             'scheme' => $options['scheme'] ?? 'https',
-            'authEndpoint' => url('/broadcasting/auth'),
+            // Always the versioned API endpoint: the framework's web-group twin
+            // (`/broadcasting/auth`) is CSRF-guarded and not CORS-covered, so a
+            // client sent there fails as an opaque browser CORS error.
+            'authEndpoint' => BroadcastAuthEndpoint::url(),
         ];
     }
 

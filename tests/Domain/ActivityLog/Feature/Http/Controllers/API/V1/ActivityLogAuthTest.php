@@ -4,6 +4,7 @@ namespace Tests\Domain\ActivityLog\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\Auth\TwoFactorService;
+use App\Support\Encryption\EncryptedEnvelope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PragmaRX\Google2FA\Google2FA;
@@ -87,7 +88,10 @@ class ActivityLogAuthTest extends TestCase
 
         $activity = Activity::query()->where('event', 'login_failed')->firstOrFail();
         $this->assertNull($activity->causer_id);
-        $this->assertSame('known@example.com', $activity->getProperty('email'));
+
+        // The attempted email is PII: stored as an envelope, decrypted for
+        // authorized viewers (see ActivityLogPiiEncryptionTest).
+        $this->assertTrue(EncryptedEnvelope::isEnvelopeJson($activity->properties->get('email')));
     }
 
     public function test_logout_writes_auth_activity_log(): void

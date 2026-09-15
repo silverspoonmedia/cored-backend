@@ -2,7 +2,12 @@
 
 return [
 
-    'paths' => ['api/*'],
+    // `broadcasting/auth` is listed explicitly: Laravel's `withRouting(channels:)`
+    // registers a web-group twin of the SPA's broadcast-auth endpoint, and a
+    // response without `Access-Control-Allow-*` reaches the browser as an opaque
+    // CORS error instead of its real 403/419. The API twin is already covered by
+    // `api/*`; this entry keeps the web one readable if it is ever hit.
+    'paths' => ['api/*', 'broadcasting/auth'],
 
     // Explicit verbs only: the API uses GET/POST/PUT/PATCH/DELETE; OPTIONS is the
     // CORS preflight. A wildcard would advertise methods the API never serves.

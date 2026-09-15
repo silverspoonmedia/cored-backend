@@ -22,6 +22,11 @@ class EnvelopeEncryptedArraySkipReencryptTest extends TestCase
     {
         Cache::flush();
 
+        // The compare-decrypt below writes a `crypto` activity row whose own PII
+        // properties are envelope-encrypted, which costs an unrelated DEK wrap.
+        // This test measures the cast only, so the audit row is suppressed.
+        config(['encryption.audit_excluded_resource_types' => ['invoices']]);
+
         $kms = new CountingKmsDekClient;
         $this->app->instance(KmsDekClientInterface::class, $kms);
 
@@ -47,6 +52,10 @@ class EnvelopeEncryptedArraySkipReencryptTest extends TestCase
     public function test_set_reencrypts_when_plaintext_changes(): void
     {
         Cache::flush();
+
+        // See the note in the test above: keep the `crypto` audit row out of the
+        // KMS counter.
+        config(['encryption.audit_excluded_resource_types' => ['invoices']]);
 
         $kms = new CountingKmsDekClient;
         $this->app->instance(KmsDekClientInterface::class, $kms);

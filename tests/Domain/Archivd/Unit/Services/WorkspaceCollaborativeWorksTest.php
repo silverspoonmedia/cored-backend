@@ -555,10 +555,24 @@ class WorkspaceCollaborativeWorksTest extends TestCase
         $this->assertSame($created['id'], $browse['workspace_id']);
         $this->assertCount(1, $browse['folders']);
 
-        $this->actingAsJwt($this->owner)
+        $activity = $this->actingAsJwt($this->owner)
             ->getJson('/api/v1/archivd/workspaces/'.$created['id'].'/activity')
             ->assertOk()
-            ->assertJsonStructure(['data' => [['event', 'properties']]]);
+            ->assertJsonStructure(['data' => [['event', 'properties']]])
+            ->json('data');
+
+        $invited = collect($activity)->firstWhere('event', 'member_invited');
+
+        $this->assertNotNull($invited);
+        $this->assertSame($this->editor->email, $invited['properties']['email']);
+
+        // Invitee email is envelope-encrypted at rest, decrypted for members.
+        $raw = (string) DB::table('activity_log')
+            ->where('log_name', WorkspaceActivityRecorder::LOG_NAME)
+            ->where('event', 'member_invited')
+            ->value('properties');
+
+        $this->assertStringNotContainsString($this->editor->email, $raw);
     }
 
     public function test_invited_free_member_can_upload_to_team_workspace(): void
