@@ -70,7 +70,7 @@ API `action_route` + `action_params` use symbolic names from `config/spa-routes.
 
 ## Production checklist
 
-Ops (not code): pair `SPA_URL` with the matching Worker origin; bake `VITE_API_BASE_URL` from tracked `.env.production` / `.env.sandbox` (never `wrangler.jsonc` `vars`); hCaptcha on both sides or both off; Archivd/Gateway CORS exposes `ETag`; Pusher/Sockudo literals match; Tunnel allowlist + 404 catch-all. Full list: sibling [README.md](../../../monolith-vue-workers/README.md) + [deployment.md](../../../monolith-vue-workers/docs/deployment.md).
+Ops (not code): pair `SPA_URL` with the matching Worker origin (production / staging / sandbox — one `SPA_URL` per Monolith instance); bake `VITE_API_BASE_URL` from tracked `.env.production` / `.env.sandbox` / `.env.staging` (never `wrangler.jsonc` `vars`); hCaptcha on both sides or both off; Archivd/Gateway CORS exposes `ETag`; Pusher/Sockudo literals match; Tunnel allowlist + 404 catch-all. Full list: sibling [README.md](../../../monolith-vue-workers/README.md) + [deployment.md](../../../monolith-vue-workers/docs/deployment.md).
 
 `X-SPA-Origin: 1` is a public anti-noise marker, not auth.
 
