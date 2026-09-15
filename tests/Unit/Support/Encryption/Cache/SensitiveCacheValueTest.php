@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Support\Encryption\Cache;
 
+use App\Domain\ActivityLog\Support\ActivityLogRealtime;
 use App\Domain\ActivityLog\Support\CryptoActivityRecorder;
 use App\Support\Encryption\Cache\SensitiveCacheValue;
 use App\Support\Encryption\DecryptedValueCache;
@@ -29,7 +30,7 @@ class SensitiveCacheValueTest extends TestCase
         $encryption = new EnvelopeEncryptionService(
             new LocalKmsDekClient,
             new DecryptedValueCache,
-            new CryptoActivityRecorder,
+            new CryptoActivityRecorder(new ActivityLogRealtime),
             new InvoicePayloadDecryptLogger,
         );
 

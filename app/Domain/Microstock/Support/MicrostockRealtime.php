@@ -9,6 +9,7 @@ use App\Domain\Microstock\Enums\MetadataStatus;
 use App\Domain\Microstock\Events\AssetMetadataProgress;
 use App\Domain\Microstock\Events\CollectionAnalysisProgress;
 use App\Domain\Microstock\Events\MicrostockBillingChanged;
+use App\Domain\Microstock\Events\MicrostockCredentialsChanged;
 use App\Domain\Microstock\Models\AssetMetadata;
 use App\Domain\Microstock\Services\CollectionService;
 use App\Support\Broadcasting\BroadcastConnection;
@@ -87,6 +88,15 @@ class MicrostockRealtime
         }
 
         event(new MicrostockBillingChanged($ownerUserId, $action));
+    }
+
+    public function credentialsChanged(string $ownerUserId, string $action, ?string $credentialId = null): void
+    {
+        if (! $this->enabled()) {
+            return;
+        }
+
+        event(new MicrostockCredentialsChanged($ownerUserId, $action, $credentialId));
     }
 
     public function notifyAssetAndCollection(AssetMetadata $metadata, bool $forceCollection = false): void

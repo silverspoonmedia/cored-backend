@@ -3,10 +3,12 @@
 namespace App\Domain\ActivityLog\Http\Resources;
 
 use App\Domain\ActivityLog\Support\CryptoActivityPropertyPresenter;
+use App\Domain\ActivityLog\Support\SensitiveActivityPropertyPresenter;
 use App\Domain\ErrorLog\Support\ErrorContextRedactor;
 use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Models\Menu;
 use App\Http\Resources\Concerns\FormatsPresentation;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -18,6 +20,13 @@ use Spatie\Activitylog\Models\Activity;
 class ActivityLogResource extends JsonResource
 {
     use FormatsPresentation;
+
+    /**
+     * Decrypted `properties` for this instance (see {@see decryptedProperties()}).
+     *
+     * @var array<string, mixed>|null
+     */
+    private ?array $decryptedProperties = null;
 
     /**
      * @return array<string, mixed>
@@ -48,7 +57,7 @@ class ActivityLogResource extends JsonResource
     private function resolveProperties(): array
     {
         $properties = app(ErrorContextRedactor::class)->redact(
-            $this->arrayValue($this->properties),
+            $this->decryptedProperties(),
         );
 
         if ($this->log_name === 'crypto') {
@@ -56,6 +65,20 @@ class ActivityLogResource extends JsonResource
         }
 
         return $properties;
+    }
+
+    /**
+     * Raw `properties` with envelope-encrypted PII decrypted for authorized
+     * viewers. Cached per resource instance (also reused by the subject label).
+     *
+     * @return array<string, mixed>
+     */
+    private function decryptedProperties(): array
+    {
+        return $this->decryptedProperties ??= SensitiveActivityPropertyPresenter::forApi(
+            $this->arrayValue($this->properties),
+            $this->id !== null ? (string) $this->id : null,
+        );
     }
 
     private function resolveEventLabel(): string
@@ -85,7 +108,7 @@ class ActivityLogResource extends JsonResource
             };
         }
 
-        $email = $this->properties?->get('email');
+        $email = $this->decryptedProperties()['email'] ?? null;
 
         return is_string($email) && $email !== '' ? $email : null;
     }
@@ -113,7 +136,7 @@ class ActivityLogResource extends JsonResource
      */
     private function arrayValue(mixed $value): array
     {
-        if ($value instanceof \Illuminate\Contracts\Support\Arrayable) {
+        if ($value instanceof Arrayable) {
             return $value->toArray();
         }
 

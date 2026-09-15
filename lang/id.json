@@ -2063,7 +2063,7 @@
                 "last_viewed": "Terakhir dilihat",
                 "views": "Dilihat"
             },
-            "title": "Hosting file",
+            "title": "Archivd",
             "trash": "Sampah",
             "trash_empty": "Sampah kosong.",
             "trash_title": "Sampah",
@@ -2281,10 +2281,10 @@
                 "layout_label": "Kelola layout"
             },
             "form": {
-                "authenticate": "Hanya untuk pengguna terautentikasi",
+                "audience_hint": "Pilih \"Pengguna masuk dengan peran terpilih\" untuk membatasi menu ke peran di bawah.",
+                "audience_label": "Siapa yang bisa melihat menu ini?",
                 "description_hint": "Teks bantu opsional per bahasa.",
                 "description_label": "Deskripsi",
-                "guest_only": "Hanya untuk tamu (guest)",
                 "icon_hint": "Kelas ikon lengkap, mis. bi bi-house.",
                 "icon_label": "Ikon",
                 "layout_hint": "Bagian shell yang merender pohon menu ini (sidebar atau navbar). Tidak dapat diubah setelah dibuat.",
@@ -2309,7 +2309,7 @@
                 "reference_hint_edit": "Wajib jika posisi diisi. Kosongkan keduanya agar urutan tidak berubah.",
                 "reference_label": "Menu referensi",
                 "reference_placeholder": "Pilih menu referensi",
-                "roles_hint": "Kosongkan agar terlihat oleh semua yang lolos aturan lain. Tidak kompatibel dengan guest only.",
+                "roles_hint": "Hanya dipakai oleh audiens \"Pengguna masuk dengan peran terpilih\". Pilih minimal satu peran di sana.",
                 "roles_label": "Role yang boleh melihat",
                 "route_hint": "Nama route Laravel yang terdaftar (mis. dashboard), bukan URL.",
                 "type_hint": "h harus root, p berada di bawah h, c berada di bawah p.",

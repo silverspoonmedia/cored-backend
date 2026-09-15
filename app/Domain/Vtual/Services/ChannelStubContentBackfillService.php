@@ -37,7 +37,7 @@ class ChannelStubContentBackfillService
             return ['status' => 'skipped', 'reason' => 'channel_not_active'];
         }
 
-        $platformKey = $this->platformKey($channel);
+        $platformKey = $channel->toPlatformKey();
         if ($platformKey !== PlatformKey::Youtube) {
             return ['status' => 'skipped', 'reason' => 'platform_not_youtube'];
         }
@@ -91,15 +91,5 @@ class ChannelStubContentBackfillService
             'fetched' => $fetched,
             'upserted' => $upserted,
         ];
-    }
-
-    private function platformKey(Channel $channel): PlatformKey
-    {
-        $key = $channel->platform?->key;
-        if ($key instanceof PlatformKey) {
-            return $key;
-        }
-
-        return PlatformKey::from((string) $key);
     }
 }

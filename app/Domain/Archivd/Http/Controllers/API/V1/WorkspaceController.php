@@ -2,6 +2,11 @@
 
 namespace App\Domain\Archivd\Http\Controllers\API\V1;
 
+use App\Domain\ActivityLog\Support\SensitiveActivityPropertyPresenter;
+use App\Domain\Archivd\Http\Requests\AcceptWorkspaceInviteRequest;
+use App\Domain\Archivd\Http\Requests\InviteWorkspaceMemberRequest;
+use App\Domain\Archivd\Http\Requests\StoreWorkspaceRequest;
+use App\Domain\Archivd\Http\Requests\UpdateWorkspaceMemberRoleRequest;
 use App\Domain\Archivd\Http\Resources\WorkspaceInviteResource;
 use App\Domain\Archivd\Http\Resources\WorkspaceMemberResource;
 use App\Domain\Archivd\Http\Resources\WorkspaceResource;
@@ -31,13 +36,9 @@ class WorkspaceController extends Controller
         );
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreWorkspaceRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-        ]);
-
-        $workspace = $this->workspaces->create($request->user(), $data['name']);
+        $workspace = $this->workspaces->create($request->user(), $request->validated('name'));
 
         return $this->successResponse(
             $this->resolveResource(new WorkspaceResource($workspace)),
@@ -76,12 +77,9 @@ class WorkspaceController extends Controller
         );
     }
 
-    public function invite(Request $request, string $workspace): JsonResponse
+    public function invite(InviteWorkspaceMemberRequest $request, string $workspace): JsonResponse
     {
-        $data = $request->validate([
-            'email' => ['required', 'email', 'max:255'],
-            'role' => ['required', 'string', 'in:admin,editor,viewer'],
-        ]);
+        $data = $request->validated();
 
         $invite = $this->workspaces->invite(
             $request->user(),
@@ -97,13 +95,9 @@ class WorkspaceController extends Controller
         );
     }
 
-    public function acceptInvite(Request $request): JsonResponse
+    public function acceptInvite(AcceptWorkspaceInviteRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'token' => ['required', 'string', 'max:64'],
-        ]);
-
-        $member = $this->workspaces->acceptInvite($request->user(), $data['token']);
+        $member = $this->workspaces->acceptInvite($request->user(), $request->validated('token'));
 
         return $this->successResponse(
             $this->resolveResource(new WorkspaceMemberResource($member)),
@@ -111,17 +105,13 @@ class WorkspaceController extends Controller
         );
     }
 
-    public function updateMemberRole(Request $request, string $workspace, string $user): JsonResponse
+    public function updateMemberRole(UpdateWorkspaceMemberRoleRequest $request, string $workspace, string $user): JsonResponse
     {
-        $data = $request->validate([
-            'role' => ['required', 'string', 'in:admin,editor,viewer'],
-        ]);
-
         $member = $this->workspaces->updateMemberRole(
             $request->user(),
             $workspace,
             $user,
-            $data['role'],
+            $request->validated('role'),
         );
 
         return $this->successResponse(
@@ -154,7 +144,10 @@ class WorkspaceController extends Controller
                 ] : null,
                 'subject_type' => $row->subject_type,
                 'subject_id' => $row->subject_id,
-                'properties' => $row->properties?->toArray() ?? [],
+                'properties' => SensitiveActivityPropertyPresenter::forApi(
+                    $row->properties?->toArray() ?? [],
+                    $row->id !== null ? (string) $row->id : null,
+                ),
                 'created_at' => $row->created_at?->toIso8601String(),
             ];
         })->values()->all();

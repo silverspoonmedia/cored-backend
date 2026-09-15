@@ -15,6 +15,14 @@ class InvoiceResource extends JsonResource
     use FormatsPresentation;
 
     /**
+     * @param  mixed  $resource
+     */
+    protected static function newCollection($resource): InvoiceResourceCollection
+    {
+        return new InvoiceResourceCollection($resource);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -61,7 +69,7 @@ class InvoiceResource extends JsonResource
             ...($staff ? $this->dateFields('disbursed_at', $this->disbursed_at) : []),
             ...$this->dateFields('created_at', $this->created_at),
             ...$this->dateFields('updated_at', $this->updated_at),
-            'checkout_session' => app(InvoiceCheckoutInstructionResolver::class)->resolve($this->resource),
+            'checkout_session' => app(InvoiceCheckoutInstructionResolver::class)->resolve($this->resource, $request),
         ];
     }
 

@@ -36,9 +36,17 @@ class DomainCommandsTest extends TestCase
 
     private string $bootstrapBackup;
 
+    private string $databaseSeederPath;
+
+    private string $databaseSeederBackup;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Purge leftovers BEFORE snapshotting, so a previous run that leaked
+        // generated artifacts cannot be restored by tearDown.
+        $this->purgeTestDomainArtifacts();
 
         $this->domainsConfigPath = config_path('domains.php');
         $this->domainsConfigBackup = File::get($this->domainsConfigPath);
@@ -55,7 +63,11 @@ class DomainCommandsTest extends TestCase
         $this->bootstrapPath = base_path('bootstrap/app.php');
         $this->bootstrapBackup = File::get($this->bootstrapPath);
 
-        $this->purgeTestDomainArtifacts();
+        // domain:make / domain:remove inject and strip the `$this->call(...)`
+        // line in DatabaseSeeder; without a backup the generated call leaks
+        // into the working tree after the test run.
+        $this->databaseSeederPath = database_path('seeders/DatabaseSeeder.php');
+        $this->databaseSeederBackup = File::get($this->databaseSeederPath);
     }
 
     protected function tearDown(): void
@@ -67,6 +79,7 @@ class DomainCommandsTest extends TestCase
         File::put($this->apiV1Path, $this->apiV1Backup);
         File::put($this->webPath, $this->webBackup);
         File::put($this->bootstrapPath, $this->bootstrapBackup);
+        File::put($this->databaseSeederPath, $this->databaseSeederBackup);
 
         parent::tearDown();
     }
@@ -175,6 +188,12 @@ class DomainCommandsTest extends TestCase
         $this->assertFileDoesNotExist(base_path('routes/web/zz-demo.php'));
         $this->assertDirectoryDoesNotExist(base_path('tests/Domain/'.self::TEST_DOMAIN));
 
+        $this->assertFileDoesNotExist(database_path('seeders/'.self::TEST_DOMAIN.'RoleSeeder.php'));
+        $this->assertStringNotContainsString(
+            '$this->call('.self::TEST_DOMAIN.'RoleSeeder::class);',
+            File::get($this->databaseSeederPath)
+        );
+
         $this->assertStringNotContainsString("'".self::TEST_DOMAIN."'", File::get($this->domainsConfigPath));
         $this->assertStringNotContainsString(self::TEST_DOMAIN.'ServiceProvider', File::get($this->providersPath));
         $this->assertStringNotContainsString('zz-demo.php', File::get($this->apiV1Path));
@@ -193,6 +212,12 @@ class DomainCommandsTest extends TestCase
         $this->assertFileExists(base_path('routes/api/v1/zz-demo.php'));
         $this->assertFileExists(base_path('routes/web/zz-demo.php'));
         $this->assertDirectoryExists(base_path('tests/Domain/'.self::TEST_DOMAIN.'/Feature'));
+
+        $this->assertFileExists(database_path('seeders/'.self::TEST_DOMAIN.'RoleSeeder.php'));
+        $this->assertStringContainsString(
+            '$this->call('.self::TEST_DOMAIN.'RoleSeeder::class);',
+            File::get($this->databaseSeederPath)
+        );
 
         $providers = File::get($this->providersPath);
         $this->assertStringContainsString(self::TEST_DOMAIN.'ServiceProvider::class', $providers);
@@ -306,10 +331,25 @@ class DomainCommandsTest extends TestCase
         foreach ([
             base_path('routes/api/v1/zz-demo.php'),
             base_path('routes/web/zz-demo.php'),
-        ] as $route) {
-            if (File::isFile($route)) {
-                File::delete($route);
+            database_path('seeders/'.self::TEST_DOMAIN.'RoleSeeder.php'),
+        ] as $artifact) {
+            if (File::isFile($artifact)) {
+                File::delete($artifact);
             }
+        }
+
+        // A previous run that died before tearDown can leave the generated
+        // `$this->call(ZzDemoRoleSeeder::class);` line behind; strip it so the
+        // backup/restore cycle never preserves the leak.
+        $seederPath = database_path('seeders/DatabaseSeeder.php');
+        $call = '$this->call('.self::TEST_DOMAIN.'RoleSeeder::class);';
+        $contents = File::get($seederPath);
+        if (str_contains($contents, $call)) {
+            $kept = array_values(array_filter(
+                preg_split('/\R/', $contents) ?: [],
+                fn (string $line): bool => ! str_contains($line, $call),
+            ));
+            File::put($seederPath, implode(PHP_EOL, $kept).PHP_EOL);
         }
     }
 }

@@ -3,15 +3,17 @@
 namespace App\Support\Settings\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
-use App\Support\ApiResponder;
 use App\Support\Settings\Http\Requests\UpdateSettingsGroupRequest;
 use App\Support\Settings\SettingsService;
 use App\Support\Settings\Support\SettingsRealtime;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AdminSettingsController extends Controller
 {
+    use ApiResponse;
+
     public function __construct(
         private readonly SettingsService $settings,
         private readonly SettingsRealtime $realtime,
@@ -21,7 +23,7 @@ class AdminSettingsController extends Controller
     {
         abort_unless($request->user()?->can('view settings'), 403);
 
-        return ApiResponder::success(
+        return $this->successResponse(
             ['groups' => $this->settings->groups()],
             __('settings.groups_success'),
         );
@@ -32,10 +34,10 @@ class AdminSettingsController extends Controller
         abort_unless($request->user()?->can('view settings'), 403);
 
         if (! in_array($group, $this->settings->groups(), true)) {
-            return ApiResponder::error(__('settings.unknown_group', ['group' => $group]), 404);
+            return $this->errorResponse(__('settings.unknown_group', ['group' => $group]), 404);
         }
 
-        return ApiResponder::success(
+        return $this->successResponse(
             [
                 'group' => $group,
                 'settings' => $this->settings->presentGroup($group),
@@ -47,7 +49,7 @@ class AdminSettingsController extends Controller
     public function update(UpdateSettingsGroupRequest $request, string $group): JsonResponse
     {
         if (! in_array($group, $this->settings->groups(), true)) {
-            return ApiResponder::error(__('settings.unknown_group', ['group' => $group]), 404);
+            return $this->errorResponse(__('settings.unknown_group', ['group' => $group]), 404);
         }
 
         $updated = $this->settings->updateGroup(
@@ -58,7 +60,7 @@ class AdminSettingsController extends Controller
 
         $this->realtime->groupChanged($group, 'updated');
 
-        return ApiResponder::success(
+        return $this->successResponse(
             [
                 'group' => $group,
                 'settings' => $updated,

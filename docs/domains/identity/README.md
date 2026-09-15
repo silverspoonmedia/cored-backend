@@ -72,7 +72,7 @@ Logout sets persistent barrier before API call. Subsequent cold-boot `auth/me` c
 
 The SPA authenticates cross-site with HttpOnly `__Host-spa_jwt` cookie instead of Bearer header, so `AuthService::refresh()` falls back to cookie when no `Authorization` header exists — cookie-mode session refreshes same way (otherwise hard-expires at `jwt.ttl`). On login/register/refresh/2FA-login raw JWT is set as `__Host-spa_jwt` cookie and **stripped from JSON body** (`data.token` removed), so SPA JS never reads it and XSS cannot exfiltrate it; `TwoFactorController` applies same strip. Logout blacklists current JWT and expires `__Host-spa_jwt`; later `auth/me` carrying same Bearer token or stale cookie must return `401`. The `__Host-` prefix enforces `Secure`, `Path=/`, and no `Domain`.
 
-The SPA-side session lifecycle (logout barrier/epoch, `BroadcastChannel` cross-tab sync, post-login cookie-settle serialization, guest cold-boot single `auth/me` probe) is owned by [vue-workers-spa.md — Cross-tab auth](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
+The SPA-side session lifecycle (logout barrier/epoch, `BroadcastChannel` cross-tab sync, post-login cookie-settle serialization, guest cold-boot single `auth/me` probe) is owned by sibling [auth-session.md](../../../../monolith-vue-workers/docs/auth-session.md). Contract pointer: [vue-workers-spa.md — Cross-tab auth](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
 
 The removed Blade admin used a separate first-party JWT cookie bridge; that middleware is gone — see [web/blade-admin.md](../../web/blade-admin.md).
 
@@ -84,7 +84,7 @@ The removed Blade admin used a separate first-party JWT cookie bridge; that midd
 2. `rm` custom claim on the original token (set at login: `1` = remember, `0` = normal; persisted across refreshes via `jwt.persistent_claims`).
 3. Fallback `false`.
 
-Login, 2FA login, and register all inject the `rm` claim via `AuthService::customClaims()`. The Vue SPA cross-tab auth layer relies on this — see [vue-workers-spa — Cross-tab auth](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
+Login, 2FA login, and register all inject the `rm` claim via `AuthService::customClaims()`. The Vue SPA cross-tab auth layer relies on this — sibling [auth-session.md](../../../../monolith-vue-workers/docs/auth-session.md); contract [vue-workers-spa — Cross-tab auth](../../integration/vue-workers-spa.md#cross-tab-auth-multi-tab-session-sync).
 
 ### hCaptcha
 
@@ -161,7 +161,7 @@ Permissions: `view/create/edit/delete user` (space-separated names). Soft delete
 
 `{user}` = UUID. SPA views call these API endpoints directly — no second RBAC path.
 
-Query-mode `GET /api/v1/users` rows include `actions[]` (`App\Support\ListActions\Builders\UserQueryRowActions`): always `edit` → SPA `users.edit`; `delete` only when the actor has `delete user` and the row is not self. That matches the SPA list, not Yajra `UserRowActionResolver` hierarchy. Contract: [list-display-modes.md](../../platform/list-display-modes.md#query-mode-actions-live-spa-contract).
+Query-mode `GET /api/v1/users` rows include `actions[]` (`App\Support\ListActions\Builders\UserQueryRowActions`): always `edit` → SPA `users.edit`; `delete` only when the actor has `delete user` and the row is not self. Contract: [list-display-modes.md](../../platform/list-display-modes.md#query-mode-actions-live-spa-contract). Paged query-mode without `search` uses SQL `LIMIT` (`UserRepository::paginateVisibleToActorLevel`); `search` still uses the PHP recursive matcher so hits stay unchanged.
 
 **Sidebar:** **Administration → Access control → User management** (`users.index`), visible to Root, Admin, Moderator, and Management. Menu visibility is presentation only; API policy and H-RBAC remain authoritative.
 
@@ -169,7 +169,20 @@ Notifications on create/update: [notification domain](../notification/README.md)
 
 ## Lookups
 
-Paginated select options: `GET /api/v1/lookups/*` — [platform/list-display-modes.md](../../platform/list-display-modes.md).
+Paginated select options: `GET /api/v1/lookups/*` — [platform/list-display-modes.md](../../platform/list-display-modes.md). `users`/`roles` return flat `{id, text}` rows; `menus` returns a nested tree per root group (paginate per root, search keeps ancestors, hydrate `ids[]` stays flat).
+
+## Realtime
+
+RBAC and auth mutations ping channels after a successful persist (gated on `BroadcastConnection::isConfigured()`), payloads ids + `action` only:
+
+| Channel (permission) | Event | Fired by |
+|----------------------|-------|----------|
+| `rbac.roles` (`view user`) | `.rbac.role.list.changed`, `.rbac.role.permission.changed` | `RbacRealtime` — role CRUD, grant/revoke, assignment |
+| `rbac.users` (`view user`) | `.rbac.user.list.changed` | `RbacRealtime` — admin user create/update/delete |
+| `rbac` (`view user`, legacy) | `.rbac.role.permission.changed` | kept for older SPA builds |
+| `App.Models.User.{id}` (self-only) | `.auth.state.changed`, `.auth.security.changed` | `AuthStateBroadcast` — login/logout, password change, 2FA enable/disable |
+
+SPA: `useAdminRealtime.ts` (Users/role views refetch), `useAuthSelfRealtime.ts` (Password/TwoFactor views refetch own state).
 
 ## Connected accounts (OAuth providers)
 

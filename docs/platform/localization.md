@@ -1,6 +1,6 @@
 # Localization (multi-language)
 
-Cookie- or user-preference-driven locale for API and DB content. **No route prefix** (`/en/...`). The sibling Vue-Workers SPA has its own JSON locale runtime and startup resolution; its contract lives in [../integration/vue-workers-spa.md](../integration/vue-workers-spa.md).
+Cookie- or user-preference-driven locale for API and DB content. **No route prefix** (`/en/...`). The sibling Vue-Workers SPA has its own JSON locale runtime; see sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md). Cross-repo pointer: [vue-workers-spa.md](../integration/vue-workers-spa.md#i18n-porting-notes).
 
 **Canonical supported locales:** backend codes `en`, `id`, `ja`, `ko`, `zh_CN`, `ar`, `ru` (SPA/browser: `zh-CN` ↔ backend `zh_CN`). All other docs link here instead of restating the list.
 
@@ -15,7 +15,11 @@ Cookie- or user-preference-driven locale for API and DB content. **No route pref
 
 **Never** put app strings in package-managed files (`lang:update` overwrites them).
 
-`localization.md` owns Laravel PHP locale files, API resolution, and parity rules. [`vue-workers-spa.md`](../integration/vue-workers-spa.md) owns SPA JSON keys, runtime switching, module-level fallback translation, and Worker hydration. Keep those contracts linked instead of duplicating them.
+`localization.md` owns Laravel PHP locale files, API resolution, and parity rules. Sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md) owns SPA JSON keys, runtime switching, and `useI18n()` context. Cross-repo pointer: [`vue-workers-spa.md` — i18n](../integration/vue-workers-spa.md#i18n-porting-notes). Keep those contracts linked instead of duplicating them.
+
+### Agent: do not dump locale files
+
+Never `Read` an entire `lang/{locale}.json` or SPA `src/i18n/locales/*.json` (thousands of lines each). Find keys with Grep, apply the same targeted patch across all seven locales, then run `tests/Unit/Localization/LocaleParityTest.php` and sibling `npm run check:i18n`. English is the source locale; other locales are patched, not loaded wholesale. Root `lang/*.json` nested groups in `en`/`id`/`ja` duplicate PHP namespaces — prefer `lang/{locale}/*.php` for application strings.
 
 ### Task rule (required)
 
@@ -39,6 +43,7 @@ Translation workflow:
 | API messages / policy / business exceptions | `lang/{locale}/api/*` |
 | FormRequest messages | `forms/*` or `__()` in request |
 | Translatable DB fields | Spatie + admin input per locale |
+| Translatable map locale keys | rewritten in place by `ValidatesTranslatableInput` (SPA alias → canonical code); no locale file |
 | Seed sample content | Locale maps in seed data |
 
 Emails follow recipient `users.locale` (`HasLocalePreference` on `User`).
@@ -60,6 +65,17 @@ Switch: `POST /api/v1/auth/locale` — authenticated users persist to `users.loc
 
 Both API (`POST /api/v1/auth/locale`) calls `App\Support\Localization\LocalePreference::apply()` so cookie + user-column persist stay one implementation.
 
+### Translatable payload maps
+
+Spatie-translatable request fields (`menus.name`, `menus.description`, …) accept either a plain string (shorthand for the active locale) or a locale map. The shared trait `App\Support\Localization\Concerns\ValidatesTranslatableInput` owns the map rules:
+
+- **Alias canonicalization** — keys are validated through `LocalePreference::normalize()`, so the SPA alias `zh-CN` is accepted alongside `zh_CN`; the map is then rewritten in place with canonical backend keys, so `validated()` data and persistence never see alias keys. When both keys are present the **last** entry wins the merge, so an SPA edit sent as `zh-CN` overrides a stale `zh_CN` prefill value.
+- **All-locale requirement** — a locale map must carry a non-empty value for every supported locale (`validateTranslatableAllLocales`). Plain strings skip the check.
+- **Empty map = leave unset** — an empty map on an optional field (`description`) passes validation instead of demanding every locale. The SPA edit form always posts the field, and menus without a description would otherwise fail update with a false "required" on all locales.
+- **Unknown keys rejected** — anything `LocalePreference::normalize()` does not resolve fails with a `validation.in` error.
+
+`MenuService::mapAttributes()` canonicalizes again as a safety net for request paths that skip the trait. The SPA mirrors the contract: prefill maps come back backend-keyed (`zh_CN`) and `translatableValue()` resolves them for the row rendered under the SPA code (`zh-CN`), while `normalizeTranslatableMap()` emits backend keys on write. Covered by `tests/Unit/Localization/ValidatesTranslatableInputTest.php`, the `NavigationMenuTest` alias tests, and the SPA `tests/translatableLocaleMap.test.ts`.
+
 ### Web ↔ API sync
 
 The SPA sends the active backend locale via `X-SPA-Locale` on API requests. The header carries `zh_CN` when the SPA is using `zh-CN`; other locale codes pass through unchanged. The header wins over the `locale` cookie (see resolution order above) so a stale cookie cannot pin the old locale after an abort-prone direction-swap reload; the cookie remains the fallback for guests and non-SPA requests.
@@ -74,9 +90,9 @@ Vue-Workers resolves its initial locale independently of Laravel middleware:
 2. First matching supported `navigator.language` / `navigator.languages` alias.
 3. `en`.
 
-Only `en.json` ships in the SPA's eager bundle; the other six locales load as dynamic-import chunks on first `setLocale()` (`LAZY_LOCALES` in `monolith-vue-workers/src/i18n/index.ts`), with eager `en` covering missing keys until the chunk resolves. Details: [vue-workers-spa.md](../integration/vue-workers-spa.md).
+Only `en.json` ships in the SPA's eager bundle; the other six locales load as dynamic-import chunks on first `setLocale()` (`LAZY_LOCALES` in `monolith-vue-workers/src/i18n/index.ts`), with eager `en` covering missing keys until the chunk resolves. Details: sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md).
 
-`html[lang]` uses the SPA code (`zh-CN`, not `zh_CN`), while browser `Intl` APIs receive the SPA code. Arabic also sets `html[dir="rtl"]`; all other supported locales set `ltr`. The SPA loads a direction-split global CSS entry (`main-ltr.css` / `main-rtl.css`, resolved before mount from the detected locale); the RTL entry imports `vendor-rtl.css`, a sibling of `vendor.css` that swaps Bootstrap/AdminLTE for their official `.rtl` dist builds (a separate CSS entry, not a Vite `resolveId` alias, because Vite runs CSS `@import` through postcss rather than the JS resolve pipeline). Switching locale across directions (Arabic ↔ any other) therefore triggers a full page reload from `setLocale()` so the other stylesheet loads. Directional icons follow a fixed convention: glyph swap for `bi-arrow-left` back buttons, `scaleX(-1)` for the custom `.ar-breadcrumb__sep` separator, and `isRtl()`-bound classes for list-movement prev/next — AdminLTE's own `.nav-arrow` is mirrored by the vendor RTL build and must NOT get a custom transform (details in [docs/integration/vue-workers-spa.md](../integration/vue-workers-spa.md)).
+`html[lang]` uses the SPA code (`zh-CN`, not `zh_CN`), while browser `Intl` APIs receive the SPA code. Arabic also sets `html[dir="rtl"]`; all other supported locales set `ltr`. The SPA loads a direction-split global CSS entry (`main-ltr.css` / `main-rtl.css`, resolved before mount from the detected locale); the RTL entry imports `vendor-rtl.css`, a sibling of `vendor.css` that swaps Bootstrap/AdminLTE for their official `.rtl` dist builds (a separate CSS entry, not a Vite `resolveId` alias, because Vite runs CSS `@import` through postcss rather than the JS resolve pipeline). Switching locale across directions (Arabic ↔ any other) therefore triggers a full page reload from `setLocale()` so the other stylesheet loads. Directional icons follow a fixed convention: glyph swap for `bi-arrow-left` back buttons, `scaleX(-1)` for the custom `.ar-breadcrumb__sep` separator, and `isRtl()`-bound classes for list-movement prev/next — AdminLTE's own `.nav-arrow` is mirrored by the vendor RTL build and must NOT get a custom transform (details in sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md)).
 
 Runtime `setLocale()` persists the SPA choice and updates the HTML `lang` attribute. `window` and `document` access is guarded for SSR and tooling contexts. Authenticated SPA flows may synchronize the choice through `POST /api/v1/auth/locale`, but backend resolution remains user preference → header → cookie → app default. Do not document the two startup paths as one shared precedence chain. On an Arabic direction swap the reload must happen only AFTER `auth/locale` persists — `setLocale()` accepts `reload:false` and `AppNavbar.switchLocale()` calls `reloadForDirection()` last, otherwise the hard reload aborts the persist fetch and the dynamic menu stays on the old locale.
 
@@ -92,7 +108,7 @@ lang/{en,id,ja,ko,zh_CN,ar,ru}/
 
 Managed files listed in `config/localization.php` → `managed_files`.
 
-`web/*.php` shrank with the Blade removal — it now holds only strings that surviving **server-side PHP** still resolves: `session`, `identity-connections`, `vtual-vtuber` (Discord callback flash), `payments`, `archivd` (direct-upload errors), `settings` (registry labels), and `vtual-orphans` (orphan archive confirm, reused by query-mode `OrphanCreatorQueryRowActions` and the unused Yajra resolver — see [list-display-modes.md](list-display-modes.md)). Query-mode row-action labels and mutate confirms that are not already in `ui.php` / `web/*` live in `list_actions.php` (API-emitted; the SPA displays them, it does not re-translate). Browser UI strings live in the SPA's JSON locales, not here. Do not add a `web/*.php` file for a screen; if only the SPA reads it, it belongs in `monolith-vue-workers/src/i18n/locales/*.json`.
+`web/*.php` shrank with the Blade removal — it now holds only strings that surviving **server-side PHP** still resolves: `session`, `identity-connections`, `vtual-vtuber` (Discord callback flash), `payments`, `archivd` (direct-upload errors), `settings` (registry labels), and `vtual-orphans` (orphan archive confirm, reused by query-mode `OrphanCreatorQueryRowActions` — see [list-display-modes.md](list-display-modes.md)). Query-mode row-action labels and mutate confirms that are not already in `ui.php` / `web/*` live in `list_actions.php` (API-emitted; the SPA displays them, it does not re-translate). Browser UI strings live in the SPA's JSON locales, not here. Do not add a `web/*.php` file for a screen; if only the SPA reads it, it belongs in `monolith-vue-workers/src/i18n/locales/*.json`.
 
 ## Key conventions
 
@@ -104,8 +120,8 @@ Managed files listed in `config/localization.php` → `managed_files`.
 | API domain | `__('api/navigation.created')` |
 | Static nav labels | `__('menu.dashboard')` |
 | DB menus | `$menu->name` (Spatie) |
-| SPA JSON | `t('ui.swal.ok')`, `t('ui.dialog.error_title')` — Swal chrome in `monolith-vue-workers/src/i18n/locales/*.json`; domain confirm bodies stay on their domain keys. Contract: [vue-workers-spa.md — Notifications & confirmations](../integration/vue-workers-spa.md#notifications--confirmations-sweetalert2) |
-| SPA chrome (nav) | `t('ui.navigation.load_failed')` — Valkivid3 nav-load fallback used by `useVkNavigation`. Catalog: `ui.error_state.*`, `ui.empty_state.*`, `ui.datatable.*`, `ui.navigation.*` live in the SPA JSON; full enumeration in [vue-workers-spa.md](../integration/vue-workers-spa.md) |
+| SPA JSON | `t('ui.swal.ok')`, `t('ui.dialog.error_title')` — Swal chrome in `monolith-vue-workers/src/i18n/locales/*.json`; domain confirm bodies stay on their domain keys. Contract: sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md) |
+| SPA chrome (nav) | `t('ui.navigation.load_failed')` — Valkivid3 nav-load fallback used by `useVkNavigation`. Catalog: `ui.error_state.*`, `ui.empty_state.*`, `ui.datatable.*`, `ui.navigation.*` live in the SPA JSON; enumeration in sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md) |
 
 ## Packages & parity
 
@@ -126,7 +142,7 @@ Clients must not reformat API values — consume Resource companions (`*_formatt
 
 ## Domain glossary
 
-Canonical term choices across locales. Use these for every translation wave; do not vary per file. Brands and product names (`vTual`, `Microstock`, `Discord`, `QRIS`, `YouTube`, `Twitch`, `hCaptcha`) are never translated. Machine/contract text (enum values, probe method names, `sha256`, URL placeholders) stays English.
+Canonical term choices across locales. Use these for every translation wave; do not vary per file. Brands and product names (`Archivd`, `vTual`, `Microstock`, `Discord`, `QRIS`, `YouTube`, `Twitch`, `hCaptcha`) are never translated. Machine/contract text (enum values, probe method names, `sha256`, URL placeholders) stays English.
 
 | English | id | ja | ko | zh_CN | ar | ru |
 |---------|----|----|----|-------|----|----|
@@ -141,7 +157,7 @@ Canonical term choices across locales. Use these for every translation wave; do 
 | payment gateway | gateway pembayaran | 決済ゲートウェイ | 결제 게이트웨이 | 支付网关 | بوابة الدفع | платёжный шлюз |
 | settlement | settlement | 精算 | 정산 | 结算 | تسوية | расчёт (сеттлемент) |
 | upload batch | batch unggahan | アップロードバッチ | 업로드 배치 | 上传批次 | دفعة الرفع | пакет загрузки |
-| Archivd | Archivd | ファイルホスティング | 파일 호스팅 | 文件托管 | استضافة الملفات | файловый хостинг |
+| Archivd | Archivd | Archivd | Archivd | Archivd | Archivd | Archivd |
 | persona | persona | ペルソナ | 페르소나 | 形象 | شخصية | персона |
 | role / permission | peran / izin | ロール / 権限 | 역할 / 권한 | 角色 / 权限 | الدور / الصلاحيات | роль / разрешение |
 | staff | staf | スタッフ | 스태프 | 工作人员 | فريق العمل | сотрудники |
@@ -162,5 +178,6 @@ Register: id (Anda, formal netral), ja (です/ます), ko (합쇼체), zh-CN (�
 ## Related
 
 - [web/blade-admin.md](../web/blade-admin.md)
-- [integration/vue-workers-spa.md](../integration/vue-workers-spa.md) — SPA JSON locales, runtime switching, fallback translation, hydration, `useI18n()` context rule, and Sweetalert2 chrome keys (`ui.swal.*`, `ui.dialog.*`)
+- sibling [i18n.md](../../../monolith-vue-workers/docs/i18n.md) — SPA JSON locales, runtime switching, fallback translation, `useI18n()` context, Sweetalert2 chrome keys (`ui.swal.*`, `ui.dialog.*`)
+- [integration/vue-workers-spa.md](../integration/vue-workers-spa.md) — cross-repo contract pointer
 - [domains/navigation/README.md](../domains/navigation/README.md) — Spatie menu fields

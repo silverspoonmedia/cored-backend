@@ -6,14 +6,16 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Notification\Http\Requests\UpdateNotificationAudienceRequest;
 use App\Domain\Notification\Services\NotificationAudienceService;
 use App\Http\Controllers\Controller;
-use App\Support\ApiResponder;
 use App\Support\ListActions\Builders\NotificationAudienceQueryRowActions;
 use App\Support\ListActions\QueryRowActionAttacher;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AdminNotificationAudienceController extends Controller
 {
+    use ApiResponse;
+
     public function __construct(
         private readonly NotificationAudienceService $audiences,
         private readonly NotificationAudienceQueryRowActions $queryRowActions,
@@ -26,7 +28,7 @@ class AdminNotificationAudienceController extends Controller
         $items = $this->audiences->listPresented()->values();
         $actor = $request->user();
 
-        return ApiResponder::success(
+        return $this->successResponse(
             [
                 'items' => QueryRowActionAttacher::attach(
                     $items->all(),
@@ -44,7 +46,7 @@ class AdminNotificationAudienceController extends Controller
     {
         abort_unless($request->user()?->can('view settings'), 403);
 
-        return ApiResponder::success(
+        return $this->successResponse(
             $this->withActions($this->audiences->presentType($type), $request->user()),
             __('api/notifications.audiences.show_success'),
         );
@@ -59,7 +61,7 @@ class AdminNotificationAudienceController extends Controller
             $request->userIds(),
         );
 
-        return ApiResponder::success(
+        return $this->successResponse(
             $this->withActions($updated, $request->user()),
             __('api/notifications.audiences.updated'),
         );

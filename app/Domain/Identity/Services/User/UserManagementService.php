@@ -2,13 +2,16 @@
 
 namespace App\Domain\Identity\Services\User;
 
-use App\Domain\Notification\Events\ActivityNotificationEvent;
 use App\Domain\Identity\Models\User;
-use App\Domain\Notification\Notifications\NotificationType;
 use App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface;
 use App\Domain\Identity\Services\Rbac\RoleService;
 use App\Domain\Identity\Support\RbacRealtime;
+use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
+use App\Domain\Notification\Events\ActivityNotificationEvent;
+use App\Domain\Notification\Notifications\NotificationType;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator as LengthAwarePaginatorConcrete;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
 
@@ -34,6 +37,20 @@ class UserManagementService
         return $this->users->listVisibleToActorLevel($actorLevel);
     }
 
+    /**
+     * @return LengthAwarePaginator<int, User>
+     */
+    public function paginate(User $actor, int $perPage, int $page): LengthAwarePaginator
+    {
+        $actorLevel = $this->roleService->getLowestRoleLevel($actor);
+
+        if ($actorLevel === null) {
+            return new LengthAwarePaginatorConcrete([], 0, $perPage, $page);
+        }
+
+        return $this->users->paginateVisibleToActorLevel($actorLevel, $perPage, $page);
+    }
+
     public function get(string $id): User
     {
         return $this->users->findByIdOrFailWithRoles($id);
@@ -55,12 +72,13 @@ class UserManagementService
 
         $user->syncRoles([$roleName]);
 
-        if (app()->bound(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)) {
-            app(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)
+        if (app()->bound(MenuRepositoryInterface::class)) {
+            app(MenuRepositoryInterface::class)
                 ->forgetPresentedTreeForUserId((string) $user->id);
         }
 
         $this->realtime->changed('role_assigned', null, (string) $user->id);
+        $this->realtime->userListChanged('created', (string) $user->id);
 
         activity()
             ->useLog('user')
@@ -109,8 +127,8 @@ class UserManagementService
             $previousRole = $user->roles->first()?->name;
             $user->syncRoles([$data['role']]);
 
-            if (app()->bound(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)) {
-                app(\App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface::class)
+            if (app()->bound(MenuRepositoryInterface::class)) {
+                app(MenuRepositoryInterface::class)
                     ->forgetPresentedTreeForUserId((string) $user->id);
             }
 
@@ -129,6 +147,8 @@ class UserManagementService
                     ->log('role_assigned');
             }
         }
+
+        $this->realtime->userListChanged('updated', (string) $user->id);
 
         if ($actor->id !== $user->id) {
             // Personal notification: tell the affected user their account changed.
@@ -170,6 +190,8 @@ class UserManagementService
         $email = $user->email;
 
         $this->users->softDelete($id);
+
+        $this->realtime->userListChanged('deleted', (string) $id);
 
         // Broadcast list-change signal to Root + Admin so open /users tables
         // reload. No action route — the row is gone.

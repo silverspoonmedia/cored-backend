@@ -5,6 +5,7 @@ namespace App\Domain\Navigation\Repositories\Eloquent;
 use App\Domain\Navigation\Exceptions\InvalidMenuParentException;
 use App\Domain\Navigation\Exceptions\InvalidMenuPositionException;
 use App\Domain\Navigation\Exceptions\MenuHasChildrenException;
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Models\Menu;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
@@ -134,8 +135,7 @@ class MenuRepository implements MenuRepositoryInterface
                 'route' => $data['route'] ?? null,
                 'type' => $type,
                 'order' => null,
-                'is_authenticate' => $data['is_authenticate'] ?? null,
-                'is_guest_only' => $data['is_guest_only'] ?? null,
+                'audience' => $data['audience'] ?? MenuAudience::Auth,
             ]);
 
             $ids = $this->orderedSiblingIds($parentId, $type, $layout);
@@ -175,7 +175,7 @@ class MenuRepository implements MenuRepositoryInterface
             $oldParent = $menu->parent_id;
             $oldType = $menu->type;
 
-            foreach (['parent_id', 'name', 'description', 'icon', 'route', 'type', 'is_authenticate', 'is_guest_only'] as $key) {
+            foreach (['parent_id', 'name', 'description', 'icon', 'route', 'type', 'audience'] as $key) {
                 if (array_key_exists($key, $data)) {
                     $menu->{$key} = $data[$key];
                 }
@@ -374,8 +374,7 @@ class MenuRepository implements MenuRepositoryInterface
                     'hash' => $menu->hash,
                     'type' => $menu->type,
                     'order' => $menu->order,
-                    'is_authenticate' => $menu->is_authenticate,
-                    'is_guest_only' => $menu->is_guest_only,
+                    'audience' => $menu->audience->value,
                     'role_names' => $menu->roles->where('guard_name', 'api')->pluck('name')->values()->all(),
                     'include_user_ids' => $menu->includedUsers->pluck('id')->values()->all(),
                     'exclude_user_ids' => $menu->excludedUsers->pluck('id')->values()->all(),
@@ -656,11 +655,13 @@ class MenuRepository implements MenuRepositoryInterface
             }
         }
 
-        if ($node['is_guest_only'] && $user) {
+        $audience = MenuAudience::tryFrom((string) ($node['audience'] ?? ''));
+
+        if ($audience?->isGuestOnly() && $user) {
             return false;
         }
 
-        if ($node['is_authenticate'] && ! $user) {
+        if ($audience?->requiresUser() && ! $user) {
             return false;
         }
 

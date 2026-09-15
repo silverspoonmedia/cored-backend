@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => 'استضافة الملفات',
+    'title' => 'Archivd',
     'blocklist_title' => 'قائمة حظر التجزئات (DMCA)',
     'blocklist_add' => 'حظر التجزئة',
     'blocklist_sha256' => 'sha256',
@@ -293,7 +293,7 @@ return [
     'quota_remaining' => 'متبقٍ',
     'quota_unlimited' => 'غير محدود',
     'load_failed' => 'فشل التحميل.',
-    'vue_mount_failed' => 'فشل تحميل واجهة استضافة الملفات. حدّث الصفحة.',
+    'vue_mount_failed' => 'فشل تحميل واجهة Archivd. حدّث الصفحة.',
     'link_copied' => 'تم نسخ الرابط إلى الحافظة.',
     'ajax_success' => 'اكتمل الإجراء.',
     'ajax_error' => 'فشل الإجراء.',

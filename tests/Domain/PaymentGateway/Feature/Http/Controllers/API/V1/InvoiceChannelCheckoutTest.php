@@ -3,13 +3,14 @@
 namespace Tests\Domain\PaymentGateway\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Identity\Models\User;
-use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Models\PaymentChannel;
 use App\Domain\PaymentGateway\Models\PaymentChannelRoute;
 use App\Domain\PaymentGateway\Models\PaymentGateway;
 use App\Domain\PaymentGateway\Services\Payment\Ipaymu\IpaymuPaymentService;
 use App\Domain\PaymentGateway\Services\Payment\Midtrans\MidtransPaymentService;
+use App\Domain\Service\Models\ServicePurchase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Mockery;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\Concerns\SetsUpPaymentChannels;
@@ -250,7 +251,7 @@ class InvoiceChannelCheckoutTest extends TestCase
             'name' => 'Purchase Owner',
             'email' => 'owner@example.com',
         ]);
-        $purchase = \App\Domain\Service\Models\ServicePurchase::factory()->pending()->create([
+        $purchase = ServicePurchase::factory()->pending()->create([
             'user_id' => $owner->id,
         ]);
         $invoice = $this->createPayableInvoice(null, [
@@ -281,6 +282,42 @@ class InvoiceChannelCheckoutTest extends TestCase
             ->postJson('/api/v1/invoices/'.$invoice->id.'/channel-checkout', ['channel_code' => 'qris'])
             ->assertCreated()
             ->assertJsonPath('status', 'success');
+    }
+
+    public function test_invoice_list_prefetches_payment_channels_for_checkout_session(): void
+    {
+        $gateway = PaymentGateway::query()->where('name', 'ipaymu')->firstOrFail();
+
+        for ($i = 0; $i < 3; $i++) {
+            $invoice = $this->createPayableInvoice('ipaymu');
+            $invoice->payment_gateway_id = $gateway->id;
+            $invoice->payment_channel_code = 'va_bca';
+            $invoice->gateway_request_payload = ['mode' => 'direct'];
+            $invoice->gateway_response_payload = [
+                'Status' => 200,
+                'Data' => [
+                    'PaymentCode' => '381180003425466'.$i,
+                    'PaymentChannel' => 'BCA',
+                    'PaymentName' => 'Hallo Bali',
+                ],
+            ];
+            $invoice->save();
+        }
+
+        $admin = $this->userWithRole('Admin');
+        $channelQueries = 0;
+        DB::listen(function ($query) use (&$channelQueries): void {
+            if (preg_match('/\bpayment_channels\b/', (string) $query->sql) === 1) {
+                $channelQueries++;
+            }
+        });
+
+        $this->actingAsJwt($admin)
+            ->getJson('/api/v1/invoices?display_mode=query')
+            ->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        $this->assertSame(1, $channelQueries);
     }
 
     private function userWithRole(string $role): User

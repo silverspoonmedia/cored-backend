@@ -7,7 +7,7 @@ return [
     'source' => 'Текущий источник: :source',
     'groups' => [
         'platform' => 'Платформа',
-        'archivd' => 'Файловый хостинг',
+        'archivd' => 'Archivd',
         'microstock' => 'Microstock',
         'vtual' => 'vTual',
         'notification_audiences' => 'Аудитории уведомлений',

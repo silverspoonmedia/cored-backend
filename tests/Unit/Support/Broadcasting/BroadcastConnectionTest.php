@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Support\Broadcasting;
 
+use App\Support\Broadcasting\BroadcastAuthEndpoint;
 use App\Support\Broadcasting\BroadcastConnection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -90,7 +91,7 @@ class BroadcastConnectionTest extends TestCase
             'host' => 'ws.example.test',
             'port' => 6001,
             'scheme' => 'https',
-            'authEndpoint' => url('/broadcasting/auth'),
+            'authEndpoint' => BroadcastAuthEndpoint::url(),
         ], BroadcastConnection::socketClientConfig());
     }
 
@@ -119,8 +120,34 @@ class BroadcastConnectionTest extends TestCase
             'host' => 'ws.example.test',
             'port' => 6001,
             'scheme' => 'https',
-            'authEndpoint' => url('/broadcasting/auth'),
+            'authEndpoint' => BroadcastAuthEndpoint::url(),
         ], BroadcastConnection::clientConfig());
+    }
+
+    public function test_client_config_auth_endpoint_targets_the_versioned_api(): void
+    {
+        // The framework registers a web-group twin of /broadcasting/auth. That
+        // route is CSRF-guarded and not CORS-covered, so a client sent there
+        // fails as an opaque browser CORS error. Server-issued config must always
+        // point at the API endpoint.
+        config([
+            'notifications.delivery' => 'realtime',
+            'broadcasting.default' => 'pusher',
+            'broadcasting.connections.pusher' => [
+                'driver' => 'pusher',
+                'key' => 'public-key',
+                'secret' => 'secret',
+                'app_id' => 'app',
+                'options' => ['cluster' => 'eu', 'port' => 443, 'scheme' => 'https'],
+            ],
+        ]);
+
+        $config = BroadcastConnection::clientConfig();
+
+        $this->assertNotNull($config);
+        $this->assertSame(BroadcastAuthEndpoint::url(), $config['authEndpoint']);
+        $this->assertStringEndsWith('/'.BroadcastAuthEndpoint::PATH, $config['authEndpoint']);
+        $this->assertStringContainsString('/api/v1/broadcasting/auth', $config['authEndpoint']);
     }
 
     public function test_client_config_strips_default_pusher_rest_api_host(): void

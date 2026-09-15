@@ -2,11 +2,13 @@
 
 namespace Tests\Domain\Navigation\Feature\Http\Controllers\API\V1;
 
-use App\Domain\Navigation\Models\Menu;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Navigation\Enums\MenuAudience;
+use App\Domain\Navigation\Models\Menu;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\SeedsRolesAndPermissions;
 use Tests\TestCase;
 
@@ -22,10 +24,10 @@ class NavigationMenuTest extends TestCase
         $this->seedRolesAndPermissions();
     }
 
-    public function test_guest_navigation_tree_excludes_authenticate_only(): void
+    public function test_guest_navigation_tree_excludes_authenticated_only(): void
     {
-        $this->makeMenu(['name' => 'PublicItem', 'type' => 'c']);
-        $this->makeMenu(['name' => 'MembersItem', 'type' => 'c', 'is_authenticate' => true]);
+        $this->makeMenu(['name' => 'PublicItem', 'type' => 'c', 'audience' => MenuAudience::All]);
+        $this->makeMenu(['name' => 'MembersItem', 'type' => 'c', 'audience' => MenuAudience::Auth]);
 
         $response = $this->getJson('/api/v1/navigation/menus')->assertOk();
 
@@ -34,9 +36,9 @@ class NavigationMenuTest extends TestCase
         $this->assertFalse($names->contains('MembersItem'));
     }
 
-    public function test_authenticated_navigation_tree_includes_authenticate_only(): void
+    public function test_authenticated_navigation_tree_includes_authenticated_only(): void
     {
-        $this->makeMenu(['name' => 'MembersItem', 'type' => 'c', 'is_authenticate' => true]);
+        $this->makeMenu(['name' => 'MembersItem', 'type' => 'c', 'audience' => MenuAudience::Auth]);
         $user = $this->userWithRole('User');
 
         $response = $this->actingAsJwt($user)
@@ -59,6 +61,22 @@ class NavigationMenuTest extends TestCase
             ->assertOk();
     }
 
+    public function test_list_query_rows_include_edit_and_delete_actions(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $menu = $this->makeMenu(['name' => 'QueryActionsMenu', 'type' => 'h']);
+
+        $row = collect(
+            $this->actingAsJwt($admin)
+                ->getJson('/api/v1/navigation/menus/list')
+                ->assertOk()
+                ->json('data'),
+        )->firstWhere('id', $menu->id);
+
+        $this->assertNotNull($row);
+        $this->assertSame(['edit', 'delete'], collect($row['actions'])->pluck('key')->all());
+    }
+
     public function test_admin_can_create_menu_with_role_assignment(): void
     {
         $admin = $this->userWithRole('Admin');
@@ -68,12 +86,12 @@ class NavigationMenuTest extends TestCase
                 'name' => 'Reports',
                 'type' => 'h',
                 'icon' => 'chart',
-                'authenticate' => true,
+                'audience' => MenuAudience::Role->value,
                 'roles' => ['Admin'],
             ])
             ->assertCreated()
             ->assertJsonPath('data.name', 'Reports')
-            ->assertJsonPath('data.is_authenticate', true);
+            ->assertJsonPath('data.audience', MenuAudience::Role->value);
 
         $menuId = $response->json('data.id');
         $adminRoleId = Role::query()->where('name', 'Admin')->where('guard_name', 'api')->value('id');
@@ -100,7 +118,7 @@ class NavigationMenuTest extends TestCase
                 'name' => $name,
                 'description' => $description,
                 'type' => 'h',
-                'authenticate' => true,
+                'audience' => MenuAudience::Auth->value,
             ])
             ->assertCreated()
             ->assertJsonPath('data.name', 'Reports en')
@@ -119,6 +137,7 @@ class NavigationMenuTest extends TestCase
         $this->makeMenu([
             'name' => ['en' => 'English label', 'id' => 'Label Indonesia'],
             'type' => 'c',
+            'audience' => MenuAudience::All,
         ]);
 
         app()->setLocale('id');
@@ -135,6 +154,7 @@ class NavigationMenuTest extends TestCase
         $this->makeMenu([
             'name' => ['en' => 'English label', 'zh_CN' => '简体中文标签'],
             'type' => 'c',
+            'audience' => MenuAudience::All,
         ]);
 
         app()->setLocale('zh_CN');
@@ -151,6 +171,7 @@ class NavigationMenuTest extends TestCase
         $this->makeMenu([
             'name' => ['en' => 'English label', 'id' => 'Label Indonesia', 'ar' => 'تسمية عربية'],
             'type' => 'c',
+            'audience' => MenuAudience::All,
         ]);
 
         // Stale cookie says id, but the SPA's current header says ar. The header
@@ -170,6 +191,7 @@ class NavigationMenuTest extends TestCase
         $this->makeMenu([
             'name' => ['en' => 'English label', 'id' => 'Label Indonesia', 'ar' => 'تسمية عربية'],
             'type' => 'c',
+            'audience' => MenuAudience::All,
         ]);
 
         $user = $this->userWithRole('User');
@@ -187,7 +209,8 @@ class NavigationMenuTest extends TestCase
     }
 
     public function test_navigation_tree_cache_isolated_by_locale(): void
-    {        $this->makeMenu([
+    {
+        $this->makeMenu([
             'name' => [
                 'en' => 'English label',
                 'id' => 'Label Indonesia',
@@ -199,6 +222,7 @@ class NavigationMenuTest extends TestCase
                 'ja' => '日本語の説明',
             ],
             'type' => 'c',
+            'audience' => MenuAudience::All,
         ]);
 
         app()->setLocale('en');
@@ -240,12 +264,13 @@ class NavigationMenuTest extends TestCase
 
     public function test_navigation_tree_empty_query_returns_full_tree(): void
     {
-        $this->makeMenu(['name' => 'Alpha', 'type' => 'c']);
-        $this->makeMenu(['name' => 'Beta', 'type' => 'c']);
+        $this->makeMenu(['name' => 'Alpha', 'type' => 'c', 'audience' => MenuAudience::All]);
+        $this->makeMenu(['name' => 'Beta', 'type' => 'c', 'audience' => MenuAudience::All]);
 
         $full = $this->getJson('/api/v1/navigation/menus')->assertOk()->json('data');
         $filtered = $this->getJson('/api/v1/navigation/menus?q=')->assertOk()->json('data');
 
+        $this->assertCount(2, $full);
         $this->assertCount(count($full), $filtered);
     }
 
@@ -494,6 +519,23 @@ class NavigationMenuTest extends TestCase
         $this->assertTrue(collect($response->json('data'))->pluck('name')->contains('Gone'));
     }
 
+    public function test_trashed_list_query_rows_include_restore_action(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $menu = $this->makeMenu(['name' => 'Gone', 'type' => 'c']);
+        $this->repo()->deleteMenu($menu);
+
+        $row = collect(
+            $this->actingAsJwt($admin)
+                ->getJson('/api/v1/navigation/menus/trashed')
+                ->assertOk()
+                ->json('data'),
+        )->firstWhere('id', $menu->id);
+
+        $this->assertNotNull($row);
+        $this->assertSame(['restore'], collect($row['actions'])->pluck('key')->all());
+    }
+
     public function test_restore_requires_restore_permission(): void
     {
         $menu = $this->makeMenu(['name' => 'Gone', 'type' => 'c']);
@@ -522,30 +564,139 @@ class NavigationMenuTest extends TestCase
             ->assertJsonValidationErrors(['parent']);
     }
 
-    public function test_store_rejects_guest_only_with_authenticate(): void
+    public function test_store_defaults_to_authenticated_audience(): void
     {
-        $this->actingAsJwt($this->userWithRole('Admin'))
+        $response = $this->actingAsJwt($this->userWithRole('Admin'))
             ->postJson('/api/v1/navigation/menus', [
-                'name' => 'Impossible',
+                'name' => 'No audience sent',
                 'type' => 'h',
-                'guest_only' => true,
-                'authenticate' => true,
             ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['guest_only']);
+            ->assertCreated()
+            ->assertJsonPath('data.audience', MenuAudience::Auth->value);
+
+        $this->assertDatabaseHas('menus', [
+            'id' => $response->json('data.id'),
+            'audience' => MenuAudience::Auth->value,
+        ]);
     }
 
-    public function test_store_rejects_guest_only_with_roles(): void
+    public function test_store_rejects_unknown_audience(): void
     {
         $this->actingAsJwt($this->userWithRole('Admin'))
             ->postJson('/api/v1/navigation/menus', [
                 'name' => 'Impossible',
                 'type' => 'h',
-                'guest_only' => true,
+                'audience' => 'nobody',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['audience']);
+    }
+
+    public function test_store_rejects_role_audience_without_roles(): void
+    {
+        $this->actingAsJwt($this->userWithRole('Admin'))
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => 'Role audience without roles',
+                'type' => 'h',
+                'audience' => MenuAudience::Role->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['roles']);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function nonRoleAudiences(): array
+    {
+        return [
+            'all' => [MenuAudience::All->value],
+            'auth' => [MenuAudience::Auth->value],
+            'guest' => [MenuAudience::Guest->value],
+        ];
+    }
+
+    #[DataProvider('nonRoleAudiences')]
+    public function test_store_rejects_roles_outside_role_audience(string $audience): void
+    {
+        $this->actingAsJwt($this->userWithRole('Admin'))
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => 'Impossible',
+                'type' => 'h',
+                'audience' => $audience,
                 'roles' => ['Admin'],
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['guest_only']);
+            ->assertJsonValidationErrors(['audience']);
+    }
+
+    public function test_store_round_trips_every_audience(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        foreach (MenuAudience::cases() as $audience) {
+            $payload = [
+                'name' => 'Audience '.$audience->value,
+                'type' => 'h',
+                'audience' => $audience->value,
+            ];
+
+            if ($audience->usesRoles()) {
+                $payload['roles'] = ['Admin'];
+            }
+
+            $this->actingAsJwt($admin)
+                ->postJson('/api/v1/navigation/menus', $payload)
+                ->assertCreated()
+                ->assertJsonPath('data.audience', $audience->value);
+        }
+    }
+
+    public function test_update_clears_role_pivots_when_audience_leaves_role(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $menu = $this->makeMenu(['name' => 'Roled', 'type' => 'h', 'audience' => MenuAudience::Role]);
+        $this->repo()->syncRoles($menu, ['Admin']);
+        $this->assertDatabaseCount('menu_roles', 1);
+
+        // Moving off the role audience must drop the pivots, otherwise the
+        // stored audience would contradict the effective visibility.
+        $this->actingAsJwt($admin)
+            ->patchJson('/api/v1/navigation/menus/'.$menu->id, [
+                'audience' => MenuAudience::Auth->value,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.audience', MenuAudience::Auth->value);
+
+        $this->assertDatabaseCount('menu_roles', 0);
+    }
+
+    public function test_update_rejects_audience_change_that_orphans_roles(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $menu = $this->makeMenu(['name' => 'Roled', 'type' => 'h', 'audience' => MenuAudience::Role]);
+        $this->repo()->syncRoles($menu, ['Admin']);
+
+        // The stored pivots are the effective role set; switching the audience
+        // away from `role` without clearing them is rejected.
+        $this->actingAsJwt($admin)
+            ->patchJson('/api/v1/navigation/menus/'.$menu->id, [
+                'audience' => MenuAudience::All->value,
+                'roles' => ['Admin'],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['audience']);
+    }
+
+    public function test_update_without_audience_keeps_existing_value(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $menu = $this->makeMenu(['name' => 'Guest banner', 'type' => 'h', 'audience' => MenuAudience::Guest]);
+
+        $this->actingAsJwt($admin)
+            ->patchJson('/api/v1/navigation/menus/'.$menu->id, ['name' => 'Renamed'])
+            ->assertOk()
+            ->assertJsonPath('data.audience', MenuAudience::Guest->value);
     }
 
     public function test_store_rejects_child_without_valid_parent(): void
@@ -588,6 +739,104 @@ class NavigationMenuTest extends TestCase
         $this->actingAsJwt($this->userWithRole('Admin'))
             ->getJson('/api/v1/navigation/menus/019e8766-857b-7259-a580-a21e1ddfa27e')
             ->assertNotFound();
+    }
+
+    public function test_store_accepts_spa_zh_cn_alias_and_canonicalizes_to_zh_cn_backend(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        // A locale map must cover EVERY supported locale
+        // (validateTranslatableAllLocales), so build the payload from config.
+        // The `zh-CN` key is the SPA alias of `zh_CN` and must be accepted.
+        $name = collect(config('localization.supported_locales'))
+            ->mapWithKeys(fn (string $locale): array => [
+                $locale === 'zh_CN' ? 'zh-CN' : $locale => $locale === 'zh_CN' ? '中文标签' : "Aliased {$locale}",
+            ])
+            ->all();
+
+        $response = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => $name,
+                'type' => 'h',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.name_translations.zh_CN', '中文标签');
+
+        $menu = Menu::query()->findOrFail($response->json('data.id'));
+
+        $this->assertSame('中文标签', $menu->getTranslation('name', 'zh_CN'));
+        $this->assertArrayNotHasKey('zh-CN', $menu->getTranslations('name'));
+    }
+
+    public function test_store_merges_mixed_zh_keys_onto_backend_key(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        // A locale map must cover EVERY supported locale
+        // (validateTranslatableAllLocales), so build the payload from config.
+        // A stale canonical prefill (`zh_CN`) plus an SPA edit (`zh-CN`): the
+        // alias is the most recent write and must win the merge.
+        $name = collect(config('localization.supported_locales'))
+            ->mapWithKeys(fn (string $locale): array => [$locale => "Mixed {$locale}"])
+            ->all();
+
+        // Both keys present, alias last: zh_CN stale value + zh-CN edit.
+        $name['zh_CN'] = '旧标签';
+        $name['zh-CN'] = '新标签';
+
+        $response = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => $name,
+                'type' => 'h',
+            ])
+            ->assertCreated();
+
+        $menu = Menu::query()->findOrFail($response->json('data.id'));
+        $translations = $menu->getTranslations('name');
+
+        $this->assertSame('新标签', $translations['zh_CN']);
+        $this->assertArrayNotHasKey('zh-CN', $translations);
+    }
+
+    public function test_update_accepts_spa_zh_cn_alias_without_validation_error(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $menu = $this->makeMenu(['name' => ['en' => 'Original']]);
+
+        // A locale map must cover EVERY supported locale
+        // (validateTranslatableAllLocales), so build the payload from config.
+        // The `zh-CN` key is the SPA alias of `zh_CN` and must be accepted.
+        $name = collect(config('localization.supported_locales'))
+            ->mapWithKeys(fn (string $locale): array => [
+                $locale === 'zh_CN' ? 'zh-CN' : $locale => $locale === 'zh_CN' ? '中文标签' : "Updated {$locale}",
+            ])
+            ->all();
+
+        $this->actingAsJwt($admin)
+            ->patchJson('/api/v1/navigation/menus/'.$menu->id, [
+                'name' => $name,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.name_translations.zh_CN', '中文标签');
+
+        $fresh = $menu->fresh();
+        $this->assertNotNull($fresh);
+        $this->assertSame('中文标签', $fresh->getTranslation('name', 'zh_CN'));
+        $this->assertArrayNotHasKey('zh-CN', $fresh->getTranslations('name'));
+    }
+
+    public function test_store_still_rejects_unknown_locale_keys(): void
+    {
+        $this->actingAsJwt($this->userWithRole('Admin'))
+            ->postJson('/api/v1/navigation/menus', [
+                'name' => [
+                    'en' => 'Bad locale',
+                    'fr' => 'Clé inconnue',
+                ],
+                'type' => 'h',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
     }
 
     /**

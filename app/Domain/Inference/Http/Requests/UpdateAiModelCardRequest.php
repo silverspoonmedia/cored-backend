@@ -2,13 +2,12 @@
 
 namespace App\Domain\Inference\Http\Requests;
 
-use App\Domain\Inference\Http\Requests\Concerns\AuthorizesInferenceCatalog;
+use App\Domain\Inference\Http\Requests\Concerns\InferenceCatalogRules;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateAiModelCardRequest extends FormRequest
 {
-    use AuthorizesInferenceCatalog;
+    use InferenceCatalogRules;
 
     public function authorize(): bool
     {
@@ -20,17 +19,6 @@ class UpdateAiModelCardRequest extends FormRequest
      */
     public function rules(): array
     {
-        $card = $this->route('model_card');
-
-        return [
-            'slug' => [
-                'sometimes',
-                'string',
-                'max:128',
-                Rule::unique('ai_model_cards', 'slug')->ignore($card),
-            ],
-            'display_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'is_active' => ['sometimes', 'boolean'],
-        ];
+        return $this->aiModelCardRules(forUpdate: true, ignoreCard: $this->route('model_card'));
     }
 }

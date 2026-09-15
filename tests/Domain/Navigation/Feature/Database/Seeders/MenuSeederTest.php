@@ -3,6 +3,7 @@
 namespace Tests\Domain\Navigation\Feature\Database\Seeders;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Models\Menu;
 use App\Domain\Navigation\Repositories\Eloquent\MenuRepository;
 use App\Domain\Navigation\Support\MenuLayout;
@@ -236,14 +237,14 @@ class MenuSeederTest extends TestCase
             'name' => ['en' => 'Custom'],
             'type' => 'h',
             'order' => 4,
-            'is_authenticate' => true,
+            'audience' => MenuAudience::Auth,
         ]);
         $trashed = Menu::query()->create([
             'layout' => MenuLayout::NAVBAR,
             'name' => ['en' => 'Old navbar item'],
             'type' => 'p',
             'order' => 2,
-            'is_authenticate' => true,
+            'audience' => MenuAudience::Auth,
         ]);
         $trashed->forceFill(['order' => null])->save();
         $trashed->delete();

@@ -1,0 +1,14 @@
+---
+description: Patch locale keys; never dump whole lang JSON files
+globs: lang/**,docs/platform/localization.md
+alwaysApply: false
+---
+
+# Localization (backend)
+
+All supported locales in the same change (`en`, `id`, `ja`, `ko`, `zh_CN`, `ar`, `ru`). English is the source.
+
+- **Never `Read` an entire** `lang/{locale}.json` or a large PHP lang file. Grep the key, patch every locale, run `LocaleParityTest`.
+- Prefer `lang/{locale}/*.php` for application strings. Root `lang/en.json` nested groups duplicate PHP namespaces.
+- Full rules: [docs/platform/localization.md](../../docs/platform/localization.md).
+- SPA JSON locales are in `monolith-vue-workers` — same patch-key rule; `npm run check:i18n`.

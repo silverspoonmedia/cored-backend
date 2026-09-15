@@ -60,7 +60,7 @@ class CollectionLifecycleTest extends TestCase
 
         $this->owner = $this->userWithRole('User', 'owner@example.com');
         $this->grantMicrostockFree($this->owner);
-        // NOTE: no paid FH plan — free Microstock owners must still be able to
+        // NOTE: no paid Archivd plan — free Microstock owners must still be able to
         // upload into their collections (paid gate is only for sharing).
     }
 
@@ -124,7 +124,7 @@ class CollectionLifecycleTest extends TestCase
 
     public function test_free_microstock_owner_can_upload_into_folder(): void
     {
-        // Free owner (no paid FH plan) must be able to upload into a folder of
+        // Free owner (no paid Archivd plan) must be able to upload into a folder of
         // their Microstock workspace. Only sharing is paid-gated, not upload.
         Storage::fake('local');
         $this->app->instance(

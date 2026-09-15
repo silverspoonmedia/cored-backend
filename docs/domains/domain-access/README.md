@@ -76,9 +76,13 @@ Domain Access, product activation, and RBAC run when `MenuRepository` **builds**
 - Card grid of product domains with a Public/Private switch gated by `@can('manage domain access')`; the toggle PUTs to the web proxy which forwards to the API.
 - i18n: `lang/{en,id,ja,ko,zh_CN,ar,ru}/domain-access.php`.
 
+## Realtime
+
+Visibility toggles ping the `domain-access` private channel (permission `view domain access`) as `.domain.visibility.changed` — payload `{ product_key, visibility }`. SPA: `useAdminRealtime.ts` (dashboards/nav consumers refetch on ping).
+
 ## `domain:make` pipeline
 
-`domain:make {Name}` generates `database/seeders/{Name}RoleSeeder.php` (Beta tester role + permission + Public visibility row via `SeedsBetaTesterRole`) and registers `$this->call({Name}RoleSeeder::class)` in `DatabaseSeeder`. `domain:remove` deletes the seeder and unregisters it. Run `php artisan db:seed --class={Name}RoleSeeder` after scaffolding.
+`domain:make {Name}` generates `database/seeders/{Name}RoleSeeder.php` (Beta tester role + permission + Public visibility row via `SeedsBetaTesterRole`) and registers `$this->call({Name}RoleSeeder::class)` in `DatabaseSeeder`. `domain:remove` deletes the seeder file and unregisters that call line from `DatabaseSeeder`; `DomainCommandsTest` asserts both directions (generated on make, gone after remove) and backs up `DatabaseSeeder.php` so the injected call never leaks into the working tree. Run `php artisan db:seed --class={Name}RoleSeeder` after scaffolding.
 
 ## Tests
 

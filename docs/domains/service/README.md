@@ -225,6 +225,17 @@ Morph aliases:
 - Purchase hub sidebar shows invoice number as display-only (no duplicate link to `/apps/invoices/{id}`)
 - Product SaaS ≠ PG `Subscription` model
 
+## Realtime
+
+Catalog/purchase/currency mutations ping channels after a successful persist (`ServiceRealtime`, gated on `BroadcastConnection::isConfigured()`; payloads ids + `action`):
+
+| Channel (permission) | Event |
+|----------------------|-------|
+| `services.catalog` (`view service`) | `.service.catalog.changed`, `.service.purchase.changed` |
+| `settings.currencies` (`view settings`) | `.service.currency.changed` |
+
+SPA: `useServicesRealtime.ts` (ServiceShow/Edit, Subscriptions views), `useCurrenciesRealtime.ts` (CurrenciesView).
+
 ## Config / env
 
 | Key | Default | Role |

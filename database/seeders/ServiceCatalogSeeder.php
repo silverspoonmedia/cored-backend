@@ -61,7 +61,7 @@ class ServiceCatalogSeeder extends Seeder
         $this->seedPlan(
             code: ArchivdCatalog::CODE_ADDON_WORKSPACE_SLOT,
             name: 'Team Workspace Slot',
-            description: 'Stackable +1 owned team workspace slot per unit. Does not add storage. Requires paid FH plan for base slots.',
+            description: 'Stackable +1 owned team workspace slot per unit. Does not add storage. Requires a paid Archivd plan for base slots.',
             planKind: PlanKind::Addon,
             storageBytes: 0,
             amountUsd: 1.00,

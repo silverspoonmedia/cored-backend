@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Service\Unit\Support;
 
+use App\Domain\Service\Events\CurrencyChanged;
 use App\Domain\Service\Events\ServiceCatalogChanged;
 use App\Domain\Service\Events\ServicePurchaseChanged;
 use App\Domain\Service\Support\ServiceRealtime;
@@ -84,5 +85,30 @@ class ServiceRealtimeTest extends TestCase
         app(ServiceRealtime::class)->purchaseChanged('pur-1', 'paid');
 
         Event::assertNotDispatched(ServicePurchaseChanged::class);
+    }
+
+    public function test_currency_changed_noop_when_unconfigured(): void
+    {
+        Event::fake([CurrencyChanged::class]);
+        $this->disableBroadcast();
+
+        app(ServiceRealtime::class)->currencyChanged('updated', 'IDR');
+
+        Event::assertNotDispatched(CurrencyChanged::class);
+    }
+
+    public function test_currency_changed_dispatches_when_configured(): void
+    {
+        Event::fake([CurrencyChanged::class]);
+        $this->enableBroadcast();
+
+        app(ServiceRealtime::class)->currencyChanged('updated', 'USD');
+
+        Event::assertDispatched(CurrencyChanged::class, function (CurrencyChanged $e): bool {
+            return $e->action === 'updated'
+                && $e->currencyCode === 'USD'
+                && $e->broadcastAs() === 'service.currency.changed'
+                && $e->broadcastOn()[0]->name === 'private-settings.currencies';
+        });
     }
 }

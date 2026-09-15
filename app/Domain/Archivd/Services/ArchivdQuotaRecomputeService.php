@@ -3,15 +3,19 @@
 namespace App\Domain\Archivd\Services;
 
 use App\Domain\Archivd\Models\UserQuota;
+use App\Domain\Archivd\Support\ArchivdRealtime;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PlanKind;
 use App\Domain\Service\Models\ServiceEntitlement;
 
 /**
- * Recompute denorm UserQuota from free tier + active/grace main + addon+ùquantity.
+ * Recompute denorm UserQuota from free tier + active/grace main + addon+quantity.
  */
 class ArchivdQuotaRecomputeService
 {
+    public function __construct(
+        private readonly ArchivdRealtime $realtime,
+    ) {}
     /**
      * @return array{quota_bytes: int, main_bytes: int, addon_bytes: int, free_bytes: int}
      */
@@ -54,6 +58,8 @@ class ArchivdQuotaRecomputeService
                 'source_id' => null,
             ],
         );
+
+        $this->realtime->quotaChanged($userId);
 
         return [
             'quota_bytes' => $total,

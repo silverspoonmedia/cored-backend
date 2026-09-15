@@ -6,9 +6,9 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Http\Resources\AdminBillingUsageEventResource;
 use App\Domain\Microstock\Services\AdminBillingAnalyticsService;
 use App\Http\Controllers\Controller;
-use App\Support\ApiResponder;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ListQueryPaginator;
 use App\Traits\ApiResponse;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 class AdminBillingController extends Controller
 {
     use ApiResponse;
+    use ResolvesResourceArray;
 
     public function __construct(
         private readonly AdminBillingAnalyticsService $analytics,
@@ -47,8 +48,8 @@ class AdminBillingController extends Controller
         );
 
         return $this->successResponse([
-            'items' => AdminBillingUsageEventResource::collection($paginator->getCollection()),
-            'pagination' => $this->paginationMeta($paginator),
+            'items' => $this->resolveResource(AdminBillingUsageEventResource::collection($paginator->getCollection())),
+            'pagination' => ListQueryPaginator::meta($paginator),
         ], __('api/microstock.admin_usage_events_loaded'));
     }
 
@@ -56,22 +57,8 @@ class AdminBillingController extends Controller
     {
         if ($user === null || ! $user->hasAnyRole(['Root', 'Admin', 'Moderator'])) {
             throw new HttpResponseException(
-                ApiResponder::error(__('api/microstock.admin_billing_forbidden'), 403),
+                $this->errorResponse(__('api/microstock.admin_billing_forbidden'), 403),
             );
         }
-    }
-
-    /**
-     * @return array<string, int|bool>
-     */
-    private function paginationMeta(LengthAwarePaginator $paginator): array
-    {
-        return [
-            'current_page' => $paginator->currentPage(),
-            'last_page' => $paginator->lastPage(),
-            'per_page' => $paginator->perPage(),
-            'total' => $paginator->total(),
-            'has_more' => $paginator->hasMorePages(),
-        ];
     }
 }

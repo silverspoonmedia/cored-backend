@@ -1,6 +1,6 @@
 # Configuration & secrets policy
 
-Canonical rules for where values live and how runtime settings are read. Agent protocol: [AGENTS.md](../../AGENTS.md) point 6; [core-rules.md](../agents/core-rules.md) rule 6.
+Canonical rules for where values live and how runtime settings are read. Agent protocol: [AGENTS.md](../../AGENTS.md); [core-rules.md](../agents/core-rules.md) rule 6.
 
 ## Three tiers
 

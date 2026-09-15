@@ -21,7 +21,7 @@ use App\Domain\Service\Support\ArchivdCatalog;
 use Illuminate\Support\Carbon;
 
 /**
- * Shared setup/helpers for FH billing use-case matrix tests.
+ * Shared setup/helpers for Archivd billing use-case matrix tests.
  */
 trait ArchivdBillingScenarioHarness
 {

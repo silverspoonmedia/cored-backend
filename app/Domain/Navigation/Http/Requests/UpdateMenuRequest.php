@@ -2,6 +2,7 @@
 
 namespace App\Domain\Navigation\Http\Requests;
 
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Http\Requests\Concerns\NormalizesMenuPlacementFields;
 use App\Domain\Navigation\Http\Requests\Concerns\ValidatesMenuStructure;
 use App\Domain\Navigation\Models\Menu;
@@ -11,6 +12,7 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
 
 class UpdateMenuRequest extends FormRequest
@@ -45,8 +47,7 @@ class UpdateMenuRequest extends FormRequest
             'route' => ['sometimes', 'nullable', 'string', 'max:255', $this->namedRouteRule()],
             'hash' => ['sometimes', 'nullable', 'string', 'max:64'],
             'parent' => ['sometimes', 'nullable', 'string', Rule::exists('menus', 'id')->whereNull('deleted_at'), Rule::notIn([$menuId])],
-            'authenticate' => ['sometimes', 'boolean'],
-            'guest_only' => ['sometimes', 'boolean'],
+            'audience' => ['sometimes', new Enum(MenuAudience::class)],
             'position' => ['nullable', 'string', Rule::in(['before', 'after'])],
             'reference_id' => [
                 Rule::excludeIf(fn () => ! in_array($this->input('position'), ['before', 'after'], true)),
@@ -84,11 +85,17 @@ class UpdateMenuRequest extends FormRequest
                 return;
             }
 
-            $guestOnly = $this->has('guest_only') ? $this->boolean('guest_only') : (bool) $menu->is_guest_only;
-            $authenticate = $this->has('authenticate') ? $this->boolean('authenticate') : (bool) $menu->is_authenticate;
-            $hasRoles = $this->has('roles') ? ($this->input('roles', []) !== []) : $menu->roles()->exists();
+            $audience = $this->effectiveAudience($menu->audience);
 
-            $this->assertFlagsCompatible($validator, $guestOnly, $authenticate, $hasRoles);
+            $hasRoles = match (true) {
+                $this->has('roles') => $this->input('roles', []) !== [],
+                // Moving off the role audience drops the pivots in the service,
+                // so the effective role set is empty even while pivots exist.
+                $audience !== null && ! $audience->usesRoles() => false,
+                default => $menu->roles()->exists(),
+            };
+
+            $this->assertAudienceCompatible($validator, $audience, $hasRoles);
 
             $changingType = $this->has('type');
             $changingParent = $this->has('parent');
@@ -108,7 +115,7 @@ class UpdateMenuRequest extends FormRequest
             }
 
             if (is_string($type)) {
-                $this->assertMenuStructure($validator, $type, $parentId);
+                $this->assertMenuStructure($validator, $type, $parentId, $menu->layout);
             }
         });
     }

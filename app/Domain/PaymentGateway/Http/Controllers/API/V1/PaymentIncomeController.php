@@ -6,12 +6,14 @@ use App\Domain\PaymentGateway\Http\Requests\PaymentIncomeRequest;
 use App\Domain\PaymentGateway\Http\Resources\PaymentIncomeInvoiceResource;
 use App\Domain\PaymentGateway\Services\PaymentIncomeAnalyticsService;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class PaymentIncomeController extends Controller
 {
     use ApiResponse;
+    use ResolvesResourceArray;
 
     public function __construct(
         private readonly PaymentIncomeAnalyticsService $analytics,
@@ -31,7 +33,9 @@ class PaymentIncomeController extends Controller
         $paginator = $this->analytics->invoicesPaginated($request->filters(), $perPage);
 
         return $this->successResponse([
-            'items' => PaymentIncomeInvoiceResource::collection($paginator->getCollection())->resolve(),
+            'items' => $this->resolveResource(
+                PaymentIncomeInvoiceResource::collection($paginator->getCollection()),
+            ),
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),

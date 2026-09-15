@@ -89,6 +89,11 @@ class WorkspaceService
 
             return $workspace->load('owner');
         });
+
+        $this->realtime->membersChanged((string) $workspace->id, 'created', (string) $actor->id, (string) $actor->id);
+        $this->realtime->activityAppended((string) $workspace->id, (string) $actor->id);
+
+        return $workspace;
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Domain\Identity\Repositories\Contracts;
 
 use App\Domain\Identity\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 interface UserRepositoryInterface
@@ -29,6 +30,11 @@ interface UserRepositoryInterface
      * @return Collection<int, User>
      */
     public function listVisibleToActorLevel(int $actorLevel): Collection;
+
+    /**
+     * @return LengthAwarePaginator<int, User>
+     */
+    public function paginateVisibleToActorLevel(int $actorLevel, int $perPage, int $page): LengthAwarePaginator;
 
     public function findByIdOrFailWithRoles(string $id): User;
 

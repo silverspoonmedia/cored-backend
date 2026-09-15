@@ -2,7 +2,12 @@
 
 return [
 
-    'paths' => ['api/*'],
+    // `broadcasting/auth` is listed explicitly: Laravel's `withRouting(channels:)`
+    // registers a web-group twin of the SPA's broadcast-auth endpoint, and a
+    // response without `Access-Control-Allow-*` reaches the browser as an opaque
+    // CORS error instead of its real 403/419. The API twin is already covered by
+    // `api/*`; this entry keeps the web one readable if it is ever hit.
+    'paths' => ['api/*', 'broadcasting/auth'],
 
     // Explicit verbs only: the API uses GET/POST/PUT/PATCH/DELETE; OPTIONS is the
     // CORS preflight. A wildcard would advertise methods the API never serves.
@@ -37,7 +42,12 @@ return [
         'X-SPA-Locale',
     ],
 
-    'exposed_headers' => [],
+    // Browser-visible response headers beyond the CORS safelist. The SPA's
+    // getBlob() reads Content-Disposition to name CSV/file downloads; without
+    // exposing it the header is invisible cross-origin and downloads fall back
+    // to a generic filename. Safe to expose: it carries only the server-chosen
+    // filename, no session or token material.
+    'exposed_headers' => ['Content-Disposition'],
 
     // Cache preflights so post-login credentialed GETs do not OPTIONS every
     // call. Not a substitute for the SPA cookie-write gate / settle retry.

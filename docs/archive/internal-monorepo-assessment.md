@@ -191,7 +191,7 @@ Cleanup script: [`scripts/remove-empty-dirs.ps1`](../scripts/remove-empty-dirs.p
 | `app/Exceptions/` | `BusinessRuleException` + `Auth/*` (candidate move to Identity later) |
 | `app/Http/Requests/Concerns/`, `app/Http/Resources/Concerns/` | Shared request/resource traits |
 | `app/Console/Commands/` | Env/locale/key artisan commands |
-| `app/Providers/AppServiceProvider.php` | Kernel-only DI bindings (`EloquentCrudRepositoryInterface`, `DataTableResponseFactory`) + Blade component path |
+| `app/Providers/AppServiceProvider.php` | Kernel-only DI bindings (`EloquentCrudRepositoryInterface`, `DataTableResponseFactory`) + Blade component path. Historical snapshot — `DataTableResponseFactory` was later removed; lists are query-mode only. |
 | `app/Providers/Domain/*ServiceProvider.php` | Per-domain bindings, policies, event listeners, view composers |
 
 ### Future cleanup (not empty folders)

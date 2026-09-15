@@ -5,6 +5,7 @@ namespace App\Domain\Vtual\Models;
 use App\Domain\Vtual\Enums\ChannelDiscoverySource;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ChannelVisibility;
+use App\Domain\Vtual\Enums\PlatformKey;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -74,6 +75,16 @@ class Channel extends Model
     public function platform(): BelongsTo
     {
         return $this->belongsTo(Platform::class, 'platform_id');
+    }
+
+    public function toPlatformKey(): PlatformKey
+    {
+        $platform = $this->platform;
+        if ($platform instanceof Platform) {
+            return $platform->toPlatformKey();
+        }
+
+        return PlatformKey::from('');
     }
 
     /**

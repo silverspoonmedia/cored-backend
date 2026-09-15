@@ -78,7 +78,7 @@ class ContentFetchPoolService
             ->count();
 
         if ($pending >= $threshold) {
-            $this->flush($this->platformKey($platform), force: false);
+            $this->flush($platform->toPlatformKey(), force: false);
         }
 
         return $item;
@@ -99,7 +99,7 @@ class ContentFetchPoolService
         $summary = ['platforms' => []];
 
         foreach ($platforms as $platform) {
-            $key = $this->platformKey($platform);
+            $key = $platform->toPlatformKey();
             if ($key !== PlatformKey::Youtube) {
                 continue;
             }
@@ -274,15 +274,5 @@ class ContentFetchPoolService
                 'error' => $message,
             ])->save();
         }
-    }
-
-    private function platformKey(Platform $platform): PlatformKey
-    {
-        $key = $platform->key;
-        if ($key instanceof PlatformKey) {
-            return $key;
-        }
-
-        return PlatformKey::from((string) $key);
     }
 }

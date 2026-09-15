@@ -1,0 +1,8 @@
+# Large JSON locale dumps — Grep / targeted StrReplace still work
+/lang/*.json
+
+# Test disks and generated artefacts
+/storage/framework/testing/
+
+# Historical assessments — open explicitly via a living-doc link
+/docs/archive/

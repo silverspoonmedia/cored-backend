@@ -7,7 +7,7 @@ return [
     'source' => 'المصدر الحالي: :source',
     'groups' => [
         'platform' => 'المنصة',
-        'archivd' => 'استضافة الملفات',
+        'archivd' => 'Archivd',
         'microstock' => 'مايكروستوك',
         'vtual' => 'vTual',
         'notification_audiences' => 'جمهور الإشعارات',

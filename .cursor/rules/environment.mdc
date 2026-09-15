@@ -1,0 +1,12 @@
+---
+description: Env profiles, curate, secrets vs system_settings
+globs: .env*,config/*.php,app/Console/Commands/Env/**,app/Support/Environment/**
+alwaysApply: false
+---
+
+# Environment & config
+
+- `.env` is **Tier A secrets / infra only**. Operational knobs → `system_settings`. Product secrets → envelope-encrypted tables.
+- Runtime registry reads: `setting()` / `setting_config()` — never `env()` outside config files; never `config()` for registry-backed paths in domain code.
+- Keyword **`curate the env`**: `php artisan env:curate --dry-run`, then `php artisan env:curate` (`--sync-snapshot` when needed). Never hand-edit `.env` layout.
+- Details: [docs/platform/environment.md](../../docs/platform/environment.md), [docs/platform/configuration-policy.md](../../docs/platform/configuration-policy.md).

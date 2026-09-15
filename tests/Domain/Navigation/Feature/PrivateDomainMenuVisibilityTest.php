@@ -3,6 +3,7 @@
 namespace Tests\Domain\Navigation\Feature;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Repositories\Eloquent\MenuRepository;
 use App\Support\DomainAccess\DomainAccessService;
 use App\Support\DomainAccess\Enums\DomainVisibility;
@@ -37,12 +38,13 @@ class PrivateDomainMenuVisibilityTest extends TestCase
         $this->seed(DomainAccessSeeder::class);
 
         $repository = app(MenuRepository::class);
-        $header = $repository->createMenu(['name' => 'Files Header', 'type' => 'h'], 'append', null);
+        $header = $repository->createMenu(['name' => 'Files Header', 'type' => 'h', 'audience' => MenuAudience::All], 'append', null);
         $repository->createMenu([
             'name' => 'Files',
             'type' => 'c',
             'route' => self::ROUTE,
             'parent_id' => $header->id,
+            'audience' => MenuAudience::All,
         ], 'append', null);
     }
 

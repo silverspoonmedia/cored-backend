@@ -8,7 +8,8 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 
 | Need | Open |
 |------|------|
-| Agent scope | [agents/core-rules.md](agents/core-rules.md) · root [AGENTS.md](../AGENTS.md) |
+| Agent scope | [agents/core-rules.md](agents/core-rules.md) · root [AGENTS.md](../AGENTS.md) · [agents/context-budget.md](agents/context-budget.md) |
+| IDE workspace | [Monolith-Backend.code-workspace](../Monolith-Backend.code-workspace) · sibling `Monolith-SPA.code-workspace` · [Monolith-Fullstack.code-workspace](../Monolith-Fullstack.code-workspace) for contract work |
 | Domain layout, `domain:*`, namespaces | [platform/architecture.md](platform/architecture.md) |
 | Env profiles, secrets, typed quoting, curate | [platform/environment.md](platform/environment.md) · [configuration-policy.md](platform/configuration-policy.md) |
 | Blade admin (removed — SPA is sole UI) | [web/blade-admin.md](web/blade-admin.md) |
@@ -25,7 +26,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [api-envelope.md](platform/api-envelope.md) | Canonical JSON envelope (`status`/`message`/`data`), error mapping (401/403/404/419/422/429), `/batch` partial-failure contract |
 | [commands.md](platform/commands.md) | Artisan command index (env, domains, payments, vtual, microstock, cache, i18n) |
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
-| [list-display-modes.md](platform/list-display-modes.md) | `display_mode` list contract, query-mode `actions[]` (live SPA row buttons), `/api/v1/lookups/*`, retained-but-unused Yajra datatable mode |
+| [list-display-modes.md](platform/list-display-modes.md) | `display_mode=query` list contract, query-mode `actions[]` (live SPA row buttons), `/api/v1/lookups/*` |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
 | [environment.md](platform/environment.md) | `.env` profiles, typed quoting, assignment-key parity, `env:curate`, config cache |
 | [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, Tier B settings cache contract, agent checklist |
@@ -35,7 +36,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [localization.md](platform/localization.md) | Backend multi-locale rules (canonical supported-locale list, parity, locale resolution); SPA guard: `monolith-vue-workers/npm run check:i18n` |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |
-| [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization** |
+| [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization**, CORS perimeter incl. the `broadcasting/auth` invariant |
 | [tooling.md](platform/tooling.md) | Laravel Pint wrapper |
 
 ## Domains (`app/Domain/*`)
@@ -45,7 +46,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Identity | [domains/identity/README.md](domains/identity/README.md) — JWT, 2FA, H-RBAC, users |
 | Navigation | [domains/navigation/README.md](domains/navigation/README.md) — menu tree |
 | Notification | [domains/notification/README.md](domains/notification/README.md) — bell, role vs user |
-| ActivityLog | [domains/activity-log/README.md](domains/activity-log/README.md) — Spatie audit trail |
+| ActivityLog | [domains/activity-log/README.md](domains/activity-log/README.md) — Spatie audit trail, PII (`ip_address` / `user_agent` / `email`) envelope-encrypted at rest |
 | ErrorLog | [domains/error-log/README.md](domains/error-log/README.md) — grouped persistent app errors |
 | PaymentGateway | [domains/payment-gateway/README.md](domains/payment-gateway/README.md) · [encryption.md](domains/payment-gateway/encryption.md) · routing policy [Routing_Rules.md](domains/payment-gateway/Routing_Rules.md) + [Routing_Price.yaml](domains/payment-gateway/Routing_Price.yaml) |
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, Archivd grace/purge (core domain) |
@@ -71,7 +72,7 @@ The browser UI lives in the sibling SPA. These three are kept for history only �
 | Document | Topic |
 |----------|-------|
 | [project-overview.md](integration/project-overview.md) | Monolith (API-first backend + server web endpoints) and Monolith-Vue-Workers (sole SPA frontend, separate project) — architecture and relationship |
-| [vue-workers-spa.md](integration/vue-workers-spa.md) | Leading Vue 3 SPA frontend (Cloudflare Workers, sibling repo) — API contracts, `SPA_URL` minting, type alignment, i18n runtime/fallbacks, batch hydration, realtime, CI, production checklist |
+| [vue-workers-spa.md](integration/vue-workers-spa.md) | Leading Vue 3 SPA frontend (Cloudflare Workers, sibling repo) — API contracts, `SPA_URL` minting, type alignment, i18n runtime/fallbacks, batch hydration, realtime (channel registry + `broadcasting/auth` endpoint SoT), CI, production checklist |
 
 ## Archive (not daily reading)
 
@@ -89,7 +90,7 @@ Historical assessments and one-shot audits: [archive/](archive/) — includes [a
 | Kernel / cross-cutting (routes, CRUD pattern, UUID, env, i18n, DB safety, Octane, security process, tooling) | `docs/platform/` | One concern per file; extend existing when possible |
 | Blade admin only (removed — historical reference) | `docs/web/` | e.g. `blade-admin.md` stub, archived `partial-manifest.md` |
 | External clients / third-party integration wiring | `docs/integration/` | Prefer one concern per file; only when not domain-owned |
-| Agent scope | `docs/agents/` | `core-rules.md` only unless a dedicated agent ops page is justified |
+| Agent scope | `docs/agents/` | `core-rules.md` + [context-budget.md](agents/context-budget.md); further agent ops pages only when justified |
 | One-shot assessment, migration narrative, audit snapshot, design dump | `docs/archive/` | Not linked from daily learning paths except as “historical” |
 
 ### Decision checklist (before writing a new file)

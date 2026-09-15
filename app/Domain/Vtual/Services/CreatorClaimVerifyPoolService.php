@@ -83,7 +83,7 @@ class CreatorClaimVerifyPoolService
             foreach ($claimed as $poolItem) {
                 $processingClaim = $poolItem->claim;
                 if ($processingClaim !== null) {
-                    app(\App\Domain\Vtual\Support\VtualClaimRealtime::class)
+                    app(VtualClaimRealtime::class)
                         ->progress($processingClaim, 'verify_processing');
                 }
             }
@@ -110,7 +110,7 @@ class CreatorClaimVerifyPoolService
                     continue;
                 }
 
-                $key = $this->platformKey($platform);
+                $key = $platform->toPlatformKey();
                 if ($key === PlatformKey::Kick) {
                     $this->markPoolFailed($items, 'Kick is not enabled.');
                     $failed += $items->count();
@@ -311,15 +311,5 @@ class CreatorClaimVerifyPoolService
                 'verify_failed',
             );
         }
-    }
-
-    private function platformKey(Platform $platform): PlatformKey
-    {
-        $key = $platform->key;
-        if ($key instanceof PlatformKey) {
-            return $key;
-        }
-
-        return PlatformKey::from((string) $key);
     }
 }

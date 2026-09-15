@@ -10,8 +10,8 @@ Core domain `App\Domain\PaymentGateway\`. Secrets in env/config, not DB. Polymor
 Models/     PaymentGateway, Invoice, PaymentChannelRouteSnapshot, Subscription, PaymentChannel
 Services/   Payment/* (channel checkout, Midtrans, iPaymu), Billing/*
 Events/     InvoiceStatusChanged (ShouldBroadcastNow)
-Support/    PaymentRealtime, InvoiceChannelAuthorizer, InvoiceWebDestination, Routing/* (policy loader, materializer), DataTable/*
-Http/       API V1 + Web proxies
+Support/    PaymentRealtime, InvoiceChannelAuthorizer, InvoiceWebDestination, Routing/* (policy loader, materializer)
+Http/       API V1 + iPaymu return/cancel web
 Console/    payments:*
 ```
 
@@ -86,7 +86,7 @@ Policy default: `platform.payment.channel_fee_bearer` = `buyer` (Settings → Pl
 
 Checkout UI shows subtotal / payment fee / total due. `GET /api/v1/payment-channels?subtotal=` returns per-channel estimates. Abandoning checkout resets fee/gross to pre-checkout values.
 
-**Reconciliation:** invoice list shows subtotal + fee + gross; `GET /api/v1/invoices/export` streams CSV for bookkeeping. `InvoiceService::list()` / `get()` eager-load `paymentGateway`, `paymentChannelRouteSnapshot.paymentGateway`, and `invoiceable` up front to avoid N+1 on the invoice list (consumed by `InvoiceResource` / `PaymentIncomeInvoiceResource`).
+**Reconciliation:** invoice list shows subtotal + fee + gross; `GET /api/v1/invoices/export` streams CSV for bookkeeping. `InvoiceService::list()` / `get()` eager-load `paymentGateway`, `paymentChannelRouteSnapshot.paymentGateway`, and `invoiceable` up front to avoid N+1 on the invoice list (consumed by `InvoiceResource` / `PaymentIncomeInvoiceResource`). List collections prefetch `PaymentChannel` by code for `checkout_session`.
 
 **Purchase-hub redirect:** For `invoiceable_type = service_purchase`, invoice list **View** targets and invoice show resolve to the [Service purchase hub](../service/README.md) (`/apps/service-purchases/{id}`) — one combined payment + purchase page. Subscription and other morph types stay on `/apps/invoices/{id}`. Helper: `InvoiceWebDestination::showUrl()`.
 
@@ -206,7 +206,7 @@ Services: `InvoiceChannelCheckoutService`, `PaymentChannelResolver`, initiation 
 
 ## Vue-Workers SPA consumer
 
-The SPA uses `usePaymentsHydrate` for `PaymentsIncomeView`, batching income overview and invoice reads while retaining individual-loader fallback for failed entries. SPA-side realtime wiring is documented in [vue-workers-spa.md — Realtime](../../integration/vue-workers-spa.md#realtime-laravel-echo--pusher); the backend broadcast contract is below.
+The SPA uses `usePaymentsHydrate` for `PaymentsIncomeView`, batching income overview and invoice reads while retaining individual-loader fallback for failed entries. SPA-side realtime wiring is documented in [vue-workers-spa.md — Realtime](../../integration/vue-workers-spa.md#realtime); the backend broadcast contract is below.
 
 iPaymu hosted redirect defaults (`IpaymuPaymentService::defaultReturnUrl` / `defaultCancelUrl`) use `SpaPublicUrl`: `{SPA_URL}/payment/return` and `/payment/cancel` when `SPA_URL` is set; otherwise the server endpoints `/payment/ipaymu/return|cancel` ([`routes/web/payment-ipaymu-return.php`](../../../routes/web/payment-ipaymu-return.php)), which redirect onward. Channel checkout still sends empty `ureturn` (on-page QR/VA). SPA bounce views stay authenticated at the site root — [vue-workers-spa — Payment return URLs](../../integration/vue-workers-spa.md#payment-return-urls).
 
@@ -237,7 +237,7 @@ Checkout pages soft-update hero / steps / panel / sidebar when invoice status ch
 | Channel | Private `payments.invoice.{invoiceId}` — auth via `InvoiceChannelAuthorizer`: `view invoice` **or** invoiceable owner (`ServicePurchase` / `ServiceAddonRenewal` `user_id`; Subscription matches `subscriber_email`) |
 | Event name | `invoice.status.changed` (client: `.invoice.status.changed`) |
 | Emit | Both Midtrans + iPaymu synchronizers after save + fulfillment, **only when status string actually changed** (webhook, sync-status, Midtrans reconcile cron all converge here) |
-| Client | `usePaymentRealtime.ts` subscribes through the shared `useEcho()` singleton |
+| Client | `usePaymentRealtime.ts` subscribes per-caller (invoice channel bindings are ref-counted per invoice id by `createKeyedRealtimeChannel` — `InvoiceShowView` and `CheckoutPanel` can hold subscriptions simultaneously) |
 | Soft updates | Channel checkout success → `showInstructions()` (no reload); terminal `paid` / `expired` / `cancelled` / `failed` → badge/steps/panel/sidebar patch, stop poll |
 | Fallback | 15s `sync-status` poll while instructions active (and when broadcast unconfigured). Confirm-paid button kept; loading state while syncing. Poll response carries `invoiceable_status` so the purchase badge soft-updates without a reload. |
 
@@ -257,6 +257,19 @@ When admins toggle payment channels/routes or run `payments:sync-routing-policy`
 
 Payload: `revision`, `reason` (`channel_updated` | `route_updated` | `policy_synced`), optional `channel_code`.
 
+### Realtime admin lists (`payments.admin`)
+
+Admin CRUD surfaces soft-refetch via the `payments.admin` private channel (permission `view invoice`), all emitted by `PaymentRealtime` after successful persist:
+
+| Event | Payload | Consumer |
+|-------|---------|----------|
+| `invoice.list.changed` | `action` | Admin invoice list count-only signal |
+| `payments.gateway.changed` | `action`, `gateway_id` | `PaymentGatewaysView` |
+| `payments.channel.changed` | `action`, `channel_code` | `PaymentChannelsView` |
+| `payments.subscription.changed` | `action`, `subscription_id` | Subscriptions views (`Service` domain UI) |
+
+SPA composable: `usePaymentRealtime.ts` — three registry bindings: `createKeyedRealtimeChannel` for `payments.invoice.{id}` (one ref-counted channel per invoice), `createRealtimeChannel` for `payments.routing`, and `createRealtimeChannel` for `payments.admin`, whose handler set is ref-counted over 4 streams (invoice list / gateway / channel / subscription); it binds when the first handler attaches and leaves only when every stream is empty. `unsubscribe*` requires the exact handler argument (no implicit clear-all). Lifecycle (attach/leave/refcount) lives in `src/composables/echo/channelRegistry.ts`, not here.
+
 ## Permissions & morph map
 
 Permissions in RoleSeeder (`view invoice`, `initiate payment`, `manage payment gateway`, …). Morph map registers invoiceables (`service_purchase`, `service_addon_renewal`, `subscription`).
@@ -275,7 +288,7 @@ Sensitive invoice payloads, 2FA, etc.: [encryption.md](encryption.md).
 
 ## Tests
 
-`composer test -- --filter=Payment` (and related Invoice/Channel filters). Realtime-specific: `PaymentRealtime`, `InvoiceChannelAuthorizer`, `InvoiceStatusChanged`, `MidtransInvoiceSynchronizerRealtime`. Route snapshot: `InvoiceChannelCheckoutTest` (snapshot FK + immutable fee basis). Web navigation: `InvoiceWebDestinationTest`, `InvoiceWebNavigationTest` (datatable + show redirect to purchase hub). Snap parameter building + IDR int `gross_amount` convention: `MidtransSnapParameterBuilderTest`.
+`composer test -- --filter=Payment` (and related Invoice/Channel filters). Realtime-specific: `PaymentRealtime`, `InvoiceChannelAuthorizer`, `InvoiceStatusChanged`, `MidtransInvoiceSynchronizerRealtime`. Route snapshot: `InvoiceChannelCheckoutTest` (snapshot FK + immutable fee basis). Snap parameter building + IDR int `gross_amount` convention: `MidtransSnapParameterBuilderTest`.
 
 ## Related
 

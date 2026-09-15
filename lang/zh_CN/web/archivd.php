@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => '文件托管',
+    'title' => 'Archivd',
     'blocklist_title' => '哈希阻止列表（DMCA）',
     'blocklist_add' => '阻止哈希',
     'blocklist_sha256' => 'sha256',
@@ -292,7 +292,7 @@ return [
     'quota_remaining' => '剩余',
     'quota_unlimited' => '无限制',
     'load_failed' => '加载失败。',
-    'vue_mount_failed' => '文件托管界面加载失败，请刷新页面。',
+    'vue_mount_failed' => 'Archivd 界面加载失败，请刷新页面。',
     'link_copied' => '链接已复制到剪贴板。',
     'ajax_success' => '操作已完成。',
     'ajax_error' => '操作失败。',

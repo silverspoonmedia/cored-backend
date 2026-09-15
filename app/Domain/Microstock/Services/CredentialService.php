@@ -5,6 +5,7 @@ namespace App\Domain\Microstock\Services;
 use App\Domain\Identity\Models\User;
 use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Models\MarketplaceCredential;
+use App\Domain\Microstock\Support\MicrostockRealtime;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -13,6 +14,10 @@ use Illuminate\Database\Eloquent\Collection;
  */
 class CredentialService
 {
+    public function __construct(
+        private readonly MicrostockRealtime $realtime,
+    ) {}
+
     /**
      * @return Collection<int, MarketplaceCredential>
      */
@@ -50,6 +55,8 @@ class CredentialService
         $credential->secret_payload = $secret;
         $credential->save();
 
+        $this->realtime->credentialsChanged((string) $owner->id, 'created', (string) $credential->id);
+
         return $credential;
     }
 
@@ -65,5 +72,7 @@ class CredentialService
         }
 
         $credential->delete();
+
+        $this->realtime->credentialsChanged((string) $owner->id, 'deleted', (string) $credentialId);
     }
 }

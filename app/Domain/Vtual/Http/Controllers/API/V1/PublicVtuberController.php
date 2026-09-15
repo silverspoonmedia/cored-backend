@@ -7,8 +7,10 @@ use App\Domain\Vtual\Http\Resources\PublicEventResource;
 use App\Domain\Vtual\Http\Resources\PublicVtuberProfileResource;
 use App\Domain\Vtual\Http\Resources\PublicVtuberResource;
 use App\Domain\Vtual\Services\VtuberProfileService;
+use App\Domain\Vtual\Support\PublicLandingCache;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
+use App\Support\ListQueryPaginator;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,13 +43,7 @@ class PublicVtuberController extends Controller
             'items' => $this->resolveResource(
                 PublicVtuberResource::collection($paginator->getCollection())
             ),
-            'pagination' => [
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'has_more' => $paginator->hasMorePages(),
-            ],
+            'pagination' => ListQueryPaginator::meta($paginator),
         ], __('api/vtual.public.directory_success'));
     }
 
@@ -61,13 +57,7 @@ class PublicVtuberController extends Controller
             'items' => $this->resolveResource(
                 PublicContentResource::collection($paginator->getCollection())
             ),
-            'pagination' => [
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'has_more' => $paginator->hasMorePages(),
-            ],
+            'pagination' => ListQueryPaginator::meta($paginator),
         ], __('api/vtual.public.contents_success'));
     }
 
@@ -90,7 +80,7 @@ class PublicVtuberController extends Controller
      */
     public function landing(): JsonResponse
     {
-        $payload = \App\Domain\Vtual\Support\PublicLandingCache::remember(fn (): array => [
+        $payload = PublicLandingCache::remember(fn (): array => [
             'event' => $this->profiles->landingEvent(),
             'live_now' => $this->resolveResource(
                 PublicContentResource::collection($this->profiles->liveNow())

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Microstock\Http\Controllers\API\V1;
 
+use App\Domain\Microstock\Http\Requests\StoreMarketplaceCredentialRequest;
 use App\Domain\Microstock\Http\Resources\MarketplaceCredentialResource;
 use App\Domain\Microstock\Services\CredentialService;
 use App\Http\Controllers\Controller;
@@ -37,13 +38,9 @@ class CredentialController extends Controller
         );
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreMarketplaceCredentialRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'marketplace' => ['required', 'string', 'max:100'],
-            'label' => ['required', 'string', 'max:100'],
-            'secret' => ['required', 'array'],
-        ]);
+        $data = $request->validated();
 
         $credential = $this->credentials->store(
             $request->user(),

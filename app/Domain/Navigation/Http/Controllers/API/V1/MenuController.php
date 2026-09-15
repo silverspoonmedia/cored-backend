@@ -12,15 +12,10 @@ use App\Domain\Navigation\Http\Resources\MenuListResource;
 use App\Domain\Navigation\Http\Resources\MenuTrashedResource;
 use App\Domain\Navigation\Models\Menu;
 use App\Domain\Navigation\Services\MenuService;
-use App\Domain\Navigation\Support\DataTable\MenuRowActionResolver;
-use App\Domain\Navigation\Support\DataTable\MenuTrashedRowActionResolver;
 use App\Domain\Navigation\Support\MenuLayout;
 use App\Domain\Navigation\Support\MenuPresenter;
-use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
-use App\Support\ApiResponder;
-use App\Support\DataTable\DataTableResponseFactory;
 use App\Support\ListActions\Builders\MenuQueryRowActions;
 use App\Support\ListActions\Builders\MenuTrashedQueryRowActions;
 use App\Support\ListActions\QueryRowActionAttacher;
@@ -34,13 +29,9 @@ class MenuController extends Controller
 {
     use ApiResponse;
     use ResolvesResourceArray;
-    use RespondsWithListDisplayMode;
 
     public function __construct(
         private readonly MenuService $menus,
-        private readonly DataTableResponseFactory $dataTables,
-        private readonly MenuRowActionResolver $rowActions,
-        private readonly MenuTrashedRowActionResolver $trashedRowActions,
     ) {}
 
     /**
@@ -82,23 +73,14 @@ class MenuController extends Controller
         $actor = $this->requiredActor();
         $menus = $this->menus->adminList($loadType, $layout);
 
-        return $this->respondToListDisplayMode(
-            $request,
-            fn (): JsonResponse => $this->successResponse(
-                QueryRowActionAttacher::attach(
-                    $this->resolveResource(MenuListResource::collection($menus)),
-                    $menus,
-                    new MenuQueryRowActions($layout),
-                    $actor,
-                ),
-                __('api/navigation.list_success'),
-            ),
-            fn (): JsonResponse => $this->dataTables->respond(
+        return $this->successResponse(
+            QueryRowActionAttacher::attach(
+                $this->resolveResource(MenuListResource::collection($menus)),
                 $menus,
-                fn (Menu $menu) => $this->resolveResource(new MenuListResource($menu)),
-                $this->rowActions,
+                new MenuQueryRowActions($layout),
                 $actor,
             ),
+            __('api/navigation.list_success'),
         );
     }
 
@@ -149,23 +131,14 @@ class MenuController extends Controller
         $actor = $this->requiredActor();
         $menus = $this->menus->trashedList($loadType, $layout);
 
-        return $this->respondToListDisplayMode(
-            $request,
-            fn (): JsonResponse => $this->successResponse(
-                QueryRowActionAttacher::attach(
-                    $this->resolveResource(MenuTrashedResource::collection($menus)),
-                    $menus,
-                    new MenuTrashedQueryRowActions,
-                    $actor,
-                ),
-                __('api/navigation.trashed_success'),
-            ),
-            fn (): JsonResponse => $this->dataTables->respond(
+        return $this->successResponse(
+            QueryRowActionAttacher::attach(
+                $this->resolveResource(MenuTrashedResource::collection($menus)),
                 $menus,
-                fn (Menu $menu) => $this->resolveResource(new MenuTrashedResource($menu)),
-                $this->trashedRowActions,
+                new MenuTrashedQueryRowActions,
                 $actor,
             ),
+            __('api/navigation.trashed_success'),
         );
     }
 
@@ -196,7 +169,7 @@ class MenuController extends Controller
 
         if (! $user instanceof User) {
             throw new HttpResponseException(
-                ApiResponder::error(__('api/auth.bearer_required'), 401),
+                $this->errorResponse(__('api/auth.bearer_required'), 401),
             );
         }
 

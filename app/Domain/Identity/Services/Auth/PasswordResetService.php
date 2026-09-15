@@ -6,6 +6,7 @@ use App\Domain\Identity\Events\PasswordChanged;
 use App\Domain\Identity\Exceptions\Auth\CurrentPasswordIncorrectException;
 use App\Domain\Identity\Exceptions\Auth\InvalidPasswordResetTokenException;
 use App\Domain\Identity\Repositories\Contracts\UserRepositoryInterface;
+use App\Domain\Identity\Support\AuthStateBroadcast;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -15,6 +16,7 @@ class PasswordResetService
 {
     public function __construct(
         private readonly UserRepositoryInterface $users,
+        private readonly AuthStateBroadcast $broadcast = new AuthStateBroadcast,
     ) {}
 
     public function sendResetLink(string $email): void
@@ -47,6 +49,8 @@ class PasswordResetService
                     request()->ip() ?? 'unknown',
                     'reset',
                 );
+
+                $this->broadcast->security($user, 'password_changed', 'reset');
             },
         );
 
@@ -75,5 +79,7 @@ class PasswordResetService
             request()->ip() ?? 'unknown',
             'change',
         );
+
+        $this->broadcast->security($user->fresh() ?? $user, 'password_changed', 'change');
     }
 }

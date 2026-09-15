@@ -66,24 +66,6 @@ class OrphanCreatorApiTest extends TestCase
     }
 
     #[Test]
-    public function orphans_datatable_returns_actions_column(): void
-    {
-        $admin = $this->userWithRole('Admin');
-        app(ProductActivationService::class)->activateImplicit($admin, 'Vtual');
-
-        $this->creators->createOrphan($admin, ['display_name' => 'Orphan DT']);
-
-        $response = $this->actingAsJwt($admin)
-            ->getJson('/api/v1/vtual/creators/orphans?display_mode=datatable&draw=1&start=0&length=50')
-            ->assertOk();
-
-        $row = $response->json('data.0');
-        $this->assertNotNull($row);
-        $this->assertArrayHasKey('actions', $row);
-        $this->assertNotEmpty($row['actions']);
-    }
-
-    #[Test]
     public function orphan_show_rejects_claimed_profile(): void
     {
         $admin = $this->userWithRole('Admin');

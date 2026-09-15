@@ -114,6 +114,10 @@ Authenticated screens live in Monolith-Vue-Workers under `/apps/*` (Vue Router n
 | Status | `PATCH /api/v1/error-logs/{errorLog}/status` |
 | Menu | Administration → Monitoring → Error log (Root/Admin), `MenuSeeder` |
 
+## Realtime
+
+New recorded errors ping the `logs.errors` private channel (permission `view error log`) as `.log.error.recorded` — payload `{ level, type }` via `ErrorLogRealtime`. SPA: `useLogsRealtime.ts` (list + show views refetch).
+
 ## Maintenance
 
 ```bash
@@ -128,6 +132,8 @@ php artisan migrate
 php artisan db:seed --class=RoleSeeder   # adds view error log + syncs Root/Admin
 php artisan db:seed --class=MenuSeeder   # authoritative rebuild; removes custom menus
 ```
+
+`MenuSeeder` fails fast on missing roles (`RuntimeException` naming them), so seed `RoleSeeder` + `ArchivdRoleSeeder` + `VtualRoleSeeder` first on any database that does not already have the full role catalog.
 
 ## Safety
 

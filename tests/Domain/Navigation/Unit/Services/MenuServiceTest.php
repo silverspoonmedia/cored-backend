@@ -2,6 +2,7 @@
 
 namespace Tests\Domain\Navigation\Unit\Services;
 
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Models\Menu;
 use App\Domain\Navigation\Services\MenuService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,19 +29,58 @@ class MenuServiceTest extends TestCase
         $menu = $this->service->create([
             'name' => 'Settings',
             'type' => 'h',
-            'authenticate' => true,
-            'guest_only' => false,
+            'audience' => MenuAudience::Role,
             'roles' => ['Admin'],
         ]);
 
-        $this->assertTrue($menu->is_authenticate);
-        $this->assertFalse($menu->is_guest_only);
+        $this->assertSame(MenuAudience::Role, $menu->audience);
         $this->assertSame(['Admin'], $menu->roles->pluck('name')->all());
+    }
+
+    public function test_create_defaults_to_authenticated_audience(): void
+    {
+        $menu = $this->service->create(['name' => 'Plain', 'type' => 'h']);
+
+        $this->assertSame(MenuAudience::Auth, $menu->audience);
+        $this->assertCount(0, $menu->roles);
+    }
+
+    public function test_create_ignores_roles_outside_the_role_audience(): void
+    {
+        $menu = $this->service->create([
+            'name' => 'Everyone',
+            'type' => 'h',
+            'audience' => MenuAudience::All,
+            'roles' => ['Admin'],
+        ]);
+
+        $this->assertSame(MenuAudience::All, $menu->audience);
+        $this->assertCount(0, $menu->roles);
+    }
+
+    public function test_update_clears_role_pivots_when_leaving_the_role_audience(): void
+    {
+        $menu = $this->service->create([
+            'name' => 'Roled',
+            'type' => 'h',
+            'audience' => MenuAudience::Role,
+            'roles' => ['Admin'],
+        ]);
+
+        $updated = $this->service->update($menu, ['audience' => MenuAudience::Auth]);
+
+        $this->assertSame(MenuAudience::Auth, $updated->audience);
+        $this->assertCount(0, $updated->roles);
     }
 
     public function test_update_with_empty_roles_array_clears_assignments(): void
     {
-        $menu = $this->service->create(['name' => 'X', 'type' => 'h', 'roles' => ['Admin']]);
+        $menu = $this->service->create([
+            'name' => 'X',
+            'type' => 'h',
+            'audience' => MenuAudience::Role,
+            'roles' => ['Admin'],
+        ]);
 
         $updated = $this->service->update($menu, ['roles' => []]);
 
@@ -49,7 +89,12 @@ class MenuServiceTest extends TestCase
 
     public function test_update_without_roles_key_keeps_assignments(): void
     {
-        $menu = $this->service->create(['name' => 'Y', 'type' => 'h', 'roles' => ['Admin']]);
+        $menu = $this->service->create([
+            'name' => 'Y',
+            'type' => 'h',
+            'audience' => MenuAudience::Role,
+            'roles' => ['Admin'],
+        ]);
 
         $updated = $this->service->update($menu, ['name' => 'Y renamed']);
 

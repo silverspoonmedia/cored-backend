@@ -117,7 +117,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Owned team workspaces included with any active paid FH storage plan.
+    | Owned team workspaces included with any active paid Archivd storage plan.
     | Extra slots via catalog archivd.addon.workspace-slot.monthly (+1 each).
     |--------------------------------------------------------------------------
     */

@@ -1,6 +1,6 @@
 # AI agent core rules — Monolith
 
-Canonical, single-source mandatory rules for AI coding agents. Read this once per task, before touching code. Root entry: [AGENTS.md](../../AGENTS.md). Doc map (load domain/platform guides on demand from here): [docs/README.md](../README.md).
+Canonical, single-source mandatory rules for AI coding agents. Open this file when a listed rule is in play — do not re-read it on every task. Root entry: [AGENTS.md](../../AGENTS.md). Context budget: [context-budget.md](context-budget.md). Doc map (load domain/platform guides on demand): [docs/README.md](../README.md).
 
 ## Scope
 
@@ -35,7 +35,7 @@ Prefix the task instruction with one of these tags to declare intended scope. On
 |-------|----------------|
 | **API** | Versioned routes (`/api/v1/*`), controllers, form requests, policies, repositories, API responses |
 | **Web (server)** | `routes/web.php` / `routes/web/*.php` — server endpoints only (public share, payment return, OAuth callback); no Blade views |
-| **SPA** | Screens, forms, listings in `monolith-vue-workers` — see [vue-workers-spa.md](../integration/vue-workers-spa.md) |
+| **SPA** | Screens, forms, listings in `monolith-vue-workers` — SPA [docs/README.md](../../../monolith-vue-workers/docs/README.md); contract [vue-workers-spa.md](../integration/vue-workers-spa.md) only if the API shape moved |
 | **Navigation** | Menu `route` column = SPA Vue Router symbolic name; keep `config/spa-routes.php` in sync with MenuSeeder and SPA router |
 | **Translation** | All user-facing strings in `lang/{locale}/` for every supported locale (canonical list: [platform/localization.md](../platform/localization.md)) |
 | **API shape** | Responses follow the canonical envelope — [platform/api-envelope.md](../platform/api-envelope.md). Never hand-assemble a different shape. |
@@ -49,7 +49,7 @@ API routes/controllers/form requests/policies/repositories/responses, plus migra
 
 SPA views/composables/routes in `monolith-vue-workers`, plus translations for any new copy. No API/migration changes required by this rule.
 
-An API-only or SPA-only change without its counterpart layers is **incomplete** — unless explicitly scoped via `[backend]` or `[frontend]`. See [CRUD architecture](../platform/crud.md), [vue-workers-spa.md](../integration/vue-workers-spa.md), [Localization](../platform/localization.md#task-rule-required) for layer-specific conventions.
+An API-only or SPA-only change without its counterpart layers is **incomplete** — unless explicitly scoped via `[backend]` or `[frontend]`. See [CRUD architecture](../platform/crud.md), [vue-workers-spa.md](../integration/vue-workers-spa.md) (contract changes only), [Localization](../platform/localization.md#task-rule-required) for layer-specific conventions. Prefer an explicit `[backend]` or `[frontend]` tag so the agent does not explore both repos by default.
 
 ## 2. Living documentation (mandatory)
 
@@ -67,7 +67,7 @@ All new code must survive long-lived Swoole worker processes, even though Octane
 
 ## 5. Localization (mandatory when touching user-facing copy)
 
-Any change that adds or modifies user-facing text (API `message` strings, validation/policy errors, flash/AJAX copy, DB content shown to users) must include translations for **all** supported locales (`en`, `id`, `ja`, `ko`, `zh_CN`, `ar`, `ru`) in the same task/PR. For SPA-facing copy, update `monolith-vue-workers/src/i18n/locales/{en,id,ja,ko,zh-CN,ar,ru}.json` in the sibling repository and run `npm run check:i18n`. Use `__('…')` with application-owned files under `lang/{locale}/`, or Spatie translatable fields for DB content. Full backend checklist: [docs/platform/localization.md](../platform/localization.md#task-rule-required). SPA runtime, fallback, and `useI18n()` context rules: [vue-workers-spa.md](../integration/vue-workers-spa.md#i18n-porting-notes).
+Any change that adds or modifies user-facing text (API `message` strings, validation/policy errors, flash/AJAX copy, DB content shown to users) must include translations for **all** supported locales (`en`, `id`, `ja`, `ko`, `zh_CN`, `ar`, `ru`) in the same task/PR. For SPA-facing copy, update `monolith-vue-workers/src/i18n/locales/{en,id,ja,ko,zh-CN,ar,ru}.json` in the sibling repository and run `npm run check:i18n`. **Do not `Read` entire locale files** — Grep the key, patch all seven locales, then run the parity gate. Use `__('…')` with application-owned files under `lang/{locale}/`, or Spatie translatable fields for DB content. Full backend checklist: [docs/platform/localization.md](../platform/localization.md#task-rule-required). SPA runtime: sibling [docs/i18n.md](../../../monolith-vue-workers/docs/i18n.md); key conversion: [vue-workers-spa.md — i18n](../integration/vue-workers-spa.md#i18n-porting-notes).
 
 ## 6. Configuration & secrets (mandatory)
 
@@ -87,8 +87,8 @@ Every JSON Resource is a **per-viewer** contract, not a dump of the Eloquent mod
 
 ## Agent workflow checklist
 
-1. Scope: this repository.
-2. Read domain/platform docs from [docs/README.md](../README.md) for the area you're touching.
+1. Scope: this repository (or the loaded workspace subset). Tag `[backend]` / `[frontend]` unless the contract moves.
+2. Read **only** the domain/platform guide for the area you are touching ([docs/README.md](../README.md)).
 3. Implement; match existing patterns.
 4. Test: `composer test` ([database-safety](../platform/database-safety.md)).
 5. Update living docs when behavior changes — placement rules above, same task/PR.

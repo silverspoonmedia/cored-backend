@@ -3,11 +3,16 @@
 namespace App\Domain\Service\Services;
 
 use App\Domain\Service\Models\Currency;
+use App\Domain\Service\Support\ServiceRealtime;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class CurrencyAdminService
 {
+    public function __construct(
+        private readonly ServiceRealtime $realtime,
+    ) {}
+
     /**
      * @return Collection<int, Currency>
      */
@@ -42,6 +47,8 @@ class CurrencyAdminService
 
         $currency->fill(array_intersect_key($data, array_flip(['is_active', 'is_settlement'])));
         $currency->save();
+
+        $this->realtime->currencyChanged('updated', $code);
 
         return $currency->fresh() ?? $currency;
     }

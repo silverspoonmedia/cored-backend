@@ -93,8 +93,16 @@ Broadcast::channel('settings.{group}', function (User $user, string $group): boo
     return $user->can('view settings');
 });
 
+Broadcast::channel('settings.currencies', function (User $user): bool {
+    return $user->can('view settings');
+});
+
 Broadcast::channel('logs.errors', function (User $user): bool {
     return $user->can('view error log');
+});
+
+Broadcast::channel('logs.activity', function (User $user): bool {
+    return $user->can('view activity log');
 });
 
 Broadcast::channel('product-activations', function (User $user): bool {
@@ -105,8 +113,18 @@ Broadcast::channel('domain-access', function (User $user): bool {
     return $user->can('view domain access');
 });
 
+Broadcast::channel('rbac.roles', function (User $user): bool {
+    return $user->can('view user');
+});
+
+Broadcast::channel('rbac.users', function (User $user): bool {
+    return $user->can('view user');
+});
+
+// Legacy aggregated RBAC channel — kept so older SPA builds keep receiving
+// role-permission pings until they adopt rbac.roles / rbac.users.
 Broadcast::channel('rbac', function (User $user): bool {
-    return $user->can('view user') || $user->can('manage user');
+    return $user->can('view user');
 });
 
 Broadcast::channel('payments.admin', function (User $user): bool {

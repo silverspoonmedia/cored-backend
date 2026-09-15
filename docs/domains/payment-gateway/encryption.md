@@ -41,6 +41,7 @@ Current map:
 | resourceType | TTL |
 |--------------|-----|
 | `vtual_platform_credentials` | `0` (forever until secret/runtime rewrite / `markFailed` / flush) |
+| `activity_log` | `900` (audit-trail PII: rows are immutable, so plaintext in cache is bounded, never forever) |
 | (all others) | global `ENCRYPTION_DECRYPTED_CACHE_MAX_TTL` (default `0`) |
 
 Prod/Octane: use a **shared** cache store (Redis). Per-worker `array` cache breaks forever semantics across processes.
@@ -57,6 +58,7 @@ Envelope JSON v1: `v`, `alg`, `kms_key_id`, `dek_ciphertext`, `iv`, `tag`, `ciph
 | password_reset_tokens | token + blind index |
 | cache | `2fa_token:*` values only |
 | vtual_platform_credentials | `secret_payload`, `runtime_payload` (purpose `vtual`; forever decrypt cache; runtime = system tokens e.g. Twitch app access) |
+| activity_log | `properties` keys `ip_address`, `user_agent`, `email` (per-key selective; every other key stays plaintext) |
 
 ## Env (encryption)
 
@@ -89,6 +91,8 @@ Exit codes on verify: 0 ok; 1 config; 2 auth; 3 IAM; 4 network; 5 other. On 3 â€
 ## Activity log
 
 Decrypt events: [activity-log](../activity-log/README.md). Historical deep dive: [archive/crypto-activity-assessment.md](../../archive/crypto-activity-assessment.md).
+
+Audit-trail PII is itself encrypted: `activity_log.properties` keys `ip_address`, `user_agent`, `email` are envelopes written by `LogActivityAction::beforeLogging()` and decrypted in `ActivityLogResource` / the Archivd workspace feed. `activity_log` is listed in `audit_excluded_resource_types` (viewing the trail must not append `crypto` rows to it). Note the cost: `CryptoActivityRecorder` writes a `crypto` row *inside* `EnvelopeEncryptionService::decrypt()`, so each audited decrypt performs one extra DEK wrap â€” keep `ENCRYPTION_AUDIT_DECRYPTS=cache_miss`.
 
 ## Tests
 

@@ -7,12 +7,14 @@ use App\Domain\PaymentGateway\Http\Resources\PaymentChannelResource;
 use App\Domain\PaymentGateway\Models\Invoice;
 use App\Domain\PaymentGateway\Services\PaymentChannelService;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Concerns\ResolvesResourceArray;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 class InvoiceCheckoutChannelsController extends Controller
 {
     use ApiResponse;
+    use ResolvesResourceArray;
 
     public function __construct(
         private PaymentChannelService $channels,
@@ -27,7 +29,7 @@ class InvoiceCheckoutChannelsController extends Controller
         $channels = $this->channels->listAvailable((float) $invoice->subtotal);
 
         return $this->successResponse(
-            PaymentChannelResource::collection($channels)->resolve($request),
+            $this->resolveResource(PaymentChannelResource::collection($channels)),
             __('api/payments.invoices.checkout_channels'),
         );
     }

@@ -2,6 +2,23 @@
 
 > **UI:** Microstock admin surfaces live in **Monolith-Vue-Workers** (Archivd workspace switcher + settings). Blade references below are historical — see [web/blade-admin.md](../../web/blade-admin.md).
 
+## Agent entry
+
+Open the rest of this README only when changing Microstock **behavior**. For a one-file fix, read the file under edit plus its test.
+
+| Need | Path |
+|------|------|
+| Code | `app/Domain/Microstock/` |
+| Config | [`config/microstock.php`](../../../config/microstock.php) |
+| API | `routes/api/v1/microstock.php` |
+| Workspaces | Archivd `kind = 'microstock'` system workspaces; `POST /api/v1/microstock/workspaces` |
+| Billing | `BillingLedgerService`, prepaid AI credits — not Archivd team slots |
+| SPA | Archivd switcher + `archivd.microstock-credentials` / `archivd.microstock-usage`; **no** sidebar node (`menu_routes = []`) |
+| Tests | `tests/Domain/Microstock/` |
+| Do not | `Read` this whole guide or all locale JSON files. Do not invent client-side credit math — API `assertCanAnalyze` is the gate. |
+
+Batch hydrate pointer: [vue-workers-spa.md — Invocation budget](../../integration/vue-workers-spa.md#invocation-budget-controls).
+
 Product domain (`kind => product`, `locked => true`) for microstock asset management on top of the Archivd base storage layer. Assets live in built-in **system workspaces** (`ARCHIVD_workspaces.kind = 'microstock'`, standalone slots) and reuse the entire Archivd upload/browse/quota/download pipeline. Microstock adds AI metadata (title/description/category/keywords), CSV metadata export, and envelope-encrypted marketplace credentials.
 
 | | |
@@ -512,6 +529,10 @@ Inside a Microstock collection folder the toolbar exposes **Lock & Describe** an
 - **Progress realtime** — while `collection_status === 'processing'`, `useArchivdRealtime` listens for `collection.analysis.progress` and `asset.metadata.progress`. Fallback poll every 60 s (collection banner) / 30 s (review modal) when broadcast unconfigured.
 - **Collection billing** — `GET /api/v1/microstock/billing` pre-flight in the Lock & Describe footer; submit blocks when balance &lt; `fileCount × estimate`. **View balance & history** navigates to `archivd.microstock-usage`. Locked collections expose **Start analysis** (`POST …/analyze`).
 - **Review shortcut** — in `review` state, toolbar **Review files** opens the modal for the first listed file.
+
+### Realtime
+
+Progress/billing events ride the Archivd channels (see [archivd README — Realtime / live listing](../archivd/README.md#realtime--live-listing)): `.collection.analysis.progress`, `.asset.metadata.progress`, `.microstock.billing.changed` via `MicrostockRealtime`. Credential CRUD additionally pings the owner's `archivd.user.{id}` channel as `.microstock.credentials.changed` (ids + `action`, no secret data) — `MicrostockCredentialsView.vue` refetches on ping.
 
 ## Tests
 

@@ -76,7 +76,7 @@ app/
 │   └── Inference/      # AI model catalog + provider model rates + snapshots (core)
 ├── Http/Middleware/    # Kernel
 ├── Repositories/Eloquent/EloquentCrudRepository.php
-├── Support/            # Api, DataTable, Storage (S3 direct upload), Localization, Web, Auth, Domain, Product (Kernel)
+├── Support/            # Api, ListActions, Storage (S3 direct upload), Localization, Web, Auth, Domain, Product (Kernel)
 ├── Exceptions/         # BusinessRuleException (Kernel)
 └── Providers/
     ├── AppServiceProvider.php

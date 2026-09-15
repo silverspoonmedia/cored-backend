@@ -2,10 +2,11 @@
 
 namespace App\Domain\Archivd\Services;
 
+use App\Domain\Archivd\Enums\FileVariantStatus;
 use App\Domain\Archivd\Exceptions\ArchivdException;
 use App\Domain\Archivd\Models\FileUpload;
-use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Archivd\Models\FileVariant;
+use App\Domain\Archivd\Models\HostedFile;
 use App\Domain\Archivd\Models\UserQuota;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Enums\PlanKind;
@@ -14,10 +15,14 @@ use App\Domain\Service\Services\ServiceEntitlementService;
 use App\Domain\Service\Support\ArchivdCatalog;
 use App\Support\Presentation\BytePresenter;
 use App\Support\Product\Models\ProductActivation;
-use Illuminate\Support\Collection;
 
 class QuotaService
 {
+    /**
+     * @var array<string, 'paid'|'grace'|'free'>
+     */
+    private array $storageStateMemo = [];
+
     public function __construct(
         private readonly ServiceEntitlementService $entitlements,
     ) {}
@@ -87,9 +92,11 @@ class QuotaService
             ->sum('size');
 
         $variantBytes = (int) FileVariant::query()
-            ->ready()
-            ->whereHas('file', fn ($q) => $q->where('user_id', $userId))
-            ->sum('size');
+            ->join('archivd_files', 'archivd_files.id', '=', 'archivd_file_variants.file_id')
+            ->where('archivd_file_variants.status', FileVariantStatus::Ready)
+            ->where('archivd_files.user_id', $userId)
+            ->whereNull('archivd_files.deleted_at')
+            ->sum('archivd_file_variants.size');
 
         return $fileBytes + $variantBytes;
     }
@@ -116,7 +123,7 @@ class QuotaService
 
     public function assertCanAccept(string $userId, int $incomingBytes, ?string $excludeUploadId = null): void
     {
-        if ($this->entitlements->hasGraceArchivd($userId)) {
+        if ($this->storageStateFor($userId) === 'grace') {
             throw new ArchivdException(__('api/archivd.quota_grace_blocked'), 422);
         }
 
@@ -160,6 +167,19 @@ class QuotaService
      */
     public function storageStateFor(string $userId): string
     {
+        return $this->storageStateMemo[$userId] ??= $this->resolveStorageState($userId);
+    }
+
+    public function forgetStorageState(string $userId): void
+    {
+        unset($this->storageStateMemo[$userId]);
+    }
+
+    /**
+     * @return 'paid'|'grace'|'free'
+     */
+    private function resolveStorageState(string $userId): string
+    {
         if ($this->entitlements->hasGraceArchivd($userId)) {
             return 'grace';
         }
@@ -172,7 +192,7 @@ class QuotaService
     }
 
     /**
-     * Guest public links and enabling anyone_with_link require active paid FH storage.
+     * Guest public links and enabling anyone_with_link require active paid Archivd storage.
      * Free and grace owners cannot expose files/folders publicly (grace = renew first).
      */
     public function ownerCanPublicShare(string $userId): bool

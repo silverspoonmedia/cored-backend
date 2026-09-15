@@ -69,7 +69,7 @@ JSON errors for `api/*` via `$exceptions->shouldRenderJsonWhen(...)`.
 
 ## Versioned routes
 
-Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, error-logs, payments, services, archivd. Also includes `POST /api/v1/broadcasting/auth` — broadcast channel auth for cross-origin JWT clients (Vue-Workers SPA) under `auth:api` middleware.
+Primary product surface. Add endpoints in `routes/api/v1/{domain}.php`. Includes auth, users, menus, lookups, notifications, activity-logs, error-logs, payments, services, archivd. Also includes `POST /api/v1/broadcasting/auth` — broadcast channel auth for cross-origin JWT clients (Vue-Workers SPA) under `auth:api` middleware plus the `throttle:broadcast` limiter. The path literal lives once in `App\Support\Broadcasting\BroadcastAuthEndpoint` (`SUBPATH` for `routes/api/v1/broadcasting.php`, `url()` for `BroadcastConnection::socketClientConfig()`); `withRouting(channels: ...)` also registers a CSRF-guarded **web twin** at `/broadcasting/auth`, which is why `config/cors.php` `paths` must list `broadcasting/auth` as well — see [security.md — `broadcasting/auth` invariant](security.md#broadcastingauth-invariant) and invariant test `tests/Feature/Http/CorsBroadcastAuthTest.php`.
 
 ## Adding a new API version
 

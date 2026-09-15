@@ -3,6 +3,7 @@
 namespace App\Domain\Archivd\Console\Commands;
 
 use App\Domain\Archivd\Services\HashBlocklistService;
+use App\Domain\Archivd\Support\Sha256Checksum;
 use Illuminate\Console\Command;
 
 /**
@@ -20,9 +21,9 @@ class BlocklistHash extends Command
 
     public function handle(HashBlocklistService $blocklist): int
     {
-        $sha256 = strtolower(trim((string) $this->argument('sha256')));
+        $sha256 = Sha256Checksum::normalize((string) $this->argument('sha256'));
 
-        if (! preg_match('/^[0-9a-f]{64}$/', $sha256)) {
+        if (! Sha256Checksum::isValid($sha256)) {
             $this->error('Invalid sha256: expected 64 lowercase hex chars.');
 
             return self::FAILURE;

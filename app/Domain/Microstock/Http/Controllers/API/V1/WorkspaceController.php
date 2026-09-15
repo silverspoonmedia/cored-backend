@@ -2,6 +2,7 @@
 
 namespace App\Domain\Microstock\Http\Controllers\API\V1;
 
+use App\Domain\Microstock\Http\Requests\StoreMicrostockWorkspaceRequest;
 use App\Domain\Microstock\Services\MicrostockService;
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
@@ -29,15 +30,11 @@ class WorkspaceController extends Controller
         ], __('api/microstock.workspace_loaded'));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreMicrostockWorkspaceRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['nullable', 'string', 'max:120'],
-        ]);
-
         $workspace = $this->microstock->createWorkspace(
             $request->user(),
-            $validated['name'] ?? null,
+            $request->validated('name'),
         );
 
         return $this->successResponse([

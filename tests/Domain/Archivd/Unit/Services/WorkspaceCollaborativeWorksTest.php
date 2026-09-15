@@ -15,6 +15,7 @@ use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
 use Database\Seeders\ArchivdRoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Activitylog\Models\Activity;
 use Tests\Concerns\SeedsRolesAndPermissions;
@@ -448,6 +449,50 @@ class WorkspaceCollaborativeWorksTest extends TestCase
         $this->assertSame('editor', $list[0]['my_role']);
     }
 
+    public function test_workspace_list_batches_member_role_lookup(): void
+    {
+        $this->grantPaidMain($this->owner);
+
+        $ids = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $created = $this->actingAsJwt($this->owner)
+                ->postJson('/api/v1/archivd/workspaces', ['name' => 'Batch '.$i])
+                ->assertCreated()
+                ->json('data');
+            $ids[] = $created['id'];
+
+            $invite = $this->actingAsJwt($this->owner)
+                ->postJson('/api/v1/archivd/workspaces/'.$created['id'].'/invites', [
+                    'email' => $this->editor->email,
+                    'role' => 'editor',
+                ])
+                ->assertCreated()
+                ->json('data');
+
+            $this->actingAsJwt($this->editor)
+                ->postJson('/api/v1/archivd/workspaces/invites/accept', [
+                    'token' => $invite['token'],
+                ])
+                ->assertOk();
+        }
+
+        $memberQueries = 0;
+        DB::listen(function ($query) use (&$memberQueries): void {
+            if (str_contains((string) $query->sql, 'archivd_workspace_members')) {
+                $memberQueries++;
+            }
+        });
+
+        $list = $this->actingAsJwt($this->editor)
+            ->getJson('/api/v1/archivd/workspaces')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertCount(3, $list);
+        $this->assertSame(['editor', 'editor', 'editor'], collect($list)->pluck('my_role')->all());
+        $this->assertLessThanOrEqual(2, $memberQueries);
+    }
+
     public function test_rename_and_delete_log_activity(): void
     {
         $this->grantPaidMain($this->owner);
@@ -510,10 +555,24 @@ class WorkspaceCollaborativeWorksTest extends TestCase
         $this->assertSame($created['id'], $browse['workspace_id']);
         $this->assertCount(1, $browse['folders']);
 
-        $this->actingAsJwt($this->owner)
+        $activity = $this->actingAsJwt($this->owner)
             ->getJson('/api/v1/archivd/workspaces/'.$created['id'].'/activity')
             ->assertOk()
-            ->assertJsonStructure(['data' => [['event', 'properties']]]);
+            ->assertJsonStructure(['data' => [['event', 'properties']]])
+            ->json('data');
+
+        $invited = collect($activity)->firstWhere('event', 'member_invited');
+
+        $this->assertNotNull($invited);
+        $this->assertSame($this->editor->email, $invited['properties']['email']);
+
+        // Invitee email is envelope-encrypted at rest, decrypted for members.
+        $raw = (string) DB::table('activity_log')
+            ->where('log_name', WorkspaceActivityRecorder::LOG_NAME)
+            ->where('event', 'member_invited')
+            ->value('properties');
+
+        $this->assertStringNotContainsString($this->editor->email, $raw);
     }
 
     public function test_invited_free_member_can_upload_to_team_workspace(): void

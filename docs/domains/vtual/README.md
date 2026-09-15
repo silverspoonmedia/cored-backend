@@ -2,6 +2,26 @@
 
 > **UI:** Admin screens live in **Monolith-Vue-Workers** (`/apps/vtual/*`). Blade web controllers and views are removed — see [web/blade-admin.md](../../web/blade-admin.md) and [ui-archive.md](ui-archive.md).
 
+## Agent entry
+
+Open the rest of this README only when changing vTual **behavior**. For a one-file fix, read the file under edit plus its test. Do not load [implementation-status.md](implementation-status.md) unless tracking progress.
+
+| Need | Path |
+|------|------|
+| Code | `app/Domain/Vtual/` |
+| Config | [`config/vtual.php`](../../../config/vtual.php), [`config/products.php`](../../../config/products.php) key `Vtual` |
+| API (auth) | `routes/api/v1/vtual.php` |
+| API (guest) | `routes/api/v1/vtual-public.php` |
+| SPA auth | `/apps/vtual/*` (`config/spa-routes.php` `vtual.*`) |
+| SPA public | `/vtual`, `/vtual/vtubers/:slug` — landing is **FROZEN** |
+| Naming | [naming-conventions.md](naming-conventions.md) |
+| Tests | `tests/Domain/Vtual/` |
+| FormRequest DRY | `Http/Requests/Concerns/VtualRequestRules` (store vs update field maps; keep Store/Update classes) |
+| List N+1 | `CreatorResourceCollection` / `ManagementResourceCollection` prime membership + claimable maps per request |
+| Do not | `Read` this whole guide, archive assessments, all locale JSON files, or FROZEN `VkStr1*` components without explicit user permission |
+
+Realtime channels: [vue-workers-spa.md — Channel/event reference](../../integration/vue-workers-spa.md#channel-event-reference). Menu dual-placement: [navigation README](../navigation/README.md).
+
 Product domain (`kind => product`, `locked => true`) for **content creator aggregation** (display name **vTual**). Ships creator/management/channel/content schema, claims, platform credentials, **manual** YouTube/Twitch HTTP clients, channel fetch pool (refresh/resync), and API surfaces. **Active SPA screens (authenticated):** staff **orphan** admin (`/apps/vtual/orphans`), **platform credentials** (`/apps/vtual/platform-credentials`, Root/Admin), **owned profiles list + manage** (`/apps/vtual/profiles`, Products menu under Archivd), **read-only vTuber profile** + interactive claim (`/apps/vtual/vtuber/{slug}`, login required). **Public SPA:** guest landing `/vtual` (directory + content feed) + two-column public profile `/vtual/vtubers/{slug}` (Valkivid3; claim CTA on guest profile visible to authenticated viewers only; OG/SEO meta injected client-side via SPA `useHeadMeta` composable — no Worker function). The former Blade hub, standalone claims, and registry UIs are gone — history in [ui-archive.md](ui-archive.md). **Scheduled content ingestion** (feed poll, content pool, live CCV), **YouTube WebSub push**, and **Twitch EventSub push** (webhook + live marking) are implemented — see [implementation-status.md](implementation-status.md).
 
 | | |
@@ -15,7 +35,7 @@ Product domain (`kind => product`, `locked => true`) for **content creator aggre
 | Naming (Management disambiguation) | [naming-conventions.md](naming-conventions.md) — core role `Management` vs `vtual_managements` talent org |
 | Seeder | `VtualRoleSeeder` (after core `RoleSeeder`; also seeds platforms) |
 | Product gate | `product.active:Vtual` middleware (see [Product Activations](../product-activations/README.md)) |
-| Menu visibility | Dual placement of "Managements": Products sidebar → **vTual** (parent `vtual.profiles.index`): My vTuber profiles (Vtual roles) + **Managements** (`vtual.managements.index`, **no stored roles** — member-only via `MenuRepository` rule 7) + **Events** (`vtual.events.index`, same rule-7 member-only pattern). Administration → **vTual** (`vtual.orphans.index`): Orphan vTubers (Root/Admin/Moderator) + **Managements** (`vtual.managements.index`, Root/Admin — staff manage orgs; members never see this branch because the parent route is not in `MANAGEMENT_MEMBER_ROUTES`) + Platform credentials (Root/Admin). Staff who are also org members see both Managements entries. See [navigation README](../navigation/README.md) |
+| Menu visibility | Dual placement of "Managements": Products sidebar → **vTual** (parent `vtual.profiles.index`): My vTuber profiles (Vtual roles) + **Managements** (`vtual.managements.index`, **no stored roles** — member-only via `MenuRepository` rule 6) + **Events** (`vtual.events.index`, same rule-6 member-only pattern). Administration → **vTual** (`vtual.orphans.index`): Orphan vTubers (Root/Admin/Moderator) + **Managements** (`vtual.managements.index`, Root/Admin — staff manage orgs; members never see this branch because the parent route is not in `MANAGEMENT_MEMBER_ROUTES`) + Platform credentials (Root/Admin). Staff who are also org members see both Managements entries. See [navigation README](../navigation/README.md) |
 | Progress tracker | [implementation-status.md](implementation-status.md) — done / not done / next |
 | Vue island assessment | [archive/vtual-vue-island-assessment.md](../../archive/vtual-vue-island-assessment.md) — archived 2026-08 assessment (historical; all surfaces are SPA now) |
 | Ops assessments | [archive/vtual-youtube-stability-assessment-2026-08-07.md](../../archive/vtual-youtube-stability-assessment-2026-08-07.md) |
@@ -97,7 +117,7 @@ Core role name **Management** (platform H-RBAC ladder) is **unrelated** to `vtua
 | Public landing (SPA) | `/vtual` | Guests — Valkivid3 `str1` one-pager (hero with API-driven spotlight + sponsors + live-now strip + countdown event from `vtual.landing.event.*` + platform stats + directory `#vtubers` + all-creator content feed `#contents` + about + events section (`landing.events[]` management-submitted events first, derived `landing.schedule` as fallback) + claim banner). Header switcher owns `html.dark` (class `dark:` variant, `str1-color-theme` localStorage, inline FOUC-prevention script). OG/SEO meta injected client-side via SPA `useHeadMeta` composable (no Worker function). |
 | Public vTuber profile (SPA) | `/vtual/vtubers/{slug}` | Guests — two-column profile from `GET /api/v1/vtual/public/vtubers/{slug}` (banner, sidebar stats/channels/links, featured live + **paginated** video grid with Prev/Next pager; `contents: { items, pagination }`, `?page`/`?per_page`). Claim CTA in the sidebar is **visible to authenticated viewers only**; wizard stays at `/apps/vtual/vtubers/{slug}/claim`. OG/SEO meta injected client-side via SPA `useHeadMeta` composable (no Worker function). |
 | Public management profile (SPA) | `/vtual/managements/{slug}` | Guests — `GET /api/v1/vtual/public/managements/{slug}`: logo header, description, external links, roster grid of **publicly listed** creators (active + ≥1 active public channel). Singular `/vtual/management/{slug}` redirects to plural. OG/SEO meta via `useHeadMeta` (type `profile`). |
-| Orphan vTubers (staff) | `/apps/vtual/orphans` | Internal (Root/Admin/Moderator) — claimable profiles only; users-pattern DataTable + CRUD |
+| Orphan vTubers (staff) | `/apps/vtual/orphans` | Internal (Root/Admin/Moderator) — claimable profiles only; Vue `DataTable` + `display_mode=query` + CRUD |
 | vTual product hub (placeholder) | `/apps/vtual/vtuber` | Any logged-in user — blank AdminLTE shell for upcoming product surfaces |
 | Owned vTuber profiles | `/apps/vtual/profiles` | `Vtual vTuber` / Editor / Admin with active Vtual activation — owned list (`GET api/v1/vtual/creators/owned`) emits `actions[]` (`edit` → `vtual.profiles.show`, `view` → public `profile_url` `_blank`); SPA maps into `RowActions`; row-click follows `edit`; Products sidebar under Archivd |
 | Manage claimed profile | `/apps/vtual/profiles/{id}` | Owner/editor — meta, links, merge, channel add (member path starts a **claim**; verify above the channel table; leftover pending rows use **Delete**) |
@@ -253,7 +273,7 @@ Multi-credential child of `vtual_platforms` for future YouTube/Twitch sync rotat
 
 **Management realtime:** `ManagementService` fires `ManagementUpdated` (`ShouldBroadcastNow`, gated by `BroadcastConnection::isConfigured()`) after successful create / update / creator assign+unassign / member role update / invite create+cancel+accept+decline. Channel `private-vtual.management.{managementId}`, event `.management.updated`, payload ids-only `{management_id, kind (management|member|invite|creator), ref_id, action}`. Channel auth via `ManagementAccessService::canView` (members + `* any vtual resource` staff). SPA `useVtualRealtime.ts` `subscribeManagement` wires `VtualManagementEditView`: on push it silent-refetches `fetchOne` + `listInvites` and applies only `creators` / `members` / `my_role` / `invites` — form fields are never overwritten while the actor may be typing. The management list view is not subscribed (multi-viewer need is rare; manual reload suffices).
 
-**Management membership → dynamic menu refresh (targeted):** membership changes alter the viewer's navigation grants (see [navigation README — visibility rule 7](../navigation/README.md)). `ManagementService` `acceptInvite` and `cancelInvite` (accepted branch — the **unified removal path**: `DELETE /members/{memberId}` no longer exists, removing a member always cancels their accepted invite) each call `MenuRepository::forgetPresentedTreeForUserId(U)` then `NavigationRealtime::userTreeChanged(U, 'membership')` — a targeted `MenuTreeChanged` broadcast (`event .menu.tree.changed` on the shared channel) carrying `target_user_id: U`. The SPA's `useNavigation` listener filters `.menu.tree.changed` by `target_user_id` against the authenticated user and refetches sidebar/navbar only for that viewer, so a revoked member's vTual menu entries disappear live without a reload. On invite accept the respond view also calls `refetchNavigation()` directly before redirecting to the management page.
+**Management membership → dynamic menu refresh (targeted):** membership changes alter the viewer's navigation grants (see [navigation README — visibility rule 6](../navigation/README.md)). `ManagementService` `acceptInvite` and `cancelInvite` (accepted branch — the **unified removal path**: `DELETE /members/{memberId}` no longer exists, removing a member always cancels their accepted invite) each call `MenuRepository::forgetPresentedTreeForUserId(U)` then `NavigationRealtime::userTreeChanged(U, 'membership')` — a targeted `MenuTreeChanged` broadcast (`event .menu.tree.changed` on the shared channel) carrying `target_user_id: U`. The SPA's `useNavigation` listener filters `.menu.tree.changed` by `target_user_id` against the authenticated user and refetches sidebar/navbar only for that viewer, so a revoked member's vTual menu entries disappear live without a reload. On invite accept the respond view also calls `refetchNavigation()` directly before redirecting to the management page.
 
 ```mermaid
 flowchart TD
@@ -414,7 +434,7 @@ Service: `VtuberProfileService::directory()` + `paginatePublicContents()` (`Cont
 
 **Public SPA theme (dark/light)**: class-based (`html.dark`), `localStorage['str1-color-theme']`, default **dark** (original template behavior; OS preference intentionally ignored). `index.html` carries an inline head script that restores the class before first paint — prevents the light-mode FOUC flash; inert for `/apps/*` since valkivid3 utilities are `.vk3-root`-scoped. Composable `useVkStr1Theme` (read/apply/toggle), switcher with sun/moon sprite icons in `VkStr1Header` + `VkStr1MobileMenu`. Hero slider `VkStr1HeroSlider` is a Swiper fade carousel (3 static promo slides: `hero.one.*` hub intro, `hero.two.*` claim profile, `hero.three.*` events; no props, no live-data binding; staggered entrance animations gated by `group-[.swiper-slide-active]` + `vv-slide-played` replay, vertical bar pagination `.vv-hero-swiper-pagination`, prev/next). Live content is surfaced through the unified `VkStr1VtuberLiveDirectory` (directory cards annotated with live status + stream rows from `landing.live_now`); the standalone `VkStr1LiveNow` is kept as a reference.
 
-**Authenticated app**: staff orphan CRUD lives at SPA `/apps/vtual/orphans` (list + create + **create→edit** + archive confirm + pending channels) — Vue `DataTable` + `display_mode=query` (not Yajra). Query-mode `actions[]`: `edit` + `delete` (archive) when `manage any vtual resource`. Create `POST vtual/creators/orphan` lands on `/orphans/:id/edit` so staff can register YouTube/Twitch; save stays on edit; `DELETE vtual/creators/{id}` archives (confirm copy `web.vtual-orphans.datatable.confirm_delete`). Staff `POST vtual/creators/{id}/channels` on an **orphan** (no owner/editor membership) is `registerPendingForStaff` (pending channel row, in-place append) — not a channel claim. The same POST on an owned profile where the actor is an owner/editor member starts a **channel claim**. Create and edit share `VtualOrphanEditView`; `AppLayout` has no `router-view` `:key`, so the view watches `route.params.id` and reloads. `useVtualHydrate.hydrateOrphanEdit` batches orphan + channels + platforms on edit (individual-loader fallback). Same hydrate helper covers profile show, platform credentials, and vTuber claim. Authenticated vTuber read/claim is canonical **plural** `/apps/vtual/vtubers/:slug` (+ `/claim`) so it does not collide with the hub `/apps/vtual/vtuber`. UUID in the path is replaced with the slug after fetch. See [vue-workers-spa.md — vTual public surface](../../integration/vue-workers-spa.md#vtual-public-surface) and [vTual orphan staff admin](../../integration/vue-workers-spa.md#vtual-orphan-staff-admin).
+**Authenticated app**: staff orphan CRUD lives at SPA `/apps/vtual/orphans` (list + create + **create→edit** + archive confirm + pending channels) — Vue `DataTable` + `display_mode=query`. Query-mode `actions[]`: `edit` + `delete` (archive) when `manage any vtual resource`. Create `POST vtual/creators/orphan` lands on `/orphans/:id/edit` so staff can register YouTube/Twitch; save stays on edit; `DELETE vtual/creators/{id}` archives (confirm copy `web.vtual-orphans.datatable.confirm_delete`). Staff `POST vtual/creators/{id}/channels` on an **orphan** (no owner/editor membership) is `registerPendingForStaff` (pending channel row, in-place append) — not a channel claim. The same POST on an owned profile where the actor is an owner/editor member starts a **channel claim**. Create and edit share `VtualOrphanEditView`; `AppLayout` has no `router-view` `:key`, so the view watches `route.params.id` and reloads. `useVtualHydrate.hydrateOrphanEdit` batches orphan + channels + platforms on edit (individual-loader fallback). Same hydrate helper covers profile show, platform credentials, and vTuber claim. Authenticated vTuber read/claim is canonical **plural** `/apps/vtual/vtubers/:slug` (+ `/claim`) so it does not collide with the hub `/apps/vtual/vtuber`. UUID in the path is replaced with the slug after fetch. See [vue-workers-spa.md — vTual public surface](../../integration/vue-workers-spa.md#vtual-public-surface) and [vTual orphan staff admin](../../integration/vue-workers-spa.md#vtual-orphan-staff-admin).
 
 ## SPA admin (Blade web removed)
 
@@ -432,8 +452,7 @@ Legacy hub/claims/registry Blade UIs are archived under [`ui-archive.md`](ui-arc
 | `POST vtual/vtuber/{slug}/claim/verify` (`vtual.vtuber.claim.verify`) | Queue bio verify → `POST api/v1/vtual/claims/{id}/verify` |
 | `POST vtual/vtuber/{slug}/claim/cancel` (`vtual.vtuber.claim.cancel`) | Cancel pending claim → `POST api/v1/vtual/claims/{id}/cancel` |
 | `GET vtual/vtuber/{slug}/claim` (`vtual.vtuber.claim`) | Interactive claim: channel pick, token, queued verify UI (orphan only; owned → redirect to show) |
-| `GET vtual/orphans` (`vtual.orphans.index`) | Orphan vTuber index (server-side DataTable; claimable profiles only) |
-| `GET vtual/orphans/datatable` (`vtual.orphans.datatable`) | DataTables JSON proxy → `GET api/v1/vtual/creators/orphans?display_mode=datatable` |
+| `GET vtual/orphans` (`vtual.orphans.index`) | Orphan vTuber index (Vue DataTable; claimable profiles only) |
 | `GET vtual/orphans/create` (`vtual.orphans.create`) | Create orphan form |
 | `POST vtual/orphans` (`vtual.orphans.store`) | → `POST api/v1/vtual/creators/orphan`; redirects to edit (not index) |
 | `GET vtual/orphans/{id}/edit` (`vtual.orphans.edit`) | Edit form + deferred channel registration UI |
@@ -458,7 +477,7 @@ Live UI: SPA `vtual.platform-credentials.*` (index, platform, create, edit, prob
 
 | Method | Path | Notes |
 |--------|------|-------|
-| GET | `vtual/creators/orphans` | `listClaimable()`; `display_mode=datatable` for DataTables |
+| GET | `vtual/creators/orphans` | `listClaimable()`; `display_mode=query` |
 | GET | `vtual/creators/orphans/{id}` | 403 if profile is no longer claimable |
 
 ### UI/UX patterns (orphan admin)
@@ -483,7 +502,20 @@ Live UI: SPA `vtual.platform-credentials.*` (index, platform, create, edit, prob
 - **Auth**: any logged-in user; guest → login redirect; UUID path → **301** to canonical slug (web).
 
 ### Removed Blade UI patterns (2026-07 overhaul, see ui-archive.md)
-- **i18n**: the Blade era kept every user-facing string in a per-locale `web/vtual` PHP file (`ajax.*`, `confirm.*`, `table.*`). That file is deleted; SPA strings live in `monolith-vue-workers/src/i18n/locales/*.json`. Surviving server-side vTual PHP strings are `web/vtual-vtuber.php` (Discord claim flash), `web/vtual-orphans.php` (orphan archive confirm on query-mode `actions[]` and the unused Yajra path), and `list_actions.php` (owned-profile view, platform credential chrome/confirms, management archive).
+- **i18n**: the Blade era kept every user-facing string in a per-locale `web/vtual` PHP file (`ajax.*`, `confirm.*`, `table.*`). That file is deleted; SPA strings live in `monolith-vue-workers/src/i18n/locales/*.json`. Surviving server-side vTual PHP strings are `web/vtual-vtuber.php` (Discord claim flash), `web/vtual-orphans.php` (orphan archive confirm on query-mode `actions[]`), and `list_actions.php` (owned-profile view, platform credential chrome/confirms, management archive).
+
+## Realtime
+
+vTual pings via dedicated private channels (`routes/channels.php`), events `ShouldBroadcastNow`, payloads ids + `action`:
+
+| Channel | Auth | Event(s) |
+|---------|------|----------|
+| `vtual.claim.{claimId}` | owner only | `.claim.progress` (`VtualClaimRealtime`) |
+| `vtual.creator.{creatorId}` | `CreatorAccessService::canView` | `.channel.snapshot.updated` (`VtualChannelRealtime`, after fetch-pool flush / batch profile resolve) |
+| `vtual.management.{managementId}` | `ManagementAccessService::canView` | `.management.updated` (`VtualManagementRealtime` — member/invite/creator assignment changes) |
+| `vtual.platform-credentials` | `view vtual platform credentials` | `.platform.credential.changed` (`VtualPlatformCredentialRealtime`) |
+
+SPA: `useVtualRealtime.ts` (`subscribeCreatorSnapshots` / `subscribePlatformCredentials` / `subscribeManagement`), `useVtulClaimRealtime.ts` for `.claim.progress` (consumed by the claim view). Both are `createKeyedRealtimeChannel` / `createRealtimeChannel` bindings on `src/composables/echo/channelRegistry.ts` — one ref-counted channel per entity id.
 
 ## Seeders
 
@@ -491,7 +523,7 @@ Live UI: SPA `vtual.platform-credentials.*` (index, platform, create, edit, prob
 2. `ArchivdRoleSeeder` — required because authoritative `MenuSeeder` also builds the Archivd branch.
 3. `VtualRoleSeeder` — product roles/permissions + `PlatformService::seedDefaults()`.
 4. `MenuSeeder` — Administration → **vTual** parent (`vtual.orphans.index`) with Orphan vTubers (Root/Admin/Moderator) and Platform credentials (Root/Admin).
-5. `DatabaseSeeder` preserves this order. Running `MenuSeeder` before role seeders can omit expected menu-role pivots.
+5. `DatabaseSeeder` preserves this order. Running `MenuSeeder` before the role seeders now **fails fast** — `idsForRoles()` throws a `RuntimeException` naming the missing roles instead of silently dropping the node's RBAC.
 
 ## Kick strategy (foundation)
 
@@ -552,7 +584,7 @@ Not shared this phase (no dual-platform signal without extra APIs): Twitch follo
 
 **YouTube content fetch (POC):** `php artisan vtual:fetch-channel-content {vtual_channels_uuid}` — **manual last frontier** (recovery/debug). Not scheduled. Use `--video` / `--discover-live` for known ids or live search. Default path ingests via onboarding backfill + feed poll + content pool below.
 
-**YouTube channel onboarding (one-time):** All YouTube activations go through [`ChannelActivationService`](app/Domain/Vtual/Services/ChannelActivationService.php) (`activateFromDto`, `activatePendingFromDto` via registration flush): **WebSub subscribe** + **`RunChannelInitialContentBackfillJob`** (async) run together. Backfill: `playlistItems.list` (≤50) + `videos.list` (≤50) → upsert contents; sets `content_initial_backfill_at` and seeds `feed_last_entry_updated_at` from public Atom feed. Legacy channels without backfill: `php artisan vtual:backfill-initial-content {vtual_channels_uuid}`. Legacy channels without WebSub row: `php artisan vtual:renew-websub-subscriptions --repair-missing`. Feed poll skips channels until `content_initial_backfill_at` is set.
+**YouTube channel onboarding (one-time):** All YouTube activations go through [`ChannelActivationService`](app/Domain/Vtual/Services/ChannelActivationService.php) (`activateFromDto`, `activatePendingFromDto` via registration flush): **WebSub subscribe** + **`RunChannelInitialContentBackfillJob`** (async) run together. Backfill: `playlistItems.list` (≤50) + `videos.list` (≤50) → upsert contents; sets `content_initial_backfill_at` and seeds `feed_last_entry_updated_at` from the persist watermark (`publishedAt` / `startedAt` / `endedAt` max) — no second Atom `listVideos` call. Legacy channels without backfill: `php artisan vtual:backfill-initial-content {vtual_channels_uuid}`. Legacy channels without WebSub row: `php artisan vtual:renew-websub-subscriptions --repair-missing`. Feed poll skips channels until `content_initial_backfill_at` is set.
 
 **Content ingestion (scheduled):**
 

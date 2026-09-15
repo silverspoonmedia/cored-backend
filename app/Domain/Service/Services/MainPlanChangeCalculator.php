@@ -98,7 +98,7 @@ class MainPlanChangeCalculator
             ->whereIn('status', [EntitlementStatus::Active, EntitlementStatus::Grace])
             ->whereNotNull('ends_at')
             ->whereHas('service', function ($q): void {
-                // Storage + workspace-slot addons (FH and Microstock) share one
+                // Storage + workspace-slot addons (Archivd and Microstock) share one
                 // anniversary clock.
                 $q->whereIn('fulfillment_target', [
                     ArchivdCatalog::FULFILLMENT_TARGET,
@@ -112,7 +112,7 @@ class MainPlanChangeCalculator
     }
 
     /**
-     * True when any active/grace FH addon is past ends_at (stack renewal required).
+     * True when any active/grace Archivd addon is past ends_at (stack renewal required).
      */
     public function hasDueAddonAnniversary(string $userId): bool
     {

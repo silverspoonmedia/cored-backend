@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Support\Encryption;
 
+use App\Domain\ActivityLog\Support\ActivityLogRealtime;
 use App\Domain\ActivityLog\Support\CryptoActivityRecorder;
 use App\Support\Encryption\DecryptedValueCache;
 use App\Support\Encryption\DecryptionContext;
@@ -24,7 +25,7 @@ class DecryptCacheCiphertextFingerprintTest extends TestCase
         $service = new EnvelopeEncryptionService(
             new LocalKmsDekClient,
             new DecryptedValueCache,
-            new CryptoActivityRecorder,
+            new CryptoActivityRecorder(new ActivityLogRealtime),
             new InvoicePayloadDecryptLogger,
         );
 

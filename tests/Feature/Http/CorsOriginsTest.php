@@ -24,6 +24,22 @@ class CorsOriginsTest extends TestCase
             ->assertHeaderMissing('Access-Control-Allow-Origin');
     }
 
+    public function test_content_disposition_is_exposed_to_the_browser(): void
+    {
+        // getBlob() in the SPA reads Content-Disposition to name CSV/file
+        // downloads; without an exposed header the browser hides it and the
+        // download falls back to a generic filename.
+        $origin = rtrim((string) config('app.url'), '/');
+
+        $response = $this->withHeaders(['Origin' => $origin])->getJson('/api/ping');
+
+        $response->assertOk();
+        $this->assertStringContainsString(
+            'content-disposition',
+            strtolower((string) $response->headers->get('Access-Control-Expose-Headers')),
+        );
+    }
+
     public function test_spa_marker_is_allowed_by_preflight(): void
     {
         $origin = rtrim((string) config('app.url'), '/');

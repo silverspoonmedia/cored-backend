@@ -13,10 +13,9 @@ use App\Domain\Identity\Services\User\UserManagementService;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
-use App\Support\DataTable\DataTableResponseFactory;
-use App\Support\DataTable\Resolvers\UserRowActionResolver;
 use App\Support\ListActions\Builders\UserQueryRowActions;
 use App\Support\ListActions\QueryRowActionAttacher;
+use App\Support\ListQueryPaginator;
 use App\Support\User\UserManagementPresenter;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -31,8 +30,6 @@ class UserController extends Controller
     public function __construct(
         private readonly UserManagementService $userManagement,
         private readonly RoleService $roleService,
-        private readonly DataTableResponseFactory $dataTables,
-        private readonly UserRowActionResolver $rowActions,
         private readonly UserQueryRowActions $queryRowActions,
     ) {}
 
@@ -41,27 +38,37 @@ class UserController extends Controller
         $actor = $this->actor();
         $this->authorize('viewAny', User::class);
 
-        $users = $this->userManagement->list($actor);
+        if ($request->wantsQueryPaging() && ! $request->filled('search')) {
+            $paginator = $this->userManagement->paginate(
+                $actor,
+                ListQueryPaginator::perPage($request),
+                max(1, (int) $request->input('page', 1)),
+            );
+            $page = $paginator->getCollection();
 
-        return $this->respondToListDisplayMode(
-            $request,
-            fn (): JsonResponse => $this->respondToQueryList(
-                $request,
-                $users,
-                fn ($list) => QueryRowActionAttacher::attach(
-                    $this->resolveResource(UserManagementResource::collection($list)),
-                    $list,
+            return $this->successResponse([
+                'items' => QueryRowActionAttacher::attach(
+                    $this->resolveResource(UserManagementResource::collection($page)),
+                    $page,
                     $this->queryRowActions,
                     $actor,
                 ),
-                __('api/users.list_success'),
-            ),
-            fn (): JsonResponse => $this->dataTables->respond(
-                $users,
-                fn (User $user) => $this->resolveResource(new UserManagementResource($user)),
-                $this->rowActions,
+                'pagination' => ListQueryPaginator::meta($paginator),
+            ], __('api/users.list_success'));
+        }
+
+        $users = $this->userManagement->list($actor);
+
+        return $this->respondToQueryList(
+            $request,
+            $users,
+            fn ($list) => QueryRowActionAttacher::attach(
+                $this->resolveResource(UserManagementResource::collection($list)),
+                $list,
+                $this->queryRowActions,
                 $actor,
             ),
+            __('api/users.list_success'),
         );
     }
 

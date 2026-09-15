@@ -4,6 +4,7 @@ namespace App\Domain\Navigation\Models;
 
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Navigation\Enums\MenuAudience;
 use Database\Factories\MenuFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -45,8 +46,7 @@ class Menu extends Model
         'hash',
         'type',
         'order',
-        'is_authenticate',
-        'is_guest_only',
+        'audience',
     ];
 
     /**
@@ -55,8 +55,7 @@ class Menu extends Model
     protected function casts(): array
     {
         return [
-            'is_authenticate' => 'boolean',
-            'is_guest_only' => 'boolean',
+            'audience' => MenuAudience::class,
             'order' => 'integer',
         ];
     }
@@ -150,8 +149,7 @@ class Menu extends Model
                 'hash',
                 'type',
                 'order',
-                'is_authenticate',
-                'is_guest_only',
+                'audience',
             ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()

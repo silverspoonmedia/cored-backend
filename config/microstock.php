@@ -128,7 +128,7 @@ return [
         ],
     ],
 
-    // Persisted JPEG derivatives generated on microstock image upload (counts toward FH quota).
+    // Persisted JPEG derivatives generated on microstock image upload (counts toward Archivd quota).
     'variants' => [
         ['kind' => 'ai_512', 'max_px' => 512],
         ['kind' => 'ai_1024', 'max_px' => 1024],

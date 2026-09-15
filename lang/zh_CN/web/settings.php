@@ -7,7 +7,7 @@ return [
     'source' => '当前来源：:source',
     'groups' => [
         'platform' => '平台',
-        'archivd' => '文件托管',
+        'archivd' => 'Archivd',
         'microstock' => 'Microstock',
         'vtual' => 'vTual',
         'notification_audiences' => '通知受众',

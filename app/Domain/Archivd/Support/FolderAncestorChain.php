@@ -3,9 +3,23 @@
 namespace App\Domain\Archivd\Support;
 
 use App\Domain\Archivd\Models\Folder;
+use Illuminate\Support\Collection;
 
 class FolderAncestorChain
 {
+    /**
+     * Owner folder index for in-memory parent walks (one query).
+     *
+     * @return Collection<string, Folder>
+     */
+    public static function indexForOwner(string $userId): Collection
+    {
+        return Folder::query()
+            ->where('user_id', $userId)
+            ->get(['id', 'parent_id', 'name', 'visibility'])
+            ->keyBy('id');
+    }
+
     /**
      * Ancestors from root to immediate parent (excludes the folder itself).
      *
@@ -13,15 +27,13 @@ class FolderAncestorChain
      */
     public static function ancestors(Folder $folder): array
     {
+        $byId = self::indexForOwner((string) $folder->user_id);
         $chain = [];
         $parentId = $folder->parent_id;
         $guard = 0;
 
         while ($parentId !== null && $guard < 1000) {
-            $parent = Folder::query()
-                ->whereKey($parentId)
-                ->where('user_id', $folder->user_id)
-                ->first(['id', 'parent_id', 'name']);
+            $parent = $byId->get($parentId);
 
             if ($parent === null) {
                 break;
@@ -75,18 +87,20 @@ class FolderAncestorChain
             return true;
         }
 
+        $childrenByParent = Folder::query()
+            ->where('user_id', $folder->user_id)
+            ->get(['id', 'parent_id'])
+            ->groupBy('parent_id');
+
         $queue = [$folder->id];
         $guard = 0;
 
         while ($queue !== [] && $guard < 10_000) {
             $current = array_shift($queue);
-            $children = Folder::query()
-                ->where('user_id', $folder->user_id)
-                ->where('parent_id', $current)
-                ->pluck('id')
-                ->all();
+            $children = $childrenByParent->get($current, collect());
 
-            foreach ($children as $childId) {
+            foreach ($children as $child) {
+                $childId = (string) $child->id;
                 if ($childId === $candidateId) {
                     return true;
                 }

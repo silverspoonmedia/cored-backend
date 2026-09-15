@@ -68,6 +68,24 @@ return [
     ],
 
     /*
+     * Privacy — PII stored inside `properties` is envelope-encrypted (OCI KMS)
+     * before the row is written and decrypted again by the ActivityLog API
+     * presenter, so authorized viewers keep seeing plaintext.
+     *
+     * Only these exact top-level `properties` keys are encrypted; every other
+     * key stays plaintext so `properties->some_key` JSON queries and list
+     * filters keep working. See docs/domains/activity-log/README.md.
+     */
+    'sensitive_properties' => [
+        'enabled' => true,
+        'keys' => [
+            'ip_address',
+            'user_agent',
+            'email',
+        ],
+    ],
+
+    /*
      * These action classes can be overridden to customize how activities
      * are logged and cleaned. Your custom classes must extend the originals.
      */

@@ -2,12 +2,14 @@
 
 namespace App\Domain\Navigation\Services;
 
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Models\Menu;
 use App\Domain\Identity\Models\User;
 use App\Domain\Navigation\Repositories\Contracts\MenuRepositoryInterface;
 use App\Domain\Navigation\Support\MenuLayout;
 use App\Domain\Navigation\Support\NavigationRealtime;
 use App\Domain\Navigation\Support\NavigationTreeFilter;
+use App\Support\Localization\LocalePreference;
 use Illuminate\Support\Facades\DB;
 
 class MenuService
@@ -52,14 +54,17 @@ class MenuService
     public function create(array $data): Menu
     {
         return DB::transaction(function () use ($data) {
+            $audience = $this->resolveAudience($data['audience'] ?? null);
+
             $menu = $this->menus->createMenu(
                 $this->mapAttributes($data, true),
                 $data['position'] ?? 'append',
                 $data['reference_id'] ?? null,
             );
 
-            // On create, relationships are always (re)set so omitted keys clear them.
-            $this->menus->syncRoles($menu, $data['roles'] ?? []);
+            // On create, relationships are always (re)set so omitted keys clear
+            // them. Roles only exist for the signed-in-with-roles audience.
+            $this->menus->syncRoles($menu, $audience->usesRoles() ? ($data['roles'] ?? []) : []);
             $this->menus->syncUserIncludes($menu, $data['user_includes'] ?? []);
             $this->menus->syncUserExcludes($menu, $data['user_excludes'] ?? []);
 
@@ -90,8 +95,15 @@ class MenuService
                 );
             }
 
-            // On update, only touch a relationship when its key was sent.
-            if (array_key_exists('roles', $data)) {
+            // On update, only touch a relationship when its key was sent. Role
+            // pivots are cleared whenever the effective audience is not the
+            // signed-in-with-roles one, so a stale pivot can never contradict
+            // the stored audience.
+            if (! $menu->audience->usesRoles()) {
+                if ($menu->roles()->exists()) {
+                    $this->menus->syncRoles($menu, []);
+                }
+            } elseif (array_key_exists('roles', $data)) {
                 $this->menus->syncRoles($menu, $data['roles']);
             }
             if (array_key_exists('user_includes', $data)) {
@@ -139,17 +151,31 @@ class MenuService
     {
         $attributes = [];
 
+        // Safety net: the FormRequest trait already canonicalizes translatable
+        // locale keys (`zh-CN` → `zh_CN`); normalize again here so a future
+        // request path that skips the trait can never persist alias keys.
+        if (is_array($data['name'] ?? null)) {
+            $attributes['name'] = $this->canonicalizeLocaleMap($data['name']);
+        }
+
         if ($isCreate) {
-            $attributes['name'] = $data['name'];
+            $attributes['name'] ??= $data['name'];
             $attributes['type'] = $data['type'];
             $attributes['layout'] = $data['layout'] ?? MenuLayout::default();
-            $attributes['description'] = $data['description'] ?? null;
+
+            if (is_array($data['description'] ?? null)) {
+                $attributes['description'] = $this->canonicalizeLocaleMap($data['description']);
+            } else {
+                $attributes['description'] = $data['description'] ?? null;
+            }
         } else {
-            if (array_key_exists('name', $data)) {
+            if (! array_key_exists('name', $attributes) && array_key_exists('name', $data)) {
                 $attributes['name'] = $data['name'];
             }
             if (array_key_exists('description', $data)) {
-                $attributes['description'] = $data['description'];
+                $attributes['description'] = is_array($data['description'])
+                    ? $this->canonicalizeLocaleMap($data['description'])
+                    : $data['description'];
             }
             if (array_key_exists('type', $data)) {
                 $attributes['type'] = $data['type'];
@@ -168,14 +194,54 @@ class MenuService
         if ($isCreate || array_key_exists('parent', $data)) {
             $attributes['parent_id'] = $data['parent'] ?? null;
         }
-        if (array_key_exists('authenticate', $data)) {
-            $attributes['is_authenticate'] = (bool) $data['authenticate'];
-        }
-        if (array_key_exists('guest_only', $data)) {
-            $attributes['is_guest_only'] = (bool) $data['guest_only'];
+        if (array_key_exists('audience', $data)) {
+            $attributes['audience'] = $this->resolveAudience($data['audience']);
         }
 
         return $attributes;
+    }
+
+    /**
+     * Normalize a caller-supplied audience (enum from internal callers, string
+     * from validated request data) into the enum, defaulting to `auth` — the
+     * single default shared by the DB column, the repository and the factory.
+     */
+    private function resolveAudience(mixed $audience): MenuAudience
+    {
+        if ($audience instanceof MenuAudience) {
+            return $audience;
+        }
+
+        return is_string($audience)
+            ? (MenuAudience::tryFrom($audience) ?? MenuAudience::Auth)
+            : MenuAudience::Auth;
+    }
+
+    /**
+     * Rewrite a translatable locale map so every key is the canonical backend
+     * locale code. Later entries win: an SPA edit sent as the `zh-CN` alias
+     * overrides a stale canonical `zh_CN` value for the same locale.
+     *
+     * @param  array<string, mixed>  $map
+     * @return array<string, string>
+     */
+    private function canonicalizeLocaleMap(array $map): array
+    {
+        $canonical = [];
+
+        foreach ($map as $locale => $text) {
+            if (! is_string($locale) || ! is_string($text)) {
+                continue;
+            }
+
+            $backend = LocalePreference::normalize($locale);
+
+            if ($backend !== null) {
+                $canonical[$backend] = $text;
+            }
+        }
+
+        return $canonical;
     }
 
     /**

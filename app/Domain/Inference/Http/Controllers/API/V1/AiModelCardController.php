@@ -10,11 +10,9 @@ use App\Domain\Inference\Http\Resources\AiModelCardResource;
 use App\Domain\Inference\Models\AiModelCard;
 use App\Domain\Inference\Services\InferenceCatalogService;
 use App\Domain\Inference\Services\InferenceUsageAnalyticsService;
-use App\Domain\Inference\Support\DataTable\AiModelCardRowActionResolver;
 use App\Http\Controllers\Concerns\RespondsWithListDisplayMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Concerns\ResolvesResourceArray;
-use App\Support\DataTable\DataTableResponseFactory;
 use App\Support\ListActions\Builders\AiModelCardQueryRowActions;
 use App\Support\ListActions\QueryRowActionAttacher;
 use App\Traits\ApiResponse;
@@ -29,8 +27,6 @@ class AiModelCardController extends Controller
     public function __construct(
         private readonly InferenceCatalogService $catalog,
         private readonly InferenceUsageAnalyticsService $analytics,
-        private readonly DataTableResponseFactory $dataTables,
-        private readonly AiModelCardRowActionResolver $rowActions,
         private readonly AiModelCardQueryRowActions $queryRowActions,
     ) {}
 
@@ -38,24 +34,16 @@ class AiModelCardController extends Controller
     {
         $cards = $this->catalog->listModelCards();
 
-        return $this->respondToListDisplayMode(
+        return $this->respondToQueryList(
             $request,
-            fn (): JsonResponse => $this->respondToQueryList(
-                $request,
-                $cards,
-                fn ($list) => QueryRowActionAttacher::attach(
-                    $this->resolveResource(AiModelCardResource::collection($list)),
-                    $list,
-                    $this->queryRowActions,
-                    $request->user(),
-                ),
-                __('api/inference.model_cards.list'),
+            $cards,
+            fn ($list) => QueryRowActionAttacher::attach(
+                $this->resolveResource(AiModelCardResource::collection($list)),
+                $list,
+                $this->queryRowActions,
+                $request->user(),
             ),
-            fn (): JsonResponse => $this->dataTables->respond(
-                $cards,
-                fn (AiModelCard $card) => $this->resolveResource(new AiModelCardResource($card)),
-                $this->rowActions,
-            ),
+            __('api/inference.model_cards.list'),
         );
     }
 

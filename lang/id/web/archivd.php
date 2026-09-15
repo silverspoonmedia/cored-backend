@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => 'Hosting file',
+    'title' => 'Archivd',
     'blocklist_title' => 'Daftar blokir hash (DMCA)',
     'blocklist_add' => 'Blokir hash',
     'blocklist_sha256' => 'sha256',

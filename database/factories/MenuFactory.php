@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Domain\Navigation\Enums\MenuAudience;
 use App\Domain\Navigation\Models\Menu;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -29,8 +30,7 @@ class MenuFactory extends Factory
             // (parent_id, type) group never collide with the unique index.
             // Use the repository when contiguous ordering matters.
             'order' => null,
-            'is_authenticate' => null,
-            'is_guest_only' => null,
+            'audience' => MenuAudience::Auth,
         ];
     }
 
@@ -57,11 +57,23 @@ class MenuFactory extends Factory
 
     public function authenticated(): static
     {
-        return $this->state(fn () => ['is_authenticate' => true]);
+        return $this->state(fn () => ['audience' => MenuAudience::Auth]);
     }
 
     public function guestOnly(): static
     {
-        return $this->state(fn () => ['is_guest_only' => true]);
+        return $this->state(fn () => ['audience' => MenuAudience::Guest]);
+    }
+
+    /** Visible to guests and signed-in users alike. */
+    public function guestVisible(): static
+    {
+        return $this->state(fn () => ['audience' => MenuAudience::All]);
+    }
+
+    /** Signed-in users holding one of the attached roles. */
+    public function roleAudience(): static
+    {
+        return $this->state(fn () => ['audience' => MenuAudience::Role]);
     }
 }

@@ -42,6 +42,9 @@ return [
     */
     'decrypted_cache_ttl_by_resource_type' => [
         'vtual_platform_credentials' => 0,
+        // Audit-trail PII (activity_log.properties) is admin-read only and
+        // immutable per row — keep plaintext in cache bounded, never forever.
+        'activity_log' => 900,
     ],
 
     'decrypted_cache_prefix' => 'encryption.decrypted',
@@ -98,10 +101,14 @@ return [
 
     'audit_excluded_resource_types' => [
         'sessions',
+        // Reading audit-trail PII must not append crypto audit rows to the
+        // same trail (self-referential growth) — the trail is not a secret store.
+        'activity_log',
     ],
 
     'audit_excluded_purposes' => [
         'session_read',
+        'activity_log_read',
     ],
 
     /*

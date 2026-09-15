@@ -22,7 +22,6 @@ class DatabaseSeeder extends Seeder
         $this->call(ArchivdRoleSeeder::class);
         $this->call(VtualRoleSeeder::class);
         $this->call(MicrostockRoleSeeder::class);
-        $this->call(ZzDemoRoleSeeder::class);
         $this->call(DomainAccessSeeder::class);
         $this->call(NotificationTypeSettingSeeder::class);
         $this->call(SettingsSeeder::class);
@@ -84,6 +83,14 @@ class DatabaseSeeder extends Seeder
         }
     }
 }
+
+
+
+
+
+
+
+
 
 
 

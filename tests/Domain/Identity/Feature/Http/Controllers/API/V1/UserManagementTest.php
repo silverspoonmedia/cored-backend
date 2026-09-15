@@ -293,6 +293,31 @@ class UserManagementTest extends TestCase
         $this->assertCount(10, $response->json('data.items'));
         $this->assertGreaterThanOrEqual(12, $response->json('data.pagination.total'));
         $this->assertTrue($response->json('data.pagination.has_more'));
+        $this->assertEqualsCanonicalizing(
+            ['current_page', 'last_page', 'per_page', 'total', 'has_more'],
+            array_keys($response->json('data.pagination')),
+        );
+    }
+
+    public function test_query_mode_search_still_matches_email_in_php(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $needle = User::factory()->create(['email' => 'needle-search-xyz@example.com']);
+        $needle->assignRole('User');
+        $other = User::factory()->create(['email' => 'other-search@example.com']);
+        $other->assignRole('User');
+
+        $response = $this->actingAsJwt($admin)
+            ->getJson('/api/v1/users?display_mode=query&page=1&per_page=10&search=needle-search-xyz')
+            ->assertOk();
+
+        $ids = collect($response->json('data.items'))->pluck('id');
+        $this->assertTrue($ids->contains($needle->id));
+        $this->assertFalse($ids->contains($other->id));
+        $this->assertEqualsCanonicalizing(
+            ['current_page', 'last_page', 'per_page', 'total', 'has_more'],
+            array_keys($response->json('data.pagination')),
+        );
     }
 
     public function test_query_mode_without_paging_stays_flat_array(): void
@@ -307,6 +332,27 @@ class UserManagementTest extends TestCase
         $this->assertIsArray($data);
         $this->assertArrayNotHasKey('items', $data);
         $this->assertArrayNotHasKey('pagination', $data);
+    }
+
+    public function test_datatable_display_mode_is_rejected(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        $this->actingAsJwt($admin)
+            ->getJson('/api/v1/users?display_mode=datatable')
+            ->assertStatus(422);
+    }
+
+    public function test_stray_draw_param_stays_query_envelope(): void
+    {
+        $admin = $this->userWithRole('Admin');
+
+        $this->actingAsJwt($admin)
+            ->getJson('/api/v1/users?draw=1')
+            ->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonMissingPath('recordsTotal')
+            ->assertJsonMissingPath('draw');
     }
 
     public function test_actor_with_multiple_roles_uses_lowest_level(): void
