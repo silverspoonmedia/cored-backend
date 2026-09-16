@@ -17,6 +17,7 @@ return [
         'delete_inference' => 'Hapus data ini? Tindakan ini tidak dapat dibatalkan.',
         'delete_named_title' => 'Hapus ":name"',
         'delete_menu' => 'Yakin ingin menghapus ":name"?',
+        'delete_post' => 'Tulisan ini akan dipindahkan ke keranjang. Anda dapat memulihkannya nanti.',
         'delete_microstock_credential' => 'Hapus kredensial ini?',
         'delete_credential_title' => 'Hapus kredensial',
         'delete_platform_credential' => 'Hapus kredensial ini secara permanen?',

@@ -40,6 +40,16 @@ class MenuSeederTest extends TestCase
                     ['name' => 'Dashboard', 'route' => 'dashboard', 'type' => 'p', 'children' => []],
                     ['name' => 'Notifications', 'route' => 'notifications.index', 'type' => 'p', 'children' => []],
                     ['name' => 'Services', 'route' => 'services.index', 'type' => 'p', 'children' => []],
+                    [
+                        'name' => 'Blog',
+                        'route' => 'blog.posts.index',
+                        'type' => 'p',
+                        'children' => [
+                            ['name' => 'Posts', 'route' => 'blog.posts.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Categories', 'route' => 'blog.categories.index', 'type' => 'c', 'children' => []],
+                            ['name' => 'Tags', 'route' => 'blog.tags.index', 'type' => 'c', 'children' => []],
+                        ],
+                    ],
                 ],
             ],
             [
@@ -253,7 +263,7 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(49, Menu::query()->count());
+        $this->assertSame(53, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -262,7 +272,7 @@ class MenuSeederTest extends TestCase
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(49, Menu::query()->count());
+        $this->assertSame(53, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),

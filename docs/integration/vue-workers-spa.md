@@ -192,6 +192,7 @@ Do not load this contract for screen-level UX. Use the domain README (Agent entr
 - Inference rate editor: `PUT inference/providers/{id}/rates` full replace (`manage inference catalog`).
 - Settings: `PUT admin/settings/{group}` sends **underscore** field names (`platform_jwt_ttl`). MenuSeeder children `settings.platform|archivd|microstock|vtual` are named SPA routes **before** parameterized `settings.group.view`.
 - Navigation menus: `POST/PATCH navigation/menus` send `audience` (`all` | `auth` | `role` | `guest`, default `auth` when omitted) and `roles` **only** with `audience=role`; rows return `audience` + `role_ids`. `is_authenticate` / `is_guest_only` were removed — breaking for older SPA builds, so both repos deploy together. Admin surface: [navigation README](../domains/navigation/README.md).
+- Blog admin: `blog/posts` (index/show/store/update/destroy + `trashed`, `restore`, `statuses`), `blog/categories`, `blog/tags`, `blog/media` (multipart `POST` image upload for editor inline images + featured thumbnails). Permissions `view posts` / `manage posts` / `restore posts`. Post `content` is HTML sanitized server-side (HTMLPurifier `blog` profile) and rendered via `v-html` in the admin editor. Featured image + inline images reference `blog_media.url` — absolute URLs from the configured disk (`BLOG_MEDIA_DISK`, `s3ArchivdCe` in local/production profiles); no `/storage` proxy. List rows carry query-mode `actions[]` per [list-display-modes.md](../platform/list-display-modes.md). Sidebar group seeded under Workspace › Blog.
 
 ## Mimic doctrine
 

@@ -459,6 +459,15 @@ class ServiceEntitlementService
         app(QuotaService::class)->forgetStorageState($userId);
     }
 
+    /**
+     * Public invalidation for flows that mutate Archivd entitlements outside
+     * the purchase/fulfillment pipeline (e.g. test fixtures, manual seeding).
+     */
+    public function forgetStorageState(string $userId): void
+    {
+        $this->forgetArchivdProbeMemo($userId);
+    }
+
     public function enterGrace(ServiceEntitlement $entitlement): ServiceEntitlement
     {
         $service = $entitlement->service;

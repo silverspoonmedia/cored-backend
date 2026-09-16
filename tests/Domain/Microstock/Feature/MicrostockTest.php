@@ -25,6 +25,7 @@ use App\Domain\Microstock\Services\MicrostockService;
 use App\Domain\Service\Enums\EntitlementStatus;
 use App\Domain\Service\Models\Service;
 use App\Domain\Service\Models\ServiceEntitlement;
+use App\Domain\Service\Services\ServiceEntitlementService;
 use App\Domain\Service\Support\MicrostockCatalog;
 use Database\Seeders\ArchivdRoleSeeder;
 use Database\Seeders\MicrostockRoleSeeder;
@@ -296,6 +297,7 @@ class MicrostockTest extends TestCase
 
         // Paid owner can invite; free member can join
         $this->grantPaidMain($this->owner);
+        app(ServiceEntitlementService::class)->forgetStorageState($this->owner->id);
         $invite = app(WorkspaceService::class)->invite(
             $this->owner,
             $ws->id,

@@ -78,7 +78,11 @@ class ChannelContentFetchServiceTest extends TestCase
 
         $summary = $this->fetch->fetchAndPersist($channel, 50);
 
-        $this->assertSame(['listed' => 2, 'fetched' => 2, 'upserted' => 2], $summary);
+        $this->assertSame(
+            ['listed' => 2, 'fetched' => 2, 'upserted' => 2],
+            array_diff_key($summary, ['feed_watermark' => null]),
+        );
+        $this->assertContains($summary['feed_watermark']?->toIso8601String(), ['2026-01-01T00:00:00+00:00', '2026-01-01T00:00:00Z']);
         $this->assertDatabaseCount('vtual_contents', 2);
         $this->assertDatabaseCount('vtual_content_appearances', 2);
         $this->assertDatabaseHas('vtual_contents', [
@@ -139,7 +143,11 @@ class ChannelContentFetchServiceTest extends TestCase
 
         $summary = $this->fetch->fetchVideosAndPersist($channel, ['VgdAA0Gdzn0']);
 
-        $this->assertSame(['requested' => 1, 'fetched' => 1, 'upserted' => 1], $summary);
+        $this->assertSame(
+            ['requested' => 1, 'fetched' => 1, 'upserted' => 1],
+            array_diff_key($summary, ['feed_watermark' => null]),
+        );
+        $this->assertContains($summary['feed_watermark']?->toIso8601String(), ['2026-01-01T00:00:00+00:00', '2026-01-01T00:00:00Z']);
         $this->assertDatabaseHas('vtual_contents', [
             'channel_id' => $channel->id,
             'external_id' => 'VgdAA0Gdzn0',
@@ -225,7 +233,11 @@ class ChannelContentFetchServiceTest extends TestCase
 
         $summary = $this->fetch->fetchVideosAndPersist($channel, ['vid1', 'goneVid']);
 
-        $this->assertSame(['requested' => 2, 'fetched' => 1, 'upserted' => 1], $summary);
+        $this->assertSame(
+            ['requested' => 2, 'fetched' => 1, 'upserted' => 1],
+            array_diff_key($summary, ['feed_watermark' => null]),
+        );
+        $this->assertContains($summary['feed_watermark']?->toIso8601String(), ['2026-01-01T00:00:00+00:00', '2026-01-01T00:00:00Z']);
         $this->assertDatabaseHas('vtual_contents', [
             'channel_id' => $channel->id,
             'external_id' => 'goneVid',
