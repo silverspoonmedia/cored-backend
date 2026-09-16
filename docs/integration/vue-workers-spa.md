@@ -70,7 +70,7 @@ API `action_route` + `action_params` use symbolic names from `config/spa-routes.
 
 ## Production checklist
 
-Ops (not code): pair `SPA_URL` with the matching Worker origin (production / staging / sandbox — one `SPA_URL` per Monolith instance); bake `VITE_API_BASE_URL` from tracked `.env.production` / `.env.sandbox` / `.env.staging` (never `wrangler.jsonc` `vars`); hCaptcha on both sides or both off; Archivd/Gateway CORS exposes `ETag`; Pusher/Sockudo literals match; Tunnel allowlist + 404 catch-all. Full list: sibling [README.md](../../../monolith-vue-workers/README.md) + [deployment.md](../../../monolith-vue-workers/docs/deployment.md).
+Ops (not code): pair `SPA_URL` with the matching Worker origin (production / staging / sandbox — one `SPA_URL` per Monolith instance); bake `VITE_API_BASE_URL` from tracked `.env.production` / `.env.sandbox` / `.env.staging` (never `wrangler.jsonc` `vars`); hCaptcha on both sides or both off; Archivd/Gateway CORS exposes `ETag`; Pusher/Sockudo literals match; Tunnel allowlist + 404 catch-all. Full list: sibling [README.md](../../../monolith-vue-workers/README.md) + [deployment.md](../../../monolith-vue-workers/docs/deployment.md). The staging mode file and the production API origin are still provisional — sibling [deployment.md — Pending environment values](../../../monolith-vue-workers/docs/deployment.md#pending-environment-values).
 
 `X-SPA-Origin: 1` is a public anti-noise marker, not auth.
 
@@ -210,7 +210,7 @@ No polling. Echo auto-reconnect is recovery; reconnect fires a resync bus. SPA p
 | `VITE_PUSHER_*` | Echo; must match Monolith `PUSHER_*` literals. Unset key → no live updates. |
 | `VITE_HCAPTCHA_SITE_KEY` | Public sitekey; empty = no widget. |
 
-Discord return is Monolith `SPA_URL`, not a Vite var. Tracked mode files win over `.env.local` during `vite build --mode`. Sibling [README.md](../../../monolith-vue-workers/README.md).
+Discord return is Monolith `SPA_URL`, not a Vite var. Tracked mode files (`.env.production` / `.env.sandbox` / `.env.staging`) win over `.env.local` during `vite build --mode`. Sibling [README.md](../../../monolith-vue-workers/README.md).
 
 ### Self-hosted websocket (Sockudo)
 
