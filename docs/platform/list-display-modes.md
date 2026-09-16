@@ -13,7 +13,7 @@ List indexes speak query mode only. Validation lives in `App\Http\Requests\Conce
 
 The former Yajra DataTables presentation (`display_mode=datatable`) was removed with the Blade admin. The SPA Vue `DataTable` component is unrelated — it always sends `display_mode=query`.
 
-Query-paging lists: users, invoices, payment-gateways, subscriptions, services, inference providers, inference model-cards, vtual orphans, activity logs, error logs. The navigation **tree** and menus list are excluded — they stay a full dump and are sliced client-side. Helper: `RespondsWithListDisplayMode::respondToQueryList`.
+Query-paging lists: users, invoices, payment-gateways, subscriptions, services, inference providers, inference model-cards, vtual orphans, blog posts (including the separate `blog/posts/trashed` list), activity logs, error logs. The navigation **tree** and menus list are excluded — they stay a full dump and are sliced client-side. Helper: `RespondsWithListDisplayMode::respondToQueryList`.
 
 ## Query-mode `actions[]` (live SPA contract)
 

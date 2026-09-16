@@ -17,6 +17,7 @@ return [
         'delete_inference' => '删除此记录？此操作无法撤销。',
         'delete_named_title' => '删除“:name”',
         'delete_menu' => '确定要删除“:name”吗？',
+        'delete_post' => '该文章将移入回收站，之后可以恢复。',
         'delete_microstock_credential' => '删除此凭据？',
         'delete_credential_title' => '删除凭据',
         'delete_platform_credential' => '永久删除此凭据？',

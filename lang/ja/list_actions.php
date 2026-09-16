@@ -17,6 +17,7 @@ return [
         'delete_inference' => 'このレコードを削除しますか？元に戻せません。',
         'delete_named_title' => '「:name」を削除',
         'delete_menu' => '「:name」を削除してもよろしいですか？',
+        'delete_post' => 'この投稿はゴミ箱に移動されます。後で復元できます。',
         'delete_microstock_credential' => 'この認証情報を削除しますか？',
         'delete_credential_title' => '認証情報を削除',
         'delete_platform_credential' => 'この認証情報を完全に削除しますか？',

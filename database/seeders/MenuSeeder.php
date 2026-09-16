@@ -133,6 +133,36 @@ class MenuSeeder extends Seeder
                         'route' => 'services.index',
                         'type' => 'p',
                     ],
+                    [
+                        'name' => $this->translations('Blog', 'Blog', 'ブログ'),
+                        'icon' => 'bi bi-pencil-square',
+                        'route' => 'blog.posts.index',
+                        'type' => 'p',
+                        'roles' => ['Root', 'Admin', 'Moderator', 'Management'],
+                        'children' => [
+                            [
+                                'name' => $this->translations('Posts', 'Tulisan', '投稿'),
+                                'icon' => 'bi bi-file-earmark-text',
+                                'route' => 'blog.posts.index',
+                                'type' => 'c',
+                                'roles' => ['Root', 'Admin', 'Moderator', 'Management'],
+                            ],
+                            [
+                                'name' => $this->translations('Categories', 'Kategori', 'カテゴリー'),
+                                'icon' => 'bi bi-tags',
+                                'route' => 'blog.categories.index',
+                                'type' => 'c',
+                                'roles' => ['Root', 'Admin', 'Moderator', 'Management'],
+                            ],
+                            [
+                                'name' => $this->translations('Tags', 'Tag', 'タグ'),
+                                'icon' => 'bi bi-tag',
+                                'route' => 'blog.tags.index',
+                                'type' => 'c',
+                                'roles' => ['Root', 'Admin', 'Moderator', 'Management'],
+                            ],
+                        ],
+                    ],
                 ],
             ],
             [
@@ -530,6 +560,30 @@ class MenuSeeder extends Seeder
                 'zh_CN' => '服务',
                 'ar' => 'الخدمات',
                 'ru' => 'Сервисы',
+            ],
+            'Blog' => [
+                'ko' => '블로그',
+                'zh_CN' => '博客',
+                'ar' => 'المدونة',
+                'ru' => 'Блог',
+            ],
+            'Posts' => [
+                'ko' => '게시물',
+                'zh_CN' => '文章',
+                'ar' => 'المقالات',
+                'ru' => 'Записи',
+            ],
+            'Categories' => [
+                'ko' => '카테고리',
+                'zh_CN' => '分类',
+                'ar' => 'التصنيفات',
+                'ru' => 'Категории',
+            ],
+            'Tags' => [
+                'ko' => '태그',
+                'zh_CN' => '标签',
+                'ar' => 'الوسوم',
+                'ru' => 'Метки',
             ],
             'Products' => [
                 'ko' => '제품',

@@ -2,6 +2,8 @@
 
 namespace Tests\Domain\Vtual\Unit\Services;
 
+use App\Domain\ActivityLog\Events\ActivityLogAppended;
+use App\Domain\ErrorLog\Events\ErrorLogRecorded;
 use App\Domain\Identity\Models\User;
 use App\Domain\Vtual\Enums\PlatformCredentialStatus;
 use App\Domain\Vtual\Enums\PlatformCredentialType;
@@ -286,7 +288,7 @@ class PlatformCredentialServiceTest extends TestCase
             'secret' => ['api_key' => 'yt-key-test-aaaa'],
         ]);
 
-        Event::fake([PlatformCredentialChanged::class]);
+        Event::fake([PlatformCredentialChanged::class, ErrorLogRecorded::class, ActivityLogAppended::class]);
         $this->enableBroadcast();
 
         $result = $this->service->test($credential);
@@ -323,7 +325,7 @@ class PlatformCredentialServiceTest extends TestCase
             'secret' => ['api_key' => 'bad-key-zzzz'],
         ]);
 
-        Event::fake([PlatformCredentialChanged::class]);
+        Event::fake([PlatformCredentialChanged::class, ErrorLogRecorded::class, ActivityLogAppended::class]);
         $this->enableBroadcast();
 
         $result = $this->service->test($credential);

@@ -17,6 +17,7 @@ return [
         'delete_inference' => 'هل تريد حذف هذا السجل؟ لا يمكن التراجع عن ذلك.',
         'delete_named_title' => 'حذف ":name"',
         'delete_menu' => 'هل أنت متأكد من رغبتك في حذف ":name"؟',
+        'delete_post' => 'سيتم نقل هذه المقالة إلى سلة المحذوفات. يمكنك استعادتها لاحقًا.',
         'delete_microstock_credential' => 'هل تريد حذف بيانات الاعتماد هذه؟',
         'delete_credential_title' => 'حذف بيانات الاعتماد',
         'delete_platform_credential' => 'هل تريد حذف بيانات الاعتماد هذه نهائيًا؟',

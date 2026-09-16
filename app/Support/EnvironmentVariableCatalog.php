@@ -105,6 +105,7 @@ final class EnvironmentVariableCatalog
             'ARCHIVD_UPLOAD_PROXY_TOKEN' => self::TYPE_STRING,
             'ARCHIVD_UPLOAD_PROXY_TARGET_CE' => self::TYPE_STRING,
             'ARCHIVD_UPLOAD_PROXY_TARGET_US' => self::TYPE_STRING,
+            'BLOG_MEDIA_DISK' => self::TYPE_STRING,
             'HCAPTCHA_SECRET' => self::TYPE_STRING,
             'HCAPTCHA_SITEKEY' => self::TYPE_STRING,
             'PUSHER_APP_ID' => self::TYPE_STRING,
