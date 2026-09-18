@@ -2,7 +2,6 @@
 
 namespace App\Domain\Vtual\Services;
 
-use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\PlatformApiGateway;
@@ -22,8 +21,8 @@ use Illuminate\Support\Collection;
  *   ChannelProfileResolver for channel/stream profiles). Never reimplement Helix/YouTube
  *   HTTP, alternate query builders, or probe-only DTO mapping.
  * - Output = serialize gateway DTOs (+ optional resolved map for debug transparency).
- * - Documented exception: video methods append a debug-only content_category preview
- *   from ContentCategoryClassifier (never persisted — persistence happens on hydrate).
+ * - Documented exception: video methods append a debug-only content_type +
+ *   content_category preview (never persisted — persistence happens on hydrate).
  * - When gateway methods are added/removed/renamed for manual testing, update METHODS,
  *   run(), request validation, web i18n, tests, and docs/domains/vtual/README.md in the same PR.
  */
@@ -47,6 +46,7 @@ class PlatformApiProbeService
         private readonly PlatformApiGateway $gateway,
         private readonly ChannelProfileResolver $profiles,
         private readonly ContentCategoryClassifier $classifier,
+        private readonly ContentKindClassifier $kinds,
     ) {}
 
     /**
@@ -117,6 +117,10 @@ class PlatformApiProbeService
      * Debug-only classification preview appended to video items. Never persisted —
      * persistence happens on the hydrate path (PlatformVideoDtoMapper → ContentService).
      *
+     * `content_type_signal` names which program signal decided the music layer
+     * (topic | category_id | keyword | original_credit | long_form) so a wrong
+     * verdict can be traced without re-running the classifier by hand.
+     *
      * @param  Collection<int, mixed>  $result
      * @param  list<array<string, mixed>>  $serialized
      * @return list<array<string, mixed>>
@@ -141,10 +145,20 @@ class PlatformApiProbeService
                 'type' => $this->contentCategoryTypeFor($video->status),
             ]);
 
+            $kind = $this->kinds->classify([
+                'title' => $video->title,
+                'description' => $video->description,
+                'category_id' => $video->categoryId,
+                'duration_seconds' => $video->durationSeconds,
+                'topic_categories' => $video->topicCategories,
+                'tags' => $video->tags,
+            ]);
+
             $category = $classified !== null ? $classified['category'] : null;
 
             $out[] = $serialized[$index] + [
-                'content_type' => ContentKind::fromCategoryId($video->categoryId)?->value,
+                'content_type' => $kind['kind']?->value,
+                'content_type_signal' => $kind['signal'],
                 'content_category' => $category !== null ? $category->value : null,
                 'content_category_detail' => $classified['detail'] ?? null,
             ];

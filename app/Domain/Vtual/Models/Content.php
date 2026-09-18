@@ -134,4 +134,18 @@ class Content extends Model
             ? true
             : ($this->content_type?->value === ContentKind::NonMusic->value ? false : null);
     }
+
+    /**
+     * Duration derived from the live/archive window. VODs (uploads) carry no
+     * persisted duration, so this returns null for them — classification then
+     * simply skips the duration signal.
+     */
+    public function durationSeconds(): ?int
+    {
+        if ($this->started_at === null || $this->ended_at === null) {
+            return null;
+        }
+
+        return (int) abs($this->ended_at->diffInSeconds($this->started_at));
+    }
 }

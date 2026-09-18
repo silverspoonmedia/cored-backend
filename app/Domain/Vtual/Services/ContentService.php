@@ -27,6 +27,7 @@ class ContentService
 {
     public function __construct(
         private readonly ContentAiAuditService $aiAudit,
+        private readonly ContentKindClassifier $kindClassifier,
     ) {}
 
     /**
@@ -50,6 +51,9 @@ class ContentService
      *     content_category_detail?: string|null,
      *     content_type?: string|ContentKind|null,
      *     category_id?: string|null,
+     *     duration_seconds?: int|null,
+     *     topic_categories?: list<string>|null,
+     *     tags?: list<string>|null,
      * }  $data
      */
     public function upsertFromPrimary(Channel $primaryChannel, array $data): Content
@@ -88,10 +92,7 @@ class ContentService
                 // Recomputed per hydrate — idempotent; null when unclassifiable.
                 'content_category' => $this->resolveCategory($data['content_category'] ?? null),
                 'content_category_detail' => $data['content_category_detail'] ?? null,
-                'content_type' => $this->resolveKind(
-                    $data['content_type'] ?? null,
-                    $data['category_id'] ?? null,
-                ),
+                'content_type' => $this->resolveKind($data),
                 // Re-available: a successful hydrate clears any tombstone.
                 'first_unavailable_at' => null,
             ];
@@ -565,21 +566,30 @@ class ContentService
     }
 
     /**
-     * Music/non-music layer. Explicit content_type wins; otherwise derive
-     * from the platform categoryId (YouTube only — Twitch passes null).
+     * Music/non-music layer. An explicit content_type wins; otherwise the full
+     * signal set is re-derived through ContentKindClassifier so hand-built
+     * payloads (Twitch live state, tests) agree with the mapper.
+     *
+     * @param  array<string, mixed>  $data
      */
-    private function resolveKind(mixed $kind, mixed $categoryId): ?ContentKind
+    private function resolveKind(array $data): ?ContentKind
     {
+        $kind = $data['content_type'] ?? null;
+
         if ($kind instanceof ContentKind) {
             return $kind;
         }
         if (is_string($kind) && $kind !== '' && in_array($kind, ContentKind::values(), true)) {
             return ContentKind::from($kind);
         }
-        if (is_string($categoryId)) {
-            return ContentKind::fromCategoryId($categoryId);
-        }
 
-        return null;
+        return $this->kindClassifier->classify([
+            'title' => $data['title'] ?? null,
+            'description' => $data['description'] ?? null,
+            'category_id' => $data['category_id'] ?? null,
+            'duration_seconds' => $data['duration_seconds'] ?? null,
+            'topic_categories' => $data['topic_categories'] ?? null,
+            'tags' => $data['tags'] ?? null,
+        ])['kind'];
     }
 }

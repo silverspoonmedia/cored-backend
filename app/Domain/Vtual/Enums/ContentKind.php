@@ -3,9 +3,13 @@
 namespace App\Domain\Vtual\Enums;
 
 /**
- * Primary classification layer: music vs non-music, derived from the
- * platform categoryId (YouTube "10" = Music). Null = unknown (categoryId
- * unavailable, e.g. Twitch streams).
+ * Primary classification layer: music vs non-music. Null = unknown.
+ *
+ * `fromCategoryId` is only signal #2 of the layer — vTubers file covers under
+ * Gaming / People & Blogs instead of Music, so it is NOT sufficient alone.
+ * The decision belongs to ContentKindClassifier, which also reads the YouTube
+ * Music topic, title/tag keywords, original-credit links and duration.
+ * Kept for the categoryId-only callers and tests that need the raw mapping.
  */
 enum ContentKind: string
 {
@@ -13,8 +17,10 @@ enum ContentKind: string
     case NonMusic = 'non_music';
 
     /**
-     * Resolve from a platform categoryId. Empty/null → null (unknown);
+     * Resolve from a platform categoryId alone. Empty/null → null (unknown);
      * any other non-empty id that is not the music category → non_music.
+     *
+     * Prefer ContentKindClassifier — this ignores every other signal.
      */
     public static function fromCategoryId(?string $categoryId): ?self
     {

@@ -243,6 +243,10 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
             viewCount: isset($item['view_count']) && is_numeric($item['view_count']) ? (int) $item['view_count'] : null,
             concurrentViewers: null,
             raw: null,
+            // Helix exposes no topic/tag metadata; the music layer resolves to
+            // null (unknown) for Twitch and is left to the AI audit.
+            topicCategories: [],
+            tags: [],
         );
     }
 

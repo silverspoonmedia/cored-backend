@@ -6,21 +6,37 @@ use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Integrations\Ai\ContentAiClassifier;
 use App\Domain\Vtual\Models\Content;
 use App\Domain\Vtual\Services\ContentCategoryClassifier;
+use App\Domain\Vtual\Services\ContentKindClassifier;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Attribute\AsCommand;
 
+/**
+ * Backfill both classification layers on already-hydrated YouTube rows.
+ *
+ * This is the manual counterpart to the hydrate path (PlatformVideoDtoMapper →
+ * ContentService). It is weaker than hydrate by design: the stored row has no
+ * categoryId, topicCategories or tags (those are transient mapper inputs), so
+ * the program pass here can only use title / description / duration.
+ *
+ * `--ai` is the escape hatch for rows the program pass still cannot decide —
+ * ambiguous short-form videos, and music rows without a sub-category. It writes
+ * both layers, exactly like the `vtual:audit-content-ai` drainer.
+ */
 #[AsCommand(name: 'vtual:classify-contents')]
 class ClassifyContentsCommand extends Command
 {
     protected $signature = 'vtual:classify-contents
                             {--chunk=500 : Rows per chunk}
                             {--include-classified : Recompute already-classified rows too}
-                            {--ai : Fill null sub-categories on music rows via the AI audit pass (requires configured endpoint/key)}';
+                            {--ai : Resolve rows the program pass cannot decide via the AI audit pass (requires configured endpoint/key)}';
 
-    protected $description = 'Backfill content classification on hydrated YouTube contents (heuristic pass, optional AI audit pass with --ai)';
+    protected $description = 'Backfill content classification on hydrated YouTube contents (program pass, optional AI pass with --ai)';
 
-    public function handle(ContentCategoryClassifier $classifier, ContentAiClassifier $ai): int
-    {
+    public function handle(
+        ContentCategoryClassifier $classifier,
+        ContentKindClassifier $kinds,
+        ContentAiClassifier $ai,
+    ): int {
         $chunk = max(1, (int) $this->option('chunk'));
         $includeClassified = (bool) $this->option('include-classified');
         $withAi = (bool) $this->option('ai');
@@ -37,7 +53,8 @@ class ClassifyContentsCommand extends Command
             ->orderBy('id');
 
         if (! $includeClassified) {
-            $query->whereNull('content_category');
+            // Incomplete-row driven: work is needed when either layer is missing.
+            $query->where(fn ($q) => $q->whereNull('content_category')->orWhereNull('content_type'));
         }
 
         $total = (clone $query)->count();
@@ -49,40 +66,76 @@ class ClassifyContentsCommand extends Command
 
         $this->info("Classifying {$total} row(s)…");
 
-        $counts = array_fill_keys(['cover', 'original', 'singing_stream', 'ai_cover', 'ai_original', 'ai_singing_stream', 'unknown'], 0);
+        $counts = array_fill_keys([
+            'kind_music', 'kind_non_music',
+            'cover', 'original', 'singing_stream',
+            'ai_music', 'ai_non_music', 'ai_category',
+            'unresolved',
+        ], 0);
         $processed = 0;
 
-        $query->chunkById($chunk, function ($rows) use ($classifier, $ai, $withAi, &$counts, &$processed): void {
+        $query->chunkById($chunk, function ($rows) use ($classifier, $kinds, $ai, $withAi, &$counts, &$processed): void {
             foreach ($rows as $content) {
-                $category = $classifier->classifyStored([
+                $video = [
+                    'external_id' => $content->external_id,
                     'title' => $content->title,
                     'description' => $content->description,
-                    'duration_seconds' => $this->storedDurationSeconds($content),
+                    'duration_seconds' => $content->durationSeconds(),
                     'type' => $content->type?->value ?? (string) $content->type,
-                ]);
+                ];
 
-                if ($category !== null) {
-                    $content->content_category = $category;
+                $dirty = false;
+
+                // Layer 1 — music / non-music (program signals only).
+                if ($content->content_type === null) {
+                    $kind = $kinds->kind($video);
+                    if ($kind !== null) {
+                        $content->content_type = $kind;
+                        $counts['kind_'.$kind->value]++;
+                        $dirty = true;
+                    }
+                }
+
+                // Layer 2 — sub-category heuristics.
+                if ($content->content_category === null) {
+                    $category = $classifier->classifyStored($video);
+                    if ($category !== null) {
+                        $content->content_category = $category;
+                        $counts[$category->value] = ($counts[$category->value] ?? 0) + 1;
+                        $dirty = true;
+                    }
+                }
+
+                if ($dirty) {
                     $content->save();
-                    $counts[$category->value] = ($counts[$category->value] ?? 0) + 1;
-                } elseif ($withAi && $content->content_type === ContentKind::Music) {
-                    $audited = $ai->classifyMusicContent([
-                        'external_id' => $content->external_id,
-                        'title' => $content->title,
-                        'description' => $content->description,
-                        'duration_seconds' => $this->storedDurationSeconds($content),
-                    ]);
+                }
+
+                // Layer 3 — AI, only for rows still incomplete.
+                if ($withAi && $this->needsAi($content)) {
+                    $audited = $ai->classifyContent($video);
 
                     if ($audited !== null) {
-                        $content->content_category = $audited['category'];
-                        $content->content_category_detail = $audited['detail'];
+                        if ($audited['is_music']) {
+                            $content->content_type = ContentKind::Music;
+                            $content->content_category = $audited['category'];
+                            $content->content_category_detail = $audited['detail'];
+                            $counts['ai_music']++;
+                            if ($audited['category'] !== null) {
+                                $counts['ai_category']++;
+                            }
+                        } else {
+                            $content->content_type = ContentKind::NonMusic;
+                            $content->content_category = null;
+                            $content->content_category_detail = null;
+                            $counts['ai_non_music']++;
+                        }
+
                         $content->save();
-                        $counts['ai_'.$audited['category']->value] = ($counts['ai_'.$audited['category']->value] ?? 0) + 1;
                     } else {
-                        $counts['unknown']++;
+                        $counts['unresolved']++;
                     }
-                } else {
-                    $counts['unknown']++;
+                } elseif ($this->needsAi($content)) {
+                    $counts['unresolved']++;
                 }
 
                 $processed++;
@@ -90,28 +143,24 @@ class ClassifyContentsCommand extends Command
         });
 
         $this->table(
-            ['cover', 'original', 'singing_stream', 'ai_cover', 'ai_original', 'ai_singing_stream', 'unknown', 'processed'],
-            [[
-                $counts['cover'],
-                $counts['original'],
-                $counts['singing_stream'],
-                $counts['ai_cover'],
-                $counts['ai_original'],
-                $counts['ai_singing_stream'],
-                $counts['unknown'],
-                $processed,
-            ]],
+            array_keys($counts),
+            [array_values($counts)],
         );
+        $this->line("Processed {$processed} row(s).");
 
         return self::SUCCESS;
     }
 
-    private function storedDurationSeconds(Content $content): ?int
+    /**
+     * Same completeness rule the audit enqueue uses: no kind at all, or music
+     * without a sub-category.
+     */
+    private function needsAi(Content $content): bool
     {
-        if ($content->started_at !== null && $content->ended_at !== null) {
-            return (int) $content->ended_at->diffInSeconds($content->started_at);
+        if ($content->content_type === null) {
+            return true;
         }
 
-        return null;
+        return $content->content_type === ContentKind::Music && $content->content_category === null;
     }
 }

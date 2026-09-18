@@ -60,16 +60,77 @@ class PlatformVideoDtoMapperTest extends TestCase
     }
 
     #[Test]
-    public function resolves_content_type_from_category_id(): void
+    public function resolves_music_from_the_music_topic_before_category_id(): void
+    {
+        // The real-world false negative: a vTuber cover filed under 22
+        // (People & Blogs) that still carries the YouTube Music topic.
+        $cover = $this->mapper->toUpsertPayload($this->dto(
+            'uploaded',
+            categoryId: '22',
+            topicCategories: ['https://en.wikipedia.org/wiki/Music'],
+        ));
+        $this->assertSame('music', $cover['content_type']);
+
+        $gaming = $this->mapper->toUpsertPayload($this->dto(
+            'uploaded',
+            categoryId: '20',
+            topicCategories: ['https://en.wikipedia.org/wiki/Music'],
+        ));
+        $this->assertSame('music', $gaming['content_type']);
+    }
+
+    #[Test]
+    public function resolves_music_from_the_category_id_when_no_topic_is_present(): void
     {
         $music = $this->mapper->toUpsertPayload($this->dto('uploaded', categoryId: '10'));
         $this->assertSame('music', $music['content_type']);
+    }
 
-        $nonMusic = $this->mapper->toUpsertPayload($this->dto('uploaded', categoryId: '24'));
+    #[Test]
+    public function resolves_music_from_a_title_or_tag_keyword(): void
+    {
+        $tagged = $this->mapper->toUpsertPayload($this->dto(
+            'uploaded',
+            categoryId: '24',
+            tags: ['歌枠', 'karaoke'],
+        ));
+        $this->assertSame('music', $tagged['content_type']);
+    }
+
+    #[Test]
+    public function resolves_long_form_without_signals_to_non_music(): void
+    {
+        $nonMusic = $this->mapper->toUpsertPayload($this->dto('uploaded', categoryId: '24', durationSeconds: 3600));
         $this->assertSame('non_music', $nonMusic['content_type']);
+    }
 
+    #[Test]
+    public function leaves_short_form_without_signals_unknown_for_the_ai_audit(): void
+    {
+        // Short + no signal is exactly the bucket the async AI pass exists for;
+        // guessing non_music here is the false negative this layer removes.
         $unknown = $this->mapper->toUpsertPayload($this->dto('uploaded', categoryId: null));
         $this->assertNull($unknown['content_type']);
+
+        $short = $this->mapper->toUpsertPayload($this->dto('uploaded', categoryId: '22', durationSeconds: 180));
+        $this->assertNull($short['content_type']);
+    }
+
+    #[Test]
+    public function carries_the_signals_the_content_service_fallback_needs(): void
+    {
+        $payload = $this->mapper->toUpsertPayload($this->dto(
+            'uploaded',
+            categoryId: '22',
+            durationSeconds: 180,
+            topicCategories: ['https://en.wikipedia.org/wiki/Music'],
+            tags: ['cover'],
+        ));
+
+        $this->assertSame('22', $payload['category_id']);
+        $this->assertSame(180, $payload['duration_seconds']);
+        $this->assertSame(['https://en.wikipedia.org/wiki/Music'], $payload['topic_categories']);
+        $this->assertSame(['cover'], $payload['tags']);
     }
 
     #[Test]
@@ -105,13 +166,23 @@ class PlatformVideoDtoMapperTest extends TestCase
         $this->assertArrayNotHasKey('scheduled_at', $payload);
     }
 
-    private function dto(string $status, ?string $categoryId = '10'): PlatformVideoDto
-    {
+    /**
+     * @param  list<string>  $topicCategories
+     * @param  list<string>  $tags
+     */
+    private function dto(
+        string $status,
+        ?string $categoryId = '10',
+        int $durationSeconds = 120,
+        array $topicCategories = [],
+        array $tags = [],
+        string $title = 'Title',
+    ): PlatformVideoDto {
         return new PlatformVideoDto(
             platform: PlatformKey::Youtube,
             externalId: 'vid1',
             channelExternalId: 'UCabc',
-            title: 'Title',
+            title: $title,
             description: 'Desc',
             thumbnailUrl: 'https://img.example/thumb.jpg',
             url: 'https://www.youtube.com/watch?v=vid1',
@@ -119,10 +190,12 @@ class PlatformVideoDtoMapperTest extends TestCase
             publishedAt: Carbon::parse('2026-01-01T00:00:00Z'),
             startedAt: Carbon::parse('2026-01-01T12:00:00Z'),
             endedAt: null,
-            durationSeconds: 120,
+            durationSeconds: $durationSeconds,
             viewCount: 10,
             concurrentViewers: null,
             categoryId: $categoryId,
+            topicCategories: $topicCategories,
+            tags: $tags,
         );
     }
 }

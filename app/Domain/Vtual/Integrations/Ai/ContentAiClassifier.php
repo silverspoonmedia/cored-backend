@@ -10,15 +10,17 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * AI audit client for the music sub-category layer (cover / original /
- * singing_stream). OpenAI-compatible chat-completions, JSON mode.
+ * AI audit client for content classification. Never runs inline on the hydrate
+ * path — it drains the `vtual_content_ai_audit` pool from a scheduled command.
+ * OpenAI-compatible chat-completions, JSON mode.
  *
- * Scope guard: this client NEVER decides the music/non-music layer — that
- * stays program-only (ContentKind::fromCategoryId). It only fills sub-category
- * gaps the heuristic classifier could not resolve.
+ * Scope: this is the fallback pass for rows the program classifier could not
+ * resolve. It may set both layers (content_type and content_category), because
+ * the program layer deliberately leaves ambiguous short-form videos unknown.
+ * Where the program layer produced a verdict, that verdict is authoritative.
  *
  * Never throws: no bound AI connection, HTTP failure, malformed JSON, or
- * low confidence all return null so the caller leaves content_category null.
+ * low confidence all return null so the caller leaves the row untouched.
  */
 class ContentAiClassifier
 {
@@ -27,17 +29,23 @@ class ContentAiClassifier
     ) {}
 
     /**
-     * Classify one music video's sub-category.
+     * Decide both layers for one video.
+     *
+     * `is_music` is always present when a result comes back; `category` is null
+     * whenever `is_music` is false, and `detail` is cover-only attribution.
      *
      * @param  array{
      *     external_id?: string|null,
      *     title?: string|null,
      *     description?: string|null,
+     *     category_id?: string|null,
      *     duration_seconds?: int|null,
+     *     topic_categories?: list<string>|null,
+     *     tags?: list<string>|null,
      * }  $video
-     * @return array{category: ContentCategory, detail: ?string, confidence: float}|null
+     * @return array{is_music: bool, category: ?ContentCategory, detail: ?string, confidence: float}|null
      */
-    public function classifyMusicContent(array $video): ?array
+    public function classifyContent(array $video): ?array
     {
         $config = $this->config();
         $connection = $this->connection($config);
@@ -53,21 +61,57 @@ class ContentAiClassifier
 
         $cacheKey = 'vtual:ai:classify:'.md5($externalId !== '' ? $externalId : $title);
         $cached = Cache::get($cacheKey);
-        if (is_array($cached)) {
-            return $cached['category'] !== null && isset($cached['confidence'])
-                ? $cached
-                : null;
+        if (is_array($cached) && isset($cached['is_music'], $cached['confidence'])) {
+            return [
+                'is_music' => (bool) $cached['is_music'],
+                'category' => $cached['category'] ?? null,
+                'detail' => $cached['detail'] ?? null,
+                'confidence' => (float) $cached['confidence'],
+            ];
         }
 
         $result = $this->request($config, $connection, $video);
 
+        // Cache the whole verdict, including the negatives: a "not music" call
+        // is as expensive as a positive one, and the pool must not re-ask.
         Cache::put($cacheKey, [
-            'category' => $result !== null ? $result['category'] : null,
+            'is_music' => $result['is_music'] ?? false,
+            'category' => $result['category'] ?? null,
             'detail' => $result['detail'] ?? null,
             'confidence' => $result['confidence'] ?? 0.0,
         ], max(1, (int) ($config['cache_ttl_hours'] ?? 168)) * 3600);
 
         return $result;
+    }
+
+    /**
+     * Classify only the music sub-category, for callers that already know the
+     * row is music. Returns null when the AI says it is not music at all.
+     *
+     * @param  array{
+     *     external_id?: string|null,
+     *     title?: string|null,
+     *     description?: string|null,
+     *     category_id?: string|null,
+     *     duration_seconds?: int|null,
+     *     topic_categories?: list<string>|null,
+     *     tags?: list<string>|null,
+     * }  $video
+     * @return array{category: ContentCategory, detail: ?string, confidence: float}|null
+     */
+    public function classifyMusicContent(array $video): ?array
+    {
+        $result = $this->classifyContent($video);
+
+        if ($result === null || ! $result['is_music'] || $result['category'] === null) {
+            return null;
+        }
+
+        return [
+            'category' => $result['category'],
+            'detail' => $result['detail'],
+            'confidence' => $result['confidence'],
+        ];
     }
 
     /**
@@ -121,8 +165,8 @@ class ContentAiClassifier
 
     /**
      * @param  array<string, mixed>  $config
-     * @param  array{title?: string|null, description?: string|null, duration_seconds?: int|null}  $video
-     * @return array{category: ContentCategory, detail: ?string, confidence: float}|null
+     * @param  array<string, mixed>  $video
+     * @return array{is_music: bool, category: ?ContentCategory, detail: ?string, confidence: float}|null
      */
     private function request(array $config, AiConnectionData $connection, array $video): ?array
     {
@@ -144,7 +188,7 @@ class ContentAiClassifier
                 'stream' => false,
                 'response_format' => ['type' => 'json_object'],
                 'temperature' => 0.0,
-                'max_tokens' => max(50, (int) ($config['max_tokens'] ?? 200)),
+                'max_tokens' => max(256, (int) ($config['max_tokens'] ?? 4000)),
                 'messages' => [
                     ['role' => 'system', 'content' => $this->systemPrompt()],
                     ['role' => 'user', 'content' => $this->userPrompt($video)],
@@ -164,7 +208,7 @@ class ContentAiClassifier
     }
 
     /**
-     * @return array{category: ContentCategory, detail: ?string, confidence: float}|null
+     * @return array{is_music: bool, category: ?ContentCategory, detail: ?string, confidence: float}|null
      */
     private function parse(?string $content, float $minConfidence): ?array
     {
@@ -178,8 +222,10 @@ class ContentAiClassifier
             return null;
         }
 
-        $categoryValue = is_string($decoded['category'] ?? null) ? trim((string) $decoded['category']) : '';
-        if (! in_array($categoryValue, ContentCategory::values(), true)) {
+        // A missing/unreadable is_music is a malformed answer, not a "no":
+        // guessing false here would wrongly write non_music onto the row.
+        $isMusic = $this->toBool($decoded['is_music'] ?? null);
+        if ($isMusic === null) {
             return null;
         }
 
@@ -188,13 +234,63 @@ class ContentAiClassifier
             return null;
         }
 
+        if (! $isMusic) {
+            return [
+                'is_music' => false,
+                'category' => null,
+                'detail' => null,
+                'confidence' => $confidence,
+            ];
+        }
+
+        // is_music true with no sub-category at all is still a valid layer-1
+        // verdict — the music/non-music answer is the point, the sub-category
+        // is a bonus. But an explicit *unknown* category next to is_music true
+        // is a self-contradictory answer, so treat that as malformed.
+        $categoryValue = is_string($decoded['category'] ?? null) ? trim((string) $decoded['category']) : '';
+        if ($categoryValue !== '' && ! in_array($categoryValue, ContentCategory::values(), true)) {
+            return null;
+        }
+
+        $category = $categoryValue !== '' ? ContentCategory::from($categoryValue) : null;
+
         $detail = is_string($decoded['detail'] ?? null) ? trim((string) $decoded['detail']) : '';
 
         return [
-            'category' => ContentCategory::from($categoryValue),
-            'detail' => $detail !== '' ? $detail : null,
+            'is_music' => true,
+            'category' => $category,
+            'detail' => $category !== null && $detail !== '' ? $detail : null,
             'confidence' => $confidence,
         ];
+    }
+
+    /**
+     * Strict boolean reader. Endpoints that ignore json_object and answer in
+     * prose often emit "true"/"false" strings instead of real booleans.
+     */
+    private function toBool(mixed $value): ?bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            return match (mb_strtolower(trim($value))) {
+                'true', 'yes', '1' => true,
+                'false', 'no', '0' => false,
+                default => null,
+            };
+        }
+
+        if (is_int($value)) {
+            return match ($value) {
+                1 => true,
+                0 => false,
+                default => null,
+            };
+        }
+
+        return null;
     }
 
     /**
@@ -227,22 +323,31 @@ class ContentAiClassifier
     private function systemPrompt(): string
     {
         return <<<'TXT'
-            You audit vTuber (virtual YouTuber) YouTube videos that are already known to be music.
-            Decide the sub-category. Reply with JSON only: {"category": "cover"|"original"|"singing_stream", "detail": string|null, "confidence": number 0-1}.
+            You classify vTuber (virtual YouTuber) YouTube videos for a catalogue.
+            Decide two things: whether the video is music, and if so its sub-category.
+            Reply with JSON only: {"is_music": boolean, "category": "cover"|"original"|"singing_stream"|null, "detail": string|null, "confidence": number 0-1}.
 
-            Definitions:
+            is_music:
+            - true for a song recording or a singing performance: original songs/MVs, covers (歌ってみた), singing streams (歌枠), karaoke.
+            - false for gameplay, let's plays, talk/雑談 streams, ASMR, unboxing, announcements, clips, variety shows.
+            - A video that merely uses background music is NOT music.
+            - When is_music is false, category MUST be null.
+
+            category (only when is_music is true):
             - original: an original song / MV by the vTuber or their group (オリジナル曲, オリジナルMV, "original song").
             - singing_stream: a singing/karaoke live stream or its archive (歌枠, カラオケ枠, singing stream).
             - cover: a performance of an existing song written by someone else (歌ってみた, covered by, cover).
             - detail: for covers only, the best-known original song attribution "Artist - Track" if you are confident; otherwise null.
 
-            Japanese vTuber culture is the primary context (utaite / vocaloid covers). If you cannot
-            decide confidently, use confidence below 0.5 rather than guessing.
+            Japanese vTuber culture is the primary context (utaite / vocaloid covers). The category id and
+            topics are hints only — vTubers file covers under Gaming or People & Blogs, so trust the
+            title and description over the category id.
+            If you cannot decide confidently, use confidence below 0.5 rather than guessing.
             TXT;
     }
 
     /**
-     * @param  array{title?: string|null, description?: string|null, duration_seconds?: int|null}  $video
+     * @param  array<string, mixed>  $video
      */
     private function userPrompt(array $video): string
     {
@@ -258,6 +363,40 @@ class ContentAiClassifier
             $lines[] = 'Duration: '.(int) $duration.' seconds';
         }
 
+        $categoryId = trim((string) ($video['category_id'] ?? ''));
+        if ($categoryId !== '') {
+            $lines[] = 'Platform category id: '.$categoryId;
+        }
+
+        $topics = $this->stringList($video['topic_categories'] ?? null);
+        if ($topics !== []) {
+            $lines[] = 'Platform topics: '.implode(', ', array_slice($topics, 0, 10));
+        }
+
+        $tags = $this->stringList($video['tags'] ?? null);
+        if ($tags !== []) {
+            $lines[] = 'Uploader tags: '.implode(', ', array_slice($tags, 0, 25));
+        }
+
         return implode("\n", $lines);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function stringList(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($value as $entry) {
+            if (is_string($entry) && trim($entry) !== '') {
+                $out[] = $entry;
+            }
+        }
+
+        return $out;
     }
 }

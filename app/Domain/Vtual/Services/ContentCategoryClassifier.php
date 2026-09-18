@@ -143,9 +143,12 @@ class ContentCategoryClassifier
     }
 
     /**
+     * Public so ContentKindClassifier (music/non-music layer) reuses the exact
+     * same vocabulary instead of drifting from this list.
+     *
      * @return list<string>
      */
-    private function originalKeywords(): array
+    public function originalKeywords(): array
     {
         return ['オリジナル曲', 'オリジナル楽曲', 'オリジナルmv', 'original song', 'original mv', 'original tune'];
     }
@@ -153,7 +156,7 @@ class ContentCategoryClassifier
     /**
      * @return list<string>
      */
-    private function strongCoverKeywords(): array
+    public function strongCoverKeywords(): array
     {
         return ['歌ってみた', '歌ってみました', '弾き語り', 'cover by', 'covered by', 'cover】', '】cover', 'cover]', '[cover'];
     }
@@ -161,7 +164,7 @@ class ContentCategoryClassifier
     /**
      * @return list<string>
      */
-    private function singingStreamKeywords(): array
+    public function singingStreamKeywords(): array
     {
         return ['歌枠', 'カラオケ枠', 'singing stream', 'karaoke stream'];
     }

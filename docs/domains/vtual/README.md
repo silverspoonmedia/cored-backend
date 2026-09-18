@@ -140,7 +140,8 @@ Canonical content is **not** multi-owned. Same platform video may **appear** on 
 
 | Piece | Role |
 |-------|------|
-| `vtual_contents` | One row per `(platform_id, external_id)`; `channel_id` + `creator_id` = primary host |
+| `vtual_contents` | One row per `(platform_id, external_id)`; `channel_id` + `creator_id` = primary host. Carries the two classification layers: `content_type` (music layer) + `content_category` / `content_category_detail` |
+| `vtual_content_ai_audit` | AI audit work queue (one row per content): `status` pending/processing/done/failed, `attempts`, `requested_at`, `processed_at`, `error`. Written on hydrate, drained by `vtual:audit-content-ai` |
 | `vtual_content_appearances` | Pivot: `content_id` + `channel_id` + denormalized `creator_id` + `role` |
 | `ContentAppearanceRole` | `primary` (host), `collaborator` (official collab when known), `network` (sibling/brand) |
 | `ContentService` | Worker foundation: `upsertFromPrimary`, `attachAppearance`, `detachAppearance`, `setPrimary`, `listForChannel` / `listForCreator` |
@@ -717,7 +718,7 @@ Permanent debug surface for **production** `PlatformApiGateway` — **not** temp
 
 **Methods:** `fetch_videos`, `fetch_videos_chunked`, `fetch_channels`, `resolve_channel`, `fetch_streams` (Twitch only).
 
-**Classification preview (documented exception):** `fetch_videos` / `fetch_videos_chunked` items append `content_type` + `content_category` + `content_category_detail` — debug-only, computed in `PlatformApiProbeService::appendClassificationPreview`, **never persisted** (persistence stays on the hydrate path). See [Content classification](#content-classification-music-layer--cover-song-detection).
+**Classification preview (documented exception):** `fetch_videos` / `fetch_videos_chunked` items append `content_type` + `content_type_signal` + `content_category` + `content_category_detail` — debug-only, computed in `PlatformApiProbeService::appendClassificationPreview`, **never persisted** (persistence stays on the hydrate path). `content_type_signal` (`topic` | `category_id` | `keyword` | `original_credit` | `long_form`, null = unknown) names the signal that decided the music layer, so a wrong verdict can be traced without re-running the classifier by hand. See [Content classification](#content-classification-music-layer--cover-song-detection).
 
 #### Agent rule — production mirror (mandatory)
 
@@ -823,7 +824,19 @@ Web UI: link from credentials index → **API probe**.
 
 ## Content classification (music layer + cover song detection)
 
-**Layer 1 — `vtual_contents.content_type` (`music` | `non_music`, null = unknown).** Program-only, deterministic: derived from YouTube `snippet.categoryId` via `ContentKind::fromCategoryId` (`'10'` = Music → `music`; any other non-empty id → `non_music`; null/empty → unknown). No AI, no heuristics — zero false positives by construction. Twitch stream upserts leave it null. Exposed on the public profile API and the probe preview.
+**Layer 1 — `vtual_contents.content_type` (`music` | `non_music`, null = unknown).** Program-only and deterministic — no AI — but **not** `categoryId` alone: vTubers routinely file covers under 20 (Gaming), 22 (People & Blogs) or 24 (Entertainment) instead of 10 (Music), so `categoryId` is one signal among several. `ContentKindClassifier` is the authority; `ContentKind::fromCategoryId` survives only as signal 2 and for legacy callers.
+
+Signal order (first match wins), implemented in `App\Domain\Vtual\Services\ContentKindClassifier`:
+
+1. `topicDetails.topicCategories` contains `content_classification.music_topic` (`https://en.wikipedia.org/wiki/Music`) → `music` (signal `topic`). **This is the signal that catches vTuber covers** — live probe of real covers showed categoryId 22 and 20 while all carried the Music topic, and 0/13 gameplay/ASMR/talk samples did.
+2. `snippet.categoryId === content_classification.music_category_id` (`'10'`) → `music` (signal `category_id`).
+3. Music keyword in the **title or the uploader's tags** → `music` (signal `keyword`). Never the description — gaming videos credit background music. Latin keywords match on a word boundary (`cover` must not fire on "discover"/"coverage"); CJK keywords are plain substrings.
+4. Description credits an original (`本家` / `原曲` / `original`) **and** links a video (`youtu.be` / `youtube.com` / `nicovideo.jp` / `nico.ms`) → `music` (signal `original_credit`).
+5. No positive signal and duration ≥ `long_form_min_seconds` (600) → `non_music` (signal `long_form`).
+6. No positive signal, short or unknown duration → **null (unknown)**. The AI audit decides these; guessing `non_music` here is the false negative this layer exists to remove.
+7. Non-YouTube (Twitch: no `topicCategories`, no `tags`, `categoryId` null) → null.
+
+`topicDetails` **must stay in `config('vtual.youtube.default_video_parts')`** — dropping it silently degrades the layer to `categoryId`-only. `PlatformVideoDto` carries `categoryId`, `topicCategories` and `tags` (mapped in `YoutubeDataApiClient::mapVideo`; Twitch passes empty arrays) and `PlatformVideoDtoMapper` forwards all of them plus `duration_seconds` into the upsert payload, so `ContentService::resolveKind` (the fallback for hand-built payloads) reaches the same verdict. Exposed on the public profile API and the probe preview.
 
 **Layer 2 — `vtual_contents.content_category` (`cover` | `original` | `singing_stream`, nullable = unclassified sub-category) + `content_category_detail` (catalog attribution, e.g. `てにをは - ヴィラン`).** Sub-classification inside the music layer, set inline during video hydrate by `ContentCategoryClassifier` (via `PlatformVideoDtoMapper`), recomputed every hydrate (idempotent). Never throws — failure leaves null. Best-effort: unknown sub-category does not affect `content_type`.
 
@@ -835,17 +848,18 @@ Decision order (first match wins):
 4. **Cover (weak → verify)** — `cover` / `カバー` / `feat.` / `acoustic` / `歌` in title+description **and** corroborated by YouTube `snippet.categoryId=10` (Music) or duration 90–420 s → verify track via `ItunesSearchClient` (public iTunes Search API, keyless, cached 7 h per term, failure-safe): match → `cover` + detail attribution; no match/failure → `cover`, detail null.
 5. Otherwise null.
 
-Config: `config/vtual.php` → `content_classification` (`music_category_id`, `cover_duration`, `itunes.*`, `ai.*`). YouTube `categoryId` flows through `PlatformVideoDto` (no extra quota — already inside `snippet`).
+Config: `config/vtual.php` → `content_classification` (`music_category_id`, `music_topic`, `long_form_min_seconds`, `original_credit_markers`, `cover_duration`, `itunes.*`, `ai.*`). YouTube `categoryId` / `topicDetails` / `tags` flow through `PlatformVideoDto` (no extra quota — already inside the `videos.list` response).
 
-**AI audit pass (sub-category only):** When heuristics return null on a `music` row, an LLM audit can fill the sub-category. The music/non-music layer itself is **never** AI-decided. Config split follows the repo tier policy: endpoint + API key come from the core [Ai domain](../ai/README.md) — bound through the Tier B slug `vtual.content_classification.ai.connection` (empty = the default `ai_connections` row), while `vtual.content_classification.ai.*` (enabled, model, max_tokens, timeout, min_confidence, cache_ttl_hours) stay Tier B — Settings → vTual. Disabled/unconfigured by default outside local; the local profile turns it on with `vtual.content_classification.ai.enabled = true` + `model = internal.sspn_misc` ([`config/settings-local.php`](../../../config/settings-local.php)). Failure, malformed JSON, unknown category, or low confidence all leave the row null (never throws, cached per external_id). The former `VTUAL_AI_CLASSIFY_ENDPOINT` / `VTUAL_AI_CLASSIFY_API_KEY` env keys are removed.
+**AI audit pass (both layers, asynchronously):** the program pass deliberately leaves ambiguous short-form videos unknown, so an LLM audit resolves them — it may set **either** layer (`content_type` *and* the sub-category). Where the program pass produced a verdict, that verdict stays authoritative. Config split follows the repo tier policy: endpoint + API key come from the core [Ai domain](../ai/README.md) — bound through the Tier B slug `vtual.content_classification.ai.connection` (empty = the default `ai_connections` row), while `vtual.content_classification.ai.*` (enabled, model, max_tokens, timeout, min_confidence, cache_ttl_hours) stay Tier B — Settings → vTual. Disabled/unconfigured by default outside local; the local profile turns it on with `vtual.content_classification.ai.enabled = true` + `model = internal.sspn_misc` ([`config/settings-local.php`](../../../config/settings-local.php)). Failure, malformed JSON, a missing `is_music` flag, or low confidence all return null and leave the row untouched (never throws, cached per external_id — **including negative verdicts**, so the pool does not re-ask). The former `VTUAL_AI_CLASSIFY_ENDPOINT` / `VTUAL_AI_CLASSIFY_API_KEY` env keys are removed.
 
-**Reply parsing is defensive.** Chat-completions endpoints wrap the object in a markdown fence (```` ```json … ``` ````) or pad it with prose even under `response_format: json_object`; `ContentAiClassifier::decodeJson()` decodes the raw body first, then the outermost `{…}` object. **`max_tokens` must cover reasoning tokens** for reasoning-style aliases — at a low budget the model spends everything before emitting `content`, and the reply arrives as `finish_reason: length` with an empty body. The local profile raises it to 2000 with `timeout` 120 to match; the prod-safe literals (`config/vtual.php`) stay tight.
+**Reply parsing is defensive.** Chat-completions endpoints wrap the object in a markdown fence (```` ```json … ``` ````) or pad it with prose even under `response_format: json_object`; `ContentAiClassifier::decodeJson()` decodes the raw body first, then the outermost `{…}` object. **`max_tokens` must cover reasoning tokens** for reasoning-style aliases — at a low budget the model spends everything before emitting `content`, and the reply arrives as `finish_reason: length` with an empty body. Measured on real videos: 600 returned empty content on 4 of 5, 4000 worked, so the default is 4000 (floor 256) and the local profile matches with `timeout` 120.
 
 Audit paths:
-- **Hydrate:** `ContentService::upsertFromPrimary` → `ContentAiAuditService::enqueueIfEligible` records a pending row in `vtual_content_ai_audit` (only when AI enabled + configured; no-op otherwise, never blocks hydrate).
-- **Manual pass:** `php artisan vtual:classify-contents --ai` audits YouTube music rows with `content_category` still null (fails fast with a clear error when AI is unconfigured).
+- **Hydrate:** `ContentService::upsertFromPrimary` → `ContentAiAuditService::enqueueIfEligible` records a pending row in `vtual_content_ai_audit` when `content_type` is null **or** `content_type = music` with a null sub-category (only when AI enabled + configured; no-op otherwise, never blocks hydrate). Idempotent per content while a pending row exists.
+- **Drainer:** `php artisan vtual:audit-content-ai [--limit=25] [--max-attempts=3] [--stale-minutes=15]` claims pending rows (`lockForUpdate`), calls the AI, writes both layers, and marks `done` / `failed` with `attempts`, `error`, `processed_at`. Scheduled every five minutes with `--limit=5` (one measured call ran 7–40 s, so the batch must fit inside the window) and `withoutOverlapping`. **This is the piece that makes the pool real** — without it the table is write-only. A run killed mid-flight leaves rows in `processing`; `--stale-minutes` returns them to `pending`, and `attempts` is charged at claim time so retries stay bounded.
+- **Manual pass:** `php artisan vtual:classify-contents --ai` runs the program pass over YouTube rows and then audits whatever is still incomplete (fails fast with a clear error when AI is unconfigured).
 
-Backfill stored rows (heuristic-only, no iTunes): `php artisan vtual:classify-contents [--chunk=500] [--include-classified]` — YouTube rows with `hydrated_at` set and `content_category` null. Public API `GET vtual/public/vtubers/{slug}` contents items expose `content_type` + `content_category` + `content_category_detail`.
+Backfill stored rows (program-only, no iTunes): `php artisan vtual:classify-contents [--chunk=500] [--include-classified]` — YouTube rows with `hydrated_at` set and `content_category` **or** `content_type` null. The stored row carries no `categoryId` / `topicCategories` / `tags` (transient mapper inputs), so a backfill only has title / description / duration and is weaker than hydrate. Public API `GET vtual/public/vtubers/{slug}` contents items expose `content_type` + `content_category` + `content_category_detail`.
 
 ## Tests
 
@@ -887,8 +901,12 @@ composer test -- --filter=AccessibilityBlade
 | `DiscordConnectionDiscoveryServiceTest` | Private channel bind, promote, external links from Discord snapshot |
 | `DiscordConnectionsClientTest` | Normalize all connection types; `ownershipEligible`; `externalLinkCandidates` |
 | `CreatorProfileManageWebTest` | Manage profile web; channel add; Discord verify; promote discovered |
-| `ContentAiClassifierTest` | Fence-tolerant JSON parse, `max_tokens` wiring / floor, low-confidence and unknown category |
-| `ClassifyContentsCommandTest` | `vtual:classify-contents --ai` audit pass |
+| `ContentKindClassifierTest` | Music layer signal hierarchy — Music topic, categoryId, title/tag keyword, original credit, long-form, unknown bucket, Twitch |
+| `YoutubeVideoSignalsMappingTest` | `topicDetails` in default parts; `topicCategories`/`tags` mapped onto the DTO and probe serializer |
+| `ContentAiClassifierTest` | Fence-tolerant JSON parse, both-layer verdict shape, `is_music` false / missing, signal prompt, `max_tokens` wiring / floor, low-confidence |
+| `ContentAiAuditServiceTest` | Audit enqueue: unknown kind, music without sub-category, skip resolved/non-music, no-op when disabled, no duplicates |
+| `AuditContentAiCommandTest` | `vtual:audit-content-ai` drain: writes both layers, clears stale sub-category on a non-music verdict, failed/stale/attempt-cap handling |
+| `ClassifyContentsCommandTest` | `vtual:classify-contents` program + `--ai` passes |
 | `CreatorClaimServiceTest` (filters) | Bio proof-channel-only; Discord discovery; `verified_channel_id` contract |
 | `VtualBladeWebTest` | **Archived** — `tests/_archive/Feature/Http/Controllers/Web/` |
 | `AccessibilityBladeTest` (vtual) | `vtual/partials/confirm-modal`, `vtual-nav`, `status-badge`, `confirm-modal.js`, `credential-form.js` a11y invariants |

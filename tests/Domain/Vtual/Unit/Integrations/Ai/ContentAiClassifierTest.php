@@ -37,7 +37,7 @@ class ContentAiClassifierTest extends TestCase
             'vtual.content_classification.ai.connection' => '',
             'vtual.content_classification.ai.model' => 'audit-model',
             'vtual.content_classification.ai.timeout' => 15,
-            'vtual.content_classification.ai.max_tokens' => 200,
+            'vtual.content_classification.ai.max_tokens' => 4_000,
             'vtual.content_classification.ai.min_confidence' => 0.7,
             'vtual.content_classification.ai.cache_ttl_hours' => 168,
         ]);
@@ -72,7 +72,7 @@ class ContentAiClassifierTest extends TestCase
     }
 
     #[Test]
-    public function valid_json_response_resolves_category_and_detail(): void
+    public function valid_json_response_resolves_both_layers(): void
     {
         $this->bindAiConnection(self::ENDPOINT);
         $this->configureAiKnobs();
@@ -84,6 +84,7 @@ class ContentAiClassifierTest extends TestCase
             'ai.example.test/*' => Http::response([
                 'choices' => [
                     ['message' => ['content' => json_encode([
+                        'is_music' => true,
                         'category' => 'cover',
                         'detail' => 'てにをは - ヴィラン',
                         'confidence' => 0.9,
@@ -92,20 +93,141 @@ class ContentAiClassifierTest extends TestCase
             ], 200),
         ]);
 
-        $result = $ai->classifyMusicContent([
+        $result = $ai->classifyContent([
             'external_id' => 'vid1',
             'title' => 'ヴィラン (cover)',
             'duration_seconds' => 234,
         ]);
 
         $this->assertNotNull($result);
+        $this->assertTrue($result['is_music']);
         $this->assertSame('cover', $result['category']->value);
         $this->assertSame('てにをは - ヴィラン', $result['detail']);
         $this->assertSame(0.9, $result['confidence']);
 
         // Cached per external_id — second call hits no HTTP.
-        $again = $ai->classifyMusicContent(['external_id' => 'vid1', 'title' => 'ヴィラン (cover)']);
+        $again = $ai->classifyContent(['external_id' => 'vid1', 'title' => 'ヴィラン (cover)']);
+        $this->assertTrue($again['is_music']);
         $this->assertSame('cover', $again['category']->value);
+    }
+
+    #[Test]
+    public function not_music_verdict_returns_a_null_category(): void
+    {
+        $this->bindAiConnection(self::ENDPOINT);
+        $this->configureAiKnobs();
+
+        $ai = $this->makeClassifier();
+
+        Http::fake([
+            'ai.example.test/*' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => json_encode([
+                        'is_music' => false,
+                        'category' => null,
+                        'detail' => null,
+                        'confidence' => 0.93,
+                    ])]],
+                ],
+            ], 200),
+        ]);
+
+        $result = $ai->classifyContent(['external_id' => 'vid-game', 'title' => 'Minecraft Hardcore Ep 1']);
+
+        $this->assertNotNull($result);
+        $this->assertFalse($result['is_music']);
+        $this->assertNull($result['category']);
+
+        // A "not music" verdict is still cached — the pool must not re-ask.
+        $again = $ai->classifyContent(['external_id' => 'vid-game', 'title' => 'Minecraft Hardcore Ep 1']);
+        $this->assertFalse($again['is_music']);
+    }
+
+    #[Test]
+    public function music_verdict_without_a_category_is_still_a_verdict(): void
+    {
+        $this->bindAiConnection(self::ENDPOINT);
+        $this->configureAiKnobs();
+
+        $ai = $this->makeClassifier();
+
+        Http::fake([
+            'ai.example.test/*' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => json_encode([
+                        'is_music' => true,
+                        'category' => null,
+                        'confidence' => 0.8,
+                    ])]],
+                ],
+            ], 200),
+        ]);
+
+        $result = $ai->classifyContent(['external_id' => 'vid-music-nocat', 'title' => '星を編む']);
+
+        $this->assertNotNull($result);
+        $this->assertTrue($result['is_music']);
+        $this->assertNull($result['category']);
+
+        // The sub-category-only convenience view has nothing to report here.
+        $this->assertNull($ai->classifyMusicContent(['external_id' => 'vid-music-nocat', 'title' => '星を編む']));
+    }
+
+    #[Test]
+    public function a_missing_is_music_flag_is_treated_as_a_malformed_answer(): void
+    {
+        $this->bindAiConnection(self::ENDPOINT);
+        $this->configureAiKnobs();
+
+        $ai = $this->makeClassifier();
+
+        // Guessing "false" here would wrongly stamp non_music onto the row.
+        Http::fake([
+            'ai.example.test/*' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => json_encode(['category' => 'cover', 'confidence' => 0.9])]],
+                ],
+            ], 200),
+        ]);
+
+        $this->assertNull($ai->classifyContent(['external_id' => 'vid-noflag', 'title' => '星を編む']));
+    }
+
+    #[Test]
+    public function signal_fields_are_fed_into_the_user_prompt(): void
+    {
+        $this->bindAiConnection(self::ENDPOINT);
+        $this->configureAiKnobs();
+
+        Http::fake([
+            'ai.example.test/*' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => json_encode([
+                        'is_music' => true,
+                        'category' => 'cover',
+                        'confidence' => 0.9,
+                    ])]],
+                ],
+            ], 200),
+        ]);
+
+        $this->makeClassifier()->classifyContent([
+            'external_id' => 'vid-signals',
+            'title' => 'KING (COVER)',
+            'category_id' => '22',
+            'topic_categories' => ['https://en.wikipedia.org/wiki/Music'],
+            'tags' => ['hololive', 'cover'],
+        ]);
+
+        Http::assertSent(function ($request): bool {
+            $user = $request->data()['messages'][1]['content'] ?? '';
+            $system = $request->data()['messages'][0]['content'] ?? '';
+
+            return str_contains($user, 'Platform category id: 22')
+                && str_contains($user, 'Platform topics: https://en.wikipedia.org/wiki/Music')
+                && str_contains($user, 'Uploader tags: hololive, cover')
+                && str_contains($system, 'is_music');
+        });
     }
 
     #[Test]
@@ -116,7 +238,7 @@ class ContentAiClassifierTest extends TestCase
 
         Http::fake([
             'ai.example.test/*' => Http::response([
-                'choices' => [['message' => ['content' => json_encode(['category' => 'cover', 'confidence' => 0.9])]]],
+                'choices' => [['message' => ['content' => json_encode(['is_music' => true, 'category' => 'cover', 'confidence' => 0.9])]]],
             ], 200),
         ]);
 
@@ -148,7 +270,7 @@ class ContentAiClassifierTest extends TestCase
 
         $ai = $this->makeClassifier();
 
-        $payload = json_encode(['category' => 'cover', 'detail' => 'てにをは - ヴィラン', 'confidence' => 0.95]);
+        $payload = json_encode(['is_music' => true, 'category' => 'cover', 'detail' => 'てにをは - ヴィラン', 'confidence' => 0.95]);
 
         Http::fake([
             'ai.example.test/*' => Http::response([
@@ -174,7 +296,7 @@ class ContentAiClassifierTest extends TestCase
 
         $ai = $this->makeClassifier();
 
-        $payload = json_encode(['category' => 'singing_stream', 'detail' => null, 'confidence' => 0.88]);
+        $payload = json_encode(['is_music' => true, 'category' => 'singing_stream', 'detail' => null, 'confidence' => 0.88]);
 
         Http::fake([
             'ai.example.test/*' => Http::response([
@@ -199,7 +321,7 @@ class ContentAiClassifierTest extends TestCase
 
         $ai = $this->makeClassifier();
 
-        $payload = json_encode(['category' => 'original', 'confidence' => 0.91]);
+        $payload = json_encode(['is_music' => true, 'category' => 'original', 'confidence' => 0.91]);
 
         Http::fake([
             'ai.example.test/*' => Http::response([
@@ -243,9 +365,11 @@ class ContentAiClassifierTest extends TestCase
         $this->configureAiKnobs();
         config(['vtual.content_classification.ai.max_tokens' => 10]);
 
+        // A reasoning model burns the budget on reasoning tokens and then returns
+        // an empty `content`; the floor is what keeps the JSON coming.
         Http::fake([
             'ai.example.test/*' => Http::response([
-                'choices' => [['message' => ['content' => json_encode(['category' => 'cover', 'confidence' => 0.9])]]],
+                'choices' => [['message' => ['content' => json_encode(['is_music' => true, 'category' => 'cover', 'confidence' => 0.9])]]],
             ], 200),
         ]);
 
@@ -253,7 +377,7 @@ class ContentAiClassifierTest extends TestCase
 
         Http::assertSent(function ($request): bool {
             return $request->url() === self::ENDPOINT
-                && ($request->data()['max_tokens'] ?? null) === 50;
+                && ($request->data()['max_tokens'] ?? null) === 256;
         });
     }
 
@@ -287,7 +411,7 @@ class ContentAiClassifierTest extends TestCase
         Http::fake([
             'ai.example.test/*' => Http::response([
                 'choices' => [
-                    ['message' => ['content' => json_encode(['category' => 'gameplay', 'confidence' => 0.99])]],
+                    ['message' => ['content' => json_encode(['is_music' => true, 'category' => 'gameplay', 'confidence' => 0.99])]],
                 ],
             ], 200),
         ]);
@@ -306,7 +430,7 @@ class ContentAiClassifierTest extends TestCase
         Http::fake([
             'ai.example.test/*' => Http::response([
                 'choices' => [
-                    ['message' => ['content' => json_encode(['category' => 'original', 'confidence' => 0.3])]],
+                    ['message' => ['content' => json_encode(['is_music' => true, 'category' => 'original', 'confidence' => 0.3])]],
                 ],
             ], 200),
         ]);

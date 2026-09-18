@@ -75,7 +75,7 @@ Endpoints that cannot be probed write to `last_error_message`; the SPA list surf
 
 Both read a row directly (including `pending` ones — the resolver refuses those on purpose) and never print the key.
 
-Local consumer aliases live in [`config/settings-local.php`](../../../config/settings-local.php) — `microstock.ai.vision.model` / `.thinking.model` and `vtual.content_classification.ai.model` (plus `.enabled`, `.max_tokens`, `.timeout`); re-seed `LocalSettingsSeeder` after changing them, then `AiConnectionSeeder` picks the alias up as the probe model.
+Local consumer aliases live in [`config/settings-local.php`](../../../config/settings-local.php) — `microstock.ai.vision.model` / `.thinking.model` and `vtual.content_classification.ai.model` (plus `.enabled`, `.max_tokens` = 4000, `.timeout`); re-seed `LocalSettingsSeeder` after changing them, then `AiConnectionSeeder` picks the alias up as the probe model.
 
 ## Resolution
 
@@ -98,9 +98,11 @@ Returns `AiConnectionData` (readonly DTO: id, slug, driver, endpoint, `apiKey`, 
 |----------|-----------------|--------|
 | Microstock vision | `microstock.ai.vision.connection` (empty = default) | `HttpAiMetadataService::stageConfig()` merges Tier B knobs with `AiConnectionData` |
 | Microstock thinking | `microstock.ai.thinking.connection` | same |
-| vTual content classification | `vtual.content_classification.ai.connection` | `ContentAiClassifier::connection()` — also reads `max_tokens` and unwraps fenced JSON ([vtual README](../vtual/README.md)) |
+| vTual content classification | `vtual.content_classification.ai.connection` | `ContentAiClassifier::classifyContent()` — decides **both** layers (`is_music` + sub-category) as the async fallback for rows the program classifier left incomplete; also reads `max_tokens` and unwraps fenced JSON ([vtual README](../vtual/README.md)) |
 
 A consumer with no bound connection and no default resolves to `null` and reports "AI not configured" instead of issuing an HTTP call. Connection timeouts override the consumer's Tier B timeout when set.
+
+**`max_tokens` sizing:** a reasoning-style alias spends the budget on reasoning tokens before emitting any JSON, so a tight budget comes back as `finish_reason: length` with empty `content` (measured: 600 failed on 4 of 5 real videos, 4000 worked). vTual's default is 4000 with a 256 floor — keep consumer budgets in that range, and prefer a shorter `timeout` window over a smaller budget.
 
 ## API
 

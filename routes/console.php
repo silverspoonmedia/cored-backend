@@ -52,3 +52,12 @@ Schedule::command('vtual:renew-eventsub-subscriptions')
 Schedule::command('vtual:prune-fetch-pools')
     ->daily()
     ->withoutOverlapping();
+
+// vTual: AI classification audit pool. Rows the program classifier could not
+// decide (music/non-music unknown, or music without a sub-category) are queued
+// on hydrate; this drains them. One call measured 7-40 s, so the batch is small
+// enough to finish inside the five-minute window — withoutOverlapping covers the
+// rest. No-op while vtual.content_classification.ai.enabled is false.
+Schedule::command('vtual:audit-content-ai --limit=5')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

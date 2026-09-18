@@ -90,6 +90,10 @@ return [
             'status',
             'statistics',
             'liveStreamingDetails',
+            // Music/non-music layer reads topicDetails.topicCategories — the only
+            // reliable signal for vTuber covers filed under Gaming/People & Blogs.
+            // Removing it silently degrades classification to categoryId-only.
+            'topicDetails',
         ],
 
         'default_channel_parts' => [
@@ -295,9 +299,21 @@ return [
     */
     'content_classification' => [
         // YouTube categoryId "10" = Music — prefilter for weak-signal lookup.
+        // Also signal #2 of the music/non-music layer, but NOT sufficient alone:
+        // vTubers file covers under 20 (Gaming) / 22 (People & Blogs).
         'music_category_id' => '10',
+        // YouTube topicDetails topicCategories entry that means "this is music".
+        // The strongest signal available — present on covers regardless of the
+        // uploader's categoryId choice, and absent on gameplay/ASMR/talk samples.
+        'music_topic' => 'https://en.wikipedia.org/wiki/Music',
         // Cover duration window in seconds (typical song recording).
         'cover_duration' => ['min' => 90, 'max' => 420],
+        // No positive signal + at least this long = non-music (streams, let's
+        // plays, talk shows). Shorter/unknown = unknown → async AI audit decides.
+        'long_form_min_seconds' => 600,
+        // Markers in a description that credit an original release ("本家様：…",
+        // "原曲：…"). Only counts when the description also links a video.
+        'original_credit_markers' => ['本家', '原曲', 'original'],
         'itunes' => [
             'enabled' => true,
             'base_url' => 'https://itunes.apple.com',
@@ -305,7 +321,8 @@ return [
             'limit' => 5,
             'cache_ttl_hours' => 168,
         ],
-        // AI audit pass (sub-category only — music/non-music layer never uses AI).
+        // AI audit pass for rows the program classifier could not resolve
+        // (music/non-music unknown, or music with no sub-category).
         // Endpoint + API key live in the core Ai domain (`ai_connections`, Tier C).
         // Tier B — connection binding / enabled / model / max_tokens / timeout /
         // min_confidence / cache_ttl via Settings → vTual
@@ -313,12 +330,13 @@ return [
         // AI connection. `max_tokens` must cover reasoning tokens for
         // reasoning-style models: too low and the model spends the whole budget
         // on reasoning, returning an empty `content` (`finish_reason: length`).
+        // Measured: 600 returned empty content on 4 of 5 real videos, 4000 worked.
         'ai' => [
             'connection' => '',
             'enabled' => false,
             'model' => '',
-            'timeout' => 15,
-            'max_tokens' => 200,
+            'timeout' => 30,
+            'max_tokens' => 4000,
             'min_confidence' => 0.7,
             'cache_ttl_hours' => 168,
         ],

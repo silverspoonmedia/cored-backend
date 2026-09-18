@@ -2,20 +2,25 @@
 
 namespace App\Domain\Vtual\Services;
 
+use App\Domain\Vtual\Enums\ContentAiAuditStatus;
 use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Integrations\Ai\ContentAiClassifier;
 use App\Domain\Vtual\Models\Content;
-use Illuminate\Support\Facades\DB;
+use App\Domain\Vtual\Models\ContentAiAuditItem;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 /**
- * Enqueue music contents for the asynchronous AI sub-category audit pass.
+ * Enqueue contents for the asynchronous AI audit pass.
+ *
+ * Two reasons a row needs the AI: the program classifier could not decide the
+ * music/non-music layer (content_type null — ambiguous short-form video), or it
+ * decided music but the sub-category heuristics came up empty.
  *
  * Only fires when the AI audit is enabled AND configured (bound AI connection +
- * model); otherwise this is a no-op and the heuristic pass stays the sole
- * sub-category source. Never throws — audit failures must never break the
- * hydrate path.
+ * model); otherwise this is a no-op and the program pass stays the sole source.
+ * Never throws — audit failures must never break the hydrate path.
+ *
+ * This service only writes the pool. The drainer is `vtual:audit-content-ai`.
  */
 class ContentAiAuditService
 {
@@ -24,7 +29,7 @@ class ContentAiAuditService
     ) {}
 
     /**
-     * Record a pending audit for a music row the heuristics left unclassified.
+     * Record a pending audit for a row the program classifier left incomplete.
      * Idempotent per content: a pending row is not duplicated.
      */
     public function enqueueIfEligible(Content $content): void
@@ -34,27 +39,24 @@ class ContentAiAuditService
                 return;
             }
 
-            if ($content->content_type !== ContentKind::Music || $content->content_category !== null) {
+            if (! $this->needsAudit($content)) {
                 return;
             }
 
-            $pending = DB::table('vtual_content_ai_audit')
+            $pending = ContentAiAuditItem::query()
                 ->where('content_id', $content->id)
-                ->where('status', 'pending')
+                ->where('status', ContentAiAuditStatus::Pending)
                 ->exists();
 
             if ($pending) {
                 return;
             }
 
-            DB::table('vtual_content_ai_audit')->insert([
-                'id' => (string) Str::uuid7(),
+            ContentAiAuditItem::query()->create([
                 'content_id' => $content->id,
-                'status' => 'pending',
+                'status' => ContentAiAuditStatus::Pending,
                 'attempts' => 0,
                 'requested_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
             ]);
         } catch (\Throwable $e) {
             Log::warning('vtual.ai_audit_enqueue_failed', [
@@ -62,5 +64,18 @@ class ContentAiAuditService
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * A row needs the AI when the program layer produced no verdict at all, or
+     * produced "music" without a sub-category.
+     */
+    private function needsAudit(Content $content): bool
+    {
+        if ($content->content_type === null) {
+            return true;
+        }
+
+        return $content->content_type === ContentKind::Music && $content->content_category === null;
     }
 }

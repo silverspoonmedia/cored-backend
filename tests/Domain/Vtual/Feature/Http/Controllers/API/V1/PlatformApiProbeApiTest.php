@@ -143,8 +143,65 @@ class PlatformApiProbeApiTest extends TestCase
 
         $this->assertSame('cover', $data['data'][0]['content_category']);
         $this->assertNull($data['data'][0]['content_category_detail']);
-        // categoryId=10 on the snippet → music layer resolved.
+        // categoryId=10 on the snippet → music layer resolved by category_id.
         $this->assertSame('music', $data['data'][0]['content_type']);
+        $this->assertSame('category_id', $data['data'][0]['content_type_signal']);
+    }
+
+    #[Test]
+    public function probe_music_layer_follows_the_music_topic_over_a_non_music_category(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+        $this->activateYoutubeCredential($admin, 'probe-key-eeee');
+
+        // The real false negative: a vTuber cover filed under 22 (People & Blogs)
+        // that still carries the YouTube Music topic. Before the multi-signal
+        // layer the probe reported non_music here.
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'items' => [
+                    [
+                        'id' => 'FdTy0ZWKYRo',
+                        'snippet' => [
+                            'title' => 'KING ( COVER ) / 橘ひなの',
+                            'description' => '本家様：https://youtu.be/cm-l2h6GB8Q',
+                            'channelId' => 'UCabc',
+                            'publishedAt' => '2026-01-01T00:00:00Z',
+                            'liveBroadcastContent' => 'none',
+                            'categoryId' => '22',
+                            'tags' => ['歌ってみた'],
+                            'thumbnails' => ['high' => ['url' => 'https://img.example/hi.jpg']],
+                        ],
+                        'contentDetails' => ['duration' => 'PT2M15S'],
+                        'statistics' => ['viewCount' => '9'],
+                        'status' => ['privacyStatus' => 'public'],
+                        'liveStreamingDetails' => [],
+                        'topicDetails' => [
+                            'topicCategories' => ['https://en.wikipedia.org/wiki/Music'],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $data = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/admin/platform-api/probe', [
+                'platform' => 'youtube',
+                'method' => 'fetch_videos',
+                'ids' => ['FdTy0ZWKYRo'],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('music', $data['data'][0]['content_type']);
+        $this->assertSame('topic', $data['data'][0]['content_type_signal']);
+        $this->assertSame('cover', $data['data'][0]['content_category']);
+
+        // The signals the classifier actually used are visible in the preview.
+        $this->assertSame('22', $data['data'][0]['category_id']);
+        $this->assertSame(['https://en.wikipedia.org/wiki/Music'], $data['data'][0]['topic_categories']);
+        $this->assertSame(['歌ってみた'], $data['data'][0]['tags']);
     }
 
     #[Test]

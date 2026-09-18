@@ -54,6 +54,7 @@ class ClassifyContentsCommandTest extends TestCase
             'ai.test/*' => Http::response([
                 'choices' => [
                     ['message' => ['content' => json_encode([
+                        'is_music' => true,
                         'category' => 'original',
                         'detail' => null,
                         'confidence' => 0.85,
@@ -71,8 +72,101 @@ class ClassifyContentsCommandTest extends TestCase
         $this->assertSame('original', $music->content_category?->value);
         $this->assertNull($nonMusic->content_category);
 
-        // Only the music row reached the AI endpoint.
+        // Only the incomplete music row reached the AI endpoint.
         Http::assertSentCount(1);
+    }
+
+    #[Test]
+    public function ai_pass_resolves_the_music_layer_on_unknown_rows(): void
+    {
+        // The row the program pass cannot read: short form, no signals.
+        $unknown = $this->createContent('vid-unknown', '星を編む', null, durationSeconds: 200);
+
+        $this->bindAiConnection(apiKey: 'test-key');
+        config([
+            'vtual.content_classification.ai.model' => 'audit-model',
+            'vtual.content_classification.ai.enabled' => true,
+        ]);
+
+        Http::fake([
+            'ai.test/*' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => json_encode([
+                        'is_music' => true,
+                        'category' => 'cover',
+                        'detail' => 'Kanaria - KING',
+                        'confidence' => 0.9,
+                    ])]],
+                ],
+            ], 200),
+        ]);
+
+        $this->artisan('vtual:classify-contents', ['--ai' => true])
+            ->assertSuccessful();
+
+        $unknown->refresh();
+
+        // Both layers written, not just the sub-category.
+        $this->assertSame('music', $unknown->content_type?->value);
+        $this->assertSame('cover', $unknown->content_category?->value);
+        $this->assertSame('Kanaria - KING', $unknown->content_category_detail);
+    }
+
+    #[Test]
+    public function ai_pass_leaves_rows_the_program_already_resolved_alone(): void
+    {
+        // non_music with no sub-category is a complete verdict — not an audit
+        // candidate. Only "unknown" and "music without a sub-category" are.
+        $nonMusic = $this->createContent('vid-resolved', 'Game play stream', ContentKind::NonMusic);
+
+        $this->bindAiConnection(apiKey: 'test-key');
+        config([
+            'vtual.content_classification.ai.model' => 'audit-model',
+            'vtual.content_classification.ai.enabled' => true,
+        ]);
+
+        Http::fake(['ai.test/*' => Http::response([], 500)]);
+
+        $this->artisan('vtual:classify-contents', ['--ai' => true])
+            ->assertSuccessful();
+
+        $nonMusic->refresh();
+
+        $this->assertSame('non_music', $nonMusic->content_type?->value);
+        Http::assertNothingSent();
+    }
+
+    #[Test]
+    public function ai_pass_writes_the_music_layer_when_the_ai_says_not_music(): void
+    {
+        $unknown = $this->createContent('vid-talk', '雑談', null, durationSeconds: 300);
+
+        $this->bindAiConnection(apiKey: 'test-key');
+        config([
+            'vtual.content_classification.ai.model' => 'audit-model',
+            'vtual.content_classification.ai.enabled' => true,
+        ]);
+
+        Http::fake([
+            'ai.test/*' => Http::response([
+                'choices' => [
+                    ['message' => ['content' => json_encode([
+                        'is_music' => false,
+                        'category' => null,
+                        'detail' => null,
+                        'confidence' => 0.92,
+                    ])]],
+                ],
+            ], 200),
+        ]);
+
+        $this->artisan('vtual:classify-contents', ['--ai' => true])
+            ->assertSuccessful();
+
+        $unknown->refresh();
+
+        $this->assertSame('non_music', $unknown->content_type?->value);
+        $this->assertNull($unknown->content_category);
     }
 
     #[Test]
@@ -108,8 +202,12 @@ class ClassifyContentsCommandTest extends TestCase
         Http::assertNothingSent();
     }
 
-    private function createContent(string $externalId, string $title, ContentKind $kind): Content
-    {
+    private function createContent(
+        string $externalId,
+        string $title,
+        ?ContentKind $kind,
+        ?int $durationSeconds = null,
+    ): Content {
         $creator = Creator::query()->create([
             'slug' => $externalId,
             'display_name' => 'Creator '.$externalId,
@@ -126,6 +224,11 @@ class ClassifyContentsCommandTest extends TestCase
             'visibility' => ChannelVisibility::Public,
         ]);
 
+        // The stored row carries no categoryId / topics / tags (those are
+        // transient mapper inputs), so duration is the only extra signal a
+        // backfill can offer. Model it as a live window.
+        $startedAt = $durationSeconds !== null ? now()->subSeconds($durationSeconds) : null;
+
         return Content::query()->create([
             'creator_id' => $creator->id,
             'channel_id' => $channel->id,
@@ -135,6 +238,8 @@ class ClassifyContentsCommandTest extends TestCase
             'status' => ContentStatus::Uploaded,
             'title' => $title,
             'content_type' => $kind,
+            'started_at' => $startedAt,
+            'ended_at' => $startedAt !== null ? now() : null,
             'hydrated_at' => now(),
             'published_at' => now()->subDay(),
         ]);
