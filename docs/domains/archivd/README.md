@@ -19,7 +19,7 @@ Open the rest of this README only when changing Archivd **behavior**. For a one-
 | sha256 / object I/O | `Sha256Checksum`, `ObjectStorage` (`get` / `put` / `exists` / `readStream` / `deleteMany`) |
 | Do not | `Read` this whole guide, all 7 locale JSON files, or `storage/logs` |
 
-Realtime: private `archivd.user.{id}` — [vue-workers-spa.md — Channel/event reference](../../integration/vue-workers-spa.md#channel-event-reference). Contract: [vue-workers-spa.md](../../integration/vue-workers-spa.md) only if the API shape moves.
+Realtime: private `archivd.user.{id}` — [vue-workers-spa.md — Channel/event reference](../../integration/vue-workers-spa.md#channelevent-reference). Contract: [vue-workers-spa.md](../../integration/vue-workers-spa.md) only if the API shape moves.
 
 Product domain (`kind => product`, `locked => true`) for personal nested folders, S3-compatible chunk upload, Drive-lite link sharing, and **Collaborative Works** (paid team workspaces).
 
