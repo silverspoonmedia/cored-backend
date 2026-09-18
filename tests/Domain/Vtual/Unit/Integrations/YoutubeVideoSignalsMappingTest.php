@@ -66,6 +66,7 @@ class YoutubeVideoSignalsMappingTest extends TestCase
                         'id' => 'FdTy0ZWKYRo',
                         'snippet' => [
                             'channelId' => 'UCabc1234567890abcdefghij',
+                            'channelTitle' => '橘ひなの / Hinano Ch.',
                             'title' => 'KING ( COVER ) / 橘ひなの',
                             'description' => '本家様：https://youtu.be/cm-l2h6GB8Q',
                             'categoryId' => '22',
@@ -88,6 +89,9 @@ class YoutubeVideoSignalsMappingTest extends TestCase
 
         $this->assertNotNull($video);
         $this->assertSame('22', $video->categoryId);
+        // The uploader name drives the catalog artist comparison for the
+        // sub-category layer — without it keyword-free originals stay unknown.
+        $this->assertSame('橘ひなの / Hinano Ch.', $video->channelTitle);
         $this->assertSame(
             ['https://en.wikipedia.org/wiki/Music', 'https://en.wikipedia.org/wiki/Entertainment'],
             $video->topicCategories,
@@ -98,6 +102,7 @@ class YoutubeVideoSignalsMappingTest extends TestCase
         // The probe serializer must expose the new signal fields.
         $array = $video->toArray();
         $this->assertSame('22', $array['category_id']);
+        $this->assertSame('橘ひなの / Hinano Ch.', $array['channel_title']);
         $this->assertSame(['https://en.wikipedia.org/wiki/Music', 'https://en.wikipedia.org/wiki/Entertainment'], $array['topic_categories']);
         $this->assertSame(['歌ってみた', 'Kanaria'], $array['tags']);
     }
@@ -128,6 +133,7 @@ class YoutubeVideoSignalsMappingTest extends TestCase
         $this->assertNotNull($video);
         $this->assertSame([], $video->topicCategories);
         $this->assertSame([], $video->tags);
+        $this->assertNull($video->channelTitle);
     }
 
     #[Test]

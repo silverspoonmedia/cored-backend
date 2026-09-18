@@ -136,6 +136,7 @@ class PlatformVideoDtoMapper
             'type' => $type,
             'topic_categories' => $dto->topicCategories,
             'tags' => $dto->tags,
+            'channel_title' => $dto->channelTitle,
         ];
 
         $classified = $this->classifier->classify($video);

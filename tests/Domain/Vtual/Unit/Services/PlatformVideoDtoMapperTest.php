@@ -9,6 +9,7 @@ use App\Domain\Vtual\Integrations\Dto\PlatformStreamDto;
 use App\Domain\Vtual\Integrations\Dto\PlatformVideoDto;
 use App\Domain\Vtual\Services\PlatformVideoDtoMapper;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -134,6 +135,92 @@ class PlatformVideoDtoMapperTest extends TestCase
     }
 
     #[Test]
+    public function classifies_a_talk_video_without_signals_as_unknown(): void
+    {
+        Http::fake();
+
+        $payload = $this->mapper->toUpsertPayload($this->dto('uploaded', categoryId: '24', durationSeconds: 3600));
+
+        $this->assertNull($payload['content_category']);
+    }
+
+    #[Test]
+    public function resolves_cover_from_uploader_tags(): void
+    {
+        Http::fake();
+
+        $payload = $this->mapper->toUpsertPayload($this->dto(
+            'uploaded',
+            categoryId: '24',
+            tags: ['Vtuber', '歌ってみた'],
+            title: '君の知らない物語',
+        ));
+
+        $this->assertSame('cover', $payload['content_category']);
+    }
+
+    #[Test]
+    public function resolves_original_when_the_catalog_artist_is_the_uploader(): void
+    {
+        // Keyword-free original: no title/tag signal at all, so the catalog
+        // artist check is the only thing that can resolve it without the AI audit.
+        Http::fake([
+            'itunes.apple.com/search*' => Http::response([
+                'results' => [
+                    ['trackName' => 'KING', 'artistName' => 'Kanaria'],
+                ],
+            ], 200),
+        ]);
+
+        $payload = $this->mapper->toUpsertPayload($this->dto(
+            'uploaded',
+            categoryId: '10',
+            title: '【GUMI】KING【Kanaria】',
+            channelTitle: 'Kanaria',
+        ));
+
+        $this->assertSame('original', $payload['content_category']);
+    }
+
+    #[Test]
+    public function resolves_cover_when_the_catalog_artist_differs_from_the_uploader(): void
+    {
+        Http::fake([
+            'itunes.apple.com/search*' => Http::response([
+                'results' => [
+                    ['trackName' => 'KING', 'artistName' => 'Kanaria'],
+                ],
+            ], 200),
+        ]);
+
+        $payload = $this->mapper->toUpsertPayload($this->dto(
+            'uploaded',
+            categoryId: '10',
+            title: '【GUMI】KING【Kanaria】',
+            channelTitle: '橘ひなの',
+        ));
+
+        $this->assertSame('cover', $payload['content_category']);
+    }
+
+    #[Test]
+    public function a_feat_credit_alone_does_not_make_an_original_a_cover(): void
+    {
+        Http::fake();
+
+        $payload = $this->mapper->toUpsertPayload($this->dto(
+            'uploaded',
+            categoryId: '10',
+            durationSeconds: 238,
+            title: 'ジャバウォック / wotaku feat. 初音ミク',
+            description: 'この歌は終わらないから 森の動物と歌おう',
+        ));
+
+        $this->assertSame('music', $payload['content_type']);
+        $this->assertNull($payload['content_category']);
+    }
+
+    #[Test]
     public function maps_stream_to_live_payload(): void
     {
         $stream = new PlatformStreamDto(
@@ -177,13 +264,15 @@ class PlatformVideoDtoMapperTest extends TestCase
         array $topicCategories = [],
         array $tags = [],
         string $title = 'Title',
+        string $description = 'Desc',
+        ?string $channelTitle = null,
     ): PlatformVideoDto {
         return new PlatformVideoDto(
             platform: PlatformKey::Youtube,
             externalId: 'vid1',
             channelExternalId: 'UCabc',
             title: $title,
-            description: 'Desc',
+            description: $description,
             thumbnailUrl: 'https://img.example/thumb.jpg',
             url: 'https://www.youtube.com/watch?v=vid1',
             status: $status,
@@ -196,6 +285,7 @@ class PlatformVideoDtoMapperTest extends TestCase
             categoryId: $categoryId,
             topicCategories: $topicCategories,
             tags: $tags,
+            channelTitle: $channelTitle,
         );
     }
 }

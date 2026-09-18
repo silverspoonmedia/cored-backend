@@ -118,8 +118,13 @@ class PlatformApiProbeService
      * persistence happens on the hydrate path (PlatformVideoDtoMapper → ContentService).
      *
      * `content_type_signal` names which program signal decided the music layer
-     * (topic | category_id | keyword | original_credit | long_form) so a wrong
-     * verdict can be traced without re-running the classifier by hand.
+     * (topic | category_id | keyword | original_credit | long_form), and
+     * `content_category_signal` does the same for the sub-category layer
+     * (original_keyword | original_provide | singing_stream | strong_cover | tags
+     * | cover_provenance | weak_cover | catalog_artist_match |
+     * catalog_artist_mismatch | none). `content_category_catalog` carries the
+     * iTunes label the catalog branch compared against, so a wrong verdict can be
+     * traced without re-running the classifier by hand.
      *
      * @param  Collection<int, mixed>  $result
      * @param  list<array<string, mixed>>  $serialized
@@ -137,12 +142,14 @@ class PlatformApiProbeService
                 break;
             }
 
-            $classified = $this->classifier->classify([
+            $classified = $this->classifier->evaluate([
                 'title' => $video->title,
                 'description' => $video->description,
                 'category_id' => $video->categoryId,
                 'duration_seconds' => $video->durationSeconds,
                 'type' => $this->contentCategoryTypeFor($video->status),
+                'tags' => $video->tags,
+                'channel_title' => $video->channelTitle,
             ]);
 
             $kind = $this->kinds->classify([
@@ -154,13 +161,15 @@ class PlatformApiProbeService
                 'tags' => $video->tags,
             ]);
 
-            $category = $classified !== null ? $classified['category'] : null;
+            $category = $classified['category'];
 
             $out[] = $serialized[$index] + [
                 'content_type' => $kind['kind']?->value,
                 'content_type_signal' => $kind['signal'],
-                'content_category' => $category !== null ? $category->value : null,
-                'content_category_detail' => $classified['detail'] ?? null,
+                'content_category' => $category?->value,
+                'content_category_detail' => $classified['detail'],
+                'content_category_signal' => $classified['signal'],
+                'content_category_catalog' => $classified['catalog'],
             ];
             $index++;
         }

@@ -247,6 +247,10 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
             // null (unknown) for Twitch and is left to the AI audit.
             topicCategories: [],
             tags: [],
+            // Helix exposes the uploader name on the channel DTO, not on the
+            // video DTO; without it the catalog artist check is a no-op and the
+            // sub-category stays unknown for Twitch rows.
+            channelTitle: null,
         );
     }
 

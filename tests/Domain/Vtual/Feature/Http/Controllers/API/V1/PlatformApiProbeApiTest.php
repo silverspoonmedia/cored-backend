@@ -146,6 +146,8 @@ class PlatformApiProbeApiTest extends TestCase
         // categoryId=10 on the snippet → music layer resolved by category_id.
         $this->assertSame('music', $data['data'][0]['content_type']);
         $this->assertSame('category_id', $data['data'][0]['content_type_signal']);
+        // Sub-category layer reports its own deciding signal.
+        $this->assertSame('strong_cover', $data['data'][0]['content_category_signal']);
     }
 
     #[Test]
@@ -197,11 +199,68 @@ class PlatformApiProbeApiTest extends TestCase
         $this->assertSame('music', $data['data'][0]['content_type']);
         $this->assertSame('topic', $data['data'][0]['content_type_signal']);
         $this->assertSame('cover', $data['data'][0]['content_category']);
+        $this->assertSame('strong_cover', $data['data'][0]['content_category_signal']);
 
         // The signals the classifier actually used are visible in the preview.
         $this->assertSame('22', $data['data'][0]['category_id']);
         $this->assertSame(['https://en.wikipedia.org/wiki/Music'], $data['data'][0]['topic_categories']);
         $this->assertSame(['歌ってみた'], $data['data'][0]['tags']);
+    }
+
+    #[Test]
+    public function probe_resolves_a_keyword_free_original_from_the_catalog_artist(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+        $this->activateYoutubeCredential($admin, 'probe-key-ffff');
+
+        // The title carries no cover/original keyword at all; the uploader's
+        // channel name matching the catalog artist is the whole verdict.
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'items' => [
+                    [
+                        'id' => 'cm-l2h6GB8Q',
+                        'snippet' => [
+                            'title' => '【GUMI】KING【Kanaria】',
+                            'description' => 'Kanaria - KING',
+                            'channelId' => 'UCkanaria000000000000000',
+                            'channelTitle' => 'Kanaria',
+                            'publishedAt' => '2026-01-01T00:00:00Z',
+                            'liveBroadcastContent' => 'none',
+                            'categoryId' => '10',
+                            'thumbnails' => ['high' => ['url' => 'https://img.example/hi.jpg']],
+                        ],
+                        'contentDetails' => ['duration' => 'PT2M15S'],
+                        'statistics' => ['viewCount' => '9'],
+                        'status' => ['privacyStatus' => 'public'],
+                        'liveStreamingDetails' => [],
+                        'topicDetails' => [
+                            'topicCategories' => ['https://en.wikipedia.org/wiki/Music'],
+                        ],
+                    ],
+                ],
+            ], 200),
+            'itunes.apple.com/search*' => Http::response([
+                'results' => [
+                    ['trackName' => 'KING', 'artistName' => 'Kanaria'],
+                ],
+            ], 200),
+        ]);
+
+        $data = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/admin/platform-api/probe', [
+                'platform' => 'youtube',
+                'method' => 'fetch_videos',
+                'ids' => ['cm-l2h6GB8Q'],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('music', $data['data'][0]['content_type']);
+        $this->assertSame('original', $data['data'][0]['content_category']);
+        $this->assertSame('catalog_artist_match', $data['data'][0]['content_category_signal']);
+        $this->assertSame('Kanaria - KING', $data['data'][0]['content_category_catalog']);
     }
 
     #[Test]
@@ -250,7 +309,9 @@ class PlatformApiProbeApiTest extends TestCase
             ->json('data');
 
         $this->assertSame('cover', $data['data'][0]['content_category']);
+        $this->assertSame('weak_cover', $data['data'][0]['content_category_signal']);
         $this->assertSame('てにをは - ヴィラン', $data['data'][0]['content_category_detail']);
+        $this->assertSame('てにをは - ヴィラン', $data['data'][0]['content_category_catalog']);
     }
 
     #[Test]

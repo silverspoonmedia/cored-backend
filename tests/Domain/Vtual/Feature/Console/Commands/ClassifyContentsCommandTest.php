@@ -4,6 +4,7 @@ namespace Tests\Domain\Vtual\Feature\Console\Commands;
 
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ChannelVisibility;
+use App\Domain\Vtual\Enums\ContentCategory;
 use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
@@ -200,6 +201,52 @@ class ClassifyContentsCommandTest extends TestCase
         $this->assertSame('cover', $cover->content_category?->value);
 
         Http::assertNothingSent();
+    }
+
+    #[Test]
+    public function refresh_recomputes_a_verdict_the_current_rules_no_longer_produce(): void
+    {
+        // The title carries only "feat.", which the previous weak-cover
+        // vocabulary treated as a cover label.
+        $row = $this->createContent('vid-remix', 'DECO*27 - モニタリング (Best Friend Remix) feat. 初音ミク', ContentKind::Music);
+        $row->forceFill([
+            'content_category' => ContentCategory::Cover,
+            'content_category_detail' => 'DECO*27 - モニタリング',
+        ])->save();
+
+        // An ordinary run never overwrites an existing label…
+        $this->artisan('vtual:classify-contents')->assertSuccessful();
+        $this->assertSame('cover', $row->refresh()->content_category?->value);
+
+        // …so a classifier change needs --refresh to repair stored rows. With no
+        // other signal the row goes back to the AI-audit bucket instead of
+        // keeping a label nothing can justify any more.
+        $this->artisan('vtual:classify-contents', ['--refresh' => true])->assertSuccessful();
+
+        $row->refresh();
+        $this->assertNull($row->content_category);
+        $this->assertNull($row->content_category_detail);
+        $this->assertSame('music', $row->content_type?->value);
+
+        Http::assertNothingSent();
+    }
+
+    #[Test]
+    public function refresh_runs_the_catalog_check_with_the_channel_name(): void
+    {
+        $row = $this->createContent('vid-king', '【GUMI】KING【Kanaria】', ContentKind::Music, durationSeconds: 135);
+        $row->channel->forceFill(['display_name' => 'Kanaria'])->save();
+
+        Http::fake([
+            'itunes.apple.com/search*' => Http::response([
+                'results' => [['trackName' => 'KING', 'artistName' => 'Kanaria']],
+            ], 200),
+        ]);
+
+        $this->artisan('vtual:classify-contents', ['--refresh' => true])->assertSuccessful();
+
+        $row->refresh();
+        $this->assertSame('original', $row->content_category?->value);
     }
 
     private function createContent(

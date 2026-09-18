@@ -115,7 +115,7 @@ Canonical envelope: [api-envelope.md](../platform/api-envelope.md). Deviations:
 | `POST profile/connections/{oauth_provider}/sync` | Same `{ providers }` as GET | Unknown provider 404 |
 | `DELETE profile/connections/{oauth_provider}` | `null` data | Replaces `DELETE …/discord` |
 | `GET auth/discord/authorize-url` | `{ url }` | Requires `SPA_URL`. `return_path` is a path |
-| `GET vtual/public/vtubers/{slug}` contents items | Each item carries `content_type` (`music` \| `non_music`, null = unknown categoryId) + `content_category` (`cover` \| `original` \| `singing_stream`) + `content_category_detail` (nullable) | `content_type` derived from YouTube categoryId (program-only); `content_category` classifier-set, nullable = unclassified. See [vtual README — Content classification](../domains/vtual/README.md#content-classification-music-layer--cover-song-detection) |
+| `GET vtual/public/vtubers/{slug}` contents items | Each item carries `content_type` (`music` \| `non_music`, null = unknown) + `content_category` (`cover` \| `original` \| `singing_stream`) + `content_category_detail` (nullable) | Both layers program-classified (multi-signal, not `categoryId` alone) with an async AI audit for rows the program pass leaves unknown. See [vtual README — Content classification](../domains/vtual/README.md#content-classification-music-layer--cover-song-detection) |
 
 ## Type alignment
 

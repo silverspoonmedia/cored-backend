@@ -362,6 +362,9 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
             raw: null,
             topicCategories: $topicCategories,
             tags: $tags,
+            channelTitle: isset($snippet['channelTitle']) && is_string($snippet['channelTitle']) && trim($snippet['channelTitle']) !== ''
+                ? (string) $snippet['channelTitle']
+                : null,
         );
     }
 

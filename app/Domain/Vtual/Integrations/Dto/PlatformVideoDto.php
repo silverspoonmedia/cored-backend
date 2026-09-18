@@ -47,6 +47,12 @@ final class PlatformVideoDto
          * @var list<string>
          */
         public readonly array $tags = [],
+        /**
+         * YouTube snippet.channelTitle — the uploader's display name. Sub-category
+         * classification compares it against the iTunes catalog artist to tell an
+         * uploader's own song (original) from someone else's song (cover).
+         */
+        public readonly ?string $channelTitle = null,
     ) {}
 
     /**
@@ -58,6 +64,7 @@ final class PlatformVideoDto
             'platform' => $this->platform->value,
             'external_id' => $this->externalId,
             'channel_external_id' => $this->channelExternalId,
+            'channel_title' => $this->channelTitle,
             'title' => $this->title,
             'description' => $this->description,
             'thumbnail_url' => $this->thumbnailUrl,
