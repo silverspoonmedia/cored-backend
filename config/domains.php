@@ -38,6 +38,7 @@ return [
     'PaymentGateway' => ['kind' => 'core'],
     'Service' => ['kind' => 'core'],
     'Inference' => ['kind' => 'core'],
+    'Ai' => ['kind' => 'core'],
 
     // Product
     'Archivd' => ['kind' => 'product', 'locked' => true],

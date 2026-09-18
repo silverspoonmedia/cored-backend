@@ -4,6 +4,8 @@ namespace Tests\Domain\Vtual\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ChannelVisibility;
+use App\Domain\Vtual\Enums\ContentCategory;
+use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Enums\EntityStatus;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Creator;
@@ -283,6 +285,49 @@ class VtualPublicApiTest extends TestCase
         $this->assertCount(2, $page2['items']);
         $this->assertSame(2, $page2['pagination']['current_page']);
         $this->assertFalse($page2['pagination']['has_more']);
+    }
+
+    #[Test]
+    public function public_profile_contents_expose_content_type(): void
+    {
+        $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
+        $channel = $creator->channels()->firstOrFail();
+
+        \App\Domain\Vtual\Models\Content::query()->create([
+            'creator_id' => $creator->id,
+            'channel_id' => $channel->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'vod-music',
+            'type' => \App\Domain\Vtual\Enums\ContentType::Vod,
+            'status' => \App\Domain\Vtual\Enums\ContentStatus::Uploaded,
+            'title' => 'Music VOD',
+            'content_type' => ContentKind::Music,
+            'content_category' => ContentCategory::Cover,
+            'published_at' => now()->subDay(),
+        ]);
+
+        \App\Domain\Vtual\Models\Content::query()->create([
+            'creator_id' => $creator->id,
+            'channel_id' => $channel->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'vod-game',
+            'type' => \App\Domain\Vtual\Enums\ContentType::Vod,
+            'status' => \App\Domain\Vtual\Enums\ContentStatus::Uploaded,
+            'title' => 'Game VOD',
+            'content_type' => ContentKind::NonMusic,
+            'published_at' => now()->subDays(2),
+        ]);
+
+        $items = $this->getJson('/api/v1/vtual/public/vtubers/neon-fox')
+            ->assertOk()
+            ->json('data.contents.items');
+
+        $byTitle = collect($items)->keyBy('title');
+
+        $this->assertSame('music', $byTitle['Music VOD']['content_type']);
+        $this->assertSame('cover', $byTitle['Music VOD']['content_category']);
+        $this->assertSame('non_music', $byTitle['Game VOD']['content_type']);
+        $this->assertNull($byTitle['Game VOD']['content_category']);
     }
 
     #[Test]

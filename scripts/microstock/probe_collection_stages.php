@@ -227,8 +227,8 @@ $aggregate = [
     'file_count' => $files->count(),
     'wait_timeout_seconds' => $waitTimeout,
     'elapsed_ms' => $elapsedMs,
-    'vision_model' => config('microstock.ai.vision.model'),
-    'thinking_model' => config('microstock.ai.thinking.model'),
+    'vision_model' => setting_config('microstock.ai.vision.model'),
+    'thinking_model' => setting_config('microstock.ai.thinking.model'),
     'files' => $fileResults,
 ];
 

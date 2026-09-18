@@ -8,17 +8,16 @@ class MicrostockAiConfigTest extends TestCase
 {
     public function test_locked_production_ai_defaults(): void
     {
-        $this->assertSame(
-            'https://ai-chat.spnd.uk/api/chat/completions',
-            config('microstock.ai.vision.endpoint'),
-        );
+        // Endpoints + API keys are NOT config — they live in ai_connections.
+        $this->assertNull(config('microstock.ai.vision.endpoint'));
+        $this->assertNull(config('microstock.ai.vision.api_key'));
+        $this->assertSame('', config('microstock.ai.vision.connection'));
         $this->assertSame('internal.vision', config('microstock.ai.vision.model'));
         $this->assertSame('', config('microstock.ai.vision.free_model'));
 
-        $this->assertSame(
-            'https://ai-chat.spnd.uk/api/chat/completions',
-            config('microstock.ai.thinking.endpoint'),
-        );
+        $this->assertNull(config('microstock.ai.thinking.endpoint'));
+        $this->assertNull(config('microstock.ai.thinking.api_key'));
+        $this->assertSame('', config('microstock.ai.thinking.connection'));
         $this->assertSame('internal.thinking', config('microstock.ai.thinking.model'));
         $this->assertSame('', config('microstock.ai.thinking.free_model'));
 

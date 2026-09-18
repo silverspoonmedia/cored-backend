@@ -595,7 +595,7 @@ Not shared this phase (no dual-platform signal without extra APIs): Twitch follo
 | Live CCV + ended | `vtual:poll-live-contents` | every 2m | `videos.list` for `status=live` rows only |
 | WebSub renew / repair | `vtual:renew-websub-subscriptions` (`--repair-missing` for legacy active channels); `vtual:repair-archived-websub` for archived channels missing active/pending subscription (pre-policy repair); `vtual:websub-status` per-channel report + `active_never_notified` summary | daily / weekly / on-demand | hub subscribe |
 
-Flow: **onboarding** (WebSub + backfill job on activate via `ChannelActivationService`) → feed/WebSub deltas → enqueue video id → `ContentFetchPoolService` → `ChannelContentFetchService::fetchVideosAndPersist` → `ContentService::upsertFromPrimary`. Feed/WebSub discovery only (0 quota); hydrate via API batch ≤50. WebSub and feed share the same content pool (coalesce on pending id; upsert idempotent — no conflict). WebSub callback: `GET /api/v1/vtual/webhooks/youtube-websub` (hub verify) and `POST` same path (notifications; `throttle:120,1` per IP). Subscribe on YouTube channel activate (all paths); **archive keeps WebSub + feed poll alive** (stub ingest only — see Archive below). Hub verify needs public `APP_URL` — local without tunnel may leave row `pending`/`failed`; feed poll remains safety net. Scheduled feed poll skips channels until `content_initial_backfill_at` is set. **Private discovered channels** (`visibility=private`) are excluded from feed poll and WebSub until owner promote.
+Flow: **onboarding** (WebSub + backfill job on activate via `ChannelActivationService`) → feed/WebSub deltas → enqueue video id → `ContentFetchPoolService` → `ChannelContentFetchService::fetchVideosAndPersist` → `ContentService::upsertFromPrimary` (each hydrate also recomputes `content_category` and sets `content_type` — see [Content classification](#content-classification-music-layer--cover-song-detection)). Feed/WebSub discovery only (0 quota); hydrate via API batch ≤50. WebSub and feed share the same content pool (coalesce on pending id; upsert idempotent — no conflict). WebSub callback: `GET /api/v1/vtual/webhooks/youtube-websub` (hub verify) and `POST` same path (notifications; `throttle:120,1` per IP). Subscribe on YouTube channel activate (all paths); **archive keeps WebSub + feed poll alive** (stub ingest only — see Archive below). Hub verify needs public `APP_URL` — local without tunnel may leave row `pending`/`failed`; feed poll remains safety net. Scheduled feed poll skips channels until `content_initial_backfill_at` is set. **Private discovered channels** (`visibility=private`) are excluded from feed poll and WebSub until owner promote.
 
 **Stub contents (`hydrated_at` null):** While a channel is archived, feed poll and WebSub/content-pool flush call `ContentService::upsertStubFromPrimary` (minimal metadata, no API quota). Rows are **hidden** from public vTuber profile (`listForPublicProfile` excludes primary channel `status=archived`). API hydrate (`fetchVideosAndPersist`, live CCV poll, channel refresh pool) stays blocked until restore.
 
@@ -717,6 +717,8 @@ Permanent debug surface for **production** `PlatformApiGateway` — **not** temp
 
 **Methods:** `fetch_videos`, `fetch_videos_chunked`, `fetch_channels`, `resolve_channel`, `fetch_streams` (Twitch only).
 
+**Classification preview (documented exception):** `fetch_videos` / `fetch_videos_chunked` items append `content_type` + `content_category` + `content_category_detail` — debug-only, computed in `PlatformApiProbeService::appendClassificationPreview`, **never persisted** (persistence stays on the hydrate path). See [Content classification](#content-classification-music-layer--cover-song-detection).
+
 #### Agent rule — production mirror (mandatory)
 
 Probe **must** exercise the same production paths workers use. Results must represent real gateway method output (same clients, credentials, DTOs, errors).
@@ -819,6 +821,32 @@ Web UI: link from credentials index → **API probe**.
 | Private discovered channels | Excluded from feed/WebSub until `POST channels/{id}/promote` |
 | `verified_channel_id` API exposure | Stored on claim row; not yet in API resources or claim UI |
 
+## Content classification (music layer + cover song detection)
+
+**Layer 1 — `vtual_contents.content_type` (`music` | `non_music`, null = unknown).** Program-only, deterministic: derived from YouTube `snippet.categoryId` via `ContentKind::fromCategoryId` (`'10'` = Music → `music`; any other non-empty id → `non_music`; null/empty → unknown). No AI, no heuristics — zero false positives by construction. Twitch stream upserts leave it null. Exposed on the public profile API and the probe preview.
+
+**Layer 2 — `vtual_contents.content_category` (`cover` | `original` | `singing_stream`, nullable = unclassified sub-category) + `content_category_detail` (catalog attribution, e.g. `てにをは - ヴィラン`).** Sub-classification inside the music layer, set inline during video hydrate by `ContentCategoryClassifier` (via `PlatformVideoDtoMapper`), recomputed every hydrate (idempotent). Never throws — failure leaves null. Best-effort: unknown sub-category does not affect `content_type`.
+
+Decision order (first match wins):
+
+1. **Original** — `オリジナル曲` / `オリジナル楽曲` / `オリジナルMV` / `original song|mv` in title.
+2. **Singing stream** — `歌枠` / `カラオケ枠` / `singing stream` / `karaoke stream` in title (unambiguous regardless of type).
+3. **Cover (strong)** — `歌ってみた`, `covered by`, `cover by`, bracket-adjacent `cover】|】cover`, `弾き語り`.
+4. **Cover (weak → verify)** — `cover` / `カバー` / `feat.` / `acoustic` / `歌` in title+description **and** corroborated by YouTube `snippet.categoryId=10` (Music) or duration 90–420 s → verify track via `ItunesSearchClient` (public iTunes Search API, keyless, cached 7 h per term, failure-safe): match → `cover` + detail attribution; no match/failure → `cover`, detail null.
+5. Otherwise null.
+
+Config: `config/vtual.php` → `content_classification` (`music_category_id`, `cover_duration`, `itunes.*`, `ai.*`). YouTube `categoryId` flows through `PlatformVideoDto` (no extra quota — already inside `snippet`).
+
+**AI audit pass (sub-category only):** When heuristics return null on a `music` row, an LLM audit can fill the sub-category. The music/non-music layer itself is **never** AI-decided. Config split follows the repo tier policy: endpoint + API key come from the core [Ai domain](../ai/README.md) — bound through the Tier B slug `vtual.content_classification.ai.connection` (empty = the default `ai_connections` row), while `vtual.content_classification.ai.*` (enabled, model, max_tokens, timeout, min_confidence, cache_ttl_hours) stay Tier B — Settings → vTual. Disabled/unconfigured by default outside local; the local profile turns it on with `vtual.content_classification.ai.enabled = true` + `model = internal.sspn_misc` ([`config/settings-local.php`](../../../config/settings-local.php)). Failure, malformed JSON, unknown category, or low confidence all leave the row null (never throws, cached per external_id). The former `VTUAL_AI_CLASSIFY_ENDPOINT` / `VTUAL_AI_CLASSIFY_API_KEY` env keys are removed.
+
+**Reply parsing is defensive.** Chat-completions endpoints wrap the object in a markdown fence (```` ```json … ``` ````) or pad it with prose even under `response_format: json_object`; `ContentAiClassifier::decodeJson()` decodes the raw body first, then the outermost `{…}` object. **`max_tokens` must cover reasoning tokens** for reasoning-style aliases — at a low budget the model spends everything before emitting `content`, and the reply arrives as `finish_reason: length` with an empty body. The local profile raises it to 2000 with `timeout` 120 to match; the prod-safe literals (`config/vtual.php`) stay tight.
+
+Audit paths:
+- **Hydrate:** `ContentService::upsertFromPrimary` → `ContentAiAuditService::enqueueIfEligible` records a pending row in `vtual_content_ai_audit` (only when AI enabled + configured; no-op otherwise, never blocks hydrate).
+- **Manual pass:** `php artisan vtual:classify-contents --ai` audits YouTube music rows with `content_category` still null (fails fast with a clear error when AI is unconfigured).
+
+Backfill stored rows (heuristic-only, no iTunes): `php artisan vtual:classify-contents [--chunk=500] [--include-classified]` — YouTube rows with `hydrated_at` set and `content_category` null. Public API `GET vtual/public/vtubers/{slug}` contents items expose `content_type` + `content_category` + `content_category_detail`.
+
 ## Tests
 
 ```bash
@@ -859,6 +887,8 @@ composer test -- --filter=AccessibilityBlade
 | `DiscordConnectionDiscoveryServiceTest` | Private channel bind, promote, external links from Discord snapshot |
 | `DiscordConnectionsClientTest` | Normalize all connection types; `ownershipEligible`; `externalLinkCandidates` |
 | `CreatorProfileManageWebTest` | Manage profile web; channel add; Discord verify; promote discovered |
+| `ContentAiClassifierTest` | Fence-tolerant JSON parse, `max_tokens` wiring / floor, low-confidence and unknown category |
+| `ClassifyContentsCommandTest` | `vtual:classify-contents --ai` audit pass |
 | `CreatorClaimServiceTest` (filters) | Bio proof-channel-only; Discord discovery; `verified_channel_id` contract |
 | `VtualBladeWebTest` | **Archived** — `tests/_archive/Feature/Http/Controllers/Web/` |
 | `AccessibilityBladeTest` (vtual) | `vtual/partials/confirm-modal`, `vtual-nav`, `status-badge`, `confirm-modal.js`, `credential-form.js` a11y invariants |

@@ -89,6 +89,10 @@ Broadcast::channel('inference.catalog', function (User $user): bool {
     return $user->can('view inference catalog');
 });
 
+Broadcast::channel('ai.connections', function (User $user): bool {
+    return $user->can('view ai connections');
+});
+
 Broadcast::channel('settings.{group}', function (User $user, string $group): bool {
     return $user->can('view settings');
 });

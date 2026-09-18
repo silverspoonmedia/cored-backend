@@ -37,6 +37,7 @@ class DomainManager
         'PaymentGateway',
         'Service',
         'Inference',
+        'Ai',
     ];
 
     /** @var list<string> */

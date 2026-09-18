@@ -60,6 +60,19 @@ class PlatformVideoDtoMapperTest extends TestCase
     }
 
     #[Test]
+    public function resolves_content_type_from_category_id(): void
+    {
+        $music = $this->mapper->toUpsertPayload($this->dto('uploaded', categoryId: '10'));
+        $this->assertSame('music', $music['content_type']);
+
+        $nonMusic = $this->mapper->toUpsertPayload($this->dto('uploaded', categoryId: '24'));
+        $this->assertSame('non_music', $nonMusic['content_type']);
+
+        $unknown = $this->mapper->toUpsertPayload($this->dto('uploaded', categoryId: null));
+        $this->assertNull($unknown['content_type']);
+    }
+
+    #[Test]
     public function maps_stream_to_live_payload(): void
     {
         $stream = new PlatformStreamDto(
@@ -92,7 +105,7 @@ class PlatformVideoDtoMapperTest extends TestCase
         $this->assertArrayNotHasKey('scheduled_at', $payload);
     }
 
-    private function dto(string $status): PlatformVideoDto
+    private function dto(string $status, ?string $categoryId = '10'): PlatformVideoDto
     {
         return new PlatformVideoDto(
             platform: PlatformKey::Youtube,
@@ -109,6 +122,7 @@ class PlatformVideoDtoMapperTest extends TestCase
             durationSeconds: 120,
             viewCount: 10,
             concurrentViewers: null,
+            categoryId: $categoryId,
         );
     }
 }

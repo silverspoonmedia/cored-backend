@@ -93,11 +93,23 @@ Operational rates and default provider slug: **Settings → Platform** — see [
 | `platform.inference.unknown_input_per_million_usd` | `inference.unknown_model_rates.input_per_million_usd` | `15` | Provisional input $/1M for unregistered resolved models |
 | `platform.inference.unknown_output_per_million_usd` | `inference.unknown_model_rates.output_per_million_usd` | `60` | Provisional output $/1M for unregistered resolved models |
 
-| Env | Default | Purpose |
-|-----|---------|---------|
-| _(none for Microstock provider slug)_ | — | Use Settings → Microstock `microstock.ai.inference_provider_slug` (Tier B); endpoints/API keys stay env |
+| Tier | Storage | Runtime read |
+|------|---------|--------------|
+| **A — env only** | `.env` + `config/*.php` `env()` | `config()` at bootstrap |
+| **B — DB plaintext** | `system_settings` (Settings UI) | `setting()` / `setting_config()` |
+| **C — DB envelope** | credential tables | model cast → `EnvelopeEncryptionService` |
 
-Provider slug for Microstock `recordUsage` is registry-backed (`microstock.ai.inference_provider_slug`), separate from `platform.inference.default_provider_slug` (core Inference fallbacks).
+| Kind | Where |
+|------|-------|
+| **AI transport** (endpoint + API key) | Tier C — `ai_connections`, Administration → AI connections, bound per consumer by slug. One-time import: `php artisan ai:import-legacy-env`. [domains/ai](../ai/README.md) |
+| **AI consumer knobs** | Tier B — model, free-model override, timeout, max_tokens, min confidence, cache TTL, concurrency. `connection` key = the slug (`""` = default connection) |
+| **AI model pricing** | Inference tables (this document) |
+
+Microstock's provider slug for `recordUsage` is registry-backed (`microstock.ai.inference_provider_slug`), separate from `platform.inference.default_provider_slug` (core Inference fallbacks).
+
+## Related
+
+- [domains/ai/README.md](../domains/ai/README.md) — central Ai domain (Tier C connections, Test gate, slug binding)
 
 ## Services
 

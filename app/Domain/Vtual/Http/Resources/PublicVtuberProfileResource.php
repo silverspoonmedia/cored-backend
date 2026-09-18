@@ -78,6 +78,13 @@ class PublicVtuberProfileResource extends JsonResource
                 'items' => $contents->map(fn ($content): array => [
                     'type' => $content->type instanceof \BackedEnum ? $content->type->value : $content->type,
                     'status' => $content->status instanceof \BackedEnum ? $content->status->value : $content->status,
+                    'content_category' => $content->content_category instanceof \BackedEnum
+                        ? $content->content_category->value
+                        : $content->content_category,
+                    'content_category_detail' => $content->content_category_detail,
+                    'content_type' => $content->content_type instanceof \BackedEnum
+                        ? $content->content_type->value
+                        : $content->content_type,
                     'title' => $content->title,
                     'thumbnail_url' => $content->thumbnail_url,
                     'url' => $content->url,

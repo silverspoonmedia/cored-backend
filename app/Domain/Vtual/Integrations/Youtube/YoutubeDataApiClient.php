@@ -338,6 +338,7 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
             description: isset($snippet['description']) ? (string) $snippet['description'] : null,
             thumbnailUrl: $thumbnail,
             url: $id !== '' ? 'https://www.youtube.com/watch?v='.$id : null,
+            categoryId: isset($snippet['categoryId']) && $snippet['categoryId'] !== '' ? (string) $snippet['categoryId'] : null,
             status: $status,
             publishedAt: $this->parseTime($snippet['publishedAt'] ?? null),
             startedAt: $this->parseTime($live['actualStartTime'] ?? $live['scheduledStartTime'] ?? null),

@@ -21,6 +21,8 @@ final class PlatformVideoDto
         public readonly ?string $description,
         public readonly ?string $thumbnailUrl,
         public readonly ?string $url,
+        /** YouTube snippet.categoryId (e.g. "10" = Music); null for other platforms. */
+        public readonly ?string $categoryId,
         /** Coarse: live|upcoming|ended|uploaded|unknown */
         public readonly string $status,
         public readonly ?Carbon $publishedAt,

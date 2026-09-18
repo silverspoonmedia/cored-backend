@@ -2,6 +2,7 @@
 
 namespace App\Domain\Vtual\Services;
 
+use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Integrations\Dto\PlatformStreamDto;
@@ -12,6 +13,10 @@ use App\Domain\Vtual\Integrations\Dto\PlatformVideoDto;
  */
 class PlatformVideoDtoMapper
 {
+    public function __construct(
+        private readonly ContentCategoryClassifier $classifier,
+    ) {}
+
     /**
      * @return array{
      *     external_id: string,
@@ -26,6 +31,8 @@ class PlatformVideoDtoMapper
      *     started_at?: mixed,
      *     ended_at?: mixed,
      *     published_at?: mixed,
+     *     content_type?: string|null,
+     *     category_id?: string|null,
      * }
      */
     public function toUpsertPayload(PlatformVideoDto $dto): array
@@ -44,6 +51,8 @@ class PlatformVideoDtoMapper
             'published_at' => $dto->publishedAt,
             'started_at' => $dto->startedAt,
             'ended_at' => $dto->endedAt,
+            'category_id' => $dto->categoryId,
+            ...$this->classificationPayload($dto, $type->value),
         ];
 
         if ($status === ContentStatus::Scheduled) {
@@ -99,5 +108,27 @@ class PlatformVideoDtoMapper
             'uploaded' => [ContentType::Vod, ContentStatus::Uploaded],
             default => [ContentType::Vod, ContentStatus::Unknown],
         };
+    }
+
+    /**
+     * Classification payload (never throws; unknown → both keys null).
+     *
+     * @return array{content_category: string|null, content_category_detail: string|null}
+     */
+    private function classificationPayload(PlatformVideoDto $dto, string $type): array
+    {
+        $classified = $this->classifier->classify([
+            'title' => $dto->title,
+            'description' => $dto->description,
+            'category_id' => $dto->categoryId,
+            'duration_seconds' => $dto->durationSeconds,
+            'type' => $type,
+        ]);
+
+        return [
+            'content_category' => $classified !== null ? $classified['category']->value : null,
+            'content_category_detail' => $classified['detail'] ?? null,
+            'content_type' => ContentKind::fromCategoryId($dto->categoryId)?->value,
+        ];
     }
 }

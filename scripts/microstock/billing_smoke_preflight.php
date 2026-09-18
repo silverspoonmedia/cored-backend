@@ -41,7 +41,7 @@ foreach (['free' => $freeId, 'paid' => $paidId] as $label => $fid) {
     foreach ($fileIds as $fileId) {
         $has = \App\Domain\FileHosting\Models\FileVariant::query()
             ->where('file_id', $fileId)
-            ->where('kind', config('microstock.ai.vision_image.variant_kind', 'ai_1024'))
+            ->where('kind', setting_config('microstock.ai.vision_image.variant_kind', 'ai_1024'))
             ->exists();
         if (! $has) {
             $variantMissing++;
@@ -76,8 +76,8 @@ if ($ownerId) {
 }
 
 echo "\n=== ai config ===\n";
-echo 'vision_model: '.config('microstock.ai.vision.model')."\n";
-echo 'vision_free: '.config('microstock.ai.vision.free_model')."\n";
-echo 'thinking_model: '.config('microstock.ai.thinking.model')."\n";
-echo 'thinking_free: '.config('microstock.ai.thinking.free_model')."\n";
-echo 'inference_provider: '.config('microstock.ai.inference_provider_slug')."\n";
+echo 'vision_model: '.setting_config('microstock.ai.vision.model')."\n";
+echo 'vision_free: '.setting_config('microstock.ai.vision.free_model')."\n";
+echo 'thinking_model: '.setting_config('microstock.ai.thinking.model')."\n";
+echo 'thinking_free: '.setting_config('microstock.ai.thinking.free_model')."\n";
+echo 'inference_provider: '.setting_config('microstock.ai.inference_provider_slug')."\n";

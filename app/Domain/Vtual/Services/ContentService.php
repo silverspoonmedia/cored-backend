@@ -5,6 +5,8 @@ namespace App\Domain\Vtual\Services;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\ContentAppearanceRole;
+use App\Domain\Vtual\Enums\ContentCategory;
+use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Enums\EntityStatus;
@@ -23,6 +25,10 @@ use Illuminate\Support\Str;
  */
 class ContentService
 {
+    public function __construct(
+        private readonly ContentAiAuditService $aiAudit,
+    ) {}
+
     /**
      * Create or update canonical content for a registered primary (host) channel.
      * Syncs denormalized FKs and the primary appearance row.
@@ -40,6 +46,10 @@ class ContentService
      *     started_at?: mixed,
      *     ended_at?: mixed,
      *     published_at?: mixed,
+     *     content_category?: string|ContentCategory|null,
+     *     content_category_detail?: string|null,
+     *     content_type?: string|ContentKind|null,
+     *     category_id?: string|null,
      * }  $data
      */
     public function upsertFromPrimary(Channel $primaryChannel, array $data): Content
@@ -75,6 +85,13 @@ class ContentService
                 'ended_at' => $data['ended_at'] ?? null,
                 'published_at' => $data['published_at'] ?? null,
                 'hydrated_at' => now(),
+                // Recomputed per hydrate — idempotent; null when unclassifiable.
+                'content_category' => $this->resolveCategory($data['content_category'] ?? null),
+                'content_category_detail' => $data['content_category_detail'] ?? null,
+                'content_type' => $this->resolveKind(
+                    $data['content_type'] ?? null,
+                    $data['category_id'] ?? null,
+                ),
                 // Re-available: a successful hydrate clears any tombstone.
                 'first_unavailable_at' => null,
             ];
@@ -89,6 +106,10 @@ class ContentService
             }
 
             $this->syncPrimaryAppearance($content, $lockedChannel);
+
+            // Async AI sub-category audit for music rows the heuristics left null.
+            // No-op unless the AI audit is enabled; never blocks hydrate.
+            $this->aiAudit->enqueueIfEligible($content);
 
             return $content->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $content;
         }, 3);
@@ -529,5 +550,36 @@ class ContentService
         }
 
         return ContentStatus::Unknown;
+    }
+
+    private function resolveCategory(mixed $category): ?ContentCategory
+    {
+        if ($category instanceof ContentCategory) {
+            return $category;
+        }
+        if (is_string($category) && $category !== '' && in_array($category, ContentCategory::values(), true)) {
+            return ContentCategory::from($category);
+        }
+
+        return null;
+    }
+
+    /**
+     * Music/non-music layer. Explicit content_type wins; otherwise derive
+     * from the platform categoryId (YouTube only — Twitch passes null).
+     */
+    private function resolveKind(mixed $kind, mixed $categoryId): ?ContentKind
+    {
+        if ($kind instanceof ContentKind) {
+            return $kind;
+        }
+        if (is_string($kind) && $kind !== '' && in_array($kind, ContentKind::values(), true)) {
+            return ContentKind::from($kind);
+        }
+        if (is_string($categoryId)) {
+            return ContentKind::fromCategoryId($categoryId);
+        }
+
+        return null;
     }
 }

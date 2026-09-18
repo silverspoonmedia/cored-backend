@@ -98,6 +98,12 @@ Domain data caches are forever + rebuild-on-miss + invalidate-on-change — [cac
 | `vtual:backfill-initial-content` | One-time YouTube content backfill for an existing active channel | [domains/vtual/README.md](../domains/vtual/README.md) |
 | `vtual:fetch-channel-content` | Fetch channel content and upsert into `vtual_contents` (POC) | [domains/vtual/README.md](../domains/vtual/README.md) |
 
+## AI
+
+| Command | Purpose | Details |
+|---------|---------|---------|
+| `ai:import-legacy-env` | One-time import of the former `MICROSTOCK_AI_*` / `VTUAL_AI_CLASSIFY_*` env pairs into `ai_connections` rows + consumer slug bindings (`--dry-run`, `--skip-test`, `--actor=`). Read-only alias helpers (not Artisan): `php scripts/ai/list_models.php`, `php scripts/ai/probe_models.php` | [domains/ai/README.md](../domains/ai/README.md) |
+
 ## Microstock
 
 | Command | Purpose | Details |

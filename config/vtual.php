@@ -285,6 +285,47 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Content classification (cover song detection)
+    |--------------------------------------------------------------------------
+    |
+    | Heuristic multilingual keyword classifier + optional iTunes Search
+    | verification for weak "cover" signals. Runs inline during video hydrate;
+    | never throws — classification failure leaves content_category null.
+    |
+    */
+    'content_classification' => [
+        // YouTube categoryId "10" = Music — prefilter for weak-signal lookup.
+        'music_category_id' => '10',
+        // Cover duration window in seconds (typical song recording).
+        'cover_duration' => ['min' => 90, 'max' => 420],
+        'itunes' => [
+            'enabled' => true,
+            'base_url' => 'https://itunes.apple.com',
+            'timeout' => 5,
+            'limit' => 5,
+            'cache_ttl_hours' => 168,
+        ],
+        // AI audit pass (sub-category only — music/non-music layer never uses AI).
+        // Endpoint + API key live in the core Ai domain (`ai_connections`, Tier C).
+        // Tier B — connection binding / enabled / model / max_tokens / timeout /
+        // min_confidence / cache_ttl via Settings → vTual
+        // (vtual.content_classification.ai.*). Empty `connection` = the default
+        // AI connection. `max_tokens` must cover reasoning tokens for
+        // reasoning-style models: too low and the model spends the whole budget
+        // on reasoning, returning an empty `content` (`finish_reason: length`).
+        'ai' => [
+            'connection' => '',
+            'enabled' => false,
+            'model' => '',
+            'timeout' => 15,
+            'max_tokens' => 200,
+            'min_confidence' => 0.7,
+            'cache_ttl_hours' => 168,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Public landing page (/vtual SPA home)
     |--------------------------------------------------------------------------
     |

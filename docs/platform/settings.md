@@ -59,7 +59,7 @@ Enum-like string keys may declare an optional `options` list on the registry def
 | OCI KMS | `OCI_*` | Cloud credentials |
 | Payment secrets | `MIDTRANS_*`, `IPAYMU_*`, … | PCI-adjacent |
 | S3 / proxy | `ARCHIVD_S3_*`, `ARCHIVD_UPLOAD_PROXY_TOKEN` | Cloud credentials |
-| AI API keys | `MICROSTOCK_AI_*_API_KEY` | Provider secrets |
+| AI connection keys | _(none — Tier C `ai_connections`, Administration → AI connections)_ | Provider secrets moved out of `.env`; `MICROSTOCK_AI_*_QUEUE*` stay Tier A |
 | Mail / broadcast secrets | `MAIL_PASSWORD`, `PUSHER_APP_SECRET` | Standard secret hygiene |
 | Public origins | `APP_URL`, `SPA_URL`, `CORS_EXTRA_ORIGINS` | Laravel API origin + Vue-Workers origin + extra comma-separated origins (preview URLs, localhost dev). `SPA_URL` is OAuth `return_to` allowlist, `SpaPublicUrl` mint origin, and CORS allowlist with `APP_URL` (+ `CORS_EXTRA_ORIGINS` for extras). Empty `SPA_URL` falls back to `APP_URL` + server endpoints and disables SPA OAuth return. |
 
@@ -119,11 +119,11 @@ SKU codes and free-tier bytes stay in `ArchivdCatalog` (deploy + seeder).
 
 ### Microstock (`microstock.*`)
 
-Daily free tier, AI billing markup, pipeline batch/watchdog, image prep, retries, vision delivery / variant kind, stage models + timeouts, inference provider slug, upstream window/budget/concurrency. API keys, endpoints, and queue names stay env.
+Daily free tier, AI billing markup, pipeline batch/watchdog, image prep, retries, vision delivery / variant kind, stage models + timeouts, inference provider slug, upstream window/budget/concurrency. **Queue names stay env**; AI endpoints and API keys moved to core Ai `ai_connections` (Tier C) and are bound per stage via `microstock.ai.vision.connection` / `microstock.ai.thinking.connection` (empty = default connection).
 
 ### Vtual (`vtual.*`)
 
-Claim/channel-claim TTLs and bio token mint (`token_prefix` / `token_bytes`), credential failover, HTTP timeouts, YouTube probe channel id, channel pool thresholds. Platform credentials stay in `vtual_platform_credentials` table.
+Claim/channel-claim TTLs and bio token mint (`token_prefix` / `token_bytes`), credential failover, HTTP timeouts, YouTube probe channel id, channel pool thresholds. Platform credentials stay in `vtual_platform_credentials`; AI audit transport binds via `vtual.content_classification.ai.connection` to core Ai `ai_connections`, and the audit knobs (`enabled`, `model`, `max_tokens`, `timeout`, `min_confidence`, `cache_ttl_hours`) live under `vtual.content_classification.ai.*`.
 
 ## Already UI-manageable (DB, not system_settings)
 
@@ -140,6 +140,7 @@ Claim/channel-claim TTLs and bio token mint (`token_prefix` / `token_bytes`), cr
 | Notification audiences | `notification-audiences.*` |
 | Vtual credentials | `vtual.admin.credentials.*` |
 | Archivd blocklist | `archivd.blocklist.*` |
+| AI connections | `ai.connections.*` (Tier C — see [domains/ai](../domains/ai/README.md)) |
 
 Payment routing fees: YAML → `payments:sync-routing-policy` (partial UI toggle on channels).
 
@@ -151,11 +152,13 @@ Payment routing fees: YAML → `payments:sync-routing-policy` (partial UI toggle
 php artisan db:seed --class=SettingsSeeder
 ```
 
-**Local profile only** (`APP_ENV=local`): `DatabaseSeeder` also runs `LocalSettingsSeeder`, which `upsertMany`s dev overrides from [`config/settings-local.php`](../../config/settings-local.php) (e.g. generous daily free, realtime notifications). Re-seeding local refreshes those values; staging/production never run this seeder. Full override inventory: [configuration-policy.md — Local profile overrides](configuration-policy.md#local-profile-overrides).
+**Local profile only** (`APP_ENV=local`): `DatabaseSeeder` also runs `LocalSettingsSeeder`, which `upsertMany`s dev overrides from [`config/settings-local.php`](../../config/settings-local.php) (e.g. generous daily free, realtime notifications, local Open WebUI model aliases for the Microstock stages and the vTual audit). Re-seeding local refreshes those values; staging/production never run this seeder. Full override inventory: [configuration-policy.md — Local profile overrides](configuration-policy.md#local-profile-overrides).
 
 ```bash
 php artisan db:seed --class=LocalSettingsSeeder   # local only; upserts dev pack
 ```
+
+**Local profile only** (`APP_ENV=local`): `DatabaseSeeder` also ends with `AiConnectionSeeder`, which upserts `ai_connections` rows (Tier C) from the gitignored `database/seeders/data/ai-connections.local.php`, probes each new row, binds the consumer slug settings (`microstock.ai.vision.connection`, `microstock.ai.thinking.connection`, `vtual.content_classification.ai.connection`) and promotes the flagged entry to default. It runs last because it needs the seeded users for `created_by` and `LocalSettingsSeeder`'s model aliases for `test_model`. `php artisan db:seed` on a fresh local checkout is therefore enough once the data file is filled in — see [domains/ai/README.md — Local seeding](../domains/ai/README.md#local-seeding--wiring).
 
 Cache is rebuilt automatically after seeding. See [configuration-policy.md](configuration-policy.md) for tier rules and cache contract.
 

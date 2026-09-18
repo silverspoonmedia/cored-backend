@@ -117,6 +117,12 @@ class MenuSeederTest extends TestCase
                         ],
                     ],
                     [
+                        'name' => 'AI connections',
+                        'route' => 'ai.connections.index',
+                        'type' => 'p',
+                        'children' => [],
+                    ],
+                    [
                         'name' => 'Monitoring',
                         'route' => null,
                         'type' => 'p',
@@ -263,7 +269,7 @@ class MenuSeederTest extends TestCase
 
         $this->assertFalse(Menu::withTrashed()->whereKey($custom->id)->exists());
         $this->assertFalse(Menu::withTrashed()->whereKey($trashed->id)->exists());
-        $this->assertSame(53, Menu::query()->count());
+        $this->assertSame(54, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),
@@ -272,7 +278,7 @@ class MenuSeederTest extends TestCase
 
         $this->seed(MenuSeeder::class);
 
-        $this->assertSame(53, Menu::query()->count());
+        $this->assertSame(54, Menu::query()->count());
         $this->assertSame($initialTree, [
             'sidebar' => $this->databaseTree(MenuLayout::SIDEBAR),
             'navbar' => $this->databaseTree(MenuLayout::NAVBAR),

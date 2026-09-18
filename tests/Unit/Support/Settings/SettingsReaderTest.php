@@ -75,7 +75,9 @@ class SettingsReaderTest extends TestCase
         $this->assertIsArray($vision);
         $this->assertSame(999, $vision['timeout']);
         $this->assertSame('override.model', $vision['model']);
-        $this->assertArrayHasKey('endpoint', $vision);
-        $this->assertArrayHasKey('api_key', $vision);
+        $this->assertArrayHasKey('connection', $vision);
+        // Endpoint + API key moved out of config into ai_connections (Tier C).
+        $this->assertArrayNotHasKey('endpoint', $vision);
+        $this->assertArrayNotHasKey('api_key', $vision);
     }
 }

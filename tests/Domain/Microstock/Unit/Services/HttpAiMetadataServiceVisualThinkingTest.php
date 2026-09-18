@@ -5,10 +5,13 @@ namespace Tests\Domain\Microstock\Unit\Services;
 use App\Domain\Microstock\Services\HttpAiMetadataService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\BindsAiConnection;
 use Tests\TestCase;
 
 class HttpAiMetadataServiceVisualThinkingTest extends TestCase
 {
+    use BindsAiConnection;
+
     private const ENDPOINT = 'https://ai.test/v1/chat/completions';
 
     private const IMAGE = 'data:image/jpeg;base64,xx';
@@ -16,6 +19,8 @@ class HttpAiMetadataServiceVisualThinkingTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->bindAiConnection();
 
         config([
             'microstock.ai.http_retries' => 0,
@@ -42,7 +47,7 @@ class HttpAiMetadataServiceVisualThinkingTest extends TestCase
                 ->push($this->thinkingResponse('Girl running illustration', ['girl', 'running']), 200),
         ]);
 
-        (new HttpAiMetadataService)->generate(self::IMAGE);
+        (app(HttpAiMetadataService::class))->generate(self::IMAGE);
 
         Http::assertSent(function ($request) {
             if ($request->url() !== self::ENDPOINT) {
@@ -79,7 +84,7 @@ class HttpAiMetadataServiceVisualThinkingTest extends TestCase
                 ->push($this->thinkingResponse('Text-only curated', ['text', 'only']), 200),
         ]);
 
-        $result = (new HttpAiMetadataService)->generate(self::IMAGE);
+        $result = (app(HttpAiMetadataService::class))->generate(self::IMAGE);
 
         $this->assertSame('Text-only curated', $result['title']);
         $this->assertSame(['text', 'only'], $result['keywords']);
@@ -101,7 +106,7 @@ class HttpAiMetadataServiceVisualThinkingTest extends TestCase
             },
         ]);
 
-        (new HttpAiMetadataService)->generate(self::IMAGE);
+        (app(HttpAiMetadataService::class))->generate(self::IMAGE);
 
         $this->assertSame(['vision', 'thinking'], $order);
     }
@@ -114,7 +119,7 @@ class HttpAiMetadataServiceVisualThinkingTest extends TestCase
                 ->push($this->thinkingResponse('Curated title', ['girl', 'run'], 'thinking-model'), 200),
         ]);
 
-        $result = (new HttpAiMetadataService)->generate(self::IMAGE);
+        $result = (app(HttpAiMetadataService::class))->generate(self::IMAGE);
 
         $this->assertArrayHasKey('stage_metrics', $result);
         $metrics = $result['stage_metrics'];
@@ -136,7 +141,7 @@ class HttpAiMetadataServiceVisualThinkingTest extends TestCase
                 ->push($this->thinkingResponse('Curated title', ['girl', 'run'], 'thinking-model'), 200),
         ]);
 
-        $result = (new HttpAiMetadataService)->curateDraft(
+        $result = (app(HttpAiMetadataService::class))->curateDraft(
             'Draft title',
             ['draft'],
             null,

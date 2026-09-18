@@ -234,6 +234,7 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
             description: isset($item['description']) ? (string) $item['description'] : null,
             thumbnailUrl: $thumbnail,
             url: isset($item['url']) ? (string) $item['url'] : ($id !== '' ? 'https://www.twitch.tv/videos/'.$id : null),
+            categoryId: null,
             status: $status,
             publishedAt: $this->parseTime($item['published_at'] ?? $item['created_at'] ?? null),
             startedAt: $this->parseTime($item['created_at'] ?? null),

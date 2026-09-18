@@ -87,6 +87,113 @@ class PlatformApiProbeApiTest extends TestCase
         $this->assertSame('Probe Video', $data['data'][0]['title']);
         $this->assertArrayNotHasKey('raw', $data['data'][0]);
         $this->assertSame([], $data['resolved'] ?? []);
+        // Debug-only classification preview: talk video without signals → null.
+        $this->assertArrayHasKey('content_category', $data['data'][0]);
+        $this->assertNull($data['data'][0]['content_category']);
+        $this->assertNull($data['data'][0]['content_category_detail']);
+        // No categoryId on the fake snippet → music layer unknown.
+        $this->assertArrayHasKey('content_type', $data['data'][0]);
+        $this->assertNull($data['data'][0]['content_type']);
+    }
+
+    #[Test]
+    public function probe_video_classification_preview_marks_cover(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+        $this->activateYoutubeCredential($admin, 'probe-key-cccc');
+
+        // "covered by" is a strong cover keyword → cover without catalog lookup.
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'items' => [
+                    [
+                        'id' => 'vidcover',
+                        'snippet' => [
+                            'title' => 'ヴィラン / covered by ななし',
+                            'description' => 'cover song',
+                            'channelId' => 'UCabc',
+                            'publishedAt' => '2026-01-01T00:00:00Z',
+                            'liveBroadcastContent' => 'none',
+                            'categoryId' => '10',
+                            'thumbnails' => ['high' => ['url' => 'https://img.example/hi.jpg']],
+                        ],
+                        'contentDetails' => ['duration' => 'PT3M54S'],
+                        'statistics' => ['viewCount' => '9'],
+                        'status' => ['privacyStatus' => 'public'],
+                        'liveStreamingDetails' => [],
+                    ],
+                ],
+            ], 200),
+            'itunes.apple.com/search*' => Http::response([
+                'results' => [
+                    ['trackName' => 'ヴィラン', 'artistName' => 'てにをは'],
+                ],
+            ], 200),
+        ]);
+
+        $data = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/admin/platform-api/probe', [
+                'platform' => 'youtube',
+                'method' => 'fetch_videos',
+                'ids' => ['vidcover'],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('cover', $data['data'][0]['content_category']);
+        $this->assertNull($data['data'][0]['content_category_detail']);
+        // categoryId=10 on the snippet → music layer resolved.
+        $this->assertSame('music', $data['data'][0]['content_type']);
+    }
+
+    #[Test]
+    public function probe_video_classification_preview_resolves_catalog_detail(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+        $this->activateYoutubeCredential($admin, 'probe-key-dddd');
+
+        // Weak "cover" + Music category → verified via iTunes for attribution.
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'items' => [
+                    [
+                        'id' => 'vidweak',
+                        'snippet' => [
+                            'title' => 'ヴィラン cover',
+                            'description' => 'my singing',
+                            'channelId' => 'UCabc',
+                            'publishedAt' => '2026-01-01T00:00:00Z',
+                            'liveBroadcastContent' => 'none',
+                            'categoryId' => '10',
+                            'thumbnails' => ['high' => ['url' => 'https://img.example/hi.jpg']],
+                        ],
+                        'contentDetails' => ['duration' => 'PT3M54S'],
+                        'statistics' => ['viewCount' => '9'],
+                        'status' => ['privacyStatus' => 'public'],
+                        'liveStreamingDetails' => [],
+                    ],
+                ],
+            ], 200),
+            'itunes.apple.com/search*' => Http::response([
+                'results' => [
+                    ['trackName' => 'ヴィラン', 'artistName' => 'てにをは'],
+                ],
+            ], 200),
+        ]);
+
+        $data = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/admin/platform-api/probe', [
+                'platform' => 'youtube',
+                'method' => 'fetch_videos',
+                'ids' => ['vidweak'],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('cover', $data['data'][0]['content_category']);
+        $this->assertSame('てにをは - ヴィラン', $data['data'][0]['content_category_detail']);
     }
 
     #[Test]

@@ -54,14 +54,17 @@ foreach ($argv as $arg) {
     }
 }
 
-$visionCfg = config('microstock.ai.vision');
-$thinkingCfg = config('microstock.ai.thinking');
-$endpoint = (string) ($visionCfg['endpoint'] ?? '');
+$resolver = app(App\Domain\Ai\Services\AiConnectionResolver::class);
+$visionCfg = (array) setting_config('microstock.ai.vision');
+$thinkingCfg = (array) setting_config('microstock.ai.thinking');
+$visionConn = $resolver->resolve(trim((string) ($visionCfg['connection'] ?? '')) ?: null);
+$thinkingConn = $resolver->resolve(trim((string) ($thinkingCfg['connection'] ?? '')) ?: null);
+$endpoint = (string) ($visionConn?->endpoint ?? '');
 $model = (string) ($visionCfg['model'] ?? '');
-$apiKey = (string) ($visionCfg['api_key'] ?? '');
-$thinkingEndpoint = (string) ($thinkingCfg['endpoint'] ?? '');
+$apiKey = (string) ($visionConn?->apiKey ?? '');
+$thinkingEndpoint = (string) ($thinkingConn?->endpoint ?? '');
 $thinkingModel = (string) ($thinkingCfg['model'] ?? '');
-$thinkingApiKey = (string) ($thinkingCfg['api_key'] ?? '');
+$thinkingApiKey = (string) ($thinkingConn?->apiKey ?? '');
 
 warnIfNotOpenWebUi($endpoint, $model);
 
@@ -123,8 +126,8 @@ $resolveImage = function (?string $deliveryOverride = null, ?string $variantOver
     );
 };
 
-$activeDelivery = $delivery ?? (string) config('microstock.ai.vision_image.delivery', 'base64');
-$activeVariant = $variantKind ?? (string) config('microstock.ai.vision_image.variant_kind', 'ai_1024');
+$activeDelivery = $delivery ?? (string) setting_config('microstock.ai.vision_image.delivery', 'base64');
+$activeVariant = $variantKind ?? (string) setting_config('microstock.ai.vision_image.variant_kind', 'ai_1024');
 $visionImage = $resolveImage($delivery, $variantKind);
 $hint = 'Children doing sports';
 
@@ -133,7 +136,7 @@ $report = [
     'label' => $label,
     'folder_id' => $folderId,
     'file_id' => (string) $probeFile->id,
-    'config_delivery' => (string) config('microstock.ai.vision_image.delivery', 'base64'),
+    'config_delivery' => (string) setting_config('microstock.ai.vision_image.delivery', 'base64'),
     'timeout_seconds' => $timeout,
     'delivery' => $activeDelivery,
     'variant_kind' => $activeVariant,
@@ -141,7 +144,7 @@ $report = [
     'vision_model' => $model,
     'thinking_endpoint' => $thinkingEndpoint,
     'thinking_model' => $thinkingModel,
-    'thinking_visual_attempts' => (int) config('microstock.ai.thinking_visual_attempts', 2),
+    'thinking_visual_attempts' => (int) setting_config('microstock.ai.thinking_visual_attempts', 2),
     'file' => $probeFile->name,
     'image_payload_bytes' => strlen($visionImage),
     'tests' => [],
