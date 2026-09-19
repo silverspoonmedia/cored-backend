@@ -116,6 +116,7 @@ Canonical envelope: [api-envelope.md](../platform/api-envelope.md). Deviations:
 | `DELETE profile/connections/{oauth_provider}` | `null` data | Replaces `DELETE …/discord` |
 | `GET auth/discord/authorize-url` | `{ url }` | Requires `SPA_URL`. `return_path` is a path |
 | `GET vtual/public/vtubers/{slug}` contents items | Each item carries `content_type` (`music` \| `non_music`, null = unknown) + `content_category` (`cover` \| `original` \| `singing_stream`) + `content_category_detail` (nullable) | Both layers program-classified (multi-signal, not `categoryId` alone) with an async AI audit for rows the program pass leaves unknown. See [vtual README — Content classification](../domains/vtual/README.md#content-classification-music-layer--cover-song-detection) |
+| `GET vtual/public/vtubers/{slug}?platform=&type=&sort=` | `data.contents.filters` echoes `{ platform, type, sort }` | Guest-only grid filters. Unknown values clamp to `null` / `newest` — **never 422** — and `sort=oldest` drops the live-first pinning (`published_at` asc). `data.contents.pagination.total` / `last_page` follow the filtered set. Only this endpoint echoes `filters`; `/vtual/public/contents` and the landing payload do not. The SPA SWR key must include the filter tuple (`useVtualPublic.profileCacheKey`). |
 
 ## Type alignment
 

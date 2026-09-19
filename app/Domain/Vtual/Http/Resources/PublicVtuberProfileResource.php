@@ -19,6 +19,27 @@ use Illuminate\Support\Number;
 class PublicVtuberProfileResource extends JsonResource
 {
     /**
+     * Applied content-grid filters (already clamped by the controller).
+     *
+     * @var array{platform: string|null, type: string|null, sort: string}
+     */
+    private array $filters;
+
+    /**
+     * @param  array{platform?: string|null, type?: string|null, sort?: string|null}  $filters
+     */
+    public function __construct($resource, array $filters = [])
+    {
+        parent::__construct($resource);
+
+        $this->filters = [
+            'platform' => $filters['platform'] ?? null,
+            'type' => $filters['type'] ?? null,
+            'sort' => $filters['sort'] ?? 'newest',
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -106,6 +127,7 @@ class PublicVtuberProfileResource extends JsonResource
                     'total' => 0,
                     'has_more' => false,
                 ],
+                'filters' => $this->filters,
             ],
         ];
     }

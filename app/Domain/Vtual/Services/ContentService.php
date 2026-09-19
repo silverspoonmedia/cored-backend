@@ -441,18 +441,52 @@ class ContentService
      * ordering as listForPublicProfile, but as a paginator so the SPA can page
      * through a creator's full catalogue instead of a hard-capped slice.
      *
+     * Filters (all optional, already validated by the caller):
+     * - `platform`: platform key (`youtube`, `twitch`, ...) on the primary host
+     * - `type`: content type (`live` | `archive` | `vod`)
+     * - `sort`: `newest` (default, live rows pinned first) | `oldest`
+     *
+     * Visibility rules (archived primary channel, unavailable tombstone,
+     * creator + appearances scope) apply regardless of the filters.
+     *
+     * @param  array{platform?: string|null, type?: string|null, sort?: string|null}  $filters
      * @return LengthAwarePaginator<int, Content>
      */
-    public function paginateForPublicProfile(string $creatorId, int $perPage = 12): LengthAwarePaginator
-    {
-        return Content::query()
+    public function paginateForPublicProfile(
+        string $creatorId,
+        int $perPage = 12,
+        array $filters = [],
+    ): LengthAwarePaginator {
+        $platform = $filters['platform'] ?? null;
+        $type = $filters['type'] ?? null;
+        $oldestFirst = ($filters['sort'] ?? 'newest') === 'oldest';
+
+        $query = Content::query()
             ->where(function ($q) use ($creatorId): void {
                 $q->where('creator_id', $creatorId)
                     ->orWhereHas('appearances', fn ($a) => $a->where('creator_id', $creatorId));
             })
             ->whereDoesntHave('channel', fn ($q) => $q->where('status', ChannelStatus::Archived))
             ->where('status', '!=', ContentStatus::Unavailable)
-            ->with(['channel', 'creator', 'platform', 'appearances'])
+            ->when(
+                is_string($platform) && $platform !== '',
+                fn ($q) => $q->whereHas('platform', fn ($p) => $p->where('key', $platform)),
+            )
+            ->when(
+                is_string($type) && $type !== '',
+                fn ($q) => $q->where('type', $type),
+            )
+            ->with(['channel', 'creator', 'platform', 'appearances']);
+
+        if ($oldestFirst) {
+            // Explicit user choice: no live pinning.
+            return $query
+                ->orderBy('published_at')
+                ->orderBy('created_at')
+                ->paginate(max(1, $perPage));
+        }
+
+        return $query
             ->orderByRaw(
                 'CASE WHEN type = ? AND status = ? THEN 0 ELSE 1 END',
                 [ContentType::Live->value, ContentStatus::Live->value],

@@ -4,8 +4,11 @@ namespace Tests\Domain\Vtual\Feature\Http\Controllers\API\V1;
 
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ChannelVisibility;
+use App\Domain\Vtual\Enums\ContentAppearanceRole;
 use App\Domain\Vtual\Enums\ContentCategory;
 use App\Domain\Vtual\Enums\ContentKind;
+use App\Domain\Vtual\Enums\ContentStatus;
+use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Enums\EntityStatus;
 use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Creator;
@@ -633,6 +636,210 @@ class VtualPublicApiTest extends TestCase
             ->json('data.events');
 
         $this->assertSame('Debut Showcase', $payload[0]['title']);
+    }
+
+    #[Test]
+    public function public_profile_filters_contents_by_platform(): void
+    {
+        $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
+        $youtubeChannel = $creator->channels()->firstOrFail();
+        $twitch = $this->twitchPlatform();
+        $twitchChannel = $this->channelOnPlatform($creator, $twitch, 'twitch-neon-fox');
+
+        $this->contentRow($creator, $youtubeChannel, $this->youtube, 'vod-yt', 'YouTube VOD', ContentType::Vod, ContentStatus::Uploaded, now()->subDay());
+        $this->contentRow($creator, $twitchChannel, $twitch, 'vod-tt', 'Twitch VOD', ContentType::Vod, ContentStatus::Uploaded, now());
+
+        $twitchItems = $this->getJson('/api/v1/vtual/public/vtubers/neon-fox?platform=twitch')
+            ->assertOk()
+            ->assertJsonPath('data.contents.filters.platform', 'twitch')
+            ->assertJsonPath('data.contents.pagination.total', 1)
+            ->json('data.contents.items');
+
+        $this->assertSame(['Twitch VOD'], collect($twitchItems)->pluck('title')->all());
+        $this->assertSame('twitch', $twitchItems[0]['platform_key']);
+
+        $unfiltered = $this->getJson('/api/v1/vtual/public/vtubers/neon-fox')
+            ->assertOk()
+            ->assertJsonPath('data.contents.filters.platform', null)
+            ->assertJsonPath('data.contents.filters.type', null)
+            ->assertJsonPath('data.contents.filters.sort', 'newest')
+            ->assertJsonPath('data.contents.pagination.total', 2)
+            ->json('data.contents.items');
+
+        $this->assertCount(2, $unfiltered);
+    }
+
+    #[Test]
+    public function public_profile_filters_contents_by_type(): void
+    {
+        $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
+        $channel = $creator->channels()->firstOrFail();
+
+        $this->contentRow($creator, $channel, $this->youtube, 'vod-1', 'A VOD', ContentType::Vod, ContentStatus::Uploaded, now()->subDays(3));
+        $this->contentRow($creator, $channel, $this->youtube, 'archive-1', 'An archive', ContentType::Archive, ContentStatus::Uploaded, now()->subDays(2));
+        $this->liveContent($creator, 'live-1');
+
+        $titlesFor = fn (string $type): array => collect(
+            $this->getJson('/api/v1/vtual/public/vtubers/neon-fox?type='.$type)
+                ->assertOk()
+                ->assertJsonPath('data.contents.filters.type', $type)
+                ->json('data.contents.items'),
+        )->pluck('title')->all();
+
+        $this->assertSame(['A VOD'], $titlesFor('vod'));
+        $this->assertSame(['An archive'], $titlesFor('archive'));
+        $this->assertSame(['Live now'], $titlesFor('live'));
+    }
+
+    #[Test]
+    public function public_profile_sort_oldest_does_not_pin_live_first(): void
+    {
+        $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
+        $channel = $creator->channels()->firstOrFail();
+
+        $this->contentRow($creator, $channel, $this->youtube, 'vod-old', 'Older VOD', ContentType::Vod, ContentStatus::Uploaded, now()->subDays(5));
+        $this->contentRow($creator, $channel, $this->youtube, 'vod-new', 'Newer VOD', ContentType::Vod, ContentStatus::Uploaded, now()->subDay());
+        $this->liveContent($creator, 'live-now');
+
+        $default = collect(
+            $this->getJson('/api/v1/vtual/public/vtubers/neon-fox')
+                ->assertOk()
+                ->json('data.contents.items'),
+        )->pluck('title')->all();
+
+        $this->assertSame(['Live now', 'Newer VOD', 'Older VOD'], $default);
+
+        $oldest = collect(
+            $this->getJson('/api/v1/vtual/public/vtubers/neon-fox?sort=oldest')
+                ->assertOk()
+                ->assertJsonPath('data.contents.filters.sort', 'oldest')
+                ->json('data.contents.items'),
+        )->pluck('title')->all();
+
+        $this->assertSame(['Older VOD', 'Newer VOD', 'Live now'], $oldest);
+    }
+
+    #[Test]
+    public function public_profile_clamps_unknown_filter_values(): void
+    {
+        $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
+        $channel = $creator->channels()->firstOrFail();
+
+        $this->contentRow($creator, $channel, $this->youtube, 'vod-1', 'A VOD', ContentType::Vod, ContentStatus::Uploaded, now()->subDay());
+        $this->contentRow($creator, $channel, $this->youtube, 'vod-2', 'Another VOD', ContentType::Vod, ContentStatus::Uploaded, now()->subDays(2));
+
+        $payload = $this->getJson('/api/v1/vtual/public/vtubers/neon-fox?platform=nope&type=nope&sort=nope')
+            ->assertOk()
+            ->json('data.contents');
+
+        $this->assertNull($payload['filters']['platform']);
+        $this->assertNull($payload['filters']['type']);
+        $this->assertSame('newest', $payload['filters']['sort']);
+        $this->assertSame(2, $payload['pagination']['total']);
+    }
+
+    #[Test]
+    public function public_profile_type_filter_keeps_visibility_rules(): void
+    {
+        $creator = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
+        $channel = $creator->channels()->firstOrFail();
+
+        $archivedChannel = Channel::query()->create([
+            'creator_id' => $creator->id,
+            'platform_id' => $this->youtube->id,
+            'external_id' => 'UC-archived-feed',
+            'display_name' => $creator->display_name,
+            'status' => ChannelStatus::Archived,
+            'visibility' => ChannelVisibility::Public,
+            'subscriber_count' => 10,
+        ]);
+
+        $this->contentRow($creator, $archivedChannel, $this->youtube, 'live-archived', 'Archived live', ContentType::Live, ContentStatus::Live, now());
+        $this->contentRow($creator, $channel, $this->youtube, 'live-unavailable', 'Unavailable live', ContentType::Live, ContentStatus::Unavailable, now()->subMinute());
+        $this->liveContent($creator, 'live-visible');
+
+        $titles = collect(
+            $this->getJson('/api/v1/vtual/public/vtubers/neon-fox?type=live')
+                ->assertOk()
+                ->assertJsonPath('data.contents.pagination.total', 1)
+                ->json('data.contents.items'),
+        )->pluck('title')->all();
+
+        $this->assertSame(['Live now'], $titles);
+    }
+
+    #[Test]
+    public function public_profile_filters_keep_appearance_only_content(): void
+    {
+        $host = $this->activeCreatorWithPublicChannel('Host Talent', 50);
+        $hostChannel = $host->channels()->firstOrFail();
+        $guest = $this->activeCreatorWithPublicChannel('Neon Fox', 100);
+        $guestChannel = $guest->channels()->firstOrFail();
+
+        $collab = $this->contentRow($host, $hostChannel, $this->youtube, 'collab-1', 'Collab VOD', ContentType::Vod, ContentStatus::Uploaded, now());
+
+        \App\Domain\Vtual\Models\ContentAppearance::query()->create([
+            'content_id' => $collab->id,
+            'channel_id' => $guestChannel->id,
+            'creator_id' => $guest->id,
+            'role' => ContentAppearanceRole::Network,
+        ]);
+
+        $titles = collect(
+            $this->getJson('/api/v1/vtual/public/vtubers/neon-fox?platform=youtube&type=vod')
+                ->assertOk()
+                ->assertJsonPath('data.contents.pagination.total', 1)
+                ->json('data.contents.items'),
+        )->pluck('title')->all();
+
+        $this->assertSame(['Collab VOD'], $titles);
+    }
+
+    private function twitchPlatform(): Platform
+    {
+        return Platform::query()->create([
+            'key' => 'twitch',
+            'name' => 'Twitch',
+            'enabled' => true,
+            'supports_live' => true,
+            'supports_vod' => true,
+        ]);
+    }
+
+    private function channelOnPlatform(Creator $creator, Platform $platform, string $externalId): Channel
+    {
+        return Channel::query()->create([
+            'creator_id' => $creator->id,
+            'platform_id' => $platform->id,
+            'external_id' => $externalId,
+            'display_name' => $creator->display_name,
+            'status' => ChannelStatus::Active,
+            'visibility' => ChannelVisibility::Public,
+            'subscriber_count' => 10,
+        ]);
+    }
+
+    private function contentRow(
+        Creator $creator,
+        Channel $channel,
+        Platform $platform,
+        string $externalId,
+        string $title,
+        ContentType $type,
+        ContentStatus $status,
+        \DateTimeInterface $publishedAt,
+    ): \App\Domain\Vtual\Models\Content {
+        return \App\Domain\Vtual\Models\Content::query()->create([
+            'creator_id' => $creator->id,
+            'channel_id' => $channel->id,
+            'platform_id' => $platform->id,
+            'external_id' => $externalId,
+            'type' => $type,
+            'status' => $status,
+            'title' => $title,
+            'url' => 'https://example.test/watch/'.$externalId,
+            'published_at' => $publishedAt,
+        ]);
     }
 
     private function activeCreatorWithPublicChannel(string $name, int $subscribers): Creator
