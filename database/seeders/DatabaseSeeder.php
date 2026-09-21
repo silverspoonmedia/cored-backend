@@ -66,6 +66,13 @@ class DatabaseSeeder extends Seeder
         $this->call(CurrencySeeder::class);
         $this->call(InferenceCatalogSeeder::class);
         $this->call(ServiceCatalogSeeder::class);
+
+        if (app()->environment('local')) {
+            // Tier C wiring: `ai_connections` rows + consumer slug bindings from the
+            // gitignored data file. Last on purpose — it needs the seeded users for
+            // `created_by`, and LocalSettingsSeeder's local model aliases above.
+            $this->call(AiConnectionSeeder::class);
+        }
     }
 
     /**
@@ -83,6 +90,18 @@ class DatabaseSeeder extends Seeder
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

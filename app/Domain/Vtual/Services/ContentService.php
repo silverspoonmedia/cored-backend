@@ -5,6 +5,8 @@ namespace App\Domain\Vtual\Services;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\ContentAppearanceRole;
+use App\Domain\Vtual\Enums\ContentCategory;
+use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Enums\EntityStatus;
@@ -23,6 +25,11 @@ use Illuminate\Support\Str;
  */
 class ContentService
 {
+    public function __construct(
+        private readonly ContentAiAuditService $aiAudit,
+        private readonly ContentKindClassifier $kindClassifier,
+    ) {}
+
     /**
      * Create or update canonical content for a registered primary (host) channel.
      * Syncs denormalized FKs and the primary appearance row.
@@ -40,6 +47,13 @@ class ContentService
      *     started_at?: mixed,
      *     ended_at?: mixed,
      *     published_at?: mixed,
+     *     content_category?: string|ContentCategory|null,
+     *     content_category_detail?: string|null,
+     *     content_type?: string|ContentKind|null,
+     *     category_id?: string|null,
+     *     duration_seconds?: int|null,
+     *     topic_categories?: list<string>|null,
+     *     tags?: list<string>|null,
      * }  $data
      */
     public function upsertFromPrimary(Channel $primaryChannel, array $data): Content
@@ -75,6 +89,10 @@ class ContentService
                 'ended_at' => $data['ended_at'] ?? null,
                 'published_at' => $data['published_at'] ?? null,
                 'hydrated_at' => now(),
+                // Recomputed per hydrate — idempotent; null when unclassifiable.
+                'content_category' => $this->resolveCategory($data['content_category'] ?? null),
+                'content_category_detail' => $data['content_category_detail'] ?? null,
+                'content_type' => $this->resolveKind($data),
                 // Re-available: a successful hydrate clears any tombstone.
                 'first_unavailable_at' => null,
             ];
@@ -89,6 +107,10 @@ class ContentService
             }
 
             $this->syncPrimaryAppearance($content, $lockedChannel);
+
+            // Async AI sub-category audit for music rows the heuristics left null.
+            // No-op unless the AI audit is enabled; never blocks hydrate.
+            $this->aiAudit->enqueueIfEligible($content);
 
             return $content->fresh(['channel', 'creator', 'platform', 'appearances']) ?? $content;
         }, 3);
@@ -419,18 +441,52 @@ class ContentService
      * ordering as listForPublicProfile, but as a paginator so the SPA can page
      * through a creator's full catalogue instead of a hard-capped slice.
      *
+     * Filters (all optional, already validated by the caller):
+     * - `platform`: platform key (`youtube`, `twitch`, ...) on the primary host
+     * - `type`: content type (`live` | `archive` | `vod`)
+     * - `sort`: `newest` (default, live rows pinned first) | `oldest`
+     *
+     * Visibility rules (archived primary channel, unavailable tombstone,
+     * creator + appearances scope) apply regardless of the filters.
+     *
+     * @param  array{platform?: string|null, type?: string|null, sort?: string|null}  $filters
      * @return LengthAwarePaginator<int, Content>
      */
-    public function paginateForPublicProfile(string $creatorId, int $perPage = 12): LengthAwarePaginator
-    {
-        return Content::query()
+    public function paginateForPublicProfile(
+        string $creatorId,
+        int $perPage = 12,
+        array $filters = [],
+    ): LengthAwarePaginator {
+        $platform = $filters['platform'] ?? null;
+        $type = $filters['type'] ?? null;
+        $oldestFirst = ($filters['sort'] ?? 'newest') === 'oldest';
+
+        $query = Content::query()
             ->where(function ($q) use ($creatorId): void {
                 $q->where('creator_id', $creatorId)
                     ->orWhereHas('appearances', fn ($a) => $a->where('creator_id', $creatorId));
             })
             ->whereDoesntHave('channel', fn ($q) => $q->where('status', ChannelStatus::Archived))
             ->where('status', '!=', ContentStatus::Unavailable)
-            ->with(['channel', 'creator', 'platform', 'appearances'])
+            ->when(
+                is_string($platform) && $platform !== '',
+                fn ($q) => $q->whereHas('platform', fn ($p) => $p->where('key', $platform)),
+            )
+            ->when(
+                is_string($type) && $type !== '',
+                fn ($q) => $q->where('type', $type),
+            )
+            ->with(['channel', 'creator', 'platform', 'appearances']);
+
+        if ($oldestFirst) {
+            // Explicit user choice: no live pinning.
+            return $query
+                ->orderBy('published_at')
+                ->orderBy('created_at')
+                ->paginate(max(1, $perPage));
+        }
+
+        return $query
             ->orderByRaw(
                 'CASE WHEN type = ? AND status = ? THEN 0 ELSE 1 END',
                 [ContentType::Live->value, ContentStatus::Live->value],
@@ -529,5 +585,45 @@ class ContentService
         }
 
         return ContentStatus::Unknown;
+    }
+
+    private function resolveCategory(mixed $category): ?ContentCategory
+    {
+        if ($category instanceof ContentCategory) {
+            return $category;
+        }
+        if (is_string($category) && $category !== '' && in_array($category, ContentCategory::values(), true)) {
+            return ContentCategory::from($category);
+        }
+
+        return null;
+    }
+
+    /**
+     * Music/non-music layer. An explicit content_type wins; otherwise the full
+     * signal set is re-derived through ContentKindClassifier so hand-built
+     * payloads (Twitch live state, tests) agree with the mapper.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveKind(array $data): ?ContentKind
+    {
+        $kind = $data['content_type'] ?? null;
+
+        if ($kind instanceof ContentKind) {
+            return $kind;
+        }
+        if (is_string($kind) && $kind !== '' && in_array($kind, ContentKind::values(), true)) {
+            return ContentKind::from($kind);
+        }
+
+        return $this->kindClassifier->classify([
+            'title' => $data['title'] ?? null,
+            'description' => $data['description'] ?? null,
+            'category_id' => $data['category_id'] ?? null,
+            'duration_seconds' => $data['duration_seconds'] ?? null,
+            'topic_categories' => $data['topic_categories'] ?? null,
+            'tags' => $data['tags'] ?? null,
+        ])['kind'];
     }
 }

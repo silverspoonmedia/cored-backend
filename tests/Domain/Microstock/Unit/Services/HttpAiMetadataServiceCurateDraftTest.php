@@ -4,15 +4,20 @@ namespace Tests\Domain\Microstock\Unit\Services;
 
 use App\Domain\Microstock\Services\HttpAiMetadataService;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\BindsAiConnection;
 use Tests\TestCase;
 
 class HttpAiMetadataServiceCurateDraftTest extends TestCase
 {
+    use BindsAiConnection;
+
     private const ENDPOINT = 'https://ai.test/v1/chat/completions';
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->bindAiConnection();
 
         config([
             'microstock.ai.http_retries' => 0,
@@ -40,7 +45,7 @@ class HttpAiMetadataServiceCurateDraftTest extends TestCase
             ], 200),
         ]);
 
-        $result = (new HttpAiMetadataService)->curateDraft(
+        $result = (app(HttpAiMetadataService::class))->curateDraft(
             'Draft forest title',
             ['forest', 'autumn'],
             'Children doing sports',

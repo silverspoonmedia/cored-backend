@@ -109,6 +109,7 @@ class ChannelStubContentBackfillServiceTest extends TestCase
                     durationSeconds: 600,
                     viewCount: 42,
                     concurrentViewers: null,
+                    categoryId: '10',
                 ),
             ]));
 

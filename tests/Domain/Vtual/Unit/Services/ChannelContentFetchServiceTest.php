@@ -334,6 +334,7 @@ class ChannelContentFetchServiceTest extends TestCase
             durationSeconds: 60,
             viewCount: 1,
             concurrentViewers: $concurrentViewers,
+            categoryId: '10',
         );
     }
 

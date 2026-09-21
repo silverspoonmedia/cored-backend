@@ -70,7 +70,7 @@ class AssetResizeService
 
     private function defaultKind(): FileVariantKind
     {
-        $configured = (string) config('microstock.ai.vision_image.variant_kind', FileVariantKind::Ai1024->value);
+        $configured = (string) setting_config('microstock.ai.vision_image.variant_kind', FileVariantKind::Ai1024->value);
 
         return FileVariantKind::tryFrom($configured) ?? FileVariantKind::Ai1024;
     }

@@ -90,6 +90,10 @@ return [
             'status',
             'statistics',
             'liveStreamingDetails',
+            // Music/non-music layer reads topicDetails.topicCategories — the only
+            // reliable signal for vTuber covers filed under Gaming/People & Blogs.
+            // Removing it silently degrades classification to categoryId-only.
+            'topicDetails',
         ],
 
         'default_channel_parts' => [
@@ -281,6 +285,99 @@ return [
     'channel_lifecycle' => [
         'cooldown_seconds' => 30,
         'max_per_minute' => 10,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Content classification (cover song detection)
+    |--------------------------------------------------------------------------
+    |
+    | Heuristic multilingual keyword classifier + optional iTunes Search
+    | verification for weak "cover" signals. Runs inline during video hydrate;
+    | never throws — classification failure leaves content_category null.
+    |
+    */
+    'content_classification' => [
+        // YouTube categoryId "10" = Music — prefilter for weak-signal lookup.
+        // Also signal #2 of the music/non-music layer, but NOT sufficient alone:
+        // vTubers file covers under 20 (Gaming) / 22 (People & Blogs).
+        'music_category_id' => '10',
+        // YouTube topicDetails topicCategories entry that means "this is music".
+        // The strongest signal available — present on covers regardless of the
+        // uploader's categoryId choice, and absent on gameplay/ASMR/talk samples.
+        'music_topic' => 'https://en.wikipedia.org/wiki/Music',
+        // Cover duration window in seconds (typical song recording).
+        'cover_duration' => ['min' => 90, 'max' => 420],
+        // No positive signal + at least this long = non-music (streams, let's
+        // plays, talk shows). Shorter/unknown = unknown → async AI audit decides.
+        'long_form_min_seconds' => 600,
+        // Markers in a description that credit an original release ("本家様：…",
+        // "原曲：…"). Only counts when the description also links a video.
+        'original_credit_markers' => ['本家', '原曲', 'original'],
+        // Sub-category (cover) provenance markers. Deliberately narrower than
+        // `original_credit_markers`: an original MV's own description says
+        // "Original MV / https://youtu.be/…", so the English word "original"
+        // would label originals as covers.
+        'cover_provenance_markers' => ['本家', '原曲'],
+        // Composer-side credit: the uploader wrote the song and handed it to a
+        // singer ("兎迷夢々さんに提供した楽曲です"). Phrase-level on purpose — the
+        // bare 提供 also appears in "音源提供" (an instrumental licensed to a
+        // cover singer), which must NOT read as original.
+        'original_provide_markers' => ['提供した楽曲', '提供曲'],
+        // Title fragments that credit cover ART (illustration/jacket), not a
+        // cover PERFORMANCE. Stripped from the title before keyword matching:
+        // "Original Song" + "Cover Art: X" must not read as a cover.
+        'cover_decoy_phrases' => [
+            'cover art', 'cover illustration', 'cover design', 'cover photo',
+            'cover image', 'artwork', 'illustration', 'illust', 'jacket',
+        ],
+        // Parenthesised cover labels are strong signals — they wrap the label
+        // itself, unlike the bare word that also appears in art credits.
+        'cover_paren_keywords' => [
+            '(cover)', '（cover）', '( cover )', '(カバー)', '（カバー）',
+        ],
+        // Uploader-authored tag labels (snippet.tags). Read only on the hydrate
+        // path — stored rows do not persist tags.
+        'tag_cover' => ['歌ってみた', '歌みた', 'うたってみた', 'cover', 'カバー'],
+        'tag_original' => ['オリジナル曲', 'オリジナル楽曲', 'オリジナルmv', 'original song', 'original mv'],
+        'tag_singing_stream' => ['歌枠', 'カラオケ枠', 'singing stream', 'karaoke stream'],
+        'itunes' => [
+            'enabled' => true,
+            'base_url' => 'https://itunes.apple.com',
+            'timeout' => 5,
+            // Wider than the old 5 so the earliest-release tie-break has
+            // candidates to choose from when a cover chart-ranks higher.
+            'limit' => 25,
+            'cache_ttl_hours' => 168,
+            // Compare the catalog artist against the uploader's channel title:
+            // equal means the uploader released the song (original), different
+            // means they performed someone else's song (cover). This is what
+            // resolves keyword-free uploads like 【GUMI】KING【Kanaria】 without AI.
+            // Ordering picks the earliest release among the title-matching
+            // candidates: a cover single chart-ranks higher and ships later, so
+            // the original release wins the tie ("KING" → Kanaria 2020, not the
+            // 2021 麻婆豆腐 single).
+            'artist_disambiguation' => true,
+        ],
+        // AI audit pass for rows the program classifier could not resolve
+        // (music/non-music unknown, or music with no sub-category).
+        // Endpoint + API key live in the core Ai domain (`ai_connections`, Tier C).
+        // Tier B — connection binding / enabled / model / max_tokens / timeout /
+        // min_confidence / cache_ttl via Settings → vTual
+        // (vtual.content_classification.ai.*). Empty `connection` = the default
+        // AI connection. `max_tokens` must cover reasoning tokens for
+        // reasoning-style models: too low and the model spends the whole budget
+        // on reasoning, returning an empty `content` (`finish_reason: length`).
+        // Measured: 600 returned empty content on 4 of 5 real videos, 4000 worked.
+        'ai' => [
+            'connection' => '',
+            'enabled' => false,
+            'model' => '',
+            'timeout' => 30,
+            'max_tokens' => 4000,
+            'min_confidence' => 0.7,
+            'cache_ttl_hours' => 168,
+        ],
     ],
 
     /*

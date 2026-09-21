@@ -87,6 +87,231 @@ class PlatformApiProbeApiTest extends TestCase
         $this->assertSame('Probe Video', $data['data'][0]['title']);
         $this->assertArrayNotHasKey('raw', $data['data'][0]);
         $this->assertSame([], $data['resolved'] ?? []);
+        // Debug-only classification preview: talk video without signals → null.
+        $this->assertArrayHasKey('content_category', $data['data'][0]);
+        $this->assertNull($data['data'][0]['content_category']);
+        $this->assertNull($data['data'][0]['content_category_detail']);
+        // No categoryId on the fake snippet → music layer unknown.
+        $this->assertArrayHasKey('content_type', $data['data'][0]);
+        $this->assertNull($data['data'][0]['content_type']);
+    }
+
+    #[Test]
+    public function probe_video_classification_preview_marks_cover(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+        $this->activateYoutubeCredential($admin, 'probe-key-cccc');
+
+        // "covered by" is a strong cover keyword → cover without catalog lookup.
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'items' => [
+                    [
+                        'id' => 'vidcover',
+                        'snippet' => [
+                            'title' => 'ヴィラン / covered by ななし',
+                            'description' => 'cover song',
+                            'channelId' => 'UCabc',
+                            'publishedAt' => '2026-01-01T00:00:00Z',
+                            'liveBroadcastContent' => 'none',
+                            'categoryId' => '10',
+                            'thumbnails' => ['high' => ['url' => 'https://img.example/hi.jpg']],
+                        ],
+                        'contentDetails' => ['duration' => 'PT3M54S'],
+                        'statistics' => ['viewCount' => '9'],
+                        'status' => ['privacyStatus' => 'public'],
+                        'liveStreamingDetails' => [],
+                    ],
+                ],
+            ], 200),
+            'itunes.apple.com/search*' => Http::response([
+                'results' => [
+                    ['trackName' => 'ヴィラン', 'artistName' => 'てにをは'],
+                ],
+            ], 200),
+        ]);
+
+        $data = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/admin/platform-api/probe', [
+                'platform' => 'youtube',
+                'method' => 'fetch_videos',
+                'ids' => ['vidcover'],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('cover', $data['data'][0]['content_category']);
+        $this->assertNull($data['data'][0]['content_category_detail']);
+        // categoryId=10 on the snippet → music layer resolved by category_id.
+        $this->assertSame('music', $data['data'][0]['content_type']);
+        $this->assertSame('category_id', $data['data'][0]['content_type_signal']);
+        // Sub-category layer reports its own deciding signal.
+        $this->assertSame('strong_cover', $data['data'][0]['content_category_signal']);
+    }
+
+    #[Test]
+    public function probe_music_layer_follows_the_music_topic_over_a_non_music_category(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+        $this->activateYoutubeCredential($admin, 'probe-key-eeee');
+
+        // The real false negative: a vTuber cover filed under 22 (People & Blogs)
+        // that still carries the YouTube Music topic. Before the multi-signal
+        // layer the probe reported non_music here.
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'items' => [
+                    [
+                        'id' => 'FdTy0ZWKYRo',
+                        'snippet' => [
+                            'title' => 'KING ( COVER ) / 橘ひなの',
+                            'description' => '本家様：https://youtu.be/cm-l2h6GB8Q',
+                            'channelId' => 'UCabc',
+                            'publishedAt' => '2026-01-01T00:00:00Z',
+                            'liveBroadcastContent' => 'none',
+                            'categoryId' => '22',
+                            'tags' => ['歌ってみた'],
+                            'thumbnails' => ['high' => ['url' => 'https://img.example/hi.jpg']],
+                        ],
+                        'contentDetails' => ['duration' => 'PT2M15S'],
+                        'statistics' => ['viewCount' => '9'],
+                        'status' => ['privacyStatus' => 'public'],
+                        'liveStreamingDetails' => [],
+                        'topicDetails' => [
+                            'topicCategories' => ['https://en.wikipedia.org/wiki/Music'],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $data = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/admin/platform-api/probe', [
+                'platform' => 'youtube',
+                'method' => 'fetch_videos',
+                'ids' => ['FdTy0ZWKYRo'],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('music', $data['data'][0]['content_type']);
+        $this->assertSame('topic', $data['data'][0]['content_type_signal']);
+        $this->assertSame('cover', $data['data'][0]['content_category']);
+        $this->assertSame('strong_cover', $data['data'][0]['content_category_signal']);
+
+        // The signals the classifier actually used are visible in the preview.
+        $this->assertSame('22', $data['data'][0]['category_id']);
+        $this->assertSame(['https://en.wikipedia.org/wiki/Music'], $data['data'][0]['topic_categories']);
+        $this->assertSame(['歌ってみた'], $data['data'][0]['tags']);
+    }
+
+    #[Test]
+    public function probe_resolves_a_keyword_free_original_from_the_catalog_artist(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+        $this->activateYoutubeCredential($admin, 'probe-key-ffff');
+
+        // The title carries no cover/original keyword at all; the uploader's
+        // channel name matching the catalog artist is the whole verdict.
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'items' => [
+                    [
+                        'id' => 'cm-l2h6GB8Q',
+                        'snippet' => [
+                            'title' => '【GUMI】KING【Kanaria】',
+                            'description' => 'Kanaria - KING',
+                            'channelId' => 'UCkanaria000000000000000',
+                            'channelTitle' => 'Kanaria',
+                            'publishedAt' => '2026-01-01T00:00:00Z',
+                            'liveBroadcastContent' => 'none',
+                            'categoryId' => '10',
+                            'thumbnails' => ['high' => ['url' => 'https://img.example/hi.jpg']],
+                        ],
+                        'contentDetails' => ['duration' => 'PT2M15S'],
+                        'statistics' => ['viewCount' => '9'],
+                        'status' => ['privacyStatus' => 'public'],
+                        'liveStreamingDetails' => [],
+                        'topicDetails' => [
+                            'topicCategories' => ['https://en.wikipedia.org/wiki/Music'],
+                        ],
+                    ],
+                ],
+            ], 200),
+            'itunes.apple.com/search*' => Http::response([
+                'results' => [
+                    ['trackName' => 'KING', 'artistName' => 'Kanaria'],
+                ],
+            ], 200),
+        ]);
+
+        $data = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/admin/platform-api/probe', [
+                'platform' => 'youtube',
+                'method' => 'fetch_videos',
+                'ids' => ['cm-l2h6GB8Q'],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('music', $data['data'][0]['content_type']);
+        $this->assertSame('original', $data['data'][0]['content_category']);
+        $this->assertSame('catalog_artist_match', $data['data'][0]['content_category_signal']);
+        $this->assertSame('Kanaria - KING', $data['data'][0]['content_category_catalog']);
+    }
+
+    #[Test]
+    public function probe_video_classification_preview_resolves_catalog_detail(): void
+    {
+        $admin = $this->userWithRole('Admin');
+        $this->activations->activateImplicit($admin, 'Vtual');
+        $this->activateYoutubeCredential($admin, 'probe-key-dddd');
+
+        // Weak "cover" + Music category → verified via iTunes for attribution.
+        Http::fake([
+            'www.googleapis.com/youtube/v3/videos*' => Http::response([
+                'items' => [
+                    [
+                        'id' => 'vidweak',
+                        'snippet' => [
+                            'title' => 'ヴィラン cover',
+                            'description' => 'my singing',
+                            'channelId' => 'UCabc',
+                            'publishedAt' => '2026-01-01T00:00:00Z',
+                            'liveBroadcastContent' => 'none',
+                            'categoryId' => '10',
+                            'thumbnails' => ['high' => ['url' => 'https://img.example/hi.jpg']],
+                        ],
+                        'contentDetails' => ['duration' => 'PT3M54S'],
+                        'statistics' => ['viewCount' => '9'],
+                        'status' => ['privacyStatus' => 'public'],
+                        'liveStreamingDetails' => [],
+                    ],
+                ],
+            ], 200),
+            'itunes.apple.com/search*' => Http::response([
+                'results' => [
+                    ['trackName' => 'ヴィラン', 'artistName' => 'てにをは'],
+                ],
+            ], 200),
+        ]);
+
+        $data = $this->actingAsJwt($admin)
+            ->postJson('/api/v1/vtual/admin/platform-api/probe', [
+                'platform' => 'youtube',
+                'method' => 'fetch_videos',
+                'ids' => ['vidweak'],
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('cover', $data['data'][0]['content_category']);
+        $this->assertSame('weak_cover', $data['data'][0]['content_category_signal']);
+        $this->assertSame('てにをは - ヴィラン', $data['data'][0]['content_category_detail']);
+        $this->assertSame('てにをは - ヴィラン', $data['data'][0]['content_category_catalog']);
     }
 
     #[Test]

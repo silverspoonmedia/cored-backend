@@ -11,10 +11,12 @@ use Database\Seeders\InferenceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\BindsAiConnection;
 use Tests\TestCase;
 
 class HttpAiMetadataServiceTierModelTest extends TestCase
 {
+    use BindsAiConnection;
     use RefreshDatabase;
 
     private const ENDPOINT = 'https://ai.test/v1/chat/completions';
@@ -24,6 +26,8 @@ class HttpAiMetadataServiceTierModelTest extends TestCase
         parent::setUp();
 
         $this->seed(InferenceCatalogSeeder::class);
+
+        $this->bindAiConnection();
 
         config([
             'microstock.ai.http_retries' => 0,
@@ -51,7 +55,7 @@ class HttpAiMetadataServiceTierModelTest extends TestCase
             ->push($this->response('Curated title', 'resolved.thinking'), 200),
         ]);
 
-        (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+        (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx');
 
         $this->assertSentModels(['paid.vision', 'paid.thinking']);
         $this->assertDatabaseCount('microstock_ai_usage_events', 0);
@@ -70,7 +74,7 @@ class HttpAiMetadataServiceTierModelTest extends TestCase
                 billingUserId: (string) $user->id,
                 billingSource: BillingSource::Prepaid,
             ),
-            fn (): array => (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx'),
+            fn (): array => (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx'),
         );
 
         $this->assertSentModels(['paid.vision', 'paid.thinking']);
@@ -92,7 +96,7 @@ class HttpAiMetadataServiceTierModelTest extends TestCase
                 billingUserId: (string) $user->id,
                 billingSource: BillingSource::DailyFree,
             ),
-            fn (): array => (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx'),
+            fn (): array => (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx'),
         );
 
         $this->assertSentModels(['free.vision', 'free.thinking']);
@@ -120,7 +124,7 @@ class HttpAiMetadataServiceTierModelTest extends TestCase
                 billingUserId: (string) $user->id,
                 billingSource: BillingSource::DailyFree,
             ),
-            fn (): array => (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx'),
+            fn (): array => (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx'),
         );
 
         $this->assertSentModels(['paid.vision', 'paid.thinking']);

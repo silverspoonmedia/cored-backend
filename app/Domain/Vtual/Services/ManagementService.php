@@ -19,6 +19,7 @@ use App\Domain\Vtual\Models\ManagementCreator;
 use App\Domain\Vtual\Models\ManagementInvite;
 use App\Domain\Vtual\Models\ManagementMember;
 use App\Domain\Vtual\Notifications\ManagementMemberInvited;
+use App\Domain\Vtual\Support\LiveContentScope;
 use App\Domain\Vtual\Support\SlugGenerator;
 use App\Domain\Vtual\Support\VtualManagementRealtime;
 use Illuminate\Database\Eloquent\Collection;
@@ -262,6 +263,7 @@ class ManagementService
                         $chq->where('status', ChannelStatus::Active)
                             ->where('visibility', ChannelVisibility::Public);
                     })
+                    ->withExists(LiveContentScope::withExistsClause())
                     ->with(['channels' => fn ($chq) => $chq
                         ->where('status', ChannelStatus::Active)
                         ->where('visibility', ChannelVisibility::Public)

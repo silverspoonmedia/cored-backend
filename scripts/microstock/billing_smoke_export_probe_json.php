@@ -45,8 +45,8 @@ $aggregate = [
     'collection_billing_mode' => $folder->collection_billing_mode,
     'file_count' => $files->count(),
     'elapsed_ms' => $elapsedMs,
-    'vision_model' => config('microstock.ai.vision.model'),
-    'thinking_model' => config('microstock.ai.thinking.model'),
+    'vision_model' => setting_config('microstock.ai.vision.model'),
+    'thinking_model' => setting_config('microstock.ai.thinking.model'),
     'files' => $fileResults,
 ];
 

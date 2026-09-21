@@ -12,6 +12,11 @@ use App\Domain\Vtual\Integrations\Dto\PlatformVideoDto;
  */
 class PlatformVideoDtoMapper
 {
+    public function __construct(
+        private readonly ContentCategoryClassifier $classifier,
+        private readonly ContentKindClassifier $kinds,
+    ) {}
+
     /**
      * @return array{
      *     external_id: string,
@@ -26,6 +31,11 @@ class PlatformVideoDtoMapper
      *     started_at?: mixed,
      *     ended_at?: mixed,
      *     published_at?: mixed,
+     *     content_type?: string|null,
+     *     category_id?: string|null,
+     *     duration_seconds?: int|null,
+     *     topic_categories?: list<string>,
+     *     tags?: list<string>,
      * }
      */
     public function toUpsertPayload(PlatformVideoDto $dto): array
@@ -44,6 +54,11 @@ class PlatformVideoDtoMapper
             'published_at' => $dto->publishedAt,
             'started_at' => $dto->startedAt,
             'ended_at' => $dto->endedAt,
+            'category_id' => $dto->categoryId,
+            'duration_seconds' => $dto->durationSeconds,
+            'topic_categories' => $dto->topicCategories,
+            'tags' => $dto->tags,
+            ...$this->classificationPayload($dto, $type->value),
         ];
 
         if ($status === ContentStatus::Scheduled) {
@@ -99,5 +114,37 @@ class PlatformVideoDtoMapper
             'uploaded' => [ContentType::Vod, ContentStatus::Uploaded],
             default => [ContentType::Vod, ContentStatus::Unknown],
         };
+    }
+
+    /**
+     * Classification payload (never throws; unknown → both keys null).
+     *
+     * The music/non-music verdict comes from ContentKindClassifier, which reads
+     * the full signal set (Music topic, categoryId, title/tags keywords,
+     * original credit, duration) — categoryId alone mislabels vTuber covers
+     * filed under Gaming / People & Blogs.
+     *
+     * @return array{content_category: string|null, content_category_detail: string|null, content_type: string|null}
+     */
+    private function classificationPayload(PlatformVideoDto $dto, string $type): array
+    {
+        $video = [
+            'title' => $dto->title,
+            'description' => $dto->description,
+            'category_id' => $dto->categoryId,
+            'duration_seconds' => $dto->durationSeconds,
+            'type' => $type,
+            'topic_categories' => $dto->topicCategories,
+            'tags' => $dto->tags,
+            'channel_title' => $dto->channelTitle,
+        ];
+
+        $classified = $this->classifier->classify($video);
+
+        return [
+            'content_category' => $classified !== null ? $classified['category']->value : null,
+            'content_category_detail' => $classified['detail'] ?? null,
+            'content_type' => $this->kinds->kind($video)?->value,
+        ];
     }
 }

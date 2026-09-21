@@ -5,6 +5,7 @@ namespace Tests\Domain\Microstock\Unit\Services;
 use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Services\HttpAiMetadataService;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\BindsAiConnection;
 use Tests\TestCase;
 
 /**
@@ -13,11 +14,15 @@ use Tests\TestCase;
  */
 class HttpAiMetadataServiceResponseParsingTest extends TestCase
 {
+    use BindsAiConnection;
+
     private const ENDPOINT = 'https://ai.test/v1/chat/completions';
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->bindAiConnection();
 
         config([
             'microstock.ai.http_retries' => 0,
@@ -64,7 +69,7 @@ class HttpAiMetadataServiceResponseParsingTest extends TestCase
                 ->push($this->openAiPayload($this->metadataJson('Curated title', ['curated'])), 200),
         ]);
 
-        $result = (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+        $result = (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx');
 
         $this->assertSame('Curated title', $result['title']);
         $this->assertSame(['curated'], $result['keywords']);
@@ -78,7 +83,7 @@ class HttpAiMetadataServiceResponseParsingTest extends TestCase
             self::ENDPOINT => Http::response($body, 200, ['Content-Type' => 'application/json']),
         ]);
 
-        $result = (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+        $result = (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx');
 
         $this->assertSame('SSE title', $result['title']);
         $this->assertSame(['sse'], $result['keywords']);
@@ -94,7 +99,7 @@ class HttpAiMetadataServiceResponseParsingTest extends TestCase
                 ->push($this->openAiPayload($this->metadataJson('Curated', ['ok'])), 200),
         ]);
 
-        $result = (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+        $result = (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx');
 
         $this->assertSame('Curated', $result['title']);
     }
@@ -119,7 +124,7 @@ class HttpAiMetadataServiceResponseParsingTest extends TestCase
                 ->push($this->openAiPayload($this->metadataJson('Curated', ['ok'])), 200),
         ]);
 
-        $result = (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+        $result = (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx');
 
         $this->assertSame('Curated', $result['title']);
     }
@@ -145,7 +150,7 @@ class HttpAiMetadataServiceResponseParsingTest extends TestCase
             ),
         ]);
 
-        $result = (new HttpAiMetadataService)->generateBatch([
+        $result = (app(HttpAiMetadataService::class))->generateBatch([
             ['id' => 'meta-1', 'image' => 'data:image/jpeg;base64,xx'],
         ]);
 
@@ -165,7 +170,7 @@ class HttpAiMetadataServiceResponseParsingTest extends TestCase
 
         $this->expectException(MicrostockException::class);
 
-        (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+        (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx');
     }
 
     public function test_throws_on_unparseable_body(): void
@@ -176,7 +181,7 @@ class HttpAiMetadataServiceResponseParsingTest extends TestCase
 
         $this->expectException(MicrostockException::class);
 
-        (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+        (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx');
     }
 
     public function test_parses_full_sse_stream_chunks(): void
@@ -193,7 +198,7 @@ class HttpAiMetadataServiceResponseParsingTest extends TestCase
                 ->push($this->openAiPayload($this->metadataJson('Curated', ['ok'])), 200),
         ]);
 
-        $result = (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+        $result = (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx');
 
         $this->assertSame('Curated', $result['title']);
     }
@@ -206,7 +211,7 @@ class HttpAiMetadataServiceResponseParsingTest extends TestCase
                 ->push($this->openAiPayload($this->metadataJson('Curated', ['c'])), 200),
         ]);
 
-        (new HttpAiMetadataService)->generate('data:image/jpeg;base64,xx');
+        (app(HttpAiMetadataService::class))->generate('data:image/jpeg;base64,xx');
 
         Http::assertSent(function ($request) {
             return ($request->data()['stream'] ?? null) === false;

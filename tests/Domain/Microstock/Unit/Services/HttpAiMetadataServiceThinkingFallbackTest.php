@@ -5,6 +5,7 @@ namespace Tests\Domain\Microstock\Unit\Services;
 use App\Domain\Microstock\Services\HttpAiMetadataService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\BindsAiConnection;
 use Tests\TestCase;
 
 /**
@@ -14,11 +15,15 @@ use Tests\TestCase;
  */
 class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
 {
+    use BindsAiConnection;
+
     private const ENDPOINT = 'https://ai.test/v1/chat/completions';
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->bindAiConnection();
 
         config([
             'microstock.ai.http_retries' => 0,
@@ -74,7 +79,7 @@ class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
                 ->push($this->thinkingResponse('Curated title', ['curated', 'keywords']), 200),
         ]);
 
-        $service = new HttpAiMetadataService;
+        $service = app(HttpAiMetadataService::class);
         $result = $service->generate('data:image/jpeg;base64,xx');
 
         $this->assertSame('Curated title', $result['title']);
@@ -93,7 +98,7 @@ class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
                 ->push($this->thinkingResponse('Curated via fused', ['fused']), 200),
         ]);
 
-        $service = new HttpAiMetadataService;
+        $service = app(HttpAiMetadataService::class);
         $result = $service->generate('data:image/jpeg;base64,xx');
 
         $this->assertSame('Curated via fused', $result['title']);
@@ -112,7 +117,7 @@ class HttpAiMetadataServiceThinkingFallbackTest extends TestCase
                 ->push(fn () => throw new ConnectionException('timeout D')),
         ]);
 
-        $service = new HttpAiMetadataService;
+        $service = app(HttpAiMetadataService::class);
         $result = $service->generate('data:image/jpeg;base64,xx');
 
         $this->assertSame('Draft vision title', $result['title']);

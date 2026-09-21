@@ -97,6 +97,15 @@ Domain data caches are forever + rebuild-on-miss + invalidate-on-change — [cac
 | `vtual:repair-archived-websub` | Re-subscribe archived channels missing active WebSub (legacy repair) | [domains/vtual/README.md](../domains/vtual/README.md) |
 | `vtual:backfill-initial-content` | One-time YouTube content backfill for an existing active channel | [domains/vtual/README.md](../domains/vtual/README.md) |
 | `vtual:fetch-channel-content` | Fetch channel content and upsert into `vtual_contents` (POC) | [domains/vtual/README.md](../domains/vtual/README.md) |
+| `vtual:classify-contents` | Backfill `content_type` / `content_category` on hydrated YouTube rows (`--chunk`, `--include-classified`, `--refresh` to recompute existing verdicts after a classifier change, `--ai`) | [domains/vtual/README.md](../domains/vtual/README.md) |
+| `vtual:audit-content-ai` | Drain the `vtual_content_ai_audit` pool — AI resolves the rows the program classifier left incomplete (`--limit`, `--max-attempts`, `--stale-minutes`); scheduled every 5 min with `--limit=5` | [domains/vtual/README.md](../domains/vtual/README.md) |
+| `vtual:prune-fetch-pools` | Prune done/failed channel + content fetch pool rows past the retention window | [domains/vtual/README.md](../domains/vtual/README.md) |
+
+## AI
+
+| Command | Purpose | Details |
+|---------|---------|---------|
+| `ai:import-legacy-env` | One-time import of the former `MICROSTOCK_AI_*` / `VTUAL_AI_CLASSIFY_*` env pairs into `ai_connections` rows + consumer slug bindings (`--dry-run`, `--skip-test`, `--actor=`). Read-only alias helpers (not Artisan): `php scripts/ai/list_models.php`, `php scripts/ai/probe_models.php` | [domains/ai/README.md](../domains/ai/README.md) |
 
 ## Microstock
 

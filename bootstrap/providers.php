@@ -2,6 +2,7 @@
 
 use App\Providers\AppServiceProvider;
 use App\Providers\Domain\ActivityLogServiceProvider;
+use App\Providers\Domain\AiServiceProvider;
 use App\Providers\Domain\ErrorLogServiceProvider;
 use App\Providers\Domain\ArchivdServiceProvider;
 use App\Providers\Domain\InferenceServiceProvider;
@@ -34,6 +35,7 @@ return [
     PaymentGatewayServiceProvider::class,
     ServiceServiceProvider::class,
     InferenceServiceProvider::class,
+    AiServiceProvider::class,
 
     // Product domains (kind=product). domain:make appends; keep product last.
     ArchivdServiceProvider::class,

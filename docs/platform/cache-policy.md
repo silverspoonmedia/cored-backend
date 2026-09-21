@@ -27,6 +27,7 @@ Write → forget / bump epoch → next read rebuilds
 | Decrypt plaintext | `encryption.decrypted.*` | Forget on encrypt / cast set / explicit invalidate; default max TTL `0` (forever until forget) |
 | FX L1 | `fx.frankfurter.{from}.{to}` | Forever store; **logical freshness** via payload `fetched_at` vs `platform.frankfurter.cache_ttl` — aged → forget → DB window then Frankfurter |
 | Unregistered-model notify dedup | `inference:unregistered_model_notify:{slug}` | Forever flag; forget when model is classified/registered |
+| AI default connection slug | `ai.connection.default_slug` | Forever primitive (no Eloquent in the key). Forgotten by `AiConnectionResolver::forget()` on every connection mutation. Decrypt plaintext for the row stays on `encryption.decrypted.*` |
 
 ## FX freshness (not Cache TTL)
 
@@ -70,5 +71,6 @@ These are leases, security expiries, or rate limits — **not** source-of-truth 
 - [identity README](../domains/identity/README.md) — Spatie century-scale permission cache
 - [notification README](../domains/notification/README.md) — audience snapshot; inference unregistered-model forever dedup
 - [inference README](../domains/inference/README.md) — unregistered-model notify dedup key
+- [ai README — Resolution](../domains/ai/README.md#resolution) — default-slug forever cache + `forget()` on mutation
 - [payment-gateway encryption](../domains/payment-gateway/encryption.md) — decrypt cache
 - [octane.md](octane.md) — no request state on statics; shared cache store in production

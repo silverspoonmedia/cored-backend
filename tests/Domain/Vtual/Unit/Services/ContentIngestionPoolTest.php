@@ -137,6 +137,7 @@ class ContentIngestionPoolTest extends TestCase
                     durationSeconds: 7200,
                     viewCount: 100,
                     concurrentViewers: null,
+                    categoryId: '24',
                 ),
             ]));
 

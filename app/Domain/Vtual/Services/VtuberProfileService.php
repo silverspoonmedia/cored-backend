@@ -13,6 +13,7 @@ use App\Domain\Vtual\Models\Channel;
 use App\Domain\Vtual\Models\Content;
 use App\Domain\Vtual\Models\Creator;
 use App\Domain\Vtual\Models\VtualEvent;
+use App\Domain\Vtual\Support\LiveContentScope;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Number;
@@ -53,14 +54,7 @@ class VtuberProfileService
                         ->orderByDesc('subscriber_count');
                 },
             ])
-            ->withExists(['contents as is_live' => function ($query): void {
-                $query->where('type', ContentType::Live)
-                    ->where('status', ContentStatus::Live)
-                    ->whereDoesntHave(
-                        'channel',
-                        fn ($channel) => $channel->where('status', ChannelStatus::Archived),
-                    );
-            }])
+            ->withExists(LiveContentScope::withExistsClause())
             ->orderByDesc('is_live')
             ->orderBy('display_name')
             ->paginate($perPage);
@@ -89,7 +83,10 @@ class VtuberProfileService
         return $creator;
     }
 
-    public function showForPublic(string $key, int $perPage = 12): Creator
+    /**
+     * @param  array{platform?: string|null, type?: string|null, sort?: string|null}  $filters
+     */
+    public function showForPublic(string $key, int $perPage = 12, array $filters = []): Creator
     {
         $creator = $this->resolvePubliclyListed($key);
 
@@ -105,7 +102,7 @@ class VtuberProfileService
 
         $creator->setRelation(
             'profileContents',
-            $this->contents->paginateForPublicProfile($creator->id, $perPage),
+            $this->contents->paginateForPublicProfile($creator->id, $perPage, $filters),
         );
         $creator->setAttribute('is_live', $this->hasLiveContent($creator->id));
 

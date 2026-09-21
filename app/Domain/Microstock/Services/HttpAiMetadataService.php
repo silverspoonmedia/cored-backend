@@ -2,6 +2,8 @@
 
 namespace App\Domain\Microstock\Services;
 
+use App\Domain\Ai\Services\AiConnectionResolver;
+use App\Domain\Ai\Support\AiConnectionData;
 use App\Domain\Microstock\Contracts\AiMetadataService;
 use App\Domain\Microstock\Exceptions\MicrostockException;
 use App\Domain\Microstock\Support\AnalysisBillingContext;
@@ -14,10 +16,15 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * HTTP AI metadata service (OpenAI-compatible chat-completions shape).
- * Vision drafts, thinking curates. Endpoints/models/keys from config/microstock.php.
+ * Vision drafts, thinking curates. Endpoint + API key come from the core Ai
+ * domain (`ai_connections`, Tier C); models/timeouts/variant come from
+ * Settings → Microstock.
  */
 class HttpAiMetadataService implements AiMetadataService
 {
+    public function __construct(
+        private readonly AiConnectionResolver $connections,
+    ) {}
     /** @var list<array<string, mixed>> */
     private array $stageMetrics = [];
 
@@ -42,9 +49,55 @@ class HttpAiMetadataService implements AiMetadataService
         return max(10, min($max, $v));
     }
 
-    private function httpRetries(): int
+    private function httpRetries(array $cfg = []): int
     {
+        if (isset($cfg['max_retries']) && $cfg['max_retries'] !== null) {
+            return max(0, (int) $cfg['max_retries']);
+        }
+
         return max(0, (int) setting_config('microstock.ai.http_retries', 1));
+    }
+
+    /**
+     * Resolve one consumer stage: Tier B knobs from Settings → Microstock plus
+     * endpoint/API key from the bound AI connection (Tier C). A non-null
+     * connection timeout/retry overrides the stage setting.
+     *
+     * @return array<string, mixed>
+     */
+    private function stageConfig(string $stage): array
+    {
+        $cfg = (array) setting_config('microstock.ai.'.$stage);
+        $connection = $this->connectionFor($cfg);
+
+        if ($connection === null) {
+            return $cfg;
+        }
+
+        $cfg['endpoint'] = $connection->endpoint;
+        $cfg['api_key'] = $connection->apiKey;
+        $cfg['connection_id'] = $connection->id;
+        $cfg['connection_slug'] = $connection->slug;
+
+        if ($connection->timeoutSeconds !== null) {
+            $cfg['timeout'] = $connection->timeoutSeconds;
+        }
+
+        if ($connection->maxRetries !== null) {
+            $cfg['max_retries'] = $connection->maxRetries;
+        }
+
+        return $cfg;
+    }
+
+    /**
+     * @param  array<string, mixed>  $cfg
+     */
+    private function connectionFor(array $cfg): ?AiConnectionData
+    {
+        $slug = trim((string) ($cfg['connection'] ?? ''));
+
+        return $this->connections->resolve($slug !== '' ? $slug : null);
     }
 
     /**
@@ -88,7 +141,7 @@ class HttpAiMetadataService implements AiMetadataService
      */
     private function httpClient(array $cfg): PendingRequest
     {
-        $retries = $this->httpRetries();
+        $retries = $this->httpRetries($cfg);
 
         $client = Http::withToken($cfg['api_key'])
             ->timeout($this->timeoutSeconds($cfg['timeout'] ?? 60))
@@ -138,7 +191,7 @@ class HttpAiMetadataService implements AiMetadataService
             return [];
         }
 
-        $cfg = $this->configForBillingTier(setting_config('microstock.ai.vision'));
+        $cfg = $this->configForBillingTier($this->stageConfig('vision'));
         $this->assertConfigured($cfg, 'vision');
 
         $content = [];
@@ -206,7 +259,7 @@ class HttpAiMetadataService implements AiMetadataService
      */
     private function vision(string $imageUrl, ?string $hint = null): array
     {
-        $cfg = $this->configForBillingTier(setting_config('microstock.ai.vision'));
+        $cfg = $this->configForBillingTier($this->stageConfig('vision'));
         $this->assertConfigured($cfg, 'vision');
 
         $messages = [
@@ -250,7 +303,7 @@ class HttpAiMetadataService implements AiMetadataService
         string $category = '',
         ?string $imageUrl = null,
     ): array {
-        $cfg = $this->configForBillingTier(setting_config('microstock.ai.thinking'));
+        $cfg = $this->configForBillingTier($this->stageConfig('thinking'));
         $this->assertConfigured($cfg, 'thinking');
 
         $userText = Prompts::thinkingUser($title, $keywords, $hint, $description, $category, $imageUrl !== null);

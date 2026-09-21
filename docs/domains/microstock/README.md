@@ -290,7 +290,7 @@ When the configured variant is not `ready`, analyze logs `microstock.variants.no
 
 ### Production stack (locked 2026-07-28)
 
-Default config + `.env.example` use Open WebUI aliases for paid/prepaid analyses; **9Router** maps them to resolved models (verify in Open WebUI admin):
+Default config + Settings → Microstock (Tier B; local overrides in [`config/settings-local.php`](../../../config/settings-local.php)) use Open WebUI aliases for paid/prepaid analyses; **9Router** maps them to resolved models (verify in Open WebUI admin):
 
 | Config alias | 9Router resolves to | Role |
 |--------------|---------------------|------|
@@ -299,12 +299,14 @@ Default config + `.env.example` use Open WebUI aliases for paid/prepaid analyses
 
 | Setting | Default | Notes |
 |---------|---------|-------|
-| Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` | Both stages and tiers (env — Tier A) |
+| Endpoint | bound `ai_connections` row | Both stages and tiers — endpoint + API key from the bound connection (empty slug = the default row), managed at Administration → AI connections |
+| Vision connection | `microstock.ai.vision.connection` = `""` | Empty = the default `ai_connections` row; set a slug to give vision its own endpoint/key |
 | Paid vision model | `microstock.ai.vision.model` = `internal.vision` | Settings → Microstock; used for `billing_source=prepaid` and calls without billing context |
 | Free vision model | `microstock.ai.vision.free_model` = `""` | Empty inherits paid vision; set an Open WebUI alias to differentiate daily-free calls |
 | Paid thinking model | `microstock.ai.thinking.model` = `internal.thinking` | Settings → Microstock |
 | Free thinking model | `microstock.ai.thinking.free_model` = `""` | Empty inherits paid thinking |
-| Stage timeouts | `microstock.ai.vision.timeout` / `.thinking.timeout` | Settings → Microstock (seconds) |
+| Stage timeouts | `microstock.ai.vision.timeout` / `.thinking.timeout` | Settings → Microstock (seconds); a connection-level `timeout_seconds` overrides both |
+| Thinking connection | `microstock.ai.thinking.connection` = `""` | Empty = the default `ai_connections` row |
 | `delivery` | `url` | Signed HTTPS to `ai_1024` variant (~341 B payload) |
 | `variant_kind` | `ai_1024` | Settings → Microstock (`microstock.ai.vision_image.variant_kind`) |
 | `thinking_visual_attempts` | `2` | First 2 thinking attempts include image + draft |
@@ -354,7 +356,7 @@ All three request builders (`vision()`, `thinkingRequest()`, `generateBatch()`) 
 
 Models behind `internal.vision` / `internal.thinking` **choke on long system prompts when an image is attached** — verified 2026-07-27: a ~1700-char system prompt returns **HTTP 524** (Cloudflare origin timeout) at ~125 s, while ~1050 chars returns **200** in ~107 s. `Prompts::marketplaceRules()` is therefore intentionally dense — keep `Prompts::visionSystem()` and `Prompts::thinkingSystem()` under ~1200 chars (unit-tested in `PromptsTest`). If the upstream model behind an alias never responds acceptably, change the model mapping in Open WebUI admin or override `microstock.ai.vision.model` / `microstock.ai.thinking.model` in Settings → Microstock.
 
-`AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage is independently configurable in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: endpoint, paid/default model, optional free model, API key, timeout; all env-driven). Tests bind a stub.
+`AiMetadataService` is an interface; the default binding `HttpAiMetadataService` posts to OpenAI-compatible chat-completions endpoints. Each stage keeps its Tier B knobs in `config/microstock.php` (`ai.vision.*`, `ai.thinking.*`: paid/default model, optional free model, timeout) and resolves endpoint + API key from the core [Ai domain](../ai/README.md) by binding `microstock.ai.vision.connection` / `microstock.ai.thinking.connection` (empty = the default `ai_connections` row). Tests bind a stub through `Tests\Concerns\BindsAiConnection`.
 
 ### Open WebUI response parsing
 
@@ -362,12 +364,12 @@ Production uses **Open WebUI** as the only supported AI surface:
 
 | Setting | Value |
 |---------|-------|
-| Endpoint | `https://ai-chat.spnd.uk/api/chat/completions` |
+| Endpoint | bound `ai_connections` row |
 | Paid/default vision model | `internal.vision` |
 | Free vision model | inherits paid when `microstock.ai.vision.free_model` is empty |
 | Paid/default thinking model | `internal.thinking` |
 | Free thinking model | inherits paid when `microstock.ai.thinking.free_model` is empty |
-| Auth | JWT Bearer (`MICROSTOCK_AI_*_API_KEY`) |
+| Auth | JWT Bearer — from the bound `ai_connections` row (Administration → AI connections) |
 
 `HttpAiMetadataService` normalizes upstream quirks before decoding:
 

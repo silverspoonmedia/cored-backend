@@ -3,6 +3,8 @@
 namespace App\Domain\Vtual\Models;
 
 use App\Domain\Vtual\Enums\ContentAppearanceRole;
+use App\Domain\Vtual\Enums\ContentCategory;
+use App\Domain\Vtual\Enums\ContentKind;
 use App\Domain\Vtual\Enums\ContentStatus;
 use App\Domain\Vtual\Enums\ContentType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -29,6 +31,9 @@ class Content extends Model
         'platform_id',
         'external_id',
         'type',
+        'content_category',
+        'content_category_detail',
+        'content_type',
         'status',
         'title',
         'description',
@@ -49,8 +54,10 @@ class Content extends Model
     protected function casts(): array
     {
         return [
-            'type' => ContentType::class,
-            'status' => ContentStatus::class,
+        'type' => ContentType::class,
+        'content_category' => ContentCategory::class,
+        'content_type' => ContentKind::class,
+        'status' => ContentStatus::class,
             'concurrent_viewers' => 'integer',
             'scheduled_at' => 'datetime',
             'started_at' => 'datetime',
@@ -115,5 +122,30 @@ class Content extends Model
     public function primaryAppearance(): HasMany
     {
         return $this->appearances()->where('role', ContentAppearanceRole::Primary->value);
+    }
+
+    /**
+     * Primary music/non-music layer. True = music, false = non-music,
+     * null = unknown (categoryId unavailable).
+     */
+    public function isMusic(): ?bool
+    {
+        return $this->content_type?->value === ContentKind::Music->value
+            ? true
+            : ($this->content_type?->value === ContentKind::NonMusic->value ? false : null);
+    }
+
+    /**
+     * Duration derived from the live/archive window. VODs (uploads) carry no
+     * persisted duration, so this returns null for them — classification then
+     * simply skips the duration signal.
+     */
+    public function durationSeconds(): ?int
+    {
+        if ($this->started_at === null || $this->ended_at === null) {
+            return null;
+        }
+
+        return (int) abs($this->ended_at->diffInSeconds($this->started_at));
     }
 }

@@ -37,19 +37,18 @@ return [
         'inference_provider_slug' => 'openwebui-9router',
 
         'vision' => [
-            // Tier A — endpoint + API key stay env
-            'endpoint' => env('MICROSTOCK_AI_VISION_ENDPOINT', 'https://ai-chat.spnd.uk/api/chat/completions'),
+            // Tier B — connection binding via Settings → Microstock
+            // (microstock.ai.vision.connection). Empty = the default AI connection.
+            'connection' => '',
             // Tier B — model / free_model / timeout via Settings → Microstock
             'model' => 'internal.vision',
             'free_model' => '',
-            'api_key' => env('MICROSTOCK_AI_VISION_API_KEY'),
             'timeout' => 1500,
         ],
         'thinking' => [
-            'endpoint' => env('MICROSTOCK_AI_THINKING_ENDPOINT', 'https://ai-chat.spnd.uk/api/chat/completions'),
+            'connection' => '',
             'model' => 'internal.thinking',
             'free_model' => '',
-            'api_key' => env('MICROSTOCK_AI_THINKING_API_KEY'),
             'timeout' => 1500,
         ],
 

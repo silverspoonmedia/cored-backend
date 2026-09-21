@@ -19,6 +19,27 @@ use Illuminate\Support\Number;
 class PublicVtuberProfileResource extends JsonResource
 {
     /**
+     * Applied content-grid filters (already clamped by the controller).
+     *
+     * @var array{platform: string|null, type: string|null, sort: string}
+     */
+    private array $filters;
+
+    /**
+     * @param  array{platform?: string|null, type?: string|null, sort?: string|null}  $filters
+     */
+    public function __construct($resource, array $filters = [])
+    {
+        parent::__construct($resource);
+
+        $this->filters = [
+            'platform' => $filters['platform'] ?? null,
+            'type' => $filters['type'] ?? null,
+            'sort' => $filters['sort'] ?? 'newest',
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -78,6 +99,13 @@ class PublicVtuberProfileResource extends JsonResource
                 'items' => $contents->map(fn ($content): array => [
                     'type' => $content->type instanceof \BackedEnum ? $content->type->value : $content->type,
                     'status' => $content->status instanceof \BackedEnum ? $content->status->value : $content->status,
+                    'content_category' => $content->content_category instanceof \BackedEnum
+                        ? $content->content_category->value
+                        : $content->content_category,
+                    'content_category_detail' => $content->content_category_detail,
+                    'content_type' => $content->content_type instanceof \BackedEnum
+                        ? $content->content_type->value
+                        : $content->content_type,
                     'title' => $content->title,
                     'thumbnail_url' => $content->thumbnail_url,
                     'url' => $content->url,
@@ -99,6 +127,7 @@ class PublicVtuberProfileResource extends JsonResource
                     'total' => 0,
                     'has_more' => false,
                 ],
+                'filters' => $this->filters,
             ],
         ];
     }

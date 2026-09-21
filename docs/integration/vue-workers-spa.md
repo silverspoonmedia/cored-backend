@@ -115,6 +115,8 @@ Canonical envelope: [api-envelope.md](../platform/api-envelope.md). Deviations:
 | `POST profile/connections/{oauth_provider}/sync` | Same `{ providers }` as GET | Unknown provider 404 |
 | `DELETE profile/connections/{oauth_provider}` | `null` data | Replaces `DELETE …/discord` |
 | `GET auth/discord/authorize-url` | `{ url }` | Requires `SPA_URL`. `return_path` is a path |
+| `GET vtual/public/vtubers/{slug}` contents items | Each item carries `content_type` (`music` \| `non_music`, null = unknown) + `content_category` (`cover` \| `original` \| `singing_stream`) + `content_category_detail` (nullable) | Both layers program-classified (multi-signal, not `categoryId` alone) with an async AI audit for rows the program pass leaves unknown. See [vtual README — Content classification](../domains/vtual/README.md#content-classification-music-layer--cover-song-detection) |
+| `GET vtual/public/vtubers/{slug}?platform=&type=&sort=` | `data.contents.filters` echoes `{ platform, type, sort }` | Guest-only grid filters. Unknown values clamp to `null` / `newest` — **never 422** — and `sort=oldest` drops the live-first pinning (`published_at` asc). `data.contents.pagination.total` / `last_page` follow the filtered set. Only this endpoint echoes `filters`; `/vtual/public/contents` and the landing payload do not. The SPA SWR key must include the filter tuple (`useVtualPublic.profileCacheKey`). |
 
 ## Type alignment
 
@@ -140,7 +142,7 @@ Guest/public endpoints use dedicated Resources. Staff-only fields are optional i
 
 ## Status badges
 
-One renderer, many maps: SPA `StatusBadge.vue` + `src/utils/statusBadge.ts`. Domain maps merge over defaults. Do not add per-view `statusClass()` or one mega-badge. Details: sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md).
+One renderer, many maps: SPA `StatusBadge.vue` + `src/utils/statusBadge.ts`. Domain maps merge over defaults. Do not add per-view `statusClass()` or one mega-badge. Details: sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md). AI connection statuses map through `AI_CONNECTION_STATUS_BADGE` (`active`/`pending`/`disabled`).
 
 ## i18n porting notes
 
@@ -190,6 +192,7 @@ Do not load this contract for screen-level UX. Use the domain README (Agent entr
 - Microstock collection lifecycle on Archivd workspaces — [microstock README](../domains/microstock/README.md)
 - vTual public / orphans / profiles / managements / events — [vtual README](../domains/vtual/README.md). Landing HomeView is **FROZEN** (sibling [ui-patterns.md](../../../monolith-vue-workers/docs/ui-patterns.md)).
 - Inference rate editor: `PUT inference/providers/{id}/rates` full replace (`manage inference catalog`).
+- AI connections: SPA `/apps/ai/connections` (`ai.connections.index` / `.create` / `.edit`, sibling of Inference under Administration — not Monitoring). API `/api/v1/ai/connections` CRUD + `POST {id}/test` + `POST {id}/default` (`view`/`manage ai connections`); response carries `secret_hint` + `has_secret` only — never the key. PATCH is partial: blank text = keep, blank `api_key` = keep, explicit `null` on the numeric/header overrides = clear. Detail: [domains/ai README](../domains/ai/README.md).
 - Settings: `PUT admin/settings/{group}` sends **underscore** field names (`platform_jwt_ttl`). MenuSeeder children `settings.platform|archivd|microstock|vtual` are named SPA routes **before** parameterized `settings.group.view`.
 - Navigation menus: `POST/PATCH navigation/menus` send `audience` (`all` | `auth` | `role` | `guest`, default `auth` when omitted) and `roles` **only** with `audience=role`; rows return `audience` + `role_ids`. `is_authenticate` / `is_guest_only` were removed — breaking for older SPA builds, so both repos deploy together. Admin surface: [navigation README](../domains/navigation/README.md).
 - Blog admin: `blog/posts` (index/show/store/update/destroy + `trashed`, `restore`, `statuses`), `blog/categories`, `blog/tags`, `blog/media` (multipart `POST` image upload for editor inline images + featured thumbnails). Permissions `view posts` / `manage posts` / `restore posts`. Post `content` is HTML sanitized server-side (HTMLPurifier `blog` profile) and rendered via `v-html` in the admin editor. Featured image + inline images reference `blog_media.url` — absolute URLs from the configured disk (`BLOG_MEDIA_DISK`, `s3ArchivdCe` in local/production profiles); no `/storage` proxy. List rows carry query-mode `actions[]` per [list-display-modes.md](../platform/list-display-modes.md). Sidebar group seeded under Workspace › Blog.
@@ -259,6 +262,7 @@ SPA implementation: sibling [auth-session.md](../../../monolith-vue-workers/docs
 | Settings | `settings.{group}` | `.settings.group.changed` | `useSettingsRealtime.ts` |
 | Services catalog | `services.catalog` | `.service.catalog.changed`, `.service.purchase.changed` | `useServicesRealtime.ts` |
 | Inference | `inference.catalog` | `.inference.catalog.changed` | `useInferenceRealtime.ts` |
+| AI connections | `ai.connections` | `.ai.connection.changed` | `useAiConnectionsRealtime.ts` |
 | Navigation menus | `navigation.menus` | `.menu.tree.changed` | `useMenusRealtime.ts` |
 | Navigation (targeted) | user channel | `.menu.tree.changed` + `target_user_id` | `useNavigation.ts` |
 | Product activations / domain access | `product-activations`, `domain-access` | `.product.activation.changed`, `.domain.visibility.changed` | `useAdminRealtime.ts` |

@@ -305,6 +305,17 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
         $thumbnails = is_array($snippet['thumbnails'] ?? null) ? $snippet['thumbnails'] : [];
         $thumbnail = $this->pickThumbnail($thumbnails);
 
+        $topicDetails = is_array($item['topicDetails'] ?? null) ? $item['topicDetails'] : [];
+        $topicCategories = array_values(array_filter(
+            is_array($topicDetails['topicCategories'] ?? null) ? $topicDetails['topicCategories'] : [],
+            fn (mixed $topic): bool => is_string($topic) && trim($topic) !== '',
+        ));
+
+        $tags = array_values(array_filter(
+            is_array($snippet['tags'] ?? null) ? $snippet['tags'] : [],
+            fn (mixed $tag): bool => is_string($tag) && trim($tag) !== '',
+        ));
+
         $liveBroadcastContent = is_string($snippet['liveBroadcastContent'] ?? null)
             ? $snippet['liveBroadcastContent']
             : null;
@@ -338,6 +349,7 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
             description: isset($snippet['description']) ? (string) $snippet['description'] : null,
             thumbnailUrl: $thumbnail,
             url: $id !== '' ? 'https://www.youtube.com/watch?v='.$id : null,
+            categoryId: isset($snippet['categoryId']) && $snippet['categoryId'] !== '' ? (string) $snippet['categoryId'] : null,
             status: $status,
             publishedAt: $this->parseTime($snippet['publishedAt'] ?? null),
             startedAt: $this->parseTime($live['actualStartTime'] ?? $live['scheduledStartTime'] ?? null),
@@ -348,6 +360,11 @@ class YoutubeDataApiClient implements PlatformClient, FetchesVideos, FetchesChan
                 ? (int) $live['concurrentViewers']
                 : null,
             raw: null,
+            topicCategories: $topicCategories,
+            tags: $tags,
+            channelTitle: isset($snippet['channelTitle']) && is_string($snippet['channelTitle']) && trim($snippet['channelTitle']) !== ''
+                ? (string) $snippet['channelTitle']
+                : null,
         );
     }
 

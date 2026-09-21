@@ -127,6 +127,8 @@ final class SettingRegistry
             'microstock.ai.vision_image.variant_kind' => self::def('microstock', SettingType::String, 'microstock.ai.vision_image.variant_kind'),
             'microstock.ai.vision_image.signed_url_ttl_minutes' => self::def('microstock', SettingType::Int, 'microstock.ai.vision_image.signed_url_ttl_minutes'),
             'microstock.ai.inference_provider_slug' => self::def('microstock', SettingType::String, 'microstock.ai.inference_provider_slug'),
+            'microstock.ai.vision.connection' => self::def('microstock', SettingType::String, 'microstock.ai.vision.connection'),
+            'microstock.ai.thinking.connection' => self::def('microstock', SettingType::String, 'microstock.ai.thinking.connection'),
             'microstock.ai.vision.model' => self::def('microstock', SettingType::String, 'microstock.ai.vision.model'),
             'microstock.ai.vision.free_model' => self::def('microstock', SettingType::String, 'microstock.ai.vision.free_model'),
             'microstock.ai.vision.timeout' => self::def('microstock', SettingType::Int, 'microstock.ai.vision.timeout'),
@@ -191,6 +193,15 @@ final class SettingRegistry
             'vtual.landing.event.title' => self::def('vtual', SettingType::String, 'vtual.landing.event.title'),
             'vtual.landing.event.starts_at' => self::def('vtual', SettingType::String, 'vtual.landing.event.starts_at'),
             'vtual.landing.event.body' => self::def('vtual', SettingType::String, 'vtual.landing.event.body'),
+
+            // vTual — AI content classification audit pass
+            'vtual.content_classification.ai.enabled' => self::def('vtual', SettingType::Bool, 'vtual.content_classification.ai.enabled'),
+            'vtual.content_classification.ai.model' => self::def('vtual', SettingType::String, 'vtual.content_classification.ai.model'),
+            'vtual.content_classification.ai.timeout' => self::def('vtual', SettingType::Int, 'vtual.content_classification.ai.timeout'),
+            'vtual.content_classification.ai.max_tokens' => self::def('vtual', SettingType::Int, 'vtual.content_classification.ai.max_tokens'),
+            'vtual.content_classification.ai.min_confidence' => self::def('vtual', SettingType::Float, 'vtual.content_classification.ai.min_confidence'),
+            'vtual.content_classification.ai.cache_ttl_hours' => self::def('vtual', SettingType::Int, 'vtual.content_classification.ai.cache_ttl_hours'),
+            'vtual.content_classification.ai.connection' => self::def('vtual', SettingType::String, 'vtual.content_classification.ai.connection'),
         ];
     }
 

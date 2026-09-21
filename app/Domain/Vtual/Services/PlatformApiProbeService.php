@@ -5,6 +5,7 @@ namespace App\Domain\Vtual\Services;
 use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Exceptions\VtualException;
 use App\Domain\Vtual\Integrations\PlatformApiGateway;
+use App\Domain\Vtual\Integrations\Dto\PlatformVideoDto;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileInputKind;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileInputParser;
 use App\Domain\Vtual\Integrations\Support\ChannelProfileResolver;
@@ -20,6 +21,8 @@ use Illuminate\Support\Collection;
  *   ChannelProfileResolver for channel/stream profiles). Never reimplement Helix/YouTube
  *   HTTP, alternate query builders, or probe-only DTO mapping.
  * - Output = serialize gateway DTOs (+ optional resolved map for debug transparency).
+ * - Documented exception: video methods append a debug-only content_type +
+ *   content_category preview (never persisted — persistence happens on hydrate).
  * - When gateway methods are added/removed/renamed for manual testing, update METHODS,
  *   run(), request validation, web i18n, tests, and docs/domains/vtual/README.md in the same PR.
  */
@@ -42,6 +45,8 @@ class PlatformApiProbeService
     public function __construct(
         private readonly PlatformApiGateway $gateway,
         private readonly ChannelProfileResolver $profiles,
+        private readonly ContentCategoryClassifier $classifier,
+        private readonly ContentKindClassifier $kinds,
     ) {}
 
     /**
@@ -95,6 +100,10 @@ class PlatformApiProbeService
         $data = PlatformDtoSerializer::serialize($result);
         $count = $result instanceof Collection ? $result->count() : ($result === null ? 0 : 1);
 
+        if (in_array($method, ['fetch_videos', 'fetch_videos_chunked'], true) && is_array($data)) {
+            $data = $this->appendClassificationPreview($result, $data);
+        }
+
         return [
             'platform' => $platform->value,
             'method' => $method,
@@ -102,6 +111,88 @@ class PlatformApiProbeService
             'resolved' => $resolved,
             'data' => $data,
         ];
+    }
+
+    /**
+     * Debug-only classification preview appended to video items. Never persisted —
+     * persistence happens on the hydrate path (PlatformVideoDtoMapper → ContentService).
+     *
+     * `content_type_signal` names which program signal decided the music layer
+     * (topic | category_id | keyword | original_credit | long_form), and
+     * `content_category_signal` does the same for the sub-category layer
+     * (original_keyword | original_provide | singing_stream | strong_cover | tags
+     * | cover_provenance | weak_cover | catalog_artist_match |
+     * catalog_artist_mismatch | none). `content_category_catalog` carries the
+     * iTunes label the catalog branch compared against, so a wrong verdict can be
+     * traced without re-running the classifier by hand.
+     *
+     * @param  Collection<int, mixed>  $result
+     * @param  list<array<string, mixed>>  $serialized
+     * @return list<array<string, mixed>>
+     */
+    private function appendClassificationPreview(Collection $result, array $serialized): array
+    {
+        $videos = $result->filter(fn (mixed $item): bool => $item instanceof PlatformVideoDto)->values();
+
+        $out = [];
+        $index = 0;
+        foreach ($videos as $video) {
+            /** @var PlatformVideoDto $video */
+            if (! isset($serialized[$index])) {
+                break;
+            }
+
+            $classified = $this->classifier->evaluate([
+                'title' => $video->title,
+                'description' => $video->description,
+                'category_id' => $video->categoryId,
+                'duration_seconds' => $video->durationSeconds,
+                'type' => $this->contentCategoryTypeFor($video->status),
+                'tags' => $video->tags,
+                'channel_title' => $video->channelTitle,
+            ]);
+
+            $kind = $this->kinds->classify([
+                'title' => $video->title,
+                'description' => $video->description,
+                'category_id' => $video->categoryId,
+                'duration_seconds' => $video->durationSeconds,
+                'topic_categories' => $video->topicCategories,
+                'tags' => $video->tags,
+            ]);
+
+            $category = $classified['category'];
+
+            $out[] = $serialized[$index] + [
+                'content_type' => $kind['kind']?->value,
+                'content_type_signal' => $kind['signal'],
+                'content_category' => $category?->value,
+                'content_category_detail' => $classified['detail'],
+                'content_category_signal' => $classified['signal'],
+                'content_category_catalog' => $classified['catalog'],
+            ];
+            $index++;
+        }
+
+        // Preserve any trailing items the serializer produced beyond video DTOs.
+        for (; $index < count($serialized); $index++) {
+            $out[] = $serialized[$index];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Map coarse DTO status to the content type string the classifier expects
+     * (live|archive feed the singing-stream branch; vod otherwise).
+     */
+    private function contentCategoryTypeFor(string $dtoStatus): string
+    {
+        return match ($dtoStatus) {
+            'live', 'upcoming' => 'live',
+            'ended' => 'archive',
+            default => 'vod',
+        };
     }
 
     /**

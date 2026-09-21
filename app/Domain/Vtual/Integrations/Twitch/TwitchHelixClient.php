@@ -234,6 +234,7 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
             description: isset($item['description']) ? (string) $item['description'] : null,
             thumbnailUrl: $thumbnail,
             url: isset($item['url']) ? (string) $item['url'] : ($id !== '' ? 'https://www.twitch.tv/videos/'.$id : null),
+            categoryId: null,
             status: $status,
             publishedAt: $this->parseTime($item['published_at'] ?? $item['created_at'] ?? null),
             startedAt: $this->parseTime($item['created_at'] ?? null),
@@ -242,6 +243,14 @@ class TwitchHelixClient implements PlatformClient, FetchesVideos, FetchesChannel
             viewCount: isset($item['view_count']) && is_numeric($item['view_count']) ? (int) $item['view_count'] : null,
             concurrentViewers: null,
             raw: null,
+            // Helix exposes no topic/tag metadata; the music layer resolves to
+            // null (unknown) for Twitch and is left to the AI audit.
+            topicCategories: [],
+            tags: [],
+            // Helix exposes the uploader name on the channel DTO, not on the
+            // video DTO; without it the catalog artist check is a no-op and the
+            // sub-category stays unknown for Twitch rows.
+            channelTitle: null,
         );
     }
 

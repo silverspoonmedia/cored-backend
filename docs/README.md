@@ -24,7 +24,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [architecture.md](platform/architecture.md) | Logical monorepo, kind core\|product + locked lifecycle, routes, namespaces |
 | [api-routing.md](platform/api-routing.md) | Global vs versioned API |
 | [api-envelope.md](platform/api-envelope.md) | Canonical JSON envelope (`status`/`message`/`data`), error mapping (401/403/404/419/422/429), `/batch` partial-failure contract |
-| [commands.md](platform/commands.md) | Artisan command index (env, domains, payments, vtual, microstock, cache, i18n) |
+| [commands.md](platform/commands.md) | Artisan command index (env, domains, payments, vtual, microstock, ai, cache, i18n) |
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
 | [list-display-modes.md](platform/list-display-modes.md) | `display_mode=query` list contract, query-mode `actions[]` (live SPA row buttons), `/api/v1/lookups/*` |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
@@ -52,8 +52,9 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | Service | [domains/service/README.md](domains/service/README.md) — catalog, entitlements, DB FX→IDR, Archivd grace/purge (core domain) |
 | Blog | [domains/blog/README.md](domains/blog/README.md) — posts, categories, tags, WYSIWYG media (core domain) |
 | Inference | [domains/inference/README.md](domains/inference/README.md) — AI model catalog, provider model rates, per-usage rate snapshots (core domain) |
+| Ai | [domains/ai/README.md](domains/ai/README.md) — central AI transport: `ai_connections` (Tier C endpoint + key), Test gate, slug binding per consumer, legacy env import (core domain) |
 | Archivd | [domains/archivd/README.md](domains/archivd/README.md) — nested folders, multi-disk S3, Gateway hybrid upload (25 MB parts, `gateway.silverspoon.me`), paid link share, collab workspaces, live listing via SPA (product, locked) |
-| vTual | [domains/vtual/README.md](domains/vtual/README.md) — creator aggregator (product, locked); public SPA `/vtual` + `/vtual/vtubers/{slug}`; authenticated SPA screens: orphans + platform-credentials + profiles manage + vtuber hub + read profile; naming [naming-conventions.md](domains/vtual/naming-conventions.md); progress [implementation-status.md](domains/vtual/implementation-status.md); ops [archive/vtual-youtube-stability-assessment-2026-08-07.md](archive/vtual-youtube-stability-assessment-2026-08-07.md); legacy audit [archive/vtual-legacy-audit.md](archive/vtual-legacy-audit.md) |
+| vTual | [domains/vtual/README.md](domains/vtual/README.md) — creator aggregator (product, locked); public SPA `/vtual` + `/vtual/vtubers/{slug}` + `/vtual/managements/{slug}`; authenticated SPA screens: orphans + platform-credentials + profiles manage + vtuber hub + read profile; naming [naming-conventions.md](domains/vtual/naming-conventions.md); progress [implementation-status.md](domains/vtual/implementation-status.md); ops [archive/vtual-youtube-stability-assessment-2026-08-07.md](archive/vtual-youtube-stability-assessment-2026-08-07.md); legacy audit [archive/vtual-legacy-audit.md](archive/vtual-legacy-audit.md) |
 | Microstock | [domains/microstock/README.md](domains/microstock/README.md) — microstock asset mgmt on Archivd system workspace: AI metadata, prepaid AI billing + usage/balance UI (ledger, usage detail, admin platform tab), CSV export, encrypted marketplace creds (product, locked) |
 | Product Activations | [domains/product-activations/README.md](domains/product-activations/README.md) — kernel runtime-access registry for product domains |
 | Domain Access | [domains/domain-access/README.md](domains/domain-access/README.md) — kernel Public/Private visibility gate + Beta tester roles for product domains |

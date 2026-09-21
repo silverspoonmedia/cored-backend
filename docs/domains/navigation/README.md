@@ -170,6 +170,7 @@ php artisan db:seed --class=MenuSeeder
     - Model catalog — `inference.model-cards.index`
     - Providers — `inference.providers.index` (show = model rate grid)
     - Usage events — `inference.usage-events.index`
+  - **AI connections** — `ai.connections.index`; Root, Admin, Moderator, Management (`view ai connections` / `manage ai connections`)
   - **Monitoring** — Root, Admin
     - Activity log — `activity-logs.index`
     - Error log — `error-logs.index`

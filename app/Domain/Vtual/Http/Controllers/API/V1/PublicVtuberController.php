@@ -2,6 +2,8 @@
 
 namespace App\Domain\Vtual\Http\Controllers\API\V1;
 
+use App\Domain\Vtual\Enums\ContentType;
+use App\Domain\Vtual\Enums\PlatformKey;
 use App\Domain\Vtual\Http\Resources\PublicContentResource;
 use App\Domain\Vtual\Http\Resources\PublicEventResource;
 use App\Domain\Vtual\Http\Resources\PublicVtuberProfileResource;
@@ -64,12 +66,35 @@ class PublicVtuberController extends Controller
     public function show(Request $request, string $creator): JsonResponse
     {
         $perPage = min(24, max(1, (int) $request->query('per_page', 12)));
-        $loaded = $this->profiles->showForPublic($creator, $perPage);
+        $filters = $this->contentFilters($request);
+        $loaded = $this->profiles->showForPublic($creator, $perPage, $filters);
 
         return $this->successResponse(
-            $this->resolveResource(new PublicVtuberProfileResource($loaded)),
+            $this->resolveResource(new PublicVtuberProfileResource($loaded, $filters)),
             __('api/vtual.public.show_success'),
         );
+    }
+
+    /**
+     * Content-grid filters for the guest profile. Unknown values are clamped to
+     * the default (never 422) so a hand-edited guest URL still renders.
+     *
+     * @return array{platform: string|null, type: string|null, sort: string}
+     */
+    private function contentFilters(Request $request): array
+    {
+        $platform = $request->query('platform');
+        $type = $request->query('type');
+
+        return [
+            'platform' => is_string($platform) && in_array($platform, PlatformKey::values(), true)
+                ? $platform
+                : null,
+            'type' => is_string($type) && in_array($type, ContentType::values(), true)
+                ? $type
+                : null,
+            'sort' => $request->query('sort') === 'oldest' ? 'oldest' : 'newest',
+        ];
     }
 
     /**

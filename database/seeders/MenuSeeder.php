@@ -347,6 +347,13 @@ class MenuSeeder extends Seeder
                         ],
                     ],
                     [
+                        'name' => $this->translations('AI connections', 'Koneksi AI', 'AI 接続'),
+                        'icon' => 'bi bi-plug',
+                        'route' => 'ai.connections.index',
+                        'type' => 'p',
+                        'roles' => $managementRoles,
+                    ],
+                    [
                         'name' => $this->translations('Monitoring', 'Pemantauan', '監視'),
                         'icon' => 'bi bi-activity',
                         'type' => 'p',
@@ -722,6 +729,12 @@ class MenuSeeder extends Seeder
                 'zh_CN' => '监控',
                 'ar' => 'المراقبة',
                 'ru' => 'Мониторинг',
+            ],
+            'AI connections' => [
+                'ko' => 'AI 연결',
+                'zh_CN' => 'AI 连接',
+                'ar' => 'اتصالات الذكاء الاصطناعي',
+                'ru' => 'AI-подключения',
             ],
             'Activity log' => [
                 'ko' => '활동 로그',
