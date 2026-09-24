@@ -9,7 +9,8 @@ return [
     'users' => 'ユーザー管理',
     'navigation' => 'ナビゲーション',
     'menus' => 'メニュー一覧',
-    'menus_trashed' => 'ゴミ箱のメニュー',
+    // curated at 2026-09-21T17:25:29+07:00 — ja curation wave
+    'menus_trashed' => 'ゴミ箱内のメニュー',
     'notifications' => '通知',
     'profile' => 'プロフィール',
     'password' => 'パスワード変更',

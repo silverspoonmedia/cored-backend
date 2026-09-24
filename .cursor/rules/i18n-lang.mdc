@@ -1,6 +1,6 @@
 ---
 description: Patch locale keys; never dump whole lang JSON files
-globs: lang/**,docs/platform/localization.md
+globs: lang/**,app/**,routes/**,database/seeders/**,resources/**,docs/platform/localization.md
 alwaysApply: false
 ---
 
@@ -9,6 +9,9 @@ alwaysApply: false
 All supported locales in the same change (`en`, `id`, `ja`, `ko`, `zh_CN`, `ar`, `ru`). English is the source.
 
 - **Never `Read` an entire** `lang/{locale}.json` or a large PHP lang file. Grep the key, patch every locale, run `LocaleParityTest`.
-- Prefer `lang/{locale}/*.php` for application strings. Root `lang/en.json` nested groups duplicate PHP namespaces.
-- Full rules: [docs/platform/localization.md](../../docs/platform/localization.md).
-- SPA JSON locales are in `monolith-vue-workers` — same patch-key rule; `npm run check:i18n`.
+- **Never re-add a nested group to `lang/{locale}.json`.** JSON packs are consulted before PHP namespaces, so groups like `api`, `ui`, `web` shadow `lang/{locale}/*.php`; `LocaleUsageTest` fails the build if one reappears.
+- Prefer `lang/{locale}/*.php` for application strings.
+- **Flag every curated key** with `// curated at <ISO8601 +07:00> — <locale> curation wave` on the line above it; re-curating replaces the comment. Never flag without reviewing the consuming surface.
+- A key used in code but missing from every locale is a build failure (`LocaleUsageTest`), not a cosmetic bug.
+- Full rules, tooling, and the domain glossary: [docs/platform/localization.md](../../docs/platform/localization.md).
+- SPA JSON locales are in `monolith-vue-workers` — same patch-key rule, plus a `src/i18n/curation-log.json` entry per curated key; `npm run check:i18n`.

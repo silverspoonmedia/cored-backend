@@ -1,6 +1,9 @@
 # Large JSON locale dumps — Grep / targeted StrReplace still work
 /lang/*.json
 
+# i18n curation scratch (pair dumps + apply batches) — regenerable, gitignored
+/.tmp-i18n/
+
 # Test disks and generated artefacts
 /storage/framework/testing/
 

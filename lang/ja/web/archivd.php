@@ -2,12 +2,15 @@
 
 return [
     'title' => 'Archivd',
-    'blocklist_title' => 'ハッシュブロックリスト (DMCA)',
+    // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+    'blocklist_title' => 'ハッシュのブロックリスト（DMCA）',
     'blocklist_add' => 'ハッシュをブロック',
     'blocklist_sha256' => 'sha256',
-    'blocklist_sha256_placeholder' => '64文字のhex',
+    // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+    'blocklist_sha256_placeholder' => '64文字の16進数',
     'blocklist_reason' => '理由',
-    'blocklist_reason_placeholder' => 'DMCA参照など',
+    // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+    'blocklist_reason_placeholder' => 'DMCA の参照番号など',
     'blocklist_entries' => 'ブロック済みハッシュ',
     'blocklist_added' => '追加日時',
     'blocklist_actions' => '操作',
@@ -85,56 +88,80 @@ return [
     'workspace_activity' => 'チームアクティビティ',
 
     'microstock' => [
-        'activate_cta' => 'Microstockを有効化',
-        'create_workspace' => '新しいMicrostockワークスペース',
-        'slots_full' => 'Microstockスロットが満杯',
-        'create_title' => '新しいMicrostockワークスペース',
-        'create_hint' => 'Microstockワークスペースに名前を付けます。空のままだとデフォルト名を使用します。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'activate_cta' => 'Microstock を有効化',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'create_workspace' => '新しい Microstock ワークスペース',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'slots_full' => 'Microstock の枠が上限に達しました',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'create_title' => '新しい Microstock ワークスペース',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'create_hint' => 'Microstock ワークスペースに名前を付けます。空のままにすると既定の名前が使われます。',
         'name_label' => 'ワークスペース名',
         'name_placeholder' => 'Microstock',
-        'error_requires_folder' => '先にフォルダー（コレクション）を作成し、その中にファイルをアップロードしてください。',
-        'error_collection_locked' => 'このコレクションはロックされており、アップロードを受け付けません。',
-        'error_image_only' => 'マイクロストックコレクションでは画像ファイル（JPEG、PNG、WebP、GIF）のみ許可されています。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'error_requires_folder' => '先にフォルダ（コレクション）を作成し、その中にファイルをアップロードしてください。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'error_collection_locked' => 'このコレクションはロックされているため、アップロードを受け付けません。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'error_image_only' => 'Microstock のコレクションでは画像ファイル（JPEG、PNG、WebP、GIF）のみアップロードできます。',
         'lock_describe' => 'ロックして説明',
         'analyze' => '分析を開始',
         'export_csv' => 'CSVをエクスポート',
         'download_csv' => 'CSVをダウンロード',
         'status_locked' => 'コレクションをロックしました。分析の準備ができました。',
-        'status_processing' => 'AIがこのコレクションを分析しています…',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'status_processing' => 'AI がこのコレクションを分析しています…',
         'status_processing_degraded' => '（通常より時間がかかっています）',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
         'status_review' => '分析が完了しました。メタデータを確認してエクスポートしてください。',
         'status_exported' => 'コレクションをエクスポートしました。',
-        'status_failed' => '分析に失敗しました。再度ロックしてやり直してください。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'status_failed' => '分析に失敗しました。もう一度ロックして再試行してください。',
         'describe_title' => 'コレクションをロックして説明',
-        'describe_hint' => 'このコレクション全体を説明してください。AIは各ファイルのタイトルとキーワードを生成する際のコンテキストとしてこの説明を使用します。',
-        'describe_sections_intro' => '詳細を多く入力するほど、全ファイルで一貫したタイトルとキーワードが生成されます。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'describe_hint' => 'このコレクション全体を説明してください。AI は各ファイルのタイトルとキーワードを生成する際のコンテキストとしてこの説明を使用します。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'describe_sections_intro' => '詳細を入力するほど、すべてのファイルで一貫したタイトルとキーワードが生成されます。',
         'describe_label' => 'コレクションの説明',
         'describe_primary_concept' => '主なコンセプト',
-        'describe_primary_placeholder' => 'このコレクションは何についてですか？ 例：ストック向けのエコキッチンライフスタイル写真。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'describe_primary_placeholder' => 'このコレクションはどんな内容ですか？例: ストック購入者向けのエコフレンドリーなキッチンライフスタイル写真。',
         'describe_visible_facts' => '写っている被写体',
-        'describe_buyer_intent' => '購入者の意図',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'describe_buyer_intent' => '購入者の利用目的',
         'describe_style_mood' => 'スタイルと雰囲気',
         'describe_additional_notes' => '追加メモ（任意）',
-        'describe_additional_placeholder' => '照明、小道具、制約（ロゴなし、文字なし）、繰り返しテーマなど…',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'describe_additional_placeholder' => '照明、小道具、制約（ロゴなし、文字なし）、繰り返しのテーマ…',
         'describe_other_placeholder' => 'その他（カンマ区切り）',
         'describe_preview' => '合成ヒントのプレビュー',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
         'describe_char_count' => ':count / :max 文字',
-        'describe_validation_primary' => '主なコンセプトを :min 文字以上入力してください。',
-        'describe_validation_visible' => '被写体を1つ以上選択するか、その他を入力してください。',
-        'describe_validation_intent' => '購入者の意図を1つ以上選択するか、その他を入力してください。',
-        'describe_validation_style' => 'スタイルを1つ以上選択するか、その他を入力してください。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'describe_validation_primary' => '主なコンセプトを :min 文字以上で入力してください。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'describe_validation_visible' => '被写体を 1 つ以上選択するか、「その他」に入力してください。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'describe_validation_intent' => '購入者の利用目的を 1 つ以上選択するか、「その他」に入力してください。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'describe_validation_style' => 'スタイルを 1 つ以上選択するか、「その他」に入力してください。',
         'describe_validation_too_long' => 'ヒントが長すぎます。メモや選択を短くしてください。',
-        'describe_warning_blind' => '説明なしでこのコレクションをロックしようとしています。AIはコンテキストなしでメタデータを生成するため、通常は質の低く一貫性のない結果になります。続行しますか？',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'describe_warning_blind' => '説明を入れずにこのコレクションをロックしようとしています。AI はコンテキストなしでメタデータを生成するため、通常は品質が低く一貫性のない結果になります。続行しますか？',
         'describe_billing_mode_label' => '課金モード',
         'describe_billing_mode_hint' => 'このコレクションの分析方法を選択してください。',
         'describe_billing_mode_free' => '無料',
         'describe_billing_mode_paid' => '有料',
         'describe_validation_billing_mode' => '無料または有料の課金モードを選択してください。',
-        'describe_placeholder' => '例：木製テーブルの上のエコキッチン用品のフラットレイ写真集、明るい自然光。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'describe_placeholder' => '例: 木製テーブルの上に置いたエコフレンドリーなキッチン用品のフラットレイ写真集、明るい自然光。',
         'describe_submit' => 'ロックして分析',
         'describe_visible_options' => [
             'person' => '人物',
-            'group' => 'グループ',
+            // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+            'group' => '複数人',
             'object' => '物体',
             'icon' => 'アイコン',
             'animal' => '動物',
@@ -158,7 +185,8 @@ return [
         'describe_style_options' => [
             'photo' => '写真',
             'flat_illustration' => 'フラットイラスト',
-            'render_3d' => '3Dレンダー',
+            // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+            'render_3d' => '3D レンダー',
             'vector' => 'ベクター',
             'cartoon' => 'カートゥーン',
             'minimal' => 'ミニマル',
@@ -166,19 +194,29 @@ return [
             'hand_drawn' => '手描き',
             'isometric' => 'アイソメトリック',
         ],
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
         'progress' => ':total 件中 :processed 件を分析済み',
         'progress_failed' => '（:failed 件失敗）',
-        'billing_line' => 'AI残高 $:balance · 1ファイルあたり約 $:estimate（このコレクション約 $:total）',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'billing_line' => 'AI 残高 $:balance ・ 1 ファイルあたり約 $:estimate（このコレクションで約 $:total）',
         'daily_free_line' => '本日の無料分析: :remaining/:limit',
-        'billing_mixed_line' => '今回: 無料 :daily + 有料 :paid',
-        'status_processing_free_tier' => '（無料枠キュー — 通常より時間がかかる場合があります）',
-        'insufficient_credits' => 'AIクレジットが不足しています。サービスからクレジットパックを購入してください。',
-        'stage_vision' => '画像解析中…',
-        'stage_thinking' => 'AI思考中…',
-        'stage_queued_thinking' => 'Thinking待ち',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'billing_mixed_line' => '今回: 無料 :daily 件 + 有料 :paid 件',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'status_processing_free_tier' => '（無料枠のキュー — 時間がかかる場合があります）',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'insufficient_credits' => 'AI クレジットが不足しています。サービスページからクレジットパックを購入してください。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'stage_vision' => '画像を分析中…',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'stage_thinking' => '処理中…',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'stage_queued_thinking' => '処理待ち',
         'stage_degraded' => '時間がかかっています…',
-        'stage_vision_label' => 'Vision',
-        'stage_thinking_label' => 'Thinking',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'stage_vision_label' => '画像分析',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'stage_thinking_label' => '処理',
         'stage_result_label' => '結果',
         'stage_strip_label' => '分析ステージ',
         'review_files' => 'ファイルをレビュー',
@@ -194,92 +232,135 @@ return [
         'panel_description_label' => '説明',
         'panel_category_label' => 'カテゴリ',
         'panel_keywords_label' => 'キーワード',
-        'panel_keyword_placeholder' => 'キーワードを追加してEnter',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'panel_keyword_placeholder' => 'キーワードを入力して Enter',
         'panel_keyword_clear' => 'キーワードをすべて削除',
-        'panel_ai_details' => 'AI詳細',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'panel_ai_details' => 'AI 詳細',
         'panel_save' => '保存',
         'panel_reanalyze' => '再分析',
         'panel_saved' => 'メタデータを保存しました。',
         'panel_queued' => '再分析をキューに追加しました。',
         'step_upload' => 'アップロード',
-        'step_lock_describe' => 'ロック＆記述',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'step_lock_describe' => 'ロックして説明',
         'step_analyze' => '分析',
         'step_review' => 'レビュー',
         'step_export' => 'エクスポート',
         'step_upload_hint' => 'このコレクションフォルダに画像をアップロードして開始します。',
-        'step_lock_hint' => 'コレクションを記述し、ロックしてAI分析を開始します。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'step_lock_hint' => 'コレクションを説明してロックすると、AI 分析が始まります。',
         'step_analyze_hint' => 'AIがファイルのタイトルとキーワードを生成しています。',
         'step_review_hint' => 'AI生成メタデータを確認・編集してエクスポートします。',
-        'step_export_hint' => 'コレクションがエクスポートされました。マーケットプレース用のCSVをダウンロード。',
-        'step_upload_empty' => 'このコレクションは空です。画像をアップロードして開始します。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'step_export_hint' => 'コレクションをエクスポートしました。マーケットプレイス用の CSV をダウンロードしてください。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'step_upload_empty' => 'このコレクションは空です。画像をアップロードして始めてください。',
     ],
     'collab' => [
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
         'title' => 'コラボレーション',
-        'subtitle' => 'チームストレージはオーナーの有料プラン枠を使います。別メニューではなく、ここでモード切替。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'subtitle' => 'チームストレージはオーナーの有料プランの枠を使用します。別メニューではなく、ここでモードを切り替えます。',
         'badge_free' => '無料プラン',
         'badge_paid' => '有料プラン',
         'badge_grace' => '猶予期間',
         'free_heading' => '無料プランでできること:',
-        'free_can_personal' => '個人ストレージ（無料 5 GB）を使う。',
-        'free_can_link' => '「リンクを知っている人」で個別ファイル/フォルダを共有。',
-        'free_can_join' => '招待されれば他者のチームに参加（枠はオーナー側）。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'free_can_personal' => '個人ストレージ（無料枠 5 GB）を使用する。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'free_can_link' => '「リンクを知っている全員」で個別のファイルやフォルダを共有する。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'free_can_join' => '招待されれば他の人のチームに参加する（容量はオーナー負担）。',
         'free_cannot_heading' => '無料プランでできないこと:',
-        'free_cannot_create' => 'チームワークスペースの作成。',
-        'free_cannot_invite' => '自分がオーナーのチームへ招待（有料 main/addon が必要）。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'free_cannot_create' => 'チームワークスペースを作成する。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'free_cannot_invite' => '自分がオーナーのチームにメンバーを招待する（有料のメインプランまたはアドオンプランが必要）。',
         'upgrade_cta' => 'プランを見る / アップグレード',
         'grace_heading' => 'プランは猶予期間中',
-        'grace_body' => '更新までアップロードとコラボ機能はブロック。既存の個人ファイルは閲覧可。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'grace_body' => 'プランを更新するまで、アップロードとコラボ機能はブロックされます。既存の個人ファイルは引き続き閲覧できます。',
         'renew_cta' => 'プランを更新',
         'paid_heading' => '有料特典が有効:',
-        'paid_can_create' => '有料なら最大10チームWS（Team Workspace Slotで追加可）。メンバー招待可。',
-        'paid_can_invite' => 'チームファイルはあなたの容量枠に計上（オーナー負担）。',
-        'paid_can_join' => '自分のチームを持ちつつ、他者のチームにも参加（役割は WS ごと）。',
-        'paid_quota_note' => 'アクティビティログが追加・改名・移動・削除を記録。',
-        'create_workspace' => 'チーム WS を作成',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'paid_can_create' => 'チームワークスペースを最大 10 個作成（Team Workspace Slot で追加可）し、メンバーを招待できます。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'paid_can_invite' => 'チームのファイルはオーナーの容量枠に計上されます。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'paid_can_join' => '自分のチームを持ちながら他の人のチームにも参加できます（ロールはワークスペースごと）。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'paid_quota_note' => 'アクティビティログに、チーム項目の追加・改名・移動・削除を行ったユーザーが記録されます。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'create_workspace' => 'チームワークスペースを作成',
         'open_my_workspace' => '自分のチームを開く: :name',
-        'switch_label' => 'ワークスペース切替:',
-        'no_teams_free' => 'チームなし。作成はアップグレード、または下で招待を承認。',
-        'no_teams_paid' => 'チームなし。上で作成、または他者チームの招待を承認。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'switch_label' => 'ワークスペースを切り替え:',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'no_teams_free' => 'チームはまだありません。アップグレードして作成するか、下の招待を承認してください。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'no_teams_paid' => 'チームはまだありません。上で作成するか、他の人のチームへの招待を承認してください。',
         'accept_invite' => '招待トークンがある',
         'invite_token' => '招待トークン',
-        'invite_token_placeholder' => 'オーナーから受け取ったトークン',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'invite_token_placeholder' => 'オーナーから受け取ったトークンを貼り付け',
         'accept' => 'チームに参加',
-        'accept_hint' => '無料/有料どちらでも可。自分のチーム所有は他者チーム参加を妨げません。枠はオーナー側。',
-        'invite_token_ready' => '招待作成済み — このトークンを共有:',
-        'invite_token_share' => 'MVP はメール送信なし。トークンをコピーして手動共有。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'accept_hint' => '無料/有料どちらでも利用できます。自分のチームを所有していても他のチームに参加できます。容量は参加先のオーナー負担です。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'invite_token_ready' => '招待を作成しました — このトークンをメンバーに共有してください:',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'invite_token_share' => '現在メール送信は未対応です。トークンをコピーしてご自身で送信してください。',
         'team_context' => 'チーム: :name',
-        'you_are_role' => 'あなたの役割: :role',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'you_are_role' => 'あなたのロール: :role',
         'badge_yours' => '自分の',
         'badge_joined' => '参加中',
-        'role_owner_short' => 'Owner',
-        'role_admin_short' => 'Admin',
-        'role_editor_short' => 'Editor',
-        'role_viewer_short' => 'Viewer',
-        'team_quota_note' => 'ここはオーナー枠を使用。メンバー個人の無料枠ではありません。',
-        'confirm_archive' => 'この WS をアーカイブしますか？メンバーはアクセスできなくなります。',
-        'archive' => 'WS をアーカイブ',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'role_owner_short' => 'オーナー',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'role_admin_short' => '管理者',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'role_editor_short' => '編集者',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'role_viewer_short' => '閲覧者',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'team_quota_note' => 'ここではオーナーの容量枠を使用します。メンバー個人の無料枠ではありません。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'confirm_archive' => 'このワークスペースをアーカイブしますか？メンバーはアクセスできなくなります。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'archive' => 'ワークスペースをアーカイブ',
         'col_member' => 'メンバー',
-        'col_role' => '役割',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'col_role' => 'ロール',
         'remove' => '削除',
         'confirm_remove' => 'このメンバーを削除しますか？',
         'invite_email' => 'メールで招待',
-        'invite_role' => '役割',
-        'role_editor' => 'Editor（アップロード/編集）',
-        'role_viewer' => 'Viewer（閲覧のみ）',
-        'role_admin' => 'Admin（メンバー管理）',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'invite_role' => 'ロール',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'role_editor' => '編集者（アップロードと編集）',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'role_viewer' => '閲覧者（読み取りのみ）',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'role_admin' => '管理者（メンバー管理）',
         'send_invite' => '招待を送信',
         'invite_result_hint' => '送信後、上にトークンが表示されます。共有して参加してもらってください。',
-        'create_hint' => '有料は所有チーム10枠。Team Workspace Slot（+/月）で追加。他チーム参加は無制限。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'create_hint' => '有料プランには所有チームが 10 個含まれます。追加は Team Workspace Slot（1 つあたり月額 $1）で購入できます。他のチームへの参加は無制限です。',
         'workspace_name' => 'ワークスペース名',
         'default_workspace_name' => 'チームワークスペース',
-        'member_readonly_hint' => 'ここはメンバーです。招待・削除は owner または admin のみ。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'member_readonly_hint' => 'ここではメンバー権限です。招待や削除はオーナーまたは管理者のみ行えます。',
         'team_settings' => 'チーム',
         'slots_counter' => '所有チーム: :used / :limit',
-        'slots_full' => '所有チーム上限に達しました',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'slots_full' => '所有チームの上限に達しました',
         'buy_slot_cta' => 'チーム枠を追加',
         'grace_body_short' => 'チーム作成・管理にはプラン更新が必要です。',
         'no_members' => 'メンバーはまだいません。',
-        'activity_empty' => 'チーム活動はまだありません。',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'activity_empty' => 'チームのアクティビティはまだありません。',
     ],
     'restore' => '復元',
     'force_delete' => '完全に削除',
@@ -293,13 +374,16 @@ return [
     'quota_remaining' => '残り',
     'quota_unlimited' => '無制限',
     'load_failed' => '読み込みに失敗しました。',
-    'vue_mount_failed' => 'Archivd UI の読み込みに失敗しました。ページを再読み込みしてください。',
+    // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+    'vue_mount_failed' => 'Archivd UI を読み込めませんでした。ページを再読み込みしてください。',
     'link_copied' => 'リンクをクリップボードにコピーしました。',
     'ajax_success' => '操作が完了しました。',
     'ajax_error' => '操作に失敗しました。',
-    'network_error' => 'ネットワークエラー。再試行してください。',
+    // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+    'network_error' => 'ネットワークエラーが発生しました。もう一度お試しください。',
     'type_image' => '画像',
-    'type_pdf' => 'PDF文書',
+    // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+    'type_pdf' => 'PDF 文書',
     'type_video' => '動画',
     'type_audio' => 'オーディオ',
     'type_archive' => 'アーカイブ',
@@ -309,14 +393,16 @@ return [
     'upload' => [
         'start' => 'アップロード開始',
         'browse' => 'ファイルを選択',
-        'region' => 'アップロード地域',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'region' => 'アップロード先リージョン',
         'too_many' => '選択したファイルが多すぎます。',
         'wait' => 'アップロードの完了を待ってください。',
         'failed' => 'アップロードに失敗しました。',
         'pending' => '待機中',
         'waiting' => '順番待ち…',
         'uploading' => 'アップロード中…',
-        'completing' => '仕上げ中…',
+        // curated at 2026-09-21T17:29:05+07:00 — ja curation wave
+        'completing' => '完了処理中…',
         'done' => '完了',
         'remove' => '削除',
     ],

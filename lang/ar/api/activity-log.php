@@ -13,8 +13,10 @@ return [
         'login' => 'تسجيل الدخول',
         'login_failed' => 'فشل تسجيل الدخول',
         'logout' => 'تسجيل الخروج',
-        'two_factor_challenge' => 'طلب التحقق الثنائي',
-        'two_factor_login_failed' => 'فشل تسجيل الدخول بالتحقق الثنائي',
+        // curated at 2026-09-22T20:32:27+07:00 — ar curation wave
+        'two_factor_challenge' => 'طلب المصادقة الثنائية',
+        // curated at 2026-09-22T20:32:27+07:00 — ar curation wave
+        'two_factor_login_failed' => 'فشل تسجيل الدخول بالمصادقة الثنائية',
         'password_changed' => 'تم تغيير كلمة المرور',
         'two_factor_enabled' => 'تم تفعيل المصادقة الثنائية',
         'two_factor_disabled' => 'تم تعطيل المصادقة الثنائية',

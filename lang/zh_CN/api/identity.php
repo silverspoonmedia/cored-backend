@@ -13,7 +13,8 @@ return [
         'return_path_invalid' => '不允许使用此 OAuth 返回路径。',
     ],
     'connections' => [
-        'show' => '已连接账户已加载。',
+        // curated at 2026-09-22T12:19:25+07:00 — zh_CN curation wave
+        'show' => '已加载已连接账户。',
         'synced' => '关联账户已更新。',
         'disconnected' => '账户已断开连接。',
         'discord_disconnected' => 'Discord 已断开连接。',

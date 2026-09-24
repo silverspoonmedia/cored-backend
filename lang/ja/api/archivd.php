@@ -18,8 +18,10 @@ return [
     'bulk_visibility_updated' => '公開設定を更新しました。',
     'bulk_files_deleted' => '選択したファイルをゴミ箱に移動しました。',
     'bulk_folders_deleted' => '選択したフォルダをゴミ箱に移動しました。',
-    'download_ready' => 'ダウンロードURLの準備ができました。',
-    'download_unavailable' => 'このストレージではダウンロードURLを発行できません。',
+    // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+    'download_ready' => 'ダウンロード URL の準備ができました。',
+    // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+    'download_unavailable' => 'このストレージではダウンロード URL を発行できません。',
     'visibility_updated' => '公開設定を更新しました。',
     'invalid_visibility' => '公開設定の値が無効です。',
     'public_share_requires_paid' => '公開リンク共有には有効な有料 Archivd プランが必要です。',
@@ -27,6 +29,8 @@ return [
     'public_share_not_allowed' => 'このワークスペース内のアイテムは公開共有できません。',
     'blocklist_saved' => 'ハッシュをブロックリストに追加しました。',
     'blocklist_removed' => 'ハッシュをブロックリストから削除しました。',
+    // curated at 2026-09-21T15:32:00+07:00 — new key (blocklist list endpoint had no message)
+    'blocklist_loaded' => 'ハッシュのブロックリストを読み込みました。',
     'share_not_found' => 'この共有アイテムは利用できません。',
     'search_success' => '検索結果を読み込みました。',
     'trash_success' => 'ゴミ箱を読み込みました。',
@@ -35,10 +39,12 @@ return [
     'quota_grace_blocked' => 'サブスクリプションは猶予期間中です。再度アップロードするには更新してください。',
     'folder_not_found' => 'フォルダが見つかりません。',
     'file_not_found' => 'ファイルが見つかりません。',
-    'owner_not_found' => '所有者が見つかりません。',
+    // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+    'owner_not_found' => 'オーナーが見つかりません。',
     'folder_name_taken' => '同じ名前のフォルダが既に存在します。',
     'file_name_taken' => '同じ名前のファイルが既に存在します。',
-    'folder_cycle' => 'フォルダを自身または子孫へ移動できません。',
+    // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+    'folder_cycle' => 'フォルダを自身またはその配下へ移動することはできません。',
     'policy' => [
         'denied' => 'この操作は許可されていません。',
         'cross_user_denied' => '他のユーザーのファイルにはアクセスできません。',
@@ -53,7 +59,8 @@ return [
         'members_success' => 'メンバーを読み込みました。',
         'invite_sent' => '招待を送信しました。',
         'invite_accepted' => '招待を承認しました。',
-        'role_updated' => 'メンバーの役割を更新しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'role_updated' => 'メンバーのロールを更新しました。',
         'member_removed' => 'メンバーを削除しました。',
         'activity_success' => 'ワークスペースのアクティビティを読み込みました。',
         'not_found' => 'ワークスペースが見つかりません。',
@@ -62,12 +69,15 @@ return [
         'mutate_denied' => 'このワークスペースのファイルは変更できません。',
         'members_denied' => 'このワークスペースのメンバーを管理できません。',
         'requires_paid' => '共同ワークスペースを利用するには、有効な有料 Archivd プラン（メインまたはアドオン）が必要です。',
-        'owner_in_grace' => 'ワークスペース所有者のプランは猶予期間中です。共同機能を使うにはプランを更新してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'owner_in_grace' => 'ワークスペースのオーナーのプランは猶予期間中です。共同機能を使うにはプランを更新してください。',
         'already_exists' => '既にワークスペースがあります。',
         'slot_limit' => '所有できるチームワークスペース数の上限に達しました（:used / :limit）。チームをアーカイブするか、Team Workspace Slot アドオンを購入してください。',
         'name_required' => 'ワークスペース名は必須です。',
-        'owner_only' => 'この操作はワークスペース所有者のみ可能です。',
-        'invalid_role' => '無効なワークスペース役割です。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'owner_only' => 'この操作はワークスペースのオーナーのみ実行できます。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'invalid_role' => '無効なワークスペースロールです。',
         'invalid_email' => '無効なメールアドレスです。',
         'cannot_invite_self' => '自分自身を招待できません。',
         'already_member' => 'ユーザーは既にメンバーです。',
@@ -76,14 +86,17 @@ return [
         'invite_expired' => '招待の期限が切れています。',
         'invite_not_pending' => '招待は保留中ではありません。',
         'invite_email_mismatch' => 'この招待は別のメール宛です。',
-        'cannot_change_owner_role' => '所有者の役割は変更できません。',
-        'cannot_remove_owner' => '所有者は削除できません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'cannot_change_owner_role' => 'オーナーのロールは変更できません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'cannot_remove_owner' => 'オーナーは削除できません。',
         'member_not_found' => 'メンバーが見つかりません。',
     ],
     'upload' => [
         'initiated' => 'アップロードセッションを作成しました。',
         'status' => 'アップロード状態を読み込みました。',
-        'parts_signed' => 'パートURLに署名しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'parts_signed' => 'パート URL に署名しました。',
         'completed' => 'アップロードが完了しファイルを作成しました。',
         'aborted' => 'アップロードを中止しました。',
         'not_found' => 'アップロードセッションが見つかりません。',
@@ -94,7 +107,8 @@ return [
         'invalid_size' => 'ファイルサイズが無効です。',
         'file_too_large' => 'ファイルが最大サイズを超えています。',
         'invalid_name' => 'ファイル名が無効です。',
-        'mime_not_allowed' => 'このMIMEタイプは許可されていません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'mime_not_allowed' => 'この MIME タイプは許可されていません。',
         'object_missing' => 'ストレージにオブジェクトがありません。',
         'multipart_only' => 'この操作はマルチパートアップロード専用です。',
         'invalid_part_number' => 'パート番号が無効です。',

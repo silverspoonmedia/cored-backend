@@ -61,7 +61,8 @@ return [
                 'invoice_number' => '发票编号',
                 'status' => '状态',
                 'subtotal' => '小计',
-                'fee' => '付款费用',
+                // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+                'fee' => '支付手续费',
                 'total' => '客户应付总额',
                 'created_at' => '创建时间',
                 'actions' => '操作',
@@ -72,21 +73,25 @@ return [
             'invoice_number' => '发票编号',
             'status' => '状态',
             'payment_method' => '付款方式',
-            'gateway' => '网关',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'gateway' => '支付网关',
             'subtotal' => '服务价格',
-            'fee' => '付款费用（买家）',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'fee' => '支付手续费（买家）',
             'total' => '客户应付总额',
             'currency' => '货币',
             'paid_at' => '付款时间',
             'expired_at' => '过期时间',
             'created_at' => '创建时间',
-            'payment_route' => '结账路径',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'payment_route' => '结账路由',
         ],
     ],
 
     'income' => [
         'title' => '付款收入',
-        'subtitle' => '来自已付款发票的收入和现金收款。服务价格是产品收入，付款费用是向买家收取并转交支付提供商的附加费用。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'subtitle' => '来自已付款发票的收入与现金收款。服务价格是您的产品收入；手续费是向买家收取并转交给提供商的附加费用。',
         'loading' => '加载中…',
         'load_failed' => '无法加载收入数据。',
         'empty_invoices' => '此期间没有已付款发票。',
@@ -99,17 +104,23 @@ return [
             'basis' => '日期依据',
             'basis_paid_at' => '付款日期（paid_at）',
             'basis_withdrawable_at' => '结算日期（withdrawable_at）',
-            'gateway' => '网关',
-            'all_gateways' => '所有网关',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'gateway' => '支付网关',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'all_gateways' => '所有支付网关',
             'apply' => '应用',
         ],
         'summary' => [
             'service_revenue' => '服务收入',
-            'service_revenue_hint' => '发票小计总和（你的产品销售额）。',
-            'buyer_fees' => '买家付款费用',
-            'buyer_fees_hint' => '向客户收取的渠道附加费用。',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'service_revenue_hint' => '发票小计总和（您的产品销售金额）。',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'buyer_fees' => '买家支付手续费',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'buyer_fees_hint' => '向客户收取的渠道附加费。',
             'cash_collected' => '已收现金',
-            'cash_collected_hint' => '客户支付总额（小计 + 费用）。',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'cash_collected_hint' => '客户支付的总额（小计 + 手续费）。',
             'invoice_count' => '已付款发票',
             'avg_order_value' => '平均订单金额',
         ],
@@ -123,10 +134,12 @@ return [
             'failed_payout' => '发放失败',
         ],
         'breakdown' => [
-            'gateway' => '按网关',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'gateway' => '按支付网关',
             'channel' => '按渠道',
             'product' => '按产品类型',
-            'label' => '标签',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'label' => '名称',
             'invoices' => '发票',
             'service_revenue' => '服务收入',
             'cash_collected' => '已收现金',
@@ -157,7 +170,8 @@ return [
             'columns' => [
                 'subscription_number' => '订阅编号',
                 'subscriber_name' => '订阅者',
-                'plan_name' => '套餐',
+                // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+                'plan_name' => '方案',
                 'status' => '状态',
                 'amount' => '金额',
                 'actions' => '操作',
@@ -167,8 +181,10 @@ return [
             'subscriber_name' => '订阅者姓名',
             'subscriber_email' => '订阅者邮箱',
             'subscriber_phone' => '订阅者电话',
-            'plan_name' => '套餐名称',
-            'plan_description' => '套餐描述',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'plan_name' => '方案名称',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'plan_description' => '方案描述',
             'billing_cycle' => '计费周期',
             'amount' => '金额',
             'currency' => '货币',
@@ -199,34 +215,46 @@ return [
         'invoice_summary' => '发票 :number',
         'amount' => '应付金额',
         'subtotal' => '服务价格',
-        'payment_fee' => '付款费用',
-        'payment_fee_note' => '支付给支付提供商，并计入总额。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'payment_fee' => '支付手续费',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'payment_fee_note' => '该费用支付给提供商，并计入您的总额。',
         'total_due' => '应付总额',
-        'fee_estimate_hint' => '预计费用——继续付款时确认最终金额。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'fee_estimate_hint' => '预计手续费——继续付款时将确认最终金额。',
         'fee_percent_basis' => '服务价格的 :percent',
-        'fee_at_checkout_hint' => '选择付款方式时会增加支付提供商费用。',
-        'routing_updated' => '付款方式已更新，费用可能已变化。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'fee_at_checkout_hint' => '选择付款方式后将加收提供商手续费。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'routing_updated' => '付款方式已更新，手续费可能已变化。',
         'channel_unavailable' => ':channel 已不再可用。',
-        'fee_updated' => ':channel 费用已从 :old 更新为 :new。',
-        'selected_channel_unavailable' => '你选择的付款方式已不再可用，请选择其他方式。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'fee_updated' => ':channel 的手续费已从 :old 更新为 :new。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'selected_channel_unavailable' => '您选择的付款方式已不再可用，请选择其他方式。',
         'pay_now' => '立即付款',
         'snap_loading' => '正在打开付款页面…',
         'snap_failed' => '无法开始结账',
         'started' => '结账会话已创建。',
         'paid' => '此发票已付款。',
-        'not_payable' => '此发票当前状态不可付款。',
-        'unsupported_gateway' => '发票支付网关不支持托管结账。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'not_payable' => '此发票当前状态无法付款。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'unsupported_gateway' => '发票的支付网关不支持托管结账。',
         'select_channel' => '付款方式',
-        'cheap_alt_hint' => '使用 :channel 付款可节省费用（结账时扫描二维码）。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'cheap_alt_hint' => '使用 :channel 付款可节省手续费（结账时扫描二维码）。',
         'pay_with_channel' => '继续付款',
         'channel_loading' => '正在创建付款…',
         'channel_ready' => '按照以下说明完成付款。',
         'channel_failed' => '无法开始渠道结账',
         'confirm_paid' => '我已付款',
-        'confirm_paid_help' => '如果你已在此页面之外完成付款（例如现金或银行转账），请点击此处重新检查发票状态。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'confirm_paid_help' => '如果您已在此页面之外完成付款（例如现金或银行转账），请点击此处重新检查发票状态。',
         'change_channel' => '更改付款渠道',
         'no_channels' => '此发票没有可用的付款方式。',
-        'permission_required' => '你无权发起付款。请联系管理员授予“发起付款”权限。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'permission_required' => '您无权发起付款。请联系管理员授予“发起付款”权限。',
         'synced' => '付款状态已同步。',
         'syncing' => '同步中…',
         'sync_pending' => '付款仍在处理中。',
@@ -251,20 +279,27 @@ return [
         'title' => '支付渠道',
         'list_title' => '支付渠道列表',
         'updated' => '支付渠道已更新。',
-        'route_updated' => '支付渠道路径已更新。',
-        'routes_title' => '网关路径',
-        'routes_lead' => '结账会先尝试主要或唯一的路径，再尝试备用路径。同一角色内，优先级数字较小的路径先尝试。未启用的路径或缺少网关凭据的路径会被跳过。',
-        'empty' => '尚未配置支付渠道。请在 PaymentGatewaySeeder 后运行 php artisan payments:sync-routing-policy。',
-        'no_routes' => '此渠道未绑定网关路径。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'route_updated' => '支付渠道路由已更新。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'routes_title' => '网关路由',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'routes_lead' => '结账会先尝试主要或唯一的路由，再尝试备用路由。同一角色内，优先级数字较小的路由优先尝试。未启用的路由或缺少网关凭证的路由会被跳过。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'empty' => '尚未配置支付渠道。请在 PaymentGatewaySeeder 之后运行 php artisan payments:sync-routing-policy。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'no_routes' => '此渠道未绑定任何网关路由。',
         'no_results' => '没有匹配搜索条件的渠道。',
         'search_label' => '搜索渠道',
         'search_placeholder' => '按名称、代码或类型搜索…',
         'inactive_channel' => '已从结账中隐藏',
         'primary_route' => '优先尝试',
-        'priority_hint' => '数字越小，同一路径角色内的优先级越高。策略管理的优先级无法在此编辑。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'priority_hint' => '数字越小，同一路由角色内的优先级越高。策略管理的优先级无法在此编辑。',
         'priority_autosave_hint' => '已自动保存',
         'visible_count' => '{0} 没有渠道|{1} 可见 :count 个渠道|[2,*] 可见 :count 个渠道',
-        'route_count' => '{0} 没有路径|{1} :count 条路径|[2,*] :count 条路径',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'route_count' => '{0} 没有路由|{1} :count 条路由|[2,*] :count 条路由',
         'status' => [
             'active' => '启用',
             'inactive' => '停用',
@@ -275,28 +310,37 @@ return [
             'ewallet' => '电子钱包',
         ],
         'intro' => [
-            'title' => '渠道结账路由如何工作',
-            'lead' => '客户选择逻辑渠道（QRIS、银行虚拟账户、电子钱包）。Monolith 随后按策略顺序（路径角色，再按优先级）尝试网关路径，直到创建付款说明。',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'title' => '渠道结账路由的工作方式',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'lead' => '客户选择逻辑渠道（QRIS、银行虚拟账户、电子钱包）。Monolith 随后按策略顺序（先路由角色，再优先级）尝试网关路由，直到创建付款说明。',
             'steps' => [
                 [
                     'title' => '启用渠道',
-                    'body' => '未启用的渠道会从结账中隐藏。渠道关闭时，路径仍可保持配置。',
+                    // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+                    'body' => '未启用的渠道会从结账中隐藏。渠道关闭时，路由仍可保持配置。',
                 ],
                 [
-                    'title' => '了解路径角色',
-                    'body' => '主要或唯一的路径会在备用路径前尝试。同一角色内优先级为 10 的路径先于 20。费用和结算信息来自 Routing_Price.yaml。',
+                    // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+                    'title' => '了解路由角色',
+                    // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+                    'body' => '主要或唯一的路由会在备用路由之前尝试。同一角色内，优先级 10 的路由先于 20。手续费和结算信息来自 Routing_Price.yaml。',
                 ],
                 [
-                    'title' => '结账时使用备用路径',
-                    'body' => '如果所有可用路径都失败或缺少凭据，结账可能会提供托管 Snap 或 iPaymu 重定向。',
+                    // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+                    'title' => '结账时的备用路由',
+                    // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+                    'body' => '如果所有可用路由都失败或缺少凭证，结账可能会提供托管 Snap 或 iPaymu 重定向。',
                 ],
             ],
         ],
         'stats' => [
             'channels_active' => '启用的渠道',
-            'routes_active' => '启用的路径',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'routes_active' => '启用的路由',
             'checkout_hint' => '结账行为',
-            'checkout_body' => '只有至少包含一条可用路径的启用渠道会显示给付款人。',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'checkout_body' => '只有至少包含一条可用路由的启用渠道才会显示给付款人。',
         ],
         'columns' => [
             'code' => '代码',
@@ -306,14 +350,16 @@ return [
             'is_active' => '启用',
         ],
         'route_columns' => [
-            'gateway' => '网关',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'gateway' => '支付网关',
             'provider_type' => '提供商类型',
             'provider_channel' => '提供商渠道',
             'priority' => '优先级',
             'is_active' => '启用',
             'route_role' => '角色',
             'settlement' => '结算',
-            'fee' => '费用',
+            // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+            'fee' => '手续费',
             'policy_managed' => '策略管理',
         ],
         'route_roles' => [
@@ -322,7 +368,9 @@ return [
             'only' => '唯一',
         ],
         'sync_policy' => '同步路由策略',
-        'sync_policy_hint' => '从 Routing_Price.yaml 重新加载渠道和路径。',
-        'sync_policy_done' => '路由策略已同步（:channels 个渠道，:routes 条路径）。正在重新加载…',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'sync_policy_hint' => '从 Routing_Price.yaml 重新加载渠道和路由。',
+        // curated at 2026-09-22T11:16:10+07:00 — zh_CN curation wave
+        'sync_policy_done' => '路由策略已同步（:channels 个渠道，:routes 条路由）。正在重新加载…',
     ],
 ];

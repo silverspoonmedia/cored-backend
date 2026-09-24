@@ -1,12 +1,17 @@
 <?php
 
 return [
-    'list_success' => '오류 로그 항목이 성공적으로 검색되었습니다.',
-    'show_success' => '오류 로그 항목이 성공적으로 검색되었습니다.',
-    'status_updated' => '오류 로그 상태가 성공적으로 업데이트되었습니다.',
+    // curated at 2026-09-23T11:22:15+07:00 — ko curation wave
+    'list_success' => '오류 로그 항목을 불러왔습니다.',
+    // curated at 2026-09-23T11:22:15+07:00 — ko curation wave
+    'show_success' => '오류 로그 항목을 불러왔습니다.',
+    // curated at 2026-09-23T11:22:15+07:00 — ko curation wave
+    'status_updated' => '오류 로그 상태를 수정했습니다.',
     'statuses' => [
-        'open' => '열기',
+        // curated at 2026-09-23T11:22:15+07:00 — ko curation wave
+        'open' => '열림',
         'resolved' => '해결됨',
-        'ignored' => '이미 무시됨',
+        // curated at 2026-09-23T11:22:15+07:00 — ko curation wave
+        'ignored' => '무시됨',
     ],
 ];

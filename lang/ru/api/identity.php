@@ -9,7 +9,8 @@ return [
         'discord_not_connected' => 'Сначала подключите Discord в разделе «Связанные аккаунты».',
         'discord_user_missing' => 'Discord не вернул идентификатор пользователя.',
         'authorize_url' => 'URL авторизации Discord выдан.',
-        'spa_url_missing' => 'Origin SPA не настроен на этом сервере.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'spa_url_missing' => 'Источник SPA не настроен на этом сервере.',
         'return_path_invalid' => 'Недопустимый путь возврата OAuth.',
     ],
     'connections' => [

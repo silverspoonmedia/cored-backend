@@ -12,7 +12,8 @@ return [
         'name_required' => 'اسم العرض مطلوب.',
         'slug_taken' => 'معرّف منشئ المحتوى هذا مستخدم بالفعل.',
         'not_found' => 'ملف منشئ المحتوى غير موجود.',
-        'self_create_disabled' => 'إنشاء الملف مباشرة معطّل. اعمل على المطالبة بملف موجود أو اطلب من الفريق إنشاءه.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'self_create_disabled' => 'إنشاء الملف الشخصي مباشرة معطّل. طالِب بملف موجود أو اطلب من الموظفين إنشاء ملف أولي.',
     ],
     'orphan' => [
         'list_success' => 'تم تحميل منشئي المحتوى الأيتام.',
@@ -30,14 +31,17 @@ return [
         'landing_success' => 'تم تحميل بيانات الصفحة العامة.',
         'stats_success' => 'تم تحميل إحصاءات المنصة العامة.',
         'live_success' => 'تم تحميل قائمة البثوث المباشرة الآن.',
-        'schedule_success' => 'تم تحميل جدول البثوث القادمة.',
-        'events_success' => 'تم تحميل الفعاليات القادمة العامة.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'schedule_success' => 'تم تحميل الجدول العام للبثوث القادمة.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'events_success' => 'تم تحميل الفعاليات العامة القادمة.',
         'management_show_success' => 'تم تحميل الملف العام لجهة الإدارة.',
     ],
     'merge' => [
         'success' => 'تم دمج الملفين الشخصيين. أُرشف المصدر، وأصبحت البيانات في الملف الهدف.',
         'self' => 'لا يمكن دمج الملف الشخصي مع نفسه.',
-        'owner_required' => 'يجب أن تملك الملفين المصدر والهدف لدمجهما.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'owner_required' => 'يجب أن تكون مالكًا للملفين المصدر والهدف لدمجهما.',
         'destination_archived' => 'الملف الشخصي الهدف مؤرشف ولا يمكن الدمج فيه.',
         'source_archived' => 'الملف الشخصي المصدر مؤرشف بالفعل.',
         'channel_clash' => 'يحتوي الملفان على قناة المنصة نفسها (:external_id). أرشف إحدى القناتين أو احذفها أولًا.',
@@ -67,7 +71,8 @@ return [
         'discord_connections_failed' => 'تعذر تحميل حسابات Discord المرتبطة بك. حاول إعادة ربط Discord.',
         'discord_no_match' => 'لم يُعثر في ملف Discord على حساب YouTube أو Twitch موثّق مطابق.',
         'discord_verify_unsupported_platform' => 'التحقق عبر Discord غير متاح لهذه المنصة.',
-        'channel_missing' => 'قناة إثبات المطالبة غير محددة.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'channel_missing' => 'قناة إثبات المطالبة مفقودة.',
         'max_pending' => 'لديك بالفعل :max مطالبة معلقة. ألغِ إحداها أو أكمل التحقق أولًا.',
         'pending_success' => 'تم تحميل المطالبات المعلقة.',
         'superseded' => 'اكتملت مطالبة أخرى لهذا المنشئ. أُغلقت هذه المطالبة.',
@@ -102,7 +107,8 @@ return [
         'invite_expired' => 'انتهت صلاحية هذه الدعوة أو لم تعد صالحة.',
         'invite_wrong_account' => 'هذه الدعوة تخص حسابًا آخر.',
         'invite_user_not_found' => 'لا يوجد مستخدم مسجل بهذا البريد الإلكتروني.',
-        'owner_invite_not_claimable' => 'هذه الإدارة لديها مالك بالفعل. دعوة المالك متاحة فقط قبل التسليم.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'owner_invite_not_claimable' => 'هذه الإدارة لديها مالك بالفعل. لا تُتاح دعوة المالك إلا قبل المطالبة بالإدارة.',
         'creator_invite_mode_invalid' => 'يجب أن يكون وضع دعوة منشئ المحتوى "existing" أو "new".',
         'creator_invite_not_owner' => 'الحساب المدعو ليس مالك ملف vTuber المحدد.',
         'creator_already_linked' => 'ملف vTuber هذا مرتبط بالفعل بهذه الإدارة.',
@@ -116,7 +122,8 @@ return [
     'mail' => [
         'invite_subject' => 'دعوة للانضمام إلى :management',
         'creator_invite_subject' => 'دعوة ملف vTuber من :management',
-        'creator_invite_line' => 'لقد تمت دعوتك لربط ملفك الشخصي لـ vTuber بـ :management.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'creator_invite_line' => 'لقد تمت دعوتك لربط ملف vTuber الشخصي الخاص بك بـ :management.',
         'invite_greeting' => 'مرحبًا!',
         'invite_line' => 'لقد تمت دعوتك للانضمام إلى :management بدور :role.',
         'invite_action' => 'مراجعة الدعوة',
@@ -126,8 +133,10 @@ return [
         'list_success' => 'تم تحميل القنوات.',
         'show_success' => 'تم تحميل القناة.',
         'created' => 'تم تسجيل القناة والتحقق منها.',
-        'seeded' => 'تم حل القناة وتسجيلها (إضافة موظف؛ لا حاجة لمطالبة عبر النبذة).',
-        'registered_pending' => 'أُضيفت القناة إلى قائمة انتظار الحل على دفعات (من دون استدعاء فوري للواجهة البرمجية).',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'seeded' => 'تم حل القناة وتسجيلها (تهيئة من الموظفين؛ لا حاجة إلى مطالبة عبر النبذة).',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'registered_pending' => 'أُضيفت القناة إلى قائمة انتظار الحل على دفعات (دون استدعاء فوري لواجهة API).',
         'refreshed' => 'تم تحديث ملف القناة والتحقق منه على المنصة.',
         'refresh_queued' => 'أُضيف تحديث القناة إلى قائمة الانتظار (ضمن دفعة مع الطلبات المعلقة الأخرى).',
         'archived' => 'تمت أرشفة القناة.',
@@ -135,7 +144,8 @@ return [
         'pending_not_archivable' => 'لا يمكن أرشفة القنوات المعلقة. احذفها بدلًا من ذلك.',
         'not_pending_delete' => 'يمكن حذف القنوات المعلقة فقط بهذه الطريقة.',
         'restored' => 'أُعيدت القناة إلى الحالة النشطة.',
-        'promoted' => 'تم نشر القناة؛ وأُضيف ترطيب الملف الشخصي واستكمال المحتوى إلى قائمة الانتظار.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'promoted' => 'تم نشر القناة؛ وأُضيف تحديث الملف الشخصي واستكمال المحتوى إلى قائمة الانتظار.',
         'not_private_discovered' => 'يمكن نشر القنوات الخاصة المكتشفة فقط.',
         'promote_not_discovered' => 'يمكن نشر القنوات المكتشفة عبر Discord فقط بهذا الإجراء.',
         'promote_unsupported_platform' => 'النشر غير مدعوم لهذه المنصة.',
@@ -148,7 +158,8 @@ return [
         'external_id_required' => 'المعرّف الخارجي للقناة مطلوب.',
         'external_id_taken' => 'توجد قناة بهذا المعرّف على المنصة بالفعل.',
         'duplicate_on_creator' => 'قناة هذه المنصة مسجلة بالفعل في ملف vTuber هذا.',
-        'profile_required' => 'ملف القناة مطلوب (المعرّف أو المعرّف المختصر أو اسم الدخول أو URL).',
+        // curated at 2026-09-22T20:02:21+07:00 — ar curation wave
+        'profile_required' => 'ملف القناة مطلوب (المعرّف أو اسم المستخدم أو اسم الدخول أو URL).',
         'profile_invalid' => 'تعذر تحليل ملف القناة. استخدم معرّف المنصة أو @handle/login أو URL الملف الشخصي.',
         'profile_platform_mismatch' => 'ينتمي URL الملف الشخصي هذا إلى منصة أخرى. بدّل المنصة أو ألصق ملفًا مطابقًا.',
         'profile_not_found' => 'لم يتم العثور على قناة لهذا الملف الشخصي على المنصة.',
@@ -180,7 +191,8 @@ return [
         'created' => 'تمت إضافة الرابط الخارجي.',
         'updated' => 'تم تحديث الرابط الخارجي.',
         'deleted' => 'تمت إزالة الرابط الخارجي.',
-        'url_required' => 'عنوان URL مطلوب.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'url_required' => 'عنوان URL للرابط مطلوب.',
         'not_creator' => 'لا ينتمي هذا الرابط إلى ملف vTuber الشخصي.',
     ],
     'content' => [
@@ -208,17 +220,22 @@ return [
         'revoked' => 'تم إبطال بيانات اعتماد المنصة.',
         'label_required' => 'اسم بيانات الاعتماد مطلوب.',
         'label_taken' => 'اسم بيانات الاعتماد هذا مستخدم بالفعل لهذه المنصة.',
-        'payload_invalid' => 'بيانات سر بيانات الاعتماد غير صالحة.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'payload_invalid' => 'حمولة سر بيانات الاعتماد غير صالحة.',
         'payload_missing' => 'الحقل السري :field مطلوب لنوع بيانات الاعتماد هذا.',
         'payload_unknown_key' => 'الحقل السري :field غير مسموح به لنوع بيانات الاعتماد هذا.',
-        'test_success' => 'نجح اختبار بيانات الاعتماد؛ وأصبحت نشطة.',
-        'test_missing_secret' => 'بيانات سر بيانات الاعتماد غير مكتملة لهذا الاختبار.',
-        'test_unsupported' => 'لا يتوفر اختبار لهذا النظام الأساسي ونوع بيانات الاعتماد.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'test_success' => 'نجح اختبار بيانات الاعتماد؛ وهي الآن نشطة.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'test_missing_secret' => 'سر بيانات الاعتماد غير مكتمل لهذا الاختبار.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'test_unsupported' => 'لا يتوفر اختبار لهذه المنصة ونوع بيانات الاعتماد هذا.',
         'test_not_allowed_status' => 'لا يمكن اختبار بيانات الاعتماد الملغاة.',
         'test_youtube_ok' => 'تم قبول مفتاح YouTube API.',
         'test_youtube_empty' => 'لم تُرجع YouTube API أي عناصر قنوات لمعرّف الاختبار.',
         'test_twitch_ok' => 'تم إصدار رمز تطبيق Twitch ونجح اختبار Helix.',
-        'test_bearer_ok' => 'قبل اختبار المنصة رمز Bearer.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'test_bearer_ok' => 'تم قبول رمز Bearer من اختبار المنصة.',
         'test_bearer_ok_no_probe' => 'رمز Bearer موجود؛ تم تجاوز الاختبار المباشر لهذه المنصة.',
         'status_active_requires_test' => 'استخدم إجراء الاختبار لتفعيل بيانات الاعتماد.',
         'revoke_requires_active' => 'يمكن إبطال بيانات الاعتماد النشطة فقط.',
@@ -231,7 +248,8 @@ return [
         'denied' => 'لا يسمح لك بتنفيذ هذا الإجراء.',
         'access_denied' => 'لا يمكنك الوصول إلى مورد vTual هذا.',
         'mutate_denied' => 'لا يمكنك تعديل مورد vTual هذا.',
-        'archive_denied' => 'فقط مالك الإدارة أو عضو المسؤول يمكنه أرشفتها.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'archive_denied' => 'لا يمكن أرشفة هذه الإدارة إلا من مالك الإدارة أو عضو بصلاحيات المسؤول.',
         'members_denied' => 'لا يمكنك إدارة أعضاء هذا المورد.',
         'assign_denied' => 'لا يمكنك تعيين منشئي المحتوى لهذه الإدارة.',
     ],
@@ -241,14 +259,18 @@ return [
         'platform_unknown' => 'منصة غير معروفة: :platform.',
         'no_active_credential' => 'لا توجد بيانات اعتماد نشطة للمنصة :platform. أنشئها واختبرها أولًا.',
         'credential_required' => 'لا يملك عميل المنصة بيانات اعتماد مرتبطة.',
-        'missing_api_key' => 'بيانات اعتماد YouTube تفتقد api_key.',
-        'missing_client_id' => 'بيانات اعتماد Twitch تفتقد client_id.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'missing_api_key' => 'بيانات اعتماد YouTube تفتقر إلى api_key.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'missing_client_id' => 'بيانات اعتماد Twitch تفتقر إلى client_id.',
         'ids_required' => 'يلزم إدخال :label واحد على الأقل.',
         'batch_too_large' => 'عدد :label كبير جدًا (:count). الحد الأقصى لكل طلب هو :max.',
         'batch_max_invalid' => 'إعداد الحد الأقصى للدفعة غير صالح.',
-        'invalid_part' => 'جزء :resource ‏":part" في YouTube غير مسموح به.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'invalid_part' => 'جزء :resource ":part" في YouTube غير مسموح به.',
         'parts_required' => 'يلزم تحديد جزء واحد على الأقل من :resource في YouTube.',
-        'handle_required' => 'مُعرّف القناة المختصر أو اسم الدخول مطلوب.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'handle_required' => 'اسم المستخدم أو اسم الدخول للقناة مطلوب.',
         'youtube_channel_id_required' => 'يلزم إدخال معرّف قناة YouTube صالح (UC…).',
         'search_event_type_invalid' => 'يجب أن يكون نوع حدث البحث live أو upcoming أو completed.',
         'feed_fetch_failed' => 'فشل طلب موجز YouTube (HTTP :status).',
@@ -256,8 +278,10 @@ return [
         'upstream_error' => 'فشل طلب منصة :platform (HTTP :status).',
         'upstream_error_detail' => 'فشل طلب منصة :platform (HTTP :status): :detail',
         'upstream_connection_error' => 'تعذر الاتصال بمنصة :platform.',
-        'probe_success' => 'اكتمل اختبار واجهة منصة API.',
-        'probe_failed' => 'فشل اختبار واجهة منصة API بشكل غير متوقع.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'probe_success' => 'اكتمل اختبار واجهة API للمنصة.',
+        // curated at 2026-09-22T20:22:20+07:00 — ar curation wave
+        'probe_failed' => 'فشل اختبار واجهة API للمنصة بشكل غير متوقع.',
         'probe_ids_required' => 'يلزم إدخال معرّف واحد على الأقل لهذه الطريقة.',
         'probe_unknown_method' => 'طريقة اختبار API غير معروفة: :method.',
     ],

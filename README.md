@@ -224,7 +224,7 @@ All guides live under [`docs/`](docs/). Read them in this order when onboarding:
 
 | Document | Description |
 |----------|-------------|
-| [Localization (multi-language)](docs/platform/localization.md) | Cookie/user locale resolution, `laravel-lang/common` file packs, Spatie translatable models, `lang/` layout, and validation strategy |
+| [Localization (multi-language)](docs/platform/localization.md) | Cookie/user locale resolution, `laravel-lang/common` file packs, Spatie translatable models, `lang/` layout, validation strategy, `curated at` flag convention, per-locale curation coverage |
 
 ### Tooling
 

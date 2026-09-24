@@ -3,10 +3,14 @@
 return [
     'oauth' => [
         'discord_not_configured' => '이 서버에 Discord OAuth가 구성되어 있지 않습니다.',
-        'token_exchange_failed' => 'Discord 인증에 실패했습니다. 다시 시도하십시오.',
-        'token_refresh_failed' => 'Discord 세션이 만료되었습니다. 연결된 계정에서 Discord를 다시 연결하십시오.',
-        'connections_failed' => 'Discord 연결 계정을 불러올 수 없습니다.',
-        'discord_not_connected' => '먼저 연결된 계정에서 Discord를 연결하십시오.',
+        // curated at 2026-09-23T13:18:48+07:00 — ko curation wave: register normalized to 해요체
+        'token_exchange_failed' => 'Discord 인증에 실패했습니다. 다시 시도하세요.',
+        // curated at 2026-09-23T13:18:48+07:00 — ko curation wave: register normalized to 해요체
+        'token_refresh_failed' => 'Discord 세션이 만료되었습니다. 연결된 계정에서 Discord를 다시 연결하세요.',
+        // curated at 2026-09-23T11:22:14+07:00 — ko curation wave
+        'connections_failed' => '연결된 Discord 계정을 불러올 수 없습니다.',
+        // curated at 2026-09-23T13:18:48+07:00 — ko curation wave: register normalized to 해요체
+        'discord_not_connected' => '먼저 연결된 계정에서 Discord를 연결하세요.',
         'discord_user_missing' => 'Discord에서 사용자 ID를 반환하지 않았습니다.',
         'authorize_url' => 'Discord 인증 URL을 발급했습니다.',
         'spa_url_missing' => '이 서버에 SPA 출처가 구성되어 있지 않습니다.',

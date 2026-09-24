@@ -33,7 +33,7 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [cache-policy.md](platform/cache-policy.md) | Project-wide forever Cache + invalidate; driver-agnostic; exceptions |
 | [api-aggregation.md](platform/api-aggregation.md) | Aggregation rules: standalone-first, SPA-only, backend fan-in via `/batch`; gate condition |
 | [settings.md](platform/settings.md) | Runtime operational settings (Web UI + DB overrides) |
-| [localization.md](platform/localization.md) | Backend multi-locale rules (canonical supported-locale list, parity, locale resolution); SPA guard: `monolith-vue-workers/npm run check:i18n` |
+| [localization.md](platform/localization.md) | Backend multi-locale rules (canonical supported-locale list, parity, locale resolution), `curated at` flag convention, curation tooling, coverage status per locale; SPA guard: `monolith-vue-workers/npm run check:i18n` |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |
 | [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization**, CORS perimeter incl. the `broadcasting/auth` invariant |

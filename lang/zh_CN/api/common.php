@@ -4,7 +4,8 @@ return [
     'pong' => 'Pong',
     'data_not_found' => '未找到数据。',
     'resource_not_found' => '未找到资源。',
-    'unauthorized' => '你无权执行此操作。',
+    // curated at 2026-09-22T12:19:26+07:00 — zh_CN curation wave
+    'unauthorized' => '您无权执行此操作。',
     'updated' => '更新成功。',
     'batch_invalid' => '批量请求内容必须是非空请求列表。',
     'batch_too_many' => '批量请求超过最多 10 个请求的限制。',

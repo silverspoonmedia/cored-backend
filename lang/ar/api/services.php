@@ -7,7 +7,8 @@ return [
     'created' => 'تم إنشاء الخدمة بنجاح.',
     'updated' => 'تم تحديث الخدمة بنجاح.',
     'deleted' => 'تم حذف الخدمة بنجاح.',
-    'checkout_success' => 'بدأ الدفع. أكمل عملية الدفع في صفحة الشراء.',
+    // curated at 2026-09-22T20:32:26+07:00 — ar curation wave
+    'checkout_success' => 'بدأ إتمام الشراء. أكمل عملية الدفع في صفحة الشراء.',
     'purchase_show_success' => 'تم جلب شراء الخدمة بنجاح.',
     'quantity_updated' => 'تم تحديث كمية الشراء.',
     'quantity_not_editable' => 'لا يمكن تغيير الكمية لهذا الشراء.',

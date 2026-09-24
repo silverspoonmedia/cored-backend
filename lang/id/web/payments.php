@@ -2,21 +2,29 @@
 
 return [
     'gateways' => [
-        'title' => 'Payment gateway',
-        'list_title' => 'Daftar payment gateway',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'title' => 'Gateway pembayaran',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'list_title' => 'Daftar gateway pembayaran',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
         'create' => 'Tambah gateway',
-        'create_title' => 'Buat payment gateway',
-        'edit_title' => 'Ubah payment gateway',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'create_title' => 'Buat gateway pembayaran',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'edit_title' => 'Ubah gateway pembayaran',
         'form' => [
             'name' => 'Nama sistem',
             'display_name' => 'Nama tampilan',
             'priority' => 'Prioritas',
             'is_active' => 'Aktif',
         ],
-        'confirm_delete' => 'Hapus payment gateway ini?',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'confirm_delete' => 'Hapus gateway pembayaran ini?',
         'datatable' => [
-            'empty' => 'Belum ada payment gateway yang dikonfigurasi.',
-            'zero_records' => 'Tidak ada payment gateway yang cocok dengan pencarian Anda.',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'empty' => 'Belum ada gateway pembayaran yang dikonfigurasi.',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'zero_records' => 'Tidak ada gateway pembayaran yang cocok dengan pencarian Anda.',
             'columns' => [
                 'name' => 'Nama',
                 'display_name' => 'Nama tampilan',
@@ -37,12 +45,15 @@ return [
         ],
         'payment_steps' => [
             'aria' => 'Langkah pembayaran',
-            'choose_channel' => 'Pilih metode',
-            'choose_channel_hint' => 'Pilih QRIS, transfer bank, atau e-wallet.',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'choose_channel' => 'Pilih kanal',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'choose_channel_hint' => 'Pilih QRIS, transfer bank, atau dompet digital.',
             'pay' => 'Bayar',
             'pay_hint' => 'Selesaikan pembayaran sesuai instruksi yang ditampilkan.',
             'confirm' => 'Konfirmasi',
-            'confirm_hint' => 'Status diperbarui setelah penyedia pembayaran mengonfirmasi.',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'confirm_hint' => 'Status diperbarui setelah penyedia pembayaran mengonfirmasi pembayaran.',
         ],
     ],
 
@@ -50,6 +61,7 @@ return [
         'title' => 'Invoice',
         'list_title' => 'Daftar invoice',
         'show_title' => 'Detail invoice',
+        // curated at 2026-09-23T12:37:01+07:00 — ko curation wave: id invoice card title aligned with the SPA
         'show_card_title' => 'Invoice No. :number',
         'view_order' => 'Lihat pesanan',
         'view_purchase' => 'Lihat pembelian layanan',
@@ -61,8 +73,10 @@ return [
                 'invoice_number' => 'No. invoice',
                 'status' => 'Status',
                 'subtotal' => 'Subtotal',
+                // curated at 2026-09-21T17:05:34+07:00 — id curation wave
                 'fee' => 'Biaya pembayaran',
-                'total' => 'Total pelanggan',
+                // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+                'total' => 'Total pembeli',
                 'created_at' => 'Dibuat',
                 'actions' => 'Aksi',
             ],
@@ -74,8 +88,10 @@ return [
             'payment_method' => 'Metode pembayaran',
             'gateway' => 'Gateway',
             'subtotal' => 'Harga layanan',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
             'fee' => 'Biaya pembayaran (pembeli)',
-            'total' => 'Total pelanggan',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'total' => 'Total pembeli',
             'currency' => 'Mata uang',
             'paid_at' => 'Dibayar pada',
             'expired_at' => 'Kedaluwarsa pada',
@@ -86,19 +102,24 @@ return [
 
     'income' => [
         'title' => 'Pendapatan pembayaran',
-        'subtitle' => 'Ringkasan pendapatan dan kas masuk dari invoice lunas. Harga layanan = pendapatan produk; biaya pembayaran = surcharge pembeli yang diteruskan ke penyedia pembayaran.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'subtitle' => 'Ringkasan pendapatan dan kas masuk dari invoice lunas. Harga layanan adalah pendapatan produk Anda; biaya pembayaran adalah tambahan dari pembeli yang diteruskan ke penyedia pembayaran.',
         'loading' => 'Memuat…',
         'load_failed' => 'Tidak dapat memuat data pendapatan.',
-        'empty_invoices' => 'Tidak ada invoice lunas pada periode ini.',
-        'empty_breakdown' => 'Tidak ada data untuk periode ini.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'empty_invoices' => 'Belum ada invoice lunas pada periode ini.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'empty_breakdown' => 'Belum ada data untuk periode ini.',
         'invoices_title' => 'Invoice lunas',
         'pagination' => 'Halaman :page dari :total',
         'filters' => [
             'from' => 'Dari',
             'to' => 'Sampai',
             'basis' => 'Dasar tanggal',
-            'basis_paid_at' => 'Tanggal bayar (paid_at)',
-            'basis_withdrawable_at' => 'Tanggal siap cair (withdrawable_at)',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'basis_paid_at' => 'Tanggal pembayaran (paid_at)',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'basis_withdrawable_at' => 'Tanggal pencairan (withdrawable_at)',
             'gateway' => 'Gateway',
             'all_gateways' => 'Semua gateway',
             'apply' => 'Terapkan',
@@ -107,24 +128,29 @@ return [
             'service_revenue' => 'Pendapatan layanan',
             'service_revenue_hint' => 'Jumlah subtotal invoice (penjualan produk Anda).',
             'buyer_fees' => 'Biaya pembayaran pembeli',
-            'buyer_fees_hint' => 'Surcharge channel yang dipungut dari pelanggan.',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'buyer_fees_hint' => 'Biaya tambahan kanal yang dibebankan ke pelanggan.',
             'cash_collected' => 'Kas masuk',
-            'cash_collected_hint' => 'Total yang dibayar pelanggan (subtotal + biaya).',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'cash_collected_hint' => 'Total yang dibayar pelanggan (harga layanan + biaya).',
             'invoice_count' => 'Invoice lunas',
             'avg_order_value' => 'Rata-rata nilai pesanan',
         ],
         'pipeline' => [
             'title' => 'Alur dana',
             'invoices' => 'invoice',
-            'awaiting_settlement' => 'Menunggu settlement PG',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'awaiting_settlement' => 'Menunggu penyelesaian penyedia',
             'ready_to_disburse' => 'Siap dicairkan',
             'in_payout' => 'Dalam pencairan',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
             'disbursed' => 'Sudah dicairkan ke bank',
             'failed_payout' => 'Pencairan gagal',
         ],
         'breakdown' => [
             'gateway' => 'Per gateway',
-            'channel' => 'Per channel',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'channel' => 'Per kanal',
             'product' => 'Per jenis produk',
             'label' => 'Label',
             'invoices' => 'Invoice',
@@ -157,7 +183,8 @@ return [
             'columns' => [
                 'subscription_number' => 'No. langganan',
                 'subscriber_name' => 'Pelanggan',
-                'plan_name' => 'Plan',
+                // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+                'plan_name' => 'Paket',
                 'status' => 'Status',
                 'amount' => 'Jumlah',
                 'actions' => 'Aksi',
@@ -167,8 +194,10 @@ return [
             'subscriber_name' => 'Nama pelanggan',
             'subscriber_email' => 'Email pelanggan',
             'subscriber_phone' => 'Telepon pelanggan',
-            'plan_name' => 'Nama plan',
-            'plan_description' => 'Deskripsi plan',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'plan_name' => 'Nama paket',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'plan_description' => 'Deskripsi paket',
             'billing_cycle' => 'Siklus penagihan',
             'amount' => 'Jumlah',
             'currency' => 'Mata uang',
@@ -176,7 +205,8 @@ return [
             'auto_renew' => 'Perpanjangan otomatis',
             'started_at' => 'Dimulai pada',
             'expires_at' => 'Berakhir pada',
-            'trial_ends_at' => 'Trial berakhir pada',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'trial_ends_at' => 'Uji coba berakhir pada',
             'created_at' => 'Dibuat pada',
         ],
     ],
@@ -187,83 +217,118 @@ return [
 
     'ipaymu_return' => [
         'invoice_not_found' => 'Pembayaran ini tidak dapat dicocokkan dengan invoice mana pun.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
         'paid' => 'Pembayaran diterima. Invoice Anda ditandai lunas.',
-        'pending' => 'Pembayaran sedang diproses. Muat ulang halaman beberapa saat lagi jika status belum berubah.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'pending' => 'Pembayaran sedang diproses. Muat ulang halaman sesaat lagi bila status belum berubah.',
         'failed' => 'Pembayaran gagal atau ditolak.',
         'cancelled' => 'Pembayaran dibatalkan.',
-        'expired' => 'Sesi pembayaran kedaluwarsa.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'expired' => 'Sesi pembayaran sudah kedaluwarsa.',
     ],
 
     'checkout' => [
         'title' => 'Pembayaran',
         'invoice_summary' => 'Invoice No. :number',
         'amount' => 'Jumlah tagihan',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
         'subtotal' => 'Harga layanan',
         'payment_fee' => 'Biaya pembayaran',
         'payment_fee_note' => 'Dibayarkan ke penyedia pembayaran dan ditambahkan ke total Anda.',
         'total_due' => 'Total dibayar',
-        'fee_estimate_hint' => 'Estimasi biaya — jumlah final dikonfirmasi saat Anda lanjut ke pembayaran.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'fee_estimate_hint' => 'Estimasi biaya — jumlah akhir dikonfirmasi saat Anda melanjutkan ke pembayaran.',
         'fee_percent_basis' => ':percent dari harga layanan',
         'fee_at_checkout_hint' => 'Biaya penyedia pembayaran ditambahkan saat Anda memilih metode pembayaran.',
         'routing_updated' => 'Metode pembayaran diperbarui. Biaya mungkin berubah.',
         'channel_unavailable' => ':channel tidak lagi tersedia.',
         'fee_updated' => 'Biaya :channel diperbarui dari :old menjadi :new.',
-        'selected_channel_unavailable' => 'Metode pembayaran yang dipilih tidak lagi tersedia. Silakan pilih yang lain.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'selected_channel_unavailable' => 'Metode pembayaran yang Anda pilih tidak lagi tersedia. Pilih metode lain.',
         'pay_now' => 'Bayar sekarang',
         'snap_loading' => 'Membuka pembayaran…',
         'snap_failed' => 'Tidak dapat memulai checkout',
         'started' => 'Sesi checkout dibuat.',
         'paid' => 'Invoice ini sudah lunas.',
         'not_payable' => 'Invoice ini tidak dapat dibayar dalam status saat ini.',
-        'unsupported_gateway' => 'Payment gateway invoice ini tidak mendukung hosted checkout.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'unsupported_gateway' => 'Gateway pembayaran invoice ini tidak mendukung checkout terkelola.',
         'select_channel' => 'Metode pembayaran',
-        'cheap_alt_hint' => 'Bayar pakai :channel untuk biaya lebih murah (scan QR saat checkout).',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'cheap_alt_hint' => 'Bayar dengan :channel untuk menghemat biaya (pindai QR saat membayar).',
         'pay_with_channel' => 'Lanjut ke pembayaran',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
         'channel_loading' => 'Membuat pembayaran…',
-        'channel_ready' => 'Selesaikan pembayaran sesuai instruksi di bawah.',
-        'channel_failed' => 'Tidak dapat memulai checkout channel',
-        'confirm_paid' => 'Saya sudah bayar',
-        'confirm_paid_help' => 'Jika Anda sudah menyelesaikan pembayaran di luar layar ini (mis. tunai atau transfer bank), klik di sini untuk memeriksa ulang status invoice.',
-        'change_channel' => 'Ganti channel pembayaran',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'channel_ready' => 'Selesaikan pembayaran dengan instruksi di bawah.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'channel_failed' => 'Checkout kanal tidak dapat dimulai',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'confirm_paid' => 'Saya sudah membayar',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'confirm_paid_help' => 'Jika Anda sudah menyelesaikan pembayaran di luar layar ini (misalnya tunai atau transfer bank), klik di sini untuk memeriksa ulang status invoice.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'change_channel' => 'Ganti kanal pembayaran',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
         'no_channels' => 'Belum ada metode pembayaran yang tersedia untuk invoice ini.',
-        'permission_required' => 'Anda tidak punya izin untuk memulai pembayaran. Minta izin “initiate payment” ke administrator.',
-        'synced' => 'Status pembayaran disinkronkan.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'permission_required' => 'Anda tidak berwenang memulai pembayaran. Minta izin “initiate payment” kepada administrator.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'synced' => 'Status pembayaran berhasil disinkronkan.',
         'syncing' => 'Menyinkronkan…',
-        'sync_pending' => 'Pembayaran masih pending.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'sync_pending' => 'Pembayaran masih tertunda.',
         'sync_failed' => 'Tidak dapat menyinkronkan status pembayaran.',
     ],
 
     'instructions' => [
         'title' => 'Instruksi pembayaran',
         'expires_at' => 'Bayar sebelum :time',
-        'qr_string' => 'Payload QR',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'qr_string' => 'Data QR',
         'bank' => 'Bank',
         'va_number' => 'Nomor virtual account',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
         'account_name' => 'Nama pemilik rekening',
-        'open_ewallet' => 'Buka aplikasi e-wallet',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'open_ewallet' => 'Buka aplikasi dompet digital',
         'copy' => 'Salin',
-        'copied' => 'Tersalin ke clipboard',
-        'copy_failed' => 'Tidak dapat menyalin',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'copied' => 'Tersalin ke papan klip',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'copy_failed' => 'Gagal menyalin',
         'pending_hint' => 'Status diperbarui otomatis setelah penyedia pembayaran mengonfirmasi pembayaran Anda.',
     ],
 
     'channels' => [
-        'title' => 'Payment channel',
-        'list_title' => 'Daftar payment channel',
-        'updated' => 'Payment channel diperbarui.',
-        'route_updated' => 'Rute payment channel diperbarui.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'title' => 'Kanal pembayaran',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'list_title' => 'Daftar kanal pembayaran',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'updated' => 'Kanal pembayaran berhasil diperbarui.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'route_updated' => 'Rute kanal pembayaran berhasil diperbarui.',
         'routes_title' => 'Rute gateway',
-        'routes_lead' => 'Checkout mencoba rute primary/only dulu, lalu fallback. Dalam peran yang sama, angka priority lebih kecil dicoba lebih dulu. Rute nonaktif atau kredensial PG kosong dilewati.',
-        'empty' => 'Belum ada payment channel. Jalankan php artisan payments:sync-routing-policy setelah PaymentGatewaySeeder.',
-        'no_routes' => 'Belum ada rute gateway yang terikat ke channel ini.',
-        'no_results' => 'Tidak ada channel yang cocok dengan pencarian Anda.',
-        'search_label' => 'Cari channel',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'routes_lead' => 'Checkout mencoba rute utama atau tunggal lebih dahulu, lalu rute cadangan. Dalam peran yang sama, angka prioritas lebih kecil dicoba lebih dahulu. Rute nonaktif atau kredensial gateway yang belum tersedia akan dilewati.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'empty' => 'Belum ada kanal pembayaran yang dikonfigurasi. Jalankan php artisan payments:sync-routing-policy setelah PaymentGatewaySeeder.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'no_routes' => 'Belum ada rute gateway yang terikat ke kanal ini.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'no_results' => 'Tidak ada kanal pembayaran yang cocok dengan pencarian.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'search_label' => 'Cari kanal pembayaran',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
         'search_placeholder' => 'Cari berdasarkan nama, kode, atau jenis…',
         'inactive_channel' => 'Disembunyikan dari checkout',
         'primary_route' => 'Dicoba lebih dulu',
-        'priority_hint' => 'Angka lebih kecil = prioritas lebih tinggi dalam peran rute yang sama. Priority policy-managed tidak bisa diedit di sini.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'priority_hint' => 'Angka lebih kecil = prioritas lebih tinggi dalam peran rute yang sama. Prioritas yang dikelola kebijakan tidak dapat diubah di sini.',
         'priority_autosave_hint' => 'tersimpan otomatis',
-        'visible_count' => '{0} Tidak ada channel|{1} :count channel tampil|[2,*] :count channel tampil',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'visible_count' => '{0} Tidak ada kanal|{1} :count kanal terlihat|[2,*] :count kanal terlihat',
         'route_count' => '{0} Tidak ada rute|{1} :count rute|[2,*] :count rute',
         'status' => [
             'active' => 'Aktif',
@@ -271,32 +336,45 @@ return [
         ],
         'kinds' => [
             'qris' => 'QRIS',
-            'va' => 'Virtual Account (VA)',
-            'ewallet' => 'E-wallet',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'va' => 'Akun virtual',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'ewallet' => 'Dompet digital',
         ],
         'intro' => [
-            'title' => 'Cara kerja routing channel checkout',
-            'lead' => 'Pelanggan memilih channel logis (QRIS, VA bank, e-wallet). Monolith mencoba rute gateway sesuai policy (peran rute, lalu priority) sampai instruksi pembayaran terbentuk.',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'title' => 'Cara kerja perutean checkout kanal pembayaran',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'lead' => 'Pelanggan memilih kanal logis (QRIS, VA bank, dompet digital). Monolith lalu mencoba rute gateway sesuai kebijakan (peran rute, lalu prioritas) hingga instruksi pembayaran terbentuk.',
             'steps' => [
                 [
-                    'title' => 'Aktifkan channel',
-                    'body' => 'Channel nonaktif disembunyikan dari checkout. Rute tetap terkonfigurasi saat channel mati.',
+                    // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+                    'title' => 'Aktifkan kanal',
+                    // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+                    'body' => 'Kanal nonaktif disembunyikan dari checkout. Rute tetap dapat dikonfigurasi selama kanal dimatikan.',
                 ],
                 [
+                    // curated at 2026-09-21T17:05:34+07:00 — id curation wave
                     'title' => 'Pahami peran rute',
-                    'body' => 'Rute primary atau only dicoba sebelum fallback. Priority (10 sebelum 20) berlaku dalam peran yang sama. Fee dan settlement dari Routing_Price.yaml.',
+                    // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+                    'body' => 'Rute utama atau tunggal dicoba sebelum rute cadangan. Prioritas (10 sebelum 20) berlaku dalam peran yang sama. Biaya dan settlement mengikuti Routing_Price.yaml.',
                 ],
                 [
+                    // curated at 2026-09-21T17:05:34+07:00 — id curation wave
                     'title' => 'Fallback saat checkout',
-                    'body' => 'Jika semua rute gagal atau kredensial kosong, checkout dapat menawarkan Snap atau redirect iPaymu.',
+                    // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+                    'body' => 'Jika semua rute yang layak gagal atau kredensialnya belum tersedia, checkout dapat menawarkan Snap terkelola atau pengalihan iPaymu.',
                 ],
             ],
         ],
         'stats' => [
-            'channels_active' => 'Channel aktif',
+            // curated at 2026-09-21T17:06:40+07:00 — id curation wave
+            'channels_active' => 'Kanal aktif',
+            // curated at 2026-09-21T17:06:40+07:00 — id curation wave
             'routes_active' => 'Rute aktif',
             'checkout_hint' => 'Perilaku checkout',
-            'checkout_body' => 'Hanya channel aktif dengan minimal satu rute yang layak yang tampil ke pembayar.',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'checkout_body' => 'Hanya kanal aktif dengan minimal satu rute yang layak yang ditampilkan ke pembayar.',
         ],
         'columns' => [
             'code' => 'Kode',
@@ -307,22 +385,28 @@ return [
         ],
         'route_columns' => [
             'gateway' => 'Gateway',
-            'provider_type' => 'Jenis provider',
-            'provider_channel' => 'Channel provider',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'provider_type' => 'Jenis penyedia',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'provider_channel' => 'Kanal penyedia',
             'priority' => 'Prioritas',
             'is_active' => 'Aktif',
             'route_role' => 'Peran',
             'settlement' => 'Settlement',
             'fee' => 'Biaya',
-            'policy_managed' => 'Dikelola policy',
+            // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+            'policy_managed' => 'Dikelola kebijakan',
         ],
         'route_roles' => [
             'primary' => 'Utama',
             'fallback' => 'Cadangan',
             'only' => 'Tunggal',
         ],
-        'sync_policy' => 'Sinkronkan routing policy',
-        'sync_policy_hint' => 'Muat ulang channel dan rute dari Routing_Price.yaml.',
-        'sync_policy_done' => 'Routing policy disinkronkan (:channels channel, :routes rute). Memuat ulang…',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'sync_policy' => 'Sinkronkan kebijakan perutean',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'sync_policy_hint' => 'Muat ulang kanal dan rute dari Routing_Price.yaml.',
+        // curated at 2026-09-21T17:05:34+07:00 — id curation wave
+        'sync_policy_done' => 'Kebijakan perutean disinkronkan (:channels kanal, :routes rute). Memuat ulang…',
     ],
 ];

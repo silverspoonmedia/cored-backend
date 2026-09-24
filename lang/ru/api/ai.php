@@ -2,13 +2,21 @@
 
 return [
     'connection' => [
-        'list_success' => 'AI-подключения получены.',
-        'show_success' => 'AI-подключение получено.',
-        'created' => 'AI-подключение создано. Запустите проверку, чтобы активировать его.',
-        'updated' => 'AI-подключение обновлено. Запустите проверку снова, чтобы активировать его.',
-        'deleted' => 'AI-подключение удалено.',
-        'default_updated' => 'AI-подключение по умолчанию обновлено.',
+        // curated at 2026-09-23T19:26:40+07:00 — ru curation wave: settled terms
+        'list_success' => 'Подключения ИИ получены.',
+        // curated at 2026-09-23T19:26:40+07:00 — ru curation wave: settled terms
+        'show_success' => 'Подключение ИИ получено.',
+        // curated at 2026-09-23T19:26:40+07:00 — ru curation wave: settled terms
+        'created' => 'Подключение ИИ создано. Запустите проверку, чтобы активировать его.',
+        // curated at 2026-09-23T19:26:40+07:00 — ru curation wave: settled terms
+        'updated' => 'Подключение ИИ обновлено. Запустите проверку снова, чтобы активировать его.',
+        // curated at 2026-09-23T19:26:40+07:00 — ru curation wave: settled terms
+        'deleted' => 'Подключение ИИ удалено.',
+        // curated at 2026-09-23T19:26:40+07:00 — ru curation wave: settled terms
+        'default_updated' => 'Подключение ИИ по умолчанию обновлено.',
+        // curated at 2026-09-23T19:26:40+07:00 — ru curation wave: settled terms
         'slug_required' => 'Слаг подключения обязателен.',
+        // curated at 2026-09-23T19:26:40+07:00 — ru curation wave: settled terms
         'slug_taken' => 'Этот слаг подключения уже используется.',
         'label_required' => 'Название подключения обязательно.',
         'endpoint_invalid' => 'Эндпоинт должен быть корректным http(s) URL.',

@@ -21,12 +21,14 @@ return [
     'cannot_reactivate' => '无法重新启用状态为 :state 的激活记录。',
     'type_mismatch' => '产品 :product 需要激活类型 :expected，但收到 :actual。',
     'inactive' => '产品 :product 处于 :state 状态，访问被拒绝。',
-    'not_provisioned' => '产品 :product 尚未配置。',
+    // curated at 2026-09-22T12:51:54+07:00 — zh_CN curation wave
+    'not_provisioned' => '产品 :product 尚未开通。',
     'auth_required' => '需要身份验证。',
 
     // UI labels (Blade)
     'title' => '产品激活',
-    'subtitle' => '按用户记录产品激活状态。',
+    // curated at 2026-09-22T12:51:54+07:00 — zh_CN curation wave
+    'subtitle' => '按用户记录的产品激活注册表。',
     'col_user' => '用户',
     'col_product' => '产品',
     'col_type' => '类型',

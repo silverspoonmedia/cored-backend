@@ -62,12 +62,14 @@ return [
                 'status' => 'ステータス',
                 'subtotal' => '小計',
                 'fee' => '決済手数料',
-                'total' => '顧客合計',
+                // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+                'total' => '顧客支払総額',
                 'created_at' => '作成日',
                 'actions' => '操作',
             ],
         ],
-        'export_csv' => 'CSVをエクスポート',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'export_csv' => 'CSV をエクスポート',
         'fields' => [
             'invoice_number' => '請求書番号',
             'status' => 'ステータス',
@@ -75,7 +77,8 @@ return [
             'gateway' => 'ゲートウェイ',
             'subtotal' => 'サービス価格',
             'fee' => '決済手数料（購入者）',
-            'total' => '顧客合計',
+            // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+            'total' => '顧客支払総額',
             'currency' => '通貨',
             'paid_at' => '支払日時',
             'expired_at' => '有効期限',
@@ -86,7 +89,8 @@ return [
 
     'income' => [
         'title' => '決済収入',
-        'subtitle' => '支払い済み請求書からの収益と入金の概要。サービス価格が商品の収益、決済手数料は購入者が負担し決済プロバイダへ渡されるサーチャージです。',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'subtitle' => '支払い済みの請求書から得られた収益と入金の概要です。サービス価格は商品の収益で、決済手数料は購入者が負担して決済プロバイダへ支払われるサーチャージです。',
         'loading' => '読み込み中…',
         'load_failed' => '収入データを読み込めませんでした。',
         'empty_invoices' => 'この期間に支払い済みの請求書はありません。',
@@ -116,7 +120,8 @@ return [
         'pipeline' => [
             'title' => '資金パイプライン',
             'invoices' => '件の請求書',
-            'awaiting_settlement' => 'PG精算待ち',
+            // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+            'awaiting_settlement' => '決済プロバイダの精算待ち',
             'ready_to_disburse' => '送金可能',
             'in_payout' => '送金処理中',
             'disbursed' => '銀行へ送金済み',
@@ -217,12 +222,14 @@ return [
         'not_payable' => 'この請求書は現在の状態では支払えません。',
         'unsupported_gateway' => 'この請求書の決済ゲートウェイはホスト型チェックアウトに対応していません。',
         'select_channel' => '決済方法',
-        'cheap_alt_hint' => ':channel で支払うと手数料を抑えられます（チェックアウト時にQRをスキャン）。',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'cheap_alt_hint' => ':channel で支払うと手数料を抑えられます（チェックアウト時に QR をスキャン）。',
         'pay_with_channel' => '支払いへ進む',
         'channel_loading' => '決済を作成しています…',
         'channel_ready' => '以下の手順に従って支払いを完了してください。',
         'channel_failed' => 'チャネルチェックアウトを開始できませんでした',
-        'confirm_paid' => '支払い済み',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'confirm_paid' => '支払いを完了しました',
         'confirm_paid_help' => 'この画面外（現金や銀行振込など）で支払いを完了している場合は、ここをクリックして請求書ステータスを再確認してください。',
         'change_channel' => '決済チャネルを変更',
         'no_channels' => 'この請求書で利用できる決済方法はありません。',
@@ -263,7 +270,8 @@ return [
         'primary_route' => '最初に試行',
         'priority_hint' => '同じルートロール内では数字が小さいほど優先度が高くなります。ポリシー管理の優先度はここでは編集できません。',
         'priority_autosave_hint' => '自動保存されます',
-        'visible_count' => '{0} チャネルなし|{1} :count 件のチャネルを表示|[2,*] :count 件のチャネルを表示',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'visible_count' => '{0} チャネルなし|{1} :count 件のチャネルを表示中|[2,*] :count 件のチャネルを表示中',
         'route_count' => '{0} ルートなし|{1} :count 件のルート|[2,*] :count 件のルート',
         'status' => [
             'active' => '有効',
@@ -296,7 +304,8 @@ return [
             'channels_active' => '有効なチャネル',
             'routes_active' => '有効なルート',
             'checkout_hint' => 'チェックアウトの動作',
-            'checkout_body' => '有効なルートが1つ以上ある有効なチャネルのみが支払い者に表示されます。',
+            // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+            'checkout_body' => '有効なルートが 1 つ以上ある有効なチャネルのみが支払者に表示されます。',
         ],
         'columns' => [
             'code' => 'コード',

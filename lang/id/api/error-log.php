@@ -1,12 +1,16 @@
 <?php
 
 return [
-    'list_success' => 'Entri error log berhasil diambil.',
-    'show_success' => 'Entri error log berhasil diambil.',
-    'status_updated' => 'Status error log berhasil diperbarui.',
+    // curated at 2026-09-21T17:13:26+07:00 — id curation wave
+    'list_success' => 'Entri log error berhasil dimuat.',
+    // curated at 2026-09-21T17:13:26+07:00 — id curation wave
+    'show_success' => 'Entri log error berhasil dimuat.',
+    // curated at 2026-09-21T17:13:26+07:00 — id curation wave
+    'status_updated' => 'Status log error berhasil diperbarui.',
     'statuses' => [
         'open' => 'Terbuka',
-        'resolved' => 'Selesai',
+        // curated at 2026-09-21T17:10:25+07:00 — id curation wave
+        'resolved' => 'Terselesaikan',
         'ignored' => 'Diabaikan',
     ],
 ];

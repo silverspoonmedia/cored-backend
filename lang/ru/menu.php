@@ -9,10 +9,12 @@ return [
     'users' => 'Управление пользователями',
     'navigation' => 'Навигация',
     'menus' => 'Список меню',
-    'menus_trashed' => 'Меню в корзине',
+    // curated at 2026-09-23T19:26:42+07:00 — ru curation wave: settled terms
+    'menus_trashed' => 'Удалённые меню',
     'notifications' => 'Уведомления',
     'profile' => 'Профиль',
     'password' => 'Сменить пароль',
     'two_factor' => 'Двухфакторная аутентификация',
-    'connected_accounts' => 'Подключённые аккаунты',
+    // curated at 2026-09-23T19:26:42+07:00 — ru curation wave: settled terms
+    'connected_accounts' => 'Связанные аккаунты',
 ];

@@ -3,16 +3,20 @@
 return [
     'creator' => [
         'list_success' => '创作者列表已加载。',
-        'owned_list_success' => '你拥有的 vTuber 资料已加载。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'owned_list_success' => '您拥有的 vTuber 资料已加载。',
         'show_success' => '创作者信息已加载。',
         'created' => '创作者已创建。',
         'orphan_created' => '孤立创作者已创建（无所有者，可认领）。',
         'updated' => '创作者已更新。',
         'archived' => '创作者已归档。',
         'name_required' => '显示名称为必填项。',
-        'slug_taken' => '此创作者 slug 已被占用。',
-        'not_found' => '找不到创作者主页。',
-        'self_create_disabled' => '直接创建主页已停用。请认领现有主页，或联系工作人员代为创建。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'slug_taken' => '此创作者标识已被占用。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'not_found' => '未找到创作者资料。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'self_create_disabled' => '已停用直接创建资料。请认领现有资料，或联系工作人员为您创建。',
     ],
     'orphan' => [
         'list_success' => '孤立创作者列表已加载。',
@@ -29,28 +33,36 @@ return [
         'contents_success' => '公开内容动态已加载。',
         'landing_success' => '公开落地页数据已加载。',
         'stats_success' => '公开平台统计已加载。',
-        'live_success' => '公开直播列表已加载。',
-        'schedule_success' => '公开即将开始的日程已加载。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'live_success' => '公开正在直播列表已加载。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'schedule_success' => '公开即将开播的日程已加载。',
         'events_success' => '公开即将开始的活动已加载。',
         'management_show_success' => '公开管理机构资料已加载。',
     ],
     'merge' => [
-        'success' => '资料已合并。源资料已归档，数据现位于目标资料中。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'success' => '资料已合并。源资料已归档，数据现归入目标资料。',
         'self' => '不能将资料合并到自身。',
-        'owner_required' => '你必须同时是源资料和目标资料的所有者才能合并。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'owner_required' => '您必须同时是源资料和目标资料的所有者才能合并。',
         'destination_archived' => '目标资料已归档，无法接收合并内容。',
         'source_archived' => '源资料已归档。',
         'channel_clash' => '两个资料拥有相同的平台频道（:external_id）。请先归档或移除其中一个频道。',
     ],
     'claim' => [
         'claimable_success' => '可认领创作者列表已加载。',
-        'list_success' => '你的认领记录已加载。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'list_success' => '您的认领记录已加载。',
         'show_success' => '认领记录已加载。',
         'started' => '认领已开始。请将令牌放入频道简介，然后进行验证。',
-        'verified' => '认领已验证，你现在是所有者。',
-        'verify_queued' => '验证已排队。批次准备就绪后会执行（最多 50 个待处理项目，或等待窗口结束后执行）。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'verified' => '认领已验证，您现在就是所有者。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'verify_queued' => '验证已排队。批次就绪后会自动执行（待处理达到 50 个，或等待窗口结束后）。',
         'verify_already_queued' => '此认领的验证已经排队。',
-        'blocked' => '当前无法认领此资料，请在阻止期结束后重试。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'blocked' => '当前无法认领此资料，请在限制期结束后重试。',
         'cancelled' => '认领已取消。',
         'accepted_anyway' => '认领已接受，未执行简介检查（工作人员操作）。',
         'not_claimable' => '此创作者不可认领（已有所有者或未启用）。',
@@ -64,25 +76,38 @@ return [
         'accept_anyway_disabled' => '此环境已禁用“无论如何接受”。',
         'discord_verify_disabled' => '此环境已禁用 Discord 认领验证。',
         'discord_not_connected' => '使用 Discord 验证前，请从“已连接账户”连接 Discord。',
-        'discord_connections_failed' => '无法加载你关联的 Discord 账户，请尝试重新连接 Discord。',
-        'discord_no_match' => '在你的 Discord 资料中未找到匹配的已验证 YouTube 或 Twitch 账户。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'discord_connections_failed' => '无法加载您关联的 Discord 账户，请尝试重新连接 Discord。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'discord_no_match' => '在您的 Discord 资料中未找到匹配的已验证 YouTube 或 Twitch 账户。',
         'discord_verify_unsupported_platform' => '此平台不支持 Discord 验证。',
         'channel_missing' => '缺少认领证明频道。',
-        'max_pending' => '你已有 :max 个待处理认领。请先取消一个或完成验证。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'max_pending' => '您已有 :max 个待处理认领。请先取消一个或完成验证。',
         'pending_success' => '待处理认领已加载。',
         'superseded' => '此创作者的另一项认领已完成，此认领已关闭。',
     ],
     'management' => [
-        'list_success' => '管理项列表已加载。',
-        'show_success' => '管理项已加载。',
-        'created' => '管理项已创建。',
-        'updated' => '管理项已更新。',
-        'deleted' => '管理项已归档。',
-        'name_required' => '管理项名称为必填项。',
-        'slug_taken' => '此管理项 slug 已被占用。',
-        'creator_assigned' => '创作者已分配到管理项。',
-        'creator_unassigned' => '创作者已从管理项取消分配。',
-        'assignment_not_found' => '未找到有效的管理项分配。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'list_success' => '管理机构列表已加载。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'show_success' => '管理机构已加载。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'created' => '管理机构已创建。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'updated' => '管理机构已更新。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'deleted' => '管理机构已归档。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'name_required' => '管理机构名称为必填项。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'slug_taken' => '此管理机构标识已被占用。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'creator_assigned' => '创作者已分配到管理机构。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'creator_unassigned' => '创作者已从管理机构解除分配。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'assignment_not_found' => '未找到有效的管理机构分配。',
         'not_found' => '未找到管理机构资料或不可用。',
         'members_list_success' => '管理机构成员已加载。',
         'member_added' => '成员已加入管理机构。',
@@ -102,10 +127,13 @@ return [
         'invite_expired' => '此邀请已过期或无效。',
         'invite_wrong_account' => '此邀请属于其他账户。',
         'invite_user_not_found' => '没有使用该邮箱地址注册的用户。',
-        'owner_invite_not_claimable' => '该管理项已有所有者。所有者邀请仅在其未被认领时可用。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'owner_invite_not_claimable' => '该管理机构已有所有者。所有者邀请仅在其未被认领时可用。',
         'creator_invite_mode_invalid' => '创作者邀请模式必须是 "existing" 或 "new"。',
-        'creator_invite_not_owner' => '被邀请的账号不是所选 vTuber 资料的所有者。',
-        'creator_already_linked' => '该 vTuber 资料已关联到此管理项。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'creator_invite_not_owner' => '被邀请的账户不是所选 vTuber 资料的所有者。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'creator_already_linked' => '该 vTuber 资料已关联到此管理机构。',
         'creator_invite_name_required' => '新 vTuber 资料的显示名称为必填项。',
         'events_list_success' => '管理机构活动已加载。',
         'event_created' => '活动已创建。',
@@ -116,9 +144,12 @@ return [
     'mail' => [
         'invite_subject' => '邀请加入 :management',
         'creator_invite_subject' => '来自 :management 的 vTuber 资料邀请',
-        'creator_invite_line' => '你已被邀请将你的 vTuber 资料关联到 :management。',
-        'invite_greeting' => '你好！',
-        'invite_line' => '你已被邀请以 :role 身份加入 :management。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'creator_invite_line' => '您已被邀请将您的 vTuber 资料关联到 :management。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'invite_greeting' => '您好！',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'invite_line' => '您已被邀请以 :role 身份加入 :management。',
         'invite_action' => '查看邀请',
         'invite_expiry' => '此邀请将于 :date 过期。',
     ],
@@ -126,7 +157,8 @@ return [
         'list_success' => '频道列表已加载。',
         'show_success' => '频道信息已加载。',
         'created' => '频道已注册并验证。',
-        'seeded' => '频道已解析并注册（工作人员种子数据，无简介认领）。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'seeded' => '频道已解析并注册（工作人员预先创建，未通过简介认领）。',
         'registered_pending' => '频道已加入批量解析队列（不会立即调用 API）。',
         'refreshed' => '频道资料已从平台刷新并验证。',
         'refresh_queued' => '频道刷新已排队（与其他待处理请求批量执行）。',
@@ -135,7 +167,8 @@ return [
         'pending_not_archivable' => '待处理频道无法归档，请改为删除。',
         'not_pending_delete' => '只有待处理频道才能通过此方式删除。',
         'restored' => '频道已恢复为启用状态。',
-        'promoted' => '频道已提升为公开频道，资料填充和内容回填已排队。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'promoted' => '频道已提升为公开频道，资料刷新与内容回填已排队。',
         'not_private_discovered' => '只有已发现的私有频道可以提升。',
         'promote_not_discovered' => '只有 Discord 发现的频道可以通过此操作提升。',
         'promote_unsupported_platform' => '此平台不支持提升操作。',
@@ -167,12 +200,15 @@ return [
         'max_attempts' => '此频道认领的验证尝试次数过多。请重新开始认领，或等待工作人员协助。',
         'cooldown' => '请等待 :seconds 秒后再次验证。',
         'accept_anyway_disabled' => '此环境已禁用“无论如何接受”。',
-        'pending_other' => '已有其他用户在认领此平台频道。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'pending_other' => '已有其他用户对此平台频道提交了待处理的认领。',
         'discord_verify_disabled' => '频道认领的 Discord 验证已禁用。',
         'discord_verify_unsupported_platform' => '此平台不支持频道认领的 Discord 验证。',
-        'discord_not_connected' => '验证前，请从“个人资料 → 已连接账户”连接 Discord。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'discord_not_connected' => '验证前，请先在“个人资料 → 已连接账户”中连接 Discord。',
         'discord_connections_failed' => '无法加载 Discord 连接，请重试或使用简介令牌验证。',
-        'discord_no_match' => '没有已验证的 Discord 连接与此平台频道匹配。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'discord_no_match' => '没有与此平台频道匹配的已验证 Discord 连接。',
         'discord_verified' => '频道已通过 Discord 验证并绑定到此资料。',
     ],
     'link' => [
@@ -185,64 +221,100 @@ return [
     ],
     'content' => [
         'external_id_required' => '平台内容 ID 为必填项。',
-        'appearance_primary_via_set' => '主主持频道不能作为出场频道附加。请使用 setPrimary。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'appearance_primary_via_set' => '主频道不能作为出场频道附加。请使用 setPrimary。',
         'appearance_role_invalid' => '内容出场角色无效。',
         'appearance_platform_mismatch' => '出场频道必须与内容使用同一平台。',
-        'appearance_already_primary' => '此频道已经是内容的主主持频道。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'appearance_already_primary' => '此频道已经是内容的主频道。',
         'appearance_already_attached' => '此频道已经作为出场频道关联到内容。',
         'appearance_not_found' => '未找到此频道对应的内容出场记录。',
-        'cannot_detach_primary' => '无法解除主主持频道。请先设置其他主主持频道。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'cannot_detach_primary' => '无法解除主频道。请先设置其他主频道。',
         'fetch_platform_unsupported' => '不支持获取平台 :platform 的内容。',
-        'fetch_channel_not_active' => '获取内容需要启用频道。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'fetch_channel_not_active' => '获取内容需要频道处于启用状态。',
         'fetch_video_channel_mismatch' => '视频 :video 不属于频道 :channel。',
     ],
     'platform' => [
         'list_success' => '平台列表已加载。',
     ],
     'credential' => [
-        'list_success' => '平台凭据列表已加载。',
-        'show_success' => '平台凭据已加载。',
-        'created' => '平台凭据已创建。',
-        'updated' => '平台凭据已更新。',
-        'deleted' => '平台凭据已删除。',
-        'revoked' => '平台凭据已撤销。',
-        'label_required' => '凭据标签为必填项。',
-        'label_taken' => '此平台已使用该凭据标签。',
-        'payload_invalid' => '凭据密钥内容无效。',
-        'payload_missing' => '此凭据类型需要密钥字段 :field。',
-        'payload_unknown_key' => '此凭据类型不允许使用密钥字段 :field。',
-        'test_success' => '凭据测试成功，凭据已启用。',
-        'test_missing_secret' => '凭据密钥不完整，无法测试。',
-        'test_unsupported' => '此平台和凭据类型没有可用的测试探针。',
-        'test_not_allowed_status' => '无法测试已撤销的凭据。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'list_success' => '平台凭证列表已加载。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'show_success' => '平台凭证已加载。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'created' => '平台凭证已创建。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'updated' => '平台凭证已更新。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'deleted' => '平台凭证已删除。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'revoked' => '平台凭证已撤销。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'label_required' => '凭证名称为必填项。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'label_taken' => '此平台已使用该凭证名称。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'payload_invalid' => '凭证密钥内容无效。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'payload_missing' => '此凭证类型需要密钥字段 :field。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'payload_unknown_key' => '此凭证类型不允许使用密钥字段 :field。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'test_success' => '凭证测试成功，凭证已启用。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'test_missing_secret' => '凭证密钥不完整，无法测试。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'test_unsupported' => '此平台和凭证类型没有可用的测试探针。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'test_not_allowed_status' => '无法测试已撤销的凭证。',
         'test_youtube_ok' => 'YouTube API 密钥已接受。',
-        'test_youtube_empty' => 'YouTube API 未为探针 ID 返回频道项目。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'test_youtube_empty' => 'YouTube API 未针对探针 ID 返回频道项。',
         'test_twitch_ok' => 'Twitch 应用令牌已生成，Helix 探针成功。',
         'test_bearer_ok' => '平台探针已接受 Bearer 令牌。',
         'test_bearer_ok_no_probe' => 'Bearer 令牌已存在，此平台已跳过实时探针。',
-        'status_active_requires_test' => '使用“测试”操作将凭据标记为启用。',
-        'revoke_requires_active' => '只有启用的凭据才能撤销。',
-        'delete_requires_revoke' => '删除凭据前，请先撤销凭据。',
-        'not_active' => '凭据未启用。',
-        'app_token_oauth_only' => '应用访问令牌仅适用于 oauth_app 凭据。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'status_active_requires_test' => '请使用“测试”操作将凭证标记为启用。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'revoke_requires_active' => '只有已启用的凭证才能撤销。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'delete_requires_revoke' => '删除凭证前，请先撤销凭证。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'not_active' => '凭证未启用。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'app_token_oauth_only' => '应用访问令牌仅适用于 oauth_app 凭证。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
         'app_token_twitch_only' => '应用访问令牌生成功能仅针对 Twitch 实现。',
     ],
     'policy' => [
-        'denied' => '你无权执行此操作。',
-        'access_denied' => '你不能访问此 vTual 资源。',
-        'mutate_denied' => '你不能修改此 vTual 资源。',
-        'archive_denied' => '只有该管理项的所有者或管理员成员才能归档它。',
-        'members_denied' => '你不能管理此资源的成员。',
-        'assign_denied' => '你不能为此管理项分配创作者。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'denied' => '您无权执行此操作。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'access_denied' => '您不能访问此 vTual 资源。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'mutate_denied' => '您不能修改此 vTual 资源。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'archive_denied' => '只有该管理机构的所有者或管理员成员才能归档。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'members_denied' => '您不能管理此资源的成员。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'assign_denied' => '您不能为此管理机构分配创作者。',
     ],
     'integrations' => [
         'unsupported_operation' => '平台 :platform 不支持操作 :operation。',
         'platform_disabled' => '平台 :platform 已禁用或不可用。',
         'platform_unknown' => '未知平台 :platform。',
-        'no_active_credential' => '没有平台 :platform 的启用凭据，请先创建并测试一个凭据。',
-        'credential_required' => '平台客户端没有绑定凭据。',
-        'missing_api_key' => 'YouTube 凭据缺少 api_key。',
-        'missing_client_id' => 'Twitch 凭据缺少 client_id。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'no_active_credential' => '平台 :platform 没有已启用的凭证，请先创建并测试一个凭证。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'credential_required' => '平台客户端未绑定凭证。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'missing_api_key' => 'YouTube 凭证缺少 api_key。',
+        // curated at 2026-09-22T11:29:04+07:00 — zh_CN curation wave
+        'missing_client_id' => 'Twitch 凭证缺少 client_id。',
         'ids_required' => '至少需要一个 :label。',
         'batch_too_large' => ':label 过多（:count），每个请求最多 :max 个。',
         'batch_max_invalid' => '批量上限配置无效。',

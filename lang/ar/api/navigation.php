@@ -12,13 +12,16 @@ return [
     'restored' => 'تمت استعادة القائمة بنجاح.',
     'not_found' => 'لم يتم العثور على القائمة.',
     'has_children' => 'تحتوي هذه القائمة على عناصر فرعية. مرّر cascade=true لحذفها مع عناصرها التابعة.',
-    'invalid_route' => 'يجب أن يكون المسار اسم مسار مسجلًا.',
+    // curated at 2026-09-22T20:32:26+07:00 — ar curation wave
+    'invalid_route' => 'يجب أن يكون حقل المسار اسم مسار مسجّل.',
     'position' => [
-        'reference_required' => 'المعرّف reference_id مطلوب لتحديد الموضع قبل أو بعد.',
+        // curated at 2026-09-22T20:32:26+07:00 — ar curation wave
+        'reference_required' => 'الحقل reference_id مطلوب لتحديد الموضع (قبل أو بعد).',
         'reference_not_in_group' => 'لا ينتمي reference_id إلى مجموعة الأشقاء نفسها.',
         'invalid_position' => 'يجب أن يكون الموضع قبل أو بعد.',
         'reference_same_menu' => 'لا يمكن أن يطابق reference_id القائمة نفسها.',
         'reference_wrong_group' => 'يجب أن تشترك القائمة المرجعية مع المجموعة الهدف في parent_id والنوع.',
     ],
-    'parent_restore_failed' => 'لا يمكن الاستعادة: القائمة الرئيسية مفقودة أو لا تزال محذوفة. استعادة الأصل أولا.',
+    // curated at 2026-09-22T20:32:26+07:00 — ar curation wave
+    'parent_restore_failed' => 'لا يمكن الاستعادة: القائمة الرئيسية مفقودة أو لا تزال محذوفة. استعد القائمة الرئيسية أولًا.',
 ];

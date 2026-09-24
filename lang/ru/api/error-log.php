@@ -7,6 +7,7 @@ return [
     'statuses' => [
         'open' => 'Открыта',
         'resolved' => 'Решена',
-        'ignored' => 'Игнорируется',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'ignored' => 'Проигнорирована',
     ],
 ];

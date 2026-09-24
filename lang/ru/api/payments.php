@@ -1,24 +1,35 @@
 <?php
 
 return [
-    'success' => 'Оплата успешно завершена.',
-    'failed' => 'Оплата не удалась. Повторите попытку.',
-    'pending' => 'Оплата обрабатывается.',
+    // curated at 2026-09-23T19:29:11+07:00 — ru curation wave: settled terms
+    'success' => 'Платёж завершён.',
+    // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+    'failed' => 'Платёж не выполнен. Повторите попытку.',
+    // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+    'pending' => 'Платёж обрабатывается.',
 
     'gateways' => [
-        'list' => 'Список платёжных шлюзов успешно получен.',
-        'show' => 'Платёжный шлюз успешно получен.',
-        'created' => 'Платёжный шлюз успешно создан.',
-        'updated' => 'Платёжный шлюз успешно обновлён.',
-        'deleted' => 'Платёжный шлюз успешно удалён.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'list' => 'Список платёжных шлюзов получен.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'show' => 'Платёжный шлюз получен.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'created' => 'Платёжный шлюз создан.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'updated' => 'Платёжный шлюз обновлён.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'deleted' => 'Платёжный шлюз удалён.',
         'inactive' => 'Выбранный платёжный шлюз не активен.',
         'none_active' => 'Активный платёжный шлюз не настроен.',
     ],
 
     'invoices' => [
-        'list' => 'Список счетов успешно получен.',
-        'show' => 'Счёт успешно получен.',
-        'checkout_channels' => 'Каналы оплаты загружены.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'list' => 'Список счетов получен.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'show' => 'Счёт получен.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'checkout_channels' => 'Каналы оформления заказа загружены.',
         'checkout_channels_not_payable' => 'Счёт не открыт для оплаты.',
     ],
 
@@ -28,11 +39,16 @@ return [
     ],
 
     'subscriptions' => [
-        'list' => 'Список подписок успешно получен.',
-        'show' => 'Подписка успешно получена.',
-        'created' => 'Подписка успешно создана.',
-        'updated' => 'Подписка успешно обновлена.',
-        'deleted' => 'Подписка успешно удалена.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'list' => 'Список подписок получен.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'show' => 'Подписка получена.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'created' => 'Подписка создана.',
+        // curated at 2026-09-23T19:29:11+07:00 — ru curation wave: settled terms
+        'updated' => 'Подписка обновлена.',
+        // curated at 2026-09-23T19:29:11+07:00 — ru curation wave: settled terms
+        'deleted' => 'Подписка удалена.',
     ],
 
     'midtrans' => [
@@ -46,8 +62,10 @@ return [
         'deny_ok' => 'Транзакция отклонена.',
         'sync_ok' => 'Статус счёта синхронизирован с Midtrans.',
         'invoice_not_midtrans' => 'Счёт не привязан к шлюзу Midtrans.',
-        'invoice_not_payable' => 'Счёт должен быть в статусе ожидания или проверки, чтобы начать оплату.',
-        'external_sync_failed' => 'Не удалось проверить статус оплаты в Midtrans перед началом оформления.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'invoice_not_payable' => 'Счёт должен быть в статусе pending или challenge, чтобы начать оплату.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'external_sync_failed' => 'Не удалось проверить статус оплаты в Midtrans перед началом оформления заказа.',
         'webhook_invalid_json' => 'Недопустимое тело JSON.',
         'webhook_invalid_signature' => 'Недопустимая подпись уведомления.',
         'webhook_missing_order' => 'В уведомлении отсутствует order_id.',
@@ -62,15 +80,20 @@ return [
 
     'checkout' => [
         'active_session_pending' => 'Предыдущая платёжная сессия ещё ожидает обработки у провайдера. Дождитесь её истечения или завершения, прежде чем менять канал.',
-        'gateway_provider_mismatch' => 'Платёжный шлюз счёта не совпадает с запрошенным провайдером оформления.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'gateway_provider_mismatch' => 'Платёжный шлюз счёта не совпадает с запрошенным провайдером оформления заказа.',
     ],
 
     'channels' => [
-        'list' => 'Список платёжных каналов успешно получен.',
-        'show' => 'Платёжный канал успешно получен.',
-        'updated' => 'Платёжный канал успешно обновлён.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'list' => 'Список платёжных каналов получен.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'show' => 'Платёжный канал получен.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'updated' => 'Платёжный канал обновлён.',
         'checkout_created' => 'Инструкции по оплате созданы.',
-        'checkout_failed' => 'Все маршруты оплаты для этого канала завершились неудачно.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'checkout_failed' => 'Все маршруты оплаты для этого канала завершились ошибкой.',
         'route_updated' => 'Маршрут платёжного канала обновлён.',
         'not_found' => 'Платёжный канал не найден.',
         'not_available' => 'Выбранный платёжный канал недоступен.',
@@ -79,14 +102,18 @@ return [
     ],
 
     'ipaymu' => [
-        'snap_created' => 'Сессия оформления iPaymu создана.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'snap_created' => 'Сессия оформления заказа iPaymu создана.',
         'charge_created' => 'Прямой платёж iPaymu создан.',
         'status_retrieved' => 'Статус транзакции получен от iPaymu.',
         'sync_ok' => 'Статус счёта синхронизирован с iPaymu.',
         'invoice_not_ipaymu' => 'Счёт не привязан к шлюзу iPaymu.',
-        'invoice_not_payable' => 'Счёт должен быть в статусе ожидания или проверки, чтобы начать оплату.',
-        'external_sync_failed' => 'Не удалось проверить статус оплаты в iPaymu перед началом оформления.',
-        'active_payment_exists' => 'Для этого счёта уже идёт платёжная сессия. Завершите или отмените её, прежде чем начинать новое оформление.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'invoice_not_payable' => 'Счёт должен быть в статусе pending или challenge, чтобы начать оплату.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'external_sync_failed' => 'Не удалось проверить статус оплаты в iPaymu перед началом оформления заказа.',
+        // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+        'active_payment_exists' => 'Для этого счёта уже идёт платёжная сессия. Завершите или отмените её, прежде чем начинать новое оформление заказа.',
         'invoice_not_found' => 'Счёт iPaymu для этого идентификатора заказа не найден.',
         'missing_transaction_id' => 'У счёта ещё нет идентификатора транзакции iPaymu; сначала завершите платёжную сессию.',
         'buyer_required' => 'Не удалось определить данные покупателя из запроса, плательщика счёта или профиля аутентифицированного пользователя.',

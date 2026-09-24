@@ -23,8 +23,10 @@ return [
         // Platform — auth / 2FA
         'platform.auth.default_role' => '신규 사용자 기본 역할',
         'platform.auth.verification_expire' => '이메일 인증 링크 만료 시간(분)',
-        'platform.two_factor.window' => '2FA TOTP 검증 창',
-        'platform.two_factor.issuer' => '2FA 발급자 이름(인증 앱)',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'platform.two_factor.window' => '2단계 인증 TOTP 검증 창',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'platform.two_factor.issuer' => '2단계 인증 발급자 이름(인증 앱)',
         // Platform — hCaptcha
         'platform.hcaptcha.enabled' => 'hCaptcha 활성화',
         // Platform — notifications
@@ -46,7 +48,8 @@ return [
         // Platform — payment
         'platform.payment.channel_fee_bearer' => '결제 채널 수수료 부담 주체',
         'platform.payment.reporting_timezone' => '결제 보고 시간대',
-        'platform.payment.prefer_channel_checkout' => '채널 네이티브 체크아웃 우선',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'platform.payment.prefer_channel_checkout' => '채널 자체 체크아웃 우선',
         'platform.payment.default_buyer_phone' => '기본 구매자 전화번호(iPaymu 대체값)',
         // Platform — mail identity
         'platform.mail.from_address' => '메일 발신 주소',
@@ -56,7 +59,8 @@ return [
         'platform.service.settlement_currency' => '정산 통화',
         'platform.service.purchase_max_quantity' => '서비스 구매 최대 수량',
         // Platform — inference fallbacks
-        'platform.inference.default_provider_slug' => '기본 추론 프로바이더 slug',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'platform.inference.default_provider_slug' => '기본 추론 공급자 슬러그',
         'platform.inference.default_input_per_million_usd' => '기본 입력 요율(1M 토큰당 USD)',
         'platform.inference.default_output_per_million_usd' => '기본 출력 요율(1M 토큰당 USD)',
         'platform.inference.unknown_input_per_million_usd' => '미등록 모델 입력 요율(1M 토큰당 USD)',
@@ -88,14 +92,17 @@ return [
         'microstock.daily_free.enabled' => '일일 무료 다운로드 활성화',
         'microstock.daily_free.limit_per_user' => '사용자당 일일 무료 다운로드 한도',
         'microstock.daily_free.timezone' => '일일 무료 초기화 시간대',
-        'microstock.ai_billing.markup_multiplier' => 'AI 청구 마크업 배율',
-        'microstock.ai_billing.estimated_billable_micro_usd_per_asset' => '에셋당 예상 청구 마이크로 USD',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.ai_billing.markup_multiplier' => 'AI 과금 마크업 배율',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.ai_billing.estimated_billable_micro_usd_per_asset' => '에셋당 예상 과금액(마이크로 USD)',
         'microstock.ai_billing.estimate_thinking_attempt_factor' => '사고 시도 추정 계수',
         'microstock.ai.image_max_px' => 'AI 이미지 최대 크기(px)',
         'microstock.ai.image_jpeg_quality' => 'AI 이미지 JPEG 품질',
         'microstock.ai.max_request_image_bytes' => '요청 이미지 최대 크기(바이트)',
         'microstock.ai.http_retries' => 'AI HTTP 재시도 횟수',
-        'microstock.ai.thinking_visual_attempts' => '사고 비주얼 시도 횟수',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.ai.thinking_visual_attempts' => '사고 시각 시도 횟수',
         'microstock.ai.batch_chunk' => 'AI 배치 청크 크기',
         'microstock.ai.batch_min_files' => 'AI 배치 최소 파일 수',
         'microstock.ai.phase.normal_after' => 'AI 단계: 일반 처리 전환 시간(초)',
@@ -106,14 +113,17 @@ return [
         'microstock.ai.vision_image.delivery' => '비전 이미지 전달 방식',
         'microstock.ai.vision_image.variant_kind' => '비전 이미지 변형 종류',
         'microstock.ai.vision_image.signed_url_ttl_minutes' => '비전 서명 URL 유효 기간(분)',
-        'microstock.ai.inference_provider_slug' => 'Microstock 추론 프로바이더 slug',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.ai.inference_provider_slug' => 'Microstock 추론 공급자 슬러그',
         'microstock.ai.vision.connection' => '비전 AI 연결(비워두면 기본값)',
         'microstock.ai.thinking.connection' => '사고 AI 연결(비워두면 기본값)',
         'microstock.ai.vision.model' => '비전 모델',
-        'microstock.ai.vision.free_model' => '비전 무료 등급 모델(비워두면 유료 모델)',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.ai.vision.free_model' => '비전 무료 티어 모델(비워두면 유료 모델)',
         'microstock.ai.vision.timeout' => '비전 HTTP 시간 초과(초)',
         'microstock.ai.thinking.model' => '사고 모델',
-        'microstock.ai.thinking.free_model' => '사고 무료 등급 모델(비워두면 유료 모델)',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.ai.thinking.free_model' => '사고 무료 티어 모델(비워두면 유료 모델)',
         'microstock.ai.thinking.timeout' => '사고 HTTP 시간 초과(초)',
         'microstock.ai.upstream.window_seconds' => '업스트림 토큰 예산 창(초)',
         'microstock.ai.upstream.token_budget' => '창당 업스트림 토큰 예산',
@@ -124,30 +134,37 @@ return [
         'microstock.ai.upstream.solo_vision_concurrency' => '단일 비전 동시 처리 수',
         'microstock.ai.upstream.solo_thinking_concurrency' => '단일 사고 동시 처리 수',
         'microstock.ai.upstream.release_after_seconds' => '업스트림 슬롯 해제 시간(초)',
-        'microstock.csv_disk' => 'CSV내보기 디스크',
-        // Vtual
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.csv_disk' => 'CSV 내보내기 디스크',
+        // vTual
         'vtual.credential_test.http_timeout' => '자격 증명 테스트 HTTP 시간 초과(초)',
         'vtual.credential_test.twitch_token_skew_seconds' => 'Twitch 토큰 허용 오차(초)',
-        'vtual.credential_test.youtube_probe_channel_id' => 'YouTube 프로브 채널 ID',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'vtual.credential_test.youtube_probe_channel_id' => 'YouTube 점검 채널 ID',
         'vtual.credential.failover.enabled' => '자격 증명 장애 조치 활성화',
         'vtual.credential.failover.auth_fail_threshold' => '장애 조치 인증 실패 임계값',
         'vtual.credential.failover.skip_minutes' => '장애 조치 건너뛰기 시간(분)',
         'vtual.credential.failover.max_retries_per_call' => '호출당 장애 조치 최대 재시도 횟수',
         'vtual.http.timeout' => 'HTTP 시간 초과(초)',
         'vtual.claim.ttl_hours' => '클레임 유효 기간(시간)',
-        'vtual.claim.verify_cooldown_seconds' => '클레임 확인 쿨다운(초)',
-        'vtual.claim.max_attempts' => '클레임 최대 확인 시도 횟수',
+        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
+        'vtual.claim.verify_cooldown_seconds' => '클레임 검증 쿨다운(초)',
+        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
+        'vtual.claim.max_attempts' => '클레임 최대 검증 시도 횟수',
         'vtual.claim.block_hours_after_max_attempts' => '최대 시도 후 클레임 차단 시간(시간)',
         'vtual.claim.max_pending_per_user' => '사용자당 최대 대기 클레임 수',
         'vtual.claim.accept_anyway_enabled' => '클레임 무조건 수락 활성화',
-        'vtual.claim.discord_verify_enabled' => '클레임 Discord 확인 활성화',
+        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
+        'vtual.claim.discord_verify_enabled' => 'Discord 클레임 검증 활성화',
         'vtual.claim.token_prefix' => '클레임 토큰 접두사',
         'vtual.claim.token_bytes' => '클레임 토큰 무작위 바이트 수',
         'vtual.channel_claim.ttl_hours' => '채널 클레임 유효 기간(시간)',
-        'vtual.channel_claim.verify_cooldown_seconds' => '채널 클레임 확인 쿨다운(초)',
+        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
+        'vtual.channel_claim.verify_cooldown_seconds' => '채널 클레임 검증 쿨다운(초)',
         'vtual.channel_claim.max_attempts' => '채널 클레임 최대 시도 횟수',
         'vtual.channel_claim.accept_anyway_enabled' => '채널 클레임 무조건 수락 활성화',
-        'vtual.channel_claim.discord_verify_enabled' => '채널 클레임 Discord 확인 활성화',
+        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
+        'vtual.channel_claim.discord_verify_enabled' => 'Discord 채널 클레임 검증 활성화',
         'vtual.channel_claim.token_prefix' => '채널 클레임 토큰 접두사',
         'vtual.channel_claim.token_bytes' => '채널 클레임 토큰 무작위 바이트 수',
         'vtual.channel_pool.threshold' => '채널 풀 하한 임계값',
@@ -156,53 +173,73 @@ return [
         'vtual.channel_pool.resync_stale_hours' => '채널 풀 재동기화 유효 기간(시간)',
         'vtual.channel_pool.resync_enqueue_limit' => '채널 풀 재동기화 큐 등록 한도',
         'vtual.channel_pool.flush_lock_seconds' => '채널 풀 플러시 잠금(초)',
-        'vtual.claim_verify_pool.threshold' => '클레임 확인 풀 하한 임계값',
-        'vtual.claim_verify_pool.max_wait_minutes' => '클레임 확인 풀 최대 대기 시간(분)',
-        'vtual.claim_verify_pool.flush_lock_seconds' => '클레임 확인 풀 플러시 잠금(초)',
+        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
+        'vtual.claim_verify_pool.threshold' => '클레임 검증 풀 하한 임계값',
+        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
+        'vtual.claim_verify_pool.max_wait_minutes' => '클레임 검증 풀 최대 대기 시간(분)',
+        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
+        'vtual.claim_verify_pool.flush_lock_seconds' => '클레임 검증 풀 플러시 잠금(초)',
         'vtual.content_pool.threshold' => '콘텐츠 풀 하한 임계값',
         'vtual.content_pool.max_wait_minutes' => '콘텐츠 풀 최대 대기 시간(분)',
         'vtual.content_pool.flush_lock_seconds' => '콘텐츠 풀 플러시 잠금(초)',
         'vtual.feed_poll.interval_minutes' => '피드 폴링 간격(분)',
         'vtual.live_poll.interval_minutes' => '라이브 CCV 폴링 간격(분)',
-        'vtual.websub.lease_seconds' => 'WebSub 임대 기간(초)',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'vtual.websub.lease_seconds' => 'WebSub 리스 기간(초)',
         'vtual.websub.renew_before_hours' => 'WebSub 만료 전 갱신 시간(시간)',
         'vtual.websub.max_body_bytes' => 'WebSub 알림 본문 최대 크기(바이트)',
         'vtual.landing.event.title' => '랜딩 이벤트 제목',
         'vtual.landing.event.starts_at' => '랜딩 이벤트 시작 시간',
         'vtual.landing.event.body' => '랜딩 이벤트 본문',
-        'vtual.content_classification.ai.enabled' => 'AI 감사 활성화 (콘텐츠 분류)',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'vtual.content_classification.ai.enabled' => 'AI 감사 활성화(콘텐츠 분류)',
         'vtual.content_classification.ai.model' => 'AI 감사 모델',
         'vtual.content_classification.ai.max_tokens' => 'AI 감사 최대 응답 토큰',
-        'vtual.content_classification.ai.timeout' => 'AI 감사 시간 제한 (초)',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'vtual.content_classification.ai.timeout' => 'AI 감사 시간 제한(초)',
         'vtual.content_classification.ai.min_confidence' => 'AI 감사 최소 신뢰도',
-        'vtual.content_classification.ai.cache_ttl_hours' => 'AI 감사 결과 캐시 (시간)',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'vtual.content_classification.ai.cache_ttl_hours' => 'AI 감사 결과 캐시(시간)',
         'vtual.content_classification.ai.connection' => 'AI 감사 연결(비워두면 기본값)',
     ],
     'hints' => [
-        'platform.mail.from_address' => '발신 메일용 전역 From 주소입니다(전송 자격 증명은 .env에 유지).',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'platform.mail.from_address' => '발신 메일의 전역 발신자 주소입니다(전송 자격 증명은 .env에 유지됩니다).',
         'platform.payment.default_buyer_phone' => '구매자 프로필에 전화번호가 없을 때 사용하는 대체 번호입니다(iPaymu 요구 사항).',
         'platform.frankfurter.timeout' => 'Frankfurter FX 조회의 HTTP 시간 초과입니다.',
-        'microstock.ai.vision.free_model' => '선택적 무료 등급 모델 재정의입니다. 비워두면 유료 비전 모델을 상속합니다.',
-        'microstock.ai.thinking.free_model' => '선택적 무료 등급 모델 재정의입니다. 비워두면 유료 사고 모델을 상속합니다.',
-        'microstock.ai.vision.connection' => '비전 단계가 사용할 AI 연결 slug(설정 → AI 연결)입니다. 비워두면 기본 연결을 사용합니다.',
-        'microstock.ai.thinking.connection' => '사고 단계가 사용할 AI 연결 slug(설정 → AI 연결)입니다. 비워두면 기본 연결을 사용합니다.',
-        'microstock.ai.upstream.window_seconds' => '업스트림 토큰 예산의 기준 창입니다(실제 제한은 동시 처리 상한으로 적용).',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.ai.vision.free_model' => '선택적 무료 티어 모델 재정의입니다. 비워두면 유료 비전 모델을 상속합니다.',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.ai.thinking.free_model' => '선택적 무료 티어 모델 재정의입니다. 비워두면 유료 사고 모델을 상속합니다.',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.ai.vision.connection' => '비전 단계가 사용할 AI 연결 슬러그(설정 → AI 연결)입니다. 비워두면 기본 연결을 사용합니다.',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.ai.thinking.connection' => '사고 단계가 사용할 AI 연결 슬러그(설정 → AI 연결)입니다. 비워두면 기본 연결을 사용합니다.',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'microstock.ai.upstream.window_seconds' => '업스트림 토큰 예산의 기준 창입니다(실제 제한은 동시 처리 상한으로 적용됩니다).',
         'vtual.credential_test.youtube_probe_channel_id' => 'YouTube Data API 자격 증명 스모크 테스트에 사용되는 공개 채널 ID입니다.',
-        'platform.jwt.refresh_skew' => '액세스 토큰이 만료되기 이 시간(분) 전에 토큰을 갱신합니다.',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'platform.jwt.refresh_skew' => '액세스 토큰이 만료되기 전에 지정한 시간(분)만큼 미리 갱신합니다.',
         'platform.notifications.delivery' => '실시간 모드는 WebSocket을 사용하며 구성된 PUSHER_* / 브로드캐스트 자격 증명이 필요합니다. 그렇지 않으면 알림 벨이 HTTP 폴링으로 대체됩니다.',
         'platform.payment.channel_fee_bearer' => '결제 채널 수수료를 부담하는 주체: 판매자 또는 고객입니다.',
-        'platform.inference.default_provider_slug' => '요청에 프로바이더가 지정되지 않은 경우 사용하는 대체 프로바이더입니다.',
-        'platform.inference.default_input_per_million_usd' => '카탈로그 가격이 없는 등록 모델에 대한 임시 청구 요율입니다.',
-        'platform.inference.unknown_input_per_million_usd' => '미등록 모델에 대한 임시 청구 요율입니다.',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'platform.inference.default_provider_slug' => '요청에 공급자가 지정되지 않은 경우 사용하는 대체 공급자입니다.',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'platform.inference.default_input_per_million_usd' => '카탈로그 가격이 없는 등록 모델에 대한 임시 과금 요율입니다.',
+        // curated at 2026-09-23T11:04:35+07:00 — ko curation wave
+        'platform.inference.unknown_input_per_million_usd' => '미등록 모델에 대한 임시 과금 요율입니다.',
         'microstock.ai.phase.normal_after' => '에셋이 빠른 처리에서 일반 처리로 전환되기까지의 초입니다.',
         'microstock.ai.phase.grace_after' => '유예 기간 처리가 시작되기까지의 초입니다.',
         'microstock.ai.stage.vision_grace_after' => '비전 단계가 유예 모드에 진입하기까지의 초입니다.',
         'microstock.ai.stage.thinking_grace_after' => '사고 단계가 유예 모드에 진입하기까지의 초입니다.',
         'microstock.ai.stage.thinking_backlog_after' => '사고 작업이 백로그 큐로 이동하기까지의 초입니다.',
         'vtual.credential.failover.enabled' => '인증 실패가 반복되면 다음 자격 증명으로 전환합니다.',
-        'vtual.claim.accept_anyway_enabled' => '확인 결과가 불확실해도 사용자가 클레임을 수락할 수 있도록 허용합니다.',
-        'vtual.claim.discord_verify_enabled' => '사용자가 Discord에 연결된 YouTube/Twitch 계정을 매칭하여 고아 클레임을 확인할 수 있도록 허용합니다.',
-        'vtual.channel_claim.discord_verify_enabled' => '프로필 소유자가 Discord에 연결된 YouTube/Twitch 계정을 매칭하여 채널 연결 클레임을 확인할 수 있도록 허용합니다.',
+        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
+        'vtual.claim.accept_anyway_enabled' => '검증 결과가 불확실해도 사용자가 클레임을 수락할 수 있도록 허용합니다.',
+        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
+        'vtual.claim.discord_verify_enabled' => '사용자가 Discord에 연결된 YouTube/Twitch 계정을 매칭하여 고아 클레임을 검증할 수 있도록 허용합니다.',
+        // curated at 2026-09-23T12:15:01+07:00 — ko curation wave: claim verification unified on 검증
+        'vtual.channel_claim.discord_verify_enabled' => '프로필 소유자가 Discord에 연결된 YouTube/Twitch 계정을 매칭하여 채널 연결 클레임을 검증할 수 있도록 허용합니다.',
         'identity.discord.connections_snapshot_max_age_minutes' => '저장된 Discord 연결 스냅샷이 신뢰되는 기간입니다. 확인 실패 시 이 기간이 지나면 실시간 Discord API 새로고침이 트리거됩니다.',
     ],
     'options' => [

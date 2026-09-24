@@ -9,7 +9,8 @@ return [
     'forbidden' => 'このプロダクトドメインは非公開です。アクセスは Root、Admin、およびベータテスターに限定されています。',
 
     // Admin API
-    'list_success' => 'プロダクトドメインアクセス設定を取得しました。',
+    // curated at 2026-09-21T17:25:29+07:00 — ja curation wave
+    'list_success' => 'プロダクトドメインアクセス設定を読み込みました。',
     'updated' => 'プロダクトドメインの公開設定を更新しました。',
     'invalid_visibility' => '公開設定は public または private である必要があります。',
 

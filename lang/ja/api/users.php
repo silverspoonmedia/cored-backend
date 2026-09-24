@@ -1,13 +1,16 @@
 <?php
 
 return [
-    'list_success' => 'ユーザーを取得しました。',
-    'show_success' => 'ユーザーを取得しました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'list_success' => 'ユーザーを読み込みました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'show_success' => 'ユーザーを読み込みました。',
     'created' => 'ユーザーを作成しました。',
     'updated' => 'ユーザーを更新しました。',
     'deleted' => 'ユーザーを削除しました。',
     'not_found' => 'ユーザーが見つかりません。',
-    'assignable_roles_success' => '割り当て可能なロールを取得しました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'assignable_roles_success' => '割り当て可能なロールを読み込みました。',
     'cannot_delete_self' => '自分自身のアカウントは削除できません。',
     'policy' => [
         'view' => 'ユーザーを閲覧する権限がありません。',

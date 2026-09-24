@@ -5,7 +5,8 @@ return [
     'card_title' => 'الحسابات المتصلة',
     'discord_heading' => 'Discord',
     'discord_connected' => 'حساب Discord الخاص بك متصل.',
-    'discord_not_connected' => 'اربط Discord لربط حسابات YouTube وTwitch من ملف Discord الخاص بك.',
+    // curated at 2026-09-22T21:21:20+07:00 — ar curation wave 2
+    'discord_not_connected' => 'اربط Discord حتى تتمكن من ربط حسابات YouTube وTwitch من ملفك على Discord.',
     'discord_connect' => 'ربط Discord',
     'discord_disconnect' => 'إلغاء ربط Discord',
     'discord_disconnected' => 'تم إلغاء ربط Discord.',
@@ -27,8 +28,10 @@ return [
     'disconnected' => 'تم إلغاء ربط الحساب.',
     'disconnect_failed' => 'تعذر إلغاء ربط هذا الحساب.',
     'connected' => 'هذا الحساب متصل.',
-    'not_connected' => 'اربط هذا المزود لربط الحسابات من ملفك الشخصي.',
-    'not_configured' => 'لم تتم تهيئة هذا المزود على الخادم.',
+    // curated at 2026-09-22T21:21:20+07:00 — ar curation wave 2
+    'not_connected' => 'اربط هذا المزود حتى تتمكن من ربط الحسابات من ملفك الشخصي.',
+    // curated at 2026-09-22T21:21:20+07:00 — ar curation wave 2
+    'not_configured' => 'لم تتم تهيئة هذا المزود على هذا الخادم.',
     'provider_heading' => ':name',
     'linked_accounts_heading_generic' => 'الحسابات المرتبطة',
     'linked_accounts_empty_generic' => 'لا توجد حسابات مرتبطة بعد.',

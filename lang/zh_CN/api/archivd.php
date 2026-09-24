@@ -22,28 +22,38 @@ return [
     'download_unavailable' => '此存储磁盘无法提供下载 URL。',
     'visibility_updated' => '可见性已更新。',
     'invalid_visibility' => '可见性值无效。',
-    'public_share_requires_paid' => '公开链接分享需要启用付费 Archivd 套餐。',
-    'public_share_blocked_hash' => '此文件无法公开分享（因合规要求已被阻止）。',
+    // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
+    'public_share_requires_paid' => '公开链接分享需要有效的付费 Archivd 方案。',
+    // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+    'public_share_blocked_hash' => '此文件已被合规策略阻止，无法公开分享。',
     'public_share_not_allowed' => '此工作区中的项目不允许公开分享。',
     'blocklist_saved' => '哈希已添加到阻止列表。',
     'blocklist_removed' => '哈希已从阻止列表移除。',
+    // curated at 2026-09-21T15:32:00+07:00 — new key (blocklist list endpoint had no message)
+    'blocklist_loaded' => '哈希阻止列表已加载。',
     'share_not_found' => '此共享项目不可用。',
     'search_success' => '搜索结果已加载。',
     'trash_success' => '回收站已加载。',
     'quota_success' => '配额已加载。',
     'quota_exceeded' => '已超出存储配额。',
-    'quota_grace_blocked' => '你的订阅处于宽限期。续费后才能再次上传文件。',
+    // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+    'quota_grace_blocked' => '您的订阅处于宽限期。续费后才能再次上传文件。',
     'folder_not_found' => '未找到文件夹。',
     'file_not_found' => '未找到文件。',
     'owner_not_found' => '未找到所有者。',
     'folder_name_taken' => '此处已存在同名文件夹。',
     'file_name_taken' => '此处已存在同名文件。',
-    'folder_cycle' => '无法将文件夹移动到自身或其后代文件夹中。',
+    // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+    'folder_cycle' => '无法将文件夹移动到其自身或其子文件夹中。',
     'policy' => [
-        'denied' => '你无权执行此操作。',
-        'cross_user_denied' => '你不能访问其他用户的文件。',
-        'hierarchy_view' => '你不能查看此用户的文件。',
-        'hierarchy_mutate' => '你不能修改此用户的文件。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'denied' => '您无权执行此操作。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'cross_user_denied' => '您不能访问其他用户的文件。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'hierarchy_view' => '您不能查看此用户的文件。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'hierarchy_mutate' => '您不能修改此用户的文件。',
     ],
     'workspace' => [
         'list_success' => '工作区已加载。',
@@ -58,19 +68,28 @@ return [
         'activity_success' => '工作区活动已加载。',
         'not_found' => '未找到工作区。',
         'archived' => '此工作区已归档。',
-        'access_denied' => '你不能访问此工作区。',
-        'mutate_denied' => '你不能修改此工作区中的文件。',
-        'members_denied' => '你不能管理此工作区的成员。',
-        'requires_paid' => '协作工作区需要启用付费 Archivd 套餐（主套餐或附加组件）。',
-        'owner_in_grace' => '工作区所有者处于宽限期。续费套餐后才能使用协作功能。',
-        'already_exists' => '你已经拥有一个工作区。',
-        'slot_limit' => '已达到自有团队工作区上限（:used / :limit）。请归档一个团队，或购买 Team Workspace Slot 附加组件。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'access_denied' => '您不能访问此工作区。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'mutate_denied' => '您不能修改此工作区中的文件。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'members_denied' => '您不能管理此工作区的成员。',
+        // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
+        'requires_paid' => '协作工作区需要有效的付费 Archivd 方案（主方案或附加组件）。',
+        // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
+        'owner_in_grace' => '工作区所有者处于宽限期。续费方案后才能使用协作功能。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'already_exists' => '您已经拥有一个工作区。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'slot_limit' => '自有团队工作区数量已达上限（:used / :limit）。请归档一个团队，或购买 Team Workspace Slot 附加组件。',
         'name_required' => '工作区名称为必填项。',
         'owner_only' => '只有工作区所有者可以执行此操作。',
         'invalid_role' => '工作区角色无效。',
         'invalid_email' => '邮箱地址无效。',
-        'cannot_invite_self' => '不能邀请自己。',
-        'already_member' => '用户已经是工作区成员。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'cannot_invite_self' => '您不能邀请自己。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'already_member' => '该用户已是工作区成员。',
         'invite_pending' => '此邮箱已有待处理邀请。',
         'invite_not_found' => '未找到邀请。',
         'invite_expired' => '邀请已过期。',
@@ -89,7 +108,8 @@ return [
         'not_found' => '未找到上传会话。',
         'not_pending' => '上传会话不处于待处理状态。',
         'expired' => '上传会话已过期。',
-        'already_promoted' => '上传已提升为文件。',
+        // curated at 2026-09-22T12:07:32+07:00 — zh_CN curation wave
+        'already_promoted' => '该上传会话已转为文件。',
         'invalid_path' => '不允许使用此上传路径。',
         'invalid_size' => '文件大小无效。',
         'file_too_large' => '文件超过允许的最大大小。',

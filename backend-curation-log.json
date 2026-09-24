@@ -1,0 +1,3593 @@
+{
+    "version": 1,
+    "locales": {
+        "ar": {
+            "(and :count more error)": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "(و :count خطأ إضافي)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "(and :count more errors)": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "(و :count خطأ إضافي)|(و :count أخطاء إضافية)|(و :count أخطاء إضافية)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "A decryption key is required.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "مطلوب مفتاح فك التشفير.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Accept": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "قبول",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Accepted": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "تم القبول",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Action": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "إجراء",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Already Reported": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "تم الإبلاغ مسبقًا",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Connect": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "ربط",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Create :name": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "إنشاء :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Detach": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "فصل",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Details": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "تفاصيل",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Disable": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "إلغاء التفعيل",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Done": {
+                "curated_at": "2026-09-24T09:44:15+07:00",
+                "value": "تم",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Encrypted environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "ملف البيئة المشفر موجود بالفعل.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Encrypted environment file not found.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "لم يتم العثور على ملف البيئة المشفرة.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "ملف البيئة موجود بالفعل.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Environment file not found.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "لم يتم العثور على ملف البيئة.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Go Home": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الانتقال للرئيسية",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Go to page :page": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الانتقال إلى الصفحة :page",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Gone": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "محتوى محذوف نهائيًا",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Hello!": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "مرحبًا!",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "IM Used": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "تم استخدام IM",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "If you did not create an account, no further action is required.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "إذا لم تقم بإنشاء حساب، فلا يلزم اتخاذ أي إجراء آخر.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "If you did not request a password reset, no further action is required.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "إذا لم تقم بطلب إعادة تعيين كلمة المرور، فلن تحتاج إلى أي إجراء آخر.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "If you're having trouble clicking the \":actionText\" button, copy and paste the URL below\ninto your web browser:": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "إذا كنت تواجه مشكلة في النقر على زر \":actionText\"، يمكنك نسخ عنوان URL أدناه\nوألصقه في متصفح الويب:",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Impersonate": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "انتحال الهوية",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Impersonation": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "انتحال الهوية",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Invalid JSON was returned from the route.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "تم إرجاع JSON غير صالح من المسار.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Invalid filename.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "اسم الملف غير صالح.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Length Required": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الطول مطلوب",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Location": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الموقع",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Maintenance Mode": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "وضع الصيانة",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Misdirected Request": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "طلب موجّه إلى وجهة خاطئة",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "New :name": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "إنشاء :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "No": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "لا",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Non-Authoritative Information": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "معلومات غير موثوقة",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Not Extended": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "غير مُمدَّد",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Not Found": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الصفحة غير موجودة",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Not Implemented": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "غير مُنفَّذ",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Not Modified": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "غير معدّل",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Open in a new window": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "فتح في نافذة جديدة",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Open in a parent frame": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "فتح في الإطار الأصلي",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Open in the topmost frame": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "فتح في الإطار العلوي",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Open on the website": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "فتح في الموقع",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Origin Is Unreachable": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "لا يمكن الوصول إلى الخادم الأصلي",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Page Expired": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الصفحة منتهية الصلاحية",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Pagination Navigation": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "التنقل بين الصفحات",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Payload Too Large": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الحمولة كبيرة جدًا",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Payment Required": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الدفع مطلوب",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Please click the button below to verify your email address.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "يرجى النقر على الزر أدناه للتحقق من عنوان بريدك الإلكتروني.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Processing": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "جارٍ المعالجة",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Range Not Satisfiable": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "النطاق غير قابل للاستيفاء",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Record": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "تسجيل",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Regards,": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "مع التحية،",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Register": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "تسجيل",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Request Header Fields Too Large": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "حقول عنوان الطلب كبيرة جدًا",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Reset Password": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "إعادة تعيين كلمة المرور",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Reset your password": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "إعادة تعيين كلمة المرور",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Retry With": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "أعد المحاولة باستخدام",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Save & Return": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "حفظ والعودة",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "See Other": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "انظر إلى عنوان آخر",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Server Error": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "خطأ في الخادم",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Service Unavailable": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الخدمة غير متوفرة",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Settings": {
+                "curated_at": "2026-09-24T09:44:15+07:00",
+                "value": "الإعدادات",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Showing": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "عرض",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Switch": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "تبديل",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Switch To Role": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "التبديل إلى دور",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "The given data was invalid.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "البيانات المدخلة غير صالحة.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "The response is not a streamed response.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الاستجابة ليست استجابة متدفقة.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "The response is not a view.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الاستجابة ليست صفحة عرض.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "This action is unauthorized.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "هذا الإجراء غير مصرح به.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "This password reset link will expire in :count minutes.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "ستنتهي صلاحية رابط إعادة تعيين كلمة المرور خلال :count دقيقة.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Toggle navigation": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "إظهار/إخفاء القائمة",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Too Early": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "مبكر جدًا",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "URI Too Long": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "URI طويل جدًا",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Unsupported Media Type": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "نوع الوسائط غير مدعوم",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Use Proxy": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "استخدام وكيل",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Variant Also Negotiates": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "البديل يتفاوض أيضًا",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Verify Email Address": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "التحقق من عنوان البريد الإلكتروني",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Verify your email address": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "تحقق من عنوان بريدك الإلكتروني",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "Whoops!": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "عذرًا!",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "You are receiving this email because we received a password reset request for your account.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "لقد تلقيت هذا البريد الإلكتروني لأننا استلمنا طلب إعادة تعيين كلمة المرور لحسابك.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "errors": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "أخطاء",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "length": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "الطول",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "of": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "من",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "results": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "نتائج",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            },
+            "to": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "إلى",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ar.json"
+            }
+        },
+        "id": {
+            "(and :count more error)": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "(dan :count kesalahan lainnya)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "(and :count more errors)": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "(dan :count kesalahan lainnya)|(dan :count kesalahan lainnya)|(dan :count kesalahan lainnya)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "A decryption key is required.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Kunci dekripsi diperlukan.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Accept": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Terima",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Add :name": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Tambah :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Admin": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "Administrator",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "All rights reserved.": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Hak cipta dilindungi.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Archive": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Arsipkan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Assign": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Tetapkan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Associate": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Hubungkan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Browse": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Telusuri",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Collapse": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "Ciutkan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Connect": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "Hubungkan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Detach": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Lepaskan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Disable": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Nonaktifkan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Discard": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Buang",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Duplicate :name": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "Duplikat :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Edit": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Ubah",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Edit :name": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Ubah :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Enable": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Aktifkan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Encrypted environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "File environment terenkripsi sudah ada.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Encrypted environment file not found.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "File environment terenkripsi tidak ditemukan.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "File environment sudah ada.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Environment file not found.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "File environment tidak ditemukan.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Expand": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Perluas",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Expand All": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Perluas Semua",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Export :name": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "Ekspor :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "File": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "Berkas",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Files": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Berkas",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Forbidden": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Terlarang",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Go Home": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Ke Beranda",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Go to page :page": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Ke halaman :page",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Hide": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "Sembunyikan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Home": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Beranda",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "If you did not create an account, no further action is required.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Jika Anda tidak membuat akun, Anda tidak perlu melakukan apa pun.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "If you did not request a password reset, no further action is required.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Jika Anda tidak meminta atur ulang kata sandi, Anda tidak perlu melakukan apa pun.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "If you're having trouble clicking the \":actionText\" button, copy and paste the URL below\ninto your web browser:": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Jika Anda mengalami kesulitan mengklik tombol \":actionText\", salin dan tempel URL di bawah\nke browser web Anda:",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Impersonate": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Menyamar sebagai",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Impersonation": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Penyamaran",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Introduction": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Pendahuluan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Invalid JSON was returned from the route.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Rute mengembalikan JSON yang tidak valid.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Invalid filename.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Nama file tidak valid.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Like": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Suka",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Load": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Muat",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Localize": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Lokalkan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Location": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Lokasi",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Login": {
+                "curated_at": "2026-09-24T09:23:48+07:00",
+                "value": "Masuk",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Logout": {
+                "curated_at": "2026-09-24T09:23:48+07:00",
+                "value": "Keluar",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "New :name": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": ":name Baru",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "OK": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "OK",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Open": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Buka",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Page Expired": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Halaman kedaluwarsa",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Pagination Navigation": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Navigasi halaman",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Payment Required": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Pembayaran diperlukan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Please click the button below to verify your email address.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Silakan klik tombol di bawah untuk memverifikasi alamat email Anda.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Regards,": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Salam,",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Register": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Daftar",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Reset Password": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Atur Ulang Kata Sandi",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Reset your password": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Atur ulang kata sandi Anda",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Save & Return": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Simpan & Kembali",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Save :name": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "Simpan :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Search :name": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Cari :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Send": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Kirim",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Server Error": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Terjadi kesalahan server",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Service Unavailable": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Layanan tidak tersedia",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Show": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "Tampilkan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Show All": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Tampilkan Semua",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Showing": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Menampilkan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Solve": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Selesaikan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Start": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "Mulai",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Switch": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Beralih",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Switch To Role": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Beralih ke Peran",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Tag": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Beri label",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "The given data was invalid.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Data yang diberikan tidak valid.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "The response is not a streamed response.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Responsnya bukan respons yang dialirkan.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "The response is not a view.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Responsnya bukan tampilan.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "This action is unauthorized.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Tindakan ini tidak sah.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "This password reset link will expire in :count minutes.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Tautan atur ulang kata sandi ini akan kedaluwarsa dalam :count menit.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Toggle navigation": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Alihkan navigasi",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Too Many Requests": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Terlalu banyak permintaan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Translate": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Terjemahkan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Unauthorized": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Tidak sah",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Unpack": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Bongkar",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Update :name": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Perbarui :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Verify Email Address": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Verifikasi Alamat Email",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Verify your email address": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Verifikasi alamat email Anda",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "View": {
+                "curated_at": "2026-09-24T09:23:40+07:00",
+                "value": "Lihat",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "Whoops!": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Aduh!",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "You are receiving this email because we received a password reset request for your account.": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "Anda menerima email ini karena kami menerima permintaan atur ulang kata sandi untuk akun Anda.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "errors": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "kesalahan",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "length": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "panjang",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "of": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "dari",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "results": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "hasil",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            },
+            "to": {
+                "curated_at": "2026-09-24T09:20:03+07:00",
+                "value": "kepada",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/id.json"
+            }
+        },
+        "ja": {
+            "(and :count more error)": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "(その他、:countエラーあり)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "(and :count more errors)": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "(その他、:countエラーあり)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "A decryption key is required.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "復号キーは必須です。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Accept": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "承認",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Accepted": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "受理済",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Action": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "操作",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Actions": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "操作",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "All rights reserved.": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "無断転載を禁じます。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Associate": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "関連付け",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Browse": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "参照",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Connect": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "連携",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Detach": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "切り離す",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Disable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "無効にする",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Enable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "有効にする",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Encrypted environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "暗号化されたenvファイルが既に存在しています。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Encrypted environment file not found.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "暗号化されたenvファイルが見つかりません。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "envファイルが既に存在しています。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Environment file not found.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "envファイルが見つかりません。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Forbidden": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "アクセス禁止",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Found": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "一時的な移動",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Go to page :page": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": ":pageページへ",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "HTTP Version Not Supported": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "サポートしていない HTTP バージョン",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Hello!": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "こんにちは！",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "If you did not create an account, no further action is required.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "アカウント作成にお心当たりがない場合は、このメールを無視してください。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "If you did not request a password reset, no further action is required.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "パスワード再設定のリクエストにお心当たりがない場合は、このメールを無視してください。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "If you're having trouble clicking the \":actionText\" button, copy and paste the URL below\ninto your web browser:": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "\":actionText\"ボタンがクリックできない場合は、以下のURLに直接アクセスしてください。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Impersonate": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "代理ログイン",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Impersonation": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "代理ログイン",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Introduction": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "概要",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Invalid JSON was returned from the route.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "無効なJSON形式がルートから返却されました。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Invalid SSL Certificate": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "無効な SSL 証明書",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Invalid filename.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "無効なファイル名です。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Length Required": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Content-Length が必要",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Load": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "読み込む",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Location": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "位置",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Misdirected Request": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "リクエスト先が誤っています",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Moved Permanently": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "恒久的な移動",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "New": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "新規",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "No": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "いいえ",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "OK": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "OK",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Page Expired": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "ページが無効です",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Pagination Navigation": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "ページネーション",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Payment Required": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "支払いが必要",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Please click the button below to verify your email address.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "メールアドレスを確認するには、以下のボタンをクリックしてください。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Precondition Failed": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "前提条件の失敗",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Railgun Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Railgun エラー",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Range Not Satisfiable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "リクエスト範囲が無効",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Regards,": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "よろしくお願いします。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Register": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "アカウント作成",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Reset Password": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "パスワード再設定",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Reset your password": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "パスワードの再設定",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "SSL Handshake Failed": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "SSLハンドシェイクに失敗",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Server Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "サーバーエラー",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Service Unavailable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "サービスは利用できません",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Showing": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "表示中",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Subscribe": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "サブスクライブ",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "The given data was invalid.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "指定されたデータは無効でした。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "The response is not a streamed response.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "レスポンスは、ストリーミング形式ではありません。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "The response is not a view.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "レスポンスは、ビューではありません。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "This action is unauthorized.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "この操作は許可されていません。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "This password reset link will expire in :count minutes.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "このパスワード再設定リンクの有効期限は:count分です。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Toggle navigation": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "ナビゲーション切替",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Too Early": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "時期尚早",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "URI Too Long": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "URL が長すぎます",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Unauthorized": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "認証が必要",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Variant Also Negotiates": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "バリアントのネゴシエーション",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Verify Email Address": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "メールアドレスの確認",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Verify your email address": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "メールアドレスの確認",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "View": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "表示",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Web Server is Down": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Web サーバーが停止中",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Whoops!": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "おっと！",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "Yes": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "はい",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "You are receiving this email because we received a password reset request for your account.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "パスワード再設定のリクエストを受け付けました。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "errors": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "エラー",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "length": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "長さ",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "of": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "の",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "results": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "結果",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            },
+            "to": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "に",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ja.json"
+            }
+        },
+        "ko": {
+            "(and :count more error)": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "(그리고 :count개 이상의 오류)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "(and :count more errors)": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "(그리고 :count개 이상의 오류)|(그리고 :count개 이상의 오류)|(그리고 :count개 이상의 오류)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "A Timeout Occurred": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "시간 초과 발생",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "A decryption key is required.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "복호화 키가 필요합니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Action": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "작업",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Actions": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "작업",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "All rights reserved.": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "무단 전재 및 재배포 금지.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Browse": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "찾아보기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Choose": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "선택하기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Choose File": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "파일 선택하기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Choose Image": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "이미지 선택하기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Click to copy": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "클릭하여 복사",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Client Closed Request": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "클라이언트 종료 요청",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Collapse": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "접기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Collapse All": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "모두 접기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Connect": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "연결",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Connection Closed Without Response": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "응답 없이 연결 종료",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Connection Timed Out": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "연결 시간 초과",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Details": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "상세 정보",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Disable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "비활성화하기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Discard": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "버리기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Down": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "아래로",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Edit": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "편집",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Enable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "활성화하기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Encrypted environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "암호화된 환경 파일이 이미 존재합니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Encrypted environment file not found.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "암호화된 환경 파일을 찾을 수 없습니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "환경 파일이 이미 존재합니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Environment file not found.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "환경 파일을 찾을 수 없습니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Expand": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "펼치기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Expand All": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "모두 펼치기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Forbidden": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "금지됨",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Found": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "임시 이동",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Go to page :page": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": ":page 페이지로 이동",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Gone": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "존재하지 않음",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "IM Used": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "IM 사용됨",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "If you did not create an account, no further action is required.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "계정을 생성하지 않았다면 추가 조치가 필요하지 않습니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "If you did not request a password reset, no further action is required.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "귀하께서 비밀번호 재설정을 요청하지 않으셨다면, 추가 조치가 필요하지 않습니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "If you're having trouble clicking the \":actionText\" button, copy and paste the URL below\ninto your web browser:": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "\":actionText\" 버튼을 클릭하는 중에 문제가 있는 경우 아래 URL을 복사하여\n웹 브라우저에 붙여넣으세요:",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Impersonate": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "사용자 대신 로그인",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Impersonation": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "대리 로그인",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Invalid JSON was returned from the route.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "경로에서 잘못된 JSON이 반환되었습니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Invalid filename.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "파일 이름이 잘못되었습니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Length Required": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "길이 지정 필요",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Location": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "위치",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Loop Detected": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "루프 감지됨",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Maintenance Mode": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "점검 모드",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Method Not Allowed": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "허용되지 않은 메서드",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Misdirected Request": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "잘못 전달된 요청",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Moved Permanently": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "영구 이동",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "New": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "새로 만들기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Not Found": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "찾을 수 없음",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Not Modified": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "변경되지 않음",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "OK": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "확인",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Open in a parent frame": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "상위 프레임에서 열기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Open in the topmost frame": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "최상위 프레임에서 열기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Origin Is Unreachable": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "원본 서버에 연결할 수 없음",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Page Expired": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "만료된 페이지",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Pagination Navigation": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "페이지 탐색",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Payload Too Large": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "요청 본문이 너무 큼",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Please click the button below to verify your email address.": {
+                "curated_at": "2026-09-23T13:18:52+07:00",
+                "value": "이메일 주소를 확인하려면 아래 버튼을 클릭하세요.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Preview": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "미리보기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Record": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "기록",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Regards,": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "감사합니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Register": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "회원가입",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Request Timeout": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "요청 시간 초과",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Reset Password": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "비밀번호 재설정",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Reset your password": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "비밀번호를 재설정하세요",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Retry With": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "재시도 요청",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Select": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "선택하기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Select All": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "모두 선택",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Server Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "서버 오류",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Service Unavailable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "서비스를 사용할 수 없습니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Show": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "표시",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Show :name": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": ":name 표시",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Show All": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "모두 표시",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Showing": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "표시 중",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Subscribe": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "구독하기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "The given data was invalid.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "제공된 데이터가 유효하지 않습니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "The response is not a streamed response.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "응답이 스트리밍 응답이 아닙니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "The response is not a view.": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "응답이 뷰가 아닙니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "This action is unauthorized.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "이 작업은 승인되지 않았습니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "This password reset link will expire in :count minutes.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "이 비밀번호 재설정 링크는 :count분 후에 만료됩니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Toggle navigation": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "내비게이션 전환",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Too Many Requests": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "요청이 너무 많음",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Translate": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "번역",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Translate It": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "번역하기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "URI Too Long": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "URI가 너무 김",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Unauthorized": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "인증 실패",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Up": {
+                "curated_at": "2026-09-23T12:34:50+07:00",
+                "value": "위로",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Update": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "업데이트하기",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Use Proxy": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "프록시를 통해 접근",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Variant Also Negotiates": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "변형도 협상함",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Verify Email Address": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "이메일 주소 확인",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Verify your email address": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "이메일 주소 확인",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "Whoops!": {
+                "curated_at": "2026-09-23T13:42:12+07:00",
+                "value": "이런!",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "You are receiving this email because we received a password reset request for your account.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "귀하의 계정에 대한 비밀번호 재설정이 요청되어 이 메일이 발송되었습니다.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "errors": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "오류",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "length": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "길이",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "of": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "의",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "results": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "결과",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            },
+            "to": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "에",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ko.json"
+            }
+        },
+        "ru": {
+            "(and :count more error)": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "(и ещё :count ошибка)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "(and :count more errors)": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "(и ещё :count ошибка)|(и ещё :count ошибки)|(и ещё :count ошибок)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "A Timeout Occurred": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Произошёл тайм-аут",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "A decryption key is required.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Ключ дешифровки обязателен.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Admin": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Администратор",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Agree": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Согласен",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Archive": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Архивировать",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Associate": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Связать",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Bad Gateway": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Ошибка шлюза",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Bad Request": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Неверный запрос",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Bandwidth Limit Exceeded": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Превышен лимит пропускной способности",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Browse": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Обзор",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Click to copy": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Нажмите, чтобы скопировать",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Client Closed Request": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Клиент закрыл запрос",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Connection Timed Out": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Время ожидания соединения истекло",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Details": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Подробнее",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Down": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Переместить вниз",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Encrypted environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Зашифрованный файл настроек окружения уже существует.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Encrypted environment file not found.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Зашифрованный файл настроек окружения не найден.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Файл настроек окружения уже существует.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Environment file not found.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Файл настроек окружения не найден.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Expand": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Развернуть",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Expand All": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Развернуть всё",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Expectation Failed": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Ожидание не оправдалось",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Explanation": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Объяснение",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Export": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Экспортировать",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Export :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Экспортировать :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Failed Dependency": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Неудачная зависимость",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Forbidden": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Доступ запрещён",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Gateway Timeout": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Время ожидания шлюза истекло",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Go Home": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "На главную",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Go to page :page": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Перейти к :page-й странице",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Home": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Главная",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "I'm a teapot": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Я — чайник",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "IM Used": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "IM использован",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "If you did not create an account, no further action is required.": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Если вы не создавали учётную запись, никаких дополнительных действий не требуется.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "If you did not request a password reset, no further action is required.": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Если вы не запрашивали сброс пароля, никаких дополнительных действий не требуется.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "If you're having trouble clicking the \":actionText\" button, copy and paste the URL below\ninto your web browser:": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Если у вас возникли проблемы с нажатием кнопки «:actionText», скопируйте приведённый ниже URL-адрес и вставьте его в адресную строку браузера:",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Impersonate": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Войти от имени пользователя",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Impersonation": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Вход от имени пользователя",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Import": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Импортировать",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Import :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Импортировать :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Insufficient Storage": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Недостаточно места",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Internal Server Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Внутренняя ошибка сервера",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Invalid JSON was returned from the route.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Маршрут вернул некорректный JSON.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Invalid SSL Certificate": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Неверный SSL-сертификат",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Invalid filename.": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Недопустимое имя файла.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Length Required": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Требуемая длина",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Location": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Местоположение",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Locked": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Заблокировано",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Login": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Вход",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Logout": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Выход",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Loop Detected": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Обнаружен цикл",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Maintenance Mode": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Режим обслуживания",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Method Not Allowed": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Метод не разрешён",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Misdirected Request": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Запрос направлен не туда",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Multi-Status": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Мультистатус",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Multiple Choices": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Множественный выбор",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Network Connect Timeout Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Ошибка тайм-аута сетевого подключения",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Network Read Timeout Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Ошибка тайм-аута чтения сети",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "No Content": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Нет содержимого",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Non-Authoritative Information": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Неавторитетная информация",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Not Extended": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Не расширено",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Not Modified": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Не изменялось",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Open in the topmost frame": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Открыть в верхнем фрейме",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Page Expired": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Срок действия страницы истёк",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Pagination Navigation": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Навигация по страницам",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Partial Content": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Частичное содержимое",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Payload Too Large": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Слишком большой объём данных",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Payment Required": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Требуется оплата",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Please click the button below to verify your email address.": {
+                "curated_at": "2026-09-23T20:03:10+07:00",
+                "value": "Нажмите кнопку ниже, чтобы подтвердить ваш адрес электронной почты.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Precondition Failed": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Предварительное условие не выполнено",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Precondition Required": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Обязательное предварительное условие",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Processing": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Обработка",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Railgun Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Ошибка Railgun",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Range Not Satisfiable": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Диапазон не может быть удовлетворён",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Regards,": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "С уважением,",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Register": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Регистрация",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Request Header Fields Too Large": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Слишком большие поля заголовка запроса",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Request Timeout": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Время ожидания запроса истекло",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Reset Content": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Сбросить содержимое",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Reset Password": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Сбросить пароль",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Reset your password": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Сбросить пароль",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Retry With": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Повторить с",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "SSL Handshake Failed": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "SSL-квитирование не удалось",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Search :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Найти :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "See Other": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Смотреть другое",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Server Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Ошибка сервера",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Service Unavailable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Сервис недоступен",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Session Has Expired": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Сессия истекла",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Showing": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Показано с",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Sign In": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Войти",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "The given data was invalid.": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Указанные данные недопустимы.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "The response is not a streamed response.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Ответ не является потоковым.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "The response is not a view.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Ответ не является представлением.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "This action is unauthorized.": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Это действие не разрешено.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "This password reset link will expire in :count minutes.": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Срок действия ссылки для сброса пароля истечёт через :count минут.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Toggle navigation": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Переключить навигацию",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Translate": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Перевести",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Translate It": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Перевести это",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "URI Too Long": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Слишком длинный URI",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Unprocessable Entity": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Необрабатываемая сущность",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Up": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Переместить вверх",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Update": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Обновить",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Use Proxy": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Использовать прокси",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Variant Also Negotiates": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Вариант тоже участвует в согласовании",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Verify Email Address": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Подтвердить адрес электронной почты",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Verify your email address": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Подтвердите ваш адрес электронной почты",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "View :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Просмотреть :name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Web Server is Down": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Веб-сервер недоступен",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "Whoops!": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Упс!",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "You are receiving this email because we received a password reset request for your account.": {
+                "curated_at": "2026-09-23T19:44:16+07:00",
+                "value": "Вы получили это письмо, потому что мы получили запрос на сброс пароля для вашей учётной записи.",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "errors": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "ошибки",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "length": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "длина",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "of": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "из",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "results": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "результатов",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            },
+            "to": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "по",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/ru.json"
+            }
+        },
+        "zh_CN": {
+            "(and :count more error)": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "(还有 :count 个错误)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "(and :count more errors)": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "(还有 :count 个错误)",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "A decryption key is required.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "需要解密密钥。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Add :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "添加:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Archive": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "归档",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Associate": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "关联",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Collapse": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "收起",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Collapse All": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "全部收起",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Connection Closed Without Response": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "连接已关闭且无响应",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Continue": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "继续",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Create :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "创建:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Delete :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "删除:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Detach": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "解除关联",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Disable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "停用",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Discard": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "放弃",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Down": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "下移",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Duplicate :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "复制:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Encrypted environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "加密环境配置文件已存在。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Encrypted environment file not found.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "未找到加密环境配置文件。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Environment file already exists.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "环境配置文件已存在。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Environment file not found.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "未找到环境配置文件。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Expectation Failed": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "预期失败",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Explanation": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "说明",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Export :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "导出:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Failed Dependency": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "依赖项失败",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Forbidden": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "禁止访问",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Go Home": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "前往首页",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Go to page :page": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "前往第 :page 页",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Gone": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "资源已不存在",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "HTTP Version Not Supported": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "不支持该 HTTP 版本",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Hide :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "隐藏:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Home": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "首页",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "IM Used": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "IM 已使用",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "If you did not create an account, no further action is required.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "如果您未注册帐号，请忽略此邮件。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "If you did not request a password reset, no further action is required.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "如果您未申请重设密码，请忽略此邮件。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "If you're having trouble clicking the \":actionText\" button, copy and paste the URL below\ninto your web browser:": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "如果您单击「:actionText」按钮时遇到问题，请复制下方链接到浏览器中访问：",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Image": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "图片",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Impersonation": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "身份模拟",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Import :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "导入:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Introduction": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "简介",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Invalid JSON was returned from the route.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "路由返回了无效的 JSON。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Invalid SSL Certificate": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "SSL 证书无效",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Invalid filename.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "无效的文件名。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Length Required": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "需要内容长度",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Like": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "赞",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Location": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "地点",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Locked": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "已锁定",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Log Out": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "退出登录",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Logout": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "退出登录",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Misdirected Request": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "请求被错误定向",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Network Authentication Required": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "需要网络身份验证",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Network Connect Timeout Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "网络连接超时错误",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Network Read Timeout Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "网络读取超时错误",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "New :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "新建:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "No": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "否",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Not Extended": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "未扩展",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Not Found": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "未找到",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Open in a current window": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "在当前窗口打开",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Open in a new window": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "在新窗口打开",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Open in a parent frame": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "在父框架打开",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Open in the topmost frame": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "在最顶层框架打开",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Open on the website": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "在网站中打开",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Origin Is Unreachable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "源站不可达",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Page Expired": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "页面会话已超时",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Pagination Navigation": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "分页导航",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Please click the button below to verify your email address.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "请点击下方按钮验证您的邮箱：",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Precondition Required": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "需要满足前提条件",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Proxy Authentication Required": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "需要代理身份验证",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Railgun Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Railgun 错误",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Range Not Satisfiable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "请求范围无法满足",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Regards,": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "致敬，",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Register": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "注册",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Request Header Fields Too Large": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "请求头字段过大",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Reset Password": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "重置密码",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Reset your password": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "重置您的密码",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Retry With": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "需要重试",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "SSL Handshake Failed": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "SSL 握手失败",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Save :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "保存:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Search :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "搜索:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "See Other": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "查看其他位置",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Server Error": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "服务器错误",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Service Unavailable": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "服务不可用",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Show :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "显示:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Show All": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "全部显示",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Showing": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "显示中",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Sign In": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "登录",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "The given data was invalid.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "给定的数据无效。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "The response is not a streamed response.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "该响应不是流式响应。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "The response is not a view.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "响应不是视图。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "This action is unauthorized.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "此操作未经授权。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "This password reset link will expire in :count minutes.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "这个重设密码链接将会在 :count 分钟后失效。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Toggle navigation": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "切换导航",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Too Early": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "请求过早",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Too Many Requests": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "请求次数过多",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Translate It": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "翻译此内容",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "URI Too Long": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "URI 过长",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Unavailable For Legal Reasons": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "因法律原因不可用",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Unpack": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "解压",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Unprocessable Entity": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "无法处理的实体",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Unsubscribe": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "取消订阅",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Up": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "上移",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Variant Also Negotiates": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "变体也进行协商",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Verify Email Address": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "验证邮箱",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Verify your email address": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "验证您的邮箱",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "View :name": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "查看:name",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Web Server is Down": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "Web 服务器已关闭",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Whoops!": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "哎呀！",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "Yes": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "是",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "You are receiving this email because we received a password reset request for your account.": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "您收到此电子邮件是因为我们收到了您帐户的密码重设请求。",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "errors": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "错误",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "length": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "长度",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "of": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "于",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "results": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "结果",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            },
+            "to": {
+                "curated_at": "2026-09-24T09:20:04+07:00",
+                "value": "至",
+                "surface": "flat package pack (laravel-lang JSON)",
+                "source": "lang/zh_CN.json"
+            }
+        }
+    },
+    "updated_at": "2026-09-24T09:44:15+07:00",
+    "notes": {
+        "ar": [
+            "ar curation wave: flat pack mirrors the PHP namespaces",
+            "ar curation wave: multi-owner key fix — flat pack re-mirrors the corrected owners"
+        ],
+        "id": [
+            "ko curation wave: id flat pack leaks and defects",
+            "id curation wave: flat pack mirrors the PHP namespaces"
+        ],
+        "ja": [
+            "ko curation wave: ja flat pack leak and defects",
+            "ja curation wave: flat pack mirrors the PHP namespaces"
+        ],
+        "ko": [
+            "ko curation wave: flat pack curated against the SPA/backend action vocabulary",
+            "ko curation wave: register normalized to 해요체",
+            "ko curation wave: flat pack curated; http-status duplicates aligned to the curated lang/ko/http-statuses.php wording, Discard de-collided from Cancel, and calque strings made natural",
+            "ko curation wave: flat pack mirrors the PHP namespaces"
+        ],
+        "ru": [
+            "ru curation wave: flat pack",
+            "ru curation wave: drop Пожалуйста filler",
+            "ru curation wave: flat pack mirrors the PHP namespaces"
+        ],
+        "zh_CN": [
+            "ko curation wave: zh_CN flat pack placeholder repair",
+            "zh_CN curation wave: flat pack mirrors the PHP namespaces"
+        ]
+    }
+}

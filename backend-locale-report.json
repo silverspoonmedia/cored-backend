@@ -17,97 +17,12 @@
         "passwords.php",
         "validation.php"
     ],
-    "files": {
-        "web/settings.php": {
-            "copy_candidates": [
-                {
-                    "locale": "id",
-                    "key": "groups.file_hosting",
-                    "english": "File Hosting"
-                },
-                {
-                    "locale": "id",
-                    "key": "options.platform.notifications.delivery.polling",
-                    "english": "HTTP polling"
-                },
-                {
-                    "locale": "id",
-                    "key": "options.platform.notifications.delivery.realtime",
-                    "english": "WebSocket (realtime)"
-                }
-            ],
-            "missing_keys": [],
-            "extra_keys": []
-        },
-        "web/vtual-orphans.php": {
-            "copy_candidates": [
-                {
-                    "locale": "id",
-                    "key": "channels.profile_placeholder_youtube",
-                    "english": "UC… / @handle / https://youtube.com/@handle"
-                },
-                {
-                    "locale": "id",
-                    "key": "channels.profile_placeholder_twitch",
-                    "english": "12345678 / login / https://twitch.tv/login"
-                },
-                {
-                    "locale": "ja",
-                    "key": "channels.profile_placeholder_youtube",
-                    "english": "UC… / @handle / https://youtube.com/@handle"
-                },
-                {
-                    "locale": "ja",
-                    "key": "channels.profile_placeholder_twitch",
-                    "english": "12345678 / login / https://twitch.tv/login"
-                },
-                {
-                    "locale": "ko",
-                    "key": "channels.profile_placeholder_youtube",
-                    "english": "UC… / @handle / https://youtube.com/@handle"
-                },
-                {
-                    "locale": "ko",
-                    "key": "channels.profile_placeholder_twitch",
-                    "english": "12345678 / login / https://twitch.tv/login"
-                },
-                {
-                    "locale": "zh_CN",
-                    "key": "channels.profile_placeholder_youtube",
-                    "english": "UC… / @handle / https://youtube.com/@handle"
-                },
-                {
-                    "locale": "zh_CN",
-                    "key": "channels.profile_placeholder_twitch",
-                    "english": "12345678 / login / https://twitch.tv/login"
-                },
-                {
-                    "locale": "ar",
-                    "key": "channels.profile_placeholder_youtube",
-                    "english": "UC… / @handle / https://youtube.com/@handle"
-                },
-                {
-                    "locale": "ar",
-                    "key": "channels.profile_placeholder_twitch",
-                    "english": "12345678 / login / https://twitch.tv/login"
-                },
-                {
-                    "locale": "ru",
-                    "key": "channels.profile_placeholder_youtube",
-                    "english": "UC… / @handle / https://youtube.com/@handle"
-                },
-                {
-                    "locale": "ru",
-                    "key": "channels.profile_placeholder_twitch",
-                    "english": "12345678 / login / https://twitch.tv/login"
-                }
-            ],
-            "missing_keys": [],
-            "extra_keys": []
-        }
-    },
+    "flat_packs_included": [
+        "en.json"
+    ],
+    "files": [],
     "totals": {
-        "copy_candidates": 15,
+        "copy_candidates": 0,
         "missing_keys": 0,
         "extra_keys": 0
     }

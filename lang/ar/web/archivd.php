@@ -91,7 +91,8 @@ return [
         'create_title' => 'مساحة عمل Microstock جديدة',
         'create_hint' => 'امنح مساحة عمل Microstock اسمًا. اترك الحقل فارغًا لاستخدام الاسم الافتراضي.',
         'name_label' => 'اسم مساحة العمل',
-        'name_placeholder' => 'مايكروستوك',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'name_placeholder' => 'Microstock',
         'error_requires_folder' => 'أنشئ مجلدًا (مجموعة) أولًا، ثم ارفع ملفاتك داخله.',
         'error_collection_locked' => 'هذه المجموعة مقفلة ولم تعد تقبل عمليات رفع.',
         'error_image_only' => 'يُسمح فقط بملفات الصور (JPEG وPNG وWebP وGIF) في مجموعة Microstock.',
@@ -160,14 +161,16 @@ return [
             'flat_illustration' => 'رسم توضيحي مسطح',
             'render_3d' => 'تصيير ثلاثي الأبعاد',
             'vector' => 'متجه',
-            'cartoon' => 'رسوم متحركة',
+            // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+            'cartoon' => 'رسوم كرتونية',
             'minimal' => 'بسيط',
             'vintage' => 'عتيق',
             'hand_drawn' => 'مرسوم يدويًا',
             'isometric' => 'متساوي القياس',
         ],
         'progress' => 'تم تحليل :processed من :total',
-        'progress_failed' => '(:failed فشل)',
+        // curated at 2026-09-22T22:07:15+07:00 — ar curation wave 2: placeholder word order aligned with the SPA twin
+        'progress_failed' => '(فشل :failed)',
         'billing_line' => 'رصيد الذكاء الاصطناعي $:balance · حوالي $:estimate لكل ملف (حوالي $:total لهذه المجموعة)',
         'daily_free_line' => 'التحليلات المجانية اليوم: :remaining/:limit',
         'billing_mixed_line' => 'هذه العملية: :daily مجاني + :paid مدفوع',
@@ -200,7 +203,8 @@ return [
         'panel_save' => 'حفظ',
         'panel_reanalyze' => 'إعادة التحليل',
         'panel_saved' => 'تم حفظ البيانات الوصفية.',
-        'panel_queued' => 'أُعيد التحليل إلى قائمة الانتظار.',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'panel_queued' => 'أُضيفت إعادة التحليل إلى قائمة الانتظار.',
         'step_upload' => 'رفع',
         'step_lock_describe' => 'قفل ووصف',
         'step_analyze' => 'تحليل',
@@ -214,27 +218,35 @@ return [
         'step_upload_empty' => 'هذه المجموعة فارغة. ارفع الصور للبدء.',
     ],
     'collab' => [
-        'title' => 'أعمال تعاونية',
-        'subtitle' => 'تخزين الفريق مشترك ضمن الخطة المدفوعة للمالك. ليس عنصر قائمة مستقلًا؛ بدّل الوضع هنا.',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'title' => 'العمل التعاوني',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'subtitle' => 'تخزين الفريق مشترك في إطار الخطة المدفوعة للمالك. ليس عنصرًا مستقلًا في القائمة؛ بدّل الوضع من هنا.',
         'badge_free' => 'خطة مجانية',
         'badge_paid' => 'خطة مدفوعة',
         'badge_grace' => 'فترة سماح',
         'free_heading' => 'في الخطة المجانية يمكنك:',
         'free_can_personal' => 'استخدام التخزين الشخصي (مستوى مجاني بسعة 5 جيجابايت).',
         'free_can_link' => 'مشاركة ملفات أو مجلدات فردية عبر «أي شخص يملك الرابط».',
-        'free_can_join' => 'الانضمام إلى فريق شخص آخر إذا دعاك (ويُستخدم حد حصته).',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'free_can_join' => 'الانضمام إلى فريق شخص آخر إذا دعاك (ويُحتسب من حصته).',
         'free_cannot_heading' => 'في الخطة المجانية لا يمكنك:',
         'free_cannot_create' => 'إنشاء مساحة عمل للفريق.',
-        'free_cannot_invite' => 'دعوة أعضاء إلى فريق تملكه (تحتاج إلى خطة أساسية مدفوعة أو إضافة).',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'free_cannot_invite' => 'دعوة أعضاء إلى فريق تملكه (تحتاج إلى خطة رئيسية مدفوعة أو ملحق).',
         'upgrade_cta' => 'عرض الخطط والترقية',
         'grace_heading' => 'الخطة في فترة السماح',
         'grace_body' => 'تبقى عمليات الرفع والميزات التعاونية محظورة حتى تجدد الخطة. وتظل ملفاتك الشخصية الحالية قابلة للقراءة.',
         'renew_cta' => 'تجديد الخطة',
         'paid_heading' => 'المزايا المدفوعة مفعلة:',
-        'paid_can_create' => 'إنشاء ما يصل إلى 10 مساحات عمل للفريق (والمزيد عبر إضافات Team Workspace Slot) ودعوة الأعضاء.',
-        'paid_can_invite' => 'تُحتسب ملفات الفريق من حصة التخزين للمالك (المالك يدفع).',
-        'paid_can_join' => 'الانضمام إلى فرق الآخرين مع الاحتفاظ بفريقك (يتبع الدور كل مساحة عمل).',
-        'paid_quota_note' => 'يسجل سجل النشاط من أضاف عناصر الفريق أو أعاد تسميتها أو نقلها أو حذفها.',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'paid_can_create' => 'إنشاء ما يصل إلى 10 مساحات عمل للفريق (والمزيد عبر ملحقات Team Workspace Slot) ودعوة الأعضاء.',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'paid_can_invite' => 'تُحتسب ملفات الفريق من حصة تخزين المالك (والمالك هو من يدفع).',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'paid_can_join' => 'الانضمام إلى فرق الآخرين مع الاحتفاظ بفريقك (ويُحدد الدور لكل مساحة عمل على حدة).',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'paid_quota_note' => 'يوثق سجل النشاط من أضاف عناصر الفريق أو أعاد تسميتها أو نقلها أو حذفها.',
         'create_workspace' => 'إنشاء مساحة عمل للفريق',
         'open_my_workspace' => 'فتح فريقي: :name',
         'switch_label' => 'تبديل مساحة العمل:',
@@ -244,9 +256,11 @@ return [
         'invite_token' => 'رمز الدعوة',
         'invite_token_placeholder' => 'ألصق الرمز من المالك',
         'accept' => 'الانضمام إلى الفريق',
-        'accept_hint' => 'يعمل في الخطتين المجانية والمدفوعة. لا يمنع امتلاك فريقك الانضمام إلى فرق أخرى؛ وتُطبق حصة الفريق الآخر هناك.',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'accept_hint' => 'متاح في الخطتين المجانية والمدفوعة. امتلاكك فريقك الخاص لا يمنعك من الانضمام إلى فرق أخرى؛ وتُطبق حصة الفريق الآخر هناك.',
         'invite_token_ready' => 'تم إنشاء الدعوة؛ شارك هذا الرمز مع العضو:',
-        'invite_token_share' => 'لا يتوفر إرسال بالبريد الإلكتروني في MVP بعد. انسخ الرمز وأرسله بنفسك.',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'invite_token_share' => 'لا يدعم الإصدار الأولي (MVP) إرسال البريد الإلكتروني بعد. انسخ الرمز وأرسله بنفسك.',
         'team_context' => 'الفريق: :name',
         'you_are_role' => 'دورك: :role',
         'badge_yours' => 'ملكك',
@@ -269,7 +283,8 @@ return [
         'role_admin' => 'مشرف (إدارة الأعضاء)',
         'send_invite' => 'إرسال الدعوة',
         'invite_result_hint' => 'بعد الإرسال، يظهر رمز في الأعلى؛ شاركه ليتمكن المدعوون من الانضمام.',
-        'create_hint' => 'تشمل الخطط المدفوعة 10 فرق مملوكة. اشترِ Team Workspace Slot (+1 دولار شهريًا لكل خانة) للمزيد. الانضمام إلى فرق أخرى غير محدود.',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'create_hint' => 'تشمل الخطط المدفوعة 10 فرق مملوكة. اشترِ ملحق Team Workspace Slot (+1 دولار شهريًا لكل خانة) للمزيد. الانضمام إلى فرق أخرى غير محدود.',
         'workspace_name' => 'اسم مساحة العمل',
         'default_workspace_name' => 'مساحة عمل الفريق',
         'member_readonly_hint' => 'أنت عضو هنا. يمكن للمالك أو المشرف فقط دعوة الأشخاص أو إزالتهم.',
@@ -297,7 +312,8 @@ return [
     'link_copied' => 'تم نسخ الرابط إلى الحافظة.',
     'ajax_success' => 'اكتمل الإجراء.',
     'ajax_error' => 'فشل الإجراء.',
-    'network_error' => 'خطأ في الشبكة. أعد المحاولة.',
+    // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+    'network_error' => 'حدث خطأ في الشبكة. يرجى المحاولة مرة أخرى.',
     'type_image' => 'صورة',
     'type_pdf' => 'مستند PDF',
     'type_video' => 'فيديو',
@@ -334,8 +350,11 @@ return [
         'share' => 'مشاركة',
         'unshare' => 'جعلها خاصة',
         'delete' => 'حذف',
-        'confirm_share' => 'هل تريد مشاركة العناصر المحددة وعددها {n} مع أي شخص يملك الرابط؟',
-        'confirm_unshare' => 'هل تريد جعل العناصر المحددة وعددها {n} خاصة؟',
-        'confirm_delete' => 'هل تريد نقل العناصر المحددة وعددها {n} إلى سلة المهملات؟',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'confirm_share' => 'هل تريد مشاركة {n} من العناصر المحددة مع أي شخص يملك الرابط؟',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'confirm_unshare' => 'هل تريد جعل {n} من العناصر المحددة خاصة؟',
+        // curated at 2026-09-22T20:17:26+07:00 — ar curation wave
+        'confirm_delete' => 'هل تريد نقل {n} من العناصر المحددة إلى سلة المهملات؟',
     ],
 ];

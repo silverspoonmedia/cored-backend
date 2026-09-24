@@ -3,7 +3,8 @@
 return [
     'list_success' => '投稿を読み込みました。',
     'show_success' => '投稿を読み込みました。',
-    'trashed_success' => '削除された投稿を読み込みました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'trashed_success' => 'ゴミ箱の投稿を読み込みました。',
     'created' => '投稿を作成しました。',
     'updated' => '投稿を更新しました。',
     'deleted' => '投稿を削除しました。',

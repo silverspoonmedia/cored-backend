@@ -125,7 +125,7 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => 'Solo thinking concurrency',
         'microstock.ai.upstream.release_after_seconds' => 'Upstream slot release after (seconds)',
         'microstock.csv_disk' => 'CSV export disk',
-        // Vtual
+        // vTual
         'vtual.credential_test.http_timeout' => 'Credential test HTTP timeout (seconds)',
         'vtual.credential_test.twitch_token_skew_seconds' => 'Twitch token skew (seconds)',
         'vtual.credential_test.youtube_probe_channel_id' => 'YouTube probe channel ID',

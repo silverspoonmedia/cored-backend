@@ -1,9 +1,12 @@
 <?php
 
 return [
-    'list_success' => '活动日志条目已成功获取。',
-    'show_success' => '活动日志条目已成功获取。',
-    'subject_list_success' => '主体活动历史已成功获取。',
+    // curated at 2026-09-22T12:19:25+07:00 — zh_CN curation wave
+    'list_success' => '已成功获取活动日志条目。',
+    // curated at 2026-09-22T12:19:25+07:00 — zh_CN curation wave
+    'show_success' => '已成功获取活动日志条目。',
+    // curated at 2026-09-22T12:19:25+07:00 — zh_CN curation wave
+    'subject_list_success' => '已成功获取主体活动历史。',
     'events' => [
         'created' => '已创建',
         'updated' => '已更新',

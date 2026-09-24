@@ -21,7 +21,8 @@ return [
     'token_expired' => '令牌已过期。',
     'token_revoked' => '令牌已撤销。',
     'could_not_authenticate' => '无法验证令牌。',
-    'unauthorized' => '你无权执行此操作。',
+    // curated at 2026-09-22T12:19:26+07:00 — zh_CN curation wave
+    'unauthorized' => '您无权执行此操作。',
     'two_factor_setup_started' => '双重身份验证设置已开始。',
     'two_factor_enabled' => '双重身份验证已启用。',
     'two_factor_disabled' => '双重身份验证已停用。',

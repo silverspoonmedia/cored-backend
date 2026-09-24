@@ -1,9 +1,11 @@
 <?php
 
 return [
-    'register_success' => '회원 가입이 완료되었습니다.',
+    // curated at 2026-09-23T11:23:31+07:00 — ko curation wave
+    'register_success' => '회원가입이 완료되었습니다.',
     'login_success' => '로그인했습니다.',
-    'me_success' => '인증된 사용자 정보를 가져왔습니다.',
+    // curated at 2026-09-23T11:23:31+07:00 — ko curation wave
+    'me_success' => '인증된 사용자 정보를 불러왔습니다.',
     'refresh_success' => '토큰을 갱신했습니다.',
     'logout_success' => '로그아웃했습니다.',
     'password_forgot' => '해당 이메일 주소가 시스템에 존재하면 비밀번호 재설정 링크를 보냈습니다.',
@@ -28,5 +30,6 @@ return [
     'two_factor_already_enabled' => '2단계 인증이 이미 활성화되어 있습니다.',
     'two_factor_not_enabled' => '2단계 인증이 활성화되어 있지 않습니다.',
     'invalid_two_factor_code' => '2단계 인증 코드가 유효하지 않습니다.',
-    'login_throttled' => '로그인 시도가 너무 많습니다. :seconds초 후에 다시 시도하십시오.',
+    // curated at 2026-09-23T13:18:48+07:00 — ko curation wave: register normalized to 해요체
+    'login_throttled' => '로그인 시도가 너무 많습니다. :seconds초 후에 다시 시도하세요.',
 ];

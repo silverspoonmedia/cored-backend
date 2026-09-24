@@ -25,18 +25,22 @@ return [
             'display_name' => '표시 이름',
             'slug' => '슬러그',
             'channels' => '채널',
-            'created_at' => '생성됨',
+            // curated at 2026-09-23T11:04:36+07:00 — ko curation wave
+            'created_at' => '생성일',
             'actions' => '작업',
         ],
     ],
     'channels' => [
         'section_title' => '플랫폼 채널',
-        'section_help' => '일괄 확인할 채널 프로필을 추가하십시오(즉시 API 호출 없음). 플랫폼당 채널 50개가 대기열에 쌓이거나 15분이 지나면 자동으로 확인됩니다.',
+        // curated at 2026-09-23T13:30:12+07:00 — ko curation wave: alignment pass (term unification, register, cross-side parity)
+        'section_help' => '일괄 해석할 채널 프로필을 추가하세요(즉시 API 호출 없음). 플랫폼당 채널 50개가 대기열에 쌓이거나 15분이 지나면 자동으로 해석됩니다.',
         'avatar' => '아바타',
         'platform' => '플랫폼',
         'profile' => '채널 프로필',
-        'profile_help' => '플랫폼 채널 ID, @handle, 로그인 또는 프로필 URL.',
-        'profile_help_youtube' => 'YouTube: UC 채널 ID, @handle 또는 youtube.com/… 프로필 URL.',
+        // curated at 2026-09-23T13:31:29+07:00 — ko curation wave: handle is 핸들 (same as the handle column), not the Latin handle
+        'profile_help' => '플랫폼 채널 ID, @핸들, 로그인 또는 프로필 URL.',
+        // curated at 2026-09-23T13:30:12+07:00 — ko curation wave: alignment pass (term unification, register, cross-side parity)
+        'profile_help_youtube' => 'YouTube: UC 채널 ID, @핸들 또는 youtube.com/… 프로필 URL.',
         'profile_help_twitch' => 'Twitch: 숫자 사용자 ID, 로그인 또는 twitch.tv/… 프로필 URL.',
         'profile_placeholder_youtube' => 'UC… / @handle / https://youtube.com/@handle',
         'profile_placeholder_twitch' => '12345678 / login / https://twitch.tv/login',
@@ -46,9 +50,11 @@ return [
         'add_button' => '채널 추가',
         'table_caption' => '고아 vTuber 채널',
         'empty' => '아직 등록된 채널이 없습니다.',
-        'status_pending' => '확인 대기 중',
+        // curated at 2026-09-23T13:30:12+07:00 — ko curation wave: alignment pass (term unification, register, cross-side parity)
+        'status_pending' => '해석 대기 중',
         'status_active' => '활성',
-        'status_disconnected' => '연결 해제됨',
+        // curated at 2026-09-23T13:30:12+07:00 — ko curation wave: alignment pass (term unification, register, cross-side parity)
+        'status_disconnected' => '연결 끊김',
         'status_archived' => '보관됨',
     ],
 ];

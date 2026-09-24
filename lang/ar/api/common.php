@@ -12,7 +12,8 @@ return [
     'batch_method_not_allowed' => 'تسمح إدخالات الدفعة بطلبات GET أو HEAD فقط.',
     'batch_path_not_allowed' => 'يمكن لإدخالات الدفعة استهداف واجهة API هذه فقط.',
     'batch_sub_failed' => 'فشل إكمال أحد الطلبات ضمن الدفعة.',
-    'batch_timeout' => 'تجاوزت الدفعة الوقت المخصص لها؛ تم تجاوز الإدخالات المتبقية.',
+    // curated at 2026-09-22T20:32:27+07:00 — ar curation wave
+    'batch_timeout' => 'تجاوزت الدفعة الوقت المخصص لها؛ تم تخطي الإدخالات المتبقية.',
     'batch_ok' => 'اكتملت الدفعة.',
     'spa_origin_required' => 'لا يمكن الوصول إلى واجهة API هذه إلا عبر التطبيق.',
     'spa_csrf_issued' => 'تم إصدار رمز CSRF.',

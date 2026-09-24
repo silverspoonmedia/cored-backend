@@ -1,7 +1,10 @@
 <?php
 
 return [
-    'list' => '통화가 로드되었습니다.',
-    'updated' => '통화가 업데이트되었습니다',
-    'not_found' => '화폐를 찾을 수 없습니다.',
+    // curated at 2026-09-23T11:22:15+07:00 — ko curation wave
+    'list' => '통화를 불러왔습니다.',
+    // curated at 2026-09-23T11:22:15+07:00 — ko curation wave
+    'updated' => '통화가 수정되었습니다.',
+    // curated at 2026-09-23T11:22:15+07:00 — ko curation wave
+    'not_found' => '통화를 찾을 수 없습니다.',
 ];

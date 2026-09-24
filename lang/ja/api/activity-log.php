@@ -1,9 +1,12 @@
 <?php
 
 return [
-    'list_success' => 'アクティビティログを取得しました。',
-    'show_success' => 'アクティビティログエントリを取得しました。',
-    'subject_list_success' => '対象のアクティビティ履歴を取得しました。',
+    // curated at 2026-09-21T17:32:28+07:00 — ja curation wave
+    'list_success' => 'アクティビティログを読み込みました。',
+    // curated at 2026-09-21T17:32:28+07:00 — ja curation wave
+    'show_success' => 'アクティビティログのエントリを読み込みました。',
+    // curated at 2026-09-21T17:32:28+07:00 — ja curation wave
+    'subject_list_success' => '対象のアクティビティ履歴を読み込みました。',
     'events' => [
         'created' => '作成',
         'updated' => '更新',

@@ -10,7 +10,8 @@ return [
         'updated' => '크리에이터가 업데이트되었습니다.',
         'archived' => '크리에이터가 보관 처리되었습니다.',
         'name_required' => '표시 이름은 필수입니다.',
-        'slug_taken' => '이 크리에이터 slug는 이미 사용 중입니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'slug_taken' => '이 크리에이터 슬러그는 이미 사용 중입니다.',
         'not_found' => '크리에이터 프로필을 찾을 수 없습니다.',
         'self_create_disabled' => '직접 프로필 생성이 비활성화되었습니다. 기존 프로필을 클레임하거나 스태프에게 생성을 요청하세요.',
     ],
@@ -46,29 +47,40 @@ return [
         'claimable_success' => '클레임 가능한 크리에이터 목록을 불러왔습니다.',
         'list_success' => '클레임 목록을 불러왔습니다.',
         'show_success' => '클레임을 불러왔습니다.',
-        'started' => '클레임이 시작되었습니다. 채널 소개/바이오에 토큰을 입력한 후 인증하세요.',
-        'verified' => '클레임이 인증되었습니다. 이제 소유자입니다.',
-        'verify_queued' => '인증이 대기열에 추가되었습니다. 배치가 준비되면 실행됩니다(최대 50건 대기 또는 대기 시간 경과 후).',
-        'verify_already_queued' => '이 클레임의 인증이 이미 대기열에 있습니다.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'started' => '클레임이 시작되었습니다. 채널 소개/바이오에 토큰을 입력한 후 검증하세요.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'verified' => '클레임이 검증되었습니다. 이제 소유자입니다.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'verify_queued' => '검증이 대기열에 추가되었습니다. 배치가 준비되면 실행됩니다(최대 50건 대기 또는 대기 시간 경과 후).',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'verify_already_queued' => '이 클레임의 검증이 이미 대기열에 있습니다.',
         'blocked' => '지금은 이 프로필을 클레임할 수 없습니다. 차단 기간이 끝난 후 다시 시도하세요.',
         'cancelled' => '클레임이 취소되었습니다.',
-        'accepted_anyway' => '바이오 확인 없이 클레임이 수락되었습니다(스태프).',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'accepted_anyway' => '바이오 검증 없이 클레임이 수락되었습니다(스태프).',
         'not_claimable' => '이 크리에이터는 클레임할 수 없습니다(이미 소유자가 있거나 활성 상태가 아님).',
         'channel_mismatch' => '증명 채널은 클레임 대상 크리에이터의 채널이어야 합니다.',
         'token_not_found' => '채널 설명/바이오에서 클레임 토큰을 찾지 못했습니다. 토큰을 추가한 후 다시 시도하세요.',
         'not_pending' => '이 클레임은 대기 상태가 아닙니다.',
         'already_owned' => '이 크리에이터는 이미 소유자가 있습니다. 클레임을 완료할 수 없습니다.',
         'expired' => '이 클레임은 만료되었습니다. 새 클레임을 시작하세요.',
-        'max_attempts' => '이 클레임의 인증 시도 횟수가 너무 많습니다. 새 클레임을 시작하거나 스태프 지원을 기다리세요.',
-        'cooldown' => ':seconds초 후에 다시 인증하세요.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'max_attempts' => '이 클레임의 검증 시도 횟수가 너무 많습니다. 새 클레임을 시작하거나 스태프 지원을 기다리세요.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'cooldown' => ':seconds초 후에 다시 검증하세요.',
         'accept_anyway_disabled' => '이 환경에서는 무조건 수락이 비활성화되어 있습니다.',
-        'discord_verify_disabled' => '이 환경에서는 Discord 클레임 인증이 비활성화되어 있습니다.',
-        'discord_not_connected' => 'Discord 인증을 사용하려면 먼저 연결된 계정에서 Discord를 연결하세요.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'discord_verify_disabled' => '이 환경에서는 Discord 클레임 검증이 비활성화되어 있습니다.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'discord_not_connected' => 'Discord 검증을 사용하려면 먼저 연결된 계정에서 Discord를 연결하세요.',
         'discord_connections_failed' => '연결된 Discord 계정을 불러오지 못했습니다. Discord를 다시 연결해 보세요.',
         'discord_no_match' => 'Discord 프로필에서 일치하는 인증된 YouTube 또는 Twitch 계정을 찾지 못했습니다.',
-        'discord_verify_unsupported_platform' => '이 플랫폼에서는 Discord 인증을 사용할 수 없습니다.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'discord_verify_unsupported_platform' => '이 플랫폼에서는 Discord 검증을 사용할 수 없습니다.',
         'channel_missing' => '클레임 증명 채널이 없습니다.',
-        'max_pending' => '대기 중인 클레임이 이미 :max건 있습니다. 하나를 취소하거나 먼저 인증을 완료하세요.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'max_pending' => '대기 중인 클레임이 이미 :max건 있습니다. 하나를 취소하거나 먼저 검증을 완료하세요.',
         'pending_success' => '대기 중인 클레임 목록을 불러왔습니다.',
         'superseded' => '이 크리에이터에 대한 다른 클레임이 먼저 완료되었습니다. 이 클레임은 종료되었습니다.',
     ],
@@ -77,9 +89,11 @@ return [
         'show_success' => '매니지먼트를 불러왔습니다.',
         'created' => '매니지먼트가 생성되었습니다.',
         'updated' => '매니지먼트가 업데이트되었습니다.',
-        'deleted' => '매니지먼트가 아카이브되었습니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'deleted' => '매니지먼트가 보관 처리되었습니다.',
         'name_required' => '매니지먼트 이름은 필수입니다.',
-        'slug_taken' => '이 매니지먼트 slug는 이미 사용 중입니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'slug_taken' => '이 매니지먼트 슬러그는 이미 사용 중입니다.',
         'creator_assigned' => '크리에이터가 매니지먼트에 배정되었습니다.',
         'creator_unassigned' => '크리에이터가 매니지먼트에서 배정 해제되었습니다.',
         'assignment_not_found' => '활성 매니지먼트 배정을 찾을 수 없습니다.',
@@ -157,23 +171,33 @@ return [
     'channel_claim' => [
         'list_success' => '채널 클레임 목록을 불러왔습니다.',
         'show_success' => '채널 클레임을 불러왔습니다.',
-        'started' => '채널 클레임이 시작되었습니다. 채널 소개/바이오에 토큰을 입력한 후 인증하세요.',
-        'verified' => '채널이 인증되어 이 프로필에 연결되었습니다.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'started' => '채널 클레임이 시작되었습니다. 채널 소개/바이오에 토큰을 입력한 후 검증하세요.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'verified' => '채널이 검증되어 이 프로필에 연결되었습니다.',
         'cancelled' => '채널 클레임이 취소되었습니다.',
-        'accepted_anyway' => '바이오 확인 없이 채널이 수락되었습니다(스태프).',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'accepted_anyway' => '바이오 검증 없이 채널이 수락되었습니다(스태프).',
         'token_not_found' => '채널 설명/바이오에서 클레임 토큰을 찾지 못했습니다. 토큰을 추가한 후 다시 시도하세요.',
         'not_pending' => '이 채널 클레임은 대기 상태가 아닙니다.',
         'expired' => '이 채널 클레임은 만료되었습니다. 새 클레임을 시작하세요.',
-        'max_attempts' => '이 채널 클레임의 인증 시도 횟수가 너무 많습니다. 새 클레임을 시작하거나 스태프 지원을 기다리세요.',
-        'cooldown' => ':seconds초 후에 다시 인증하세요.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'max_attempts' => '이 채널 클레임의 검증 시도 횟수가 너무 많습니다. 새 클레임을 시작하거나 스태프 지원을 기다리세요.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'cooldown' => ':seconds초 후에 다시 검증하세요.',
         'accept_anyway_disabled' => '이 환경에서는 무조건 수락이 비활성화되어 있습니다.',
         'pending_other' => '다른 사용자가 이미 이 플랫폼 채널에 대한 대기 중인 클레임을 가지고 있습니다.',
-        'discord_verify_disabled' => '채널 클레임의 Discord 인증이 비활성화되어 있습니다.',
-        'discord_verify_unsupported_platform' => '이 플랫폼에서는 채널 클레임의 Discord 인증을 지원하지 않습니다.',
-        'discord_not_connected' => '인증하려면 먼저 프로필 → 연결된 계정에서 Discord를 연결하세요.',
-        'discord_connections_failed' => 'Discord 연결을 불러오지 못했습니다. 다시 시도하거나 바이오 토큰 인증을 사용하세요.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'discord_verify_disabled' => '채널 클레임의 Discord 검증이 비활성화되어 있습니다.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'discord_verify_unsupported_platform' => '이 플랫폼에서는 채널 클레임의 Discord 검증을 지원하지 않습니다.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'discord_not_connected' => '검증하려면 먼저 프로필 → 연결된 계정에서 Discord를 연결하세요.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'discord_connections_failed' => 'Discord 연결을 불러오지 못했습니다. 다시 시도하거나 바이오 토큰 검증을 사용하세요.',
         'discord_no_match' => '이 플랫폼 채널과 일치하는 인증된 Discord 연결이 없습니다.',
-        'discord_verified' => '채널이 Discord를 통해 인증되어 이 프로필에 연결되었습니다.',
+        // curated at 2026-09-23T12:14:40+07:00 — ko curation wave: claim verification unified on 검증
+        'discord_verified' => '채널이 Discord를 통해 검증되어 이 프로필에 연결되었습니다.',
     ],
     'link' => [
         'list_success' => '외부 링크 목록을 불러왔습니다.',
@@ -194,7 +218,8 @@ return [
         'cannot_detach_primary' => '메인 호스트 채널은 해제할 수 없습니다. 먼저 다른 채널을 메인으로 설정하세요.',
         'fetch_platform_unsupported' => ':platform 플랫폼의 콘텐츠 가져오기는 지원하지 않습니다.',
         'fetch_channel_not_active' => '콘텐츠를 가져오려면 활성 채널이 필요합니다.',
-        'fetch_video_channel_mismatch' => '동영상 :video는 채널 :channel에 속하지 않습니다.',
+        // curated at 2026-09-23T13:52:31+07:00 — ko curation wave: parenthesised particle after a placeholder
+        'fetch_video_channel_mismatch' => '동영상 :video은(는) 채널 :channel에 속하지 않습니다.',
     ],
     'platform' => [
         'list_success' => '플랫폼 목록을 불러왔습니다.',
@@ -209,17 +234,24 @@ return [
         'label_required' => '자격 증명 라벨은 필수입니다.',
         'label_taken' => '이 자격 증명 라벨은 이 플랫폼에서 이미 사용 중입니다.',
         'payload_invalid' => '자격 증명 시크릿 페이로드가 올바르지 않습니다.',
-        'payload_missing' => '이 자격 증명 유형에는 시크릿 필드 :field가 필요합니다.',
-        'payload_unknown_key' => '이 자격 증명 유형에서는 시크릿 필드 :field를 사용할 수 없습니다.',
+        // curated at 2026-09-23T13:52:31+07:00 — ko curation wave: parenthesised particle after a placeholder
+        'payload_missing' => '이 자격 증명 유형에는 시크릿 필드 :field이(가) 필요합니다.',
+        // curated at 2026-09-23T13:52:31+07:00 — ko curation wave: parenthesised particle after a placeholder
+        'payload_unknown_key' => '이 자격 증명 유형에서는 시크릿 필드 :field을(를) 사용할 수 없습니다.',
         'test_success' => '자격 증명 테스트에 성공했습니다. 자격 증명이 활성 상태입니다.',
         'test_missing_secret' => '이 테스트에 필요한 자격 증명 시크릿이 완전하지 않습니다.',
-        'test_unsupported' => '이 플랫폼과 자격 증명 유형에 사용할 수 있는 테스트 프로브가 없습니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'test_unsupported' => '이 플랫폼과 자격 증명 유형에는 사용할 수 있는 테스트 점검이 없습니다.',
         'test_not_allowed_status' => '해지된 자격 증명은 테스트할 수 없습니다.',
         'test_youtube_ok' => 'YouTube API 키가 승인되었습니다.',
-        'test_youtube_empty' => 'YouTube API가 프로브 ID에 대한 채널 항목을 반환하지 않았습니다.',
-        'test_twitch_ok' => 'Twitch 앱 토큰이 발급되었고 Helix 프로브에 성공했습니다.',
-        'test_bearer_ok' => 'Bearer 토큰이 플랫폼 프로브에서 승인되었습니다.',
-        'test_bearer_ok_no_probe' => 'Bearer 토큰이 존재합니다. 이 플랫폼은 라이브 프로브를 건너뛰었습니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'test_youtube_empty' => 'YouTube API가 점검 ID에 대한 채널 항목을 반환하지 않았습니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'test_twitch_ok' => 'Twitch 앱 토큰이 발급되었고 Helix 점검에 성공했습니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'test_bearer_ok' => 'Bearer 토큰이 플랫폼 점검에서 승인되었습니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'test_bearer_ok_no_probe' => 'Bearer 토큰이 있습니다. 이 플랫폼은 라이브 점검을 건너뛰었습니다.',
         'status_active_requires_test' => '자격 증명을 활성으로 표시하려면 테스트 작업을 사용하세요.',
         'revoke_requires_active' => '활성 자격 증명만 해지할 수 있습니다.',
         'delete_requires_revoke' => '삭제하기 전에 이 자격 증명을 해지하세요.',
@@ -231,7 +263,8 @@ return [
         'denied' => '이 작업을 수행할 권한이 없습니다.',
         'access_denied' => '이 vTual 리소스에 접근할 수 없습니다.',
         'mutate_denied' => '이 vTual 리소스를 수정할 수 없습니다.',
-        'archive_denied' => '이 매니지먼트는 오너 또는 관리자 멤버만 아카이브할 수 있습니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'archive_denied' => '이 매니지먼트는 오너 또는 관리자 멤버만 보관 처리할 수 있습니다.',
         'members_denied' => '이 리소스의 멤버를 관리할 수 없습니다.',
         'assign_denied' => '이 매니지먼트에 크리에이터를 배정할 수 없습니다.',
     ],

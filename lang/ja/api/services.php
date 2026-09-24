@@ -1,19 +1,25 @@
 <?php
 
 return [
-    'list_success' => 'サービスを取得しました。',
-    'options_success' => 'サービスオプションを取得しました。',
-    'show_success' => 'サービスを取得しました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'list_success' => 'サービスを読み込みました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'options_success' => 'サービスオプションを読み込みました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'show_success' => 'サービスを読み込みました。',
     'created' => 'サービスを作成しました。',
     'updated' => 'サービスを更新しました。',
     'deleted' => 'サービスを削除しました。',
     'checkout_success' => 'チェックアウトを開始しました。購入ページで支払いを完了してください。',
-    'purchase_show_success' => 'サービス購入を取得しました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'purchase_show_success' => 'サービス購入を読み込みました。',
     'quantity_updated' => '購入数量を更新しました。',
     'quantity_not_editable' => 'この購入の数量は変更できません。',
     'quantity_addon_only' => '数量はアドオン購入のみ変更できます。',
-    'quantity_main_plan_fixed' => 'メインプランの数量は1である必要があります。',
-    'quantity_out_of_range' => '数量は1から:maxの間である必要があります。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'quantity_main_plan_fixed' => 'メインプランの数量は 1 でなければなりません。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'quantity_out_of_range' => '数量は 1 から :max の範囲で指定してください。',
     'duplicate_code' => 'このコードのサービスは既に存在します。',
     'not_available' => 'このサービスは購入できません。',
     'price_not_found' => '通貨 :currency の価格が見つかりません。',

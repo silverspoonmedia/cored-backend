@@ -2,8 +2,10 @@
 
 return [
     'title' => 'Pengaturan',
-    'subtitle' => 'Konfigurasi operasional yang dikelola melalui UI admin.',
-    'read_only' => 'Anda hanya memiliki akses lihat untuk pengaturan ini.',
+    // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+    'subtitle' => 'Konfigurasi operasional yang dikelola melalui antarmuka admin.',
+    // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+    'read_only' => 'Anda hanya memiliki akses baca untuk pengaturan ini.',
     'source' => 'Sumber saat ini: :source',
     'groups' => [
         'platform' => 'Platform',
@@ -18,10 +20,12 @@ return [
         'platform.jwt.ttl' => 'TTL akses JWT (menit)',
         'platform.jwt.refresh_ttl' => 'Jendela refresh JWT (menit)',
         'platform.jwt.remember_ttl' => 'TTL remember-me JWT (menit)',
-        'platform.jwt.refresh_skew' => 'Skew refresh diam JWT (menit)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.jwt.refresh_skew' => 'Jeda refresh senyap JWT (menit)',
         'platform.jwt.blacklist_grace_period' => 'Masa tenggang blacklist JWT (detik)',
         // Platform — auth / 2FA
-        'platform.auth.default_role' => 'Role default untuk pengguna baru',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.auth.default_role' => 'Peran default untuk pengguna baru',
         'platform.auth.verification_expire' => 'Kedaluwarsa tautan verifikasi email (menit)',
         'platform.two_factor.window' => 'Jendela validasi TOTP 2FA',
         'platform.two_factor.issuer' => 'Nama penerbit 2FA (aplikasi autentikator)',
@@ -33,24 +37,33 @@ return [
         // Platform — error log
         'platform.errorlog.enabled' => 'Log error persisten aktif',
         'platform.errorlog.clean_after_days' => 'Retensi log error (hari)',
-        'platform.errorlog.max_message_length' => 'Panjang maks pesan log error',
-        'platform.errorlog.max_trace_length' => 'Panjang maks trace log error',
-        'platform.errorlog.max_context_json_length' => 'Panjang maks JSON konteks log error',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.errorlog.max_message_length' => 'Panjang maksimum pesan log error',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.errorlog.max_trace_length' => 'Panjang maksimum trace log error',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.errorlog.max_context_json_length' => 'Panjang maksimum JSON konteks log error',
         // Platform — activity log
         'platform.activitylog.enabled' => 'Log aktivitas aktif',
         'platform.activitylog.buffer_enabled' => 'Buffer log aktivitas aktif',
         // Platform — localization
         'platform.localization.locale_cookie' => 'Nama cookie locale',
-        'identity.discord.connections_snapshot_max_age_minutes' => 'Umur maks snapshot koneksi Discord (menit)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'identity.discord.connections_snapshot_max_age_minutes' => 'Umur maksimum snapshot koneksi Discord (menit)',
         'platform.localization.locale_cookie_minutes' => 'Masa hidup cookie locale (menit)',
         // Platform — payment
-        'platform.payment.channel_fee_bearer' => 'Pembawa biaya channel',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.payment.channel_fee_bearer' => 'Penanggung biaya kanal',
         'platform.payment.reporting_timezone' => 'Zona waktu pelaporan pembayaran',
-        'platform.payment.prefer_channel_checkout' => 'Utamakan checkout native channel',
-        'platform.payment.default_buyer_phone' => 'Telepon pembeli default (fallback iPaymu)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.payment.prefer_channel_checkout' => 'Utamakan checkout kanal asli',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.payment.default_buyer_phone' => 'Telepon pembeli default (cadangan iPaymu)',
         // Platform — mail identity
-        'platform.mail.from_address' => 'Alamat From email',
-        'platform.mail.from_name' => 'Nama From email',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.mail.from_address' => 'Alamat pengirim email',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.mail.from_name' => 'Nama pengirim email',
         // Platform — service
         'platform.service.grace_days' => 'Hari masa tenggang layanan',
         'platform.service.settlement_currency' => 'Mata uang settlement',
@@ -65,16 +78,23 @@ return [
         'platform.frankfurter.cache_ttl' => 'Jendela kesegaran FX Frankfurter (detik)',
         'platform.frankfurter.timeout' => 'Timeout HTTP Frankfurter FX (detik)',
         // Archivd
-        'archivd.max_file_size_bytes' => 'Ukuran file maksimum (byte)',
-        'archivd.max_files_per_batch' => 'File maksimum per batch',
-        'archivd.max_concurrent_uploads' => 'Upload bersamaan maksimum',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'archivd.max_file_size_bytes' => 'Ukuran berkas maksimum (byte)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'archivd.max_files_per_batch' => 'Berkas maksimum per batch',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'archivd.max_concurrent_uploads' => 'Unggahan bersamaan maksimum',
         'archivd.max_concurrent_parts' => 'Bagian multipart bersamaan maksimum',
-        'archivd.chunk_size_bytes' => 'Ukuran chunk upload (byte)',
-        'archivd.multipart_threshold_bytes' => 'Ambang upload multipart (byte)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'archivd.chunk_size_bytes' => 'Ukuran potongan unggahan (byte)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'archivd.multipart_threshold_bytes' => 'Ambang unggahan multipart (byte)',
         'archivd.max_presigned_parts_per_response' => 'Bagian presigned maksimum per respons',
         'archivd.presign_ttl_minutes' => 'TTL URL presigned (menit)',
-        'archivd.session_ttl_hours' => 'TTL sesi upload (jam)',
-        'archivd.stale_upload_grace_hours' => 'Masa tenggang upload tertunda (jam)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'archivd.session_ttl_hours' => 'TTL sesi unggahan (jam)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'archivd.stale_upload_grace_hours' => 'Masa tenggang unggahan usang (jam)',
         'archivd.orphan_inactivity_minutes' => 'Timeout inaktivitas bagian yatim (menit)',
         'archivd.default_quota_bytes' => 'Kuota penyimpanan default (byte)',
         'archivd.base_owned_workspace_slots' => 'Slot workspace milik dasar',
@@ -97,7 +117,8 @@ return [
         'microstock.ai.http_retries' => 'Percobaan ulang HTTP AI',
         'microstock.ai.thinking_visual_attempts' => 'Percobaan visual thinking',
         'microstock.ai.batch_chunk' => 'Ukuran chunk batch AI',
-        'microstock.ai.batch_min_files' => 'File minimum batch AI',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'microstock.ai.batch_min_files' => 'Berkas minimum per batch AI',
         'microstock.ai.phase.normal_after' => 'Fase AI: normal setelah (detik)',
         'microstock.ai.phase.grace_after' => 'Fase AI: grace setelah (detik)',
         'microstock.ai.stage.vision_grace_after' => 'Tahap AI: grace vision setelah (detik)',
@@ -107,7 +128,9 @@ return [
         'microstock.ai.vision_image.variant_kind' => 'Jenis varian gambar vision',
         'microstock.ai.vision_image.signed_url_ttl_minutes' => 'TTL URL bertanda tangan vision (menit)',
         'microstock.ai.inference_provider_slug' => 'Slug provider inferensi Microstock',
-        'microstock.ai.vision.connection' => 'Koneksi AI visi (kosong = default)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'microstock.ai.vision.connection' => 'Koneksi AI vision (kosong = default)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'microstock.ai.thinking.connection' => 'Koneksi AI thinking (kosong = default)',
         'microstock.ai.vision.model' => 'Model vision',
         'microstock.ai.vision.free_model' => 'Model vision tier gratis (kosong = model berbayar)',
@@ -125,37 +148,55 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => 'Konkurensi thinking solo',
         'microstock.ai.upstream.release_after_seconds' => 'Lepas slot upstream setelah (detik)',
         'microstock.csv_disk' => 'Disk ekspor CSV',
-        // Vtual
+        // vTual
         'vtual.credential_test.http_timeout' => 'Timeout HTTP uji kredensial (detik)',
-        'vtual.credential_test.twitch_token_skew_seconds' => 'Skew token Twitch (detik)',
-        'vtual.credential_test.youtube_probe_channel_id' => 'ID channel probe YouTube',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.credential_test.twitch_token_skew_seconds' => 'Jeda token Twitch (detik)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.credential_test.youtube_probe_channel_id' => 'ID kanal probe YouTube',
         'vtual.credential.failover.enabled' => 'Failover kredensial aktif',
         'vtual.credential.failover.auth_fail_threshold' => 'Ambang kegagalan auth failover',
-        'vtual.credential.failover.skip_minutes' => 'Durasi skip failover (menit)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.credential.failover.skip_minutes' => 'Durasi lewati failover (menit)',
         'vtual.credential.failover.max_retries_per_call' => 'Percobaan ulang failover maksimum per panggilan',
         'vtual.http.timeout' => 'Timeout HTTP (detik)',
         'vtual.claim.ttl_hours' => 'TTL klaim (jam)',
-        'vtual.claim.verify_cooldown_seconds' => 'Cooldown verifikasi klaim (detik)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.claim.verify_cooldown_seconds' => 'Jeda verifikasi klaim (detik)',
         'vtual.claim.max_attempts' => 'Percobaan verifikasi klaim maksimum',
         'vtual.claim.block_hours_after_max_attempts' => 'Durasi blokir klaim setelah percobaan maksimum (jam)',
         'vtual.claim.max_pending_per_user' => 'Klaim tertunda maksimum per pengguna',
-        'vtual.claim.accept_anyway_enabled' => 'Terima klaim tetap aktif',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.claim.accept_anyway_enabled' => 'Izinkan terima klaim tanpa verifikasi',
         'vtual.claim.discord_verify_enabled' => 'Verifikasi klaim Discord aktif',
         'vtual.claim.token_prefix' => 'Prefiks token klaim',
         'vtual.claim.token_bytes' => 'Byte acak token klaim',
-        'vtual.channel_claim.ttl_hours' => 'TTL klaim channel (jam)',
-        'vtual.channel_claim.verify_cooldown_seconds' => 'Cooldown verifikasi klaim channel (detik)',
-        'vtual.channel_claim.max_attempts' => 'Percobaan klaim channel maksimum',
-        'vtual.channel_claim.accept_anyway_enabled' => 'Terima klaim channel tetap aktif',
-        'vtual.channel_claim.discord_verify_enabled' => 'Verifikasi Discord klaim channel aktif',
-        'vtual.channel_claim.token_prefix' => 'Prefiks token klaim channel',
-        'vtual.channel_claim.token_bytes' => 'Byte acak token klaim channel',
-        'vtual.channel_pool.threshold' => 'Ambang rendah pool channel',
-        'vtual.channel_pool.max_wait_minutes' => 'Tunggu maksimum pool channel (menit)',
-        'vtual.channel_pool.schedule_every_minutes' => 'Interval jadwal pool channel (menit)',
-        'vtual.channel_pool.resync_stale_hours' => 'Resync pool channel setelah usang (jam)',
-        'vtual.channel_pool.resync_enqueue_limit' => 'Batas antrean resync pool channel',
-        'vtual.channel_pool.flush_lock_seconds' => 'Kunci flush pool channel (detik)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_claim.ttl_hours' => 'TTL klaim kanal (jam)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_claim.verify_cooldown_seconds' => 'Jeda verifikasi klaim kanal (detik)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_claim.max_attempts' => 'Percobaan klaim kanal maksimum',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_claim.accept_anyway_enabled' => 'Izinkan terima klaim kanal tanpa verifikasi',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_claim.discord_verify_enabled' => 'Verifikasi Discord klaim kanal aktif',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_claim.token_prefix' => 'Prefiks token klaim kanal',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_claim.token_bytes' => 'Byte acak token klaim kanal',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_pool.threshold' => 'Ambang rendah pool kanal',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_pool.max_wait_minutes' => 'Tunggu maksimum pool kanal (menit)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_pool.schedule_every_minutes' => 'Interval jadwal pool kanal (menit)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_pool.resync_stale_hours' => 'Resync pool kanal setelah usang (jam)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_pool.resync_enqueue_limit' => 'Batas antrean resync pool kanal',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_pool.flush_lock_seconds' => 'Kunci flush pool kanal (detik)',
         'vtual.claim_verify_pool.threshold' => 'Ambang rendah pool verifikasi klaim',
         'vtual.claim_verify_pool.max_wait_minutes' => 'Tunggu maksimum pool verifikasi klaim (menit)',
         'vtual.claim_verify_pool.flush_lock_seconds' => 'Kunci flush pool verifikasi klaim (detik)',
@@ -167,50 +208,72 @@ return [
         'vtual.websub.lease_seconds' => 'Lease WebSub (detik)',
         'vtual.websub.renew_before_hours' => 'Perpanjang WebSub sebelum kedaluwarsa (jam)',
         'vtual.websub.max_body_bytes' => 'Ukuran maks body notifikasi WebSub (byte)',
-        'vtual.landing.event.title' => 'Judul event landing',
-        'vtual.landing.event.starts_at' => 'Waktu mulai event landing',
-        'vtual.landing.event.body' => 'Isi event landing',
-        'vtual.content_classification.ai.enabled' => 'Aktifkan audit AI (klasifikasi konten)',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.landing.event.title' => 'Judul acara landing',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.landing.event.starts_at' => 'Waktu mulai acara landing',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.landing.event.body' => 'Isi acara landing',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.content_classification.ai.enabled' => 'Audit AI aktif (klasifikasi konten)',
         'vtual.content_classification.ai.model' => 'Model audit AI',
         'vtual.content_classification.ai.max_tokens' => 'Token respons maksimum audit AI',
         'vtual.content_classification.ai.timeout' => 'Timeout audit AI (detik)',
-        'vtual.content_classification.ai.min_confidence' => 'Confidence minimum audit AI',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.content_classification.ai.min_confidence' => 'Keyakinan minimum audit AI',
         'vtual.content_classification.ai.cache_ttl_hours' => 'Cache hasil audit AI (jam)',
         'vtual.content_classification.ai.connection' => 'Koneksi audit AI (kosong = default)',
     ],
     'hints' => [
-        'platform.mail.from_address' => 'Alamat From global untuk email keluar (kredensial transport tetap di .env).',
-        'platform.payment.default_buyer_phone' => 'Telepon fallback saat profil pembeli belum punya nomor (syarat iPaymu).',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.mail.from_address' => 'Alamat pengirim global untuk email keluar (kredensial transport tetap di .env).',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.payment.default_buyer_phone' => 'Telepon cadangan saat profil pembeli belum memiliki nomor (syarat iPaymu).',
         'platform.frankfurter.timeout' => 'Timeout HTTP untuk lookup FX Frankfurter.',
         'microstock.ai.vision.free_model' => 'Override model tier gratis opsional; kosong mewarisi model vision berbayar.',
         'microstock.ai.thinking.free_model' => 'Override model tier gratis opsional; kosong mewarisi model thinking berbayar.',
-        'microstock.ai.vision.connection' => 'Slug koneksi AI (Pengaturan → Koneksi AI) untuk tahap visi; kosong memakai koneksi default.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'microstock.ai.vision.connection' => 'Slug koneksi AI (Pengaturan → Koneksi AI) untuk tahap vision; kosong memakai koneksi default.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
         'microstock.ai.thinking.connection' => 'Slug koneksi AI (Pengaturan → Koneksi AI) untuk tahap thinking; kosong memakai koneksi default.',
-        'microstock.ai.upstream.window_seconds' => 'Jendela referensi anggaran token upstream (penegakan lewat batas konkurensi).',
-        'vtual.credential_test.youtube_probe_channel_id' => 'ID channel publik untuk uji asap YouTube Data API.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'microstock.ai.upstream.window_seconds' => 'Jendela referensi anggaran token upstream (penegakan melalui batas konkurensi).',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.credential_test.youtube_probe_channel_id' => 'ID kanal publik untuk uji cepat YouTube Data API.',
         'platform.jwt.refresh_skew' => 'Refresh token akses beberapa menit sebelum kedaluwarsa.',
-        'platform.notifications.delivery' => 'Realtime memakai WebSocket dan membutuhkan kredensial PUSHER_* / broadcast yang valid; jika tidak, lonceng kembali ke HTTP polling.',
-        'platform.payment.channel_fee_bearer' => 'Siapa yang menanggung biaya channel pembayaran: merchant atau pelanggan.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.notifications.delivery' => 'Realtime memakai WebSocket dan membutuhkan kredensial PUSHER_* / broadcast yang valid; jika tidak, lonceng kembali ke polling HTTP.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'platform.payment.channel_fee_bearer' => 'Siapa yang menanggung biaya kanal pembayaran: merchant atau pelanggan.',
         'platform.inference.default_provider_slug' => 'Provider cadangan saat tidak ada yang ditentukan pada permintaan.',
         'platform.inference.default_input_per_million_usd' => 'Tarif penagihan sementara untuk model terdaftar tanpa harga katalog.',
         'platform.inference.unknown_input_per_million_usd' => 'Tarif penagihan sementara untuk model yang belum terdaftar.',
-        'microstock.ai.phase.normal_after' => 'Detik sebelum aset pindah dari fast-track ke pemrosesan normal.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'microstock.ai.phase.normal_after' => 'Detik sebelum aset beralih dari jalur cepat ke pemrosesan normal.',
         'microstock.ai.phase.grace_after' => 'Detik sebelum penanganan masa tenggang dimulai.',
-        'microstock.ai.stage.vision_grace_after' => 'Detik sebelum tahap vision masuk mode grace.',
-        'microstock.ai.stage.thinking_grace_after' => 'Detik sebelum tahap thinking masuk mode grace.',
-        'microstock.ai.stage.thinking_backlog_after' => 'Detik sebelum job thinking pindah ke antrean backlog.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'microstock.ai.stage.vision_grace_after' => 'Detik sebelum tahap vision masuk mode tenggang.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'microstock.ai.stage.thinking_grace_after' => 'Detik sebelum tahap thinking masuk mode tenggang.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'microstock.ai.stage.thinking_backlog_after' => 'Detik sebelum job thinking berpindah ke antrean backlog.',
         'vtual.credential.failover.enabled' => 'Rotasi ke kredensial berikutnya setelah kegagalan auth berulang.',
         'vtual.claim.accept_anyway_enabled' => 'Izinkan pengguna menerima klaim meski verifikasi tidak meyakinkan.',
-        'vtual.claim.discord_verify_enabled' => 'Izinkan verifikasi klaim yatim dengan mencocokkan akun YouTube/Twitch tertaut di Discord.',
-        'vtual.channel_claim.discord_verify_enabled' => 'Izinkan pemilik profil memverifikasi klaim channel via akun YouTube/Twitch tertaut di Discord.',
-        'identity.discord.connections_snapshot_max_age_minutes' => 'Berapa lama snapshot koneksi Discord dipercaya sebelum kegagalan verifikasi memicu refresh API Discord langsung.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.claim.discord_verify_enabled' => 'Izinkan pengguna memverifikasi klaim yatim dengan mencocokkan akun YouTube/Twitch yang tertaut di Discord.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'vtual.channel_claim.discord_verify_enabled' => 'Izinkan pemilik profil memverifikasi klaim kanal melalui akun YouTube/Twitch yang tertaut di Discord.',
+        // curated at 2026-09-21T17:02:15+07:00 — id curation wave
+        'identity.discord.connections_snapshot_max_age_minutes' => 'Berapa lama snapshot koneksi Discord tersimpan dipercaya sebelum kegagalan verifikasi memicu penyegaran langsung melalui Discord API.',
     ],
     'options' => [
         'platform' => [
             'notifications' => [
                 'delivery' => [
-                    'polling' => 'HTTP polling',
-                    'realtime' => 'WebSocket (realtime)',
+                    // curated at 2026-09-23T12:37:01+07:00 — ko curation wave: id notification delivery options aligned with the SPA
+                    'polling' => 'Polling HTTP',
+                    // curated at 2026-09-23T12:37:01+07:00 — ko curation wave: id notification delivery options aligned with the SPA
+                    'realtime' => 'WebSocket (real-time)',
                 ],
             ],
         ],
