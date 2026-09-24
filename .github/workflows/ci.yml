@@ -50,7 +50,11 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          # 8.4, not 8.3: `composer.json` only asks for `^8.3`, but the VCS
+          # dependency `silverspoonmedia/pdf-tools` (dev-main) requires `^8.4`, and
+          # `composer install` refuses to resolve the lock file on 8.3. The local
+          # toolchain is 8.4.20, so this matches the machine the lock was built on.
+          php-version: '8.4'
           extensions: mbstring, intl, pdo_sqlite, sqlite3, bcmath, gd, zip, exif, curl
           coverage: none
 
