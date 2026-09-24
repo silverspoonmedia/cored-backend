@@ -57,9 +57,21 @@ class MoneyPresenterTest extends TestCase
 
             $this->assertNotNull($formatted);
             $this->assertStringStartsWith('USD ', $formatted);
-            $this->assertStringContainsString('1', $formatted);
-            $this->assertStringContainsString('234', $formatted);
-            $this->assertStringContainsString('56', $formatted);
+
+            // The digits themselves are locale-dependent: ICU renders `ar` with
+            // Arabic-Indic digits (١٬٢٣٤٫٥٦) on some versions and ASCII on others, so
+            // asserting on the raw string makes this test depend on the runner's ICU
+            // build rather than on the presenter. Normalize any Unicode decimal digit
+            // to ASCII and assert on the value, not on its glyphs.
+            $ascii = preg_replace_callback(
+                '/\p{Nd}/u',
+                static fn (array $match): string => (string) \IntlChar::digit($match[0]),
+                $formatted
+            );
+
+            $this->assertStringContainsString('1', $ascii, "Locale {$locale} lost the leading digit.");
+            $this->assertStringContainsString('234', $ascii, "Locale {$locale} lost the thousands group.");
+            $this->assertStringContainsString('56', $ascii, "Locale {$locale} lost the decimals.");
         }
     }
 
