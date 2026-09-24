@@ -44,13 +44,15 @@ When you add a table that belongs to a user or another UUID-backed model, use `f
 
 | Tool | Version |
 |------|---------|
-| PHP | ^8.3 (extensions: `mbstring`, `openssl`, `pdo`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`) |
+| PHP | ^8.4 (extensions: `mbstring`, `openssl`, `pdo`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`) |
 | Composer | 2.x |
 | Database | MySQL (default in profile templates), or PostgreSQL |
 
+PHP 8.4, not 8.3: the locked `silverspoonmedia/pdf-tools` (dev-main) and `symfony/*` 8.1 require `^8.4`, so `composer install` refuses the lock file on 8.3. The same pin is in `.github/workflows/ci.yml`.
+
 No Node.js toolchain is needed here: this repo has no frontend stack or `package.json`. The browser UI is the sibling `monolith-vue-workers` project.
 
-On **Laragon** (Windows), enable PHP 8.3+ and create a MySQL database named `monolith` (or adjust `DB_DATABASE` in `.env`).
+On **Laragon** (Windows), enable PHP 8.4+ and create a MySQL database named `monolith` (or adjust `DB_DATABASE` in `.env`).
 
 ### Development OS (Windows)
 

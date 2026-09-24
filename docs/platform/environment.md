@@ -28,6 +28,8 @@ php artisan migrate
 php artisan db:seed
 ```
 
+**PHP 8.4 is required, not 8.3.** `composer.json` declares `php: ^8.4` and the lock file enforces it: `silverspoonmedia/pdf-tools` (dev-main) and `symfony/*` 8.1 both require `^8.4`, so `composer install` on 8.3 stops with `Your lock file does not contain a compatible set of packages`. `.github/workflows/ci.yml` pins the same version on the runner ([tooling.md — CI](tooling.md#ci-github-actions)).
+
 `env:install` copies the template, seeds the snapshot, sets profile, and generates `APP_KEY`, `JWT_SECRET`, and `ENCRYPTION_BLIND_INDEX_PEPPER` (filled, double-quoted via Monolith writers — not bare `jwt:secret`).
 
 ## Value types
@@ -155,6 +157,8 @@ See [identity](../domains/identity/README.md#configuration). The Blade-era silen
 ## Testing environment
 
 PHPUnit: `APP_ENV=testing` (`phpunit.xml` `force="true"`), sqlite, CSRF bypass for web proxy tests. Tests that `putenv` another env (e.g. bootstrapping a second app) must restore process env in `tearDown`. Prefer `composer test`. See [database-safety.md](database-safety.md).
+
+The suite does not need a populated `.env`: every value it depends on comes from `phpunit.xml` or the process environment. CI creates an empty `.env` anyway, because Laravel's `LoadEnvironmentVariables` otherwise asks phpdotenv for a missing file on every boot and PHPUnit reports the suppressed read as a warning — 36 of them, one per test, which hides the four `skipped` cross-repo locale guards. Do not read that warning as a corpus defect. Details: [tooling.md — CI](tooling.md#ci-github-actions).
 
 Payment: `checkout_mode` derived from active channels at runtime — see [payment-gateway](../domains/payment-gateway/README.md). After editing `Routing_Price.yaml`, run `php artisan payments:sync-routing-policy` (or use the admin **Sync routing policy** button). Channel fee bearer and reporting timezone are in **Settings → Platform**. Encryption env: [encryption](../domains/payment-gateway/encryption.md).
 

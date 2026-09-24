@@ -31,7 +31,7 @@ The SPA is an **API-consumer** — no business logic lives in the frontend. All 
 
 | Aspect | Detail |
 |--------|--------|
-| Framework | Laravel 13, PHP 8.3 |
+| Framework | Laravel 13, PHP 8.4 |
 | Architecture | Domain-driven monorepo, `app/Domain/{Domain}/` in one git repo |
 | API | REST at `/api/v1/*` — all business logic lives here. Versioned: global (`/api/ping`) vs versioned (`/api/v1/*`), no dual exposure, breaking changes → new version |
 | IDs | UUID v7 primary keys end-to-end (no auto-increment integers) |

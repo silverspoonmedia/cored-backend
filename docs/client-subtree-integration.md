@@ -275,7 +275,7 @@ The client's `composer.json` must include:
     "name": "client/client-project",
     "type": "project",
     "require": {
-        "php": "^8.3",
+        "php": "^8.4",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
         "php-open-source-saver/jwt-auth": "^2.9",

@@ -141,6 +141,8 @@ Managed files listed in `config/localization.php` → `managed_files`.
 ## Packages & parity
 
 - `php artisan lang:add …` / `lang:update` for managed packs. Managed packs are curated and flagged like application-owned files once reviewed (see the package-managed policy above) — the `zh_CN` wave left 137 flags in `validation.php`, 51 in `actions.php`, 28 in `http-statuses.php`, 3 in `passwords.php`, and 2 in `auth.php`. `lang:update` may rewrite those files and drop both the flags and the reviewed wording; re-review after every package upgrade. Two keys are deliberately added on top of the pack rather than reviewed package values, because the pack does not ship them for every locale: `validation.hcaptcha` (the rule message) was missing in `ko`/`ar`/`ru` and the `attributes.h-captcha-response` label was missing in `ko`/`ar`/`ru` too — with the label absent, an hCaptcha failure renders the raw field name `h-captcha-response` to the user. Both are now present in all seven locales. `api/archivd.blocklist_loaded` sits in an application-owned file but had no message in any locale including `en`, so it was added to all seven locales in one change and flagged in each.
+
+  **You do not have to type `lang:update` for this to happen.** `composer.json` runs it from `post-update-cmd`, so *any* `composer update` — including `composer update --lock`, whose only intended effect is refreshing the lock file's `content-hash` — rewrites `lang/{locale}/**` and `lang/{locale}.json` with upstream vendor text and silently discards every `// curated at` flag and reviewed wording in the process. It leaves ~37 files dirty and the diff reads like a legitimate translation change. Recover with `git checkout -- lang/` (the curated corpus is committed; the vendor rewrite is not worth keeping) and verify with `php artisan test --filter=Locale` before committing. Use `composer update --lock --no-scripts` when only the lock metadata needs refreshing.
 - `tests/Unit/Localization/LocaleParityTest.php` checks supported locale directories, application-owned file presence, dot-notation key parity, PHP placeholder parity, and that **no lang file declares the same literal key twice inside one array block**. That last one exists because a duplicate is invisible to every other check: the file parses, the key-parity test sees only the surviving entry, and PHP silently keeps the *last* value — so the rendered string is wrong with nothing to report it. Indentation cannot detect it (a container array and its parent's sibling keys share a depth), so it is tokenized, which also keeps the same key name in two sibling arrays (`steps.1.title` / `steps.2.title`) legal. The curation appliers can create this by accident when a create path inserts a key that already exists, which is exactly how it was found. Managed packs are included in the scan: `validation.php` is where an added-on-top key is most likely to collide with a later `lang:update`. It excludes files listed in `config/localization.php` / package-managed basenames from the key/placeholder comparisons, including `validation.php` from placeholder comparison. Managed files are still required to exist for every supported locale and need a deliberate translation review after `lang:update` or package upgrades.
 - Backend coverage inventory is generated with `php scripts/backend-locale-audit.php backend-locale-report.json`. It compares every application-owned PHP file **and each flat `lang/{locale}.json` pack** against `en`, reports missing/extra keys, and reports exact English carryover while excluding identifier-like values and machine fields. The generated report is per file and locale; it is review output, not a translation allowlist. As of the `ko` wave (Sep 2026) the audit reports `missing_keys: 0`, `extra_keys: 0`, `copy_candidates: 0`. That zero is only meaningful because of two fixes made during the `ko` wave:
   - the flat packs were previously invisible. The audit walked `lang/{locale}/` directories only, so `lang/{locale}.json` was never compared — which is how `New` in `lang/ko.json`, `Admin` and `Export :name` in `lang/id.json`, and `All rights reserved.` in `lang/ja.json` survived four waves. Each pack is now audited as a pseudo-file;
@@ -222,6 +224,8 @@ The backend workflow is `.github/workflows/ci.yml`, and it runs **only the check
 
 Four of the eight are gated in CI; the other four run from a checkout that has `monolith-vue-workers` as a sibling. `LocaleGuardTest` reports those four as **skipped** when the sibling is absent (after asserting the guard fails loudly with `exit 1` and `cannot see the SPA repo`), so a green CI run cannot be mistaken for "all six guards ran".
 
+The job's runner environment is part of this contract, not incidental: it pins PHP 8.4, sets `DB_CONNECTION=sqlite` / `DB_DATABASE=:memory:` (so `composer install` can boot `SettingsServiceProvider` without a MySQL service), creates an empty `.env`, and widens `COLUMNS`. Changing any of those breaks the job in a way that reads like a corpus failure. Per-step reasoning: [tooling.md — CI (GitHub Actions)](tooling.md#ci-github-actions).
+
 An earlier version of this workflow did check out the sibling and run all six. It never worked: the sibling is private, `GITHUB_TOKEN` is scoped to the repo running the workflow, and the checkout step failed `Not Found` before a single test executed — a red `main` caused by the gate itself, not by the corpus. Reading the sibling needs a fine-grained PAT, and the four guards still would not cover the SPA-only case (see below). The workflow was narrowed instead of patched.
 
 ### PR & merge process
@@ -266,6 +270,22 @@ User-facing **numbers and datetimes** (money separators, absolute dates, relativ
 SPA-native values that are not already formatted by the API use `Intl.NumberFormat(locale.value)` and `Intl.DateTimeFormat(locale.value, …)` with the active Vue locale. Do not call unqualified `toLocaleString()` for user-facing values.
 
 Clients must not reformat API values — consume Resource companions (`*_formatted`, `*_human`). Contract: [platform/crud.md — API Resource presentation](crud.md#api-resource-presentation-dual-fields).
+
+### Digits are locale-dependent — never assert on the rendered glyphs
+
+`NumberFormatter` renders digits in the locale's own numbering system, and which one depends on the ICU build, not on the code. On the GitHub runner `ar` produces Arabic-Indic digits (`USD ١٬٢٣٤٫٥٦`); the local Windows toolchain produced ASCII (`USD 1,234.56`) for the same input. A test that asserts a formatted amount contains `'1'`, `'234'`, or `'56'` is therefore asserting the runner's ICU version, and it failed the first real CI run of the localization workflow (`MoneyPresenterTest::test_each_supported_locale_returns_a_formatted_amount`).
+
+Normalize before asserting, then assert on the value:
+
+```php
+$ascii = preg_replace_callback(
+    '/\p{Nd}/u',
+    static fn (array $m): string => (string) \IntlChar::digit($m[0]),
+    $formatted
+);
+```
+
+The same applies to `DatePresenter` output and to any SPA-side `Intl` assertion: assert the shape and the value, never the digits or the separator glyphs. `MoneyPresenter`'s `id` separators (`1.234,56`) are a documented product decision, not an ICU accident — those assertions stay.
 
 ## Domain glossary
 

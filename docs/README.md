@@ -28,16 +28,16 @@ Living docs are organized **by domain** (mirror `app/Domain/*`) plus shared **pl
 | [crud.md](platform/crud.md) | Repository pattern, layers, checklist |
 | [list-display-modes.md](platform/list-display-modes.md) | `display_mode=query` list contract, query-mode `actions[]` (live SPA row buttons), `/api/v1/lookups/*` |
 | [identifiers.md](platform/identifiers.md) | UUID v7 primary keys |
-| [environment.md](platform/environment.md) | `.env` profiles, typed quoting, assignment-key parity, `env:curate`, config cache |
+| [environment.md](platform/environment.md) | `.env` profiles, typed quoting, assignment-key parity, `env:curate`, config cache, PHP 8.4 requirement |
 | [configuration-policy.md](platform/configuration-policy.md) | Env vs DB tiers, Tier B settings cache contract, agent checklist |
 | [cache-policy.md](platform/cache-policy.md) | Project-wide forever Cache + invalidate; driver-agnostic; exceptions |
 | [api-aggregation.md](platform/api-aggregation.md) | Aggregation rules: standalone-first, SPA-only, backend fan-in via `/batch`; gate condition |
 | [settings.md](platform/settings.md) | Runtime operational settings (Web UI + DB overrides) |
-| [localization.md](platform/localization.md) | Backend multi-locale rules (canonical supported-locale list, parity, locale resolution), `curated at` flag convention, curation tooling, coverage status per locale; SPA guard: `monolith-vue-workers/npm run check:i18n` |
+| [localization.md](platform/localization.md) | Backend multi-locale rules (canonical supported-locale list, parity, locale resolution), `curated at` flag convention, curation tooling, CI vs manual guard coverage, ICU digit caveat, coverage status per locale; SPA guard: `monolith-vue-workers/npm run check:i18n` |
 | [database-safety.md](platform/database-safety.md) | Dev DB wipe prevention, tests |
 | [octane.md](platform/octane.md) | Long-lived worker rules |
 | [security.md](platform/security.md) | OWASP audit procedure, auth activity coverage, **response data minimization**, CORS perimeter incl. the `broadcasting/auth` invariant |
-| [tooling.md](platform/tooling.md) | Laravel Pint wrapper |
+| [tooling.md](platform/tooling.md) | Laravel Pint wrapper; CI workflow (job, runner PHP 8.4 pin, sqlite `:memory:` env, why the four cross-repo guards are not gated) |
 
 ## Domains (`app/Domain/*`)
 
