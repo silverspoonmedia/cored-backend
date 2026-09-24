@@ -62,6 +62,22 @@ function locale_scan_spa_file(string $spaRoot, string $locale): string
 }
 
 /**
+ * Can the guards actually read the sibling SPA repo?
+ *
+ * The single definition of that question: the checkout exists **and** the reference
+ * pack is readable. Both halves matter — a directory that exists but is empty (a
+ * failed or partial checkout) cannot be compared against, and `is_dir()` alone would
+ * call that present. `locale_scan_require_spa()` and `LocaleGuardTest` both ask this
+ * function, so neither can drift into a weaker check.
+ */
+function locale_scan_spa_present(?string $spaRoot = null): bool
+{
+    $spaRoot ??= locale_scan_spa_root();
+
+    return is_dir($spaRoot) && is_file($spaRoot.'/src/i18n/locales/en.json');
+}
+
+/**
  * Fail the guard when the sibling repo is not checked out.
  *
  * Without this, every cross-repo comparison silently compares against nothing and
@@ -69,13 +85,13 @@ function locale_scan_spa_file(string $spaRoot, string $locale): string
  */
 function locale_scan_require_spa(string $spaRoot): void
 {
-    if (is_dir($spaRoot) && is_file($spaRoot.'/src/i18n/locales/en.json')) {
+    if (locale_scan_spa_present($spaRoot)) {
         return;
     }
 
     fwrite(STDERR, 'cannot see the SPA repo: '.$spaRoot.PHP_EOL);
     fwrite(STDERR, 'This guard compares the backend packs with the SPA packs, so a run without it proves nothing.'.PHP_EOL);
-    fwrite(STDERR, 'Check out monolith-vue-workers as a sibling of this repo (CI checks out both) and retry.'.PHP_EOL);
+    fwrite(STDERR, 'Check out monolith-vue-workers as a sibling of this repo and retry.'.PHP_EOL);
 
     exit(1);
 }
