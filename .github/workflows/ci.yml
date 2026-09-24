@@ -72,6 +72,16 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      # This repo does not commit `.env` (gitignored) and CI never creates one, so
+      # `LoadEnvironmentVariables` asks phpdotenv for a missing file on every test that
+      # boots the app. `safeLoad()` swallows the failure, but PHPUnit still reports the
+      # suppressed read as a warning — 36 of them, one per test, which buries the four
+      # `skipped` cross-repo guards in noise. An empty file is enough: every value the
+      # suite needs comes from phpunit.xml or the job `env:` above, and Laravel's dotenv
+      # repository is immutable, so a real `.env` could not override them anyway.
+      - name: Create empty .env
+        run: php -r "file_put_contents('.env', '');"
+
       # `LocaleGuardTest` shells out to each guard in `scripts/` and asserts exit 0.
       # The four cross-repo ones report as skipped here rather than passing silently.
       - name: Localization tests (incl. guard gate)
