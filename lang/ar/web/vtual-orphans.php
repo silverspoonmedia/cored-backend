@@ -10,7 +10,8 @@ return [
     'edit_title' => 'تعديل vTuber اليتيم',
     'form' => [
         'display_name' => 'اسم العرض',
-        'slug' => 'المعرّف المختصر',
+        // curated at 2026-09-22T20:02:21+07:00 — ar curation wave
+        'slug' => 'المعرّف',
         'slug_hint' => 'اختياري. استخدم أحرفًا صغيرة وأرقامًا وشرطات فقط.',
         'bio' => 'النبذة',
         'avatar_url' => 'عنوان URL للصورة الشخصية',
@@ -23,7 +24,8 @@ return [
         'confirm_delete' => 'هل تريد أرشفة هذا الملف اليتيم؟ لن تعود المطالبة به ممكنة.',
         'columns' => [
             'display_name' => 'اسم العرض',
-            'slug' => 'المعرّف المختصر',
+            // curated at 2026-09-22T20:02:21+07:00 — ar curation wave
+            'slug' => 'المعرّف',
             'channels' => 'القنوات',
             'created_at' => 'تاريخ الإنشاء',
             'actions' => 'الإجراءات',
@@ -41,7 +43,8 @@ return [
         'profile_placeholder_youtube' => 'UC… / @handle / https://youtube.com/@handle',
         'profile_placeholder_twitch' => '12345678 / login / https://twitch.tv/login',
         'profile_or_id' => 'الملف الشخصي / المعرّف الخارجي',
-        'handle' => 'المعرّف المختصر',
+        // curated at 2026-09-22T20:02:21+07:00 — ar curation wave
+        'handle' => 'اسم المستخدم',
         'status' => 'الحالة',
         'add_button' => 'إضافة قناة',
         'table_caption' => 'قنوات vTuber اليتيم',

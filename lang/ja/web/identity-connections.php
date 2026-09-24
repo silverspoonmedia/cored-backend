@@ -9,7 +9,8 @@ return [
     'discord_connect' => 'Discordを連携',
     'discord_disconnect' => 'Discordの連携を解除',
     'discord_disconnected' => 'Discordの連携を解除しました。',
-    'discord_connected_flash' => 'Discordの連携に成功しました。',
+    // curated at 2026-09-21T17:29:07+07:00 — ja curation wave
+    'discord_connected_flash' => 'Discord の連携が完了しました。',
     'discord_denied' => 'Discordの認可がキャンセルされました。',
     'discord_callback_invalid' => 'Discordの認可に失敗しました。もう一度お試しください。',
     'discord_not_configured' => 'このサーバーではDiscord OAuthが設定されていません。',

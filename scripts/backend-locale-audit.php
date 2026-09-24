@@ -30,6 +30,21 @@ $excludedIdentifierKeys = [
     'permission',
 ];
 
+/**
+ * Flat-pack scalars that are identical to English in every locale by design:
+ * universal acronyms and protocol words that no locale translates. The SPA
+ * duplicate-English rule carries the same list globally
+ * (`scripts/lib/duplicate-english-allowlist.mjs` → `globalDuplicateEnglishKeys`),
+ * so `OK` is allowed there and must be allowed here too — the flat pack is the
+ * same `laravel-lang` chrome on the backend side. Prefer a translated value;
+ * add an entry only for a word that is the accepted form everywhere.
+ *
+ * @var array<int, string>
+ */
+$universalFlatPackScalars = [
+    'OK',
+];
+
 function flattenValues(mixed $value, string $prefix = '', array &$out = []): array
 {
     if (is_array($value)) {
@@ -45,9 +60,32 @@ function flattenValues(mixed $value, string $prefix = '', array &$out = []): arr
     return $out;
 }
 
-function isLikelyCopy(string $key, mixed $value, array $excludedIdentifierKeys): bool
+/**
+ * `$strictSingleToken` exists for the flat package packs. The default heuristic
+ * deliberately ignores single-token values because in the app namespaces those
+ * are brands, identifiers and enum-like labels that are *supposed* to stay in
+ * English. The packs are different: they are package chrome prose, so a lone
+ * English word there really is an untranslated string (`ko.json` shipped `New`
+ * for four waves precisely because the single-token rule waved it through).
+ */
+function isLikelyCopy(string $key, mixed $value, array $excludedIdentifierKeys, bool $strictSingleToken = false): bool
 {
+    global $universalFlatPackScalars;
+
     if (! is_string($value) || trim($value) === '' || ! preg_match('/[A-Za-z]/', $value)) {
+        return false;
+    }
+
+    // Universal acronyms (`OK`) are the accepted form in every locale, so the
+    // English-identical value is the translation, not a missing one.
+    if (in_array(trim($value), $universalFlatPackScalars, true)) {
+        return false;
+    }
+
+    // Format examples are not prose: an input placeholder such as
+    // `UC… / @handle / https://youtube.com/@handle` is the same sample in every
+    // locale by design, so it is never an untranslated string.
+    if (str_contains($value, '://') || str_contains($value, '@handle')) {
         return false;
     }
 
@@ -59,7 +97,7 @@ function isLikelyCopy(string $key, mixed $value, array $excludedIdentifierKeys):
     }
 
     if (preg_match('/^[A-Za-z0-9_.:\/-]+$/', $value) && ! preg_match('/\s/', $value)) {
-        return false;
+        return $strictSingleToken;
     }
 
     return true;
@@ -93,12 +131,57 @@ function applicationFiles(string $locale, array $managed, string $root): array
     return $files;
 }
 
+/**
+ * Flat laravel-lang package packs live at `lang/{locale}.json`, not under
+ * `lang/{locale}/`, so the directory walk above never saw them. They are still
+ * user-facing (Laravel consults the JSON pack before the PHP namespaces for any
+ * key without a `/`), and leaving them out of the audit is how `ko.json` kept an
+ * untranslated `New` through four curation waves. They are reported under the
+ * reference pack name so the entry key is stable across locales.
+ */
+function flatPackFiles(string $reference, string $root): array
+{
+    return is_file($root.'/lang/'.$reference.'.json') ? [$reference.'.json'] : [];
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function loadValues(string $path): array
+{
+    if (! is_file($path)) {
+        return [];
+    }
+
+    if (str_ends_with($path, '.json')) {
+        $decoded = json_decode((string) file_get_contents($path), true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    $data = include $path;
+
+    return is_array($data) ? $data : [];
+}
+
+/**
+ * Resolve the on-disk path for a report entry: a `.json` entry is a flat pack at
+ * `lang/{locale}.json`, anything else is a file under `lang/{locale}/`.
+ */
+function localePath(string $root, string $locale, string $relative): string
+{
+    return str_ends_with($relative, '.json')
+        ? $root.'/lang/'.$locale.'.json'
+        : $root.'/lang/'.$locale.'/'.$relative;
+}
+
 $reference = 'en';
-$files = applicationFiles($reference, $managed, $root);
+$files = array_merge(applicationFiles($reference, $managed, $root), flatPackFiles($reference, $root));
 $report = [
     'locales' => $locales,
     'reference' => $reference,
     'managed_files_excluded' => $managed,
+    'flat_packs_included' => flatPackFiles($reference, $root),
     'files' => [],
     'totals' => [
         'copy_candidates' => 0,
@@ -109,7 +192,7 @@ $report = [
 
 foreach ($files as $relative) {
     $referenceValues = [];
-    flattenValues(include $root.'/lang/'.$reference.'/'.$relative, '', $referenceValues);
+    flattenValues(loadValues(localePath($root, $reference, $relative)), '', $referenceValues);
     $entry = [
         'copy_candidates' => [],
         'missing_keys' => [],
@@ -121,7 +204,7 @@ foreach ($files as $relative) {
             continue;
         }
 
-        $path = $root.'/lang/'.$locale.'/'.$relative;
+        $path = localePath($root, $locale, $relative);
         if (! is_file($path)) {
             $entry['missing_file'] ??= [];
             $entry['missing_file'][] = $locale;
@@ -129,14 +212,14 @@ foreach ($files as $relative) {
         }
 
         $values = [];
-        flattenValues(include $path, '', $values);
+        flattenValues(loadValues($path), '', $values);
         foreach (array_keys($referenceValues) as $key) {
             if (! array_key_exists($key, $values)) {
                 $entry['missing_keys'][] = ['locale' => $locale, 'key' => $key];
                 continue;
             }
 
-            if (isLikelyCopy($key, $referenceValues[$key], $excludedIdentifierKeys)
+            if (isLikelyCopy($key, $referenceValues[$key], $excludedIdentifierKeys, str_ends_with($relative, '.json'))
                 && $values[$key] === $referenceValues[$key]
             ) {
                 $entry['copy_candidates'][] = [

@@ -2,8 +2,10 @@
 
 return [
     'connection' => [
-        'list_success' => 'AI 接続を取得しました。',
-        'show_success' => 'AI 接続を取得しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'list_success' => 'AI 接続を読み込みました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'show_success' => 'AI 接続を読み込みました。',
         'created' => 'AI 接続を作成しました。テストを実行して有効化してください。',
         'updated' => 'AI 接続を更新しました。再度テストを実行して有効化してください。',
         'deleted' => 'AI 接続を削除しました。',
@@ -20,7 +22,8 @@ return [
         'delete_requires_default_handover' => '削除する前に別の接続をデフォルトにしてください。',
         'test_not_configured' => 'エンドポイント、API キー、またはテストモデルが未設定です。',
         'test_unreachable' => 'エンドポイントに到達できません: :error',
-        'test_unauthorized' => 'エンドポイントが API キーを拒否しました (401/403)。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'test_unauthorized' => 'エンドポイントが API キーを拒否しました（401/403）。',
         'test_http_failed' => 'エンドポイントが HTTP :status を返しました。',
         'test_http_failed_with_body' => 'エンドポイントが HTTP :status を返しました: :detail',
         'test_passed' => '接続テストに成功しました。',

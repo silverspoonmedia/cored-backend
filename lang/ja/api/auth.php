@@ -2,8 +2,10 @@
 
 return [
     'register_success' => '登録が完了しました。',
-    'login_success' => 'ログインに成功しました。',
-    'me_success' => '認証済みユーザーを取得しました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'login_success' => 'ログインしました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'me_success' => '認証済みユーザーを読み込みました。',
     'refresh_success' => 'トークンを更新しました。',
     'logout_success' => 'ログアウトしました。',
     'password_forgot' => 'そのメールアドレスがシステムに存在する場合、パスワード再設定リンクを送信しました。',
@@ -26,7 +28,8 @@ return [
     'two_factor_enabled' => '二要素認証を有効にしました。',
     'two_factor_disabled' => '二要素認証を無効にしました。',
     'two_factor_already_enabled' => '二要素認証はすでに有効です。',
-    'two_factor_not_enabled' => '二要素認証は有効ではありません。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'two_factor_not_enabled' => '二要素認証は有効になっていません。',
     'invalid_two_factor_code' => '二要素認証コードが無効です。',
     'login_throttled' => 'ログイン試行回数が多すぎます。:seconds 秒後に再試行してください。',
 ];

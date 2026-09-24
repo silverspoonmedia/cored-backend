@@ -1,8 +1,10 @@
 <?php
 
 return [
-    'list_success' => '通知を取得しました。',
-    'unread_count_success' => '未読通知数を取得しました。',
+    // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+    'list_success' => '通知を読み込みました。',
+    // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+    'unread_count_success' => '未読通知数を読み込みました。',
     'marked_read' => '通知を既読にしました。',
     'marked_all_read' => 'すべての通知を既読にしました。',
     'not_visible' => 'この通知にアクセスする権限がありません。',
@@ -16,7 +18,8 @@ return [
         'service_subscription_grace' => ':service のサブスクリプションが終了しました。:grace_days 日以内（:grace_ends_at まで）に更新しないと、無料枠を超えるファイルが削除されます。',
         'service_subscription_expired' => ':service の猶予期間が終了しました。無料枠が適用され、:deleted 件のファイルが削除されました。',
         'inference_unregistered_model' => '未登録モデル :resolved_model（:provider_slug）が暫定料金（入力 $:input_per_million_usd / 出力 $:output_per_million_usd / 100万）で課金されました。モデルカタログで分類して課金を確定してください。',
-        'vtual_management_invite_received' => ':inviter から :management への招待が届きました（役割: :role）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'vtual_management_invite_received' => ':inviter から :management への招待が届きました（ロール: :role）。',
         'vtual_management_creator_invite_received' => ':inviter から vTuber プロフィールを :management に紐付ける招待が届きました。',
     ],
     'audiences' => [

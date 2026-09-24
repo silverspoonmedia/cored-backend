@@ -15,6 +15,7 @@ return [
         'back' => 'Kembali',
         'search' => 'Cari',
         'logout' => 'Keluar',
+        // curated at 2026-09-21T16:59:32+07:00 — id curation wave
         'reset' => 'Atur ulang',
     ],
     'labels' => [
@@ -50,7 +51,8 @@ return [
     'skip_to_content' => 'Lewati ke konten utama',
     'empty_state' => [
         'default_title' => 'Belum ada data',
-        'default_message' => 'Item akan muncul di sini setelah dibuat.',
+        // curated at 2026-09-21T16:59:32+07:00 — id curation wave
+        'default_message' => 'Data akan muncul di sini setelah dibuat.',
     ],
     'breadcrumb' => [
         'add' => 'Tambah',
@@ -65,7 +67,8 @@ return [
         'confirm' => [
             'delete_user' => 'Yakin ingin menghapus pengguna ini?',
             'delete_menu' => 'Hapus item menu ini?',
-            'restore_menu' => 'Pulihkan item menu ini beserta subtree yang terhapus?',
+            // curated at 2026-09-21T16:59:32+07:00 — id curation wave
+            'restore_menu' => 'Pulihkan item menu ini beserta seluruh turunannya yang terhapus?',
         ],
     ],
 

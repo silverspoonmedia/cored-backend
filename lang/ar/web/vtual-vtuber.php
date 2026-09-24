@@ -13,7 +13,8 @@ return [
     'stat_channels' => 'القنوات',
     'stat_contents' => 'المحتوى المفهرس',
     'stat_live' => 'مباشر الآن',
-    'slug_label' => 'المعرّف المختصر',
+    // curated at 2026-09-22T20:02:21+07:00 — ar curation wave
+    'slug_label' => 'المعرّف',
     'platforms_label' => 'المنصات',
     'subscribers' => ':count مشتركين',
     'channels_empty' => 'لم يتم ربط أي قنوات بعد.',
@@ -24,7 +25,8 @@ return [
     'columns' => [
         'avatar' => 'الصورة الشخصية',
         'platform' => 'المنصة',
-        'handle' => 'المعرّف المختصر',
+        // curated at 2026-09-22T20:02:21+07:00 — ar curation wave
+        'handle' => 'اسم المستخدم',
         'display_name' => 'اسم العرض',
         'link' => 'الرابط',
         'thumbnail' => 'الصورة المصغرة',
@@ -55,7 +57,8 @@ return [
     'claim_step_2' => 'ابدأ مطالبة لهذا الملف الشخصي وقناة الإثبات؛ ستحصل على رمز يبدأ بـ vtual-claim-….',
     'claim_step_3' => 'ألصق الرمز كما هو في قسم المعلومات بقناة YouTube أو نبذة قناة Twitch.',
     'claim_step_4' => 'شغّل التحقق؛ سيعيد النظام جلب وصف القناة عبر محلّل الملفات الشخصية الإنتاجي.',
-    'claim_step_5' => 'عند النجاح، تصبح مالك الملف الشخصي (مالك العضوية + دور منتج vTuber في Vtual).',
+    // curated at 2026-09-22T20:30:00+07:00 — brand casing normalized to vTual
+    'claim_step_5' => 'عند النجاح، تصبح مالك الملف الشخصي (مالك العضوية + دور منتج vTuber في vTual).',
     'claim_channels_heading' => 'القنوات في هذا الملف الشخصي',
     'claim_back_to_profile' => 'العودة إلى الملف الشخصي',
     'claim_no_channels_note' => 'لم يتم ربط أي قنوات بعد؛ يجب على الموظفين تسجيل قناة في هذا الملف الشخصي قبل أن تتمكن من المطالبة به.',

@@ -6,7 +6,9 @@ return [
     'status_updated' => 'تم تحديث حالة سجل الأخطاء بنجاح.',
     'statuses' => [
         'open' => 'مفتوح',
-        'resolved' => 'تم الحل',
-        'ignored' => 'تم التجاهل',
+        // curated at 2026-09-22T20:32:28+07:00 — ar curation wave
+        'resolved' => 'محلول',
+        // curated at 2026-09-22T20:32:28+07:00 — ar curation wave
+        'ignored' => 'متجاهل',
     ],
 ];

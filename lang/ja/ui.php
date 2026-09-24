@@ -5,7 +5,8 @@ return [
     'no' => 'いいえ',
     'loading' => '読み込み中…',
     'home' => 'ホーム',
-    'all_rights_reserved' => '著作権を保有しています。',
+    // curated at 2026-09-21T17:25:29+07:00 — ja curation wave
+    'all_rights_reserved' => '無断転載を禁じます。',
     'actions' => [
         'save' => '保存',
         'cancel' => 'キャンセル',
@@ -27,7 +28,8 @@ return [
         'language' => '言語',
         'actions' => '操作',
         'main_navigation' => 'メインナビゲーション',
-        'breadcrumb' => 'パンくず',
+        // curated at 2026-09-21T17:25:29+07:00 — ja curation wave
+        'breadcrumb' => 'パンくずリスト',
         'users_table' => 'ユーザー',
         'user_menu' => 'アカウントメニュー',
     ],
@@ -50,7 +52,8 @@ return [
     'skip_to_content' => 'メインコンテンツへスキップ',
     'empty_state' => [
         'default_title' => 'まだデータがありません',
-        'default_message' => '作成されるとここに表示されます。',
+        // curated at 2026-09-21T17:25:29+07:00 — ja curation wave
+        'default_message' => 'データを作成するとここに表示されます。',
     ],
     'breadcrumb' => [
         'add' => '追加',
@@ -65,7 +68,8 @@ return [
         'confirm' => [
             'delete_user' => 'このユーザーを削除してもよろしいですか？',
             'delete_menu' => 'このメニュー項目を削除しますか？',
-            'restore_menu' => 'このメニュー項目と削除されたサブツリーを復元しますか？',
+            // curated at 2026-09-21T17:25:29+07:00 — ja curation wave
+            'restore_menu' => 'このメニュー項目と、削除された配下の項目を復元しますか？',
         ],
     ],
 

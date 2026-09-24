@@ -1,47 +1,76 @@
 <?php
 
 return [
-    'root_label' => '나의 파일',
-    'browse_success' => '브라우징이 로드되었습니다.',
-    'folder_created' => '폴다가 생성되었습니다.',
-    'folder_renamed' => '폴다 이름이 변경되었습니다.',
-    'folder_moved' => '폴다가 이동되었습니다.',
-    'folder_deleted' => '폴다가 휴지통으로 이동되었습니다.',
-    'folder_restored' => '폴다가 복원되었습니다.',
-    'folder_force_deleted' => '폴다가 영구적으로 삭제되었습니다.',
-    'file_show_success' => '파일이 로드되었습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'root_label' => '내 파일',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'browse_success' => '탐색 결과를 불러왔습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'folder_created' => '폴더가 생성되었습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'folder_renamed' => '폴더 이름이 변경되었습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'folder_moved' => '폴더가 이동되었습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'folder_deleted' => '폴더가 휴지통으로 이동되었습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'folder_restored' => '폴더가 복원되었습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'folder_force_deleted' => '폴더가 영구적으로 삭제되었습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'file_show_success' => '파일을 불러왔습니다.',
     'file_renamed' => '파일 이름이 변경되었습니다.',
-    'file_moved' => '파일이 이동되었습니다',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'file_moved' => '파일이 이동되었습니다.',
     'file_deleted' => '파일이 휴지통으로 이동되었습니다.',
-    'file_restored' => '%s개의 미디어 파일이 휴지통에서 복원됩니다',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'file_restored' => '파일이 복원되었습니다.',
     'file_force_deleted' => '파일이 영구적으로 삭제되었습니다.',
-    'bulk_visibility_updated' => '공개 설정이 업데이트되었습니다.',
+    // curated at 2026-09-23T14:05:27+07:00 — ko curation wave - visibility term unification
+    'bulk_visibility_updated' => '공개 범위가 업데이트되었습니다.',
     'bulk_files_deleted' => '선택한 파일이 휴지통으로 이동되었습니다.',
-    'bulk_folders_deleted' => '선택한 폴다가 휴지통으로 이동했습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'bulk_folders_deleted' => '선택한 폴더가 휴지통으로 이동되었습니다.',
     'download_ready' => '다운로드 URL이 준비되었습니다.',
     'download_unavailable' => '이 저장소 디스크에는 다운로드 URL을 사용할 수 없습니다.',
-    'visibility_updated' => '공개 설정이 업데이트되었습니다.',
-    'invalid_visibility' => '유효하지 않은 가시성 값입니다.',
+    // curated at 2026-09-23T14:05:27+07:00 — ko curation wave - visibility term unification
+    'visibility_updated' => '공개 범위가 업데이트되었습니다.',
+    // curated at 2026-09-23T14:05:27+07:00 — ko curation wave - visibility term unification
+    'invalid_visibility' => '유효하지 않은 공개 범위 값입니다.',
     'public_share_requires_paid' => '공개 링크를 공유하려면 유료 Archivd 요금제가 필요합니다.',
-    'public_share_blocked_hash' => '이 파일은 공개적으로 공유할 수 없습니다 (규정 준수에 의해 차단됨).',
-    'public_share_not_allowed' => '이 작업 영역의 항목은 공개적으로 공유할 수 없습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'public_share_blocked_hash' => '이 파일은 공개적으로 공유할 수 없습니다(규정 준수 정책에 의해 차단됨).',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'public_share_not_allowed' => '이 워크스페이스의 항목은 공개적으로 공유할 수 없습니다.',
     'blocklist_saved' => '해시가 차단 목록에 추가되었습니다.',
     'blocklist_removed' => '차단 목록에서 해시가 제거되었습니다.',
+    // curated at 2026-09-21T15:32:00+07:00 — new key (blocklist list endpoint had no message)
+    'blocklist_loaded' => '해시 차단 목록을 불러왔습니다.',
     'share_not_found' => '이 공유 항목은 사용할 수 없습니다.',
-    'search_success' => '검색 결과가 로드되었습니다.',
-    'trash_success' => '휴지통이 로드되었습니다.',
-    'quota_success' => '할당량이 로드되었습니다.',
-    'quota_exceeded' => '저장용량을 초과했습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'search_success' => '검색 결과를 불러왔습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'trash_success' => '휴지통을 불러왔습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'quota_success' => '할당량을 불러왔습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'quota_exceeded' => '저장 할당량을 초과했습니다.',
     'quota_grace_blocked' => '구독이 유예 기간에 있습니다. 파일을 다시 업로드하려면 갱신하세요.',
-    'folder_not_found' => '폴다를 찾을 수 없습니다.',
-    'file_not_found' => '파일을 찾을 수 없습니다. ',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'folder_not_found' => '폴더를 찾을 수 없습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'file_not_found' => '파일을 찾을 수 없습니다.',
     'owner_not_found' => '소유자를 찾을 수 없습니다.',
-    'folder_name_taken' => '이 이름을  폴다가 이미 있습니다.',
-    'file_name_taken' => '이 이름의 파일이 이미 존재합니다. ',
-    'folder_cycle' => '폴다를 자기 자신 또는 하위 폴다로 이동할 수 없습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'folder_name_taken' => '같은 이름의 폴더가 이미 있습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'file_name_taken' => '같은 이름의 파일이 이미 있습니다.',
+    // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+    'folder_cycle' => '폴더를 자기 자신 또는 하위 폴더로 이동할 수 없습니다.',
     'policy' => [
         'denied' => '이 작업을 수행할 권한이 없습니다.',
-        'cross_user_denied' => '다른 사용자의 파일에 액세스할 수 없습니다.',
+        // curated at 2026-09-23T13:30:12+07:00 — ko curation wave: alignment pass (term unification, register, cross-side parity)
+        'cross_user_denied' => '다른 사용자의 파일에 접근할 수 없습니다.',
         'hierarchy_view' => '이 사용자의 파일을 볼 수 없습니다.',
         'hierarchy_mutate' => '이 사용자의 파일을 수정할 수 없습니다.',
     ],
@@ -49,7 +78,8 @@ return [
         'list_success' => '워크스페이스를 불러왔습니다.',
         'show_success' => '워크스페이스를 불러왔습니다.',
         'created' => '워크스페이스가 생성되었습니다.',
-        'archived_success' => '워크스페이스가 보관되었습니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'archived_success' => '워크스페이스가 보관 처리되었습니다.',
         'members_success' => '멤버를 불러왔습니다.',
         'invite_sent' => '초대가 전송되었습니다.',
         'invite_accepted' => '초대가 수락되었습니다.',
@@ -57,15 +87,19 @@ return [
         'member_removed' => '멤버가 제거되었습니다.',
         'activity_success' => '워크스페이스 활동을 불러왔습니다.',
         'not_found' => '워크스페이스를 찾을 수 없습니다.',
-        'archived' => '이 워크스페이스는 보관되었습니다.',
-        'access_denied' => '이 워크스페이스에 액세스할 수 없습니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'archived' => '이 워크스페이스는 보관 처리되었습니다.',
+        // curated at 2026-09-23T13:30:12+07:00 — ko curation wave: alignment pass (term unification, register, cross-side parity)
+        'access_denied' => '이 워크스페이스에 접근할 수 없습니다.',
         'mutate_denied' => '이 워크스페이스의 파일을 수정할 수 없습니다.',
         'members_denied' => '이 워크스페이스의 멤버를 관리할 수 없습니다.',
         'requires_paid' => '협업 워크스페이스를 사용하려면 유료 Archivd 요금제(메인 또는 애드온)가 필요합니다.',
         'owner_in_grace' => '워크스페이스 소유자가 유예 기간에 있습니다. 협업 기능을 사용하려면 요금제를 갱신하세요.',
         'already_exists' => '이미 워크스페이스가 있습니다.',
-        'slot_limit' => '소유 가능한 팀 워크스페이스 한도에 도달했습니다 (:used / :limit). 팀을 보관하거나 팀 워크스페이스 슬롯 애드온을 구매하세요.',
-        'name_required' => '워크스페이스 이름이 필요합니다.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'slot_limit' => '소유 가능한 팀 워크스페이스 한도에 도달했습니다(:used / :limit). 팀 워크스페이스를 보관 처리하거나 팀 워크스페이스 슬롯 애드온을 구매하세요.',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'name_required' => '워크스페이스 이름은 필수입니다.',
         'owner_only' => '워크스페이스 소유자만 이 작업을 수행할 수 있습니다.',
         'invalid_role' => '유효하지 않은 워크스페이스 역할입니다.',
         'invalid_email' => '유효하지 않은 이메일 주소입니다.',
@@ -100,7 +134,8 @@ return [
         'invalid_part_number' => '유효하지 않은 파트 번호입니다.',
         'incomplete_parts' => '모든 멀티파트 파트가 업로드되지 않았습니다.',
         'unsupported_disk' => '설정된 저장소 디스크가 직접 업로드를 지원하지 않습니다.',
-        'proxy_misconfigured' => '업로드 프록시가 활성화되어 있지만 설정이 불완전합니다 (토큰 또는 디스크 대상 별칭이 없음).',
+        // curated at 2026-09-23T10:55:13+07:00 — ko curation wave
+        'proxy_misconfigured' => '업로드 프록시가 활성화되어 있지만 설정이 불완전합니다(토큰 또는 디스크 대상 별칭 누락).',
         'upstream_failed' => '저장소가 업로드 작업을 거부했습니다: :detail',
         'upstream_failed_generic' => '저장소가 업로드 작업을 거부했습니다. S3/B2 경로 스타일 설정 및 멀티파트 상태를 확인하세요.',
         'too_many_concurrent' => '동시 업로드가 너무 많습니다. 먼저 기존 세션을 완료하거나 중단하세요.',

@@ -50,7 +50,8 @@ return [
     'skip_to_content' => '跳转到主要内容',
     'empty_state' => [
         'default_title' => '暂无内容',
-        'default_message' => '创建项目后，内容会显示在这里。',
+        // curated at 2026-09-22T12:51:54+07:00 — zh_CN curation wave
+        'default_message' => '条目创建后会显示在这里。',
     ],
     'breadcrumb' => [
         'add' => '添加',

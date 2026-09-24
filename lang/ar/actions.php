@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 return [
-    'accept'          => 'موافقة',
+    // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+    'accept'          => 'قبول',
     'action'          => 'إجراء',
-    'actions'         => 'أجراءات',
+    // curated at 2026-09-24T09:43:18+07:00 — ar curation wave: multi-owner key — Actions/Settings take the definite article, Done takes the SPA wording
+    'actions'         => 'الإجراءات',
     'add'             => 'إضافة',
     'admin'           => 'مدير',
     'agree'           => 'موافقة',
@@ -31,7 +33,8 @@ return [
     'details'         => 'تفاصيل',
     'disable'         => 'إلغاء التفعيل',
     'discard'         => 'تجاهل',
-    'done'            => 'مكتمل',
+    // curated at 2026-09-24T09:43:18+07:00 — ar curation wave: multi-owner key — Actions/Settings take the definite article, Done takes the SPA wording
+    'done'            => 'تم',
     'down'            => 'أسفل',
     'duplicate'       => 'نسخ',
     'edit'            => 'تعديل',
@@ -46,8 +49,10 @@ return [
     'hide'            => 'إخفاء',
     'home'            => 'الرئيسية',
     'image'           => 'صورة',
-    'impersonate'     => 'اقتباس شخصية',
-    'impersonation'   => 'الاقتباس',
+    // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+    'impersonate'     => 'انتحال الهوية',
+    // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+    'impersonation'   => 'انتحال الهوية',
     'import'          => 'استيراد',
     'introduction'    => 'مقدمة',
     'like'            => 'إعجاب',
@@ -56,7 +61,8 @@ return [
     'log_in'          => 'تسجيل الدخول',
     'log_out'         => 'تسجيل الخروج',
     'named'           => [
-        'add'       => 'أضف :name',
+        // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+        'add'       => 'إضافة :name',
         'choose'    => 'اختر :name',
         'create'    => 'إنشاء :name',
         'delete'    => 'حذف :name',
@@ -76,19 +82,23 @@ return [
     'new'             => 'جديد',
     'no'              => 'لا',
     'open'            => 'فتح',
-    'open_website'    => 'فتح على الموقع',
+    // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+    'open_website'    => 'فتح في الموقع',
     'preview'         => 'معاينة',
     'price'           => 'السعر',
-    'record'          => 'سجل',
+    // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+    'record'          => 'تسجيل',
     'restore'         => 'استعادة',
     'save'            => 'حفظ',
     'save_and_close'  => 'حفظ وإغلاق',
-    'save_and_return' => 'حفظ وعودة',
+    // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+    'save_and_return' => 'حفظ والعودة',
     'search'          => 'بحث',
     'select'          => 'اختر',
     'select_all'      => 'اختر الكل',
     'send'            => 'إرسال',
-    'settings'        => 'إعدادات',
+    // curated at 2026-09-24T09:43:18+07:00 — ar curation wave: multi-owner key — Actions/Settings take the definite article, Done takes the SPA wording
+    'settings'        => 'الإعدادات',
     'show'            => 'عرض',
     'show_all'        => 'عرض الكل',
     'sign_in'         => 'تسجيل الدخول',
@@ -97,15 +107,20 @@ return [
     'stop'            => 'إيقاف',
     'submit'          => 'إرسال',
     'subscribe'       => 'اشتراك',
-    'switch'          => 'تحويل',
-    'switch_to_role'  => 'التحويل إلى صلاحية',
+    // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+    'switch'          => 'تبديل',
+    // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+    'switch_to_role'  => 'التبديل إلى دور',
     'tag'             => 'علامة',
     'tags'            => 'العلامات',
     'target_link'     => [
-        'blank'  => 'افتح في نافذة جديدة',
-        'parent' => 'فتح في إطار الأصل',
+        // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+        'blank'  => 'فتح في نافذة جديدة',
+        // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+        'parent' => 'فتح في الإطار الأصلي',
         'self'   => 'فتح في النافذة الحالية',
-        'top'    => 'افتح في الإطار العلوي',
+        // curated at 2026-09-22T20:24:52+07:00 — ar curation wave
+        'top'    => 'فتح في الإطار العلوي',
     ],
     'translate'       => 'ترجمة',
     'translate_it'    => 'ترجمة',

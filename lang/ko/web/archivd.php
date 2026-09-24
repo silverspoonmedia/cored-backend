@@ -9,7 +9,8 @@ return [
     'blocklist_reason' => '사유',
     'blocklist_reason_placeholder' => 'DMCA 참조 번호 등',
     'blocklist_entries' => '차단된 해시',
-    'blocklist_added' => '추가됨',
+    // curated at 2026-09-23T10:56:49+07:00 — ko curation wave
+    'blocklist_added' => '추가일',
     'blocklist_actions' => '작업',
     'blocklist_remove' => '제거',
     'blocklist_confirm_remove' => '이 해시를 차단 목록에서 제거하시겠습니까?',
@@ -23,7 +24,8 @@ return [
     'new_folder' => '새 폴더',
     'folder_name' => '폴더 이름',
     'file_name' => '파일 이름',
-    'create' => '만들기',
+    // curated at 2026-09-24T09:43:18+07:00 — ko curation wave: multi-owner key — Create agrees with the sibling dialog buttons (생성)
+    'create' => '생성',
     'cancel' => '취소',
     'download' => '다운로드',
     'delete' => '삭제',
@@ -78,7 +80,8 @@ return [
     'move_failed' => '항목을 이동할 수 없습니다.',
     'move_invalid' => '여기로 이동할 수 없습니다.',
     'select_folder' => '대상 폴더 선택',
-    'root_label' => '나의 파일',
+    // curated at 2026-09-23T10:56:49+07:00 — ko curation wave
+    'root_label' => '내 파일',
     'parent_folder' => '상위 폴더',
     'workspace_personal' => '개인',
     'workspace_team' => '팀 워크스페이스',
@@ -89,24 +92,32 @@ return [
         'create_workspace' => '새 Microstock 워크스페이스',
         'slots_full' => 'Microstock 슬롯이 가득 찼습니다',
         'create_title' => '새 Microstock 워크스페이스',
-        'create_hint' => 'Microstock 워크스페이스 이름을 지정하십시오. 비워 두면 기본값이 사용됩니다.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'create_hint' => 'Microstock 워크스페이스 이름을 지정하세요. 비워 두면 기본값이 사용됩니다.',
         'name_label' => '워크스페이스 이름',
         'name_placeholder' => 'Microstock',
-        'error_requires_folder' => '먼저 폴더(컬렉션)를 만든 다음 그 안에 파일을 업로드하십시오.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'error_requires_folder' => '먼저 폴더(컬렉션)를 만든 다음 그 안에 파일을 업로드하세요.',
         'error_collection_locked' => '이 컬렉션은 잠겨 있어 더 이상 업로드를 받지 않습니다.',
-        'error_image_only' => '마이크로스톡 컬렉션에는 이미지 파일(JPEG, PNG, WebP, GIF)만 허용됩니다.',
+        // curated at 2026-09-23T10:56:49+07:00 — ko curation wave
+        'error_image_only' => 'Microstock 컬렉션에는 이미지 파일(JPEG, PNG, WebP, GIF)만 허용됩니다.',
         'lock_describe' => '잠금 및 설명',
         'analyze' => '분석 시작',
-        'export_csv' => 'CSV 보내기',
+        // curated at 2026-09-23T10:56:49+07:00 — ko curation wave
+        'export_csv' => 'CSV 내보내기',
         'download_csv' => 'CSV 다운로드',
         'status_locked' => '컬렉션이 잠겼습니다. 분석할 준비가 되었습니다.',
         'status_processing' => 'AI가 이 컬렉션을 분석하는 중…',
         'status_processing_degraded' => '(평소보다 오래 걸리고 있습니다)',
-        'status_review' => '분석이 완료되었습니다. 메타데이터를 검토한 후 보내십시오.',
-        'status_exported' => '컬렉션을 보냈습니다.',
-        'status_failed' => '분석에 실패했습니다. 다시 잠가서 재시도하십시오.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'status_review' => '분석이 완료되었습니다. 메타데이터를 검토한 후 내보내세요.',
+        // curated at 2026-09-23T10:56:49+07:00 — ko curation wave
+        'status_exported' => '컬렉션을 내보냈습니다.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'status_failed' => '분석에 실패했습니다. 다시 잠가서 재시도하세요.',
         'describe_title' => '컬렉션 잠금 및 설명',
-        'describe_hint' => '이 컬렉션을 전체적으로 설명하십시오. AI는 모든 파일의 제목과 키워드를 생성할 때 설명을 컨텍스트로 사용합니다.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'describe_hint' => '이 컬렉션을 전체적으로 설명하세요. AI는 모든 파일의 제목과 키워드를 생성할 때 설명을 컨텍스트로 사용합니다.',
         'describe_sections_intro' => '세부 정보를 많이 제공할수록 AI가 모든 파일에서 더 일관된 제목과 키워드를 생성합니다.',
         'describe_label' => '컬렉션 설명',
         'describe_primary_concept' => '주요 콘셉트',
@@ -119,17 +130,25 @@ return [
         'describe_other_placeholder' => '기타 (쉼표로 구분)',
         'describe_preview' => '작성된 힌트 미리 보기',
         'describe_char_count' => ':count / :max 자',
-        'describe_validation_primary' => '주요 콘셉트를 최소 :min자 이상 설명하십시오.',
-        'describe_validation_visible' => '보이는 피사체를 하나 이상 선택하거나 기타를 입력하십시오.',
-        'describe_validation_intent' => '구매자 의도를 하나 이상 선택하거나 기타를 입력하십시오.',
-        'describe_validation_style' => '스타일을 하나 이상 선택하거나 기타를 입력하십시오.',
-        'describe_validation_too_long' => '힌트가 너무 깁니다. 추가 메모나 선택 항목을 줄이십시오.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'describe_validation_primary' => '주요 콘셉트를 최소 :min자 이상 설명하세요.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'describe_validation_visible' => '보이는 피사체를 하나 이상 선택하거나 기타를 입력하세요.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'describe_validation_intent' => '구매자 의도를 하나 이상 선택하거나 기타를 입력하세요.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'describe_validation_style' => '스타일을 하나 이상 선택하거나 기타를 입력하세요.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'describe_validation_too_long' => '힌트가 너무 깁니다. 추가 메모나 선택 항목을 줄이세요.',
         'describe_warning_blind' => '설명 없이 이 컬렉션을 잠그려고 합니다. AI가 컨텍스트 없이 메타데이터를 생성하므로 보통 품질이 낮고 일관성 없는 결과가 나옵니다. 계속하시겠습니까?',
-        'describe_billing_mode_label' => '결제 모드',
-        'describe_billing_mode_hint' => '이 컬렉션의 분석 방식을 선택하십시오.',
+        // curated at 2026-09-23T10:56:49+07:00 — ko curation wave
+        'describe_billing_mode_label' => '과금 모드',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'describe_billing_mode_hint' => '이 컬렉션의 분석 방식을 선택하세요.',
         'describe_billing_mode_free' => '무료',
         'describe_billing_mode_paid' => '유료',
-        'describe_validation_billing_mode' => '무료 또는 유료 결제 모드를 선택하십시오.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'describe_validation_billing_mode' => '무료 또는 유료 과금 모드를 선택하세요.',
         'describe_placeholder' => '예: 밝은 자연광 아래 나무 테이블 위 친환경 주방 용품의 플랫레이 사진 세트.',
         'describe_submit' => '잠금 및 분석',
         'describe_visible_options' => [
@@ -172,7 +191,8 @@ return [
         'daily_free_line' => '오늘의 무료 분석: :remaining/:limit',
         'billing_mixed_line' => '이번 실행: 무료 :daily건 + 유료 :paid건',
         'status_processing_free_tier' => '(무료 티어 대기열 — 더 오래 걸릴 수 있습니다)',
-        'insufficient_credits' => 'AI 크레딧이 부족합니다. 서비스에서 크레딧 팩을 구매하십시오.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'insufficient_credits' => 'AI 크레딧이 부족합니다. 서비스에서 크레딧 팩을 구매하세요.',
         'stage_vision' => '이미지 분석 중…',
         'stage_thinking' => 'AI 분석 중…',
         'stage_queued_thinking' => '분석 대기 중',
@@ -194,7 +214,8 @@ return [
         'panel_description_label' => '설명',
         'panel_category_label' => '카테고리',
         'panel_keywords_label' => '키워드',
-        'panel_keyword_placeholder' => '키워드를 추가하고 Enter를 누르십시오',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'panel_keyword_placeholder' => '키워드를 추가하고 Enter를 누르세요',
         'panel_keyword_clear' => '모든 키워드 지우기',
         'panel_ai_details' => 'AI 세부 정보',
         'panel_save' => '저장',
@@ -205,17 +226,24 @@ return [
         'step_lock_describe' => '잠금 및 설명',
         'step_analyze' => '분석',
         'step_review' => '검토',
-        'step_export' => '보내기',
-        'step_upload_hint' => '이 컬렉션 폴더에 이미지를 업로드하여 시작하십시오.',
-        'step_lock_hint' => '컬렉션을 설명한 후 잠가서 AI 분석을 시작하십시오.',
+        // curated at 2026-09-23T10:56:49+07:00 — ko curation wave
+        'step_export' => '내보내기',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'step_upload_hint' => '이 컬렉션 폴더에 이미지를 업로드하여 시작하세요.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'step_lock_hint' => '컬렉션을 설명한 후 잠가서 AI 분석을 시작하세요.',
         'step_analyze_hint' => 'AI가 파일의 제목과 키워드를 생성하는 중입니다.',
-        'step_review_hint' => 'AI가 생성한 메타데이터를 검토하고 다듬은 후 보내십시오.',
-        'step_export_hint' => '컬렉션을 보냈습니다. 마켓플레이스용 CSV를 다운로드하십시오.',
-        'step_upload_empty' => '이 컬렉션은 비어 있습니다. 이미지를 업로드하여 시작하십시오.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'step_review_hint' => 'AI가 생성한 메타데이터를 검토하고 다듬은 후 내보내세요.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'step_export_hint' => '컬렉션을 내보냈습니다. 마켓플레이스용 CSV를 다운로드하세요.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'step_upload_empty' => '이 컬렉션은 비어 있습니다. 이미지를 업로드하여 시작하세요.',
     ],
     'collab' => [
         'title' => '협업 작업',
-        'subtitle' => '소유자의 유료 요금제 아래 공유되는 팀 스토리지입니다. 별도 메뉴가 아니라 여기서 모드를 전환하십시오.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'subtitle' => '소유자의 유료 요금제 아래 공유되는 팀 스토리지입니다. 별도 메뉴가 아니라 여기서 모드를 전환하세요.',
         'badge_free' => '무료 요금제',
         'badge_paid' => '유료 요금제',
         'badge_grace' => '유예 기간',
@@ -238,15 +266,19 @@ return [
         'create_workspace' => '팀 워크스페이스 만들기',
         'open_my_workspace' => '내 팀 열기: :name',
         'switch_label' => '워크스페이스 전환:',
-        'no_teams_free' => '아직 팀이 없습니다. 업그레이드하여 만들거나 아래에서 초대를 수락하십시오.',
-        'no_teams_paid' => '아직 팀이 없습니다. 위에서 만들거나 초대를 수락하여 다른 사람의 팀에 참여하십시오.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'no_teams_free' => '아직 팀이 없습니다. 업그레이드하여 만들거나 아래에서 초대를 수락하세요.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'no_teams_paid' => '아직 팀이 없습니다. 위에서 만들거나 초대를 수락하여 다른 사람의 팀에 참여하세요.',
         'accept_invite' => '초대 토큰이 있습니다',
         'invite_token' => '초대 토큰',
         'invite_token_placeholder' => '소유자에게 받은 토큰 붙여넣기',
         'accept' => '팀 참여',
         'accept_hint' => '무료와 유료 모두에서 작동합니다. 자신의 팀을 소유해도 다른 팀 참여가 차단되지 않습니다. 해당 팀의 할당량이 적용됩니다.',
-        'invite_token_ready' => '초대가 생성되었습니다 — 이 토큰을 멤버에게 공유하십시오:',
-        'invite_token_share' => 'MVP에는 아직 이메일 전송이 없습니다. 토큰을 복사하여 직접 보내십시오.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'invite_token_ready' => '초대가 생성되었습니다 — 이 토큰을 멤버에게 공유하세요:',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'invite_token_share' => 'MVP에는 아직 이메일 전송이 없습니다. 토큰을 복사하여 직접 보내세요.',
         'team_context' => '팀: :name',
         'you_are_role' => '내 역할: :role',
         'badge_yours' => '내 팀',
@@ -268,8 +300,10 @@ return [
         'role_viewer' => '뷰어 (읽기 전용)',
         'role_admin' => '관리자 (멤버 관리)',
         'send_invite' => '초대 보내기',
-        'invite_result_hint' => '제출 후 위에 토큰이 나타납니다 — 참여할 수 있도록 공유하십시오.',
-        'create_hint' => '유료 요금제에는 소유 팀 10개가 포함됩니다. 더 필요하면 팀 워크스페이스 슬롯(월 +$1)을 구매하십시오. 다른 팀 참여는 무제한입니다.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'invite_result_hint' => '제출 후 위에 토큰이 나타납니다 — 참여할 수 있도록 공유하세요.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'create_hint' => '유료 요금제에는 소유 팀 10개가 포함됩니다. 더 필요하면 팀 워크스페이스 슬롯(월 +$1)을 구매하세요. 다른 팀 참여는 무제한입니다.',
         'workspace_name' => '워크스페이스 이름',
         'default_workspace_name' => '팀 워크스페이스',
         'member_readonly_hint' => '이 팀의 멤버입니다. 소유자나 관리자만 멤버를 초대하거나 제거할 수 있습니다.',
@@ -277,7 +311,8 @@ return [
         'slots_counter' => '소유한 팀: :used / :limit',
         'slots_full' => '소유 팀 한도에 도달했습니다',
         'buy_slot_cta' => '팀 슬롯 추가 구매',
-        'grace_body_short' => '팀을 만들거나 관리하려면 요금제를 갱신하십시오.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'grace_body_short' => '팀을 만들거나 관리하려면 요금제를 갱신하세요.',
         'no_members' => '아직 멤버가 없습니다.',
         'activity_empty' => '아직 팀 활동이 없습니다.',
     ],
@@ -289,15 +324,18 @@ return [
     'view_list' => '목록 보기',
     'view_toggle' => '보기 모드',
     'drag_drop_hint' => '또는 클릭하여 찾아보기',
-    'upload_here' => '업로드할 파일을 여기에 놓으십시오',
+    // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+    'upload_here' => '업로드할 파일을 여기에 놓으세요',
     'quota_remaining' => '남음',
     'quota_unlimited' => '무제한',
     'load_failed' => '불러오지 못했습니다.',
-    'vue_mount_failed' => 'Archivd UI를 불러오지 못했습니다. 페이지를 새로 고치십시오.',
+    // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+    'vue_mount_failed' => 'Archivd UI를 불러오지 못했습니다. 페이지를 새로 고치세요.',
     'link_copied' => '링크가 클립보드에 복사되었습니다.',
     'ajax_success' => '작업이 완료되었습니다.',
     'ajax_error' => '작업에 실패했습니다.',
-    'network_error' => '네트워크 오류입니다. 다시 시도하십시오.',
+    // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+    'network_error' => '네트워크 오류입니다. 다시 시도하세요.',
     'type_image' => '이미지',
     'type_pdf' => 'PDF 문서',
     'type_video' => '동영상',
@@ -311,7 +349,8 @@ return [
         'browse' => '파일 찾아보기',
         'region' => '업로드 리전',
         'too_many' => '선택한 파일이 너무 많습니다.',
-        'wait' => '업로드가 완료될 때까지 기다려 주십시오.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'wait' => '업로드가 완료될 때까지 기다려 주세요.',
         'failed' => '업로드에 실패했습니다.',
         'pending' => '대기 중',
         'waiting' => '대기 중…',

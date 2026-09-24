@@ -38,11 +38,14 @@ return [
         'payment_steps' => [
             'aria' => '결제 단계',
             'choose_channel' => '방법 선택',
+            // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
             'choose_channel_hint' => 'QRIS, 계좌이체 또는 전자지갑을 선택하세요.',
             'pay' => '결제',
+            // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
             'pay_hint' => '표시된 안내에 따라 결제를 완료하세요.',
             'confirm' => '확인',
-            'confirm_hint' => '결제사에서 결제를 확인하면 상태가 업데이트됩니다.',
+            // curated at 2026-09-23T11:14:18+07:00 — ko curation wave
+            'confirm_hint' => '공급자가 결제를 확인하면 상태가 업데이트됩니다.',
         ],
     ],
 
@@ -60,10 +63,12 @@ return [
             'columns' => [
                 'invoice_number' => '인보이스 번호',
                 'status' => '상태',
-                'subtotal' => '서비스 가격',
+                // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+                'subtotal' => '소계',
                 'fee' => '결제 수수료',
                 'total' => '고객 총액',
-                'created_at' => '생성됨',
+                // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+                'created_at' => '생성일',
                 'actions' => '작업',
             ],
         ],
@@ -73,6 +78,7 @@ return [
             'status' => '상태',
             'payment_method' => '결제 방법',
             'gateway' => '게이트웨이',
+            // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
             'subtotal' => '서비스 가격',
             'fee' => '결제 수수료 (구매자)',
             'total' => '고객 총액',
@@ -80,13 +86,15 @@ return [
             'paid_at' => '결제 완료 시각',
             'expired_at' => '만료 시각',
             'created_at' => '생성 시각',
-            'payment_route' => '결제 경로',
+            // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+            'payment_route' => '체크아웃 라우트',
         ],
     ],
 
     'income' => [
         'title' => '결제 수입',
-        'subtitle' => '결제 완료된 인보이스에서 발생한 매출 및 현금 수금입니다. 서비스 가격은 제품 수입이며, 결제 수수료는 구매자에게 부과되어 결제사로 전달되는 추가 요금입니다.',
+        // curated at 2026-09-23T11:14:18+07:00 — ko curation wave
+        'subtitle' => '결제 완료된 인보이스에서 발생한 매출과 수금액입니다. 서비스 가격은 제품 수입이며, 결제 수수료는 구매자에게 부과되어 공급자에게 전달되는 추가 요금입니다.',
         'loading' => '불러오는 중…',
         'load_failed' => '수입 데이터를 불러올 수 없습니다.',
         'empty_invoices' => '이 기간에 결제 완료된 인보이스가 없습니다.',
@@ -105,11 +113,13 @@ return [
         ],
         'summary' => [
             'service_revenue' => '서비스 매출',
-            'service_revenue_hint' => '인보이스 서비스 가격의 합계 (제품 매출).',
+            // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+            'service_revenue_hint' => '인보이스 소계의 합계 (제품 매출).',
             'buyer_fees' => '구매자 결제 수수료',
             'buyer_fees_hint' => '고객에게 청구된 채널 추가 요금.',
             'cash_collected' => '수금된 현금',
-            'cash_collected_hint' => '고객이 결제한 총액 (서비스 가격 + 수수료).',
+            // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+            'cash_collected_hint' => '고객이 결제한 총액 (소계 + 수수료).',
             'invoice_count' => '결제 완료 인보이스',
             'avg_order_value' => '평균 주문 금액',
         ],
@@ -169,7 +179,8 @@ return [
             'subscriber_phone' => '구독자 전화번호',
             'plan_name' => '요금제 이름',
             'plan_description' => '요금제 설명',
-            'billing_cycle' => '청구 주기',
+            // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+            'billing_cycle' => '과금 주기',
             'amount' => '금액',
             'currency' => '통화',
             'status' => '상태',
@@ -188,6 +199,7 @@ return [
     'ipaymu_return' => [
         'invoice_not_found' => '이 결제와 일치하는 인보이스를 찾을 수 없습니다.',
         'paid' => '결제가 접수되었습니다. 인보이스가 결제 완료로 표시되었습니다.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
         'pending' => '결제가 처리 중입니다. 상태가 업데이트되지 않으면 잠시 후 페이지를 새로고침하세요.',
         'failed' => '결제가 실패하거나 거절되었습니다.',
         'cancelled' => '결제가 취소되었습니다.',
@@ -195,38 +207,53 @@ return [
     ],
 
     'checkout' => [
+        // curated at 2026-09-23T11:30:53+07:00 — ko curation wave: checkout.title is EN 'Payment', revert over-correction
         'title' => '결제',
         'invoice_summary' => '인보이스 :number',
         'amount' => '결제 금액',
+        // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
         'subtotal' => '서비스 가격',
         'payment_fee' => '결제 수수료',
-        'payment_fee_note' => '결제사에 지급되며 총액에 추가됩니다.',
+        // curated at 2026-09-23T11:14:18+07:00 — ko curation wave
+        'payment_fee_note' => '공급자에게 지급되며 총액에 추가됩니다.',
         'total_due' => '총 결제 금액',
-        'fee_estimate_hint' => '예상 수수료 — 결제를 진행할 때 최종 금액이 확정됩니다.',
+        // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+        'fee_estimate_hint' => '예상 수수료 — 결제를 진행하면 최종 금액이 확정됩니다.',
         'fee_percent_basis' => '서비스 가격의 :percent',
-        'fee_at_checkout_hint' => '결제 방법을 선택하면 결제사 수수료가 추가됩니다.',
+        // curated at 2026-09-23T11:14:18+07:00 — ko curation wave
+        'fee_at_checkout_hint' => '결제 방법을 선택하면 공급자 수수료가 추가됩니다.',
         'routing_updated' => '결제 방법이 업데이트되었습니다. 수수료가 변경되었을 수 있습니다.',
         'channel_unavailable' => ':channel은(는) 더 이상 사용할 수 없습니다.',
         'fee_updated' => ':channel 수수료가 :old에서 :new(으)로 변경되었습니다.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
         'selected_channel_unavailable' => '선택한 결제 방법을 더 이상 사용할 수 없습니다. 다른 방법을 선택하세요.',
         'pay_now' => '지금 결제',
+        // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
         'snap_loading' => '결제 화면 여는 중…',
-        'snap_failed' => '결제를 시작할 수 없습니다',
-        'started' => '결제 세션이 생성되었습니다.',
+        // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+        'snap_failed' => '체크아웃을 시작할 수 없습니다',
+        // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+        'started' => '체크아웃 세션이 생성되었습니다.',
         'paid' => '이 인보이스는 이미 결제되었습니다.',
         'not_payable' => '현재 상태에서는 이 인보이스를 결제할 수 없습니다.',
-        'unsupported_gateway' => '인보이스의 결제 게이트웨이가 호스팅 결제를 지원하지 않습니다.',
+        // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+        'unsupported_gateway' => '인보이스의 결제 게이트웨이가 호스팅 체크아웃을 지원하지 않습니다.',
         'select_channel' => '결제 방법',
-        'cheap_alt_hint' => ':channel로 결제하면 수수료를 절약할 수 있습니다 (결제 시 QR 스캔).',
+        // curated at 2026-09-23T13:52:32+07:00 — ko curation wave: parenthesised particle after a placeholder
+        'cheap_alt_hint' => ':channel을(를) 통해 결제하면 수수료를 절약할 수 있습니다 (체크아웃 시 QR 스캔).',
         'pay_with_channel' => '결제 계속하기',
         'channel_loading' => '결제 생성 중…',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
         'channel_ready' => '아래 안내에 따라 결제를 완료하세요.',
-        'channel_failed' => '채널 결제를 시작할 수 없습니다',
+        // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+        'channel_failed' => '채널 체크아웃을 시작할 수 없습니다',
         'confirm_paid' => '결제 완료했습니다',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
         'confirm_paid_help' => '이 화면 밖에서 결제를 완료한 경우 (예: 현금 또는 계좌이체), 여기를 클릭하여 인보이스 상태를 다시 확인하세요.',
         'change_channel' => '결제 채널 변경',
         'no_channels' => '이 인보이스에 사용 가능한 결제 방법이 없습니다.',
-        'permission_required' => '결제를 시작할 권한이 없습니다. 관리자에게 "결제 시작" 권한을 요청하세요.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'permission_required' => '결제를 시작할 권한이 없습니다. 관리자에게 “결제 시작” 권한을 요청하세요.',
         'synced' => '결제 상태가 동기화되었습니다.',
         'syncing' => '동기화 중…',
         'sync_pending' => '결제가 아직 대기 중입니다.',
@@ -235,7 +262,8 @@ return [
 
     'instructions' => [
         'title' => '결제 안내',
-        'expires_at' => ':time 전까지 결제하세요',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
+        'expires_at' => ':time까지 결제하세요',
         'qr_string' => 'QR 데이터',
         'bank' => '은행',
         'va_number' => '가상계좌',
@@ -244,7 +272,8 @@ return [
         'copy' => '복사',
         'copied' => '클립보드에 복사됨',
         'copy_failed' => '복사할 수 없습니다',
-        'pending_hint' => '결제사가 결제를 확인하면 상태가 자동으로 업데이트됩니다.',
+        // curated at 2026-09-23T11:14:18+07:00 — ko curation wave
+        'pending_hint' => '공급자가 결제를 확인하면 상태가 자동으로 업데이트됩니다.',
     ],
 
     'channels' => [
@@ -253,13 +282,16 @@ return [
         'updated' => '결제 채널이 업데이트되었습니다.',
         'route_updated' => '결제 채널 경로가 업데이트되었습니다.',
         'routes_title' => '게이트웨이 경로',
-        'routes_lead' => '결제는 기본 또는 전용 경로를 먼저 시도한 후 폰백 경로를 시도합니다. 같은 역할 내에서는 우선순위 숫자가 낮은 경로가 먼저 시도됩니다. 비활성 경로나 게이트웨이 자격 증명이 없는 경로는 건너뜏니다.',
+        // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+        'routes_lead' => '체크아웃은 기본 또는 전용 경로를 먼저 시도한 다음 폴백 경로를 시도합니다. 같은 역할 내에서는 우선순위 숫자가 낮은 경로가 먼저 시도됩니다. 비활성 경로나 게이트웨이 자격 증명이 없는 경로는 건너뜁니다.',
+        // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
         'empty' => '설정된 결제 채널이 없습니다. PaymentGatewaySeeder 이후 php artisan payments:sync-routing-policy를 실행하세요.',
         'no_routes' => '이 채널에 연결된 게이트웨이 경로가 없습니다.',
         'no_results' => '검색 조건에 맞는 채널이 없습니다.',
         'search_label' => '채널 검색',
         'search_placeholder' => '이름, 코드 또는 유형으로 검색…',
-        'inactive_channel' => '결제 화면에서 숨겨짐',
+        // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+        'inactive_channel' => '체크아웃에서 숨김',
         'primary_route' => '먼저 시도됨',
         'priority_hint' => '숫자가 낮을수록 같은 경로 역할 내에서 우선순위가 높습니다. 정책 관리 우선순위는 여기서 편집할 수 없습니다.',
         'priority_autosave_hint' => '자동 저장됨',
@@ -275,27 +307,34 @@ return [
             'ewallet' => '전자지갑',
         ],
         'intro' => [
-            'title' => '채널 결제 라우팅 작동 방식',
-            'lead' => '고객은 논리 채널(QRIS, 은행 가상계좌, 전자지갑)을 선택합니다. Monolith는 정책 순서(경로 역할, 그다음 우선순위)에 따라 게이트웨이 경로를 시도하여 결제 안내를 생성합니다.',
+            // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+            'title' => '채널 체크아웃 라우팅 작동 방식',
+            // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+            'lead' => '고객은 논리 채널(QRIS, 은행 가상계좌, 전자지갑)을 선택합니다. 그러면 Monolith가 정책 순서(경로 역할, 그다음 우선순위)에 따라 게이트웨이 경로를 시도하여 결제 안내를 생성합니다.',
             'steps' => [
                 [
                     'title' => '채널 활성화',
-                    'body' => '비활성 채널은 결제 화면에서 숨겨집니다. 채널이 꺼져 있어도 경로는 설정된 상태로 유지됩니다.',
+                    // curated at 2026-09-23T10:55:03+07:00 — ko curation wave
+                    'body' => '비활성 채널은 체크아웃에서 숨겨집니다. 채널이 꺼져 있어도 경로는 설정된 상태로 유지됩니다.',
                 ],
                 [
                     'title' => '경로 역할 이해하기',
-                    'body' => '기본 또는 전용 경로가 폰백 경로보다 먼저 시도됩니다. 우선순위(10이 20보다 먼저)는 같은 역할 내에서 적용됩니다. 수수료와 정산은 Routing_Price.yaml에서 가져옵니다.',
+                    // curated at 2026-09-23T10:55:03+07:00 — ko curation wave
+                    'body' => '기본 또는 전용 경로가 폴백 경로보다 먼저 시도됩니다. 우선순위(10이 20보다 먼저)는 같은 역할 내에서 적용됩니다. 수수료와 정산은 Routing_Price.yaml에서 가져옵니다.',
                 ],
                 [
-                    'title' => '결제 시 폰백',
-                    'body' => '모든 유효 경로가 실패하거나 자격 증명이 없는 경우, 결제는 호스팅 Snap 또는 iPaymu 리디렉션을 제공할 수 있습니다.',
+                    // curated at 2026-09-23T10:55:03+07:00 — ko curation wave
+                    'title' => '체크아웃 시 폴백',
+                    // curated at 2026-09-23T10:55:03+07:00 — ko curation wave
+                    'body' => '모든 유효 경로가 실패하거나 자격 증명이 없는 경우, 체크아웃은 호스팅 Snap 또는 iPaymu 리디렉션을 제공할 수 있습니다.',
                 ],
             ],
         ],
         'stats' => [
             'channels_active' => '활성 채널',
             'routes_active' => '활성 경로',
-            'checkout_hint' => '결제 동작',
+            // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+            'checkout_hint' => '체크아웃 동작',
             'checkout_body' => '최소 하나의 유효 경로가 있는 활성 채널만 결제자에게 표시됩니다.',
         ],
         'columns' => [
@@ -307,8 +346,10 @@ return [
         ],
         'route_columns' => [
             'gateway' => '게이트웨이',
-            'provider_type' => '제공자 유형',
-            'provider_channel' => '제공자 채널',
+            // curated at 2026-09-23T11:14:18+07:00 — ko curation wave
+            'provider_type' => '공급자 유형',
+            // curated at 2026-09-23T11:14:18+07:00 — ko curation wave
+            'provider_channel' => '공급자 채널',
             'priority' => '우선순위',
             'is_active' => '활성',
             'route_role' => '역할',
@@ -318,7 +359,8 @@ return [
         ],
         'route_roles' => [
             'primary' => '기본',
-            'fallback' => '폰백',
+            // curated at 2026-09-23T11:07:04+07:00 — ko curation wave
+            'fallback' => '폴백',
             'only' => '전용',
         ],
         'sync_policy' => '라우팅 정책 동기화',

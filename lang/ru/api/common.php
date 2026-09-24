@@ -4,8 +4,10 @@ return [
     'pong' => 'Понг',
     'data_not_found' => 'Данные не найдены.',
     'resource_not_found' => 'Ресурс не найден.',
-    'unauthorized' => 'У вас нет прав для выполнения этого действия.',
-    'updated' => 'Успешно обновлено.',
+    // curated at 2026-09-23T19:26:40+07:00 — ru curation wave: settled terms
+    'unauthorized' => 'У вас нет разрешения выполнить это действие.',
+    // curated at 2026-09-23T19:26:40+07:00 — ru curation wave: settled terms
+    'updated' => 'Обновлено.',
     'batch_invalid' => 'Пакетный запрос должен быть непустым списком запросов.',
     'batch_too_many' => 'Пакетный запрос превышает максимум в 10 запросов.',
     'batch_entry_invalid' => 'Некорректный элемент пакетного запроса.',

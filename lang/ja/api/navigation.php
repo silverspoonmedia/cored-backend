@@ -1,17 +1,23 @@
 <?php
 
 return [
-    'tree_success' => 'ナビゲーションツリーを取得しました。',
-    'layouts_success' => 'ナビゲーションレイアウトを取得しました。',
-    'list_success' => 'メニューを取得しました。',
-    'show_success' => 'メニューを取得しました。',
-    'trashed_success' => '削除済みメニューを取得しました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'tree_success' => 'ナビゲーションツリーを読み込みました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'layouts_success' => 'ナビゲーションレイアウトを読み込みました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'list_success' => 'メニューを読み込みました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'show_success' => 'メニューを読み込みました。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'trashed_success' => 'ゴミ箱のメニューを読み込みました。',
     'created' => 'メニューを作成しました。',
     'updated' => 'メニューを更新しました。',
     'deleted' => 'メニューを削除しました。',
     'restored' => 'メニューを復元しました。',
     'not_found' => 'メニューが見つかりません。',
-    'has_children' => 'このメニューには子項目があります。子孫ごと削除するには cascade=true を指定してください。',
+    // curated at 2026-09-21T17:32:29+07:00 — ja curation wave
+    'has_children' => 'このメニューには子項目があります。子孫もまとめて削除するには cascade=true を指定してください。',
     'invalid_route' => 'ルートは登録済みのルート名である必要があります。',
     'position' => [
         'reference_required' => 'before/after の配置には reference_id が必要です。',

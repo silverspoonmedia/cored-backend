@@ -27,6 +27,8 @@ return [
     'public_share_not_allowed' => 'Items in this workspace cannot be shared publicly.',
     'blocklist_saved' => 'Hash added to the blocklist.',
     'blocklist_removed' => 'Hash removed from the blocklist.',
+    // curated at 2026-09-21T15:32:00+07:00 — new key (blocklist list endpoint had no message)
+    'blocklist_loaded' => 'Hash blocklist loaded.',
     'share_not_found' => 'This shared item is unavailable.',
     'search_success' => 'Search results loaded.',
     'trash_success' => 'Trash loaded.',

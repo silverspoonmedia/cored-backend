@@ -2,17 +2,22 @@
 
 return [
     'title' => 'Archivd',
-    'blocklist_title' => '哈希阻止列表（DMCA）',
-    'blocklist_add' => '阻止哈希',
+    // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+    'blocklist_title' => '哈希黑名单（DMCA）',
+    // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+    'blocklist_add' => '添加哈希',
     'blocklist_sha256' => 'sha256',
-    'blocklist_sha256_placeholder' => '64 位十六进制字符',
+    // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+    'blocklist_sha256_placeholder' => '64 个十六进制字符',
     'blocklist_reason' => '原因',
-    'blocklist_reason_placeholder' => 'DMCA 参考信息等',
+    // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+    'blocklist_reason_placeholder' => 'DMCA 编号等',
     'blocklist_entries' => '已阻止的哈希',
     'blocklist_added' => '添加时间',
     'blocklist_actions' => '操作',
     'blocklist_remove' => '移除',
-    'blocklist_confirm_remove' => '从阻止列表中移除此哈希？',
+    // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+    'blocklist_confirm_remove' => '将此哈希从黑名单中移除？',
     'blocklist_empty' => '暂无被阻止的哈希。',
     'list_title' => '我的文件',
     'show_title' => '文件详情',
@@ -53,9 +58,12 @@ return [
     'visibility' => [
         'label' => '可见性',
         'private' => '受限',
-        'anyone_with_link' => '任何获得链接的人',
-        'hint_link' => '任何获得此链接的人都可以查看和下载文件。保存为“任何获得链接的人”后，请刷新页面以复制链接。',
-        'hint_folder' => '任何获得此链接的人都可以浏览文件夹并下载其中的文件。保存后，请刷新页面以复制链接。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'anyone_with_link' => '知道链接的任何人',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'hint_link' => '知道此链接的任何人均可查看和下载该文件。保存为“知道链接的任何人”后，请刷新页面以复制链接。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'hint_folder' => '知道此链接的任何人均可浏览该文件夹并下载其中的文件。保存后，请刷新页面以复制链接。',
     ],
     'stats' => [
         'views' => '查看次数',
@@ -84,9 +92,11 @@ return [
     'workspace_team' => '团队工作区',
     'workspace_activity' => '团队活动',
     'microstock' => [
-        'activate_cta' => '启用 Microstock',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'activate_cta' => '激活 Microstock',
         'create_workspace' => '新建 Microstock 工作区',
-        'slots_full' => 'Microstock 槽位已满',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'slots_full' => 'Microstock 名额已满',
         'create_title' => '新建 Microstock 工作区',
         'create_hint' => '为 Microstock 工作区命名。留空则使用默认名称。',
         'name_label' => '工作区名称',
@@ -100,7 +110,8 @@ return [
         'download_csv' => '下载 CSV',
         'status_locked' => '集合已锁定，可以开始分析。',
         'status_processing' => 'AI 正在分析此集合…',
-        'status_processing_degraded' => '（耗时较长）',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'status_processing_degraded' => '（耗时比平时更长）',
         'status_review' => '分析完成。请检查元数据，然后导出。',
         'status_exported' => '集合已导出。',
         'status_failed' => '分析失败。再次锁定即可重试。',
@@ -116,14 +127,20 @@ return [
         'describe_additional_notes' => '其他备注（可选）',
         'describe_additional_placeholder' => '光线、道具、限制条件（无标志、无文字）、重复主题…',
         'describe_other_placeholder' => '其他（用逗号分隔）',
-        'describe_preview' => '预览组合提示',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'describe_preview' => '预览组合后的提示',
         'describe_char_count' => ':count / :max 个字符',
-        'describe_validation_primary' => '请输入至少 :min 个字符描述主要概念。',
-        'describe_validation_visible' => '至少选择一个可见主体，或填写其他。',
-        'describe_validation_intent' => '至少选择一个买家意图，或填写其他。',
-        'describe_validation_style' => '至少选择一种风格，或填写其他。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'describe_validation_primary' => '请至少输入 :min 个字符来描述主要概念。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'describe_validation_visible' => '请至少选择一个可见主体，或填写“其他”。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'describe_validation_intent' => '请至少选择一个买家意图，或填写“其他”。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'describe_validation_style' => '请至少选择一种风格，或填写“其他”。',
         'describe_validation_too_long' => '提示过长。请缩短其他备注或减少选择项。',
-        'describe_warning_blind' => '你即将不添加描述就锁定此集合。AI 将在没有上下文的情况下生成元数据，通常会导致结果质量较差且不一致。继续吗？',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'describe_warning_blind' => '您即将在不填写任何描述的情况下锁定此集合。AI 将在没有上下文的情况下生成元数据，通常会导致结果质量较差且不一致。是否继续？',
         'describe_billing_mode_label' => '计费模式',
         'describe_billing_mode_hint' => '选择此集合的分析方式。',
         'describe_billing_mode_free' => '免费',
@@ -149,7 +166,8 @@ return [
             'education' => '教育',
             'learning' => '学习',
             'health' => '健康',
-            'technology' => '技术',
+            // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+            'technology' => '科技',
             'lifestyle' => '生活方式',
             'marketing' => '营销',
             'holidays' => '节日',
@@ -170,8 +188,10 @@ return [
         'billing_line' => 'AI 余额 $:balance · 每个文件约 $:estimate（此集合约 $:total）',
         'daily_free_line' => '今日免费分析：:remaining/:limit',
         'billing_mixed_line' => '本次运行：:daily 次免费 + :paid 次付费',
-        'status_processing_free_tier' => '（免费层队列，可能耗时更长）',
-        'insufficient_credits' => 'AI 积分不足。请从服务页面购买积分包。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'status_processing_free_tier' => '（免费额度队列，可能耗时更长）',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'insufficient_credits' => 'AI 积分不足。请前往“服务”页面购买积分包。',
         'stage_vision' => '视觉分析…',
         'stage_thinking' => '思考中…',
         'stage_queued_thinking' => '思考已排队',
@@ -188,7 +208,8 @@ return [
         'status_finalized' => '已定稿',
         'status_failed_item' => '分析失败',
         'panel_error_label' => '分析错误',
-        'panel_title' => '检查资源',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'panel_title' => '检查素材',
         'panel_title_label' => '标题',
         'panel_description_label' => '描述',
         'panel_category_label' => '类别',
@@ -205,33 +226,52 @@ return [
         'step_analyze' => '分析',
         'step_review' => '检查',
         'step_export' => '导出',
-        'step_upload_hint' => '将图片上传到此集合文件夹以开始。',
-        'step_lock_hint' => '描述集合，然后锁定集合以开始 AI 分析。',
-        'step_analyze_hint' => 'AI 正在为你的文件生成标题和关键词。',
-        'step_review_hint' => '检查并整理 AI 生成的元数据，然后导出。',
-        'step_export_hint' => '集合已导出。下载 CSV 并提交到你的图库市场。',
-        'step_upload_empty' => '此集合为空。上传图片以开始。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'step_upload_hint' => '将图片上传到此集合文件夹即可开始。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'step_lock_hint' => '请先描述该集合，然后锁定以开始 AI 分析。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'step_analyze_hint' => 'AI 正在为您的文件生成标题和关键词。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'step_review_hint' => '请检查并整理 AI 生成的元数据，然后导出。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'step_export_hint' => '集合已导出。请下载 CSV 并用于您的图库市场。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'step_upload_empty' => '此集合为空。请上传图片以开始。',
     ],
     'collab' => [
         'title' => '协作内容',
-        'subtitle' => '团队存储共享所有者的付费套餐。它不是独立菜单，请在此切换模式。',
-        'badge_free' => '免费套餐',
-        'badge_paid' => '付费套餐',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'subtitle' => '团队存储使用所有者付费方案的配额。它不是独立菜单，请在此切换模式。',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'badge_free' => '免费方案',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'badge_paid' => '付费方案',
         'badge_grace' => '宽限期',
-        'free_heading' => '免费套餐可执行：',
-        'free_can_personal' => '使用个人存储（5 GB 免费层）。',
-        'free_can_link' => '通过“任何获得链接的人”分享单个文件或文件夹。',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'free_heading' => '免费方案下您可以：',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'free_can_personal' => '使用个人存储（5 GB 免费额度）。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'free_can_link' => '通过“知道链接的任何人”分享单个文件或文件夹。',
         'free_can_join' => '加入他人邀请的团队（使用对方配额）。',
-        'free_cannot_heading' => '免费套餐不可执行：',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'free_cannot_heading' => '免费方案下您无法：',
         'free_cannot_create' => '创建团队工作区。',
-        'free_cannot_invite' => '邀请成员加入你拥有的团队（需要付费主套餐或附加组件）。',
-        'upgrade_cta' => '查看套餐并升级',
-        'grace_heading' => '套餐处于宽限期',
-        'grace_body' => '套餐续费前，上传和协作功能会保持阻止状态。现有个人文件仍可读取。',
-        'renew_cta' => '续费套餐',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'free_cannot_invite' => '邀请成员加入您拥有的团队（需要付费主方案或附加组件）。',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'upgrade_cta' => '查看方案并升级',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'grace_heading' => '方案处于宽限期',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'grace_body' => '方案续费前，上传和协作功能将一直处于禁用状态。现有个人文件仍可查看。',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'renew_cta' => '续费方案',
         'paid_heading' => '已解锁付费权益：',
         'paid_can_create' => '创建最多 10 个团队工作区（购买 Team Workspace Slot 附加组件后可创建更多）并邀请成员。',
-        'paid_can_invite' => '团队文件计入你的存储配额（由所有者付费）。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'paid_can_invite' => '团队文件计入您的存储配额（由所有者付费）。',
         'paid_can_join' => '加入其他人的团队，同时保留自己的团队（角色按每个工作区分别计算）。',
         'paid_quota_note' => '活动日志会记录谁添加、重命名、移动或删除了团队项目。',
         'create_workspace' => '创建团队工作区',
@@ -243,18 +283,21 @@ return [
         'invite_token' => '邀请令牌',
         'invite_token_placeholder' => '粘贴所有者提供的令牌',
         'accept' => '加入团队',
-        'accept_hint' => '免费和付费套餐均可使用。拥有自己的团队不会阻止你加入其他团队，在其他团队中使用对方配额。',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'accept_hint' => '免费和付费方案均可使用。拥有自己的团队不会妨碍您加入其他团队，在其他团队中将使用对方配额。',
         'invite_token_ready' => '邀请已创建，请将此令牌分享给成员：',
         'invite_token_share' => 'MVP 尚未提供邮件发送功能。请复制令牌并自行发送。',
         'team_context' => '团队：:name',
-        'you_are_role' => '你的角色：:role',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'you_are_role' => '您的角色：:role',
         'badge_yours' => '我的',
         'badge_joined' => '已加入',
         'role_owner_short' => '所有者',
         'role_admin_short' => '管理员',
         'role_editor_short' => '编辑者',
         'role_viewer_short' => '查看者',
-        'team_quota_note' => '此处文件使用所有者的存储配额，不使用每位成员的个人免费层配额。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'team_quota_note' => '此处文件使用所有者的存储配额，不使用每位成员的个人免费额度。',
         'confirm_archive' => '归档此工作区？成员将失去访问权限。',
         'archive' => '归档工作区',
         'col_member' => '成员',
@@ -268,15 +311,19 @@ return [
         'role_admin' => '管理员（管理成员）',
         'send_invite' => '发送邀请',
         'invite_result_hint' => '提交后，上方会显示令牌，请分享令牌以便对方加入。',
-        'create_hint' => '付费套餐包含 10 个自有团队。购买 Team Workspace Slot（每个每月 +$1）可增加数量。加入其他团队不受限制。',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'create_hint' => '付费方案包含 10 个自有团队。购买 Team Workspace Slot（每个每月 +$1）可增加数量。加入其他团队不受限制。',
         'workspace_name' => '工作区名称',
         'default_workspace_name' => '团队工作区',
-        'member_readonly_hint' => '你是此处成员。只有所有者或管理员可以邀请或移除人员。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'member_readonly_hint' => '您是此处的成员。只有所有者或管理员可以邀请或移除成员。',
         'team_settings' => '团队',
         'slots_counter' => '自有团队：:used / :limit',
         'slots_full' => '已达到自有团队上限',
-        'buy_slot_cta' => '获取更多团队槽位',
-        'grace_body_short' => '续费套餐后才能创建或管理团队。',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'buy_slot_cta' => '获取更多团队名额',
+        // curated at 2026-09-22T16:42:54+07:00 — zh_CN curation wave
+        'grace_body_short' => '续费方案后才能创建或管理团队。',
         'no_members' => '暂无成员。',
         'activity_empty' => '暂无团队活动。',
     ],
@@ -331,7 +378,8 @@ return [
         'share' => '分享',
         'unshare' => '设为私有',
         'delete' => '删除',
-        'confirm_share' => '与任何获得链接的人分享所选的 {n} 个项目？',
+        // curated at 2026-09-22T11:11:58+07:00 — zh_CN curation wave
+        'confirm_share' => '将所选的 {n} 个项目分享给知道链接的任何人？',
         'confirm_unshare' => '将所选的 {n} 个项目设为私有？',
         'confirm_delete' => '将所选的 {n} 个项目移入回收站？',
     ],

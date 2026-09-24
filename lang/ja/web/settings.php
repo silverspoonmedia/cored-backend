@@ -2,7 +2,8 @@
 
 return [
     'title' => '設定',
-    'subtitle' => '管理UIで管理する運用設定。',
+    // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+    'subtitle' => '管理 UI で管理する運用設定です。',
     'read_only' => 'これらの設定は閲覧のみ可能です。',
     'source' => '現在のソース: :source',
     'groups' => [
@@ -15,7 +16,8 @@ return [
     ],
     'fields' => [
         // Platform — JWT
-        'platform.jwt.ttl' => 'JWTアクセストTL（分）',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'platform.jwt.ttl' => 'JWT アクセストークン TTL（分）',
         'platform.jwt.refresh_ttl' => 'JWTリフレッシュ期間（分）',
         'platform.jwt.remember_ttl' => 'JWTリメンバーミーTTL（分）',
         'platform.jwt.refresh_skew' => 'JWTサイレントリフレッシュ余裕（分）',
@@ -49,8 +51,10 @@ return [
         'platform.payment.prefer_channel_checkout' => 'チャネルネイティブ決済を優先',
         'platform.payment.default_buyer_phone' => 'デフォルト購入者電話（iPaymuフォールバック）',
         // Platform — mail identity
-        'platform.mail.from_address' => 'メールFromアドレス',
-        'platform.mail.from_name' => 'メールFrom名',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'platform.mail.from_address' => 'メールの From アドレス',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'platform.mail.from_name' => 'メールの From 名',
         // Platform — service
         'platform.service.grace_days' => 'サービス猶予日数',
         'platform.service.settlement_currency' => '決済通貨',
@@ -125,7 +129,7 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => 'ソロ思考並行数',
         'microstock.ai.upstream.release_after_seconds' => 'アップストリームスロット解放まで（秒）',
         'microstock.csv_disk' => 'CSVエクスポートディスク',
-        // Vtual
+        // vTual
         'vtual.credential_test.http_timeout' => '認証情報テストHTTPタイムアウト（秒）',
         'vtual.credential_test.twitch_token_skew_seconds' => 'Twitchトークンスキュー（秒）',
         'vtual.credential_test.youtube_probe_channel_id' => 'YouTubeプローブチャンネルID',
@@ -134,31 +138,50 @@ return [
         'vtual.credential.failover.skip_minutes' => 'フェイルオーバースキップ期間（分）',
         'vtual.credential.failover.max_retries_per_call' => 'フェイルオーバー呼び出しあたり最大リトライ',
         'vtual.http.timeout' => 'HTTPタイムアウト（秒）',
-        'vtual.claim.ttl_hours' => 'クレームTTL（時間）',
-        'vtual.claim.verify_cooldown_seconds' => 'クレーム検証クールダウン（秒）',
-        'vtual.claim.max_attempts' => 'クレーム最大検証試行回数',
-        'vtual.claim.block_hours_after_max_attempts' => '最大試行後のクレームブロック時間（時間）',
-        'vtual.claim.max_pending_per_user' => 'ユーザーあたり最大保留クレーム数',
-        'vtual.claim.accept_anyway_enabled' => 'クレーム強制承認有効',
-        'vtual.claim.discord_verify_enabled' => 'クレームDiscord検証有効',
-        'vtual.claim.token_prefix' => 'クレームトークン接頭辞',
-        'vtual.claim.token_bytes' => 'クレームトークン乱数バイト数',
-        'vtual.channel_claim.ttl_hours' => 'チャネルクレームTTL（時間）',
-        'vtual.channel_claim.verify_cooldown_seconds' => 'チャネルクレーム検証クールダウン（秒）',
-        'vtual.channel_claim.max_attempts' => 'チャネルクレーム最大試行回数',
-        'vtual.channel_claim.accept_anyway_enabled' => 'チャネルクレーム強制承認有効',
-        'vtual.channel_claim.discord_verify_enabled' => 'チャネルクレームDiscord検証有効',
-        'vtual.channel_claim.token_prefix' => 'チャネルクレームトークン接頭辞',
-        'vtual.channel_claim.token_bytes' => 'チャネルクレームトークン乱数バイト数',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim.ttl_hours' => '申請 TTL（時間）',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim.verify_cooldown_seconds' => '申請の検証クールダウン（秒）',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim.max_attempts' => '申請の最大検証試行回数',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim.block_hours_after_max_attempts' => '最大試行後の申請ブロック時間（時間）',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim.max_pending_per_user' => 'ユーザーあたりの保留申請の上限',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim.accept_anyway_enabled' => '申請の強制承認を有効化',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim.discord_verify_enabled' => 'Discord による申請検証を有効化',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim.token_prefix' => '申請トークンの接頭辞',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim.token_bytes' => '申請トークンの乱数バイト数',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.channel_claim.ttl_hours' => 'チャンネル申請 TTL（時間）',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.channel_claim.verify_cooldown_seconds' => 'チャンネル申請の検証クールダウン（秒）',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.channel_claim.max_attempts' => 'チャンネル申請の最大試行回数',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.channel_claim.accept_anyway_enabled' => 'チャンネル申請の強制承認を有効化',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.channel_claim.discord_verify_enabled' => 'Discord によるチャンネル申請検証を有効化',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.channel_claim.token_prefix' => 'チャンネル申請トークンの接頭辞',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.channel_claim.token_bytes' => 'チャンネル申請トークンの乱数バイト数',
         'vtual.channel_pool.threshold' => 'チャネルプール低水位閾値',
         'vtual.channel_pool.max_wait_minutes' => 'チャネルプール最大待機（分）',
         'vtual.channel_pool.schedule_every_minutes' => 'チャネルプールスケジュール間隔（分）',
         'vtual.channel_pool.resync_stale_hours' => 'チャネルプール再同期猶予（時間）',
         'vtual.channel_pool.resync_enqueue_limit' => 'チャネルプール再同期エンキュー上限',
         'vtual.channel_pool.flush_lock_seconds' => 'チャネルプールフラッシュロック（秒）',
-        'vtual.claim_verify_pool.threshold' => 'クレーム検証プール低水位閾値',
-        'vtual.claim_verify_pool.max_wait_minutes' => 'クレーム検証プール最大待機（分）',
-        'vtual.claim_verify_pool.flush_lock_seconds' => 'クレーム検証プールフラッシュロック（秒）',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim_verify_pool.threshold' => '申請検証プールの低水位閾値',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim_verify_pool.max_wait_minutes' => '申請検証プールの最大待機（分）',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim_verify_pool.flush_lock_seconds' => '申請検証プールのフラッシュロック（秒）',
         'vtual.content_pool.threshold' => 'コンテンツプール低水位閾値',
         'vtual.content_pool.max_wait_minutes' => 'コンテンツプール最大待機（分）',
         'vtual.content_pool.flush_lock_seconds' => 'コンテンツプールフラッシュロック（秒）',
@@ -182,11 +205,16 @@ return [
         'platform.mail.from_address' => '送信メールのグローバルFromアドレス（輸送資格情報は.envのまま）。',
         'platform.payment.default_buyer_phone' => '購入者プロフィールに電話がない場合のフォールバック（iPaymu要件）。',
         'platform.frankfurter.timeout' => 'Frankfurter FX取得のHTTPタイムアウト。',
-        'microstock.ai.vision.free_model' => '任意の無料枠モデル上書き。空なら有料ビジョンモデルを継承。',
-        'microstock.ai.thinking.free_model' => '任意の無料枠モデル上書き。空なら有料思考モデルを継承。',
-        'microstock.ai.vision.connection' => 'ビジョン工程が使う AI 接続スラッグ（設定 → AI 接続）。空ならデフォルト接続を使用。',
-        'microstock.ai.thinking.connection' => '思考工程が使う AI 接続スラッグ（設定 → AI 接続）。空ならデフォルト接続を使用。',
-        'microstock.ai.upstream.window_seconds' => 'アップストリームトークン予算の参照ウィンドウ（制約は並行数で実施）。',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'microstock.ai.vision.free_model' => '任意で無料枠モデルを上書きします。空の場合は有料のビジョンモデルを継承します。',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'microstock.ai.thinking.free_model' => '任意で無料枠モデルを上書きします。空の場合は有料の思考モデルを継承します。',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'microstock.ai.vision.connection' => 'ビジョン工程が使用する AI 接続のスラッグ（設定 → AI 接続）。空の場合はデフォルト接続を使用します。',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'microstock.ai.thinking.connection' => '思考工程が使用する AI 接続のスラッグ（設定 → AI 接続）。空の場合はデフォルト接続を使用します。',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'microstock.ai.upstream.window_seconds' => 'アップストリームのトークン予算を判定する参照ウィンドウです（上限の適用は同時実行数の制限で行います）。',
         'vtual.credential_test.youtube_probe_channel_id' => 'YouTube Data API資格情報スモークテスト用の公開チャンネルID。',
         'platform.jwt.refresh_skew' => 'アクセストークンの有効期限前にリフレッシュする余裕時間（分）。',
         'platform.notifications.delivery' => 'リアルタイムは WebSocket を使い、設定済みの PUSHER_* / ブロードキャスト資格情報が必要です。未設定の場合はベルが HTTP ポーリングにフォールバックします。',
@@ -200,10 +228,14 @@ return [
         'microstock.ai.stage.thinking_grace_after' => '思考ステージが猶予モードに入るまでの秒数。',
         'microstock.ai.stage.thinking_backlog_after' => '思考ジョブがバックログキューに移るまでの秒数。',
         'vtual.credential.failover.enabled' => '認証失敗が繰り返された後、次の認証情報にローテーションします。',
-        'vtual.claim.accept_anyway_enabled' => '検証が不確実でもユーザーがクレームを承認できるようにします。',
-        'vtual.claim.discord_verify_enabled' => 'DiscordにリンクされたYouTube/Twitchアカウントの照合による孤児クレーム検証を許可します。',
-        'vtual.channel_claim.discord_verify_enabled' => 'プロフィール所有者がDiscord連携のYouTube/Twitch照合でチャネル追加クレームを検証できるようにします。',
-        'identity.discord.connections_snapshot_max_age_minutes' => '検証ミス時にライブDiscord API更新を行うまで、保存済みDiscord接続スナップショットを信頼する時間。',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim.accept_anyway_enabled' => '検証が不確実でも、ユーザーが申請を承認できるようにします。',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.claim.discord_verify_enabled' => 'Discord にリンクされた YouTube/Twitch アカウントを照合して、オーファンの申請を検証できるようにします。',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'vtual.channel_claim.discord_verify_enabled' => 'プロフィールのオーナーが、Discord に連携された YouTube/Twitch アカウントの照合でチャンネル追加の申請を検証できるようにします。',
+        // curated at 2026-09-21T17:29:57+07:00 — ja curation wave
+        'identity.discord.connections_snapshot_max_age_minutes' => '検証に失敗したときに Discord API から最新情報を取得するまで、保存済みの Discord 接続スナップショットを信頼する時間です。',
     ],
     'options' => [
         'platform' => [

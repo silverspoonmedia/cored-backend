@@ -9,24 +9,37 @@ return [
     'make_default' => '设为默认',
     'activate' => '启用',
     'deactivate' => '停用',
-    'set_settlement' => '设为结算项',
+    // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+    'set_settlement' => '设为结算货币',
     'remove' => '移除',
     'confirm' => [
-        'archive_management' => '归档此管理项？',
-        'cancel_event' => '取消此活动？',
-        'delete_service' => '删除此服务？',
-        'delete_inference' => '删除此记录？此操作无法撤销。',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'archive_management' => '确定要归档该管理机构吗？',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'cancel_event' => '确定要取消该活动吗？',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'delete_service' => '确定要删除该服务吗？',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'delete_inference' => '确定要删除该记录吗？此操作无法撤销。',
         'delete_named_title' => '删除“:name”',
         'delete_menu' => '确定要删除“:name”吗？',
-        'delete_post' => '该文章将移入回收站，之后可以恢复。',
-        'delete_microstock_credential' => '删除此凭据？',
-        'delete_credential_title' => '删除凭据',
-        'delete_platform_credential' => '永久删除此凭据？',
-        'revoke_credential_title' => '撤销凭据',
-        'revoke_credential' => '撤销此凭据？撤销后，Worker 将停止使用它，直到你编辑凭据并再次执行测试。',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'delete_post' => '该文章将被移入回收站，您稍后可以恢复。',
+        // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
+        'delete_microstock_credential' => '确定要删除该凭证吗？',
+        // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
+        'delete_credential_title' => '删除凭证',
+        // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
+        'delete_platform_credential' => '确定要永久删除该凭证吗？',
+        // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
+        'revoke_credential_title' => '撤销凭证',
+        // curated at 2026-09-22T16:42:53+07:00 — zh_CN curation wave
+        'revoke_credential' => '确定要撤销该凭证吗？撤销后，Worker 将停止使用它，直到您编辑该凭证并重新测试。',
         'delete_ai_connection_title' => '删除连接',
-        'delete_ai_connection' => '永久删除此 AI 连接？绑定到该 slug 的使用方将失去端点，直到您绑定另一个。',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'delete_ai_connection' => '确定要永久删除该 AI 连接吗？绑定到该标识的使用方将失去端点，直到您绑定另一个连接。',
         'remove_blocklist_title' => '移除条目',
-        'remove_blocklist' => '从阻止列表中移除此哈希？具有此校验和的文件将可以再次公开分享。',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'remove_blocklist' => '确定要从阻止列表中移除此哈希吗？具有该校验和的文件将可以再次公开分享。',
     ],
 ];

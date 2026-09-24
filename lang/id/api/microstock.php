@@ -1,42 +1,72 @@
 <?php
 
 return [
-    'workspace_loaded' => 'Workspace Microstock dimuat.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'workspace_loaded' => 'Workspace Microstock berhasil dimuat.',
     'asset_not_found' => 'Aset tidak ditemukan.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
     'metadata_not_found' => 'Belum ada metadata untuk aset ini. Jalankan analisis terlebih dahulu.',
-    'metadata_loaded' => 'Metadata dimuat.',
-    'metadata_saved' => 'Metadata disimpan.',
-    'analysis_queued' => 'Analisis AI dimasukkan ke antrean.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'metadata_loaded' => 'Metadata berhasil dimuat.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'metadata_saved' => 'Metadata berhasil disimpan.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'analysis_queued' => 'Analisis AI berhasil dimasukkan ke antrean.',
     'title_required' => 'Judul wajib diisi.',
-    'ai_not_configured' => 'Penyedia AI :stage belum dikonfigurasi.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'ai_not_configured' => 'Penyedia AI untuk tahap :stage belum dikonfigurasi.',
     'ai_failed' => 'Pembuatan metadata AI gagal.',
     'ai_invalid_response' => 'AI mengembalikan respons metadata yang tidak valid.',
-    'credentials_loaded' => 'Kredensial dimuat.',
-    'credential_saved' => 'Kredensial disimpan.',
-    'credential_deleted' => 'Kredensial dihapus.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'credentials_loaded' => 'Kredensial berhasil dimuat.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'credential_saved' => 'Kredensial berhasil disimpan.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'credential_deleted' => 'Kredensial berhasil dihapus.',
     'credential_not_found' => 'Kredensial tidak ditemukan.',
     'credential_invalid' => 'Marketplace dan label wajib diisi.',
-    'credential_secret_required' => 'Secret kredensial wajib diisi.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'credential_secret_required' => 'Rahasia kredensial wajib diisi.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
     'workspace_not_activated' => 'Microstock belum diaktifkan. Daftarkan workspace Microstock gratis dari halaman Layanan.',
-    'slot_limit' => 'Batas slot workspace Microstock tercapai (:used/:limit). Beli slot tambahan untuk membuat lebih banyak.',
-    'workspace_created' => 'Workspace Microstock dibuat.',
-    'slots_loaded' => 'Status slot Microstock dimuat.',
-    'collection_not_found' => 'Collection tidak ditemukan.',
-    'collection_already_locked' => 'Collection ini sudah terkunci.',
-    'collection_not_locked' => 'Kunci collection sebelum menjalankan analisis.',
-    'collection_empty' => 'Collection ini tidak punya file untuk dianalisis.',
-    'collection_not_ready' => 'Collection belum siap untuk diekspor.',
-    'collection_nothing_finalized' => 'Tidak ada metadata yang difinalkan di collection ini untuk diekspor.',
-    'collection_csv_missing' => 'CSV hasil ekspor untuk collection ini tidak ditemukan.',
-    'collection_locked' => 'Collection dikunci.',
-    'billing_mode_required' => 'Pilih mode penagihan (Gratis atau Berbayar) untuk collection ini.',
-    'collection_processing' => 'Analisis collection dimulai.',
-    'collection_status' => 'Status collection dimuat.',
-    'collection_exported' => 'Collection diekspor.',
-    'insufficient_ai_credits' => 'Kredit AI tidak cukup. Beli paket kredit AI dari Layanan sebelum menjalankan analisis.',
-    'billing_loaded' => 'Status penagihan AI dimuat.',
-    'ledger_loaded' => 'Buku besar penagihan dimuat.',
-    'usage_events_loaded' => 'Peristiwa penggunaan AI dimuat.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'slot_limit' => 'Batas slot workspace Microstock telah tercapai (:used/:limit). Beli slot tambahan untuk membuat lebih banyak.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'workspace_created' => 'Workspace Microstock berhasil dibuat.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'slots_loaded' => 'Status slot Microstock berhasil dimuat.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'collection_not_found' => 'Koleksi tidak ditemukan.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'collection_already_locked' => 'Koleksi ini sudah terkunci.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'collection_not_locked' => 'Kunci koleksi sebelum menjalankan analisis.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'collection_empty' => 'Koleksi ini tidak memiliki berkas untuk dianalisis.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'collection_not_ready' => 'Koleksi belum siap untuk diekspor.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'collection_nothing_finalized' => 'Tidak ada metadata yang sudah difinalkan di koleksi ini untuk diekspor.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'collection_csv_missing' => 'CSV hasil ekspor untuk koleksi ini tidak ditemukan.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'collection_locked' => 'Koleksi berhasil dikunci.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'billing_mode_required' => 'Pilih mode penagihan (Gratis atau Berbayar) untuk koleksi ini.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'collection_processing' => 'Analisis koleksi dimulai.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'collection_status' => 'Status koleksi berhasil dimuat.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'collection_exported' => 'Koleksi berhasil diekspor.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'insufficient_ai_credits' => 'Kredit AI tidak cukup. Beli paket kredit AI dari halaman Layanan sebelum menjalankan analisis.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'billing_loaded' => 'Status penagihan AI berhasil dimuat.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'ledger_loaded' => 'Buku besar penagihan berhasil dimuat.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'usage_events_loaded' => 'Peristiwa penggunaan AI berhasil dimuat.',
     'ledger' => [
         'purchase' => 'Pembelian kredit AI — :service',
         'purchase_fallback' => 'Kredit AI',
@@ -45,7 +75,9 @@ return [
         'analysis_debit_fallback' => 'Analisis AI',
         'adjustment' => 'Penyesuaian saldo',
     ],
-    'admin_billing_overview_loaded' => 'Ringkasan penagihan platform dimuat.',
-    'admin_usage_events_loaded' => 'Peristiwa penggunaan platform dimuat.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'admin_billing_overview_loaded' => 'Ringkasan penagihan platform berhasil dimuat.',
+    // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+    'admin_usage_events_loaded' => 'Peristiwa penggunaan platform berhasil dimuat.',
     'admin_billing_forbidden' => 'Anda tidak diizinkan melihat penagihan platform.',
 ];

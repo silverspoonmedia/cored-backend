@@ -12,7 +12,8 @@ return [
     'approved' => 'تمت الموافقة على تفعيل المنتج.',
     'rejected' => 'تم رفض تفعيل المنتج.',
 
-    'not_found' => 'لم يتم العثور على تفعيل المنتج :product.',
+    // curated at 2026-09-22T21:21:20+07:00 — ar curation wave 2
+    'not_found' => 'لم يتم العثور على تفعيل للمنتج :product.',
     'unknown_product' => 'مفتاح منتج غير معروف: :product.',
     'already_active' => 'المنتج نشط بالفعل.',
     'cannot_approve' => 'لا يمكن الموافقة على تفعيل في الحالة :state.',
@@ -46,7 +47,8 @@ return [
     'action_reject' => 'رفض',
     'reason_label' => 'السبب',
     'reason_placeholder' => 'سبب اختياري لهذا الإجراء',
-    'state_pending' => 'معلّق',
+    // curated at 2026-09-22T21:21:20+07:00 — ar curation wave 2
+    'state_pending' => 'قيد الانتظار',
     'state_active' => 'نشط',
     'state_suspended' => 'معلّق',
     'state_expired' => 'منتهي الصلاحية',

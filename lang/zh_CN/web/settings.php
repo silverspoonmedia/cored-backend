@@ -2,8 +2,10 @@
 
 return [
     'title' => '设置',
-    'subtitle' => '通过管理界面管理的运行配置。',
-    'read_only' => '你仅可查看这些设置。',
+    // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+    'subtitle' => '通过管理界面维护的运行配置。',
+    // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+    'read_only' => '您对这些设置只有查看权限。',
     'source' => '当前来源：:source',
     'groups' => [
         'platform' => '平台',
@@ -22,30 +24,38 @@ return [
         'platform.jwt.blacklist_grace_period' => 'JWT 黑名单宽限期（秒）',
         // Platform — auth / 2FA
         'platform.auth.default_role' => '新用户的默认角色',
-        'platform.auth.verification_expire' => '邮箱验证链接有效期（分钟）',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.auth.verification_expire' => '电子邮件验证链接有效期（分钟）',
         'platform.two_factor.window' => '2FA TOTP 验证窗口',
-        'platform.two_factor.issuer' => '2FA 签发者名称（身份验证器应用）',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.two_factor.issuer' => '2FA 签发者名称（验证器应用）',
         // Platform — hCaptcha
         'platform.hcaptcha.enabled' => '启用 hCaptcha',
         // Platform — notifications
-        'platform.notifications.delivery' => '通知传送模式',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.notifications.delivery' => '通知投递方式',
         'platform.notifications.polling_interval' => '通知轮询间隔（秒）',
         // Platform — error log
         'platform.errorlog.enabled' => '启用持久化错误日志',
-        'platform.errorlog.clean_after_days' => '错误日志保留期限（天）',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.errorlog.clean_after_days' => '错误日志保留天数',
         'platform.errorlog.max_message_length' => '错误日志最大消息长度',
-        'platform.errorlog.max_trace_length' => '错误日志最大追踪长度',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.errorlog.max_trace_length' => '错误日志最大堆栈跟踪长度',
         'platform.errorlog.max_context_json_length' => '错误日志最大上下文 JSON 长度',
         // Platform — activity log
         'platform.activitylog.enabled' => '启用活动日志',
         'platform.activitylog.buffer_enabled' => '启用活动日志缓冲',
         // Platform — localization
-        'platform.localization.locale_cookie' => '区域设置 Cookie 名称',
+        // curated at 2026-09-22T13:09:56+07:00 — zh_CN curation wave
+        'platform.localization.locale_cookie' => '语言环境 Cookie 名称',
         'identity.discord.connections_snapshot_max_age_minutes' => 'Discord 连接快照最大有效期（分钟）',
-        'platform.localization.locale_cookie_minutes' => '区域设置 Cookie 有效期（分钟）',
+        // curated at 2026-09-22T13:09:56+07:00 — zh_CN curation wave
+        'platform.localization.locale_cookie_minutes' => '语言环境 Cookie 有效期（分钟）',
         // Platform — payment
         'platform.payment.channel_fee_bearer' => '支付渠道费用承担方',
-        'platform.payment.reporting_timezone' => '付款报告时区',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.payment.reporting_timezone' => '支付报表时区',
         'platform.payment.prefer_channel_checkout' => '优先使用渠道原生结账',
         'platform.payment.default_buyer_phone' => '默认买家电话（iPaymu 备用值）',
         // Platform — mail identity
@@ -54,19 +64,28 @@ return [
         // Platform — service
         'platform.service.grace_days' => '服务宽限天数',
         'platform.service.settlement_currency' => '结算货币',
-        'platform.service.purchase_max_quantity' => '服务购买最大数量',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.service.purchase_max_quantity' => '服务购买数量上限',
         // Platform — inference fallbacks
-        'platform.inference.default_provider_slug' => '默认推理提供商 slug',
-        'platform.inference.default_input_per_million_usd' => '默认输入费率（每 1M token 的 USD 价格）',
-        'platform.inference.default_output_per_million_usd' => '默认输出费率（每 1M token 的 USD 价格）',
-        'platform.inference.unknown_input_per_million_usd' => '未知模型输入费率（每 1M token 的 USD 价格）',
-        'platform.inference.unknown_output_per_million_usd' => '未知模型输出费率（每 1M token 的 USD 价格）',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.inference.default_provider_slug' => '默认推理提供商标识',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.inference.default_input_per_million_usd' => '默认输入费率（每 100 万 token 的美元价格）',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.inference.default_output_per_million_usd' => '默认输出费率（每 100 万 token 的美元价格）',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.inference.unknown_input_per_million_usd' => '未知模型输入费率（每 100 万 token 的美元价格）',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.inference.unknown_output_per_million_usd' => '未知模型输出费率（每 100 万 token 的美元价格）',
         // Platform — Frankfurter FX
-        'platform.frankfurter.cache_ttl' => 'Frankfurter FX 缓存新鲜度窗口（秒）',
-        'platform.frankfurter.timeout' => 'Frankfurter FX HTTP 超时（秒）',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.frankfurter.cache_ttl' => 'Frankfurter 汇率缓存有效期（秒）',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.frankfurter.timeout' => 'Frankfurter 汇率查询 HTTP 超时（秒）',
         // Archivd
         'archivd.max_file_size_bytes' => '最大文件大小（字节）',
-        'archivd.max_files_per_batch' => '每批最大文件数',
+        // curated at 2026-09-22T13:09:56+07:00 — zh_CN curation wave
+        'archivd.max_files_per_batch' => '每批次的最大文件数',
         'archivd.max_concurrent_uploads' => '最大并发上传数',
         'archivd.max_concurrent_parts' => '最大并发分片数',
         'archivd.chunk_size_bytes' => '上传分块大小（字节）',
@@ -74,7 +93,8 @@ return [
         'archivd.max_presigned_parts_per_response' => '每次响应的最大预签名分片数',
         'archivd.presign_ttl_minutes' => '预签名 URL 有效期（分钟）',
         'archivd.session_ttl_hours' => '上传会话有效期（小时）',
-        'archivd.stale_upload_grace_hours' => '过期上传宽限期（小时）',
+        // curated at 2026-09-22T13:09:56+07:00 — zh_CN curation wave
+        'archivd.stale_upload_grace_hours' => '停滞上传的宽限期（小时）',
         'archivd.orphan_inactivity_minutes' => '孤立分片不活动超时（分钟）',
         'archivd.default_quota_bytes' => '默认存储配额（字节）',
         'archivd.base_owned_workspace_slots' => '基础自有工作区槽位数',
@@ -89,7 +109,8 @@ return [
         'microstock.daily_free.limit_per_user' => '每位用户每日免费下载上限',
         'microstock.daily_free.timezone' => '每日免费额度重置时区',
         'microstock.ai_billing.markup_multiplier' => 'AI 计费加价倍数',
-        'microstock.ai_billing.estimated_billable_micro_usd_per_asset' => '每项资源预计可计费微 USD',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'microstock.ai_billing.estimated_billable_micro_usd_per_asset' => '每项资源预计可计费金额（微美元）',
         'microstock.ai_billing.estimate_thinking_attempt_factor' => '思考尝试估算系数',
         'microstock.ai.image_max_px' => 'AI 图片最大尺寸（px）',
         'microstock.ai.image_jpeg_quality' => 'AI 图片 JPEG 质量',
@@ -103,10 +124,12 @@ return [
         'microstock.ai.stage.vision_grace_after' => 'AI 阶段：视觉阶段进入宽限模式前的时间（秒）',
         'microstock.ai.stage.thinking_grace_after' => 'AI 阶段：思考阶段进入宽限模式前的时间（秒）',
         'microstock.ai.stage.thinking_backlog_after' => 'AI 阶段：思考任务进入积压队列前的时间（秒）',
-        'microstock.ai.vision_image.delivery' => '视觉图像传送模式',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'microstock.ai.vision_image.delivery' => '视觉图像投递方式',
         'microstock.ai.vision_image.variant_kind' => '视觉图像变体类型',
         'microstock.ai.vision_image.signed_url_ttl_minutes' => '视觉签名 URL 有效期（分钟）',
-        'microstock.ai.inference_provider_slug' => 'Microstock 推理提供商 slug',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'microstock.ai.inference_provider_slug' => 'Microstock 推理提供商标识',
         'microstock.ai.vision.connection' => '视觉 AI 连接（留空 = 默认）',
         'microstock.ai.thinking.connection' => '思考 AI 连接（留空 = 默认）',
         'microstock.ai.vision.model' => '视觉模型',
@@ -125,11 +148,13 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => '单项思考并发数',
         'microstock.ai.upstream.release_after_seconds' => '上游槽位释放时间（秒）',
         'microstock.csv_disk' => 'CSV 导出磁盘',
-        // Vtual
-        'vtual.credential_test.http_timeout' => '凭据测试 HTTP 超时（秒）',
+        // vTual
+        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
+        'vtual.credential_test.http_timeout' => '凭证测试 HTTP 超时（秒）',
         'vtual.credential_test.twitch_token_skew_seconds' => 'Twitch 令牌提前量（秒）',
         'vtual.credential_test.youtube_probe_channel_id' => 'YouTube 探针频道 ID',
-        'vtual.credential.failover.enabled' => '启用凭据故障转移',
+        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
+        'vtual.credential.failover.enabled' => '启用凭证故障转移',
         'vtual.credential.failover.auth_fail_threshold' => '故障转移身份验证失败阈值',
         'vtual.credential.failover.skip_minutes' => '故障转移跳过时长（分钟）',
         'vtual.credential.failover.max_retries_per_call' => '每次调用的故障转移最大重试次数',
@@ -139,14 +164,16 @@ return [
         'vtual.claim.max_attempts' => '认领最大验证尝试次数',
         'vtual.claim.block_hours_after_max_attempts' => '达到最大尝试次数后的认领阻止时长（小时）',
         'vtual.claim.max_pending_per_user' => '每位用户最大待处理认领数',
-        'vtual.claim.accept_anyway_enabled' => '启用认领“无论如何接受”',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'vtual.claim.accept_anyway_enabled' => '启用认领的“仍可接受”选项',
         'vtual.claim.discord_verify_enabled' => '启用认领 Discord 验证',
         'vtual.claim.token_prefix' => '认领令牌前缀',
         'vtual.claim.token_bytes' => '认领令牌随机字节数',
         'vtual.channel_claim.ttl_hours' => '频道认领有效期（小时）',
         'vtual.channel_claim.verify_cooldown_seconds' => '频道认领验证冷却时间（秒）',
         'vtual.channel_claim.max_attempts' => '频道认领最大尝试次数',
-        'vtual.channel_claim.accept_anyway_enabled' => '启用频道认领“无论如何接受”',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'vtual.channel_claim.accept_anyway_enabled' => '启用频道认领的“仍可接受”选项',
         'vtual.channel_claim.discord_verify_enabled' => '启用频道认领 Discord 验证',
         'vtual.channel_claim.token_prefix' => '频道认领令牌前缀',
         'vtual.channel_claim.token_bytes' => '频道认领令牌随机字节数',
@@ -179,31 +206,41 @@ return [
         'vtual.content_classification.ai.connection' => 'AI 审查连接（留空 = 默认）',
     ],
     'hints' => [
-        'platform.mail.from_address' => '用于发送邮件的全局发件地址（传输凭据仍保存在 .env 中）。',
+        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
+        'platform.mail.from_address' => '用于发送邮件的全局发件地址（传输凭证仍保存在 .env 中）。',
         'platform.payment.default_buyer_phone' => '买家资料没有电话时使用的备用号码（iPaymu 要求）。',
-        'platform.frankfurter.timeout' => 'Frankfurter FX 查询的 HTTP 超时时间。',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.frankfurter.timeout' => 'Frankfurter 汇率查询的 HTTP 超时时间。',
         'microstock.ai.vision.free_model' => '可选的免费层模型覆盖值；留空则继承付费视觉模型。',
         'microstock.ai.thinking.free_model' => '可选的免费层模型覆盖值；留空则继承付费思考模型。',
-        'microstock.ai.vision.connection' => '视觉阶段使用的 AI 连接 slug（设置 → AI 连接）；留空则使用默认连接。',
-        'microstock.ai.thinking.connection' => '思考阶段使用的 AI 连接 slug（设置 → AI 连接）；留空则使用默认连接。',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'microstock.ai.vision.connection' => '视觉阶段使用的 AI 连接标识（设置 → AI 连接）；留空则使用默认连接。',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'microstock.ai.thinking.connection' => '思考阶段使用的 AI 连接标识（设置 → AI 连接）；留空则使用默认连接。',
         'microstock.ai.upstream.window_seconds' => '上游 token 预算的参考窗口（实际限制通过并发上限执行）。',
-        'vtual.credential_test.youtube_probe_channel_id' => '用于 YouTube Data API 凭据冒烟测试的公开频道 ID。',
-        'platform.jwt.refresh_skew' => '在访问令牌过期前提前这么多分钟刷新令牌。',
-        'platform.notifications.delivery' => '实时模式使用 WebSocket，需要配置 PUSHER_* / 广播凭据；否则通知铃铛会回退到 HTTP 轮询。',
+        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
+        'vtual.credential_test.youtube_probe_channel_id' => '用于 YouTube Data API 凭证冒烟测试的公开频道 ID。',
+        // curated at 2026-09-22T13:09:56+07:00 — zh_CN curation wave
+        'platform.jwt.refresh_skew' => '在访问令牌过期前的这几分钟刷新令牌。',
+        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
+        'platform.notifications.delivery' => '实时模式使用 WebSocket，需要配置 PUSHER_* / 广播凭证；否则通知图标会回退到 HTTP 轮询。',
         'platform.payment.channel_fee_bearer' => '支付渠道费用承担方：商户或客户。',
         'platform.inference.default_provider_slug' => '请求未指定提供商时使用的备用提供商。',
-        'platform.inference.default_input_per_million_usd' => '目录中没有注册模型价格时使用的临时计费费率。',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'platform.inference.default_input_per_million_usd' => '已注册模型在目录中没有价格时使用的临时计费费率。',
         'platform.inference.unknown_input_per_million_usd' => '未注册模型的临时计费费率。',
         'microstock.ai.phase.normal_after' => '资源从快速通道转入普通处理前的等待秒数。',
         'microstock.ai.phase.grace_after' => '宽限期处理开始前的等待秒数。',
         'microstock.ai.stage.vision_grace_after' => '视觉阶段进入宽限模式前的等待秒数。',
         'microstock.ai.stage.thinking_grace_after' => '思考阶段进入宽限模式前的等待秒数。',
         'microstock.ai.stage.thinking_backlog_after' => '思考任务移入积压队列前的等待秒数。',
-        'vtual.credential.failover.enabled' => '连续身份验证失败后切换到下一个凭据。',
+        // curated at 2026-09-22T16:42:56+07:00 — zh_CN curation wave
+        'vtual.credential.failover.enabled' => '连续身份验证失败后切换到下一个凭证。',
         'vtual.claim.accept_anyway_enabled' => '允许用户在验证结果不明确时仍接受认领。',
         'vtual.claim.discord_verify_enabled' => '允许用户通过匹配 Discord 关联的 YouTube/Twitch 账户来验证孤立认领。',
         'vtual.channel_claim.discord_verify_enabled' => '允许资料所有者通过匹配 Discord 关联的 YouTube/Twitch 账户来验证频道附加认领。',
-        'identity.discord.connections_snapshot_max_age_minutes' => '存储的 Discord 连接快照在验证失败触发实时 Discord API 刷新前可信的时长。',
+        // curated at 2026-09-22T11:48:38+07:00 — zh_CN curation wave
+        'identity.discord.connections_snapshot_max_age_minutes' => '存储的 Discord 连接快照的有效期；超过该时长后，若验证未命中就会触发实时 Discord API 刷新。',
     ],
     'options' => [
         'platform' => [

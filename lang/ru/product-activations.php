@@ -8,17 +8,20 @@ return [
     'admin_list_success' => 'Активации продуктов получены.',
     'stats_success' => 'Статистика активаций продуктов получена.',
     'suspended' => 'Активация продукта приостановлена.',
-    'reactivated' => 'Активация продукта восстановлена.',
+    // curated at 2026-09-23T17:11:09+07:00 — ru curation wave — reactivate vs restore, product domain noun, workspace term
+    'reactivated' => 'Активация продукта возобновлена.',
     'approved' => 'Активация продукта одобрена.',
     'rejected' => 'Активация продукта отклонена.',
 
-    'not_found' => 'Активация для продукта :product не найдена.',
+    // curated at 2026-09-23T17:11:09+07:00 — ru curation wave — reactivate vs restore, product domain noun, workspace term
+    'not_found' => 'Активация продукта :product не найдена.',
     'unknown_product' => 'Неизвестный ключ продукта: :product.',
     'already_active' => 'Продукт уже активен.',
     'cannot_approve' => 'Нельзя одобрить активацию в состоянии :state.',
     'cannot_reject' => 'Нельзя отклонить активацию в состоянии :state.',
     'cannot_suspend' => 'Нельзя приостановить активацию в состоянии :state.',
-    'cannot_reactivate' => 'Нельзя восстановить активацию в состоянии :state.',
+    // curated at 2026-09-23T17:11:09+07:00 — ru curation wave — reactivate vs restore, product domain noun, workspace term
+    'cannot_reactivate' => 'Нельзя возобновить активацию в состоянии :state.',
     'type_mismatch' => 'Продукт :product ожидает тип активации :expected, получен :actual.',
     'inactive' => 'Продукт :product в состоянии :state — доступ запрещён.',
     'not_provisioned' => 'Продукт :product ещё не подготовлен.',
@@ -41,7 +44,8 @@ return [
     'filter_state' => 'Состояние',
     'filter_all' => 'Все',
     'action_suspend' => 'Приостановить',
-    'action_reactivate' => 'Восстановить',
+    // curated at 2026-09-23T17:11:09+07:00 — ru curation wave — reactivate vs restore, product domain noun, workspace term
+    'action_reactivate' => 'Возобновить',
     'action_approve' => 'Одобрить',
     'action_reject' => 'Отклонить',
     'reason_label' => 'Причина',
@@ -54,14 +58,19 @@ return [
     'type_explicit' => 'Явная',
 
     // v2 — per-product insights UI
-    'products_title' => 'Продуктовые домены',
-    'products_subtitle' => 'Статистика и управление по продуктовым доменам.',
-    'products_empty' => 'Продуктовые домены не зарегистрированы.',
+    // curated at 2026-09-23T17:11:09+07:00 — ru curation wave — reactivate vs restore, product domain noun, workspace term
+    'products_title' => 'Домены продуктов',
+    // curated at 2026-09-23T17:11:09+07:00 — ru curation wave — reactivate vs restore, product domain noun, workspace term
+    'products_subtitle' => 'Аналитика и управление по каждому домену продукта.',
+    // curated at 2026-09-23T17:11:09+07:00 — ru curation wave — reactivate vs restore, product domain noun, workspace term
+    'products_empty' => 'Домены продуктов не зарегистрированы.',
     'products_list_success' => 'Сводки продуктов получены.',
     'product_show_success' => 'Детали продукта получены.',
-    'user_detail_success' => 'Детали продукта пользователя получены.',
+    // curated at 2026-09-23T17:11:09+07:00 — ru curation wave — reactivate vs restore, product domain noun, workspace term
+    'user_detail_success' => 'Получены сведения о продукте пользователя.',
     'product_title' => 'Продукт: :product',
-    'view_product' => 'Открыть статистику',
+    // curated at 2026-09-23T17:11:09+07:00 — ru curation wave — reactivate vs restore, product domain noun, workspace term
+    'view_product' => 'Смотреть аналитику',
     'back_to_products' => 'Назад к продуктам',
     'fulfillment_target' => 'Цель выдачи',
     'no_activations' => 'Нет активаций для этого продукта.',

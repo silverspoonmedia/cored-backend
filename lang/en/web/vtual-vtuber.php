@@ -55,7 +55,8 @@ return [
     'claim_step_2' => 'Start a claim for this profile and proof channel — you receive a token (prefix vtual-claim-…).',
     'claim_step_3' => 'Paste the exact token into the YouTube channel About or Twitch channel bio.',
     'claim_step_4' => 'Run verify — the system re-fetches the channel description via the production profile resolver.',
-    'claim_step_5' => 'On success you become the profile owner (membership owner + Vtual vTuber product role).',
+    // curated at 2026-09-22T20:30:00+07:00 — brand casing normalized to vTual
+    'claim_step_5' => 'On success you become the profile owner (membership owner + vTual vTuber product role).',
     'claim_channels_heading' => 'Channels on this profile',
     'claim_back_to_profile' => 'Back to profile',
     'claim_no_channels_note' => 'No channels are linked yet — staff must register a channel on this profile before you can claim.',

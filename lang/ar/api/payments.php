@@ -18,7 +18,8 @@ return [
     'invoices' => [
         'list' => 'تم جلب الفواتير بنجاح.',
         'show' => 'تم جلب الفاتورة بنجاح.',
-        'checkout_channels' => 'تم تحميل قنوات دفع الشراء.',
+        // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+        'checkout_channels' => 'تم تحميل قنوات الدفع لإتمام الشراء.',
         'checkout_channels_not_payable' => 'الفاتورة غير متاحة للدفع.',
     ],
 
@@ -50,7 +51,8 @@ return [
         'external_sync_failed' => 'تعذر التحقق من حالة الدفع مع Midtrans قبل بدء الدفع.',
         'webhook_invalid_json' => 'نص JSON غير صالح.',
         'webhook_invalid_signature' => 'توقيع الإشعار غير صالح.',
-        'webhook_missing_order' => 'المعرّف order_id مفقود في الإشعار.',
+        // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+        'webhook_missing_order' => 'الحقل order_id مفقود في الإشعار.',
         'webhook_ack_no_status' => 'تم تأكيد استلام الإشعار (تعذر تحديد الحالة).',
         'webhook_orphan' => 'تم قبول الإشعار (لا توجد فاتورة مطابقة).',
         'webhook_ok' => 'تمت معالجة الإشعار.',
@@ -92,7 +94,8 @@ return [
         'buyer_required' => 'تعذر تحديد بيانات المشتري من الطلب أو الفاتورة أو ملف المستخدم المصادق عليه.',
         'webhook_invalid_json' => 'نص JSON غير صالح.',
         'webhook_invalid_signature' => 'توقيع الإشعار غير صالح.',
-        'webhook_invalid_va' => 'لا يطابق ترويس VA قيمة iPaymu المهيأة.',
+        // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+        'webhook_invalid_va' => 'ترويسة VA لا تطابق قيمة iPaymu VA المهيأة.',
         'webhook_ack_no_status' => 'تم تأكيد استلام الإشعار (تعذر تحديد الحالة).',
         'webhook_orphan' => 'تم قبول الإشعار (لا توجد فاتورة مطابقة).',
         'webhook_ok' => 'تمت معالجة الإشعار.',

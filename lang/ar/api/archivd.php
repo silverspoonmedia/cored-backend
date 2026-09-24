@@ -2,7 +2,8 @@
 
 return [
     'root_label' => 'ملفاتي',
-    'browse_success' => 'تم تحميل التصفح.',
+    // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+    'browse_success' => 'تم تحميل قائمة التصفح.',
     'folder_created' => 'تم إنشاء المجلد.',
     'folder_renamed' => 'تمت إعادة تسمية المجلد.',
     'folder_moved' => 'تم نقل المجلد.',
@@ -15,19 +16,27 @@ return [
     'file_deleted' => 'تم نقل الملف إلى سلة المهملات.',
     'file_restored' => 'تمت استعادة الملف.',
     'file_force_deleted' => 'تم حذف الملف نهائيًا.',
-    'bulk_visibility_updated' => 'تم تحديث الظهور.',
+    // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+    'bulk_visibility_updated' => 'تم تحديث مستوى الظهور.',
     'bulk_files_deleted' => 'تم نقل الملفات المحددة إلى سلة المهملات.',
     'bulk_folders_deleted' => 'تم نقل المجلدات المحددة إلى سلة المهملات.',
-    'download_ready' => 'عنوان URL للتنزيل جاهز.',
-    'download_unavailable' => 'عنوان URL للتنزيل غير متاح لقرص التخزين هذا.',
-    'visibility_updated' => 'تم تحديث الظهور.',
-    'invalid_visibility' => 'قيمة الظهور غير صالحة.',
+    // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+    'download_ready' => 'رابط التنزيل جاهز.',
+    // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+    'download_unavailable' => 'رابط التنزيل غير متاح لقرص التخزين هذا.',
+    // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+    'visibility_updated' => 'تم تحديث مستوى الظهور.',
+    // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+    'invalid_visibility' => 'قيمة مستوى الظهور غير صالحة.',
     'public_share_requires_paid' => 'تتطلب المشاركة عبر رابط عام خطة Archivd مدفوعة ونشطة.',
     'public_share_blocked_hash' => 'لا يمكن مشاركة هذا الملف علنًا (محظور لأسباب تتعلق بالامتثال).',
     'public_share_not_allowed' => 'لا يمكن مشاركة العناصر في مساحة العمل هذه علنًا.',
     'blocklist_saved' => 'تمت إضافة التجزئة إلى قائمة الحظر.',
     'blocklist_removed' => 'تمت إزالة التجزئة من قائمة الحظر.',
-    'share_not_found' => 'العنصر المشترك هذا غير متاح.',
+    // curated at 2026-09-21T15:32:00+07:00 — new key (blocklist list endpoint had no message)
+    'blocklist_loaded' => 'تم تحميل قائمة حظر التجزئات.',
+    // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+    'share_not_found' => 'هذا العنصر المشترك غير متاح.',
     'search_success' => 'تم تحميل نتائج البحث.',
     'trash_success' => 'تم تحميل سلة المهملات.',
     'quota_success' => 'تم تحميل الحصة.',
@@ -40,7 +49,8 @@ return [
     'file_name_taken' => 'يوجد ملف بهذا الاسم هنا بالفعل.',
     'folder_cycle' => 'لا يمكن نقل مجلد إلى داخله أو إلى أحد مجلداته الفرعية.',
     'policy' => [
-        'denied' => 'لا يسمح لك بتنفيذ هذا الإجراء.',
+        // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+        'denied' => 'لا يُسمح لك بتنفيذ هذا الإجراء.',
         'cross_user_denied' => 'لا يمكنك الوصول إلى ملفات مستخدم آخر.',
         'hierarchy_view' => 'لا يمكنك عرض ملفات هذا المستخدم.',
         'hierarchy_mutate' => 'لا يمكنك تعديل ملفات هذا المستخدم.',
@@ -83,7 +93,8 @@ return [
     'upload' => [
         'initiated' => 'تم إنشاء جلسة الرفع.',
         'status' => 'تم تحميل حالة الرفع.',
-        'parts_signed' => 'تم توقيع عناوين URL للأجزاء.',
+        // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+        'parts_signed' => 'تم توقيع روابط الأجزاء.',
         'completed' => 'اكتمل الرفع وتم إنشاء الملف.',
         'aborted' => 'تم إيقاف الرفع.',
         'not_found' => 'لم يتم العثور على جلسة الرفع.',
@@ -99,7 +110,8 @@ return [
         'multipart_only' => 'هذا الإجراء صالح لعمليات الرفع متعدد الأجزاء فقط.',
         'invalid_part_number' => 'رقم الجزء غير صالح.',
         'incomplete_parts' => 'لم تُرفع كل أجزاء الرفع متعدد الأجزاء.',
-        'unsupported_disk' => 'قرص التخزين المُعد لا يدعم الرفع المباشر.',
+        // curated at 2026-09-22T20:32:25+07:00 — ar curation wave
+        'unsupported_disk' => 'قرص التخزين المُهيأ لا يدعم الرفع المباشر.',
         'proxy_misconfigured' => 'وكيل الرفع مفعّل لكنه غير مكتمل (الرمز أو الاسم المستعار للقرص الهدف مفقود).',
         'upstream_failed' => 'رفض التخزين عملية الرفع: :detail',
         'upstream_failed_generic' => 'رفض التخزين عملية الرفع. تحقق من إعدادات S3/B2 بنمط path-style وحالة الرفع متعدد الأجزاء.',

@@ -6,25 +6,35 @@ return [
     'pending' => 'Pembayaran sedang diproses.',
 
     'gateways' => [
-        'list' => 'Daftar payment gateway berhasil dimuat.',
-        'show' => 'Detail payment gateway berhasil dimuat.',
-        'created' => 'Payment gateway berhasil dibuat.',
-        'updated' => 'Payment gateway berhasil diperbarui.',
-        'deleted' => 'Payment gateway berhasil dihapus.',
-        'inactive' => 'Payment gateway yang dipilih sedang tidak aktif.',
-        'none_active' => 'Belum ada payment gateway aktif yang dikonfigurasi.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'list' => 'Daftar gateway pembayaran berhasil dimuat.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'show' => 'Detail gateway pembayaran berhasil dimuat.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'created' => 'Gateway pembayaran berhasil dibuat.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'updated' => 'Gateway pembayaran berhasil diperbarui.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'deleted' => 'Gateway pembayaran berhasil dihapus.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'inactive' => 'Gateway pembayaran yang dipilih sedang tidak aktif.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'none_active' => 'Belum ada gateway pembayaran aktif yang dikonfigurasi.',
     ],
 
     'invoices' => [
         'list' => 'Daftar invoice berhasil dimuat.',
         'show' => 'Detail invoice berhasil dimuat.',
-        'checkout_channels' => 'Channel pembayaran untuk checkout berhasil dimuat.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'checkout_channels' => 'Kanal pembayaran untuk checkout berhasil dimuat.',
         'checkout_channels_not_payable' => 'Invoice ini belum dapat dibayar.',
     ],
 
     'income' => [
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
         'overview' => 'Ringkasan pendapatan pembayaran berhasil dimuat.',
-        'invoices' => 'Daftar invoice pendapatan pembayaran berhasil dimuat.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'invoices' => 'Daftar invoice pendapatan berhasil dimuat.',
     ],
 
     'subscriptions' => [
@@ -36,21 +46,33 @@ return [
     ],
 
     'checkout' => [
-        'active_session_pending' => 'Sesi pembayaran sebelumnya masih tertunda di penyedia. Tunggu hingga kedaluwarsa atau selesai sebelum mengganti channel.',
-        'gateway_provider_mismatch' => 'Payment gateway invoice tidak cocok dengan penyedia checkout yang diminta.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'active_session_pending' => 'Sesi pembayaran sebelumnya masih tertunda di penyedia. Tunggu hingga kedaluwarsa atau selesai sebelum mengganti kanal.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'gateway_provider_mismatch' => 'Gateway pembayaran invoice tidak cocok dengan penyedia checkout yang diminta.',
     ],
 
     'channels' => [
-        'list' => 'Channel pembayaran berhasil diambil.',
-        'show' => 'Channel pembayaran berhasil diambil.',
-        'updated' => 'Channel pembayaran berhasil diperbarui.',
-        'checkout_created' => 'Instruksi pembayaran dibuat.',
-        'checkout_failed' => 'Semua rute pembayaran untuk channel ini gagal.',
-        'route_updated' => 'Rute channel pembayaran diperbarui.',
-        'not_found' => 'Channel pembayaran tidak ditemukan.',
-        'not_available' => 'Channel pembayaran yang dipilih tidak tersedia.',
-        'unsupported_gateway' => 'Tidak ada payment gateway yang dikonfigurasi untuk channel ini.',
-        'policy_managed_route' => 'Rute ini dikelola oleh kebijakan routing. Hanya status aktif yang dapat diubah.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'list' => 'Kanal pembayaran berhasil dimuat.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'show' => 'Kanal pembayaran berhasil dimuat.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'updated' => 'Kanal pembayaran berhasil diperbarui.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'checkout_created' => 'Instruksi pembayaran berhasil dibuat.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'checkout_failed' => 'Semua rute pembayaran untuk kanal ini gagal.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'route_updated' => 'Rute kanal pembayaran berhasil diperbarui.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'not_found' => 'Kanal pembayaran tidak ditemukan.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'not_available' => 'Kanal pembayaran yang dipilih tidak tersedia.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'unsupported_gateway' => 'Belum ada gateway pembayaran yang mendukung kanal ini.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'policy_managed_route' => 'Rute ini dikelola oleh kebijakan perutean. Hanya status aktif yang dapat diubah.',
     ],
 
     'midtrans' => [
@@ -87,8 +109,10 @@ return [
         'invoice_not_payable' => 'Invoice harus pending atau challenge untuk memulai pembayaran.',
         'external_sync_failed' => 'Tidak dapat memverifikasi status pembayaran dengan iPaymu sebelum memulai checkout.',
         'active_payment_exists' => 'Sesi pembayaran untuk invoice ini masih berjalan. Selesaikan atau batalkan sebelum memulai checkout baru.',
-        'invoice_not_found' => 'Tidak ada invoice iPaymu untuk order id ini.',
-        'missing_transaction_id' => 'Invoice belum memiliki transaction id iPaymu.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'invoice_not_found' => 'Tidak ada invoice iPaymu untuk ID pesanan ini.',
+        // curated at 2026-09-21T17:08:42+07:00 — id curation wave
+        'missing_transaction_id' => 'Invoice belum memiliki ID transaksi iPaymu; selesaikan sesi pembayaran terlebih dahulu.',
         'buyer_required' => 'Tidak dapat menentukan detail pembeli dari request, invoiceable, atau profil pengguna yang login.',
         'webhook_invalid_json' => 'Body JSON tidak valid.',
         'webhook_invalid_signature' => 'Signature notifikasi tidak valid.',

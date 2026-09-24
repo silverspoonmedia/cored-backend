@@ -36,3 +36,6 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /monolith
+
+# i18n curation scratch (pair dumps, apply batches)
+/.tmp-i18n/

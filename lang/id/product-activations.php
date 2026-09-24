@@ -3,17 +3,26 @@
 declare(strict_types=1);
 
 return [
-    'list_success' => 'Aktivasi produk diambil.',
-    'show_success' => 'Aktivasi produk diambil.',
-    'admin_list_success' => 'Aktivasi produk diambil.',
-    'stats_success' => 'Statistik aktivasi produk diambil.',
-    'suspended' => 'Aktivasi produk ditangguhkan.',
-    'reactivated' => 'Aktivasi produk diaktifkan kembali.',
-    'approved' => 'Aktivasi produk disetujui.',
-    'rejected' => 'Aktivasi produk ditolak.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'list_success' => 'Aktivasi produk berhasil dimuat.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'show_success' => 'Aktivasi produk berhasil dimuat.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'admin_list_success' => 'Aktivasi produk berhasil dimuat.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'stats_success' => 'Statistik aktivasi produk berhasil dimuat.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'suspended' => 'Aktivasi produk berhasil ditangguhkan.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'reactivated' => 'Aktivasi produk berhasil diaktifkan kembali.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'approved' => 'Aktivasi produk berhasil disetujui.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'rejected' => 'Aktivasi produk berhasil ditolak.',
 
     'not_found' => 'Aktivasi produk untuk :product tidak ditemukan.',
-    'unknown_product' => 'Product key tidak dikenal: :product.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'unknown_product' => 'Kunci produk tidak dikenal: :product.',
     'already_active' => 'Produk sudah aktif.',
     'cannot_approve' => 'Tidak dapat menyetujui aktivasi dengan status :state.',
     'cannot_reject' => 'Tidak dapat menolak aktivasi dengan status :state.',
@@ -21,10 +30,13 @@ return [
     'cannot_reactivate' => 'Tidak dapat mengaktifkan kembali aktivasi dengan status :state.',
     'type_mismatch' => 'Produk :product mengharapkan tipe aktivasi :expected, didapat :actual.',
     'inactive' => 'Produk :product berstatus :state — akses ditolak.',
-    'not_provisioned' => 'Produk :product belum diprovision.',
-    'auth_required' => 'Otentikasi diperlukan.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'not_provisioned' => 'Produk :product belum disediakan.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'auth_required' => 'Autentikasi diperlukan.',
 
     'title' => 'Aktivasi Produk',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
     'subtitle' => 'Registry aktivasi produk per pengguna.',
     'col_user' => 'Pengguna',
     'col_product' => 'Produk',
@@ -44,7 +56,8 @@ return [
     'action_approve' => 'Setujui',
     'action_reject' => 'Tolak',
     'reason_label' => 'Alasan',
-    'reason_placeholder' => 'Alasan opsional untuk aksi ini',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'reason_placeholder' => 'Alasan opsional untuk tindakan ini',
     'state_pending' => 'Menunggu',
     'state_active' => 'Aktif',
     'state_suspended' => 'Ditangguhkan',
@@ -53,21 +66,33 @@ return [
     'type_explicit' => 'Eksplisit',
 
     // v2 — insight per produk
-    'products_title' => 'Domain Produk',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'products_title' => 'Domain produk',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
     'products_subtitle' => 'Insight dan kontrol per domain produk.',
-    'products_empty' => 'Tidak ada domain produk terdaftar.',
-    'products_list_success' => 'Ringkasan produk diambil.',
-    'product_show_success' => 'Detail produk diambil.',
-    'user_detail_success' => 'Detail produk pengguna diambil.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'products_empty' => 'Belum ada domain produk terdaftar.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'products_list_success' => 'Ringkasan produk berhasil dimuat.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'product_show_success' => 'Detail produk berhasil dimuat.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'user_detail_success' => 'Detail produk pengguna berhasil dimuat.',
     'product_title' => 'Produk: :product',
-    'view_product' => 'Lihat Insight',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'view_product' => 'Lihat insight',
     'back_to_products' => 'Kembali ke Produk',
-    'fulfillment_target' => 'Target fulfillment',
-    'no_activations' => 'Tidak ada aktivasi untuk produk ini.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'fulfillment_target' => 'Target pemenuhan',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'no_activations' => 'Belum ada aktivasi untuk produk ini.',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
     'pagination' => 'Paginasi aktivasi',
 
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
     'metric_total_storage_used_bytes' => 'Total penyimpanan terpakai',
-    'metric_total_files' => 'Total file',
+    // curated at 2026-09-21T17:10:50+07:00 — id curation wave
+    'metric_total_files' => 'Total berkas',
     'metric_total_workspaces' => 'Total workspace',
     'metric_paid_users_count' => 'Pengguna berbayar',
     'metric_free_users_count' => 'Pengguna gratis',

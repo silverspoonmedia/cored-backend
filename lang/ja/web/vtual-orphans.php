@@ -1,13 +1,20 @@
 <?php
 
 return [
-    'title' => '未クレーム vTuber',
-    'breadcrumb' => '未クレーム vTuber',
-    'list_title' => '未クレーム vTuber プロフィール',
-    'subtitle' => 'スタッフがシードしたオーナーなしプロフィール。クレーム済みはこの一覧に表示されません。',
-    'add_button' => '未クレーム vTuber を追加',
-    'create_title' => '未クレーム vTuber を追加',
-    'edit_title' => '未クレーム vTuber を編集',
+    // curated at 2026-09-21T17:29:06+07:00 — ja curation wave
+    'title' => '未申請 vTuber',
+    // curated at 2026-09-21T17:29:06+07:00 — ja curation wave
+    'breadcrumb' => '未申請 vTuber',
+    // curated at 2026-09-21T17:29:06+07:00 — ja curation wave
+    'list_title' => '未申請 vTuber プロフィール',
+    // curated at 2026-09-21T17:29:06+07:00 — ja curation wave
+    'subtitle' => 'スタッフがシードしたオーナーなしプロフィール。申請済みはこの一覧に表示されません。',
+    // curated at 2026-09-21T17:29:06+07:00 — ja curation wave
+    'add_button' => '未申請 vTuber を追加',
+    // curated at 2026-09-21T17:29:06+07:00 — ja curation wave
+    'create_title' => '未申請 vTuber を追加',
+    // curated at 2026-09-21T17:29:06+07:00 — ja curation wave
+    'edit_title' => '未申請 vTuber を編集',
     'form' => [
         'display_name' => '表示名',
         'slug' => 'スラッグ',
@@ -18,9 +25,11 @@ return [
         'submit_update' => '変更を保存',
     ],
     'datatable' => [
-        'empty' => '未クレーム vTuber プロフィールはまだありません。',
+        // curated at 2026-09-21T17:29:06+07:00 — ja curation wave
+        'empty' => '未申請 vTuber プロフィールはまだありません。',
         'zero_records' => '一致するプロフィールがありません。',
-        'confirm_delete' => 'このオーファンプロフィールをアーカイブしますか？クレームできなくなります。',
+        // curated at 2026-09-21T17:29:06+07:00 — ja curation wave
+        'confirm_delete' => 'このオーファンプロフィールをアーカイブしますか？申請できなくなります。',
         'columns' => [
             'display_name' => '表示名',
             'slug' => 'スラッグ',
@@ -44,7 +53,8 @@ return [
         'handle' => 'ハンドル',
         'status' => 'ステータス',
         'add_button' => 'チャンネルを追加',
-        'table_caption' => '未クレーム vTuber のチャンネル',
+        // curated at 2026-09-21T17:29:06+07:00 — ja curation wave
+        'table_caption' => '未申請 vTuber のチャンネル',
         'empty' => '登録されたチャンネルはまだありません。',
         'status_pending' => '解決待ち',
         'status_active' => '有効',

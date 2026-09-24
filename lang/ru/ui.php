@@ -37,11 +37,13 @@ return [
         'none' => 'Нет',
     ],
     'ajax' => [
-        'saved' => 'Успешно сохранено.',
+        // curated at 2026-09-23T19:26:42+07:00 — ru curation wave: settled terms
+        'saved' => 'Сохранено.',
         'validation_failed' => 'Проверьте введённые данные.',
         'request_failed' => 'Не удалось обработать запрос.',
         'server_unreachable' => 'Не удалось связаться с сервером. Проверьте подключение.',
-        'datatable_load_failed' => 'Не удалось загрузить данные таблицы. Попробуйте ещё раз.',
+        // curated at 2026-09-23T19:26:42+07:00 — ru curation wave: settled terms
+        'datatable_load_failed' => 'Не удалось загрузить данные таблицы. Повторите попытку.',
     ],
     'password' => [
         'show' => 'Показать пароль',

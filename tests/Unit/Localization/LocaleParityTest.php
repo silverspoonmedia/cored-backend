@@ -137,6 +137,116 @@ class LocaleParityTest extends TestCase
     }
 
     /**
+     * A literal key written twice inside the same array block is invisible to
+     * every other guard: the file parses, `flattenKeys()` sees the surviving
+     * entry only, and PHP silently keeps the *last* value. The rendered string is
+     * then simply the wrong one, with no missing key and no parity mismatch to
+     * report it. The curation appliers can produce this by accident when a create
+     * path inserts a key that already exists, so it is asserted, not assumed.
+     *
+     * Covers managed packs too: `validation.php` is where an added-on-top key
+     * (like `attributes.h-captcha-response`) is most likely to collide with a
+     * later `lang:update`.
+     */
+    public function test_no_lang_file_declares_a_literal_key_twice(): void
+    {
+        $duplicates = [];
+
+        foreach ($this->supportedLocales() as $locale) {
+            $base = lang_path($locale);
+
+            if (! is_dir($base)) {
+                continue;
+            }
+
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
+            );
+
+            foreach ($iterator as $file) {
+                if ($file->getExtension() !== 'php') {
+                    continue;
+                }
+
+                foreach ($this->duplicateLiteralKeys($file->getPathname()) as $duplicate) {
+                    $duplicates[] = "{$locale}/"
+                        .str_replace('\\', '/', substr($file->getPathname(), strlen($base) + 1))
+                        .'  '.$duplicate;
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $duplicates,
+            "Lang files declaring the same literal key twice (PHP keeps the last value, so the other is dead):\n"
+            .implode("\n", $duplicates)
+        );
+    }
+
+    /**
+     * Literal keys repeated inside one array block of a PHP lang file.
+     *
+     * Tokenized rather than regex-scanned, because the nesting is what makes a
+     * repeat meaningful: the same key name in two sibling arrays (`steps.1.title`
+     * and `steps.2.title`) is correct, while a repeat in one array is not.
+     * Indentation cannot be trusted to tell those apart, since a container array
+     * and its parent's other keys share a depth.
+     *
+     * @return array<int, string>
+     */
+    private function duplicateLiteralKeys(string $path): array
+    {
+        $tokens = token_get_all((string) file_get_contents($path));
+        $stack = [[]];
+        $pendingKey = null;
+        $duplicates = [];
+
+        foreach ($tokens as $token) {
+            if (is_array($token)) {
+                [$id, $text, $line] = $token;
+
+                if ($id === T_CONSTANT_ENCAPSED_STRING && $pendingKey === null) {
+                    $pendingKey = [stripcslashes(substr($text, 1, -1)), $line];
+
+                    continue;
+                }
+
+                if ($id === T_DOUBLE_ARROW && $pendingKey !== null) {
+                    $frame = count($stack) - 1;
+                    $key = $pendingKey[0];
+
+                    if (isset($stack[$frame][$key])) {
+                        $duplicates[] = "'{$key}' at line {$pendingKey[1]} repeats line {$stack[$frame][$key]}";
+                    } else {
+                        $stack[$frame][$key] = $pendingKey[1];
+                    }
+
+                    $pendingKey = null;
+
+                    continue;
+                }
+
+                if (! in_array($id, [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                    $pendingKey = null;
+                }
+
+                continue;
+            }
+
+            if ($token === '[') {
+                $stack[] = [];
+            } elseif ($token === ']') {
+                array_pop($stack);
+            }
+
+            $pendingKey = null;
+        }
+
+        return $duplicates;
+    }
+
+    /**
      * @return array<int, string>
      */
     private function supportedLocales(): array

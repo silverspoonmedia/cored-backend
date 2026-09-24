@@ -1,0 +1,29 @@
+{
+    "locales": [
+        "en",
+        "id",
+        "ja",
+        "ko",
+        "zh_CN",
+        "ar",
+        "ru"
+    ],
+    "reference": "en",
+    "managed_files_excluded": [
+        "actions.php",
+        "auth.php",
+        "http-statuses.php",
+        "pagination.php",
+        "passwords.php",
+        "validation.php"
+    ],
+    "flat_packs_included": [
+        "en.json"
+    ],
+    "files": [],
+    "totals": {
+        "copy_candidates": 0,
+        "missing_keys": 0,
+        "extra_keys": 0
+    }
+}

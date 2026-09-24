@@ -1,14 +1,21 @@
 <?php
 
 return [
-    'list_success' => 'Список сервисов успешно получен.',
-    'options_success' => 'Опции сервисов успешно получены.',
-    'show_success' => 'Сервис успешно получен.',
-    'created' => 'Сервис успешно создан.',
-    'updated' => 'Сервис успешно обновлён.',
-    'deleted' => 'Сервис успешно удалён.',
+    // curated at 2026-09-23T19:29:11+07:00 — ru curation wave: settled terms
+    'list_success' => 'Список сервисов получен.',
+    // curated at 2026-09-23T19:29:11+07:00 — ru curation wave: settled terms
+    'options_success' => 'Опции сервисов получены.',
+    // curated at 2026-09-23T19:29:11+07:00 — ru curation wave: settled terms
+    'show_success' => 'Сервис получен.',
+    // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+    'created' => 'Сервис создан.',
+    // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+    'updated' => 'Сервис обновлён.',
+    // curated at 2026-09-23T19:26:41+07:00 — ru curation wave: settled terms
+    'deleted' => 'Сервис удалён.',
     'checkout_success' => 'Оформление начато. Завершите оплату на странице покупки.',
-    'purchase_show_success' => 'Покупка сервиса успешно получена.',
+    // curated at 2026-09-23T19:29:11+07:00 — ru curation wave: settled terms
+    'purchase_show_success' => 'Покупка сервиса получена.',
     'quantity_updated' => 'Количество в покупке обновлено.',
     'quantity_not_editable' => 'Количество нельзя изменить для этой покупки.',
     'quantity_addon_only' => 'Количество можно изменить только для покупок дополнений.',

@@ -8,17 +8,23 @@ return [
     'groups' => [
         'platform' => 'المنصة',
         'archivd' => 'Archivd',
-        'microstock' => 'مايكروستوك',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'microstock' => 'Microstock',
         'vtual' => 'vTual',
+        // curated at 2026-09-22T20:29:07+07:00 — ar curation wave
         'notification_audiences' => 'جمهور الإشعارات',
         'currencies' => 'العملات',
     ],
     'fields' => [
         // Platform — JWT
-        'platform.jwt.ttl' => 'مدة صلاحية وصول JWT (بالدقائق)',
-        'platform.jwt.refresh_ttl' => 'نافذة تحديث JWT (بالدقائق)',
-        'platform.jwt.remember_ttl' => 'مدة صلاحية تذكّر JWT (بالدقائق)',
-        'platform.jwt.refresh_skew' => 'هامش التحديث الصامت لـ JWT (بالدقائق)',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'platform.jwt.ttl' => 'مدة صلاحية رمز الوصول JWT (بالدقائق)',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'platform.jwt.refresh_ttl' => 'نافذة تجديد JWT (بالدقائق)',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'platform.jwt.remember_ttl' => 'مدة صلاحية خيار «تذكرني» لـ JWT (بالدقائق)',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'platform.jwt.refresh_skew' => 'هامش التجديد الصامت لـ JWT (بالدقائق)',
         'platform.jwt.blacklist_grace_period' => 'فترة السماح لقائمة حظر JWT (بالثواني)',
         // Platform — auth / 2FA
         'platform.auth.default_role' => 'الدور الافتراضي للمستخدمين الجدد',
@@ -44,13 +50,17 @@ return [
         'identity.discord.connections_snapshot_max_age_minutes' => 'الحد الأقصى لعمر لقطة اتصالات Discord (بالدقائق)',
         'platform.localization.locale_cookie_minutes' => 'مدة ملف تعريف ارتباط اللغة (بالدقائق)',
         // Platform — payment
-        'platform.payment.channel_fee_bearer' => 'الطرف الذي يتحمل رسوم القناة',
+        // curated at 2026-09-22T20:27:19+07:00 — ar curation wave
+        'platform.payment.channel_fee_bearer' => 'الطرف الذي يتحمل رسوم قناة الدفع',
         'platform.payment.reporting_timezone' => 'المنطقة الزمنية لتقارير الدفع',
-        'platform.payment.prefer_channel_checkout' => 'تفضيل الدفع الأصلي للقناة',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'platform.payment.prefer_channel_checkout' => 'تفضيل إتمام الشراء الأصلي للقناة',
         'platform.payment.default_buyer_phone' => 'هاتف المشتري الافتراضي (بديل iPaymu)',
         // Platform — mail identity
-        'platform.mail.from_address' => 'عنوان المرسل للبريد',
-        'platform.mail.from_name' => 'اسم المرسل للبريد',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'platform.mail.from_address' => 'عنوان المرسل للبريد الصادر',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'platform.mail.from_name' => 'اسم المرسل للبريد الصادر',
         // Platform — service
         'platform.service.grace_days' => 'أيام السماح للخدمة',
         'platform.service.settlement_currency' => 'عملة التسوية',
@@ -98,13 +108,19 @@ return [
         'microstock.ai.thinking_visual_attempts' => 'محاولات الرؤية في مرحلة التفكير',
         'microstock.ai.batch_chunk' => 'حجم جزء دفعة الذكاء الاصطناعي',
         'microstock.ai.batch_min_files' => 'الحد الأدنى لملفات دفعة الذكاء الاصطناعي',
-        'microstock.ai.phase.normal_after' => 'مرحلة الذكاء الاصطناعي: بدء الوضع العادي بعد (بالثواني)',
-        'microstock.ai.phase.grace_after' => 'مرحلة الذكاء الاصطناعي: بدء فترة السماح بعد (بالثواني)',
-        'microstock.ai.stage.vision_grace_after' => 'مرحلة الذكاء الاصطناعي: بدء سماح الرؤية بعد (بالثواني)',
-        'microstock.ai.stage.thinking_grace_after' => 'مرحلة الذكاء الاصطناعي: بدء سماح التفكير بعد (بالثواني)',
-        'microstock.ai.stage.thinking_backlog_after' => 'مرحلة الذكاء الاصطناعي: بدء تراكم التفكير بعد (بالثواني)',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'microstock.ai.phase.normal_after' => 'مرحلة الذكاء الاصطناعي: التحول إلى المعالجة العادية بعد (بالثواني)',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'microstock.ai.phase.grace_after' => 'مرحلة الذكاء الاصطناعي: بدء معالجة فترة السماح بعد (بالثواني)',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'microstock.ai.stage.vision_grace_after' => 'مرحلة الذكاء الاصطناعي: دخول الرؤية وضع السماح بعد (بالثواني)',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'microstock.ai.stage.thinking_grace_after' => 'مرحلة الذكاء الاصطناعي: دخول التفكير وضع السماح بعد (بالثواني)',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'microstock.ai.stage.thinking_backlog_after' => 'مرحلة الذكاء الاصطناعي: انتقال مهام التفكير إلى قائمة الانتظار المتراكمة بعد (بالثواني)',
         'microstock.ai.vision_image.delivery' => 'طريقة تسليم صورة الرؤية',
-        'microstock.ai.vision_image.variant_kind' => 'نوع تنويع صورة الرؤية',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'microstock.ai.vision_image.variant_kind' => 'نوع متغيّر صورة الرؤية',
         'microstock.ai.vision_image.signed_url_ttl_minutes' => 'مدة صلاحية عنوان URL الموقّع لصورة الرؤية (بالدقائق)',
         'microstock.ai.inference_provider_slug' => 'معرّف مزود استدلال Microstock',
         'microstock.ai.vision.connection' => 'اتصال الذكاء الاصطناعي للرؤية (فارغ = الافتراضي)',
@@ -125,7 +141,7 @@ return [
         'microstock.ai.upstream.solo_thinking_concurrency' => 'تزامن التفكير الفردي',
         'microstock.ai.upstream.release_after_seconds' => 'تحرير خانة المزود الخارجي بعد (بالثواني)',
         'microstock.csv_disk' => 'قرص تصدير CSV',
-        // Vtual
+        // vTual
         'vtual.credential_test.http_timeout' => 'مهلة HTTP لاختبار بيانات الاعتماد (بالثواني)',
         'vtual.credential_test.twitch_token_skew_seconds' => 'هامش رمز Twitch (بالثواني)',
         'vtual.credential_test.youtube_probe_channel_id' => 'معرّف قناة اختبار YouTube',
@@ -170,12 +186,15 @@ return [
         'vtual.landing.event.title' => 'عنوان حدث الصفحة التعريفية',
         'vtual.landing.event.starts_at' => 'وقت بدء حدث الصفحة التعريفية',
         'vtual.landing.event.body' => 'نص حدث الصفحة التعريفية',
-        'vtual.content_classification.ai.enabled' => 'تمكين تدقيق الذكاء الاصطناعي (تصنيف المحتوى)',
+        // curated at 2026-09-22T20:51:39+07:00 — wave 2 follow-up: enabled label consistency + hint punctuation
+        'vtual.content_classification.ai.enabled' => 'تفعيل تدقيق الذكاء الاصطناعي (تصنيف المحتوى)',
         'vtual.content_classification.ai.model' => 'نموذج تدقيق الذكاء الاصطناعي',
         'vtual.content_classification.ai.max_tokens' => 'الحد الأقصى لرموز رد تدقيق الذكاء الاصطناعي',
-        'vtual.content_classification.ai.timeout' => 'مهلة تدقيق الذكاء الاصطناعي (ثانية)',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'vtual.content_classification.ai.timeout' => 'مهلة تدقيق الذكاء الاصطناعي (بالثواني)',
         'vtual.content_classification.ai.min_confidence' => 'الحد الأدنى لثقة تدقيق الذكاء الاصطناعي',
-        'vtual.content_classification.ai.cache_ttl_hours' => 'ذاكرة تخزين نتائج التدقيق (ساعات)',
+        // curated at 2026-09-22T20:24:46+07:00 — ar curation wave
+        'vtual.content_classification.ai.cache_ttl_hours' => 'مدة تخزين نتائج التدقيق مؤقتًا (بالساعات)',
         'vtual.content_classification.ai.connection' => 'اتصال تدقيق الذكاء الاصطناعي (فارغ = الافتراضي)',
     ],
     'hints' => [
@@ -189,8 +208,10 @@ return [
         'microstock.ai.upstream.window_seconds' => 'نافذة مرجعية لميزانية رموز المزود الخارجي (يُفرض الحد عبر قيود التزامن).',
         'vtual.credential_test.youtube_probe_channel_id' => 'معرّف قناة عامة يُستخدم لاختبارات بيانات اعتماد YouTube Data API السريعة.',
         'platform.jwt.refresh_skew' => 'حدّث رمز الوصول قبل انتهاء صلاحيته بهذا العدد من الدقائق.',
-        'platform.notifications.delivery' => 'يستخدم الوقت الفعلي WebSockets ويتطلب إعداد بيانات اعتماد PUSHER_* / البث؛ وإلا يعود الجرس إلى استطلاع HTTP.',
-        'platform.payment.channel_fee_bearer' => 'من يتحمل رسوم قناة الدفع: التاجر أم العميل؟',
+        // curated at 2026-09-22T20:27:19+07:00 — ar curation wave
+        'platform.notifications.delivery' => 'يستخدم الوضع الفعلي WebSockets ويتطلب إعداد بيانات اعتماد PUSHER_* / البث؛ وإلا فتعود أيقونة الإشعارات إلى استطلاع HTTP.',
+        // curated at 2026-09-22T20:51:39+07:00 — wave 2 follow-up: enabled label consistency + hint punctuation
+        'platform.payment.channel_fee_bearer' => 'الطرف الذي يتحمل رسوم قناة الدفع: التاجر أو العميل.',
         'platform.inference.default_provider_slug' => 'المزود البديل عند عدم تحديد مزود في الطلب.',
         'platform.inference.default_input_per_million_usd' => 'سعر فوترة مؤقت للنماذج المسجلة التي لا تملك سعرًا في الكتالوج.',
         'platform.inference.unknown_input_per_million_usd' => 'سعر فوترة مؤقت للنماذج غير المسجلة.',

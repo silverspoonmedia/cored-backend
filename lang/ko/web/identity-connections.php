@@ -11,6 +11,7 @@ return [
     'discord_disconnected' => 'Discord 연결이 해제되었습니다.',
     'discord_connected_flash' => 'Discord가 성공적으로 연결되었습니다.',
     'discord_denied' => 'Discord 인증이 취소되었습니다.',
+    // curated at 2026-09-23T13:18:51+07:00 — ko curation wave: register normalized to 해요체
     'discord_callback_invalid' => 'Discord 인증에 실패했습니다. 다시 시도하세요.',
     'discord_not_configured' => '이 서버에 Discord OAuth가 설정되어 있지 않습니다.',
     'linked_accounts_heading' => 'Discord에 연동된 플랫폼',
@@ -27,8 +28,10 @@ return [
     'disconnected' => '계정 연결이 해제되었습니다.',
     'disconnect_failed' => '이 계정의 연결을 해제할 수 없습니다.',
     'connected' => '이 계정은 연결되어 있습니다.',
-    'not_connected' => '이 제공자를 연결하면 프로필에서 계정을 연동할 수 있습니다.',
-    'not_configured' => '이 제공자는 서버에 설정되어 있지 않습니다.',
+    // curated at 2026-09-23T11:07:05+07:00 — ko curation wave
+    'not_connected' => '이 공급자를 연결하면 프로필에서 계정을 연동할 수 있습니다.',
+    // curated at 2026-09-23T11:07:05+07:00 — ko curation wave
+    'not_configured' => '이 공급자는 서버에 설정되어 있지 않습니다.',
     'provider_heading' => ':name',
     'linked_accounts_heading_generic' => '연동된 계정',
     'linked_accounts_empty_generic' => '연동된 계정이 아직 없습니다.',

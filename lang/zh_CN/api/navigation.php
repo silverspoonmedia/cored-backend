@@ -1,11 +1,16 @@
 <?php
 
 return [
-    'tree_success' => '导航树已成功获取。',
-    'layouts_success' => '导航布局已成功获取。',
-    'list_success' => '菜单列表已成功获取。',
-    'show_success' => '菜单已成功获取。',
-    'trashed_success' => '已删除菜单列表已成功获取。',
+    // curated at 2026-09-22T12:19:26+07:00 — zh_CN curation wave
+    'tree_success' => '已成功获取导航树。',
+    // curated at 2026-09-22T12:19:26+07:00 — zh_CN curation wave
+    'layouts_success' => '已成功获取导航布局。',
+    // curated at 2026-09-22T12:19:26+07:00 — zh_CN curation wave
+    'list_success' => '已成功获取菜单列表。',
+    // curated at 2026-09-22T12:19:26+07:00 — zh_CN curation wave
+    'show_success' => '已成功获取菜单。',
+    // curated at 2026-09-22T12:19:26+07:00 — zh_CN curation wave
+    'trashed_success' => '已成功获取回收站中的菜单。',
     'created' => '菜单已成功创建。',
     'updated' => '菜单已成功更新。',
     'deleted' => '菜单已成功删除。',

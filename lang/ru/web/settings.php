@@ -2,8 +2,10 @@
 
 return [
     'title' => 'Настройки',
+    // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
     'subtitle' => 'Операционная конфигурация, управляемая через панель администратора.',
-    'read_only' => 'У вас доступ к этим настройкам только для просмотра.',
+    // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+    'read_only' => 'У вас есть доступ к этим настройкам только для просмотра.',
     'source' => 'Текущий источник: :source',
     'groups' => [
         'platform' => 'Платформа',
@@ -15,193 +17,338 @@ return [
     ],
     'fields' => [
         // Platform — JWT
-        'platform.jwt.ttl' => 'Срок действия JWT-токена доступа (минуты)',
-        'platform.jwt.refresh_ttl' => 'Окно обновления JWT (минуты)',
-        'platform.jwt.remember_ttl' => 'Срок действия JWT «запомнить меня» (минуты)',
-        'platform.jwt.refresh_skew' => 'Запас тихого обновления JWT (минуты)',
-        'platform.jwt.blacklist_grace_period' => 'Льготный период чёрного списка JWT (секунды)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.jwt.ttl' => 'Срок действия JWT-токена доступа (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.jwt.refresh_ttl' => 'Окно обновления JWT (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.jwt.remember_ttl' => 'Срок действия JWT «запомнить меня» (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.jwt.refresh_skew' => 'Запас тихого обновления JWT (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.jwt.blacklist_grace_period' => 'Льготный период чёрного списка JWT (секунд)',
         // Platform — auth / 2FA
         'platform.auth.default_role' => 'Роль по умолчанию для новых пользователей',
-        'platform.auth.verification_expire' => 'Срок действия ссылки подтверждения email (минуты)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.auth.verification_expire' => 'Срок действия ссылки подтверждения электронной почты (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.two_factor.window' => 'Окно проверки TOTP двухфакторной аутентификации',
         'platform.two_factor.issuer' => 'Имя издателя 2FA (приложение-аутентификатор)',
         // Platform — hCaptcha
         'platform.hcaptcha.enabled' => 'hCaptcha включена',
         // Platform — notifications
         'platform.notifications.delivery' => 'Режим доставки уведомлений',
-        'platform.notifications.polling_interval' => 'Интервал опроса уведомлений (секунды)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.notifications.polling_interval' => 'Интервал опроса уведомлений (секунд)',
         // Platform — error log
         'platform.errorlog.enabled' => 'Постоянный журнал ошибок включён',
-        'platform.errorlog.clean_after_days' => 'Срок хранения журнала ошибок (дни)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.errorlog.clean_after_days' => 'Срок хранения журнала ошибок (дней)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.errorlog.max_message_length' => 'Максимальная длина сообщения журнала ошибок',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.errorlog.max_trace_length' => 'Максимальная длина трассировки журнала ошибок',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.errorlog.max_context_json_length' => 'Максимальная длина JSON-контекста журнала ошибок',
         // Platform — activity log
         'platform.activitylog.enabled' => 'Журнал активности включён',
         'platform.activitylog.buffer_enabled' => 'Буфер журнала активности включён',
         // Platform — localization
         'platform.localization.locale_cookie' => 'Имя cookie локали',
-        'identity.discord.connections_snapshot_max_age_minutes' => 'Максимальный возраст снимка подключений Discord (минуты)',
-        'platform.localization.locale_cookie_minutes' => 'Срок действия cookie локали (минуты)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'identity.discord.connections_snapshot_max_age_minutes' => 'Максимальный возраст снимка подключений Discord (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.localization.locale_cookie_minutes' => 'Срок действия cookie локали (минут)',
         // Platform — payment
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.payment.channel_fee_bearer' => 'Плательщик комиссии канала',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.payment.reporting_timezone' => 'Часовой пояс платёжной отчётности',
-        'platform.payment.prefer_channel_checkout' => 'Предпочитать нативную оплату канала',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.payment.prefer_channel_checkout' => 'Предпочитать оформление заказа через канал',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.payment.default_buyer_phone' => 'Телефон покупателя по умолчанию (резерв iPaymu)',
         // Platform — mail identity
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.mail.from_address' => 'Адрес отправителя писем',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.mail.from_name' => 'Имя отправителя писем',
         // Platform — service
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.service.grace_days' => 'Льготные дни услуги',
         'platform.service.settlement_currency' => 'Валюта расчёта',
-        'platform.service.purchase_max_quantity' => 'Максимальное количество покупки услуги',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.service.purchase_max_quantity' => 'Максимальное количество для покупки услуги',
         // Platform — inference fallbacks
         'platform.inference.default_provider_slug' => 'Slug провайдера инференса по умолчанию',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.inference.default_input_per_million_usd' => 'Ставка ввода по умолчанию (USD за 1 млн токенов)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.inference.default_output_per_million_usd' => 'Ставка вывода по умолчанию (USD за 1 млн токенов)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.inference.unknown_input_per_million_usd' => 'Ставка ввода для неизвестной модели (USD за 1 млн токенов)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.inference.unknown_output_per_million_usd' => 'Ставка вывода для неизвестной модели (USD за 1 млн токенов)',
         // Platform — Frankfurter FX
-        'platform.frankfurter.cache_ttl' => 'Окно свежести курсов Frankfurter FX (секунды)',
-        'platform.frankfurter.timeout' => 'HTTP-таймаут Frankfurter FX (секунды)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.frankfurter.cache_ttl' => 'Окно свежести курсов Frankfurter FX (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.frankfurter.timeout' => 'HTTP-таймаут Frankfurter FX (секунд)',
         // Archivd
-        'archivd.max_file_size_bytes' => 'Максимальный размер файла (байты)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'archivd.max_file_size_bytes' => 'Максимальный размер файла (байт)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'archivd.max_files_per_batch' => 'Максимум файлов в пакете',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'archivd.max_concurrent_uploads' => 'Максимум одновременных загрузок',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'archivd.max_concurrent_parts' => 'Максимум одновременных частей multipart',
-        'archivd.chunk_size_bytes' => 'Размер фрагмента загрузки (байты)',
-        'archivd.multipart_threshold_bytes' => 'Порог multipart-загрузки (байты)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'archivd.chunk_size_bytes' => 'Размер фрагмента загрузки (байт)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'archivd.multipart_threshold_bytes' => 'Порог multipart-загрузки (байт)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'archivd.max_presigned_parts_per_response' => 'Максимум presigned-частей в ответе',
-        'archivd.presign_ttl_minutes' => 'Срок действия presigned URL (минуты)',
-        'archivd.session_ttl_hours' => 'Срок действия сессии загрузки (часы)',
-        'archivd.stale_upload_grace_hours' => 'Льготный период устаревшей загрузки (часы)',
-        'archivd.orphan_inactivity_minutes' => 'Таймаут неактивности сироты-части (минуты)',
-        'archivd.default_quota_bytes' => 'Квота хранилища по умолчанию (байты)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'archivd.presign_ttl_minutes' => 'Срок действия presigned URL (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'archivd.session_ttl_hours' => 'Срок действия сессии загрузки (часов)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'archivd.stale_upload_grace_hours' => 'Льготный период устаревшей загрузки (часов)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'archivd.orphan_inactivity_minutes' => 'Таймаут неактивности части-сироты (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'archivd.default_quota_bytes' => 'Квота хранилища по умолчанию (байт)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'archivd.base_owned_workspace_slots' => 'Базовые слоты собственных рабочих областей',
         'archivd.disabled_regions' => 'Отключённые регионы хранилища',
-        'archivd.signed_download_ttl_minutes' => 'Срок действия подписанного URL скачивания (минуты)',
-        'archivd.signed_download_cache_margin_seconds' => 'Запас кэша подписанного скачивания (секунды)',
-        'archivd.public_download_signature_ttl_minutes' => 'Срок действия подписи публичного скачивания (минуты)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'archivd.signed_download_ttl_minutes' => 'Срок действия подписанного URL скачивания (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'archivd.signed_download_cache_margin_seconds' => 'Запас кэша подписанного скачивания (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'archivd.public_download_signature_ttl_minutes' => 'Срок действия подписи публичного скачивания (минут)',
         'archivd.allowed_mime_prefixes' => 'Разрешённые префиксы MIME-типов',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'archivd.download_vault.enabled' => 'Прокси хранилища скачиваний включён',
         // Microstock
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.daily_free.enabled' => 'Ежедневные бесплатные скачивания включены',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.daily_free.limit_per_user' => 'Лимит ежедневных бесплатных скачиваний на пользователя',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.daily_free.timezone' => 'Часовой пояс сброса ежедневного лимита',
-        'microstock.ai_billing.markup_multiplier' => 'Множитель наценки биллинга ИИ',
-        'microstock.ai_billing.estimated_billable_micro_usd_per_asset' => 'Расчётные тарифицируемые микро-USD на ресурс',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai_billing.markup_multiplier' => 'Множитель наценки ИИ-оплаты',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai_billing.estimated_billable_micro_usd_per_asset' => 'Расчётные тарифицируемые микро-USD на актив',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai_billing.estimate_thinking_attempt_factor' => 'Коэффициент оценки попыток мышления',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.image_max_px' => 'Максимальный размер изображения ИИ (px)',
-        'microstock.ai.image_jpeg_quality' => 'Качество JPEG изображения ИИ',
-        'microstock.ai.max_request_image_bytes' => 'Максимальный размер изображения запроса (байты)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.image_jpeg_quality' => 'Качество JPEG-изображения ИИ',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.max_request_image_bytes' => 'Максимальный размер изображения запроса (байт)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.http_retries' => 'Повторы HTTP-запросов ИИ',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.thinking_visual_attempts' => 'Визуальные попытки мышления',
-        'microstock.ai.batch_chunk' => 'Размер пакета ИИ',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.batch_chunk' => 'Размер фрагмента пакета ИИ',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.batch_min_files' => 'Минимум файлов в пакете ИИ',
-        'microstock.ai.phase.normal_after' => 'Фаза ИИ: переход в обычный режим после (секунды)',
-        'microstock.ai.phase.grace_after' => 'Фаза ИИ: льготный период после (секунды)',
-        'microstock.ai.stage.vision_grace_after' => 'Стадия ИИ: льготный период vision после (секунды)',
-        'microstock.ai.stage.thinking_grace_after' => 'Стадия ИИ: льготный период мышления после (секунды)',
-        'microstock.ai.stage.thinking_backlog_after' => 'Стадия ИИ: backlog мышления после (секунды)',
-        'microstock.ai.vision_image.delivery' => 'Режим доставки изображения vision',
-        'microstock.ai.vision_image.variant_kind' => 'Тип варианта изображения vision',
-        'microstock.ai.vision_image.signed_url_ttl_minutes' => 'Срок действия подписанного URL vision (минуты)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.phase.normal_after' => 'Фаза ИИ: переход в обычный режим после (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.phase.grace_after' => 'Фаза ИИ: льготный режим после (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.stage.vision_grace_after' => 'Стадия ИИ: льготный режим распознавания после (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.stage.thinking_grace_after' => 'Стадия ИИ: льготный режим мышления после (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.stage.thinking_backlog_after' => 'Стадия ИИ: переход задач мышления в очередь отложенных после (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.vision_image.delivery' => 'Режим доставки изображения распознавания',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.vision_image.variant_kind' => 'Тип варианта изображения распознавания',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.vision_image.signed_url_ttl_minutes' => 'Срок действия подписанного URL распознавания (минут)',
         'microstock.ai.inference_provider_slug' => 'Slug провайдера инференса Microstock',
-        'microstock.ai.vision.connection' => 'AI-подключение для vision (пусто = по умолчанию)',
-        'microstock.ai.thinking.connection' => 'AI-подключение для thinking (пусто = по умолчанию)',
-        'microstock.ai.vision.model' => 'Модель vision',
-        'microstock.ai.vision.free_model' => 'Модель vision бесплатного уровня (пусто = платная модель)',
-        'microstock.ai.vision.timeout' => 'HTTP-таймаут vision (секунды)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.vision.connection' => 'Подключение ИИ для распознавания (пусто = по умолчанию)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.thinking.connection' => 'Подключение ИИ для мышления (пусто = по умолчанию)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.vision.model' => 'Модель распознавания',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.vision.free_model' => 'Модель распознавания бесплатного уровня (пусто = платная модель)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.vision.timeout' => 'HTTP-таймаут распознавания (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.thinking.model' => 'Модель мышления',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.thinking.free_model' => 'Модель мышления бесплатного уровня (пусто = платная модель)',
-        'microstock.ai.thinking.timeout' => 'HTTP-таймаут мышления (секунды)',
-        'microstock.ai.upstream.window_seconds' => 'Окно токен-бюджета upstream (секунды)',
-        'microstock.ai.upstream.token_budget' => 'Токен-бюджет upstream на окно',
-        'microstock.ai.upstream.max_concurrent_vision' => 'Максимум одновременных запросов vision',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.thinking.timeout' => 'HTTP-таймаут мышления (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.upstream.window_seconds' => 'Окно бюджета токенов провайдера (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.upstream.token_budget' => 'Бюджет токенов провайдера на окно',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.upstream.max_concurrent_vision' => 'Максимум одновременных запросов распознавания',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.upstream.max_concurrent_thinking' => 'Максимум одновременных запросов мышления',
-        'microstock.ai.upstream.collection_vision_concurrency' => 'Параллелизм vision коллекций',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.upstream.collection_vision_concurrency' => 'Параллелизм распознавания коллекций',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.upstream.collection_thinking_concurrency' => 'Параллелизм мышления коллекций',
-        'microstock.ai.upstream.solo_vision_concurrency' => 'Параллелизм vision одиночных',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.upstream.solo_vision_concurrency' => 'Параллелизм распознавания одиночных',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.upstream.solo_thinking_concurrency' => 'Параллелизм мышления одиночных',
-        'microstock.ai.upstream.release_after_seconds' => 'Освобождение слота upstream после (секунды)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.upstream.release_after_seconds' => 'Освобождение слота провайдера после (секунд)',
         'microstock.csv_disk' => 'Диск экспорта CSV',
-        // Vtual
-        'vtual.credential_test.http_timeout' => 'HTTP-таймаут проверки учётных данных (секунды)',
-        'vtual.credential_test.twitch_token_skew_seconds' => 'Запас токена Twitch (секунды)',
-        'vtual.credential_test.youtube_probe_channel_id' => 'ID пробного канала YouTube',
+        // vTual
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.credential_test.http_timeout' => 'HTTP-таймаут проверки учётных данных (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.credential_test.twitch_token_skew_seconds' => 'Запас токена Twitch (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.credential_test.youtube_probe_channel_id' => 'ID канала для проверки YouTube',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.credential.failover.enabled' => 'Отказоустойчивость учётных данных включена',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.credential.failover.auth_fail_threshold' => 'Порог ошибок аутентификации для отказоустойчивости',
-        'vtual.credential.failover.skip_minutes' => 'Длительность пропуска при отказоустойчивости (минуты)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.credential.failover.skip_minutes' => 'Длительность пропуска при отказоустойчивости (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.credential.failover.max_retries_per_call' => 'Максимум повторов на вызов при отказоустойчивости',
-        'vtual.http.timeout' => 'HTTP-таймаут (секунды)',
-        'vtual.claim.ttl_hours' => 'Срок действия заявки (часы)',
-        'vtual.claim.verify_cooldown_seconds' => 'Перерыв между проверками заявки (секунды)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.http.timeout' => 'HTTP-таймаут (секунд)',
+        // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
+        'vtual.claim.ttl_hours' => 'Срок действия заявки (часов)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.claim.verify_cooldown_seconds' => 'Перерыв между проверками заявки (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.claim.max_attempts' => 'Максимум попыток проверки заявки',
-        'vtual.claim.block_hours_after_max_attempts' => 'Блокировка заявки после максимума попыток (часы)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.claim.block_hours_after_max_attempts' => 'Блокировка заявки после исчерпания попыток (часов)',
         'vtual.claim.max_pending_per_user' => 'Максимум ожидающих заявок на пользователя',
-        'vtual.claim.accept_anyway_enabled' => 'Принятие заявки в любом случае включено',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.claim.accept_anyway_enabled' => 'Принятие заявки без подтверждения включено',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.claim.discord_verify_enabled' => 'Проверка заявок через Discord включена',
         'vtual.claim.token_prefix' => 'Префикс токена заявки',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.claim.token_bytes' => 'Случайные байты токена заявки',
-        'vtual.channel_claim.ttl_hours' => 'Срок действия заявки на канал (часы)',
-        'vtual.channel_claim.verify_cooldown_seconds' => 'Перерыв между проверками заявки на канал (секунды)',
-        'vtual.channel_claim.max_attempts' => 'Максимум попыток заявки на канал',
-        'vtual.channel_claim.accept_anyway_enabled' => 'Принятие заявки на канал в любом случае включено',
+        // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
+        'vtual.channel_claim.ttl_hours' => 'Срок действия заявки на канал (часов)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.channel_claim.verify_cooldown_seconds' => 'Перерыв между проверками заявки на канал (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.channel_claim.max_attempts' => 'Максимум попыток проверки заявки на канал',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.channel_claim.accept_anyway_enabled' => 'Принятие заявки на канал без подтверждения включено',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.channel_claim.discord_verify_enabled' => 'Проверка заявок на канал через Discord включена',
         'vtual.channel_claim.token_prefix' => 'Префикс токена заявки на канал',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.channel_claim.token_bytes' => 'Случайные байты токена заявки на канал',
         'vtual.channel_pool.threshold' => 'Нижний порог пула каналов',
-        'vtual.channel_pool.max_wait_minutes' => 'Максимальное ожидание пула каналов (минуты)',
-        'vtual.channel_pool.schedule_every_minutes' => 'Интервал расписания пула каналов (минуты)',
-        'vtual.channel_pool.resync_stale_hours' => 'Повторная синхронизация пула каналов после (часы)',
-        'vtual.channel_pool.resync_enqueue_limit' => 'Лимит постановки в очередь ресинхронизации пула каналов',
-        'vtual.channel_pool.flush_lock_seconds' => 'Блокировка сброса пула каналов (секунды)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.channel_pool.max_wait_minutes' => 'Максимальное ожидание пула каналов (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.channel_pool.schedule_every_minutes' => 'Интервал расписания пула каналов (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.channel_pool.resync_stale_hours' => 'Срок устаревания при повторной синхронизации пула каналов (часов)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.channel_pool.resync_enqueue_limit' => 'Лимит постановки в очередь повторной синхронизации пула каналов',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.channel_pool.flush_lock_seconds' => 'Блокировка сброса пула каналов (секунд)',
         'vtual.claim_verify_pool.threshold' => 'Нижний порог пула проверки заявок',
-        'vtual.claim_verify_pool.max_wait_minutes' => 'Максимальное ожидание пула проверки заявок (минуты)',
-        'vtual.claim_verify_pool.flush_lock_seconds' => 'Блокировка сброса пула проверки заявок (секунды)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.claim_verify_pool.max_wait_minutes' => 'Максимальное ожидание пула проверки заявок (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.claim_verify_pool.flush_lock_seconds' => 'Блокировка сброса пула проверки заявок (секунд)',
         'vtual.content_pool.threshold' => 'Нижний порог пула контента',
-        'vtual.content_pool.max_wait_minutes' => 'Максимальное ожидание пула контента (минуты)',
-        'vtual.content_pool.flush_lock_seconds' => 'Блокировка сброса пула контента (секунды)',
-        'vtual.feed_poll.interval_minutes' => 'Интервал опроса ленты (минуты)',
-        'vtual.live_poll.interval_minutes' => 'Интервал опроса live CCV (минуты)',
-        'vtual.websub.lease_seconds' => 'Аренда WebSub (секунды)',
-        'vtual.websub.renew_before_hours' => 'Продление WebSub до истечения (часы)',
-        'vtual.websub.max_body_bytes' => 'Максимальный размер тела уведомления WebSub (байты)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.content_pool.max_wait_minutes' => 'Максимальное ожидание пула контента (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.content_pool.flush_lock_seconds' => 'Блокировка сброса пула контента (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.feed_poll.interval_minutes' => 'Интервал опроса ленты (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.live_poll.interval_minutes' => 'Интервал опроса live CCV (минут)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.websub.lease_seconds' => 'Аренда WebSub (секунд)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.websub.renew_before_hours' => 'Продление WebSub до истечения (часов)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.websub.max_body_bytes' => 'Максимальный размер тела уведомления WebSub (байт)',
         'vtual.landing.event.title' => 'Заголовок события лендинга',
         'vtual.landing.event.starts_at' => 'Время начала события лендинга',
         'vtual.landing.event.body' => 'Текст события лендинга',
         'vtual.content_classification.ai.enabled' => 'Включить ИИ-аудит (классификация контента)',
         'vtual.content_classification.ai.model' => 'Модель ИИ-аудита',
         'vtual.content_classification.ai.max_tokens' => 'Максимум токенов ответа ИИ-аудита',
-        'vtual.content_classification.ai.timeout' => 'Тайм-аут ИИ-аудита (секунды)',
+        // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
+        'vtual.content_classification.ai.timeout' => 'Тайм-аут ИИ-аудита (секунд)',
         'vtual.content_classification.ai.min_confidence' => 'Минимальная достоверность ИИ-аудита',
-        'vtual.content_classification.ai.cache_ttl_hours' => 'Кэш результатов ИИ-аудита (часы)',
-        'vtual.content_classification.ai.connection' => 'AI-подключение аудита (пусто = по умолчанию)',
+        // curated at 2026-09-23T19:19:09+07:00 — ru curation wave: unit labels in genitive plural
+        'vtual.content_classification.ai.cache_ttl_hours' => 'Кэш результатов ИИ-аудита (часов)',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'vtual.content_classification.ai.connection' => 'Подключение ИИ для аудита (пусто = по умолчанию)',
     ],
     'hints' => [
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.mail.from_address' => 'Глобальный адрес отправителя для исходящей почты (транспортные учётные данные остаются в .env).',
-        'platform.payment.default_buyer_phone' => 'Резервный телефон, когда в профиле покупателя нет телефона (требование iPaymu).',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.payment.default_buyer_phone' => 'Резервный телефон, когда в профиле покупателя нет номера (требование iPaymu).',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.frankfurter.timeout' => 'HTTP-таймаут для запросов курсов Frankfurter FX.',
-        'microstock.ai.vision.free_model' => 'Необязательная замена модели бесплатного уровня; пусто наследует платную модель vision.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.vision.free_model' => 'Необязательная замена модели бесплатного уровня; пусто наследует платную модель распознавания.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.thinking.free_model' => 'Необязательная замена модели бесплатного уровня; пусто наследует платную модель мышления.',
-        'microstock.ai.vision.connection' => 'Слаг AI-подключения (Настройки → AI-подключения) для этапа vision; пусто использует подключение по умолчанию.',
-        'microstock.ai.thinking.connection' => 'Слаг AI-подключения (Настройки → AI-подключения) для этапа thinking; пусто использует подключение по умолчанию.',
-        'microstock.ai.upstream.window_seconds' => 'Эталонное окно для токен-бюджета upstream (принудительное ограничение — через пределы параллелизма).',
+        // curated at 2026-09-23T19:29:12+07:00 — ru curation wave: settled terms
+        'microstock.ai.vision.connection' => 'Слаг ИИ-подключения (Настройки → Подключения ИИ) для этапа распознавания; пусто использует подключение по умолчанию.',
+        // curated at 2026-09-23T19:29:12+07:00 — ru curation wave: settled terms
+        'microstock.ai.thinking.connection' => 'Слаг ИИ-подключения (Настройки → Подключения ИИ) для этапа мышления; пусто использует подключение по умолчанию.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.upstream.window_seconds' => 'Эталонное окно бюджета токенов провайдера (ограничение — через пределы параллелизма).',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.credential_test.youtube_probe_channel_id' => 'Публичный ID канала для проверочных тестов учётных данных YouTube Data API.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.jwt.refresh_skew' => 'Обновлять токен доступа за столько минут до его истечения.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.notifications.delivery' => 'Режим реального времени использует WebSockets и требует настроенных учётных данных PUSHER_* / broadcast; иначе колокольчик переключается на HTTP-опрос.',
-        'platform.payment.channel_fee_bearer' => 'Кто берёт на себя комиссии платёжных каналов: продавец или покупатель.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.payment.channel_fee_bearer' => 'Кто берёт на себя комиссию платёжного канала: продавец или покупатель.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'platform.inference.default_provider_slug' => 'Резервный провайдер, если в запросе не указан другой.',
-        'platform.inference.default_input_per_million_usd' => 'Временная ставка биллинга для зарегистрированных моделей без каталожных цен.',
-        'platform.inference.unknown_input_per_million_usd' => 'Временная ставка биллинга для незарегистрированных моделей.',
-        'microstock.ai.phase.normal_after' => 'Секунды до перехода ресурса из ускоренного режима в обычную обработку.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.inference.default_input_per_million_usd' => 'Временная ставка оплаты для зарегистрированных моделей без каталожных цен.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'platform.inference.unknown_input_per_million_usd' => 'Временная ставка оплаты для незарегистрированных моделей.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.phase.normal_after' => 'Секунды до перехода актива из ускоренной обработки в обычную.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.phase.grace_after' => 'Секунды до начала обработки льготного периода.',
-        'microstock.ai.stage.vision_grace_after' => 'Секунды до перехода стадии vision в льготный режим.',
+        // curated at 2026-09-23T19:29:12+07:00 — ru curation wave: settled terms
+        'microstock.ai.stage.vision_grace_after' => 'Секунды до перехода стадии распознавания в льготный режим.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'microstock.ai.stage.thinking_grace_after' => 'Секунды до перехода стадии мышления в льготный режим.',
-        'microstock.ai.stage.thinking_backlog_after' => 'Секунды до перемещения заданий мышления в очередь backlog.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
+        'microstock.ai.stage.thinking_backlog_after' => 'Секунды до перемещения заданий мышления в очередь отложенных задач.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.credential.failover.enabled' => 'Переключаться на следующие учётные данные после повторных ошибок аутентификации.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.claim.accept_anyway_enabled' => 'Разрешить пользователям принимать заявку, даже когда проверка не даёт однозначного результата.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.claim.discord_verify_enabled' => 'Разрешить пользователям подтверждать заявки на сирот по совпадению связанных с Discord аккаунтов YouTube/Twitch.',
+        // curated at 2026-09-23T19:26:43+07:00 — ru curation wave: settled terms
         'vtual.channel_claim.discord_verify_enabled' => 'Разрешить владельцам профилей подтверждать заявки на привязку каналов по совпадению связанных с Discord аккаунтов YouTube/Twitch.',
         'identity.discord.connections_snapshot_max_age_minutes' => 'Как долго сохранённые снимки подключений Discord считаются достоверными, прежде чем промах проверки вызовет живое обновление через Discord API.',
     ],

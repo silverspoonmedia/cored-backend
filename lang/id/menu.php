@@ -6,10 +6,12 @@
  */
 return [
     'dashboard' => 'Dasbor',
-    'users' => 'Pengelolaan pengguna',
+    // curated at 2026-09-21T17:00:09+07:00 — id curation wave
+    'users' => 'Manajemen pengguna',
     'navigation' => 'Navigasi',
     'menus' => 'Daftar menu',
-    'menus_trashed' => 'Menu di sampah',
+    // curated at 2026-09-21T17:00:09+07:00 — id curation wave
+    'menus_trashed' => 'Menu di tempat sampah',
     'notifications' => 'Notifikasi',
     'profile' => 'Profil',
     'password' => 'Ubah kata sandi',

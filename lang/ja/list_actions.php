@@ -23,9 +23,11 @@ return [
         'delete_credential_title' => '認証情報を削除',
         'delete_platform_credential' => 'この認証情報を完全に削除しますか？',
         'revoke_credential_title' => '認証情報を失効',
-        'revoke_credential' => 'この認証情報を失効させますか？編集してテストするまでワーカーは使用しません。',
+        // curated at 2026-09-21T17:25:29+07:00 — ja curation wave
+        'revoke_credential' => 'この認証情報を失効させますか？編集して再テストするまで、ワーカーはこの認証情報を使用しません。',
         'delete_ai_connection_title' => '接続を削除',
-        'delete_ai_connection' => 'この AI 接続を完全に削除しますか？このスラッグに紐づくコンシューマーは、別の接続を割り当てるまでエンドポイントを失います。',
+        // curated at 2026-09-21T17:25:29+07:00 — ja curation wave
+        'delete_ai_connection' => 'この AI 接続を完全に削除しますか？このスラッグに紐づいているコンシューマーは、別の接続を紐づけるまでエンドポイントを利用できなくなります。',
         'remove_blocklist_title' => 'エントリを削除',
         'remove_blocklist' => 'このハッシュをブロックリストから削除しますか？同じチェックサムのファイルは再び公開共有できるようになります。',
     ],

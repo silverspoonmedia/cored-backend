@@ -11,7 +11,8 @@ return [
         'created' => '決済ゲートウェイを作成しました。',
         'updated' => '決済ゲートウェイを更新しました。',
         'deleted' => '決済ゲートウェイを削除しました。',
-        'inactive' => '選択した決済ゲートウェイは有効ではありません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'inactive' => '選択した決済ゲートウェイは有効になっていません。',
         'none_active' => '有効な決済ゲートウェイが設定されていません。',
     ],
 
@@ -41,12 +42,15 @@ return [
     ],
 
     'channels' => [
-        'list' => '決済チャネルを取得しました。',
-        'show' => '決済チャネルを取得しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'list' => '決済チャネルを読み込みました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'show' => '決済チャネルを読み込みました。',
         'updated' => '決済チャネルを更新しました。',
         'checkout_created' => '支払い手順を作成しました。',
         'checkout_failed' => 'このチャネルのすべての決済ルートが失敗しました。',
-        'route_updated' => '決済チャネルルートを更新しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'route_updated' => '決済チャネルのルートを更新しました。',
         'not_found' => '決済チャネルが見つかりません。',
         'not_available' => '選択した決済チャネルは利用できません。',
         'unsupported_gateway' => 'このチャネル用の決済ゲートウェイが設定されていません。',
@@ -62,40 +66,64 @@ return [
         'refund_ok' => '返金を処理しました。',
         'approve_ok' => 'トランザクションを承認しました。',
         'deny_ok' => 'トランザクションを拒否しました。',
-        'sync_ok' => '請求書ステータスをMidtransと同期しました。',
-        'invoice_not_midtrans' => '請求書はMidtransゲートウェイにリンクされていません。',
-        'invoice_not_payable' => '支払いを開始するには請求書がpendingまたはchallengeである必要があります。',
-        'external_sync_failed' => 'チェックアウト開始前にMidtransの支払いステータスを確認できませんでした。',
-        'webhook_invalid_json' => '無効なJSONボディです。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'sync_ok' => '請求書のステータスを Midtrans と同期しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'invoice_not_midtrans' => '請求書は Midtrans ゲートウェイに紐づいていません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'invoice_not_payable' => '支払いを開始するには、請求書のステータスが pending または challenge である必要があります。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'external_sync_failed' => 'チェックアウトを開始する前に Midtrans の支払いステータスを確認できませんでした。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'webhook_invalid_json' => 'JSON ボディが無効です。',
         'webhook_invalid_signature' => '無効な通知署名です。',
-        'webhook_missing_order' => '通知にorder_idがありません。',
-        'webhook_ack_no_status' => '通知を受け付けました（ステータスを解決できませんでした）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'webhook_missing_order' => '通知に order_id がありません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'webhook_ack_no_status' => '通知を受け付けました（ステータスを特定できませんでした）。',
         'webhook_orphan' => '通知を受け付けました（一致する請求書がありません）。',
         'webhook_ok' => '通知を処理しました。',
-        'webhook_ping' => 'Midtrans webhook URLに到達可能です（通知にはPOSTを使用してください）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'webhook_ping' => 'Midtrans の webhook URL に到達可能です（通知には POST を使用してください）。',
         'webhook_subscription_ack' => 'サブスクリプション通知を受け付けました。',
-        'open_api_public_key_missing' => 'Midtrans Open API公開鍵が設定されていません。',
-        'open_api_signature_invalid' => 'Open API通知のX-SIGNATUREが無効または検証できません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'open_api_public_key_missing' => 'Midtrans の Open API 公開鍵が設定されていません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'open_api_signature_invalid' => 'Open API 通知の X-SIGNATURE が無効か、検証できません。',
     ],
 
     'ipaymu' => [
-        'snap_created' => 'iPaymuホスト型チェックアウトセッションを作成しました。',
-        'charge_created' => 'iPaymu直接支払いを作成しました。',
-        'status_retrieved' => 'iPaymuからトランザクションステータスを取得しました。',
-        'sync_ok' => '請求書ステータスをiPaymuと同期しました。',
-        'invoice_not_ipaymu' => '請求書はiPaymuゲートウェイにリンクされていません。',
-        'invoice_not_payable' => '支払いを開始するには請求書がpendingまたはchallengeである必要があります。',
-        'external_sync_failed' => 'チェックアウト開始前にiPaymuの支払いステータスを確認できませんでした。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'snap_created' => 'iPaymu のホスト型チェックアウトセッションを作成しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'charge_created' => 'iPaymu の直接支払いを作成しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'status_retrieved' => 'iPaymu からトランザクションのステータスを取得しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'sync_ok' => '請求書のステータスを iPaymu と同期しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'invoice_not_ipaymu' => '請求書は iPaymu ゲートウェイに紐づいていません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'invoice_not_payable' => '支払いを開始するには、請求書のステータスが pending または challenge である必要があります。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'external_sync_failed' => 'チェックアウトを開始する前に iPaymu の支払いステータスを確認できませんでした。',
         'active_payment_exists' => 'この請求書の支払いセッションが進行中です。新しいチェックアウトを開始する前に完了またはキャンセルしてください。',
-        'invoice_not_found' => 'このorder idのiPaymu請求書が見つかりません。',
-        'missing_transaction_id' => '請求書にまだiPaymuトランザクションIDがありません。',
-        'buyer_required' => 'リクエスト、請求対象、またはログイン中のユーザープロフィールから購入者情報を解決できませんでした。',
-        'webhook_invalid_json' => '無効なJSONボディです。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'invoice_not_found' => 'この order id の iPaymu 請求書が見つかりません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'missing_transaction_id' => '請求書にはまだ iPaymu のトランザクション ID がありません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'buyer_required' => 'リクエスト、請求対象、またはログイン中のユーザープロフィールから購入者情報を取得できませんでした。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'webhook_invalid_json' => 'JSON ボディが無効です。',
         'webhook_invalid_signature' => '無効な通知署名です。',
-        'webhook_invalid_va' => 'VAヘッダーが設定されたiPaymu VAと一致しません。',
-        'webhook_ack_no_status' => '通知を受け付けました（ステータスを解決できませんでした）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'webhook_invalid_va' => 'VA ヘッダーが設定済みの iPaymu VA と一致しません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'webhook_ack_no_status' => '通知を受け付けました（ステータスを特定できませんでした）。',
         'webhook_orphan' => '通知を受け付けました（一致する請求書がありません）。',
         'webhook_ok' => '通知を処理しました。',
-        'webhook_ping' => 'iPaymu webhook URLに到達可能です（通知にはPOSTを使用してください）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'webhook_ping' => 'iPaymu の webhook URL に到達可能です（通知には POST を使用してください）。',
     ],
 ];

@@ -25,7 +25,8 @@ return [
             'display_name' => 'Отображаемое имя',
             'slug' => 'Слаг',
             'channels' => 'Каналы',
-            'created_at' => 'Создан',
+            // curated at 2026-09-23T20:26:05+07:00 — ru curation wave: date labels as nouns
+            'created_at' => 'Дата создания',
             'actions' => 'Действия',
         ],
     ],

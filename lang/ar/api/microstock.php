@@ -15,7 +15,8 @@ return [
     'credential_saved' => 'تم حفظ بيانات الاعتماد.',
     'credential_deleted' => 'تم حذف بيانات الاعتماد.',
     'credential_not_found' => 'لم يتم العثور على بيانات الاعتماد.',
-    'credential_invalid' => 'السوق والتسمية مطلوبان.',
+    // curated at 2026-09-22T20:32:26+07:00 — ar curation wave
+    'credential_invalid' => 'يجب تحديد السوق والاسم.',
     'credential_secret_required' => 'سر بيانات الاعتماد مطلوب.',
     'workspace_not_activated' => 'لم يتم تفعيل Microstock بعد. سجّل مساحة عمل Microstock المجانية من صفحة الخدمات.',
     'slot_limit' => 'تم بلوغ حد مساحات عمل Microstock (:used/:limit). اشترِ خانة إضافية لإنشاء المزيد.',
@@ -43,9 +44,11 @@ return [
         'analysis_debit' => 'تحليل الذكاء الاصطناعي — :file',
         'analysis_debit_with_folder' => 'تحليل الذكاء الاصطناعي — :file (:folder)',
         'analysis_debit_fallback' => 'تحليل الذكاء الاصطناعي',
-        'adjustment' => 'تسوية الرصيد',
+        // curated at 2026-09-22T20:32:26+07:00 — ar curation wave
+        'adjustment' => 'تعديل الرصيد',
     ],
     'admin_billing_overview_loaded' => 'تم تحميل نظرة عامة على فوترة المنصة.',
     'admin_usage_events_loaded' => 'تم تحميل أحداث استخدام المنصة.',
-    'admin_billing_forbidden' => 'غير مسموح لك بمشاهدة فواتير النظام الأساسي.',
+    // curated at 2026-09-22T20:32:26+07:00 — ar curation wave
+    'admin_billing_forbidden' => 'غير مسموح لك بمشاهدة فوترة المنصة.',
 ];

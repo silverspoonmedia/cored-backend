@@ -3,7 +3,8 @@
 return [
     'list_success' => '文章已加载。',
     'show_success' => '文章已加载。',
-    'trashed_success' => '已删除文章已加载。',
+    // curated at 2026-09-22T12:19:24+07:00 — zh_CN curation wave
+    'trashed_success' => '回收站中的文章已加载。',
     'created' => '文章已创建。',
     'updated' => '文章已更新。',
     'deleted' => '文章已删除。',

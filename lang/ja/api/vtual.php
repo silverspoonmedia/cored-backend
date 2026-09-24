@@ -6,18 +6,21 @@ return [
         'owned_list_success' => '所有している vTuber プロフィールを読み込みました。',
         'show_success' => 'クリエイターのプロフィールを読み込みました。',
         'created' => 'クリエイターを作成しました。',
-        'orphan_created' => '所有者なしのクリエイターを作成しました（クレーム可能）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'orphan_created' => 'オーナーなしのクリエイターを作成しました（申請可能）。',
         'updated' => 'クリエイターを更新しました。',
         'archived' => 'クリエイターをアーカイブしました。',
         'name_required' => '表示名は必須です。',
         'slug_taken' => 'このクリエイタースラッグは既に使用されています。',
         'not_found' => 'クリエイタープロフィールが見つかりません。',
-        'self_create_disabled' => 'プロフィールの直接作成は無効です。既存プロフィールをクレームするか、スタッフに作成を依頼してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'self_create_disabled' => 'プロフィールの直接作成は無効です。既存のプロフィールを申請するか、スタッフに作成を依頼してください。',
     ],
     'orphan' => [
         'list_success' => 'オーファンクリエイター一覧を読み込みました。',
         'show_success' => 'オーファンクリエイターを読み込みました。',
-        'not_claimable' => 'このプロフィールはオーファンではなくなりました（クレーム済みまたは非アクティブ）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'not_claimable' => 'このプロフィールはオーファンではなくなりました（申請済みまたは非アクティブ）。',
     ],
     'vtuber' => [
         'show_success' => 'vTuber プロフィールを読み込みました。',
@@ -43,34 +46,61 @@ return [
         'channel_clash' => '両プロフィールに同じプラットフォームチャンネル (:external_id) があります。先に一方をアーカイブ/削除してください。',
     ],
     'claim' => [
-        'claimable_success' => 'クレーム可能なクリエイターを読み込みました。',
-        'list_success' => 'あなたのクレームを読み込みました。',
-        'show_success' => 'クレームを読み込みました。',
-        'started' => 'クレームを開始しました。チャンネルの About/bio にトークンを入力して、検証してください。',
-        'verified' => 'クレームが検証されました。あなたが所有者になりました。',
-        'verify_queued' => '検証をキューに追加しました。バッチの準備が整ったら実行されます（最大50件の保留または待機ウィンドウ後）。',
-        'verify_already_queued' => 'このクレームの検証は既にキューに入っています。',
-        'blocked' => '現在このプロフィールをクレームできません。ブロック期間終了後に再試行してください。',
-        'cancelled' => 'クレームをキャンセルしました。',
-        'accepted_anyway' => 'bio の確認なしでクレームを承認しました（スタッフ）。',
-        'not_claimable' => 'このクリエイターはクレームできません（オーナーあり、または非アクティブ）。',
-        'channel_mismatch' => '証明チャンネルはクレーム対象クリエイターに属している必要があります。',
-        'token_not_found' => 'チャンネル説明/bio にクレームトークンが見つかりません。トークンを追加して再試行してください。',
-        'not_pending' => 'このクレームは pending ではありません。',
-        'already_owned' => 'このクリエイターには既にオーナーがいます。クレームを完了できません。',
-        'expired' => 'このクレームは期限切れです。新しいクレームを開始してください。',
-        'max_attempts' => '検証試行が多すぎます。新しいクレームを開始するかスタッフに連絡してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'claimable_success' => '申請可能なクリエイターを読み込みました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'list_success' => 'あなたの申請を読み込みました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'show_success' => '申請を読み込みました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'started' => '申請を開始しました。トークンをチャンネルの概要欄（About/bio）に入れてから検証してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'verified' => '申請が承認されました。あなたがオーナーです。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'verify_queued' => '検証をキューに追加しました。バッチの準備が整い次第実行されます（保留が最大 50 件に達するか、待機時間の経過後）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'verify_already_queued' => 'この申請の検証は既にキューに入っています。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'blocked' => '現在このプロフィールは申請できません。ブロック期間の終了後に再試行してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'cancelled' => '申請を取り消しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'accepted_anyway' => 'bio の確認なしで申請を承認しました（スタッフ）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'not_claimable' => 'このクリエイターは申請できません（オーナーがいるか、非アクティブです）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'channel_mismatch' => '証明チャンネルは申請対象のクリエイターに属している必要があります。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'token_not_found' => 'チャンネルの説明欄（bio）に申請トークンが見つかりません。トークンを追加して再試行してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'not_pending' => 'この申請は保留中ではありません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'already_owned' => 'このクリエイターには既にオーナーがいます。申請を完了できません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'expired' => 'この申請は期限切れです。新しい申請を開始してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'max_attempts' => '検証の試行回数が上限に達しました。新しい申請を開始するか、スタッフに連絡してください。',
         'cooldown' => ':seconds 秒待ってから再度検証してください。',
-        'accept_anyway_disabled' => 'この環境では Accept Anyway が無効です。',
-        'discord_verify_disabled' => 'この環境ではDiscordクレーム検証が無効です。',
-        'discord_not_connected' => 'Discord検証を使う前に、連携アカウントからDiscordを連携してください。',
-        'discord_connections_failed' => 'Discordのリンクアカウントを読み込めませんでした。Discordの再接続をお試しください。',
-        'discord_no_match' => 'Discordプロフィールに一致する認証済みYouTubeまたはTwitchアカウントが見つかりませんでした。',
-        'discord_verify_unsupported_platform' => 'このプラットフォームではDiscord検証は利用できません。',
-        'channel_missing' => 'クレームの証明に使うチャンネルが見つかりません。',
-        'max_pending' => '保留中のクレームが既に :max 件あります。1 件キャンセルするか検証を完了してください。',
-        'pending_success' => '保留中のクレームを読み込みました。',
-        'superseded' => 'このクリエイターの別クレームが既に完了したため、このクレームは閉じられました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'accept_anyway_disabled' => 'この環境では「確認なしで承認」は無効です。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'discord_verify_disabled' => 'この環境では Discord による申請の検証は無効です。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'discord_not_connected' => 'Discord による検証を使う前に、連携アカウントから Discord を連携してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'discord_connections_failed' => 'Discord のリンクアカウントを読み込めませんでした。Discord の再接続をお試しください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'discord_no_match' => 'Discord プロフィールに、一致する認証済みの YouTube または Twitch アカウントが見つかりませんでした。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'discord_verify_unsupported_platform' => 'このプラットフォームでは Discord による検証は利用できません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'channel_missing' => '申請に使う証明チャンネルが見つかりません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'max_pending' => '保留中の申請が既に :max 件あります。1 件取り消すか、検証を完了してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'pending_success' => '保留中の申請を読み込みました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'superseded' => 'このクリエイターの別の申請が既に完了したため、この申請は終了しました。',
     ],
     'management' => [
         'list_success' => 'マネジメント一覧を読み込みました。',
@@ -86,10 +116,12 @@ return [
         'not_found' => 'マネジメントプロフィールが見つからないか、利用できません。',
         'members_list_success' => 'マネジメントメンバーを読み込みました。',
         'member_added' => 'メンバーをマネジメントに追加しました。',
-        'member_updated' => 'メンバーの役割を更新しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'member_updated' => 'メンバーのロールを更新しました。',
         'member_already_exists' => 'このユーザーは既にマネジメントのメンバーです。',
         'member_not_found' => 'マネジメントメンバーが見つかりません。',
-        'role_invalid' => 'メンバーの役割またはユーザーが無効です。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'role_invalid' => 'メンバーのロールまたはユーザーが無効です。',
         'cannot_edit_self' => '自分のメンバーシップは変更・削除できません。',
         'last_owner' => 'マネジメントには少なくとも1人のオーナーが必要です。',
         'invites_list_success' => 'マネジメント招待を読み込みました。',
@@ -102,9 +134,11 @@ return [
         'invite_expired' => 'この招待は期限切れまたは無効です。',
         'invite_wrong_account' => 'この招待は別のアカウント宛てです。',
         'invite_user_not_found' => 'このメールアドレスの登録ユーザーが見つかりません。',
-        'owner_invite_not_claimable' => 'このマネジメントには既にオーナーがいます。オーナー招待は未承渡しの間のみ可能です。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'owner_invite_not_claimable' => 'このマネジメントには既にオーナーがいます。オーナー招待は、まだオーナーがいない間のみ利用できます。',
         'creator_invite_mode_invalid' => 'クリエイター招待モードは "existing" または "new" を指定してください。',
-        'creator_invite_not_owner' => '招待されたアカウントは選択された vTuber プロフィールの所有者ではありません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'creator_invite_not_owner' => '招待されたアカウントは、選択された vTuber プロフィールのオーナーではありません。',
         'creator_already_linked' => 'その vTuber プロフィールは既にこのマネジメントに紐付いています。',
         'creator_invite_name_required' => '新しい vTuber プロフィールの表示名は必須です。',
         'events_list_success' => 'マネジメントイベントを読み込みました。',
@@ -118,15 +152,18 @@ return [
         'creator_invite_subject' => ':management からの vTuber プロフィール招待',
         'creator_invite_line' => 'vTuber プロフィールを :management に紐付けるよう招待されました。',
         'invite_greeting' => 'こんにちは！',
-        'invite_line' => ':management から :role として招待されました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'invite_line' => ':management に :role として参加するよう招待されました。',
         'invite_action' => '招待を確認する',
-        'invite_expiry' => 'この招待は :date に期限切れになります。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'invite_expiry' => 'この招待は :date に有効期限が切れます。',
     ],
     'channel' => [
         'list_success' => 'チャンネル一覧を読み込みました。',
         'show_success' => 'チャンネルの詳細を読み込みました。',
         'created' => 'チャンネルを登録し、検証しました。',
-        'seeded' => 'チャンネルを解決して登録しました（スタッフ投入・bio クレーム不要）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'seeded' => 'チャンネルを解決して登録しました（スタッフによる投入で、bio での申請は不要）。',
         'registered_pending' => 'チャンネルをバッチ解決キューに追加しました（即時 API 呼び出しなし）。',
         'refreshed' => 'チャンネルプロフィールをプラットフォームから更新・検証しました。',
         'refresh_queued' => 'チャンネル更新をキューに追加しました（他の保留中リクエストとまとめて処理）。',
@@ -136,8 +173,10 @@ return [
         'not_pending_delete' => 'この操作で削除できるのは保留チャンネルのみです。',
         'restored' => 'チャンネルをアクティブに復元しました。',
         'promoted' => 'チャンネルを公開に昇格しました。プロフィール取得とコンテンツバックフィルをキューに追加しました。',
-        'not_private_discovered' => '昇格できるのは非公開の発見チャンネルのみです。',
-        'promote_not_discovered' => 'この操作で昇格できるのはDiscord発見チャンネルのみです。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'not_private_discovered' => '昇格できるのは、非公開で検出されたチャンネルのみです。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'promote_not_discovered' => 'この操作で昇格できるのは、Discord で検出されたチャンネルのみです。',
         'promote_unsupported_platform' => 'このプラットフォームでは公開への昇格に対応していません。',
         'not_archived' => 'チャンネルはアーカイブ状態ではありません。',
         'lifecycle_cooldown' => 'このチャンネルを再度アーカイブまたは復元するまで :seconds 秒お待ちください。',
@@ -152,27 +191,44 @@ return [
         'profile_invalid' => 'チャンネルプロフィールを解析できません。プラットフォーム ID、@ハンドル/ログイン、またはプロフィール URL を指定してください。',
         'profile_platform_mismatch' => 'このプロフィール URL は別のプラットフォームのものです。プラットフォームを切り替えるか、一致するプロフィールを入力してください。',
         'profile_not_found' => 'このプロフィールに一致するチャンネルがプラットフォーム上にありません。',
-        'profile_unsupported_platform' => 'このプラットフォームではプロフィール解決に対応していません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'profile_unsupported_platform' => 'このプラットフォームではプロフィールの解決に対応していません。',
     ],
     'channel_claim' => [
-        'list_success' => 'チャンネルクレームを読み込みました。',
-        'show_success' => 'チャンネルクレームを読み込みました。',
-        'started' => 'チャンネルクレームを開始しました。トークンを About/bio に入れ、検証してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'list_success' => 'チャンネル申請を読み込みました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'show_success' => 'チャンネル申請を読み込みました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'started' => 'チャンネル申請を開始しました。トークンをチャンネルの概要欄（About/bio）に入れてから検証してください。',
         'verified' => 'チャンネルを検証し、このプロフィールに紐付けました。',
-        'cancelled' => 'チャンネルクレームを取り消しました。',
-        'accepted_anyway' => 'bio 確認なしでチャンネルを承認しました（スタッフ）。',
-        'token_not_found' => 'チャンネル説明/bio にクレームトークンが見つかりません。トークンを追加して再試行してください。',
-        'not_pending' => 'このチャンネルクレームは保留中ではありません。',
-        'expired' => 'このチャンネルクレームは期限切れです。新しく開始してください。',
-        'max_attempts' => '検証試行が多すぎます。新しいクレームを開始するかスタッフに連絡してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'cancelled' => 'チャンネル申請を取り消しました。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'accepted_anyway' => 'bio の確認なしでチャンネルを承認しました（スタッフ）。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'token_not_found' => 'チャンネルの説明欄（bio）に申請トークンが見つかりません。トークンを追加して再試行してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'not_pending' => 'このチャンネル申請は保留中ではありません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'expired' => 'このチャンネル申請は期限切れです。新しい申請を開始してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'max_attempts' => '検証の試行回数が上限に達しました。新しい申請を開始するか、スタッフに連絡してください。',
         'cooldown' => '再検証まで :seconds 秒待ってください。',
-        'accept_anyway_disabled' => 'この環境では Accept Anyway が無効です。',
-        'pending_other' => '別のユーザーが既にこのプラットフォームチャンネルの保留クレームを持っています。',
-        'discord_verify_disabled' => 'チャンネルクレームのDiscord検証は無効です。',
-        'discord_verify_unsupported_platform' => 'このプラットフォームではDiscord検証はサポートされていません。',
-        'discord_not_connected' => '検証前にプロフィール → 連携アカウントでDiscordを接続してください。',
-        'discord_connections_failed' => 'Discord接続を読み込めませんでした。再試行するか、バイオトークン検証を使用してください。',
-        'discord_no_match' => 'このプラットフォームチャンネルと一致する検証済みDiscord接続がありません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'accept_anyway_disabled' => 'この環境では「確認なしで承認」は無効です。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'pending_other' => '別のユーザーが既にこのプラットフォームチャンネルの保留中の申請を持っています。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'discord_verify_disabled' => 'チャンネル申請の Discord 検証は無効です。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'discord_verify_unsupported_platform' => 'このプラットフォームでは Discord 検証はサポートされていません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'discord_not_connected' => '検証する前に、プロフィール → 連携アカウントで Discord を連携してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'discord_connections_failed' => 'Discord の接続を読み込めませんでした。再試行するか、bio トークンによる検証を使用してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'discord_no_match' => 'このプラットフォームチャンネルに一致する検証済みの Discord 接続がありません。',
         'discord_verified' => 'Discordで検証され、このプロフィールにチャンネルが紐づけられました。',
     ],
     'link' => [
@@ -185,13 +241,19 @@ return [
     ],
     'content' => [
         'external_id_required' => 'プラットフォームのコンテンツ ID は必須です。',
-        'appearance_primary_via_set' => 'プライマリホストチャンネルは appearance として追加できません。setPrimary を使ってください。',
-        'appearance_role_invalid' => 'コンテンツ appearance のロールが無効です。',
-        'appearance_platform_mismatch' => 'appearance チャンネルはコンテンツと同じプラットフォームである必要があります。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'appearance_primary_via_set' => 'プライマリホストチャンネルは出演チャンネルとして追加できません。setPrimary を使用してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'appearance_role_invalid' => 'コンテンツの出演ロールが無効です。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'appearance_platform_mismatch' => '出演チャンネルはコンテンツと同じプラットフォームである必要があります。',
         'appearance_already_primary' => 'このチャンネルは既にコンテンツのプライマリホストです。',
-        'appearance_already_attached' => 'このチャンネルは既にコンテンツの appearance としてリンクされています。',
-        'appearance_not_found' => 'このチャンネルのコンテンツ appearance が見つかりません。',
-        'cannot_detach_primary' => 'プライマリホストは取り外せません。先に別のプライマリを設定してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'appearance_already_attached' => 'このチャンネルは既にコンテンツの出演チャンネルとして登録されています。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'appearance_not_found' => 'このチャンネルのコンテンツ出演情報が見つかりません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'cannot_detach_primary' => 'プライマリホストチャンネルは取り外せません。先に別のプライマリを設定してください。',
         'fetch_platform_unsupported' => 'プラットフォーム :platform ではコンテンツ取得はサポートされていません。',
         'fetch_channel_not_active' => 'コンテンツ取得には有効なチャンネルが必要です。',
         'fetch_video_channel_mismatch' => '動画 :video はチャンネル :channel に属していません。',
@@ -211,19 +273,23 @@ return [
         'payload_invalid' => '認証情報のシークレットペイロードが無効です。',
         'payload_missing' => 'この認証情報タイプではシークレット項目 :field が必須です。',
         'payload_unknown_key' => 'シークレット項目 :field はこの認証情報タイプでは許可されていません。',
-        'test_success' => '認証情報のテストに成功しました。有効な認証情報として登録されています。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'test_success' => '認証情報のテストに成功しました。認証情報が有効になりました。',
         'test_missing_secret' => 'このテストに必要なシークレットが不足しています。',
         'test_unsupported' => 'このプラットフォームと認証情報タイプの組み合わせに対応するプローブがありません。',
         'test_not_allowed_status' => '失効した認証情報はテストできません。',
         'test_youtube_ok' => 'YouTube API キーを受け付けました。',
-        'test_youtube_empty' => 'プローブ用チャンネル ID に対して YouTube API がアイテムを返しませんでした。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'test_youtube_empty' => 'プローブ用のチャンネル ID に対して YouTube API がチャンネル情報を返しませんでした。',
         'test_twitch_ok' => 'Twitch アプリトークンを発行し、Helix プローブに成功しました。',
         'test_bearer_ok' => 'Bearer トークンがプラットフォームプローブに受け入れられました。',
         'test_bearer_ok_no_probe' => 'Bearer トークンはあります。このプラットフォームではライブプローブをスキップしました。',
-        'status_active_requires_test' => '認証情報を有効にするには Test を実行してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'status_active_requires_test' => '認証情報を有効にするには「テスト」を実行してください。',
         'revoke_requires_active' => '失効できるのは有効な認証情報のみです。',
         'delete_requires_revoke' => '削除する前にこの認証情報を失効させてください。',
-        'not_active' => '認証情報が有効ではありません。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'not_active' => '認証情報が有効になっていません。',
         'app_token_oauth_only' => 'アプリアクセストークンは oauth_app 認証情報のみ対象です。',
         'app_token_twitch_only' => 'アプリアクセストークンの発行は Twitch のみ実装されています。',
     ],
@@ -239,7 +305,8 @@ return [
         'unsupported_operation' => 'プラットフォーム :platform は操作 :operation をサポートしていません。',
         'platform_disabled' => 'プラットフォーム :platform は無効または利用できません。',
         'platform_unknown' => '不明なプラットフォーム :platform です。',
-        'no_active_credential' => 'プラットフォーム :platform に有効な認証情報がありません。作成して Test してください。',
+        // curated at 2026-09-21T17:32:30+07:00 — ja curation wave
+        'no_active_credential' => 'プラットフォーム :platform に有効な認証情報がありません。作成してテストしてください。',
         'credential_required' => 'プラットフォームクライアントに認証情報がバインドされていません。',
         'missing_api_key' => 'YouTube 認証情報に api_key がありません。',
         'missing_client_id' => 'Twitch 認証情報に client_id がありません。',
