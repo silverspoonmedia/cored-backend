@@ -1,18 +1,22 @@
 name: CI
 
-# The localization guards are cross-repo by design: they compare the backend packs
-# (`lang/{locale}/**`, `lang/{locale}.json`) with the SPA packs
-# (`monolith-vue-workers/src/i18n/locales/*.json`). That means this workflow has to
-# check out **two** repositories, and the sibling has to land at
-# `../monolith-vue-workers` relative to this one — that is the path the guards resolve
-# (`locale_scan_spa_root()`), and the path `LocaleGuardTest` asserts against.
+# Localization gate. This workflow runs only the checks that need **one** repo, so it
+# carries no credentials: no cross-repo token, no sibling checkout.
 #
-# Both repos are private. `GITHUB_TOKEN` is scoped to the repo running the workflow and
-# cannot read the sibling, so the sibling checkout (and the Composer VCS install of
-# `silverspoonmedia/pdf-tools`) needs a token with read access to the org's repos.
-# Set `SPA_REPO_TOKEN` in repository secrets; it falls back to `GITHUB_TOKEN` so the
-# workflow still runs (and fails loudly on the checkout, not silently on the guards)
-# when the secret is absent.
+# An earlier version checked out `monolith-vue-workers` as a sibling so the four
+# cross-repo guards (`locale-prose-scan`, `locale-rawkey-scan`, `locale-pack-parity`,
+# `locale-glossary-scan`) could run here too. It never worked: the sibling is private,
+# `GITHUB_TOKEN` is scoped to the repo running the workflow, and the checkout step
+# failed `Not Found` before any test executed. Reading the sibling needs a fine-grained
+# PAT, and the guards still are not the whole story — see the coverage table in
+# `docs/platform/localization.md`. Those four now run from a machine that has both
+# repos, via `php artisan test --filter=Locale`.
+#
+# What runs here is the sibling-free half: key/placeholder parity across locales,
+# literal call-site resolution, the flat pack against its PHP owners, and the
+# runtime-assembled keys. `LocaleGuardTest` reports the four cross-repo guards as
+# skipped when the sibling is absent, so a green run cannot be mistaken for "all six
+# guards ran".
 
 on:
   push:
@@ -21,57 +25,74 @@ on:
 
 jobs:
   locale:
-    name: Localization guards
+    name: Localization guards (sibling-free)
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout backend
-        uses: actions/checkout@v4
-        with:
-          path: monolith
+    # `composer install` is not a passive download here: `post-autoload-dump` runs
+    # `artisan package:discover`, which boots every service provider. One of them,
+    # `SettingsServiceProvider::boot()`, calls `Schema::hasTable('system_settings')`.
+    # With no `.env`, `config/database.php` defaults to `mysql` and the runner has no
+    # MySQL, so the install step fails before a single test runs. These variables are
+    # real environment variables, and Laravel's Dotenv does not overwrite them, so they
+    # answer `hasTable()` with `false` over an in-memory database and need no service.
+    env:
+      APP_KEY: 'base64:2fl+KtvkdphvQyEfmNqD2aE7nKj8vR3xW5yZ1aB4cD8='
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      SESSION_DRIVER: array
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+      # Collision truncates test names and finding messages to the terminal width, and
+      # the runner's default is 80 columns — the log then reads `file_get_contents(/ho…`
+      # instead of the path that failed. This gate exists to produce readable findings.
+      COLUMNS: '200'
 
-      - name: Checkout SPA sibling (required by the cross-repo guards)
-        uses: actions/checkout@v4
-        with:
-          repository: silverspoonmedia/monolith-vue-workers
-          path: monolith-vue-workers
-          token: ${{ secrets.SPA_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          # 8.4, not 8.3: `composer.json` only asks for `^8.3`, but the VCS
+          # dependency `silverspoonmedia/pdf-tools` (dev-main) requires `^8.4`, and
+          # `composer install` refuses to resolve the lock file on 8.3. The local
+          # toolchain is 8.4.20, so this matches the machine the lock was built on.
+          php-version: '8.4'
           extensions: mbstring, intl, pdo_sqlite, sqlite3, bcmath, gd, zip, exif, curl
           coverage: none
 
       - name: Cache Composer packages
         uses: actions/cache@v4
         with:
-          path: monolith/vendor
-          key: composer-${{ hashFiles('monolith/composer.lock') }}
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
 
       - name: Install Composer dependencies
-        working-directory: monolith
-        env:
-          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.SPA_REPO_TOKEN || secrets.GITHUB_TOKEN }}"}}'
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      # `LocaleGuardTest` shells out to every guard in `scripts/` and asserts exit 0, so
-      # this one command is the gate. `LocaleParityTest` and `LocaleUsageTest` run under
-      # the same filter.
+      # This repo does not commit `.env` (gitignored) and CI never creates one, so
+      # `LoadEnvironmentVariables` asks phpdotenv for a missing file on every test that
+      # boots the app. `safeLoad()` swallows the failure, but PHPUnit still reports the
+      # suppressed read as a warning — 36 of them, one per test, which buries the four
+      # `skipped` cross-repo guards in noise. An empty file is enough: every value the
+      # suite needs comes from phpunit.xml or the job `env:` above, and Laravel's dotenv
+      # repository is immutable, so a real `.env` could not override them anyway.
+      - name: Create empty .env
+        run: php -r "file_put_contents('.env', '');"
+
+      # `LocaleGuardTest` shells out to each guard in `scripts/` and asserts exit 0.
+      # The four cross-repo ones report as skipped here rather than passing silently.
       - name: Localization tests (incl. guard gate)
-        working-directory: monolith
         run: php artisan test --filter=Locale
 
-      # Run the guards directly as well: their output names the offending key and
-      # locale, which the aggregated PHPUnit failure does not surface in the job log.
+      # Run the sibling-free guards directly as well: their output names the offending
+      # key and locale, which the aggregated PHPUnit failure does not surface in the
+      # job log. `locale-dynamic-key-check.php` needs `vendor/autoload.php` (it reflects
+      # over the `NotificationType` enum and `ErrorLog` constants), which the install
+      # step above provides.
       - name: Guards (direct run, for readable findings)
-        working-directory: monolith
         run: |
-          php scripts/locale-prose-scan.php
-          php scripts/locale-rawkey-scan.php
-          php scripts/locale-dynamic-key-check.php
-          php scripts/locale-pack-parity.php
           php scripts/locale-flat-pack-parity.php
-          php scripts/locale-glossary-scan.php
+          php scripts/locale-dynamic-key-check.php

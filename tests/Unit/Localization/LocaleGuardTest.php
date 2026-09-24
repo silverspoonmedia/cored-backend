@@ -28,9 +28,11 @@ use Tests\TestCase;
  * logic — one implementation, two entry points.
  *
  * The cross-repo guards need the sibling `monolith-vue-workers` checkout. When it is
- * absent the test does not silently pass: it asserts the guard *fails loudly*. That is
- * the "green by absence" bug this suite was written to close, and asserting it here is
- * what keeps it closed.
+ * absent the test does not silently pass: it asserts the guard *fails loudly*, then
+ * marks the case skipped, so the absence shows up in the PHPUnit summary instead of
+ * hiding behind a green run. That matters because CI runs without the sibling by
+ * design — see `.github/workflows/ci.yml` and the coverage table in
+ * `docs/platform/localization.md`.
  */
 class LocaleGuardTest extends TestCase
 {
@@ -75,7 +77,15 @@ class LocaleGuardTest extends TestCase
                 $script.' must explain that it cannot see the sibling repo.'
             );
 
-            return;
+            // The assertions above prove the guard degrades loudly, but a green result
+            // would still imply it ran. It did not: without the sibling there is
+            // nothing to compare against, so the guard is skipped rather than passing.
+            // CI runs without the sibling on purpose, which makes this the difference
+            // between "4 guards passed" and "4 guards never executed".
+            $this->markTestSkipped(
+                'Sibling repo monolith-vue-workers is not checked out; '
+                .$script.' was asserted to fail loudly instead of being executed.'
+            );
         }
 
         $this->assertSame(
@@ -89,23 +99,27 @@ class LocaleGuardTest extends TestCase
     {
         // The helper the guards use is the single definition of "can I see the SPA?".
         // If it drifts from this test's check, one of the two is lying about the
-        // environment and the assertions above stop meaning anything.
+        // environment and the assertions above stop meaning anything. The predicate is
+        // deliberately the same one the guard uses — checkout present **and** reference
+        // pack readable — because `is_dir()` alone reports a partial checkout as usable.
         $helper = base_path('scripts/lib/locale-scan-support.php');
 
         $this->assertFileExists($helper);
 
-        $process = $this->runGuard('-r', 'require '.var_export($helper, true).'; echo is_dir(locale_scan_spa_root()) ? "yes" : "no";');
+        $process = $this->runGuard('-r', 'require '.var_export($helper, true).'; echo locale_scan_spa_present() ? "yes" : "no";');
 
         $this->assertSame(
             $this->siblingRepoIsPresent() ? 'yes' : 'no',
             trim($process->getOutput()),
-            'locale_scan_spa_root() disagrees with the test about whether the sibling repo exists.'
+            'locale_scan_spa_present() disagrees with the test about whether the sibling repo is usable.'
         );
     }
 
     private function siblingRepoIsPresent(): bool
     {
-        return is_file(dirname(base_path()).'/monolith-vue-workers/src/i18n/locales/en.json');
+        $root = dirname(base_path()).'/monolith-vue-workers';
+
+        return is_dir($root) && is_file($root.'/src/i18n/locales/en.json');
     }
 
     /**
