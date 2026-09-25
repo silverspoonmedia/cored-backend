@@ -25,7 +25,15 @@
 //     and only wrong inside checkout copy, so it cannot be banned outright. The
 //     floor is a "was this reverted?" tripwire, not a completeness proof: it fails
 //     when a wave reverts many keys at once, which is the realistic regression.
-//     Floors only ever need raising, since added keys raise the real count.
+//     Floors only ever need raising when keys are added, since added keys raise the
+//     real count. They must be **re-measured and lowered in the same change that
+//     deletes keys** — the 2026-09-24 sweep of 344 unreachable `web.vtual*` SPA keys
+//     dropped every `spa` floor below its recorded value and turned this gate red
+//     with 40 false "reverted?" findings. Run `--verbose`, confirm the terms are
+//     present and the *drop* is explained by deleted keys rather than rewording, then
+//     set the floor to the measured count. A floor left above the real count is a
+//     permanently red gate, which is worse than no gate: it trains the reader to
+//     ignore the output.
 //
 // Usage:
 //   php scripts/locale-glossary-scan.php              all locales that have a map
@@ -183,11 +191,11 @@ const MIN_OCCURRENCES = [
         'ИИ' => ['backend' => 54, 'spa' => 65],
         'оформлени' => ['backend' => 19, 'spa' => 20],
         'област' => ['backend' => 45, 'spa' => 65],
-        'заявк' => ['backend' => 56, 'spa' => 87],
-        'организац' => ['backend' => 21, 'spa' => 35],
-        'автор' => ['backend' => 14, 'spa' => 30],
-        'хендл' => ['backend' => 5, 'spa' => 10],
-        'проверк' => ['backend' => 43, 'spa' => 65],
+        'заявк' => ['backend' => 56, 'spa' => 55],
+        'организац' => ['backend' => 21, 'spa' => 32],
+        'автор' => ['backend' => 14, 'spa' => 24],
+        'хендл' => ['backend' => 5, 'spa' => 7],
+        'проверк' => ['backend' => 43, 'spa' => 56],
         // `Session Has Expired` is `истёк`, not `устарела`; the *messages* keep that
         // verb while the expiry *column labels* settle on the noun phrase
         // `Действует до`, so both are floored. The two casings are floored
@@ -195,7 +203,7 @@ const MIN_OCCURRENCES = [
         // floor of 11 silently summed `истёк` + `Истёк`, so it could never be met.
         'истёк' => ['backend' => 10, 'spa' => 10],
         'Истёк' => ['backend' => 1, 'spa' => 1],
-        'Действует до' => ['backend' => 2, 'spa' => 7],
+        'Действует до' => ['backend' => 2, 'spa' => 5],
         'Источник' => ['backend' => 5, 'spa' => 6],
         'провайдер' => ['backend' => 19, 'spa' => 37],
     ],
@@ -206,21 +214,21 @@ const MIN_OCCURRENCES = [
     // floor.
     'id' => [
         'Terlarang' => ['backend' => 2, 'spa' => 1],
-        'kedaluwarsa' => ['backend' => 16, 'spa' => 19],
+        'kedaluwarsa' => ['backend' => 16, 'spa' => 14],
         'Berkas' => ['backend' => 27, 'spa' => 24],
-        'klaim' => ['backend' => 54, 'spa' => 86],
-        'verifikasi' => ['backend' => 51, 'spa' => 71],
-        'kredensial' => ['backend' => 28, 'spa' => 52],
+        'klaim' => ['backend' => 54, 'spa' => 57],
+        'verifikasi' => ['backend' => 51, 'spa' => 59],
+        'kredensial' => ['backend' => 28, 'spa' => 39],
         // The loanwords that replaced the English words left in prose.
-        'manajemen' => ['backend' => 21, 'spa' => 34],
-        'kreator' => ['backend' => 10, 'spa' => 29],
-        'Slug' => ['backend' => 11, 'spa' => 26],
-        'yatim' => ['backend' => 13, 'spa' => 32],
+        'manajemen' => ['backend' => 21, 'spa' => 31],
+        'kreator' => ['backend' => 10, 'spa' => 23],
+        'Slug' => ['backend' => 11, 'spa' => 23],
+        'yatim' => ['backend' => 13, 'spa' => 21],
         'penagihan' => ['backend' => 13, 'spa' => 20],
     ],
     'ja' => [
-        'プローブ' => ['backend' => 9, 'spa' => 18],
-        'スラッグ' => ['backend' => 13, 'spa' => 30],
+        'プローブ' => ['backend' => 9, 'spa' => 14],
+        'スラッグ' => ['backend' => 13, 'spa' => 25],
         // 403 `Forbidden` is `アクセス禁止`, not the validation sentence
         // `…の入力は禁止されています。`, which is why the phrase cannot be banned —
         // the floor is the tripwire instead. Same for 302 `一時的な移動`: `発見` is
@@ -229,44 +237,44 @@ const MIN_OCCURRENCES = [
         '一時的な移動' => ['backend' => 2, 'spa' => 1],
         'チェックアウト' => ['backend' => 20, 'spa' => 25],
         '課金' => ['backend' => 9, 'spa' => 12],
-        '認証情報' => ['backend' => 41, 'spa' => 95],
-        'マネジメント' => ['backend' => 25, 'spa' => 43],
-        'クリエイター' => ['backend' => 19, 'spa' => 45],
-        '申請' => ['backend' => 84, 'spa' => 152],
-        'オーファン' => ['backend' => 6, 'spa' => 16],
+        '認証情報' => ['backend' => 41, 'spa' => 66],
+        'マネジメント' => ['backend' => 25, 'spa' => 39],
+        'クリエイター' => ['backend' => 19, 'spa' => 37],
+        '申請' => ['backend' => 84, 'spa' => 96],
+        'オーファン' => ['backend' => 6, 'spa' => 9],
     ],
     'zh_CN' => [
-        '标识' => ['backend' => 13, 'spa' => 32],
+        '标识' => ['backend' => 13, 'spa' => 27],
         '结账' => ['backend' => 21, 'spa' => 31],
         '计费' => ['backend' => 14, 'spa' => 27],
-        '归档' => ['backend' => 26, 'spa' => 45],
-        '凭证' => ['backend' => 47, 'spa' => 99],
-        '管理机构' => ['backend' => 26, 'spa' => 44],
-        '孤立' => ['backend' => 16, 'spa' => 32],
-        '认领' => ['backend' => 80, 'spa' => 150],
-        '验证' => ['backend' => 93, 'spa' => 168],
-        '创作者' => ['backend' => 20, 'spa' => 49],
+        '归档' => ['backend' => 26, 'spa' => 31],
+        '凭证' => ['backend' => 47, 'spa' => 70],
+        '管理机构' => ['backend' => 26, 'spa' => 40],
+        '孤立' => ['backend' => 16, 'spa' => 21],
+        '认领' => ['backend' => 80, 'spa' => 94],
+        '验证' => ['backend' => 93, 'spa' => 139],
+        '创作者' => ['backend' => 20, 'spa' => 41],
         '方案' => ['backend' => 24, 'spa' => 30],
-        '登录' => ['backend' => 22, 'spa' => 46],
+        '登录' => ['backend' => 22, 'spa' => 43],
         '退出登录' => ['backend' => 6, 'spa' => 7],
     ],
     'ar' => [
-        'المعرّف' => ['backend' => 8, 'spa' => 32],
-        'فحص' => ['backend' => 4, 'spa' => 11],
+        'المعرّف' => ['backend' => 8, 'spa' => 25],
+        'فحص' => ['backend' => 4, 'spa' => 8],
         'إتمام الشراء' => ['backend' => 16, 'spa' => 23],
         'الفوترة' => ['backend' => 5, 'spa' => 15],
-        'أرشفة' => ['backend' => 14, 'spa' => 25],
-        'استعادة' => ['backend' => 17, 'spa' => 33],
-        'بيانات الاعتماد' => ['backend' => 29, 'spa' => 64],
-        'قائمة الانتظار' => ['backend' => 15, 'spa' => 15],
+        'أرشفة' => ['backend' => 14, 'spa' => 21],
+        'استعادة' => ['backend' => 17, 'spa' => 28],
+        'بيانات الاعتماد' => ['backend' => 29, 'spa' => 43],
+        'قائمة الانتظار' => ['backend' => 15, 'spa' => 10],
         'التخزين' => ['backend' => 13, 'spa' => 21],
-        'يتيم' => ['backend' => 13, 'spa' => 29],
-        'مطالبة' => ['backend' => 65, 'spa' => 107],
-        'منشئ' => ['backend' => 20, 'spa' => 46],
+        'يتيم' => ['backend' => 13, 'spa' => 18],
+        'مطالبة' => ['backend' => 65, 'spa' => 72],
+        'منشئ' => ['backend' => 20, 'spa' => 38],
         'خطة' => ['backend' => 16, 'spa' => 20],
         // The glossary row used to say `تحقّق` (with a shadda) and the corpus said
         // `تحقق`; the corpus is right and the row was corrected.
-        'تحقق' => ['backend' => 68, 'spa' => 110],
+        'تحقق' => ['backend' => 68, 'spa' => 85],
     ],
 ];
 
@@ -411,7 +419,7 @@ foreach ($locales as $locale) {
     }
 
     echo str_pad($locale, 8), str_pad((string) count($rows), 8), 'entries  ',
-        ($found === 0 ? 'ok' : $found.' violation(s)'), PHP_EOL;
+    ($found === 0 ? 'ok' : $found.' violation(s)'), PHP_EOL;
 
     if ($verbose) {
         foreach ($floors as $term => $minimum) {

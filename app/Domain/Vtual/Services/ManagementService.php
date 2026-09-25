@@ -257,19 +257,22 @@ class ManagementService
         return $management->load([
             'externalLinks' => fn ($q) => $q->orderBy('sort_order'),
             'creatorAssignments' => fn ($q) => $q->whereNull('left_at')
-                ->with(['creator' => fn ($cq) => $cq
-                    ->where('status', EntityStatus::Active)
-                    ->whereHas('channels', function ($chq): void {
-                        $chq->where('status', ChannelStatus::Active)
-                            ->where('visibility', ChannelVisibility::Public);
-                    })
-                    ->withExists(LiveContentScope::withExistsClause())
-                    ->with(['channels' => fn ($chq) => $chq
-                        ->where('status', ChannelStatus::Active)
-                        ->where('visibility', ChannelVisibility::Public)
-                        ->with('platform'),
-                    ]),
-                ]),
+                ->with(['creator' => function ($creatorRelation): void {
+                    $query = $creatorRelation->getQuery();
+
+                    $query->where('status', EntityStatus::Active)
+                        ->whereHas('channels', function ($chq): void {
+                            $chq->where('status', ChannelStatus::Active)
+                                ->where('visibility', ChannelVisibility::Public);
+                        })
+                        ->with(['channels' => fn ($chq) => $chq
+                            ->where('status', ChannelStatus::Active)
+                            ->where('visibility', ChannelVisibility::Public)
+                            ->with('platform'),
+                        ]);
+
+                    LiveContentScope::applyIsLiveSelect($query);
+                }]),
         ]);
     }
 

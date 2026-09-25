@@ -3,6 +3,7 @@
 namespace App\Domain\Vtual\Http\Controllers\API\V1;
 
 use App\Domain\Vtual\Http\Requests\StoreManagementEventRequest;
+use App\Domain\Vtual\Http\Requests\UpdateManagementEventRequest;
 use App\Domain\Vtual\Http\Resources\ManagementEventResource;
 use App\Domain\Vtual\Models\Management;
 use App\Domain\Vtual\Services\ManagementEventService;
@@ -86,6 +87,34 @@ class ManagementEventController extends Controller
             $this->resolveResource(new ManagementEventResource($event)),
             __('api/vtual.management.event_created'),
             201,
+        );
+    }
+
+    /**
+     * Single event read for the SPA edit form (staff or owning-org member).
+     */
+    public function show(Request $request, string $event): JsonResponse
+    {
+        $found = $this->events->findForActor($request->user(), $event);
+
+        return $this->successResponse(
+            $this->resolveResource(new ManagementEventResource($found)),
+            __('api/vtual.management.events_list_success'),
+        );
+    }
+
+    public function update(
+        UpdateManagementEventRequest $request,
+        Management $management,
+        string $event,
+    ): JsonResponse {
+        $this->authorize('update', $management);
+
+        $updated = $this->events->update($request->user(), $management->id, $event, $request->validated());
+
+        return $this->successResponse(
+            $this->resolveResource(new ManagementEventResource($updated)),
+            __('api/vtual.management.event_updated'),
         );
     }
 

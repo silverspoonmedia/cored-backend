@@ -137,6 +137,8 @@ return [
         'creator_invite_name_required' => '新 vTuber 资料的显示名称为必填项。',
         'events_list_success' => '管理机构活动已加载。',
         'event_created' => '活动已创建。',
+        // curated at 2026-09-24T18:10:00+07:00 — zh_CN curation wave: vTual management event edit
+        'event_updated' => '活动已更新。',
         'event_cancelled' => '活动已取消。',
         'event_not_found' => '未找到该管理机构的活动。',
         'event_not_actionable' => '此活动已无法更改。',

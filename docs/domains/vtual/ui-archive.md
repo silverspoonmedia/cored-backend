@@ -12,7 +12,7 @@
 
 ## What the Blade era contained
 
-Archived at the 2026-08-05 restart (paths since deleted): external web routes and legacy admin web routes under `routes/web/_archive/`, Blade views and the status-badge component under `resources/views/_archive/adminlte4/vtual/`, web controllers under `app/Domain/Vtual/Http/Controllers/Web/_archive/`, and two Blade web tests under `tests/_archive/`. Vite registered `vtual/admin.css`, `confirm-modal.js`, `credential-form.js`, and `credentials-platform.js`; `registry-admin.js` was legacy-only and never in the active build.
+Archived at the 2026-08-05 restart (paths since deleted): external web routes and legacy admin web routes under `routes/web/_archive/`, Blade views and the status-badge component under `resources/views/_archive/adminlte4/vtual/`, web controllers under `app/Domain/Vtual/Http/Controllers/Web/_archive/`, and five Blade web tests under `tests/_archive/` (`VtuberProfileWebTest`, `PlatformCredentialWebTest`, `CreatorProfileManageWebTest`, `VtualBladeWebTest`, `AccessibilityBladeTest`). Vite registered `vtual/admin.css`, `confirm-modal.js`, `credential-form.js`, and `credentials-platform.js`; `registry-admin.js` was legacy-only and never in the active build.
 
 By surface: **external (user)** was the legacy hub, standalone claims UI, and channel/link management; **internal (staff)** was the registry and pending-claims admin.
 

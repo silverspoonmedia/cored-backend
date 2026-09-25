@@ -182,6 +182,8 @@ return [
         // curated at 2026-09-24T09:30:44+07:00 — id curation wave: glossary — management is manajemen, creator is kreator
         'events_list_success' => 'Acara manajemen berhasil dimuat.',
         'event_created' => 'Acara berhasil dibuat.',
+        // curated at 2026-09-24T18:10:00+07:00 — id curation wave: vTual management event edit
+        'event_updated' => 'Acara berhasil diperbarui.',
         'event_cancelled' => 'Acara berhasil dibatalkan.',
         // curated at 2026-09-24T09:30:44+07:00 — id curation wave: glossary — management is manajemen, creator is kreator
         'event_not_found' => 'Acara tidak ditemukan untuk manajemen ini.',

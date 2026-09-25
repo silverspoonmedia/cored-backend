@@ -115,6 +115,8 @@ return [
         'creator_invite_name_required' => 'اسم العرض لملف vTuber الجديد مطلوب.',
         'events_list_success' => 'تم تحميل فعاليات الإدارة.',
         'event_created' => 'تم إنشاء الفعالية.',
+        // curated at 2026-09-24T18:10:00+07:00 — ar curation wave: vTual management event edit
+        'event_updated' => 'تم تحديث الفعالية.',
         'event_cancelled' => 'تم إلغاء الفعالية.',
         'event_not_found' => 'لم يتم العثور على الفعالية لهذه الإدارة.',
         'event_not_actionable' => 'لا يمكن تغيير هذه الفعالية بعد الآن.',

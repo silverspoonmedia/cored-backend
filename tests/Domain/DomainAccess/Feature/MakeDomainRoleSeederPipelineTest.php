@@ -26,7 +26,15 @@ class MakeDomainRoleSeederPipelineTest extends TestCase
 
     protected function tearDown(): void
     {
-        if ($this->domains->isRegistered(self::PROBE) || File::isFile($this->domains->roleSeederPath(self::PROBE))) {
+        // `directoryExists` matters as much as `isRegistered`: a scaffold that
+        // fails after creating the directory tree but before registering the
+        // domain leaves an untracked `app/Domain/{Name}` behind, and git cannot
+        // see it (empty directories are not tracked). That leftover makes every
+        // later run of this test fail on the `already exists` guard, so clean it
+        // up on the same terms `DomainManager::remove()` accepts.
+        if ($this->domains->isRegistered(self::PROBE)
+            || $this->domains->directoryExists(self::PROBE)
+            || File::isFile($this->domains->roleSeederPath(self::PROBE))) {
             try {
                 $this->domains->remove(self::PROBE);
             } catch (\Throwable) {

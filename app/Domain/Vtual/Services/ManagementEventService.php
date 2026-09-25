@@ -108,6 +108,67 @@ class ManagementEventService
     }
 
     /**
+     * Update an upcoming event (Owner/Admin of the owning org). Ended and
+     * cancelled events are immutable — they are history.
+     *
+     * @param  array{title?: string, description?: string|null, thumbnail_url?: string|null, url?: string|null, starts_at?: string, ends_at?: string|null, timezone?: string|null, creator_id?: string|null, is_featured?: bool}  $data
+     */
+    public function update(User $actor, string $managementId, string $eventId, array $data): VtualEvent
+    {
+        $management = $this->access->findOrFail($managementId);
+        $this->access->assertCanAssignCreators($management, $actor);
+
+        $event = $this->findInManagement($management->id, $eventId);
+        $this->assertActionable($event);
+
+        $event->fill(array_intersect_key($data, array_flip([
+            'title',
+            'description',
+            'thumbnail_url',
+            'url',
+            'starts_at',
+            'ends_at',
+            'timezone',
+            'creator_id',
+            'is_featured',
+        ])));
+
+        if (array_key_exists('title', $data)) {
+            $event->title = trim((string) $data['title']);
+        }
+
+        $event->save();
+
+        $this->realtime->changed($management->id, 'event', (string) $event->id, 'updated');
+
+        return $event->load(['management', 'creator']);
+    }
+
+    /**
+     * Single event read for the SPA edit form: staff (any) or a member of the
+     * owning org. Keeps the guest-facing UUID-free resource out of the picture.
+     */
+    public function findForActor(User $actor, string $eventId): VtualEvent
+    {
+        $event = VtualEvent::query()
+            ->with(['management', 'creator'])
+            ->whereKey($eventId)
+            ->first();
+
+        if ($event === null) {
+            throw new VtualException(__('api/vtual.management.event_not_found'), 404);
+        }
+
+        if (! $actor->can('manage any vtual resource') && ! $actor->can('view any vtual resource')) {
+            if (! in_array((string) $event->management_id, $this->actorManagementIds($actor), true)) {
+                throw new VtualException(__('api/vtual.policy.access_denied'), 403);
+            }
+        }
+
+        return $event;
+    }
+
+    /**
      * Cancel an upcoming event (Owner/Admin of the owning org). Ended events
      * are immutable — they are history.
      */
@@ -116,18 +177,8 @@ class ManagementEventService
         $management = $this->access->findOrFail($managementId);
         $this->access->assertCanAssignCreators($management, $actor);
 
-        $event = VtualEvent::query()
-            ->where('management_id', $management->id)
-            ->whereKey($eventId)
-            ->first();
-
-        if ($event === null) {
-            throw new VtualException(__('api/vtual.management.event_not_found'), 404);
-        }
-
-        if ($event->status !== VtualEventStatus::Scheduled && $event->status !== VtualEventStatus::Live) {
-            throw new VtualException(__('api/vtual.management.event_not_actionable'), 422);
-        }
+        $event = $this->findInManagement($management->id, $eventId);
+        $this->assertActionable($event);
 
         $event->status = VtualEventStatus::Cancelled;
         $event->save();
@@ -135,6 +186,27 @@ class ManagementEventService
         $this->realtime->changed($management->id, 'event', (string) $event->id, 'cancelled');
 
         return $event->load(['management', 'creator']);
+    }
+
+    private function findInManagement(string $managementId, string $eventId): VtualEvent
+    {
+        $event = VtualEvent::query()
+            ->where('management_id', $managementId)
+            ->whereKey($eventId)
+            ->first();
+
+        if ($event === null) {
+            throw new VtualException(__('api/vtual.management.event_not_found'), 404);
+        }
+
+        return $event;
+    }
+
+    private function assertActionable(VtualEvent $event): void
+    {
+        if ($event->status !== VtualEventStatus::Scheduled && $event->status !== VtualEventStatus::Live) {
+            throw new VtualException(__('api/vtual.management.event_not_actionable'), 422);
+        }
     }
 
     /**

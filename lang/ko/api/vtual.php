@@ -123,6 +123,8 @@ return [
         'creator_invite_name_required' => '새 vTuber 프로필의 표시 이름은 필수입니다.',
         'events_list_success' => '매니지먼트 이벤트를 불러왔습니다.',
         'event_created' => '이벤트가 생성되었습니다.',
+        // curated at 2026-09-24T18:10:00+07:00 — ko curation wave: vTual management event edit
+        'event_updated' => '이벤트가 수정되었습니다.',
         'event_cancelled' => '이벤트가 취소되었습니다.',
         'event_not_found' => '이 매니지먼트에서 이벤트를 찾을 수 없습니다.',
         'event_not_actionable' => '이 이벤트는 더 이상 변경할 수 없습니다.',

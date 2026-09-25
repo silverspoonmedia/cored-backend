@@ -84,6 +84,8 @@ Visibility toggles ping the `domain-access` private channel (permission `view do
 
 `domain:make {Name}` generates `database/seeders/{Name}RoleSeeder.php` (Beta tester role + permission + Public visibility row via `SeedsBetaTesterRole`) and registers `$this->call({Name}RoleSeeder::class)` in `DatabaseSeeder`. `domain:remove` deletes the seeder file and unregisters that call line from `DatabaseSeeder`; `DomainCommandsTest` asserts both directions (generated on make, gone after remove) and backs up `DatabaseSeeder.php` so the injected call never leaks into the working tree. Run `php artisan db:seed --class={Name}RoleSeeder` after scaffolding.
 
+**A failed scaffold leaves a directory git cannot see.** `MakeDomainRoleSeederPipelineTest` scaffolds a throwaway `DomainAccessProbe` domain and tears it down. If a run dies between directory creation and config registration, the leftover is `app/Domain/DomainAccessProbe/` with empty subdirectories — and **empty directories are not tracked**, so `git status` stays clean while the next run fails on `Domain [DomainAccessProbe] already exists.` The test's `tearDown` now checks `directoryExists()` as well as `isRegistered()`, so the next run repairs the tree; if you hit that message in a tree that never ran the test, delete the directory by hand.
+
 ## Tests
 
 `tests/Domain/DomainAccess/`: service matrix, gate middleware (web + API), admin API authorization, seeder assertions, and the `domain:make` seeder-generation pipeline.
