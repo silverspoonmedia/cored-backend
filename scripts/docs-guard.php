@@ -258,8 +258,8 @@ function docs_guard_repo(string $root, string $label): array
             // *unverifiable* link, not a broken one — the same rule the SPA guard
             // applies in reverse. Reporting it here would fail `--repo=backend`,
             // which exists precisely so the guard can run with no sibling at all.
-            if (! docs_guard_within_root($resolved, $root)
-                && ! is_dir(docs_guard_sibling_root($resolved, $root))) {
+            if (! docs_path_within($resolved, $root)
+                && ! is_dir(docs_path_sibling_root($resolved, $root))) {
                 continue;
             }
 
@@ -281,58 +281,6 @@ function docs_guard_repo(string $root, string $label): array
     }
 
     return $findings;
-}
-
-/**
- * Is `$path` inside `$root`? Both are compared after collapsing `.` / `..`, so a
- * link like `../../../../gateway/docs/x.md` is recognised as leaving the repo
- * rather than as a missing file.
- */
-function docs_guard_within_root(string $path, string $root): bool
-{
-    $path = docs_guard_normalize($path);
-    $root = rtrim(docs_guard_normalize($root), '/');
-
-    return $path === $root || str_starts_with($path, $root.'/');
-}
-
-/**
- * The sibling checkout a cross-repo link points into — the first path segment
- * outside this repo. `is_dir()` on the result is the presence probe.
- */
-function docs_guard_sibling_root(string $path, string $root): string
-{
-    $parent = rtrim(dirname(rtrim(docs_guard_normalize($root), '/')), '/');
-    $escaped = substr(docs_guard_normalize($path), strlen($parent) + 1);
-
-    return $parent.'/'.strtok($escaped, '/');
-}
-
-/**
- * Collapse `.` and `..` segments without touching the filesystem, so the result can
- * be compared even when the path does not exist (which is the case under test).
- */
-function docs_guard_normalize(string $path): string
-{
-    $path = str_replace('\\', '/', $path);
-    $prefix = str_starts_with($path, '/') ? '/' : '';
-    $segments = [];
-
-    foreach (explode('/', $path) as $segment) {
-        if ($segment === '' || $segment === '.') {
-            continue;
-        }
-
-        if ($segment === '..') {
-            array_pop($segments);
-
-            continue;
-        }
-
-        $segments[] = $segment;
-    }
-
-    return $prefix.implode('/', $segments);
 }
 
 /**

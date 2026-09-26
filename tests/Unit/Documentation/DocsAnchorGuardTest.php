@@ -138,9 +138,13 @@ class DocsAnchorGuardTest extends TestCase
 
                 $resolved = dirname($source).'/'.urldecode($path);
 
-                // A link that leaves this repo belongs to the sibling SPA checkout,
-                // which a single-repo run cannot see.
-                if (! str_starts_with(str_replace('\\', '/', $resolved), $this->root.'/')) {
+                // A link that escapes this repo points at the sibling SPA checkout,
+                // which a single-repo run cannot see. Normalise before comparing: the
+                // raw path still *starts* with the repo root when it is written as
+                // `docs/x/../../../monolith-vue-workers/...`, so a string prefix test
+                // would treat an unverifiable link as a missing one.
+                if (! docs_path_within($resolved, $this->root)
+                    && ! is_dir(docs_path_sibling_root($resolved, $this->root))) {
                     continue;
                 }
 

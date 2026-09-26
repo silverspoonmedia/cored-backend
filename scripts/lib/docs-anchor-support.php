@@ -139,3 +139,58 @@ function docs_anchor_slug(string $heading): string
 
     return trim($slug);
 }
+
+/**
+ * Collapse `.` and `..` segments without touching the filesystem, so two paths can be
+ * compared even when they do not exist — which is the case for a link into a sibling
+ * checkout that CI never fetched.
+ */
+function docs_path_normalize(string $path): string
+{
+    $path = str_replace('\\', '/', $path);
+    $prefix = str_starts_with($path, '/') ? '/' : '';
+    $segments = [];
+
+    foreach (explode('/', $path) as $segment) {
+        if ($segment === '' || $segment === '.') {
+            continue;
+        }
+
+        if ($segment === '..') {
+            array_pop($segments);
+
+            continue;
+        }
+
+        $segments[] = $segment;
+    }
+
+    return $prefix.implode('/', $segments);
+}
+
+/**
+ * Does `$path` live inside `$root`? Both are normalized first, so a link like
+ * `../../../../gateway/docs/x.md` is recognised as leaving the repo rather than as a
+ * missing file.
+ */
+function docs_path_within(string $path, string $root): bool
+{
+    $path = docs_path_normalize($path);
+    $root = rtrim(docs_path_normalize($root), '/');
+
+    return $path === $root || str_starts_with($path, $root.'/');
+}
+
+/**
+ * The sibling checkout a cross-repo link points into — the first path segment outside
+ * `$root`. `is_dir()` on the result is the presence probe: these checkouts exist on a
+ * developer machine and are absent in CI, so an unresolvable sibling means the link is
+ * *unverifiable*, not broken.
+ */
+function docs_path_sibling_root(string $path, string $root): string
+{
+    $parent = rtrim(dirname(rtrim(docs_path_normalize($root), '/')), '/');
+    $escaped = substr(docs_path_normalize($path), strlen($parent) + 1);
+
+    return $parent.'/'.strtok($escaped, '/');
+}
