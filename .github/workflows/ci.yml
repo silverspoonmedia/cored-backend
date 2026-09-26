@@ -1,22 +1,31 @@
 name: CI
 
-# Localization gate. This workflow runs only the checks that need **one** repo, so it
-# carries no credentials: no cross-repo token, no sibling checkout.
+# Two gates, both sibling-free — neither job carries credentials or checks out
+# `monolith-vue-workers`:
 #
-# An earlier version checked out `monolith-vue-workers` as a sibling so the four
-# cross-repo guards (`locale-prose-scan`, `locale-rawkey-scan`, `locale-pack-parity`,
-# `locale-glossary-scan`) could run here too. It never worked: the sibling is private,
-# `GITHUB_TOKEN` is scoped to the repo running the workflow, and the checkout step
-# failed `Not Found` before any test executed. Reading the sibling needs a fine-grained
-# PAT, and the guards still are not the whole story — see the coverage table in
-# `docs/platform/localization.md`. Those four now run from a machine that has both
-# repos, via `php artisan test --filter=Locale`.
+#   `locale`  — the localization guards.
+#   `backend` — the backend test suite (`php artisan test`), which is where the
+#               domain suites live. Before this job existed, `ci.yml` ran only
+#               `--filter=Locale`, so a change that broke `tests/Domain/**` could
+#               merge green: the vTual domain alone is 60+ feature test files that
+#               never executed on the runner.
 #
-# What runs here is the sibling-free half: key/placeholder parity across locales,
-# literal call-site resolution, the flat pack against its PHP owners, and the
-# runtime-assembled keys. `LocaleGuardTest` reports the four cross-repo guards as
+# An earlier version of `locale` checked out `monolith-vue-workers` as a sibling so
+# the four cross-repo guards (`locale-prose-scan`, `locale-rawkey-scan`,
+# `locale-pack-parity`, `locale-glossary-scan`) could run here too. It never worked:
+# the sibling is private, `GITHUB_TOKEN` is scoped to the repo running the workflow,
+# and the checkout step failed `Not Found` before any test executed. Reading the
+# sibling needs a fine-grained PAT, and the guards still are not the whole story —
+# see the coverage table in `docs/platform/localization.md`. Those four now run from
+# a machine that has both repos, via `php artisan test --filter=Locale`.
+#
+# What runs in `locale` is the sibling-free half: key/placeholder parity across
+# locales, literal call-site resolution, the flat pack against its PHP owners, and
+# the runtime-assembled keys. `LocaleGuardTest` reports the four cross-repo guards as
 # skipped when the sibling is absent, so a green run cannot be mistaken for "all six
-# guards ran".
+# guards ran". The `backend` job reruns those locale tests as part of the whole suite;
+# the narrow job stays because its direct guard runs name the offending key and locale
+# in the job log, which an aggregated PHPUnit failure does not.
 
 on:
   push:
@@ -35,7 +44,11 @@ jobs:
     # MySQL, so the install step fails before a single test runs. These variables are
     # real environment variables, and Laravel's Dotenv does not overwrite them, so they
     # answer `hasTable()` with `false` over an in-memory database and need no service.
-    env:
+    #
+    # The `backend` job reuses this block through a YAML alias. Both jobs need the same
+    # database-less environment, and a drift between two hand-maintained copies is
+    # exactly the kind of thing that reads like a corpus failure.
+    env: &test-env
       APP_KEY: 'base64:2fl+KtvkdphvQyEfmNqD2aE7nKj8vR3xW5yZ1aB4cD8='
       DB_CONNECTION: sqlite
       DB_DATABASE: ':memory:'
@@ -96,3 +109,45 @@ jobs:
         run: |
           php scripts/locale-flat-pack-parity.php
           php scripts/locale-dynamic-key-check.php
+
+  backend:
+    name: Backend suite (sqlite in-memory)
+    runs-on: ubuntu-latest
+    env: *test-env
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          # Same pin as the `locale` job, for the same reason: `composer.json` requires
+          # `^8.4` and the lock resolves `symfony/*` 8.1, so 8.3 cannot install the lock.
+          php-version: '8.4'
+          extensions: mbstring, intl, pdo_sqlite, sqlite3, bcmath, gd, zip, exif, curl
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      # Same reason as the `locale` job: without a file, every app-booting test reports
+      # a suppressed phpdotenv read as a warning, which buries real failures. Values come
+      # from `phpunit.xml` and the job `env:` above, and Laravel's dotenv repository is
+      # immutable, so a real `.env` could not override them anyway.
+      - name: Create empty .env
+        run: php -r "file_put_contents('.env', '');"
+
+      # The whole suite, not a testsuite subset: `tests/Unit`, `tests/Feature`, and
+      # `tests/Domain` all boot the same app, and `--testsuite=Domain` alone would leave
+      # the unit/feature halves — including `LocaleGuardTest` — unguarded on the runner.
+      # The suite runs against `sqlite :memory:` with `BROADCAST_CONNECTION=null` (set in
+      # `phpunit.xml`), so it needs no service: no MySQL, no Redis, no queue worker.
+      - name: Backend test suite
+        run: php artisan test

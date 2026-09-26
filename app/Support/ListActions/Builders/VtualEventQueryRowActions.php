@@ -18,14 +18,22 @@ final class VtualEventQueryRowActions implements QueryRowActionBuilder
             return [];
         }
 
-        // Cancel is offered only while the event can still change. The
-        // authorize call on DELETE also re-checks org Owner/Admin — a stale
-        // action payload can never widen the power.
+        // Cancel/edit are offered only while the event can still change. The
+        // authorize call on PATCH/DELETE also re-checks org Owner/Admin — a
+        // stale action payload can never widen the power.
         if ($model->status->value !== 'scheduled' && $model->status->value !== 'live') {
             return [];
         }
 
         return [
+            QueryRowAction::nav(
+                key: 'edit',
+                label: __('ui.actions.edit'),
+                icon: 'pencil',
+                variant: 'secondary',
+                route: 'vtual.events.edit',
+                params: ['id' => (string) $model->id],
+            ),
             QueryRowAction::mutate(
                 key: 'cancel',
                 label: __('ui.actions.cancel'),

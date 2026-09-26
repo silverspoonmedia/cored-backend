@@ -102,11 +102,17 @@ Same pattern for `staff` (org) vs **Moderator** (core) — unrelated enums.
 | **Staff orphan admin** | `/apps/vtual/orphans` | Core Root/Admin/Moderator (`internal_web_roles`) |
 | **Platform credentials** | `/apps/vtual/platform-credentials` | Core Root/Admin |
 | **vTual settings** | `settings.vtual` | Core Root/Admin |
-| **Product hub (placeholder)** | `/apps/vtual/vtuber` | Any logged-in user (`vtual.vtuber.index`) |
-| **Read-only creator profile** | `/apps/vtual/vtuber/{slug}` | Any logged-in user (`vtual.vtuber.show`) |
-| **Talent org UI** | Not implemented | Future — use **talent** vocabulary in menu labels |
+| **Product hub** | `/apps/vtual/vtuber` | Any logged-in user (`vtual.vtuber.index`) — links my profiles, orphan creators, platform credentials |
+| **Owned creator profiles** | `/apps/vtual/profiles`, `/apps/vtual/profiles/{slug}` | Creator membership (`Vtual vTuber` / Editor / Admin) with an active Vtual activation |
+| **Talent org UI** | `/apps/vtual/managements`, `/apps/vtual/managements/{id}/edit` | Org members — rule-7 menu (no stored roles); Root/Admin reach the same screens as a staff branch |
+| **Org events** | `/apps/vtual/events`, `/apps/vtual/events/create`, `/apps/vtual/events/{id}/edit` | Org members — event submission is an org Owner/Admin power |
+| **Invite response** | `/apps/vtual/invites/respond` | The invited account (email match), member or creator invite |
+| **Read-only creator profile** | `/apps/vtual/vtubers/{slug}` | Any logged-in user (`vtual.vtuber.show`); the singular `/apps/vtual/vtuber/{slug}` redirects onto it |
+| **Claim wizard** | `/apps/vtual/vtubers/{slug}/claim` | Any logged-in user; orphan profiles only (`vtual.vtuber.claim`) |
 
 Core role **Management** may call vTual **API** with `manage any vtual resource` but has **no** Administration → vTual sidebar entries today.
+
+**Menu-label divergence (open):** checklist item 2 below asks the `vtual_managements` menu label to carry **Talent** or **Org**, but the shipped label is **Managements** / **Manajemen** / **マネジメント** (`MenuSeeder`), matching the product's own vocabulary in the SPA screens (`web.vtual-managements.*`). One of the two should move: either the menu labels gain "Talent", or the checklist rule is retired. Not resolved here — it is a copy decision, and the surface table above records what actually ships.
 
 ---
 

@@ -143,6 +143,8 @@ return [
         'creator_invite_name_required' => '新しい vTuber プロフィールの表示名は必須です。',
         'events_list_success' => 'マネジメントイベントを読み込みました。',
         'event_created' => 'イベントを作成しました。',
+        // curated at 2026-09-24T18:10:00+07:00 — ja curation wave: vTual management event edit
+        'event_updated' => 'イベントを更新しました。',
         'event_cancelled' => 'イベントを中止しました。',
         'event_not_found' => 'このマネジメントのイベントが見つかりません。',
         'event_not_actionable' => 'このイベントはこれ以上変更できません。',

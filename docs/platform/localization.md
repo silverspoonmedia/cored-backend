@@ -209,7 +209,7 @@ Guard rails, run for every batch: `php artisan test --filter=Locale` (parity, us
 
 ### CI coverage vs manual runs
 
-The backend workflow is `.github/workflows/ci.yml`, and it runs **only the checks that need one repo**, so it carries no credentials — no cross-repo token, no sibling checkout:
+The backend workflow is `.github/workflows/ci.yml`, and its `locale` job runs **only the checks that need one repo**, so it carries no credentials — no cross-repo token, no sibling checkout. The workflow's second job, `backend`, runs the whole test suite for the same reason: one repo, no services. It reruns these locale tests as part of `php artisan test`; the narrow `locale` job stays because its direct guard runs print the offending key and locale instead of burying them in an aggregated PHPUnit failure. Which defect classes the `locale` job covers, and which four guards need the sibling checkout:
 
 | Class of defect | Guard | Needs sibling repo? | Gated in CI |
 |---|---|---|---|
@@ -224,7 +224,9 @@ The backend workflow is `.github/workflows/ci.yml`, and it runs **only the check
 
 Four of the eight are gated in CI; the other four run from a checkout that has `monolith-vue-workers` as a sibling. `LocaleGuardTest` reports those four as **skipped** when the sibling is absent (after asserting the guard fails loudly with `exit 1` and `cannot see the SPA repo`), so a green CI run cannot be mistaken for "all six guards ran".
 
-The job's runner environment is part of this contract, not incidental: it pins PHP 8.4, sets `DB_CONNECTION=sqlite` / `DB_DATABASE=:memory:` (so `composer install` can boot `SettingsServiceProvider` without a MySQL service), creates an empty `.env`, and widens `COLUMNS`. Changing any of those breaks the job in a way that reads like a corpus failure. Per-step reasoning: [tooling.md — CI (GitHub Actions)](tooling.md#ci-github-actions).
+**The occurrence floors are calibrated to the corpus, so a key deletion moves them.** They exist because the rejected rendering of a collapse (`ko` `결제` for *checkout*, `ru` `оплата` for *checkout*) is a correct word elsewhere and cannot be banned as a literal. The floor only catches a mass revert, which assumes the corpus grows. Deleting unreachable keys shrinks it: the 2026-09-24 sweep of 344 dead `web.vtual*` SPA keys dropped every `spa` floor below its recorded value and produced 40 false `reverted?` findings. When you delete keys, run `php scripts/locale-glossary-scan.php --verbose`, confirm the term is still present and the drop is explained by the deleted keys (not by rewording), and set the floor to the measured count in the same change. Do not leave a floor above the real count — a permanently red gate is worse than no gate.
+
+The job's runner environment is part of this contract, not incidental: it pins PHP 8.4, sets `DB_CONNECTION=sqlite` / `DB_DATABASE=:memory:` (so `composer install` can boot `SettingsServiceProvider` without a MySQL service), creates an empty `.env`, and widens `COLUMNS`. Changing any of those breaks the job in a way that reads like a corpus failure. The `backend` job reuses that same `env:` block through a YAML alias, so the two cannot drift. Per-step reasoning for both: [tooling.md — CI (GitHub Actions)](tooling.md#ci-github-actions).
 
 An earlier version of this workflow did check out the sibling and run all six. It never worked: the sibling is private, `GITHUB_TOKEN` is scoped to the repo running the workflow, and the checkout step failed `Not Found` before a single test executed — a red `main` caused by the gate itself, not by the corpus. Reading the sibling needs a fine-grained PAT, and the four guards still would not cover the SPA-only case (see below). The workflow was narrowed instead of patched.
 
@@ -232,10 +234,12 @@ An earlier version of this workflow did check out the sibling and run all six. I
 
 1. Run the gates locally, from a checkout that has `monolith-vue-workers` as a sibling: `php artisan test --filter=Locale` (covers all six guards) and `npm run check:i18n` in the SPA.
 2. Push and open the pull request.
-3. Wait for the backend `locale` job and the SPA `check` job to go green.
+3. Wait for the backend `locale` and `backend` jobs, and the SPA `check` job, to go green.
 4. Merge.
 
 Step 3 is a convention, not an enforced rule. These repos are private and the org is on the GitHub **free** plan, so branch protection and required status checks are unavailable — `gh api repos/silverspoonmedia/monolith/branches/main/protection` answers `403 Upgrade to GitHub Pro or make this repository public`. Nothing on GitHub blocks a merge with a red run; merging anyway leaves `main` red, which is what happened to PR #77 and #10 when the cross-repo workflow above was in place. The gate protects the corpus only when someone looks at it.
+
+The `backend` job is the slow one (whole suite, ~9 min on the dev machine and longer on a 2-vCPU runner), and it is the only thing that runs `tests/Domain/**` on a push. A PR that skips waiting for it is a PR whose domain regressions nobody sees until the next local run. A green run reports `2233 tests, 2232 passed, 1 skipped, 1 risky` — the skip is the opt-in OCI KMS live test and the risky is a pre-existing stdout report; only `failed` must be 0. Details: [tooling.md — CI](tooling.md#ci-github-actions).
 
 One gap follows from the coverage table and is worth stating plainly: **a pull request that only touches SPA locale files is not gated by the cross-repo guards.** `npm run check:i18n` is per-repo and cannot see the backend, and the backend workflow triggers on backend changes. If a batch changes a mirrored pack (`validation`, `http-statuses`, `auth`, `passwords`, `pagination`) or a settled glossary term, run `php artisan test --filter=Locale` from the backend checkout before merging — that is the only thing that reads both halves.
 
@@ -290,6 +294,8 @@ The same applies to `DatePresenter` output and to any SPA-side `Intl` assertion:
 ## Domain glossary
 
 Canonical term choices across locales. Use these for every translation wave; do not vary per file. Brands and product names (`Archivd`, `vTual`, `Microstock`, `Discord`, `QRIS`, `YouTube`, `Twitch`, `hCaptcha`) are never translated. Machine/contract text (enum values, probe method names, `sha256`, URL placeholders) stays English.
+
+> **Occurrence figures in the drift logs below were measured before the 2026-09-24 sweep of 344 unreachable `web.vtual*` SPA keys.** Every `SPA` count in this section is therefore higher than the current corpus, and `locale-glossary-scan.php`'s `MIN_OCCURRENCES` table — recalibrated in that same change — is the authority. The *term choices* the logs record are unaffected: no translation was reverted, only dead keys were deleted.
 
 | English | id | ja | ko | zh_CN | ar | ru |
 |---------|----|----|----|-------|----|----|

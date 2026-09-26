@@ -227,6 +227,10 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
     Route::get('events', [ManagementEventController::class, 'index'])
         ->middleware('permission:view vtual management')
         ->name('events.index');
+    Route::get('events/{event}', [ManagementEventController::class, 'show'])
+        ->middleware('permission:view vtual management')
+        ->whereUuid('event')
+        ->name('events.show');
     Route::get('managements/{management}/events', [ManagementEventController::class, 'managementIndex'])
         ->middleware('permission:view vtual management')
         ->whereUuid('management')
@@ -235,6 +239,9 @@ Route::middleware(['auth:api', 'domain.access:Vtual', 'product.active:Vtual'])->
         Route::post('managements/{management}/events', [ManagementEventController::class, 'store'])
             ->whereUuid('management')
             ->name('managements.events.store');
+        Route::patch('managements/{management}/events/{event}', [ManagementEventController::class, 'update'])
+            ->whereUuid(['management', 'event'])
+            ->name('managements.events.update');
         Route::delete('managements/{management}/events/{event}', [ManagementEventController::class, 'destroy'])
             ->whereUuid(['management', 'event'])
             ->name('managements.events.destroy');

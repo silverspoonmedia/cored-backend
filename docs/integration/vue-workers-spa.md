@@ -116,7 +116,7 @@ Canonical envelope: [api-envelope.md](../platform/api-envelope.md). Deviations:
 | `DELETE profile/connections/{oauth_provider}` | `null` data | Replaces `DELETE …/discord` |
 | `GET auth/discord/authorize-url` | `{ url }` | Requires `SPA_URL`. `return_path` is a path |
 | `GET vtual/public/vtubers/{slug}` contents items | Each item carries `content_type` (`music` \| `non_music`, null = unknown) + `content_category` (`cover` \| `original` \| `singing_stream`) + `content_category_detail` (nullable) | Both layers program-classified (multi-signal, not `categoryId` alone) with an async AI audit for rows the program pass leaves unknown. See [vtual README — Content classification](../domains/vtual/README.md#content-classification-music-layer--cover-song-detection) |
-| `GET vtual/public/vtubers/{slug}?platform=&type=&sort=` | `data.contents.filters` echoes `{ platform, type, sort }` | Guest-only grid filters. Unknown values clamp to `null` / `newest` — **never 422** — and `sort=oldest` drops the live-first pinning (`published_at` asc). `data.contents.pagination.total` / `last_page` follow the filtered set. Only this endpoint echoes `filters`; `/vtual/public/contents` and the landing payload do not. The SPA SWR key must include the filter tuple (`useVtualPublic.profileCacheKey`). |
+| `GET vtual/public/vtubers/{slug}?platform=&type=&sort=` | `data.contents.filters` echoes `{ platform, type, sort }` | Guest-only grid filters. Unknown values clamp to `null` / `newest` — **never 422** — and `sort=oldest` drops the live-first pinning (`published_at` asc). `data.contents.pagination.total` / `last_page` follow the filtered set. Only this endpoint echoes `filters`; `/vtual/public/contents` and the landing payload do not. The SPA SWR key must include the filter tuple (`useVtualPublic.profileCacheKey`), and `useVtualProfileQuery` mirrors the tuple + page into the URL (`?platform=&type=&sort=&page=`) so a filtered grid is linkable — it seeds from `route.query` and does a normalized `router.replace` on change, keeping `sort=newest` and `page=1` out of the URL. |
 
 ## Type alignment
 
@@ -182,7 +182,7 @@ SPA `/payment/return` and `/payment/cancel` (`requiresAuth`, site root, not unde
 
 ## `/apps` shell
 
-Authenticated `AppLayout` routes are prefixed `/apps/*`. Route **names** stay unprefixed. **Not prefixed:** auth screens, public share `/s/*`, payment bounce, vTual public `/vtual` + `/vtual/vtubers/:slug`. Verify-email uses `meta.authChrome` (not `guestOnly`). Legacy bare paths redirect. Catch-all 404 is last, inside `AppLayout` (public vTuber misses stay in Valkivid3).
+Authenticated `AppLayout` routes are prefixed `/apps/*`. Route **names** stay unprefixed. **Not prefixed:** auth screens, public share `/s/*`, payment bounce, vTual public `/vtual` + `/vtual/vtubers/:slug` + `/vtual/managements/:slug` (the singular `/vtual/vtuber/:slug` and `/vtual/management/:slug` are redirects onto the plural routes). Verify-email uses `meta.authChrome` (not `guestOnly`). Legacy bare paths redirect. Catch-all 404 is last, inside `AppLayout` (public vTuber misses stay in Valkivid3).
 
 ## Domain SPA surfaces
 
@@ -266,12 +266,12 @@ SPA implementation: sibling [auth-session.md](../../../monolith-vue-workers/docs
 | Navigation menus | `navigation.menus` | `.menu.tree.changed` | `useMenusRealtime.ts` |
 | Navigation (targeted) | user channel | `.menu.tree.changed` + `target_user_id` | `useNavigation.ts` |
 | Product activations / domain access | `product-activations`, `domain-access` | `.product.activation.changed`, `.domain.visibility.changed` | `useAdminRealtime.ts` |
-| vTual claim | `vtual.claim.{claimId}` | `.claim.progress` | `useVtulClaimRealtime.ts` (consumed by `VtualVtuberClaimView.vue`) |
+| vTual claim | `vtual.claim.{claimId}` | `.claim.progress` | `useVtualClaimRealtime.ts` (consumed by `VtualVtuberClaimView.vue`) |
 | vTual creator snapshots | `vtual.creator.{creatorId}` | `.channel.snapshot.updated` | `useVtualRealtime.ts` |
 | vTual credentials | `vtual.platform-credentials` | `.platform.credential.changed` | `useVtualRealtime.ts` |
-| vTual management | `vtual.management.{managementId}` | `.management.updated` | `useVtualRealtime.ts` |
+| vTual management | `vtual.management.{managementId}` | `.management.updated` | `useVtualRealtime.ts` — payload `kind` is `management` / `member` / `invite` / `creator`, or `event` for event created / updated / cancelled. Nothing subscribes to `kind=event` yet (the events list refreshes on Echo resync only) — see [vtual README — Realtime](../domains/vtual/README.md#realtime) |
 
-All channel callbacks live in `routes/channels.php` (Spatie permission or ownership/access service; admin-facing channels gate on the matching `view *` permission). Payloads are invalidation pings (ids + `action`) — never model snapshots.
+All channel callbacks live in `routes/channels.php` (Spatie permission or ownership/access service; admin-facing channels gate on the matching `view *` permission). Payloads are invalidation pings (ids + `action`, plus `kind` on the vTual management channel) — never model snapshots.
 
 ## Payment UI / service checkout
 

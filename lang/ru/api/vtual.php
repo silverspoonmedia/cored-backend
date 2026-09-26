@@ -172,6 +172,8 @@ return [
         // curated at 2026-09-23T19:58:16+07:00 — ru curation wave: management entity settled on организация
         'events_list_success' => 'События организации загружены.',
         'event_created' => 'Событие создано.',
+        // curated at 2026-09-24T18:10:00+07:00 — ru curation wave: vTual management event edit
+        'event_updated' => 'Событие обновлено.',
         'event_cancelled' => 'Событие отменено.',
         // curated at 2026-09-23T19:58:16+07:00 — ru curation wave: management entity settled on организация
         'event_not_found' => 'Событие для этой организации не найдено.',

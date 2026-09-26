@@ -5,7 +5,6 @@ namespace App\Domain\Vtual\Services;
 use App\Domain\Vtual\Enums\ChannelStatus;
 use App\Domain\Vtual\Enums\ChannelVisibility;
 use App\Domain\Vtual\Enums\ContentStatus;
-use App\Domain\Vtual\Enums\ContentType;
 use App\Domain\Vtual\Enums\EntityStatus;
 use App\Domain\Vtual\Enums\VtualEventStatus;
 use App\Domain\Vtual\Exceptions\VtualException;
@@ -36,7 +35,7 @@ class VtuberProfileService
      */
     public function directory(?string $search = null, int $perPage = 12): LengthAwarePaginator
     {
-        return Creator::query()
+        $query = Creator::query()
             ->where('status', EntityStatus::Active)
             ->whereHas('channels', function ($query): void {
                 $query->where('status', ChannelStatus::Active)
@@ -53,8 +52,11 @@ class VtuberProfileService
                         ->with('platform')
                         ->orderByDesc('subscriber_count');
                 },
-            ])
-            ->withExists(LiveContentScope::withExistsClause())
+            ]);
+
+        LiveContentScope::applyIsLiveSelect($query);
+
+        return $query
             ->orderByDesc('is_live')
             ->orderBy('display_name')
             ->paginate($perPage);
@@ -112,7 +114,7 @@ class VtuberProfileService
     /**
      * Guest landing feed across every publicly listed creator.
      *
-     * @return LengthAwarePaginator<int, \App\Domain\Vtual\Models\Content>
+     * @return LengthAwarePaginator<int, Content>
      */
     public function paginatePublicContents(int $perPage = 12): LengthAwarePaginator
     {
@@ -127,24 +129,10 @@ class VtuberProfileService
      */
     public function liveNow(int $limit = 8): Collection
     {
-        return Content::query()
-            ->where('type', ContentType::Live)
-            ->where('status', ContentStatus::Live)
-            ->whereNotNull('title')
-            ->where('title', '!=', '')
-            ->whereNotNull('url')
-            ->where('url', '!=', '')
-            ->whereHas('creator', function ($query): void {
-                $query->where('status', EntityStatus::Active)
-                    ->whereHas('channels', function ($channels): void {
-                        $channels->where('status', ChannelStatus::Active)
-                            ->where('visibility', ChannelVisibility::Public);
-                    });
-            })
-            ->whereHas('channel', function ($query): void {
-                $query->where('status', ChannelStatus::Active)
-                    ->where('visibility', ChannelVisibility::Public);
-            })
+        $query = LiveContentScope::query();
+        LiveContentScope::constrainToGuestVisible($query);
+
+        return $query
             ->with(['channel', 'creator', 'platform'])
             ->orderByDesc('started_at')
             ->orderByDesc('published_at')
@@ -273,18 +261,16 @@ class VtuberProfileService
     /**
      * Lightweight any-live check across the creator's full catalogue
      * (non-archived channels). Independent of the paginated contents page.
+     *
+     * Delegates to {@see LiveContentScope} so the profile badge cannot drift
+     * from the directory card / management roster badge.
      */
     private function hasLiveContent(string $creatorId): bool
     {
-        return Content::query()
-            ->where('type', ContentType::Live)
-            ->where('status', ContentStatus::Live)
-            ->where(function ($q) use ($creatorId): void {
-                $q->where('creator_id', $creatorId)
-                    ->orWhereHas('appearances', fn ($a) => $a->where('creator_id', $creatorId));
-            })
-            ->whereDoesntHave('channel', fn ($q) => $q->where('status', ChannelStatus::Archived))
-            ->exists();
+        $query = LiveContentScope::query();
+        LiveContentScope::constrainToCreator($query, $creatorId);
+
+        return $query->exists();
     }
 
     private function resolveActive(string $key): Creator

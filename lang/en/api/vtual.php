@@ -109,6 +109,7 @@ return [
         'creator_invite_name_required' => 'Display name for the new vTuber profile is required.',
         'events_list_success' => 'Management events loaded.',
         'event_created' => 'Event created.',
+        'event_updated' => 'Event updated.',
         'event_cancelled' => 'Event cancelled.',
         'event_not_found' => 'Event not found for this management.',
         'event_not_actionable' => 'This event can no longer be changed.',
